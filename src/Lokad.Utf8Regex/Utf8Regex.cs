@@ -1173,9 +1173,10 @@ public sealed partial class Utf8Regex
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
         try
         {
-            if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program))
+            if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program) ||
+                CanUseNativeWordDelimitedCount(program, startByte))
             {
-                // Literal Count consumes validated bytes, not coordinate metadata.
+                // These complete counters consume validated bytes, not coordinate metadata.
                 // Keep structural validation and the existing counting kernel intact.
                 Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
                 return OwnedSliceCountFromByte(input, program, startByte, ref invocation);
@@ -1204,9 +1205,22 @@ public sealed partial class Utf8Regex
         }
     }
 
+    private bool CanUseNativeWordDelimitedCount(Utf8SliceProgram program, int startByte)
+        => startByte == 0 && ReferenceEquals(program, _ownedSliceProgram) && !_hasCaptures &&
+            !program.RightToLeft && !program.IgnoreCase &&
+            (Options & (RegexOptions.ECMAScript | RegexOptions.NonBacktracking)) == 0 &&
+            _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount;
+
     private int OwnedSliceCountFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program,
         int startByte, ref Utf8SliceInvocation invocation)
     {
+        if (CanUseNativeWordDelimitedCount(program, startByte))
+        {
+            var breach = Utf8WordDelimitedTokenExecutor.TryCountWellFormed(input, ref invocation, out var count);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException("Word-delimited count breached the invocation budget.");
+            return count;
+        }
         // A pure literal/family Count needs no capture slots or continuation frames.
         // Borrow the validated invocation instead of dropping finite callers
         // into the VM solely because they selected an enforceable policy.

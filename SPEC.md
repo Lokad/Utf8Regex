@@ -313,6 +313,16 @@ scratch requirement. Boundary/trailing assertions, contiguous anchors,
 shared/explicit numbering and balancing retain their qualified routes; captured
 Unicode and NonBacktracking patterns without a native plan also retain the VM.
 Offset interoperability maps keep their separate working/result admission.
+Development source after scalar.86 also reuses the existing scalar word-delimited
+email Count family before general VM dispatch. Eligibility requires the original
+capture-free, nonfolded LTR program, excluding ECMAScript and NonBacktracking.
+Whole-subject strict validation shares the invocation; delimiter searches have
+bounded windows and head/body scalar steps keep work, token and deadline checks.
+The counter uses the same scalar word predicate as the VM and needs no capture,
+continuation or result storage. Tight depth/working/result caps can therefore
+admit these calls below the former VM scratch requirement; numerical work needs
+can fall. Other programs and operations retain their qualified routes. This does
+not extend construction, retained-storage or default guarantees.
 Development source also reuses this existing metered driver for prepared exact
 LTR families with two or three nonempty branches and no stateful/anchor/folding
 exclusions. Count publishes no capture values, so ordinary distinct captures need

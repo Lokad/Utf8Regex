@@ -2,6 +2,11 @@
 
 ## Development after scalar.86
 
+- Reuse the existing scalar email Count algorithm before general VM dispatch for
+  its exact capture-free LTR family, including finite policies, live tokens and
+  deadlines. Bound delimiter searches and meter scalar steps with the validated
+  invocation; avoid unnecessary VM slots and attempts. Retain scalar word rules,
+  full strict validation and declined-program semantics. Immutable86 is unchanged.
 - Classify oversized PythonRe conditional group IDs as pattern errors instead of
   leaking arithmetic overflow. Preserve header error precedence, leading-zero
   forward conditions and per-character construction admission/interruption.

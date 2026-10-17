@@ -7,22 +7,51 @@ internal static class Utf8WordDelimitedTokenExecutor
 {
     public static int CountWellFormed(ReadOnlySpan<byte> input)
     {
-        var count = 0;
+        var invocation = new Utf8SliceInvocation(default, Timeout.InfiniteTimeSpan, default);
+        var breach = TryCountWellFormed(input, ref invocation, out var count);
+        if (breach != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException("Word-delimited count breached the invocation budget.");
+        return count;
+    }
+
+    internal static Utf8ExecutionLimitKind TryCountWellFormed(ReadOnlySpan<byte> input,
+        ref Utf8SliceInvocation invocation, out int count)
+    {
+        count = 0;
         var searchFrom = 0;
+        var breach = invocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
         while ((uint)searchFrom < (uint)input.Length)
         {
-            var relative = input[searchFrom..].IndexOf((byte)'@');
-            if (relative < 0)
+            var delimiterIndex = -1;
+            if (invocation.IsUnmetered)
             {
-                break;
+                var relative = input[searchFrom..].IndexOf((byte)'@');
+                if (relative >= 0) delimiterIndex = searchFrom + relative;
             }
+            else
+            {
+                // Bound each search without advancing the semantic head floor:
+                // a token can begin before the window containing its delimiter.
+                for (var scanFrom = searchFrom; scanFrom < input.Length;)
+                {
+                    breach = invocation.TryChargeInputStep();
+                    if (breach != Utf8ExecutionLimitKind.None) return breach;
+                    var length = Math.Min(2048, input.Length - scanFrom);
+                    var relative = input.Slice(scanFrom, length).IndexOf((byte)'@');
+                    if (relative >= 0) { delimiterIndex = scanFrom + relative; break; }
+                    scanFrom += length;
+                }
+            }
+            if (delimiterIndex < 0) break;
 
-            var delimiterIndex = searchFrom + relative;
             var tokenStart = delimiterIndex;
-            while (tokenStart > searchFrom && TryConsumePreviousHead(input, ref tokenStart))
+            while (tokenStart > searchFrom)
             {
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                if (!TryConsumePreviousHead(input, ref tokenStart)) break;
             }
-
             if (tokenStart == delimiterIndex)
             {
                 searchFrom = delimiterIndex + 1;
@@ -30,36 +59,21 @@ internal static class Utf8WordDelimitedTokenExecutor
             }
 
             var tokenEnd = delimiterIndex + 1;
-            var bodyScalarCount = 0;
             var lastSecondaryIndex = -1;
             var hasSecondaryWithTail = false;
-            while (TryConsumeNextBody(input, ref tokenEnd, out var scalarStart, out var isSecondary))
+            while (true)
             {
-                if (lastSecondaryIndex > delimiterIndex + 1)
-                {
-                    hasSecondaryWithTail = true;
-                }
-
-                if (isSecondary)
-                {
-                    lastSecondaryIndex = scalarStart;
-                }
-
-                bodyScalarCount++;
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                if (!TryConsumeNextBody(input, ref tokenEnd, out var scalarStart, out var isSecondary)) break;
+                if (lastSecondaryIndex > delimiterIndex + 1) hasSecondaryWithTail = true;
+                if (isSecondary) lastSecondaryIndex = scalarStart;
             }
-
-            if (bodyScalarCount > 0 && hasSecondaryWithTail)
-            {
-                count++;
-                searchFrom = tokenEnd;
-            }
-            else
-            {
-                searchFrom = delimiterIndex + 1;
-            }
+            // A secondary with both neighbours already proves a nonempty body.
+            if (hasSecondaryWithTail) { count++; searchFrom = tokenEnd; }
+            else searchFrom = delimiterIndex + 1;
         }
-
-        return count;
+        return Utf8ExecutionLimitKind.None;
     }
 
     public static Utf8SelectedCountKernelMetrics InspectMetrics(ReadOnlySpan<byte> input)
