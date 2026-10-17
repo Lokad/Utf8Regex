@@ -1,14 +1,14 @@
 # Bounded checked-access work
 
-The latest immutable Core/PythonRe scalar.86 pair preserves the completed inventory:
+The latest immutable Core/PythonRe scalar.87 pair preserves the completed inventory:
 Core only permitted `Unsafe.SizeOf`, PythonRe none, no generated staging helpers,
 native imports or shipped BCL matcher/results. Lython accepts SizeOf. Same-byte
-Windows/Linux consumer and exact packaged member checks pass. Producer8893a3df/
-CI39060834938 is green both platforms. [Handoff](artifacts/core-python-scalar86-20261017/HANDOFF.md),
-[exact members](artifacts/core-python-scalar86-20261017/exact-member-references.json).
-Earlier85/84 and independent PCRE76/Core76 remain immutable. Later engine/protection
-changes and their separately scoped source/default-runtime costs do not reopen or
-replace the completed fixed-original checked52 gate. Earlier evidence stays below.
+Windows/Linux consumer and exact packaged member checks pass. Producere660102a/
+CI39068878117 is green both platforms. [Handoff](artifacts/core-python-scalar87-20261017/HANDOFF.md),
+[exact members](artifacts/core-python-scalar87-20261017/exact-member-references.json).
+Earlier86/85/84 and independentPCRE76/Core76 remain immutable. Later scalar email
+Count/cache/parser changes and their scoped source costs do not reopen or replace
+the completed fixed-original checked52 gate. Earlier evidence stays below.
 
 ## Checked-access batch: scalar.52
 

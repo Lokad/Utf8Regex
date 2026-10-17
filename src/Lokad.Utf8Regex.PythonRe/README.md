@@ -3,45 +3,38 @@
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
 strict UTF-8 scalars, with primary byte coordinates and derived UTF-16 projections.
 
-Development candidate **0.4.0-scalar.87** batches Core scalar/metered email Count,
-cache admission repairs and Python conditional/backreference syntax fixes. See
-the [delivery handoff](../../artifacts/core-python-scalar87-20261017/HANDOFF.md) and
-immutable manifest for qualification scope and exact dependency identity.
-The earlier qualified private **Core/PythonRe 0.4.0-scalar.86** pair comes from clean
-producer `8893a3df7fe377e256bb5a522bc7558b3ec79eda`; PythonRe pins exact Core
-`[0.4.0-scalar.86]`. Same-byte Windows/Linux consumers,107 capture/91 semantic
-cases, symbols/provenance/member/API checks and a fresh isolated public restore
-pass. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39060834938)
-is green. [Handoff](../../artifacts/core-python-scalar86-20261017/HANDOFF.md) and
-[consumption](../../artifacts/core-python-scalar86-20261017/CONSUMING.md) record scope
-and identities. Earlier85/84 and independent PCRE76/Core76 remain immutable;
-no PCRE86, publication, consumer pin/default change or adoption is implied.
+The qualified private **Core/PythonRe 0.4.0-scalar.87** pair comes from clean
+producer `e660102a5008dd654b478488817f5f05e4720f65`; PythonRe pins exact Core
+`[0.4.0-scalar.87]`. Same-byte Windows/Linux consumers,107 capture/91 semantic
+cases, API/member/symbol/provenance checks and a fresh isolated public restore
+pass. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39068878117)
+is green. [Handoff](../../artifacts/core-python-scalar87-20261017/HANDOFF.md) and
+[consumption](../../artifacts/core-python-scalar87-20261017/CONSUMING.md) record scope
+and identities. Earlier86/85/84 and independent PCRE76/Core76 remain immutable.
 
-Scalar.86 batches the existing-threshold validation-selector early exit and
-complete Core literal discovery for Python FullMatch value/string results.
-Exact capture-free calls check both suffix endpoints without per-scalar VM
-dispatch or unused lazy preparation. Required strings remain result-admitted.
-Detailed/captured/alternative/folded/assertion routes and eager Compile retain
-their handling. Earlier native boolean/Count, captures/aliases, explicit cursor
-lifetime and conservative accounting remain. Full strict validation, scalar
-boundaries, original interruption and all four finite invocation controls stay.
+Scalar.87 batches scalar/metered Core email Count before general VM dispatch,
+cache admission repairs and Python conditional/backreference syntax fixes.
+Strict full validation, scalar boundaries, captures/aliases, original interruption
+and all four finite invocation controls remain. The proved capture-free LTR
+email counter needs no VM capture/continuation/result storage. Other programs
+and operations retain their routes. Core references only permitted Unsafe.SizeOf,
+accepted by Lython; PythonRe none. Actual unchecked reads, generated helpers,
+native imports and shipped BCL matcher/results stay absent.
 
-Core only retains permitted `Unsafe.SizeOf`, accepted by Lython; PythonRe none.
-No unchecked reads, generated helpers, native imports or shipped BCL matcher/
-result dependencies return.
+Closed [public source costs](../../artifacts/core-email-count-current-20261017/RESULT.md)
+use FullOpts/R2Roff on runtime10.0.12. Finite Count falls from about4.1ms to1.5us
+on the16KiB corpus prefix and420us to59us on dense hits. The full6.8MB/92-match
+after-only witness is about1.6ms unlimited/3.2ms finite; predecoded .NET remains
+faster. Controls/drift and scope remain explicit. These are source measurements,
+not exact-package/default-runtime or broad-parity claims. No further timing.
+[Earlier exact86 default costs](../../artifacts/core-python-scalar86-20261017/vm-cost/RESULT.md)
+retain their unqualified noisy lanes and cross-process caveats; historical tables
+do not qualify87 package-default absolutes or CPythonStatus.
 
-[Exact86 current costs](../../artifacts/core-python-scalar86-20261017/vm-cost/RESULT.md)
-cover FullMatch, Count and required output under default.NET10.0.12 tiering/PGO/
-R2R with all-four finite controls/live token and both overlapping .NET comparators.
-The150 initial plus sole100 confirmation samples retain short/noisy lanes:
-some FullMatch, text and finite bulk costs remain unqualified. Within-lane
-stability does not prove cross-process reproducibility; text medians differ
-sharply between processes. No further timing. Closed FullOpts source comparisons
-and historical tables do not qualify package-default absolutes or CPythonStatus.
-
-Full construction/lazy/default/common-retention/host/SPEC coverage remains open;
-see [host composition](../../HOST-INTEGRATION.md). These are scoped dependency
-guarantees, not a safe-default or process-memory claim.
+Defaults/static calls remain unlimited. [Host composition](../../HOST-INTEGRATION.md)
+explains covered payload and surviving owners. Full construction/lazy/default/
+common-retention/host/SPEC coverage remains open. No PCRE87, publication, external
+consumer pin/default change or actual adoption is implied.
 
 ## Support Scope
 

@@ -1,6 +1,15 @@
 # Changelog
 
-## Development after scalar.86
+## Qualified private Core/PythonRe scalar.87
+
+- Batch scalar/metered email Count with cache and Python pattern-admission fixes.
+  Same immutable bytes pass Windows/Linux consumers/oracles, exact public restore,
+  API/member/symbol/provenance checks and green producer CI. Preserve earlier86
+  and independentPCRE76/Core76. Source costs keep their explicit flags/uncertainty;
+  no package-default, publication, adoption or complete-SPEC claim.
+  [Handoff](artifacts/core-python-scalar87-20261017/HANDOFF.md).
+
+## Changes included after scalar.86
 
 - Reuse the existing scalar email Count algorithm before general VM dispatch for
   its exact capture-free LTR family, including finite policies, live tokens and
