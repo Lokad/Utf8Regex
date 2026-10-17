@@ -2,6 +2,10 @@
 
 ## Development after scalar.86
 
+- Reject PythonRe conditional names that are undefined at their lexical point,
+  including names introduced later. Preserve already-open named groups, numeric
+  forward references, scalar captures and unterminated-header syntax failures.
+  Admission now agrees with the pinned CPython oracle for these cases.
 - Bypass cache hashing/lookup for keys whose existing length-based charge exceeds
   the payload cap. Keep original construction admission, cancellation/deadlines,
   retainable entries and held results; remove redundant keyFits state. One bounded

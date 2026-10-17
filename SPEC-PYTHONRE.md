@@ -116,6 +116,9 @@ Supported feature families in the current profile:
 * greedy, reluctant, and possessive quantifiers
 * capturing and named capturing groups
 * named and numeric backreferences
+* group-participation conditionals: names must already be defined at the
+  conditional header, including an already-open named group; numeric forward
+  references retain final group-count validation
 * lookahead and fixed-width lookbehind
 * atomic groups
 * leading and scoped inline flags for `i`, `m`, `s`, `x`, `u` on `str` patterns

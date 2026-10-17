@@ -298,6 +298,13 @@ internal sealed partial class PythonReParser
             throw new PythonRePatternException($"bad character in group name '{name}'", start);
         }
 
+        // Names resolve where the conditional is parsed. Unlike numeric
+        // references, a later group definition cannot make this name valid.
+        if (!IsAtEnd && !Storage.NamedGroups.ContainsKey(name))
+        {
+            throw new PythonRePatternException($"unknown group name '{name}'", start);
+        }
+
         return PythonReConditionalReference.ForGroupName(name);
     }
 
