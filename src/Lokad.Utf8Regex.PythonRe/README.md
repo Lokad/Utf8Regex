@@ -81,6 +81,9 @@ that same owner before returning. This pays its instruction-copy/metadata cost
 upfront, even if FullMatch is unused, and tighter budgets can consequently deny
 more compilations. Constructors remain lazy; replacement preparation, incidental
 acquisitions and process memory remain outside this partial construction bound.
+Development source after scalar.81 excludes individual charges for temporary
+immutable-metadata views and enumerator boxes. Their backing tables, traversal
+work and original cancellation/deadline checks remain covered.
 Construction authority ends before expression publication; execution policy and
 the token supplied to each operation remain independent.
 

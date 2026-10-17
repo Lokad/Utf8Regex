@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.FrontEnd;
+using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -95,6 +96,77 @@ public sealed class Utf8ConstructionMetadataMapTests
 
         Assert.True(owner.Budget.WorkSteps <= allowance + 1);
         owner.Budget.ReleaseArray(parent, false);
+    }
+
+    [Theory]
+    [InlineData(0ul)] [InlineData(32ul)]
+    public void TemporaryViewsUseNoByteLoansButTraversalStillNeedsWork(ulong work)
+    {
+        var snapshot = CreateSnapshot();
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 0, work, ulong.MaxValue);
+        using var keys = snapshot.Keys.GetEnumerator();
+        using var values = snapshot.Values.GetEnumerator();
+        using var pairs = snapshot.GetEnumerator();
+        Assert.Equal(0ul, owner.Budget.ReservedBytes);
+        Assert.Equal(0ul, owner.Budget.WorkSteps);
+        foreach (var advance in new Func<bool>[] { keys.MoveNext, values.MoveNext, pairs.MoveNext })
+        {
+            if (work == 0)
+            {
+                var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => advance());
+                Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
+            }
+            else
+            {
+                var count = 0;
+                while (advance()) count++;
+                Assert.Equal(2, count);
+            }
+        }
+        Assert.Equal(0ul, owner.Budget.ReservedBytes);
+        Assert.Equal(work == 0, owner.Budget.WorkSteps == 0);
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void TemporaryViewsAndEnumeratorsKeepOriginalInterruptionPreflights(bool timeout)
+    {
+        var snapshot = CreateSnapshot();
+        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 0, ulong.MaxValue, ulong.MaxValue);
+        var keys = snapshot.Keys;
+        var values = snapshot.Values;
+        using var cancellation = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(20));
+        owner.Budget.Deadline = deadline;
+        owner.Budget.CancellationToken = cancellation.Token;
+        if (timeout) ticks = 25; else cancellation.Cancel();
+
+        foreach (var acquire in new Func<object>[]
+        {
+            () => snapshot.Keys, () => snapshot.Values, () => snapshot.GetEnumerator(),
+            () => keys.GetEnumerator(), () => values.GetEnumerator(),
+        })
+        {
+            var failure = Record.Exception(() => acquire());
+            if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
+            else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+        }
+        Assert.Same(deadline, owner.Budget.Deadline);
+        Assert.Equal(0ul, owner.Budget.ReservedBytes);
+        Assert.Equal(0ul, owner.Budget.WorkSteps);
+    }
+
+    private static Utf8ConstructionReadOnlyMap<int, int> CreateSnapshot()
+    {
+        using var owner = Utf8ConstructionScope.Enter();
+        using var arena = Utf8ConstructionArena.Create(owner.Budget);
+        using var map = Utf8ConstructionMap<int, int>.Create(owner.Budget, EqualityComparer<int>.Default);
+        map.Add(1, 2); map.Add(3, 4);
+        var snapshot = map.Freeze(arena);
+        arena.Complete(); owner.Complete();
+        return snapshot;
     }
 
     private sealed class Collisions : IEqualityComparer<int>

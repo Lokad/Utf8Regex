@@ -920,8 +920,12 @@ charges the typed major extent again, including shared/repeated storage; earlier
 construction denial is intentional. Failure releases both totals, success keeps
 retained charges, and cleanup never refunds work or depends on GC timing.
 Immutable metadata lookup/enumeration spends the current construction
-owner's work, rather than a closed original owner. Its generic enumerable views
-and boxed enumerators admit descriptor capacity before acquisition.
+owner's work, rather than a closed original owner. Temporary generic enumerable
+views and boxed enumerators have no individual byte or acquisition-work charge;
+their backing tables retain major-capacity admission. View/enumerator acquisition
+still checks the original token/deadline, and table traversal still meters work.
+This source simplification after scalar.81 may admit tighter numerical policies;
+it does not promise accounting for every allocation or caller-retained storage.
 Capture bodies use one opening-order array: a null slot marks an open group,
 and closing stores its body at the same index. The parser transfers the admitted
 final array through the numeric arena; retained aliases survive scratch cleanup.

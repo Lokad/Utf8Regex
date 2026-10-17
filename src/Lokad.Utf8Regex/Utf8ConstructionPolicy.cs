@@ -4,7 +4,10 @@ namespace Lokad.Utf8Regex;
 /// <remarks>Null keeps the fixed construction backstop; positive values may tighten it.
 /// Limits cover admitted work, traversal frames, instruction capacity and major
 /// storage, not every allocation, CLR/JIT metadata, lazy preparation, caller
-/// retention or process memory. Construction work units can change by version.</remarks>
+/// retention or process memory. Temporary immutable-metadata enumerable views
+/// and enumerator boxes have no individual byte/acquisition-work charge;
+/// their backing tables and traversal work remain covered.
+/// Construction work units can change by version.</remarks>
 public readonly record struct Utf8ConstructionPolicy
 {
     /// <summary>Gets the cumulative covered construction-work limit, or null for the fixed backstop.</summary>

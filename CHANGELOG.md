@@ -2,6 +2,11 @@
 
 ## Development after scalar.81
 
+- Remove individual construction byte/work charges for temporary immutable-map
+  views and enumerator boxes, along with their generic allocation wrapper.
+  Keep backing-table admission, snapshot validity, metered scans and original
+  token/deadline preflights. These fixed-size descriptors join the explicitly
+  uncovered incidental allocations; numerical policy requirements may decrease.
 - Reuse existing validation-only strategies for boolean calls that discard UTF16
   counts/flags. Share the charged scalar-aligned block loop, error offsets and
   original interruption; metadata-producing callers and admission remain intact.

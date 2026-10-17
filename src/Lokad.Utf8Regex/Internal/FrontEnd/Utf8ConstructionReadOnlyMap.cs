@@ -12,11 +12,18 @@ internal sealed class Utf8ConstructionReadOnlyMap<TKey, TValue>(
     internal static Utf8ConstructionReadOnlyMap<TKey, TValue> Empty { get; } = new([], EqualityComparer<TKey>.Default, 0);
     public int Count { get; } = count;
 
-    // The comparer is a borrowed shared framework singleton. Collect the actual
-    // table capacity; the caller separately collects reference-bearing entries.
     public TValue this[TKey key] => TryGetValue(key, out var value) ? value : throw new KeyNotFoundException();
-    public IEnumerable<TKey> Keys => Create(new KeyView(this), static state => (IEnumerable<TKey>)state);
-    public IEnumerable<TValue> Values => Create(new ValueView(this), static state => (IEnumerable<TValue>)state);
+    // The backing table is admitted at construction/publication. Temporary views
+    // and enumerator boxes have no individual byte loans or acquisition charges;
+    // keep original interruption checks and charge the traversal itself below.
+    public IEnumerable<TKey> Keys
+    {
+        get { Utf8ConstructionScope.ChargeWork(0); return new KeyView(this); }
+    }
+    public IEnumerable<TValue> Values
+    {
+        get { Utf8ConstructionScope.ChargeWork(0); return new ValueView(this); }
+    }
 
     public bool ContainsKey(TKey key) => TryGetValue(key, out _);
     public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
@@ -41,21 +48,29 @@ internal sealed class Utf8ConstructionReadOnlyMap<TKey, TValue>(
         return false;
     }
 
-    public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() =>
-        Create(new PairEnumerator(entries), static state => (IEnumerator<KeyValuePair<TKey, TValue>>)state);
+    public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+    {
+        Utf8ConstructionScope.ChargeWork(0);
+        return new PairEnumerator(entries);
+    }
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-    private static T Create<TState, T>(TState state, Func<TState, T> factory) where T : class =>
-        Utf8ConstructionScope.IsActive ? Utf8ConstructionScope.CurrentBudget.AllocateObject(state, factory) : factory(state);
 
     private readonly struct KeyView(Utf8ConstructionReadOnlyMap<TKey, TValue> map) : IEnumerable<TKey>
     {
-        public IEnumerator<TKey> GetEnumerator() => Create(new KeyEnumerator(map), static state => (IEnumerator<TKey>)state);
+        public IEnumerator<TKey> GetEnumerator()
+        {
+            Utf8ConstructionScope.ChargeWork(0);
+            return new KeyEnumerator(map);
+        }
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
     private readonly struct ValueView(Utf8ConstructionReadOnlyMap<TKey, TValue> map) : IEnumerable<TValue>
     {
-        public IEnumerator<TValue> GetEnumerator() => Create(new ValueEnumerator(map), static state => (IEnumerator<TValue>)state);
+        public IEnumerator<TValue> GetEnumerator()
+        {
+            Utf8ConstructionScope.ChargeWork(0);
+            return new ValueEnumerator(map);
+        }
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
     private struct PairEnumerator(Utf8ConstructionMap<TKey, TValue>.Entry[] source) : IEnumerator<KeyValuePair<TKey, TValue>>
