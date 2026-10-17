@@ -3,38 +3,35 @@
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
 strict UTF-8 scalars, with primary byte coordinates and derived UTF-16 projections.
 
-The qualified private **Core/PythonRe 0.4.0-scalar.78** pair, producer
-`17d4e70bffb75d5f1d96dccd38c6f4f294f92006`, pins Core `[0.4.0-scalar.78]`.
-Same immutable Windows/Linux consumers pass capture/semantic oracles, exact
-provenance/member inventory and a fresh final-feed restore.
-[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39008949770) is green.
-See the [handoff](../../artifacts/core-python-scalar78-20261017/HANDOFF.md) and
-[consumption instructions](../../artifacts/core-python-scalar78-20261017/CONSUMING.md).
+The prepared private **Core/PythonRe 0.4.0-scalar.79** candidate pins Core
+`[0.4.0-scalar.79]`. Exact immutable identity, completed consumer qualification and
+current operating costs are recorded in the
+[handoff](../../artifacts/core-python-scalar79-20261017/HANDOFF.md) and
+[consumption instructions](../../artifacts/core-python-scalar79-20261017/CONSUMING.md).
+This package README is preparation metadata, not a qualification receipt. The
+previously qualified scalar.78 pair remains immutable.
 
-The batch reuses the scalar scanner when a disjoint following literal proves
-repeat alternatives useless, preserving ordinary capture closing and tail
-matching. Replacement-literal preparation now checks its existing authority during
-bounded encoding/validation passes. No new public API, owner, policy mode or
-output buffer. Scalar captures/completion, coordinates, retained results/aliases
-and finite controls remain. Actual removed repeat work/state lowers numerical
-cutoffs; successful replacement-preparation charges and fragment repair stay.
+Python captures now use opening-order scalar slots directly across references,
+conditionals, assertions and FullMatch. The Core-pattern numbering permutation is
+local construction scratch; the retained projection map, cursor plumbing and
+reverse lastindex search are removed. Lastindex retains completion order, including
+outer captures closing after their children. Public values, names, coordinates,
+retained snapshots/aliases and finite controls remain. No new public API, owner,
+instruction or execution mode. Core also reuses terminal greedy class scans when
+no required endpoint can reject Accept; remaining execution and metering stay.
+
 Core Unicode and pinned Python data are unchanged. Core retains only permitted
 `Unsafe.SizeOf`, accepted by Lython; Python has no unchecked API references.
-
-A closed Windows public source comparison records about 11% lower eager string-
-tuple unlimited/finite time, with less than 1% unchanged managed-control movement
-and no material allocation increase. Noisy token/BCL lanes remain explicit in the
-[evidence](../../artifacts/disjoint-class-repeat-20261017/RESULT.md). The measured
-matching code is unchanged here; this is source evidence, not exact scalar.78 or
-VM timing. The [comparative snapshot](BENCHMARKS.md) retains actual source/runtime
-generations and its Unqualified paired row; no CPython Status was promoted.
+Earlier source timings predate the capture-slot change. Current public costs and
+finite-limit overhead are recorded with their actual scope in the handoff; no
+CPython snapshot Status or quiet-VM qualification follows from those older results.
+The [comparative snapshot](BENCHMARKS.md) retains its original provenance.
 
 Defaults/static calls remain unlimited. Complete construction, lazy/default,
 caller-retention/RSS and host coverage remain open; compose existing
-[host owners](../../HOST-INTEGRATION.md). Earlier inputs and independent PCRE76
-remain immutable with separate exact Core pins. This qualified private dependency
-does not imply publication, external default changes or actual adoption. Package
-preparation assets remain frozen; the handoff records completed scoped acceptance.
+[host owners](../../HOST-INTEGRATION.md). Earlier packages and independent PCRE76
+remain immutable with separate exact Core pins. Preparation or qualification does
+not imply publication, external defaults, pin changes or actual adoption.
 
 ## Support Scope
 

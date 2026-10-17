@@ -1,5 +1,15 @@
 # Changelog
 
+## Core/PythonRe scalar.79 candidate preparation
+
+- Combine terminal captured-class scanning and direct Python capture slots into
+  one fresh private input. Preserve scalar.78 and independent PCRE76 unchanged.
+- Use the existing one-build/pack and detached Windows/Linux consumer boundary;
+  exact dependency, provenance, captures, finite policies and operating costs
+  receive their own receipts. This preparation entry does not claim qualification.
+- Preserve source regression coverage for ordered literal expansion; the direct-
+  fill construction prototype remains deferred after public Compile cost evidence.
+
 ## Development: direct Python capture slots
 
 - Lower Python captures, references and conditionals directly in Python opening

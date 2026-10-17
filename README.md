@@ -4,33 +4,35 @@
 scalars over strict UTF-8 spans, with primary byte offsets and lengths. Dot matches
 😀 once across its four bytes. UTF-16 coordinates and strings are derived conveniences.
 
-The qualified private **Core/PythonRe 0.4.0-scalar.78** pair is produced by
-`17d4e70bffb75d5f1d96dccd38c6f4f294f92006`; PythonRe pins Core
-`[0.4.0-scalar.78]`. The same immutable bytes pass Windows/Linux detached
-consumers, capture/semantic oracles, exact provenance and a fresh final-feed
-restore. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39008949770)
-is green. See the [handoff](artifacts/core-python-scalar78-20261017/HANDOFF.md)
-and [consumption instructions](artifacts/core-python-scalar78-20261017/CONSUMING.md).
+The prepared private **Core/PythonRe 0.4.0-scalar.79** candidate pins Core
+`[0.4.0-scalar.79]`. Its immutable identity, completed qualification and installation
+instructions belong to the [handoff](artifacts/core-python-scalar79-20261017/HANDOFF.md)
+and [consumption instructions](artifacts/core-python-scalar79-20261017/CONSUMING.md).
+This package README is preparation metadata, not a qualification receipt. The
+previously qualified [scalar.78 pair](artifacts/core-python-scalar78-20261017/HANDOFF.md)
+remains unchanged.
 
-This batch removes useless repeat alternatives before a disjoint exact literal
-and checks cancellation/deadlines during replacement-literal preparation. It
-reuses existing execution and construction owners. Scalar captures, coordinates,
-retained results and all four finite invocation controls remain. Removing actual
-repeat work/state can lower numerical work/depth/storage requirements; successful
-replacement-preparation charges and fragment repair stay unchanged. Unicode data
-are unchanged from scalar.77. No shipped BCL matcher/results, unchecked reads or
-generated staging helpers remain; Core retains permitted `Unsafe.SizeOf`,
-accepted by Lython.
+This batch combines terminal greedy class-repeat scanning with direct Python
+capture slots. Terminal Accept needs no rewind alternatives when no required
+endpoint can reject it; explicit-end and more complex paths retain their existing
+execution. Python group n now owns scalar slot n-1 through captures, references,
+conditionals, assertions and FullMatch. The Core-number permutation is temporary
+text-rendering scratch; retained projection tables and reverse lastindex searches
+are removed. Public completion order, values, names, coordinates and retained
+results/aliases remain. No new public API, owner, instruction or policy mode.
 
-A bounded Windows source comparison records about **11% less time** for eager
-capture-string tuples, including finite limits, with less than 1% movement in
-the unaffected managed control. Allocation differences are negligible; noisy
-live-token lanes and composed .NET controls remain explicit in the
-[evidence](artifacts/disjoint-class-repeat-20261017/RESULT.md). That matching source
-is unchanged in this candidate. These are source observations, with their actual
-platform and controls; no exact scalar.78-package or VM timing is claimed.
-Historical benchmark tables retain their source and environment; September
-results do not qualify this engine.
+Strict whole-input UTF-8/scalar semantics and all four finite invocation controls
+remain. Actual removed work/storage can lower numerical admission requirements;
+spent work is not refunded. Prior disjoint-repeat and bounded replacement-literal
+preparation fixes remain. Unicode data are unchanged. No shipped BCL matcher/
+results, unchecked reads or generated staging helpers; Core retains permitted
+`Unsafe.SizeOf`, accepted by Lython.
+
+Earlier closed [source measurements](artifacts/terminal-capture-repeat-20261017/RESULT.md)
+predate the capture-slot cleanup and do not qualify this candidate's operating
+cost. Current costs, finite-limit overhead and their source/package/platform
+scope are recorded separately in the handoff. Historical benchmark tables keep
+their actual provenance; September results do not qualify today's implementation.
 
 Defaults/static calls remain unlimited. [HOST-INTEGRATION.md](HOST-INTEGRATION.md)
 explains integration with existing resource owners; complete construction, lazy,
