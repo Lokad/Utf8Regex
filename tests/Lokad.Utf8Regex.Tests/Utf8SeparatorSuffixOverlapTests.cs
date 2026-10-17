@@ -12,6 +12,14 @@ public sealed class Utf8SeparatorSuffixOverlapTests
     [InlineData(@"\b(?:foo|bar)[\t ]* ", "foo \t bar\t ")]
     [InlineData(@"\b(?:foo|bar)\s*\t", "foo \t\tbar\t ")]
     [InlineData(@"\b(?:foo|bar)\s* ", "😀foo \u2003 bar   ")]
+    [InlineData(@"\b(?:foo|bar)\s*[ A-Z][a-z]*", "foo  x")]
+    [InlineData(@"\b(?:foo|bar)\s*[ A-Z][a-z]*", "foo A")]
+    [InlineData(@"\b(?:foo|bar)\s*\t+\(", "foo\t(")]
+    [InlineData(@"\b(?:foo|bar)\s*\([\t ]* ", "foo(   ")]
+    [InlineData(@"\b(?:foo|bar)\s+[A-Z][A-Z]*X", "foo ABX")]
+    [InlineData(@"\b(?:LogError|LogWarning)\s*\b", "LogError   ")]
+    [InlineData(@"\b(?:LogError|LogWarning)\s*?", "LogError   ")]
+    [InlineData(@"\b(?:LogError|LogWarning)\s*", "LogError   ")]
     public void SeparatorRewindsForItsLiteralSuffixInEveryMatchingLane(string pattern, string text)
     {
         var expected = new Regex(pattern).Matches(text);

@@ -1067,13 +1067,24 @@ internal static class Utf8NativeExecutionAnalyzer
                 return false;
             }
 
-            // This verifier consumes the separator greedily without rewinding it.
-            // A suffix beginning in that class needs the owned backtracking path.
-            var firstSuffix = suffixParts.Length > 0 && suffixParts[0].IsLiteral
-                ? suffixParts[0].LiteralUtf8 : suffixUtf8;
-            if (identifierStartSet is null && separatorSet is { } separator &&
-                firstSuffix is { Length: > 0 } && separator.Contains(firstSuffix[0]))
+            // Separator steps do not rewind. Their following consuming atom must
+            // be disjoint; identifier-tail rewinding has its own existing verifier.
+            if (separatorSet is { } separator && identifierStartSet is { } start &&
+                !separator.IsDisjoint(start))
                 return false;
+            AsciiCharClass? previousSeparator = identifierStartSet.HasValue ? null : separatorSet;
+            foreach (var part in suffixParts)
+            {
+                owner.ChargeWork(1);
+                if (previousSeparator is { } previous &&
+                    (part.IsLiteral && part.LiteralUtf8 is { Length: > 0 } literal && previous.Contains(literal[0]) ||
+                     part.IsSeparator && !previous.IsDisjoint(part.SeparatorCharClass)))
+                    return false;
+                previousSeparator = part.IsSeparator ? part.SeparatorCharClass : null;
+            }
+            // Literal-only shortcuts do not retain terminal separator progression
+            // or rewind it for a trailing boundary. Keep the complete owned plan.
+            if (previousSeparator.HasValue) return false;
 
             var plan = new AsciiStructuralIdentifierFamilyPlan(
                 prefixes,

@@ -2,9 +2,11 @@
 
 ## Development after scalar.88
 
-- Fix overlapping separator/suffix matching by declining the non-rewinding
-  structural-family optimization when a greedy separator consumes the suffix's
-  first byte. Existing owned matching preserves backtracking and scalar ranges
+- Fix overlapping separator/following-atom matching by declining the
+  non-rewinding structural-family optimization when a separator overlaps an
+  identifier start or a following literal/class in multipart suffixes, or when
+  terminal separator progression/trailing-boundary rewind is not represented.
+  Existing owned matching preserves backtracking and scalar ranges
   across Count, IsMatch, Match and enumeration. Scalar.88 remains immutable and
   retains the demonstrated Count mismatch for this shape.
 

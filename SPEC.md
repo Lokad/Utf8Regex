@@ -327,13 +327,19 @@ admit these calls below the former VM scratch requirement; numerical work needs
 can fall. Other programs and operations retain their qualified routes. This does
 not extend construction, retained-storage or default guarantees.
 Development source after scalar.88 declines structural-family lowering when a
-greedy separator overlaps the first literal suffix byte and no identifier
-separates them. The non-rewinding specialized verifier cannot prove this shape;
+separator overlaps the following identifier-start class or consuming suffix
+literal/class, including multipart suffixes. The proof reuses the existing
+constant-time ASCII class-disjointness predicate; identifier-tail rewind keeps
+its existing implementation. The non-rewinding separator cannot prove these shapes;
 existing owned matching must preserve its backtracking. Immutable scalar.88
 miscounts the pattern \b(?:foo|bar)\s* followed by a literal space over
 "foo   bar   " as six unlimited or zero finite instead of two. Correct execution
 can require different state/work admission than the former incorrect result;
 selected limits remain authoritative.
+Terminal separator progression and trailing-boundary rewind also require the
+complete owned plan. Scalar.88 can truncate an unlimited greedy Match at the
+prefix or miss a finite Count before a trailing boundary. These declines affect
+optimization selection, not grammar admission, scalar units or caller coordinates.
 Development source after scalar.87 also lets finite Core Count borrow the
 existing invocation-aware ASCII structural-family search and verifier. The
 original zero-offset LTR program must be nonempty, nonfolded and free of stateful
