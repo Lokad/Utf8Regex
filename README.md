@@ -4,13 +4,15 @@
 scalars over strict UTF-8 spans, with primary byte offsets and lengths. Dot matches
 😀 once across its four bytes. UTF-16 coordinates and strings are derived conveniences.
 
-The prepared private **Core/PythonRe 0.4.0-scalar.79** candidate pins Core
-`[0.4.0-scalar.79]`. Its immutable identity, completed qualification and installation
-instructions belong to the [handoff](artifacts/core-python-scalar79-20261017/HANDOFF.md)
-and [consumption instructions](artifacts/core-python-scalar79-20261017/CONSUMING.md).
-This package README is preparation metadata, not a qualification receipt. The
-previously qualified [scalar.78 pair](artifacts/core-python-scalar78-20261017/HANDOFF.md)
-remains unchanged.
+The qualified private **Core/PythonRe 0.4.0-scalar.79** pair comes from producer
+`2b41cad3c66097e8ff575a4f08f034037b708aa2`; PythonRe pins Core
+`[0.4.0-scalar.79]`. Same immutable Windows/Linux consumers, capture/semantic
+oracles, exact provenance/member inventories and a fresh isolated public restore
+pass. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39014053062)
+is green. [Handoff](artifacts/core-python-scalar79-20261017/HANDOFF.md) and
+[consumption instructions](artifacts/core-python-scalar79-20261017/CONSUMING.md)
+record completed scope, including the preserved Linux inventory setup recovery.
+The previously qualified scalar.78 pair remains unchanged.
 
 This batch combines terminal greedy class-repeat scanning with direct Python
 capture slots. Terminal Accept needs no rewind alternatives when no required
@@ -28,11 +30,14 @@ preparation fixes remain. Unicode data are unchanged. No shipped BCL matcher/
 results, unchecked reads or generated staging helpers; Core retains permitted
 `Unsafe.SizeOf`, accepted by Lython.
 
-Earlier closed [source measurements](artifacts/terminal-capture-repeat-20261017/RESULT.md)
-predate the capture-slot cleanup and do not qualify this candidate's operating
-cost. Current costs, finite-limit overhead and their source/package/platform
-scope are recorded separately in the handoff. Historical benchmark tables keep
-their actual provenance; September results do not qualify today's implementation.
+Current public costs compare frozen source32 with exact scalar.79 bytes on
+Windows, including finite/live-token lanes, retained tuple outputs, an unchanged
+Core Count control and decode/predecoded .NET controls. The
+[handoff](artifacts/core-python-scalar79-20261017/HANDOFF.md#current-public-operating-cost)
+records timings, allocations, finite-limit overhead and noise. No isolated
+speedup or CPython Status is claimed. Full quiet-VM measurement still needs disk
+and memory headroom; historical tables retain their actual source/environment.
+September results do not qualify today's implementation.
 
 Defaults/static calls remain unlimited. [HOST-INTEGRATION.md](HOST-INTEGRATION.md)
 explains integration with existing resource owners; complete construction, lazy,

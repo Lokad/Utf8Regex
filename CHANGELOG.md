@@ -1,5 +1,17 @@
 # Changelog
 
+## Core/PythonRe scalar.79 qualified private dependency
+
+- Deliver terminal captured-class scanning and direct Python capture slots in
+  one immutable pair with exact Core dependency. Windows/Linux consumers, capture
+  and semantic oracles, provenance and a fresh public restore pass. Preserve the
+  Linux inventory setup failure and no-build recovery; no repack or library build.
+- Record current exact79 Windows public costs and finite-limit overhead against
+  frozen source and unchanged controls. No isolated speedup, CPython Status or
+  quiet-VM claim; basic metering and all four invocation caps remain.
+- Earlier78/77 and independent PCRE76 remain immutable. No publication/default/
+  adoption change. [Handoff](artifacts/core-python-scalar79-20261017/HANDOFF.md).
+
 ## Core/PythonRe scalar.79 candidate preparation
 
 - Combine terminal captured-class scanning and direct Python capture slots into

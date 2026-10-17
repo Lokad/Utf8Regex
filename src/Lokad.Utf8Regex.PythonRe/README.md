@@ -3,13 +3,15 @@
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
 strict UTF-8 scalars, with primary byte coordinates and derived UTF-16 projections.
 
-The prepared private **Core/PythonRe 0.4.0-scalar.79** candidate pins Core
-`[0.4.0-scalar.79]`. Exact immutable identity, completed consumer qualification and
-current operating costs are recorded in the
-[handoff](../../artifacts/core-python-scalar79-20261017/HANDOFF.md) and
-[consumption instructions](../../artifacts/core-python-scalar79-20261017/CONSUMING.md).
-This package README is preparation metadata, not a qualification receipt. The
-previously qualified scalar.78 pair remains immutable.
+The qualified private **Core/PythonRe 0.4.0-scalar.79** pair pins Core
+`[0.4.0-scalar.79]`, producer `2b41cad3c66097e8ff575a4f08f034037b708aa2`.
+Same immutable Windows/Linux consumers, capture/semantic oracles, exact
+provenance/member inventory and a fresh public restore pass.
+[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39014053062) is green.
+The [handoff](../../artifacts/core-python-scalar79-20261017/HANDOFF.md) and
+[consumption instructions](../../artifacts/core-python-scalar79-20261017/CONSUMING.md)
+record identities, scope and preserved Linux inventory setup recovery. Earlier
+scalar.78 remains immutable; package README preparation assets stay frozen.
 
 Python captures now use opening-order scalar slots directly across references,
 conditionals, assertions and FullMatch. The Core-pattern numbering permutation is
@@ -22,9 +24,11 @@ no required endpoint can reject Accept; remaining execution and metering stay.
 
 Core Unicode and pinned Python data are unchanged. Core retains only permitted
 `Unsafe.SizeOf`, accepted by Lython; Python has no unchecked API references.
-Earlier source timings predate the capture-slot change. Current public costs and
-finite-limit overhead are recorded with their actual scope in the handoff; no
-CPython snapshot Status or quiet-VM qualification follows from those older results.
+The handoff includes current Windows public costs with exact79 AFTER bytes,
+frozen-source BEFORE, finite/live-token lanes and unchanged Core Count controls.
+Required tuple outputs and .NET decode/predecoded controls are included. Noise,
+finite overhead and remaining gaps are explicit; no isolated speedup, CPython
+Status or quiet-VM qualification is claimed.
 The [comparative snapshot](BENCHMARKS.md) retains its original provenance.
 
 Defaults/static calls remain unlimited. Complete construction, lazy/default,
