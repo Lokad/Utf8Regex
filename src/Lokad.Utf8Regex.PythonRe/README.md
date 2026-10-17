@@ -3,41 +3,34 @@
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
 strict UTF-8 scalars, with primary byte coordinates and derived UTF-16 projections.
 
-The qualified private **Core/PythonRe 0.4.0-scalar.81** pair pins Core
-`[0.4.0-scalar.81]`, producer `66a5db4a9e542bb15d16ed7a2d57cee8cde38288`.
+The qualified private **Core/PythonRe 0.4.0-scalar.82** pair pins Core
+`[0.4.0-scalar.82]`, producer `29f5a0b466f8f5be1fccd55530d35e97d9f74383`.
 Same immutable Windows/Linux consumers, capture/semantic oracles, symbols,
 provenance/member/API checks and a fresh isolated public restore pass.
-[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39029228373) is green.
-[Handoff](../../artifacts/core-python-scalar81-20261017/HANDOFF.md) and
-[consumption](../../artifacts/core-python-scalar81-20261017/CONSUMING.md) retain
-exact identities, scopes and current costs. Earlier bytes and their preparation
-assets remain immutable; no PCRE81, publication, actual consumer pin/default
-change or adoption is implied.
+[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39034578875) is green.
+[Handoff](../../artifacts/core-python-scalar82-20261017/HANDOFF.md) and
+[consumption](../../artifacts/core-python-scalar82-20261017/CONSUMING.md) preserve
+exact identities and scopes. No PCRE82, publication, consumer pin/default change
+or adoption is implied; earlier candidates remain immutable.
 
-Core finite Count, value Match and IsMatch reuse existing conservative native
-literal/family discovery under the validated original invocation; Match reuses
-metered coordinate projection, bool needs none. Unused VM attempts/slots go away.
-Detailed capture discovery and working/result admission keep their existing VM.
-Strict scalars, whole-input validation, priority, original interruption, sticky
-cumulative denial and final checks remain; less actual work/storage can lower
-numerical requirements. No new API, owner, retained classifier metadata or mode.
-Prior direct Python slots, mandatory ASCII intervals and explicit cursor owners
-remain. The Python semantic target stays CPython3.13.2/Unicode15.1.
+Scalar.82 includes direct string Split staging, conservative construction
+descriptor exclusions and Core boolean validation-only reuse. Captures/nulls,
+scalar boundaries, original deadlines/tokens, basic work and major-capacity
+admission remain. The accepted memory/CPU tradeoff is documented; reduced actual
+work/storage can lower numerical requirements. Prior direct capture slots,
+explicit cursor lifetime and prepared native finite literal routes remain.
+The semantic target stays CPython3.13.2/Unicode15.1; API snapshots are unchanged.
 
-[Current exact-package public costs](../../artifacts/core-python-scalar81-20261017/vm-cost/RESULT.md)
-include UTF8/string tuples, identifiers, Core Count/Match/IsMatch, finite/live-token
-lanes and both .NET controls. Selected Python finite overhead is 5.5–10.5%; output
-operations still trail composed .NET. Unicode finite costs and allocation/spread
-limits remain explicit. .NET10.0.12/FullOpts/R2Roff is the measured scope; no
-default-PGO, new CPython Status, universal speedup or full-catalog claim.
-Historical [paired CPython evidence](../../artifacts/pythonre-current-qualification-20261017/RESULT.md)
-and [snapshot](BENCHMARKS.md) keep their actual source/environment and do not
-qualify81. Core/Python fixed data and API snapshots are unchanged.
+[Current exact-package costs](../../artifacts/core-python-scalar82-20261017/vm-cost/RESULT.md)
+include finite/live-token overhead, required tuples/Split values and both .NET
+controls under default tiering/PGO. Stable rows and noisy/short lanes are distinct;
+older FullOpts and paired CPython results retain their actual source scope and
+do not qualify82. The [historical snapshot](BENCHMARKS.md) is not a fresh catalog.
 
-Core only retains allowed `Unsafe.SizeOf`, accepted by Lython; Python none. No
-unchecked reads, generated staging helpers, native imports or shipped BCL matcher/
-results. Defaults/static calls stay unlimited. Complete construction/lazy/default/
-retention/RSS/host and full SPEC proof remain open; compose
+Core only retains permitted `Unsafe.SizeOf`, accepted by Lython; Python has none.
+No unchecked reads, generated staging helpers, native imports or shipped BCL
+matcher/results. Defaults/static calls stay unlimited. Complete construction/
+lazy/default/retention/RSS/host and full SPEC proof remain open; compose
 [existing host owners](../../HOST-INTEGRATION.md).
 
 ## Support Scope
@@ -81,7 +74,7 @@ that same owner before returning. This pays its instruction-copy/metadata cost
 upfront, even if FullMatch is unused, and tighter budgets can consequently deny
 more compilations. Constructors remain lazy; replacement preparation, incidental
 acquisitions and process memory remain outside this partial construction bound.
-Development source after scalar.81 excludes individual charges for temporary
+Scalar.82 excludes individual charges for temporary
 immutable-metadata views and enumerator boxes. Their backing tables, traversal
 work and original cancellation/deadline checks remain covered.
 Construction authority ends before expression publication; execution policy and
@@ -184,7 +177,7 @@ bounded engine/checkpoint steps and may change between releases. Compilation and
 replacement-plan preparation use separate construction backstops. Arbitrary user
 callback execution and later standalone result getters are outside this cap;
 encoding/copying callback returns is charged. Cancellation and deadlines still apply.
-Development source after scalar.81 stages `SplitToStrings` references directly
+Scalar.82 stages `SplitToStrings` references directly
 in the existing metered result buffer. `SplitDetailed` keeps its capture metadata
 route. Full validation, captures/nulls, scalar starts, original interruption and
 admission remain; less actual staging can admit tighter work/byte policies.

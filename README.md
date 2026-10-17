@@ -1,59 +1,47 @@
 # Lokad.Utf8Regex
 
-`Lokad.Utf8Regex` is a managed `net10.0` regex library matching complete Unicode
-scalars over strict UTF-8 spans, with primary byte offsets and lengths. Dot matches
-😀 once across its four bytes. UTF-16 coordinates and strings are derived conveniences.
+`Lokad.Utf8Regex` matches Unicode scalars over strict UTF-8 spans, with primary
+byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
+coordinates and strings are derived conveniences.
 
-The qualified private **Core/PythonRe 0.4.0-scalar.81** pair comes from clean
-producer `66a5db4a9e542bb15d16ed7a2d57cee8cde38288`; PythonRe pins Core
-`[0.4.0-scalar.81]`. Same immutable Windows/Linux consumers, capture/semantic
+The qualified private **Core/PythonRe 0.4.0-scalar.82** pair comes from clean
+producer `29f5a0b466f8f5be1fccd55530d35e97d9f74383`; PythonRe pins Core
+`[0.4.0-scalar.82]`. Same immutable Windows/Linux consumers, capture/semantic
 oracles, symbols/provenance/member/API checks and a fresh isolated public restore
-pass. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39029228373)
-is green. [Handoff](artifacts/core-python-scalar81-20261017/HANDOFF.md) and
-[consumption](artifacts/core-python-scalar81-20261017/CONSUMING.md) record exact
-identities, completed scope and current operating costs.
+pass. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39034578875)
+is green. [Handoff](artifacts/core-python-scalar82-20261017/HANDOFF.md) and
+[consumption](artifacts/core-python-scalar82-20261017/CONSUMING.md) record exact
+identities, scoped guarantees and current costs.
 
-Development source after scalar.81 reuses validation-only strategies for boolean
-calls that discard UTF16 metadata, inside the same charged scalar-aligned blocks.
-A bounded public comparison improves mixed-width finite IsMatch by 43% and
-two-byte input by 14%, with unchanged allocations. ASCII-late slows by 6.4%; this
-tradeoff is explicit. [Source evidence](artifacts/boolean-validation-only-20261017/RESULT.md)
-retains controls and FullOpts scope. Metadata, errors, interruption and admission
-keep their contract; immutable scalar.81 does not include this source change.
+Scalar.82 reuses validation-only strategies when boolean calls discard metadata,
+excludes temporary metadata descriptors from construction charges, and stages
+Python Split strings without discarded detailed metadata. Basic metering, whole
+strict validation, scalar ranges/captures, original interruption, admission and
+retained-result validity remain. Numerical requirements may decrease as actual
+work/storage disappears. Split's memory/CPU tradeoff and the earlier ASCII
+validation cost remain explicit in their source evidence; no equivalence claim.
+Prior native finite literal discovery, direct Python capture slots and simplified
+cache/construction/cursor ownership remain. Shipped BCL matcher/results, unchecked
+reads, generated staging helpers and native imports stay absent. Core retains
+only permitted `Unsafe.SizeOf`, accepted by Lython; PythonRe has none.
 
-Scalar.81 reuses prepared short-literal search inside charged windows and shares
-conservative native literal/family eligibility across finite Count, value Match
-and IsMatch. Match reuses metered coordinate projection; IsMatch needs none.
-Unused VM attempts/slots disappear. Detailed captures keep their VM and admission.
-Whole strict UTF8 validation, scalar ranges, family priority, original token/
-deadline, basic work, sticky denial and final checks remain. Removed actual work/
-storage can lower numerical requirements; spent work/results are not refunded.
-No new owner, API, classifier metadata or policy mode. Prior ASCII start hints,
-direct Python slots and simplified cache/construction/cursor ownership remain.
-No shipped BCL matcher/results, unchecked reads, generated staging helpers or
-native imports. Core retains only permitted `Unsafe.SizeOf`, accepted by Lython;
-Python has none. Public API snapshots and fixed profile data are unchanged.
-
-[Current exact-package VM costs](artifacts/core-python-scalar81-20261017/vm-cost/RESULT.md)
-cover seven public workloads, required outputs, unlimited/all-four finite caps/
-live token and both .NET controls. Finite late Match/IsMatch measure 1.84us/1.07us.
-Finite Count is 72.5us versus 24.6us unlimited and 111.6us predecoded .NET. Python
-finite overhead is 5.5–10.5% on selected output workloads; outputs still trail
-composed .NET. Unicode IsMatch remains 30.8us finite versus 16.5us unlimited and
-24.3us decode-plus-.NET. These costs retain their .NET10.0.12 FullOpts/R2Roff
-scope, allocations and spreads: no default-PGO, CPython Status, universal speedup
-or full-catalog claim. Source comparisons retain their own frozen baselines;
-historical tables and September results do not qualify current package bytes.
+[Current exact-package costs](artifacts/core-python-scalar82-20261017/vm-cost/RESULT.md)
+cover representative required outputs, finite/live-token lanes and both .NET
+controls under default .NET tiering/PGO. Stable product rows and unqualified
+short/control lanes are distinguished; all raw evidence remains. Older FullOpts
+source/package measurements use another configuration. Historical generated
+tables and September results do not qualify current package bytes. No universal
+speedup, new CPython Status or full-catalog qualification is claimed.
 
 Defaults/static calls remain unlimited. [HOST-INTEGRATION.md](HOST-INTEGRATION.md)
 explains composition with existing owners. Complete construction/lazy/default,
-caller-retention/RSS, host and full [SPEC.md](SPEC.md) proof remain open. This is
-a private dependency input, with separate publication, actual consumer pins/
-defaults/adoption. Earlier [Core/Python80](artifacts/core-python-scalar80-20261017/HANDOFF.md)
-and independent [PCRE76](artifacts/pcre2-scalar76-delivery-20261017/HANDOFF.md) are
-immutable; PCRE76 requires exact Core76. No PCRE81 is designated. Published0.3
-packages retain their former contract. The existing
-[qualifier](qualify-scalar-candidate.ps1) records scoped private acceptance.
+caller-retention/RSS, host and full [SPEC.md](SPEC.md) proof remain open. Publication,
+actual consumer pins/defaults/adoption are separate. Earlier
+[Core/Python81](artifacts/core-python-scalar81-20261017/HANDOFF.md) and independent
+[PCRE76](artifacts/pcre2-scalar76-delivery-20261017/HANDOFF.md) are immutable;
+PCRE76 requires exact Core76. No PCRE82 is designated. Published0.3 packages retain
+their former contract. The [qualifier](qualify-scalar-candidate.ps1) records scoped
+private acceptance.
 
 ## Support Scope
 
@@ -66,7 +54,7 @@ packages retain their former contract. The existing
 - Resource scope: core instances accept finite `Utf8ResourcePolicy.MaxWorkSteps`, `MaxDepth`, `MaxWorkingBytes` and `MaxResultBytes`. Work covers strict UTF-8 validation, scalar matching and required shaping cumulatively. Depth bounds live backtracking/continuation frames or pending linear alternatives before acquisition/copy; the selected route determines its depth requirement, and a stack-free linear replay uses no depth allowance. Result bytes conservatively charge major array/text and output-control capacity before acquisition, including staging/growth; charges are not refunded and can count shared storage again. Finite calls select owned metered execution. Core Count can reuse the bounded native counter for prepared nonempty exact LTR literals, including ordinary ASCII literal captures; scalar.49 and later qualified pairs extend this to eligible exact two/three-literal families. That route needs no VM capture/depth/result scratch, and removing verification/workspace lowers its charged requirements. Scalar.48 predates the family extension; larger or semantically excluded families retain the VM. Offset maps retain their own admission. Working bytes bound modeled major active storage/output controls and growth overlap. Exclusive scratch releases synchronously; published copied-cursor maps/tables stay charged for the invocation. Incidental owner metadata and caller-retained results have separate scope. Defaults and static cached calls remain unlimited. Construction/replacement preparation, caller callback execution/allocations, borrowed subjects, fixed value results and later standalone getters have separate scope. These are operation controls, not wall-time, live-retention or process-memory guarantees.
 - Cancellation and deadlines: caller cancellation is checked synchronously during validation, search, backtracking and required result shaping. A match deadline is absolute across an invocation, including waits between persistent cursor advances. Caller callback execution has its own lifetime; copying/encoding its returned output remains controlled.
 - PythonRe delivery: Python-order captures/backreferences and nullable last-closed `LastIndex`/`LastGroup` are authoritative backend metadata. The persistent memory-based cursor has explicit disposal and owned snapshots that survive advance/disposal; aliases share its position and lifetime. See the [PythonRe contract](src/Lokad.Utf8Regex.PythonRe/README.md) for subject lifetime, supported syntax and exclusions.
-- Stability: 0.4.0-scalar.81 is the latest locally qualified private Core/PythonRe pair. The immutable manifest proves only its recorded checks; downstream acceptance and current performance retain explicit scopes. Defaults/static cached calls remain unlimited; embedders must select finite policies for bounded invocations. Lython accepts the permitted `Unsafe.SizeOf` reference; actual unchecked accesses remain excluded.
+- Stability: 0.4.0-scalar.82 is the latest locally qualified private Core/PythonRe pair. The immutable manifest proves only its recorded checks; downstream acceptance and current performance retain explicit scopes. Defaults/static cached calls remain unlimited; embedders must select finite policies for bounded invocations. Lython accepts the permitted `Unsafe.SizeOf` reference; actual unchecked accesses remain excluded.
 
 PythonRe reuses its private VM workspace across cursor moves.
 Scratch stays charged while positioned and overlaps projection; EOF/failure/Dispose

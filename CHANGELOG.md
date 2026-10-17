@@ -1,5 +1,18 @@
 # Changelog
 
+## Qualified private Core/PythonRe scalar.82
+
+- Batch boolean validation-only reuse, conservative construction-descriptor
+  exclusions and direct string Split staging. Preserve scalar/capture semantics,
+  original interruption and usable finite controls, with explicit CPU/memory
+  tradeoffs and modeled-capacity exclusions.
+- Fresh immutable bytes pass detached Windows/Linux consumers, exact provenance/
+  symbols/member/API checks, oracles and final-feed public restore. Producer
+  29f5a0b4 CI is green. Current default-runtime operating costs distinguish four
+  stable product rows from remaining unqualified short/control measurements.
+  No catalog campaign, actual consumer change, publication or PCRE82 designation.
+  [Handoff](artifacts/core-python-scalar82-20261017/HANDOFF.md).
+
 ## Development after scalar.81
 
 - Stage Python Split string references directly in the existing metered result
