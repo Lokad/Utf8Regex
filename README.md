@@ -13,9 +13,9 @@ is green. [Handoff](artifacts/core-python-scalar88-20261017/HANDOFF.md) and
 [consumption](artifacts/core-python-scalar88-20261017/CONSUMING.md) record exact scope/identities.
 Earlier87/86/85/84 and independentPCRE76/Core76 remain immutable.
 
-Source after scalar.88 fixes a demonstrated overlapping separator/suffix Count
-defect by declining an optimization that cannot rewind the separator. Immutable88
-retains this case; its [handoff](artifacts/core-python-scalar88-20261017/HANDOFF.md)
+Source after scalar.88 fixes separator endpoint/overlap and atomic-tail defects
+by declining structural optimizations that cannot preserve their backtracking
+rules. Immutable88 retains these cases; its [handoff](artifacts/core-python-scalar88-20261017/HANDOFF.md)
 records the reproduction and source repair.
 
 Scalar.88 batches scalar URI Count, finite ASCII structural-family Count and

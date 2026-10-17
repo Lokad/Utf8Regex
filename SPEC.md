@@ -340,6 +340,10 @@ Terminal separator progression and trailing-boundary rewind also require the
 complete owned plan. Scalar.88 can truncate an unlimited greedy Match at the
 prefix or miss a finite Count before a trailing boundary. These declines affect
 optimization selection, not grammar admission, scalar units or caller coordinates.
+An atomic identifier-tail group must also retain its commitment. The structural
+verifier can rewind ordinary tails, so preparation must not strip an atomic
+wrapper from such a loop. These shapes use the existing owned path, preserving
+atomic failure and the original resource controls.
 Development source after scalar.87 also lets finite Core Count borrow the
 existing invocation-aware ASCII structural-family search and verifier. The
 original zero-offset LTR program must be nonempty, nonfolded and free of stateful

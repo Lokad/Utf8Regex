@@ -2,6 +2,9 @@
 
 ## Development after scalar.88
 
+- Preserve atomic identifier-tail commitment in structural families: an atomic
+  loop must not be flattened into the rewinding identifier verifier. Keep these
+  shapes on the existing owned path; no grammar or resource-control change.
 - Fix overlapping separator/following-atom matching by declining the
   non-rewinding structural-family optimization when a separator overlaps an
   identifier start or a following literal/class in multipart suffixes, or when

@@ -20,7 +20,17 @@ public sealed class Utf8SeparatorSuffixOverlapTests
     [InlineData(@"\b(?:LogError|LogWarning)\s*\b", "LogError   ")]
     [InlineData(@"\b(?:LogError|LogWarning)\s*?", "LogError   ")]
     [InlineData(@"\b(?:LogError|LogWarning)\s*", "LogError   ")]
-    public void SeparatorRewindsForItsLiteralSuffixInEveryMatchingLane(string pattern, string text)
+    [InlineData(@"\b(?>foo|foobar)\s*[A-Z][A-Za-z]*", "foobarAlpha fooBeta")]
+    [InlineData(@"\b(?:foo|foobar)\s*[A-Z][A-Za-z]*", "foobarAlpha fooBeta")]
+    [InlineData(@"\b(?:foo|bar)\s+[A-Z](?>[A-Z]*)X", "foo ABX")]
+    [InlineData(@"\b(?:foo|bar)\s+[A-Z](?>[A-Z]*)X", "foo ABY X")]
+    [InlineData(@"\b(?:foo|bar)\s+(?>[A-Z][A-Z]*)X", "foo ABX")]
+    [InlineData(@"\b(?:foo|bar)(?>\s*)\(", "foo   ( bar(")]
+    [InlineData(@"\b(?:foo|bar)\s+[A-Z](?>[A-Z]{0,3})X", "foo ABX")]
+    [InlineData(@"\b(?:foo|bar)\s+[A-Z](?>[A-Z]{0,2})X", "foo ABCX")]
+    [InlineData(@"\b(?:foo|bar)\s+[A-Z](?>(?:[A-Z]*))X", "😀foo ABX bar CX")]
+    [InlineData(@"\b(?:foo|bar)\s+[A-Z](?>[A-Z]*)", "😀foo ABX bar CX")]
+    public void StructuralFamilyPreservesSeparatorsAndAtomicCommitment(string pattern, string text)
     {
         var expected = new Regex(pattern).Matches(text);
         var input = Encoding.UTF8.GetBytes(text);

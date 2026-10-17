@@ -2487,7 +2487,13 @@ internal static class Utf8NativeExecutionAnalyzer
 
     private static bool TryGetAsciiBoundedSetLoop(Utf8TreeNode node, out AsciiCharClass? runtimeSet, out int minCount, out int maxCount)
     {
-        node = UnwrapRuntimeNode(node);
+        // The identifier verifier can rewind this tail for a suffix/boundary.
+        // Do not erase an atomic wrapper and admit a loop that cannot rewind.
+        while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group && node.ChildCount == 1)
+        {
+            Utf8ConstructionScope.ChargeWork(1);
+            node = node.Child(0);
+        }
         runtimeSet = null; minCount = 0; maxCount = 0;
         if (node.Kind != Utf8TreeNodeKind.Setloop ||
             !Utf8ScalarAsciiProjector.TryProjectAsciiDefinition(node.ScalarClass, out var charClass)) return false;
