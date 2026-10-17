@@ -1,5 +1,22 @@
 # Changelog
 
+## Development: Core replacement preparation shares original authority
+
+- Start the original deadline before cold template lookup/validation/decoding,
+  carry it through cache waits/factories and owned/native execution. Preserve
+  caller cancellation, separate construction backstops and existing algorithms.
+  Failed preparation is not cached; foreign interruption retries under the caller.
+- Admit UTF8 fallback text before acquisition, keep native literal destination
+  allocation behavior, absolute malformed offsets, argument precedence, parent
+  cleanup and retained successful plans. No new owner/policy mode or accounting
+  framework. Qualified scalar.72 bytes remain unchanged.
+- Original10public failures reproduce missing cold authority. Focused checks cover
+  remaining matching time, foreign failures, refusal before string acquisition,
+  destination preservation and strict UTF8 offsets. One public source comparison
+  records warm costs within about2%, but controlled cold parsing costs48-93%more
+  (about7-14us) for required checks. This is an explicit protection cost, not a
+  performance-equivalence/unchecked10% qualification or a new package release.
+
 ## Core/PythonRe scalar.72 qualified dependency
 
 - Qualify immutable1d04bd4c: same-byte Windows/Linux39148Core/1504Diff/3237Python,

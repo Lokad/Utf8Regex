@@ -9,8 +9,10 @@ namespace Lokad.Utf8Regex;
 public sealed partial class Utf8Regex
 {
     private Utf8SliceByteOutputScope CreateOwnedOutputScope(CancellationToken token)
+        => CreateOwnedOutputScope(new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token));
+
+    private Utf8SliceByteOutputScope CreateOwnedOutputScope(Utf8SliceInvocation invocation)
     {
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
         try { return Utf8SliceByteOutputScope.Enter(invocation); }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         { throw CreateExecutionResourceFailure(ref invocation); }
@@ -31,19 +33,27 @@ public sealed partial class Utf8Regex
     }
 
     private Utf8SliceReplacementResult OwnedSliceReplace(ReadOnlySpan<byte> input, Utf8SliceProgram program,
-        Utf8AnalyzedReplacement replacement, Utf8SliceReplacementResultKind resultKind, Span<byte> destination, CancellationToken token)
+        Utf8AnalyzedReplacement replacement, Utf8SliceReplacementResultKind resultKind, Span<byte> destination, CancellationToken token,
+        Utf8ExecutionDeadline deadline)
     {
         var state = 0;
         return OwnedSliceReplace(input, program, new Utf8SliceTemplateExpansion(replacement, _program.CaptureCatalog),
-            ref state, resultKind, destination, token);
+            ref state, resultKind, destination, new Utf8SliceInvocation(InvocationLimits, deadline, token));
     }
 
     private Utf8SliceReplacementResult OwnedSliceReplace<TState, TExpansion>(ReadOnlySpan<byte> input,
         Utf8SliceProgram program, TExpansion expansion, ref TState state, Utf8SliceReplacementResultKind resultKind,
         Span<byte> destination, CancellationToken token)
         where TExpansion : struct, IUtf8SliceReplacementExpansion<TState>
+        => OwnedSliceReplace(input, program, expansion, ref state, resultKind, destination,
+            new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token));
+
+    private Utf8SliceReplacementResult OwnedSliceReplace<TState, TExpansion>(ReadOnlySpan<byte> input,
+        Utf8SliceProgram program, TExpansion expansion, ref TState state, Utf8SliceReplacementResultKind resultKind,
+        Span<byte> destination, Utf8SliceInvocation initialInvocation)
+        where TExpansion : struct, IUtf8SliceReplacementExpansion<TState>
     {
-        var scope = CreateOwnedOutputScope(token);
+        var scope = CreateOwnedOutputScope(initialInvocation);
         ref var invocation = ref scope.Invocation;
         var slots = new Utf8SliceSlots([], []);
         ulong mapReservation = 0;

@@ -35,4 +35,9 @@ internal sealed class Utf8ReplacementPlanCache
         TState state,
         Func<string, TState, Utf8AnalyzedReplacement> factory)
         => _plans.GetOrAdd(replacement, state, factory, default(Utf8ConstructionTextNoControl), default(Utf8ReplacementRetainedStorage));
+
+    internal Utf8AnalyzedReplacement GetOrAdd<TState, TControl>(string replacement, TState state,
+        Func<string, TState, Utf8AnalyzedReplacement> factory, TControl control)
+        where TControl : struct, IUtf8ConstructionTextControl
+        => _plans.GetOrAdd(replacement, state, factory, control, default(Utf8ReplacementRetainedStorage));
 }

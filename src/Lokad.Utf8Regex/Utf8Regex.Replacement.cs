@@ -19,15 +19,15 @@ public sealed partial class Utf8Regex
     private byte[] ReplaceCore(
         ReadOnlySpan<byte> input,
         Utf8AnalyzedReplacement replacement,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, Utf8ExecutionDeadline deadline)
     {
         if (GetOwnedReplacementProgram(input, replacement, cancellationToken) is { } ownedProgram)
         {
-            return OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceReplacementResultKind.Bytes, default, cancellationToken).Bytes;
+            return OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceReplacementResultKind.Bytes, default, cancellationToken, deadline).Bytes;
         }
 
         var validation = Utf8Validation.Validate(input);
-        var budget = CreateExecutionBudget();
+        var budget = deadline;
         if (UsesOwnedTemplateBeforeNativePlan() &&
             TryReplaceTemplateWithOwnedGroups(input, replacement, out var ownedTemplate))
         {
@@ -41,10 +41,10 @@ public sealed partial class Utf8Regex
 
         if (!TryGetNativeReplacementBytes(replacement, out var replacementBytes))
         {
-            return Encoding.UTF8.GetBytes(ReplaceWithScalarProgram(input, replacement, cancellationToken));
+            return Encoding.UTF8.GetBytes(ReplaceWithScalarProgram(input, replacement, cancellationToken, deadline));
         }
 
-        return ReplaceLiteralBytesCore(input, validation, replacementBytes);
+        return ReplaceLiteralBytesCore(input, validation, replacementBytes, deadline);
     }
 
     private Utf8AnalyzedReplacement GetParsedReplacement(string replacement)
@@ -160,15 +160,16 @@ public sealed partial class Utf8Regex
         return true;
     }
 
-    private string ReplaceToStringCore(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement, CancellationToken cancellationToken)
+    private string ReplaceToStringCore(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement, CancellationToken cancellationToken,
+        Utf8ExecutionDeadline deadline)
     {
         if (GetOwnedReplacementProgram(input, replacement, cancellationToken) is { } ownedProgram)
         {
-            return OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceReplacementResultKind.Text, default, cancellationToken).Text;
+            return OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceReplacementResultKind.Text, default, cancellationToken, deadline).Text;
         }
 
         var validation = Utf8Validation.Validate(input);
-        var budget = CreateExecutionBudget();
+        var budget = deadline;
         if (UsesOwnedTemplateBeforeNativePlan() &&
             TryReplaceTemplateWithOwnedGroups(input, replacement, out var ownedTemplate))
         {
@@ -178,20 +179,26 @@ public sealed partial class Utf8Regex
 
         if (TryReplaceViaNativePlan(input, validation, replacement, budget, out var nativeResult))
         {
-            return Encoding.UTF8.GetString(nativeResult);
+            var text = Encoding.UTF8.GetString(nativeResult);
+            deadline.CheckNow();
+            return text;
         }
 
         if (TryGetExactLiteralReplacementBytes(replacement, out var exactLiteralReplacementBytes))
         {
-            return Encoding.UTF8.GetString(Replace(input, exactLiteralReplacementBytes));
+            var text = Encoding.UTF8.GetString(ReplaceLiteralBytesCore(input, validation, exactLiteralReplacementBytes, deadline));
+            deadline.CheckNow();
+            return text;
         }
 
         if (TryGetNativeReplacementBytes(replacement, out var replacementBytes))
         {
-            return Encoding.UTF8.GetString(Replace(input, replacementBytes));
+            var text = Encoding.UTF8.GetString(ReplaceLiteralBytesCore(input, validation, replacementBytes, deadline));
+            deadline.CheckNow();
+            return text;
         }
 
-        return ReplaceWithScalarProgram(input, replacement, cancellationToken);
+        return ReplaceWithScalarProgram(input, replacement, cancellationToken, deadline);
     }
 
     private OperationStatus TryReplaceCore(
@@ -199,17 +206,17 @@ public sealed partial class Utf8Regex
         Utf8AnalyzedReplacement replacement,
         Span<byte> destination,
         out int bytesWritten,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, Utf8ExecutionDeadline deadline)
     {
         if (GetOwnedReplacementProgram(input, replacement, cancellationToken) is { } ownedProgram)
         {
-            var result = OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceReplacementResultKind.Destination, destination, cancellationToken);
+            var result = OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceReplacementResultKind.Destination, destination, cancellationToken, deadline);
             bytesWritten = result.BytesWritten;
             return result.Status;
         }
 
         var validation = Utf8Validation.Validate(input);
-        var budget = CreateExecutionBudget();
+        var budget = deadline;
         if (UsesOwnedTemplateBeforeNativePlan() &&
             TryReplaceTemplateWithOwnedGroups(input, replacement, out var ownedTemplate) &&
             TryEncodeUtf8ToDestination(ownedTemplate, destination, out bytesWritten))
@@ -224,7 +231,7 @@ public sealed partial class Utf8Regex
                 validation,
                 exactLiteralReplacementBytes,
                 destination,
-                out bytesWritten);
+                out bytesWritten, deadline);
         }
 
         if (TryGetNativeReplacementBytes(replacement, out var replacementBytes))
@@ -234,10 +241,10 @@ public sealed partial class Utf8Regex
                 validation,
                 replacementBytes,
                 destination,
-                out bytesWritten);
+                out bytesWritten, deadline);
         }
 
-        return TryEncodeUtf8ToDestination(ReplaceWithScalarProgram(input, replacement, cancellationToken), destination, out bytesWritten)
+        return TryEncodeUtf8ToDestination(ReplaceWithScalarProgram(input, replacement, cancellationToken, deadline), destination, out bytesWritten)
             ? OperationStatus.Done
             : OperationStatus.DestinationTooSmall;
     }
@@ -246,15 +253,15 @@ public sealed partial class Utf8Regex
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
         ReadOnlySpan<byte> replacementBytes) =>
-        ReplaceLiteralBytesCore(input, validation, replacementBytes, out _);
+        ReplaceLiteralBytesCore(input, validation, replacementBytes, out _, CreateExecutionBudget());
 
-    private byte[] ReplaceLiteralBytesCore(
-        ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation,
-        ReadOnlySpan<byte> replacementBytes,
-        out int replacementCount)
+    private byte[] ReplaceLiteralBytesCore(ReadOnlySpan<byte> input, Utf8ValidationResult validation,
+        ReadOnlySpan<byte> replacementBytes, Utf8ExecutionDeadline deadline) =>
+        ReplaceLiteralBytesCore(input, validation, replacementBytes, out _, deadline);
+
+    private byte[] ReplaceLiteralBytesCore(ReadOnlySpan<byte> input, Utf8ValidationResult validation,
+        ReadOnlySpan<byte> replacementBytes, out int replacementCount, Utf8ExecutionDeadline budget)
     {
-        var budget = CreateExecutionBudget();
         // R05: scalar-verifiable shapes replace literal templates through the scalar cursor
         // on astral-free non-ASCII input; ASCII and byte-safe inputs keep the factory cursor below.
         if (Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
@@ -292,14 +299,9 @@ public sealed partial class Utf8Regex
             maximumReplacementCount, ref invocation, ref results, out replacementCount);
     }
 
-    private OperationStatus TryReplaceLiteralBytesCore(
-        ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation,
-        ReadOnlySpan<byte> replacementBytes,
-        Span<byte> destination,
-        out int bytesWritten)
+    private OperationStatus TryReplaceLiteralBytesCore(ReadOnlySpan<byte> input, Utf8ValidationResult validation,
+        ReadOnlySpan<byte> replacementBytes, Span<byte> destination, out int bytesWritten, Utf8ExecutionDeadline budget)
     {
-        var budget = CreateExecutionBudget();
         // R05: scalar-verifiable shapes replace literal templates through the scalar cursor
         // on astral-free non-ASCII input; ASCII and byte-safe inputs keep the factory cursor below.
         if (Utf8ScalarSimplePatternVerifier.CanServeScalar(_preparedRegex.ExecutionKind, _preparedRegex.SimplePatternPlan, input))
@@ -333,10 +335,10 @@ public sealed partial class Utf8Regex
     }
 
     private string ReplaceWithScalarProgram(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, Utf8ExecutionDeadline deadline)
     {
         return OwnedSliceReplace(input, _ownedSliceProgram, replacement,
-            Utf8SliceReplacementResultKind.Text, default, cancellationToken).Text;
+            Utf8SliceReplacementResultKind.Text, default, cancellationToken, deadline).Text;
     }
 
     // Keep the qualified template/native allocation order. Finite deadlines

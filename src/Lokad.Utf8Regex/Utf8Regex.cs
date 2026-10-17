@@ -2694,8 +2694,9 @@ public sealed partial class Utf8Regex
 
     private byte[] ReplaceStringCore(ReadOnlySpan<byte> input, string replacement, CancellationToken cancellationToken)
     {
-        var analyzed = GetParsedReplacement(replacement);
-        return ReplaceCore(input, analyzed, cancellationToken);
+        var deadline = CreateExecutionBudget();
+        var analyzed = GetParsedReplacement(replacement, new(deadline, cancellationToken));
+        return ReplaceCore(input, analyzed, cancellationToken, deadline);
     }
 
     /// <summary>Replaces all matches using a .NET replacement pattern encoded as well-formed UTF-8.</summary>
@@ -2736,7 +2737,9 @@ public sealed partial class Utf8Regex
 
     private byte[] ReplaceUtf8Core(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, CancellationToken cancellationToken)
     {
-        _ = Utf8Validation.Validate(replacementPatternUtf8);
+        var deadline = CreateExecutionBudget();
+        var control = new ReplacementPreparationControl(deadline, cancellationToken);
+        ValidateReplacementTemplateUtf8(replacementPatternUtf8, control);
 
 
         if ((GetOwnedSliceProgram(input, cancellationToken) ??
@@ -2744,7 +2747,7 @@ public sealed partial class Utf8Regex
                 _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral ? _ownedSliceProgram : null)) is { } ownedProgram)
         {
             return OwnedSliceReplace(input, ownedProgram,
-                GetParsedReplacement(Encoding.UTF8.GetString(replacementPatternUtf8)), Utf8SliceReplacementResultKind.Bytes, default, cancellationToken).Bytes;
+                GetParsedReplacement(replacementPatternUtf8, control), Utf8SliceReplacementResultKind.Bytes, default, cancellationToken, deadline).Bytes;
         }
 
 
@@ -2754,15 +2757,14 @@ public sealed partial class Utf8Regex
 
         if (TryGetDirectLiteralReplacementBytes(replacementPatternUtf8, out var directReplacementBytes))
         {
-            return ReplaceLiteralBytesCore(input, validation, directReplacementBytes);
+            return ReplaceLiteralBytesCore(input, validation, directReplacementBytes, deadline);
         }
 
-        var replacementText = Encoding.UTF8.GetString(replacementPatternUtf8);
-        var replacementPattern = GetParsedReplacement(replacementText);
+        var replacementPattern = GetParsedReplacement(replacementPatternUtf8, control);
         if (GetOwnedReplacementProgram(input, replacementPattern, cancellationToken) is { } requiredProgram)
             return OwnedSliceReplace(input, requiredProgram, replacementPattern,
-                Utf8SliceReplacementResultKind.Bytes, default, cancellationToken).Bytes;
-        var budget = CreateExecutionBudget();
+                Utf8SliceReplacementResultKind.Bytes, default, cancellationToken, deadline).Bytes;
+        var budget = deadline;
         if (UsesOwnedTemplateBeforeNativePlan() &&
             TryReplaceTemplateWithOwnedGroups(input, replacementPattern, out var ownedTemplate))
         {
@@ -2771,7 +2773,7 @@ public sealed partial class Utf8Regex
 
         if (TryGetExactLiteralReplacementBytes(replacementPattern, out var exactLiteralReplacementBytes))
         {
-            return ReplaceLiteralBytesCore(input, validation, exactLiteralReplacementBytes);
+            return ReplaceLiteralBytesCore(input, validation, exactLiteralReplacementBytes, deadline);
         }
 
         if (TryReplaceViaNativePlan(input, validation, replacementPattern, budget, out var nativeResult))
@@ -2781,10 +2783,10 @@ public sealed partial class Utf8Regex
 
         if (!TryGetNativeReplacementBytes(replacementPattern, out var replacementBytes))
         {
-            return Encoding.UTF8.GetBytes(ReplaceWithScalarProgram(input, replacementPattern, cancellationToken));
+            return Encoding.UTF8.GetBytes(ReplaceWithScalarProgram(input, replacementPattern, cancellationToken, deadline));
         }
 
-        return ReplaceLiteralBytesCore(input, validation, replacementBytes);
+        return ReplaceLiteralBytesCore(input, validation, replacementBytes, deadline);
     }
 
     /// <summary>Replaces all matches through a stateful callback that writes UTF-8 replacement content.</summary>
@@ -2841,8 +2843,9 @@ public sealed partial class Utf8Regex
 
     private string ReplaceToStringMappedCore(ReadOnlySpan<byte> input, string replacement, CancellationToken cancellationToken)
     {
-        var analyzed = GetParsedReplacement(replacement);
-        return ReplaceToStringCore(input, analyzed, cancellationToken);
+        var deadline = CreateExecutionBudget();
+        var analyzed = GetParsedReplacement(replacement, new(deadline, cancellationToken));
+        return ReplaceToStringCore(input, analyzed, cancellationToken, deadline);
     }
 
     /// <summary>Replaces all matches through a stateful callback that returns UTF-16 replacement text.</summary>
@@ -2893,8 +2896,9 @@ public sealed partial class Utf8Regex
         out int bytesWritten,
         CancellationToken cancellationToken)
     {
-        var analyzed = GetParsedReplacement(replacement);
-        return TryReplaceCore(input, analyzed, destination, out bytesWritten, cancellationToken);
+        var deadline = CreateExecutionBudget();
+        var analyzed = GetParsedReplacement(replacement, new(deadline, cancellationToken));
+        return TryReplaceCore(input, analyzed, destination, out bytesWritten, cancellationToken, deadline);
     }
 
     /// <summary>Attempts to apply a UTF-8-encoded replacement pattern into a caller-provided UTF-8 destination.</summary>
@@ -2915,7 +2919,9 @@ public sealed partial class Utf8Regex
         out int bytesWritten,
         CancellationToken cancellationToken)
     {
-        _ = Utf8Validation.Validate(replacementPatternUtf8);
+        var deadline = CreateExecutionBudget();
+        var control = new ReplacementPreparationControl(deadline, cancellationToken);
+        ValidateReplacementTemplateUtf8(replacementPatternUtf8, control);
 
 
         if (GetOwnedSliceProgram(input, cancellationToken) is null && !input.IsEmpty &&
@@ -2923,12 +2929,11 @@ public sealed partial class Utf8Regex
             TryGetDirectLiteralReplacementBytes(replacementPatternUtf8, out var directReplacementBytes))
         {
             var validation = Utf8Validation.Validate(input);
-            return TryReplaceLiteralBytesCore(input, validation, directReplacementBytes, destination, out bytesWritten);
+            return TryReplaceLiteralBytesCore(input, validation, directReplacementBytes, destination, out bytesWritten, deadline);
         }
 
-        var replacementText = Encoding.UTF8.GetString(replacementPatternUtf8);
-        var replacementPattern = GetParsedReplacement(replacementText);
-        return TryReplaceCore(input, replacementPattern, destination, out bytesWritten, cancellationToken);
+        var replacementPattern = GetParsedReplacement(replacementPatternUtf8, control);
+        return TryReplaceCore(input, replacementPattern, destination, out bytesWritten, cancellationToken, deadline);
     }
 
     /// <summary>Attempts to write a replacement result into a caller-provided UTF-8 destination, observing cancellation before matching begins.</summary>

@@ -107,6 +107,25 @@ capture projection, copying and output belong to the same operation authority.
 Construction has its own contract; reusable instances and caches never retain an
 evaluation deadline.
 
+Development after scalar.72 starts Core template replacement's absolute deadline
+before cold lookup, UTF8-template validation/decoding and plan preparation. The
+same deadline reaches owned execution and existing native cursors; parsing does
+not earn a new match interval. Cache waits and cold construction checkpoints
+observe the original token/deadline. Interrupted preparation is not published;
+another factory's interruption is retried once under the caller's own authority.
+Successfully prepared code survives a later matching interruption. Parent
+construction hooks/capacity/authority restore on failure, and spent work remains.
+Construction work/bytes keep their separate fixed backstops; they are not newly
+charged to invocation work/result caps. This does not complete every preparation
+or retained-storage bound.
+
+UTF8 template fallback decoding admits its one text key before acquisition;
+native direct-literal destination routes still avoid that string. Controlled
+validation uses existing scalar-aligned blocks and preserves absolute invalid-byte
+offsets and template-before-subject precedence. Pre-cancellation still wins and
+legacy null-template failures precede elapsed-clock checks. No new engine, budget
+owner hierarchy, execution mode, allocation registry or graph accounting.
+
 For Core/PythonRe calls with a finite `MaxWorkingBytes` or `MaxResultBytes`,
 timeout exceptions have an empty `Input`: failure construction does not decode
 the subject into an unadmitted diagnostic string. The existing route's `Pattern`,
