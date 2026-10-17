@@ -4,37 +4,37 @@
 byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences.
 
-The qualified private **Core/PythonRe 0.4.0-scalar.84** pair comes from clean
-producer `7969fbf3b9e931242807cb12687e6438d41b684e`; PythonRe pins Core
-`[0.4.0-scalar.84]`. Same immutable Windows/Linux consumers, capture/semantic
+The qualified private **Core/PythonRe 0.4.0-scalar.85** pair comes from clean
+producer `fce0fbb4531543c1b0f45d904a2ffd3807dad6bc`; PythonRe pins Core
+`[0.4.0-scalar.85]`. Same immutable Windows/Linux consumers, capture/semantic
 oracles, symbols/provenance/member/API checks and a fresh isolated public restore
-pass. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39047343088)
-is green. [Handoff](artifacts/core-python-scalar84-20261017/HANDOFF.md) and
-[consumption](artifacts/core-python-scalar84-20261017/CONSUMING.md) record exact
-identities, scoped guarantees and current costs.
+pass. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39050443092)
+is green. [Handoff](artifacts/core-python-scalar85-20261017/HANDOFF.md) and
+[consumption](artifacts/core-python-scalar85-20261017/CONSUMING.md) preserve
+identities, scoped guarantees and current costs. Earlier84 and PCRE76/Core76
+remain immutable; no PCRE85 or actual consumer adoption is implied.
 
-Scalar.84 skips unused metadata for eligible finite Core Count and reuses complete
-native Count in Python, including ordinary/named/ordered/supplementary captures.
-Count can avoid slots and VM attempts because it returns no captures. Returned
-captures and generic matching retain their required routes. Unmetered exact-literal
-dispatch and validation strategy remain. The captured-search experiments did not
-qualify their dense costs and are absent. Strict whole-input validation, scalar
-boundaries, original interruption, work/depth/storage admission and retained results
-remain intact. Reduced real work/storage can admit tighter numerical policies.
-Earlier native cursors, controlled boolean validation, direct string Split staging,
-conservative construction accounting and explicit cursor ownership remain.
+Scalar.85 reuses complete native literal/family discovery for captured PythonRe
+`IsMatch`, including unmetered calls, avoiding unused capture slots and VM
+attempts. Capture-free unmetered dispatch, returned captures and generic matching
+keep their routes. Scalar.84's native Count improvements, direct string Split,
+conservative construction accounting and explicit cursor lifetime remain.
+Strict whole-input/scalar validation, original interruption and work/depth/storage
+admission are preserved. Less actual work/storage can admit tighter policies.
+Deferred captured-search prototypes remain absent.
 
-Shipped BCL matcher/results, unchecked reads, generated staging helpers and native
-imports stay absent. Core retains only permitted `Unsafe.SizeOf`, accepted by
-Lython; PythonRe has none.
+Core only retains permitted `Unsafe.SizeOf`, accepted by Lython; PythonRe has none.
+No unchecked reads, generated staging helpers, native imports or shipped BCL
+matcher/result dependencies return.
 
-[Current exact-package costs](artifacts/core-python-scalar84-20261017/vm-cost/RESULT.md)
-cover representative Count and required captured output, finite/live-token lanes
-and both .NET controls under default .NET tiering/PGO/R2R. Per-lane quality is
-explicit; several lanes remain unqualified after the sole selective confirmation.
-All raw evidence remains. Closed FullOpts source pairs and historical generated
-tables do not qualify current default-runtime bytes. No universal speedup, new
-CPython Status or full-catalog qualification is claimed.
+[Exact85 current costs](artifacts/core-python-scalar85-20261017/vm-cost/RESULT.md)
+cover captured boolean calls, Count and required UTF8 tuples under default
+.NET10.0.12 tiering/PGO/R2R, including all-four finite caps/live tokens and both
+.NET controls.225 raw samples include the sole selective confirmation; short/noisy
+lanes remain explicit. The ASCII boolean row differs sharply across processes and
+its absolute cost stays uncertain. No further timing is planned. Closed FullOpts
+source comparisons and historical generated tables do not qualify these current
+default-runtime bytes or refresh CPythonStatus/full-catalog results.
 
 Defaults/static calls remain unlimited. [HOST-INTEGRATION.md](HOST-INTEGRATION.md)
 explains composition with existing owners. Complete construction/lazy/default,

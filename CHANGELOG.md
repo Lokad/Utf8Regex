@@ -1,5 +1,18 @@
 # Changelog
 
+## Qualified private Core/PythonRe scalar.85
+
+- Batch native captured PythonRe boolean reuse with and without invocation controls.
+  Preserve scalar/whole-input validation, original interruption/admission, returned
+  captures and capture-free unmetered dispatch. Earlier native Count, ownership
+  and accounting simplifications remain; deferred captured-search prototypes are absent.
+- Same-byte Windows/Linux consumers/oracles, identity/member/API/symbol/provenance
+  and final-feed restore pass; producer CI is green. Current default-runtime costs
+  include finite/live-token controls and required output, with remaining noisy lanes
+  and cross-process ASCII disagreement explicit after the sole confirmation.
+  Earlier84 and PCRE76/Core76 stay immutable; no publication/adoption claim.
+  [Handoff](artifacts/core-python-scalar85-20261017/HANDOFF.md).
+
 ## Development after scalar.84
 
 - Captured PythonRe `IsMatch` also reuses complete native discovery without finite
