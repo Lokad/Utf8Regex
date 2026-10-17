@@ -33,6 +33,14 @@ default-PGO, CPython Status, universal speedup or full-catalog claim. Closed sou
 comparisons retain the dense identifier tradeoff (+8.6% unlimited/+7.8% finite).
 Historical tables and September results do not qualify today's engine.
 
+Development source after scalar.80 reuses the prepared short-literal searcher
+inside charged windows of at most 2,048 bytes, including lookahead. A bounded
+public comparison reduces dense finite Count time by 13%, with unchanged
+allocations and original interruption/admission. Numeric work requirements can
+decrease because the window charge covers verification. Long/folded needles
+keep their existing comparison path. [Source evidence](artifacts/short-exact-prepared-window-20261017/RESULT.md).
+This source change is outside immutable scalar.80; no new package is designated.
+
 Defaults/static calls remain unlimited. [HOST-INTEGRATION.md](HOST-INTEGRATION.md)
 explains composition with existing resource owners. Complete construction/lazy/
 default, caller-retention/RSS, host and full [SPEC.md](SPEC.md) coverage remain

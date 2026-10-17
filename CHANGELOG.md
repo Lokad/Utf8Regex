@@ -1,5 +1,18 @@
 # Changelog
 
+## Development after scalar.80
+
+- Reuse prepared search for exact needles up to 16 bytes inside charged windows
+  of at most 2,048 bytes, including lookahead. Longer/folded needles keep their
+  existing bounded comparisons. Preserve scalar results, original token/deadline,
+  sticky resource denial and terminal checks; no new owner, allocation or mode.
+  Window charges include verification, lowering numeric work requirements.
+- One bounded public comparison: dense finite Count 83.0 to 72.1 us; adversarial
+  false candidates 470 to 1.0 us. Allocations unchanged, long-literal finite
+  control +2.6%; preserve raw controls/noise and scope. No confirmation needed.
+  [Source receipt](artifacts/short-exact-prepared-window-20261017/RESULT.md).
+  Immutable scalar.80 remains the qualified dependency; no new package per pilot.
+
 ## Qualified private Core/PythonRe scalar.80
 
 - Batch the required ASCII-class start seeker and necessary-interval extension.

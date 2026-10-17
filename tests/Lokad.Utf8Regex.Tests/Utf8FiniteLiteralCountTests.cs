@@ -88,13 +88,14 @@ public sealed class Utf8FiniteLiteralCountTests
     }
 
     [Theory]
-    [InlineData(1)] [InlineData(2)] [InlineData(31)] [InlineData(2047)]
+    [InlineData(1)] [InlineData(2)] [InlineData(15)] [InlineData(16)]
+    [InlineData(17)] [InlineData(31)] [InlineData(2047)]
     [InlineData(2048)] [InlineData(2049)] [InlineData(4097)]
     public void BoundedLiteralCountPreservesFalseCandidatesChunkEdgesAndBorrowedSlices(int length)
     {
         var literal = new string('a', length - 1) + "b";
         var regex = Create(literal, 1000000, RegexOptions.Compiled);
-        foreach (var prefix in new[] { 0, 2047, 2048, 2049 })
+        foreach (var prefix in new[] { 0, 2032, 2033, 2034, 2047, 2048, 2049 })
         {
             var subject = "😀é" + new string('a', prefix) + literal + " " + literal + "a";
             var storage = Encoding.UTF8.GetBytes("padding" + subject + "padding");

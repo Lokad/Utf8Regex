@@ -346,6 +346,17 @@ reducing charged work while retaining per-block/comparison metering, diagnostic
 candidates and a terminal interruption check before publication. Other shapes
 keep the existing counter. This is a route-specific work change, not a CPU-time
 equivalence guarantee.
+
+Development after immutable scalar.80 uses the existing prepared searcher for
+exact needles up to 16 bytes. The complete search span, including needle
+lookahead, is at most 2048 bytes per original charged checkpoint. This bounded
+search includes verification in its window charge, instead of separately visiting
+and charging every first-byte candidate. Longer and folded needles retain their
+separate bounded comparisons. Numeric work requirements can decrease; spent
+work, sticky denial, original token/deadline and terminal publication checks remain.
+No new scratch, owner, policy switch or unchecked access is introduced. This
+source improvement does not change the immutable scalar.80 package's evidence.
+
 Family verification rejects exact branches with a different first byte under
 their existing branch charge, and invokes confirmation only when a boundary or
 trailing predicate exists. Full comparisons remain bounded and charged, including

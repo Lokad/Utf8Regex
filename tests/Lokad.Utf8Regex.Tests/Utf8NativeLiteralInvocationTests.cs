@@ -19,8 +19,8 @@ public sealed class Utf8NativeLiteralInvocationTests
 
     public static IEnumerable<object[]> SearchCases()
     {
-        foreach (var length in new[] { 1, 2, 2047, 2048, 2049, 8193 })
-        foreach (var offset in new[] { 2047, 2048, 2049 })
+        foreach (var length in new[] { 1, 2, 15, 16, 17, 2047, 2048, 2049, 8193 })
+        foreach (var offset in new[] { 2032, 2033, 2034, 2047, 2048, 2049 })
         foreach (var folded in new[] { false, true })
         foreach (var reverse in new[] { false, true }) yield return [length, offset, folded, reverse];
     }
