@@ -1,5 +1,13 @@
 # Changelog
 
+## Private Core/PythonRe scalar.88 candidate
+
+- Stage the brace/verbose grammar repair and the two Core Count improvements as
+  one consumer delivery boundary. Same-byte package/platform qualification is
+  pending; qualified scalar.87 and independent PCRE76/Core76 remain immutable.
+  Preserve explicit finite controls, scalar captures, original interruption and
+  the remaining large-repeat representation limitation. No publication implied.
+
 ## Development after scalar.87
 
 - Fix PythonRe brace grammar: literal/unfinished braces stay literal, omitted

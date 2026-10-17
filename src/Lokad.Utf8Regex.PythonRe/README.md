@@ -12,6 +12,11 @@ is green. [Handoff](../../artifacts/core-python-scalar87-20261017/HANDOFF.md) an
 [consumption](../../artifacts/core-python-scalar87-20261017/CONSUMING.md) record scope
 and identities. Earlier86/85/84 and independent PCRE76/Core76 remain immutable.
 
+Private candidate **scalar.88** batches the Python brace/verbose grammar repair
+with scalar URI Count and finite ASCII structural-family Count reuse. Its
+same-byte consumer/platform qualification is pending; scalar.87 remains the
+qualified dependency. No PCRE88 or publication is implied.
+
 Scalar.87 batches scalar/metered Core email Count before general VM dispatch,
 cache admission repairs and Python conditional/backreference syntax fixes.
 Strict full validation, scalar boundaries, captures/aliases, original interruption
