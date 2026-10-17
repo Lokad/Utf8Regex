@@ -37,14 +37,14 @@ public sealed class Utf8ResourcePolicyTests
     [InlineData(null, 10u, null, null)]
     [InlineData(null, null, 1024ul, null)]
     [InlineData(null, 10u, null, 1024ul)]
-    public void FiniteBudgetsAreNotSupportedByCore(ulong? work, uint? depth, ulong? workingBytes, ulong? resultBytes)
+    public void FiniteBudgetsConstructAndExecute(ulong? work, uint? depth, ulong? workingBytes, ulong? resultBytes)
     {
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = work, MaxDepth = depth, MaxWorkingBytes = workingBytes, MaxResultBytes = resultBytes };
         var regex = new Utf8Regex("cat", RegexOptions.None, Regex.InfiniteMatchTimeout, policy);
         Assert.Equal(policy, regex.ResourcePolicy); Assert.True(regex.IsMatch("cat"u8));
     }
     [Fact]
-    public void FinitePolicyIsRejectedBeforePatternCompilation()
+    public void ValidFinitePolicyPreservesPatternSyntaxFailure()
     {
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100ul, MaxWorkingBytes = 1024ul };
         Assert.Throws<ArgumentException>(() => new Utf8Regex("[invalid", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, policy));
@@ -60,7 +60,7 @@ public sealed class Utf8ResourcePolicyTests
     [Fact]
     public void DefaultConstructionReportsUnlimitedPolicy()
     {
-        // R06 compatibility decision: defaults stay unlimited (BCL-compatible);
+        // R06 compatibility decision: legacy defaults keep unlimited invocation limits;
         // execution work budgets are opt-in via the policy overload.
         Assert.Equal(Utf8ResourcePolicy.Unlimited, new Utf8Regex("cat", RegexOptions.CultureInvariant).ResourcePolicy);
         Assert.Equal(Utf8ResourcePolicy.Unlimited, new Utf8Regex("cat", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).ResourcePolicy);

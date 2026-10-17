@@ -47,6 +47,37 @@ public sealed class Utf8PublicConstructionTests
         Assert.Equal(100000ul, regex.ResourcePolicy.MaxWorkSteps);
     }
 
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void PublishedExpressionAndColdReplacementDoNotUseConstructionInterruption(RegexOptions options)
+    {
+        using var constructionCancellation = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var regex = Utf8Regex.Compile("(?<x>😀){2,4}", options | RegexOptions.CultureInvariant,
+            Regex.InfiniteMatchTimeout,
+            new() { MaxWorkSteps = 100000, MaxDepth = 64, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 },
+            Utf8ConstructionPolicy.Default, TimeSpan.FromMilliseconds(20), constructionCancellation.Token);
+        constructionCancellation.Cancel();
+        ticks = 1000;
+        Assert.False(Utf8ConstructionScope.IsActive);
+
+        var match = regex.Match("x😀😀y"u8);
+        Assert.True(match.Success);
+        Assert.Equal((1, 8), (match.IndexInBytes, match.LengthInBytes));
+        // First template use happens after the construction authority has ended.
+        Assert.Equal("x😀y"u8.ToArray(), regex.Replace("x😀😀y"u8, "${x}"));
+
+        using var invocationCancellation = new CancellationTokenSource();
+        invocationCancellation.Cancel();
+        var failure = Assert.Throws<OperationCanceledException>(() =>
+            regex.IsMatch("😀😀"u8, invocationCancellation.Token));
+        Assert.Equal(invocationCancellation.Token, failure.CancellationToken);
+        Assert.Equal(1, regex.Count("😀😀"u8));
+        Assert.False(Utf8ConstructionScope.IsActive);
+    }
+
     [Fact]
     public void PreCancellationPrecedesAllArgumentAndPatternFailures()
     {
