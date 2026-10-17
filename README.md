@@ -4,6 +4,11 @@
 byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences.
 
+Private Core/PythonRe candidate **0.4.0-scalar.89** stages the separator/atomic
+correctness repairs and exact Python finite repeat bounds through4294967294.
+Qualification and current cost measurements are pending; the prior qualified
+pair below remains immutable. No PCRE89 package is included.
+
 The qualified private **Core/PythonRe 0.4.0-scalar.88** pair comes from clean
 producer `64c8f38b315b083f5b73a556477679b5725bd13b`; PythonRe requires exact Core
 `[0.4.0-scalar.88]`. Same immutable bytes pass Windows/Linux consumers,

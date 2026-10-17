@@ -1,6 +1,10 @@
 # Changelog
 
-## Development after scalar.88
+## Staged private Core/PythonRe scalar.89
+
+- Use a fresh immutable identity for the following source repairs. Package and
+  current performance qualification are pending; preserve scalar.88 and the
+  independent PCRE76/Core76 pair. No PCRE89 package or publication is included.
 
 - Admit Python finite repeat bounds through4294967294, distinct from unbounded
   repetition, across parsing/rendering/lowering and scalar execution. Preserve

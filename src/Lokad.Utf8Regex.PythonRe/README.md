@@ -3,6 +3,10 @@
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
 strict UTF-8 scalars, with primary byte coordinates and derived UTF-16 projections.
 
+Private candidate **0.4.0-scalar.89** stages compact wide finite repetitions and
+the shared separator/atomic repairs. Qualification/current costs are pending;
+the earlier qualified pair below retains its original scope and bytes.
+
 The qualified private **Core/PythonRe 0.4.0-scalar.88** pair comes from clean
 producer `64c8f38b315b083f5b73a556477679b5725bd13b`; PythonRe requires exact Core
 `[0.4.0-scalar.88]`. Same immutable bytes pass Windows/Linux consumers,
