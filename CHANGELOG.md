@@ -1,5 +1,18 @@
 # Changelog
 
+## Development: capture shaping delivery batch
+
+- Reuse original ASCII subject validation for capture string lengths and the
+  Python compiler's existing capture slots for projection. Preserve scalar
+  captures/completion/coordinates, original interruption and resource admission.
+  No new owner, map, mode, allocation or public API.
+- Record bounded public observations and unchanged allocations without turning
+  Linux CPU-efficiency Unqualified evidence into a performance winner. Keep all
+  historical benchmark rows scoped to their actual sources.
+- Prepare distinct scalar.77 identity for one Core/Python package qualification
+  of both changes. Core/Python75 and independent PCRE76 remain immutable; no
+  publication, external pin/default change or full SPEC/containment claim.
+
 ## Independent Core/PCRE2 scalar.76 qualified private dependency
 
 - Qualify producer58e2927a's explicit construction factory and bounded byte

@@ -27,10 +27,10 @@ samples, allocations and Core/.NET controls separately from closed source pairs;
 no equal BCL Python tuple operation or cross-run source delta is claimed.
 
 A separate current-source captured FindAllStrings observation processes2048
-two-string tuples in2.084ms/263920B, versus0.274ms for predecoded CPython3.12.3.
+two-string tuples in2.063ms/263920B, versus0.275ms for predecoded CPython3.12.3.
 Its nine pairs retain **Unqualified** Status because the runner could not identify
 Linux processor efficiency; this is diagnostic operating cost, not a qualified
-winner or a package/finite-limit measurement. [Evidence](../../artifacts/python-ascii-capture-count-20261017/RESULT.md).
+winner or a package/finite-limit measurement. [Evidence](../../artifacts/python-capture-slot-20261017/RESULT.md).
 The [comparative snapshot](BENCHMARKS.md) identifies each measured source/runtime;
 historical September Status counts do not qualify today's scalar engine.
 
@@ -41,6 +41,12 @@ One source comparison observes7.1%less managed time with unchanged allocation;
 the CPython control also improves2.2%, so the full drop is not a causal speedup.
 Less actual validation work can lower numeric cutoffs. Immutable75 predates this
 source change; package qualification waits for a coherent delivery boundary.
+
+The same development batch uses Python's existing mapped capture slots directly,
+removing repeated search through its dense group catalog. Sparse Core catalogs
+retain their own handling. Existing capture/ownership/finite-policy checks pass;
+the small observed timing difference is within variation, with no throughput
+claim. Both capture changes are prepared for one scalar.77 dependency candidate.
 Defaults/static calls remain unlimited. Complete construction/lazy/default/
 retention/RSS/host objectives remain open; compose existing
 [host owners](../../HOST-INTEGRATION.md). Original package preparation assets stay

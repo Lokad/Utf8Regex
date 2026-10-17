@@ -24,8 +24,8 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-10-17T04:46:14.9758894+00:00`
-- Snapshot SHA-256: `56C4AEDBF0206E0B2416BC1BBD7D7604570CA7B93799A21A820C22B4802C7240`
+- Generated: `2026-10-17T05:08:22.3773135+00:00`
+- Snapshot SHA-256: `9458498135F0B2E4F33E7051BDD067DCA2E3A2FA9AEE85B86EAC4E0853536E5D`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
@@ -35,6 +35,7 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 - Historical point measurement environments represented: `1`
 - Paired evidence from source `101975b4ce6a`: `3` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `185a07de3077`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `1c01183e8d6d`: `1` rows; .NET 10.0.12; CPython 3.12.3
 - Paired evidence from source `227771fc0ef7`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `30f9b58c44cc`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `37661064ec3a`: `4` rows; .NET 10.0.12; CPython 3.13.2
@@ -52,7 +53,6 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 - Paired evidence from source `b8a54d632b28`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `d91449df7a20`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `e19304ef1f66`: `4` rows; .NET 10.0.12; CPython 3.13.2
-- Paired evidence from source `e8d14f30c36f`: `1` rows; .NET 10.0.12; CPython 3.12.3
 - Paired evidence from source `f0af29a25688`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `f79efd349de6`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `fffeb0e7f25a`: `4` rows; .NET 10.0.12; CPython 3.13.2
@@ -168,7 +168,7 @@ Historical independent point columns were measured from source `30f9b58c44cc` on
 | `findall/unicode-full-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 12.096 us | 16.155 us | 0.74x | 33.968 us | 72.601 us | 4,120 B |
 | `findall/unicode-full-utf8` | `FindAllUtf8` | EagerMaterializedResult | Inconclusive | 32.393 us | 37.762 us | 0.85x | 61.262 us | 82.955 us | 24,600 B |
 | `findall/one-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 108.427 us | 128.736 us | 0.84x | 180.681 us | 387.484 us | 149,792 B |
-| `findall/many-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Unqualified | 2,083.846 us | 273.612 us | 7.59x | 308.273 us | 625.652 us | 263,920 B |
+| `findall/many-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Unqualified | 2,062.956 us | 275.379 us | 7.43x | 308.273 us | 625.652 us | 263,920 B |
 | `findall/many-capture-utf8` | `FindAllUtf8` | EagerMaterializedResult | Inconclusive | 340.432 us | 725.307 us | 0.47x | 1,037.212 us | 719.675 us | 1,528,096 B |
 | `findall/unicode-capture-utf8` | `FindAllUtf8` | EagerMaterializedResult | Managed faster | 211.538 us | 345.114 us | 0.60x | 567.932 us | 382.628 us | 785,704 B |
 | `iteration/finditer-detailed` | `FindIterDetailed` | EagerMaterializedResult | Inconclusive | 95.770 us | 336.809 us | 0.28x | 454.376 us | 162.644 us | 415,976 B |
