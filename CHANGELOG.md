@@ -1,5 +1,17 @@
 # Changelog
 
+## Qualified private Core/PythonRe scalar.84
+
+- Batch the accepted finite Core Count validation simplification and Python native
+  Count reuse, including eligible captured patterns. Preserve returned captures,
+  scalar boundaries, original interruption and finite admission. Deferred captured-
+  search prototypes are absent.
+- Fresh immutable bytes pass same-byte Windows/Linux consumer, oracle, identity,
+  symbols/member/API and final-feed restore checks; producer CI is green. Current
+  default-runtime Count/output costs retain per-lane qualification and remaining
+  uncertainty after one selective confirmation. Earlier packages and independent
+  PCRE76 remain immutable. [Handoff](artifacts/core-python-scalar84-20261017/HANDOFF.md).
+
 ## Development after scalar.83
 
 - Python Count reuses complete native literal/family eligibility even when the

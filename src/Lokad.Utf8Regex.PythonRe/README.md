@@ -3,53 +3,41 @@
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
 strict UTF-8 scalars, with primary byte coordinates and derived UTF-16 projections.
 
-The qualified private **Core/PythonRe 0.4.0-scalar.83** pair pins Core
-`[0.4.0-scalar.83]`, producer `70b422e8418671a1afbdb55b4f96e82202d0c510`.
+The qualified private **Core/PythonRe 0.4.0-scalar.84** pair pins Core
+`[0.4.0-scalar.84]`, producer `7969fbf3b9e931242807cb12687e6438d41b684e`.
 Same immutable Windows/Linux consumers, capture/semantic oracles, symbols,
 provenance/member/API checks and a fresh isolated public restore pass.
-[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39041003196) is green.
-[Handoff](../../artifacts/core-python-scalar83-20261017/HANDOFF.md) and
-[consumption](../../artifacts/core-python-scalar83-20261017/CONSUMING.md) preserve
-exact identities and scopes. No PCRE83, publication, consumer pin/default change
-or adoption is implied; earlier candidates remain immutable.
+[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39047343088) is green.
+[Handoff](../../artifacts/core-python-scalar84-20261017/HANDOFF.md) and
+[consumption](../../artifacts/core-python-scalar84-20261017/CONSUMING.md) preserve
+identities and scope. No PCRE84, publication, consumer pin/default change or
+adoption is implied; earlier packages remain immutable.
 
-Scalar.83 preserves direct string Split staging, conservative construction
-descriptor exclusions and Core boolean validation-only reuse. Captures/nulls,
-scalar boundaries, original deadlines/tokens, basic work and major-capacity
-admission remain. The accepted memory/CPU tradeoff is documented; reduced actual
-work/storage can lower numerical requirements. Prior direct capture slots,
-explicit cursor lifetime and prepared native finite literal routes remain.
-The semantic target stays CPython3.13.2/Unicode15.1; API snapshots are unchanged.
+Scalar.84 lets Count reuse complete Core native literal/family eligibility even
+when captures are present, avoiding unused slots and VM attempts. Controlled
+Count validates without discarded coordinate metadata. Existing unmetered literal
+dispatch/validation, returned captures, general matching and scalar offsets remain.
+Unicode captured concatenations without native eligibility keep the owned VM.
+The captured-search prototypes were deferred on cost and are absent.
 
-Scalar.83 also reuses complete native literal/family matches
-for capture-free, nonempty cursor search under the same validated invocation.
-Full-result eligibility is distinct from a necessary start hint. Match and
-FullMatch retain their position/end constraints; captures and excluded semantics
-keep the VM. Group-zero coordinates, original interruption and major admission
-remain; removed work/scratch can admit tighter numerical policies.
-[One bounded source pair](../../artifacts/python-native-cursor-20261017/RESULT.md)
-improves finite dense Split by12.6% and removes late-family Search VM attempts.
-That source comparison uses FullOpts; it does not update CPython Status.
+Prior native capture-free cursors, controlled boolean validation, direct string
+Split staging, conservative construction accounting and explicit cursor lifetime
+remain. Basic metering, original deadlines/tokens, major-capacity admission and
+retained snapshot validity are preserved. Less actual work/storage can lower
+numerical requirements. CPython3.13.2/Unicode15.1 and API snapshots are unchanged.
 
-Controlled boolean-only literal searches also reuse existing validation-only
-and native discovery, omitting unused coordinate/cursor preparation. Whole-input
-strict validation and original work/deadline/token authority remain. Unmetered
-calls keep their prior routes after the broader prototype regressed an
-ASCII workload. [Experiment](../../artifacts/python-boolean-native-20261017/RESULT.md)
-distinguishes prototype measurements from the final guard. Its current-package
-costs are recorded separately; no additional public policy or execution mode.
-
-[Current exact-package costs](../../artifacts/core-python-scalar83-20261017/vm-cost/RESULT.md)
-include finite/live-token overhead, required tuples/Split values and both .NET
-controls under default tiering/PGO. Stable rows and noisy/short lanes are distinct;
-older FullOpts and paired CPython results retain their actual source scope and
-do not qualify83. The [historical snapshot](BENCHMARKS.md) is not a fresh catalog.
+[Current exact-package costs](../../artifacts/core-python-scalar84-20261017/vm-cost/RESULT.md)
+include finite/live-token controls, Count, required captured tuples and both .NET
+baselines under default tiering/PGO. Per-lane quality and remaining unqualified
+measurements are explicit after one selective confirmation. Closed FullOpts source
+pairs and the [historical snapshot](BENCHMARKS.md) do not qualify current bytes or
+update CPython Status.
 
 Core only retains permitted `Unsafe.SizeOf`, accepted by Lython; Python has none.
 No unchecked reads, generated staging helpers, native imports or shipped BCL
-matcher/results. Defaults/static calls stay unlimited. Complete construction/
-lazy/default/retention/RSS/host and full SPEC proof remain open; compose
-[existing host owners](../../HOST-INTEGRATION.md).
+matcher/results. Defaults/static calls stay unlimited. Full construction/lazy/
+default/common-retention/host/SPEC coverage remains open; use
+[host composition](../../HOST-INTEGRATION.md) for the scoped payload policy.
 
 ## Support Scope
 

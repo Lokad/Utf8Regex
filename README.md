@@ -4,43 +4,45 @@
 byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences.
 
-The qualified private **Core/PythonRe 0.4.0-scalar.83** pair comes from clean
-producer `70b422e8418671a1afbdb55b4f96e82202d0c510`; PythonRe pins Core
-`[0.4.0-scalar.83]`. Same immutable Windows/Linux consumers, capture/semantic
+The qualified private **Core/PythonRe 0.4.0-scalar.84** pair comes from clean
+producer `7969fbf3b9e931242807cb12687e6438d41b684e`; PythonRe pins Core
+`[0.4.0-scalar.84]`. Same immutable Windows/Linux consumers, capture/semantic
 oracles, symbols/provenance/member/API checks and a fresh isolated public restore
-pass. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39041003196)
-is green. [Handoff](artifacts/core-python-scalar83-20261017/HANDOFF.md) and
-[consumption](artifacts/core-python-scalar83-20261017/CONSUMING.md) record exact
+pass. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39047343088)
+is green. [Handoff](artifacts/core-python-scalar84-20261017/HANDOFF.md) and
+[consumption](artifacts/core-python-scalar84-20261017/CONSUMING.md) record exact
 identities, scoped guarantees and current costs.
 
-Scalar.83 reuses complete native literal/family matches in eligible capture-free
-Python cursors and avoids unused coordinate preparation for controlled boolean
-searches. Unmetered boolean calls keep their prior routes after the broader
-prototype regressed an ASCII workload. Captures, assertions, folding, empty matches
-and Match/FullMatch constraints retain their required routes. Basic metering,
-strict whole-input validation, scalar ranges, original interruption, admission and
-retained results remain intact. Reduced work/storage can admit tighter policies.
-Prior direct string Split staging, conservative construction accounting, native
-finite operations and explicit cursor ownership remain. Shipped BCL matcher/results, unchecked
-reads, generated staging helpers and native imports stay absent. Core retains
-only permitted `Unsafe.SizeOf`, accepted by Lython; PythonRe has none.
+Scalar.84 skips unused metadata for eligible finite Core Count and reuses complete
+native Count in Python, including ordinary/named/ordered/supplementary captures.
+Count can avoid slots and VM attempts because it returns no captures. Returned
+captures and generic matching retain their required routes. Unmetered exact-literal
+dispatch and validation strategy remain. The captured-search experiments did not
+qualify their dense costs and are absent. Strict whole-input validation, scalar
+boundaries, original interruption, work/depth/storage admission and retained results
+remain intact. Reduced real work/storage can admit tighter numerical policies.
+Earlier native cursors, controlled boolean validation, direct string Split staging,
+conservative construction accounting and explicit cursor ownership remain.
 
-[Current exact-package costs](artifacts/core-python-scalar83-20261017/vm-cost/RESULT.md)
-cover representative required outputs, finite/live-token lanes and both .NET
-controls under default .NET tiering/PGO. Five product rows have stable timings;
-short family rows remain unqualified after the sole selective confirmation.
-All raw evidence remains. Older FullOpts
-source/package measurements use another configuration. Historical generated
-tables and September results do not qualify current package bytes. No universal
-speedup, new CPython Status or full-catalog qualification is claimed.
+Shipped BCL matcher/results, unchecked reads, generated staging helpers and native
+imports stay absent. Core retains only permitted `Unsafe.SizeOf`, accepted by
+Lython; PythonRe has none.
+
+[Current exact-package costs](artifacts/core-python-scalar84-20261017/vm-cost/RESULT.md)
+cover representative Count and required captured output, finite/live-token lanes
+and both .NET controls under default .NET tiering/PGO/R2R. Per-lane quality is
+explicit; several lanes remain unqualified after the sole selective confirmation.
+All raw evidence remains. Closed FullOpts source pairs and historical generated
+tables do not qualify current default-runtime bytes. No universal speedup, new
+CPython Status or full-catalog qualification is claimed.
 
 Defaults/static calls remain unlimited. [HOST-INTEGRATION.md](HOST-INTEGRATION.md)
 explains composition with existing owners. Complete construction/lazy/default,
 caller-retention/RSS, host and full [SPEC.md](SPEC.md) proof remain open. Publication,
 actual consumer pins/defaults/adoption are separate. Earlier
-[Core/Python82](artifacts/core-python-scalar82-20261017/HANDOFF.md) and independent
+[Core/Python83](artifacts/core-python-scalar83-20261017/HANDOFF.md) and independent
 [PCRE76](artifacts/pcre2-scalar76-delivery-20261017/HANDOFF.md) are immutable;
-PCRE76 requires exact Core76. No PCRE83 is designated. Published0.3 packages retain
+PCRE76 requires exact Core76. No PCRE84 is designated. Published0.3 packages retain
 their former contract. The [qualifier](qualify-scalar-candidate.ps1) records scoped
 private acceptance.
 
