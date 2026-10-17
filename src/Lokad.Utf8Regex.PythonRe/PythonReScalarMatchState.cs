@@ -332,7 +332,9 @@ internal struct PythonReScalarMatchState
     {
         start = end = -1;
         if ((uint)number >= (uint)_numbersByPython.Length) return false;
-        var slot = Array.BinarySearch(_program.GroupNumbers, _numbersByPython[number]) - 1;
+        // Python lowering reserves a dense catalog and emits these mapped core
+        // numbers minus one as CaptureNode slots, including in FullMatch.
+        var slot = _numbersByPython[number] - 1;
         start = number == 0 ? StartOffsetInBytes : slot >= 0 ? _slots.Starts[slot] : -1;
         end = number == 0 ? EndOffsetInBytes : slot >= 0 ? _slots.Ends[slot] : -1;
         // The profile runs fixed-width lookbehind forward as well. Byte-only
