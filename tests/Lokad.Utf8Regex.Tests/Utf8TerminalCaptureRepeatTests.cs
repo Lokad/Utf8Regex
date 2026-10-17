@@ -64,7 +64,7 @@ public sealed class Utf8TerminalCaptureRepeatTests
         // The assertion caller requires edge2; a greedy body can first reach3.
         // Accept alone must not discard the alternative ending at the caller's edge.
         Utf8SliceNode body = new Utf8SliceNode.CaptureNode(0,
-            new Utf8SliceNode.RepeatNode(new Utf8SliceNode.ShorthandNode(Utf8SliceShorthand.Word), 1, int.MaxValue, false));
+            new Utf8SliceNode.RepeatNode(new Utf8SliceNode.ShorthandNode(Utf8SliceShorthand.Word), 1, long.MaxValue, false));
         var behind = new Utf8SliceNode.LookbehindNode(body, true) { ForwardScalarCount = 2 };
         var root = new Utf8SliceNode.ConcatNode([behind, new Utf8SliceNode.LiteralNode('x', false)]);
         var program = Utf8SliceLowerer.Lower(root, null, false, false, false)!;

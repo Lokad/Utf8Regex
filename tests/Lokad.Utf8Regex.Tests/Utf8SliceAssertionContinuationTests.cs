@@ -176,7 +176,7 @@ public sealed class Utf8SliceAssertionContinuationTests
         var push = method.CreateDelegate<PushFrame>();
         // The small-chunk control makes old/new table overlap the actual peak;
         // the 64-frame row also exercises the production chunk extent.
-        var chunkBytes = 32UL + ((ulong)(28 * chunkCapacity) + 15) / 16 * 16;
+        var chunkBytes = 32UL + ((ulong)(System.Runtime.CompilerServices.Unsafe.SizeOf<Utf8SliceFrame>() * chunkCapacity) + 15) / 16 * 16;
         var tables = Enumerable.Range(0, 4).Select(_ => new Utf8SliceFrame[chunkCapacity]).ToArray();
         var original = tables;
         var count = 4 * chunkCapacity;

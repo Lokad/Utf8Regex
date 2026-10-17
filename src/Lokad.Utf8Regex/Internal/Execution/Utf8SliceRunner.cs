@@ -365,7 +365,7 @@ internal static partial class Utf8SliceRunner
         var positions = workspace.Positions;
         var heads = workspace.Heads;
         Array.Fill(counts, -1);
-        Array.Clear(positions);
+        Array.Fill(positions, -1);
         Array.Fill(captureStarts, -1);
         Array.Fill(captureEnds, -1);
         Array.Fill(heads, -1);
@@ -766,8 +766,11 @@ internal static partial class Utf8SliceRunner
                 case Utf8SliceInstructionKind.RepeatLazyAfterMinimum:
                     {
                         var repeatId = instruction.B;
-                        var count = counts[repeatId];
-                        if (count < 0)
+                        // Counts store unsigned bits. Only an inactive repeat has
+                        // both UINT_MAX and position -1; active body starts are
+                        // nonnegative scalar boundaries, including RTL execution.
+                        var count = (long)unchecked((uint)counts[repeatId]);
+                        if (counts[repeatId] == -1 && positions[repeatId] == -1)
                         {
                             if (!SetRepeat(counts, positions, repeatId, 0, -1, ref stacks, ref invocation))
                             {
@@ -790,8 +793,8 @@ internal static partial class Utf8SliceRunner
                         }
 
                         var madeNoProgress = count > 0 && positions[repeatId] == inputIndex;
-                        var minimum = instruction.C;
-                        var maximum = instruction.D;
+                        var minimum = instruction.RepeatMinimum;
+                        var maximum = instruction.RepeatMaximum;
                         var greedy = instruction.Kind is Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatGreedyAfterMinimum;
                         // Repetition counts atom iterations, independently of UTF-8 or UTF-16 width.
                         if (count < minimum)
@@ -812,6 +815,13 @@ internal static partial class Utf8SliceRunner
                             break;
                         }
 
+                        // Finite repeats retain their exact iteration count. An
+                        // unbounded optional phase only distinguishes min from
+                        // min+1; later totals cannot affect any repeat decision.
+                        // This also supports a UINT_MAX-1 minimum without growing
+                        // every program's counter, frame or rollback record.
+                        var nextCount = maximum == long.MaxValue ? minimum + 1 : count + 1;
+
                         var frame = new Utf8SliceFrame
                         {
                             InputIndex = inputIndex,
@@ -823,13 +833,13 @@ internal static partial class Utf8SliceRunner
                         {
                             frame.ResumeKind = Utf8SliceResumeKind.RepeatUnwind;
                             frame.Target = instruction.A;
-                            frame.Count = count;
+                            frame.Count = unchecked((int)count);
                         }
                         else
                         {
                             frame.ResumeKind = Utf8SliceResumeKind.RepeatContinue;
                             frame.Target = programIndex + 1;
-                            frame.Count = count + 1;
+                            frame.Count = unchecked((int)nextCount);
                         }
 
                         if (!stacks.PushFrame(frame, ref invocation))
@@ -839,7 +849,7 @@ internal static partial class Utf8SliceRunner
 
                         if (greedy)
                         {
-                            if (!SetRepeat(counts, positions, repeatId, count + 1, inputIndex, ref stacks, ref invocation))
+                            if (!SetRepeat(counts, positions, repeatId, nextCount, inputIndex, ref stacks, ref invocation))
                             {
                                 return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                             }
@@ -1515,7 +1525,7 @@ internal static partial class Utf8SliceRunner
         int[] counts,
         int[] positions,
         int repeatId,
-        int count,
+        long count,
         int position,
         ref ChunkedStacks stacks,
         ref Utf8SliceInvocation invocation)
@@ -1525,7 +1535,7 @@ internal static partial class Utf8SliceRunner
             return false;
         }
 
-        counts[repeatId] = count;
+        counts[repeatId] = unchecked((int)count);
         positions[repeatId] = position;
         return true;
     }

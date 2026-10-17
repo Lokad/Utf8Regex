@@ -49,12 +49,12 @@ public sealed class Utf8SliceRunnerTests
 
     private static Utf8SliceNode Plus(Utf8SliceNode body)
     {
-        return new Utf8SliceNode.RepeatNode(body, 1, int.MaxValue, false);
+        return new Utf8SliceNode.RepeatNode(body, 1, long.MaxValue, false);
     }
 
     private static Utf8SliceNode Star(Utf8SliceNode body, bool lazy = false)
     {
-        return new Utf8SliceNode.RepeatNode(body, 0, int.MaxValue, lazy);
+        return new Utf8SliceNode.RepeatNode(body, 0, long.MaxValue, lazy);
     }
 
     private static Utf8SliceProgram Lower(Utf8SliceNode root)

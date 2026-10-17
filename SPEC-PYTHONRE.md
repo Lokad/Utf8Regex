@@ -47,9 +47,22 @@ The lexical brace check spends construction work while peeking, including when
 the text proves literal. Its spent work is never rolled back. Original finite
 construction limits, deadlines and cancellation remain authoritative; no extra
 parser, matching mode or accounting owner is introduced. This repair is outside
-immutable scalar.87. Repeat bounds above Int32.MaxValue remain a separate known
-representation gap, including values accepted by the CPython 3.13.2 oracle; they
-are not a deliberate profile exclusion or a completed grammar claim.
+immutable scalar.87. Immutable scalar.88 still overflows for repeat bounds above
+Int32.MaxValue. Development source after scalar.88 admits finite bounds through
+4294967294, separately from an unbounded maximum. Larger numeric bounds raise
+PythonRePatternException with `the repetition number is too large`; CPython uses
+OverflowError for this range failure and supplies no pattern position.
+
+The AST, rendering and scalar instructions preserve each finite bound exactly.
+The shared instruction and invocation-state layouts remain unchanged. Finite
+repeats retain exact unsigned counts. For an unbounded repeat, after its minimum
+the VM retains only whether the optional phase has begun; later totals do not
+affect matching, empty-progress checks or rollback. Active positions are scalar
+boundaries, so the largest optional-phase value remains distinct from inactive
+state. Required nullable iterations still spend work and can be interrupted;
+they are not skipped or changed into unbounded finite repeats. Construction
+bounds metadata grows and remains admitted. This source repair is not yet a
+qualified package or a claim of complete Python grammar coverage.
 
 ## Nullable repetition and capture state
 

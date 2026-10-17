@@ -2,6 +2,11 @@
 
 ## Development after scalar.88
 
+- Admit Python finite repeat bounds through4294967294, distinct from unbounded
+  repetition, across parsing/rendering/lowering and scalar execution. Preserve
+  exact finite counts, captures/rollback and interruption without growing the
+  invocation counter/frame/journal layouts. Larger bounds are pattern failures.
+  New source/package performance remains separately qualified.
 - Preserve atomic identifier-tail commitment in structural families: an atomic
   loop must not be flattened into the rewinding identifier verifier. Keep these
   shapes on the existing owned path; no grammar or resource-control change.

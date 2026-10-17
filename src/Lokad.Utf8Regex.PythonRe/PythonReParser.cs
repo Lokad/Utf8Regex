@@ -142,8 +142,8 @@ internal sealed partial class PythonReParser
             return atom;
         }
 
-        int min;
-        int? max;
+        uint min;
+        uint? max;
         if (TryConsume('*'))
         {
             min = 0;
@@ -986,18 +986,23 @@ internal sealed partial class PythonReParser
         return index < _pattern.Length && _pattern[index] == '}';
     }
 
-    private int ParseNumber()
+    private uint ParseNumber()
     {
         if (!TryPeekDigit())
         {
             throw Error("expected number");
         }
 
-        var value = 0;
+        uint value = 0;
         while (TryPeekDigit())
         {
             Utf8ConstructionScope.ChargeWork(1);
-            value = checked(value * 10 + (Consume() - '0'));
+            var digit = (uint)(Current - '0');
+            // Python reserves UINT_MAX for infinity; a finite bound cannot use it.
+            if (value > (uint.MaxValue - 1 - digit) / 10)
+                throw Error("the repetition number is too large");
+            value = value * 10 + digit;
+            Consume();
         }
 
         return value;

@@ -67,15 +67,16 @@ public sealed class Utf8ScalarLoweringFrameAdmissionTests
     }
 
     [Fact]
-    public void FormerGraphOnlyAllowanceCannotAcquireFinalProgramMetadata()
+    public void FormerGraphOnlyAllowanceRejectsLoweringAndRestoresParent()
     {
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, 1024, ulong.MaxValue, ulong.MaxValue);
         _ = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8SliceLowerer.Lower(Leaf, null, false, false, false));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
-        // The retained numeric group-zero name now owns its 48-byte text loan.
-        Assert.Equal(1024ul, failure.Limit); Assert.Equal(1152ul, failure.Requested);
+        // The first denied extent can change with admitted frame/metadata sizes;
+        // the same bounded operation must still deny and restore its parent.
+        Assert.Equal(1024ul, failure.Limit); Assert.True(failure.Requested > failure.Limit);
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.InRange(owner.Budget.PeakBytes, 128ul, 1024ul); Assert.Equal(0ul, owner.Budget.Depth);
     }
@@ -89,7 +90,7 @@ public sealed class Utf8ScalarLoweringFrameAdmissionTests
         // optional copies, a nullable loop, assertions and a conditional test.
         Utf8SliceNode root = new Utf8SliceNode.ConcatNode([
             new Utf8SliceNode.AlternationNode([[], [new Utf8SliceNode.RepeatNode(Leaf, 1, 3, true)], [Leaf, Leaf]]),
-            new Utf8SliceNode.RepeatNode(new Utf8SliceNode.AlternationNode([[], [Leaf]]), 0, int.MaxValue, false),
+            new Utf8SliceNode.RepeatNode(new Utf8SliceNode.AlternationNode([[], [Leaf]]), 0, long.MaxValue, false),
             new Utf8SliceNode.ConditionalNode(-1, Leaf, new Utf8SliceNode.EmptyNode(), new Utf8SliceNode.LookaheadNode(Leaf, true)),
             new Utf8SliceNode.LookbehindNode(Leaf, true),
         ]);

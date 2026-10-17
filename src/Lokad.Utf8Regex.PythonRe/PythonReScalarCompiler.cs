@@ -127,7 +127,7 @@ internal static partial class PythonReScalarCompiler
                         else
                         {
                             var result = PythonReScalarNodeFactory.Repeat(nodes[repeat.Inner], repeat.Min,
-                                repeat.Max ?? int.MaxValue, repeat.Flavor == PythonReQuantifierFlavor.Reluctant);
+                                repeat.Max.HasValue ? repeat.Max.Value : long.MaxValue, repeat.Flavor == PythonReQuantifierFlavor.Reluctant);
                             nodes[node] = repeat.Flavor == PythonReQuantifierFlavor.Possessive
                                 ? PythonReScalarNodeFactory.Atomic(result) : result;
                         }

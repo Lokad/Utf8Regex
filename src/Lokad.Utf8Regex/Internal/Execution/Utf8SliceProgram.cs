@@ -73,7 +73,8 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
 
     internal sealed record AlternationNode(Utf8SliceNode[][] Branches) : Utf8SliceNode(Utf8SliceNodeKind.Alternation);
 
-    internal sealed record RepeatNode(Utf8SliceNode Body, int Minimum, int Maximum, bool Lazy) : Utf8SliceNode(Utf8SliceNodeKind.Repeat)
+    // Finite bounds fit uint below UINT_MAX; long.MaxValue alone means unbounded.
+    internal sealed record RepeatNode(Utf8SliceNode Body, long Minimum, long Maximum, bool Lazy) : Utf8SliceNode(Utf8SliceNodeKind.Repeat)
     {
         // Mandatory iterations need not participate in the optional loop's
         // zero-progress guard. Python's REPEAT/UNTIL distinction requires this.
@@ -230,6 +231,11 @@ internal readonly struct Utf8SliceInstruction
     internal int B { get; }
     internal int C { get; }
     internal int D { get; }
+
+    // Only repeat instructions interpret C/D as unsigned bounds. Keep the
+    // existing instruction layout; UINT_MAX is their distinct infinity marker.
+    internal long RepeatMinimum => unchecked((uint)C);
+    internal long RepeatMaximum => D == -1 ? long.MaxValue : unchecked((uint)D);
 }
 
 /// <summary>Immutable lowered slice program: instruction array, ASCII set masks,
@@ -772,7 +778,7 @@ internal static class Utf8SliceLowerer
                 case Utf8SliceNode.RepeatNode repeat:
                     var body = facts[repeat.Body];
                     return (Saturate((long)body.Minimum * repeat.Minimum),
-                        repeat.Maximum == int.MaxValue || body.Maximum == int.MaxValue ? int.MaxValue : Saturate((long)body.Maximum * repeat.Maximum));
+                        repeat.Maximum == long.MaxValue || body.Maximum == int.MaxValue ? int.MaxValue : Saturate((long)body.Maximum * repeat.Maximum));
                 default: return (0, int.MaxValue);
             }
         }
@@ -844,7 +850,8 @@ internal static class Utf8SliceLowerer
         internal bool RightToLeft = rightToLeft;
         internal Lowering? Owner = owner;
         internal int LookaheadPolarity = lookaheadPolarity;
-        internal int Stage, Index, Branch, Mark, Jump, RepeatId, Minimum, Maximum, Opening;
+        internal int Stage, Index, Branch, Mark, Jump, RepeatId, Opening;
+        internal long Minimum, Maximum;
         internal bool NullableLoop;
         internal Utf8NonBacktrackingLoopScope? ParentScope;
         internal Utf8ConstructionBuffer<int>? Scratch;
@@ -1136,7 +1143,8 @@ internal static class Utf8SliceLowerer
                     foreach (var jump in jumps) { Budget.ChargeWork(1); Patch(jump, Instructions.Count); }
                     break;
                 case Utf8SliceNode.RepeatNode repeat:
-                    if (repeat.Minimum < 0 || repeat.Maximum < repeat.Minimum)
+                    if (repeat.Minimum < 0 || repeat.Minimum >= uint.MaxValue || repeat.Maximum < repeat.Minimum ||
+                        repeat.Maximum != long.MaxValue && repeat.Maximum >= uint.MaxValue)
                         throw new ArgumentOutOfRangeException(nameof(node), "Slice repeat bounds need 0 <= min <= max.");
                     if (NonBacktracking)
                     {
@@ -1153,7 +1161,7 @@ internal static class Utf8SliceLowerer
                             }
                             else
                             {
-                                var copies = frame.Maximum == int.MaxValue ? frame.Minimum : frame.Maximum;
+                                var copies = frame.Maximum == long.MaxValue ? frame.Minimum : frame.Maximum;
                                 Budget.CheckReplacementMinimum((ulong)Instructions.Capacity, (ulong)Instructions.Count + (ulong)copies);
                             }
                             frame.Stage = 1;
@@ -1171,7 +1179,7 @@ internal static class Utf8SliceLowerer
                         }
                         if (frame.Stage == 3)
                         {
-                            if (frame.Maximum == int.MaxValue)
+                            if (frame.Maximum == long.MaxValue)
                             {
                                 if (frame.NullableLoop && NonBacktrackingScope is { } scope) scope.End = Instructions.Count;
                                 Emit(new(Utf8SliceInstructionKind.Jump, frame.Mark, 0, 0, 0));
@@ -1192,7 +1200,7 @@ internal static class Utf8SliceLowerer
                             frame.Mark = Instructions.Count;
                             Emit(new(Utf8SliceInstructionKind.Fork, 0, repeat.Lazy ? 1 : 0, 0, 0));
                             frame.ParentScope = NonBacktrackingScope;
-                            frame.NullableLoop = frame.Maximum == int.MaxValue && Facts[repeat.Body].CanMatchEmpty;
+                            frame.NullableLoop = frame.Maximum == long.MaxValue && Facts[repeat.Body].CanMatchEmpty;
                             if (frame.NullableLoop)
                             {
                                 NonBacktrackingScope = new(frame.ParentScope, frame.Mark);
@@ -1224,7 +1232,8 @@ internal static class Utf8SliceLowerer
                         Facts[repeat.Body].CanMatchEmpty)
                         repeatKind = repeat.Lazy ? Utf8SliceInstructionKind.RepeatLazyAfterMinimum : Utf8SliceInstructionKind.RepeatGreedyAfterMinimum;
                     Instructions[frame.Mark] = new(repeatKind,
-                        repeatExit, frame.RepeatId, repeat.Minimum, repeat.Maximum);
+                        repeatExit, frame.RepeatId, unchecked((int)repeat.Minimum),
+                        repeat.Maximum == long.MaxValue ? -1 : unchecked((int)repeat.Maximum));
                     break;
                 case Utf8SliceNode.DotNode dot:
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Dot, dot.MatchNewline ? 1 : 0, 0, 0, 0));

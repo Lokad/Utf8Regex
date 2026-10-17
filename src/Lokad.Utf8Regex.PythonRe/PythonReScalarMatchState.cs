@@ -178,7 +178,7 @@ internal struct PythonReScalarMatchState
         // A capture start cannot fail; a positive minimum must enter the body.
         // Inspect at most three instructions, even for deeply nested patterns.
         var index = instructions[0].Kind == Utf8SliceInstructionKind.CaptureStart ? 1 : 0;
-        if (index < instructions.Length && instructions[index] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, C: > 0 }) index++;
+        if (index < instructions.Length && instructions[index] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: > 0 }) index++;
         if (index >= instructions.Length || instructions[index] is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } set)
             return false;
         var mask = program.SetMasks[set.A];

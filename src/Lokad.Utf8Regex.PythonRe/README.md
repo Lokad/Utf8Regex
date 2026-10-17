@@ -17,8 +17,10 @@ the Python brace/verbose grammar repair. Existing counters/verifiers omit VM
 scratch under proved eligibility; full strict validation, scalar captures,
 retained aliases and original cancellation/deadline/finite controls remain.
 Python admits literal/unfinished braces, omitted lower bounds and verbose trivia
-before quantifiers. AboveInt32 repeat bounds remain a known representation gap,
-not an intentional profile exclusion or complete-grammar claim. Core references
+before quantifiers. Scalar.88 still has the aboveInt32 repeat-bound gap;
+development source admits finite bounds through4294967294 with distinct
+unbounded repetition, exact scalar captures and the existing controls. The new
+source has not yet been packaged or performance-qualified. Core references
 only permitted Unsafe.SizeOf, accepted by Lython; PythonRe none. Actual unchecked
 reads, generated helpers, native imports and shipped BCL matchers/results stay absent.
 
@@ -46,9 +48,13 @@ consumer pin/default change or actual adoption is implied.
 
 Scalar.88 fixes literal/unfinished braces, omitted-lower repeat
 bounds and verbose quantifier attachment. Scalar captures and existing matching
-paths remain, with metered construction lookahead. Repeat bounds above Int32 are
-still a known grammar gap. [Scope and evidence](../../artifacts/python-brace-quantifier-admission-20261017/RESULT.md)
-describe the correction beyond immutable scalar.87.
+paths remain, with metered construction lookahead. Development after scalar.88
+extends finite repeat bounds through4294967294 without enlarging invocation
+counter/frame/journal layouts. Invalid larger bounds use PythonRePatternException;
+required nullable work remains interruptible and metered. See the
+[contract](../../SPEC-PYTHONRE.md#brace-repetition-and-verbose-attachment) and
+[evidence](../../artifacts/python-wide-repeats-20261018/RESULT.md). Immutable88
+retains its original grammar and qualification scope.
 
 - Semantic target: `Utf8PythonRegex` models the standard `re` surface, while remaining a managed .NET library.
 - Implementation model: parser-first translation. Python-style patterns are parsed into a dedicated AST before any backend is selected.

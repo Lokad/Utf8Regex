@@ -24,7 +24,7 @@ internal static class PythonReAstFactory
     internal static PythonReCharacterClassNode CharacterClass(bool isNegated, IReadOnlyList<PythonReCharacterClassItem> items) =>
         Create((isNegated, items), static state => new PythonReCharacterClassNode(state.isNegated, state.items));
 
-    internal static PythonReQuantifierNode Quantifier(PythonReNode inner, int min, int? max, PythonReQuantifierFlavor flavor) =>
+    internal static PythonReQuantifierNode Quantifier(PythonReNode inner, uint min, uint? max, PythonReQuantifierFlavor flavor) =>
         Create((inner, min, max, flavor), static state => new PythonReQuantifierNode(state.inner, state.min, state.max, state.flavor));
 
     internal static PythonReGroupNode Group(PythonReGroupKind kind, PythonReNode inner, string? name,

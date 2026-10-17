@@ -34,6 +34,13 @@ internal sealed class Utf8ConstructionText(Utf8ConstructionBudget budget, Utf8Co
         value.TryFormat(formatted, out var written, provider: CultureInfo.InvariantCulture);
         return Append(formatted[..written]);
     }
+    internal Utf8ConstructionText Append(uint value)
+    {
+        Span<char> formatted = stackalloc char[11];
+        budget.ChargeWork((ulong)formatted.Length);
+        value.TryFormat(formatted, out var written, provider: CultureInfo.InvariantCulture);
+        return Append(formatted[..written]);
+    }
     internal Utf8ConstructionText AppendHex(int value)
     {
         Span<char> formatted = stackalloc char[8];

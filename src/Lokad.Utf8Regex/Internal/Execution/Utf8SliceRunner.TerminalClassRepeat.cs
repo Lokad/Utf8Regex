@@ -13,7 +13,7 @@ internal static partial class Utf8SliceRunner
         var repeat = instructions[0];
         var atom = instructions[1];
         if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy ||
-            repeat.A != 3 || repeat.B != 0 || repeat.C < 1 || repeat.D < repeat.C ||
+            repeat.A != 3 || repeat.B != 0 || repeat.RepeatMinimum < 1 || repeat.RepeatMaximum < repeat.RepeatMinimum ||
             instructions[2].Kind != Utf8SliceInstructionKind.RepeatEnd || instructions[2].A != 0 ||
             instructions[3].Kind != Utf8SliceInstructionKind.RepeatExit || instructions[3].A != 0 ||
             instructions[4].Kind != Utf8SliceInstructionKind.Accept ||
@@ -38,6 +38,8 @@ internal static partial class Utf8SliceRunner
         if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
         var repeat = program.Instructions[0];
         var atom = program.Instructions[1];
+        var minimum = repeat.RepeatMinimum;
+        var maximum = repeat.RepeatMaximum;
         var position = start;
         var run = 0;
         var count = 0;
@@ -51,7 +53,7 @@ internal static partial class Utf8SliceRunner
             if (hit)
             {
                 position += width;
-                if (++run == repeat.D)
+                if (++run == maximum)
                 {
                     count++;
                     run = 0;
@@ -60,7 +62,7 @@ internal static partial class Utf8SliceRunner
             }
             else
             {
-                if (run >= repeat.C)
+                if (run >= minimum)
                 {
                     count++;
                     invocation.AnchorOriginByte = position;
@@ -69,7 +71,7 @@ internal static partial class Utf8SliceRunner
                 position += width;
             }
         }
-        if (run >= repeat.C)
+        if (run >= minimum)
         {
             count++;
             invocation.AnchorOriginByte = position;
@@ -137,9 +139,11 @@ internal static partial class Utf8SliceRunner
     {
         var repeat = program.Instructions[repeatIndex];
         var atom = program.Instructions[repeatIndex + 1];
+        var minimum = repeat.RepeatMinimum;
+        var maximum = repeat.RepeatMaximum;
         var position = start;
         var count = 0;
-        while (count < repeat.D)
+        while (count < maximum)
         {
             var breach = invocation.TryChargeStep();
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, breach, null, null);
@@ -152,7 +156,7 @@ internal static partial class Utf8SliceRunner
         }
         var terminal = invocation.TryChargeInputStep();
         if (terminal != Utf8ExecutionLimitKind.None) return new(false, -1, terminal, null, null);
-        return count >= repeat.C ? new(true, position, Utf8ExecutionLimitKind.None, null, null)
+        return count >= minimum ? new(true, position, Utf8ExecutionLimitKind.None, null, null)
             : new(false, -1, Utf8ExecutionLimitKind.None, null, null);
     }
 

@@ -60,7 +60,7 @@ public sealed class PythonReParserContinuationTests
             node = conditional.YesBranch;
         }
         var repeat = Assert.IsType<PythonReQuantifierNode>(node);
-        Assert.Equal(1, repeat.Min);
+        Assert.Equal(1u, repeat.Min);
         Assert.Null(repeat.Max);
         Assert.Equal("😀", Assert.IsType<PythonReRawNode>(repeat.Inner).Text);
         Assert.Equal(0ul, scope.Budget.Depth);

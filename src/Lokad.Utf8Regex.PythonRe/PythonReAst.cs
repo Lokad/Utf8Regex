@@ -16,8 +16,8 @@ internal sealed record PythonReCharacterClassNode(
 
 internal sealed record PythonReQuantifierNode(
     PythonReNode Inner,
-    int Min,
-    int? Max,
+    uint Min,
+    uint? Max,
     PythonReQuantifierFlavor Flavor) : PythonReNode;
 
 internal sealed record PythonReGroupNode(
