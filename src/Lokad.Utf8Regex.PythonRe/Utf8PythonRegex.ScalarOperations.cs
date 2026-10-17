@@ -75,7 +75,7 @@ public sealed partial class Utf8PythonRegex
         // Keep unmetered calls on their established cursor: validation-only
         // was slower for that ASCII route in the bounded public comparison.
         if ((HasFiniteExecutionLimits || cancellationToken.CanBeCanceled || MatchTimeout != Timeout.InfiniteTimeSpan) &&
-            _scalarProgram.GroupCount == 0 && !_scalarProgram.CanMatchEmpty &&
+            !_scalarProgram.CanMatchEmpty &&
             !_scalarProgram.HasContiguousAnchor && !_scalarProgram.RightToLeft &&
             !_scalarProgram.IgnoreCase && _utf8Regex?.CanFindNativeLiteralForResult == true)
         {
@@ -83,7 +83,8 @@ public sealed partial class Utf8PythonRegex
             var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
             try
             {
-                // A boolean needs neither coordinate metadata nor cursor state.
+                // Complete literal eligibility also covers ordinary captures;
+                // a boolean needs neither capture slots nor coordinate metadata.
                 // Keep validation and the existing finder under one authority.
                 Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
                 if (!_utf8Regex.TryFindNativeLiteralForResult(input, startOffsetInBytes,

@@ -1,5 +1,16 @@
 # Changelog
 
+## Development after scalar.84
+
+- Controlled PythonRe `IsMatch` reuses the existing complete native literal/family
+  route when ordinary captures are present, avoiding unused capture slots and VM
+  attempts. Preserve unmetered dispatch, general matching, returned captures,
+  strict scalar input and original interruption/resource controls. This source
+  change is outside the immutable scalar.84 packages.
+  [Focused public measurements](artifacts/python-native-boolean-captures-20261017/RESULT.md)
+  show about72% lower finite short-call time and lower allocations; the unchanged
+  unmetered short path remains noisy (+7.3% in the sole confirmation).
+
 ## Qualified private Core/PythonRe scalar.84
 
 - Batch the accepted finite Core Count validation simplification and Python native

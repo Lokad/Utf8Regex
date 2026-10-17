@@ -20,6 +20,16 @@ dispatch/validation, returned captures, general matching and scalar offsets rema
 Unicode captured concatenations without native eligibility keep the owned VM.
 The captured-search prototypes were deferred on cost and are absent.
 
+Development source after scalar.84 also reuses complete native literal/family
+discovery for controlled `IsMatch` with captures. Boolean matching needs no capture
+slots or results; captured output operations keep their existing behavior. Generic,
+capture-dependent, folded and assertion patterns retain their established routes,
+as do unmetered calls. Original whole-input validation, scalar offsets, tokens,
+deadlines and resource admission remain. This change is outside immutable scalar.84.
+[Focused source evidence](../../artifacts/python-native-boolean-captures-20261017/RESULT.md)
+records the controlled gains and the noisy unmetered short-case caveat; it does
+not update the exact-package cost qualification below.
+
 Prior native capture-free cursors, controlled boolean validation, direct string
 Split staging, conservative construction accounting and explicit cursor lifetime
 remain. Basic metering, original deadlines/tokens, major-capacity admission and
