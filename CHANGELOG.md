@@ -1,15 +1,20 @@
 # Changelog
 
-## Core/PythonRe scalar.81 candidate preparation
+## Qualified private Core/PythonRe scalar.81
 
 - Batch the accepted short exact Count windows and finite native value Match/
   IsMatch reuse. Share the existing conservative eligibility, validated invocation,
   bounded search and metered projection. No new owner/API/mode or unchecked access.
   Basic work, original interruption, denial and detailed/map admission remain;
   actual removed work/storage can lower numerical requirements.
-- Existing workflow will qualify fresh immutable bytes once. Source comparisons
-  keep their FullOpts/noise scopes; they are not exact81 cost or CPython Status
-  evidence. Scalar.80 and independent PCRE76/Core76 remain immutable and qualified.
+- Fresh immutable bytes pass existing same-byte Windows/Linux consumers,
+  oracles, symbols/provenance/member/API and isolated public restore checks.
+  Producer66a5db4a CI is green. One current exact-package VM pass retains finite/
+  live-token costs and .NET controls; late finite Match/IsMatch1.84us/1.07us,
+  finite Count72.5us. Source comparisons retain separate baselines/FullOpts scope;
+  no default-PGO, CPython Status or full-catalog claim.
+  [Handoff](artifacts/core-python-scalar81-20261017/HANDOFF.md).
+  Scalar.80 and independent PCRE76/Core76 remain immutable and qualified.
   No PCRE81 designation, publication or actual consumer pin/default change.
 
 ## Development after scalar.80

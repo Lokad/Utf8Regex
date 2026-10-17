@@ -3,50 +3,42 @@
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
 strict UTF-8 scalars, with primary byte coordinates and derived UTF-16 projections.
 
-Private Core/PythonRe scalar.81 is being prepared with exact Core81 for the
-related finite Core Count/Match/IsMatch changes. Existing semantics, profile data,
-captures and resource controls remain. Scalar.80 below stays qualified until the
-new immutable bytes pass existing consumer/provenance checks. No PCRE81,
-publication, external pin/default change or adoption is implied.
-
-The qualified private **Core/PythonRe 0.4.0-scalar.80** pair pins Core
-`[0.4.0-scalar.80]`, producer `39358de0717058b868486fd304a2c0a85bb7f08c`.
+The qualified private **Core/PythonRe 0.4.0-scalar.81** pair pins Core
+`[0.4.0-scalar.81]`, producer `66a5db4a9e542bb15d16ed7a2d57cee8cde38288`.
 Same immutable Windows/Linux consumers, capture/semantic oracles, symbols,
-provenance/member inventory and fresh isolated public restore pass.
-[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39025373513) is green.
-The [handoff](../../artifacts/core-python-scalar80-20261017/HANDOFF.md) and
-[consumption instructions](../../artifacts/core-python-scalar80-20261017/CONSUMING.md)
-record exact identities, scoped contract and preserved setup corrections. Earlier
-packages and their preparation assets remain immutable; no PCRE80, publication,
-consumer pin/default change or actual adoption is implied.
+provenance/member/API checks and a fresh isolated public restore pass.
+[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39029228373) is green.
+[Handoff](../../artifacts/core-python-scalar81-20261017/HANDOFF.md) and
+[consumption](../../artifacts/core-python-scalar81-20261017/CONSUMING.md) retain
+exact identities, scopes and current costs. Earlier bytes and their preparation
+assets remain immutable; no PCRE81, publication, actual consumer pin/default
+change or adoption is implied.
 
-Required positive nonfolding ASCII classes use a necessary interval derived from
-bounded owned instructions and existing masks. Holes remain VM-verified false
-candidates; the cheap current-byte probe bypasses the slow seeker for hits.
-Whole strict UTF8 validation, scalar boundaries, captures/aliases, basic metering,
-original deadlines/token and all four invocation controls remain. Less actual
-work and scratch can lower numerical admission requirements. No new owner, API,
-mode or retained classifier metadata. Prior direct Python slots, terminal class
-scans and simplified cache/construction/cursor owners remain.
+Core finite Count, value Match and IsMatch reuse existing conservative native
+literal/family discovery under the validated original invocation; Match reuses
+metered coordinate projection, bool needs none. Unused VM attempts/slots go away.
+Detailed capture discovery and working/result admission keep their existing VM.
+Strict scalars, whole-input validation, priority, original interruption, sticky
+cumulative denial and final checks remain; less actual work/storage can lower
+numerical requirements. No new API, owner, retained classifier metadata or mode.
+Prior direct Python slots, mandatory ASCII intervals and explicit cursor owners
+remain. The Python semantic target stays CPython3.13.2/Unicode15.1.
 
-Current [exact-package public VM costs](../../artifacts/core-python-scalar80-20261017/vm-cost/RESULT.md)
-include required UTF8/string tuples, mixed identifiers, finite/live-token lanes,
-Core Count and decode/predecoded .NET controls. Selected Python finite overhead
-is7–10%; required tuple/identifier operations still trail composed .NET. Basic
-metering stays. The controlled source comparison's dense identifier penalty
-(+8.6% unlimited/+7.8% finite) and rejected gate-only pilot remain explicit in the
-[source receipt](../../artifacts/ascii-set-start-hints-20261017/RESULT.md).
-Current costs use .NET10.0.12/FullOpts/R2R off; no default-PGO, universal speedup,
-full-catalog or CPython Status claim. Earlier exact79 CPython observations retain
-their original scope in the [closed batch](../../artifacts/pythonre-current-qualification-20261017/RESULT.md)
-and [comparative snapshot](BENCHMARKS.md); they do not qualify80. The semantic
-target remains CPython3.13.2/Unicode15.1; profile data are unchanged.
+[Current exact-package public costs](../../artifacts/core-python-scalar81-20261017/vm-cost/RESULT.md)
+include UTF8/string tuples, identifiers, Core Count/Match/IsMatch, finite/live-token
+lanes and both .NET controls. Selected Python finite overhead is 5.5–10.5%; output
+operations still trail composed .NET. Unicode finite costs and allocation/spread
+limits remain explicit. .NET10.0.12/FullOpts/R2Roff is the measured scope; no
+default-PGO, new CPython Status, universal speedup or full-catalog claim.
+Historical [paired CPython evidence](../../artifacts/pythonre-current-qualification-20261017/RESULT.md)
+and [snapshot](BENCHMARKS.md) keep their actual source/environment and do not
+qualify81. Core/Python fixed data and API snapshots are unchanged.
 
-Core's only Unsafe reference is permitted `SizeOf`, accepted by Lython; Python
-has none. No unchecked reads, generated staging helpers, native imports or
-shipped BCL matcher/results. Defaults/static calls stay unlimited. Complete
-construction/lazy/default/retention/RSS/host and SPEC coverage remain open;
-compose [existing host owners](../../HOST-INTEGRATION.md).
+Core only retains allowed `Unsafe.SizeOf`, accepted by Lython; Python none. No
+unchecked reads, generated staging helpers, native imports or shipped BCL matcher/
+results. Defaults/static calls stay unlimited. Complete construction/lazy/default/
+retention/RSS/host and full SPEC proof remain open; compose
+[existing host owners](../../HOST-INTEGRATION.md).
 
 ## Support Scope
 

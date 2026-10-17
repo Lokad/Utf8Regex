@@ -347,7 +347,7 @@ candidates and a terminal interruption check before publication. Other shapes
 keep the existing counter. This is a route-specific work change, not a CPU-time
 equivalence guarantee.
 
-Development after immutable scalar.80 uses the existing prepared searcher for
+Qualified scalar.81 uses the existing prepared searcher for
 exact needles up to 16 bytes. The complete search span, including needle
 lookahead, is at most 2048 bytes per original charged checkpoint. This bounded
 search includes verification in its window charge, instead of separately visiting
@@ -355,9 +355,9 @@ and charging every first-byte candidate. Longer and folded needles retain their
 separate bounded comparisons. Numeric work requirements can decrease; spent
 work, sticky denial, original token/deadline and terminal publication checks remain.
 No new scratch, owner, policy switch or unchecked access is introduced. This
-source improvement does not change the immutable scalar.80 package's evidence.
+improvement is qualified in scalar.81; earlier scalar.80 evidence stays immutable.
 
-Development after scalar.80 also reuses that conservative native eligibility for
+Qualified scalar.81 also reuses that conservative native eligibility for
 finite value Match: nonempty exact forward literals and eligible two/three-literal
 families, keeping the existing stateful/boundary/trailing exclusions. Discovery
 and derived-coordinate projection borrow the original invocation after complete
@@ -366,7 +366,7 @@ sticky denial and terminal checks remain. Unused VM attempts/slots can disappear
 lowering numerical work/storage requirements without refunding spent work.
 Detailed captures keep their own VM; detailed results and offset maps retain
 working/result admission. This adds no public API, owner or policy switch and
-does not change immutable scalar.80 or prove full SPEC/host coverage.
+does not alter earlier bytes or prove full SPEC/host coverage.
 
 Finite IsMatch uses the same eligibility and original validated invocation for
 native discovery, returning only the boolean with no coordinate projection or
