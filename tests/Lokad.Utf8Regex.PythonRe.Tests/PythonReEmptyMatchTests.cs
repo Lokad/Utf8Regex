@@ -4,8 +4,8 @@ using Lokad.Utf8Regex.PythonRe;
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 // Empty-match progression in enumeration: FindAll and FindIter visit every
-// UTF-16 boundary exactly once (CPython parity), advancing whole scalars on
-// non-ASCII input.
+// scalar boundary exactly once. UTF-16 starts below are derived coordinates,
+// including for non-ASCII input.
 [Collection(PythonReGlobalSettingsCollection.Name)]
 public sealed class PythonReEmptyMatchTests
 {

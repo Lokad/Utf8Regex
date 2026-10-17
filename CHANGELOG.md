@@ -1,5 +1,15 @@
 # Changelog
 
+## Development: terminal captured-class repeats
+
+- Reuse the scalar scanner when a greedy class repeat ends at Accept, optionally
+  through one capture closing, and no required endpoint can reject that Accept.
+  Remove useless repeat frames and per-scalar repeat-state writes.
+- Keep explicit-end assertions, FullMatch anchors, lazy/RTL and complex bodies on
+  their existing paths. Preserve captures/completion, empty retries, work metering,
+  original interruption and remaining admission. Actual state/work needs fall;
+  no new owner, mode, metadata or instruction. Immutable78 predates this change.
+
 ## Core/PythonRe scalar.78 qualified private dependency
 
 - Deliver the disjoint-literal repeat scan and replacement-literal checkpoints

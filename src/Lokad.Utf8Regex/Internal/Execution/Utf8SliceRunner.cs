@@ -775,7 +775,7 @@ internal static partial class Utf8SliceRunner
                             }
 
                             count = 0;
-                            if (TryRunDisjointClassRepeat(program, programIndex, input, inputIndex,
+                            if (TryRunClassRepeatWithoutRewind(program, programIndex, input, inputIndex, cursor.RequiredEnd,
                                 ref invocation, out var repeated))
                             {
                                 if (repeated.Breach != Utf8ExecutionLimitKind.None) return repeated;

@@ -37,10 +37,11 @@ public sealed class Utf8TerminalClassRepeatTests
         => Assert.Equal(expected, Create(pattern, 256).Count(Encoding.UTF8.GetBytes(text)));
 
     [Fact]
-    public void APlainRunNeedsNoRewindDepthWhileCapturedRunsKeepTheirLimit()
+    public void TerminalRunsElideUselessDepthWhileCapturesInsideTheLoopKeepTheirLimit()
     {
         Assert.Equal(2, Create(@"\w+", 1).Count("abc ééé"u8));
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(@"(\w+)", 1).Count("abc ééé"u8));
+        Assert.Equal(2, Create(@"(\w+)", 1).Count("abc ééé"u8));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(@"(\w)+", 1).Count("abc ééé"u8));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionDepth, failure.ResourceKind);
         var reverse = new Utf8Regex(@"\w+", RegexOptions.CultureInvariant | RegexOptions.RightToLeft);
         Assert.Equal(2, reverse.Count("abc ééé"u8));

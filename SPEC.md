@@ -421,6 +421,15 @@ the required depth, working capacity and work cutoffs; remaining admission,
 predicate metering and original interruption remain. This is not a new policy
 mode or a change to greedy/capture semantics. Scalar.77 predates this change.
 
+Development source after scalar.78 extends the same scanner to a terminal
+greedy scalar-class repeat, optionally followed by one capture closing, then
+Accept, only when the cursor has no RequiredEnd. Assertion callers with an
+explicit end can still reject Accept and need shorter alternatives; they retain
+the VM path. Python FullMatch inserts an end anchor and retains its handling.
+Nonempty retries, capture closing/history and upstream restoration stay ordinary.
+Actual removed frames/journal writes/dispatch lower numerical requirements; work
+metering, original interruption and remaining storage/result admission remain.
+
 Core and PythonRe accept `MaxWorkingBytes`, alone or with other supported caps.
 It bounds conservative modeled active major array/text and output-control capacity:
 slot/repeat/frame state, captures/projection, coordinate maps, linear tables,

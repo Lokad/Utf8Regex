@@ -42,8 +42,9 @@ public sealed class PythonReTerminalClassRepeatTests
     public void FewerFramesDoNotRemoveWorkingResultOrCaptureLimits()
     {
         Assert.Equal(2, Create(@"\w+", 1, 1).Count("abc ééé"u8));
+        Assert.Equal(2, Create(@"(\w+)", 1, 1 << 20).Count("abc ééé"u8));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionDepth,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(@"(\w+)", 1, 1 << 20).Count("abc ééé"u8)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(@"(\w)+", 1, 1 << 20).Count("abc ééé"u8)).ResourceKind);
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(@"\w+", 1, 1).FindAllToUtf8("abc ééé"u8)).ResourceKind);
         var tiny = new Utf8PythonRegex(@"\w+", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,

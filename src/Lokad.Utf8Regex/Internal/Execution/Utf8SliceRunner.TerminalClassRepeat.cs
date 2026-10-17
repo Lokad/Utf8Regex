@@ -83,8 +83,8 @@ internal static partial class Utf8SliceRunner
         ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation)
         => RunClassRepeat(program, 0, input, start, ref invocation);
 
-    private static bool TryRunDisjointClassRepeat(Utf8SliceProgram program, int repeatIndex,
-        ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation,
+    private static bool TryRunClassRepeatWithoutRewind(Utf8SliceProgram program, int repeatIndex,
+        ReadOnlySpan<byte> input, int start, int? requiredEnd, ref Utf8SliceInvocation invocation,
         out Utf8SliceMatchOutcome outcome)
     {
         outcome = default;
@@ -104,6 +104,13 @@ internal static partial class Utf8SliceRunner
         if (instructions[tail].Kind == Utf8SliceInstructionKind.CaptureEnd) tail++;
         if (tail == instructions.Length) return false;
         var literal = instructions[tail];
+        // RunFrom can retry a child after Accept to satisfy its required end.
+        // Without that constraint, no shorter successful endpoint is requested.
+        if (literal.Kind == Utf8SliceInstructionKind.Accept && requiredEnd is null)
+        {
+            outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
+            return true;
+        }
         if (literal.Kind != Utf8SliceInstructionKind.Literal || literal.B != 0 || !Rune.IsValid(literal.A))
             return false;
 
