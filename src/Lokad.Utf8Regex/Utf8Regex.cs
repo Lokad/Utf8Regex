@@ -1173,6 +1173,13 @@ public sealed partial class Utf8Regex
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
         try
         {
+            if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program))
+            {
+                // Literal Count consumes validated bytes, not coordinate metadata.
+                // Keep structural validation and the existing counting kernel intact.
+                Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
+                return OwnedSliceCountFromByte(input, program, startByte, ref invocation);
+            }
             var validation = Utf8Validation.Validate(input, ref invocation);
             if (HasFiniteExecutionLimits && startByte == 0 && ReferenceEquals(program, _ownedSliceProgram) &&
                 validation.IsAscii && !program.RightToLeft && !program.IgnoreCase && !program.CanMatchEmpty &&

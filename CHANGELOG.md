@@ -1,5 +1,17 @@
 # Changelog
 
+## Development after scalar.83
+
+- Eligible finite literal Count validates without producing unused coordinates,
+  then reuses the existing counting kernel and invocation. Structural and other
+  routes keep their validation. Strict errors, scalar boundaries and resource/
+  interruption contracts remain intact.
+- One bounded public source comparison improves finite mixed-Unicode Count by
+  about 30%, with unchanged allocations. Short Count is unchanged; dense ASCII
+  is 1.6% slower. Structural controls stay within 2%. This is FullOpts source
+  evidence outside immutable scalar.83.
+  [Evidence](artifacts/finite-count-validation-only-20261017/RESULT.md).
+
 ## Qualified private Core/PythonRe scalar.83
 
 - Batch native capture-free cursor discovery and controlled boolean validation-only

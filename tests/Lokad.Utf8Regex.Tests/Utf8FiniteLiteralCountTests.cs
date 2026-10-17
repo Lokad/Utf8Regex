@@ -67,6 +67,23 @@ public sealed class Utf8FiniteLiteralCountTests
     }
 
     [Theory]
+    [InlineData(2047)] [InlineData(2048)] [InlineData(4095)] [InlineData(4096)]
+    public void NativeCountKeepsFirstMalformedOffsetAcrossBlocksAndBorrowedSlices(int offset)
+    {
+        byte[] input = [.. Encoding.UTF8.GetBytes("ab" + new string('x', offset - 2)), 0xF0, 0x80, 0x80, 0x80];
+        byte[] storage = [.. "padding"u8, .. input, .. "padding"u8];
+        var expected = Assert.Throws<ArgumentException>(() => Utf8Validation.Validate(input));
+        using var source = new CancellationTokenSource();
+        foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
+        foreach (var token in new[] { CancellationToken.None, source.Token })
+        {
+            var regex = Create("(a)(b)", 1000000, mode);
+            var error = Assert.Throws<ArgumentException>(() => regex.Count(storage.AsSpan(7, input.Length), token));
+            Assert.Equal(expected.Message, error.Message);
+        }
+    }
+
+    [Theory]
     [InlineData("abcdefgh|xyzzz|ztzzz", "abcde xyzzz ztzzz abcdefgh", 3)]
     [InlineData("abcde|abcd|abcz", "abcde abcd abcz", 3)]
     [InlineData("😀😀|😀|中", "😀😀😀中", 3)]
