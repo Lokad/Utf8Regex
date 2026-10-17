@@ -72,9 +72,11 @@ public sealed partial class Utf8PythonRegex
     private bool IsMatchScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
         CancellationToken cancellationToken)
     {
-        // Keep unmetered calls on their established cursor: validation-only
-        // was slower for that ASCII route in the bounded public comparison.
-        if ((HasFiniteExecutionLimits || cancellationToken.CanBeCanceled || MatchTimeout != Timeout.InfiniteTimeSpan) &&
+        // Keep capture-free unmetered calls on their established cursor:
+        // validation-only was slower for that ASCII route in the public comparison.
+        // Captured booleans can discard the VM's otherwise unused capture state.
+        if ((HasFiniteExecutionLimits || cancellationToken.CanBeCanceled ||
+             MatchTimeout != Timeout.InfiniteTimeSpan || _scalarProgram.GroupCount != 0) &&
             !_scalarProgram.CanMatchEmpty &&
             !_scalarProgram.HasContiguousAnchor && !_scalarProgram.RightToLeft &&
             !_scalarProgram.IgnoreCase && _utf8Regex?.CanFindNativeLiteralForResult == true)

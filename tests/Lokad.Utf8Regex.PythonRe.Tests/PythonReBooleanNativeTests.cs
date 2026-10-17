@@ -44,10 +44,13 @@ public sealed class PythonReBooleanNativeTests
     {
         var input = Encoding.UTF8.GetBytes("cat" + new string('x', offset - 3))
             .Concat(new byte[] { 0xf0, 0x80, 0x80, 0x80 }).ToArray();
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
         var expected = Assert.Throws<ArgumentException>(() => Utf8Validation.Validate(input));
-        Assert.Equal(expected.Message, Assert.Throws<ArgumentException>(() => regex.IsMatch(input)).Message);
+        foreach (var policy in new[] { Utf8ResourcePolicy.Unlimited,
+            new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 } })
+        {
+            var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+            Assert.Equal(expected.Message, Assert.Throws<ArgumentException>(() => regex.IsMatch(input)).Message);
+        }
     }
 
     [Theory]
@@ -75,6 +78,8 @@ public sealed class PythonReBooleanNativeTests
             Assert.True(regex.IsMatch("é😀dog"u8, 2));
             Assert.True(regex.IsMatch("é😀dog"u8, 2, token.Token));
             Assert.False(regex.IsMatch("é😀dog"u8, 9, token.Token));
+            Assert.False(regex.IsMatch("é😀dog"u8, 9));
+            Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatch("é😀dog"u8, 3));
         }
     }
 

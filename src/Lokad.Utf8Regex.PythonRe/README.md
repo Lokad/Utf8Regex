@@ -21,14 +21,16 @@ Unicode captured concatenations without native eligibility keep the owned VM.
 The captured-search prototypes were deferred on cost and are absent.
 
 Development source after scalar.84 also reuses complete native literal/family
-discovery for controlled `IsMatch` with captures. Boolean matching needs no capture
-slots or results; captured output operations keep their existing behavior. Generic,
-capture-dependent, folded and assertion patterns retain their established routes,
-as do unmetered calls. Original whole-input validation, scalar offsets, tokens,
-deadlines and resource admission remain. This change is outside immutable scalar.84.
-[Focused source evidence](../../artifacts/python-native-boolean-captures-20261017/RESULT.md)
-records the controlled gains and the noisy unmetered short-case caveat; it does
-not update the exact-package cost qualification below.
+discovery for `IsMatch` with captures, including unmetered calls. Boolean matching
+needs no capture slots or results; captured output operations keep their behavior.
+Generic, capture-dependent, folded and assertion patterns retain established
+routes. Capture-free unmetered calls retain their cursor route. Whole-input
+validation, scalar offsets, tokens, deadlines and resource admission remain.
+[Controlled source evidence](../../artifacts/python-native-boolean-captures-20261017/RESULT.md)
+and the [unmetered follow-up](../../artifacts/python-native-boolean-unmetered-20261017/RESULT.md)
+record public gains, allocations and uncertainty, including6-9% higher finite
+Unicode costs in the follow-up. Both are outside immutable scalar.84 and do not
+update its exact-package cost qualification below.
 
 Prior native capture-free cursors, controlled boolean validation, direct string
 Split staging, conservative construction accounting and explicit cursor lifetime

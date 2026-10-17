@@ -2,6 +2,12 @@
 
 ## Development after scalar.84
 
+- Captured PythonRe `IsMatch` also reuses complete native discovery without finite
+  limits or interruption controls; capture-free unmetered calls keep their route.
+  In one focused source pair, short calls fall from0.84 to0.17 microseconds and
+  from2,224 to0 allocated bytes; late searches fall from0.9-2.7 milliseconds to
+  about2 microseconds. Finite Unicode lanes read6-9% slower, within the allowance;
+  preserve that tradeoff. [Evidence](artifacts/python-native-boolean-unmetered-20261017/RESULT.md).
 - Controlled PythonRe `IsMatch` reuses the existing complete native literal/family
   route when ordinary captures are present, avoiding unused capture slots and VM
   attempts. Preserve unmetered dispatch, general matching, returned captures,
