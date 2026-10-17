@@ -8,7 +8,7 @@ native-overlap probes and a fresh public consumer restore.
 PCRE2 pins Core `[0.4.0-scalar.71]`.
 [Handoff](../../artifacts/pcre2-scalar71-delivery-20261017/HANDOFF.md) and
 [consumption notes](../../artifacts/pcre2-scalar71-delivery-20261017/CONSUMING.md).
-Core/PythonRe72 remains independent; do not mix its exact Core72 pin with this
+Core/PythonRe73 remains independent; do not mix its exact Core73 pin with this
 pair. Core71 is the PCRE dependency only. Earlier70/67/69 and failed66 stay immutable.
 Actual consumer adoption, complete SPEC and host containment remain open.
 
@@ -32,7 +32,10 @@ observations are separate from closed source comparisons. The repeat source's
 Both exact assemblies retain only permitted Unsafe.SizeOf, accepted by Lython;
 no native dependency, generated inline-array helper or BCL matcher/results ship.
 Frozen reset/consumed-range/retry exclusions and12known BMP replacement differences
-remain. Properties are not pinned wholesale to Unicode16. Original package README
+remain. Those twelve observations concern final-sigma uppercasing: this profile
+produces uppercase sigma, while the measured native replacement produces lowercase
+sigma. The [specification](../../SPEC-PCRE2.md) records the retained behavior.
+Properties are not pinned wholesale to Unicode16. Original package README
 preparation assets stay frozen; the handoff records completion without repacking.
 
 `Lokad.Utf8Regex.Pcre2` is a `net10.0`, UTF-8-first managed companion to

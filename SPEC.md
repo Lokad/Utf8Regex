@@ -620,8 +620,9 @@ its existing folded modes. Other folds, scalar subjects and unproved shapes keep
 the scalar route. Raw shortcuts require no finite timeout, live token or finite
 invocation policy. A borrowed anchored cursor reuses the caller's owner/deadline
 without acquiring another finite invocation. No public API or matching unit changes.
-This source correction still needs the next immutable dependency's cost and
-consumer qualification; its rejected prototype measurements do not qualify it.
+The immutable Core/PythonRe scalar.73 pair qualifies this correction against
+detached consumers and selective current costs; its rejected prototype timings
+remain separate. [Qualification and limitations](artifacts/core-python-scalar73-20261017/HANDOFF.md).
 
 ```csharp
 public sealed class Utf8Regex

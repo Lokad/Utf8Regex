@@ -586,6 +586,14 @@ partners. Supplementary matching and extended-replacement simple casing reuse
 the owned Unicode 16 pairs, including Garay, without host casing dependencies.
 BMP replacement transforms retain their existing Rune route. This does not pin
 all Unicode properties or establish complete Unicode-version compatibility.
+In the qualified scalar.71 overlap corpus, native PCRE2 10.47 turns final sigma
+(U+03C2) into lowercase sigma (U+03C3) under uppercasing replacement escapes;
+this profile produces uppercase sigma (U+03A3). The twelve observations cover
+four capture/literal transforms under three invocation policies. This is a
+disclosed replacement-casing difference, not a matching-coordinate difference.
+Keep the existing uppercase result rather than copy the native result.
+The [scalar.71 handoff](artifacts/pcre2-scalar71-delivery-20261017/HANDOFF.md)
+preserves the exact native and managed observations. No package bytes change.
 The supplementary and necessary-leading-set changes are included in the scoped
 private Core/PCRE2 scalar.67 input at db9526f3. The exact handoff records platform/
 native/resource evidence and known BMP replacement differences separately from
