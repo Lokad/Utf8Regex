@@ -1,5 +1,18 @@
 # Changelog
 
+## Core/PythonRe scalar.78 qualified private dependency
+
+- Deliver the disjoint-literal repeat scan and replacement-literal checkpoints
+  together. Same immutable Windows/Linux consumers, capture/semantic oracles,
+  exact provenance and fresh final-feed restore pass; producer CI is green.
+- Preserve public scalar/capture/resource/lifetime contracts and unchanged Unicode
+  data. Actual eliminated repeat work/state lowers required budgets; successful
+  replacement-preparation charges and fragment repair stay unchanged.
+- Carry the closed Windows public source-cost comparison with its controls and
+  limits. No exact78-package or VM timing claim, benchmark replay or broader
+  parity claim. Earlier77 and independent PCRE76 remain immutable.
+  [Handoff](artifacts/core-python-scalar78-20261017/HANDOFF.md).
+
 ## Core/PythonRe scalar.78 candidate preparation
 
 - Combine the accepted disjoint-literal repeat scan and bounded replacement-

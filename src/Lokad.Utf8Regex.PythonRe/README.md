@@ -3,36 +3,31 @@
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
 strict UTF-8 scalars, with primary byte coordinates and derived UTF-16 projections.
 
-The qualified private **Core/PythonRe 0.4.0-scalar.77** pair, producer
-`2b5114672ddd34aa760176bb92944073c66c2093`, pins Core `[0.4.0-scalar.77]`.
-The same immutable Windows/Linux consumers pass capture/semantic oracles, exact
-provenance, member inventory and fresh final-feed restore.
-[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39005396110) is green.
-See the [handoff](../../artifacts/core-python-scalar77-20261017/HANDOFF.md) and
-[consumption instructions](../../artifacts/core-python-scalar77-20261017/CONSUMING.md).
+The qualified private **Core/PythonRe 0.4.0-scalar.78** pair, producer
+`17d4e70bffb75d5f1d96dccd38c6f4f294f92006`, pins Core `[0.4.0-scalar.78]`.
+Same immutable Windows/Linux consumers pass capture/semantic oracles, exact
+provenance/member inventory and a fresh final-feed restore.
+[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39008949770) is green.
+See the [handoff](../../artifacts/core-python-scalar78-20261017/HANDOFF.md) and
+[consumption instructions](../../artifacts/core-python-scalar78-20261017/CONSUMING.md).
 
-Capture shaping now reuses whole-subject ASCII validation for character counts
-and compiler-established dense slots for projection. Repeated scans/searches are
-removed; Unicode/mapped counting, bounded admitted decoding, completion metadata,
-aliases and original interruption remain. No new allocation, owner, map or API.
-Actual work cutoffs can decrease with removed work; spent work never refunds.
-Core C# and Unicode data are unchanged from scalar.75. Core retains only permitted
-`Unsafe.SizeOf`; Python has no unchecked API members or generated staging helpers.
-Lython accepts SizeOf.
+The batch reuses the scalar scanner when a disjoint following literal proves
+repeat alternatives useless, preserving ordinary capture closing and tail
+matching. Replacement-literal preparation now checks its existing authority during
+bounded encoding/validation passes. No new public API, owner, policy mode or
+output buffer. Scalar captures/completion, coordinates, retained results/aliases
+and finite controls remain. Actual removed repeat work/state lowers numerical
+cutoffs; successful replacement-preparation charges and fragment repair stay.
+Core Unicode and pinned Python data are unchanged. Core retains only permitted
+`Unsafe.SizeOf`, accepted by Lython; Python has no unchecked API references.
 
-Selective exact-package measurements include full validation and required outputs:
-1,000 UTF-8 capture tuples take about **648 / 708 / 689 us**, and 2,048 string
-capture tuples **1,996 / 2,153 / 2,123 us**, for unlimited / finite / finite plus
-live-token lanes. All four finite controls are enabled. Allocations, composed .NET
-controls and variability are explicit in the handoff. This is current operating
-cost, separate from source-regression evidence or snapshot Status.
-
-The closed ASCII source observation improved managed time by 7.1% while its
-unchanged CPython control improved 2.2%; the full drop is not a causal speedup.
-Direct-slot timing differs about 1%, within variation. Both observations remain
-Unqualified under the existing CPU-efficiency gate. [Source evidence](../../artifacts/python-capture-slot-20261017/RESULT.md).
-The [comparative snapshot](BENCHMARKS.md) identifies its measured source/runtime
-generations; September statuses do not qualify today's scalar engine.
+A closed Windows public source comparison records about 11% lower eager string-
+tuple unlimited/finite time, with less than 1% unchanged managed-control movement
+and no material allocation increase. Noisy token/BCL lanes remain explicit in the
+[evidence](../../artifacts/disjoint-class-repeat-20261017/RESULT.md). The measured
+matching code is unchanged here; this is source evidence, not exact scalar.78 or
+VM timing. The [comparative snapshot](BENCHMARKS.md) retains actual source/runtime
+generations and its Unqualified paired row; no CPython Status was promoted.
 
 Defaults/static calls remain unlimited. Complete construction, lazy/default,
 caller-retention/RSS and host coverage remain open; compose existing
@@ -40,14 +35,6 @@ caller-retention/RSS and host coverage remain open; compose existing
 remain immutable with separate exact Core pins. This qualified private dependency
 does not imply publication, external default changes or actual adoption. Package
 preparation assets remain frozen; the handoff records completed scoped acceptance.
-
-Development version **0.4.0-scalar.78** prepares one combined delivery of the
-accepted disjoint-literal repeat scan and bounded replacement-literal construction
-checkpoints. The existing qualifier will record same-byte platform consumers,
-oracles and exact identities before candidate acceptance. The bounded Windows
-source comparison remains separately scoped; no new benchmark campaign or PCRE78
-qualification is implied. Scalar.77 remains the latest qualified pair until that
-handoff is complete.
 
 ## Support Scope
 

@@ -30,7 +30,13 @@ former member-gate disagreement; actual unchecked accesses remain excluded. No p
 pin/default/promotion or host containment is implied. The independent PCRE2
 boundary does not alter Core/PythonRe52 acceptance.
 
-Current immutable Core/PythonRe scalar.69 preserves the same inventory in its
+Current qualified Core/PythonRe scalar.78 preserves this inventory: Core retains
+only permitted SizeOf; PythonRe has none. Exact packaged DLLs, same-byte platform
+consumers and identity/member receipts are in the
+[handoff](artifacts/core-python-scalar78-20261017/HANDOFF.md). The engine/protection
+batch does not reopen the completed scalar.52 fixed-original conversion gate.
+
+Earlier immutable Core/PythonRe scalar.69 preserves the same inventory in its
 exact packaged DLLs. Its [handoff](artifacts/core-python-scalar69-20261016/HANDOFF.md)
 records the new engine delivery; it does not replace the closed scalar.52
 fixed-original checked-access evidence or reopen the SizeOf acceptance question.

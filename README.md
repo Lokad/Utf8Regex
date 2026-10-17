@@ -4,48 +4,44 @@
 scalars over strict UTF-8 spans, with primary byte offsets and lengths. Dot matches
 😀 once across its four bytes. UTF-16 coordinates and strings are derived conveniences.
 
-The qualified private **Core/PythonRe 0.4.0-scalar.77** pair is produced by
-`2b5114672ddd34aa760176bb92944073c66c2093`; PythonRe pins Core
-`[0.4.0-scalar.77]`. The same immutable bytes pass Windows/Linux detached
+The qualified private **Core/PythonRe 0.4.0-scalar.78** pair is produced by
+`17d4e70bffb75d5f1d96dccd38c6f4f294f92006`; PythonRe pins Core
+`[0.4.0-scalar.78]`. The same immutable bytes pass Windows/Linux detached
 consumers, capture/semantic oracles, exact provenance and a fresh final-feed
-restore. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39005396110)
-is green. See the [handoff](artifacts/core-python-scalar77-20261017/HANDOFF.md)
-and [consumption instructions](artifacts/core-python-scalar77-20261017/CONSUMING.md).
+restore. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39008949770)
+is green. See the [handoff](artifacts/core-python-scalar78-20261017/HANDOFF.md)
+and [consumption instructions](artifacts/core-python-scalar78-20261017/CONSUMING.md).
 
-This batch reuses validated ASCII capture lengths and compiler-established
-capture slots. It removes repeated scans and searches without adding storage,
-owners or public APIs. Scalar captures, coordinates, retained results, cancellation,
-deadlines and all four finite invocation controls remain. Removing actual work can
-lower numerical work cutoffs. Core C# and Unicode data are unchanged from scalar.75.
-No shipped BCL matcher/results, unchecked reads or generated staging helpers remain;
-Core retains permitted `Unsafe.SizeOf`, accepted by Lython.
+This batch removes useless repeat alternatives before a disjoint exact literal
+and checks cancellation/deadlines during replacement-literal preparation. It
+reuses existing execution and construction owners. Scalar captures, coordinates,
+retained results and all four finite invocation controls remain. Removing actual
+repeat work/state can lower numerical work/depth/storage requirements; successful
+replacement-preparation charges and fragment repair stay unchanged. Unicode data
+are unchanged from scalar.77. No shipped BCL matcher/results, unchecked reads or
+generated staging helpers remain; Core retains permitted `Unsafe.SizeOf`,
+accepted by Lython.
 
-A selective exact-package observation includes validation and required outputs:
-1,000 UTF-8 capture tuples take about **648 us unlimited / 708 us finite**;
-2,048 string tuples take **1,996 us / 2,153 us**. Live-token lanes, allocations,
-composed .NET controls and measurement variability are recorded in the handoff.
-These operating costs are separate from the closed source comparisons and do not
-establish parity or a comparative winner. Historical benchmark tables retain their
-actual source and environment; September results do not qualify this engine.
+A bounded Windows source comparison records about **11% less time** for eager
+capture-string tuples, including finite limits, with less than 1% movement in
+the unaffected managed control. Allocation differences are negligible; noisy
+live-token lanes and composed .NET controls remain explicit in the
+[evidence](artifacts/disjoint-class-repeat-20261017/RESULT.md). That matching source
+is unchanged in this candidate. These are source observations, with their actual
+platform and controls; no exact scalar.78-package or VM timing is claimed.
+Historical benchmark tables retain their source and environment; September
+results do not qualify this engine.
 
 Defaults/static calls remain unlimited. [HOST-INTEGRATION.md](HOST-INTEGRATION.md)
 explains integration with existing resource owners; complete construction, lazy,
 default, caller-retention/RSS and host coverage remain open. [SPEC.md](SPEC.md)
 defines targets, not proof of all coverage. This is a private dependency input;
 publication, consumer defaults and adoption have separate acceptance. Earlier
-[Core/Python75](artifacts/core-python-scalar75-20261017/HANDOFF.md) and independent
+[Core/Python77](artifacts/core-python-scalar77-20261017/HANDOFF.md) and independent
 [PCRE76](artifacts/pcre2-scalar76-delivery-20261017/HANDOFF.md) remain immutable.
 PCRE76 requires its own exact Core76 pin. Published 0.3 packages retain their
 former contract. The existing [qualifier](qualify-scalar-candidate.ps1) records
 private candidate acceptance without publishing.
-
-Development source after scalar.77 avoids useless repeat alternatives before a
-disjoint exact literal, such as `([a-z]+)-`. One bounded Windows public comparison
-records about 11% less time for eager capture-string tuples, including finite
-limits, with less than 1% movement in the unaffected managed control. See the
-[evidence and scope](artifacts/disjoint-class-repeat-20261017/RESULT.md).
-[Source CI](https://github.com/Lokad/Utf8Regex/actions/runs/39007308245) is green on
-Windows/Linux. The immutable scalar.77 packages predate this change.
 
 ## Support Scope
 
@@ -58,7 +54,7 @@ Windows/Linux. The immutable scalar.77 packages predate this change.
 - Resource scope: core instances accept finite `Utf8ResourcePolicy.MaxWorkSteps`, `MaxDepth`, `MaxWorkingBytes` and `MaxResultBytes`. Work covers strict UTF-8 validation, scalar matching and required shaping cumulatively. Depth bounds live backtracking/continuation frames or pending linear alternatives before acquisition/copy; the selected route determines its depth requirement, and a stack-free linear replay uses no depth allowance. Result bytes conservatively charge major array/text and output-control capacity before acquisition, including staging/growth; charges are not refunded and can count shared storage again. Finite calls select owned metered execution. Core Count can reuse the bounded native counter for prepared nonempty exact LTR literals, including ordinary ASCII literal captures; scalar.49 and later qualified pairs extend this to eligible exact two/three-literal families. That route needs no VM capture/depth/result scratch, and removing verification/workspace lowers its charged requirements. Scalar.48 predates the family extension; larger or semantically excluded families retain the VM. Offset maps retain their own admission. Working bytes bound modeled major active storage/output controls and growth overlap. Exclusive scratch releases synchronously; published copied-cursor maps/tables stay charged for the invocation. Incidental owner metadata and caller-retained results have separate scope. Defaults and static cached calls remain unlimited. Construction/replacement preparation, caller callback execution/allocations, borrowed subjects, fixed value results and later standalone getters have separate scope. These are operation controls, not wall-time, live-retention or process-memory guarantees.
 - Cancellation and deadlines: caller cancellation is checked synchronously during validation, search, backtracking and required result shaping. A match deadline is absolute across an invocation, including waits between persistent cursor advances. Caller callback execution has its own lifetime; copying/encoding its returned output remains controlled.
 - PythonRe delivery: Python-order captures/backreferences and nullable last-closed `LastIndex`/`LastGroup` are authoritative backend metadata. The persistent memory-based cursor has explicit disposal and owned snapshots that survive advance/disposal; aliases share its position and lifetime. See the [PythonRe contract](src/Lokad.Utf8Regex.PythonRe/README.md) for subject lifetime, supported syntax and exclusions.
-- Stability: 0.4.0-scalar.77 is the latest locally qualified private Core/PythonRe pair. The immutable manifest proves only its recorded checks; downstream acceptance and current performance retain explicit scopes. Defaults/static cached calls remain unlimited; embedders must select finite policies for bounded invocations. Lython accepts the permitted `Unsafe.SizeOf` reference; actual unchecked accesses remain excluded.
+- Stability: 0.4.0-scalar.78 is the latest locally qualified private Core/PythonRe pair. The immutable manifest proves only its recorded checks; downstream acceptance and current performance retain explicit scopes. Defaults/static cached calls remain unlimited; embedders must select finite policies for bounded invocations. Lython accepts the permitted `Unsafe.SizeOf` reference; actual unchecked accesses remain excluded.
 
 PythonRe reuses its private VM workspace across cursor moves.
 Scratch stays charged while positioned and overlaps projection; EOF/failure/Dispose
