@@ -203,7 +203,7 @@ detached consumers and selective current costs
 
 ### 3.6 Scalar boundaries and coordinates
 
-Development after scalar.79 filters Python scalar search starts only from a
+Qualified scalar.80 filters Python scalar search starts only from a
 mandatory positive, nonfolding ASCII Set or the existing literal hint. At most
 three owned instructions and the fixed128-bit mask are inspected, including one
 optional capture start and a positive-minimum greedy repeat. The first/last set
@@ -215,8 +215,9 @@ Failed attempts/capture resets/workspace acquisition can be omitted, lowering
 numeric work/depth/working requirements without restarting the deadline/token or
 removing basic metering. Captures, retained aliases and result admission remain.
 No public API, owner, mode, program metadata or opaque profile-class proof is added.
-These source changes are outside immutable79; source cost evidence carries its
-own protocol and dense-input tradeoff, separately from package qualification.
+These changes are included in immutable80; source cost evidence retains its own
+protocol and dense-input tradeoff, separately from exact package operating costs.
+Scoped qualification does not prove all target behavior or host containment.
 
 Every successful core match and capture on valid input has a representable UTF-8 byte range. For `😀`, dot returns one match at byte offset 0 with byte length 4; `^.$` succeeds and `^..$` fails. Dot on `a😀b` returns ranges (0,1), (1,4) and (5,1). `^(.)\1$` matches `😀😀`, retaining the complete first scalar in group 1. Dot on `e` followed by U+0301 returns two scalar matches.
 

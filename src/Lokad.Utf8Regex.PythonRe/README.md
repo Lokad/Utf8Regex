@@ -3,72 +3,44 @@
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
 strict UTF-8 scalars, with primary byte coordinates and derived UTF-16 projections.
 
-Private scalar.80 is being prepared to deliver both related ASCII start-hint
-changes together, with an exact Core80 dependency. It is not yet qualified;
-immutable79 remains the qualified pair below. Existing consumer/provenance flows
-will check the new bytes once at this delivery boundary. This does not designate
-PCRE80 or change consumer defaults/pins/publication.
+The qualified private **Core/PythonRe 0.4.0-scalar.80** pair pins Core
+`[0.4.0-scalar.80]`, producer `39358de0717058b868486fd304a2c0a85bb7f08c`.
+Same immutable Windows/Linux consumers, capture/semantic oracles, symbols,
+provenance/member inventory and fresh isolated public restore pass.
+[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39025373513) is green.
+The [handoff](../../artifacts/core-python-scalar80-20261017/HANDOFF.md) and
+[consumption instructions](../../artifacts/core-python-scalar80-20261017/CONSUMING.md)
+record exact identities, scoped contract and preserved setup corrections. Earlier
+packages and their preparation assets remain immutable; no PCRE80, publication,
+consumer pin/default change or actual adoption is implied.
 
-The qualified private **Core/PythonRe 0.4.0-scalar.79** pair pins Core
-`[0.4.0-scalar.79]`, producer `2b41cad3c66097e8ff575a4f08f034037b708aa2`.
-Same immutable Windows/Linux consumers, capture/semantic oracles, exact
-provenance/member inventory and a fresh public restore pass.
-[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39014053062) is green.
-The [handoff](../../artifacts/core-python-scalar79-20261017/HANDOFF.md) and
-[consumption instructions](../../artifacts/core-python-scalar79-20261017/CONSUMING.md)
-record identities, scope and preserved Linux inventory setup recovery. Earlier
-scalar.78 remains immutable; package README preparation assets stay frozen.
+Required positive nonfolding ASCII classes use a necessary interval derived from
+bounded owned instructions and existing masks. Holes remain VM-verified false
+candidates; the cheap current-byte probe bypasses the slow seeker for hits.
+Whole strict UTF8 validation, scalar boundaries, captures/aliases, basic metering,
+original deadlines/token and all four invocation controls remain. Less actual
+work and scratch can lower numerical admission requirements. No new owner, API,
+mode or retained classifier metadata. Prior direct Python slots, terminal class
+scans and simplified cache/construction/cursor owners remain.
 
-Python captures now use opening-order scalar slots directly across references,
-conditionals, assertions and FullMatch. The Core-pattern numbering permutation is
-local construction scratch; the retained projection map, cursor plumbing and
-reverse lastindex search are removed. Lastindex retains completion order, including
-outer captures closing after their children. Public values, names, coordinates,
-retained snapshots/aliases and finite controls remain. No new public API, owner,
-instruction or execution mode. Core also reuses terminal greedy class scans when
-no required endpoint can reject Accept; remaining execution and metering stay.
+Current [exact-package public VM costs](../../artifacts/core-python-scalar80-20261017/vm-cost/RESULT.md)
+include required UTF8/string tuples, mixed identifiers, finite/live-token lanes,
+Core Count and decode/predecoded .NET controls. Selected Python finite overhead
+is7–10%; required tuple/identifier operations still trail composed .NET. Basic
+metering stays. The controlled source comparison's dense identifier penalty
+(+8.6% unlimited/+7.8% finite) and rejected gate-only pilot remain explicit in the
+[source receipt](../../artifacts/ascii-set-start-hints-20261017/RESULT.md).
+Current costs use .NET10.0.12/FullOpts/R2R off; no default-PGO, universal speedup,
+full-catalog or CPython Status claim. Earlier exact79 CPython observations retain
+their original scope in the [closed batch](../../artifacts/pythonre-current-qualification-20261017/RESULT.md)
+and [comparative snapshot](BENCHMARKS.md); they do not qualify80. The semantic
+target remains CPython3.13.2/Unicode15.1; profile data are unchanged.
 
-Core Unicode and pinned Python data are unchanged. Core retains only permitted
-`Unsafe.SizeOf`, accepted by Lython; Python has no unchecked API references.
-The handoff includes current Windows and quiet-VM public costs with exact79
-AFTER bytes, frozen-source BEFORE, finite/live-token lanes and unchanged Core
-Count controls.
-Required tuple outputs and .NET decode/predecoded controls are included. Noise,
-finite overhead and remaining gaps are explicit. The bounded .NET10.0.12 VM
-comparison follows verified input archival, with stable headroom. No general
-speedup or full-catalog qualification is claimed; those .NET comparisons set no
-CPython Status. A separate bounded quiet-VM batch uses exact79 libraries with
-.NET10.0.12/CPython3.12.3 and passes all91 semantic digests. Literal early Search
-measures1.947us versus0.163us predecoded CPython; named-capture string FindAll
-measures331.137us versus90.368us. Both qualify as CPython faster. Limited Split
-remains unqualified (short samples); Unicode FullMatch remains inconclusive
-(CPython spread), after their sole17-pair extensions. No further timing in this
-batch. The Python semantic target remains3.13.2/Unicode15.1.
-The [comparative snapshot](BENCHMARKS.md) retains historical point measurements
-and route labels separately from paired evidence. See the [batch receipt](../../artifacts/pythonre-current-qualification-20261017/RESULT.md).
-
-Development source after79 also skips impossible starts for a required positive
-ASCII class, including one outer capture and positive greedy repetition. A
-necessary interval may contain holes; the VM verifies each actual candidate. It
-reuses the existing bounded span seeker and shared invocation; whole strict UTF8
-validation, captures, cancellation/deadlines and finite admission remain. Removing
-failed VM attempts can lower numeric work/depth/working requirements. A bounded
-VM comparison and its sole confirmation reduce mixed captured-string FindAll
-time about38% with finite limits, under the declared FullOpts protocol; dense
-work stays within variation and misses avoid VM scratch. [Source evidence](../../artifacts/leading-ascii-range-20261017/RESULT.md).
-This source change is not included in immutable scalar.79 and sets no new CPython
-Status. Package qualification waits for the next coherent delivery boundary.
-The interval extension's bounded comparison reduces mixed identifier FindAll time
-about43% with finite limits and short inputs about29%, with an8.6% unlimited dense
-identifier penalty under the controlled protocol. The rejected gate-only pilot
-and corrected probe placement are preserved in [its receipt](../../artifacts/ascii-set-start-hints-20261017/RESULT.md).
-No adaptive mode or extra retained metadata is used.
-
-Defaults/static calls remain unlimited. Complete construction, lazy/default,
-caller-retention/RSS and host coverage remain open; compose existing
-[host owners](../../HOST-INTEGRATION.md). Earlier packages and independent PCRE76
-remain immutable with separate exact Core pins. Preparation or qualification does
-not imply publication, external defaults, pin changes or actual adoption.
+Core's only Unsafe reference is permitted `SizeOf`, accepted by Lython; Python
+has none. No unchecked reads, generated staging helpers, native imports or
+shipped BCL matcher/results. Defaults/static calls stay unlimited. Complete
+construction/lazy/default/retention/RSS/host and SPEC coverage remain open;
+compose [existing host owners](../../HOST-INTEGRATION.md).
 
 ## Support Scope
 

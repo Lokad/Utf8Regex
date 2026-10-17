@@ -1,15 +1,20 @@
 # Changelog
 
-## Core/PythonRe scalar.80 candidate preparation
+## Qualified private Core/PythonRe scalar.80
 
 - Batch the required ASCII-class start seeker and necessary-interval extension.
   Derive hints from bounded owned instructions/masks; verify every candidate in
   the scalar VM. Move the cheap probe out of the slow search helper. No new API,
   owner, mode or retained metadata; strict validation and finite controls remain.
 - Preserve the rejected gate-only pilot and controlled dense identifier penalty
-  (+8.6%). Closed source comparisons are not default-PGO/CPython Status or exact80
-  package measurements. Use the existing detached consumer/provenance workflow
-  for new bytes; this entry does not claim qualification.
+  (+8.6%). Closed source comparisons retain their original scope. Fresh immutable
+  packages pass same-byte Windows/Linux consumers, oracles, symbols/provenance/
+  member checks and isolated public restore; producer39358de0 CI is green.
+- Record one exact-package current VM pass with finite/live-token lanes and both
+  .NET controls. Selected Python finite overhead is7–10%; Core Count24.6us
+  unlimited/80.6us finite versus103.9us predecoded .NET. No default-PGO, new
+  CPython Status, before/after speedup or full-catalog claim.
+  [Delivery receipt](artifacts/core-python-scalar80-20261017/HANDOFF.md).
 - Preserve immutable79/78/77 and independent PCRE76 with its own exact Core76 pin.
   No publication, consumer pin/default change or actual host adoption is implied.
 
