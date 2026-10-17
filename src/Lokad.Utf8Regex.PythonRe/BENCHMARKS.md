@@ -24,37 +24,38 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-09-23T04:29:59.3563393+00:00`
-- Snapshot SHA-256: `07C4797757F3E026404B05761EE0339BDF367CDDA9513D48EDD177737DE01E87`
+- Generated: `2026-10-17T04:30:26.1097364+00:00`
+- Snapshot SHA-256: `B940A6C3F253CF73AE6C10BC8F253ACE7BBD18EF9FC7ACC034E1DBF671799DF7`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `0`
 - Scaling families: `7`
-- Recorded public Status: `58` managed faster, `0` equivalent, `5` CPython faster, `27` inconclusive, `0` unqualified
+- Public Status: `57` managed faster, `0` equivalent, `5` CPython faster, `27` inconclusive, `1` unqualified
 - Historical point measurement environments represented: `1`
-- Paired evidence from source `101975b4ce6a`: `4` rows
-- Paired evidence from source `185a07de3077`: `4` rows
-- Paired evidence from source `227771fc0ef7`: `4` rows
-- Paired evidence from source `30f9b58c44cc`: `4` rows
-- Paired evidence from source `37661064ec3a`: `4` rows
-- Paired evidence from source `4127a964c29e`: `4` rows
-- Paired evidence from source `48de72c5cf47`: `4` rows
-- Paired evidence from source `5b32ab77b03e`: `4` rows
-- Paired evidence from source `653161a993b9`: `4` rows
-- Paired evidence from source `675cda546679`: `4` rows
-- Paired evidence from source `69723e1684a5`: `6` rows
-- Paired evidence from source `6ab8f21ace15`: `4` rows
-- Paired evidence from source `8bc66679fb5a`: `4` rows
-- Paired evidence from source `9fff67981ce7`: `4` rows
-- Paired evidence from source `b2df56e6e3fb`: `4` rows
-- Paired evidence from source `b7228bd026e1`: `4` rows
-- Paired evidence from source `b8a54d632b28`: `4` rows
-- Paired evidence from source `d91449df7a20`: `4` rows
-- Paired evidence from source `e19304ef1f66`: `4` rows
-- Paired evidence from source `f0af29a25688`: `4` rows
-- Paired evidence from source `f79efd349de6`: `4` rows
-- Paired evidence from source `fffeb0e7f25a`: `4` rows
+- Paired evidence from source `101975b4ce6a`: `3` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `185a07de3077`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `227771fc0ef7`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `30f9b58c44cc`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `37661064ec3a`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `4127a964c29e`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `48de72c5cf47`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `51ffb1c04a01`: `1` rows; .NET 10.0.12; CPython 3.12.3
+- Paired evidence from source `5b32ab77b03e`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `653161a993b9`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `675cda546679`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `69723e1684a5`: `6` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `6ab8f21ace15`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `8bc66679fb5a`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `9fff67981ce7`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `b2df56e6e3fb`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `b7228bd026e1`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `b8a54d632b28`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `d91449df7a20`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `e19304ef1f66`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `f0af29a25688`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `f79efd349de6`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `fffeb0e7f25a`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
 - Historical CPython point environments represented: `1`
@@ -167,7 +168,7 @@ Historical independent point columns were measured from source `30f9b58c44cc` on
 | `findall/unicode-full-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 12.096 us | 16.155 us | 0.74x | 33.968 us | 72.601 us | 4,120 B |
 | `findall/unicode-full-utf8` | `FindAllUtf8` | EagerMaterializedResult | Inconclusive | 32.393 us | 37.762 us | 0.85x | 61.262 us | 82.955 us | 24,600 B |
 | `findall/one-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 108.427 us | 128.736 us | 0.84x | 180.681 us | 387.484 us | 149,792 B |
-| `findall/many-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 179.990 us | 205.639 us | 0.87x | 308.273 us | 625.652 us | 299,296 B |
+| `findall/many-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Unqualified | 2,242.448 us | 279.696 us | 7.88x | 308.273 us | 625.652 us | 263,920 B |
 | `findall/many-capture-utf8` | `FindAllUtf8` | EagerMaterializedResult | Inconclusive | 340.432 us | 725.307 us | 0.47x | 1,037.212 us | 719.675 us | 1,528,096 B |
 | `findall/unicode-capture-utf8` | `FindAllUtf8` | EagerMaterializedResult | Managed faster | 211.538 us | 345.114 us | 0.60x | 567.932 us | 382.628 us | 785,704 B |
 | `iteration/finditer-detailed` | `FindIterDetailed` | EagerMaterializedResult | Inconclusive | 95.770 us | 336.809 us | 0.28x | 454.376 us | 162.644 us | 415,976 B |
@@ -238,13 +239,13 @@ These bounded, warmed families vary one named dimension while preserving equival
 
 | Family | Dimension | Operation | Points | Managed route | Fit gate | Maximum residual M / C | Maximum spread M / C | Max order effect | Min lane |
 |---|---|---|---:|---|---|---:|---:|---:|---:|
-| `candidate-position` | candidate byte position | `Search` | 4 | `Utf8Regex/ExactAsciiLiteral; value ranges` | **Pass** | 7.1% / 9.7% | 1.020 / 1.022 | 1.051 | 9.6 ms |
-| `capture-count` | capture group count | `SearchDetailed` | 4 | `Utf8Regex/AsciiSimplePattern; detailed capture projection` | **Reject** | 2.8% / 3.8% | 1.051 / 1.103 | 1.093 | 9.0 ms |
-| `input-length` | UTF-8 input bytes | `Search` | 4 | `Utf8Regex/ExactAsciiLiteral; value ranges` | **Pass** | 15.0% / 6.4% | 1.009 / 1.029 | 1.016 | 9.1 ms |
-| `match-count` | discovered match count | `Count` | 4 | `Utf8Regex/ExactAsciiLiteral; Python-style count progression` | **Reject** | 6.9% / 1.5% | 1.019 / 1.029 | 1.165 | 7.7 ms |
-| `output-growth` | replacement output UTF-8 bytes | `ReplaceString` | 4 | `Utf8Regex/ExactAsciiLiteral; replacement; string shaping` | **Reject** | 4.0% / 8.9% | 1.097 / 1.036 | 1.072 | 3.5 ms |
-| `unicode-coordinate-density` | UTF-8 bytes per scalar | `SearchDetailed` | 4 | `Utf8Regex/ExactAsciiLiteral; detailed capture projection` | **Reject** | 342.3% / 1.3% | 1.104 / 1.041 | 1.032 | 5.5 ms |
-| `zero-width-progression` | zero-width-aware result count | `FindAllStrings` | 4 | `strict UTF-8 decode; .NET Regex; findall string shaping` | **Reject** | 21.2% / 7.2% | 1.324 / 1.036 | 1.300 | 6.3 ms |
+| `candidate-position` | candidate byte position | `Search` | 4 | `Utf8Regex/ExactAsciiLiteral; value ranges` | **Pass** | 7.1 % / 9.7 % | 1.020 / 1.022 | 1.051 | 9.6 ms |
+| `capture-count` | capture group count | `SearchDetailed` | 4 | `Utf8Regex/AsciiSimplePattern; detailed capture projection` | **Reject** | 2.8 % / 3.8 % | 1.051 / 1.103 | 1.093 | 9.0 ms |
+| `input-length` | UTF-8 input bytes | `Search` | 4 | `Utf8Regex/ExactAsciiLiteral; value ranges` | **Pass** | 15.0 % / 6.4 % | 1.009 / 1.029 | 1.016 | 9.1 ms |
+| `match-count` | discovered match count | `Count` | 4 | `Utf8Regex/ExactAsciiLiteral; Python-style count progression` | **Reject** | 6.9 % / 1.5 % | 1.019 / 1.029 | 1.165 | 7.7 ms |
+| `output-growth` | replacement output UTF-8 bytes | `ReplaceString` | 4 | `Utf8Regex/ExactAsciiLiteral; replacement; string shaping` | **Reject** | 4.0 % / 8.9 % | 1.097 / 1.036 | 1.072 | 3.5 ms |
+| `unicode-coordinate-density` | UTF-8 bytes per scalar | `SearchDetailed` | 4 | `Utf8Regex/ExactAsciiLiteral; detailed capture projection` | **Reject** | 342.3 % / 1.3 % | 1.104 / 1.041 | 1.032 | 5.5 ms |
+| `zero-width-progression` | zero-width-aware result count | `FindAllStrings` | 4 | `strict UTF-8 decode; .NET Regex; findall string shaping` | **Reject** | 21.2 % / 7.2 % | 1.324 / 1.036 | 1.300 | 6.3 ms |
 
 #### `candidate-position`
 

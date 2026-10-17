@@ -316,7 +316,12 @@ public sealed class PythonReBenchmarkSnapshotTests
             {
                 "single-highest-efficiency-processor",
                 "single-least-contended-highest-efficiency-processor",
+                "scheduler-default",
             });
+        if (evidence.GetProperty("CpuPolicy").GetString() == "scheduler-default")
+        {
+            Assert.Equal("Unqualified", status);
+        }
         Assert.True(evidence.GetProperty("ManagedIterations").GetInt32() > 0);
         Assert.True(evidence.GetProperty("CpythonIterations").GetInt32() > 0);
         Assert.True(evidence.GetProperty("ManagedWarmupCalls").GetInt32() > 0);

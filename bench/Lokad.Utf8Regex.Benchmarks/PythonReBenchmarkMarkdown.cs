@@ -138,20 +138,24 @@ internal static partial class PythonReBenchmarkReporter
         writer.WriteLine($"- Lifecycle families: `{snapshot.Lifecycle.Count}`");
         writer.WriteLine($"- Scaling families: `{snapshot.ScalingFamilies.Count}`");
         writer.WriteLine(
-            $"- Recorded public Status: `{GetStatusCount("ManagedFaster")}` managed faster, " +
+            $"- Public Status: `{GetStatusCount("ManagedFaster")}` managed faster, " +
             $"`{GetStatusCount("Equivalent")}` equivalent, " +
             $"`{GetStatusCount("CpythonFaster")}` CPython faster, " +
             $"`{GetStatusCount("Inconclusive")}` inconclusive, " +
             $"`{GetStatusCount("Unqualified")}` unqualified");
         writer.WriteLine($"- Historical point measurement environments represented: `{environments.Length}`");
         foreach (var source in rows
-            .Select(static row => row.Value.Qualification?.PairedEvidence?.SourceCommit)
-            .OfType<string>()
-            .Where(static source => source.Length != 0)
-            .GroupBy(static source => source, StringComparer.Ordinal)
+            .Select(static row => row.Value.Qualification?.PairedEvidence)
+            .OfType<PythonRePairedEvidence>()
+            .Where(static evidence => evidence.SourceCommit.Length != 0)
+            .GroupBy(static evidence => evidence.SourceCommit, StringComparer.Ordinal)
             .OrderBy(static group => group.Key, StringComparer.Ordinal))
         {
-            writer.WriteLine($"- Paired evidence from source `{source.Key}`: `{source.Count()}` rows");
+            var runtimes = string.Join(", ", source.Select(static evidence => evidence.ManagedEnvironment.Runtime)
+                .Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
+            var interpreters = string.Join(", ", source.Select(static evidence => evidence.CpythonEnvironment.Version)
+                .Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
+            writer.WriteLine($"- Paired evidence from source `{source.Key}`: `{source.Count()}` rows; {runtimes}; CPython {interpreters}");
         }
         writer.WriteLine($"- Corpus: [`{snapshot.Corpus.SourceFile}`](../../{snapshot.Corpus.SourceFile}) (`{snapshot.Corpus.VectorCount}` vectors, SHA-256 `{snapshot.Corpus.Sha256}`)");
         writer.WriteLine($"- Corpus provenance limitation: {snapshot.Corpus.Limitation}");
@@ -448,7 +452,7 @@ internal static partial class PythonReBenchmarkReporter
                 writer.WriteLine(
                     $"| `{id}` | {family.Dimension} | `{family.Operation}` | {family.Points.Count} | " +
                     $"`{EscapeMarkdownTable(family.ManagedRoute)}` | **{family.FitGate}** | " +
-                    $"{family.ManagedMaximumRelativeResidual:P1} / {family.CpythonMaximumRelativeResidual:P1} | " +
+                    $"{family.ManagedMaximumRelativeResidual.ToString("P1", CultureInfo.InvariantCulture)} / {family.CpythonMaximumRelativeResidual.ToString("P1", CultureInfo.InvariantCulture)} | " +
                     $"{family.ManagedMaximumSpread:F3} / {family.CpythonMaximumSpread:F3} | " +
                     $"{family.MaximumOrderEffect:F3} | {family.MinimumLaneElapsedMilliseconds:F1} ms |");
             }
