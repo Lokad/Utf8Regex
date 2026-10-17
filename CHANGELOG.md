@@ -1,5 +1,18 @@
 # Changelog
 
+## Development: explicit PCRE2 construction controls
+
+- Add text/UTF-8 `Utf8Pcre2Regex.Compile` factories using the existing shared
+  construction policy, original cancellation and a separate construction timeout.
+  Covered construction denial uses shared `Construction*` limit kinds and timeout
+  uses `RegexMatchTimeoutException`; PCRE grammar/runtime errors retain their types.
+- Bound strict byte validation to scalar-aligned 4096-byte blocks before the
+  already bounded decoder, preserving work charges, strict errors and byte offsets.
+  Constructors/defaults, scalar matching, captures and invocation controls remain.
+- Prepare distinct scalar.76 identity for independent Core/PCRE2 qualification.
+  Immutable Core/Python75 and Core/PCRE71 stay unchanged; this is not publication,
+  consumer adoption or complete construction/allocation/retention/RSS coverage.
+
 ## Core/PythonRe scalar.75 qualified private dependency
 
 - Qualify immutable producer01e178d9: same-byte first-pass Windows/Linux

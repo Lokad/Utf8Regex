@@ -45,7 +45,7 @@ The core `Utf8Regex` matches Unicode scalars over strict UTF-8 with byte coordin
 
 Scalar development candidates have distinct identities from published 0.3.0.
 Core/PythonRe delivery is qualified independently. PCRE2 has scoped private
-package acceptance; broader profile coverage and public preparation/construction,
+package acceptance; broader profile coverage and complete preparation/construction,
 safe-default and retained-result policies remain unfinished. Use the qualified
 candidate's exact version, immutable feed and provenance manifest.
 
@@ -157,7 +157,37 @@ Construction validates the named factory's resource policy first, then timeout,
 option bits and compile settings, before decoding pattern bytes or spending
 construction allowance. Those argument errors take precedence over malformed
 UTF-8 and construction denial. Valid arguments retain strict decoding and the
-existing admitted pattern-code checks. Public construction controls remain separate.
+existing admitted pattern-code checks.
+
+Development source adds `Utf8Pcre2Regex.Compile` for explicit eager construction
+controls, separately from execution limits. It accepts text or strict UTF-8 bytes:
+
+```csharp
+var regex = Utf8Pcre2Regex.Compile("(?<x>😀){2,4}\\k<x>",
+    Pcre2CompileOptions.None, default, TimeSpan.FromSeconds(1),
+    new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 128,
+        MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 },
+    new Utf8ConstructionPolicy { MaxWorkSteps = 1000000, MaxDepth = 256,
+        MaxInstructionCapacity = 10000, MaxBytes = 1000000 },
+    TimeSpan.FromSeconds(5), cancellationToken);
+```
+
+One existing numeric owner covers admitted eager decoding/parsing/lowering and
+checks again before publication. Pre-cancellation wins over argument/pattern
+errors; nested compilation inherits the owner. Positive caps tighten fixed
+backstops. Explicit compilation cannot replace an active owner. The construction
+token/deadline end at publication; the match timeout and execution limits govern
+later operations independently. Covered construction refusal uses shared
+`Utf8ResourceLimitExceededException` (`Construction*` kinds), original-token
+`OperationCanceledException`, or `RegexMatchTimeoutException` for construction
+timeout. The latter has empty `Input`, original text `Pattern` or empty `Pattern`
+for byte inputs. PCRE grammar and runtime exception types remain unchanged.
+Byte validation/decoding checkpoint at scalar-aligned blocks of at most 4096
+bytes, preserving strict errors, absolute offsets and existing work charges.
+This does not meter every allocation/pass, CLR/JIT metadata, lazy replacement
+preparation, caller retention or RSS. Constructors/`Create` keep their defaults.
+The new factories require a later qualified candidate; immutable scalar.71 does
+not contain them.
 
 Current development enforces capture names of at most 128 UTF-8 bytes and literal
 verb labels of at most 255 UTF-8 bytes, before choosing a backend. Previously,
@@ -607,7 +637,7 @@ reservation. Cold and warm heap requirements can differ. Construction metadata
 remains outside exact process/RSS guarantees. Validation/preparation work
 remains spent through output shaping; finite work may
 deny before reaching a malformed tail or invalid start. Common public
-construction/default/live-retention policies remain unfinished. Cancellation,
+complete construction coverage, defaults and live-retention policies remain unfinished. Cancellation,
 deadlines, depth/backtracking limits and basic bounded state metering remain active.
 Broader profile grammar/options/capture completion has separate qualification gates.
 

@@ -10,12 +10,33 @@ its isolated byte features. Do not add a flavor flag or a shared option bag to t
 core. Core capture history and PCRE2 last-capture/duplicate-name rules retain their
 own contracts; .NET is an overlapping test/benchmark comparator only.
 
-PCRE2 construction validates a factory resource policy first, then timeout,
-option bits and compile settings, before pattern-byte decoding and construction
+`Create` validates its resource policy first. PCRE2 constructors then validate
+match timeout, option bits and compile settings, before pattern-byte decoding and construction
 admission. This preserves string-entry error precedence while making invalid
 arguments win over malformed byte patterns or admission denial. Pattern-dependent
-checks still run after strict decoding. Finite invocation controls do not provide
-a public construction budget or construction cancellation.
+checks still run after strict decoding. Finite invocation controls alone do not
+bound pattern construction.
+
+Development source adds explicit `Utf8Pcre2Regex.Compile` text/UTF-8 factories
+with `Utf8ConstructionPolicy`, a separate construction timeout and cancellation
+token. Pre-cancellation precedes argument/pattern work; construction policy,
+execution policy and construction timeout are validated before the existing
+constructor argument checks. One synchronous numeric construction owner covers
+admitted eager decoding, parsing and lowering, plus the final publication check.
+Nested compilation inherits that owner. Positive caps tighten the fixed backstops;
+they do not relax them. Explicit compilation cannot replace an active owner.
+The token and construction deadline are not retained for later matching or lazy
+replacement preparation. Existing constructors and `Create` retain their defaults.
+
+Construction refusal uses shared `Utf8ResourceLimitExceededException` with a
+`Construction*` kind, cancellation preserves the original token, and construction
+timeout uses `RegexMatchTimeoutException` with the construction duration and empty
+`Input`. Its `Pattern` is the supplied text, or empty for byte inputs to avoid
+decoding solely for an exception. PCRE grammar errors retain `Pcre2CompileException`;
+later match failures retain `Pcre2MatchException`. Strict byte validation and both
+decode passes checkpoint scalar-aligned blocks of at most 4096 bytes; malformed
+input retains its absolute byte offset. The original work charges are preserved.
+These source APIs are not present in the immutable scalar.71 package.
 
 Pattern-validation lexical passes admit their full text extent into the shared
 construction-work backstop before scanning. Repeated POSIX-token and control-verb
@@ -23,8 +44,10 @@ searches also admit bounded blocks, so malformed input cannot rescan suffixes
 without consuming the cumulative allowance. Charges are conservative, including
 unused block tails; earlier construction denial is allowed. The existing owner
 supplies internal cancellation/deadline checks at admission points. This does not
-establish public construction interruption, prompt checks within every linear
-pass, or complete admission of validation stacks and other construction storage.
+establish prompt checks within every linear pass or complete admission of
+validation stacks and other construction storage. The explicit factory exposes
+covered admission/interruption, not a claim to every allocation, CLR/JIT metadata,
+lazy preparation, caller retention or process memory.
 
 Character-class ranges compare decoded Unicode-scalar endpoints. Raw
 `[😀-😃]` and escaped `[\x{1F600}-\x{1F603}]` have the same membership; UTF-16
@@ -817,9 +840,8 @@ additional-peak reservation through replacement. Existing parent loans, historic
 peaks and tighter construction backstops are preserved. Warm reuse borrows immutable
 cached plans under their separate bounded cache policy, so cold and warm working
 requirements can differ. These capacity charges are conservative, not process RSS
-or arbitrary caller retention. Public
-construction/default/live-retention policies and broader profile coverage remain
-separate completion gates.
+or arbitrary caller retention. Complete construction coverage, safe defaults,
+live-retention policies and broader profile coverage remain separate completion gates.
 
 ```csharp
 var limits = new Utf8Pcre2ExecutionLimits { MatchLimit = 1 };
