@@ -119,6 +119,10 @@ Supported feature families in the current profile:
 * group-participation conditionals: names must already be defined at the
   conditional header. Outside lookbehind, an already-open named group is allowed
   and numeric forward references retain final group-count validation.
+  Decimal IDs beyond the managed group-index range report pattern errors rather
+  than arithmetic overflow. Leading zeros retain their numeric value; malformed
+  and unterminated headers keep their syntax-error precedence. Header scanning
+  and oversized-reference diagnostics share construction admission.
 * lookahead and fixed-width lookbehind. Within lookbehind, backreferences and
   group-participation conditions must refer to a closed group defined before the
   outermost enclosing lookbehind; nested assertions retain that restriction.

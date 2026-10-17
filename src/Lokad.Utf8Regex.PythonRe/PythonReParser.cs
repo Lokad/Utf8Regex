@@ -255,7 +255,17 @@ internal sealed partial class PythonReParser
         if (TryPeekDigit())
         {
             var referenceStart = _position;
-            var number = ParseNumber();
+            var number = 0;
+            var tooLarge = false;
+            // Finish the header before classifying it, including after the
+            // numeric value exceeds our group index. Keep every digit metered.
+            while (TryPeekDigit())
+            {
+                Utf8ConstructionScope.ChargeWork(1);
+                var digit = Consume() - '0';
+                if (number > (int.MaxValue - digit) / 10) tooLarge = true;
+                else if (!tooLarge) number = number * 10 + digit;
+            }
             if (number <= 0)
             {
                 throw new PythonRePatternException("bad group number", referenceStart);
@@ -278,6 +288,12 @@ internal sealed partial class PythonReParser
                 throw new PythonRePatternException($"bad character in group name '{invalidName}'", referenceStart);
             }
 
+            if (tooLarge)
+            {
+                using var message = Utf8ConstructionText.Create();
+                throw new PythonRePatternException(message.Append("invalid group reference ")
+                    .Append(_pattern.AsSpan(referenceStart, _position - referenceStart).TrimStart('0')).ToText(), referenceStart);
+            }
             return PythonReConditionalReference.ForGroupNumber(number);
         }
 

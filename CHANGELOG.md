@@ -2,6 +2,9 @@
 
 ## Development after scalar.86
 
+- Classify oversized PythonRe conditional group IDs as pattern errors instead of
+  leaking arithmetic overflow. Preserve header error precedence, leading-zero
+  forward conditions and per-character construction admission/interruption.
 - Reconcile the general specification with implemented public construction caps
   and PCRE2 result-byte limits. Preserve lazy, retention, metadata and safe-default
   exclusions; refresh the checked-access inventory's qualified candidate pointer.
