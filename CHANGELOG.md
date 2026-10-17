@@ -2,6 +2,15 @@
 
 ## Development after scalar.80
 
+- Reuse conservative native literal eligibility for finite value Match, with
+  complete validation, original invocation and metered coordinate projection.
+  Detailed captures keep their VM and admission. Removed attempts/slots lower
+  numerical work/storage requirements; no public API, owner or policy mode added.
+- One public source comparison: late ASCII finite Match 1.57ms to 1.93us;
+  Unicode prefix 408us to 62.8us. Allocations remain about 112B; unchanged Count
+  finite control +3.2%, tiny movements track its unlimited control. Preserve
+  FullOpts scope/raw evidence; no confirmation or new package for this patch.
+  [Source receipt](artifacts/finite-literal-match-20261017/RESULT.md).
 - Reuse prepared search for exact needles up to 16 bytes inside charged windows
   of at most 2,048 bytes, including lookahead. Longer/folded needles keep their
   existing bounded comparisons. Preserve scalar results, original token/deadline,

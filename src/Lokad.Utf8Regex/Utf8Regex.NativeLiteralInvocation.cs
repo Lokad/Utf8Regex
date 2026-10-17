@@ -43,7 +43,7 @@ public sealed partial class Utf8Regex
         ref Utf8SliceInvocation invocation)
     {
         _ = Utf8Validation.Validate(input, ref invocation);
-        if (!CanCountNativeLiterals(_ownedSliceProgram))
+        if (!CanUseNativeLiteralSearch(_ownedSliceProgram))
             return OwnedSliceCountFromByte(input, _ownedSliceProgram, startOffsetInBytes, ref invocation);
         var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(_preparedRegex.SearchPlan,
             input[startOffsetInBytes..], false, ref invocation, out var count);
@@ -54,7 +54,7 @@ public sealed partial class Utf8Regex
 
     // Shared semantic eligibility, independent of the optional Core owner's
     // policy. An adapter can supply finite limits through its borrowed invocation.
-    private bool CanCountNativeLiterals(Utf8SliceProgram program) =>
+    private bool CanUseNativeLiteralSearch(Utf8SliceProgram program) =>
         !program.RightToLeft && !program.IgnoreCase &&
         !program.HasBalancing && !program.HasSharedCaptureDeclarations &&
         !program.HasExplicitCaptureNumbers && !program.HasContiguousAnchor &&

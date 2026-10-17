@@ -1195,7 +1195,7 @@ public sealed partial class Utf8Regex
         // A pure literal/family Count needs no capture slots or continuation frames.
         // Borrow the validated invocation instead of dropping finite callers
         // into the VM solely because they selected an enforceable policy.
-        if (HasFiniteExecutionLimits && CanCountNativeLiterals(program))
+        if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program))
         {
             var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(
                 _preparedRegex.SearchPlan, input[startByte..], false, ref invocation, out var count);
@@ -1559,6 +1559,19 @@ public sealed partial class Utf8Regex
         int startByte, ref Utf8SliceInvocation invocation)
     {
         invocation.AnchorOriginByte = startByte;
+        if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program))
+        {
+            // Value Match needs only the selected range. Borrow Count's proven
+            // literal discovery and the existing metered coordinate projection;
+            // detailed captures still use their own scalar VM path.
+            var plan = _preparedRegex.SearchPlan;
+            var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(plan, input, startByte,
+                input.Length, false, ref invocation, out var selected, out var found);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException("Native literal match breached the invocation budget.");
+            return found ? Utf8ProjectionExecutor.ProjectLiteralFamilyMatch(plan.ProjectionPlan, input,
+                plan.AlternateLiteralUtf16Lengths, 0, 0, selected, ref invocation, out _, out _) : Utf8ValueMatch.NoMatch;
+        }
         var slots = new Utf8SliceSlots([], []);
         try
         {

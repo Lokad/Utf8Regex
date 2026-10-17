@@ -357,6 +357,17 @@ work, sticky denial, original token/deadline and terminal publication checks rem
 No new scratch, owner, policy switch or unchecked access is introduced. This
 source improvement does not change the immutable scalar.80 package's evidence.
 
+Development after scalar.80 also reuses that conservative native eligibility for
+finite value Match: nonempty exact forward literals and eligible two/three-literal
+families, keeping the existing stateful/boundary/trailing exclusions. Discovery
+and derived-coordinate projection borrow the original invocation after complete
+strict validation. Ordered priority, scalar-aligned ranges, token/deadline,
+sticky denial and terminal checks remain. Unused VM attempts/slots can disappear,
+lowering numerical work/storage requirements without refunding spent work.
+Detailed captures keep their own VM; detailed results and offset maps retain
+working/result admission. This adds no public API, owner or policy switch and
+does not change immutable scalar.80 or prove full SPEC/host coverage.
+
 Family verification rejects exact branches with a different first byte under
 their existing branch charge, and invokes confirmation only when a boundary or
 trailing predicate exists. Full comparisons remain bounded and charged, including

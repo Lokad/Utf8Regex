@@ -41,6 +41,14 @@ decrease because the window charge covers verification. Long/folded needles
 keep their existing comparison path. [Source evidence](artifacts/short-exact-prepared-window-20261017/RESULT.md).
 This source change is outside immutable scalar.80; no new package is designated.
 
+Development finite value Match also reuses the proved exact-literal/small-family
+search and metered projection under the original invocation. Detailed captures
+keep their VM path and admission. A bounded source comparison reduces late ASCII
+Match from 1.57ms to 1.93us and the Unicode-prefix case from 408us to 62.8us,
+with about 112B allocated per finite call. Removed VM work/storage can lower
+numerical requirements. [Source evidence](artifacts/finite-literal-match-20261017/RESULT.md)
+retains controls, noise and FullOpts scope; this is outside immutable scalar.80.
+
 Defaults/static calls remain unlimited. [HOST-INTEGRATION.md](HOST-INTEGRATION.md)
 explains composition with existing resource owners. Complete construction/lazy/
 default, caller-retention/RSS, host and full [SPEC.md](SPEC.md) coverage remain
