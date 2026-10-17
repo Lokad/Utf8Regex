@@ -1,5 +1,15 @@
 # Changelog
 
+## Independent Core/PCRE2 scalar.76 qualified private dependency
+
+- Qualify producer58e2927a's explicit construction factory and bounded byte
+  validation: same immutable Windows/Linux5803tests each, including37new cases,
+  exact provenance/symbols/member/restore checks and fresh public Compile consumer.
+- Preserve native688zero/576same12known observations and record one selective
+  current-package Count cost observation with all four finite controls/live token.
+- Core76 is the exact PCRE dependency only; Core/Python75 and PCRE71 stay
+  immutable. Complete SPEC/containment/default/adoption remain separate gates.
+
 ## Development: explicit PCRE2 construction controls
 
 - Add text/UTF-8 `Utf8Pcre2Regex.Compile` factories using the existing shared

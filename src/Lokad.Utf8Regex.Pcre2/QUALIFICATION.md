@@ -1,5 +1,43 @@
 # Managed PCRE2 profile qualification
 
+## Qualified independent scalar.76 construction input
+
+Producer `58e2927a64c334f1e9f7ced2fbd46d55dadc5d55`, Release/net10.0.
+[Handoff](../../artifacts/pcre2-scalar76-delivery-20261017/HANDOFF.md) and
+[restore instructions](../../artifacts/pcre2-scalar76-delivery-20261017/CONSUMING.md)
+record immutable archive/manifest/package/DLL/symbol identities and exact Core76
+dependency. Same bytes pass Windows/Linux5803tests each, including37new public
+construction,16frame,20literal-bridge and12repeat-journal cases. One affected
+build6.16s/one pack-symbol per project; no Linux library build/repack/suite replay.
+Source Release5803/focused Debug79 pass. Six original receipt files remain.
+
+The additive text/UTF-8 Compile API exposes the existing construction owner,
+positive caps, original cancellation and separate timeout through final publication.
+Byte validation checkpoints scalar-aligned <=4096byte blocks without changing
+charges/strict offsets. XML/SPEC document shared construction exception types,
+independent execution and scope exclusions. Existing constructors/defaults and
+PCRE grammar/runtime errors remain. Core/Python C# matches75; Core76 is tested
+here only as PCRE's dependency, independent of qualified Core/Python75.
+
+Exact refs/locks/cache/feed/DLLs/symbols/SourceLink/member inventory and all7archive
+artifact hashes pass. Both DLLs retain only permitted SizeOf, accepted by Lython;
+no generated inline-array helper, native import or BCL matcher/results ship.
+Unchanged native probes retain688leading observations0differences and576case
+rows identical71, including12known BMP final-sigma replacement observations.
+Fresh final-feed public consumption exercises Compile/scalars/captures/token
+lifetime/construction-work refusal plus existing invocation and output denials.
+
+One selective current-cost observation:65samples,minimum68.1922ms,all above50ms,
+max managed spread12.45%. All four finite controls/live token, full validation,
+infinite match timeouts, constructors excluded. Finite1000captured Count354.351us/
+5888B,1000literal Count40.950us/112B,500Unicode Count274.766us/5888B. Applicable
+predecoded/decode BCL costs and exclusions/raw samples remain in the handoff.
+This is not a source comparison, checked10% qualification or snapshot Status.
+No confirmation/tuning follows. Full construction/lazy/default/live-retention/
+RSS/SPEC/host and actual adoption remain open;71 and earlier inputs stay immutable.
+[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39001264596)
+records full source validation separately from package acceptance.
+
 ## Qualified independent scalar.71 Count/storage input
 
 Clean producer `2328451d46bac3055422b8a288d29cff425198bb`, Release/net10.0.

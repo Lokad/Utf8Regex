@@ -1,5 +1,30 @@
 # Lokad.Utf8Regex.Pcre2
 
+Qualified private **Core/PCRE2 0.4.0-scalar.76**, producer
+`58e2927a64c334f1e9f7ced2fbd46d55dadc5d55`, adds text/UTF-8 `Compile` factories
+using the existing construction policy/owner, a separate timeout and original
+cancellation. Strict byte validation now checkpoints bounded scalar-aligned
+blocks before decoding. Shared construction-limit/timeout exceptions are explicit;
+PCRE grammar/runtime errors and existing constructors/defaults remain.
+[Handoff](../../artifacts/pcre2-scalar76-delivery-20261017/HANDOFF.md) and
+[consumption notes](../../artifacts/pcre2-scalar76-delivery-20261017/CONSUMING.md)
+record exact hashes and the Core `[0.4.0-scalar.76]` pin. Same immutable bytes pass
+Windows/Linux5803tests each, including37new construction cases; exact provenance,
+symbols, member inventory, native overlap and a fresh public Compile consumer pass.
+Core/Python75 remains independent. Core76 is the PCRE dependency only.
+
+One selective65sample current-package Count observation includes all four finite
+controls/live token:1000captured matches354us/5888B,1000literal matches41us/112B,
+500Unicode matches275us/5888B. All floors pass; max managed spread12.45%.
+Captured matching still trails overlapping BCL controls; finite literal metering
+remains material versus unlimited. Full validation is included, constructors are
+excluded and every lane has infinite match timeout. No source-regression/Status
+claim or follow-up tuning. Broader construction/lazy/default/retention/RSS/SPEC
+and host/adoption gates remain. Immutable package README preparation assets stay
+frozen; the handoff records completed scoped acceptance.
+
+## Previous qualified scalar.71
+
 Qualified private **Core/PCRE2 0.4.0-scalar.71** is produced by
 `2328451d46bac3055422b8a288d29cff425198bb`. The same immutable packages pass
 Windows/Linux detached consumers, exact provenance/pins/locks/DLLs/symbols,
@@ -186,7 +211,7 @@ Byte validation/decoding checkpoint at scalar-aligned blocks of at most 4096
 bytes, preserving strict errors, absolute offsets and existing work charges.
 This does not meter every allocation/pass, CLR/JIT metadata, lazy replacement
 preparation, caller retention or RSS. Constructors/`Create` keep their defaults.
-The new factories require a later qualified candidate; immutable scalar.71 does
+The factories are included in qualified scalar.76; immutable scalar.71 does
 not contain them.
 
 Current development enforces capture names of at most 128 UTF-8 bytes and literal

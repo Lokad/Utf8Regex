@@ -44,8 +44,9 @@ composes covered capacity with existing owners; complete construction/lazy/defau
 live-retention/RSS/host containment and full SPEC remain unfinished. This scoped
 input does not imply publication, consumer pins/defaults/adoption or POSIX-longest
 selection. Published0.3 packages retain their former contract. Earlier74/73/72/69/68/65
-remain immutable. Independent [PCRE71](artifacts/pcre2-scalar71-delivery-20261017/HANDOFF.md)
-has its own exact Core71 pin; keep it separate from Python75. Original package
+remain immutable. Independent [PCRE76](artifacts/pcre2-scalar76-delivery-20261017/HANDOFF.md)
+adds explicit construction controls with its own exact Core76 pin; keep it
+separate from Python75. Earlier PCRE71 stays immutable. Original package
 README preparation assets stay frozen; handoff/manifest record completed scope.
 
 Use exact versions and the immutable feed. The existing
