@@ -53,24 +53,20 @@ internal static class Utf8InputAnalyzer
 
     public static void ThrowIfInvalidOnly(ReadOnlySpan<byte> input)
     {
-        switch (SelectThrowIfInvalidOnlyMode(input))
-        {
-            case ThrowIfInvalidOnlyMode.Utf8IsValid:
-                if (Utf8.IsValid(input))
-                {
-                    return;
-                }
-
-                break;
-
-            case ThrowIfInvalidOnlyMode.ValidationCore:
-                break;
-        }
-
-        if (!Utf8ValidationCore.TryValidate(input, computeUtf16Length: false, out _, out var errorOffset))
+        if (!TryValidateOnly(input, out var errorOffset))
         {
             throw Utf8Validation.CreateInvalidUtf8Exception(errorOffset);
         }
+    }
+
+    internal static bool TryValidateOnly(ReadOnlySpan<byte> input, out int errorOffset)
+    {
+        if (SelectThrowIfInvalidOnlyMode(input) == ThrowIfInvalidOnlyMode.Utf8IsValid && Utf8.IsValid(input))
+        {
+            errorOffset = -1;
+            return true;
+        }
+        return Utf8ValidationCore.TryValidate(input, computeUtf16Length: false, out _, out errorOffset);
     }
 
     public static Utf8LeadByteSampleShape DescribeLeadByteSample(ReadOnlySpan<byte> input)

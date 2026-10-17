@@ -374,6 +374,15 @@ unused VM slots. Original work/token/deadline and terminal checks remain. Remove
 real VM work/storage can lower numerical requirements; offset-map admission and
 excluded semantic shapes retain their existing paths. No new API or policy mode.
 
+Development after scalar.81 avoids unused UTF16 metadata for owned boolean calls.
+Validation-only and metadata-producing entry points share the same charged,
+complete-scalar block loop and exact error-offset rebasing. Existing checked
+ASCII and validity-only strategies serve the boolean path; metadata-producing
+callers retain counts/flags. Validation-only flags are never used for projection
+or maps. Original token/deadline, sticky work denial, terminal checks and major
+admission remain; valid-input work cutoffs are unchanged. No new owner/public
+mode or unchecked access. This source change is outside immutable scalar.81.
+
 Family verification rejects exact branches with a different first byte under
 their existing branch charge, and invokes confirmation only when a boundary or
 trailing predicate exists. Full comparisons remain bounded and charged, including

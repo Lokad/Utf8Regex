@@ -1,5 +1,16 @@
 # Changelog
 
+## Development after scalar.81
+
+- Reuse existing validation-only strategies for boolean calls that discard UTF16
+  counts/flags. Share the charged scalar-aligned block loop, error offsets and
+  original interruption; metadata-producing callers and admission remain intact.
+  Extract the existing dispatch instead of duplicating validation machinery.
+- One public source pair: mixed-width finite IsMatch -43.45%, two-byte -14.01%,
+  ASCII-late +6.44% (accepted explicit tradeoff), allocations unchanged. Metadata
+  Match control stays close. [Evidence](artifacts/boolean-validation-only-20261017/RESULT.md)
+  retains FullOpts/control/noise scope; no repeat or new package for this pilot.
+
 ## Qualified private Core/PythonRe scalar.81
 
 - Batch the accepted short exact Count windows and finite native value Match/

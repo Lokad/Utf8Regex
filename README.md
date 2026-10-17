@@ -13,7 +13,15 @@ is green. [Handoff](artifacts/core-python-scalar81-20261017/HANDOFF.md) and
 [consumption](artifacts/core-python-scalar81-20261017/CONSUMING.md) record exact
 identities, completed scope and current operating costs.
 
-This batch reuses prepared short-literal search inside charged windows and shares
+Development source after scalar.81 reuses validation-only strategies for boolean
+calls that discard UTF16 metadata, inside the same charged scalar-aligned blocks.
+A bounded public comparison improves mixed-width finite IsMatch by 43% and
+two-byte input by 14%, with unchanged allocations. ASCII-late slows by 6.4%; this
+tradeoff is explicit. [Source evidence](artifacts/boolean-validation-only-20261017/RESULT.md)
+retains controls and FullOpts scope. Metadata, errors, interruption and admission
+keep their contract; immutable scalar.81 does not include this source change.
+
+Scalar.81 reuses prepared short-literal search inside charged windows and shares
 conservative native literal/family eligibility across finite Count, value Match
 and IsMatch. Match reuses metered coordinate projection; IsMatch needs none.
 Unused VM attempts/slots disappear. Detailed captures keep their VM and admission.

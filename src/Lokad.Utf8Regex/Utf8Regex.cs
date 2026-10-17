@@ -765,7 +765,7 @@ public sealed partial class Utf8Regex
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
         try
         {
-            _ = Utf8Validation.Validate(input, ref invocation);
+            Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
             return OwnedSliceIsMatchFromByte(input, program, startByte, ref invocation);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)

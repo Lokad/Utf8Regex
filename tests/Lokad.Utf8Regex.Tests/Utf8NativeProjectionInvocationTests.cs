@@ -33,11 +33,16 @@ public sealed class Utf8NativeProjectionInvocationTests
         Assert.Equal(expected.ContainsSupplementaryScalars, actual.ContainsSupplementaryScalars);
         Assert.True(invocation.Budget.Steps >= (ulong)input.Length / 2048);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        var only = Metered();
+        Utf8Validation.ThrowIfInvalidOnly(input, ref only);
+        Assert.Equal(invocation.Budget.Steps, only.Budget.Steps);
+        Assert.Equal(0UL, only.Ledger.ReservedBytes);
     }
     public static IEnumerable<object[]> InvalidCases()
     {
         byte[][] invalid = [[0x80], [0xc0, 0x80], [0xe0, 0x9f, 0x80], [0xed, 0xa0, 0x80],
-            [0xf4, 0x90, 0x80, 0x80], [0xf5, 0x80, 0x80, 0x80], [0xe2, 0x80]];
+            [0xf4, 0x90, 0x80, 0x80], [0xf5, 0x80, 0x80, 0x80], [0xe2, 0x80],
+            [0xc1, 0xbf], [0xf0, 0x8f, 0xbf, 0xbf], [0xf0, 0x9f, 0x98], [0x80, 0x80, 0x80, 0x80]];
         foreach (var offset in new[] { 0, 2045, 2046, 2047, 2048, 2049, 4095 })
         foreach (var bytes in invalid) yield return [offset, bytes];
     }
@@ -52,6 +57,11 @@ public sealed class Utf8NativeProjectionInvocationTests
         Assert.Equal(expected.ParamName, actual.ParamName);
         Assert.Equal(expected.Message, actual.Message);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        var only = Metered();
+        var invalidOnly = Assert.Throws<ArgumentException>(() => Utf8Validation.ThrowIfInvalidOnly(input, ref only));
+        Assert.Equal(expected.ParamName, invalidOnly.ParamName);
+        Assert.Equal(expected.Message, invalidOnly.Message);
+        Assert.Equal(0UL, only.Ledger.ReservedBytes);
     }
     [Theory]
     [InlineData(false)]
@@ -82,6 +92,12 @@ public sealed class Utf8NativeProjectionInvocationTests
             {
                 Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Utf8Validation.TryValidate(input, ref invocation, out var validation));
                 Assert.Equal(0, validation.ByteLength);
+                var only = new Utf8SliceInvocation(new(cap, 0, 0), Regex.InfiniteMatchTimeout, default);
+                Assert.True(only.Ledger.TryReserve(7));
+                Assert.Throws<InvalidOperationException>(() => Utf8Validation.ThrowIfInvalidOnly(input, ref only));
+                Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, only.Budget.LimitBreach);
+                Assert.Equal(cap + 1, only.Budget.Steps);
+                Assert.Equal(7UL, only.Ledger.ReservedBytes);
             }
             Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
         }
