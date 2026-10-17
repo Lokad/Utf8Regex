@@ -41,6 +41,14 @@ remain immutable with separate exact Core pins. This qualified private dependenc
 does not imply publication, external default changes or actual adoption. Package
 preparation assets remain frozen; the handoff records completed scoped acceptance.
 
+Development version **0.4.0-scalar.78** prepares one combined delivery of the
+accepted disjoint-literal repeat scan and bounded replacement-literal construction
+checkpoints. The existing qualifier will record same-byte platform consumers,
+oracles and exact identities before candidate acceptance. The bounded Windows
+source comparison remains separately scoped; no new benchmark campaign or PCRE78
+qualification is implied. Scalar.77 remains the latest qualified pair until that
+handoff is complete.
+
 ## Support Scope
 
 - Semantic target: `Utf8PythonRegex` models the standard `re` surface, while remaining a managed .NET library.

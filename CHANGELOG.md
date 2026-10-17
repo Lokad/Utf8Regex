@@ -1,5 +1,16 @@
 # Changelog
 
+## Core/PythonRe scalar.78 candidate preparation
+
+- Combine the accepted disjoint-literal repeat scan and bounded replacement-
+  literal preparation in one fresh private dependency input. Preserve scalar
+  captures, original interruption, finite admission and result/alias lifetimes.
+- Use one affected build/pack and the existing same-byte Windows/Linux consumers,
+  oracles, provenance and fresh-feed checks. Preparation is not qualification.
+- Carry the bounded Windows source-cost comparison with its controls and limits;
+  do not relabel it as exact-package or VM evidence. Earlier scalar.77 and the
+  independent PCRE76 pair remain immutable with separate exact Core pins.
+
 ## Development: bounded replacement-literal preparation
 
 - Check the original cancellation/deadline authority during literal byte counting,
