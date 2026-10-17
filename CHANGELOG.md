@@ -2,6 +2,12 @@
 
 ## Development after scalar.85
 
+- Reuse metered Core literal discovery for exact, capture-free PythonRe FullMatch
+  value/string calls, including scalar suffix offsets. Keep whole-input validity,
+  original interruption and finite controls; required strings remain admitted.
+  Short public value calls improve55-83% and scalar strings44-51% in one bounded
+  FullOpts source pair, with unchanged allocations. General/captured/detailed
+  paths and immutable85 remain. [Evidence](artifacts/python-literal-fullmatch-20261017/RESULT.md).
 - Stop the UTF-8 validity cost selector once its existing threshold is reached;
   later sample bytes cannot change its decision. Preserve both validators, scalar
   boundaries and resource/interruption behavior. Focused public evidence, with

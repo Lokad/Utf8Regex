@@ -9,13 +9,14 @@ public sealed partial class Utf8PythonRegex
         int kind, CancellationToken cancellationToken)
     {
         ValidateScalarStartOffset(input, startOffsetInBytes);
-        var native = !HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&
+        var native = kind == 2 && CanUseLiteralFullMatch ||
+            !HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&
             (kind is 0 or 1 && startOffsetInBytes == 0 && _canUseZeroOffsetUtf8SearchValueFastPath ||
              kind == 1 && startOffsetInBytes == 0 && _asciiLiteralPrefixDigitMatchPrefix is not null ||
              kind == 2 && _asciiDotAllFullMatchPrefix is not null && _asciiDotAllFullMatchSuffix is not null);
         if (native)
         {
-            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, cancellationToken);
+            var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
             Utf8InvocationResultLedger results = default;
             try { return MaterializeNativeMatchText(input, startOffsetInBytes, kind, ref invocation, ref results); }
             finally { results.Release(ref invocation); }

@@ -111,7 +111,8 @@ public sealed partial class Utf8PythonRegex
     private Utf8PythonValueMatch FullMatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         ValidateScalarStartOffset(input, startOffsetInBytes);
-        if (_asciiDotAllFullMatchPrefix is not null && _asciiDotAllFullMatchSuffix is not null &&
+        if (CanUseLiteralFullMatch ||
+            _asciiDotAllFullMatchPrefix is not null && _asciiDotAllFullMatchSuffix is not null &&
             !HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled)
         {
             return MatchValueNative(input, startOffsetInBytes, 2, cancellationToken);
@@ -122,7 +123,7 @@ public sealed partial class Utf8PythonRegex
     private Utf8PythonValueMatch MatchValueNative(ReadOnlySpan<byte> input, int startOffsetInBytes,
         int kind, CancellationToken cancellationToken)
     {
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, cancellationToken);
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
         return MaterializeNativeMatchValue(input, startOffsetInBytes, kind, ref invocation);
     }
 

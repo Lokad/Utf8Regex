@@ -192,7 +192,7 @@ This profile is still incomplete. In particular:
   with no participating capture have null completion metadata. Owned metadata
   remains valid after cursor advances, failure or disposal.
   One-shot search/match/fullmatch and detailed data likewise use the profile
-  scalar program, with byte starts and the original assertion context. FullMatch
+  scalar program, with byte starts and the original assertion context. General FullMatch
   adds an end assertion before discovery so alternatives can backtrack to a
   complete result. Production BCL matching and result shaping have been removed;
   complete common resource gates remain open. Immutable scalar.52 predates the
@@ -251,6 +251,16 @@ unbounded diagnostic decode. Construction authority ends before publication;
 the expression's invocation policy/token/timeout remain independent. Replacement
 preparation, CLR/JIT metadata, incidental acquisitions
 and caller retention retain separate scope. Static caches are not consulted.
+Development after scalar.85 lets exact, capture-free literal FullMatch value and
+string operations borrow Core's complete literal finder under the caller's one
+invocation. Both byte endpoints must cover the requested suffix, including for
+empty literals. Full-subject UTF8 validation, derived UTF16 coordinates, original
+cancellation/deadline and all four finite controls remain. These calls require no
+lazy full-program preparation or per-scalar VM dispatch; explicit Compile still
+eagerly prepares its existing programs. Required text remains result-admitted.
+Detailed, captured, folded, alternating and assertion routes retain their existing
+handling. Actual removed work may lower numerical requirements; public units,
+ownership and unlimited defaults do not change. Immutable85 predates this source.
 Development after scalar.71 counts and decodes UTF8 pattern bytes in scalar-aligned
 blocks of at most4096bytes under that same construction owner. The two original
 numeric work charges and single admitted string remain; no intermediate text/byte

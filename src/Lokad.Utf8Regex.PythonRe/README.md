@@ -111,6 +111,19 @@ warm reuse has no preparation scope allocation. These fixes are included in the
 qualified scalar.51 pair and preserved in scalar.52.
 See [SPEC-PYTHONRE.md](../../SPEC-PYTHONRE.md) for the exact scopes and exclusions.
 
+Development after scalar.85 reuses Core's complete literal finder for exact,
+capture-free `FullMatch` value and string results. It checks both suffix endpoints,
+validates the entire subject and keeps the original deadline/token and all four
+finite controls. These calls omit per-scalar VM dispatch and lazy full-program
+preparation; detailed/capture-dependent and alternative routes retain their
+existing handling. Required strings still need result-byte admission. Lower
+actual work can admit tighter policies; resource units and defaults are unchanged.
+One bounded FullOpts source comparison shows short ASCII/scalar value calls
+55-83% faster and scalar string output44-51% faster, with unchanged allocations.
+The offset case and controls differ by a few percent; those small differences
+are not precise causal claims. This does not update immutable85 or CPythonStatus.
+[Evidence](../../artifacts/python-literal-fullmatch-20261017/RESULT.md).
+
 ```csharp
 using System;
 using Lokad.Utf8Regex;

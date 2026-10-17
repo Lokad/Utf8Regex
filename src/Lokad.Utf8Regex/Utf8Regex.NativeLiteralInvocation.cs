@@ -11,7 +11,7 @@ public sealed partial class Utf8Regex
     // A result-producing adapter borrows discovery's actual invocation. Keep
     // complete-subject validation and the prepared literal route inside it;
     // derived coordinates are unnecessary for the borrowed byte range.
-    internal bool FindLiteralForResult(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation,
+    internal bool FindLiteralForResult(ReadOnlySpan<byte> input, int startOffsetInBytes, ref Utf8SliceInvocation invocation,
         out int start, out int end, out Utf8ValidationResult validation)
     {
         start = end = -1;
@@ -23,11 +23,11 @@ public sealed partial class Utf8Regex
         Utf8InvocationOutput.Checkpoint(control);
         if (literal.Length == 0)
         {
-            start = end = 0;
+            start = end = startOffsetInBytes;
             return true;
         }
         var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(_preparedRegex.SearchPlan,
-            input, 0, input.Length, false, ref invocation, out var match, out var found);
+            input, startOffsetInBytes, input.Length, false, ref invocation, out var match, out var found);
         if (breach != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException($"Native literal result discovery exceeded {breach}.");
         Utf8InvocationOutput.Checkpoint(control);

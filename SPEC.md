@@ -418,6 +418,13 @@ application-wide meter. Core static cached operations have no policy parameter a
 retain unlimited defaults. Finite policy routes can have different performance
 from qualified unlimited native shortcuts.
 
+Development after scalar.85 reuses complete Core literal discovery for exact,
+capture-free Python FullMatch value/string results. The one invocation covers
+full strict validation, suffix start/end checks, derived coordinates and required
+output admission. These calls avoid per-scalar VM dispatch and lazy preparation;
+general/detailed/capture-dependent routes and explicit eager Compile remain.
+Actual work requirements may fall; controls, ownership and defaults do not change.
+
 Development source after scalar.81 stages Python string Split output directly
 in the existing metered string-reference buffer, without detailed-item metadata
 that the operation discards. Detailed Split retains its metadata route. Both

@@ -10,6 +10,13 @@ namespace Lokad.Utf8Regex.PythonRe;
 /// <summary>UTF-8 backend engines for <see cref="Utf8PythonRegex"/>.</summary>
 public sealed partial class Utf8PythonRegex
 {
+    // One exact, capture-free literal has no alternative end or capture state.
+    // Its complete finder can serve FullMatch after both endpoints are checked.
+    private bool CanUseLiteralFullMatch => _scalarProgram.GroupCount == 0 && !_scalarProgram.IgnoreCase &&
+        (_canUseZeroOffsetUtf8SearchValueFastPath ||
+         _utf8Regex?.CanFindNativeLiteralForResult == true &&
+         _utf8Regex.Inspection.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal);
+
     // Optional Core owns the equivalent prepared exact family, while the caller's
     // invocation supplies every limit. Other controlled bulk paths remain scalar.
     private bool HasPreparedExactLiteralFamily =>
@@ -231,6 +238,11 @@ public sealed partial class Utf8PythonRegex
             Utf8InvocationOutput.Checkpoint(control);
             return completed;
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        {
+            throw invocation.Budget.CreateResourceFailure();
+        }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
             throw CreateMatchTimeoutException(input, _translation.Pattern);
@@ -260,6 +272,11 @@ public sealed partial class Utf8PythonRegex
             }
             Utf8InvocationOutput.Checkpoint(control);
             return result;
+        }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        {
+            throw invocation.Budget.CreateResourceFailure();
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
@@ -295,7 +312,7 @@ public sealed partial class Utf8PythonRegex
             return true;
         }
         if (_utf8Regex is null) throw new InvalidOperationException("Native result discovery requires its prepared core.");
-        return _utf8Regex.FindLiteralForResult(input, ref invocation, out start, out end, out validation) &&
-            (kind != 1 || start == 0);
+        return _utf8Regex.FindLiteralForResult(input, startOffsetInBytes, ref invocation, out start, out end, out validation) &&
+            (kind == 0 || start == startOffsetInBytes && (kind != 2 || end == input.Length));
     }
 }
