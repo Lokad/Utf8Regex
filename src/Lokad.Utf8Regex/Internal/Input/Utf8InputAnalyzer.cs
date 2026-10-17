@@ -140,11 +140,12 @@ internal static class Utf8InputAnalyzer
             var value = input[i];
             if (value is 0xE0 or 0xED or >= 0xF0)
             {
-                constrainedOrFourByteLeadCount++;
+                // The count cannot decrease; later bytes cannot change this choice.
+                if (++constrainedOrFourByteLeadCount == 8) return true;
             }
         }
 
-        return constrainedOrFourByteLeadCount >= 8;
+        return false;
     }
 
 }

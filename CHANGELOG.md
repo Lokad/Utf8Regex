@@ -1,5 +1,14 @@
 # Changelog
 
+## Development after scalar.85
+
+- Stop the UTF-8 validity cost selector once its existing threshold is reached;
+  later sample bytes cannot change its decision. Preserve both validators, scalar
+  boundaries and resource/interruption behavior. One focused public source pair
+  stays within2% observed slowdown with unchanged allocations; mixed IsMatch
+  improves about13%. Smaller differences are not precise causal claims.
+  [Evidence](artifacts/selector-early-exit-20261017/RESULT.md). Immutable85 is unchanged.
+
 ## Qualified private Core/PythonRe scalar.85
 
 - Batch native captured PythonRe boolean reuse with and without invocation controls.
