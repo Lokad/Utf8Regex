@@ -2,6 +2,14 @@
 
 ## Development after scalar.81
 
+- Stage Python Split string references directly in the existing metered result
+  buffer, removing discarded detailed-item staging and its projection loop.
+  Captures/nulls, scalar offsets, interruption and finite admission remain intact.
+  The bounded source comparison cuts dense/captured allocations by 24–30%.
+  ASCII Split is 4.8–7.5% slower; this memory tradeoff is accepted explicitly.
+  Captured Unicode is 3.5–4.4% faster; FullOpts scope and unchanged controls are
+  retained in [the evidence](artifacts/pythonre-split-string-staging-20261017/RESULT.md).
+  This source change does not refresh CPython Status or immutable scalar.81.
 - Qualify the previously unfinished limited-Split duration check with the existing
   runner: current clean source27741916 takes5.83us/6032B versus predecoded
   CPython3.12.3 at0.454us. Nine pairs pass without a repeat; this remains a

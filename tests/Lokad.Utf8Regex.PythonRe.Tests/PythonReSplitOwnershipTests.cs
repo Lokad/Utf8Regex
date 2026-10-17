@@ -33,6 +33,9 @@ public sealed class PythonReSplitOwnershipTests
         yield return new object?[] { "(cat)|(horse)", none, "cat horse", 0, 4, new string?[] { "", null, "horse", "" } };
         yield return new object?[] { "cat|horse", none, "cat horse", 0, 4, new string?[] { "", "" } };
         yield return new object?[] { "(caf\u00E9)|(ni\u00F1o)", none, "\u03B1caf\u00E9\u03B2ni\u00F1o\u03B3", 0, 0, new string?[] { "\u03B1", "caf\u00E9", null, "\u03B2", null, "ni\u00F1o", "\u03B3" } };
+        yield return new object?[] { "(?P<s>😀)|(,)?;", none, "é😀a;🙂,;z", 0, 0, new string?[] { "é", "😀", null, "a", null, null, "🙂", null, ",", "z" } };
+        yield return new object?[] { "(?P<s>😀)|(,)?;", none, "é😀a;🙂,;z", 2, 2, new string?[] { "", "😀", null, "a", null, null, "🙂,;z" } };
+        yield return new object?[] { "()", none, "😀é", 2, 0, new string?[] { "", "", "😀", "", "é" } };
     }
 
     [Theory]

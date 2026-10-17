@@ -270,44 +270,45 @@ public sealed partial class Utf8PythonRegex
         values = [];
         var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
         Utf8InvocationResultBuffer<Utf8PythonSplitItem> parts = default;
+        // String output needs only references; detailed output keeps capture metadata.
+        // Both use the same cursor, result admission and interruption authority.
+        Utf8InvocationResultBuffer<string?> stringParts = default;
         try
         {
             var last = startOffsetInBytes;
             var splits = 0;
             while ((maxSplit == 0 || splits < maxSplit) && cursor.MoveNext())
             {
-                cursor.AddResult(ref parts, new Utf8PythonSplitItem { ValueText = cursor.GetText(last, cursor.StartOffsetInBytes) });
+                var text = cursor.GetText(last, cursor.StartOffsetInBytes);
+                if (stringsOnly) cursor.AddResult(ref stringParts, text);
+                else cursor.AddResult(ref parts, new Utf8PythonSplitItem { ValueText = text });
                 for (var i = 1; i <= _translation.CaptureGroupCount; i++)
                 {
-                    cursor.AddResult(ref parts, new Utf8PythonSplitItem
+                    var capture = cursor.TryGetCaptureByteRange(i, out var start, out var end) ? cursor.GetText(start, end) : null;
+                    if (stringsOnly) cursor.AddResult(ref stringParts, capture);
+                    else cursor.AddResult(ref parts, new Utf8PythonSplitItem
                     {
                         IsCapture = true, CaptureGroupNumber = i,
-                        ValueText = cursor.TryGetCaptureByteRange(i, out var start, out var end) ? cursor.GetText(start, end) : null,
+                        ValueText = capture,
                     });
                     cursor.Checkpoint();
                 }
                 last = cursor.EndOffsetInBytes;
                 splits++;
             }
-            cursor.AddResult(ref parts, new Utf8PythonSplitItem { ValueText = cursor.GetText(last, input.Length) });
+            var tail = cursor.GetText(last, input.Length);
+            if (stringsOnly) cursor.AddResult(ref stringParts, tail);
+            else cursor.AddResult(ref parts, new Utf8PythonSplitItem { ValueText = tail });
             Utf8PythonSplitItem[] completedItems = [];
             string?[] completedValues = [];
-            if (stringsOnly)
-            {
-                completedValues = cursor.AllocateResultArray<string?>(parts.Count);
-                for (var i = 0; i < completedValues.Length; i++)
-                {
-                    if ((i & 255) == 0) cursor.Checkpoint();
-                    completedValues[i] = parts[i].ValueText;
-                }
-            }
+            if (stringsOnly) completedValues = cursor.CompleteResults(ref stringParts);
             else completedItems = cursor.CompleteResults(ref parts);
             cursor.Checkpoint();
             items = completedItems;
             values = completedValues;
             return;
         }
-        finally { cursor.ReleaseResults(ref parts); cursor.Dispose(); }
+        finally { cursor.ReleaseResults(ref stringParts); cursor.ReleaseResults(ref parts); cursor.Dispose(); }
     }
 
     private void SubstituteScalar<TState>(ReadOnlySpan<byte> input, TState state,

@@ -184,6 +184,14 @@ bounded engine/checkpoint steps and may change between releases. Compilation and
 replacement-plan preparation use separate construction backstops. Arbitrary user
 callback execution and later standalone result getters are outside this cap;
 encoding/copying callback returns is charged. Cancellation and deadlines still apply.
+Development source after scalar.81 stages `SplitToStrings` references directly
+in the existing metered result buffer. `SplitDetailed` keeps its capture metadata
+route. Full validation, captures/nulls, scalar starts, original interruption and
+admission remain; less actual staging can admit tighter work/byte policies.
+One bounded source comparison reduces dense/captured allocations by 24–30%,
+with an explicit 4.8–7.5% ASCII execution-time cost and 3.5–4.4% faster captured
+Unicode. These are FullOpts source results, not new default-PGO CPython Status
+or package results. [Evidence](../../artifacts/pythonre-split-string-staging-20261017/RESULT.md).
 Working bytes bound modeled major active capacity and old/new overlap, with reusable exclusive scratch and invocation-long published cursor credits. Working publication does not bound caller retention; incidental owner/deadline metadata is outside this model. Depth does not bound pattern
 nesting, workspace, result size or cumulative work. Result capacity traffic
 has separate scope from live caller retention; these controls do not complete safe defaults.

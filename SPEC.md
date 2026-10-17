@@ -418,6 +418,13 @@ application-wide meter. Core static cached operations have no policy parameter a
 retain unlimited defaults. Finite policy routes can have different performance
 from qualified unlimited native shortcuts.
 
+Development source after scalar.81 stages Python string Split output directly
+in the existing metered string-reference buffer, without detailed-item metadata
+that the operation discards. Detailed Split retains its metadata route. Both
+share scalar discovery, full validation, original token/deadline and result/
+working admission. Reduced actual staging may lower numerical work/byte needs;
+no spent-work refund or caller-retention guarantee is introduced.
+
 PythonRe scalar.5 reuses one existing exclusive VM workspace for each
 scalar cursor. It stays charged while positioned, including host waits and result
 projection; EOF, failure and disposal release it synchronously. Private repeat,
