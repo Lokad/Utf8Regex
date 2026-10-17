@@ -9,8 +9,11 @@ internal ref partial struct Utf8OperationMatchCursor
 
     internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, byte[] literal,
         Utf8FallbackDirectFamilyKind kind, Utf8ValidationResult validation, Utf8SliceInvocation invocation)
-        : this(input, literal, invocation.Budget.Deadline, kind)
+        : this(input, literal, Utf8ExecutionDeadline.Infinite, kind)
     {
+        // The borrowed invocation already owns the deadline and shared state.
+        // Do not allocate a second finite invocation in the base constructor.
+        _budget = invocation.Budget.Deadline;
         _sliceInvocation = invocation;
         _asciiInput = validation.IsAscii;
         _totalUtf16Length = validation.Utf16Length;
@@ -30,13 +33,17 @@ internal ref partial struct Utf8OperationMatchCursor
         _sliceInvocation.Budget.ThrowIfCancellationRequested();
         if (_nativeStructuralExhausted) return Utf8ExecutionLimitKind.None;
         var literal = _literal ?? throw new InvalidOperationException("An anchored cursor needs its literal.");
-        var end = _mode == EnumeratorMode.AnchoredAsciiLiteralPrefix ? literal.Length : _input.Length;
-        if (_mode == EnumeratorMode.AnchoredAsciiLiteralSuffix && end > literal.Length && _input[end - 1] == (byte)'\n') end--;
+        var prefix = _mode is EnumeratorMode.AnchoredAsciiLiteralPrefix or EnumeratorMode.AnchoredFoldedAsciiLiteralPrefix;
+        var folded = _mode is EnumeratorMode.AnchoredFoldedAsciiLiteralPrefix or
+            EnumeratorMode.AnchoredFoldedAsciiLiteralSuffix or EnumeratorMode.AnchoredFoldedAsciiLiteralSuffixStrictEnd;
+        var end = prefix ? literal.Length : _input.Length;
+        if (_mode is EnumeratorMode.AnchoredAsciiLiteralSuffix or EnumeratorMode.AnchoredFoldedAsciiLiteralSuffix &&
+            end > literal.Length && _input[end - 1] == (byte)'\n') end--;
         var start = end - literal.Length;
         var equal = false;
         if (start >= _consumed && end <= _input.Length)
         {
-            breach = Utf8SearchExecutor.TryCompareLiteral(_input.Slice(start, literal.Length), literal, false,
+            breach = Utf8SearchExecutor.TryCompareLiteral(_input.Slice(start, literal.Length), literal, folded,
                 ref _sliceInvocation, out equal);
             if (breach != Utf8ExecutionLimitKind.None) return breach;
         }

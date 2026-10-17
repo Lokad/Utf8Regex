@@ -613,6 +613,16 @@ Baseline API notes:
 
 These APIs accept explicitly named **UTF-16 coordinate offsets** for interoperability with .NET strings. The offsets must resolve to complete scalar boundaries; they do not request UTF-16-unit matching. An offset inside a supplementary scalar throws `ArgumentOutOfRangeException`, naming the offset parameter. The preferred native surface uses UTF-8 spans and byte coordinates.
 
+Development scalar.73 retains the original invocation through anchored one-shot
+offset matching after validation and coordinate preparation. Exact anchors reuse
+the controlled enumeration cursor; ASCII culture-invariant folded anchors reuse
+its existing folded modes. Other folds, scalar subjects and unproved shapes keep
+the scalar route. Raw shortcuts require no finite timeout, live token or finite
+invocation policy. A borrowed anchored cursor reuses the caller's owner/deadline
+without acquiring another finite invocation. No public API or matching unit changes.
+This source correction still needs the next immutable dependency's cost and
+consumer qualification; its rejected prototype measurements do not qualify it.
+
 ```csharp
 public sealed class Utf8Regex
 {

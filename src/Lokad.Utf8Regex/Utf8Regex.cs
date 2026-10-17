@@ -725,7 +725,10 @@ public sealed partial class Utf8Regex
         {
             var map = PrepareOffsetInput(input, utf16Offset, ref invocation,
                 out var validation, out var startByte, out mapReservation);
-            if (!HasFiniteExecutionLimits && !UsesRightToLeft() && _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix)
+            var controlled = cancellationToken.CanBeCanceled || MatchTimeout != Regex.InfiniteMatchTimeout;
+            if (controlled && TryMatchControlledAnchoredOffset(input, validation, startByte, utf16Offset, ref invocation, out var anchored))
+                return anchored.Success;
+            if (!controlled && !HasFiniteExecutionLimits && !UsesRightToLeft() && _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix)
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
                 return utf16Offset == 0 &&
@@ -734,7 +737,7 @@ public sealed partial class Utf8Regex
 
             // Anchored suffixes match at most once at a fixed end position: a start past
             // it misses definitively, otherwise the direct hit itself decides.
-            if (!HasFiniteExecutionLimits && !UsesRightToLeft() && Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            if (!controlled && !HasFiniteExecutionLimits && !UsesRightToLeft() && Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
                 _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
@@ -1127,8 +1130,11 @@ public sealed partial class Utf8Regex
         {
             var map = PrepareOffsetInput(input, utf16Offset, ref invocation,
                 out var validation, out var startByte, out mapReservation);
+            var controlled = cancellationToken.CanBeCanceled || MatchTimeout != Regex.InfiniteMatchTimeout;
+            if (controlled && TryMatchControlledAnchoredOffset(input, validation, startByte, utf16Offset, ref invocation, out var anchored))
+                return anchored.Success ? 1 : 0;
             // At most one anchored suffix match exists past the start: count it directly.
-            if (!HasFiniteExecutionLimits && !UsesRightToLeft() && Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            if (!controlled && !HasFiniteExecutionLimits && !UsesRightToLeft() && Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
                 _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
@@ -1457,7 +1463,10 @@ public sealed partial class Utf8Regex
         {
             var map = PrepareOffsetInput(input, utf16Offset, ref invocation,
                 out var validation, out var startByte, out mapReservation);
-            if (!HasFiniteExecutionLimits && !UsesRightToLeft() && _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
+            var controlled = cancellationToken.CanBeCanceled || MatchTimeout != Regex.InfiniteMatchTimeout;
+            if (controlled && TryMatchControlledAnchoredOffset(input, validation, startByte, utf16Offset, ref invocation, out var anchored))
+                return anchored;
+            if (!controlled && !HasFiniteExecutionLimits && !UsesRightToLeft() && _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
                 _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
@@ -1472,7 +1481,7 @@ public sealed partial class Utf8Regex
 
             // Folded anchored prefixes serve the same single anchored hit with per-byte
             // invariant folding; nonzero starts and Kelvin/Turkic divergence fall through.
-            if (!HasFiniteExecutionLimits && !UsesRightToLeft() && _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix &&
+            if (!controlled && !HasFiniteExecutionLimits && !UsesRightToLeft() && _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix &&
                 _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
             {
                 if (!ShouldUseKelvinSignFallback(input))
@@ -1488,7 +1497,7 @@ public sealed partial class Utf8Regex
                 }
             }
 
-            if (!HasFiniteExecutionLimits && !UsesRightToLeft() && Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            if (!controlled && !HasFiniteExecutionLimits && !UsesRightToLeft() && Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
                 _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
@@ -1504,7 +1513,7 @@ public sealed partial class Utf8Regex
 
             // Folded anchored suffixes serve the same single tail hit with per-byte invariant
             // folding through the suffix kernel; non-native folds use scalar execution.
-            if (!HasFiniteExecutionLimits && !UsesRightToLeft() && (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd) &&
+            if (!controlled && !HasFiniteExecutionLimits && !UsesRightToLeft() && (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd) &&
                 _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
             {
                 if (!ShouldUseKelvinSignFallback(input))
@@ -1795,9 +1804,15 @@ public sealed partial class Utf8Regex
         {
             var map = PrepareOffsetInput(input, utf16Offset, ref invocation,
                 out var validation, out var startByte, out mapReservation);
+            var controlled = cancellationToken.CanBeCanceled || MatchTimeout != Regex.InfiniteMatchTimeout;
+            if (controlled && _groupNumbers.Length <= 1 &&
+                TryMatchControlledAnchoredOffset(input, validation, startByte, utf16Offset, ref invocation, out var anchored))
+                return anchored.Success
+                    ? new Utf8MatchContext(input, map, _program.CaptureCatalog, anchored.IndexInUtf16, anchored.LengthInUtf16)
+                    : Utf8MatchContext.Unsuccessful(input, map, _program.CaptureCatalog);
             // Anchored prefixes anchor to offset 0: a nonzero start is a definitive miss,
             // while offset 0 reuses the byte-exact prefix compare without BCL construction.
-            if (!HasFiniteExecutionLimits && !UsesRightToLeft() && _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
+            if (!controlled && !HasFiniteExecutionLimits && !UsesRightToLeft() && _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
                 _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } &&
                 _groupNumbers.Length <= 1)
             {
@@ -1811,7 +1826,7 @@ public sealed partial class Utf8Regex
                 return Utf8MatchContext.Unsuccessful(input, map, _program.CaptureCatalog);
             }
 
-            if (!HasFiniteExecutionLimits && !UsesRightToLeft() && Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            if (!controlled && !HasFiniteExecutionLimits && !UsesRightToLeft() && Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
                 _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } &&
                 _groupNumbers.Length <= 1)
             {

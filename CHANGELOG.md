@@ -1,5 +1,20 @@
 # Changelog
 
+## Core/PythonRe scalar.73 preparation: invocation authority
+
+- Batch the Core cold-template preparation fix with anchored UTF16-offset
+  matching under the original token/deadline. Forty public offset interruption
+  cases reproduce the old uncontrolled shortcuts after preparation.
+- Reuse existing anchored cursor modes and checked comparison, with ASCII/
+  culture-invariant eligibility for folded native matching. Other folds/scalars
+  retain the owned VM. Raw unlimited/no-token shortcuts stay. Borrowed finite
+  cursor construction omits an unnecessary second invocation owner.
+- An initial source comparison rejected scalar folded-suffix scanning and slower
+  uncontrolled dispatch. Its timings are not final73 evidence. The revised
+  implementation needs one coherent package/consumer/current-cost milestone;
+  this preparation is not qualified delivery. Earlier72 and independent71 remain
+  immutable. Broader PCRE2 completion does not block Core/PythonRe.
+
 ## Development: Core replacement preparation shares original authority
 
 - Start the original deadline before cold template lookup/validation/decoding,

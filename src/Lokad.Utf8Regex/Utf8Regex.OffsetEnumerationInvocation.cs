@@ -67,11 +67,30 @@ public sealed partial class Utf8Regex
             !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
             !program.HasContiguousAnchor;
         anchored = eligible && _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } &&
-            _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix or
-                Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffixStrictEnd;
+            (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix or
+                Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffixStrictEnd ||
+             validation.IsAscii && (Options & RegexOptions.CultureInvariant) != 0 &&
+                _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix or
+                    Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd);
         var native = eligible && !program.IgnoreCase &&
             Utf8CompiledOperationCursorFactory.CanCreateInvocationMatchCursor(_preparedRegex, validation, ref invocation);
         return anchored || native;
+    }
+
+    // One-shot compatibility entries borrow the same controlled anchored cursor
+    // as enumeration. Raw shortcuts below remain for genuinely unmetered calls.
+    private bool TryMatchControlledAnchoredOffset(ReadOnlySpan<byte> input, Utf8ValidationResult validation,
+        int startByte, int utf16Offset, scoped ref Utf8SliceInvocation invocation, out Utf8ValueMatch match)
+    {
+        match = Utf8ValueMatch.NoMatch;
+        if (!CanUseNativeOffsetCursor(validation, ref invocation, out var anchored) || !anchored)
+            return false;
+        var literal = _fallbackDirectFamily.LiteralUtf8
+            ?? throw new InvalidOperationException("An anchored plan needs its literal.");
+        var cursor = new Utf8OperationMatchCursor(input, literal, _fallbackDirectFamily.Kind, validation, invocation)
+            .WithStartFloor(startByte, utf16Offset);
+        if (cursor.MoveNext()) match = cursor.CurrentValueMatch;
+        return true;
     }
 
     // Python bulk collection borrows this invocation through validation, byte-floor

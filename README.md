@@ -13,6 +13,12 @@ PythonRe pins Core `[0.4.0-scalar.72]`.
 [Handoff and exact scope](artifacts/core-python-scalar72-20261017/HANDOFF.md),
 [consumption instructions](artifacts/core-python-scalar72-20261017/CONSUMING.md).
 
+Development now prepares **scalar.73**, batching Core cold-template and anchored
+offset invocation-authority fixes. It is not yet a qualified package. Its initial
+offset prototype was rejected for cost; revised cursor reuse still needs the
+combined consumer and current-cost milestone. The72 evidence below remains
+specific to those immutable packages.
+
 This input adds bounded UTF8 construction decoding and direct semantic literal
 nodes, omitting per-atom Core parsing. Scalar semantics, captures, original
 interruption, resource admission and prior execution improvements remain. Less
