@@ -2,6 +2,9 @@
 
 ## Development after scalar.86
 
+- Reconcile the general specification with implemented public construction caps
+  and PCRE2 result-byte limits. Preserve lazy, retention, metadata and safe-default
+  exclusions; refresh the checked-access inventory's qualified candidate pointer.
 - Reject PythonRe named backreferences to later declarations at their lexical
   point, including in lookbehind, and retain the unknown-name position.
 - Reject PythonRe backreferences and conditional references to groups defined

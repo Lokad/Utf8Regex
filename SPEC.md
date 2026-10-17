@@ -298,7 +298,9 @@ must not be advertised as complete public bounds or a process-RSS guarantee.
 
 Current public support is narrower: core and PythonRe accept finite
 `Utf8ResourcePolicy.MaxWorkSteps`, `MaxDepth`, `MaxWorkingBytes` and
-`MaxResultBytes`. A finite policy selects owned metered
+`MaxResultBytes`. PCRE2 maps the same policy to its separately documented
+managed execution limits, including result bytes; see `SPEC-PCRE2.md`.
+A finite core/PythonRe policy selects owned metered
 execution with one cumulative invocation through full strict UTF-8 validation,
 discovery, required coordinate/capture projection, output and publication. Lazy
 advances share that allowance, including copies of core value cursors; copies keep
@@ -1529,9 +1531,10 @@ restore child capacity/depth/object loans while preserving spent work. The same
 interruption authority is checked again after opaque delegate creation.
 CLR reflection records, token resolver internals, dynamic-method metadata,
 method-signature metadata and native JIT storage remain the named runtime-metadata
-exclusion, distinct from these admitted and retained managed copies. Complete adapter program/AST storage, public
-construction controls/defaults and retained policies remain unqualified. This
-covered producer does not establish a process RSS or cumulative GC bound.
+exclusion, distinct from these admitted and retained managed copies. Complete
+adapter program/AST coverage, safe defaults and retained policies remain
+unqualified; covered eager construction uses the public admission described below.
+This covered producer does not establish a process RSS or cumulative GC bound.
 Byte-safe DFA construction shares the enclosing construction owner for its
 compiler and graph descriptors, deterministic vectors, NFA states and edges,
 closure keys, work queues, transition buckets and maps. Graph growth and final
@@ -1543,7 +1546,8 @@ ceilings remain heuristic declines. Shared resource failures, cancellation and
 deadlines propagate instead of selecting an unmetered route. Failed children
 restore the parent's capacity and depth; successful graphs transfer their final
 arrays. Internal construction interruption authority belongs to the shared
-owner; complete public construction/invocation policy remains unqualified.
+owner. These graph bounds participate in covered public eager construction;
+they do not prove complete construction, lazy-storage or invocation coverage.
 Optional byte-safe bodies containing loop atoms use the admitted NFA-to-DFA
 construction path. The former deterministic append shortcut could add duplicate
 transitions, accept an incomplete body or exceed an inner repeat bound; it is
@@ -1665,7 +1669,7 @@ Python scalar widths use UInt128 intermediates and the CPython 3.13.2 2^64
 getwidth clamp/sentinel. Fixedness does not collapse at int.MaxValue; fixed
 lookbehind widths above the 32-bit code limit report "looks too much behind".
 Provisional limits are 67,108,864 work units and 65,536 covered live frames.
-The explicit core/PythonRe `Compile` factories expose caller-selected eager
+The explicit Core/PythonRe `Compile` factories expose caller-selected eager
 admission through `Utf8ConstructionPolicy`: covered work, live traversal depth,
 instruction capacity and major bytes. Null retains the fixed backstop; a positive
 value tightens that ceiling. The work/storage units and coverage above apply;
@@ -1681,7 +1685,10 @@ this owner before publication. Its instruction copy and metadata consume the
 construction allowance upfront, even if FullMatch is unused; no construction
 authority is retained. PythonRe constructors keep retryable lazy preparation.
 Replacement preparation and other uncovered acquisitions remain separate.
-Exhaustion reports ConstructionWorkSteps/ConstructionDepth with checked requested
+PCRE2 exposes the same four construction caps and independent interruption through
+its own `Compile` factories; its coverage and failures are in `SPEC-PCRE2.md`.
+Exhaustion reports ConstructionWorkSteps, ConstructionDepth,
+ConstructionInstructionCapacity or ConstructionBytes with checked requested
 totals. Failed children roll back capacity/depth but never refund admitted work;
 neither nested construction nor a declined speculative plan can reset it.
 These remain partial counters: other producers, descriptors and work/storage
@@ -1700,12 +1707,15 @@ assertion programs and source/lifted NonBacktracking graphs remain charged
 while live. Admission precedes acquisition. Exhaustion throws
 `Utf8ResourceLimitExceededException` with resource kind, maximum and requested
 capacity, and never selects a BCL engine. A failed construction restores its
-parent's admission state. This partial buffer backstop is not the complete
-common construction policy. It excludes other pattern conversion, core parser/IR
-node objects, other created strings, independently borrowed payloads, collection/iterator descriptors, independent
-PCRE2 programs and lazy retained storage. Work/depth, public construction
-controls and qualified safe defaults remain open. The byte charge bounds the
-defined live covered capacity, not process RSS or cumulative GC allocations.
+parent's admission state. These covered producers participate in the explicit
+construction policy above; coverage remains limited to the extents described in
+this section. Independently borrowed payloads, temporary immutable-metadata
+enumerable views/boxing, opaque CLR/JIT storage and later lazy preparation retain
+their stated exclusions.
+PCRE2's separate program construction is qualified in `SPEC-PCRE2.md`. Complete
+coverage, common retained-storage policy and qualified safe defaults remain open.
+The byte charge bounds defined covered live capacity, not process RSS or
+cumulative GC allocations.
 
 The managed PCRE2 backtracking VM admits its fixed repeat/capture and optional
 subroutine-restore vectors together before acquisition. Its eight growable state
@@ -1730,9 +1740,11 @@ remain live. Endpoint sorting, group loops and scalar-safe projection windows
 spend shared work and check deadlines. Temporary staging returns to the bounded
 pool; final arrays remain charged through VM exit and detach when the result is
 published. Detached arrays stay immutable and valid across later operations and
-cursor advancement. This transfer does not establish an external retained-result
-limit or enable MaxResultBytes. Other projection producers and public copied
-lifetime, cancellation and combined working/retained policies remain open.
+cursor advancement. PCRE2's public result-byte policy separately admits cumulative
+major publication/staging before allocation, including these capture arrays;
+see `SPEC-PCRE2.md` for coverage and `ResultLimit` failures. Publication does not
+establish an external live-retention limit. Complete combined working/retained
+policy and uncovered producers remain separate qualification work.
 
 Shared slice capture-slot pairs admit both complete exact arrays, including
 headers, before acquisition; failure and release restore that reservation.
