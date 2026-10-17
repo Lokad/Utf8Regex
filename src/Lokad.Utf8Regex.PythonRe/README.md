@@ -3,6 +3,12 @@
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
 strict UTF-8 scalars, with primary byte coordinates and derived UTF-16 projections.
 
+Private scalar.80 is being prepared to deliver both related ASCII start-hint
+changes together, with an exact Core80 dependency. It is not yet qualified;
+immutable79 remains the qualified pair below. Existing consumer/provenance flows
+will check the new bytes once at this delivery boundary. This does not designate
+PCRE80 or change consumer defaults/pins/publication.
+
 The qualified private **Core/PythonRe 0.4.0-scalar.79** pair pins Core
 `[0.4.0-scalar.79]`, producer `2b41cad3c66097e8ff575a4f08f034037b708aa2`.
 Same immutable Windows/Linux consumers, capture/semantic oracles, exact

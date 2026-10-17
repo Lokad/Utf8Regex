@@ -203,6 +203,21 @@ detached consumers and selective current costs
 
 ### 3.6 Scalar boundaries and coordinates
 
+Development after scalar.79 filters Python scalar search starts only from a
+mandatory positive, nonfolding ASCII Set or the existing literal hint. At most
+three owned instructions and the fixed128-bit mask are inspected, including one
+optional capture start and a positive-minimum greedy repeat. The first/last set
+bits define a necessary interval; holes remain VM-verified false candidates.
+Checked span searches cover at most2048 bytes per original invocation checkpoint.
+Whole strict validation precedes discovery, and an ASCII hit is a scalar boundary
+even across chunk tails. Anchored operations retain their existing handling.
+Failed attempts/capture resets/workspace acquisition can be omitted, lowering
+numeric work/depth/working requirements without restarting the deadline/token or
+removing basic metering. Captures, retained aliases and result admission remain.
+No public API, owner, mode, program metadata or opaque profile-class proof is added.
+These source changes are outside immutable79; source cost evidence carries its
+own protocol and dense-input tradeoff, separately from package qualification.
+
 Every successful core match and capture on valid input has a representable UTF-8 byte range. For `😀`, dot returns one match at byte offset 0 with byte length 4; `^.$` succeeds and `^..$` fails. Dot on `a😀b` returns ranges (0,1), (1,4) and (5,1). `^(.)\1$` matches `😀😀`, retaining the complete first scalar in group 1. Dot on `e` followed by U+0301 returns two scalar matches.
 
 Existing UTF-16 coordinate properties are derived interoperability coordinates. They do not affect matching width or permit a capture endpoint inside a scalar. Primary byte operations must not require whole-subject UTF-16 conversion merely to emulate .NET. Remove obsolete half-unit encoding, non-representable-match exceptions and parity-only execution/output paths as qualified scalar consumers replace them.

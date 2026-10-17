@@ -1,5 +1,18 @@
 # Changelog
 
+## Core/PythonRe scalar.80 candidate preparation
+
+- Batch the required ASCII-class start seeker and necessary-interval extension.
+  Derive hints from bounded owned instructions/masks; verify every candidate in
+  the scalar VM. Move the cheap probe out of the slow search helper. No new API,
+  owner, mode or retained metadata; strict validation and finite controls remain.
+- Preserve the rejected gate-only pilot and controlled dense identifier penalty
+  (+8.6%). Closed source comparisons are not default-PGO/CPython Status or exact80
+  package measurements. Use the existing detached consumer/provenance workflow
+  for new bytes; this entry does not claim qualification.
+- Preserve immutable79/78/77 and independent PCRE76 with its own exact Core76 pin.
+  No publication, consumer pin/default change or actual host adoption is implied.
+
 ## Current scalar.79 quiet-VM operating costs
 
 - Recover VM headroom by moving eight cold historical input trees to verified

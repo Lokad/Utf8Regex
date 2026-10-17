@@ -4,6 +4,16 @@
 scalars over strict UTF-8 spans, with primary byte offsets and lengths. Dot matches
 😀 once across its four bytes. UTF-16 coordinates and strings are derived conveniences.
 
+The next private **Core/PythonRe scalar.80** candidate batches the owned ASCII
+start-hint changes: mandatory positive classes use necessary intervals, with
+the VM verifying holes and the cheap current-byte probe kept in the caller.
+Strict validation, captures/aliases and all four invocation controls remain.
+Preparation is not qualification; scalar.79 below stays the qualified input
+until the new candidate's provenance and detached consumer checks complete.
+Closed source measurements include a dense identifier penalty of8.6% under
+their controlled protocol; no new CPython Status or default-PGO claim.
+No PCRE80 designation, publication or consumer pin/default change is implied.
+
 The qualified private **Core/PythonRe 0.4.0-scalar.79** pair comes from producer
 `2b41cad3c66097e8ff575a4f08f034037b708aa2`; PythonRe pins Core
 `[0.4.0-scalar.79]`. Same immutable Windows/Linux consumers, capture/semantic
