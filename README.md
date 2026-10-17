@@ -49,6 +49,12 @@ with about 112B allocated per finite call. Removed VM work/storage can lower
 numerical requirements. [Source evidence](artifacts/finite-literal-match-20261017/RESULT.md)
 retains controls, noise and FullOpts scope; this is outside immutable scalar.80.
 
+Finite IsMatch reuses that native discovery too, without coordinate projection.
+Its bounded source pair measures late ASCII at 1.10us versus 1.54ms before and
+Unicode prefix at 32.8us versus 377us, with unchanged allocations and original
+controls. [Source evidence](artifacts/finite-literal-ismatch-20261017/RESULT.md)
+retains scope and controls; these related changes await one package checkpoint.
+
 Defaults/static calls remain unlimited. [HOST-INTEGRATION.md](HOST-INTEGRATION.md)
 explains composition with existing resource owners. Complete construction/lazy/
 default, caller-retention/RSS, host and full [SPEC.md](SPEC.md) coverage remain

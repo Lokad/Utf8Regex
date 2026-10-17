@@ -2,6 +2,14 @@
 
 ## Development after scalar.80
 
+- Extend the same metered exact-literal/small-family search reuse to finite
+  IsMatch, with no coordinate projection or unused VM slots. Keep whole strict
+  validation, original invocation/interruption, sticky denial and terminal checks.
+  One bounded source pair: late ASCII 1.54ms to 1.10us, Unicode prefix 377us to
+  32.8us, tiny -35%; about112B/op unchanged, Count controls within2%.
+  [Closed source evidence](artifacts/finite-literal-ismatch-20261017/RESULT.md).
+  Batch with the related Match/Count changes at a downstream delivery boundary;
+  immutable scalar.80 is unchanged.
 - Reuse conservative native literal eligibility for finite value Match, with
   complete validation, original invocation and metered coordinate projection.
   Detailed captures keep their VM and admission. Removed attempts/slots lower

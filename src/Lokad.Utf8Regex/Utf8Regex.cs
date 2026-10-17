@@ -778,6 +778,14 @@ public sealed partial class Utf8Regex
         int startByte, ref Utf8SliceInvocation invocation)
     {
         invocation.AnchorOriginByte = startByte;
+        if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program))
+        {
+            var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(_preparedRegex.SearchPlan,
+                input, startByte, input.Length, false, ref invocation, out _, out var found);
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException("Native literal existence search breached the invocation budget.");
+            return found;
+        }
         var slots = new Utf8SliceSlots([], []);
         try
         {

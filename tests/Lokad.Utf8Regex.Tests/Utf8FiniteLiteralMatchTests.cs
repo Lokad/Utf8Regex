@@ -44,6 +44,8 @@ public sealed class Utf8FiniteLiteralMatchTests
             var slice = input.AsSpan(7, Encoding.UTF8.GetByteCount(text));
             AssertRange(regex.Match(slice), text, start, length);
             AssertRange(regex.Match(slice, source.Token), text, start, length);
+            Assert.True(regex.IsMatch(slice));
+            Assert.True(regex.IsMatch(slice, source.Token));
         }
     }
 
@@ -56,8 +58,12 @@ public sealed class Utf8FiniteLiteralMatchTests
         var storage = Encoding.UTF8.GetBytes("padding" + text + "padding");
         using var source = new CancellationTokenSource();
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
-            AssertRange(Create(literal, options: options).Match(storage.AsSpan(7, Encoding.UTF8.GetByteCount(text)), source.Token),
-                text, 2052, length);
+        {
+            var regex = Create(literal, options: options);
+            var input = storage.AsSpan(7, Encoding.UTF8.GetByteCount(text));
+            AssertRange(regex.Match(input, source.Token), text, 2052, length);
+            Assert.True(regex.IsMatch(input, source.Token));
+        }
     }
 
     [Theory]
@@ -76,8 +82,10 @@ public sealed class Utf8FiniteLiteralMatchTests
             var actual = regex.MatchFromUtf16Offset(input, offset, source.Token);
             Assert.Equal(expected.Success, actual.Success);
             if (expected.Success) AssertRange(actual, text, expected.Index, expected.Length);
+            Assert.Equal(expected.Success, regex.IsMatchFromUtf16Offset(input, offset, source.Token));
         }
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchFromUtf16Offset(input, 2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatchFromUtf16Offset(input, 2));
         var detailed = regex.MatchDetailed(input, source.Token);
         Assert.Equal("nee", detailed.GetGroup(1).GetValueString());
         Assert.Equal("dle", detailed.GetGroup("suffix").GetValueString());
@@ -93,6 +101,7 @@ public sealed class Utf8FiniteLiteralMatchTests
             var expected = working ? Utf8ResourceLimitKind.ExecutionWorkingBytes : Utf8ResourceLimitKind.ExecutionResultBytes;
             Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.MatchDetailed(input)).ResourceKind);
             Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.MatchFromUtf16Offset(input, 0)).ResourceKind);
+            Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.IsMatchFromUtf16Offset(input, 0)).ResourceKind);
         }
     }
 
@@ -175,11 +184,15 @@ public sealed class Utf8FiniteLiteralMatchTests
         var regex = Create("needle");
         byte[] invalid = [.. "needle"u8, 0x80];
         Assert.Throws<ArgumentException>(() => regex.Match(invalid));
+        Assert.Throws<ArgumentException>(() => regex.IsMatch(invalid));
         using var source = new CancellationTokenSource();
         source.Cancel();
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(invalid, source.Token)).CancellationToken);
+        Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.IsMatch(invalid, source.Token)).CancellationToken);
         Assert.False(regex.Match("unrelated"u8).Success);
         Assert.False(regex.Match([]).Success);
+        Assert.False(regex.IsMatch("unrelated"u8));
+        Assert.False(regex.IsMatch([]));
     }
 
     [Theory]
@@ -207,6 +220,65 @@ public sealed class Utf8FiniteLiteralMatchTests
             var actual = regex.Match(input);
             Assert.Equal(expected.Success, actual.Success);
             if (expected.Success) AssertRange(actual, text, expected.Index, expected.Length);
+            Assert.Equal(expected.Success, regex.IsMatch(input));
         }
+    }
+
+    [Theory]
+    [InlineData("(nee)(dle)")] [InlineData("needle|other|third")]
+    public void BooleanWorkDenialIncludesTheSuccessfulAndTerminalChecks(string pattern)
+    {
+        var input = Encoding.UTF8.GetBytes(new string('é', 4097) + "😀needle");
+        ulong low = 1, high = 100000;
+        while (low < high)
+        {
+            var cap = low + (high - low) / 2;
+            try { Assert.True(Create(pattern, cap).IsMatch(input)); high = cap; }
+            catch (Utf8ResourceLimitExceededException failure)
+            {
+                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
+                Assert.Equal(cap + 1, failure.Requested);
+                low = cap + 1;
+            }
+        }
+        for (ulong cap = 1; cap < low; cap++)
+        {
+            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(pattern, cap).IsMatch(input));
+            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
+            Assert.Equal(cap, failure.Limit);
+            Assert.Equal(cap + 1, failure.Requested);
+        }
+        Assert.True(Create(pattern, low).IsMatch(input));
+    }
+
+    [Theory]
+    [InlineData(false, false)] [InlineData(false, true)]
+    [InlineData(true, false)] [InlineData(true, true)]
+    public void BooleanValidationAndSearchKeepOriginalInterruption(bool searchPhase, bool expire)
+    {
+        using var clock = Utf8DeadlineTestClock.Start();
+        using var source = new CancellationTokenSource();
+        var regex = new Utf8Regex("needle", RegexOptions.CultureInvariant,
+            expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
+            new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var input = Encoding.UTF8.GetBytes(new string('é', 160000) + "needle");
+        var probe = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
+        _ = Utf8Validation.Validate(input, ref probe);
+        var validationSteps = probe.Budget.Steps;
+        var entered = false;
+        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        {
+            if (entered || searchPhase && steps <= validationSteps) return;
+            entered = true;
+            if (expire) clock.Advance(250); else source.Cancel();
+        });
+        try
+        {
+            if (expire) Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input, source.Token));
+            else Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, source.Token)).CancellationToken);
+            Assert.True(entered);
+        }
+        finally { session.Complete(); }
+        Assert.True(regex.IsMatch("needle"u8));
     }
 }

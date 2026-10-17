@@ -368,6 +368,12 @@ Detailed captures keep their own VM; detailed results and offset maps retain
 working/result admission. This adds no public API, owner or policy switch and
 does not change immutable scalar.80 or prove full SPEC/host coverage.
 
+Finite IsMatch uses the same eligibility and original validated invocation for
+native discovery, returning only the boolean with no coordinate projection or
+unused VM slots. Original work/token/deadline and terminal checks remain. Removed
+real VM work/storage can lower numerical requirements; offset-map admission and
+excluded semantic shapes retain their existing paths. No new API or policy mode.
+
 Family verification rejects exact branches with a different first byte under
 their existing branch charge, and invokes confirmation only when a boundary or
 trailing predicate exists. Full comparisons remain bounded and charged, including
