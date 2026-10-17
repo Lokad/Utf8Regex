@@ -84,18 +84,13 @@ bool isMatch = regex.IsMatch(input);
 int count = regex.Count(input);
 
 Utf8ValueMatch first = regex.Match(input);
-if (first.Success && first.IsByteAligned)
+if (first.Success)
 {
     Console.WriteLine($"First match at byte {first.IndexInBytes}, length {first.LengthInBytes}");
 }
 
 foreach (var match in regex.EnumerateMatches(input))
 {
-    if (!match.IsByteAligned)
-    {
-        continue;
-    }
-
     var slice = input.Slice(match.IndexInBytes, match.LengthInBytes);
     Console.WriteLine(Encoding.UTF8.GetString(slice));
 }
@@ -108,6 +103,46 @@ Notes:
 - Inputs must be well-formed UTF-8.
 - The library also exposes static helpers such as `Utf8Regex.IsMatch(...)`, `Utf8Regex.Count(...)`, `Utf8Regex.Match(...)`, `Utf8Regex.EnumerateMatches(...)`, and `Utf8Regex.Replace(...)`.
 - Match results expose primary byte coordinates and derived UTF-16 coordinates via `Utf8ValueMatch`.
+
+### Finite construction and invocation controls
+
+Use an instance for finite limits. Compilation and each later invocation have
+separate limits, deadlines and cancellation tokens:
+
+```csharp
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+
+using var compileCancellation = new CancellationTokenSource();
+var bounded = Utf8Regex.Compile(
+    @"(?<word>\w+)", RegexOptions.CultureInvariant,
+    matchTimeout: TimeSpan.FromMilliseconds(100),
+    resourcePolicy: new()
+    {
+        MaxWorkSteps = 1_000_000, MaxDepth = 256,
+        MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576
+    },
+    constructionPolicy: new()
+    {
+        MaxWorkSteps = 1_000_000, MaxDepth = 128,
+        MaxInstructionCapacity = 100_000, MaxBytes = 4_194_304
+    },
+    constructionTimeout: TimeSpan.FromSeconds(1),
+    cancellationToken: compileCancellation.Token);
+
+using var callCancellation = new CancellationTokenSource();
+int count = bounded.Count("café 😀 tea"u8, callCancellation.Token); // 2
+```
+
+These are example application limits, not library defaults. Legacy overloads and
+static helpers remain unlimited. The construction token governs only `Compile`;
+pass the invocation token to each call. Resource exhaustion throws
+`Utf8ResourceLimitExceededException` with `ResourceKind`, `Limit` and `Requested`;
+cancellation and timeout retain their distinct exceptions. Byte caps cover the
+documented modeled capacities, not process memory. Lazy preparation, caller
+callback execution/allocations, later standalone getters and retained host storage
+have separate scope; see
+[host composition](HOST-INTEGRATION.md).
 
 <!-- BEGIN GENERATED DOTNET_PERFORMANCE BENCHMARKS -->
 ## DotNetPerformance Benchmarks
