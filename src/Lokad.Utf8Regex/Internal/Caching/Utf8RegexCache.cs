@@ -30,6 +30,7 @@ internal static class Utf8RegexCache
 
     public static Utf8Regex GetOrAdd(string pattern, RegexOptions options, TimeSpan matchTimeout)
     {
+        if (pattern is null) throw new ArgumentNullException(nameof(pattern));
         var normalizedOptions = Utf8RegexSyntax.NormalizeNonSemanticOptions(options);
         // Mirror System.Text.RegularExpressions.RegexCache (PLAN.md C02): the
         // effective construction culture is part of the cache identity, so a

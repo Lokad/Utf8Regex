@@ -834,6 +834,13 @@ and cause earlier eviction. Entries retain a
 numeric charge, with no global identity registry,
 reference counts or payload manifests. Production graph collectors and temporary
 identity builders are retired under the qualified per-program certificate.
+Development after scalar.86 preflights the existing constant-time key charge
+before hashing or lookup. Keys larger than the immutable payload cap prepare
+uncached under the same construction owner/admission; they cannot be retained.
+Retainable-key coordination, eviction, interruption and held values remain.
+This avoids impossible-key scans, not every admitted key-comparer operation.
+Core static entry points reject null patterns with ArgumentNullException naming
+pattern before cache-key metadata or construction work.
 Independent test-owned graph/major-array
 and lazy-descendant coverage remains required. Cache admission/eviction preserve
 pending preparation coordination, cancellation, construction work and reentrant

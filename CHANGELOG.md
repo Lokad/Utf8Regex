@@ -1,5 +1,15 @@
 # Changelog
 
+## Development after scalar.86
+
+- Bypass cache hashing/lookup for keys whose existing length-based charge exceeds
+  the payload cap. Keep original construction admission, cancellation/deadlines,
+  retainable entries and held results; remove redundant keyFits state. One bounded
+  public comparison preserves warm allocations with at most2% observed short-call
+  cost; large-template medians remain within8% with noise, without a speedup claim.
+- Core static calls reject null patterns as ArgumentNullException(pattern) before
+  cache-key metadata or construction. Existing immutable86 bytes remain unchanged.
+
 ## Qualified private Core/PythonRe scalar.86
 
 - Batch the validity-selector and literal FullMatch improvements with construction

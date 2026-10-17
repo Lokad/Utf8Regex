@@ -123,10 +123,17 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
         {
             control.Check();
             if (Capacity == 0) return PrepareUncached(key, state, factory, control);
+            var keyCharge = IsPayloadBounded ? storage.GetKeyCharge(key) : 0;
+            if (keyCharge > _maximumPayloadBytes)
+            {
+                // This immutable owner can never retain the key. Do not hash or
+                // compare its text before the factory's construction admission.
+                using var oversized = Utf8ConstructionScope.Enter();
+                oversized.Budget.ChargeWork(1);
+                return Complete(oversized, PrepareUncached(key, state, factory, control));
+            }
             var hash = _comparer.GetHashCode(key);
             CacheEntry? entry = null;
-            var keyFits = true;
-            ulong keyCharge = 0;
             long generation;
             Utf8ConstructionScope preparation;
             lock (this)
@@ -140,10 +147,8 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
                 {
                     control.Check();
                     preparation.Budget.ChargeWork(1);
-                    keyCharge = storage.GetKeyCharge(key);
-                    keyFits = keyCharge <= _maximumPayloadBytes;
                 }
-                if (keyFits && CanAdd())
+                if (CanAdd())
                 {
                     entry = Acquire(key, default, null, 0, Environment.CurrentManagedThreadId, hash, keyCharge);
                     control.Check();
@@ -161,7 +166,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
                 lock (this)
                 {
                     control.Check();
-                    if (_generation != generation || !keyFits) return Complete(preparation, value);
+                    if (_generation != generation) return Complete(preparation, value);
                     var existing = Find(key, hash, control);
                     if (existing is not null) return Read(existing, control);
                     if (_capacity == 0 || EntryBytes > _maximumMetadataBytes - BaseMetadataBytes) return Complete(preparation, value);
