@@ -326,6 +326,14 @@ continuation or result storage. Tight depth/working/result caps can therefore
 admit these calls below the former VM scratch requirement; numerical work needs
 can fall. Other programs and operations retain their qualified routes. This does
 not extend construction, retained-storage or default guarantees.
+Development source after scalar.87 also lets finite Core Count borrow the
+existing invocation-aware ASCII structural-family search and verifier. The
+original zero-offset LTR program must be nonempty, nonfolded and free of stateful
+capture numbering, balancing, lookarounds and conditional tests. Full validation
+must prove ASCII, and overlapping prefixes retain scalar verification. Search,
+verification and terminal checks share the original invocation, without VM
+capture/continuation storage. This changes route-dependent work/storage admission;
+it does not add returned capture values or extend the other operations.
 Development source also reuses this existing metered driver for prepared exact
 LTR families with two or three nonempty branches and no stateful/anchor/folding
 exclusions. Count publishes no capture values, so ordinary distinct captures need

@@ -34,6 +34,13 @@ Count family with bounded delimiter searches and the same invocation controls.
 It needs no VM capture/continuation storage. [Focused source evidence](artifacts/core-uri-count-current-20261017/RESULT.md)
 records the public costs, scalar/resource checks and remaining predecoded-.NET
 gap; these changes are outside the immutable scalar.87 packages.
+
+Finite Core Count in current source also borrows the existing metered ASCII
+structural-family search and verifier. A bounded public comparison improves
+method-call Count about57% and identifier Count about20%, reducing working-route
+allocations from about3.7KB to112B. [Evidence](artifacts/finite-structural-family-count-20261017/RESULT.md)
+includes unchanged controls, Unicode fallback and explicit finite overhead, which
+remains substantial relative to unlimited execution. Other operations are unchanged.
 [Earlier exact86 default costs](artifacts/core-python-scalar86-20261017/vm-cost/RESULT.md)
 retain their unqualified noisy lanes and cross-process caveats; historical tables
 do not qualify87 package-default absolutes or CPythonStatus.

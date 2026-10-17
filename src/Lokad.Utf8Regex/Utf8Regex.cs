@@ -1187,15 +1187,31 @@ public sealed partial class Utf8Regex
                 !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
                 !program.HasContiguousAnchor && !program.SawLookaround && !program.HasConditionalTest &&
                 !_requiresKelvinSignFallback && (Options & RegexOptions.NonBacktracking) == 0 &&
-                _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-                !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
-                Utf8AsciiInstructionLinearExecutor.SupportsInput(_preparedRegex.StructuralLinearProgram, validation) &&
-                Utf8AsciiDeterministicFixedWidthCountExecutor.TryCountValidatedAscii(
-                    _preparedRegex.StructuralLinearProgram, input, ref invocation, out var nativeCount, out var breach))
+                _preparedRegex.ExecutionKind is NativeExecutionKind.AsciiSimplePattern or NativeExecutionKind.AsciiStructuralIdentifierFamily)
             {
-                if (breach != Utf8ExecutionLimitKind.None)
-                    throw new InvalidOperationException("Native fixed-width count breached the invocation budget.");
-                return nativeCount;
+                if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
+                    _preparedRegex.StructuralSearchPlan.HasValue && _preparedRegex.StructuralVerifier.AsciiProgram.LinearProgram.HasValue &&
+                    !_preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes &&
+                    !_preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap &&
+                    !_preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
+                {
+                    var structuralBreach = Utf8AsciiStructuralIdentifierFamilyExecutor.TryCount(
+                        _preparedRegex.StructuralSearchPlan, _preparedRegex.StructuralVerifier.AsciiProgram,
+                        input, ref invocation, out var structuralCount);
+                    if (structuralBreach != Utf8ExecutionLimitKind.None)
+                        throw new InvalidOperationException("Native structural count breached the invocation budget.");
+                    return structuralCount;
+                }
+                if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+                    !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
+                    Utf8AsciiInstructionLinearExecutor.SupportsInput(_preparedRegex.StructuralLinearProgram, validation) &&
+                    Utf8AsciiDeterministicFixedWidthCountExecutor.TryCountValidatedAscii(
+                        _preparedRegex.StructuralLinearProgram, input, ref invocation, out var nativeCount, out var breach))
+                {
+                    if (breach != Utf8ExecutionLimitKind.None)
+                        throw new InvalidOperationException("Native fixed-width count breached the invocation budget.");
+                    return nativeCount;
+                }
             }
             return OwnedSliceCountFromByte(input, program, startByte, ref invocation);
         }

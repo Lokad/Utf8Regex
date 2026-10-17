@@ -2,6 +2,11 @@
 
 ## Development after scalar.87
 
+- Let finite Core Count reuse the existing metered ASCII structural-family search
+  and verifier after original full-subject validation. Preserve scalar fallback
+  for mixed Unicode and overlapping prefixes, stateful-program exclusions and
+  cumulative work/cancellation/deadline authority. Avoid unnecessary VM slots;
+  other operations and immutable scalar.87 retain their contracts.
 - Reuse the existing scalar URI Count algorithm before general VM dispatch for
   its original capture-free, nonfolded LTR family. Keep whole-input strict UTF-8
   validation, bounded delimiter searches, metered scalar loops and the original
