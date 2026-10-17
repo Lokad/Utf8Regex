@@ -11,6 +11,38 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 // 3.13.2 ground truth (see ground-c07*.py).
 public sealed class PythonGroupNumberingRegressionTests
 {
+    [Theory]
+    [InlineData(false, false)] [InlineData(false, true)]
+    [InlineData(true, false)] [InlineData(true, true)]
+    public void ManyMixedGroupsKeepPythonOrderAndLastCompletion(bool trailingGroup, bool finite)
+    {
+        var pieces = Enumerable.Range(0, 70).Select(index => index % 2 == 0 ? "é" : "😀").ToArray();
+        var body = string.Concat(pieces);
+        var pattern = "(?P<outer>" + string.Concat(Enumerable.Range(0, pieces.Length)
+            .Select(index => index % 2 == 0 ? $"(?P<n{index}>.)" : "(.)")) + ")" + (trailingGroup ? "(.)" : "");
+        var text = body + (trailingGroup ? "z" : "");
+        var input = Utf8(text);
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
+            finite ? new() { MaxWorkSteps = 1000000, MaxDepth = 1000, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 } : default);
+        var values = new[] { text, body }.Concat(pieces).Concat(trailingGroup ? new[] { "z" } : []).ToArray();
+        void AssertGroups(Utf8PythonDetailedMatchData match)
+        {
+            Assert.True(match.Success);
+            Assert.Equal(trailingGroup ? 72 : 1, match.LastIndex);
+            Assert.Equal(trailingGroup ? null : "outer", match.LastGroup);
+            Assert.Equal(values, match.Groups.Select(group => group.ValueText));
+            Assert.Equal(Enumerable.Range(0, values.Length), match.Groups.Select(group => group.Number));
+        }
+        AssertGroups(regex.SearchDetailedData(input));
+        AssertGroups(regex.FullMatchDetailedData(input));
+        Assert.Equal(values.Skip(1), Assert.Single(regex.FindAllToStrings(input).TupleValues));
+        using var cursor = regex.CreateMatchCursor(input);
+        Assert.True(cursor.MoveNext());
+        var retained = cursor.Current;
+        Assert.False(cursor.MoveNext());
+        cursor.Dispose();
+        AssertGroups(retained);
+    }
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);
 
     [Theory]

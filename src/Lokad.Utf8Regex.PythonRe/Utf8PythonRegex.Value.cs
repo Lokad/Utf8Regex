@@ -163,7 +163,7 @@ public sealed partial class Utf8PythonRegex
     private int CountOwnedSlicePythonStyle(ReadOnlySpan<byte> input, int startOffsetInBytes,
         Utf8SliceProgram program, CancellationToken cancellationToken)
     {
-        var cursor = new PythonReScalarMatchCursor(input, program, _coreGroupNumbersByPythonGroup,
+        var cursor = new PythonReScalarMatchCursor(input, program,
             startOffsetInBytes, MatchTimeout, _utf8Regex, _translation.Pattern,
             new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken));
         try

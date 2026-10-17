@@ -19,7 +19,7 @@ public sealed partial class Utf8PythonRegex
         // keeps its fixed backstop, but its elapsed time cannot reset the deadline.
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
         var program = kind == 2 ? GetScalarFullProgram(input, invocation.Budget.Deadline, cancellationToken) : ScalarProgram;
-        return new PythonReScalarMatchCursor(input, program, _coreGroupNumbersByPythonGroup,
+        return new PythonReScalarMatchCursor(input, program,
             startOffsetInBytes, MatchTimeout, _utf8Regex, _translation.Pattern, invocation);
     }
 
@@ -318,7 +318,7 @@ public sealed partial class Utf8PythonRegex
         bytesResult = default;
         textResult = default;
         ValidateScalarStartOffset(input, startOffsetInBytes);
-        var cursor = new PythonReScalarMatchCursor(input, ScalarProgram, _coreGroupNumbersByPythonGroup,
+        var cursor = new PythonReScalarMatchCursor(input, ScalarProgram,
             startOffsetInBytes, MatchTimeout, _utf8Regex, _translation.Pattern, invocation);
         Utf8SliceOutputWriter writer = default;
         try

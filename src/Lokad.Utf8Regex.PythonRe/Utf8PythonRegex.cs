@@ -74,7 +74,6 @@ public sealed partial class Utf8PythonRegex
     private readonly Lazy<Utf8SliceProgram> _lazyScalarFullProgram;
     private readonly Utf8Regex? _utf8Regex;
     private readonly PythonReTranslation _translation;
-    private readonly int[] _coreGroupNumbersByPythonGroup;
     private readonly PythonReNameEntry[] _nameEntries;
     private readonly IReadOnlyDictionary<string, int> _namedGroups;
     private readonly bool _canMatchEmpty;
@@ -226,7 +225,6 @@ public sealed partial class Utf8PythonRegex
         // become a permanently cached failure. Concurrent cold callers may each
         // derive under their own construction scope; only one result is kept.
         _lazyScalarFullProgram = new Lazy<Utf8SliceProgram>(() => PythonReScalarCompiler.RequireFullMatch(_scalarProgram), LazyThreadSafetyMode.PublicationOnly);
-        _coreGroupNumbersByPythonGroup = _translation.CoreNumbersByPython;
 
         _groupNames = GetPublicGroupNames(parseResult.CaptureGroupCount, parseResult.NamedGroups);
         _nameEntries = GetPythonNameEntries(parseResult.NamedGroups);

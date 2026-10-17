@@ -29,7 +29,7 @@ public sealed class PythonRePrefixDiscoveryTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.Multiline);
         var input = Encoding.UTF8.GetBytes(subject);
         var plain = new PythonReScalarMatchCursor(input, Field<Utf8SliceProgram>(regex, "_scalarProgram"),
-            Field<int[]>(regex, "_coreGroupNumbersByPythonGroup"), 0, Regex.InfiniteMatchTimeout, pattern,
+            0, Regex.InfiniteMatchTimeout, pattern,
             default, Utf8ExecutionLimits.Unlimited);
         var expected = new List<Utf8PythonDetailedMatchData>();
         try { while (plain.MoveNext()) expected.Add(plain.SnapshotDetailed(Field<PythonReNameEntry[]>(regex, "_nameEntries"))); }
@@ -64,7 +64,7 @@ public sealed class PythonRePrefixDiscoveryTests
         {
             var regex = new Utf8PythonRegex(pattern);
             var program = Field<Utf8SliceProgram>(regex, "_scalarProgram");
-            var numbers = Field<int[]>(regex, "_coreGroupNumbersByPythonGroup");
+
             var names = Field<PythonReNameEntry[]>(regex, "_nameEntries");
             foreach (var first in pieces)
             foreach (var second in pieces)
@@ -74,7 +74,7 @@ public sealed class PythonRePrefixDiscoveryTests
                 var start = 0;
                 while (true)
                 {
-                    var plain = new PythonReScalarMatchCursor(input, program, numbers, start,
+                    var plain = new PythonReScalarMatchCursor(input, program, start,
                         Regex.InfiniteMatchTimeout, pattern, default, Utf8ExecutionLimits.Unlimited);
                     var expected = new List<Utf8PythonDetailedMatchData>();
                     try { while (plain.MoveNext()) expected.Add(plain.SnapshotDetailed(names)); }
@@ -113,15 +113,15 @@ public sealed class PythonRePrefixDiscoveryTests
     {
         var regex = new Utf8PythonRegex("(ab|cd)+");
         var program = Field<Utf8SliceProgram>(regex, "_scalarProgram");
-        var numbers = Field<int[]>(regex, "_coreGroupNumbersByPythonGroup");
+
         var candidate = Field<global::Lokad.Utf8Regex.Utf8Regex>(regex, "_utf8Regex");
         var input = Encoding.UTF8.GetBytes(new string('x', 4097) + "abcd xx cd");
-        var plain = new PythonReScalarMatchCursor(input, program, numbers, 0, Regex.InfiniteMatchTimeout,
+        var plain = new PythonReScalarMatchCursor(input, program, 0, Regex.InfiniteMatchTimeout,
             "(ab|cd)+", default, new(ulong.MaxValue, 0, 1048576));
         ulong originalWork;
         try { var count = 0; while (plain.MoveNext()) count++; Assert.Equal(2, count); originalWork = plain.WorkingInvocation.Budget.Steps; }
         finally { plain.Dispose(); }
-        var guided = new PythonReScalarMatchCursor(input, program, numbers, 0, Regex.InfiniteMatchTimeout,
+        var guided = new PythonReScalarMatchCursor(input, program, 0, Regex.InfiniteMatchTimeout,
             candidate, "(ab|cd)+", new(new(ulong.MaxValue, 0, 1048576), Regex.InfiniteMatchTimeout, default));
         ulong work;
         try { var count = 0; while (guided.MoveNext()) count++; Assert.Equal(2, count); work = guided.WorkingInvocation.Budget.Steps; }
@@ -133,7 +133,7 @@ public sealed class PythonRePrefixDiscoveryTests
             var constructed = false;
             try
             {
-                cursor = new(input, program, numbers, 0, Regex.InfiniteMatchTimeout, candidate, "(ab|cd)+",
+                cursor = new(input, program, 0, Regex.InfiniteMatchTimeout, candidate, "(ab|cd)+",
                     new(new(cap, 0, 1048576), Regex.InfiniteMatchTimeout, default));
                 constructed = true;
                 Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));

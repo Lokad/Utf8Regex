@@ -14,8 +14,7 @@ public sealed class PythonReScalarCursorOwnershipTests
         var program = core.Inspection.AvailableOwnedSliceProgram;
         Assert.NotNull(program);
         using var source = new CancellationTokenSource();
-        var cursor = new PythonReScalarMatchCursor("\U0001f600\u00e9"u8, program, [0, 1],
-            0, Regex.InfiniteMatchTimeout, "(.)", source.Token);
+        var cursor = new PythonReScalarMatchCursor("\U0001f600\u00e9"u8, program, 0, Regex.InfiniteMatchTimeout, "(.)", source.Token);
         Utf8PythonDetailedMatchData first;
         try
         {
@@ -64,15 +63,13 @@ public sealed class PythonReScalarCursorOwnershipTests
         {
             var failure = Assert.Throws<OperationCanceledException>(() =>
             {
-                var cursor = new PythonReScalarMatchCursor("\U0001f600"u8, program, [0, 1],
-                    0, Regex.InfiniteMatchTimeout, "(.)", source.Token);
+                var cursor = new PythonReScalarMatchCursor("\U0001f600"u8, program, 0, Regex.InfiniteMatchTimeout, "(.)", source.Token);
                 cursor.Dispose();
             });
             Assert.Equal(source.Token, failure.CancellationToken);
             return;
         }
-        var mapped = new PythonReScalarMatchCursor("\U0001f600"u8, program, [0, 1],
-            0, Regex.InfiniteMatchTimeout, "(.)", source.Token);
+        var mapped = new PythonReScalarMatchCursor("\U0001f600"u8, program, 0, Regex.InfiniteMatchTimeout, "(.)", source.Token);
         try
         {
             Assert.True(mapped.MoveNext());

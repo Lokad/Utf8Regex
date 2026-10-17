@@ -14,7 +14,7 @@ public sealed class PythonReWorkspaceLifetimeTests
         Assert.NotNull(program);
         var invocation = new Utf8SliceInvocation(new(1000000, 1024, 1UL << 20), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(13));
-        using var cursor = new Utf8PythonMatchCursor(input, program, [0, 1, 2], [], 0,
+        using var cursor = new Utf8PythonMatchCursor(input, program, [], 0,
             Regex.InfiniteMatchTimeout, "(a)(b)", invocation);
         var alias = cursor;
         Assert.True(cursor.MoveNext());
@@ -64,7 +64,7 @@ public sealed class PythonReWorkspaceLifetimeTests
         var limit = 13 + 3 * Utf8ConstructionBudget.ArrayBytes<int>(program.GroupCount);
         var invocation = new Utf8SliceInvocation(new(1000000, 1024, limit), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(13));
-        using var cursor = new Utf8PythonMatchCursor("ab"u8.ToArray(), program, [0, 1, 2], [], 0,
+        using var cursor = new Utf8PythonMatchCursor("ab"u8.ToArray(), program, [], 0,
             Regex.InfiniteMatchTimeout, "(a)(b)", invocation);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext());
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);

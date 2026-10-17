@@ -262,7 +262,7 @@ public sealed class PythonRePersistentCursorTests
         var core = new global::Lokad.Utf8Regex.Utf8Regex(pattern);
         var program = core.Inspection.AvailableOwnedSliceProgram;
         Assert.NotNull(program);
-        return new Utf8PythonMatchCursor(input, program, [0, 1], [], 0,
+        return new Utf8PythonMatchCursor(input, program, [], 0,
             timeout ?? Regex.InfiniteMatchTimeout, pattern, invocation);
     }
 }

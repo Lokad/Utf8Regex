@@ -21,6 +21,14 @@ The implementation is parser-first:
    shipped BCL matcher/result dependency. The semantic authority remains the
    pinned CPython 3.13.2 `str`-pattern oracle
 
+Python numbers captures by opening parenthesis, including named groups. The
+owned scalar program uses group `n` at slot `n - 1` for captures, references and
+conditionals, including assertion bodies and FullMatch. `lastindex` follows the
+last capture closed on the successful path, rather than the largest participating
+number; an outer capture can close after its children. The different named/unnamed
+numbering used by rendered Core patterns remains local to text construction.
+It is not retained as a cursor projection table or searched after each match.
+
 The native rendering consumes complete scalars. Supplementary class members and ranges use numeric scalar endpoints, rather than separate surrogate classes. Python's separate `\uD800`/`\uDC00` escapes denote separate surrogate atoms and cannot combine into a scalar; they cannot match strict UTF-8. A raw supplementary character or `\U00010000` escape denotes one scalar. A surrogate-only class contains no valid scalar, and its negation admits valid scalars. Captures retain primary byte ranges and derived UTF-16 coordinates. Owned execution does not establish complete grammar coverage, public construction containment or retained-storage limits; qualify those separately from the current invocation controls.
 
 ## Nullable repetition and capture state

@@ -35,7 +35,7 @@ public sealed class PythonReGroupNumberingOwnershipTests
 
     [Theory]
     [MemberData(nameof(NumberingCases))]
-    public void TranslatorNumberingMatchesBclQuery(string pattern)
+    public void ScalarSlotsFollowPythonOrderWhileRenderedTextKeepsCoreNumbering(string pattern)
     {
         var parser = new PythonReParser(pattern);
         var parseResult = parser.Parse(PythonReCompileOptions.None);
@@ -58,11 +58,20 @@ public sealed class PythonReGroupNumberingOwnershipTests
             }
         }
 
-        foreach (var pair in parseResult.NamedGroups)
+        var nextNamed = nextUnnamed;
+        foreach (var pair in parseResult.NamedGroups.OrderBy(pair => pair.Value))
         {
-            expected[pair.Value] = managed.GroupNumberFromName(translation.EmittedGroupNames[pair.Key]);
+            expected[pair.Value] = nextNamed++;
+            Assert.Equal(expected[pair.Value], managed.GroupNumberFromName(translation.EmittedGroupNames[pair.Key]));
         }
 
-        Assert.Equal(expected, translation.CoreNumbersByPython);
+        var program = PythonReScalarCompiler.Compile(parseResult, translation);
+        Assert.Equal(Enumerable.Range(0, expected.Length), program.GroupNumbers);
+        for (var pythonGroup = 1; pythonGroup < namesByPythonGroup.Length; pythonGroup++)
+        {
+            var name = namesByPythonGroup[pythonGroup];
+            Assert.Equal(name is null ? pythonGroup.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                : translation.EmittedGroupNames[name], program.GroupNames[pythonGroup]);
+        }
     }
 }

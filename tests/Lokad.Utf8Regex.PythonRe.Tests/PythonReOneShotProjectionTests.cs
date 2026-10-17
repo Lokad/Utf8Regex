@@ -66,7 +66,7 @@ public sealed class PythonReOneShotProjectionTests
         var core = new global::Lokad.Utf8Regex.Utf8Regex("(?<=é)(.)");
         var program = core.Inspection.AvailableOwnedSliceProgram;
         Assert.NotNull(program);
-        var cursor = new PythonReScalarMatchCursor("é😀z"u8, program, [0, 1], 0,
+        var cursor = new PythonReScalarMatchCursor("é😀z"u8, program, 0,
             Regex.InfiniteMatchTimeout, "(?<=é)(.)", CancellationToken.None, new(0, 0, 1UL << 20));
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
         PythonReGroupData value;
@@ -117,7 +117,7 @@ public sealed class PythonReOneShotProjectionTests
         var scratch = ArrayBytes<int>(program.GroupCount) + (ulong)Utf8SliceRunner.TrailReserveBytes +
             ArrayBytes<Utf8SliceTrailEntry[]>(Utf8SliceRunner.ChunkTableCapacity);
         var total = 13 + 96 + 96 + scratch + groupExtent + extent;
-        var cursor = new PythonReScalarMatchCursor("😀é"u8, program, [0, 1], 0, Regex.InfiniteMatchTimeout,
+        var cursor = new PythonReScalarMatchCursor("😀é"u8, program, 0, Regex.InfiniteMatchTimeout,
             "(.)", CancellationToken.None, new(0, 0, total - (allow ? 0UL : 1UL)));
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
         Utf8PythonMatchContext result = default;
@@ -171,7 +171,7 @@ public sealed class PythonReOneShotProjectionTests
         var names = Enumerable.Repeat(new PythonReNameEntry { Name = "word", Number = 1 }, 16385).ToArray();
         var extent = ArrayBytes<PythonReNameEntry>(names.Length);
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
-        var cursor = new PythonReScalarMatchCursor("😀"u8, program, [0, 1], 0, timeout,
+        var cursor = new PythonReScalarMatchCursor("😀"u8, program, 0, timeout,
             "(.)", token.Token, new(0, 0, 1UL << 24));
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
         try

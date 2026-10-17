@@ -17,7 +17,7 @@ public sealed class PythonReResultExtentTests
         var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)");
         var program = core.Inspection.AvailableOwnedSliceProgram;
         Assert.NotNull(program);
-        var cursor = new PythonReScalarMatchCursor("😀é"u8, program, [0, 1], 0,
+        var cursor = new PythonReScalarMatchCursor("😀é"u8, program, 0,
             Regex.InfiniteMatchTimeout, "(.)", CancellationToken.None, new(0, 0, 1UL << 20));
         var names = Enumerable.Repeat(new PythonReNameEntry { Name = "value", Number = 1 }, 257).ToArray();
         Utf8PythonDetailedMatchData result;
@@ -49,7 +49,7 @@ public sealed class PythonReResultExtentTests
         var program = core.Inspection.AvailableOwnedSliceProgram;
         Assert.NotNull(program);
         var input = Encoding.UTF8.GetBytes(new string('é', 1025));
-        var cursor = new PythonReScalarMatchCursor(input, program, [0, 1], 0,
+        var cursor = new PythonReScalarMatchCursor(input, program, 0,
             Regex.InfiniteMatchTimeout, "(.)", CancellationToken.None, new(0, 0, 1UL << 20));
         try
         {
@@ -88,7 +88,7 @@ public sealed class PythonReResultExtentTests
         Assert.NotNull(program);
         var input = Encoding.UTF8.GetBytes(new string('é', 5000));
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
-        var cursor = new PythonReScalarMatchCursor(input, program, [0, 1], 0,
+        var cursor = new PythonReScalarMatchCursor(input, program, 0,
             timeout, "(.+)", token.Token, new(0, 0, 1UL << 20));
         try
         {

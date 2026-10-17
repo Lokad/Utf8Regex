@@ -1,5 +1,16 @@
 # Changelog
 
+## Development: direct Python capture slots
+
+- Lower Python captures, references and conditionals directly in Python opening
+  order. Keep the Core-pattern numbering permutation as temporary rendering
+  scratch; remove its retained table, facade/cursor references and arguments.
+- Derive capture ranges and lastindex directly from the shared VM slots, removing
+  the per-match reverse search. Preserve completion order, named groups, FullMatch,
+  assertion captures, snapshots/aliases, scalar coordinates and finite controls.
+  Keep the original capture-metadata interruption checkpoint. No public API,
+  new owner or execution mode; no measured speedup or new package claim.
+
 ## Development: terminal captured-class repeats
 
 - Reuse the scalar scanner when a greedy class repeat ends at Accept, optionally

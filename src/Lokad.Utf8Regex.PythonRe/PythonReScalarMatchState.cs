@@ -16,7 +16,6 @@ internal struct PythonReScalarMatchState
     private readonly Utf8SliceProgram _program;
     private readonly Utf8Regex? _candidateRegex;
     private readonly int _leadingAsciiLiteral;
-    private readonly int[] _numbersByPython;
     private readonly string _pattern;
     private readonly TimeSpan _timeout;
     private Utf8SliceInvocation _invocation;
@@ -32,20 +31,20 @@ internal struct PythonReScalarMatchState
     private int _position;
 
     internal PythonReScalarMatchState(ReadOnlySpan<byte> input, Utf8SliceProgram program,
-        int[] numbersByPython, int startOffsetInBytes, TimeSpan timeout,
+        int startOffsetInBytes, TimeSpan timeout,
         string pattern, CancellationToken cancellationToken, Utf8ExecutionLimits limits)
-        : this(input, program, numbersByPython, startOffsetInBytes, timeout, pattern,
+        : this(input, program, startOffsetInBytes, timeout, pattern,
             new Utf8SliceInvocation(limits, timeout, cancellationToken))
     { }
 
     internal PythonReScalarMatchState(ReadOnlySpan<byte> input, Utf8SliceProgram program,
-        int[] numbersByPython, int startOffsetInBytes, TimeSpan timeout, string pattern,
+        int startOffsetInBytes, TimeSpan timeout, string pattern,
         Utf8SliceInvocation invocation)
-        : this(input, program, numbersByPython, startOffsetInBytes, timeout, pattern, invocation, default)
+        : this(input, program, startOffsetInBytes, timeout, pattern, invocation, default)
     { }
 
     internal PythonReScalarMatchState(ReadOnlySpan<byte> input, Utf8SliceProgram program,
-        int[] numbersByPython, int startOffsetInBytes, TimeSpan timeout, string pattern,
+        int startOffsetInBytes, TimeSpan timeout, string pattern,
         Utf8SliceInvocation invocation, Utf8Regex? candidateRegex)
     {
         this = default;
@@ -63,7 +62,6 @@ internal struct PythonReScalarMatchState
             !program.HasContiguousAnchor && !program.RightToLeft && !program.IgnoreCase &&
             program.Instructions is [{ Kind: Utf8SliceInstructionKind.Literal, B: 0 } first, ..] &&
             (uint)first.A < 0x80 ? first.A : -1;
-        _numbersByPython = numbersByPython;
         _pattern = pattern;
         _timeout = timeout;
         _position = startOffsetInBytes;
@@ -190,13 +188,10 @@ internal struct PythonReScalarMatchState
                     LastIndex = null;
                     if (outcome.LastClosedSlot >= 0)
                     {
-                        var coreNumber = _program.GroupNumbers[outcome.LastClosedSlot + 1];
-                        for (var number = 1; number < _numbersByPython.Length; number++)
-                        {
-                            if ((number & 63) == 1) Checkpoint(input);
-                            if (_numbersByPython[number] == coreNumber) { LastIndex = number; break; }
-                        }
-                        if (LastIndex is null) throw new InvalidOperationException("Completed scalar capture has no profile slot.");
+                        // Python lowering uses opening-order slots, including assertions
+                        // and FullMatch. Keep the existing metadata interruption point.
+                        Checkpoint(input);
+                        LastIndex = outcome.LastClosedSlot + 1;
                     }
                     StartOffsetInBytes = _position;
                     EndOffsetInBytes = outcome.EndIndex;
@@ -310,7 +305,7 @@ internal struct PythonReScalarMatchState
     {
         Checkpoint(input);
         EnsureMap(input);
-        var groups = AllocateResultArray<PythonReGroupData>(input, _numbersByPython.Length);
+        var groups = AllocateResultArray<PythonReGroupData>(input, _program.GroupCount + 1);
         for (var pythonGroup = 0; pythonGroup < groups.Length; pythonGroup++)
         {
             if ((pythonGroup & 255) == 0) Checkpoint(input);
@@ -331,12 +326,11 @@ internal struct PythonReScalarMatchState
     internal bool TryGetCaptureByteRange(int number, out int start, out int end)
     {
         start = end = -1;
-        if ((uint)number >= (uint)_numbersByPython.Length) return false;
-        // Python lowering reserves a dense catalog and emits these mapped core
-        // numbers minus one as CaptureNode slots, including in FullMatch.
-        var slot = _numbersByPython[number] - 1;
-        start = number == 0 ? StartOffsetInBytes : slot >= 0 ? _slots.Starts[slot] : -1;
-        end = number == 0 ? EndOffsetInBytes : slot >= 0 ? _slots.Ends[slot] : -1;
+        if ((uint)number > (uint)_program.GroupCount) return false;
+        // Python group n owns slot n-1; group0 projects the whole-match range.
+        var slot = number - 1;
+        start = number == 0 ? StartOffsetInBytes : _slots.Starts[slot];
+        end = number == 0 ? EndOffsetInBytes : _slots.Ends[slot];
         // The profile runs fixed-width lookbehind forward as well. Byte-only
         // template expansion needs neither edge normalization nor a map.
         if (start < 0 || end < 0) return false;
@@ -368,7 +362,7 @@ internal struct PythonReScalarMatchState
         EnsureMap(input);
         // Owned snapshots project directly from capture slots. Borrowed contexts
         // still use SnapshotGroups; no temporary range array is needed here.
-        var projected = AllocateResultArray<Utf8PythonGroupMatchData>(input, _numbersByPython.Length);
+        var projected = AllocateResultArray<Utf8PythonGroupMatchData>(input, _program.GroupCount + 1);
         for (var i = 0; i < projected.Length; i++)
         {
             Checkpoint(input);

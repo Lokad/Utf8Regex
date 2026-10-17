@@ -242,8 +242,10 @@ internal static partial class PythonReTranslator
         using var arena = Utf8ConstructionArena.Create(construction.Budget);
         var emittedGroupNames = BuildEmittedGroupNames(parseResult.NamedGroups, arena);
         using var builder = Utf8ConstructionText.Create();
-        // PLAN.md C07: .NET numbers unnamed groups first (opening-paren order), then named groups (opening-paren order), while Python numbers strictly by opening paren. Precompute the Python-slot to core-slot permutation for the owned scalar program.
-        var coreNumbersByPython = arena.Allocate<int>(checked(parseResult.CaptureGroupCount + 1), true);
+        // Core text numbers unnamed groups before named groups; Python numbers by
+        // opening order. This temporary permutation serves text rendering only.
+        // The owned Python scalar program uses Python numbers directly.
+        var coreNumbersByPython = arena.Allocate<int>(checked(parseResult.CaptureGroupCount + 1), false);
         var namedPythonGroups = arena.Allocate<bool>(coreNumbersByPython.Length, false);
         foreach (var number in parseResult.NamedGroups.Values)
         {
@@ -285,7 +287,7 @@ internal static partial class PythonReTranslator
 
         var result = new PythonReTranslation(translatedPattern, nativePattern, ToRegexOptions(parseResult.Options),
             ToRegexOptions(parseResult.Options) & ~RegexOptions.IgnoreCase, parseResult.CaptureGroupCount,
-            emittedGroupNames, coreNumbersByPython);
+            emittedGroupNames);
         arena.Complete();
         construction.Complete();
         return result;
@@ -765,5 +767,4 @@ internal readonly record struct PythonReTranslation(
     RegexOptions RegexOptions,
     RegexOptions NativeRegexOptions,
     int CaptureGroupCount,
-    IReadOnlyDictionary<string, string> EmittedGroupNames,
-    int[] CoreNumbersByPython);
+    IReadOnlyDictionary<string, string> EmittedGroupNames);

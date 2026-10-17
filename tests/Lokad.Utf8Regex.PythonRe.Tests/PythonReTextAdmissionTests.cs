@@ -63,16 +63,14 @@ public sealed class PythonReTextAdmissionTests
     }
 
     [Fact]
-    public void TranslationRetainsRenderedTextNamesAndNumericProjectionTables()
+    public void TranslationRetainsRenderedTextAndNames()
     {
         var parse = new PythonReParser("(?P<é>a)(b)(?P=é)").Parse(PythonReCompileOptions.None);
         using var owner = Utf8ConstructionScope.Enter();
         var result = PythonReTranslator.Translate(parse);
         Assert.Equal("g1", result.EmittedGroupNames["é"]);
-        Assert.Equal(new[] { 0, 2, 1 }, result.CoreNumbersByPython);
         Assert.Equal("(?<g1>a)(b)\\k<g1>", result.NativePattern);
-        Assert.True(owner.Budget.ReservedBytes >= Utf8ConstructionBudget.ArrayBytes<int>(3)
-            + Utf8ConstructionBudget.StringBytes(result.Pattern.Length) + Utf8ConstructionBudget.StringBytes(result.NativePattern.Length));
+        Assert.True(owner.Budget.ReservedBytes >= Utf8ConstructionBudget.StringBytes(result.Pattern.Length) + Utf8ConstructionBudget.StringBytes(result.NativePattern.Length));
     }
 
     [Theory]

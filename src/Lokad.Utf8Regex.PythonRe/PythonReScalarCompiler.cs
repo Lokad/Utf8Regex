@@ -151,7 +151,7 @@ internal static partial class PythonReScalarCompiler
                             nodes[node] = group.Kind switch
                             {
                                 PythonReGroupKind.Capturing or PythonReGroupKind.NamedCapturing =>
-                                    PythonReScalarNodeFactory.Capture(translation.CoreNumbersByPython[group.GroupNumber] - 1, body),
+                                    PythonReScalarNodeFactory.Capture(group.GroupNumber - 1, body),
                                 PythonReGroupKind.PositiveLookbehind => PythonReScalarNodeFactory.Lookbehind(body, true, group.FixedLookbehindWidth ?? throw new InvalidOperationException("Validated lookbehind width is missing.")),
                                 PythonReGroupKind.NegativeLookbehind => PythonReScalarNodeFactory.Lookbehind(body, false, group.FixedLookbehindWidth ?? throw new InvalidOperationException("Validated lookbehind width is missing.")),
                                 PythonReGroupKind.PositiveLookahead => PythonReScalarNodeFactory.Lookahead(body, true),
@@ -162,10 +162,10 @@ internal static partial class PythonReScalarCompiler
                         }
                         break;
                     case PythonReNumericBackreferenceNode reference:
-                        nodes[node] = PythonReScalarNodeFactory.Backref(translation.CoreNumbersByPython[reference.GroupNumber] - 1, reference.LowerScalar);
+                        nodes[node] = PythonReScalarNodeFactory.Backref(reference.GroupNumber - 1, reference.LowerScalar);
                         break;
                     case PythonReNamedBackreferenceNode reference:
-                        nodes[node] = PythonReScalarNodeFactory.Backref(translation.CoreNumbersByPython[parse.NamedGroups[reference.Name]] - 1, reference.LowerScalar);
+                        nodes[node] = PythonReScalarNodeFactory.Backref(parse.NamedGroups[reference.Name] - 1, reference.LowerScalar);
                         break;
                     case PythonReConditionalNode conditional:
                         if (frame.Stage == 0)
@@ -190,7 +190,7 @@ internal static partial class PythonReScalarCompiler
                         var number = conditional.Reference.Kind == PythonReConditionalReferenceKind.GroupNumber
                             ? conditional.Reference.GroupNumber
                             : parse.NamedGroups[conditional.Reference.GroupName ?? throw new InvalidOperationException("Conditional name missing.")];
-                        nodes[node] = PythonReScalarNodeFactory.Conditional(translation.CoreNumbersByPython[number] - 1,
+                        nodes[node] = PythonReScalarNodeFactory.Conditional(number - 1,
                             frame.Yes ?? throw new InvalidOperationException("Conditional yes branch is missing."), no);
                         break;
                     default:
@@ -212,6 +212,8 @@ internal static partial class PythonReScalarCompiler
         // The shared value-frame owner is idempotent on the later using exit.
         frames.Dispose();
         var root = nodes[parse.Root];
+        // Python opening-order group n owns scalar slot n-1. Core text rendering
+        // has its separate named/unnamed numbering; it does not define VM slots.
         var names = arena.Allocate<string>(checked(parse.CaptureGroupCount + 1), true);
         names[0] = "0"; // Borrowed immutable whole-match slot spelling.
         if (names.Length > 1)
@@ -224,7 +226,7 @@ internal static partial class PythonReScalarCompiler
             }
         }
         foreach (var named in parse.NamedGroups)
-            names[translation.CoreNumbersByPython[named.Value]] = translation.EmittedGroupNames[named.Key];
+            names[named.Value] = translation.EmittedGroupNames[named.Key];
         var program = Utf8SliceLowerer.Lower(root, names, false, false, false)
             ?? throw new InvalidOperationException("The validated Python tree has no owned scalar program.");
         arena.Complete();
