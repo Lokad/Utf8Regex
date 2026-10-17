@@ -3,34 +3,26 @@
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
 strict UTF-8 scalars, with primary byte coordinates and derived UTF-16 projections.
 
-Development prepares scalar.73 to carry the Core preparation/anchored-offset
-authority fixes in one matching pair. It is not yet package/cost qualified;
-the exact72 evidence below is preserved, not relabeled. No broader PCRE2 milestone
-is a prerequisite for this Core/PythonRe delivery.
+Qualified private **Core/PythonRe 0.4.0-scalar.73** is produced by
+`137ca9a73dfeff24282e0b9ba585b6ed08b302b0`; PythonRe pins Core `[0.4.0-scalar.73]`.
+Same-byte Windows/Linux consumers, capture/CPython catalog, provenance and final-
+feed public restore pass. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38991026778)
+is green. [Handoff](../../artifacts/core-python-scalar73-20261017/HANDOFF.md) and
+[consumption notes](../../artifacts/core-python-scalar73-20261017/CONSUMING.md)
+record exact identities, operating costs, sample noise and the preserved Windows
+Core timeout/retry. The pair was built/packed once; a same-byte Core test retry
+did not rebuild/repack or relax its timeout. Earlier72/69/68/65 stay immutable;
+independent PCRE71 requires its own exact Core71 pin.
 
-Qualified private **Core/PythonRe 0.4.0-scalar.72** is produced by
-`1d04bd4c35f0a7bfd9d0c566d2b0181190d445ca`; PythonRe pins Core `[0.4.0-scalar.72]`.
-Same-byte Windows/Linux consumers, captures/CPython catalog, provenance and final-
-feed public restore pass. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38983676410)
-is green. [Handoff](../../artifacts/core-python-scalar72-20261017/HANDOFF.md) and
-[consumption notes](../../artifacts/core-python-scalar72-20261017/CONSUMING.md)
-record exact identities, current costs and exclusions. Earlier69/68/65 stay
-immutable; independent PCRE71 requires its own exact Core71 pin.
-
-This input bounds UTF8 construction decoding and directly acquires semantic BMP
-literal nodes through the existing admitted factory, avoiding per-atom Core
-parsing. Scalar VM, captures/references, pinned Python15.1 case data, surrogate
-rejection, interruption and all resource controls remain. Less actual preparation
-changes numeric cutoffs; explicit small caps still deny. Retained snapshots and
-cursor aliases preserve their lifetimes. Core only permitted SizeOf, accepted by
-Lython; Python has no unchecked references/generated helpers or BCL matcher/results.
-
-Compiling an 8 KiB byte pattern takes 21.6 ms and allocates 11.9 MB in this package.
-With finite limits, word Count takes 211 µs and about 112 bytes, word values 347 µs,
-captured Count 371 µs and 1,000 tuples 723 µs. All 170 samples exceed 73 ms. The
-handoff records required validation/output retention, finite controls, live tokens,
-allocations, noise and comparator scope. The source comparison (48.7 to 19.4 ms,
-33.0 to 11.9 MB) is separate; these runs do not establish a cross-run change.
+This input carries the Core cold-template and anchored-offset authority fixes,
+reusing existing construction/cursor controls and omitting a duplicate finite
+owner. It preserves72's bounded UTF8 decoding/direct literal lowering, Python
+scalar VM/captures/references, pinned15.1 case data and all invocation controls.
+Retained snapshots and cursor aliases preserve their lifetimes. Core only permits
+SizeOf, accepted by Lython; Python has no unchecked members/generated helpers or
+BCL matcher/results. Complete required tuple materialization is included in the
+current cost observation; exact sample provenance and comparator exclusions stay
+in the handoff, separate from source comparisons and historical benchmark tables.
 
 Defaults/static caches remain unlimited. Complete construction/lazy/default/live-
 retention/RSS/host containment remains unfinished; compose existing [host owners](../../HOST-INTEGRATION.md).

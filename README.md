@@ -4,49 +4,45 @@
 scalars over strict UTF-8 spans, with primary byte offsets and lengths. Dot matches
 😀 once across its four bytes. UTF-16 coordinates and strings are derived conveniences.
 
-The qualified private **Core/PythonRe 0.4.0-scalar.72** pair is produced by
-`1d04bd4c35f0a7bfd9d0c566d2b0181190d445ca`. The same immutable packages pass
+The qualified private **Core/PythonRe 0.4.0-scalar.73** pair is produced by
+`137ca9a73dfeff24282e0b9ba585b6ed08b302b0`. The same immutable packages pass
 Windows/Linux detached consumers, exact provenance/pins/locks/DLLs/symbols,
 capture fixtures, the CPython semantic catalog and fresh final-feed public restore.
-[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38983676410) is green.
-PythonRe pins Core `[0.4.0-scalar.72]`.
-[Handoff and exact scope](artifacts/core-python-scalar72-20261017/HANDOFF.md),
-[consumption instructions](artifacts/core-python-scalar72-20261017/CONSUMING.md).
+[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38991026778) is green.
+PythonRe pins Core `[0.4.0-scalar.73]`.
+[Handoff and exact scope](artifacts/core-python-scalar73-20261017/HANDOFF.md),
+[consumption instructions](artifacts/core-python-scalar73-20261017/CONSUMING.md).
 
-Development now prepares **scalar.73**, batching Core cold-template and anchored
-offset invocation-authority fixes. It is not yet a qualified package. Its initial
-offset prototype was rejected for cost; revised cursor reuse still needs the
-combined consumer and current-cost milestone. The72 evidence below remains
-specific to those immutable packages.
+This combined milestone carries Core's original invocation authority through cold
+template preparation and anchored offset matching. Existing cache/codec/cursor
+machinery is reused, the UTF8 key is admitted before acquisition, and a throwaway
+finite cursor owner is omitted. Strict scalars, captures, interruption and all
+resource controls remain. UTF16 offsets continue to be compatibility coordinates.
 
-This input adds bounded UTF8 construction decoding and direct semantic literal
-nodes, omitting per-atom Core parsing. Scalar semantics, captures, original
-interruption, resource admission and prior execution improvements remain. Less
-actual preparation intentionally lowers numeric construction requirements; explicit
-small caps still deny. The source comparison reduces8KiB Python byte Compile
-48.7->19.4ms and33.0->11.9MB, with an unchanged class-only control. Closed source
-comparisons remain separate from current-package observations.
+The candidate was built/packed once. One existing one-second Windows split test
+timed out initially; focused and full same-byte retries passed without rebuilding,
+changing source or relaxing its timeout. Both results and the recovery are retained.
+The handoff distinguishes that recovery from first-pass success.
 
-Compiling an 8 KiB byte pattern takes 21.6 ms and allocates 11.9 MB in the current
-package. With finite limits, Unicode word Count takes 211 µs and about 112 bytes;
-word values take 347 µs and 1,000 captured tuples take 723 µs. Core family Count
-still costs 320 µs with finite limits versus 61 µs unlimited, with substantial
-noise. All 170 samples exceed 73 ms. The handoff records full validation, required
-output retention, finite controls, live tokens, allocations and comparator scope.
-These observations do not establish changes against earlier runs or broad parity.
+Selective current operating costs on exact73 bytes include complete validation,
+required output, finite limits/live tokens and decode/predecoded comparators.
+Finite family Count remains dearer than unlimited, mixed-Unicode folded offsets
+retain a costly scalar route, and several materialization samples are noisy.
+Read the handoff's measurements and limitations; the rejected source prototype
+and historical benchmark rows are not final73 performance evidence.
 
-Core supplementary casing owns Unicode 16 pairs; categories remain runtime-sourced.
-Python data stay pinned to 15.1. No shipped BCL matcher/results or dormant UTF16 engine.
-Core only retains permitted Unsafe.SizeOf, accepted by Lython; Python has no
+Core supplementary casing owns Unicode16 pairs; categories remain runtime-sourced.
+Python data stay pinned15.1. No shipped BCL matcher/results or dormant UTF16 engine.
+Core retains only permitted Unsafe.SizeOf, accepted by Lython; Python has no
 unchecked references or generated inline-array helpers.
 
 Defaults/static calls remain unlimited. [HOST-INTEGRATION.md](HOST-INTEGRATION.md)
 composes covered capacity with existing owners; complete construction/lazy/default/
 live-retention/RSS/host containment and full SPEC remain unfinished. This scoped
 input does not imply publication, consumer pins/defaults/adoption or POSIX-longest
-selection. Published 0.3 packages retain their former contract. Earlier 69/68/65
+selection. Published0.3 packages retain their former contract. Earlier72/69/68/65
 remain immutable. Independent [PCRE71](artifacts/pcre2-scalar71-delivery-20261017/HANDOFF.md)
-has its own exact Core71 pin; keep it separate from Python72. Original package
+has its own exact Core71 pin; keep it separate from Python73. Original package
 README preparation assets stay frozen; handoff/manifest record completed scope.
 
 Use exact versions and the immutable feed. The existing

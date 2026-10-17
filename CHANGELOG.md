@@ -1,5 +1,18 @@
 # Changelog
 
+## Core/PythonRe scalar.73 qualified private dependency
+
+- Qualify immutable producer137ca9a7: matching Core/Python packages with exact
+  pins/symbols/locks/DLLs, same-byte Windows/Linux consumers and fresh final-feed
+  restore. Capture/semantic oracles and managed-member inventories pass.
+- Build/pack once. Preserve the initial one-second Windows split timeout and
+  successful same-byte focused/full retries; no source/timeout change or repack.
+- Record selective current public cost on actual73 bytes, including finite
+  controls/required output. Disclose noisy materialization and the mixed-Unicode
+  folded offset slow path. Rejected prototype timings remain separate.
+- Earlier72 and independent PCRE71 remain immutable. No publication, consumer
+  adoption/default switch, full containment claim or PCRE73 qualification.
+
 ## Core/PythonRe scalar.73 preparation: invocation authority
 
 - Batch the Core cold-template preparation fix with anchored UTF16-offset
