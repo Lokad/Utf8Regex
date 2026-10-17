@@ -28,6 +28,12 @@ on the16KiB corpus prefix and420us to59us on dense hits. The full6.8MB/92-match
 after-only witness is about1.6ms unlimited/3.2ms finite; predecoded .NET remains
 faster. Controls/drift and scope remain explicit. These are source measurements,
 not exact-package/default-runtime or broad-parity claims. No further timing.
+
+Development source after scalar.87 extends this reuse to the prepared scalar URI
+Count family with bounded delimiter searches and the same invocation controls.
+It needs no VM capture/continuation storage. [Focused source evidence](artifacts/core-uri-count-current-20261017/RESULT.md)
+records the public costs, scalar/resource checks and remaining predecoded-.NET
+gap; these changes are outside the immutable scalar.87 packages.
 [Earlier exact86 default costs](artifacts/core-python-scalar86-20261017/vm-cost/RESULT.md)
 retain their unqualified noisy lanes and cross-process caveats; historical tables
 do not qualify87 package-default absolutes or CPythonStatus.

@@ -1174,7 +1174,7 @@ public sealed partial class Utf8Regex
         try
         {
             if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program) ||
-                CanUseNativeWordDelimitedCount(program, startByte))
+                CanUseNativeScalarTokenCount(program, startByte))
             {
                 // These complete counters consume validated bytes, not coordinate metadata.
                 // Keep structural validation and the existing counting kernel intact.
@@ -1205,17 +1205,19 @@ public sealed partial class Utf8Regex
         }
     }
 
-    private bool CanUseNativeWordDelimitedCount(Utf8SliceProgram program, int startByte)
+    private bool CanUseNativeScalarTokenCount(Utf8SliceProgram program, int startByte)
         => startByte == 0 && ReferenceEquals(program, _ownedSliceProgram) && !_hasCaptures &&
             !program.RightToLeft && !program.IgnoreCase &&
             (Options & (RegexOptions.ECMAScript | RegexOptions.NonBacktracking)) == 0 &&
-            _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount;
+            _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or Utf8FallbackDirectFamilyKind.Utf8UriToken;
 
     private int OwnedSliceCountFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program,
         int startByte, ref Utf8SliceInvocation invocation)
     {
-        if (CanUseNativeWordDelimitedCount(program, startByte))
+        if (CanUseNativeScalarTokenCount(program, startByte))
         {
+            if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.Utf8UriToken)
+                return Utf8UriTokenCountExecutor.CountWellFormed(input, ref invocation);
             var breach = Utf8WordDelimitedTokenExecutor.TryCountWellFormed(input, ref invocation, out var count);
             if (breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException("Word-delimited count breached the invocation budget.");

@@ -1,5 +1,14 @@
 # Changelog
 
+## Development after scalar.87
+
+- Reuse the existing scalar URI Count algorithm before general VM dispatch for
+  its original capture-free, nonfolded LTR family. Keep whole-input strict UTF-8
+  validation, bounded delimiter searches, metered scalar loops and the original
+  cancellation/deadline authority. Avoid VM capture/continuation storage under
+  finite policies; preserve Unicode scheme, host, query and fragment semantics.
+  One bounded public comparison supports the change; scalar.87 stays immutable.
+
 ## Qualified private Core/PythonRe scalar.87
 
 - Batch scalar/metered email Count with cache and Python pattern-admission fixes.

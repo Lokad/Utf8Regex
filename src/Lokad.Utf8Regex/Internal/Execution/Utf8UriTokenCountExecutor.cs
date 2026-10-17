@@ -7,19 +7,39 @@ internal static class Utf8UriTokenCountExecutor
 {
     public static int CountWellFormed(ReadOnlySpan<byte> input)
     {
+        var invocation = new Utf8SliceInvocation(default, Timeout.InfiniteTimeSpan, default);
+        return CountWellFormed(input, ref invocation);
+    }
+
+    internal static int CountWellFormed(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)
+    {
+        Checkpoint(ref invocation);
         var count = 0;
         var searchFrom = 0;
         while ((uint)searchFrom < (uint)input.Length)
         {
-            var relative = input[searchFrom..].IndexOf("://"u8);
-            if (relative < 0)
+            var delimiterIndex = -1;
+            if (invocation.IsUnmetered)
             {
-                break;
+                var relative = input[searchFrom..].IndexOf("://"u8);
+                if (relative >= 0) delimiterIndex = searchFrom + relative;
             }
-
-            var delimiterIndex = searchFrom + relative;
-            if (!TryFindSchemeStart(input, searchFrom, delimiterIndex, out _) ||
-                !TryConsumeBody(input, delimiterIndex + 3, out var tokenEnd))
+            else
+            {
+                // Two lookahead bytes retain every delimiter crossing a window.
+                // Keep searchFrom as the scheme floor, independent of scanFrom.
+                for (var scanFrom = searchFrom; scanFrom < input.Length;)
+                {
+                    Checkpoint(ref invocation);
+                    var length = Math.Min(2048, input.Length - scanFrom);
+                    var relative = input.Slice(scanFrom, Math.Min(length + 2, input.Length - scanFrom)).IndexOf("://"u8);
+                    if (relative >= 0) { delimiterIndex = scanFrom + relative; break; }
+                    scanFrom += length;
+                }
+            }
+            if (delimiterIndex < 0) break;
+            if (!TryFindSchemeStart(input, searchFrom, delimiterIndex, ref invocation, out _) ||
+                !TryConsumeBody(input, delimiterIndex + 3, ref invocation, out var tokenEnd))
             {
                 searchFrom = delimiterIndex + 3;
                 continue;
@@ -32,8 +52,16 @@ internal static class Utf8UriTokenCountExecutor
         return count;
     }
 
+    private static void Checkpoint(ref Utf8SliceInvocation invocation)
+    {
+        if (invocation.IsUnmetered) return;
+        if (invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException("URI count breached the invocation budget.");
+    }
+
     public static Utf8SelectedCountKernelMetrics InspectMetrics(ReadOnlySpan<byte> input)
     {
+        var invocation = new Utf8SliceInvocation(default, Timeout.InfiniteTimeSpan, default);
         var candidates = 0;
         var matches = 0;
         var searchFrom = 0;
@@ -47,8 +75,8 @@ internal static class Utf8UriTokenCountExecutor
 
             candidates++;
             var delimiterIndex = searchFrom + relative;
-            if (!TryFindSchemeStart(input, searchFrom, delimiterIndex, out _) ||
-                !TryConsumeBody(input, delimiterIndex + 3, out var tokenEnd))
+            if (!TryFindSchemeStart(input, searchFrom, delimiterIndex, ref invocation, out _) ||
+                !TryConsumeBody(input, delimiterIndex + 3, ref invocation, out var tokenEnd))
             {
                 searchFrom = delimiterIndex + 3;
                 continue;
@@ -71,11 +99,13 @@ internal static class Utf8UriTokenCountExecutor
         ReadOnlySpan<byte> input,
         int minStartIndex,
         int delimiterIndex,
+        ref Utf8SliceInvocation invocation,
         out int schemeStart)
     {
         schemeStart = delimiterIndex;
         while (schemeStart > minStartIndex)
         {
+            Checkpoint(ref invocation);
             var value = input[schemeStart - 1];
             if (value < 0x80)
             {
@@ -107,18 +137,18 @@ internal static class Utf8UriTokenCountExecutor
         return schemeStart < delimiterIndex;
     }
 
-    private static bool TryConsumeBody(ReadOnlySpan<byte> input, int bodyStart, out int tokenEnd)
+    private static bool TryConsumeBody(ReadOnlySpan<byte> input, int bodyStart, ref Utf8SliceInvocation invocation, out int tokenEnd)
     {
         tokenEnd = bodyStart;
         // Host and continuation each require one complete scalar.
-        if (!TryConsumeBodyScalar(input, ref tokenEnd, allowSlash: false) ||
-            !TryConsumeBodyScalar(input, ref tokenEnd, allowSlash: true)) return false;
-        while (TryConsumeBodyScalar(input, ref tokenEnd, allowSlash: true)) { }
+        if (!TryConsumeBodyScalar(input, ref tokenEnd, false, ref invocation) ||
+            !TryConsumeBodyScalar(input, ref tokenEnd, true, ref invocation)) return false;
+        while (TryConsumeBodyScalar(input, ref tokenEnd, true, ref invocation)) { }
 
         if ((uint)tokenEnd < (uint)input.Length && input[tokenEnd] == (byte)'?')
         {
             tokenEnd++;
-            while (TryConsumeNonWhitespaceScalar(input, ref tokenEnd, excludedAscii: (byte)'#'))
+            while (TryConsumeNonWhitespaceScalar(input, ref tokenEnd, (byte)'#', ref invocation))
             {
             }
         }
@@ -126,7 +156,7 @@ internal static class Utf8UriTokenCountExecutor
         if ((uint)tokenEnd < (uint)input.Length && input[tokenEnd] == (byte)'#')
         {
             tokenEnd++;
-            while (TryConsumeNonWhitespaceScalar(input, ref tokenEnd, excludedAscii: 0))
+            while (TryConsumeNonWhitespaceScalar(input, ref tokenEnd, 0, ref invocation))
             {
             }
         }
@@ -137,8 +167,10 @@ internal static class Utf8UriTokenCountExecutor
     private static bool TryConsumeBodyScalar(
         ReadOnlySpan<byte> input,
         ref int index,
-        bool allowSlash)
+        bool allowSlash,
+        ref Utf8SliceInvocation invocation)
     {
+        Checkpoint(ref invocation);
         if ((uint)index >= (uint)input.Length)
         {
             return false;
@@ -171,8 +203,10 @@ internal static class Utf8UriTokenCountExecutor
     private static bool TryConsumeNonWhitespaceScalar(
         ReadOnlySpan<byte> input,
         ref int index,
-        byte excludedAscii)
+        byte excludedAscii,
+        ref Utf8SliceInvocation invocation)
     {
+        Checkpoint(ref invocation);
         if ((uint)index >= (uint)input.Length)
         {
             return false;
