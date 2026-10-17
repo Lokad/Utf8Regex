@@ -1067,6 +1067,14 @@ internal static class Utf8NativeExecutionAnalyzer
                 return false;
             }
 
+            // This verifier consumes the separator greedily without rewinding it.
+            // A suffix beginning in that class needs the owned backtracking path.
+            var firstSuffix = suffixParts.Length > 0 && suffixParts[0].IsLiteral
+                ? suffixParts[0].LiteralUtf8 : suffixUtf8;
+            if (identifierStartSet is null && separatorSet is { } separator &&
+                firstSuffix is { Length: > 0 } && separator.Contains(firstSuffix[0]))
+                return false;
+
             var plan = new AsciiStructuralIdentifierFamilyPlan(
                 prefixes,
                 separatorSet,
