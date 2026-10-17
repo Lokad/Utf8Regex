@@ -2,6 +2,11 @@
 
 ## Development after scalar.82
 
+- Boolean-only Python literal searches with resource or interruption controls
+  reuse whole-subject validation-only and the existing native finder, avoiding
+  unused coordinate/cursor preparation. Unmetered calls keep their prior route:
+  the broader prototype regressed an ASCII workload. Final guarded costs remain
+  for the next delivery boundary; immutable scalar.82 is unchanged.
 - Reuse Core's complete metered literal/family discovery for capture-free Python
   cursor search. Admit full native eligibility separately from start hints;
   remove redundant VM attempts/scratch while keeping original validation,

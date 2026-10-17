@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
@@ -71,6 +72,35 @@ public sealed partial class Utf8PythonRegex
     private bool IsMatchScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
         CancellationToken cancellationToken)
     {
+        // Keep unmetered calls on their established cursor: validation-only
+        // was slower for that ASCII route in the bounded public comparison.
+        if ((HasFiniteExecutionLimits || cancellationToken.CanBeCanceled || MatchTimeout != Timeout.InfiniteTimeSpan) &&
+            _scalarProgram.GroupCount == 0 && !_scalarProgram.CanMatchEmpty &&
+            !_scalarProgram.HasContiguousAnchor && !_scalarProgram.RightToLeft &&
+            !_scalarProgram.IgnoreCase && _utf8Regex?.CanFindNativeLiteralForResult == true)
+        {
+            ValidateScalarStartOffset(input, startOffsetInBytes);
+            var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+            try
+            {
+                // A boolean needs neither coordinate metadata nor cursor state.
+                // Keep validation and the existing finder under one authority.
+                Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
+                if (!_utf8Regex.TryFindNativeLiteralForResult(input, startOffsetInBytes,
+                    ref invocation, out var found, out _, out _))
+                    throw new InvalidOperationException("Prepared literal discovery declined its eligible route.");
+                return found;
+            }
+            catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+                invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+            {
+                throw invocation.Budget.CreateResourceFailure();
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw CreateMatchTimeoutException(input, _translation.Pattern);
+            }
+        }
         var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
         try
         {

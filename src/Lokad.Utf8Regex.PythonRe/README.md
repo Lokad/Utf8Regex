@@ -31,6 +31,14 @@ remain; removed work/scratch can admit tighter numerical policies.
 improves finite dense Split by12.6% and removes late-family Search VM attempts.
 It is FullOpts evidence outside immutable scalar.82, not new CPython Status.
 
+Controlled boolean-only literal searches also reuse existing validation-only
+and native discovery, omitting unused coordinate/cursor preparation. Whole-input
+strict validation and original work/deadline/token authority remain. Unmetered
+calls keep their prior routes after the broader prototype regressed an
+ASCII workload. [Experiment](../../artifacts/python-boolean-native-20261017/RESULT.md)
+distinguishes prototype measurements from the final guard, whose costs are due
+at the next delivery boundary. No additional public policy or execution mode.
+
 [Current exact-package costs](../../artifacts/core-python-scalar82-20261017/vm-cost/RESULT.md)
 include finite/live-token overhead, required tuples/Split values and both .NET
 controls under default tiering/PGO. Stable rows and noisy/short lanes are distinct;
