@@ -1,6 +1,13 @@
 # Changelog
 
-## Development after scalar.85
+## Private Core/PythonRe scalar.86 candidate
+
+- Batch the accepted validity-selector and literal FullMatch improvements with
+  construction-authority and scalar-lookbehind regressions. Qualification is
+  pending; earlier85 and independent PCRE76/Core76 remain immutable. No PCRE86,
+  publication, consumer pin/default change or actual adoption is implied.
+
+## Changes included after scalar.85
 
 - Reuse metered Core literal discovery for exact, capture-free PythonRe FullMatch
   value/string calls, including scalar suffix offsets. Keep whole-input validity,
