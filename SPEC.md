@@ -144,6 +144,15 @@ external exclusions require qualification; a runtime's timeout rounding or
 checkpoint defects do not define the owned contract. Full route coverage remains
 an acceptance gate, distinct from the qualified development slices below.
 
+Development source after scalar.77 bounds replacement-literal byte counting,
+encoding and validity scans by 2048 UTF-16 code units, finishing a valid surrogate
+pair at the boundary (at most 2049 units). These are template-string operations,
+not subject matching. Zero-work checkpoints use the existing construction owner
+and its inherited cold-replacement token/deadline. Successful numeric work and
+storage charges, bulk BCL encoding, one exact admitted byte array, valid-template
+text reuse and per-fragment repair remain unchanged. Earlier interruption is
+intentional; this does not qualify all preparation or add a public byte/RSS cap.
+
 Development scalar-class execution keeps linear range and independent-table
 scans bounded under the original invocation. The first 32 entries of each range
 or table scan fit within its atom/segment cost; each further block spends a work step

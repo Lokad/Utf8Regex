@@ -1,5 +1,15 @@
 # Changelog
 
+## Development: bounded replacement-literal preparation
+
+- Check the original cancellation/deadline authority during literal byte counting,
+  encoding and validity scans, rather than only between whole-fragment passes.
+  Keep BCL span encoding and finish surrogate pairs at chunk boundaries.
+- Preserve successful work/storage charges, exact byte-array admission, valid
+  text reuse and independent repair of each literal fragment. No new owner,
+  budget, mode or output buffer. Immutable scalar.77 predates this correction.
+  [Focused evidence](artifacts/replacement-literal-checkpoints-20261017/RESULT.md).
+
 ## Development: disjoint-literal class repeats
 
 - Reuse the existing scalar scanner for forward greedy class repeats whose
