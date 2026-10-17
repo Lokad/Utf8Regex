@@ -41,8 +41,9 @@ batch. The Python semantic target remains3.13.2/Unicode15.1.
 The [comparative snapshot](BENCHMARKS.md) retains historical point measurements
 and route labels separately from paired evidence. See the [batch receipt](../../artifacts/pythonre-current-qualification-20261017/RESULT.md).
 
-Development source after79 also skips impossible starts for a required contiguous
-ASCII class, including one outer capture and positive greedy repetition. It
+Development source after79 also skips impossible starts for a required positive
+ASCII class, including one outer capture and positive greedy repetition. A
+necessary interval may contain holes; the VM verifies each actual candidate. It
 reuses the existing bounded span seeker and shared invocation; whole strict UTF8
 validation, captures, cancellation/deadlines and finite admission remain. Removing
 failed VM attempts can lower numeric work/depth/working requirements. A bounded
@@ -51,6 +52,11 @@ time about38% with finite limits, under the declared FullOpts protocol; dense
 work stays within variation and misses avoid VM scratch. [Source evidence](../../artifacts/leading-ascii-range-20261017/RESULT.md).
 This source change is not included in immutable scalar.79 and sets no new CPython
 Status. Package qualification waits for the next coherent delivery boundary.
+The interval extension's bounded comparison reduces mixed identifier FindAll time
+about43% with finite limits and short inputs about29%, with an8.6% unlimited dense
+identifier penalty under the controlled protocol. The rejected gate-only pilot
+and corrected probe placement are preserved in [its receipt](../../artifacts/ascii-set-start-hints-20261017/RESULT.md).
+No adaptive mode or extra retained metadata is used.
 
 Defaults/static calls remain unlimited. Complete construction, lazy/default,
 caller-retention/RSS and host coverage remain open; compose existing

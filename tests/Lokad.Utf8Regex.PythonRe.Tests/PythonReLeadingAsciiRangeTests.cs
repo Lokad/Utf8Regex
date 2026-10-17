@@ -28,7 +28,11 @@ public sealed class PythonReLeadingAsciiRangeTests
     [InlineData(@"[\x3f-\x40]+", 63, 64)]
     [InlineData(@"[\x7f]+", 127, 127)]
     [InlineData("[a-cd-f]+", 97, 102)]
-    public void MandatoryMaskHasExactlyTheDerivedAsciiMembership(string pattern, int minimum, int maximum)
+    [InlineData("[A-Za-z_][A-Za-z0-9_]*", 65, 122)]
+    [InlineData("(?P<word>[a-cx-z]+)", 97, 122)]
+    [InlineData("[a-cx-z]+", 97, 122)]
+    [InlineData("[ACE]+", 65, 69)]
+    public void MandatoryMaskIsContainedInTheDerivedAsciiInterval(string pattern, int minimum, int maximum)
     {
         var program = Compile(pattern);
         Assert.True(PythonReScalarMatchState.TryGetLeadingAsciiRange(program, out var low, out var high));
@@ -36,12 +40,14 @@ public sealed class PythonReLeadingAsciiRangeTests
         var mask = program.SetMasks[program.Instructions.First(instruction => instruction.Kind == Utf8SliceInstructionKind.Set).A];
         for (var scalar = 0; scalar < 128; scalar++)
         {
-            Assert.Equal((mask[scalar >> 3] & (1 << (scalar & 7))) != 0, scalar >= low && scalar <= high);
+            if ((mask[scalar >> 3] & (1 << (scalar & 7))) != 0)
+                Assert.InRange(scalar, low, high);
         }
+        Assert.NotEqual(0, mask[low >> 3] & (1 << (low & 7)));
+        Assert.NotEqual(0, mask[high >> 3] & (1 << (high & 7)));
     }
 
     [Theory]
-    [InlineData("[a-cx-z]+")]
     [InlineData("[^a-z]+")]
     [InlineData("[a-z]*Z")]
     [InlineData("([a-z]+)?Z")]
@@ -90,6 +96,9 @@ public sealed class PythonReLeadingAsciiRangeTests
     [InlineData(@"([\x3f-\x40]+)", "9?@AX", new[] { "?@" })]
     [InlineData(@"([a-z]+)-\1", "99abc-abc xx", new[] { "abc" })]
     [InlineData("([a-z]+)(?=pha)", "9alpha", new[] { "al" })]
+    [InlineData("([A-Za-z_][A-Za-z0-9_]*)", "99[\\]^`😀_id2 A3 z", new[] { "_id2", "A3", "z" })]
+    [InlineData("([ACE]+)", "BDACEBDE", new[] { "ACE", "E" })]
+    [InlineData(@"([a-cx-z]+)-\1", "mno ab-ab xyz-xyz", new[] { "ab", "xyz" })]
     public void VerificationRetainsMinimumTailNegationAndFolding(string pattern, string text, string[] expected)
         => Assert.Equal(expected, new Utf8PythonRegex(pattern).FindAllToStrings(Encoding.UTF8.GetBytes(text)).ScalarValues);
 
@@ -158,20 +167,30 @@ public sealed class PythonReLeadingAsciiRangeTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void CandidateBlocksObserveOriginalTokenAndDeadlineAndKeepParentLoans(bool expire)
+    [InlineData(false, false)] [InlineData(true, false)]
+    [InlineData(false, true)] [InlineData(true, true)]
+    public void CandidateBlocksObserveOriginalTokenAndDeadlineAndKeepParentLoans(bool expire, bool disjoint)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cancellation = new CancellationTokenSource();
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
+        var pattern = disjoint ? "(?P<word>[A-Za-z_]+)" : Pattern;
         var cursor = new PythonReScalarMatchCursor(Encoding.UTF8.GetBytes(new string('9', 200000) + "alpha"),
-            Compile(Pattern), 0, timeout, Pattern, cancellation.Token, Limits);
+            Compile(pattern), 0, timeout, pattern, cancellation.Token, Limits);
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
+        cursor.WorkingInvocation.ShareStorageForCursor();
+        var observer = cursor.WorkingInvocation;
+        var initialBytes = cursor.ReservedBytes;
         while ((cursor.WorkingInvocation.Budget.Steps & 63) != 62)
             Assert.Equal(Utf8ExecutionLimitKind.None, cursor.WorkingInvocation.Budget.TryChargeStep());
         var entered = false;
-        cursor.WorkingInvocation.CheckpointHook = _ => { entered = true; if (expire) ticks = 50; else cancellation.Cancel(); };
+        cursor.WorkingInvocation.CheckpointHook = _ =>
+        {
+            entered = true;
+            Assert.Equal(initialBytes, observer.Ledger.ReservedBytes); // No candidate entered the VM.
+            if (expire) ticks = 50; else cancellation.Cancel();
+        };
         Exception? error = null;
         try { cursor.MoveNext(); } catch (Exception failure) { error = failure; }
         finally { cursor.Dispose(); }
@@ -179,7 +198,7 @@ public sealed class PythonReLeadingAsciiRangeTests
         if (expire)
         {
             var failure = Assert.IsType<RegexMatchTimeoutException>(error);
-            Assert.Equal(Pattern, failure.Pattern); Assert.Equal(timeout, failure.MatchTimeout);
+            Assert.Equal(pattern, failure.Pattern); Assert.Equal(timeout, failure.MatchTimeout);
         }
         else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
         Assert.Equal(13UL, cursor.ReservedBytes);

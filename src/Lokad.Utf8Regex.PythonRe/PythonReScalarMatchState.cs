@@ -185,7 +185,8 @@ internal struct PythonReScalarMatchState
         if ((lower | upper) == 0) return false;
         var first = lower != 0 ? BitOperations.TrailingZeroCount(lower) : 64 + BitOperations.TrailingZeroCount(upper);
         var last = upper != 0 ? 127 - BitOperations.LeadingZeroCount(upper) : 63 - BitOperations.LeadingZeroCount(lower);
-        if (BitOperations.PopCount(lower) + BitOperations.PopCount(upper) != last - first + 1) return false;
+        // This is a necessary start interval, not a complete class predicate.
+        // Holes are harmless false candidates: the original VM verifies the mask.
         low = first;
         high = last;
         return true;
@@ -201,7 +202,11 @@ internal struct PythonReScalarMatchState
             while (!_finished)
             {
                 Checkpoint(input);
-                if (search && (_candidateRegex is not null || _leadingAsciiLow >= 0) &&
+                // Avoid the exception-handling search helper when the current byte
+                // already satisfies the hint. The VM still checks the exact class.
+                if (search && (_candidateRegex is not null ||
+                    _leadingAsciiLow >= 0 && ((uint)_position >= (uint)input.Length ||
+                        (uint)(input[_position] - _leadingAsciiLow) > (uint)(_leadingAsciiHigh - _leadingAsciiLow))) &&
                     !SeekCandidate(input)) { _finished = true; return false; }
                 _invocation.AnchorOriginByte = _position;
                 Utf8SliceMatchOutcome outcome;
@@ -263,7 +268,6 @@ internal struct PythonReScalarMatchState
             if (_candidateRegex is not { } candidateRegex)
             {
                 if (_leadingAsciiLow < 0) return true;
-                if (_position < input.Length && (uint)(input[_position] - _leadingAsciiLow) <= (uint)(_leadingAsciiHigh - _leadingAsciiLow)) return true;
                 while (_position < input.Length)
                 {
                     if (_invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None) throw ResourceFailure();
