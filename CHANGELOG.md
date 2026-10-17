@@ -8,7 +8,8 @@
   Failed preparation is not cached; foreign interruption retries under the caller.
 - Admit UTF8 fallback text before acquisition, keep native literal destination
   allocation behavior, absolute malformed offsets, argument precedence, parent
-  cleanup and retained successful plans. No new owner/policy mode or accounting
+  cleanup and retained successful plans. Null-template errors identify the public
+  replacement parameter. No new owner/policy mode or accounting
   framework. Qualified scalar.72 bytes remain unchanged.
 - Original10public failures reproduce missing cold authority. Focused checks cover
   remaining matching time, foreign failures, refusal before string acquisition,

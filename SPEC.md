@@ -123,7 +123,8 @@ UTF8 template fallback decoding admits its one text key before acquisition;
 native direct-literal destination routes still avoid that string. Controlled
 validation uses existing scalar-aligned blocks and preserves absolute invalid-byte
 offsets and template-before-subject precedence. Pre-cancellation still wins and
-legacy null-template failures precede elapsed-clock checks. No new engine, budget
+null-template failures precede elapsed-clock checks. Their parameter is the public
+`replacement`, rather than the old cache comparer argument `obj`. No new engine, budget
 owner hierarchy, execution mode, allocation registry or graph accounting.
 
 For Core/PythonRe calls with a finite `MaxWorkingBytes` or `MaxResultBytes`,

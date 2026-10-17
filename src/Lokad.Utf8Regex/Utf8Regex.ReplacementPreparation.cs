@@ -19,9 +19,9 @@ public sealed partial class Utf8Regex
 
     private Utf8AnalyzedReplacement GetParsedReplacement(string replacement, ReplacementPreparationControl control)
     {
-        // Preserve the cache's existing null-argument failure before observing
-        // elapsed preparation time (pre-cancellation is checked at the API).
-        if (replacement is null) return GetParsedReplacement(replacement!);
+        // Reject the public null template before observing elapsed preparation
+        // time (pre-cancellation is checked at the API).
+        if (replacement is null) throw new ArgumentNullException(nameof(replacement));
         try
         {
             if (control.IsUncontrolled) return GetParsedReplacement(replacement);

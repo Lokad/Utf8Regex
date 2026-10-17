@@ -54,7 +54,8 @@ public sealed class Utf8ReplacementPreparationAuthorityTests
         var regex = new Utf8Regex("(a)", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(20));
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks += 100);
-        Assert.Throws<ArgumentNullException>(() => Replace(regex, route, "a"u8.ToArray(), null!, [], new byte[8], CancellationToken.None));
+        var failure = Assert.Throws<ArgumentNullException>(() => Replace(regex, route, "a"u8.ToArray(), null!, [], new byte[8], CancellationToken.None));
+        Assert.Equal("replacement", failure.ParamName);
     }
 
     [Theory]
