@@ -1,5 +1,7 @@
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -15,7 +17,8 @@ internal struct PythonReScalarMatchState
 {
     private readonly Utf8SliceProgram _program;
     private readonly Utf8Regex? _candidateRegex;
-    private readonly int _leadingAsciiLiteral;
+    private readonly int _leadingAsciiLow;
+    private readonly int _leadingAsciiHigh;
     private readonly string _pattern;
     private readonly TimeSpan _timeout;
     private Utf8SliceInvocation _invocation;
@@ -56,12 +59,12 @@ internal struct PythonReScalarMatchState
         {
             _candidateRegex = candidateRegex;
         }
-        // The owned first instruction proves this byte is mandatory, without
-        // borrowing the optional Core plan's character-class semantics.
-        _leadingAsciiLiteral = _candidateRegex is null && !program.CanMatchEmpty &&
-            !program.HasContiguousAnchor && !program.RightToLeft && !program.IgnoreCase &&
-            program.Instructions is [{ Kind: Utf8SliceInstructionKind.Literal, B: 0 } first, ..] &&
-            (uint)first.A < 0x80 ? first.A : -1;
+        _leadingAsciiLow = _leadingAsciiHigh = -1;
+        if (_candidateRegex is null && TryGetLeadingAsciiRange(program, out var low, out var high))
+        {
+            _leadingAsciiLow = low;
+            _leadingAsciiHigh = high;
+        }
         _pattern = pattern;
         _timeout = timeout;
         _position = startOffsetInBytes;
@@ -156,6 +159,38 @@ internal struct PythonReScalarMatchState
 
     internal bool MatchAtCurrentPosition(ReadOnlySpan<byte> input) => MoveNextCore(input, false);
 
+    internal static bool TryGetLeadingAsciiRange(Utf8SliceProgram program, out int low, out int high)
+    {
+        low = high = -1;
+        if (program.CanMatchEmpty || program.HasContiguousAnchor || program.RightToLeft || program.IgnoreCase ||
+            program.Instructions.Length == 0) return false;
+        var instructions = program.Instructions;
+        if (instructions[0] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } literal && (uint)literal.A < 128)
+        {
+            low = high = literal.A;
+            return true;
+        }
+
+        // A capture start cannot fail; a positive minimum must enter the body.
+        // Inspect at most three instructions, even for deeply nested patterns.
+        var index = instructions[0].Kind == Utf8SliceInstructionKind.CaptureStart ? 1 : 0;
+        if (index < instructions.Length && instructions[index] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, C: > 0 }) index++;
+        if (index >= instructions.Length || instructions[index] is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } set)
+            return false;
+        var mask = program.SetMasks[set.A];
+        if (mask.Length != 16) return false;
+        // ASCII masks store bit n at byte n/8, bit n%8, independently of host endian.
+        var lower = BinaryPrimitives.ReadUInt64LittleEndian(mask);
+        var upper = BinaryPrimitives.ReadUInt64LittleEndian(mask.AsSpan(8));
+        if ((lower | upper) == 0) return false;
+        var first = lower != 0 ? BitOperations.TrailingZeroCount(lower) : 64 + BitOperations.TrailingZeroCount(upper);
+        var last = upper != 0 ? 127 - BitOperations.LeadingZeroCount(upper) : 63 - BitOperations.LeadingZeroCount(lower);
+        if (BitOperations.PopCount(lower) + BitOperations.PopCount(upper) != last - first + 1) return false;
+        low = first;
+        high = last;
+        return true;
+    }
+
     private bool MoveNextCore(ReadOnlySpan<byte> input, bool search)
     {
         // A scalar cursor exclusively owns this admitted scratch. Published
@@ -166,7 +201,7 @@ internal struct PythonReScalarMatchState
             while (!_finished)
             {
                 Checkpoint(input);
-                if (search && (_candidateRegex is not null || _leadingAsciiLiteral >= 0) &&
+                if (search && (_candidateRegex is not null || _leadingAsciiLow >= 0) &&
                     !SeekCandidate(input)) { _finished = true; return false; }
                 _invocation.AnchorOriginByte = _position;
                 Utf8SliceMatchOutcome outcome;
@@ -227,13 +262,16 @@ internal struct PythonReScalarMatchState
             Utf8ExecutionLimitKind breach;
             if (_candidateRegex is not { } candidateRegex)
             {
-                if (_leadingAsciiLiteral < 0) return true;
-                if (_position < input.Length && input[_position] == (byte)_leadingAsciiLiteral) return true;
+                if (_leadingAsciiLow < 0) return true;
+                if (_position < input.Length && (uint)(input[_position] - _leadingAsciiLow) <= (uint)(_leadingAsciiHigh - _leadingAsciiLow)) return true;
                 while (_position < input.Length)
                 {
                     if (_invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None) throw ResourceFailure();
                     var length = Math.Min(2048, input.Length - _position);
-                    var offset = input.Slice(_position, length).IndexOf((byte)_leadingAsciiLiteral);
+                    var block = input.Slice(_position, length);
+                    var offset = _leadingAsciiLow == _leadingAsciiHigh
+                        ? block.IndexOf((byte)_leadingAsciiLow)
+                        : block.IndexOfAnyInRange((byte)_leadingAsciiLow, (byte)_leadingAsciiHigh);
                     if (offset >= 0) { _position += offset; return true; }
                     _position += length;
                 }

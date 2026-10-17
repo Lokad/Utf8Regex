@@ -41,6 +41,17 @@ batch. The Python semantic target remains3.13.2/Unicode15.1.
 The [comparative snapshot](BENCHMARKS.md) retains historical point measurements
 and route labels separately from paired evidence. See the [batch receipt](../../artifacts/pythonre-current-qualification-20261017/RESULT.md).
 
+Development source after79 also skips impossible starts for a required contiguous
+ASCII class, including one outer capture and positive greedy repetition. It
+reuses the existing bounded span seeker and shared invocation; whole strict UTF8
+validation, captures, cancellation/deadlines and finite admission remain. Removing
+failed VM attempts can lower numeric work/depth/working requirements. A bounded
+VM comparison and its sole confirmation reduce mixed captured-string FindAll
+time about38% with finite limits, under the declared FullOpts protocol; dense
+work stays within variation and misses avoid VM scratch. [Source evidence](../../artifacts/leading-ascii-range-20261017/RESULT.md).
+This source change is not included in immutable scalar.79 and sets no new CPython
+Status. Package qualification waits for the next coherent delivery boundary.
+
 Defaults/static calls remain unlimited. Complete construction, lazy/default,
 caller-retention/RSS and host coverage remain open; compose existing
 [host owners](../../HOST-INTEGRATION.md). Earlier packages and independent PCRE76
