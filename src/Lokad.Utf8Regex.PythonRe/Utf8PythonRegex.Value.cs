@@ -149,14 +149,15 @@ public sealed partial class Utf8PythonRegex
     private int CountCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         ValidateStartOffset(input, startOffsetInBytes);
-        if (_utf8Regex is { } familyRegex && HasPreparedExactLiteralFamily && !_canMatchEmpty &&
-            _translation.CaptureGroupCount == 0 && _canUseUtf8IterationFastPath)
-            return CountLiteralFamily(familyRegex, input, startOffsetInBytes, cancellationToken);
         // The native rendering intentionally has exact references. Other shapes
         // keep lexical profile comparison, apart from the proven exact literal.
         if (_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 &&
             !HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
             return _utf8Regex.Count(input, cancellationToken);
+        // Count discards captures. Complete native eligibility proves the whole
+        // match even when the returned-capture iteration classifier declines it.
+        if (_utf8Regex is { } prepared && prepared.CanFindNativeLiteralForResult)
+            return CountPreparedLiteral(prepared, input, startOffsetInBytes, cancellationToken);
         return CountOwnedSlicePythonStyle(input, startOffsetInBytes, ScalarProgram, cancellationToken);
     }
 

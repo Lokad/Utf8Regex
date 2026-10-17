@@ -2,6 +2,12 @@
 
 ## Development after scalar.83
 
+- Python Count reuses complete native literal/family eligibility even when the
+  pattern captures, avoiding discarded slots and VM attempts. Existing unlimited
+  literal dispatch, returned captures and general-engine semantics remain.
+  In one bounded FullOpts source pair, finite `(a)(b)` Count over 1,000 matches
+  falls from 304 to 34.5 microseconds and from 2,336 to 112 allocated bytes.
+  [Evidence](artifacts/python-native-count-20261017/RESULT.md).
 - Eligible finite literal Count validates without producing unused coordinates,
   then reuses the existing counting kernel and invocation. Structural and other
   routes keep their validation. Strict errors, scalar boundaries and resource/
