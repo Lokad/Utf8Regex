@@ -2,6 +2,11 @@
 
 ## Development after scalar.87
 
+- Fix PythonRe brace grammar: literal/unfinished braces stay literal, omitted
+  lower repeat bounds mean zero, and verbose trivia can precede a quantifier.
+  Preserve adjacent lazy/possessive modifiers, scalar captures, construction
+  admission and Python syntax errors/positions. Bounds above Int32 remain a
+  separate representation gap; matching kernels and immutable87 are unchanged.
 - Let finite Core Count reuse the existing metered ASCII structural-family search
   and verifier after original full-subject validation. Preserve scalar fallback
   for mixed Unicode and overlapping prefixes, stateful-program exclusions and

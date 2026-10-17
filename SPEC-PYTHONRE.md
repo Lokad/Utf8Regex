@@ -31,6 +31,26 @@ It is not retained as a cursor projection table or searched after each match.
 
 The native rendering consumes complete scalars. Supplementary class members and ranges use numeric scalar endpoints, rather than separate surrogate classes. Python's separate `\uD800`/`\uDC00` escapes denote separate surrogate atoms and cannot combine into a scalar; they cannot match strict UTF-8. A raw supplementary character or `\U00010000` escape denotes one scalar. A surrogate-only class contains no valid scalar, and its negation admits valid scalars. Captures retain primary byte ranges and derived UTF-16 coordinates. Owned execution does not establish complete grammar coverage, public construction containment or retained-storage limits; qualify those separately from the current invocation controls.
 
+## Brace repetition and verbose attachment
+
+Development source after scalar.87 recognizes only complete brace-repeat syntax:
+`{m}`, `{m,n}`, `{m,}`, `{,n}` and `{,}`. Other braces, including unfinished
+numeric forms and `{}`, are literal text. Omitted minima are zero. Leading
+repeats and repeated quantifiers retain Python's syntax failures and positions;
+reversed bounds report `min repeat greater than max repeat` at the bound start.
+Verbose whitespace/comments can separate an atom and its quantifier, but cannot
+split a lazy/possessive modifier or turn whitespace inside braces into digits.
+Scoped options, scalar captures and existing global empty-match advancement stay
+on the same AST/compiler/execution paths.
+
+The lexical brace check spends construction work while peeking, including when
+the text proves literal. Its spent work is never rolled back. Original finite
+construction limits, deadlines and cancellation remain authoritative; no extra
+parser, matching mode or accounting owner is introduced. This repair is outside
+immutable scalar.87. Repeat bounds above Int32.MaxValue remain a separate known
+representation gap, including values accepted by the CPython 3.13.2 oracle; they
+are not a deliberate profile exclusion or a completed grammar claim.
+
 ## Nullable repetition and capture state
 
 Python's mandatory repetitions precede the optional phase's empty-progress guard.

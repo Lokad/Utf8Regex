@@ -134,8 +134,9 @@ internal sealed partial class PythonReParser
         return true;
     }
 
-    private PythonReNode ParseQuantifiedAtom(PythonReNode atom)
+    private PythonReNode ParseQuantifiedAtom(PythonReNode atom, PythonReCompileOptions options)
     {
+        SkipIgnoredPatternTrivia(options);
         if (IsAtEnd)
         {
             return atom;
@@ -158,23 +159,22 @@ internal sealed partial class PythonReParser
             min = 0;
             max = 1;
         }
-        else if (TryConsume('{'))
+        else if (IsBraceQuantifier())
         {
-            min = ParseNumber();
+            _position++;
+            var boundsStart = _position;
+            min = TryPeekDigit() ? ParseNumber() : 0;
             max = min;
             if (TryConsume(','))
             {
                 max = TryPeekDigit() ? ParseNumber() : null;
             }
 
-            if (!TryConsume('}'))
-            {
-                throw Error("missing }");
-            }
+            _position++; // The lexical check established the closing brace.
 
             if (max.HasValue && max.Value < min)
             {
-                throw Error("numbers out of order in quantifier");
+                throw new PythonRePatternException("min repeat greater than max repeat", boundsStart);
             }
         }
         else
@@ -192,7 +192,9 @@ internal sealed partial class PythonReParser
             flavor = PythonReQuantifierFlavor.Possessive;
         }
 
-        if (!IsAtEnd && Current is '*' or '+' or '?' or '{')
+        // Trivia may separate repeats, but never joins a lazy/possessive suffix.
+        SkipIgnoredPatternTrivia(options);
+        if (!IsAtEnd && (Current is '*' or '+' or '?' || IsBraceQuantifier()))
         {
             throw new PythonRePatternException("multiple repeat", _position);
         }
@@ -202,7 +204,7 @@ internal sealed partial class PythonReParser
 
     private PythonReNode ParseAtom(PythonReCompileOptions options)
     {
-        if (!IsAtEnd && Current is '*' or '+' or '?' or '{')
+        if (!IsAtEnd && (Current is '*' or '+' or '?' || IsBraceQuantifier()))
         {
             throw new PythonRePatternException("nothing to repeat", _position);
         }
@@ -956,6 +958,32 @@ internal sealed partial class PythonReParser
                 fragment = string.Empty;
                 return false;
         }
+    }
+
+    private bool IsBraceQuantifier()
+    {
+        if (IsAtEnd || Current != '{') return false;
+        // Only complete repeat syntax reserves a brace. Peek without allocating
+        // or rewinding work; malformed/unfinished text remains literal Python syntax.
+        Utf8ConstructionScope.ChargeWork(1);
+        var index = _position + 1;
+        var minimumStart = index;
+        while (index < _pattern.Length && char.IsAsciiDigit(_pattern[index]))
+        {
+            Utf8ConstructionScope.ChargeWork(1);
+            index++;
+        }
+        if (index < _pattern.Length && _pattern[index] == ',')
+        {
+            index++;
+            while (index < _pattern.Length && char.IsAsciiDigit(_pattern[index]))
+            {
+                Utf8ConstructionScope.ChargeWork(1);
+                index++;
+            }
+        }
+        else if (index == minimumStart) return false;
+        return index < _pattern.Length && _pattern[index] == '}';
     }
 
     private int ParseNumber()

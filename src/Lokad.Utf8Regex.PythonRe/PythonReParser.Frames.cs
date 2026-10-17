@@ -111,7 +111,7 @@ internal sealed partial class PythonReParser
         var elements = frame.Nodes;
         if (frame.Stage == 1)
         {
-            elements.Add(ParseQuantifiedAtom(_parsedNode));
+            elements.Add(ParseQuantifiedAtom(_parsedNode, frame.Options));
             frame.Stage = 0;
         }
         while (true)
@@ -125,7 +125,7 @@ internal sealed partial class PythonReParser
                 child = new(ParseFrameKind.Group, frame.Options);
                 return false;
             }
-            elements.Add(ParseQuantifiedAtom(ParseAtom(frame.Options)));
+            elements.Add(ParseQuantifiedAtom(ParseAtom(frame.Options), frame.Options));
         }
         _parsedNode = elements.Count switch
         {

@@ -38,6 +38,12 @@ consumer pin/default change or actual adoption is implied.
 
 ## Support Scope
 
+Development after scalar.87 fixes literal/unfinished braces, omitted-lower repeat
+bounds and verbose quantifier attachment. Scalar captures and existing matching
+paths remain, with metered construction lookahead. Repeat bounds above Int32 are
+still a known grammar gap. [Scope and evidence](../../artifacts/python-brace-quantifier-admission-20261017/RESULT.md)
+are separate from the immutable scalar.87 qualification.
+
 - Semantic target: `Utf8PythonRegex` models the standard `re` surface, while remaining a managed .NET library.
 - Implementation model: parser-first translation. Python-style patterns are parsed into a dedicated AST before any backend is selected.
 - Native rendering: the AST emits Unicode scalar atoms/ranges for `Utf8Regex`; native execution receives scalar spellings instead of UTF-16 surrogate-class compensation.
