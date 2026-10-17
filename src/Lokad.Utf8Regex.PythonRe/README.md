@@ -3,35 +3,32 @@
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
 strict UTF-8 scalars, with primary byte coordinates and derived UTF-16 projections.
 
-Core/PythonRe scalar.74 is in preparation for bounded work/interruption inside
-Core scalar-class scans. Package/platform qualification is pending; the previous
-immutable input below does not contain this correction. No PCRE74 delivery is implied.
+Qualified private **Core/PythonRe 0.4.0-scalar.74** is produced by
+`f0bbbf8f0439964862bb86e625d7200cfa7f29b6`; PythonRe pins Core `[0.4.0-scalar.74]`.
+Same-byte Windows/Linux consumers, capture/semantic oracles, provenance/member
+inventory and final-feed restore pass. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38996580124)
+is green. [Handoff](../../artifacts/core-python-scalar74-20261017/HANDOFF.md) and
+[consumption notes](../../artifacts/core-python-scalar74-20261017/CONSUMING.md).
+One closure build/one pack each, first-pass platform matrices; earlier73 and
+independent PCRE71 remain immutable. No PCRE74 qualification is implied.
 
-Qualified private **Core/PythonRe 0.4.0-scalar.73** is produced by
-`137ca9a73dfeff24282e0b9ba585b6ed08b302b0`; PythonRe pins Core `[0.4.0-scalar.73]`.
-Same-byte Windows/Linux consumers, capture/CPython catalog, provenance and final-
-feed public restore pass. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38991026778)
-is green. [Handoff](../../artifacts/core-python-scalar73-20261017/HANDOFF.md) and
-[consumption notes](../../artifacts/core-python-scalar73-20261017/CONSUMING.md)
-record exact identities, operating costs, sample noise and the preserved Windows
-Core timeout/retry. The pair was built/packed once; a same-byte Core test retry
-did not rebuild/repack or relax its timeout. Earlier72/69/68/65 stay immutable;
-independent PCRE71 requires its own exact Core71 pin.
+Core scalar-class range/table scans now spend bounded work and directly check
+the original deadline. Shorthand subtraction arrays become existing fixed bits;
+duplicate class-matching loops are removed. Numeric long-class work cutoffs
+tighten without a new owner/policy/mode. Python scalar/capture/reference behavior,
+pinned15.1 data, original interruption and all four invocation controls remain.
+Retained snapshots and cursor aliases preserve their documented lifetimes.
+Core only permits SizeOf, accepted by Lython; Python has no unchecked members,
+generated helpers or BCL matcher/results.
 
-This input carries the Core cold-template and anchored-offset authority fixes,
-reusing existing construction/cursor controls and omitting a duplicate finite
-owner. It preserves72's bounded UTF8 decoding/direct literal lowering, Python
-scalar VM/captures/references, pinned15.1 case data and all invocation controls.
-Retained snapshots and cursor aliases preserve their lifetimes. Core only permits
-SizeOf, accepted by Lython; Python has no unchecked members/generated helpers or
-BCL matcher/results. Complete required tuple materialization is included in the
-current cost observation; exact sample provenance and comparator exclusions stay
-in the handoff, separate from source comparisons and historical benchmark tables.
-
-Defaults/static caches remain unlimited. Complete construction/lazy/default/live-
-retention/RSS/host containment remains unfinished; compose existing [host owners](../../HOST-INTEGRATION.md).
-No publication, external pins/defaults or actual adoption. Original package README
-preparation assets stay frozen; handoff/manifest record completed qualification.
+Actual74 current costs include full validation/required output:1000capture tuples
+about645us unlimited/684us finite/667us finite+token. The handoff reports sample
+noise, Core/.NET controls and explicit protection costs separately from source
+comparisons and historical benchmark rows. No exact BCL Python tuple shape is
+claimed. Defaults/static calls remain unlimited. Complete construction/lazy/
+default/retention/RSS/host objectives remain unfinished; compose existing
+[host owners](../../HOST-INTEGRATION.md). No publication, external pin/default or
+actual adoption. Original package preparation assets stay frozen.
 
 ## Support Scope
 

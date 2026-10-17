@@ -1,5 +1,17 @@
 # Changelog
 
+## Core/PythonRe scalar.74 qualified private dependency
+
+- Qualify immutable producerf0bbbf8f: same-byte first-pass Windows/Linux Core39272,
+  Diff1504 and Python3237, exact package/pin/DLL/symbol identities, semantic/member
+  checks and fresh final-feed public restore. One5.44s closure build/one pack each.
+- Deliver bounded inner scalar-class work/interruption with existing ownership
+  and simpler shorthand representation. Preserve scalar/capture/resource behavior.
+- Record selective current operating costs and noise on exact74 bytes. Subtraction
+  remains about5x the .NET controls; source protection costs are separate and explicit.
+- Earlier73 and independent PCRE71 stay immutable. No publication, consumer
+  adoption/default switch, full containment claim or PCRE74 qualification.
+
 ## Core/PythonRe scalar.74 preparation: bounded scalar-class work
 
 - Reproduce thirteen public finite-work/cancellation/deadline failures inside

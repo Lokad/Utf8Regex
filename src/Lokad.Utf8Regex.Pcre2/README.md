@@ -8,7 +8,7 @@ native-overlap probes and a fresh public consumer restore.
 PCRE2 pins Core `[0.4.0-scalar.71]`.
 [Handoff](../../artifacts/pcre2-scalar71-delivery-20261017/HANDOFF.md) and
 [consumption notes](../../artifacts/pcre2-scalar71-delivery-20261017/CONSUMING.md).
-Core/PythonRe73 remains independent; do not mix its exact Core73 pin with this
+Core/PythonRe74 remains independent; do not mix its exact Core74 pin with this
 pair. Core71 is the PCRE dependency only. Earlier70/67/69 and failed66 stay immutable.
 Actual consumer adoption, complete SPEC and host containment remain open.
 

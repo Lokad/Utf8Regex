@@ -153,7 +153,9 @@ terminal-repeat execution share the existing class helper. Subtraction segments
 store the existing six shorthand bits instead of retaining/scanning duplicate
 shorthand arrays. Longer predicates may now exhaust a work cap that previously
 omitted their inner scan; storage and scalar semantics are preserved. This source
-correction does not alter immutable scalar.73 or establish full construction,
+correction is qualified in the immutable Core/PythonRe scalar.74 pair
+([scope](artifacts/core-python-scalar74-20261017/HANDOFF.md)). It does not alter
+scalar.73 or establish full construction,
 retained-storage, safe-default or process-memory guarantees.
 
 ### 3.5 UTF-8 validity
