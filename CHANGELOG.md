@@ -1,5 +1,16 @@
 # Changelog
 
+## Core/PythonRe scalar.77 qualified private dependency
+
+- Qualify both capture simplifications as one immutable Core/PythonRe pair:
+  Windows/Linux consumers, capture/semantic oracles, exact provenance and fresh
+  final-feed restore pass. Producer CI is green on both platforms.
+- Preserve scalar/capture/resource/lifetime contracts. No new storage, owner or
+  API; Core C# and Unicode data are unchanged from scalar.75.
+- Record selective actual-package tuple-output costs with finite limits and live
+  tokens. Keep source-comparison limitations and Unqualified Status explicit.
+  Earlier inputs and independent PCRE76 remain immutable.
+
 ## Development: capture shaping delivery batch
 
 - Reuse original ASCII subject validation for capture string lengths and the

@@ -3,55 +3,43 @@
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
 strict UTF-8 scalars, with primary byte coordinates and derived UTF-16 projections.
 
-Qualified private **Core/PythonRe 0.4.0-scalar.75** is produced by
-`01e178d9cf28c3d9836a36a7dfb48de59d28ebdc`; PythonRe pins Core `[0.4.0-scalar.75]`.
-Same-byte first-pass Windows/Linux consumers, capture/semantic oracles, exact
-provenance/member inventory and fresh final-feed restore pass.
-[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38999724440) is green.
-[Handoff](../../artifacts/core-python-scalar75-20261017/HANDOFF.md),
-[consumption notes](../../artifacts/core-python-scalar75-20261017/CONSUMING.md).
-One5.04s closure build/one pack each. Earlier74/73 and independent PCRE71 remain
-immutable. No PCRE75 qualification, publication, external pin/default or adoption.
+The qualified private **Core/PythonRe 0.4.0-scalar.77** pair, producer
+`2b5114672ddd34aa760176bb92944073c66c2093`, pins Core `[0.4.0-scalar.77]`.
+The same immutable Windows/Linux consumers pass capture/semantic oracles, exact
+provenance, member inventory and fresh final-feed restore.
+[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39005396110) is green.
+See the [handoff](../../artifacts/core-python-scalar77-20261017/HANDOFF.md) and
+[consumption instructions](../../artifacts/core-python-scalar77-20261017/CONSUMING.md).
 
-The Core batch counts eligible complete class repeats in one scalar pass and
-skips empty shorthand-bit scans. Existing scalar/capture/reference behavior,
-pinned15.1 data, inner metering, original interruption, major admission and all
-four invocation controls remain. Less actual Count work intentionally changes
-numeric cutoffs. Retained snapshots/cursor aliases keep their documented lifetime.
-Core only permits SizeOf, accepted by Lython; Python has no unchecked members,
-generated helpers or BCL matcher/results. No new public API, owner or policy mode.
+Capture shaping now reuses whole-subject ASCII validation for character counts
+and compiler-established dense slots for projection. Repeated scans/searches are
+removed; Unicode/mapped counting, bounded admitted decoding, completion metadata,
+aliases and original interruption remain. No new allocation, owner, map or API.
+Actual work cutoffs can decrease with removed work; spent work never refunds.
+Core C# and Unicode data are unchanged from scalar.75. Core retains only permitted
+`Unsafe.SizeOf`; Python has no unchecked API members or generated staging helpers.
+Lython accepts SizeOf.
 
-Actual75 current costs include full validation/required output:1000capture tuples
-about649us unlimited/691us finite/680us finite+token. The handoff reports exact
-samples, allocations and Core/.NET controls separately from closed source pairs;
-no equal BCL Python tuple operation or cross-run source delta is claimed.
+Selective exact-package measurements include full validation and required outputs:
+1,000 UTF-8 capture tuples take about **648 / 708 / 689 us**, and 2,048 string
+capture tuples **1,996 / 2,153 / 2,123 us**, for unlimited / finite / finite plus
+live-token lanes. All four finite controls are enabled. Allocations, composed .NET
+controls and variability are explicit in the handoff. This is current operating
+cost, separate from source-regression evidence or snapshot Status.
 
-A separate current-source captured FindAllStrings observation processes2048
-two-string tuples in2.063ms/263920B, versus0.275ms for predecoded CPython3.12.3.
-Its nine pairs retain **Unqualified** Status because the runner could not identify
-Linux processor efficiency; this is diagnostic operating cost, not a qualified
-winner or a package/finite-limit measurement. [Evidence](../../artifacts/python-capture-slot-20261017/RESULT.md).
-The [comparative snapshot](BENCHMARKS.md) identifies each measured source/runtime;
-historical September Status counts do not qualify today's scalar engine.
+The closed ASCII source observation improved managed time by 7.1% while its
+unchanged CPython control improved 2.2%; the full drop is not a causal speedup.
+Direct-slot timing differs about 1%, within variation. Both observations remain
+Unqualified under the existing CPU-efficiency gate. [Source evidence](../../artifacts/python-capture-slot-20261017/RESULT.md).
+The [comparative snapshot](BENCHMARKS.md) identifies its measured source/runtime
+generations; September statuses do not qualify today's scalar engine.
 
-Development source reuses original whole-subject ASCII validation to derive
-capture string length before admitted decoding, avoiding another capture scan.
-Unicode/mapped counts, allocation admission and original interruption remain.
-One source comparison observes7.1%less managed time with unchanged allocation;
-the CPython control also improves2.2%, so the full drop is not a causal speedup.
-Less actual validation work can lower numeric cutoffs. Immutable75 predates this
-source change; package qualification waits for a coherent delivery boundary.
-
-The same development batch uses Python's existing mapped capture slots directly,
-removing repeated search through its dense group catalog. Sparse Core catalogs
-retain their own handling. Existing capture/ownership/finite-policy checks pass;
-the small observed timing difference is within variation, with no throughput
-claim. Both capture changes are prepared for one scalar.77 dependency candidate.
-Defaults/static calls remain unlimited. Complete construction/lazy/default/
-retention/RSS/host objectives remain open; compose existing
-[host owners](../../HOST-INTEGRATION.md). Original package preparation assets stay
-frozen. A copied public-consumer fixture encoding failure and correction against
-the same DLLs are preserved; no package was rebuilt or repacked to repair it.
+Defaults/static calls remain unlimited. Complete construction, lazy/default,
+caller-retention/RSS and host coverage remain open; compose existing
+[host owners](../../HOST-INTEGRATION.md). Earlier inputs and independent PCRE76
+remain immutable with separate exact Core pins. This qualified private dependency
+does not imply publication, external default changes or actual adoption. Package
+preparation assets remain frozen; the handoff records completed scoped acceptance.
 
 ## Support Scope
 
