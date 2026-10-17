@@ -1,12 +1,14 @@
 # Changelog
 
-## Private Core/PythonRe scalar.88 candidate
+## Qualified private Core/PythonRe scalar.88
 
-- Stage the brace/verbose grammar repair and the two Core Count improvements as
-  one consumer delivery boundary. Same-byte package/platform qualification is
-  pending; qualified scalar.87 and independent PCRE76/Core76 remain immutable.
-  Preserve explicit finite controls, scalar captures, original interruption and
-  the remaining large-repeat representation limitation. No publication implied.
+- Batch the Python brace/verbose grammar repair with scalar URI Count and finite
+  ASCII structural-family Count reuse. Same immutable bytes pass Windows/Linux
+  consumers/oracles, exact public restore and API/member/symbol/provenance checks;
+  producer CI is green. Selective exact-package default-runtime costs retain
+  finite overhead and residual compiled/control uncertainty after one confirmation.
+  Preserve87 and independentPCRE76/Core76; no publication/adoption/full-SPEC claim.
+  [Handoff](artifacts/core-python-scalar88-20261017/HANDOFF.md).
 
 ## Development after scalar.87
 

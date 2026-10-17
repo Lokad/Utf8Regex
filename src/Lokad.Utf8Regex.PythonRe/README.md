@@ -3,51 +3,52 @@
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
 strict UTF-8 scalars, with primary byte coordinates and derived UTF-16 projections.
 
-The qualified private **Core/PythonRe 0.4.0-scalar.87** pair comes from clean
-producer `e660102a5008dd654b478488817f5f05e4720f65`; PythonRe pins exact Core
-`[0.4.0-scalar.87]`. Same-byte Windows/Linux consumers,107 capture/91 semantic
-cases, API/member/symbol/provenance checks and a fresh isolated public restore
-pass. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39068878117)
-is green. [Handoff](../../artifacts/core-python-scalar87-20261017/HANDOFF.md) and
-[consumption](../../artifacts/core-python-scalar87-20261017/CONSUMING.md) record scope
-and identities. Earlier86/85/84 and independent PCRE76/Core76 remain immutable.
+The qualified private **Core/PythonRe 0.4.0-scalar.88** pair comes from clean
+producer `64c8f38b315b083f5b73a556477679b5725bd13b`; PythonRe requires exact Core
+`[0.4.0-scalar.88]`. Same immutable bytes pass Windows/Linux consumers,
+107capture/91semantic fixtures, API/member/symbol/provenance checks and a fresh
+isolated public restore. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39072816761)
+is green. [Handoff](../../artifacts/core-python-scalar88-20261017/HANDOFF.md) and
+[consumption](../../artifacts/core-python-scalar88-20261017/CONSUMING.md) record exact scope/identities.
+Earlier87/86/85/84 and independentPCRE76/Core76 remain immutable.
 
-Private candidate **scalar.88** batches the Python brace/verbose grammar repair
-with scalar URI Count and finite ASCII structural-family Count reuse. Its
-same-byte consumer/platform qualification is pending; scalar.87 remains the
-qualified dependency. No PCRE88 or publication is implied.
+Scalar.88 batches scalar URI Count, finite ASCII structural-family Count and
+the Python brace/verbose grammar repair. Existing counters/verifiers omit VM
+scratch under proved eligibility; full strict validation, scalar captures,
+retained aliases and original cancellation/deadline/finite controls remain.
+Python admits literal/unfinished braces, omitted lower bounds and verbose trivia
+before quantifiers. AboveInt32 repeat bounds remain a known representation gap,
+not an intentional profile exclusion or complete-grammar claim. Core references
+only permitted Unsafe.SizeOf, accepted by Lython; PythonRe none. Actual unchecked
+reads, generated helpers, native imports and shipped BCL matchers/results stay absent.
 
-Scalar.87 batches scalar/metered Core email Count before general VM dispatch,
-cache admission repairs and Python conditional/backreference syntax fixes.
-Strict full validation, scalar boundaries, captures/aliases, original interruption
-and all four finite invocation controls remain. The proved capture-free LTR
-email counter needs no VM capture/continuation/result storage. Other programs
-and operations retain their routes. Core references only permitted Unsafe.SizeOf,
-accepted by Lython; PythonRe none. Actual unchecked reads, generated helpers,
-native imports and shipped BCL matcher/results stay absent.
+[Selective exact88 current costs](../../artifacts/core-python-scalar88-20261017/vm-cost/RESULT.md)
+use default runtime/tiering/R2R on10.0.12 with explicit finite allowances.
+Ordinary unlimited/finite Count is18.7/42.4us for dense URI,8.3/185.3us for method
+calls and80.7/82.9us for captured scalar Python. Finite Core allocates about112B;
+the selected captured Python row5776/5888B. Finite structural cost remains about22x
+unlimited, and qualified .NET controls expose substantial gaps. All selected
+ordinary product lanes qualify; some compiledURI/.NET control lanes remain
+unqualified after the sole confirmation. Both raw batches/uncertainty are retained;
+no further timing or broad/CPythonStatus/cross-version claim.
 
-Closed [public source costs](../../artifacts/core-email-count-current-20261017/RESULT.md)
-use FullOpts/R2Roff on runtime10.0.12. Finite Count falls from about4.1ms to1.5us
-on the16KiB corpus prefix and420us to59us on dense hits. The full6.8MB/92-match
-after-only witness is about1.6ms unlimited/3.2ms finite; predecoded .NET remains
-faster. Controls/drift and scope remain explicit. These are source measurements,
-not exact-package/default-runtime or broad-parity claims. No further timing.
-[Earlier exact86 default costs](../../artifacts/core-python-scalar86-20261017/vm-cost/RESULT.md)
-retain their unqualified noisy lanes and cross-process caveats; historical tables
-do not qualify87 package-default absolutes or CPythonStatus.
+Closed [URI source costs](../../artifacts/core-uri-count-current-20261017/RESULT.md) and
+[structural source costs](../../artifacts/finite-structural-family-count-20261017/RESULT.md)
+keep their FullOpts scope. Earlier exact86 noisy default-runtime evidence stays
+attached to86. Source gains and historical tables do not replace current package costs.
 
 Defaults/static calls remain unlimited. [Host composition](../../HOST-INTEGRATION.md)
-explains covered payload and surviving owners. Full construction/lazy/default/
-common-retention/host/SPEC coverage remains open. No PCRE87, publication, external
+explains modeled capacities and surviving owners. Full construction/lazy/default/
+common-retention/host/SPEC coverage remains open. No PCRE88, publication, external
 consumer pin/default change or actual adoption is implied.
 
 ## Support Scope
 
-Development after scalar.87 fixes literal/unfinished braces, omitted-lower repeat
+Scalar.88 fixes literal/unfinished braces, omitted-lower repeat
 bounds and verbose quantifier attachment. Scalar captures and existing matching
 paths remain, with metered construction lookahead. Repeat bounds above Int32 are
 still a known grammar gap. [Scope and evidence](../../artifacts/python-brace-quantifier-admission-20261017/RESULT.md)
-are separate from the immutable scalar.87 qualification.
+describe the correction beyond immutable scalar.87.
 
 - Semantic target: `Utf8PythonRegex` models the standard `re` surface, while remaining a managed .NET library.
 - Implementation model: parser-first translation. Python-style patterns are parsed into a dedicated AST before any backend is selected.
