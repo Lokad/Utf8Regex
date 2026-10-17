@@ -1,5 +1,20 @@
 # Changelog
 
+## Core/PythonRe scalar.72 qualified dependency
+
+- Qualify immutable1d04bd4c: same-byte Windows/Linux39148Core/1504Diff/3237Python,
+ 104capture fixtures/91digests each, exact provenance/symbols/locks/inventory and
+ fresh final-feed public restore pass. Producer CI is green. Build/pack once;
+ no Linux library/oracle rebuild, Unicode recensus or source-pair replay.
+- Deliver bounded UTF8 construction decoding and direct semantic literal nodes
+ with original scalar/capture/lifetime/interruption/resource guarantees. Numeric
+ admission follows reduced real preparation; tight construction caps still deny.
+- Record current8KiB byte Compile21.6ms/11.9MB, finite word Count211us/112B and
+ 1000tuples723us;170samples above73ms. Core family finite overhead/noise remains
+ visible. Closed source gains retain their own scope; no broad parity/Status claim.
+- Preserve earlier69/68/65 and independent PCRE71. No PCRE72, publication, consumer
+ switch or full construction/default/retention/RSS/host/adoption claim.
+
 ## Core/PythonRe scalar.72 preparation
 
 - Batch bounded UTF8 construction decoding with direct semantic BMP literal

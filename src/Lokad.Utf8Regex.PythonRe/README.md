@@ -3,37 +3,34 @@
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
 strict UTF-8 scalars, with primary byte coordinates and derived UTF-16 projections.
 
-Qualified private **Core/PythonRe 0.4.0-scalar.69** is produced by
-`98c4b20a910ac86f6c5d2d9122679d34d9e5f65b`. PythonRe pins Core
-`[0.4.0-scalar.69]`. The same immutable packages pass Windows/Linux detached
-consumers, captures/CPython catalog, provenance and final-feed public restore.
-[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38967691650) is green.
-[Handoff](../../artifacts/core-python-scalar69-20261016/HANDOFF.md) and
-[consumption notes](../../artifacts/core-python-scalar69-20261016/CONSUMING.md)
-record exact identities, current costs and exclusions. Earlier inputs remain
-immutable; PCRE2 qualifies independently.
+Qualified private **Core/PythonRe 0.4.0-scalar.72** is produced by
+`1d04bd4c35f0a7bfd9d0c566d2b0181190d445ca`; PythonRe pins Core `[0.4.0-scalar.72]`.
+Same-byte Windows/Linux consumers, captures/CPython catalog, provenance and final-
+feed public restore pass. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38983676410)
+is green. [Handoff](../../artifacts/core-python-scalar72-20261017/HANDOFF.md) and
+[consumption notes](../../artifacts/core-python-scalar72-20261017/CONSUMING.md)
+record exact identities, current costs and exclusions. Earlier69/68/65 stay
+immutable; independent PCRE71 requires its own exact Core71 pin.
 
-Eligible plain terminal scalar-class repeats execute in the same owned VM without
-unused rewind state or repeat vectors. Captures/general/assertion contexts retain
-required state. The existing leading filter, strict whole-subject validation,
-scalar byte floors, pinned predicates, original token/deadline and four finite
-invocation caps remain. Fewer actual work and allocations intentionally change
-numeric admission. Retained snapshots and cursor aliases remain valid. Python
-data remain pinned 15.1; no BCL matcher/results or UTF-16 matching progression.
-Core only retains permitted Unsafe.SizeOf, accepted by Lython; Python has no
-unchecked references or generated inline-array helpers.
+This input bounds UTF8 construction decoding and directly acquires semantic BMP
+literal nodes through the existing admitted factory, avoiding per-atom Core
+parsing. Scalar VM, captures/references, pinned Python15.1 case data, surrogate
+rejection, interruption and all resource controls remain. Less actual preparation
+changes numeric cutoffs; explicit small caps still deny. Retained snapshots and
+cursor aliases preserve their lifetimes. Core only permitted SizeOf, accepted by
+Lython; Python has no unchecked references/generated helpers or BCL matcher/results.
 
-Current exact-package finite costs: mixed Unicode word Count 208 µs, UTF-8 word
-values 332 µs, captured word Count 368 µs, and 1,000 captured tuples 675 µs.
-All 165 samples exceed 70 ms. Full validation/materialization/retention, finite
-limits and live tokens are included; raw samples, allocations, BCL controls,
-noise and timeouts stay in the handoff. No CPython timing or broad parity claim.
+Compiling an 8 KiB byte pattern takes 21.6 ms and allocates 11.9 MB in this package.
+With finite limits, word Count takes 211 µs and about 112 bytes, word values 347 µs,
+captured Count 371 µs and 1,000 tuples 723 µs. All 170 samples exceed 73 ms. The
+handoff records required validation/output retention, finite controls, live tokens,
+allocations, noise and comparator scope. The source comparison (48.7 to 19.4 ms,
+33.0 to 11.9 MB) is separate; these runs do not establish a cross-run change.
 
-Defaults/static caches remain unlimited. Complete construction/lazy/default/
-live-retention/RSS and host containment remain unfinished; compose explicit
-policies with existing [host owners](../../HOST-INTEGRATION.md). No publication,
-external pins/defaults or adoption change. Original package README preparation
-assets remain frozen; the handoff records qualification without repacking.
+Defaults/static caches remain unlimited. Complete construction/lazy/default/live-
+retention/RSS/host containment remains unfinished; compose existing [host owners](../../HOST-INTEGRATION.md).
+No publication, external pins/defaults or actual adoption. Original package README
+preparation assets stay frozen; handoff/manifest record completed qualification.
 
 ## Support Scope
 
@@ -79,23 +76,23 @@ acquisitions and process memory remain outside this partial construction bound.
 Construction authority ends before expression publication; execution policy and
 the token supplied to each operation remain independent.
 
-Development after scalar.71 checks that same construction authority between
+Scalar.72 checks that same construction authority between
 scalar-aligned4096-byte count/decode blocks for UTF8 patterns. Strict decoding,
 absolute malformed-byte offsets, original numeric charges and one admitted string
 remain. Failed decoding releases unpublished text capacity; interruption may win
 before a later malformed suffix. Inner decoder wording can differ for later
-blocks. This source change is outside immutable Core/Python69 and PCRE71 packages;
+blocks. This change is outside immutable Core/Python69 and PCRE71 packages;
 it does not complete construction/default/live-retention or host containment.
 
-Later source also constructs existing semantic BMP literal nodes directly through
+Scalar.72 also constructs existing semantic BMP literal nodes directly through
 the admitted scalar-node factory, omitting per-atom Core parsing. Python case
 expansion, surrogate rejection, scalar VM, captures and original construction
 authority remain. Less actual preparation lowers numeric work/depth/byte needs;
 explicit caps still deny. One public source comparison reduces8KiB byte-pattern
 Compile48.7->19.4ms and33.0->11.9MB; the class-only control is unchanged within
-noise. Remaining cost and raw observations are explicit. The next private
-Core/PythonRe scalar.72 input batches this with bounded UTF8 construction decoding;
-it is under preparation, not yet qualified. Immutable69/71 bytes remain unchanged.
+noise. Remaining cost and raw observations are explicit. The private
+Core/PythonRe scalar.72 input includes this and bounded UTF8 construction decoding;
+its handoff records qualification. Immutable69/71 bytes remain unchanged.
 
 This candidate additionally preserves the original call deadline through
 cold scalar FullMatch and template substitution preparation. Construction/cache
