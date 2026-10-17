@@ -399,7 +399,9 @@ internal struct PythonReScalarMatchState
             // String-only results need the selected scalar range's char count,
             // not a coordinate map for the complete subject. Detailed results
             // already own a map and can reuse its derived coordinates.
-            var count = _hasMap
+            // Original whole-subject validation already proves the character
+            // count for ASCII captures; do not validate those bytes again.
+            var count = _validation.IsAscii ? end - start : _hasMap
                 ? _map.GetUtf16OffsetForByteOffset(end) - _map.GetUtf16OffsetForByteOffset(start)
                 : Utf8Validation.Validate(input[start..end], ref _invocation).Utf16Length;
             var text = _results.DecodeUtf8(input[start..end], count, ref _invocation);
