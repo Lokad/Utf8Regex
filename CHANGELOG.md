@@ -1,5 +1,21 @@
 # Changelog
 
+## Core/PythonRe scalar.74 preparation: bounded scalar-class work
+
+- Reproduce thirteen public finite-work/cancellation/deadline failures inside
+  long scalar-class scans. Reuse the original invocation for bounded range and
+  independent-table blocks; folding, negation and subtraction preserve denial.
+- Share the existing class matcher across ordinary and NonBacktracking execution.
+  Subtraction segments store six shorthand bits instead of retaining/scanning
+  duplicate shorthand arrays. No new policy, owner, accounting layer or allocation.
+- Longer predicates now spend previously omitted work. One source comparison and
+  its sole noise confirmation record explicit execution costs with unchanged
+  allocations; these are protection costs, not unchecked-access equivalence.
+  Small cases cost2-8%, subtraction16%, deliberately long scans33-37% in the
+  stable-control confirmation. Package/platform acceptance is pending.
+- Qualified73 and independent PCRE71 remain immutable. No publication, consumer
+  adoption, complete containment claim or PCRE74 qualification.
+
 ## Core/PythonRe scalar.73 qualified private dependency
 
 - Qualify immutable producer137ca9a7: matching Core/Python packages with exact

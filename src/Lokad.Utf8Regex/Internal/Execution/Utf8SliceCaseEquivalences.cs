@@ -4320,14 +4320,25 @@ internal static class Utf8SliceCaseEquivalences
     ];
 
     /// <summary>Tests one scalar against explicit half-open endpoint pairs.</summary>
-    internal static bool RangesHit(int[] ranges, int scalar)
+    internal static bool RangesHit(int[] ranges, int scalar,
+        ref Utf8SliceInvocation invocation, out Utf8ExecutionLimitKind breach)
     {
-        for (var range = 0; range + 1 < ranges.Length; range += 2)
+        breach = Utf8ExecutionLimitKind.None;
+        for (var offset = 0; ranges.Length - offset >= 2;)
         {
-            if (scalar >= ranges[range] && scalar < ranges[range + 1])
+            // The atom/segment's existing step covers its first 32 ranges.
+            // Longer linear scans borrow the same owner in bounded blocks.
+            if (offset != 0)
             {
-                return true;
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return false;
             }
+            var block = ranges.AsSpan(offset, Math.Min(64, ranges.Length - offset));
+            for (var range = 0; range + 1 < block.Length; range += 2)
+            {
+                if (scalar >= block[range] && scalar < block[range + 1]) return true;
+            }
+            offset += block.Length;
         }
 
         return false;
@@ -4338,15 +4349,24 @@ internal static class Utf8SliceCaseEquivalences
     /// expansion overlaps the positive test). Empty when the table and the
     /// invariant i-branch know no equivalents, reducing to the direct test.
     /// </summary>
-    internal static bool EquivalentsHitRanges(Rune scalar, int[] ranges, bool miss, Utf8ScalarCaseBehavior behavior)
+    internal static bool EquivalentsHitRanges(Rune scalar, int[] ranges, bool miss, Utf8ScalarCaseBehavior behavior,
+        ref Utf8SliceInvocation invocation, out Utf8ExecutionLimitKind breach)
     {
+        breach = Utf8ExecutionLimitKind.None;
         if (!scalar.IsBmp)
         {
-            return RangesHit(ranges, Utf8SupplementaryCase.Upper(scalar.Value)) != miss ||
-                RangesHit(ranges, Utf8SupplementaryCase.Lower(scalar.Value)) != miss;
+            var upper = RangesHit(ranges, Utf8SupplementaryCase.Upper(scalar.Value), ref invocation, out breach);
+            if (breach != Utf8ExecutionLimitKind.None) return false;
+            if (upper != miss) return true;
+            var lower = RangesHit(ranges, Utf8SupplementaryCase.Lower(scalar.Value), ref invocation, out breach);
+            return breach == Utf8ExecutionLimitKind.None && lower != miss;
         }
         foreach (var equivalent in GetEquivalents((char)scalar.Value, behavior))
-            if (RangesHit(ranges, equivalent) != miss) return true;
+        {
+            var hit = RangesHit(ranges, equivalent, ref invocation, out breach);
+            if (breach != Utf8ExecutionLimitKind.None) return false;
+            if (hit != miss) return true;
+        }
         return false;
     }
 }

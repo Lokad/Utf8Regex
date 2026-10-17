@@ -5,7 +5,8 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// <summary>Immutable scalar class subtraction chain. Each segment owns its
 /// union, folding and class negation; subtraction is applied from the innermost
 /// segment outward. Matching allocates no state and charges the shared invocation
-/// once per segment. Construction flattens the complete chain once; execution
+/// once per segment plus bounded blocks of long predicate scans. Construction
+/// flattens the complete chain once; execution
 /// uses no nested call frames.</summary>
 internal sealed class Utf8SliceClassProgram
 {
@@ -20,10 +21,21 @@ internal sealed class Utf8SliceClassProgram
     {
         static Segment FromNode(Utf8SliceNode node) => node switch
         {
-            Utf8SliceNode.SetNode set => new Segment(set.Mask16, set.Members, [], set.Negated, set.FoldCase),
-            Utf8SliceNode.CategorySetNode set => new Segment(set.Mask16, set.Members, set.Categories, set.Negated, set.FoldCase),
+            Utf8SliceNode.SetNode set => new Segment(set.Mask16, MemberBits(set.Members), [], set.Negated, set.FoldCase),
+            Utf8SliceNode.CategorySetNode set => new Segment(set.Mask16, MemberBits(set.Members), set.Categories, set.Negated, set.FoldCase),
             _ => throw new ArgumentOutOfRangeException(nameof(node), "Class subtraction requires class operands."),
         };
+
+        static int MemberBits(ReadOnlySpan<Utf8SliceShorthand> members)
+        {
+            var bits = 0;
+            foreach (var member in members)
+            {
+                Utf8ConstructionScope.ChargeWork(1);
+                bits |= 1 << (int)member;
+            }
+            return bits;
+        }
 
         var segments = arena.Allocate<Segment>(operands.Count, true);
         arena.Budget.ChargeWork((ulong)operands.Count);
@@ -43,31 +55,26 @@ internal sealed class Utf8SliceClassProgram
         {
             breach = invocation.TryChargeStep();
             if (breach != Utf8ExecutionLimitKind.None) return false;
-            matched = SegmentMatches(scalar, _segments[segment], behavior) && !matched;
+            var segmentHit = SegmentMatches(scalar, _segments[segment], behavior, ref invocation, out breach);
+            if (breach != Utf8ExecutionLimitKind.None) return false;
+            matched = segmentHit && !matched;
         }
         breach = Utf8ExecutionLimitKind.None;
         return matched;
     }
 
-    private static bool SegmentMatches(Rune scalar, in Segment segment, Utf8ScalarCaseBehavior behavior)
+    private static bool SegmentMatches(Rune scalar, in Segment segment, Utf8ScalarCaseBehavior behavior,
+        ref Utf8SliceInvocation invocation, out Utf8ExecutionLimitKind breach)
     {
-        var hit = Utf8SliceScalarClasses.MatchesMask(scalar, segment.Mask16, segment.FoldCase, behavior);
+        breach = Utf8ExecutionLimitKind.None;
+        var hit = Utf8SliceScalarClasses.MatchesMask(scalar, segment.Mask16, segment.FoldCase, behavior) ||
+            Utf8SliceScalarClasses.MatchesMembers(scalar, segment.ShorthandBits);
 
         if (!hit)
         {
-            foreach (var shorthand in segment.Members)
-            {
-                if (Utf8SliceScalarClasses.MatchesShorthand(scalar, shorthand)) { hit = true; break; }
-            }
-        }
-
-        if (!hit)
-        {
-            foreach (var member in segment.Categories)
-            {
-                if (Utf8SliceScalarClasses.MatchesTable(scalar, member.Table, segment.FoldCase, member.Negated, behavior))
-                { hit = true; break; }
-            }
+            hit = Utf8SliceScalarClasses.MatchesTables(scalar, segment.Categories, segment.FoldCase,
+                behavior, ref invocation, out breach);
+            if (breach != Utf8ExecutionLimitKind.None) return false;
         }
 
         return hit != segment.Negated;
@@ -75,6 +82,6 @@ internal sealed class Utf8SliceClassProgram
 
     // The complete segment field state lives inline in the admitted array.
     // A reference array would leave one unadmitted heap object per operand.
-    private readonly record struct Segment(byte[] Mask16, Utf8SliceShorthand[] Members,
+    private readonly record struct Segment(byte[] Mask16, int ShorthandBits,
         Utf8SliceNode.CategorySetMember[] Categories, bool Negated, bool FoldCase);
 }

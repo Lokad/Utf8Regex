@@ -36,7 +36,7 @@ public sealed class Utf8ScalarClassStorageTests
         Assert.Equal(5, fields.Length);
         Assert.Equal(2, fields.Count(item => item.FieldType == typeof(bool)));
         Assert.Single(fields, item => item.FieldType == typeof(byte[]));
-        Assert.Single(fields, item => item.FieldType == typeof(Utf8SliceShorthand[]));
+        Assert.Single(fields, item => item.FieldType == typeof(int));
         Assert.Single(fields, item => item.FieldType == typeof(Utf8SliceNode.CategorySetMember[]));
         Assert.True(Utf8ScalarIrAdmissionTests.CountOwnedGraphArrays(program) + 128ul <= owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.Depth);
@@ -65,7 +65,7 @@ public sealed class Utf8ScalarClassStorageTests
         for (var index = 0; index < count; index++) operands.Add(operand);
         using var arena = Utf8ConstructionArena.Create(owner.Budget);
         var before = owner.Budget.ReservedBytes;
-        var extent = Utf8ConstructionBudget.ArrayBytes<(byte[], Utf8SliceShorthand[], Utf8SliceNode.CategorySetMember[], bool, bool)>(count);
+        var extent = Utf8ConstructionBudget.ArrayBytes<(byte[], int, Utf8SliceNode.CategorySetMember[], bool, bool)>(count);
         var padding = maximum - before - extent + 1;
         owner.Budget.ReserveBytes(padding);
         var held = owner.Budget.ReservedBytes;

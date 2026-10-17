@@ -353,22 +353,10 @@ internal static partial class Utf8SliceRunner
             case Utf8SliceInstructionKind.Shorthand:
                 return Utf8SliceScalarClasses.MatchesShorthand(scalar, (Utf8SliceShorthand)instruction.A);
             case Utf8SliceInstructionKind.Category:
-                return Utf8SliceScalarClasses.MatchesTable(scalar, program.CategoryTables[instruction.A],
-                    (instruction.B & 2) != 0, (instruction.B & 1) != 0, program.CaseBehavior);
             case Utf8SliceInstructionKind.Hybrid:
             case Utf8SliceInstructionKind.CategorySet:
-                var categorySet = instruction.Kind == Utf8SliceInstructionKind.CategorySet;
-                var members = categorySet ? program.CategorySetMembers[instruction.D] : null;
-                if (members is { Length: 1 } && members[0].Table.ClassProgram is { } classProgram)
-                    return classProgram.TryMatch(scalar, program.CaseBehavior, ref invocation, out breach);
-                var fold = categorySet ? (instruction.B & 2) != 0 : instruction.D != 0;
-                var hit = Utf8SliceScalarClasses.MatchesMask(scalar, program.SetMasks[instruction.A], fold, program.CaseBehavior) ||
-                    Utf8SliceScalarClasses.MatchesMembers(scalar, instruction.C);
-                if (!hit && members is not null)
-                    foreach (var member in members)
-                        if (Utf8SliceScalarClasses.MatchesTable(scalar, member.Table, fold, member.Negated, program.CaseBehavior))
-                        { hit = true; break; }
-                return hit != ((instruction.B & 1) != 0);
+                breach = TryMatchScalarClass(program, instruction, scalar, ref invocation, out var hit);
+                return hit;
             default:
                 throw new InvalidOperationException("A nonregular instruction entered the NonBacktracking atom runner.");
         }

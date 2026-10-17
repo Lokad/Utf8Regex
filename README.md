@@ -4,6 +4,12 @@
 scalars over strict UTF-8 spans, with primary byte offsets and lengths. Dot matches
 😀 once across its four bytes. UTF-16 coordinates and strings are derived conveniences.
 
+Core/PythonRe **scalar.74 is being prepared**, with a correction for work and
+interruption checks inside long scalar-class predicates. Scalar.73 omits those
+inner scan charges. The new source keeps the existing invocation, linear scans
+and scalar semantics, and uses fixed shorthand bits for subtraction segments.
+Its package/platform acceptance is pending; it is not yet a qualified dependency.
+
 The qualified private **Core/PythonRe 0.4.0-scalar.73** pair is produced by
 `137ca9a73dfeff24282e0b9ba585b6ed08b302b0`. The same immutable packages pass
 Windows/Linux detached consumers, exact provenance/pins/locks/DLLs/symbols,

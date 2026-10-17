@@ -144,6 +144,18 @@ external exclusions require qualification; a runtime's timeout rounding or
 checkpoint defects do not define the owned contract. Full route coverage remains
 an acceptance gate, distinct from the qualified development slices below.
 
+Development scalar-class execution keeps linear range and independent-table
+scans bounded under the original invocation. The first 32 entries of each range
+or table scan fit within its atom/segment cost; each further block spends a work step
+and checks the deadline directly. Folding uses the same authority and a denied
+scan cannot become a successful negated predicate. Ordinary, NonBacktracking and
+terminal-repeat execution share the existing class helper. Subtraction segments
+store the existing six shorthand bits instead of retaining/scanning duplicate
+shorthand arrays. Longer predicates may now exhaust a work cap that previously
+omitted their inner scan; storage and scalar semantics are preserved. This source
+correction does not alter immutable scalar.73 or establish full construction,
+retained-storage, safe-default or process-memory guarantees.
+
 ### 3.5 UTF-8 validity
 
 The public UTF-8 APIs accept **well-formed UTF-8 only**. Invalid UTF-8 must not be silently repaired or replacement-decoded on the main API. The low-level .NET UTF-8 transcoder exposes invalid-data signaling when replacement is disabled; `Lokad.Utf8Regex` should follow that spirit and reject malformed input. Public failure mode: throw `ArgumentException` with a precise message and the offending byte offset when the input is ill-formed. ([Microsoft Learn][7])

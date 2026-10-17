@@ -48,17 +48,41 @@ internal static class Utf8SliceScalarClasses
         return hit != (((int)shorthand & 1) != 0);
     }
 
-    internal static bool MatchesTable(Rune scalar, Utf8SliceCategoryTable table, bool fold, bool negated, Utf8ScalarCaseBehavior behavior)
+    internal static bool MatchesTable(Rune scalar, Utf8SliceCategoryTable table, bool fold, bool negated,
+        Utf8ScalarCaseBehavior behavior, ref Utf8SliceInvocation invocation, out Utf8ExecutionLimitKind breach)
     {
+        breach = Utf8ExecutionLimitKind.None;
         if (table.ScalarPredicate is { } predicate) return predicate(scalar.Value) != negated;
         var category = Rune.GetUnicodeCategory(scalar);
         var maskHit = fold && category is UnicodeCategory.LowercaseLetter or UnicodeCategory.UppercaseLetter or UnicodeCategory.TitlecaseLetter
             ? (table.Mask & Utf8SliceCategories.CasedLetterMask) != 0
             : ((table.Mask >> (int)category) & 1u) != 0;
         if (maskHit) return !negated;
-        var rangeHit = Utf8SliceCaseEquivalences.RangesHit(table.Ranges, scalar.Value);
+        var rangeHit = Utf8SliceCaseEquivalences.RangesHit(table.Ranges, scalar.Value, ref invocation, out breach);
+        if (breach != Utf8ExecutionLimitKind.None) return false;
         return rangeHit != negated || fold && table.Ranges.Length != 0 &&
-            Utf8SliceCaseEquivalences.EquivalentsHitRanges(scalar, table.Ranges, negated, behavior);
+            Utf8SliceCaseEquivalences.EquivalentsHitRanges(scalar, table.Ranges, negated, behavior, ref invocation, out breach);
+    }
+
+    internal static bool MatchesTables(Rune scalar, ReadOnlySpan<Utf8SliceNode.CategorySetMember> members,
+        bool fold, Utf8ScalarCaseBehavior behavior, ref Utf8SliceInvocation invocation, out Utf8ExecutionLimitKind breach)
+    {
+        breach = Utf8ExecutionLimitKind.None;
+        for (var index = 0; index < members.Length; index++)
+        {
+            // The atom/segment covers its first 32 tables. Check the deadline
+            // directly for further blocks, like other bounded buffer scans.
+            if (index != 0 && (index & 31) == 0)
+            {
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return false;
+            }
+            var member = members[index];
+            var hit = MatchesTable(scalar, member.Table, fold, member.Negated, behavior, ref invocation, out breach);
+            if (breach != Utf8ExecutionLimitKind.None) return false;
+            if (hit) return true;
+        }
+        return false;
     }
 
     internal static bool MatchesMask(Rune scalar, byte[] mask, bool fold, Utf8ScalarCaseBehavior behavior)

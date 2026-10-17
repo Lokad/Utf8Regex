@@ -61,8 +61,8 @@ internal static partial class Utf8SliceRunner
         if (instruction.Kind == Utf8SliceInstructionKind.Category)
         {
             hit = Utf8SliceScalarClasses.MatchesTable(scalar, program.CategoryTables[instruction.A],
-                (instruction.B & 2) != 0, (instruction.B & 1) != 0, program.CaseBehavior);
-            return Utf8ExecutionLimitKind.None;
+                (instruction.B & 2) != 0, (instruction.B & 1) != 0, program.CaseBehavior, ref invocation, out var breach);
+            return breach;
         }
         var categorySet = instruction.Kind == Utf8SliceInstructionKind.CategorySet;
         var members = categorySet ? program.CategorySetMembers[instruction.D] : null;
@@ -76,14 +76,9 @@ internal static partial class Utf8SliceRunner
             Utf8SliceScalarClasses.MatchesMembers(scalar, instruction.C);
         if (!memberHit && members is not null)
         {
-            foreach (var member in members)
-            {
-                if (Utf8SliceScalarClasses.MatchesTable(scalar, member.Table, fold, member.Negated, program.CaseBehavior))
-                {
-                    memberHit = true;
-                    break;
-                }
-            }
+            memberHit = Utf8SliceScalarClasses.MatchesTables(scalar, members, fold, program.CaseBehavior,
+                ref invocation, out var breach);
+            if (breach != Utf8ExecutionLimitKind.None) { hit = false; return breach; }
         }
         hit = memberHit != ((instruction.B & 1) != 0);
         return Utf8ExecutionLimitKind.None;
