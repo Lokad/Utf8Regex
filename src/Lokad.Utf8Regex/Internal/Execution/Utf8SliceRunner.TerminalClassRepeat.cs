@@ -26,6 +26,59 @@ internal static partial class Utf8SliceRunner
             program.CategorySetMembers[atom.D].Length <= 1;
     }
 
+    private static Utf8SliceCountOutcome CountTerminalClassRepeat(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation)
+    {
+        // This complete root has no tail to reconsider a greedy boundary.
+        // Publish full maxima and discard each final run below the minimum.
+        var breach = invocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+        // Observe an enclosing loan without acquiring any local scratch.
+        breach = invocation.TryReserveWorking(0);
+        if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+        var repeat = program.Instructions[0];
+        var atom = program.Instructions[1];
+        var position = start;
+        var run = 0;
+        var count = 0;
+        while (position < input.Length)
+        {
+            breach = invocation.TryChargeStep();
+            if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
+            if (!TryReadScalar(input, position, false, out var scalar, out var width)) break;
+            breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var hit);
+            if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
+            if (hit)
+            {
+                position += width;
+                if (++run == repeat.D)
+                {
+                    count++;
+                    run = 0;
+                    invocation.AnchorOriginByte = position;
+                }
+            }
+            else
+            {
+                if (run >= repeat.C)
+                {
+                    count++;
+                    invocation.AnchorOriginByte = position;
+                }
+                run = 0;
+                position += width;
+            }
+        }
+        if (run >= repeat.C)
+        {
+            count++;
+            invocation.AnchorOriginByte = position;
+        }
+        breach = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        return new(count, breach);
+    }
+
     private static Utf8SliceMatchOutcome RunTerminalClassRepeat(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation)
     {

@@ -179,6 +179,17 @@ result capacity retain admission. Actual acquisition work/storage requirements
 fall; no replacement charge, new state flag or retention policy is introduced.
 This source improvement does not alter immutable scalar.68.
 
+Development Count also reuses this exact complete-root guard for one scalar
+pass. It groups greedy runs by the finite/unbounded maximum, counts remaining
+runs only when they meet the positive minimum, and avoids repeated match-attempt
+setup and rescanning too-short suffixes. The same controlled class helper retains
+inner predicate metering. One invocation/deadline/token spans the byte floor and
+scan, with final interruption before publication. Existing parent working loans
+are noted without acquiring local scratch. Less actual work lowers numeric
+cutoffs; captures, nullable/lazy/RTL/NonBacktracking/anchors/tails keep their
+existing paths. No public API, matching unit or ownership contract changes.
+This later source optimization is outside the immutable scalar.74 packages.
+
 ### 3.6 Scalar boundaries and coordinates
 
 Every successful core match and capture on valid input has a representable UTF-8 byte range. For `😀`, dot returns one match at byte offset 0 with byte length 4; `^.$` succeeds and `^..$` fails. Dot on `a😀b` returns ranges (0,1), (1,4) and (5,1). `^(.)\1$` matches `😀😀`, retaining the complete first scalar in group 1. Dot on `e` followed by U+0301 returns two scalar matches.

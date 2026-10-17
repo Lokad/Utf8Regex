@@ -4,6 +4,12 @@
 scalars over strict UTF-8 spans, with primary byte offsets and lengths. Dot matches
 😀 once across its four bytes. UTF-16 coordinates and strings are derived conveniences.
 
+Development **scalar.75 is in preparation** with one-pass Count for the existing
+complete terminal-class-repeat route. The bounded source comparison records
+2-2.8x faster affected finite counts and34x faster too-short-run misses, preserving
+scalar semantics, admission and interruption. Package/platform qualification is
+pending; immutable scalar.74 below does not include this optimization.
+
 The qualified private **Core/PythonRe 0.4.0-scalar.74** pair is produced by
 `f0bbbf8f0439964862bb86e625d7200cfa7f29b6`. The same immutable packages pass
 Windows/Linux detached consumers, exact provenance/pins/locks/DLLs/symbols,

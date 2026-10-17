@@ -537,6 +537,8 @@ internal static partial class Utf8SliceRunner
         var count = 0;
         var position = fromByte;
         invocation.AnchorOriginByte = fromByte;
+        if (CanRunTerminalClassRepeat(program))
+            return CountTerminalClassRepeat(program, input, fromByte, ref invocation);
         if (program.IsNonBacktracking)
         {
             Array.Fill(captureStarts, -1);

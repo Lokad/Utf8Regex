@@ -1,5 +1,20 @@
 # Changelog
 
+## Development: complete terminal-class-repeat Count
+
+- Reuse the existing capture-free positive greedy root guard and scalar-class
+  matcher for one Count pass. Avoid repeated attempt setup, duplicate boundary
+  evaluation and rescanning runs below the minimum. Keep finite maxima, byte
+  floors, Unicode/fold/subtraction semantics, original interruption and metering.
+- Observe parent working loans without scratch, preserve final cancellation and
+  all four finite controls. No API/mode/owner or unchecked access is introduced.
+  Lower actual work intentionally changes numeric cutoffs; excluded shapes keep
+  their existing paths.
+- One public source comparison against immutable74 records2-2.8x faster affected
+  counts and34x faster too-short-run misses, with stable control and unchanged
+  principal allocations. No confirmation, tuning variant or package replay.
+  The next immutable dependency qualification remains a separate delivery gate.
+
 ## Core/PythonRe scalar.74 qualified private dependency
 
 - Qualify immutable producerf0bbbf8f: same-byte first-pass Windows/Linux Core39272,
