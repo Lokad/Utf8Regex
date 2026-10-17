@@ -3,17 +3,17 @@
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
 strict UTF-8 scalars, with primary byte coordinates and derived UTF-16 projections.
 
-The qualified private **Core/PythonRe 0.4.0-scalar.82** pair pins Core
-`[0.4.0-scalar.82]`, producer `29f5a0b466f8f5be1fccd55530d35e97d9f74383`.
+The qualified private **Core/PythonRe 0.4.0-scalar.83** pair pins Core
+`[0.4.0-scalar.83]`, producer `70b422e8418671a1afbdb55b4f96e82202d0c510`.
 Same immutable Windows/Linux consumers, capture/semantic oracles, symbols,
 provenance/member/API checks and a fresh isolated public restore pass.
-[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39034578875) is green.
-[Handoff](../../artifacts/core-python-scalar82-20261017/HANDOFF.md) and
-[consumption](../../artifacts/core-python-scalar82-20261017/CONSUMING.md) preserve
-exact identities and scopes. No PCRE82, publication, consumer pin/default change
+[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39041003196) is green.
+[Handoff](../../artifacts/core-python-scalar83-20261017/HANDOFF.md) and
+[consumption](../../artifacts/core-python-scalar83-20261017/CONSUMING.md) preserve
+exact identities and scopes. No PCRE83, publication, consumer pin/default change
 or adoption is implied; earlier candidates remain immutable.
 
-Scalar.82 includes direct string Split staging, conservative construction
+Scalar.83 preserves direct string Split staging, conservative construction
 descriptor exclusions and Core boolean validation-only reuse. Captures/nulls,
 scalar boundaries, original deadlines/tokens, basic work and major-capacity
 admission remain. The accepted memory/CPU tradeoff is documented; reduced actual
@@ -21,7 +21,7 @@ work/storage can lower numerical requirements. Prior direct capture slots,
 explicit cursor lifetime and prepared native finite literal routes remain.
 The semantic target stays CPython3.13.2/Unicode15.1; API snapshots are unchanged.
 
-Development source after scalar.82 reuses complete native literal/family matches
+Scalar.83 also reuses complete native literal/family matches
 for capture-free, nonempty cursor search under the same validated invocation.
 Full-result eligibility is distinct from a necessary start hint. Match and
 FullMatch retain their position/end constraints; captures and excluded semantics
@@ -29,21 +29,21 @@ keep the VM. Group-zero coordinates, original interruption and major admission
 remain; removed work/scratch can admit tighter numerical policies.
 [One bounded source pair](../../artifacts/python-native-cursor-20261017/RESULT.md)
 improves finite dense Split by12.6% and removes late-family Search VM attempts.
-It is FullOpts evidence outside immutable scalar.82, not new CPython Status.
+That source comparison uses FullOpts; it does not update CPython Status.
 
 Controlled boolean-only literal searches also reuse existing validation-only
 and native discovery, omitting unused coordinate/cursor preparation. Whole-input
 strict validation and original work/deadline/token authority remain. Unmetered
 calls keep their prior routes after the broader prototype regressed an
 ASCII workload. [Experiment](../../artifacts/python-boolean-native-20261017/RESULT.md)
-distinguishes prototype measurements from the final guard, whose costs are due
-at the next delivery boundary. No additional public policy or execution mode.
+distinguishes prototype measurements from the final guard. Its current-package
+costs are recorded separately; no additional public policy or execution mode.
 
-[Current exact-package costs](../../artifacts/core-python-scalar82-20261017/vm-cost/RESULT.md)
+[Current exact-package costs](../../artifacts/core-python-scalar83-20261017/vm-cost/RESULT.md)
 include finite/live-token overhead, required tuples/Split values and both .NET
 controls under default tiering/PGO. Stable rows and noisy/short lanes are distinct;
 older FullOpts and paired CPython results retain their actual source scope and
-do not qualify82. The [historical snapshot](BENCHMARKS.md) is not a fresh catalog.
+do not qualify83. The [historical snapshot](BENCHMARKS.md) is not a fresh catalog.
 
 Core only retains permitted `Unsafe.SizeOf`, accepted by Lython; Python has none.
 No unchecked reads, generated staging helpers, native imports or shipped BCL

@@ -1,5 +1,18 @@
 # Changelog
 
+## Qualified private Core/PythonRe scalar.83
+
+- Batch native capture-free cursor discovery and controlled boolean validation-only
+  reuse. Preserve strict scalar semantics, captures, original interruption and
+  finite admission. Unmetered boolean calls retain their previous routes after
+  a measured prototype regression.
+- Fresh immutable bytes pass same-byte Windows/Linux consumer, oracle, identity,
+  symbols/member/API and final-feed restore checks; producer CI is green. Current
+  default-runtime measurements qualify five product rows, including finite costs;
+  short family timings remain unqualified after one selective confirmation.
+  Earlier packages and independent PCRE76 remain unchanged.
+  [Handoff](artifacts/core-python-scalar83-20261017/HANDOFF.md).
+
 ## Development after scalar.82
 
 - Boolean-only Python literal searches with resource or interruption controls
