@@ -120,6 +120,7 @@ internal static partial class PythonReBenchmarkReporter
             $"qualification-protocol={PythonReQualificationProtocolVersion}",
             $"cpython-stream-protocol={CpythonProtocolVersion}",
             $"processor-policy={PythonReQualificationProcessorPolicy}",
+            $"linux-processor-policy={BenchmarkProcessorScope.LinuxSingleProcessorPolicy}",
             $"bootstrap-seed={PythonReQualificationBootstrapSeed}",
             $"bootstrap-resamples={PythonReQualificationBootstrapResamples}",
             $"maximum-iterations={PythonReQualificationMaximumIterations}",

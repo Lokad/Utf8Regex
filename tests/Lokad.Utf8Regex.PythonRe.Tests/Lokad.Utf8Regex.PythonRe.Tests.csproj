@@ -27,6 +27,8 @@
   <ItemGroup>
     <Compile Include="..\..\bench\Lokad.Utf8Regex.Benchmarks\PythonReBenchmarkCatalog.cs"
              Link="PythonReBenchmarkCatalog.cs" />
+    <Compile Include="..\..\bench\Lokad.Utf8Regex.Benchmarks\BenchmarkProcessorScope.cs"
+             Link="BenchmarkProcessorScope.cs" />
     <Compile Include="..\..\bench\Lokad.Utf8Regex.Benchmarks\BenchmarkDataFiles.cs"
              Link="BenchmarkDataFiles.cs" />
     <Compile Include="..\..\bench\Lokad.Utf8Regex.Benchmarks\BenchmarkSubjectDefinitions.cs"

@@ -6,6 +6,7 @@ namespace Lokad.Utf8Regex.Benchmarks;
 
 internal sealed class BenchmarkProcessorScope : IDisposable
 {
+    internal const string LinuxSingleProcessorPolicy = "single-least-contended-allowed-processor";
     private const int CpuSetInformationType = 0;
     private const int MinimumCpuSetInformationSize = 20;
     private readonly Process? _process;
@@ -46,7 +47,7 @@ internal sealed class BenchmarkProcessorScope : IDisposable
             return;
         }
 
-        if (OperatingSystem.IsWindows())
+        if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux())
         {
             _process.ProcessorAffinity = _originalAffinity;
         }
@@ -56,6 +57,38 @@ internal sealed class BenchmarkProcessorScope : IDisposable
 
     private static BenchmarkProcessorScope Enter(bool singleProcessor)
     {
+        if (OperatingSystem.IsLinux() && singleProcessor)
+        {
+            var linuxProcess = Process.GetCurrentProcess();
+            var linuxOriginalAffinity = linuxProcess.ProcessorAffinity;
+            try
+            {
+                var linuxMask = SelectLeastContendedProcessorMask(
+                    linuxProcess, unchecked((ulong)linuxOriginalAffinity.ToInt64()));
+                var selectedAffinity = new nint(unchecked((long)linuxMask));
+                linuxProcess.ProcessorAffinity = selectedAffinity;
+                linuxProcess.Refresh();
+                if (linuxMask == 0 || linuxProcess.ProcessorAffinity != selectedAffinity)
+                {
+                    throw new InvalidOperationException("Could not pin the Linux benchmark processor.");
+                }
+
+                return new(
+                    linuxProcess,
+                    linuxOriginalAffinity,
+                    LinuxSingleProcessorPolicy,
+                    FormatMask(linuxMask),
+                    null,
+                    $"least-contended allowed processor ({FormatMask(linuxMask)}; Linux efficiency class unknown)");
+            }
+            catch
+            {
+                linuxProcess.ProcessorAffinity = linuxOriginalAffinity;
+                linuxProcess.Dispose();
+                throw;
+            }
+        }
+
         if (!OperatingSystem.IsWindows())
         {
             return new(
@@ -166,7 +199,8 @@ internal sealed class BenchmarkProcessorScope : IDisposable
         static ulong SelectLeastContendedProcessorMask(Process process, ulong candidateMask)
         {
             // The first logical processor is commonly burdened by system work. Probe only
-            // equal-efficiency candidates; the child comparator inherits the selected mask.
+            // the selected candidates (equal-efficiency on Windows); the child comparator
+            // inherits the selected mask.
             const int probeSamples = 3;
             const int probeSpinIterations = 250_000;
             var bestMask = 0UL;

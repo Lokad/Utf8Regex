@@ -356,7 +356,7 @@ internal static partial class PythonReBenchmarkReporter
                                      static duration => duration >= PythonReQualificationMinimumSampleMilliseconds) &&
                                  cpythonMilliseconds.All(
                                      static duration => duration >= PythonReQualificationMinimumSampleMilliseconds);
-        var placementQualified = processorScope.Policy == PythonReQualificationProcessorPolicy;
+        var placementQualified = IsPythonReQualifiedProcessorPolicy(processorScope.Policy);
         var status = DeriveStatus(
             worktreeQualified,
             placementQualified,
@@ -1585,6 +1585,7 @@ internal static partial class PythonReBenchmarkReporter
 
     private static bool IsPythonReQualifiedProcessorPolicy(string policy) =>
         policy.Equals(PythonReQualificationProcessorPolicy, StringComparison.Ordinal) ||
+        policy.Equals(BenchmarkProcessorScope.LinuxSingleProcessorPolicy, StringComparison.Ordinal) ||
         policy.Equals("single-highest-efficiency-processor", StringComparison.Ordinal);
 
     private static void VerifyPythonReStatistic(string name, double expected, double actual)
@@ -1756,7 +1757,7 @@ internal static partial class PythonReBenchmarkReporter
         {
             return new(
                 PythonRePublicStatus.Unqualified,
-                "A single common highest-efficiency processor was unavailable.");
+                "A single common processor under a qualified placement policy was unavailable.");
         }
 
         if (!durationsQualified)
@@ -2049,15 +2050,21 @@ internal static partial class PythonReBenchmarkReporter
             startInfo.ArgumentList.Add("--stream");
             _process = Process.Start(startInfo) ??
                 throw new InvalidOperationException($"Could not start CPython executable '{executable}'.");
-            if (OperatingSystem.IsWindows())
-            {
-                using var parent = Process.GetCurrentProcess();
-                _process.ProcessorAffinity = parent.ProcessorAffinity;
-            }
-
             _standardError = _process.StandardError.ReadToEndAsync();
             try
             {
+                if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux())
+                {
+                    using var parent = Process.GetCurrentProcess();
+                    var affinity = parent.ProcessorAffinity;
+                    _process.ProcessorAffinity = affinity;
+                    _process.Refresh();
+                    if (_process.ProcessorAffinity != affinity)
+                    {
+                        throw new InvalidOperationException("CPython did not inherit the benchmark CPU affinity.");
+                    }
+                }
+
                 Ready = Read("Ready");
                 Environment = Ready.Environment ??
                     throw new InvalidOperationException("CPython streaming ready response has no environment.");

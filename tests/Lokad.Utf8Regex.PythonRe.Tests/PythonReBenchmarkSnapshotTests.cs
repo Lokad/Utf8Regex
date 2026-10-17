@@ -316,6 +316,7 @@ public sealed class PythonReBenchmarkSnapshotTests
             {
                 "single-highest-efficiency-processor",
                 "single-least-contended-highest-efficiency-processor",
+                "single-least-contended-allowed-processor",
                 "scheduler-default",
             });
         if (evidence.GetProperty("CpuPolicy").GetString() == "scheduler-default")

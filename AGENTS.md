@@ -179,6 +179,11 @@ PythonRe benchmark snapshot and diagnostics:
 - Use `--qualify-pythonre-case <id> [samples]` to checkpoint paired evidence
   and Status into the snapshot; use `--qualify-pythonre-case-reversed` for the
   predeclared reversed-first repeat.
+- Paired qualification pins managed and CPython work to one common processor:
+  Windows selects the least-contended highest-efficiency processor; Linux selects
+  the least-contended allowed processor and records efficiency class as unknown.
+  The scope restores the original affinity. Linux results do not claim a measured
+  efficiency-class preference.
 - Use `--resume-pythonre-qualifications [initial-samples] [extended-samples]
   [maximum-cases]` for a bounded milestone batch. It skips only exact current
   source/catalog/runner/runtime/interpreter matches, checkpoints every case,
