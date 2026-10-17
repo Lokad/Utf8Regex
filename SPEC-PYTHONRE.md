@@ -61,8 +61,8 @@ affect matching, empty-progress checks or rollback. Active positions are scalar
 boundaries, so the largest optional-phase value remains distinct from inactive
 state. Required nullable iterations still spend work and can be interrupted;
 they are not skipped or changed into unbounded finite repeats. Construction
-bounds metadata grows and remains admitted. This source repair is not yet a
-qualified package or a claim of complete Python grammar coverage.
+bounds metadata grows and remains admitted. The repair is included in qualified scalar.89;
+complete Python grammar coverage remains separate.
 
 ## Nullable repetition and capture state
 

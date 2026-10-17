@@ -3,56 +3,39 @@
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
 strict UTF-8 scalars, with primary byte coordinates and derived UTF-16 projections.
 
-Private candidate **0.4.0-scalar.89** stages compact wide finite repetitions and
-the shared separator/atomic repairs. Qualification/current costs are pending;
-the earlier qualified pair below retains its original scope and bytes.
-
-The qualified private **Core/PythonRe 0.4.0-scalar.88** pair comes from clean
-producer `64c8f38b315b083f5b73a556477679b5725bd13b`; PythonRe requires exact Core
-`[0.4.0-scalar.88]`. Same immutable bytes pass Windows/Linux consumers,
+The qualified private **Core/PythonRe 0.4.0-scalar.89** pair comes from clean
+producer `a290c428ad6f30656e9cc1f46bb65f547942aa59`; PythonRe requires exact Core
+`[0.4.0-scalar.89]`. Same immutable bytes pass Windows/Linux consumers,
 107capture/91semantic fixtures, API/member/symbol/provenance checks and a fresh
-isolated public restore. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39072816761)
-is green. [Handoff](../../artifacts/core-python-scalar88-20261017/HANDOFF.md) and
-[consumption](../../artifacts/core-python-scalar88-20261017/CONSUMING.md) record exact scope/identities.
-Earlier87/86/85/84 and independentPCRE76/Core76 remain immutable.
+isolated public restore. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39079455973)
+is green. [Handoff](../../artifacts/core-python-scalar89-20261018/HANDOFF.md) and
+[consumption](../../artifacts/core-python-scalar89-20261018/CONSUMING.md) record exact scope/identities.
+Earlier88/87/86 and independentPCRE76/Core76 remain immutable.
 
-Scalar.88 batches scalar URI Count, finite ASCII structural-family Count and
-the Python brace/verbose grammar repair. Existing counters/verifiers omit VM
-scratch under proved eligibility; full strict validation, scalar captures,
-retained aliases and original cancellation/deadline/finite controls remain.
-Python admits literal/unfinished braces, omitted lower bounds and verbose trivia
-before quantifiers. Scalar.88 still has the aboveInt32 repeat-bound gap;
-development source admits finite bounds through4294967294 with distinct
-unbounded repetition, exact scalar captures and the existing controls. The new
-source has not yet been packaged or performance-qualified. Core references
-only permitted Unsafe.SizeOf, accepted by Lython; PythonRe none. Actual unchecked
-reads, generated helpers, native imports and shipped BCL matchers/results stay absent.
+Scalar.89 includes exact finite Python repetition through4294967294, distinct
+from infinity, with compact invocation state and preserved captures/rollback,
+finite controls and interruption. Shared separator/atomic defects are repaired.
+Core references only permitted Unsafe.SizeOf (accepted by Lython); Python none.
+Unchecked reads, generated helpers, native imports and BCL matchers stay absent.
 
-[Selective exact88 current costs](../../artifacts/core-python-scalar88-20261017/vm-cost/RESULT.md)
-use default runtime/tiering/R2R on10.0.12 with explicit finite allowances.
-Ordinary unlimited/finite Count is18.7/42.4us for dense URI,8.3/185.3us for method
-calls and80.7/82.9us for captured scalar Python. Finite Core allocates about112B;
-the selected captured Python row5776/5888B. Finite structural cost remains about22x
-unlimited, and qualified .NET controls expose substantial gaps. All selected
-ordinary product lanes qualify; some compiledURI/.NET control lanes remain
-unqualified after the sole confirmation. Both raw batches/uncertainty are retained;
-no further timing or broad/CPythonStatus/cross-version claim.
-
-Closed [URI source costs](../../artifacts/core-uri-count-current-20261017/RESULT.md) and
-[structural source costs](../../artifacts/finite-structural-family-count-20261017/RESULT.md)
-keep their FullOpts scope. Earlier exact86 noisy default-runtime evidence stays
-attached to86. Source gains and historical tables do not replace current package costs.
+[Current exact89 costs](../../artifacts/core-python-scalar89-20261018/vm-cost/RESULT.md)
+retain500samples from one default-runtime pair plus sole confirmation.24/25 lanes
+qualify; selected affected public changes-1.04..+6.16%, unchanged allocations.
+All selected finite/live lanes qualify, but unlimited captured FullMatch remains
+noisy/unqualified. Python nullable captured Count79.9/82.1us U/finite and finite
+detailed FullMatch6.46us retain substantial .NET gaps. No further timing, broad
+performance/CPythonStatus or inference from discarded64-bit-state/old costs.
 
 Defaults/static calls remain unlimited. [Host composition](../../HOST-INTEGRATION.md)
-explains modeled capacities and surviving owners. Full construction/lazy/default/
-common-retention/host/SPEC coverage remains open. No PCRE88, publication, external
-consumer pin/default change or actual adoption is implied.
+explains modeled capacities and surviving owners. Full grammar/construction/lazy/
+default/retained-storage/host/SPEC coverage remains open. No PCRE89, publication,
+external consumer pin/default change or actual adoption is implied.
 
 ## Support Scope
 
 Scalar.88 fixes literal/unfinished braces, omitted-lower repeat
 bounds and verbose quantifier attachment. Scalar captures and existing matching
-paths remain, with metered construction lookahead. Development after scalar.88
+paths remain, with metered construction lookahead. Scalar.89
 extends finite repeat bounds through4294967294 without enlarging invocation
 counter/frame/journal layouts. Invalid larger bounds use PythonRePatternException;
 required nullable work remains interruptible and metered. See the

@@ -1,16 +1,17 @@
 # Changelog
 
-## Staged private Core/PythonRe scalar.89
+## Qualified private Core/PythonRe scalar.89
 
-- Use a fresh immutable identity for the following source repairs. Package and
-  current performance qualification are pending; preserve scalar.88 and the
+- Use a fresh immutable identity for the following source repairs. Same bytes pass Windows/Linux consumer/oracle/public-restore and identity
+  checks with green CI. Selective current costs retain one noisy FullMatch lane;
+  preserve scalar.88 and the
   independent PCRE76/Core76 pair. No PCRE89 package or publication is included.
 
 - Admit Python finite repeat bounds through4294967294, distinct from unbounded
   repetition, across parsing/rendering/lowering and scalar execution. Preserve
   exact finite counts, captures/rollback and interruption without growing the
   invocation counter/frame/journal layouts. Larger bounds are pattern failures.
-  New source/package performance remains separately qualified.
+  See artifacts/core-python-scalar89-20261018/HANDOFF.md for exact qualification.
 - Preserve atomic identifier-tail commitment in structural families: an atomic
   loop must not be flattened into the rewinding identifier verifier. Keep these
   shapes on the existing owned path; no grammar or resource-control change.
