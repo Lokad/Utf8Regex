@@ -188,7 +188,9 @@ scan, with final interruption before publication. Existing parent working loans
 are noted without acquiring local scratch. Less actual work lowers numeric
 cutoffs; captures, nullable/lazy/RTL/NonBacktracking/anchors/tails keep their
 existing paths. No public API, matching unit or ownership contract changes.
-This later source optimization is outside the immutable scalar.74 packages.
+The immutable Core/PythonRe scalar.75 pair qualifies this optimization against
+detached consumers and selective current costs
+([scope](artifacts/core-python-scalar75-20261017/HANDOFF.md)); scalar.74 stays unchanged.
 
 ### 3.6 Scalar boundaries and coordinates
 

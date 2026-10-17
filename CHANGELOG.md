@@ -1,5 +1,19 @@
 # Changelog
 
+## Core/PythonRe scalar.75 qualified private dependency
+
+- Qualify immutable producer01e178d9: same-byte first-pass Windows/Linux
+  Core39333/Diff1504/Python3237, capture/semantic/member/provenance gates and
+  fresh final-feed restore. One5.04s closure build/one pack per package.
+- Deliver the accepted complete class-repeat Count and empty-bit shortcuts with
+  unchanged scalar/capture/interruption/ownership contracts and usable limits.
+- Record selective current exact-package costs with finite/live-token lanes and
+  applicable .NET controls. Source before/after results remain separate.
+- Preserve a copied public-consumer fixture encoding failure; only the fixture
+  was corrected/rebuilt against the same DLLs. No library rebuild/repack.
+- Earlier74 and independent PCRE71 stay immutable. Full SPEC/host/adoption and
+  PCRE75 qualification remain separate. No publication or external update.
+
 ## Development: complete terminal-class-repeat Count
 
 - Reuse the existing capture-free positive greedy root guard and scalar-class

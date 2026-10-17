@@ -4,39 +4,35 @@
 scalars over strict UTF-8 spans, with primary byte offsets and lengths. Dot matches
 😀 once across its four bytes. UTF-16 coordinates and strings are derived conveniences.
 
-Development **scalar.75 is in preparation** with one-pass Count for the existing
-complete terminal-class-repeat route. The bounded source comparison records
-2-2.8x faster affected finite counts and34x faster too-short-run misses, preserving
-scalar semantics, admission and interruption. Package/platform qualification is
-pending; immutable scalar.74 below does not include this optimization.
-
-The qualified private **Core/PythonRe 0.4.0-scalar.74** pair is produced by
-`f0bbbf8f0439964862bb86e625d7200cfa7f29b6`. The same immutable packages pass
+The qualified private **Core/PythonRe 0.4.0-scalar.75** pair is produced by
+`01e178d9cf28c3d9836a36a7dfb48de59d28ebdc`. The same immutable packages pass
 Windows/Linux detached consumers, exact provenance/pins/locks/DLLs/symbols,
-capture/semantic oracles, managed-member inventory and fresh final-feed restore.
-[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38996580124) is green.
-PythonRe pins Core `[0.4.0-scalar.74]`.
-[Handoff and exact scope](artifacts/core-python-scalar74-20261017/HANDOFF.md),
-[consumption instructions](artifacts/core-python-scalar74-20261017/CONSUMING.md).
+capture/semantic oracles, member inventory and fresh final-feed public restore.
+[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38999724440) is green.
+PythonRe pins Core `[0.4.0-scalar.75]`.
+[Handoff and exact scope](artifacts/core-python-scalar75-20261017/HANDOFF.md),
+[consumption instructions](artifacts/core-python-scalar75-20261017/CONSUMING.md).
 
-This milestone closes omitted work/cancellation/deadline checks inside long
-scalar-class predicates. Existing invocation controls now cover32-entry blocks;
-ordinary/NonBacktracking execution shares the class helper, and subtraction
-segments retain six shorthand bits instead of duplicate arrays. Scalar, folding,
-negation, captures and storage admission remain. Long-class numeric work cutoffs
-tighten. No new policy, owner, mode, accounting layer or runtime allocation.
+Core Count handles the existing complete positive greedy class-repeat root in
+one scalar pass, avoiding repeated attempts and too-short suffix scans. Greedy
+min/max, byte floors, inner predicate metering, original interruption and parent
+admission remain. Empty shorthand bits skip six useless bit tests. No new owner,
+policy/mode, public API, allocation or unchecked access. Less actual Count work
+intentionally lowers numeric cutoffs; excluded shapes keep their general paths.
 
-The closure was built once5.44s, each package packed once, and both platform
-matrices passed first time. Earlier73's preserved Windows timeout/retry belongs
-to that earlier immutable input. No package was rebuilt/repacked for this delivery.
+The closure was built once5.04s, each package packed once, and both platform
+matrices passed first time. A separate copied public-consumer fixture initially
+had an encoding error; its source/log are preserved. Only that fixture was fixed
+and rebuilt against the same packages, then passed. No library rebuild/repack.
 
-One selective current observation on exact74 bytes includes complete validation,
-required output and all four finite controls/live tokens. Finite subtraction
-Count is about358us and1000Python capture tuples684us. Category samples are noisy;
-subtraction retains a substantial .NET gap. The source comparison separately
-records protection costs, including16% subtraction and33-37% long predicates;
-these are not unchecked-access equivalence claims. Read the handoff for actual
-samples, .NET controls and limitations. No historical rows are relabeled.
+One selective current observation on exact75 bytes includes full validation,
+required output and all four finite controls/live tokens. Finite category Count
+is about74us, subtraction Count135us and1000Python capture tuples691us. Stable
+managed samples accompany predecoded/decode .NET controls and allocations. .NET
+remains faster on these class Count rows; no parity or cross-run speedup is claimed.
+The two closed source comparisons separately recorded2-2.8x affected Count wins,
+34x too-short-run miss and12-19% further subtraction Count wins, with an accepted
+3.7% nonzero-space miss cost. Read the handoff for scope and all raw evidence.
 
 Core supplementary casing owns Unicode16 pairs; categories remain runtime-sourced.
 Python data stay pinned15.1. No shipped BCL matcher/results or dormant UTF16 engine.
@@ -47,9 +43,9 @@ Defaults/static calls remain unlimited. [HOST-INTEGRATION.md](HOST-INTEGRATION.m
 composes covered capacity with existing owners; complete construction/lazy/default/
 live-retention/RSS/host containment and full SPEC remain unfinished. This scoped
 input does not imply publication, consumer pins/defaults/adoption or POSIX-longest
-selection. Published0.3 packages retain their former contract. Earlier73/72/69/68/65
+selection. Published0.3 packages retain their former contract. Earlier74/73/72/69/68/65
 remain immutable. Independent [PCRE71](artifacts/pcre2-scalar71-delivery-20261017/HANDOFF.md)
-has its own exact Core71 pin; keep it separate from Python74. Original package
+has its own exact Core71 pin; keep it separate from Python75. Original package
 README preparation assets stay frozen; handoff/manifest record completed scope.
 
 Use exact versions and the immutable feed. The existing
@@ -72,7 +68,7 @@ and completed checked-access campaign retain their original scope.
 - Resource scope: core instances accept finite `Utf8ResourcePolicy.MaxWorkSteps`, `MaxDepth`, `MaxWorkingBytes` and `MaxResultBytes`. Work covers strict UTF-8 validation, scalar matching and required shaping cumulatively. Depth bounds live backtracking/continuation frames or pending linear alternatives before acquisition/copy; the selected route determines its depth requirement, and a stack-free linear replay uses no depth allowance. Result bytes conservatively charge major array/text and output-control capacity before acquisition, including staging/growth; charges are not refunded and can count shared storage again. Finite calls select owned metered execution. Core Count can reuse the bounded native counter for prepared nonempty exact LTR literals, including ordinary ASCII literal captures; scalar.49 and later qualified pairs extend this to eligible exact two/three-literal families. That route needs no VM capture/depth/result scratch, and removing verification/workspace lowers its charged requirements. Scalar.48 predates the family extension; larger or semantically excluded families retain the VM. Offset maps retain their own admission. Working bytes bound modeled major active storage/output controls and growth overlap. Exclusive scratch releases synchronously; published copied-cursor maps/tables stay charged for the invocation. Incidental owner metadata and caller-retained results have separate scope. Defaults and static cached calls remain unlimited. Construction/replacement preparation, caller callback execution/allocations, borrowed subjects, fixed value results and later standalone getters have separate scope. These are operation controls, not wall-time, live-retention or process-memory guarantees.
 - Cancellation and deadlines: caller cancellation is checked synchronously during validation, search, backtracking and required result shaping. A match deadline is absolute across an invocation, including waits between persistent cursor advances. Caller callback execution has its own lifetime; copying/encoding its returned output remains controlled.
 - PythonRe delivery: Python-order captures/backreferences and nullable last-closed `LastIndex`/`LastGroup` are authoritative backend metadata. The persistent memory-based cursor has explicit disposal and owned snapshots that survive advance/disposal; aliases share its position and lifetime. See the [PythonRe contract](src/Lokad.Utf8Regex.PythonRe/README.md) for subject lifetime, supported syntax and exclusions.
-- Stability: 0.4.0-scalar.74 is the latest locally qualified private Core/PythonRe pair. The immutable manifest proves only its recorded checks; downstream acceptance and current performance retain explicit scopes. Defaults/static cached calls remain unlimited; embedders must select finite policies for bounded invocations. Lython accepts the permitted `Unsafe.SizeOf` reference; actual unchecked accesses remain excluded.
+- Stability: 0.4.0-scalar.75 is the latest locally qualified private Core/PythonRe pair. The immutable manifest proves only its recorded checks; downstream acceptance and current performance retain explicit scopes. Defaults/static cached calls remain unlimited; embedders must select finite policies for bounded invocations. Lython accepts the permitted `Unsafe.SizeOf` reference; actual unchecked accesses remain excluded.
 
 PythonRe reuses its private VM workspace across cursor moves.
 Scratch stays charged while positioned and overlaps projection; EOF/failure/Dispose

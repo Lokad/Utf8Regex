@@ -3,36 +3,33 @@
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
 strict UTF-8 scalars, with primary byte coordinates and derived UTF-16 projections.
 
-Development scalar.75 prepares a Core class-repeat Count optimization; its next
-immutable package/platform milestone remains pending. The qualified74 input
-below stays frozen. No PCRE75 qualification or consumer update is implied.
+Qualified private **Core/PythonRe 0.4.0-scalar.75** is produced by
+`01e178d9cf28c3d9836a36a7dfb48de59d28ebdc`; PythonRe pins Core `[0.4.0-scalar.75]`.
+Same-byte first-pass Windows/Linux consumers, capture/semantic oracles, exact
+provenance/member inventory and fresh final-feed restore pass.
+[Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38999724440) is green.
+[Handoff](../../artifacts/core-python-scalar75-20261017/HANDOFF.md),
+[consumption notes](../../artifacts/core-python-scalar75-20261017/CONSUMING.md).
+One5.04s closure build/one pack each. Earlier74/73 and independent PCRE71 remain
+immutable. No PCRE75 qualification, publication, external pin/default or adoption.
 
-Qualified private **Core/PythonRe 0.4.0-scalar.74** is produced by
-`f0bbbf8f0439964862bb86e625d7200cfa7f29b6`; PythonRe pins Core `[0.4.0-scalar.74]`.
-Same-byte Windows/Linux consumers, capture/semantic oracles, provenance/member
-inventory and final-feed restore pass. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/38996580124)
-is green. [Handoff](../../artifacts/core-python-scalar74-20261017/HANDOFF.md) and
-[consumption notes](../../artifacts/core-python-scalar74-20261017/CONSUMING.md).
-One closure build/one pack each, first-pass platform matrices; earlier73 and
-independent PCRE71 remain immutable. No PCRE74 qualification is implied.
-
-Core scalar-class range/table scans now spend bounded work and directly check
-the original deadline. Shorthand subtraction arrays become existing fixed bits;
-duplicate class-matching loops are removed. Numeric long-class work cutoffs
-tighten without a new owner/policy/mode. Python scalar/capture/reference behavior,
-pinned15.1 data, original interruption and all four invocation controls remain.
-Retained snapshots and cursor aliases preserve their documented lifetimes.
+The Core batch counts eligible complete class repeats in one scalar pass and
+skips empty shorthand-bit scans. Existing scalar/capture/reference behavior,
+pinned15.1 data, inner metering, original interruption, major admission and all
+four invocation controls remain. Less actual Count work intentionally changes
+numeric cutoffs. Retained snapshots/cursor aliases keep their documented lifetime.
 Core only permits SizeOf, accepted by Lython; Python has no unchecked members,
-generated helpers or BCL matcher/results.
+generated helpers or BCL matcher/results. No new public API, owner or policy mode.
 
-Actual74 current costs include full validation/required output:1000capture tuples
-about645us unlimited/684us finite/667us finite+token. The handoff reports sample
-noise, Core/.NET controls and explicit protection costs separately from source
-comparisons and historical benchmark rows. No exact BCL Python tuple shape is
-claimed. Defaults/static calls remain unlimited. Complete construction/lazy/
-default/retention/RSS/host objectives remain unfinished; compose existing
-[host owners](../../HOST-INTEGRATION.md). No publication, external pin/default or
-actual adoption. Original package preparation assets stay frozen.
+Actual75 current costs include full validation/required output:1000capture tuples
+about649us unlimited/691us finite/680us finite+token. The handoff reports exact
+samples, allocations and Core/.NET controls separately from closed source pairs;
+no equal BCL Python tuple operation or cross-run source delta is claimed.
+Defaults/static calls remain unlimited. Complete construction/lazy/default/
+retention/RSS/host objectives remain open; compose existing
+[host owners](../../HOST-INTEGRATION.md). Original package preparation assets stay
+frozen. A copied public-consumer fixture encoding failure and correction against
+the same DLLs are preserved; no package was rebuilt or repacked to repair it.
 
 ## Support Scope
 
