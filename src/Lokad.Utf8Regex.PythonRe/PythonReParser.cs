@@ -48,11 +48,12 @@ internal sealed partial class PythonReParser
     private PythonReNode _parsedNode = PythonReAstFactory.Empty;
     private int _position;
     private int _groupCount;
+    private int _lookbehindGroupStart;
     private PythonReCompileOptions _leadingInlineOptions;
 
     internal static PythonReParser Create(string pattern) =>
         Utf8ConstructionScope.CurrentBudget.AllocateObject(
-            (pattern, (PythonReParserStorage?)null, false, PythonReAstFactory.Empty, 0, 0, PythonReCompileOptions.None),
+            (pattern, (PythonReParserStorage?)null, false, PythonReAstFactory.Empty, 0, 0, 0, PythonReCompileOptions.None),
             static state => new PythonReParser(state.pattern));
 
     public PythonReParser(string pattern)
@@ -554,7 +555,17 @@ internal sealed partial class PythonReParser
             throw new PythonRePatternException($"invalid group reference {value}", escapeStart + 1);
         }
 
+        CheckLookbehindReference(value, _position);
         return PythonReAstFactory.NumericReference(value, BackreferenceLower(options));
+    }
+
+    private void CheckLookbehindReference(int number, int position)
+    {
+        if (_lookbehindGroupStart == 0) return;
+        if (number > _groupCount || Storage.IsOpen(number))
+            throw new PythonRePatternException("cannot refer to an open group", position);
+        if (number >= _lookbehindGroupStart)
+            throw new PythonRePatternException("cannot refer to group defined in the same lookbehind subpattern", position);
     }
 
     // References compare captured scalars using lexical simple lowercase,

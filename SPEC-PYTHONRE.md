@@ -117,9 +117,11 @@ Supported feature families in the current profile:
 * capturing and named capturing groups
 * named and numeric backreferences
 * group-participation conditionals: names must already be defined at the
-  conditional header, including an already-open named group; numeric forward
-  references retain final group-count validation
-* lookahead and fixed-width lookbehind
+  conditional header. Outside lookbehind, an already-open named group is allowed
+  and numeric forward references retain final group-count validation.
+* lookahead and fixed-width lookbehind. Within lookbehind, backreferences and
+  group-participation conditions must refer to a closed group defined before the
+  outermost enclosing lookbehind; nested assertions retain that restriction.
 * atomic groups
 * leading and scoped inline flags for `i`, `m`, `s`, `x`, `u` on `str` patterns
 * Python replacement references `\\1` and `\\g<name>`

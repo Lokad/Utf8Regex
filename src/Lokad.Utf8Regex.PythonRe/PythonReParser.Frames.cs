@@ -16,6 +16,7 @@ internal sealed partial class PythonReParser
         internal Utf8ConstructionBuffer<PythonReNode>? Nodes;
         internal int GroupStart;
         internal int GroupNumber;
+        internal int PreviousLookbehindGroupStart;
         internal PythonReGroupKind GroupKind;
         internal string? GroupName;
         internal PythonReCompileOptions AddOptions;
@@ -146,7 +147,10 @@ internal sealed partial class PythonReParser
             ExpectGroupEnd(frame.GroupStart, "missing ), unterminated subpattern");
             if (frame.GroupNumber != 0) Storage.GroupBodies[frame.GroupNumber - 1] = inner;
             if (frame.GroupKind is PythonReGroupKind.PositiveLookbehind or PythonReGroupKind.NegativeLookbehind)
+            {
+                _lookbehindGroupStart = frame.PreviousLookbehindGroupStart;
                 _hasLookbehind = true;
+            }
             _parsedNode = PythonReAstFactory.Group(frame.GroupKind, inner, frame.GroupName,
                 frame.AddOptions, frame.RemoveOptions, frame.GroupNumber);
             return true;
@@ -216,8 +220,12 @@ internal sealed partial class PythonReParser
             {
                 var referenceStart = _position;
                 var name = ParseGroupName(')', "missing ), unterminated name");
-                if (Storage.NamedGroups.TryGetValue(name, out var number) && Storage.IsOpen(number))
-                    throw new PythonRePatternException("cannot refer to an open group", referenceStart);
+                if (Storage.NamedGroups.TryGetValue(name, out var number))
+                {
+                    if (Storage.IsOpen(number))
+                        throw new PythonRePatternException("cannot refer to an open group", referenceStart);
+                    CheckLookbehindReference(number, _position);
+                }
                 _parsedNode = PythonReAstFactory.NamedReference(name, BackreferenceLower(frame.Options));
                 child = default;
                 return true;
@@ -226,6 +234,12 @@ internal sealed partial class PythonReParser
             {
                 frame.Condition = ParseConditionalReference();
                 ExpectGroupEnd(frame.GroupStart, "missing ), unterminated name");
+                if (_lookbehindGroupStart != 0)
+                {
+                    var number = frame.Condition.GroupName is string name
+                        ? Storage.NamedGroups[name] : frame.Condition.GroupNumber;
+                    CheckLookbehindReference(number, _position);
+                }
                 frame.Stage = 2;
                 child = new(ParseFrameKind.Sequence, frame.Options);
                 return false;
@@ -279,6 +293,12 @@ internal sealed partial class PythonReParser
                 }
                 bodyOptions = ApplyScopedFlags(frame.Options, frame.AddOptions, frame.RemoveOptions);
             }
+        }
+        if (frame.GroupKind is PythonReGroupKind.PositiveLookbehind or PythonReGroupKind.NegativeLookbehind)
+        {
+            frame.PreviousLookbehindGroupStart = _lookbehindGroupStart;
+            // Nested lookbehinds inherit the outer assertion's boundary.
+            if (_lookbehindGroupStart == 0) _lookbehindGroupStart = _groupCount + 1;
         }
         frame.Stage = 1;
         child = new(ParseFrameKind.Alternation, bodyOptions);

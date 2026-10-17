@@ -2,6 +2,10 @@
 
 ## Development after scalar.86
 
+- Reject PythonRe backreferences and conditional references to groups defined
+  inside the enclosing lookbehind, and open/forward conditional groups there.
+  Preserve earlier closed captures, nested assertion scope and scalar widths;
+  outside-lookbehind open/forward conditionals remain supported.
 - Reject PythonRe conditional names that are undefined at their lexical point,
   including names introduced later. Preserve already-open named groups, numeric
   forward references, scalar captures and unterminated-header syntax failures.
