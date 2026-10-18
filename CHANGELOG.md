@@ -2,6 +2,11 @@
 
 ## Development after scalar.98
 
+Correct allocation reporting in the README and slice-policy benchmark CLI. An
+unboxed sink removes a 24-byte measurement allocation; independent constant and
+retained-array controls agree with thread allocation counters. Engine allocations,
+timing loops and stored historical measurements are unchanged.
+
 Simplify complementary digit/whitespace/individual-category class predicates and
 negated complete scalar ranges during owned parsing. Proven impossible classes
 use the existing impossible atom, removing unused class data and numeric repeat

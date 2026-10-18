@@ -22,6 +22,7 @@ internal static partial class BenchmarkInspectReporter
 {
     private static bool s_wroteMeasurementEnvironment;
     private static BenchmarkEnvironmentJson? s_measurementEnvironment;
+    private static int s_allocationSink;
 
     public static int RunInspectPattern(string pattern, string? optionsText)
     {
@@ -6040,7 +6041,7 @@ internal static partial class BenchmarkInspectReporter
         }
 
         var allocatedBytes = GC.GetAllocatedBytesForCurrentThread() - before;
-        GC.KeepAlive(sink);
+        Volatile.Write(ref s_allocationSink, sink);
         return (double)allocatedBytes / iterations;
     }
 

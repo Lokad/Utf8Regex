@@ -140,6 +140,10 @@ overhead and inconclusive lanes are recorded in the
 [scalar.98 handoff](artifacts/core-python-scalar98-20261018/HANDOFF.md).
 Later source comparisons retain their separate scope in [CHANGELOG.md](CHANGELOG.md).
 
+The README CLI now uses an unboxed allocation sink. Older allocation figures can
+include a 24-byte harness allocation per lane measurement; stored historical rows
+retain their recorded values.
+
 <!-- BEGIN GENERATED DOTNET_PERFORMANCE BENCHMARKS -->
 ## DotNetPerformance Benchmarks
 
