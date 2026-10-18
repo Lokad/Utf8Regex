@@ -2,6 +2,15 @@
 
 ## Development after scalar.98
 
+Generic scalar Count validates UTF-8 without deriving an unused UTF-16 length.
+The existing finite ASCII structural lanes retain their validation metadata.
+Whole-input validation, scalar matching, original work/cancellation/deadline
+authority and result admission remain; there is no new validator or selector.
+A bounded public source comparison reduces selected finite two-byte and
+supplementary misses by about28% and44%, with unchanged allocations. These are
+scoped FullOpts measurements, separate from immutable98 and README snapshots;
+noisy CJK/decode lanes receive no speedup claim.
+
 Correct allocation reporting in the README and slice-policy benchmark CLI. An
 unboxed sink removes a 24-byte measurement allocation; independent constant and
 retained-array controls agree with thread allocation counters. Engine allocations,

@@ -1210,15 +1210,15 @@ public sealed partial class Utf8Regex
                 Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
                 return OwnedSliceCountFromByte(input, program, startByte, ref invocation);
             }
-            var validation = Utf8Validation.Validate(input, ref invocation);
             if (HasFiniteExecutionLimits && startByte == 0 && ReferenceEquals(program, _ownedSliceProgram) &&
-                validation.IsAscii && !program.RightToLeft && !program.IgnoreCase && !program.CanMatchEmpty &&
+                !program.RightToLeft && !program.IgnoreCase && !program.CanMatchEmpty &&
                 !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
                 !program.HasContiguousAnchor && !program.SawLookaround && !program.HasConditionalTest &&
                 !_requiresKelvinSignFallback && (Options & RegexOptions.NonBacktracking) == 0 &&
                 _preparedRegex.ExecutionKind is NativeExecutionKind.AsciiSimplePattern or NativeExecutionKind.AsciiStructuralIdentifierFamily)
             {
-                if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
+                var validation = Utf8Validation.Validate(input, ref invocation);
+                if (validation.IsAscii && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
                     _preparedRegex.StructuralSearchPlan.HasValue && _preparedRegex.StructuralVerifier.AsciiProgram.LinearProgram.HasValue &&
                     !_preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes &&
                     !_preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap &&
@@ -1231,7 +1231,7 @@ public sealed partial class Utf8Regex
                         throw new InvalidOperationException("Native structural count breached the invocation budget.");
                     return structuralCount;
                 }
-                if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+                if (validation.IsAscii && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
                     !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
                     Utf8AsciiInstructionLinearExecutor.SupportsInput(_preparedRegex.StructuralLinearProgram, validation) &&
                     Utf8AsciiDeterministicFixedWidthCountExecutor.TryCountValidatedAscii(
@@ -1241,6 +1241,12 @@ public sealed partial class Utf8Regex
                         throw new InvalidOperationException("Native fixed-width count breached the invocation budget.");
                     return nativeCount;
                 }
+            }
+            else
+            {
+                // The generic scalar counter consumes bytes only. Derive
+                // coordinate metadata solely for the structural lanes above.
+                Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
             }
             return OwnedSliceCountFromByte(input, program, startByte, ref invocation);
         }
