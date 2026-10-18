@@ -216,7 +216,11 @@ public sealed partial class Utf8Regex
         out int bytesWritten,
         CancellationToken cancellationToken, Utf8ExecutionDeadline deadline)
     {
-        if (GetOwnedReplacementProgram(input, replacement, cancellationToken) is { } ownedProgram)
+        // Native emission still reads unmatched subject slices after writing
+        // earlier pieces. Stage overlapping destinations in the existing owned
+        // writer so expansion cannot overwrite those unread bytes.
+        if ((input.Overlaps(destination) ? _ownedSliceProgram :
+            GetOwnedReplacementProgram(input, replacement, cancellationToken)) is { } ownedProgram)
         {
             var result = OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceReplacementResultKind.Destination, destination, cancellationToken, deadline);
             bytesWritten = result.BytesWritten;

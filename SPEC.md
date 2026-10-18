@@ -853,6 +853,7 @@ Baseline API notes:
 * `replacementPatternUtf8` overloads interpret bytes as UTF-8 encoded .NET replacement patterns, not as literal bytes.
 * All `ref struct` match/group/capture/split views are ephemeral over the original input span and cannot outlive the calling frame or input buffer.
 * `TryReplace` returns `Done` or `DestinationTooSmall` only for destination sizing. On `DestinationTooSmall`, `bytesWritten == 0` and callers must treat `destination` as unchanged. Invalid UTF-8, invalid replacement text, invalid regex construction and timeout still throw. Successful scalar matches do not introduce non-representable byte results.
+* `TryReplace` permits input and UTF-8 replacement spans to overlap the destination. Overlapping input uses the existing staged scalar output before final copying, preserving unread subject bytes at the cost of staging allocation. Disjoint input keeps its qualified native route; finite admission, cancellation and deadlines remain in force.
 * Evaluator-based replacement is currently the allocating replacement path; allocation control is provided only for fixed replacement-pattern overloads.
 
 ## 4.2 UTF-16 offset compatibility APIs

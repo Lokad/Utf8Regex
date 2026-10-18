@@ -7,6 +7,14 @@ original public consumer assertions. Exact identity, current finite costs and
 scope are in artifacts/core-python-scalar100-20261018/HANDOFF.md. No PCRE100 is
 designated. Defaults, lifetime rules and common-retention exclusions remain.
 
+Current 101-dev source also fixes Core `TryReplace` with an input span that
+overlaps its destination. It stages scalar output before copying, so expansion
+preserves unread subject bytes. This may allocate staging storage even for a
+native literal; disjoint destinations keep their existing route. UTF-8 templates
+may also alias the destination. Insufficient destinations remain unchanged, and
+finite admission, cancellation and deadlines still apply. Immutable scalar.100
+predates this correction; use disjoint subject/destination storage with it.
+
 Earlier qualified private Core/PythonRe scalar.99 batches constant-class construction
 simplifications and generic Count's omitted coordinate metadata, inheriting
 scalar.98's decimal/URI and earlier deadline/preparation corrections.

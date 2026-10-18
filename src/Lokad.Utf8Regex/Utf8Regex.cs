@@ -3000,6 +3000,7 @@ public sealed partial class Utf8Regex
 
     /// <summary>Attempts to write a replacement result into a caller-provided UTF-8 destination.</summary>
     /// <returns><see cref="OperationStatus.Done"/> on success, or <see cref="OperationStatus.DestinationTooSmall"/> when the destination cannot hold the complete result.</returns>
+    /// <remarks>An overlapping input and destination use staged output. An insufficient destination remains unchanged.</remarks>
     public OperationStatus TryReplace(
         ReadOnlySpan<byte> input,
         string replacement,
@@ -3023,6 +3024,7 @@ public sealed partial class Utf8Regex
 
     /// <summary>Attempts to apply a UTF-8-encoded replacement pattern into a caller-provided UTF-8 destination.</summary>
     /// <returns><see cref="OperationStatus.Done"/> on success, or <see cref="OperationStatus.DestinationTooSmall"/> when the destination cannot hold the complete result.</returns>
+    /// <remarks>Input and replacement spans may overlap the destination. Overlapping input uses staged output; an insufficient destination remains unchanged.</remarks>
     public OperationStatus TryReplace(
         ReadOnlySpan<byte> input,
         ReadOnlySpan<byte> replacementPatternUtf8,
@@ -3044,7 +3046,7 @@ public sealed partial class Utf8Regex
         ValidateReplacementTemplateUtf8(replacementPatternUtf8, control);
 
 
-        if (GetOwnedSliceProgram(input, cancellationToken) is null && !input.IsEmpty &&
+        if (!input.Overlaps(destination) && GetOwnedSliceProgram(input, cancellationToken) is null && !input.IsEmpty &&
             !(_ownedSliceProgram is { CanMatchEmpty: true } && _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral) &&
             TryGetDirectLiteralReplacementBytes(replacementPatternUtf8, out var directReplacementBytes))
         {
