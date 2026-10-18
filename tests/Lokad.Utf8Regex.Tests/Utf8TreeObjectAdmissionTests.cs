@@ -31,7 +31,7 @@ public sealed class Utf8TreeObjectAdmissionTests
             4 => Utf8TreeNode.Create(Utf8TreeNodeKind.Capture, RegexOptions.IgnoreCase, 9, 0),
             _ => Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.None, 'é', text, 2, 7, borrowed, borrowed, true),
         };
-        var loan = CompleteLoan(typeof(Utf8TreeNode), 9);
+        var loan = CompleteLoan(typeof(Utf8TreeNode), 10);
         var maximum = kind == Utf8ResourceLimitKind.ConstructionBytes ? loan : 2;
         foreach (var cutoff in new[] { 0ul, 1ul, maximum - 1, maximum, maximum + 1 }.Distinct())
         {

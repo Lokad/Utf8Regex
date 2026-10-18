@@ -51,7 +51,7 @@ internal static class Utf8FallbackFinalProfileClassifier
     private static bool IsDomainLabels(Utf8TreeNode source)
     {
         var loop = Unwrap(source);
-        if (loop.Kind != Utf8TreeNodeKind.Loop || loop.M != 1 || loop.N != int.MaxValue || loop.ChildCount != 1) return false;
+        if (loop.Kind != Utf8TreeNodeKind.Loop || loop.M != 1 || !loop.IsUnboundedRepeat || loop.ChildCount != 1) return false;
         using var cursor = new Cursor(loop.Child(0));
         return cursor.Next(out var label) && IsRun(label, 1, int.MaxValue, "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"u8) &&
             cursor.Next(out var dot) && IsByte(dot, (byte)'.') && !cursor.Peek(out _);
@@ -69,7 +69,7 @@ internal static class Utf8FallbackFinalProfileClassifier
     {
         using var cursor = new Cursor(root);
         if (!cursor.ReadLiteral(root, out var begin) || !EqualsLiteral(begin, "BEGIN"u8) || !cursor.Next(out var loop) ||
-            loop.Kind != Utf8TreeNodeKind.Loop || loop.M != 0 || loop.N != int.MaxValue || loop.ChildCount != 1 ||
+            loop.Kind != Utf8TreeNodeKind.Loop || loop.M != 0 || !loop.IsUnboundedRepeat || loop.ChildCount != 1 ||
             !cursor.ReadLiteral(root, out var end) || !EqualsLiteral(end, "END"u8) || !cursor.Next(out var conditional) ||
             conditional.Kind != Utf8TreeNodeKind.BackreferenceConditional || conditional.M <= 0 || conditional.ChildCount != 2 ||
             !IsAlwaysFail(conditional.Child(0)) || !IsEmpty(conditional.Child(1)) || cursor.Peek(out _)) return false;

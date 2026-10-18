@@ -7,7 +7,8 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 internal sealed class Utf8TreeNode
 {
     private readonly record struct ConstructionState(object? Children, Utf8TreeNode? Parent,
-        Utf8TreeNodeKind Kind, RegexOptions Options, bool MatchCaseInsensitive, object? Payload, char Ch, int M, int N);
+        Utf8TreeNodeKind Kind, RegexOptions Options, bool MatchCaseInsensitive, object? Payload, char Ch, int M, int N,
+        bool IsUnboundedRepeat);
 
     public object? Children;
 
@@ -24,6 +25,7 @@ internal sealed class Utf8TreeNode
         Ch = state.Ch;
         M = state.M;
         N = state.N;
+        IsUnboundedRepeat = state.IsUnboundedRepeat;
     }
 
     internal static Utf8TreeNode Create(Utf8TreeNodeKind kind, RegexOptions options) =>
@@ -58,7 +60,7 @@ internal sealed class Utf8TreeNode
     {
         using var scope = Utf8ConstructionScope.Enter();
         var node = scope.Budget.AllocateObject(new ConstructionState(children, parent, kind, options,
-            matchCaseInsensitive, payload, ch, m, n), static state => new Utf8TreeNode(state));
+            matchCaseInsensitive, payload, ch, m, n, n == int.MaxValue), static state => new Utf8TreeNode(state));
         scope.Complete();
         return node;
     }
@@ -84,6 +86,11 @@ internal sealed class Utf8TreeNode
     public int M { get; set; }
 
     public int N { get; set; }
+
+    // Bound-only factories retain their internal int.MaxValue convention. The
+    // parser records the actual grammar distinction before publishing a repeat;
+    // numeric/octal fixups must copy this fact along with M/N.
+    internal bool IsUnboundedRepeat { get; set; }
 
     public int ChildCount => Children switch
     {

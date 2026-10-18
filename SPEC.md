@@ -344,6 +344,13 @@ An atomic identifier-tail group must also retain its commitment. The structural
 verifier can rewind ordinary tails, so preparation must not strip an atomic
 wrapper from such a loop. These shapes use the existing owned path, preserving
 atomic failure and the original resource controls.
+Development source after scalar.89 preserves Core's explicit finite maximum
+`2147483647` separately from infinity through grammar fixups and scalar lowering.
+Sentinel-based direct families conservatively decline that finite edge. A
+NonBacktracking consuming repeat must satisfy the existing finite expansion
+admission; it can fail construction capacity instead of becoming an unbounded
+loop. Existing compact zero-width repeats do not require that expansion. This
+does not widen the Core grammar's accepted numeric range or alter immutable89.
 Development source after scalar.89 also omits unobserved capture values for Core
 Count on an original backtracking program whose existing tree features prove
 no references, conditionals or lookarounds. Balancing, shared/explicit capture

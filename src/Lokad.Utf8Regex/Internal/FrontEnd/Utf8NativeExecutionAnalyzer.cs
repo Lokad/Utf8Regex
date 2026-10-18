@@ -2261,7 +2261,7 @@ internal static class Utf8NativeExecutionAnalyzer
         if ((node.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop) &&
             node.ChildCount == 1 &&
             node.M >= 1 &&
-            node.N == int.MaxValue &&
+            node.IsUnboundedRepeat &&
             TryExtractQuotedAsciiRun(node.Child(0), out runtimeSet, out runLength))
         {
             allowRepeat = true;
@@ -2515,7 +2515,7 @@ internal static class Utf8NativeExecutionAnalyzer
             if (node.Kind is not (Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic) || node.ChildCount != 1) break;
             node = node.Child(0); frames.Push(new(node, 0, false));
         }
-        var min = node.M; var max = node.N;
+        var min = node.M; var unbounded = node.IsUnboundedRepeat;
         if (node.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop && node.ChildCount == 1)
         {
             node = node.Child(0); frames.Push(new(node, 0, false));
@@ -2528,7 +2528,7 @@ internal static class Utf8NativeExecutionAnalyzer
             if (node.Kind != Utf8TreeNodeKind.Set) return false;
         }
         else if (node.Kind is not (Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Setloopatomic)) return false;
-        if (min < 0 || max != int.MaxValue ||
+        if (min < 0 || !unbounded ||
             !TryGetAsciiSeparatorSet(node.ScalarClass, out var separatorSet)) return false;
         runtimeSet = separatorSet; minCount = min; return true;
     }
@@ -2581,7 +2581,7 @@ internal static class Utf8NativeExecutionAnalyzer
     {
         node = UnwrapRuntimeNode(node);
         runtimeSet = default; length = 0;
-        if (!TryGetSetLoop(node, out var setNode, out var min, out var max) || min <= 0 || min != max ||
+        if (!TryGetSetLoop(node, out var setNode, out var min, out var max) || min <= 0 || min != max || max == int.MaxValue ||
             !Utf8ScalarAsciiProjector.TryProjectAsciiDefinition(setNode.ScalarClass, out runtimeSet)) return false;
         length = min;
         return true;
@@ -2801,6 +2801,10 @@ internal static class Utf8NativeExecutionAnalyzer
         min = 0;
         max = 0;
 
+        // Direct set-loop plans use the old int.MaxValue infinity convention.
+        // Keep an explicit finite maximum exact in the shared scalar program.
+        if (node.N == int.MaxValue && !node.IsUnboundedRepeat) return false;
+
         switch (node.Kind)
         {
             case Utf8TreeNodeKind.Setloop:
@@ -2920,7 +2924,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 else if (!foldCase && node.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Multi &&
                     TryGetLiteralText(node, out literal)) { }
                 else if (!foldCase && node.Kind is Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setloopatomic or Utf8TreeNodeKind.Setlazy &&
-                    node.ScalarClass is { } set && node.M >= 1 && node.N == int.MaxValue)
+                    node.ScalarClass is { } set && node.M >= 1 && node.IsUnboundedRepeat)
                 {
                     if (!IsAsciiWhitespaceOnlySet(set)) return false;
                     literal = " ";

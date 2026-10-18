@@ -526,7 +526,7 @@ internal static class Utf8OwnedTreeParser
                     {
                         // A leading brace that cannot complete decays (BCL shapes like
                         // brace-a or brace-12); complete or invalid shapes still decline.
-                        if (!ParseBrace(ref state, out _, out _, out var decayedBrace) && decayedBrace)
+                        if (!ParseBrace(ref state, out _, out _, out _, out var decayedBrace) && decayedBrace)
                         {
                             run.Append('{');
                             continue;
@@ -2105,6 +2105,7 @@ internal static class Utf8OwnedTreeParser
                     : Utf8TreeNodeKind.Setloop;
                 foldedLoop.M = wrapper.M;
                 foldedLoop.N = wrapper.N;
+                foldedLoop.IsUnboundedRepeat = wrapper.IsUnboundedRepeat;
                 ReplaceNodeInParent(ref root, wrapper, foldedLoop);
                 return true;
             }
@@ -2117,6 +2118,7 @@ internal static class Utf8OwnedTreeParser
                 strippedWrapper.MatchCaseInsensitive = true;
                 strippedWrapper.M = wrapper.M;
                 strippedWrapper.N = wrapper.N;
+                strippedWrapper.IsUnboundedRepeat = wrapper.IsUnboundedRepeat;
                 ReplaceNodeInParent(ref root, wrapper, strippedWrapper);
                 return true;
             }
@@ -2187,6 +2189,7 @@ internal static class Utf8OwnedTreeParser
             var loopBody = Utf8TreeNode.Create(loopKind, loopOptions, loopChar);
             loopBody.M = restWrapper.M;
             loopBody.N = restWrapper.N;
+            loopBody.IsUnboundedRepeat = restWrapper.IsUnboundedRepeat;
             ReplaceNodeWithMany(storage, ref root, restWrapper, beforeAnchor, loopBody);
             morphed = true;
             return true;
@@ -3116,16 +3119,19 @@ internal static class Utf8OwnedTreeParser
             var character = state.Pattern[state.Position];
             int minimum;
             int maximum;
+            var maximumInfinite = false;
             if (character == '*')
             {
                 minimum = 0;
                 maximum = Infinite;
+                maximumInfinite = true;
                 state.Position++;
             }
             else if (character == '+')
             {
                 minimum = 1;
                 maximum = Infinite;
+                maximumInfinite = true;
                 state.Position++;
             }
             else if (character == '?')
@@ -3136,7 +3142,7 @@ internal static class Utf8OwnedTreeParser
             }
             else if (character == '{')
             {
-                if (!ParseBrace(ref state, out minimum, out maximum, out var braceDecayed))
+                if (!ParseBrace(ref state, out minimum, out maximum, out maximumInfinite, out var braceDecayed))
                 {
                     if (braceDecayed)
                     {
@@ -3161,6 +3167,8 @@ internal static class Utf8OwnedTreeParser
             }
 
             atom = Quantify(state, atom, minimum, maximum, lazy);
+            if (minimum != 1 || maximum != 1)
+                atom.IsUnboundedRepeat = maximumInfinite;
             return true;
         }
 
@@ -3170,10 +3178,11 @@ internal static class Utf8OwnedTreeParser
         // closed garbage) decays to a literal: the position rewinds past '{' and
         // decayToLiteral is set, exactly like BCL. Only a complete invalid shape
         // (reversed bounds, numeric overflow) rejects.
-        static bool ParseBrace(ref ParserState state, out int minimum, out int maximum, out bool decayToLiteral)
+        static bool ParseBrace(ref ParserState state, out int minimum, out int maximum, out bool maximumInfinite, out bool decayToLiteral)
         {
             minimum = 0;
             maximum = 0;
+            maximumInfinite = false;
             decayToLiteral = false;
             var braceStart = state.Position;
             state.Position++;
@@ -3203,7 +3212,6 @@ internal static class Utf8OwnedTreeParser
             }
 
             var maximumValue = minimumValue;
-            var maximumInfinite = false;
             var hasMaximum = false;
             if (!state.AtEnd && state.Pattern[state.Position] == ',')
             {

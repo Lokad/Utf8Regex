@@ -2,6 +2,13 @@
 
 ## Development after scalar.89
 
+- Keep Core's explicit finite repeat maximum `2147483647` distinct from
+  infinity, including numeric/octal fixups and scalar VM lowering. Direct
+  families that use the old sentinel decline this finite edge to scalar
+  execution. NonBacktracking consuming repeats retain finite expansion
+  admission; a huge bound can now correctly fail construction capacity rather
+  than silently become unbounded. Compact zero-width repeats remain compact.
+
 - Omit unobserved capture slots/trail writes during eligible Core Count calls,
   using existing whole-tree facts and the same scalar VM. References,
   conditionals, lookarounds, balancing, shared/explicit captures and alternate

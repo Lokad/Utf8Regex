@@ -87,7 +87,7 @@ internal static class Utf8FallbackAnchoredProfileClassifier
     {
         if (body.ChildCount != 4 || !IsQuote(body.Child(1)) || !IsQuote(body.Child(3))) return false;
         var loop = Unwrap(body.Child(2));
-        if (loop.Kind != Utf8TreeNodeKind.Loop || loop.M != 0 || loop.N != int.MaxValue || loop.ChildCount != 1) return false;
+        if (loop.Kind != Utf8TreeNodeKind.Loop || loop.M != 0 || !loop.IsUnboundedRepeat || loop.ChildCount != 1) return false;
         var choice = Unwrap(loop.Child(0));
         return choice.Kind == Utf8TreeNodeKind.Alternate && choice.ChildCount == 2 &&
             (IsQuotedBody(choice.Child(0)) && IsEscapedScalar(choice.Child(1)) || IsQuotedBody(choice.Child(1)) && IsEscapedScalar(choice.Child(0)));

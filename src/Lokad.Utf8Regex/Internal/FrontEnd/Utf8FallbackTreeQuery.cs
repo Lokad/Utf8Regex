@@ -207,6 +207,9 @@ internal static class Utf8FallbackTreeQuery
         if (atom.Kind is Utf8TreeNodeKind.One or Utf8TreeNodeKind.Notone or Utf8TreeNodeKind.Set) return true;
         minimum = atom.M; maximum = atom.N;
         if (minimum < 0 || maximum < minimum) return false;
+        // These direct families use int.MaxValue as infinity. An explicit finite
+        // maximum at that value belongs to the scalar VM, which keeps it exact.
+        if (maximum == int.MaxValue && !atom.IsUnboundedRepeat) return false;
         if (atom.Kind == Utf8TreeNodeKind.Loop && atom.ChildCount == 1)
         {
             atom = Unwrap(atom.Child(0));

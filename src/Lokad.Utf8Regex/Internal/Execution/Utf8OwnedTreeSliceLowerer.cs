@@ -144,7 +144,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                         _ => node.ScalarClass is { } loopSet ? DecodeClass(loopSet, foldCase, arena) : null,
                     };
                     if (atom is null) return null;
-                    var compactRepeat = new Utf8SliceNode.RepeatNode(atom, node.M, node.N == int.MaxValue ? long.MaxValue : node.N,
+                    var compactRepeat = new Utf8SliceNode.RepeatNode(atom, node.M, node.IsUnboundedRepeat ? long.MaxValue : node.N,
                         node.Kind is Utf8TreeNodeKind.Onelazy or Utf8TreeNodeKind.Notonelazy or Utf8TreeNodeKind.Setlazy);
                     return node.Kind is Utf8TreeNodeKind.Oneloopatomic or Utf8TreeNodeKind.Notoneloopatomic or Utf8TreeNodeKind.Setloopatomic
                         ? new Utf8SliceNode.AtomicNode(compactRepeat) : compactRepeat;
@@ -152,9 +152,9 @@ internal static class Utf8OwnedTreeSliceLowerer
                 case Utf8TreeNodeKind.Lazyloop:
                     if (node.ChildCount != 1) return null;
                     hasCaptureWritingLazyRange |= node.Kind == Utf8TreeNodeKind.Lazyloop &&
-                        node.N != int.MaxValue && node.N > 1 && node.N > node.M && writes[node.Child(0)];
+                        !node.IsUnboundedRepeat && node.N > 1 && node.N > node.M && writes[node.Child(0)];
                     var repeatBody = nodes[node.Child(0)];
-                    return repeatBody is null ? null : new Utf8SliceNode.RepeatNode(repeatBody, node.M, node.N == int.MaxValue ? long.MaxValue : node.N,
+                    return repeatBody is null ? null : new Utf8SliceNode.RepeatNode(repeatBody, node.M, node.IsUnboundedRepeat ? long.MaxValue : node.N,
                         node.Kind == Utf8TreeNodeKind.Lazyloop);
                 case Utf8TreeNodeKind.Group:
                 case Utf8TreeNodeKind.Capture:

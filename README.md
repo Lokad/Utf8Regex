@@ -15,7 +15,9 @@ Earlier88/87/86 and independentPCRE76/Core76 remain immutable.
 
 Source after scalar.89 omits unobserved capture storage during eligible Core
 Count calls, preserving matching state where it is read and all original
-controls. The focused source experiment is separate from immutable89's costs;
+controls. It also preserves Core's finite `2147483647` repeat maximum separately
+from infinity, including existing NonBacktracking construction admission.
+The focused source experiment is separate from immutable89's costs;
 see the [changelog](CHANGELOG.md#development-after-scalar89).
 
 Scalar.89 repairs demonstrated separator endpoint/overlap and atomic-tail

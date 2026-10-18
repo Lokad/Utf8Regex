@@ -392,6 +392,7 @@ internal static class Utf8FrontEndSearchAnalyzer
 
         if (node.Kind is Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setloopatomic &&
             node.M > 0 &&
+            !node.IsUnboundedRepeat &&
             node.M == node.N &&
             Utf8ScalarAsciiProjector.TryProjectPositiveAsciiDefinition(node.ScalarClass, out var set))
         {
@@ -403,6 +404,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         if (node.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop &&
             node.ChildCount == 1 &&
             node.M > 0 &&
+            !node.IsUnboundedRepeat &&
             node.M == node.N)
         {
             var child = UnwrapStructuralNode(node.Child(0)) ?? node.Child(0);
