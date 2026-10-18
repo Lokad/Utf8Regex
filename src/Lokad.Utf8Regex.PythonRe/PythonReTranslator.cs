@@ -507,7 +507,18 @@ internal static partial class PythonReTranslator
 
     private static void AppendCharacterClass(PythonReCharacterClassNode node, Utf8ConstructionText builder, bool native)
     {
-        var positiveAtom = native ? BuildScalarCharacterClassAtom(node.Items) : BuildPositiveCharacterClassAtom(node.Items);
+        var complete = false;
+        for (var index = 0; index < node.Items.Count; index++)
+        {
+            Utf8ConstructionScope.ChargeWork(1);
+            if (node.Items[index] is PythonReCharacterClassRangeItem { StartScalar: 0, EndScalar: 0x10ffff })
+            { complete = true; break; }
+        }
+        // Reuse the existing scalar atom in both renderings. The managed
+        // comparator still consumes a complete surrogate pair, without making
+        // 1024 separate branches for a class that contains every scalar.
+        var positiveAtom = complete ? native ? NativeScalarPattern : AnyUnicodeScalarPattern
+            : native ? BuildScalarCharacterClassAtom(node.Items) : BuildPositiveCharacterClassAtom(node.Items);
         if (!node.IsNegated)
         {
             builder.Append(positiveAtom);

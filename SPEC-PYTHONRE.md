@@ -354,6 +354,13 @@ it does not retain a construction owner, policy or token for future calls.
 Positive work/depth/instruction/byte limits
 tighten the fixed ceilings; null retains them. Limits bound covered admission,
 including major growth overlap, rather than every acquisition or process memory.
+Development after scalar.99 keeps a parsed `U+0000..U+10FFFF` class range instead
+of expanding its redundant case closure. Both scalar and managed renderings reuse
+their existing complete-scalar atom, including whole surrogate pairs in the
+managed comparator. Negation and capture/empty-match rules remain unchanged.
+Syntax validation precedes the proof; other ranges retain their expansion
+backstops. These classes can fit smaller construction policies. Their translated
+timeout-pattern spelling can become shorter while retaining equivalent behavior.
 Pre-cancellation wins over argument/decoding failures; later cancellation keeps
 the original token and a deadline failure throws `RegexMatchTimeoutException`.
 For UTF-8 pattern timeout failures the exception's Pattern is empty, avoiding an

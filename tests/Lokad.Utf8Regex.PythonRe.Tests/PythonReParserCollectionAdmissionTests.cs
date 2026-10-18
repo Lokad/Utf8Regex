@@ -48,14 +48,14 @@ public sealed class PythonReParserCollectionAdmissionTests
     }
 
     [Fact]
-    public void FullUnicodeClassExpansionUsesBoundedSparseStorageAndPreservesPlaneRuns()
+    public void LargeNonconstantClassExpansionUsesBoundedSparseStorageAndPreservesPlaneRuns()
     {
         using var owner = Utf8ConstructionScope.Enter();
-        var parse = new PythonReParser("[\\u0000-\\U0010FFFF]").Parse(PythonReCompileOptions.IgnoreCase);
+        var parse = new PythonReParser("[\\u0000-\\U0010FFFE]").Parse(PythonReCompileOptions.IgnoreCase);
         var node = Assert.IsType<PythonReCharacterClassNode>(parse.Root);
         Assert.Collection(node.Items,
             item => Assert.Equal((0, 0xffff), (Assert.IsType<PythonReCharacterClassRangeItem>(item).StartScalar, ((PythonReCharacterClassRangeItem)item).EndScalar)),
-            item => Assert.Equal((0x10000, 0x10ffff), (Assert.IsType<PythonReCharacterClassRangeItem>(item).StartScalar, ((PythonReCharacterClassRangeItem)item).EndScalar)));
+            item => Assert.Equal((0x10000, 0x10fffe), (Assert.IsType<PythonReCharacterClassRangeItem>(item).StartScalar, ((PythonReCharacterClassRangeItem)item).EndScalar)));
         Assert.True(owner.Budget.PeakBytes < 1024 * 1024);
         Assert.True(owner.Budget.ReservedBytes < 8192);
         Assert.Equal(0ul, owner.Budget.Depth);

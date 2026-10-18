@@ -1,5 +1,14 @@
 # Changelog
 
+## Development after scalar.99
+
+Python full-domain character classes skip redundant per-code-point case folding
+and reuse the existing complete-scalar rendering instead of 1,024 surrogate
+branches. Positive and negated forms now compile under the tested 20,000-step
+construction policy. Other class closures, syntax validation and resource controls
+remain. Timeout exceptions can expose a shorter equivalent translated pattern.
+This source change does not alter immutable scalar.99 packages.
+
 ## Qualified private Core/PythonRe scalar.99
 
 Development benchmark tooling now warms the actual timing loop before README

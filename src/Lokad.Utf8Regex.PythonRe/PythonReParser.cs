@@ -396,6 +396,15 @@ internal sealed partial class PythonReParser
         {
             if ((scopeOptions & PythonReCompileOptions.IgnoreCase) == 0)
                 return Storage.Arena.Take(classItems, true);
+            // Parsing has already validated every item and range. A full-domain
+            // member makes the union closed under both ASCII and Unicode folds;
+            // retain it before allocating pages or visiting every code point.
+            for (var index = 0; index < classItems.Count; index++)
+            {
+                Utf8ConstructionScope.ChargeWork(1);
+                if (classItems[index] is PythonReCharacterClassRangeItem { StartScalar: 0, EndScalar: 0x10ffff })
+                    return Storage.Arena.Take(classItems, true);
+            }
             using var scalars = PythonReScalarSet.Create(Storage.Arena.Budget);
             using var others = Utf8ConstructionBuffer<PythonReCharacterClassItem>.Create(Storage.Arena.Budget);
             for (var index = 0; index < classItems.Count; index++)
