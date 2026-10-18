@@ -2,6 +2,16 @@
 
 ## Development after scalar.97
 
+- Simplify URI Count's body/query/fragment phases to their equivalent
+  non-whitespace tail after the two required complete scalars. Checked ASCII
+  searches cover at most2048bytes; Unicode/control handling and whole-input UTF8
+  validation remain. Original work/token/deadline checks include publication.
+  This removes phase dispatch without a new owner, mode, table or allocation.
+- The bounded public source pair qualifies32–38% less time on the URI corpus
+  across ordinary/compiled and unlimited/finite/live-token lanes, with unchanged
+  allocations. Long ASCII tails improve about98–99%; literal controls stay
+  within3%. Two decode controls remain inconclusive. Compiled predecoded .NET
+  remains faster on the corpus. No confirmation, Status change or new package.
 - Let recognized ASCII signed-decimal IsMatch borrow the caller's existing
   invocation. Validate the complete UTF8 subject, search digits in checked blocks
   of at most2048bytes and observe original cancellation/deadline before publication.

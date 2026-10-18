@@ -21,6 +21,13 @@ result scratch, so removing that work can admit smaller work/depth/working caps.
 This is outside immutable97; other operations and families keep their existing
 requirements. No common retention/RSS bound or unlimited-default change follows.
 
+The same development source simplifies URI Count's tail scanning to checked
+ASCII blocks of at most2048bytes with existing Unicode/control handling. Whole
+input validation and the original invocation remain; publication observes the
+original token/deadline. Removed scalar-loop work and an added final checkpoint
+can revise numerical work cutoffs. Major storage/result scope is unchanged.
+Immutable97 predates this source change too.
+
 Choose eager-construction and invocation limits separately. The common policy
 types describe admission scopes; work units and execution failure types depend
 on the regex profile. Matching remains strict UTF-8/scalar with byte coordinates.

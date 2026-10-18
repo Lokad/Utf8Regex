@@ -116,10 +116,58 @@ public sealed class Utf8FiniteUriCountTests
     {
         0 => new string('x', 200000),
         1 => new string('x', 512) + "://ab",
-        2 => "x://" + new string('b', 512),
-        3 => "x://ab?" + new string('b', 512),
-        _ => "x://ab#" + new string('b', 512),
+        // Exercise enough bounded ASCII blocks to interrupt the live loop,
+        // rather than requiring one diagnostic checkpoint per scalar.
+        2 => "x://" + new string('b', 200000),
+        3 => "x://ab?" + new string('b', 200000),
+        _ => "x://ab#" + new string('b', 200000),
     });
+
+    [Fact]
+    public void TailPhasesAgreeWithIndependentCapturedScalarExecution()
+    {
+        var native = Create(RegexOptions.None, 1000000);
+        var captured = new Utf8Regex("(?<uri>" + Pattern + ")", RegexOptions.CultureInvariant,
+            Regex.InfiniteMatchTimeout, new() { MaxWorkSteps = 1000000, MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        string[] atoms = ["a", "/", "?", "#", " ", "\t", "\0", "\u007f", "é", "😀", "\u0085", "\u2003", "x://ab"];
+        var random = new Random(104721);
+        for (var sample = 0; sample < 500; sample++)
+        {
+            var text = "lead x://" + string.Concat(Enumerable.Range(0, random.Next(49))
+                .Select(_ => atoms[random.Next(atoms.Length)])) + "\u2003y://ab#\0";
+            var input = Encoding.UTF8.GetBytes(text);
+            byte[] storage = [0xff, .. input, 0xff];
+            Assert.Equal(captured.Count(input), native.Count(storage.AsSpan(1, input.Length)));
+        }
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void FinalPublicationObservesOriginalInterruption(bool deadline)
+    {
+        var input = "x://ab"u8.ToArray();
+        var complete = new Utf8SliceInvocation(new(1000, 1, 1, 1), Regex.InfiniteMatchTimeout, default);
+        Assert.Equal(1, Utf8UriTokenCountExecutor.CountWellFormed(input, ref complete));
+        using var cancellation = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var invocation = new Utf8SliceInvocation(new(1000, 1, 1, 1),
+            deadline ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, cancellation.Token);
+        while (invocation.Budget.Steps < 64 - complete.Budget.Steps)
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeStep());
+        invocation.CheckpointHook = _ => { if (deadline) ticks = 250; else cancellation.Cancel(); };
+        if (deadline)
+            Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
+                Utf8UriTokenCountExecutor.CountWellFormed(input, ref invocation));
+        else
+        {
+            var error = Assert.Throws<OperationCanceledException>(() =>
+                Utf8UriTokenCountExecutor.CountWellFormed(input, ref invocation));
+            Assert.Equal(cancellation.Token, error.CancellationToken);
+        }
+        Assert.Equal(0ul, invocation.Ledger.ReservedBytes);
+    }
 
     [Theory]
     [InlineData(RegexOptions.IgnoreCase, 3)]

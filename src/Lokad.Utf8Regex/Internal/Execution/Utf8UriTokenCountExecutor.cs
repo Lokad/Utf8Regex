@@ -49,6 +49,8 @@ internal static class Utf8UriTokenCountExecutor
             searchFrom = tokenEnd;
         }
 
+        Checkpoint(ref invocation);
+        invocation.Budget.ThrowIfCancellationRequested();
         return count;
     }
 
@@ -143,23 +145,10 @@ internal static class Utf8UriTokenCountExecutor
         // Host and continuation each require one complete scalar.
         if (!TryConsumeBodyScalar(input, ref tokenEnd, false, ref invocation) ||
             !TryConsumeBodyScalar(input, ref tokenEnd, true, ref invocation)) return false;
-        while (TryConsumeBodyScalar(input, ref tokenEnd, true, ref invocation)) { }
-
-        if ((uint)tokenEnd < (uint)input.Length && input[tokenEnd] == (byte)'?')
-        {
-            tokenEnd++;
-            while (TryConsumeNonWhitespaceScalar(input, ref tokenEnd, (byte)'#', ref invocation))
-            {
-            }
-        }
-
-        if ((uint)tokenEnd < (uint)input.Length && input[tokenEnd] == (byte)'#')
-        {
-            tokenEnd++;
-            while (TryConsumeNonWhitespaceScalar(input, ref tokenEnd, 0, ref invocation))
-            {
-            }
-        }
+        // Once the two required scalars match, the base/query/fragment union
+        // consumes precisely the remaining non-whitespace tail. Count exposes
+        // no capture that distinguishes those phases.
+        while (TryConsumeNonWhitespace(input, ref tokenEnd, ref invocation)) { }
 
         return true;
     }
@@ -200,10 +189,9 @@ internal static class Utf8UriTokenCountExecutor
         return true;
     }
 
-    private static bool TryConsumeNonWhitespaceScalar(
+    private static bool TryConsumeNonWhitespace(
         ReadOnlySpan<byte> input,
         ref int index,
-        byte excludedAscii,
         ref Utf8SliceInvocation invocation)
     {
         Checkpoint(ref invocation);
@@ -213,9 +201,18 @@ internal static class Utf8UriTokenCountExecutor
         }
 
         var value = input[index];
+        if (value is >= 0x21 and <= 0x7f)
+        {
+            // Stop before controls or a non-ASCII scalar; their existing
+            // whitespace/decoding checks below retain complete boundaries.
+            var length = Math.Min(2048, input.Length - index);
+            var stop = input.Slice(index, length).IndexOfAnyExceptInRange((byte)0x21, (byte)0x7f);
+            index += stop < 0 ? length : stop;
+            return true;
+        }
         if (value < 0x80)
         {
-            if ((excludedAscii != 0 && value == excludedAscii) || char.IsWhiteSpace((char)value))
+            if (char.IsWhiteSpace((char)value))
             {
                 return false;
             }
