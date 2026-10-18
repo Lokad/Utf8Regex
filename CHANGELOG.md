@@ -2,6 +2,9 @@
 
 ## Development after scalar.95
 
+- Remove obsolete internal match/detailed-match offset adapters and an unused
+  projection convenience property. Their scalar offset and culture assertions
+  now exercise the public APIs; live prepared hooks and cached maps remain.
 - Bound Core replacement parsing and UTF-8 template-key decoding with the
   instance's finite working-byte value as a separate preparation ceiling.
   Text cache hits add no scope; decoded UTF-8 keys still need admission on warm

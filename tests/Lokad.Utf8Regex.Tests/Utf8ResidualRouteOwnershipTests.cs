@@ -15,28 +15,29 @@ public sealed class Utf8ResidualRouteOwnershipTests
     [InlineData("(?#(?z)ab", true)]
     [InlineData("(?#(?<100>a)a", false)]
     [InlineData("(?#(?<100>a)a", true)]
-    public void CommentPatternsKeepOwnedByteOffsetDiscovery(string pattern, bool compiled)
+    public void CommentPatternsKeepOwnedOffsetDiscovery(string pattern, bool compiled)
     {
         var regex = new Utf8Regex(pattern, Options(compiled), TimeSpan.FromSeconds(1));
         var bytes = "😀xab 😀ab"u8;
         var subject = Utf8ValidatedInput.Create(bytes);
         var start = subject.GetBytePosition(7, "startOffsetInBytes");
-        var match = regex.ByteOffsetExecution.Match(subject, start);
+        var startUtf16 = subject.Project(start).Value;
+        var match = regex.MatchFromUtf16Offset(bytes, startUtf16);
         Assert.True(match.Success);
         // The fourth comment terminates at the first closing parenthesis,
         // leaving "a" as its literal; the other three leave "ab".
         var length = pattern == "(?#(?<100>a)a" ? 1 : 2;
         Assert.Equal((12, length), (match.IndexInBytes, match.LengthInBytes));
-        Assert.True(regex.ByteOffsetExecution.IsMatch(subject, start));
-        var detailed = regex.ByteOffsetExecution.MatchDetailed(subject, start);
+        Assert.True(regex.IsMatchFromUtf16Offset(bytes, startUtf16));
+        var detailed = regex.MatchDetailedFromUtf16Offset(bytes, startUtf16);
         Assert.True(detailed.Success);
         Assert.Equal((12, length), (detailed.IndexInBytes, detailed.LengthInBytes));
-        Assert.Equal(1, regex.ByteOffsetExecution.Count(subject, start));
+        Assert.Equal(1, regex.CountFromUtf16Offset(bytes, startUtf16));
         var enumerated = new List<(int, int)>();
         foreach (var value in regex.ByteOffsetExecution.EnumerateMatches(subject, start))
             enumerated.Add((value.IndexInBytes, value.LengthInBytes));
         Assert.Equal([(12, length)], enumerated);
-        Assert.False(regex.ByteOffsetExecution.Match(subject, subject.GetBytePosition(bytes.Length, "startOffsetInBytes")).Success);
+        Assert.False(regex.MatchFromUtf16Offset(bytes, subject.Utf16Length).Success);
         AssertNoBclEngine(regex);
     }
 

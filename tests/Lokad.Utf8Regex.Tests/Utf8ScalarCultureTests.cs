@@ -235,7 +235,7 @@ public sealed class Utf8ScalarCultureTests
             Assert.Equal(2, regex.ByteOffsetExecution.CountPrepared(input, zero));
             var second = input.GetBytePosition(Encoding.UTF8.GetByteCount(firstSegment), "start");
             Assert.Equal(1, regex.ByteOffsetExecution.CountPrepared(input, second));
-            var found = regex.ByteOffsetExecution.MatchDetailed(input, second);
+            var found = regex.MatchDetailedFromUtf16Offset(input.Bytes, input.Project(second).Value);
             Assert.Equal((second.Value, Encoding.UTF8.GetByteCount(prefix) + 4), (found.IndexInBytes, found.LengthInBytes));
             Assert.Equal("\U0001f600", found.GetGroup(1).GetValueString());
             AssertOwned(regex);
