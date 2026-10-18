@@ -3,7 +3,7 @@
 Independent **Core/PCRE2 0.4.0-scalar.94**, producer
 `4a369c5612a603112abe3740c1e09a24f2baac3e`, passes same-byte Windows/Linux package
 consumers, exact API/member/symbol/provenance and a fresh public restore. Producer
-CI is pending. [Handoff](../../artifacts/pcre2-scalar94-delivery-20261018/HANDOFF.md)
+CI is green on Windows and Linux. [Handoff](../../artifacts/pcre2-scalar94-delivery-20261018/HANDOFF.md)
 and [consumption](../../artifacts/pcre2-scalar94-delivery-20261018/CONSUMING.md)
 record identities and the exact Core `[0.4.0-scalar.94]` pin. Core/PythonRe
 scalar.93 remains independent; no Python94, publication or adoption is implied.

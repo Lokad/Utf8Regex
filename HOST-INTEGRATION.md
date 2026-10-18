@@ -123,6 +123,11 @@ explicit PythonRe `Compile` construction allowance before publication. Hosts
 can use that factory to finish this program eagerly; constructors still defer
 it. This adds upfront construction work/storage and can deny tighter policies.
 Replacement preparation and complete program/cache retention remain separate.
+In particular, a cold Python replacement-template cache miss uses its own fixed
+construction backstops. The invocation's numeric work/working/result caps do not
+bound that preparation; its original cancellation and deadline still apply.
+Include this preparation in a separate host admission. Even a replacement over
+an empty subject can prepare and cache the template before discovering no matches.
 
 On denial or interruption, release exclusive cursor scratch through its normal
 failure/EOF/Dispose path, but preserve reservations for surviving results. Prior

@@ -4,8 +4,8 @@
 
 The independent pair at 4a369c56 passes same-byte Windows/Linux consumers, exact
 API/member/symbol/provenance and a fresh public restore, including fixed-vector
-allocation and tiny-capacity witnesses. Producer CI is green on Windows and Linux. Current costs
-are closed after one 80-sample observation: 11 of 16 lanes qualify; five remain
+allocation and tiny-capacity witnesses. Producer CI is green on Windows and Linux.
+Current costs are closed after one 80-sample observation: 11 of 16 lanes qualify; five remain
 inconclusive. The accepted workspace simplification preserves original resource
 and interruption authority. Core94 is the adapter's exact dependency; delivered
 Core/PythonRe93 and older PCRE92 remain immutable. No Python94, publication,
