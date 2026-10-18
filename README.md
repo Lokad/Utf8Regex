@@ -1,11 +1,13 @@
 # Lokad.Utf8Regex
 
-Private **Core/PythonRe 0.4.0-scalar.103** is being qualified. It batches the
-scoped-multiline grouped-prefix correction with admitted literal storage reuse,
-bounded-copy charge simplification, smaller construction factory states and the
-accepted ASCII-repeat change. Core/PythonRe require exact matching versions.
-Scalar.102 lacks the scoped-anchor correction; see [host guidance](HOST-INTEGRATION.md).
-No PCRE103, publication or downstream adoption is designated.
+Qualified private **Core/PythonRe 0.4.0-scalar.103**, exact Core103, producer
+`6150c4388b3140cfa32c516e8c03d0836a5a84cc`. It fixes scoped-multiline grouped
+prefixes and reuses admitted literal storage, batching the accepted bounded-copy,
+construction-state and ASCII-repeat changes. Same DLLs pass Windows/Linux package
+and unchanged original consumer checks. [Handoff](artifacts/core-python-scalar103-20261019/HANDOFF.md)
+and [consume](artifacts/core-python-scalar103-20261019/CONSUMING.md) record identities,
+current finite capture costs and timing limitations. Scalar.102 lacks the anchor
+correction. Source moves to104-dev; no PCRE103, publication or adoption is designated.
 
 Qualified private **Core/PythonRe 0.4.0-scalar.102**, exact Core102, clean producer
 `62efe07bc5cf93865549b1d241487efe34b3475f`. It batches bounded required-literal

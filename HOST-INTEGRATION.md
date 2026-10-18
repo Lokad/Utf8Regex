@@ -1,12 +1,12 @@
 # Resource controls and host ownership
 
-The qualified private Core/PythonRe input is **0.4.0-scalar.102**. Its
-[handoff](artifacts/core-python-scalar102-20261018/HANDOFF.md) records exact
+The qualified private Core/PythonRe input is **0.4.0-scalar.103**. Its
+[handoff](artifacts/core-python-scalar103-20261019/HANDOFF.md) records exact
 identities, same-byte Windows/Linux consumer checks, current costs and exclusions.
 Independent PCRE2 uses its exact Core/PCRE2 scalar.94 pair; no PCRE102 is designated.
 Earlier packages retain their recorded contracts and limitations.
 
-Development source after scalar.102 fixes a scoped-multiline anchor defect:
+Scalar.103 fixes a scoped-multiline anchor defect:
 grouped literals such as `(?m:^(abc))` could incorrectly use an absolute-start
 shortcut, missing later lines or undercounting matches. The fix reuses the
 existing admitted prefix proof; scoped line anchors keep their line/scalar

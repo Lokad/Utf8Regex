@@ -1,5 +1,15 @@
 # Bounded checked-access work
 
+Immutable Core/PythonRe scalar.103 preserves the completed inventory: Core only
+accepted Unsafe.SizeOf, PythonRe none; no unchecked reads/generated staging
+helpers/native imports/shipped BCL matcher or results. Both producer and Lython
+accept SizeOf. Same-byte Windows/Linux package and unchanged original public
+consumers pass. Producer6150c438 freezes identical shipped C# to6ab30589,
+CI39171314513 terminal green Windows/Linux. [Handoff](artifacts/core-python-scalar103-20261019/HANDOFF.md)
+and [exact members](artifacts/core-python-scalar103-20261019/exact-member-references.json)
+record the scoped-anchor correction, current costs and limitations. No checked52
+reopening, manual size estimates or unchanged-package requalification.
+
 Exact immutable Core/PythonRe scalar.102 retains only accepted Unsafe.SizeOf in
 Core and none in PythonRe, with no generated access helpers/native imports or
 shipped BCL matcher/results. Same-byte Windows/Linux suites and unchanged original

@@ -1,9 +1,12 @@
 # Lokad.Utf8Regex.PythonRe
 
-Private **Core/PythonRe 0.4.0-scalar.103** is being qualified with exact Core103.
-It inherits the scoped-anchor correction and bounded Core simplifications;
-scalar.102 is unchanged and lacks this correction. See
-[host guidance](../../HOST-INTEGRATION.md). No publication or adoption is designated.
+Qualified private **Core/PythonRe 0.4.0-scalar.103**, exact Core103, producer
+`6150c4388b3140cfa32c516e8c03d0836a5a84cc`. It inherits the scoped-anchor correction
+and bounded Core simplifications. Same DLLs pass Windows/Linux package and unchanged
+original public consumers. [Handoff](../../artifacts/core-python-scalar103-20261019/HANDOFF.md)
+and [consume](../../artifacts/core-python-scalar103-20261019/CONSUMING.md) record exact
+identities and current finite capture costs with timing limitations. Scalar.102
+lacks the correction; no publication or downstream adoption is designated.
 
 Qualified private **Core/PythonRe 0.4.0-scalar.102**, exact Core102, clean producer
 `62efe07bc5cf93865549b1d241487efe34b3475f`. Controlled template lookup admits coarse
