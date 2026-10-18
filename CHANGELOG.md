@@ -1,6 +1,10 @@
 # Changelog
 
-## Changes after scalar.100
+## Preparing private Core/PythonRe scalar.101
+
+The two output changes below are batched for one fresh immutable Core/PythonRe
+candidate with exact Core101. Qualification is pending; no PCRE101, publication
+or downstream adoption is designated. Earlier package bytes stay unchanged.
 
 Core `TryReplace` now preserves subject bytes when input and destination overlap.
 It uses the existing staged scalar writer before copying the final result, so
@@ -8,7 +12,7 @@ expanding replacements cannot overwrite unread subject slices. This can allocate
 staging storage for native literals; disjoint destinations keep their existing
 route. Finite admission, original cancellation/deadlines and unchanged storage on
 `DestinationTooSmall` remain. Scalar.100 predates this fix and requires disjoint
-subject/destination storage. No new package is designated by this source change.
+subject/destination storage. Scalar.101 includes this correction.
 
 Python detailed snapshots reuse owned immutable whole-match text for captures
 with the same byte range. This avoids duplicate decoding and string allocation

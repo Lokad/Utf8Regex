@@ -1,5 +1,10 @@
 # Lokad.Utf8Regex
 
+Preparing private **Core/PythonRe 0.4.0-scalar.101**, exact Core101, for one
+qualification boundary. It fixes overlapping Core `TryReplace` output and avoids
+duplicate whole-match text in detailed Python captures. Package/platform/consumer
+qualification is pending; no PCRE101, publication or adoption is designated.
+
 Qualified private **Core/PythonRe 0.4.0-scalar.100**, clean producer
 `fa0e260880caf40b3ba139f6e7fa196276d8c783`, exact Core100. Same bytes pass
 Windows/Linux package consumers, original public assertions and provenance/member

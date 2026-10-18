@@ -1,5 +1,10 @@
 # Lokad.Utf8Regex.PythonRe
 
+Preparing private **Core/PythonRe 0.4.0-scalar.101**, exact Core101. Detailed
+snapshots reuse owned immutable whole-match text for equal-range captures; Core
+also fixes overlapping replacement output. Qualification is pending; no PCRE101,
+publication or consumer adoption is designated.
+
 Qualified private **Core/PythonRe 0.4.0-scalar.100**, exact Core100, clean producer
 `fa0e260880caf40b3ba139f6e7fa196276d8c783`. Same DLLs pass Windows/Linux complete
 package-bound suites and unchanged original public assertions. Complete-domain
