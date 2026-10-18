@@ -14,6 +14,14 @@ original public consumer assertions. Exact identity, current finite costs and
 scope are in artifacts/core-python-scalar100-20261018/HANDOFF.md. No PCRE100 is
 designated. Defaults, lifetime rules and common-retention exclusions remain.
 
+Current102-dev Core `IsMatch` and `Count` can reject an absent, planner-proved
+required literal before VM acquisition, using the existing bounded search and
+the original validated invocation. Eligible unanchored LTR programs without
+existing prefix guidance may therefore fit smaller work/depth/working caps.
+Presence still runs the original matcher. Accounting metadata keeps its separate
+scope; a one-byte modeled working cap does not imply one physical allocated byte.
+This source change is outside immutable101; no additional package is designated.
+
 Scalar.101 also fixes Core `TryReplace` with an input span that
 overlaps its destination. It stages scalar output before copying, so expansion
 preserves unread subject bytes. This may allocate staging storage even for a

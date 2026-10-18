@@ -229,7 +229,7 @@ public sealed class Utf8SliceBalanceTests
     [Fact]
     public void OwnedCatastrophicBalanceIsMatchTimesOut()
     {
-        var input = Encoding.UTF8.GetBytes(new string('a', 25));
+        var input = Encoding.UTF8.GetBytes("bc" + new string('a', 25));
         var regex = new Utf8Regex("(?<o>(a+)+)(?<-o>b)c", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));

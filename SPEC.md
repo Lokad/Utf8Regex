@@ -333,6 +333,15 @@ execution with one cumulative invocation through full strict UTF-8 validation,
 discovery, required coordinate/capture projection, output and publication. Lazy
 advances share that allowance, including copies of core value cursors; copies keep
 independent positions and retained aliases/results remain valid after work denial.
+Development after scalar.101 also lets controlled Core IsMatch/Count reject an
+absent planner-proved exact required literal before acquiring VM state. The
+existing bounded2048byte search borrows the complete validated input and original
+invocation. The pilot serves the owning unanchored LTR program without existing
+prefix guidance; presence retains normal verification. Numeric work and required
+state can decrease, so smaller policies may admit the same false/zero outcome.
+Whole-input UTF8 validity, original cancellation/deadlines and basic metering stay.
+Fixed accounting metadata keeps its existing separate scope. Unmetered/native/
+anchored/RTL/prefix-guided routes retain their selection; immutable101 is unchanged.
 Core Count may reuse the existing bounded native counter for a prepared nonempty
 exact LTR literal, including ordinary ASCII literal captures. It shares the
 validated invocation and requires no capture/continuation scratch, depth or result

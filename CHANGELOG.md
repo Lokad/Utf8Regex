@@ -1,5 +1,14 @@
 # Changelog
 
+## Changes after scalar.101
+
+Controlled Core `IsMatch` and `Count` reuse an existing exact required-literal
+search before acquiring VM state for eligible unanchored LTR programs. An absent
+literal can now return false/zero under smaller work, depth and working budgets;
+presence still requires full matching. Whole-input strict UTF-8 validation and
+the original cancellation/deadline remain. Unmetered routes and existing anchored,
+RTL and prefix-guided paths retain their selection. No new package is designated.
+
 ## Qualified private Core/PythonRe scalar.101
 
 Clean producer8ed61eab batches the two output changes below with exact Core101.

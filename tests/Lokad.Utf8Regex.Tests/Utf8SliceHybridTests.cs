@@ -243,7 +243,7 @@ public sealed class Utf8SliceHybridTests
     [Fact]
     public void OwnedCatastrophicHybridIsMatchTimesOut()
     {
-        var input = Encoding.UTF8.GetBytes(new string('1', 25));
+        var input = Encoding.UTF8.GetBytes("b" + new string('1', 25));
         var regex = new Utf8Regex("([\\da]+)+b", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));

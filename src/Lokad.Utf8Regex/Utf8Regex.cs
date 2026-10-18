@@ -815,6 +815,7 @@ public sealed partial class Utf8Regex
                 throw new InvalidOperationException("Native literal existence search breached the invocation budget.");
             return found;
         }
+        if (RejectMissingRequiredLiteral(input, program, ref invocation)) return false;
         var slots = new Utf8SliceSlots([], []);
         try
         {
@@ -826,6 +827,24 @@ public sealed partial class Utf8Regex
             return outcome.Found;
         }
         finally { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }
+    }
+
+    private bool RejectMissingRequiredLiteral(ReadOnlySpan<byte> input, Utf8SliceProgram program,
+        ref Utf8SliceInvocation invocation)
+    {
+        if (invocation.IsUnmetered || !ReferenceEquals(program, _ownedSliceProgram) ||
+            program.RightToLeft || program.HasContiguousAnchor ||
+            _preparedRegex.Features.HasAbsoluteStartAnchor ||
+            _preparedRegex.SearchPlan.CanGuideFallbackStarts) return false;
+        var prefilter = _preparedRegex.SearchPlan.RequiredPrefilterSearcher;
+        if (prefilter.Kind != PreparedSearcherKind.ExactLiteral) return false;
+        // The existing planner proves this literal is necessary. Search the
+        // complete already-validated subject, including lookbehind context;
+        // presence proves nothing about a match and retains normal verification.
+        var breach = prefilter.TryFindMatch(input, 0, input.Length, false, ref invocation, out _, out var found);
+        if (breach != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException("Required literal screening breached the invocation budget.");
+        return !found;
     }
 
     /// <summary>Counts non-overlapping matches in the well-formed UTF-8 input.</summary>
@@ -1325,6 +1344,7 @@ public sealed partial class Utf8Regex
                 return count;
             }
         }
+        if (RejectMissingRequiredLiteral(input, program, ref invocation)) return 0;
         var slots = new Utf8SliceSlots([], []);
         try
         {

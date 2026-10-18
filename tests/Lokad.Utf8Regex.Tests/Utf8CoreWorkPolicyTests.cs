@@ -272,7 +272,9 @@ public sealed class Utf8CoreWorkPolicyTests
     public void BacktrackingMissIsBoundedAndIndependentCallsGetFreshBudgets()
     {
         var regex = Create("(a+)+b", 1000);
-        var input = Encoding.UTF8.GetBytes(new string('a', 200));
+        // Keep the required literal present but outside any complete match,
+        // so the test reaches backtracking rather than a proved absent literal.
+        var input = Encoding.UTF8.GetBytes("b" + new string('a', 200));
         AssertWorkFailure(() => regex.IsMatch(input), 1000);
         AssertWorkFailure(() => regex.IsMatch(input), 1000);
         var ordinary = Create("ab", 100000);

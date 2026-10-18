@@ -206,7 +206,7 @@ public sealed class Utf8SliceBackrefTests
     [Fact]
     public void OwnedCatastrophicBackrefIsMatchTimesOut()
     {
-        var input = Encoding.UTF8.GetBytes(new string('a', 30));
+        var input = Encoding.UTF8.GetBytes("b" + new string('a', 30));
         var regex = new Utf8Regex("(a+)+\\1b", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));
