@@ -44,8 +44,8 @@ public sealed class Utf8OutputExtentAdmissionTests
     [InlineData(false)] [InlineData(true)]
     public void EveryGrowthAndPublicationWorkCutoffKeepsAnUnpublishedResultAndBalances(bool publication)
     {
-        const ulong seed = 5;
-        var complete = publication ? 5UL : 8UL;
+        const ulong seed = 4; // Rent, two copy blocks, terminal copy check.
+        var complete = publication ? 4UL : 6UL;
         var payload = Enumerable.Repeat((byte)'x', 8192).ToArray();
         for (ulong cutoff = 0; cutoff <= complete; cutoff++)
         {
@@ -76,7 +76,7 @@ public sealed class Utf8OutputExtentAdmissionTests
                     Assert.NotNull(failure);
                     Assert.Empty(result);
                     Assert.Equal(8192, writer.Length);
-                    var capacity = publication || cutoff < 5 ? 8192 : 16384;
+                    var capacity = publication || cutoff < 4 ? 8192 : 16384;
                     Assert.Equal(13 + Bytes(capacity), invocation.Ledger.ReservedBytes);
                     if (capacity == 8192) Assert.Same(original, Buffer(ref writer));
                     Assert.Equal(payload, Buffer(ref writer)!.AsSpan(0, 8192).ToArray());
@@ -102,7 +102,7 @@ public sealed class Utf8OutputExtentAdmissionTests
         Assert.True(Utf8SliceOutputWriter.Rent(8192, ref invocation, out var writer));
         Assert.True(writer.Append(new byte[8192], ref invocation));
         var original = Buffer(ref writer);
-        while ((invocation.Budget.Steps & 63) != 60) Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
+        while ((invocation.Budget.Steps & 63) != 61) Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
         var entered = false;
         invocation.CheckpointHook = _ => { entered = true; if (expire) ticks = 50; else token.Cancel(); };
         byte[] result = [];
@@ -137,7 +137,32 @@ public sealed class Utf8OutputExtentAdmissionTests
             actual.AsSpan(start + displacement, 20000), out var written, new Utf8InvocationBufferControl(ref invocation)));
         Assert.Equal(20000, written);
         Assert.Equal(expected, actual);
-        Assert.Equal(7UL, invocation.Budget.Steps);
+        Assert.Equal(6UL, invocation.Budget.Steps);
+    }
+
+    [Theory]
+    [InlineData(0, false)] [InlineData(1, false)]
+    [InlineData(4096, false)] [InlineData(4097, false)]
+    [InlineData(0, true)] [InlineData(1, true)]
+    [InlineData(4096, true)] [InlineData(4097, true)]
+    public void EmptyAndBoundaryCopiesObserveOriginalInterruptionBeforeWriting(int length, bool expire)
+    {
+        using var token = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var invocation = new Utf8SliceInvocation(new(100000, 0, 1UL << 20),
+            expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout, token.Token);
+        Assert.True(invocation.Ledger.TryReserve(13));
+        var source = Enumerable.Repeat((byte)'s', length).ToArray();
+        var destination = Enumerable.Repeat((byte)'d', length).ToArray();
+        if (expire) ticks = 50; else token.Cancel();
+        var failure = Record.Exception(() => Utf8InvocationOutput.Copy(source, destination,
+            new Utf8InvocationBufferControl(ref invocation)));
+        if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
+        else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+        Assert.All(destination, value => Assert.Equal((byte)'d', value));
+        Assert.Equal(13ul, invocation.Ledger.ReservedBytes);
+        invocation.Ledger.Release(13);
     }
 
     [Theory]
