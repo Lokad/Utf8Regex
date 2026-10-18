@@ -1,11 +1,11 @@
 # Bounded checked-access work
 
-The latest immutable Core/PythonRe scalar.97 pair preserves the completed inventory:
+The latest immutable Core/PythonRe scalar.98 pair preserves the completed inventory:
 Core only permitted `Unsafe.SizeOf`, PythonRe none, no generated staging helpers,
 native imports or shipped BCL matcher/results. Lython accepts SizeOf. Same-byte
-Windows/Linux consumer and exact packaged member checks pass. Producerc3b3d874/
-CI39112269466 is green both platforms. [Handoff](artifacts/core-python-scalar97-20261018/HANDOFF.md),
-[exact members](artifacts/core-python-scalar97-20261018/exact-member-references.json).
+Windows/Linux consumer and exact packaged member checks pass. Producer02fde38c/
+CI39119349263 is green both platforms. [Handoff](artifacts/core-python-scalar98-20261018/HANDOFF.md),
+[exact members](artifacts/core-python-scalar98-20261018/exact-member-references.json).
 Independent Core/PCRE2 scalar.94 also preserves only accepted SizeOf in both
 assemblies, with no generated access helpers/native imports/shipped BCL matcher
 or results. Exact members and same-byte platform receipts are in its

@@ -1,14 +1,11 @@
 # Resource controls and host ownership
 
-Preparing Core/PythonRe scalar.98 batches the controlled decimal and URI changes
-described below. Exact Core98 is required; actual-package acceptance is pending.
-No control, ownership or unlimited-default contract changes at this boundary.
-
-Qualified private Core/PythonRe scalar.97 includes the finite Core match-timeout
-correction and construction-authority borrowing, alongside earlier cold-preparation
-byte/work ceilings. Exact package identity and scoped consumer acceptance are in
-artifacts/core-python-scalar97-20261018/HANDOFF.md. Common retention and process
-memory remain separate; no defaults or ownership rules change.
+Qualified private Core/PythonRe scalar.98 batches controlled decimal IsMatch and
+bounded URI Count with the earlier finite-deadline and preparation corrections.
+Same immutable bytes pass Windows/Linux semantic/resource and original consumer
+checks. Exact package identity, costs and exclusions are recorded in
+artifacts/core-python-scalar98-20261018/HANDOFF.md. Common retention and process
+memory remain separate; defaults and ownership rules are unchanged.
 
 Finite Core match timeouts enter invocation authority before unpolled native
 shortcuts. No-token IsMatch uses its existing invocation; qualified native routes
@@ -16,7 +13,7 @@ retain their authority and other finite-timeout fallbacks use owned scalar
 execution. The deadline starts before validation/search and stays absolute until
 publication. Immutable scalar.96 predates this correction and remains unchanged.
 
-Development after scalar.97 lets recognized ASCII signed-decimal IsMatch borrow
+Scalar.98 lets recognized ASCII signed-decimal IsMatch borrow
 the same invocation for whole-input UTF8 validation and bounded digit searches.
 Every search block is at most2048bytes; work, original cancellation and deadline
 are checked through final publication. Mixed Unicode uses the owned scalar VM
@@ -25,7 +22,7 @@ result scratch, so removing that work can admit smaller work/depth/working caps.
 This is outside immutable97; other operations and families keep their existing
 requirements. No common retention/RSS bound or unlimited-default change follows.
 
-The same development source simplifies URI Count's tail scanning to checked
+Scalar.98 also simplifies URI Count's tail scanning to checked
 ASCII blocks of at most2048bytes with existing Unicode/control handling. Whole
 input validation and the original invocation remain; publication observes the
 original token/deadline. Removed scalar-loop work and an added final checkpoint

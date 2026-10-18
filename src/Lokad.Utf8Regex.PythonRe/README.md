@@ -5,49 +5,35 @@ byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences. PythonRe adds pinned Python
 grammar, captures and result shaping over the shared owned engine.
 
-Preparing private **Core/PythonRe 0.4.0-scalar.98** batches the accepted controlled
-decimal IsMatch and bounded URI Count improvements. Exact Core98 is required;
-same-byte platform, consumer and package-cost checks are pending. Scalar97 below
-remains the qualified immutable candidate until this boundary is complete.
+Qualified private **Core/PythonRe 0.4.0-scalar.98**, clean producer
+`02fde38c8edc81d44dc2bc1da9fc072cfd336f8f`, requires exact Core
+`[0.4.0-scalar.98]`. Same immutable bytes pass Windows/Linux package consumers,
+capture/semantic controls, API/member/provenance/symbol checks and a fresh mapped
+feed restore. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39119349263)
+is green. [Handoff](../../artifacts/core-python-scalar98-20261018/HANDOFF.md) and
+[consumption](../../artifacts/core-python-scalar98-20261018/CONSUMING.md) record identities,
+the supported contract and exclusions.
 
-Qualified private **Core/PythonRe 0.4.0-scalar.97**, clean producer
-`c3b3d874e19104fbb91f66ee42b154e6e4394d4b`, requires exact Core
-`[0.4.0-scalar.97]`. Same immutable bytes pass Windows/Linux package consumers,
-capture/semantic controls, exact API/member/provenance/symbol checks and a fresh
-mapped-feed public restore. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39112269466)
-is green. [Handoff](../../artifacts/core-python-scalar97-20261018/HANDOFF.md) and
-[consumption](../../artifacts/core-python-scalar97-20261018/CONSUMING.md) record
-identities, supported scope and remaining exclusions.
+This delivery batches controlled ASCII decimal IsMatch and bounded URI Count
+improvements. Whole-input strict UTF-8 validation, scalar results, captures,
+original cancellation, absolute deadlines and finite work/depth/working/result
+controls remain. Removing unnecessary VM work and URI phase dispatch can admit
+smaller numeric budgets. Earlier deadline and preparation fixes remain included.
+See [shared controls](../../HOST-INTEGRATION.md) for the exact resource scope.
 
-This pair fixes a finite Core match-timeout bypass in unpolled native shortcuts.
-No-token finite-timeout IsMatch starts existing invocation authority before work;
-qualified native invocation routes remain eligible, other fallbacks use owned
-scalar execution. Infinite-timeout shortcuts remain. Actual packaged deadline
-regressions pass on both platforms; the exact96 DLL reproduces the old defect.
+[Exact98 costs](../../artifacts/core-python-scalar98-20261018/vm-cost/RESULT.md) close after
+one run and its sole confirmation. Finite/live URI Count costs about3.45ms/112B;
+finite/live16KiB decimal IsMatch about1.16us/112B. Several unlimited/control lanes
+and Python materialization remain inconclusive. Source comparisons retain their
+separate scope; historical README tables do not qualify these package bytes.
 
-It also removes redundant Core/Python cold-preparation callbacks/closures by
-borrowing existing authority, preserving distinct parents, every work charge,
-checkpoints and finally restoration/retry. Earlier phase byte ceilings, strict
-scalar/capture behavior, retained results and public APIs remain.
-[Shared controls](../../HOST-INTEGRATION.md) distinguish invocation admission,
-separate preparation ceilings and host/caller retention.
-
-[Exact97 public costs](../../artifacts/core-python-scalar97-20261018/vm-cost/RESULT.md)
-close after one run and its sole confirmation:13of24lanes qualify. Cold text
-preparation U/F/live costs129.42/130.87/132.06us: about1.1%finite overhead and
-2.0%live-token overhead. Cold UTF8 and several short/warm/control lanes remain
-inconclusive. Keep metering; no source/package speedup, CPython Status or broad
-parity is inferred. These families do not measure the finite-timeout route cost.
-
-Core retains only accepted Unsafe.SizeOf; PythonRe none. Actual unchecked reads,
-generated staging helpers, native imports and shipped BCL matching/results remain
-absent. Preserve immutable96 and independent
-[Core/PCRE94](../../artifacts/pcre2-scalar94-delivery-20261018/HANDOFF.md).
-Exact Core94/Core97 cannot share one dependency graph. No PCRE97, publication,
-external pin/default change or adoption is implied. Defaults/static invocation
-remain unlimited; full SPEC and common-retention coverage remain open. Frozen
-package preparation assets retain staging status; this source records acceptance
-without changing their bytes.
+Core retains only permitted `Unsafe.SizeOf`; PythonRe none. Producer and Lython
+accept SizeOf. Actual unchecked reads, generated staging helpers, native imports
+and shipped BCL matching/results remain absent. Preserve immutable97/older and
+independent [Core/PCRE94](../../artifacts/pcre2-scalar94-delivery-20261018/HANDOFF.md).
+Exact Core94/Core98 require separate dependency graphs. Defaults/static calls
+remain unlimited; full SPEC and common-retention coverage remain open. These
+producer checks do not establish downstream adoption or publication.
 
 ## Support Scope
 

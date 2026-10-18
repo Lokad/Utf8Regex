@@ -1,14 +1,24 @@
 # Changelog
 
-## Preparing private Core/PythonRe scalar.98
+## Qualified private Core/PythonRe scalar.98
 
-Batch the accepted controlled decimal IsMatch and bounded URI Count changes
-below into one immutable downstream candidate. Exact Core98 is required.
-Windows/Linux actual-package semantics, resources, consumer assertions, member/
-provenance/symbol checks and representative finite-policy costs are pending.
-Reuse the completed source comparisons; they do not qualify immutable98 bytes.
-Scalar97 and earlier candidates remain unchanged. PCRE2 retains its independent
-Core94 graph. No publication, consumer pin/default change or full-SPEC claim.
+Clean producer02fde38c batches the controlled decimal IsMatch and bounded URI
+Count changes below. Exact Core98 is required. Same immutable bytes pass
+Windows/Linux semantics/resources, original Awk/Lython consumer assertions,
+capture/semantic controls and API/member/provenance/symbol checks; producer CI
+is green. Core retains only permitted SizeOf, Python none; Lython accepts SizeOf.
+
+Current package costs close after the sole confirmation:250raw,11of25lanes
+qualify. Finite/live URI Count is about3.45ms/112B;16KiB decimal about1.16us/112B.
+Several unlimited/control and Python materialization lanes remain inconclusive.
+Explicit-token unlimited decimal retains a large qualified VM cost; controls
+select a different route there. Keep metering and distinguish these current
+runtime-default observations from completed FullOpts source comparisons.
+
+Preserve immutable97/older and independent Core/PCRE94. No PCRE98, publication,
+external pins/defaults, adoption or full-SPEC claim. Handoff:
+artifacts/core-python-scalar98-20261018/HANDOFF.md. Frozen package preparation
+assets retain staging status; this source records acceptance without repacking.
 
 ## Development after scalar.97
 
@@ -21,7 +31,7 @@ Core94 graph. No publication, consumer pin/default change or full-SPEC claim.
   across ordinary/compiled and unlimited/finite/live-token lanes, with unchanged
   allocations. Long ASCII tails improve about98–99%; literal controls stay
   within3%. Two decode controls remain inconclusive. Compiled predecoded .NET
-  remains faster on the corpus. No confirmation, Status change or new package.
+  remains faster on the corpus. No confirmation or Status change; included in scalar.98.
 - Let recognized ASCII signed-decimal IsMatch borrow the caller's existing
   invocation. Validate the complete UTF8 subject, search digits in checked blocks
   of at most2048bytes and observe original cancellation/deadline before publication.
@@ -34,7 +44,7 @@ Core94 graph. No publication, consumer pin/default change or full-SPEC claim.
   Allocations fall from5544/680776B to160B. Qualified literal/Unicode controls
   stay within8%, with unchanged allocations. No confirmation was needed;
   inconclusive rows remain. These FullOpts source measurements are separate from
-  immutable97's current package costs. No new package is designated.
+  immutable97's current package costs. These source changes are now included in scalar.98.
 
 ## Qualified private Core/PythonRe scalar.97
 
