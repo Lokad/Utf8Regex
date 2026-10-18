@@ -16,6 +16,10 @@ public class Utf8RegexCountBenchmarks
     public void Setup()
     {
         _context = new Utf8RegexBenchmarkContext(Utf8RegexBenchmarkCatalog.Get(CaseId));
+        var expected = _context.Regex.Count(_context.InputString);
+        if (_context.Utf8Regex.Count(_context.InputBytes) != expected ||
+            _context.Regex.Count(System.Text.Encoding.UTF8.GetString(_context.InputBytes)) != expected)
+            throw new InvalidOperationException($"Count benchmark results disagree for {CaseId}.");
     }
 
     [Benchmark(Baseline = true)]
