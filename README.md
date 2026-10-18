@@ -13,6 +13,10 @@ is green. [Handoff](artifacts/core-python-scalar90-20261018/HANDOFF.md) and
 [consumption](artifacts/core-python-scalar90-20261018/CONSUMING.md) record exact scope/identities.
 Preserve89/88/87/86 and independentPCRE76/Core76; no PCRE90 package is included.
 
+Development source after scalar.90 also fixes raw escaped Unicode literals and
+their class/range/quantifier/folding behavior. Scalar.90 retains this demonstrated
+gap outside its recorded subset; see the [development changelog](CHANGELOG.md#development-after-scalar90).
+
 Scalar.90 batches Core Count capture-state elision and exact finite2147483647
 repeat maxima, plus Python comment/leading-flag parsing, anchor quantifier
 admission and bracket control escapes. Captures, scalar ranges, retained aliases

@@ -243,20 +243,16 @@ internal sealed partial class PythonReParser
             return PythonReAstFactory.Raw("$", PythonReRawKind.EndAnchor);
         }
 
-        var literal = Consume();
-        if (char.IsHighSurrogate(literal) &&
-            !IsAtEnd &&
-            char.IsLowSurrogate(Current))
+        var literal = ReadRawPatternScalar(Consume());
+        if (literal > char.MaxValue)
         {
             // PLAN.md C06: tokenize one scalar before quantification so a repeat binds the whole pair. Mirrors the astral escape path: explicit case partners when folding needs them, otherwise one escaped pair atom.
-            var low = Consume();
-            var scalar = char.ConvertToUtf32(literal, low);
-            return ExpandIgnoreCaseScalar(scalar, options)
-                ?? PythonReAstFactory.Raw(Utf8ConstructionText.EscapeScalar(scalar), PythonReRawKind.AstralLiteral);
+            return ExpandIgnoreCaseScalar(literal, options)
+                ?? PythonReAstFactory.Raw(Utf8ConstructionText.EscapeScalar(literal), PythonReRawKind.AstralLiteral);
         }
 
         return ExpandIgnoreCaseScalar(literal, options)
-            ?? PythonReAstFactory.Literal(literal);
+            ?? PythonReAstFactory.Literal((char)literal);
     }
 
     private PythonReConditionalReference ParseConditionalReference()
@@ -349,7 +345,7 @@ internal sealed partial class PythonReParser
                 return PythonReAstFactory.CharacterClass(isNegated, ExpandClassItems(items, options));
             }
 
-            var parsedItem = ParseCharacterClassItem(options, allowLiteralClosingBracket);
+            var parsedItem = ParseCharacterClassItem(options);
             var item = parsedItem.Item;
             allowLiteralClosingBracket = false;
 
@@ -360,7 +356,7 @@ internal sealed partial class PythonReParser
                 _pattern[_position + 1] != ']')
             {
                 _position++;
-                var endParsedItem = ParseCharacterClassItem(options, allowLiteralClosingBracket: false);
+                var endParsedItem = ParseCharacterClassItem(options);
                 var endItem = endParsedItem.Item;
                 if (endItem is not PythonReCharacterClassLiteralItem endLiteral)
                 {
@@ -383,7 +379,7 @@ internal sealed partial class PythonReParser
                 _pattern[_position + 1] != ']')
             {
                 _position++;
-                _ = ParseCharacterClassItem(options, allowLiteralClosingBracket: false);
+                _ = ParseCharacterClassItem(options);
                 throw BadCharacterRange(parsedItem.Position);
             }
 
@@ -493,6 +489,7 @@ internal sealed partial class PythonReParser
             '0' => CreateEscapedLiteralNode(ParseOctalEscapeIntValue(escapeStart, ch), options),
             >= '1' and <= '9' => ParseNumericEscapeOrBackreference(ch, escapeStart, options),
             _ when PatternBadEscapeLetters.IndexOf(ch) >= 0 => throw new PythonRePatternException($@"bad escape \{ch}", escapeStart),
+            _ when !char.IsAscii(ch) => CreateEscapedLiteralNode(ReadRawPatternScalar(ch), options),
             _ => PythonReAstFactory.Raw(Storage.Arena.Budget.CopyText(_pattern.AsSpan(escapeStart, 2)), PythonReRawKind.Escape),
         };
     }
@@ -591,7 +588,12 @@ internal sealed partial class PythonReParser
         => (options & PythonReCompileOptions.IgnoreCase) == 0 ? null
             : IsAsciiMode(options) ? PythonReScalarCaseData.LowerAscii : PythonReScalarCaseData.LowerUnicode;
 
-    private PythonReParsedCharacterClassItem ParseCharacterClassItem(PythonReCompileOptions options, bool allowLiteralClosingBracket)
+    // Only adjacent raw source code units form a scalar here. Explicit \u
+    // surrogate escapes have already taken their separate semantic-atom path.
+    private int ReadRawPatternScalar(char first) => char.IsHighSurrogate(first) &&
+        !IsAtEnd && char.IsLowSurrogate(Current) ? char.ConvertToUtf32(first, Consume()) : first;
+
+    private PythonReParsedCharacterClassItem ParseCharacterClassItem(PythonReCompileOptions options)
     {
         var escapeStart = _position;
         var ch = Consume();
@@ -629,23 +631,10 @@ internal sealed partial class PythonReParser
                 return new PythonReParsedCharacterClassItem(PythonReAstFactory.ClassPredefined(GetUnicodePredefinedFragment(escaped), true), escapeStart);
             }
 
-            return new PythonReParsedCharacterClassItem(PythonReAstFactory.ClassLiteral(escaped), escapeStart);
+            return new PythonReParsedCharacterClassItem(PythonReAstFactory.ClassLiteral(ReadRawPatternScalar(escaped)), escapeStart);
         }
 
-        if (ch == ']' && allowLiteralClosingBracket)
-        {
-            return new PythonReParsedCharacterClassItem(PythonReAstFactory.ClassLiteral(ch), escapeStart);
-        }
-
-        if (char.IsHighSurrogate(ch) &&
-            !IsAtEnd &&
-            char.IsLowSurrogate(Current))
-        {
-            var low = Consume();
-            return new PythonReParsedCharacterClassItem(PythonReAstFactory.ClassLiteral(char.ConvertToUtf32(ch, low)), escapeStart);
-        }
-
-        return new PythonReParsedCharacterClassItem(PythonReAstFactory.ClassLiteral(ch), escapeStart);
+        return new PythonReParsedCharacterClassItem(PythonReAstFactory.ClassLiteral(ReadRawPatternScalar(ch)), escapeStart);
     }
 
     private int? ParseEscapedCharacterClassLiteralScalar(char escaped, int escapeStart)

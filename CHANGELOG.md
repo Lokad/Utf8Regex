@@ -1,5 +1,14 @@
 # Changelog
 
+## Development after scalar.90
+
+- Read raw escaped Unicode literals as complete scalars inside and outside
+  brackets, including range endpoints and quantifiers. Apply lexical Python
+  folding through the existing literal path; `\😀+` matches complete emoji and
+  ignore-case `\é` matches `É`. Explicit escaped surrogate halves stay separate.
+  One shared raw-scalar reader removes duplicate surrogate handling and an
+  unused class-item parameter; existing admission and interruption remain.
+
 ## Qualified private Core/PythonRe scalar.90
 
 The fresh pair at fd8bade3 includes the changes below and passes same-byte

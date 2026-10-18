@@ -107,6 +107,11 @@ CASES = [
     # their spelling letters; include range endpoints and supplementary offsets.
     (r"😀(?P<x>[\n]+)", "x😀\n\n 😀n"),
     (r"(?P<x>[\b-\r]+)", "x\b\t\n\v\f\r ybfnrtv"),
+    # A raw escaped supplementary character is one literal, while explicit
+    # surrogate escapes remain separate atoms. Keep lexical folding and offsets.
+    (r"(?P<x>\😀)+", "π😀😀 é😀"),
+    (r"(?P<x>[\😀-\😁]+)", "π😀😁é 😀"),
+    (r"(?i:(?P<x>\𐐀))(?-i:(?P<y>\𐐀))", "𐐨𐐀 𐐨𐐨"),
 ]
 
 def snapshot(match, text):

@@ -31,6 +31,21 @@ It is not retained as a cursor projection table or searched after each match.
 
 The native rendering consumes complete scalars. Supplementary class members and ranges use numeric scalar endpoints, rather than separate surrogate classes. Python's separate `\uD800`/`\uDC00` escapes denote separate surrogate atoms and cannot combine into a scalar; they cannot match strict UTF-8. A raw supplementary character or `\U00010000` escape denotes one scalar. A surrogate-only class contains no valid scalar, and its negation admits valid scalars. Captures retain primary byte ranges and derived UTF-16 coordinates. Owned execution does not establish complete grammar coverage, public construction containment or retained-storage limits; qualify those separately from the current invocation controls.
 
+## Raw escaped Unicode literals
+
+Development source after scalar.90 consumes a raw escaped non-ASCII character
+as one scalar: `\😀`, `[\😀]`, escaped range endpoints and their quantifiers keep
+the same scalar unit as an unescaped literal. Escaped BMP and supplementary
+literals use the existing pinned Python folding under their lexical options,
+including scoped ASCII exclusions. Explicit `\uD83D\uDE00` escapes remain two
+surrogate atoms and cannot match a strict UTF-8 emoji; `\U0001F600` is one scalar.
+
+The parser shares raw scalar acquisition across ordinary literals and class
+items, reusing the existing escaped-literal/case path. It adds no matching engine,
+IR mode or Unicode table. Original construction/invocation admission, synchronous
+cancellation/deadlines and retained-result validity remain. This is outside
+immutable scalar.90 and its114-fixture qualification subset.
+
 ## Brace repetition and verbose attachment
 
 Development source after scalar.87 recognizes only complete brace-repeat syntax:
