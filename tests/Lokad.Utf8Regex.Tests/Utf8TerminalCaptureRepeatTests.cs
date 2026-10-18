@@ -20,6 +20,10 @@ public sealed class Utf8TerminalCaptureRepeatTests
     [InlineData("([a-z]+?)", "abcd")]
     [InlineData("(([a-z]+))", "abcd")]
     [InlineData("([a-z])+", "abcd")]
+    [InlineData("([ace]+)", "😀ace bad cabé")]
+    [InlineData("([a-cx-z]{1,3})", "😀abc-xyzzéq")]
+    [InlineData("([a-z]{0,4})", "éabcde é")]
+    [InlineData("([\\x00-\\x7f]{1,3})", "\0\u007f\u0080\u0001😀")]
     public void TerminalAndExcludedShapesKeepCapturesAndProgression(string pattern, string text)
     {
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
@@ -56,6 +60,18 @@ public sealed class Utf8TerminalCaptureRepeatTests
         Assert.True(match.Success);
         Assert.Equal(expected, match.GetGroup(1).GetValueString());
         Assert.Equal(Encoding.UTF8.GetByteCount(expected), match.LengthInBytes);
+    }
+
+    [Fact]
+    public void EmptyAsciiRunsAdvanceAcrossCompleteSupplementaryScalars()
+    {
+        var regex = new Utf8Regex("([a-z]{0,4})");
+        var input = "😀abcde é"u8;
+        var ranges = new List<(int Start, int Length)>();
+        foreach (var match in regex.EnumerateMatches(input))
+            ranges.Add((match.IndexInBytes, match.LengthInBytes));
+        Assert.Equal(new[] { (0, 0), (4, 4), (8, 1), (9, 0), (10, 0), (12, 0) }, ranges);
+        Assert.Equal(6, regex.Count(input));
     }
 
     [Fact]
@@ -98,12 +114,15 @@ public sealed class Utf8TerminalCaptureRepeatTests
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, error.ResourceKind);
     }
 
-    [Fact]
-    public void EveryWorkCutoffPreservesTheParentLoan()
+    [Theory]
+    [InlineData(@"(\p{L}{1,3})", "éé A𐐀!")]
+    [InlineData("([a-z]{1,3})", "abc de!")]
+    [InlineData("([ace]+)", "ace b aaa")]
+    public void EveryWorkCutoffPreservesTheParentLoan(string pattern, string text)
     {
-        var regex = new Utf8Regex(@"(\p{L}{1,3})");
+        var regex = new Utf8Regex(pattern);
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
-        var input = "éé A𐐀!"u8.ToArray();
+        var input = Encoding.UTF8.GetBytes(text);
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
         var baseline = new Utf8SliceInvocation(new(100000, 1, 1 << 20), Timeout.InfiniteTimeSpan, default);
@@ -124,11 +143,12 @@ public sealed class Utf8TerminalCaptureRepeatTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void OriginalInterruptionInsideTerminalRunReleasesScratch(bool timeout)
+    [InlineData(false, false)] [InlineData(true, false)]
+    [InlineData(false, true)] [InlineData(true, true)]
+    public void OriginalInterruptionInsideTerminalRunReleasesScratch(bool timeout, bool ascii)
     {
-        var program = new Utf8Regex(@"(\p{L}+)").Inspection.AvailableOwnedSliceProgram!;
-        var input = Encoding.UTF8.GetBytes(new string('é', 2048));
+        var program = new Utf8Regex(ascii ? "([a-z]+)" : @"(\p{L}+)").Inspection.AvailableOwnedSliceProgram!;
+        var input = Encoding.UTF8.GetBytes(new string(ascii ? 'a' : 'é', 2048));
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);

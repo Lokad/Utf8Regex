@@ -143,10 +143,22 @@ internal static partial class Utf8SliceRunner
         var maximum = repeat.RepeatMaximum;
         var position = start;
         var count = 0;
+        ReadOnlySpan<byte> asciiMask = atom.Kind == Utf8SliceInstructionKind.Set && atom.B == 0 && atom.C == 0
+            ? program.SetMasks[atom.A] : [];
         while (count < maximum)
         {
             var breach = invocation.TryChargeStep();
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, breach, null, null);
+            // This positive, unfolded mask has the same ASCII predicate; keep
+            // its existing per-scalar charge without Rune decoding/dispatch.
+            if (!asciiMask.IsEmpty && (uint)position < (uint)input.Length && input[position] < 128)
+            {
+                var value = input[position];
+                if ((asciiMask[value >> 3] & (1 << (value & 7))) == 0) break;
+                position++;
+                count++;
+                continue;
+            }
             if (!TryReadScalar(input, position, false, out var scalar, out var width)) break;
             breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var hit);
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, breach, null, null);

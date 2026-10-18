@@ -1,5 +1,15 @@
 # Changelog
 
+## Changes after scalar.102
+
+The shared terminal class-repeat loop reads ASCII directly from an existing
+positive, case-sensitive mask, avoiding Rune decoding and class dispatch for
+those bytes. Per-scalar/terminal work charges, Unicode/folded/negated fallbacks,
+captures and storage admission remain. A bounded public replacement comparison
+improves bulk medians by3.0–4.1%, with a7.6% short-unlimited slowdown; the
+[source receipt](artifacts/terminal-ascii-set-repeat-20261018/RESULT.md) records
+that tradeoff and unchanged controls. This source change is outside immutable102.
+
 ## Qualified private Core/PythonRe scalar.102
 
 Clean producer62efe07b batches the three bounded changes below with exact Core102.
