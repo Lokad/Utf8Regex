@@ -1,64 +1,25 @@
 # Resource controls and host ownership
 
-Qualified private Core/PythonRe scalar.101 fixes overlapping Core replacement
-output and shares immutable whole-match text within detailed Python snapshots.
-The same DLLs pass Windows/Linux detached suites and original consumer assertions.
-Exact identity, current finite costs and scope are in
-artifacts/core-python-scalar101-20261018/HANDOFF.md. Defaults and the separate
-construction/common-retention exclusions remain. No PCRE101 is designated.
+The qualified private Core/PythonRe input is **0.4.0-scalar.101**. Its
+[handoff](artifacts/core-python-scalar101-20261018/HANDOFF.md) records exact
+identities, same-byte Windows/Linux consumer checks, current costs and exclusions.
+Independent PCRE2 uses its exact Core/PCRE2 scalar.94 pair; no PCRE101 is designated.
+Earlier packages retain their recorded contracts and limitations.
 
-Qualified private Core/PythonRe scalar.100 adds complete-domain Python class
-folding and compact managed astral rendering, with the same native scalar
-patterns for recorded probes. Same bytes pass Windows/Linux detached suites and
-original public consumer assertions. Exact identity, current finite costs and
-scope are in artifacts/core-python-scalar100-20261018/HANDOFF.md. No PCRE100 is
-designated. Defaults, lifetime rules and common-retention exclusions remain.
+Scalar.101 supports overlapping Core `TryReplace` subject/destination spans by
+staging scalar output before copying. Staging may allocate even for a literal;
+insufficient destinations stay unchanged. UTF-8 templates may alias the
+destination too. Use disjoint subject/destination storage with scalar.100 and
+earlier. Detailed Python snapshots may share an immutable string for captures
+covering the whole match; capture metadata and returned mutable arrays remain
+independent.
 
-Current102-dev Core `IsMatch` and `Count` can reject an absent, planner-proved
-required literal before VM acquisition, using the existing bounded search and
-the original validated invocation. Eligible unanchored LTR programs without
-existing prefix guidance may therefore fit smaller work/depth/working caps.
-Presence still runs the original matcher. Accounting metadata keeps its separate
-scope; a one-byte modeled working cap does not imply one physical allocated byte.
-This source change is outside immutable101; no additional package is designated.
-
-Scalar.101 also fixes Core `TryReplace` with an input span that
-overlaps its destination. It stages scalar output before copying, so expansion
-preserves unread subject bytes. This may allocate staging storage even for a
-native literal; disjoint destinations keep their existing route. UTF-8 templates
-may also alias the destination. Insufficient destinations remain unchanged, and
-finite admission, cancellation and deadlines still apply. Immutable scalar.100
-predates this correction; use disjoint subject/destination storage with it.
-
-Earlier qualified private Core/PythonRe scalar.99 batches constant-class construction
-simplifications and generic Count's omitted coordinate metadata, inheriting
-scalar.98's decimal/URI and earlier deadline/preparation corrections.
-Same immutable bytes pass Windows/Linux semantic/resource and original consumer
-checks. Exact package identity, costs and exclusions are recorded in
-artifacts/core-python-scalar99-20261018/HANDOFF.md. Common retention and process
-memory remain separate; defaults and ownership rules are unchanged.
-
-Finite Core match timeouts enter invocation authority before unpolled native
-shortcuts. No-token IsMatch uses its existing invocation; qualified native routes
-retain their authority and other finite-timeout fallbacks use owned scalar
-execution. The deadline starts before validation/search and stays absolute until
-publication. Immutable scalar.96 predates this correction and remains unchanged.
-
-Scalar.98 lets recognized ASCII signed-decimal IsMatch borrow
-the same invocation for whole-input UTF8 validation and bounded digit searches.
-Every search block is at most2048bytes; work, original cancellation and deadline
-are checked through final publication. Mixed Unicode uses the owned scalar VM
-without resetting that authority. The ASCII boolean route needs no VM frame or
-result scratch, so removing that work can admit smaller work/depth/working caps.
-This is outside immutable97; other operations and families keep their existing
-requirements. No common retention/RSS bound or unlimited-default change follows.
-
-Scalar.98 also simplifies URI Count's tail scanning to checked
-ASCII blocks of at most2048bytes with existing Unicode/control handling. Whole
-input validation and the original invocation remain; publication observes the
-original token/deadline. Removed scalar-loop work and an added final checkpoint
-can revise numerical work cutoffs. Major storage/result scope is unchanged.
-Immutable97 predates this source change too.
+Current102-dev adds two source changes outside immutable101: eligible controlled
+Core `IsMatch`/`Count` calls reject a planner-proved absent required literal before
+VM acquisition, and scalar prefix Count rechecks the original token after its
+terminal work checkpoint. The first can admit smaller limits; a one-byte modeled
+working cap does not imply one physical allocated byte. The second corrects a
+shared-invocation cancellation edge. Neither change designates another package.
 
 Choose eager-construction and invocation limits separately. The common policy
 types describe admission scopes; work units and execution failure types depend
@@ -178,39 +139,31 @@ separate program/subject owner alive while a surviving result or view borrows it
 storage. The envelope does not turn these exclusions into covered allocations.
 Host-created lists of snapshots, for example, need their own admission.
 
-PythonRe includes the derived FullMatch program in the
-explicit PythonRe `Compile` construction allowance before publication. Hosts
-can use that factory to finish this program eagerly; constructors still defer
-it. This adds upfront construction work/storage and can deny tighter policies.
-Replacement preparation and complete program/cache retention remain separate.
-In qualified scalar.93, a cold Python replacement-template cache miss uses fixed
-construction backstops separately from invocation numeric caps. Development source
-also uses a finite `MaxWorkingBytes` as a ceiling on additional covered parser
-capacity. It reuses the existing construction owner; construction work/depth and
-retained-cache admission remain separate. A cold byte denial reports
-`ConstructionBytes`, whose totals include the enclosing construction reservation,
-and may precede an execution denial. Warm hits acquire no preparation scope.
-The same development ceiling applies to uncached FullMatch preparation triggered
-by execution. Explicit `Compile` still prepares FullMatch eagerly under its
-separate construction policy, independently of future invocation caps.
-Original cancellation and deadline still apply. Include preparation and surviving
-plans in separate host admission: this phase ceiling does not extend the combined
-invocation envelope to retained storage. Even an empty subject can prepare and
-cache a template before discovering no matches. Immutable scalar.93 is unchanged.
-These additional phase ceilings belong to PythonRe in scalar.95. Core replacement
-parsing and UTF-8 template-key decoding still use their separate construction
-backstops; Core's invocation byte caps do not admit that preparation. Keep its
-preparation/retained-storage host reservation separate as well.
+Core/PythonRe scalar.101 and current source have the following preparation scope.
+These are separate phase ceilings, not additions to the invocation W + R promise.
 
-Development source after scalar.95 additionally borrows finite `MaxWorkingBytes`
-for Core replacement parsing and UTF-8 key decoding as one nested phase ceiling.
-Text-key hits add no scope; UTF-8 lookup still decodes a key, so warm calls must
-fund that allocation too. Byte-template validation also admits scan work before
-reading through an active construction owner or the existing fixed scan ceiling.
-An oversized malformed template can deny before its tail is read. Original
-interruption and fixed backstops remain. Preparation/retained-storage host admission
-stays separate; this source change does not extend the invocation W+R envelope.
-Immutable scalar.95 retains the documented Core exclusion above.
+| Preparation | Admission and reuse |
+| --- | --- |
+| PythonRe FullMatch | Explicit `Compile` eagerly prepares its derived program under the construction policy. Constructors defer it. Execution-triggered preparation borrows finite `MaxWorkingBytes` as a ceiling on additional covered construction capacity. |
+| PythonRe replacement | A cold template cache miss uses the same additional-byte ceiling and fixed construction work/depth backstops. A warm text-key hit needs no preparation scope. |
+| Core replacement | Cold parsing and UTF-8 template-key decoding share a nested additional-byte ceiling. Warm text-key hits need no scope; UTF-8 lookups still fund decoded-key storage. Template validation admits scan work before reading through the active construction owner or fixed scan ceiling. |
+
+The original invocation token and deadline govern controlled preparation. A byte
+denial can report `ConstructionBytes`, including the enclosing construction
+reservation, before execution starts. Tighter parent limits remain in force;
+nested scopes preserve parent loans and restore their limits on exit. Construction
+work/depth, cache retention and host admission remain separate from the invocation
+numeric envelope. An oversized malformed template may deny before its tail is
+read. Even an empty subject can prepare and cache a template before finding no
+matches. Reserve separately for preparation and surviving plans; finite invocation
+caps alone do not bound their combined retained storage.
+
+PCRE2's independent scalar.94 contract additionally charges controlled replacement
+preparation checkpoints to invocation work. Cold finite-heap preparation borrows
+the remaining heap capacity as a construction ceiling and holds its additional
+peak reservation through replacement. Warm plans use their separate bounded cache.
+This differs from the Core/PythonRe phase scope above; see
+[SPEC-PCRE2.md](SPEC-PCRE2.md) for its covered capacities and failure mapping.
 
 On denial or interruption, release exclusive cursor scratch through its normal
 failure/EOF/Dispose path, but preserve reservations for surviving results. Prior
@@ -233,10 +186,10 @@ The qualified input is the exact Core/adapter pair recorded by its manifest,
 feed and locks. Adapters consume Core internals and move together with the exact
 qualified Core version. Applications combining adapters need a common qualified
 Core; deliberate dependency overrides have separate compatibility scope.
-The immutable [Core/PythonRe scalar.91 handoff](artifacts/core-python-scalar91-20261018/HANDOFF.md)
+The immutable [Core/PythonRe scalar.101 handoff](artifacts/core-python-scalar101-20261018/HANDOFF.md)
 records same-byte Windows/Linux consumers, exact identities, current costs and
 the recorded semantic/resource subset. Independent PCRE2 evidence stays
-with its [scalar.76 handoff](artifacts/pcre2-scalar76-delivery-20261017/HANDOFF.md).
+with its [scalar.94 handoff](artifacts/pcre2-scalar94-delivery-20261018/HANDOFF.md).
 Earlier candidates remain immutable; actual consumer ownership/adoption is separate.
 
 The source witnesses are `Utf8ExecutionBudget.TryChargeResultBytes`,
