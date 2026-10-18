@@ -616,7 +616,10 @@ internal static partial class Utf8SliceRunner
                         continue;
                     }
                 }
-                else if (program.RightToLeft && program.HasContiguousAnchor)
+                // Presence in one alternative does not anchor other branches.
+                // Only a mandatory initial \G proves later starts impossible.
+                else if (program.RightToLeft && first.Kind == Utf8SliceInstructionKind.Anchor &&
+                    first.A == (int)Utf8SliceAnchorKind.Contiguous)
                     break;
                 position = AdvancePastScalar(input, position, program.RightToLeft);
                 if (position < 0) break;

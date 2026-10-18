@@ -2,6 +2,12 @@
 
 ## Development after scalar.92
 
+- Correct right-to-left Count when one alternative contains `\G` and another
+  can match without it. A missed candidate no longer hides earlier matches:
+  `a|\Gb` over `a xa` counts two. Only an actual mandatory first contiguous
+  anchor retains the early stop. Scalar/empty advancement, captures and resource
+  controls remain; visiting required candidates can spend more work.
+
 - Reuse fixed PCRE2 VM vectors within the existing lexical Count/search owner.
   Acquire lazily at the first candidate; nested assertions keep independent
   storage. Explicit acquisition/release uses the owner's actual budget instead

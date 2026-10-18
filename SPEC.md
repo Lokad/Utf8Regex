@@ -77,6 +77,14 @@ Count has no coordinate result, so primary Count must not construct a whole-
 subject UTF-16 map just to enumerate positions. Explicit UTF-16 start APIs may
 resolve their scalar-aligned starting boundary as admitted interoperability work.
 
+RTL Count may stop after one failed candidate only when the first emitted
+instruction is a mandatory contiguous anchor. A `\G` in one alternative does
+not constrain other alternatives: `a|\Gb` over `a xa` must count both `a`s.
+The ordinary candidate loop continues over complete scalars and keeps the same
+invocation's work, cancellation/deadline and scratch authority. Correctly visiting
+additional candidates can require more work than the former incorrect early
+stop. Empty-match advancement and retained capture validity remain unchanged.
+
 ### 3.2 Replacement semantics
 
 Retain the .NET-style replacement language (`$1`, `${name}`, `$&`, `$```, `$'`, `$+`, `$_`, `$$`) and numeric-group parsing rules, expanding captures discovered under scalar matching. Invoke replacement evaluators once per match. Right-to-left replacement discovers matches from the end and assembles output in subject order. UTF-8 output remains well formed; string-returning APIs materialize the same scalar result as a .NET string. They are not surrogate-half compatibility escape hatches.
