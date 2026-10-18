@@ -1,5 +1,11 @@
 # Changelog
 
+## Staged private Core/PythonRe scalar.90
+
+The fresh identity batches the development changes below. Package/platform,
+consumer/provenance and current-cost qualification are pending; no publication
+or downstream promotion is implied. Preserve immutable89 and independentPCRE76.
+
 ## Development after scalar.89
 
 - Reject direct Python anchor/boundary quantifiers while preserving grouped

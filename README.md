@@ -4,6 +4,10 @@
 byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences.
 
+Private **Core/PythonRe scalar.90** is being prepared to batch the source repairs
+below. Its package/platform, consumer/provenance and current-cost checks are
+pending. It is not yet a qualified replacement for the scoped scalar.89 input.
+
 The qualified private **Core/PythonRe 0.4.0-scalar.89** pair comes from clean
 producer `a290c428ad6f30656e9cc1f46bb65f547942aa59`; PythonRe requires exact Core
 `[0.4.0-scalar.89]`. Same immutable bytes pass Windows/Linux consumers,
