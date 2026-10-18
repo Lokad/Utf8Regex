@@ -570,6 +570,27 @@ public sealed partial class Utf8Regex
 
     private bool IsMatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
+        if (_prioritizedBooleanFamilyKind == Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiSignedDecimalWhole &&
+            (HasFiniteExecutionLimits || cancellationToken.CanBeCanceled || MatchTimeout != Regex.InfiniteMatchTimeout))
+        {
+            var decimalInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+            try
+            {
+                var decimalValidation = Utf8Validation.Validate(input, ref decimalInvocation);
+                if (!decimalValidation.IsAscii)
+                    return OwnedSliceIsMatchFromByte(input, _ownedSliceProgram, 0, ref decimalInvocation);
+                var breach = Utf8AsciiPrefixTokenExecutor.TryMatchSignedDecimalWhole(input,
+                    ref decimalInvocation, out var matched);
+                if (breach != Utf8ExecutionLimitKind.None)
+                    throw CreateExecutionResourceFailure(ref decimalInvocation);
+                return matched;
+            }
+            catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+                decimalInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+            {
+                throw CreateExecutionResourceFailure(ref decimalInvocation);
+            }
+        }
         if (HasFiniteExecutionLimits) return OwnedSliceIsMatch(input, _ownedSliceProgram, cancellationToken);
         if (TryStartNativeStructuralInvocation(input, cancellationToken, false, out var structuralInvocation, out var structuralValidation))
         {

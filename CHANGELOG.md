@@ -1,5 +1,21 @@
 # Changelog
 
+## Development after scalar.97
+
+- Let recognized ASCII signed-decimal IsMatch borrow the caller's existing
+  invocation. Validate the complete UTF8 subject, search digits in checked blocks
+  of at most2048bytes and observe original cancellation/deadline before publication.
+  Mixed Unicode retains owned scalar execution under the same authority.
+  No public API, owner, policy or execution mode is added. Removing unnecessary
+  VM frames/scratch lowers this route's work/depth/working requirements; Count,
+  Match and other families retain their existing handling.
+- A bounded public source comparison against exact97, with unchanged controls,
+  qualifies about96% less time for64digit protected hits and99.9% for16KiB hits.
+  Allocations fall from5544/680776B to160B. Qualified literal/Unicode controls
+  stay within8%, with unchanged allocations. No confirmation was needed;
+  inconclusive rows remain. These FullOpts source measurements are separate from
+  immutable97's current package costs. No new package is designated.
+
 ## Qualified private Core/PythonRe scalar.97
 
 Immutable producerc3b3d874 delivers the finite Core deadline correction and

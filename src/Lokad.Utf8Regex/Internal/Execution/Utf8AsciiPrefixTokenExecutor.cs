@@ -136,6 +136,55 @@ internal static class Utf8AsciiPrefixTokenExecutor
         return true;
     }
 
+    // The caller has validated the complete subject and proved it ASCII. Keep
+    // the same primitive, with bounded searches under its existing invocation.
+    internal static Utf8ExecutionLimitKind TryMatchSignedDecimalWhole(ReadOnlySpan<byte> input,
+        ref Utf8SliceInvocation invocation, out bool matched)
+    {
+        matched = false;
+        var breach = invocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        var length = input.Length;
+        if (length > 0 && input[^1] == (byte)'\n') length--;
+        var index = 0;
+        if (index < length && input[index] is (byte)'+' or (byte)'-') index++;
+        breach = TryCountLeadingDigits(input[index..length], ref invocation, out var digits);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        index += digits;
+        if (index < length && input[index] == (byte)'.')
+        {
+            index++;
+            breach = TryCountLeadingDigits(input[index..length], ref invocation, out digits);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            index += digits;
+        }
+        // The final bounded block and even an empty subject must observe the
+        // original authority before publishing either success or failure.
+        breach = invocation.TryChargeInputStep();
+        if (breach == Utf8ExecutionLimitKind.None)
+        {
+            invocation.Budget.ThrowIfCancellationRequested();
+            matched = index == length;
+        }
+        return breach;
+    }
+
+    private static Utf8ExecutionLimitKind TryCountLeadingDigits(ReadOnlySpan<byte> input,
+        ref Utf8SliceInvocation invocation, out int count)
+    {
+        count = 0;
+        while (count < input.Length)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            var length = Math.Min(2048, input.Length - count);
+            var digits = CountLeadingDigits(input.Slice(count, length));
+            count += digits;
+            if (digits < length) break;
+        }
+        return Utf8ExecutionLimitKind.None;
+    }
+
     public static bool TryMatchOperatorRunPrefix(ReadOnlySpan<byte> input, out int matchedLength)
     {
         matchedLength = 0;

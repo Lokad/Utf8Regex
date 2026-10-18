@@ -12,6 +12,15 @@ retain their authority and other finite-timeout fallbacks use owned scalar
 execution. The deadline starts before validation/search and stays absolute until
 publication. Immutable scalar.96 predates this correction and remains unchanged.
 
+Development after scalar.97 lets recognized ASCII signed-decimal IsMatch borrow
+the same invocation for whole-input UTF8 validation and bounded digit searches.
+Every search block is at most2048bytes; work, original cancellation and deadline
+are checked through final publication. Mixed Unicode uses the owned scalar VM
+without resetting that authority. The ASCII boolean route needs no VM frame or
+result scratch, so removing that work can admit smaller work/depth/working caps.
+This is outside immutable97; other operations and families keep their existing
+requirements. No common retention/RSS bound or unlimited-default change follows.
+
 Choose eager-construction and invocation limits separately. The common policy
 types describe admission scopes; work units and execution failure types depend
 on the regex profile. Matching remains strict UTF-8/scalar with byte coordinates.
