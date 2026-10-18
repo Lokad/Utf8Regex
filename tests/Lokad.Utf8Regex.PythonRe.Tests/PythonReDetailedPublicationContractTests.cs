@@ -133,10 +133,13 @@ public sealed class PythonReDetailedPublicationContractTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         var core = new global::Lokad.Utf8Regex.Utf8Regex("(.+)");
-        var input = Encoding.UTF8.GetBytes(new string('é', 5000));
+        // One decode alone must cross the diagnostic hook's 64-step interval;
+        // sharing equal capture text must not make the injection depend on a
+        // second redundant decode or on the VM's preceding step count.
+        var input = Encoding.UTF8.GetBytes(new string('é', 150000));
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
         var cursor = new PythonReScalarMatchCursor(input, core.Inspection.AvailableOwnedSliceProgram,
-            0, timeout, "(.+)", token.Token, new(0, 0, 1048576, 1048576));
+            0, timeout, "(.+)", token.Token, new(0, 0, 64UL << 20, 1048576));
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
         try
         {

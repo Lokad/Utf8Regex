@@ -439,7 +439,10 @@ internal struct PythonReScalarMatchState
                 StartOffsetInUtf16 = _map.GetUtf16OffsetForByteOffset(start),
                 EndOffsetInUtf16 = _map.GetUtf16OffsetForByteOffset(end),
                 HasContiguousByteRange = true,
-                ValueText = GetText(input, start, end),
+                // Equal ranges can share owned immutable text; keep every
+                // group's independently projected metadata and mutable slot.
+                ValueText = i > 0 && start == StartOffsetInBytes && end == EndOffsetInBytes
+                    ? projected[0].ValueText : GetText(input, start, end),
             };
         }
         var copiedNames = SnapshotNameEntries(input, names);

@@ -15,6 +15,8 @@ public class Utf8PythonReFindAllBenchmarks
     private byte[] _input = null!;
     private Utf8PythonRegex _unlimited = null!;
     private Utf8PythonRegex _finite = null!;
+    private Utf8PythonRegex _detailedUnlimited = null!;
+    private Utf8PythonRegex _detailedFinite = null!;
     private Regex _regex = null!;
     private CancellationTokenSource _cancellation = null!;
 
@@ -36,6 +38,12 @@ public class Utf8PythonReFindAllBenchmarks
             });
         _regex = new Regex(item.Pattern, RegexOptions.CultureInvariant);
         _cancellation = new CancellationTokenSource();
+        // A wrapping capture commonly repeats group zero in owned snapshots.
+        // Keep the existing corpus and exercise the actual public materializer.
+        var detailedPattern = "(" + item.Pattern + ")";
+        _detailedUnlimited = new Utf8PythonRegex(detailedPattern, item.Options, Timeout.InfiniteTimeSpan);
+        _detailedFinite = new Utf8PythonRegex(detailedPattern, item.Options, Timeout.InfiniteTimeSpan,
+            _finite.ResourcePolicy);
 
         var expected = PredecodedRegex();
         if (expected.Length != 1024)
@@ -44,6 +52,9 @@ public class Utf8PythonReFindAllBenchmarks
         Verify(Finite(), expected);
         Verify(FiniteWithToken(), expected);
         Verify(DecodeThenRegex(), expected);
+        VerifyDetailed(DetailedUnlimited(), expected);
+        VerifyDetailed(DetailedFinite(), expected);
+        VerifyDetailed(DetailedFiniteWithToken(), expected);
     }
 
     [GlobalCleanup]
@@ -65,6 +76,16 @@ public class Utf8PythonReFindAllBenchmarks
     [Benchmark]
     public byte[][][] DecodeThenRegex() => Project(Encoding.UTF8.GetString(_input));
 
+    [Benchmark]
+    public Utf8PythonDetailedMatchData[] DetailedUnlimited() => _detailedUnlimited.FindIterDetailed(_input);
+
+    [Benchmark]
+    public Utf8PythonDetailedMatchData[] DetailedFinite() => _detailedFinite.FindIterDetailed(_input);
+
+    [Benchmark]
+    public Utf8PythonDetailedMatchData[] DetailedFiniteWithToken() =>
+        _detailedFinite.FindIterDetailed(_input, 0, _cancellation.Token);
+
     private byte[][][] Project(string text) => _regex.Matches(text)
         .Select(match => new[]
         {
@@ -82,6 +103,23 @@ public class Utf8PythonReFindAllBenchmarks
                 !actual[row][0].AsSpan().SequenceEqual(expected[row][0]) ||
                 !actual[row][1].AsSpan().SequenceEqual(expected[row][1]))
                 throw new InvalidOperationException($"Capture tuple {row} disagrees.");
+        }
+    }
+
+    private static void VerifyDetailed(Utf8PythonDetailedMatchData[] actual, byte[][][] expected)
+    {
+        if (actual.Length != expected.Length)
+            throw new InvalidOperationException("Detailed capture counts disagree.");
+        for (var row = 0; row < actual.Length; row++)
+        {
+            var groups = actual[row].Groups;
+            if (groups.Length != 4 || !groups.All(group => group.Success) ||
+                groups[0].ValueText != groups[1].ValueText ||
+                groups[0].StartOffsetInBytes != groups[1].StartOffsetInBytes ||
+                groups[0].EndOffsetInBytes != groups[1].EndOffsetInBytes ||
+                !Encoding.UTF8.GetBytes(groups[2].ValueText).AsSpan().SequenceEqual(expected[row][0]) ||
+                !Encoding.UTF8.GetBytes(groups[3].ValueText).AsSpan().SequenceEqual(expected[row][1]))
+                throw new InvalidOperationException($"Detailed capture {row} disagrees.");
         }
     }
 }

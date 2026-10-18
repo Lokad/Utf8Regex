@@ -10,6 +10,12 @@ route. Finite admission, original cancellation/deadlines and unchanged storage o
 `DestinationTooSmall` remain. Scalar.100 predates this fix and requires disjoint
 subject/destination storage. No new package is designated by this source change.
 
+Python detailed snapshots reuse owned immutable whole-match text for captures
+with the same byte range. This avoids duplicate decoding and string allocation
+while preserving separate group metadata/arrays, retained-result validity and
+original cancellation/deadlines. Result capacity is charged for the acquired
+string once; identical captures can therefore fit smaller finite limits.
+
 ## Qualified private Core/PythonRe scalar.100
 
 Clean producer fa0e2608 freezes Core/PythonRe100 with exact Core100. Same bytes

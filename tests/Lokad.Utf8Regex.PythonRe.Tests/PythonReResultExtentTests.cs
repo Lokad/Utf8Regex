@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
@@ -27,7 +28,8 @@ public sealed class PythonReResultExtentTests
             cursor.EnsureMap();
             var baseline = cursor.ReservedBytes;
             result = cursor.SnapshotDetailed(names);
-            var graph = ArrayBytes<Utf8PythonGroupMatchData>(2) + ArrayBytes<PythonReNameEntry>(257) + 2 * 48UL;
+            var graph = ArrayBytes<Utf8PythonGroupMatchData>(2) + ArrayBytes<PythonReNameEntry>(257)
+                + Utf8ConstructionBudget.StringBytes(2); // Whole match and capture share owned text.
             Assert.Equal(graph, cursor.ResultReservation);
             Assert.Equal(baseline + graph, cursor.ReservedBytes);
             Assert.Equal(baseline + graph, cursor.WorkingInvocation.Budget.PeakWorkingBytes);

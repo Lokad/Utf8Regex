@@ -544,6 +544,14 @@ getters have separate scope. Completion metadata reuses the existing rollback
 trail and maps Python slots with bounded metered traversal; enlarged result
 structs participate in the usual array/staging extent charges.
 
+Development after scalar.100 reuses a detailed snapshot's owned whole-match
+string for capture slots with the identical byte range. Group metadata and the
+mutable group/name arrays remain independent; strings are immutable and stay
+valid after cursor disposal or subject mutation. Only one text extent is
+acquired and charged for these slots, so tighter result/working policies can
+admit the same snapshot. Per-group checks and the original authority remain;
+covered work units can decrease when redundant decoding disappears.
+
 PythonRe and core also admit positive finite `MaxDepth` and `MaxWorkingBytes`.
 Depth bounds live engine backtracking/continuation frames or pending linear
 alternatives before acquisition. Working bytes conservatively cover major active
