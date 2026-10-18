@@ -1957,7 +1957,7 @@ internal static class Pcre2CharacterSemantics
         "P" or "PC" or "PD" or "PE" or "PF" or "PI" or "PO" or "PS" or
         "S" or "SC" or "SK" or "SM" or "SO" or
         "Z" or "ZS" or "ZL" or "ZP" or
-        "XAN" or "XPS" or "XSP" or "XWD";
+        "XAN" or "XPS" or "XSP" or "XUC" or "XWD";
 
     internal static bool MatchesProperty(Rune scalar, string normalizedName, bool caseless)
     {
@@ -2005,6 +2005,8 @@ internal static class Pcre2CharacterSemantics
             "ZP" => category == UnicodeCategory.ParagraphSeparator,
             "XAN" => IsLetterCategory(category) || IsNumber(category),
             "XPS" or "XSP" => scalar.Value is >= 0x09 and <= 0x0D || IsSeparator(category),
+            // PT_UCNC: a Rune is already outside the surrogate range.
+            "XUC" => scalar.Value >= 0xA0 || scalar.Value is '$' or '@' or '`',
             "XWD" => IsWord(scalar, ucp: true),
             _ => false,
         };

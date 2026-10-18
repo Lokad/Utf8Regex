@@ -1,5 +1,15 @@
 # Changelog
 
+## Development after scalar.91
+
+- Add PCRE2 `Xuc` to the existing property-name and scalar-predicate dispatch.
+  The property and complement now match instead of failing at execution as
+  unsupported. Native10.47/Unicode16 controls cover boundary scalars, bracket
+  complements and caseless behavior; captures, lookbehind, all four finite
+  controls and original cancellation/deadlines remain. No new matcher, table,
+  native runtime dependency or package designation is introduced. Core/Python91
+  and independent Core/PCRE76 packages remain immutable.
+
 ## Qualified private Core/PythonRe scalar.91
 
 The immutable pair at68a1e39b includes the development changes below. Same-byte

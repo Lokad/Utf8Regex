@@ -1,5 +1,11 @@
 # Lokad.Utf8Regex.Pcre2
 
+Development source adds the `Xuc` property using existing managed scalar
+predicates: `$`, `@`, U+0060 and scalars from U+00A0 upward. Complements,
+caseless classes, captured repetition and lookbehind retain their scalar and
+resource contracts. This is outside the immutable scalar.76 pair below;
+Core/PythonRe scalar.91 remains independent and unchanged.
+
 Qualified private **Core/PCRE2 0.4.0-scalar.76**, producer
 `58e2927a64c334f1e9f7ced2fbd46d55dadc5d55`, adds text/UTF-8 `Compile` factories
 using the existing construction policy/owner, a separate timeout and original
@@ -11,7 +17,7 @@ PCRE grammar/runtime errors and existing constructors/defaults remain.
 record exact hashes and the Core `[0.4.0-scalar.76]` pin. Same immutable bytes pass
 Windows/Linux5803tests each, including37new construction cases; exact provenance,
 symbols, member inventory, native overlap and a fresh public Compile consumer pass.
-Core/Python75 remains independent. Core76 is the PCRE dependency only.
+Core/Python91 remains independent. Core76 is the PCRE dependency only.
 
 One selective65sample current-package Count observation includes all four finite
 controls/live token:1000captured matches354us/5888B,1000literal matches41us/112B,

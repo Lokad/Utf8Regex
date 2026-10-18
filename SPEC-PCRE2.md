@@ -599,6 +599,16 @@ Those defaults are deliberate. PCRE2 allows duplicate names only when requested,
 
 The detailed PCRE2 group model exposes **only the final value of each capture slot**. There is no `.NET`-style `CaptureCount` / `GetCapture(i)` surface on PCRE2 detailed results. This is intentional and must not be approximated, because `.NET` exposes full capture history for repeated captures while PCRE2 standard matching returns only the last portion matched by a repeated group. ([Microsoft Learn][1])
 
+Development source after the independent scalar.76 pair supports PCRE2's `Xuc`
+property through the existing scalar predicate dispatch. It matches `$`, `@`,
+U+0060 (grave accent), and valid scalars at or above U+00A0. Surrogate encodings
+remain invalid UTF-8 subjects. `\p{Xuc}`, its complement and bracket forms retain
+the same set under caseless matching: Kelvin sign matches, while ASCII `K` does
+not. Repetition, captures and lookbehind use the existing execution and resource
+controls; no Unicode-name table, new matcher or native dependency is added.
+This source addition is outside immutable Core/PCRE2 scalar.76 and does not alter
+the qualified Core/PythonRe scalar.91 pair.
+
 Caseless literals, class ranges and references use default simple-fold scalar
 equivalence: all partners are symmetric, including Kelvin sign, long S, Greek
 symbol variants and titlecase partners. A class negates the complete positive
