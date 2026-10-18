@@ -47,8 +47,24 @@ public sealed partial class Utf8Regex
         using var construction = ResourcePolicy.MaxWorkingBytes is { } maximumBytes
             ? Utf8ConstructionScope.RestrictAdditionalBytes(maximumBytes)
             : Utf8ConstructionScope.Enter();
-        var previous = construction.Budget.CheckpointHook;
-        construction.Budget.CheckpointHook = steps => { previous?.Invoke(steps); control.Check(); };
+        var budget = construction.Budget;
+        var previousToken = budget.CancellationToken;
+        var previousDeadline = budget.Deadline;
+        var previousHook = budget.CheckpointHook;
+        if ((!previousToken.CanBeCanceled || previousToken == control.Token) &&
+            (previousDeadline.IsInfinite || ReferenceEquals(previousDeadline, control.Deadline)))
+        {
+            // ChargeWork already checks these fields after the existing hook.
+            // Borrow the same authority instead of adding another callback.
+            budget.CancellationToken = control.Token;
+            budget.Deadline = control.Deadline;
+        }
+        else
+        {
+            var parentHook = previousHook;
+            var currentControl = control;
+            budget.CheckpointHook = steps => { parentHook?.Invoke(steps); currentControl.Check(); };
+        }
         try
         {
             control.Check();
@@ -58,7 +74,12 @@ public sealed partial class Utf8Regex
             construction.Complete();
             return result;
         }
-        finally { construction.Budget.CheckpointHook = previous; }
+        finally
+        {
+            budget.CheckpointHook = previousHook;
+            budget.CancellationToken = previousToken;
+            budget.Deadline = previousDeadline;
+        }
     }
 
     private static void ValidateReplacementTemplateUtf8(ReadOnlySpan<byte> template, ReplacementPreparationControl control)
@@ -105,21 +126,39 @@ public sealed partial class Utf8Regex
         // Keep captured locals in this block so uncontrolled key decoding does
         // not allocate an empty interruption closure before its early return.
         {
-            var currentControl = control;
-            var previous = construction.Budget.CheckpointHook;
-            construction.Budget.CheckpointHook = steps => { previous?.Invoke(steps); currentControl.Check(); };
+            var budget = construction.Budget;
+            var previousToken = budget.CancellationToken;
+            var previousDeadline = budget.Deadline;
+            var previousHook = budget.CheckpointHook;
+            if ((!previousToken.CanBeCanceled || previousToken == control.Token) &&
+                (previousDeadline.IsInfinite || ReferenceEquals(previousDeadline, control.Deadline)))
+            {
+                budget.CancellationToken = control.Token;
+                budget.Deadline = control.Deadline;
+            }
+            else
+            {
+                var parentHook = previousHook;
+                var currentControl = control;
+                budget.CheckpointHook = steps => { parentHook?.Invoke(steps); currentControl.Check(); };
+            }
             try
             {
-                currentControl.Check();
+                control.Check();
                 // The template was validated before route selection. Admit its
                 // decoded key and any nested parser overlap before acquisition.
                 var text = construction.Budget.DecodeUtf8(validatedTemplate, Encoding.UTF8);
-                var result = GetParsedReplacement(text, currentControl);
-                currentControl.Check();
+                var result = GetParsedReplacement(text, control);
+                control.Check();
                 construction.Complete();
                 return result;
             }
-            finally { construction.Budget.CheckpointHook = previous; }
+            finally
+            {
+                budget.CheckpointHook = previousHook;
+                budget.CancellationToken = previousToken;
+                budget.Deadline = previousDeadline;
+            }
         }
     }
 }

@@ -1,5 +1,19 @@
 # Changelog
 
+## Development after scalar.96
+
+- Reuse the construction budget's existing caller token/deadline for Core
+  replacement preparation when parent authority is absent or identical. Restore
+  the prior token, deadline and hook on every exit; distinct parent authority
+  retains the existing callback chain. Every work charge and checkpoint remains.
+  This removes redundant callbacks and borrowing-path closures without a new
+  owner, policy or polling cadence.
+- The bounded public source pair against frozen96 qualifies cold live-token text
+  and UTF8 preparation at about 40% and 56% less execution time, saving 104/208 B
+  per call. Unchanged controls vary within 3%; noisy warm timings remain
+  inconclusive. This development change is outside immutable96 and its separate
+  runtime-default operating-cost observations. No new package is designated.
+
 ## Qualified private Core/PythonRe scalar.96
 
 Immutable producer `8b294d08` delivers the Core preparation limits and obsolete

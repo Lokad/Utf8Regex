@@ -155,6 +155,55 @@ public sealed class Utf8CoreTemplateByteCeilingTests
         Assert.Equal("<😀><a>"u8.ToArray(), regex.Replace("😀a"u8, "<${x}>"u8));
     }
 
+    [Theory]
+    [InlineData(false, 0)] [InlineData(true, 0)]
+    [InlineData(false, 1)] [InlineData(true, 1)]
+    [InlineData(false, 2)] [InlineData(true, 2)]
+    [InlineData(false, 3)] [InlineData(true, 3)]
+    public void DistinctCallerAndParentAuthoritiesRemainEffective(bool bytes, int authority)
+    {
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var regex = new Utf8Regex("(?<x>😀|a)", RegexOptions.CultureInvariant,
+            TimeSpan.FromMilliseconds(100), new() { MaxWorkingBytes = 1 << 20 });
+        using var caller = new CancellationTokenSource();
+        using var parentToken = new CancellationTokenSource();
+        using var parent = Utf8ConstructionScope.Enter();
+        parent.Budget.CancellationToken = parentToken.Token;
+        var parentDeadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(20));
+        parent.Budget.Deadline = parentDeadline;
+        var checkpoints = 0;
+        Action<ulong> hook = _ =>
+        {
+            if (++checkpoints != 8) return;
+            if (authority == 0) caller.Cancel();
+            else if (authority == 1) parentToken.Cancel();
+            else ticks = authority == 2 ? 110 : 25;
+        };
+        parent.Budget.CheckpointHook = hook;
+        var failure = Record.Exception(() =>
+        {
+            if (bytes) regex.Replace("😀a"u8, "<${x}>"u8, caller.Token);
+            else regex.Replace("😀a"u8, "<${x}>", caller.Token);
+        });
+        if (authority < 2)
+            Assert.Equal(authority == 0 ? caller.Token : parentToken.Token,
+                Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+        else
+            Assert.IsType<RegexMatchTimeoutException>(failure);
+        Assert.Same(hook, parent.Budget.CheckpointHook);
+        Assert.Same(parentDeadline, parent.Budget.Deadline);
+        Assert.Equal(parentToken.Token, parent.Budget.CancellationToken);
+        Assert.Equal(0ul, parent.Budget.ReservedBytes);
+        Assert.Equal(0ul, parent.Budget.Depth);
+        Assert.Equal(0, Cache(regex).Count);
+        ticks = 0;
+        parent.Budget.CheckpointHook = null;
+        parent.Budget.CancellationToken = default;
+        parent.Budget.Deadline = Utf8ExecutionDeadline.Infinite;
+        Assert.Equal("<😀><a>"u8.ToArray(), regex.Replace("😀a"u8, "<${x}>"u8));
+    }
+
     private static Utf8Regex Create(string pattern, ulong working) => new(pattern,
         RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
         new() { MaxWorkSteps = 1000000, MaxDepth = 256, MaxWorkingBytes = working, MaxResultBytes = 1 << 20 });
