@@ -1,14 +1,31 @@
 # Lokad.Utf8Regex.Pcre2
 
-Development staging for independent **Core/PCRE2 0.4.0-scalar.94** carries the
-accepted fixed-vector reuse under the existing lexical Count/search owner,
-plus Core's qualified RTL Count repair and unused balancing-scratch reduction
-from scalar.93. Fixed vectors are acquired only at the first candidate;
-nested assertions own separate storage and copied public cursors gain no owned
-scratch. Original interruption and major-capacity admission remain; fewer
-acquisitions intentionally revise numeric cutoffs. Exact-package/platform and
-public-consumer qualification is pending at this producer revision. Core/PythonRe
-scalar.93 remains the independent delivered pair. No Python94 is designated.
+Independent **Core/PCRE2 0.4.0-scalar.94**, producer
+`4a369c5612a603112abe3740c1e09a24f2baac3e`, passes same-byte Windows/Linux package
+consumers, exact API/member/symbol/provenance and a fresh public restore. Producer
+CI is pending. [Handoff](../../artifacts/pcre2-scalar94-delivery-20261018/HANDOFF.md)
+and [consumption](../../artifacts/pcre2-scalar94-delivery-20261018/CONSUMING.md)
+record identities and the exact Core `[0.4.0-scalar.94]` pin. Core/PythonRe
+scalar.93 remains independent; no Python94, publication or adoption is implied.
+
+This pair reuses lazily acquired fixed vectors under the existing lexical
+Count/search owner, with explicit acquisition/release through the actual owner
+budget. Nested assertions retain separate storage; copied public cursors gain
+no owned scratch. Original interruption and major admission remain; fewer
+acquisitions intentionally revise numeric cutoffs. It also inherits Core93's
+RTL Count repair and omission of unused balancing scratch. The public consumer
+counts 1,000 property matches with 1,592 B allocated and preserves impossible
+short-input success under a one-byte heap allowance.
+
+One bounded current-package observation qualifies 11 of 16 lanes; five remain
+inconclusive and the experiment is closed. Finite-plus-token Count: captured
+1,000 hits 290.091 us / 5,856 B; literal bridge 1,000 hits 16.357 us / 112 B;
+Unicode 500 hits 232.804 us / 5,856 B; properties 500 hits 353.352 us / 1,592 B.
+Only Unicode has a qualified unlimited base: finite/live overhead 2.25%/6.52%,
+112 additional bytes. No comparison with older package timings, Status or
+checked-access gate claim. The accepted source comparison remains separate.
+
+## Previous qualified scalar.92
 
 Qualified independent **Core/PCRE2 0.4.0-scalar.92**, producer
 `4b8f8ef5dff11ecc41f0d7b53d57162c1ef9603e`, includes the property repairs below
