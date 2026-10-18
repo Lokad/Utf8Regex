@@ -13,6 +13,27 @@ namespace Lokad.Utf8Regex.Tests;
 // spellings fail construction.
 public sealed class Utf8SliceBalanceTests
 {
+    [Theory]
+    [InlineData("(?=(?=(?<p>😀)(?<-p>é)))😀é")]
+    [InlineData("(?:(?=(?<p>😀)(?<-p>é))Z|😀é)")]
+    public void AssertionBalancingKeepsItsHeadsAndRollback(string pattern)
+    {
+        using var cancellation = new CancellationTokenSource();
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
+        {
+            var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
+                new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
+            var retained = regex.MatchDetailed("z😀é😀é"u8, cancellation.Token);
+            Assert.True(retained.Success);
+            Assert.Equal(1, retained.IndexInBytes);
+            Assert.Equal(6, retained.LengthInBytes);
+            Assert.False(retained.GetGroup("p").Success);
+            Assert.Equal(2, regex.Count("z😀é😀é"u8, cancellation.Token));
+            Assert.Equal("😀é", retained.GetValueString());
+            Assert.False(retained.GetGroup("p").Success);
+        }
+    }
+
     public static IEnumerable<object?[]> SliceBalanceShapes()
     {
         yield return new object?[] { "(?<open>a)+(?<-open>b)+" };

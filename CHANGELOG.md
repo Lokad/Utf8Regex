@@ -1,5 +1,15 @@
 # Changelog
 
+## Development after scalar.92
+
+- Omit the shared backtracking runner's balancing-head array when the existing
+  program flag proves that neither it nor its assertions use balancing groups.
+  Captures and references keep their own required storage. This removes one
+  unused array and its acquisition work; actual instruction metering is unchanged.
+  Lower working capacity can admit tighter finite limits. Balancing/rollback,
+  scalar captures, retained results and interruption keep their contracts.
+  This source change is outside immutable Core/Python91 and Core/PCRE92.
+
 ## Qualified private Core/PCRE2 scalar.92
 
 The independent pair at4b8f8ef5 includes Xuc support, the shared Xps/Xsp Unicode

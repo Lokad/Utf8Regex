@@ -9,6 +9,25 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8CountCaptureElisionTests
 {
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ManyUnobservedCapturesDoNotRequireBalancingStorage(bool compiled)
+    {
+        var pattern = string.Concat(Enumerable.Repeat("()", 512)) + "(?:(ab)|c){1,8}X";
+        var input = "ababcX cabX "u8.ToArray();
+        var options = compiled ? RegexOptions.Compiled : RegexOptions.None;
+        using var cancellation = new CancellationTokenSource();
+        var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
+            new() { MaxWorkSteps = 1000000, MaxDepth = 128, MaxWorkingBytes = 4096, MaxResultBytes = 1 });
+
+        Assert.Equal(2, regex.Count(input));
+        Assert.Equal(2, regex.Count(input, cancellation.Token));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.MatchDetailed(input)).ResourceKind);
+        Assert.Equal(2, regex.Count(input));
+    }
+
+    [Theory]
     [InlineData("(?:(ab)|c){1,8}X", "ababcX cabX ")]
     [InlineData("((ab)|c){1,8}X", "ababcX cabX ")]
     [InlineData("(?:(a)|(b)){1,8}X", "aabX bbX ")]

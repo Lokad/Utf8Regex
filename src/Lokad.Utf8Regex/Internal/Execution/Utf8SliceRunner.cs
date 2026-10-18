@@ -1570,8 +1570,11 @@ internal static partial class Utf8SliceRunner
             // The terminal root uses scalar locals, never repeat vectors. Keep
             // the exact same gate as execution and the existing owner/release.
             var repeats = CanRunTerminalClassRepeat(program) ? 0 : program.RepeatCount;
+            // Lowering propagates the same balancing requirement to assertion
+            // bodies. Only balancing captures produce or restore head entries.
+            var balanceGroups = program.HasBalancing ? program.GroupCount : 0;
             var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(repeats) * 2
-                + Utf8ConstructionBudget.ArrayBytes<int>(program.GroupCount));
+                + Utf8ConstructionBudget.ArrayBytes<int>(balanceGroups));
             var breach = invocation.TryReserveWorking(bytes);
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             _reservation = bytes;
@@ -1584,11 +1587,11 @@ internal static partial class Utf8SliceRunner
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 Positions = new int[repeats];
             }
-            if (program.GroupCount != 0)
+            if (balanceGroups != 0)
             {
                 breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
-                Heads = new int[program.GroupCount];
+                Heads = new int[balanceGroups];
             }
             Initialized = true;
             return Utf8ExecutionLimitKind.None;

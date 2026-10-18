@@ -2,6 +2,15 @@
 
 `Lokad.Utf8Regex` is a `net10.0` library whose primary I/O surface is **UTF-8 `ReadOnlySpan<byte>` / `Span<byte>`**. Its matching unit is **one Unicode scalar**, and byte offsets and lengths are the primary result coordinates. The framework target and .NET-shaped API do not impose UTF-16 code-unit matching.
 
+The backtracking workspace acquires balancing-head storage only for programs
+whose existing global balancing flag requires it, including assertion bodies.
+Other programs omit that array and its initialization/acquisition work. Required
+capture/repeat/trail storage and all visited-instruction charges remain. This
+lower actual storage/preparation intentionally admits tighter numeric working
+or work limits; balancing rollback, retained captures and original invocation
+cancellation/deadlines remain authoritative. This development change is outside
+the immutable Core/Python91 and Core/PCRE92 packages.
+
 Library cache admission uses conservative per-program charges. The complete
 constructor records its successful covered capacity after scratch release,
 complete facade metadata, independently charged pattern text and the replacement
