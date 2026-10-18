@@ -49,11 +49,10 @@ internal sealed partial class PythonReParser
     private int _position;
     private int _groupCount;
     private int _lookbehindGroupStart;
-    private PythonReCompileOptions _leadingInlineOptions;
 
     internal static PythonReParser Create(string pattern) =>
         Utf8ConstructionScope.CurrentBudget.AllocateObject(
-            (pattern, (PythonReParserStorage?)null, false, PythonReAstFactory.Empty, 0, 0, 0, PythonReCompileOptions.None),
+            (pattern, (PythonReParserStorage?)null, false, PythonReAstFactory.Empty, 0, 0, 0),
             static state => new PythonReParser(state.pattern));
 
     public PythonReParser(string pattern)
@@ -75,6 +74,10 @@ internal sealed partial class PythonReParser
                 if (Current == ')') throw Error("unbalanced parenthesis");
                 throw Error("unexpected character");
             }
+            // Global groups accumulate with constructor flags. Validate their
+            // effective union only after body syntax, as CPython does; scoped
+            // overrides have already restored the outer options independently.
+            PythonReCompileValidator.Validate(options);
             result = new PythonReParseResult(node, options, _groupCount,
                 Storage.NamedGroups.Freeze(Storage.Arena), _hasLookbehind, Storage.Arena.Take(Storage.GroupBodies, true));
             Storage.Arena.Complete();
@@ -101,7 +104,6 @@ internal sealed partial class PythonReParser
             if (!TryConsumeLeadingInlineFlagGroup(out var add)) return;
             Utf8ConstructionScope.ChargeWork(1);
             options |= add;
-            _leadingInlineOptions |= add;
         }
     }
 

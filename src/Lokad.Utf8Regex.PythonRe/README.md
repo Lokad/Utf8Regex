@@ -14,7 +14,8 @@ Preserve89/88/87/86 and independentPCRE76/Core76; no PCRE90 package is included.
 
 Development source after scalar.90 also fixes raw escaped Unicode literals:
 `\😀` and escaped class/range members consume complete scalars, with lexical
-folding and unchanged explicit-surrogate semantics. This demonstrated gap remains
+folding and unchanged explicit-surrogate semantics. It also rejects conflicting
+combined global ASCII/Unicode modes while preserving scoped overrides. These gaps remain
 in scalar.90 outside its recorded subset. See the
 [escape contract](../../SPEC-PYTHONRE.md#raw-escaped-unicode-literals).
 

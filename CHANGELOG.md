@@ -2,6 +2,10 @@
 
 ## Development after scalar.90
 
+- Validate combined global Python ASCII/Unicode modes after parsing, preserving
+  body-syntax error precedence and valid scoped mode overrides. Reuse the
+  existing compile-option validator and remove unused leading-flag state.
+
 - Read raw escaped Unicode literals as complete scalars inside and outside
   brackets, including range endpoints and quantifiers. Apply lexical Python
   folding through the existing literal path; `\😀+` matches complete emoji and

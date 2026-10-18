@@ -46,6 +46,18 @@ IR mode or Unicode table. Original construction/invocation admission, synchronou
 cancellation/deadlines and retained-result validity remain. This is outside
 immutable scalar.90 and its114-fixture qualification subset.
 
+## Effective global modes
+
+Development source after scalar.90 validates the union of constructor and leading
+global flags after body syntax. Separate `(?a)(?u)` groups and conflicting
+explicit constructor/inline modes raise `PythonRePatternException` with
+`ASCII and UNICODE flags are incompatible` (CPython uses `ValueError`). Body
+syntax errors keep precedence; the global conflict precedes deferred conditional
+reference and lookbehind-width validation. Scoped ASCII/Unicode overrides still
+replace and restore their outer mode. One existing validator enforces this;
+unused accumulated leading-flag state is removed. Original construction
+admission/unwind and public argument validation retain their scope.
+
 ## Brace repetition and verbose attachment
 
 Development source after scalar.87 recognizes only complete brace-repeat syntax:
