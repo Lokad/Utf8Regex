@@ -73,10 +73,12 @@ public sealed class PythonReTemplateAuthorityTests
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
-    public void PreparationKeepsSeparateNumericBackstopAndFreshExecutionAllowance(int result)
+    public void PreparationKeepsSeparateWorkBackstopAndFreshExecutionAllowance(int result)
     {
         var regex = new Utf8PythonRegex("(?P<x>😀|a)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 1, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            // Fund preparation's separate byte ceiling; execution work still
+            // starts at one rather than including construction work.
+            new() { MaxWorkSteps = 1, MaxDepth = 1, MaxWorkingBytes = 16384, MaxResultBytes = 1 });
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(regex, result, CancellationToken.None));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
         Assert.Equal(1ul, error.Limit);

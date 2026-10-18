@@ -455,8 +455,17 @@ If the preparing caller is interrupted, a healthy waiter checks its own authorit
 and prepares once without caching, rather than inheriting the other caller's
 interruption or entering an unbounded retry loop. A later fresh call may cache it.
 The same invocation continues through subject validation, discovery and output
-shaping. Numeric preparation budgets remain separate from execution work/bytes;
-warm cache hits allocate no preparation scope or checkpoint closure.
+shaping. Construction work/depth remain separate from invocation counts.
+Development source additionally reuses finite `MaxWorkingBytes` as a ceiling on
+additional covered cold-template parser capacity, through the existing nested
+construction owner. Fixed construction ceilings still apply. A byte denial is
+`ConstructionBytes`; its `Limit` and `Requested` include the enclosing construction
+reservation. It may therefore precede execution denial even when the subject has
+no matches. Failure restores the parent ceiling/capacity and removes the pending
+cache entry; work stays spent. Cache admission, borrowed template keys and retained
+plans remain separate, so this does not establish common cumulative metering or a
+combined invocation/retention envelope. Warm cache hits allocate no preparation
+scope or checkpoint closure. This change is outside immutable scalar.93.
 
 Capture-name metadata shares the existing construction owner. The public-name
 array and named-entry array are admitted before acquisition; numeric group labels
@@ -520,8 +529,10 @@ arrays, coordinate maps, output controls and old/new growth overlap. Denials rep
 `ExecutionDepth` or `ExecutionWorkingBytes` with `Limit` and `Requested`; zero
 budgets remain invalid. Exclusive scratch releases synchronously; published
 copied-cursor reservations retain their invocation-long credits. Borrowed subjects,
-programs, incidental metadata, preparation and caller-retained results have separate
-scope. These controls do not establish exact GC traffic, process-memory bounds,
+programs, incidental metadata and caller-retained results have separate scope.
+Cold replacement parsing also borrows this byte value as the separate phase
+ceiling described above; other preparation keeps its documented scope.
+These controls do not establish exact GC traffic, process-memory bounds,
 common construction/live-retention policies or safe defaults.
 
 `CreateMatchCursor(ReadOnlyMemory<byte>)` is an incremental, explicitly owned

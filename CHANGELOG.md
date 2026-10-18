@@ -1,5 +1,15 @@
 # Changelog
 
+## Development after scalar.94
+
+- Bound additional cold Python replacement-template parser capacity with the
+  instance's finite `MaxWorkingBytes`, reusing the existing nested construction
+  restriction. Oversized templates can now fail with `ConstructionBytes` before
+  matching, including on empty input. Fixed construction work/depth, original
+  interruption, retryable cache failure and retained results remain. Warm hits
+  acquire no new preparation scope. Cache retention stays separate; this is not
+  a shared construction/execution/RSS budget. No new API, owner or package.
+
 ## Qualified private Core/PCRE2 scalar.94
 
 The independent pair at 4a369c56 passes same-byte Windows/Linux consumers, exact

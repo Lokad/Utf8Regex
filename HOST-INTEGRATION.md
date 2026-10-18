@@ -123,11 +123,17 @@ explicit PythonRe `Compile` construction allowance before publication. Hosts
 can use that factory to finish this program eagerly; constructors still defer
 it. This adds upfront construction work/storage and can deny tighter policies.
 Replacement preparation and complete program/cache retention remain separate.
-In particular, a cold Python replacement-template cache miss uses its own fixed
-construction backstops. The invocation's numeric work/working/result caps do not
-bound that preparation; its original cancellation and deadline still apply.
-Include this preparation in a separate host admission. Even a replacement over
-an empty subject can prepare and cache the template before discovering no matches.
+In qualified scalar.93, a cold Python replacement-template cache miss uses fixed
+construction backstops separately from invocation numeric caps. Development source
+also uses a finite `MaxWorkingBytes` as a ceiling on additional covered parser
+capacity. It reuses the existing construction owner; construction work/depth and
+retained-cache admission remain separate. A cold byte denial reports
+`ConstructionBytes`, whose totals include the enclosing construction reservation,
+and may precede an execution denial. Warm hits acquire no preparation scope.
+Original cancellation and deadline still apply. Include preparation and surviving
+plans in separate host admission: this phase ceiling does not extend the combined
+invocation envelope to retained storage. Even an empty subject can prepare and
+cache a template before discovering no matches. Immutable scalar.93 is unchanged.
 
 On denial or interruption, release exclusive cursor scratch through its normal
 failure/EOF/Dispose path, but preserve reservations for surviving results. Prior

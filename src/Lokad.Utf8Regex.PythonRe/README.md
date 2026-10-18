@@ -1,5 +1,12 @@
 # Lokad.Utf8Regex.PythonRe
 
+Development source additionally bounds cold replacement-template parser capacity
+with finite `MaxWorkingBytes`, using the existing construction scope. Tight caps
+can fail with `ConstructionBytes` before matching; warm hits add no preparation
+scope. Construction work/depth and cache retention remain separate. This is
+outside the immutable Core/PythonRe scalar.93 pair documented below; no new
+PythonRe package is designated by this source change.
+
 `Lokad.Utf8Regex` matches Unicode scalars over strict UTF-8 spans, with primary
 byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences; PythonRe adds its pinned

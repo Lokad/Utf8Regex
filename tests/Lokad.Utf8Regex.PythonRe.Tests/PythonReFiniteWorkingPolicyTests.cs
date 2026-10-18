@@ -21,6 +21,19 @@ public sealed class PythonReFiniteWorkingPolicyTests
         Assert.Equal(bytes, error.Limit); Assert.True(error.Requested > bytes);
     }
 
+    private static void Denied(Utf8ResourceLimitExceededException error, ulong bytes, int operation)
+    {
+        if (operation is 20 or 21 && error.ResourceKind == Utf8ResourceLimitKind.ConstructionBytes)
+        {
+            // Cold template parsing has an additional-capacity ceiling before
+            // execution. Its diagnostic totals include the enclosing cache
+            // preparation; all other routes retain execution-only diagnostics.
+            Assert.True(error.Limit >= bytes);
+            Assert.True(error.Requested > error.Limit);
+        }
+        else Denied(error, bytes);
+    }
+
     public static IEnumerable<object[]> Operations()
     {
         for (var operation = 0; operation < 25; operation++)
@@ -36,7 +49,7 @@ public sealed class PythonReFiniteWorkingPolicyTests
         var expected = PythonReFiniteWorkPolicyTests.Run(new(pattern), input, operation);
         Assert.Equal(expected, PythonReFiniteWorkPolicyTests.Run(Create(pattern, ulong.MaxValue, bytePattern), input, operation));
         Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            PythonReFiniteWorkPolicyTests.Run(Create(pattern, 1, bytePattern), input, operation)), 1);
+            PythonReFiniteWorkPolicyTests.Run(Create(pattern, 1, bytePattern), input, operation)), 1, operation);
         ulong low = 1, high = 1_048_576;
         while (high - low > 1)
         {
@@ -46,11 +59,11 @@ public sealed class PythonReFiniteWorkingPolicyTests
                 Assert.Equal(expected, PythonReFiniteWorkPolicyTests.Run(Create(pattern, middle, bytePattern), input, operation));
                 high = middle;
             }
-            catch (Utf8ResourceLimitExceededException error) { Denied(error, middle); low = middle; }
+            catch (Utf8ResourceLimitExceededException error) { Denied(error, middle, operation); low = middle; }
         }
         Assert.Equal(expected, PythonReFiniteWorkPolicyTests.Run(Create(pattern, high, bytePattern), input, operation));
         Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            PythonReFiniteWorkPolicyTests.Run(Create(pattern, high - 1, bytePattern), input, operation)), high - 1);
+            PythonReFiniteWorkPolicyTests.Run(Create(pattern, high - 1, bytePattern), input, operation)), high - 1, operation);
     }
 
     [Theory]

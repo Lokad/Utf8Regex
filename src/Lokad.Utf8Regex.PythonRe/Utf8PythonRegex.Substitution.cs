@@ -25,7 +25,17 @@ public sealed partial class Utf8PythonRegex
         _replacementPlanCache.GetOrAdd(
             replacement,
             this,
-            static (template, self) => PythonReReplacementParser.Parse(template, self._translation.CaptureGroupCount, self._namedGroups),
+            static (template, self) =>
+            {
+                if (self.ResourcePolicy.MaxWorkingBytes is not { } maximumBytes)
+                    return PythonReReplacementParser.Parse(template, self._translation.CaptureGroupCount, self._namedGroups);
+                // No token/deadline to forward on this lane. Restrict parser
+                // bytes without installing an otherwise empty per-work hook.
+                using var construction = Utf8ConstructionScope.RestrictAdditionalBytes(maximumBytes);
+                var plan = PythonReReplacementParser.Parse(template, self._translation.CaptureGroupCount, self._namedGroups);
+                construction.Complete();
+                return plan;
+            },
             default(Utf8ConstructionTextNoControl), default(PythonReReplacementRetainedStorage));
 
     private PythonReReplacementPlan GetReplacementPlan(ReadOnlySpan<byte> input, string replacement,
@@ -67,8 +77,12 @@ public sealed partial class Utf8PythonRegex
         PythonRePreparationInterruptionControl control)
     {
         // Only a cache miss allocates this checkpoint closure. Keep parent
-        // authority and numeric preparation backstops, then restore the hook.
-        using var construction = Utf8ConstructionScope.Enter();
+        // authority and fixed preparation backstops, then restore the hook.
+        // Working bytes also cap this phase's additional parser capacity;
+        // construction work/depth and retained-cache admission stay separate.
+        using var construction = ResourcePolicy.MaxWorkingBytes is { } maximumBytes
+            ? Utf8ConstructionScope.RestrictAdditionalBytes(maximumBytes)
+            : Utf8ConstructionScope.Enter();
         var previousCheckpoint = construction.Budget.CheckpointHook;
         construction.Budget.CheckpointHook = steps =>
         {
