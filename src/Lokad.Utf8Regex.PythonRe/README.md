@@ -226,8 +226,12 @@ Depth caps live backtracking/continuation frames and can be combined with these
 cumulative limits. Exhaustion throws `Utf8ResourceLimitExceededException` with
 `ExecutionWorkSteps`, `ExecutionDepth`, `ExecutionWorkingBytes` or `ExecutionResultBytes`; faulted cursors
 release scratch immediately. Separate calls get separate counters. Work units are
-bounded engine/checkpoint steps and may change between releases. Compilation and
-replacement-plan preparation use separate construction backstops. Arbitrary user
+bounded engine/checkpoint steps and may change between releases. Development after
+scalar.101 also admits one invocation step per 2,048 UTF-16 template code units
+before cold or warm replacement-cache lookup, sharing the operation's work,
+cancellation and deadline. Large templates can deny before parsing even on empty
+subjects; a denied lookup preserves a previously cached plan. Fine-grained
+compilation and replacement-plan preparation keep separate construction backstops. Arbitrary user
 callback execution and later standalone result getters are outside this cap;
 encoding/copying callback returns is charged. Cancellation and deadlines still apply.
 Scalar.82 stages `SplitToStrings` references directly

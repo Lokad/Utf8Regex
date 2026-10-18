@@ -62,7 +62,7 @@ public sealed class PythonReTemplateAuthorityTests
         using (Utf8ExecutionDeadline.UseClockForDiagnostics(() => ++reads == 1 ? 0 : 250))
         {
             _ = Assert.Throws<RegexMatchTimeoutException>(() => Run(regex, result, CancellationToken.None));
-            Assert.Equal(3, reads); // Entry, cache check, own-authority check before fallback.
+            Assert.Equal(2, reads); // Entry, then length admission before cache access.
         }
         Assert.Equal(1, regex.DebugReplacementPlanCacheEntryCount);
         Assert.Equal(payload, regex.DebugReplacementPlanCachePayloadBytes);
@@ -73,11 +73,11 @@ public sealed class PythonReTemplateAuthorityTests
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
-    public void PreparationKeepsSeparateWorkBackstopAndFreshExecutionAllowance(int result)
+    public void PreparationKeepsConstructionBackstopAndSharesTemplateLengthWork(int result)
     {
         var regex = new Utf8PythonRegex("(?P<x>😀|a)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            // Fund preparation's separate byte ceiling; execution work still
-            // starts at one rather than including construction work.
+            // Fund the separate byte ceiling. Template-length admission spends
+            // one invocation step; the next execution step exhausts its cap.
             new() { MaxWorkSteps = 1, MaxDepth = 1, MaxWorkingBytes = 16384, MaxResultBytes = 1 });
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(regex, result, CancellationToken.None));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);

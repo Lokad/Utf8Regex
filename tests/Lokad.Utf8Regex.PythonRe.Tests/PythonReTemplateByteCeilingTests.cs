@@ -55,7 +55,8 @@ public sealed class PythonReTemplateByteCeilingTests
     [Fact]
     public void FundedPreparationAndLaterDenialPreserveScalarResults()
     {
-        var regex = Create("(?P<x>😀|a)", 1 << 20);
+        // Fund template-length work to reach the independent byte ceiling.
+        var regex = Create("(?P<x>😀|a)", 1 << 20, work: 1024);
         Assert.Empty(regex.Replace([], new string('x', 65536)));
         var retained = regex.Subn("😀a"u8, @"<\g<x>>");
         Assert.Equal(2, retained.ReplacementCount);
@@ -155,7 +156,7 @@ public sealed class PythonReTemplateByteCeilingTests
         Assert.Equal("<😀><a>", regex.ReplaceToString("😀a"u8, @"<\g<x>>"));
     }
 
-    private static Utf8PythonRegex Create(string pattern, ulong working) => new(pattern,
+    private static Utf8PythonRegex Create(string pattern, ulong working, ulong work = 128) => new(pattern,
         PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-        new() { MaxWorkSteps = 128, MaxDepth = 16, MaxWorkingBytes = working, MaxResultBytes = 4096 });
+        new() { MaxWorkSteps = work, MaxDepth = 16, MaxWorkingBytes = working, MaxResultBytes = 4096 });
 }

@@ -14,12 +14,16 @@ earlier. Detailed Python snapshots may share an immutable string for captures
 covering the whole match; capture metadata and returned mutable arrays remain
 independent.
 
-Current102-dev adds two source changes outside immutable101: eligible controlled
+Current102-dev adds source changes outside immutable101: eligible controlled
 Core `IsMatch`/`Count` calls reject a planner-proved absent required literal before
 VM acquisition, and scalar prefix Count rechecks the original token after its
 terminal work checkpoint. The first can admit smaller limits; a one-byte modeled
 working cap does not imply one physical allocated byte. The second corrects a
-shared-invocation cancellation edge. Neither change designates another package.
+shared-invocation cancellation edge. Controlled PythonRe template substitution
+also admits one invocation-work step per 2,048 UTF-16 template code units before
+cache lookup, for cold and warm calls. Large templates can deny before parsing,
+even on empty subjects; detailed construction work keeps its separate backstop.
+These changes do not designate another package.
 
 Choose eager-construction and invocation limits separately. The common policy
 types describe admission scopes; work units and execution failure types depend
@@ -151,8 +155,8 @@ These are separate phase ceilings, not additions to the invocation W + R promise
 The original invocation token and deadline govern controlled preparation. A byte
 denial can report `ConstructionBytes`, including the enclosing construction
 reservation, before execution starts. Tighter parent limits remain in force;
-nested scopes preserve parent loans and restore their limits on exit. Construction
-work/depth, cache retention and host admission remain separate from the invocation
+nested scopes preserve parent loans and restore their limits on exit. Fine-grained
+construction work/depth, cache retention and host admission remain separate from the invocation
 numeric envelope. An oversized malformed template may deny before its tail is
 read. Even an empty subject can prepare and cache a template before finding no
 matches. Reserve separately for preparation and surviving plans; finite invocation

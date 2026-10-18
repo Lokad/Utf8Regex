@@ -2,6 +2,13 @@
 
 ## Changes after scalar.101
 
+Controlled PythonRe template substitution admits one invocation-work step per
+2,048 UTF-16 template code units before cache lookup. Cold and warm calls share
+this charge with matching and output, observing the original cancellation and
+deadline. Long templates can now exhaust `ExecutionWorkSteps` before parsing or
+cache access, including on empty subjects. Fine-grained construction backstops,
+separate preparation byte ceilings and retained cached plans remain unchanged.
+
 Controlled Core `IsMatch` and `Count` reuse an existing exact required-literal
 search before acquiring VM state for eligible unanchored LTR programs. An absent
 literal can now return false/zero under smaller work, depth and working budgets;

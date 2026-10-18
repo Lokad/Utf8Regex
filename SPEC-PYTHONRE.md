@@ -470,6 +470,15 @@ and prepares once without caching, rather than inheriting the other caller's
 interruption or entering an unbounded retry loop. A later fresh call may cache it.
 The same invocation continues through subject validation, discovery and output
 shaping. Construction work/depth remain separate from invocation counts.
+Development after scalar.101 additionally admits one invocation-work step per
+2,048 UTF-16 template code units (rounding up) before cache access. This coarse
+length charge covers both cold parsing and warm hashing/comparison admission;
+it does not count each parser helper. It shares the original invocation and its
+interruption authority, adds no preparation owner, and is not refunded on failure.
+A long template can therefore deny with `ExecutionWorkSteps` before construction
+or cache access, including for an empty subject. Existing cached plans remain
+valid when a later caller cannot fund their lookup. Unlimited, infinite-timeout,
+no-token calls retain their unmetered route. Immutable scalar.101 is unchanged.
 Development source additionally reuses finite `MaxWorkingBytes` as a ceiling on
 additional covered cold-template parser capacity, through the existing nested
 construction owner. Fixed construction ceilings still apply. A byte denial is
@@ -519,9 +528,10 @@ impossible scalar starts. The Python VM still verifies candidates, captures and
 assertions. Anchored operations and empty-match retry preserve their existing
 paths; finite candidate scans charge the same invocation in bounded blocks.
 The limit does not bound wall time, retained output bytes or process
-memory. Pattern compilation, lazy full-match compilation and replacement-plan
-preparation retain separate construction backstops; they are outside execution
-work counts. Arbitrary evaluator execution and later standalone result getters
+memory. Pattern compilation, lazy full-match compilation and fine-grained
+replacement-plan preparation retain separate construction backstops. The coarse
+template-length charge above belongs to invocation work; it does not include all
+construction work. Arbitrary evaluator execution and later standalone result getters
 are outside this cap; the library charges encoding/copying the evaluator's return.
 Cancellation and the absolute invocation deadline remain independently enforced.
 

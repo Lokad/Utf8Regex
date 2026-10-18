@@ -45,6 +45,20 @@ public sealed partial class Utf8PythonRegex
         var control = new PythonRePreparationInterruptionControl(deadline, cancellationToken);
         try
         {
+            // Admit length-dependent hashing/comparison and possible parsing
+            // before entering the cache. Coarse text blocks share the original
+            // invocation; fine-grained parser work keeps its construction backstop.
+            if (!invocation.IsUnmetered)
+            {
+                var bufferControl = new Utf8InvocationBufferControl(ref invocation);
+                for (var offset = 0; offset < replacement.Length;)
+                {
+                    var breach = bufferControl.TryChargeWorkspaceStep();
+                    if (breach != Utf8ExecutionLimitKind.None)
+                        throw invocation.Budget.CreateResourceFailure();
+                    offset += Math.Min(2048, replacement.Length - offset);
+                }
+            }
             try
             {
                 if (deadline.IsInfinite && !cancellationToken.CanBeCanceled)
