@@ -53,7 +53,7 @@ public sealed class ReadmeBenchmarkSnapshotTests
         Assert.All(rows, row =>
         {
             Assert.Contains(row.GetProperty("Status").GetString(), new[] { "Win", "TieCandidate", "Gap" });
-            Assert.Equal("AlternatingSixLaneV1", row.GetProperty("MeasurementProtocol").GetString());
+            Assert.Contains(row.GetProperty("MeasurementProtocol").GetString(), new[] { "AlternatingSixLaneV1", "AlternatingSixLaneV2" });
             Assert.True(row.GetProperty("RatioToDecode").GetDouble() > 0);
             var ratioToPredecoded = row.GetProperty("RatioToPredecoded").GetDouble();
             Assert.True(ratioToPredecoded > 0);
@@ -108,7 +108,7 @@ public sealed class ReadmeBenchmarkSnapshotTests
         {
             var measurement = benchmarkCase.Value;
             var requestedIterations = measurement.GetProperty("RequestedIterations").GetInt32();
-            Assert.Equal("AlternatingSixLaneV1", measurement.GetProperty("MeasurementProtocol").GetString());
+            Assert.Contains(measurement.GetProperty("MeasurementProtocol").GetString(), new[] { "AlternatingSixLaneV1", "AlternatingSixLaneV2" });
             Assert.True(requestedIterations > 0, benchmarkCase.Name);
             Assert.True(measurement.GetProperty("EffectiveIterations").GetInt32() >= requestedIterations, benchmarkCase.Name);
             Assert.True(measurement.GetProperty("Samples").GetInt32() >= 5, benchmarkCase.Name);

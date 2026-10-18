@@ -2,6 +2,12 @@
 
 ## Qualified private Core/PythonRe scalar.99
 
+Development benchmark tooling now warms the actual timing loop before README
+calibration, using bounded batches within the existing warmup limits. V2 rows
+record the changed preparation; historical V1 rows and their classifications
+remain intact. Matching code, sample order and allocation reporting are unchanged.
+This tooling change does not modify or requalify immutable scalar.99 packages.
+
 Producer222dc5da batches the three engine changes below into fresh immutable
 Core/PythonRe99 bytes with an exact Core99 dependency. The same DLLs pass complete
 Windows/Linux package-bound suites, unchanged original public consumer assertions,

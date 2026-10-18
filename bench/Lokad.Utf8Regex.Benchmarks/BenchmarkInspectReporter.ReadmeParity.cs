@@ -132,7 +132,7 @@ internal static partial class BenchmarkInspectReporter
         var decodeAllocatedBytes = compiled ? measurement.DecodeThenCompiledRegexAllocatedBytes : measurement.DecodeThenRegexAllocatedBytes;
         var qualified = snapshotHasCurrentProtocol &&
             measurement.Environment is { TrackedDirty: false } &&
-            measurement.MeasurementProtocol == ReadmeMeasurementProtocol &&
+            measurement.MeasurementProtocol is "AlternatingSixLaneV1" or ReadmeMeasurementProtocol &&
             measurement.RequestedIterations > 0 &&
             measurement.EffectiveIterations >= measurement.RequestedIterations &&
             measurement.Samples >= 5 &&

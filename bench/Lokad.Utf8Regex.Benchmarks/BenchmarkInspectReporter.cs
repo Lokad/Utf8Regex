@@ -1497,7 +1497,7 @@ internal static partial class BenchmarkInspectReporter
     }
 
     private const string ReadmeBenchmarkSnapshotFileName = "README.Benchmarks.json";
-    private const string ReadmeMeasurementProtocol = "AlternatingSixLaneV1";
+    private const string ReadmeMeasurementProtocol = "AlternatingSixLaneV2";
 
     private static ReadmeBenchmarkSnapshot LoadReadmeBenchmarkSnapshot()
     {
@@ -5938,6 +5938,10 @@ internal static partial class BenchmarkInspectReporter
             if (actions[index]() != expected)
                 throw new InvalidOperationException($"README benchmark lane {index} disagrees with the UTF-8 result.");
         }
+        var warmupSink = 0;
+        foreach (var action in actions)
+            warmupSink ^= WarmupCore(action).Sink;
+        Volatile.Write(ref s_allocationSink, warmupSink);
         var effectiveIterations = CalibrateReadmeIterations(
             requestedIterations,
             iterationTarget,
@@ -5980,11 +5984,6 @@ internal static partial class BenchmarkInspectReporter
         bool reverseFirstSample)
     {
         var sink = 0;
-        foreach (var action in actions)
-        {
-            sink ^= WarmupCore(action).Sink;
-        }
-
         var elapsedByAction = new TimeSpan[actions.Count][];
         for (var index = 0; index < elapsedByAction.Length; index++)
         {
@@ -6575,6 +6574,8 @@ internal static partial class BenchmarkInspectReporter
             $"instances={instanceCount} samples={samples} sink={sink}");
     }
 
+    // Calibration, warmup and sampling share this delegate call site.
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static (TimeSpan Elapsed, int Sink) MeasureTimedCore(int iterations, Func<int> action)
     {
         var sink = 0;
@@ -6617,11 +6618,17 @@ internal static partial class BenchmarkInspectReporter
         var target = TimeSpan.FromMilliseconds(250);
         var sink = 0;
         var iterations = 0;
+        var batchIterations = 1;
         var stopwatch = Stopwatch.StartNew();
         do
         {
-            sink ^= action();
-            iterations++;
+            // Warm the actual timing loop and its delegate call site too.
+            // Start small for slow operations and amortize the timer over
+            // batches of at most 1024 calls.
+            var batch = Math.Min(batchIterations, maximumIterations - iterations);
+            sink ^= MeasureTimedCore(batch, action).Sink;
+            iterations += batch;
+            batchIterations = Math.Min(batchIterations * 2, 1024);
         }
         while (iterations < maximumIterations && stopwatch.Elapsed < target);
 

@@ -123,6 +123,9 @@ README benchmark snapshot model:
 - Use `--resume-readme-benchmarks` for an interrupted milestone refresh. It
   skips only rows whose paired measurements, requested iterations, samples,
   clean source revision, runtime, OS, processor, and tiering mode all match.
+- README refresh warms through the actual timing loop before calibration.
+  Warmup keeps its duration/call limits and uses bounded batches. New rows use
+  AlternatingSixLaneV2; historical V1 rows retain their original provenance/status.
 - README refresh calibrates one shared effective iteration count from all six
   target/baseline lanes, alternates lane order sample-by-sample, records the
   protocol and count in the snapshot, checkpoints after every case, and caps
