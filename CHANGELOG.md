@@ -2,6 +2,13 @@
 
 ## Development after scalar.89
 
+- Reject direct Python anchor/boundary quantifiers while preserving grouped
+  anchors, quantified lookarounds and numeric-error precedence. Parse bracket
+  control escapes as their scalar values, including range endpoints, rather
+  than the spelling letters. Range errors retain original source spellings,
+  removing the class-description reconstruction helpers. Width analysis shares the parser's existing
+  zero-width escape classification; no new IR or execution mechanism is added.
+
 - Treat PythonRe comment groups as ignored syntax, preserving leading global
   flags and quantifier attachment to the preceding atom. Escaped closing
   parentheses and newlines stay inside their comments; trailing comment escapes

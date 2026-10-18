@@ -13778,6 +13778,140 @@
           ]
         }
       ]
+    },
+    {
+      "id": 112,
+      "pattern": "😀(?P<x>[\\n]+)",
+      "input": "x😀\n\n 😀n",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀\n\n",
+              "startByte": 1,
+              "endByte": 7,
+              "startUtf16": 1,
+              "endUtf16": 5
+            },
+            {
+              "success": true,
+              "text": "\n\n",
+              "startByte": 5,
+              "endByte": 7,
+              "startUtf16": 3,
+              "endUtf16": 5
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀\n\n",
+              "startByte": 1,
+              "endByte": 7,
+              "startUtf16": 1,
+              "endUtf16": 5
+            },
+            {
+              "success": true,
+              "text": "\n\n",
+              "startByte": 5,
+              "endByte": 7,
+              "startUtf16": 3,
+              "endUtf16": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 113,
+      "pattern": "(?P<x>[\\b-\\r]+)",
+      "input": "x\b\t\n\u000b\f\r ybfnrtv",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "\b\t\n\u000b\f\r",
+              "startByte": 1,
+              "endByte": 7,
+              "startUtf16": 1,
+              "endUtf16": 7
+            },
+            {
+              "success": true,
+              "text": "\b\t\n\u000b\f\r",
+              "startByte": 1,
+              "endByte": 7,
+              "startUtf16": 1,
+              "endUtf16": 7
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "\b\t\n\u000b\f\r",
+              "startByte": 1,
+              "endByte": 7,
+              "startUtf16": 1,
+              "endUtf16": 7
+            },
+            {
+              "success": true,
+              "text": "\b\t\n\u000b\f\r",
+              "startByte": 1,
+              "endByte": 7,
+              "startUtf16": 1,
+              "endUtf16": 7
+            }
+          ]
+        }
+      ]
     }
   ]
 }

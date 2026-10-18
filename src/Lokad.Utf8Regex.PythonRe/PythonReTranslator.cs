@@ -458,13 +458,6 @@ internal static partial class PythonReTranslator
 
     private static bool IsUtf8IterationSafe(PythonReNode node) => InspectSelection(node, InspectionKind.Iteration);
 
-    private static bool IsZeroWidthEscape(string text)
-    {
-        return text is @"\A" or @"\Z" or @"\z" or @"\b" or @"\B"
-            or PythonReParser.AsciiWordBoundary or PythonReParser.AsciiNonWordBoundary
-            or PythonReParser.UnicodeWordBoundary or PythonReParser.UnicodeNonWordBoundary;
-    }
-
     private static bool IsPrefixFreeExactLiteralAlternation(PythonReAlternationNode alternation)
     {
         using var construction = Utf8ConstructionScope.Enter();

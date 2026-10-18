@@ -17,6 +17,10 @@ global flags can follow comments/verbose trivia, comments cannot steal an atom's
 quantifier, and escaped closers/newlines stay in their comments. Existing
 construction/interruption controls remain authoritative. See the
 [comment contract](../../SPEC-PYTHONRE.md#ignored-comments-and-leading-flags).
+It also rejects direct anchor/boundary quantifiers and reads bracket control
+escapes as their scalar values; grouped assertions and existing controls remain
+supported. These demonstrated gaps remain in immutable89 outside its recorded
+qualification subset; the next package boundary will carry their repairs.
 
 Scalar.89 includes exact finite Python repetition through4294967294, distinct
 from infinity, with compact invocation state and preserved captures/rollback,

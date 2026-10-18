@@ -144,6 +144,7 @@ internal sealed partial class PythonReParser
             return atom;
         }
 
+        var quantifierStart = _position;
         uint min;
         uint? max;
         if (TryConsume('*'))
@@ -183,6 +184,10 @@ internal sealed partial class PythonReParser
         {
             return atom;
         }
+
+        if (atom is PythonReRawNode raw && (raw.Kind is PythonReRawKind.StartAnchor or PythonReRawKind.EndAnchor ||
+            raw.Kind == PythonReRawKind.Escape && IsZeroWidthEscape(raw.Text)))
+            throw new PythonRePatternException("nothing to repeat", quantifierStart);
 
         var flavor = PythonReQuantifierFlavor.Greedy;
         if (TryConsume('?'))
@@ -354,22 +359,17 @@ internal sealed partial class PythonReParser
                 _position + 1 < _pattern.Length &&
                 _pattern[_position + 1] != ']')
             {
-                var rangePosition = _position;
                 _position++;
                 var endParsedItem = ParseCharacterClassItem(options, allowLiteralClosingBracket: false);
                 var endItem = endParsedItem.Item;
                 if (endItem is not PythonReCharacterClassLiteralItem endLiteral)
                 {
-                    throw new PythonRePatternException(
-                        $"bad character range {DescribeCharacterClassItem(literal)}-{DescribeCharacterClassItem(endItem)}",
-                        parsedItem.Position);
+                    throw BadCharacterRange(parsedItem.Position);
                 }
 
                 if (literal.Scalar > endLiteral.Scalar)
                 {
-                    throw new PythonRePatternException(
-                        $"bad character range {DescribeCharacterClassItem(literal)}-{DescribeCharacterClassItem(endLiteral)}",
-                        parsedItem.Position);
+                    throw BadCharacterRange(parsedItem.Position);
                 }
 
                 items.Add(PythonReAstFactory.ClassRange(literal.Scalar, endLiteral.Scalar));
@@ -382,12 +382,9 @@ internal sealed partial class PythonReParser
                 _position + 1 < _pattern.Length &&
                 _pattern[_position + 1] != ']')
             {
-                var rangePosition = _position;
                 _position++;
-                var endItem = ParseCharacterClassItem(options, allowLiteralClosingBracket: false).Item;
-                throw new PythonRePatternException(
-                    $"bad character range {DescribeCharacterClassItem(item)}-{DescribeCharacterClassItem(endItem)}",
-                    parsedItem.Position);
+                _ = ParseCharacterClassItem(options, allowLiteralClosingBracket: false);
+                throw BadCharacterRange(parsedItem.Position);
             }
 
             items.Add(item);
@@ -655,6 +652,13 @@ internal sealed partial class PythonReParser
     {
         switch (escaped)
         {
+            case 'a': return '\a';
+            case 'b': return '\b';
+            case 'f': return '\f';
+            case 'n': return '\n';
+            case 'r': return '\r';
+            case 't': return '\t';
+            case 'v': return '\v';
             case 'x':
                 return ParseHexEscapeScalarValue(escapeStart, 2, 'x');
             case 'u':
@@ -946,6 +950,10 @@ internal sealed partial class PythonReParser
         return (options | addOptions) & ~removeOptions;
     }
 
+    internal static bool IsZeroWidthEscape(string text) =>
+        text is @"\A" or @"\Z" or @"\z" or @"\b" or @"\B"
+            or AsciiWordBoundary or AsciiNonWordBoundary or UnicodeWordBoundary or UnicodeNonWordBoundary;
+
     private static string GetUnicodePredefinedFragment(char escaped) => escaped switch
     {
         'w' => UnicodeWordClass,
@@ -1066,42 +1074,10 @@ internal sealed partial class PythonReParser
         return false;
     }
 
-    private static string DescribeCharacterClassItem(PythonReCharacterClassItem item)
-    {
-        return item switch
-        {
-            PythonReCharacterClassLiteralItem literal => char.ConvertFromUtf32(literal.Scalar),
-            PythonReCharacterClassRangeItem range => char.ConvertFromUtf32(range.StartScalar) + "-" + char.ConvertFromUtf32(range.EndScalar),
-            // Standalone Unicode fragments render back to their Python escape so
-            // diagnostics keep naming the source construct (inline switch: a new
-            // single-caller helper would count as source debt).
-            PythonReCharacterClassPredefinedItem predefined => predefined.RegexClassFragment switch
-            {
-                _ when predefined.IsStandaloneAtom && predefined.RegexClassFragment == UnicodeWordClass => @"\w",
-                _ when predefined.IsStandaloneAtom && predefined.RegexClassFragment == UnicodeNonWordClass => @"\W",
-                _ when predefined.IsStandaloneAtom && predefined.RegexClassFragment == UnicodeSpaceClass => @"\s",
-                _ when predefined.IsStandaloneAtom && predefined.RegexClassFragment == UnicodeNonSpaceClass => @"\S",
-                _ when predefined.RegexClassFragment.StartsWith("^", StringComparison.Ordinal) => @"\" + char.ToUpperInvariant(predefined.RegexClassFragment[1]),
-                _ when predefined.RegexClassFragment.StartsWith(@"\", StringComparison.Ordinal) => predefined.RegexClassFragment,
-                _ => @"\" + InferAsciiEscapeName(predefined.RegexClassFragment),
-            },
-            _ => "?",
-        };
-    }
-
-    private static char InferAsciiEscapeName(string fragment)
-    {
-        return fragment switch
-        {
-            "A-Za-z0-9_" => 'w',
-            "^A-Za-z0-9_" => 'W',
-            "0-9" => 'd',
-            "^0-9" => 'D',
-            @"\t\n\r\f\v " => 's',
-            @"^\t\n\r\f\v " => 'S',
-            _ => '?',
-        };
-    }
+    // Preserve source escapes directly instead of reconstructing them from
+    // expanded class payloads (which loses control escapes and flag context).
+    private PythonRePatternException BadCharacterRange(int start) =>
+        new($"bad character range {_pattern.AsSpan(start, _position - start)}", start);
 
     private bool TryConsumeExact(string text)
     {

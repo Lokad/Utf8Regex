@@ -170,7 +170,7 @@ internal static partial class PythonReTranslator
                 PythonReNamedBackreferenceNode or PythonReNumericBackreferenceNode => frame.Index == 0
                     ? new(0, PythonReWidth.Maximum) : new(frame.Min, frame.Max),
                 PythonReRawNode raw => raw.Kind is PythonReRawKind.StartAnchor or PythonReRawKind.EndAnchor ||
-                    raw.Kind == PythonReRawKind.Escape && IsZeroWidthEscape(raw.Text) ? new(0, 0) : new(1, 1),
+                    raw.Kind == PythonReRawKind.Escape && PythonReParser.IsZeroWidthEscape(raw.Text) ? new(0, 0) : new(1, 1),
                 PythonReLiteralNode or PythonReCharacterClassNode => new(1, 1),
                 _ => throw new PythonRePatternException("Unsupported AST node."),
             };

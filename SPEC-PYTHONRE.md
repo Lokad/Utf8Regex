@@ -86,6 +86,20 @@ owner; spent work is not refunded. Removing comment nodes can reduce required
 construction storage/depth. This is a source correction, separate from the
 immutable scalar.89 package and its original107 capture fixtures.
 
+## Quantified atoms and bracket control escapes
+
+Development source after scalar.89 rejects direct quantification of `^`, `$`,
+`\A`, `\Z`, `\b` and `\B` with `nothing to repeat` at the quantifier. Grouped
+anchors and quantified lookarounds remain valid; numeric bound failures retain
+precedence over atom eligibility. The parser and width analysis share one
+classification of zero-width escapes.
+
+Inside brackets, `\a`, `\b`, `\f`, `\n`, `\r`, `\t` and `\v` denote their control
+scalars, including in ranges and negated classes. In particular, bracket `\b`
+is backspace while outside `\b` is a word boundary. Existing scalar/capture and
+construction/invocation controls remain authoritative. This correction does
+not alter immutable scalar.89.
+
 ## Nullable repetition and capture state
 
 Python's mandatory repetitions precede the optional phase's empty-progress guard.

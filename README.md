@@ -19,6 +19,10 @@ controls. It also preserves Core's finite `2147483647` repeat maximum separately
 from infinity, including existing NonBacktracking construction admission.
 The focused source experiment is separate from immutable89's costs;
 see the [changelog](CHANGELOG.md#development-after-scalar89).
+PythonRe source also repairs ignored-comment/leading-flag parsing, direct anchor
+quantifier admission and bracket control escapes. Immutable89 retains those
+demonstrated gaps outside its recorded qualification subset; the repairs await
+the next coherent package delivery.
 
 Scalar.89 repairs demonstrated separator endpoint/overlap and atomic-tail
 matching defects by keeping unproved structural shapes on the existing owned

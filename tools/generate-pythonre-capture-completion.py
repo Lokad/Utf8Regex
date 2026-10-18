@@ -103,6 +103,10 @@ CASES = [
     (r"(a)(?#between){2}", "aa a"),
     (r"(?#escaped\)closer)(?i)(?P<x>😀a)", "😀A 😀a"),
     ("(?x)(?P<x>a)#continued\\\nb", "a ab"),
+    # Bracket control escapes are scalar literals, not word-boundary atoms or
+    # their spelling letters; include range endpoints and supplementary offsets.
+    (r"😀(?P<x>[\n]+)", "x😀\n\n 😀n"),
+    (r"(?P<x>[\b-\r]+)", "x\b\t\n\v\f\r ybfnrtv"),
 ]
 
 def snapshot(match, text):
