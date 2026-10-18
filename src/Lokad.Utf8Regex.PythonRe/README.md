@@ -1,5 +1,11 @@
 # Lokad.Utf8Regex.PythonRe
 
+Preparing private **Core/PythonRe 0.4.0-scalar.102** with exact Core102. Controlled
+template lookup admits coarse length work before cold or warm preparation; Core
+also batches required-literal absence admission and terminal Count cancellation.
+Qualification is pending. Earlier packages stay immutable; no PCRE102,
+publication or downstream adoption is designated.
+
 Qualified private **Core/PythonRe 0.4.0-scalar.101**, exact Core101, clean producer
 `8ed61eaba2b34d8aa72f791b063d3f8300f8f1a3`. Detailed snapshots reuse owned immutable
 whole-match text for equal-range captures; Core fixes overlapping replacement

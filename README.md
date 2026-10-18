@@ -1,5 +1,11 @@
 # Lokad.Utf8Regex
 
+Preparing private **Core/PythonRe 0.4.0-scalar.102**. It batches bounded required-
+literal absence admission, terminal prefix Count cancellation and coarse Python
+template-length work admission. Qualification is pending; scalar.101 remains the
+previous qualified input with its recorded source-only correction. No PCRE102,
+publication or consumer adoption is designated.
+
 Qualified private **Core/PythonRe 0.4.0-scalar.101**, exact Core101, clean producer
 `8ed61eaba2b34d8aa72f791b063d3f8300f8f1a3`. It fixes overlapping Core `TryReplace`
 output and avoids duplicate whole-match text in detailed Python captures. Same
@@ -18,7 +24,7 @@ the Unicode class-construction improvements, current costs and scope. Earlier
 bytes stay immutable. No PCRE100, publication or downstream adoption is implied.
 
 Known scalar.100 issue: Core `TryReplace` requires disjoint subject/destination
-storage. Current 101-dev source fixes overlapping output through staged scalar
+storage. Scalar.101 fixes overlapping output through staged scalar
 replacement; see [the contract and allocation tradeoff](HOST-INTEGRATION.md).
 
 `Lokad.Utf8Regex` is a `net10.0` library matching Unicode scalars over strict UTF-8 spans, with primary
