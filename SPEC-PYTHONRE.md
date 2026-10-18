@@ -44,7 +44,10 @@ The parser shares raw scalar acquisition across ordinary literals and class
 items, reusing the existing escaped-literal/case path. It adds no matching engine,
 IR mode or Unicode table. Original construction/invocation admission, synchronous
 cancellation/deadlines and retained-result validity remain. This is outside
-immutable scalar.90 and its114-fixture qualification subset.
+immutable scalar.90 and its114-fixture qualification subset. The immutable
+scalar.91 pair includes this repair and passes the121-fixture capture corpus,
+same-byte Windows/Linux consumers and exact packaged dependency checks; see
+[the handoff](artifacts/core-python-scalar91-20261018/HANDOFF.md).
 
 ## Effective global modes
 

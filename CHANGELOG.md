@@ -1,9 +1,22 @@
 # Changelog
 
+## Qualified private Core/PythonRe scalar.91
+
+The immutable pair at68a1e39b includes the development changes below. Same-byte
+Windows/Linux consumers,121capture/91semantic controls, exact symbols/member/API/
+provenance checks and a fresh final-feed public restore pass; producer CI is
+green. Actual public byte-pattern/capture/global-mode/alias assertions and the
+original Awk/Lython-facing subset pass. Current-cost batch is closed500raw/18of25
+qualified after its sole confirmation; seven rows remain unqualified, including
+Core captured Count. Rounded allocations are unchanged. No noisy timing gain,
+publication/adoption or full-SPEC completion is claimed. Preserve90/older and
+independentPCRE76. See artifacts/core-python-scalar91-20261018/HANDOFF.md.
+
 ## Development after scalar.90
 
-These changes are prepared as Core/PythonRe scalar.91. Exact immutable-package,
-platform and current-cost qualification is pending. The shared resource reference
+At producer staging these changes were prepared as Core/PythonRe scalar.91;
+package/platform/current-cost qualification was pending. The record above now
+reports completion without changing immutable package bytes. The shared resource reference
 now distinguishes construction backstops from unlimited invocation defaults,
 lists actual profile entry points/failures and corrects a stale PCRE2 direct-call
 metering claim. Existing matching algorithms and controls are unchanged.

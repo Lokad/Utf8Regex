@@ -145,9 +145,9 @@ The qualified input is the exact Core/adapter pair recorded by its manifest,
 feed and locks. Adapters consume Core internals and move together with the exact
 qualified Core version. Applications combining adapters need a common qualified
 Core; deliberate dependency overrides have separate compatibility scope.
-The immutable [Core/PythonRe scalar.90 handoff](artifacts/core-python-scalar90-20261018/HANDOFF.md)
+The immutable [Core/PythonRe scalar.91 handoff](artifacts/core-python-scalar91-20261018/HANDOFF.md)
 records same-byte Windows/Linux consumers, exact identities, current costs and
-subsequently discovered gaps outside its subset. Independent PCRE2 evidence stays
+the recorded semantic/resource subset. Independent PCRE2 evidence stays
 with its [scalar.76 handoff](artifacts/pcre2-scalar76-delivery-20261017/HANDOFF.md).
 Earlier candidates remain immutable; actual consumer ownership/adoption is separate.
 

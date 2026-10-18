@@ -2,47 +2,38 @@
 
 `Lokad.Utf8Regex` matches Unicode scalars over strict UTF-8 spans, with primary
 byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
-coordinates and strings are derived conveniences.
+coordinates and strings are derived conveniences; PythonRe adds its pinned
+Python grammar, captures and result shaping over the shared owned engine.
 
-**Prepared Core/PythonRe scalar.91** batches the escaped-Unicode/global-mode
-repairs below, composed capture rollback controls and the
-[shared resource reference](HOST-INTEGRATION.md). Package/platform qualification
-is pending; scalar.90 remains the qualified input recorded below. PCRE2 retains
-its independent milestone.
+The qualified private **Core/PythonRe 0.4.0-scalar.91** pair comes from clean
+producer `68a1e39b555cad29d5f488d2c8d2adc6624b68b7`; PythonRe requires exact Core
+`[0.4.0-scalar.91]`. Same immutable bytes pass Windows/Linux package consumers,
+121capture/91semantic fixtures, API/member/symbol/provenance checks and a fresh
+isolated final-feed public restore. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39089557966)
+is green. [Handoff](artifacts/core-python-scalar91-20261018/HANDOFF.md) and
+[consumption](artifacts/core-python-scalar91-20261018/CONSUMING.md) record exact scope/identities.
+Preserve90/older candidates and independentPCRE76/Core76; no PCRE91 package is supplied.
 
-The qualified private **Core/PythonRe 0.4.0-scalar.90** pair comes from clean
-producer `fd8bade3fe2ddae0ffc6680cf53a1d0295107977`; PythonRe requires exact Core
-`[0.4.0-scalar.90]`. Same immutable bytes pass Windows/Linux consumers,
-114capture/91semantic fixtures, API/member/symbol/provenance checks and a fresh
-isolated public restore. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39084642019)
-is green. [Handoff](artifacts/core-python-scalar90-20261018/HANDOFF.md) and
-[consumption](artifacts/core-python-scalar90-20261018/CONSUMING.md) record exact scope/identities.
-Preserve89/88/87/86 and independentPCRE76/Core76; no PCRE90 package is included.
+Scalar.91 repairs raw escaped Unicode literals/classes/ranges/folding and combined
+global ASCII/Unicode admission, preserving scoped overrides and separate explicit
+surrogate atoms. Existing capture rollback also passes new assertion/conditional
+compositions. The [shared resource reference](HOST-INTEGRATION.md) lists actual
+entry points, construction versus invocation controls and surviving owners.
+Prior Count capture-state elision, exact wide finite repeats, comments/flags,
+anchor admission and bracket control escapes remain. No matching algorithm,
+public API, IR, engine or accounting model is added. Core retains only permitted
+Unsafe.SizeOf (accepted by Lython); Python none. Unchecked reads/generated helpers,
+native imports and shipped BCL matchers/results stay absent.
 
-Development source after scalar.90 also fixes raw escaped Unicode literals,
-their class/range/quantifier/folding behavior and combined global mode admission.
-Scalar.90 retains these demonstrated gaps outside its recorded subset; see the
-[development changelog](CHANGELOG.md#development-after-scalar90).
-
-Scalar.90 batches Core Count capture-state elision and exact finite2147483647
-repeat maxima, plus Python comment/leading-flag parsing, anchor quantifier
-admission and bracket control escapes. Captures, scalar ranges, retained aliases
-and original construction/invocation/cancellation/deadline controls remain.
-Core retains only permitted Unsafe.SizeOf (accepted by Lython); Python none.
-Unchecked reads, generated helpers, native imports and BCL matchers stay absent.
-Immutable89 retains the demonstrated Python gaps outside its recorded subset.
-
-[Current exact90 costs](artifacts/core-python-scalar90-20261018/vm-cost/RESULT.md)
-retain500raw samples from one default-runtime pair plus sole confirmation;
-17/25 lanes qualify. Eight remain unqualified, including captured Count timings;
-no further timing or speed/equivalence claim for them. Captured Count allocations
-fall2192B/op. Qualified affected product changes versus89 are-2.31..-0.16%,
-with other allocations unchanged; literal controls-0.26/+1.62/+2.53% U/finite/live.
-Qualified terminal Unicode Count is16.91/17.24/17.59us, and finite detailed
-Python FullMatch6.01us. Finite literal Count adds about0.72us/112B. Substantial
-cost gaps and output-contract differences from .NET remain explicit. This is
-selective operating-cost evidence, not CPythonStatus/compiled/fullSPEC parity or
-an update to the original closed checked-access gate. Old costs retain scope.
+[Current exact91 costs](artifacts/core-python-scalar91-20261018/vm-cost/RESULT.md)
+retain500raw samples from one default-runtime pair plus its sole confirmation.
+18/25 lanes qualify; seven remain unqualified, including captured Core Count
+and both its.NET controls. Rounded allocations are unchanged. Qualified finite
+Python Count82.827us/detailed FullMatch6.385us and terminal Unicode Count
+17.699/18.045/18.218us U/finite/live provide selective current operating costs.
+Finite literal Count adds about0.71us/112B. No timing claim from noisy lanes,
+new speedup attribution, CPythonStatus/compiled/full-SPEC parity or replacement of
+the original closed checked-access gate follows. Earlier costs keep their scope.
 
 Defaults/static calls remain unlimited. [Host composition](HOST-INTEGRATION.md)
 explains modeled capacities and surviving owners. Complete grammar/construction/
