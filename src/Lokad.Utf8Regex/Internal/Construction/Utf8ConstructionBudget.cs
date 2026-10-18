@@ -76,8 +76,9 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
         return length == 0 ? 0 : 32 + ((2 * ((ulong)length + 1) + 15) & ~15ul);
     }
 
-    // State contains every acquired instance field, including initializer
-    // fields; referenced strings/arrays have independent acquisition loans.
+    // Larger acquisitions describe their instance fields, including initializers.
+    // Small utility factories use constructor arguments under the 128-byte floor;
+    // referenced strings/arrays have independent acquisition loans.
     internal static ulong ObjectBytes<TState>() => 32 + (((ulong)Unsafe.SizeOf<TState>() + 15) & ~15ul);
 
     internal T AllocateObject<TState, T>(TState state, Func<TState, T> factory) where T : class

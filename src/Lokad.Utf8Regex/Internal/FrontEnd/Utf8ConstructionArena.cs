@@ -21,7 +21,7 @@ internal sealed class Utf8ConstructionArena : IDisposable
 
     internal static Utf8ConstructionArena Create(Utf8ConstructionBudget owner)
     {
-        return owner.AllocateObject((owner, 0UL, 0UL, false), static state => new Utf8ConstructionArena(state.owner));
+        return owner.AllocateObject(owner, static budget => new Utf8ConstructionArena(budget));
     }
 
     internal T[] Allocate<T>(int count, bool retained) => Track(budget.AllocateArray<T>(count, false), retained);

@@ -14,7 +14,7 @@ internal sealed class Utf8ConstructionMap<TKey, TValue>(Utf8ConstructionBudget b
     internal ulong StorageBytes => Utf8ConstructionBudget.ArrayBytes<Entry>(_entries.Length);
 
     internal static Utf8ConstructionMap<TKey, TValue> Create(Utf8ConstructionBudget owner, IEqualityComparer<TKey> equality) =>
-        owner.AllocateObject((owner, equality, Array.Empty<Entry>(), 0), static state => new Utf8ConstructionMap<TKey, TValue>(state.owner, state.equality));
+        owner.AllocateObject((owner, equality), static state => new Utf8ConstructionMap<TKey, TValue>(state.owner, state.equality));
 
     internal Utf8ConstructionReadOnlyMap<TKey, TValue> Freeze(Utf8ConstructionArena arena)
     {
