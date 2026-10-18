@@ -1,15 +1,20 @@
 # Lokad.Utf8Regex.PythonRe
 
-Preparing private **Core/PythonRe 0.4.0-scalar.100**, exact Core100, for complete
-class folding and compact astral-range rendering. Qualification is pending;
-scalar.99 remains the qualified input. No PCRE100 or publication is designated.
+Qualified private **Core/PythonRe 0.4.0-scalar.100**, exact Core100, clean producer
+`fa0e260880caf40b3ba139f6e7fa196276d8c783`. Same DLLs pass Windows/Linux complete
+package-bound suites and unchanged original public assertions. Complete-domain
+classes and compact astral rendering fit smaller construction policies.
+[Handoff](../../artifacts/core-python-scalar100-20261018/HANDOFF.md) and
+[consume](../../artifacts/core-python-scalar100-20261018/CONSUMING.md) record exact
+identities, current finite-policy costs, broad timing uncertainty and scope.
+Earlier bytes stay immutable; no PCRE100, publication or downstream adoption.
 
 `Lokad.Utf8Regex` matches Unicode scalars over strict UTF-8 spans, with primary
 byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences. PythonRe adds pinned Python
 grammar, captures and result shaping over the shared owned engine.
 
-Qualified private **Core/PythonRe 0.4.0-scalar.99**, clean producer
+Earlier qualified private **Core/PythonRe 0.4.0-scalar.99**, clean producer
 `222dc5da6a1dc05800480f3a26cdf28d91a4e85f`, requires exact Core
 `[0.4.0-scalar.99]`. It batches
 constant-class construction simplifications and generic Count's removal of

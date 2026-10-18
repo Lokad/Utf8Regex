@@ -1,6 +1,13 @@
 # Resource controls and host ownership
 
-Qualified private Core/PythonRe scalar.99 batches constant-class construction
+Qualified private Core/PythonRe scalar.100 adds complete-domain Python class
+folding and compact managed astral rendering, with the same native scalar
+patterns for recorded probes. Same bytes pass Windows/Linux detached suites and
+original public consumer assertions. Exact identity, current finite costs and
+scope are in artifacts/core-python-scalar100-20261018/HANDOFF.md. No PCRE100 is
+designated. Defaults, lifetime rules and common-retention exclusions remain.
+
+Earlier qualified private Core/PythonRe scalar.99 batches constant-class construction
 simplifications and generic Count's omitted coordinate metadata, inheriting
 scalar.98's decimal/URI and earlier deadline/preparation corrections.
 Same immutable bytes pass Windows/Linux semantic/resource and original consumer

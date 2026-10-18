@@ -1,5 +1,20 @@
 # Selected current-source performance
 
+The latest exact-package observation uses immutable Core/PythonRe scalar.100,
+producer `fa0e260880caf40b3ba139f6e7fa196276d8c783`, on .NET 10.0.12. Existing
+BenchmarkDotNet Short runs in-process to preserve the staged shipping DLLs.
+Eight public lanes include both .NET baselines and all four finite Python limits.
+Unicode Count averaged 53.21 µs / 0 B; Python tuples averaged 572.62 µs / 132,792 B
+unlimited, 714.09 µs / 136,992 B finite and 690.32 µs / 136,997 B with a live token.
+The finite mean difference is about 25%, with broad three-iteration confidence
+intervals. It is not an overhead ceiling or source-regression claim. This protocol
+differs from the earlier process-isolated observations below. [Full costs,
+uncertainty, comparators and raw evidence](artifacts/core-python-scalar100-20261018/vm-cost/RESULT.md)
+include a first archival failure whose measurements are excluded, followed by one
+complete 49-second replacement. No further timing run or Status update follows.
+
+## Earlier source measurements
+
 On 2026-10-18, the existing BenchmarkDotNet Short job measured public Count on
 24 KiB of UTF-8 containing 4,096 `café` matches. Source revision was
 `118d471311d74e7a5aa88b97495a370a0b731095`. All three public results agree during

@@ -1,9 +1,14 @@
 # Changelog
 
-## Preparing private Core/PythonRe scalar.100
+## Qualified private Core/PythonRe scalar.100
 
-Source builds use `0.4.0-scalar.100` for one coherent Unicode class-construction
-delivery. Qualification is pending; no package or downstream promotion is claimed.
+Clean producer fa0e2608 freezes Core/PythonRe100 with exact Core100. Same bytes
+pass Windows/Linux package-bound suites, unchanged public consumer assertions,
+capture/semantic oracles and API/member/provenance/symbol gates. Producer CI is
+green. Current BDN in-process evidence covers eight public lanes, including all
+four finite Python controls; broad Short confidence intervals remain explicit.
+No PCRE100, publication or downstream adoption. Source now uses101-dev to preserve
+the immutable100 identity. Handoff: artifacts/core-python-scalar100-20261018/HANDOFF.md.
 
 Python full-domain character classes skip redundant per-code-point case folding
 and reuse the existing complete-scalar rendering instead of 1,024 surrogate
