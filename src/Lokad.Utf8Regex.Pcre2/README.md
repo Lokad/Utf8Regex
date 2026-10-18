@@ -6,6 +6,10 @@ caseless classes, captured repetition and lookbehind retain their scalar and
 resource contracts. This is outside the immutable scalar.76 pair below;
 Core/PythonRe scalar.91 remains independent and unchanged.
 
+The source also corrects `Xps`/`Xsp` for NEL and Mongolian vowel separator,
+sharing the existing Unicode-space rule with generic/POSIX whitespace. UCP-off
+generic whitespace stays ASCII; resource controls and scalar coordinates remain.
+
 Qualified private **Core/PCRE2 0.4.0-scalar.76**, producer
 `58e2927a64c334f1e9f7ced2fbd46d55dadc5d55`, adds text/UTF-8 `Compile` factories
 using the existing construction policy/owner, a separate timeout and original

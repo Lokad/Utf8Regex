@@ -609,6 +609,14 @@ controls; no Unicode-name table, new matcher or native dependency is added.
 This source addition is outside immutable Core/PCRE2 scalar.76 and does not alter
 the qualified Core/PythonRe scalar.91 pair.
 
+The same development source unifies Unicode space classification for `Xps`,
+`Xsp` and UCP generic/POSIX space. Property escapes now include U+0085 (NEL)
+and U+180E (Mongolian vowel separator), matching native PCRE2 10.47. Property
+escapes remain Unicode-aware without UCP; generic `\s` and POSIX space retain
+their ASCII behavior when UCP is off. The shared predicate retains the existing
+ASCII fast path and reuses the caller's Unicode category; no lookup table,
+execution mode or resource-policy change is introduced.
+
 Caseless literals, class ranges and references use default simple-fold scalar
 equivalence: all partners are symmetric, including Kelvin sign, long S, Greek
 symbol variants and titlecase partners. A class negates the complete positive

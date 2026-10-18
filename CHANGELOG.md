@@ -2,6 +2,11 @@
 
 ## Development after scalar.91
 
+- Correct PCRE2 `Xps`/`Xsp` for U+0085 and U+180E. Share one Unicode-space
+  predicate with existing generic/POSIX whitespace instead of a divergent
+  property formula, retaining the ASCII fast path and category lookup. Captures,
+  complements, scoped UCP behavior and finite controls retain their contracts.
+
 - Add PCRE2 `Xuc` to the existing property-name and scalar-predicate dispatch.
   The property and complement now match instead of failing at execution as
   unsupported. Native10.47/Unicode16 controls cover boundary scalars, bracket

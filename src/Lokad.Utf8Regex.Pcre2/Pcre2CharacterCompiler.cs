@@ -1913,8 +1913,11 @@ internal static class Pcre2CharacterSemantics
             return Utf8AsciiBytePredicates.IsSixByteWhitespace((byte)scalar.Value);
         }
 
-        return ucp && (IsSeparator(Rune.GetUnicodeCategory(scalar)) || IsHorizontalSpace(scalar) || IsVerticalSpace(scalar));
+        return ucp && IsUnicodeSpace(scalar, Rune.GetUnicodeCategory(scalar));
     }
+
+    private static bool IsUnicodeSpace(Rune scalar, UnicodeCategory category) =>
+        IsSeparator(category) || IsHorizontalSpace(scalar) || IsVerticalSpace(scalar);
 
     internal static bool IsWord(Rune scalar, bool ucp)
     {
@@ -2004,7 +2007,7 @@ internal static class Pcre2CharacterSemantics
             "ZL" => category == UnicodeCategory.LineSeparator,
             "ZP" => category == UnicodeCategory.ParagraphSeparator,
             "XAN" => IsLetterCategory(category) || IsNumber(category),
-            "XPS" or "XSP" => scalar.Value is >= 0x09 and <= 0x0D || IsSeparator(category),
+            "XPS" or "XSP" => IsUnicodeSpace(scalar, category),
             // PT_UCNC: a Rune is already outside the surrogate range.
             "XUC" => scalar.Value >= 0xA0 || scalar.Value is '$' or '@' or '`',
             "XWD" => IsWord(scalar, ucp: true),
