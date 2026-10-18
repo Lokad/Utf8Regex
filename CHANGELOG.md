@@ -1,8 +1,9 @@
 # Changelog
 
-## Development after scalar.99
+## Preparing private Core/PythonRe scalar.100
 
-Source builds use `0.4.0-scalar.100-dev`; no new immutable candidate is designated.
+Source builds use `0.4.0-scalar.100` for one coherent Unicode class-construction
+delivery. Qualification is pending; no package or downstream promotion is claimed.
 
 Python full-domain character classes skip redundant per-code-point case folding
 and reuse the existing complete-scalar rendering instead of 1,024 surrogate

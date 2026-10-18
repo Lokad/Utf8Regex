@@ -1,5 +1,9 @@
 # Lokad.Utf8Regex.PythonRe
 
+Preparing private **Core/PythonRe 0.4.0-scalar.100**, exact Core100, for complete
+class folding and compact astral-range rendering. Qualification is pending;
+scalar.99 remains the qualified input. No PCRE100 or publication is designated.
+
 `Lokad.Utf8Regex` matches Unicode scalars over strict UTF-8 spans, with primary
 byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences. PythonRe adds pinned Python

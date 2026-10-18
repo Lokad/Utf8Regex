@@ -1,5 +1,10 @@
 # Lokad.Utf8Regex
 
+Preparing private **Core/PythonRe 0.4.0-scalar.100** for the Unicode class
+construction improvements below. Qualification is pending; immutable scalar.99
+remains the qualified input until the new delivery receipts pass. No PCRE100
+or publication is designated.
+
 `Lokad.Utf8Regex` matches Unicode scalars over strict UTF-8 spans, with primary
 byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences. PythonRe adds pinned Python
