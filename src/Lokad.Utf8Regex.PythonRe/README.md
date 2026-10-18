@@ -5,46 +5,40 @@ byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences; PythonRe adds its pinned
 Python grammar, captures and result shaping over the shared owned engine.
 
-Preparation for a fresh **Core/PythonRe 0.4.0-scalar.93** pair is underway.
-Its exact Core dependency includes the RTL Count repair and unused-balancing-
-scratch reduction; PythonRe code and pinned oracle inputs remain unchanged.
-Package/platform/consumer/current-cost checks are pending at this producer
-revision. Preserve91 and independent PCRE92; no PCRE93, publication or adoption.
+Qualified private **Core/PythonRe 0.4.0-scalar.93**, clean producer
+`b4b0778bd897b173ced8a980e7192c9cda2a62de`, corrects RTL Count across unanchored
+alternatives beside `\G` and omits unused balancing scratch. PythonRe requires
+exact Core `[0.4.0-scalar.93]`. Same immutable Windows/Linux package consumers,
+121 capture / 91 semantic fixtures, API/member/symbol/provenance and a fresh mapped-
+feed public restore pass. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39096987592)
+is green. [Handoff](../../artifacts/core-python-scalar93-20261018/HANDOFF.md) and
+[consumption](../../artifacts/core-python-scalar93-20261018/CONSUMING.md) record exact identities and scope.
 
-The qualified private **Core/PythonRe 0.4.0-scalar.91** pair comes from clean
-producer `68a1e39b555cad29d5f488d2c8d2adc6624b68b7`; PythonRe requires exact Core
-`[0.4.0-scalar.91]`. Same immutable bytes pass Windows/Linux package consumers,
-121capture/91semantic fixtures, API/member/symbol/provenance checks and a fresh
-isolated final-feed public restore. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39089557966)
-is green. [Handoff](../../artifacts/core-python-scalar91-20261018/HANDOFF.md) and
-[consumption](../../artifacts/core-python-scalar91-20261018/CONSUMING.md) record exact scope/identities.
-Preserve90/older candidates and independentPCRE76/Core76; no PCRE91 package is supplied.
+`a|\Gb` over `a xa` now counts both matches in RTL. Mandatory first-anchor
+stopping stays bounded, with scalar/empty advancement, captures, cancellation,
+deadlines and finite limits preserved. Removing unused heads lets a 512-capture
+Count fit 4 KiB without dropping required detailed capture storage or instruction
+metering. PythonRe code/pinned data and public APIs are unchanged from 91. Previous
+parser/capture/folding repairs remain. Core retains only accepted Unsafe.SizeOf;
+PythonRe none. Unchecked reads/generated helpers/native imports/shipped BCL
+matcher/results remain absent. [Shared controls](../../HOST-INTEGRATION.md) describe actual factories and owners.
 
-Scalar.91 repairs raw escaped Unicode literals/classes/ranges/folding and combined
-global ASCII/Unicode admission, preserving scoped overrides and separate explicit
-surrogate atoms. Existing capture rollback also passes new assertion/conditional
-compositions. The [shared resource reference](../../HOST-INTEGRATION.md) lists actual
-entry points, construction versus invocation controls and surviving owners.
-Prior Count capture-state elision, exact wide finite repeats, comments/flags,
-anchor admission and bracket control escapes remain. No matching algorithm,
-public API, IR, engine or accounting model is added. Core retains only permitted
-Unsafe.SizeOf (accepted by Lython); Python none. Unchecked reads/generated helpers,
-native imports and shipped BCL matchers/results stay absent.
+[Current exact93 costs](../../artifacts/core-python-scalar93-20261018/vm-cost/RESULT.md)
+are closed: 500 raw samples, 16 of 25 paired rows qualified after the sole confirmation; nine
+remain unqualified, including captured Core Count. No noisy gain/loss or cause
+is claimed. Qualified finite Python Count 80.378 us, detailed FullMatch 6.201 us;
+Core terminal Count 16.935/17.410/17.543 us and literal 1.616/2.343/2.381 us U/F/live.
+Captured operations allocate 32 B less; controls retain 0/112/112 B. Terminal finite
+cost is about 2.8/3.6%, literal ~0.727/0.765 us plus 112 B. Python unlimited bases are
+unqualified. No more timing, CPython Status, compiled or full-profile parity or
+replacement of the closed original checked-access gate follows.
 
-[Current exact91 costs](../../artifacts/core-python-scalar91-20261018/vm-cost/RESULT.md)
-retain500raw samples from one default-runtime pair plus its sole confirmation.
-18/25 lanes qualify; seven remain unqualified, including captured Core Count
-and both its.NET controls. Rounded allocations are unchanged. Qualified finite
-Python Count82.827us/detailed FullMatch6.385us and terminal Unicode Count
-17.699/18.045/18.218us U/finite/live provide selective current operating costs.
-Finite literal Count adds about0.71us/112B. No timing claim from noisy lanes,
-new speedup attribution, CPythonStatus/compiled/full-SPEC parity or replacement of
-the original closed checked-access gate follows. Earlier costs keep their scope.
-
-Defaults/static calls remain unlimited. [Host composition](../../HOST-INTEGRATION.md)
-explains modeled capacities and surviving owners. Complete grammar/construction/
-lazy/default/retained-storage/host/SPEC coverage remains open. No public
-publication, external consumer pin/default change or adoption is implied.
+Defaults/static calls remain unlimited. Complete grammar/construction/lazy/
+default/retained-storage/host/SPEC coverage stays open. Preserve 91 and older bytes; 91 retains its documented RTL Count issue.
+Independent Core/PCRE92 and later PCRE source
+work stay separate. No PCRE93, publication, external pin/default change or actual
+adoption is implied. Immutable package preparation assets retain staging-time
+pending status; this source view and handoff record later scoped completion.
 
 ## Support Scope
 

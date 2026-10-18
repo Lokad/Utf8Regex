@@ -1,11 +1,25 @@
 # Changelog
 
+## Qualified private Core/PythonRe scalar.93
+
+The immutable pair at b4b0778b corrects Core RTL Count across unanchored
+alternatives beside a contiguous anchor and removes unused balancing scratch.
+Same-byte Windows/Linux consumers, exact API/member/symbol/provenance, capture/
+semantic controls and a fresh public restore pass; producer CI is green. Current
+costs are closed: 500 raw samples, 16 of 25 paired rows qualified after the sole confirmation;
+nine remain unqualified, including captured Core Count. Selected captured calls
+allocate 32 B less. No noisy timing gain/loss or further campaign is claimed.
+PythonRe code/data/API are unchanged from 91. Preserve 91 and older and independent
+Core/PCRE92; no PCRE93, publication/adoption or full-SPEC completion is implied.
+See artifacts/core-python-scalar93-20261018/HANDOFF.md.
+
 ## Preparation for private Core/PythonRe scalar.93
 
-This coherent pair includes the Core RTL Count alternative/contiguous-anchor
-repair and omission of unused balancing scratch. PythonRe's implementation and
+At producer staging this coherent pair included the Core RTL Count repair
+and omission of unused balancing scratch. PythonRe's implementation and
 pinned oracle inputs are unchanged from91. Exact-package/platform/consumer and
-current-cost qualification is pending at this producer revision. The older91
+current-cost qualification was pending at that producer revision. The completion
+record above does not mutate its immutable package preparation assets. The older91
 bytes retain the demonstrated RTL Count limitation. Preserve91 and independent
 Core/PCRE92; no PCRE93, publication or downstream adoption is implied. The PCRE
 workspace source improvement below has its own later delivery boundary.
