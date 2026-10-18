@@ -99,20 +99,8 @@ $processInfo.UseShellExecute = $false
 # non-Windows hosts, and .NET child processes inherit the latter, not the former.
 $processInfo.WorkingDirectory = $repoRoot
 
-if ($CommandArgs) {
-    $benchmarkDll = Join-Path $repoRoot "bench" "Lokad.Utf8Regex.Benchmarks" "bin" $Configuration "net10.0" "Lokad.Utf8Regex.Benchmarks.dll"
-    $processInfo.ArgumentList.Add($benchmarkDll)
-}
-else {
-    $processInfo.ArgumentList.Add("run")
-    $processInfo.ArgumentList.Add("--project")
-    $processInfo.ArgumentList.Add("./bench/Lokad.Utf8Regex.Benchmarks/Lokad.Utf8Regex.Benchmarks.csproj")
-    $processInfo.ArgumentList.Add("-c")
-    $processInfo.ArgumentList.Add($Configuration)
-    $processInfo.ArgumentList.Add("--no-build")
-    $processInfo.ArgumentList.Add("--no-restore")
-    $processInfo.ArgumentList.Add("--")
-}
+$benchmarkDll = Join-Path $benchmarkArtifactsRoot "Lokad.Utf8Regex.Benchmarks.dll"
+$processInfo.ArgumentList.Add($benchmarkDll)
 
 foreach ($argument in $benchmarkArgs) {
     $processInfo.ArgumentList.Add($argument)

@@ -149,6 +149,9 @@ The tables below are historical measurements from the revisions and dates in
 qualify the current engine. Current scoped package measurements, finite-limit
 costs and inconclusive lanes are recorded in the
 [scalar.99 handoff](artifacts/core-python-scalar99-20261018/HANDOFF.md).
+One selected current-source Unicode Count workload has a separate
+[BenchmarkDotNet report](CURRENT-PERFORMANCE.md), including both .NET baselines,
+allocations, uncertainty and scope. It does not measure finite-limit overhead.
 Later source comparisons retain their separate scope in [CHANGELOG.md](CHANGELOG.md).
 
 The README CLI now uses an unboxed allocation sink. Older allocation figures can
