@@ -9,6 +9,11 @@ presence still requires full matching. Whole-input strict UTF-8 validation and
 the original cancellation/deadline remain. Unmetered routes and existing anchored,
 RTL and prefix-guided paths retain their selection. No new package is designated.
 
+Core scalar prefix-guided Count rechecks the original cancellation token after
+its terminal admitted step, before publishing zero or a prior count. It reuses
+the existing checkpoint without another work charge or new state; deadlines,
+resource denials and cleanup remain unchanged.
+
 ## Qualified private Core/PythonRe scalar.101
 
 Clean producer8ed61eab batches the two output changes below with exact Core101.

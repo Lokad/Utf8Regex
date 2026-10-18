@@ -589,8 +589,10 @@ internal static partial class Utf8SliceRunner
                         position = found ? candidate.Index : -1;
                     }
                     if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
-                    // Exhausting the prefix search still checks publication authority.
-                    if (position < 0) return new(count, invocation.TryChargeInputStep());
+                    // Keep the final charge and recheck the original token after
+                    // its diagnostic hook before publishing any accumulated count.
+                    if (position < 0)
+                        return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
                 }
                 if (seekBeginning)
                 {
