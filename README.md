@@ -1,10 +1,13 @@
 # Lokad.Utf8Regex
 
-Preparing private **Core/PythonRe 0.4.0-scalar.102**. It batches bounded required-
-literal absence admission, terminal prefix Count cancellation and coarse Python
-template-length work admission. Qualification is pending; scalar.101 remains the
-previous qualified input with its recorded source-only correction. No PCRE102,
-publication or consumer adoption is designated.
+Qualified private **Core/PythonRe 0.4.0-scalar.102**, exact Core102, clean producer
+`62efe07bc5cf93865549b1d241487efe34b3475f`. It batches bounded required-literal
+absence admission, terminal prefix Count cancellation and coarse Python template
+work admission. Same DLLs pass Windows/Linux detached suites and unchanged
+original public consumer assertions. [Handoff](artifacts/core-python-scalar102-20261018/HANDOFF.md)
+and [consume](artifacts/core-python-scalar102-20261018/CONSUMING.md) record identities,
+the initial allocation-test failure/recovery and current finite replacement costs.
+Source moves to103-dev; no PCRE102, publication or adoption is designated.
 
 Qualified private **Core/PythonRe 0.4.0-scalar.101**, exact Core101, clean producer
 `8ed61eaba2b34d8aa72f791b063d3f8300f8f1a3`. It fixes overlapping Core `TryReplace`

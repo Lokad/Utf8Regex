@@ -1,9 +1,9 @@
 # Resource controls and host ownership
 
-The qualified private Core/PythonRe input is **0.4.0-scalar.101**. Its
-[handoff](artifacts/core-python-scalar101-20261018/HANDOFF.md) records exact
+The qualified private Core/PythonRe input is **0.4.0-scalar.102**. Its
+[handoff](artifacts/core-python-scalar102-20261018/HANDOFF.md) records exact
 identities, same-byte Windows/Linux consumer checks, current costs and exclusions.
-Independent PCRE2 uses its exact Core/PCRE2 scalar.94 pair; no PCRE101 is designated.
+Independent PCRE2 uses its exact Core/PCRE2 scalar.94 pair; no PCRE102 is designated.
 Earlier packages retain their recorded contracts and limitations.
 
 Scalar.101 supports overlapping Core `TryReplace` subject/destination spans by
@@ -14,7 +14,7 @@ earlier. Detailed Python snapshots may share an immutable string for captures
 covering the whole match; capture metadata and returned mutable arrays remain
 independent.
 
-Current102-dev adds source changes outside immutable101: eligible controlled
+Scalar.102 adds changes outside immutable101: eligible controlled
 Core `IsMatch`/`Count` calls reject a planner-proved absent required literal before
 VM acquisition, and scalar prefix Count rechecks the original token after its
 terminal work checkpoint. The first can admit smaller limits; a one-byte modeled
@@ -23,7 +23,7 @@ shared-invocation cancellation edge. Controlled PythonRe template substitution
 also admits one invocation-work step per 2,048 UTF-16 template code units before
 cache lookup, for cold and warm calls. Large templates can deny before parsing,
 even on empty subjects; detailed construction work keeps its separate backstop.
-These changes do not designate another package.
+These changes are qualified in scalar.102; earlier bytes remain unchanged.
 
 Choose eager-construction and invocation limits separately. The common policy
 types describe admission scopes; work units and execution failure types depend
@@ -143,7 +143,7 @@ separate program/subject owner alive while a surviving result or view borrows it
 storage. The envelope does not turn these exclusions into covered allocations.
 Host-created lists of snapshots, for example, need their own admission.
 
-Core/PythonRe scalar.101 and current source have the following preparation scope.
+Core/PythonRe scalar.102 and current source have the following preparation scope.
 These are separate phase ceilings, not additions to the invocation W + R promise.
 
 | Preparation | Admission and reuse |
@@ -190,7 +190,7 @@ The qualified input is the exact Core/adapter pair recorded by its manifest,
 feed and locks. Adapters consume Core internals and move together with the exact
 qualified Core version. Applications combining adapters need a common qualified
 Core; deliberate dependency overrides have separate compatibility scope.
-The immutable [Core/PythonRe scalar.101 handoff](artifacts/core-python-scalar101-20261018/HANDOFF.md)
+The immutable [Core/PythonRe scalar.102 handoff](artifacts/core-python-scalar102-20261018/HANDOFF.md)
 records same-byte Windows/Linux consumers, exact identities, current costs and
 the recorded semantic/resource subset. Independent PCRE2 evidence stays
 with its [scalar.94 handoff](artifacts/pcre2-scalar94-delivery-20261018/HANDOFF.md).

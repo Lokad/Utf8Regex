@@ -1,10 +1,13 @@
 # Lokad.Utf8Regex.PythonRe
 
-Preparing private **Core/PythonRe 0.4.0-scalar.102** with exact Core102. Controlled
-template lookup admits coarse length work before cold or warm preparation; Core
-also batches required-literal absence admission and terminal Count cancellation.
-Qualification is pending. Earlier packages stay immutable; no PCRE102,
-publication or downstream adoption is designated.
+Qualified private **Core/PythonRe 0.4.0-scalar.102**, exact Core102, clean producer
+`62efe07bc5cf93865549b1d241487efe34b3475f`. Controlled template lookup admits coarse
+length work before cold or warm preparation; Core batches required-literal absence
+admission and terminal Count cancellation. Same DLLs pass Windows/Linux detached
+and original public consumer checks. [Handoff](../../artifacts/core-python-scalar102-20261018/HANDOFF.md)
+and [consume](../../artifacts/core-python-scalar102-20261018/CONSUMING.md) record exact
+identities, allocation-test recovery and current finite replacement costs. Earlier
+bytes stay immutable; no PCRE102, publication or downstream adoption is designated.
 
 Qualified private **Core/PythonRe 0.4.0-scalar.101**, exact Core101, clean producer
 `8ed61eaba2b34d8aa72f791b063d3f8300f8f1a3`. Detailed snapshots reuse owned immutable

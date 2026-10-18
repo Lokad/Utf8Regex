@@ -1,6 +1,15 @@
 # Changelog
 
-## Changes after scalar.101
+## Qualified private Core/PythonRe scalar.102
+
+Clean producer62efe07b batches the three bounded changes below with exact Core102.
+Same immutable DLLs pass Windows/Linux detached suites, unchanged original public
+consumer assertions, capture/semantic oracles and identity/member/provenance checks.
+The initial Windows Core allocation assertion failed once; focused and full-suite
+recovery used unchanged bytes and matching binaries, with all receipts preserved.
+One bounded exact-package replacement observation records finite/live costs and
+the remaining .NET-overlap gap. Source moves to103-dev; no PCRE102, publication
+or adoption. Handoff: artifacts/core-python-scalar102-20261018/HANDOFF.md.
 
 Controlled PythonRe template substitution admits one invocation-work step per
 2,048 UTF-16 template code units before cache lookup. Cold and warm calls share
