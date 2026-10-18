@@ -1,11 +1,22 @@
 # Lokad.Utf8Regex.Pcre2
 
-Preparation for an independent **Core/PCRE2 0.4.0-scalar.92** pair is underway.
-It includes the property repairs below and inherited qualified Core fixes since
-scalar.76. Exact-package Windows/Linux, public-consumer and current-cost checks
-are pending at this producer revision. No PythonRe scalar.92 designation,
-publication or adoption is implied; Core/PythonRe scalar.91 remains available.
-The scalar.76 evidence below remains tied to its immutable packages.
+Qualified independent **Core/PCRE2 0.4.0-scalar.92**, producer
+`4b8f8ef5dff11ecc41f0d7b53d57162c1ef9603e`, includes the property repairs below
+and inherited qualified Core fixes since76. Same-byte Windows/Linux5865tests,
+exact API/member/symbol/provenance and a fresh public restore with676recorded
+native property observations pass. Producer CI is green. [Handoff](../../artifacts/pcre2-scalar92-delivery-20261018/HANDOFF.md)
+and [consumption](../../artifacts/pcre2-scalar92-delivery-20261018/CONSUMING.md)
+record hashes and exact Core `[0.4.0-scalar.92]` pin. Core92 is this adapter's
+dependency only; no Python92, publication or adoption is implied. Core/Python91
+remains independent. Original package preparation assets stay immutable.
+
+Current-cost batch is closed after160raw samples/one allowed confirmation:
+10of16rows qualify, six remain unqualified. Finite+token Count: captured1000hits
+293.452us/5888B, literal1000hits16.589us/112B, Unicode500hits234.312us/5888B,
+properties500hits479.499us/89416B. Only Unicode has a qualified unlimited lane:
+finite/live overhead2.25/4.49%,112additional bytes. Other unlimited comparisons
+remain unqualified. No source speedup, Status or checked-access gate claim;
+capture/property costs remain opportunities and basic metering stays.
 
 Development source adds the `Xuc` property using existing managed scalar
 predicates: `$`, `@`, U+0060 and scalars from U+00A0 upward. Complements,
@@ -16,6 +27,8 @@ Core/PythonRe scalar.91 remains independent and unchanged.
 The source also corrects `Xps`/`Xsp` for NEL and Mongolian vowel separator,
 sharing the existing Unicode-space rule with generic/POSIX whitespace. UCP-off
 generic whitespace stays ASCII; resource controls and scalar coordinates remain.
+
+## Previous qualified scalar.76
 
 Qualified private **Core/PCRE2 0.4.0-scalar.76**, producer
 `58e2927a64c334f1e9f7ced2fbd46d55dadc5d55`, adds text/UTF-8 `Compile` factories

@@ -1,10 +1,22 @@
 # Changelog
 
+## Qualified private Core/PCRE2 scalar.92
+
+The independent pair at4b8f8ef5 includes Xuc support, the shared Xps/Xsp Unicode
+space correction and inherited qualified Core fixes since76. Same-byte Windows/
+Linux package consumers, exact symbols/API/member/provenance and a fresh public
+restore with676recorded native property observations pass; producer CI is green.
+Current costs are closed after160raw samples:10of16rows qualify, six remain
+unqualified. No further timing or noisy speedup claim follows. Core/PythonRe91
+and older PCRE76 remain immutable; Core92 is this adapter's exact dependency.
+No Python92, publication/adoption or full-SPEC completion is claimed.
+See artifacts/pcre2-scalar92-delivery-20261018/HANDOFF.md.
+
 ## Preparation for private Core/PCRE2 scalar.92
 
-The next independent Core/PCRE2 pair includes the two property repairs below
+At producer staging the independent Core/PCRE2 pair included the two repairs below
 and the qualified Core fixes since scalar.76. Package/platform/public-consumer
-and current-cost checks are pending at this producer revision. Core is this
+and current-cost checks were pending at that producer revision; the record above reports completion. Core is this
 pair's exact dependency; no PythonRe scalar.92 qualification is implied.
 Preserve delivered Core/PythonRe scalar.91 and independent Core/PCRE2 scalar.76.
 No publication, consumer adoption or full-profile completion is claimed.

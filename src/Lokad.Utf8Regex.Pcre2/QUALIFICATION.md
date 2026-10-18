@@ -1,5 +1,31 @@
 # Managed PCRE2 profile qualification
 
+## Qualified independent scalar.92 properties
+
+Producer `4b8f8ef5dff11ecc41f0d7b53d57162c1ef9603e`, Release/net10.0.
+[Handoff](../../artifacts/pcre2-scalar92-delivery-20261018/HANDOFF.md) and
+[consumption](../../artifacts/pcre2-scalar92-delivery-20261018/CONSUMING.md)
+record exact packages/DLLs/symbols/provenance and the Core92 pin. Same immutable
+bytes pass Windows/Linux5865tests each, including34Xuc/28space/37construction.
+Fresh final-feed public restore checks exact refs/locks/cache/loaded DLLs and
+replays676native10.47/Unicode16 property observations with all four finite caps.
+Native comparator remains private tooling; no runtime implementation dependency.
+
+Xuc uses existing scalar dispatch. Xps/Xsp reuse one Unicode-space predicate,
+correcting NEL/MVS without a duplicate formula. No new API/table/engine/owner.
+Core source exactly equals qualified91; Core92 is the adapter dependency only.
+Both exact assemblies retain only accepted Unsafe.SizeOf, no generated access
+helpers/native imports/shipped BCL matcher/results. Producer CI39093230643 is
+green on both platforms. Original seven-artifact manifest and six TRX/project/
+lock receipts remain. No old package is rebuilt or relabeled.
+
+Current default-runtime cost observation is closed160raw/10of16qualified after
+its sole confirmation; six rows stay unqualified. Finite+token captured Count
+293.452us/5888B, literal16.589us/112B, Unicode234.312us/5888B and properties
+479.499us/89416B. Only Unicode qualifies its unlimited comparison. No further
+timing, cross-report source speedup, Status or checked52 gate claim. Complete
+SPEC/construction/lazy/default/retention/RSS/host/adoption remains open.
+
 ## Qualified independent scalar.76 construction input
 
 Producer `58e2927a64c334f1e9f7ced2fbd46d55dadc5d55`, Release/net10.0.

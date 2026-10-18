@@ -3,9 +3,14 @@
 The latest immutable Core/PythonRe scalar.91 pair preserves the completed inventory:
 Core only permitted `Unsafe.SizeOf`, PythonRe none, no generated staging helpers,
 native imports or shipped BCL matcher/results. Lython accepts SizeOf. Same-byte
-Windows/Linux consumer and exact packaged member checks pass. Producerfd8bade3/
-CI39084642019 is green both platforms. [Handoff](artifacts/core-python-scalar91-20261018/HANDOFF.md),
+Windows/Linux consumer and exact packaged member checks pass. Producer68a1e39b/
+CI39089557966 is green both platforms. [Handoff](artifacts/core-python-scalar91-20261018/HANDOFF.md),
 [exact members](artifacts/core-python-scalar91-20261018/exact-member-references.json).
+Independent Core/PCRE2 scalar.92 also preserves only accepted SizeOf in both
+assemblies, with no generated access helpers/native imports/shipped BCL matcher
+or results. Exact members and same-byte platform receipts are in its
+[handoff](artifacts/pcre2-scalar92-delivery-20261018/HANDOFF.md). Lython's former
+SizeOf rejection is resolved; keep actual size queries rather than manual estimates.
 Earlier90/89/88/87/86 and independentPCRE76/Core76 remain immutable. Later correctness/
 Count/parser changes and selective costs do not reopen or replace the completed
 fixed-original checked52 gate. Earlier evidence stays below.
