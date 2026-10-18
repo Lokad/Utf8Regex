@@ -13266,6 +13266,518 @@
           ]
         }
       ]
+    },
+    {
+      "id": 107,
+      "pattern": "(?#lead)(?i)(?P<x>😀a)",
+      "input": "😀A 😀a",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀A",
+              "startByte": 0,
+              "endByte": 5,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀A",
+              "startByte": 0,
+              "endByte": 5,
+              "startUtf16": 0,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀A",
+              "startByte": 0,
+              "endByte": 5,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀A",
+              "startByte": 0,
+              "endByte": 5,
+              "startUtf16": 0,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀A",
+              "startByte": 0,
+              "endByte": 5,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀A",
+              "startByte": 0,
+              "endByte": 5,
+              "startUtf16": 0,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀a",
+              "startByte": 6,
+              "endByte": 11,
+              "startUtf16": 4,
+              "endUtf16": 7
+            },
+            {
+              "success": true,
+              "text": "😀a",
+              "startByte": 6,
+              "endByte": 11,
+              "startUtf16": 4,
+              "endUtf16": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 108,
+      "pattern": "(?x) #lead\n (?i)(?P<x>😀a)",
+      "input": "😀A 😀a",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀A",
+              "startByte": 0,
+              "endByte": 5,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀A",
+              "startByte": 0,
+              "endByte": 5,
+              "startUtf16": 0,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀A",
+              "startByte": 0,
+              "endByte": 5,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀A",
+              "startByte": 0,
+              "endByte": 5,
+              "startUtf16": 0,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀A",
+              "startByte": 0,
+              "endByte": 5,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀A",
+              "startByte": 0,
+              "endByte": 5,
+              "startUtf16": 0,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀a",
+              "startByte": 6,
+              "endByte": 11,
+              "startUtf16": 4,
+              "endUtf16": 7
+            },
+            {
+              "success": true,
+              "text": "😀a",
+              "startByte": 6,
+              "endByte": 11,
+              "startUtf16": 4,
+              "endUtf16": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 109,
+      "pattern": "(a)(?#between){2}",
+      "input": "aa a",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": null,
+          "groups": [
+            {
+              "success": true,
+              "text": "aa",
+              "startByte": 0,
+              "endByte": 2,
+              "startUtf16": 0,
+              "endUtf16": 2
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 1,
+              "endByte": 2,
+              "startUtf16": 1,
+              "endUtf16": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 110,
+      "pattern": "(?#escaped\\)closer)(?i)(?P<x>😀a)",
+      "input": "😀A 😀a",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀A",
+              "startByte": 0,
+              "endByte": 5,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀A",
+              "startByte": 0,
+              "endByte": 5,
+              "startUtf16": 0,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀A",
+              "startByte": 0,
+              "endByte": 5,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀A",
+              "startByte": 0,
+              "endByte": 5,
+              "startUtf16": 0,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀A",
+              "startByte": 0,
+              "endByte": 5,
+              "startUtf16": 0,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "😀A",
+              "startByte": 0,
+              "endByte": 5,
+              "startUtf16": 0,
+              "endUtf16": 3
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "😀a",
+              "startByte": 6,
+              "endByte": 11,
+              "startUtf16": 4,
+              "endUtf16": 7
+            },
+            {
+              "success": true,
+              "text": "😀a",
+              "startByte": 6,
+              "endByte": 11,
+              "startUtf16": 4,
+              "endUtf16": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 111,
+      "pattern": "(?x)(?P<x>a)#continued\\\nb",
+      "input": "a ab",
+      "single": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": false,
+          "lastIndex": null,
+          "lastGroup": null,
+          "groups": []
+        }
+      ],
+      "global": [
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 0,
+              "endByte": 1,
+              "startUtf16": 0,
+              "endUtf16": 1
+            }
+          ]
+        },
+        {
+          "success": true,
+          "lastIndex": 1,
+          "lastGroup": "x",
+          "groups": [
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            },
+            {
+              "success": true,
+              "text": "a",
+              "startByte": 2,
+              "endByte": 3,
+              "startUtf16": 2,
+              "endUtf16": 3
+            }
+          ]
+        }
+      ]
     }
   ]
 }

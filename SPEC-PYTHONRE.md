@@ -64,6 +64,28 @@ they are not skipped or changed into unbounded finite repeats. Construction
 bounds metadata grows and remains admitted. The repair is included in qualified scalar.89;
 complete Python grammar coverage remains separate.
 
+## Ignored comments and leading flags
+
+Development source after scalar.89 treats `(?#...)` comments as ignored syntax
+in every option scope, alongside verbose whitespace and `#` line comments where
+verbose mode applies. Global inline flags may follow only such leading trivia;
+real atoms, alternatives and nested scopes keep their existing placement errors.
+Comment groups produce no AST atom or group frame, so `a(?#note){2}` repeats `a`.
+Trivia between repeat modifiers never joins a lazy or possessive suffix.
+
+Comment scanning respects CPython's escaped-token boundaries: an escaped `)`
+does not close a group comment, and an escaped LF does not end a verbose line
+comment. A trailing backslash still raises `bad escape (end of pattern)`; an
+unfinished group comment keeps its original start position. Pattern error
+positions retain the public UTF-16 coordinate convention.
+
+The leading-flag, atom and quantifier decisions reuse one admitted trivia scan.
+Every consumed comment character spends construction work and checks the
+original cancellation/deadline authority. Failed scans unwind their existing
+owner; spent work is not refunded. Removing comment nodes can reduce required
+construction storage/depth. This is a source correction, separate from the
+immutable scalar.89 package and its original107 capture fixtures.
+
 ## Nullable repetition and capture state
 
 Python's mandatory repetitions precede the optional phase's empty-progress guard.

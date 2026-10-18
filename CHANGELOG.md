@@ -2,6 +2,12 @@
 
 ## Development after scalar.89
 
+- Treat PythonRe comment groups as ignored syntax, preserving leading global
+  flags and quantifier attachment to the preceding atom. Escaped closing
+  parentheses and newlines stay inside their comments; trailing comment escapes
+  retain Python errors. One shared trivia scan replaces comment group AST/frame
+  handling and keeps construction work, cancellation and deadlines authoritative.
+
 - Keep Core's explicit finite repeat maximum `2147483647` distinct from
   infinity, including numeric/octal fixups and scalar VM lowering. Direct
   families that use the old sentinel decline this finite edge to scalar

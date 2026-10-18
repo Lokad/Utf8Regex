@@ -95,8 +95,10 @@ internal sealed partial class PythonReParser
 
     private void ConsumeLeadingInlineFlags(ref PythonReCompileOptions options)
     {
-        while (TryConsumeLeadingInlineFlagGroup(out var add))
+        while (true)
         {
+            SkipIgnoredPatternTrivia(options);
+            if (!TryConsumeLeadingInlineFlagGroup(out var add)) return;
             Utf8ConstructionScope.ChargeWork(1);
             options |= add;
             _leadingInlineOptions |= add;
@@ -866,13 +868,17 @@ internal sealed partial class PythonReParser
 
     private void SkipIgnoredPatternTrivia(PythonReCompileOptions options)
     {
-        if ((options & PythonReCompileOptions.Verbose) == 0)
-        {
-            return;
-        }
-
         while (!IsAtEnd)
         {
+            // Group comments are trivia in every option scope. Skip them before
+            // atom/repeat/leading-flag decisions, without creating an empty AST
+            // atom that could steal a following quantifier.
+            if (_pattern.AsSpan(_position).StartsWith("(?#", StringComparison.Ordinal))
+            {
+                SkipGroupComment();
+                continue;
+            }
+            if ((options & PythonReCompileOptions.Verbose) == 0) return;
             Utf8ConstructionScope.ChargeWork(1);
             // CPython verbose skips exactly space, tab, LF, CR, VT, and FF (Lib/re/_parser.py WHITESPACE), unlike char.IsWhiteSpace, which also eats no-break spaces and Unicode spaces that CPython preserves literally.
             if (Current is ' ' or '\t' or '\n' or '\r' or '\v' or '\f')
@@ -887,7 +893,7 @@ internal sealed partial class PythonReParser
                 while (!IsAtEnd && Current != '\n')
                 {
                     Utf8ConstructionScope.ChargeWork(1);
-                    _position++;
+                    if (_pattern[_position++] == '\\') SkipEscapedCommentCharacter();
                 }
 
                 continue;
@@ -895,6 +901,31 @@ internal sealed partial class PythonReParser
 
             break;
         }
+    }
+
+    private void SkipGroupComment()
+    {
+        var start = _position;
+        Utf8ConstructionScope.ChargeWork(3);
+        _position += 3; // The caller established "(?#".
+        while (!IsAtEnd)
+        {
+            Utf8ConstructionScope.ChargeWork(1);
+            var character = _pattern[_position++];
+            if (character == ')') return;
+            if (character == '\\') SkipEscapedCommentCharacter();
+        }
+        throw new PythonRePatternException("missing ), unterminated comment", start);
+    }
+
+    // CPython's tokenizer keeps an escaped character in the same token: an
+    // escaped ')' or LF cannot end its comment. A trailing backslash is still
+    // a lexical error, even inside a comment.
+    private void SkipEscapedCommentCharacter()
+    {
+        if (IsAtEnd) throw new PythonRePatternException("bad escape (end of pattern)", _position - 1);
+        Utf8ConstructionScope.ChargeWork(1);
+        _position++;
     }
 
     private static PythonReCompileOptions ApplyScopedFlags(

@@ -12,6 +12,12 @@ is green. [Handoff](../../artifacts/core-python-scalar89-20261018/HANDOFF.md) an
 [consumption](../../artifacts/core-python-scalar89-20261018/CONSUMING.md) record exact scope/identities.
 Earlier88/87/86 and independentPCRE76/Core76 remain immutable.
 
+Development source after scalar.89 also fixes ignored-comment parsing: leading
+global flags can follow comments/verbose trivia, comments cannot steal an atom's
+quantifier, and escaped closers/newlines stay in their comments. Existing
+construction/interruption controls remain authoritative. See the
+[comment contract](../../SPEC-PYTHONRE.md#ignored-comments-and-leading-flags).
+
 Scalar.89 includes exact finite Python repetition through4294967294, distinct
 from infinity, with compact invocation state and preserved captures/rollback,
 finite controls and interruption. Shared separator/atomic defects are repaired.

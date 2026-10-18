@@ -96,6 +96,13 @@ CASES = [
     (r"(?<=(?P<x>😀|a))b", "😀b ab"),
     (r"(?P<x>😀|a)(?<=(?P=x))b", "😀b ab"),
     (r"(?<=(?P<x>😀|a){2})b", "😀ab a😀b"),
+    # Ignored comments retain leading flag placement, quantifier attachment and
+    # escaped-token boundaries; captures still close on the successful path.
+    (r"(?#lead)(?i)(?P<x>😀a)", "😀A 😀a"),
+    ("(?x) #lead\n (?i)(?P<x>😀a)", "😀A 😀a"),
+    (r"(a)(?#between){2}", "aa a"),
+    (r"(?#escaped\)closer)(?i)(?P<x>😀a)", "😀A 😀a"),
+    ("(?x)(?P<x>a)#continued\\\nb", "a ab"),
 ]
 
 def snapshot(match, text):

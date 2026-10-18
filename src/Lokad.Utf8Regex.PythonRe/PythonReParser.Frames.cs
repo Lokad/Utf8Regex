@@ -187,19 +187,6 @@ internal sealed partial class PythonReParser
         else
         {
             if (IsAtEnd) throw new PythonRePatternException("unexpected end of pattern", _position);
-            if (TryConsume('#'))
-            {
-                while (!IsAtEnd && !TryConsume(')'))
-                {
-                    Utf8ConstructionScope.ChargeWork(1);
-                    _position++;
-                }
-                if (IsAtEnd && (_position == 0 || _pattern[_position - 1] != ')'))
-                    throw new PythonRePatternException("missing ), unterminated comment", frame.GroupStart);
-                _parsedNode = PythonReAstFactory.Empty;
-                child = default;
-                return true;
-            }
             if (TryConsume(':')) frame.GroupKind = PythonReGroupKind.NonCapturing;
             else if (TryConsume('>')) frame.GroupKind = PythonReGroupKind.Atomic;
             else if (TryConsume('=')) frame.GroupKind = PythonReGroupKind.PositiveLookahead;
