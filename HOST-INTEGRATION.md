@@ -6,6 +6,12 @@ identities, same-byte Windows/Linux consumer checks, current costs and exclusion
 Independent PCRE2 uses its exact Core/PCRE2 scalar.94 pair; no PCRE102 is designated.
 Earlier packages retain their recorded contracts and limitations.
 
+Development source after scalar.102 fixes a scoped-multiline anchor defect:
+grouped literals such as `(?m:^(abc))` could incorrectly use an absolute-start
+shortcut, missing later lines or undercounting matches. The fix reuses the
+existing admitted prefix proof; scoped line anchors keep their line/scalar
+route. Immutable scalar.102 is unchanged and does not contain this correction.
+
 Scalar.101 supports overlapping Core `TryReplace` subject/destination spans by
 staging scalar output before copying. Staging may allocate even for a literal;
 insufficient destinations stay unchanged. UTF-8 templates may alias the

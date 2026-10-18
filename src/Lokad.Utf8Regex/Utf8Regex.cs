@@ -163,7 +163,15 @@ public sealed partial class Utf8Regex
                 : null;
         _hasCaptures = HasOwnedCaptures(preparedRegex.ExecutionTree);
         _groupedLiteralSpanTable = !_hasCaptures || UsesRightToLeft() ? null : Utf8GroupedLiteralSpanTable.TryCreate(preparedRegex.ExecutionTree, ownedSliceProgram);
-        _caretAnchoredGroupedLiteralUtf8 = TryGetCaretAnchoredGroupedLiteral(preparedRegex.ExecutionTree, options, _groupedLiteralSpanTable, out var caretLiteral) ? caretLiteral : null;
+        // The existing literal proof respects each anchor's scoped options. Borrow
+        // its admitted bytes instead of collecting/copying the execution tree again.
+        _caretAnchoredGroupedLiteralUtf8 =
+            _groupedLiteralSpanTable is { } spanTable &&
+            (options & (RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.NonBacktracking)) == 0 &&
+            _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } prefix &&
+            prefix.Length == spanTable.TotalLengthInUtf16
+                ? prefix : null;
         _alternationBranchSpanMap = !_hasCaptures || UsesRightToLeft() ? null : Utf8AlternationBranchSpanMap.TryCreate(preparedRegex.ExecutionTree, ownedSliceProgram);
         static bool CanPrioritizePlainAsciiLiteralCount(
             string pattern,
@@ -2218,136 +2226,6 @@ public sealed partial class Utf8Regex
         // This predicate retains no storage, so its construction scope releases
         // the frame descriptor as well as its array on either result.
         return false;
-    }
-
-    // R05: construction-cached caret-anchored grouped-literal prefix for direct
-    // discovery without BCL verification. Admits ^ (outside Multiline) and \A followed
-    // by a single ASCII literal run through transparent groups/captures to the end
-    // of the tree, with a grouped span table covering the same total length for
-    // shaping. Anchors pin every match at offset 0 with the literal bytes, so a
-    // byte-prefix compare decides every group-agnostic lane exactly; group
-    // shaping reuses the span table. Multiline ^, RightToLeft, IgnoreCase,
-    // NonBacktracking, sets, loops, alternations, and other anchors stay out.
-    private static bool TryGetCaretAnchoredGroupedLiteral(
-        Utf8ExecutionTree? tree,
-        RegexOptions options,
-        Utf8GroupedLiteralSpanTable? spanTable,
-        out byte[]? prefixUtf8)
-    {
-        prefixUtf8 = null;
-        if (spanTable is null || tree?.Root is not { Kind: Utf8ExecutionNodeKind.Capture, CaptureNumber: 0 } root ||
-            root.Children.Count != 1 ||
-            (options & (RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.NonBacktracking)) != 0)
-        {
-            return false;
-        }
-
-        var node = root.Children[0];
-        while (node.Kind == Utf8ExecutionNodeKind.Group && node.Children.Count == 1)
-        {
-            node = node.Children[0];
-        }
-
-
-        // The anchor leads a top-level concatenation (probed: ^ and \A both lower
-        // to Beginning with the literal run as siblings); a trailing anchor, which
-        // the span table tolerates for shaping, stays out here.
-        if (node.Kind != Utf8ExecutionNodeKind.Concatenate || node.Children.Count < 2)
-        {
-            return false;
-        }
-
-        var head = node.Children[0];
-        var absoluteStart = head.Kind == Utf8ExecutionNodeKind.Beginning && head.Children.Count == 0;
-        if (!absoluteStart && head.Kind == Utf8ExecutionNodeKind.Bol && head.Children.Count == 0 &&
-            (options & RegexOptions.Multiline) == 0)
-        {
-            absoluteStart = true;
-        }
-
-        if (!absoluteStart)
-        {
-            return false;
-        }
-
-        var literal = new System.Collections.Generic.List<byte>();
-        for (var i = 1; i < node.Children.Count; i++)
-        {
-            if (!AppendCaretLiteralRun(node.Children[i], literal))
-            {
-                return false;
-            }
-        }
-
-        if (literal.Count == 0 || literal.Count != spanTable.TotalLengthInUtf16)
-        {
-            return false;
-        }
-
-        prefixUtf8 = literal.ToArray();
-        return true;
-    }
-
-    // Collects ASCII literal bytes through transparent groups/captures. Sets,
-    // loops, alternations, anchors, and non-ASCII content stay out, exactly
-    // matching the span-table literal-run definition minus its width-only set
-    // arm (byte-exact shaping needs the characters themselves).
-    private static bool AppendCaretLiteralRun(Utf8ExecutionNode node, System.Collections.Generic.List<byte> literal)
-    {
-        switch (node.Kind)
-        {
-            case Utf8ExecutionNodeKind.One:
-                if (node.Ch >= 0x80)
-                {
-                    return false;
-                }
-
-                literal.Add((byte)node.Ch);
-                return true;
-            case Utf8ExecutionNodeKind.Multi:
-                if (node.Text is null)
-                {
-                    return false;
-                }
-
-                foreach (var ch in node.Text)
-                {
-                    if (ch >= 0x80)
-                    {
-                        return false;
-                    }
-
-                    literal.Add((byte)ch);
-                }
-
-                return node.Text.Length > 0;
-            case Utf8ExecutionNodeKind.Concatenate:
-                foreach (var child in node.Children)
-                {
-                    if (!AppendCaretLiteralRun(child, literal))
-                    {
-                        return false;
-                    }
-                }
-
-                return node.Children.Count > 0;
-            case Utf8ExecutionNodeKind.Group:
-                if (node.Children.Count != 1)
-                {
-                    return false;
-                }
-
-                return AppendCaretLiteralRun(node.Children[0], literal);
-            case Utf8ExecutionNodeKind.Capture:
-                if (node.CaptureNumber <= 0 || node.Children.Count != 1)
-                {
-                    return false;
-                }
-
-                return AppendCaretLiteralRun(node.Children[0], literal);
-            default:
-                return false;
-        }
     }
 
     // Returns true when native branch discovery owns the result; false selects scalar discovery.
