@@ -11,6 +11,12 @@ construction policy. Other class closures, syntax validation and resource contro
 remain. Timeout exceptions can expose a shorter equivalent translated pattern.
 This source change does not alter immutable scalar.99 packages.
 
+Large astral class ranges now render with at most three disjoint surrogate-pair
+intervals for managed comparators, instead of one branch per high surrogate.
+The native scalar pattern is unchanged. Positive and negated ranges fit the
+tested 20,000-step construction policy; captures, quantifiers, lookbehind and
+strict UTF-8 behavior remain. Translated timeout-pattern text is more compact.
+
 ## Qualified private Core/PythonRe scalar.99
 
 Development benchmark tooling now warms the actual timing loop before README

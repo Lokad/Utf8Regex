@@ -361,6 +361,13 @@ managed comparator. Negation and capture/empty-match rules remain unchanged.
 Syntax validation precedes the proof; other ranges retain their expansion
 backstops. These classes can fit smaller construction policies. Their translated
 timeout-pattern spelling can become shorter while retaining equivalent behavior.
+Astral ranges also use at most three disjoint surrogate-pair intervals in the
+managed rendering: partial first/last rows and a complete middle interval.
+The branches retain scalar order and consume complete pairs, including under
+quantifiers and fixed-width lookbehind. Native scalar rendering and the parsed
+class are unchanged. Existing construction admission and interruption apply
+before branch text acquisition; no code-point or high-surrogate enumeration is
+required for this rendering. Nonconstant case folding retains its own backstops.
 Pre-cancellation wins over argument/decoding failures; later cancellation keeps
 the original token and a deadline failure throws `RegexMatchTimeoutException`.
 For UTF-8 pattern timeout failures the exception's Pattern is empty, avoiding an

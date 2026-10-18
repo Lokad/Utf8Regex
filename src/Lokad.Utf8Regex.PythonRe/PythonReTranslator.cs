@@ -746,19 +746,32 @@ internal static partial class PythonReTranslator
     {
         var startHigh = 0xd800 + ((startScalar - 0x10000) >> 10);
         var endHigh = 0xd800 + ((endScalar - 0x10000) >> 10);
-        for (var high = startHigh; high <= endHigh; high++)
+        var lowStart = (char)(0xdc00 + ((startScalar - 0x10000) & 1023));
+        var lowEnd = (char)(0xdc00 + ((endScalar - 0x10000) & 1023));
+        if (startHigh == endHigh)
         {
-            Utf8ConstructionScope.ChargeWork(1);
-            var lowStart = high == startHigh ? (char)(0xdc00 + ((startScalar - 0x10000) & 1023)) : '\uDC00';
-            var lowEnd = high == endHigh ? (char)(0xdc00 + ((endScalar - 0x10000) & 1023)) : '\uDFFF';
-            branches.Add(BuildSurrogateBranch((char)high, lowStart, lowEnd));
+            branches.Add(BuildSurrogateBranch((char)startHigh, (char)endHigh, lowStart, lowEnd));
+            return;
         }
+        // Preserve ascending, disjoint scalar intervals. Complete middle rows
+        // form one rectangle; only the two edge rows can need partial lows.
+        if (lowStart != '\uDC00')
+            branches.Add(BuildSurrogateBranch((char)startHigh, (char)startHigh, lowStart, '\uDFFF'));
+        var firstComplete = lowStart == '\uDC00' ? startHigh : startHigh + 1;
+        var lastComplete = lowEnd == '\uDFFF' ? endHigh : endHigh - 1;
+        if (firstComplete <= lastComplete)
+            branches.Add(BuildSurrogateBranch((char)firstComplete, (char)lastComplete, '\uDC00', '\uDFFF'));
+        if (lowEnd != '\uDFFF')
+            branches.Add(BuildSurrogateBranch((char)endHigh, (char)endHigh, '\uDC00', lowEnd));
     }
 
-    private static string BuildSurrogateBranch(char high, char lowStart, char lowEnd)
+    private static string BuildSurrogateBranch(char highStart, char highEnd, char lowStart, char lowEnd)
     {
+        Utf8ConstructionScope.ChargeWork(1);
         using var builder = Utf8ConstructionText.Create();
-        builder.Append(@"(?:\u").AppendHex(high);
+        builder.Append("(?:");
+        if (highStart == highEnd) builder.Append(@"\u").AppendHex(highStart);
+        else builder.Append(@"[\u").AppendHex(highStart).Append(@"-\u").AppendHex(highEnd).Append(']');
         if (lowStart == lowEnd) builder.Append(@"\u").AppendHex(lowStart);
         else builder.Append(@"[\u").AppendHex(lowStart).Append(@"-\u").AppendHex(lowEnd).Append(']');
         return builder.Append(')').ToText();
