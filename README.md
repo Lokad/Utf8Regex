@@ -1,5 +1,15 @@
 # Lokad.Utf8Regex
 
+Preparing private **Core/PythonRe 0.4.0-scalar.97**, with exact Core
+`[0.4.0-scalar.97]`. This coherent increment fixes the demonstrated finite-Core-
+match-timeout bypass and includes the accepted Core/Python cold-preparation
+callback/closure reductions. Strict scalar/capture semantics, synchronous original
+cancellation, resource admission, retained results and public APIs remain.
+Actual-byte platform/package/consumer and current-cost checks are pending; this
+preparation statement is not qualification. No PCRE97, publication, external
+pin/default change or adoption is implied. Earlier candidates remain immutable.
+
+## Previous qualified scalar.96
 `Lokad.Utf8Regex` matches Unicode scalars over strict UTF-8 spans, with primary
 byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences. PythonRe adds its pinned

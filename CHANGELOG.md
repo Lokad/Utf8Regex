@@ -1,5 +1,13 @@
 # Changelog
 
+## Preparing private Core/PythonRe scalar.97
+
+Stage the deadline correction and preparation savings below as one downstream
+increment. Exact Core97 is required. Actual-byte Windows/Linux, consumer,
+provenance/symbol/member and current operating-cost checks are pending.
+Preserve immutable96 and independent Core/PCRE94. No PCRE97, publication,
+external pins/defaults, adoption or complete-SPEC qualification is implied.
+
 ## Development after scalar.96
 
 - Honor finite Core match timeouts before unpolled native shortcuts. No-token
