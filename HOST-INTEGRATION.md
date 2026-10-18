@@ -1,17 +1,16 @@
 # Resource controls and host ownership
 
-Qualified private Core/PythonRe scalar.96 includes the Core replacement
-preparation byte/work controls below, alongside the Python preparation controls
-already qualified in95. Exact package identity and scoped consumer acceptance are
-in artifacts/core-python-scalar96-20261018/HANDOFF.md. Common retention and process
+Qualified private Core/PythonRe scalar.97 includes the finite Core match-timeout
+correction and construction-authority borrowing, alongside earlier cold-preparation
+byte/work ceilings. Exact package identity and scoped consumer acceptance are in
+artifacts/core-python-scalar97-20261018/HANDOFF.md. Common retention and process
 memory remain separate; no defaults or ownership rules change.
 
-Development after scalar.96 corrects a finite Core match-timeout bypass in
-unpolled native shortcuts. No-token IsMatch enters the existing invocation;
-qualified native routes retain their authority, and other finite-timeout routes
-use owned scalar execution. A deadline begins before validation/search and stays
-absolute until publication. Immutable scalar.96 predates this correction; use
-the later qualified candidate once supplied for this guarantee.
+Finite Core match timeouts enter invocation authority before unpolled native
+shortcuts. No-token IsMatch uses its existing invocation; qualified native routes
+retain their authority and other finite-timeout fallbacks use owned scalar
+execution. The deadline starts before validation/search and stays absolute until
+publication. Immutable scalar.96 predates this correction and remains unchanged.
 
 Choose eager-construction and invocation limits separately. The common policy
 types describe admission scopes; work units and execution failure types depend

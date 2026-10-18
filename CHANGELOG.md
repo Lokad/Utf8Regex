@@ -1,5 +1,23 @@
 # Changelog
 
+## Qualified private Core/PythonRe scalar.97
+
+Immutable producerc3b3d874 delivers the finite Core deadline correction and
+accepted Core/Python preparation savings below. Same bytes pass Windows/Linux
+package consumers, deadline regressions, capture/semantic controls, exact
+API/member/symbol/provenance and fresh-feed public restore; producer CI is green.
+Exact Core97 is required. Existing source cost pairs remain separate.
+
+The current package-cost observation closes after one run and its sole
+confirmation:13of24lanes qualify. Cold text finite/live overhead is about1.1%/2.0%.
+Cold UTF8 and several short/warm/control rows remain inconclusive. Keep metering;
+no broad parity/source speedup or fixed-original checked-access claim. These
+preparation rows do not measure protected finite-timeout native-route costs.
+
+Preserve immutable96 and independent Core/PCRE94. No PCRE97, publication,
+external pins/defaults, adoption or full-SPEC completion. Handoff:
+artifacts/core-python-scalar97-20261018/HANDOFF.md.
+
 ## Preparing private Core/PythonRe scalar.97
 
 Stage the deadline correction and preparation savings below as one downstream
