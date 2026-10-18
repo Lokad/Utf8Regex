@@ -1,5 +1,12 @@
 # Lokad.Utf8Regex.Pcre2
 
+Preparation for an independent **Core/PCRE2 0.4.0-scalar.92** pair is underway.
+It includes the property repairs below and inherited qualified Core fixes since
+scalar.76. Exact-package Windows/Linux, public-consumer and current-cost checks
+are pending at this producer revision. No PythonRe scalar.92 designation,
+publication or adoption is implied; Core/PythonRe scalar.91 remains available.
+The scalar.76 evidence below remains tied to its immutable packages.
+
 Development source adds the `Xuc` property using existing managed scalar
 predicates: `$`, `@`, U+0060 and scalars from U+00A0 upward. Complements,
 caseless classes, captured repetition and lookbehind retain their scalar and

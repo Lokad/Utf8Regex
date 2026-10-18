@@ -1,5 +1,14 @@
 # Changelog
 
+## Preparation for private Core/PCRE2 scalar.92
+
+The next independent Core/PCRE2 pair includes the two property repairs below
+and the qualified Core fixes since scalar.76. Package/platform/public-consumer
+and current-cost checks are pending at this producer revision. Core is this
+pair's exact dependency; no PythonRe scalar.92 qualification is implied.
+Preserve delivered Core/PythonRe scalar.91 and independent Core/PCRE2 scalar.76.
+No publication, consumer adoption or full-profile completion is claimed.
+
 ## Development after scalar.91
 
 - Correct PCRE2 `Xps`/`Xsp` for U+0085 and U+180E. Share one Unicode-space
