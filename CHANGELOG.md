@@ -1,10 +1,14 @@
 # Changelog
 
-## Preparing private Core/PythonRe scalar.101
+## Qualified private Core/PythonRe scalar.101
 
-The two output changes below are batched for one fresh immutable Core/PythonRe
-candidate with exact Core101. Qualification is pending; no PCRE101, publication
-or downstream adoption is designated. Earlier package bytes stay unchanged.
+Clean producer8ed61eab batches the two output changes below with exact Core101.
+Same immutable DLLs pass Windows/Linux detached semantic/resource suites, unchanged
+original public consumer assertions, capture/semantic oracles and member/provenance/
+symbol checks. Source CI is green. Exact-package costs cover seven public lanes,
+including finite/live-token detailed output; the unlimited detailed row is noisy.
+Source now uses102-dev to preserve101 identity. No PCRE101, publication or adoption;
+earlier bytes stay unchanged. Handoff: artifacts/core-python-scalar101-20261018/HANDOFF.md.
 
 Core `TryReplace` now preserves subject bytes when input and destination overlap.
 It uses the existing staged scalar writer before copying the final result, so

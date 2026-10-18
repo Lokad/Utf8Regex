@@ -1,5 +1,12 @@
 # Resource controls and host ownership
 
+Qualified private Core/PythonRe scalar.101 fixes overlapping Core replacement
+output and shares immutable whole-match text within detailed Python snapshots.
+The same DLLs pass Windows/Linux detached suites and original consumer assertions.
+Exact identity, current finite costs and scope are in
+artifacts/core-python-scalar101-20261018/HANDOFF.md. Defaults and the separate
+construction/common-retention exclusions remain. No PCRE101 is designated.
+
 Qualified private Core/PythonRe scalar.100 adds complete-domain Python class
 folding and compact managed astral rendering, with the same native scalar
 patterns for recorded probes. Same bytes pass Windows/Linux detached suites and
@@ -7,7 +14,7 @@ original public consumer assertions. Exact identity, current finite costs and
 scope are in artifacts/core-python-scalar100-20261018/HANDOFF.md. No PCRE100 is
 designated. Defaults, lifetime rules and common-retention exclusions remain.
 
-Current 101-dev source also fixes Core `TryReplace` with an input span that
+Scalar.101 also fixes Core `TryReplace` with an input span that
 overlaps its destination. It stages scalar output before copying, so expansion
 preserves unread subject bytes. This may allocate staging storage even for a
 native literal; disjoint destinations keep their existing route. UTF-8 templates

@@ -1,9 +1,12 @@
 # Lokad.Utf8Regex.PythonRe
 
-Preparing private **Core/PythonRe 0.4.0-scalar.101**, exact Core101. Detailed
-snapshots reuse owned immutable whole-match text for equal-range captures; Core
-also fixes overlapping replacement output. Qualification is pending; no PCRE101,
-publication or consumer adoption is designated.
+Qualified private **Core/PythonRe 0.4.0-scalar.101**, exact Core101, clean producer
+`8ed61eaba2b34d8aa72f791b063d3f8300f8f1a3`. Detailed snapshots reuse owned immutable
+whole-match text for equal-range captures; Core fixes overlapping replacement
+output. Same DLLs pass Windows/Linux package and original public consumer checks.
+[Handoff](../../artifacts/core-python-scalar101-20261018/HANDOFF.md) and
+[consume](../../artifacts/core-python-scalar101-20261018/CONSUMING.md) record scope,
+identities and current costs. No PCRE101, publication or consumer adoption.
 
 Qualified private **Core/PythonRe 0.4.0-scalar.100**, exact Core100, clean producer
 `fa0e260880caf40b3ba139f6e7fa196276d8c783`. Same DLLs pass Windows/Linux complete

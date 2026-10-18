@@ -544,7 +544,7 @@ getters have separate scope. Completion metadata reuses the existing rollback
 trail and maps Python slots with bounded metered traversal; enlarged result
 structs participate in the usual array/staging extent charges.
 
-Development after scalar.100 reuses a detailed snapshot's owned whole-match
+Scalar.101 reuses a detailed snapshot's owned whole-match
 string for capture slots with the identical byte range. Group metadata and the
 mutable group/name arrays remain independent; strings are immutable and stay
 valid after cursor disposal or subject mutation. Only one text extent is
