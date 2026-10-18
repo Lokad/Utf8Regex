@@ -13,7 +13,7 @@ provenance and a fresh mapped-feed public restore. [Producer CI](https://github.
 is green. [Handoff](../../artifacts/core-python-scalar95-20261018/HANDOFF.md) and
 [consumption](../../artifacts/core-python-scalar95-20261018/CONSUMING.md) record identities and scoped acceptance.
 
-Finite `MaxWorkingBytes` now also bounds additional covered cold replacement-
+PythonRe's finite MaxWorkingBytes also bounds additional covered cold replacement-
 parser and execution-triggered FullMatch preparation capacity. Tight caps can
 report `ConstructionBytes` before matching, even on empty input. Fixed construction
 work/depth, original cancellation/deadlines, retry and retained results remain;

@@ -137,6 +137,10 @@ Original cancellation and deadline still apply. Include preparation and survivin
 plans in separate host admission: this phase ceiling does not extend the combined
 invocation envelope to retained storage. Even an empty subject can prepare and
 cache a template before discovering no matches. Immutable scalar.93 is unchanged.
+These additional phase ceilings belong to PythonRe in scalar.95. Core replacement
+parsing and UTF-8 template-key decoding still use their separate construction
+backstops; Core's invocation byte caps do not admit that preparation. Keep its
+preparation/retained-storage host reservation separate as well.
 
 On denial or interruption, release exclusive cursor scratch through its normal
 failure/EOF/Dispose path, but preserve reservations for surviving results. Prior
