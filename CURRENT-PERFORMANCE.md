@@ -46,3 +46,36 @@ WarmupCount=3
 | Utf8Regex       | count(...)teral [26] |  50.15 μs | 12.153 μs | 0.666 μs |  1.00 |    0.02 |      - |         - |          NA |
 | DecodeThenRegex | count(...)teral [26] | 286.41 μs | 14.291 μs | 0.783 μs |  5.71 |    0.07 | 0.4883 |   40984 B |          NA |
 | PredecodedRegex | count(...)teral [26] | 157.88 μs |  7.215 μs | 0.395 μs |  3.15 |    0.04 |      - |         - |          NA |
+
+## Python capture materialization with finite limits
+
+Source `54318595b190abf4037a5a368ec25170814a7d63` adds a small fixture to the
+existing BDN runner for catalog case `findall/unicode-capture-utf8`. Pattern
+`(é+)-(𝒜𝒜|𝒜)` produces 1,024 two-capture tuples over 11 KiB of mixed-width UTF-8.
+Setup checks every capture value for agreement. Timed operations return complete
+owned UTF-8 tuples; constructors and correctness traversal are outside timing.
+Both .NET comparators include UTF-8 tuple projection. This compares overlapping
+results with composed .NET operations; it does not compare with CPython.
+
+One Short run completed in 66.51 seconds on the same VM/runtime/toolchain:
+
+| Operation | Mean | Allocated |
+| --- | ---: | ---: |
+| PythonRe, unlimited |625.2 µs|129.68 KiB|
+| PythonRe, finite |650.5 µs|133.78 KiB|
+| PythonRe, finite + live token |649.8 µs|133.78 KiB|
+| Predecoded .NET + tuple projection |310.4 µs|692.34 KiB|
+| Decode + .NET + tuple projection |322.6 µs|705.37 KiB|
+
+Finite policy: 50 million work steps, depth 1,024, working capacity 64 MiB and
+result capacity 128 MiB. The observed finite means are about 4% above unlimited,
+with 4,200 additional bytes per operation. Three measured iterations give broad
+confidence intervals: this is descriptive operating-cost evidence, not proof of
+an overhead ceiling. The predecoded .NET lane varies particularly widely. Python
+uses substantially less allocation here; the .NET timing means are lower.
+
+[Raw samples, confidence intervals and scope](artifacts/bdn-python-findall-20261018/RESULT.md)
+remain separate from exact-package99 evidence, closed private-loop campaigns,
+CPython Status and historical snapshots. No second timing run was needed for
+this coarse observation; no precise percentage or general performance claim is
+promoted.
