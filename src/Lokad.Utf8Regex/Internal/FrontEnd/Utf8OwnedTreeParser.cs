@@ -966,6 +966,15 @@ internal static class Utf8OwnedTreeParser
             bool fold, Utf8ScalarCaseBehavior behavior)
         {
             var owner = Utf8ConstructionScope.CurrentBudget;
+            // These unions cover every scalar under any case fold. Recognize
+            // them before enumerating folded ranges or allocating merge buffers.
+            if ((categories.Count == 2 && categories[0] != 0 && categories[0] == -categories[1]) ||
+                (scalarRanges.Count == 2 && scalarRanges[0] == 0 && scalarRanges[1] == 0x110000))
+            {
+                data.Add(negated ? 1 : 0); data.Add(2); data.Add(0);
+                data.Add(0); data.Add(0x110000);
+                return;
+            }
             using var ranges = Utf8ConstructionBuffer<(int Low, int High)>.Create(owner);
             for (var index = 0; index < scalarRanges.Count; index += 2)
                 {
@@ -1016,14 +1025,6 @@ internal static class Utf8OwnedTreeParser
                 if (merged.Count != 0 && range.Low < merged[merged.Count - 1].High)
                     merged[merged.Count - 1] = (merged[merged.Count - 1].Low, Math.Max(merged[merged.Count - 1].High, range.High));
                 else merged.Add(range);
-            }
-            // Two complementary standalone predicates cover every scalar.
-            // Grouped categories and range predicates have other encodings.
-            if (categories.Count == 2 && categories[0] != 0 && categories[0] == -categories[1])
-            {
-                data.Add(negated ? 1 : 0); data.Add(2); data.Add(0);
-                data.Add(0); data.Add(0x110000);
-                return;
             }
             using var endpoints = Utf8ConstructionBuffer<int>.Create(owner);
             foreach (var range in merged)

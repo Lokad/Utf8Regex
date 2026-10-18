@@ -15,6 +15,11 @@ budgets; consuming repeats retain their backstops. Complete subtraction syntax,
 whole-subject strict UTF-8 validation, scalar ranges and capture metadata remain.
 This source change is outside immutable98; no new package is designated.
 
+Recognize those constant scalar unions before case-fold range enumeration.
+Folded impossible full-range classes now fit the tested 20,000-step eager
+construction policy, with finite invocation controls. Subtracted classes retain
+their own case folds; consuming repeats keep their construction backstops.
+
 ## Qualified private Core/PythonRe scalar.98
 
 Clean producer02fde38c batches the controlled decimal IsMatch and bounded URI

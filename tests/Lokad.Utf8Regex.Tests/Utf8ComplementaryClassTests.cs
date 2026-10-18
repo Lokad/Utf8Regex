@@ -6,6 +6,50 @@ public sealed class Utf8ComplementaryClassTests
 {
     [Theory]
     [InlineData(@"[^\s\S]")]
+    [InlineData(@"[^\u0000-\uDBFF\uDFFF]")]
+    [InlineData(@"[^\s\S\u0000-\uDBFF\uDFFF]")]
+    public void ConstantEmptyClassesFitFiniteConstructionWorkBeforeCaseExpansion(string emptyClass)
+    {
+        var construction = new Utf8ConstructionPolicy
+        {
+            MaxWorkSteps = 20000, MaxDepth = 128,
+            MaxInstructionCapacity = 1024, MaxBytes = 1 << 20,
+        };
+        var invocation = new Utf8ResourcePolicy
+        {
+            MaxWorkSteps = 10000, MaxDepth = 128,
+            MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20,
+        };
+        foreach (var compiled in new[] { false, true })
+        {
+            var options = RegexOptions.NonBacktracking | RegexOptions.IgnoreCase |
+                RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
+            var regex = Utf8Regex.Compile("(?<g>" + emptyClass + "){1000000000}", options,
+                Timeout.InfiniteTimeSpan, invocation, construction, Timeout.InfiniteTimeSpan, default);
+            Assert.Equal(0, regex.Count("a😀b"u8));
+            Assert.False(regex.MatchDetailed("a😀b"u8).Success);
+        }
+    }
+
+    [Theory]
+    [InlineData(@"[\u0000-\uDBFF\uDFFF-[a]]")]
+    [InlineData(@"[\s\S\u0000-\uDBFF\uDFFF-[a]]")]
+    public void UniversalRootsKeepTheirCaseFoldedSubtraction(string pattern)
+    {
+        foreach (var compiled in new[] { false, true })
+        {
+            var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
+                RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : 0);
+            var regex = new Utf8Regex(pattern, options);
+            var ranges = new List<(int, int)>();
+            foreach (var match in regex.EnumerateMatches("aAé😀\n"u8))
+                ranges.Add((match.IndexInBytes, match.LengthInBytes));
+            Assert.Equal(new[] { (2, 2), (4, 4), (8, 1) }, ranges);
+        }
+    }
+
+    [Theory]
+    [InlineData(@"[^\s\S]")]
     [InlineData(@"[^\d\D]")]
     [InlineData(@"[^\p{Lu}\P{Lu}]")]
     [InlineData(@"[^\u0000-\uDBFF\uDFFF]")]

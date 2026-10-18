@@ -78,6 +78,8 @@ operations still validate the whole UTF-8 subject. NonBacktracking repeats over
 these impossible atoms need no expansion proportional to their numeric bounds;
 consuming repeats retain their construction limits. Capture declarations remain
 available, and a zero-minimum repeat leaves its unvisited captures unsuccessful.
+Complete-range unions are recognized before case-fold range enumeration;
+subtracted classes retain their own folding and complete syntax validation.
 
 An empty pattern has one match at every scalar boundary, including both ends:
 Count on `😀` is two, and Count on `a😀b` is four. Non-overlapping discovery
