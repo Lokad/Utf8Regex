@@ -1,57 +1,49 @@
 # Lokad.Utf8Regex
 
-Preparing private **Core/PythonRe 0.4.0-scalar.96** combines the accepted Core
-preparation limits and obsolete-adapter cleanup below. Exact Core96 is required;
-package/platform/consumer qualification is pending. This does not change the
-qualified immutable95 pair or designate PCRE96.
-
-Core replacement parsing and UTF-8 template-key decoding use a separate
-working-byte ceiling, and byte-template validation admits work before scanning.
-UTF-8 key admission applies on warm calls too. Dead internal offset adapters and
-their obsolete diagnostic replay are removed; public scalar offset/capture
-behavior and live cached maps remain. These changes are outside immutable95.
-
 `Lokad.Utf8Regex` matches Unicode scalars over strict UTF-8 spans, with primary
 byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences. PythonRe adds its pinned
 Python grammar, captures and result shaping over the shared owned engine.
 
-Qualified private **Core/PythonRe 0.4.0-scalar.95**, clean producer
-`ab23f649766882fbf55e0b240d37e431cdd94b6c`, requires exact Core
-`[0.4.0-scalar.95]`. Same immutable bytes pass Windows/Linux package consumers,
+Qualified private **Core/PythonRe 0.4.0-scalar.96**, clean producer
+`8b294d08f28c1d79e4d3a1c93aed887093d68418`, requires exact Core
+`[0.4.0-scalar.96]`. Same immutable bytes pass Windows/Linux package consumers,
 121 capture fixtures, 91 structured semantic cases, exact API/member/symbol/
-provenance and a fresh mapped-feed public restore. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39100434806)
-is green. [Handoff](artifacts/core-python-scalar95-20261018/HANDOFF.md) and
-[consumption](artifacts/core-python-scalar95-20261018/CONSUMING.md) record identities and scoped acceptance.
+provenance and a fresh mapped-feed public restore. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39105215088)
+is green. [Handoff](artifacts/core-python-scalar96-20261018/HANDOFF.md) and
+[consumption](artifacts/core-python-scalar96-20261018/CONSUMING.md) record
+exact identities, the supported contract and remaining exclusions.
 
-PythonRe's finite MaxWorkingBytes also bounds additional covered cold replacement-
-parser and execution-triggered FullMatch preparation capacity. Tight caps can
-report `ConstructionBytes` before matching, even on empty input. Fixed construction
-work/depth, original cancellation/deadlines, retry and retained results remain;
-warm hits add no preparation scope. Eager `Compile` keeps its independent
-construction policy. Cache/host retention remains separate; these phase ceilings
-do not establish a common cumulative or combined invocation/retention envelope.
-[Shared controls](HOST-INTEGRATION.md) describe the factories, limits and owners.
+Core now bounds additional cold replacement parsing and UTF8 template-key decoding
+with finite MaxWorkingBytes, and admits byte-template validation work before
+scanning. Warm text hits add no scope; UTF8 keys still need decoding admission.
+Construction denial can precede execution. Existing Python template/lazy FullMatch
+ceilings and eager Compile independence remain. Original interruption, retry,
+retained results, strict scalar/capture behavior and public APIs stay intact.
+Duplicate diagnostic-only adapters are removed; live maps/prepared hooks remain.
+These are separate preparation ceilings, not a common cumulative or combined
+invocation/retention/RSS bound. [Shared controls](HOST-INTEGRATION.md) define
+factories, admission phases and ownership.
 
-[Current exact95 costs](artifacts/core-python-scalar95-20261018/vm-cost/RESULT.md)
-are closed: 160 raw samples, 11 of 16 lanes qualified after the sole confirmation.
-Cold preparation: 128.12/130.19/219.87 us U/F/live; finite overhead about 1.6%,
-live cancellation about 72%. Detailed FullMatch: 1.495/1.470/1.485 us, with 112 B
-added by finite controls. Warm replacement timings and the Core unlimited control
-remain inconclusive; their allocations and exclusions are recorded. No source
-speedup, CPython Status, broad parity or checked-access gate replacement is claimed.
+[Exact96 public costs](artifacts/core-python-scalar96-20261018/vm-cost/RESULT.md)
+close after one run and its sole confirmation: 12 of 24 lanes qualify. Cold text
+preparation costs 139.25/140.89/280.17 us for unlimited/finite/live-token lanes:
+about 1.2% finite overhead and 101% live-token overhead. Basic metering stays.
+Cold UTF8 and several warm/control timings remain inconclusive; no overhead
+ratios or point timings are claimed for them. Raw data and allocations remain
+available. No source speedup, CPython Status, broad parity or checked-access gate
+replacement is inferred; the earlier source-pair campaign stays closed.
 
-Core C#, public APIs and pinned parser/Unicode data are unchanged from qualified93.
-The earlier RTL Count, scalar/capture and unused-scratch repairs remain. Core
+Python matching/compiler/pinned data and public APIs are unchanged from95. Core
 retains only accepted Unsafe.SizeOf; PythonRe none. Actual unchecked reads,
-generated staging helpers, native imports and shipped BCL matching/results stay
-absent. Preserve [Core/Python93](artifacts/core-python-scalar93-20261018/HANDOFF.md)
+generated staging helpers, native imports and shipped BCL matching/results remain
+absent. Preserve [Core/Python95](artifacts/core-python-scalar95-20261018/HANDOFF.md)
 and independent [Core/PCRE94](artifacts/pcre2-scalar94-delivery-20261018/HANDOFF.md).
-No PCRE95, publication, external pins/defaults or actual adoption is implied.
-Defaults/static invocation remain unlimited. Full grammar/construction/lazy/
-default/common-retention/SPEC and host coverage stays open. Immutable package
-preparation assets keep their staging-time pending status; this source view and
-handoff record later scoped completion without changing those package bytes.
+Exact Core94/Core96 cannot share one dependency graph. No PCRE96, publication,
+external pins/defaults or actual adoption is implied. Defaults/static invocation
+remain unlimited. Full grammar/construction/lazy/default/common-retention/SPEC
+coverage stays open. Frozen package preparation assets retain staging-time status;
+this source view records later acceptance without changing immutable bytes.
 
 ## Support Scope
 

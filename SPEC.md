@@ -506,6 +506,13 @@ Original cancellation/deadlines, fixed construction backstops and retained value
 remain; invocation work/result counters and cache/host retention keep separate
 scope. This does not establish common cumulative or retained/RSS metering.
 
+The immutable Core/PythonRe scalar.96 pair includes this Core preparation change
+and the removal of obsolete internal offset adapters. Same-byte Windows/Linux
+package consumers, public denial/retry/token witnesses and producer CI pass;
+qualified operating costs and inconclusive lanes are recorded in
+artifacts/core-python-scalar96-20261018/HANDOFF.md. Public APIs, scalar/capture
+semantics, live projection maps and original resource/ownership scopes remain.
+
 The preliminary byte-template validator admits its byte-count work before reading
 the template. An active construction owner supplies cumulative admission and
 bounded parent interruption checkpoints. Without such an owner, the scan enforces

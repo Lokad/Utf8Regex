@@ -1,5 +1,11 @@
 # Resource controls and host ownership
 
+Qualified private Core/PythonRe scalar.96 includes the Core replacement
+preparation byte/work controls below, alongside the Python preparation controls
+already qualified in95. Exact package identity and scoped consumer acceptance are
+in artifacts/core-python-scalar96-20261018/HANDOFF.md. Common retention and process
+memory remain separate; no defaults or ownership rules change.
+
 Choose eager-construction and invocation limits separately. The common policy
 types describe admission scopes; work units and execution failure types depend
 on the regex profile. Matching remains strict UTF-8/scalar with byte coordinates.

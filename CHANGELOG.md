@@ -1,5 +1,19 @@
 # Changelog
 
+## Qualified private Core/PythonRe scalar.96
+
+Immutable producer `8b294d08` delivers the Core preparation limits and obsolete
+adapter cleanup below. Same bytes pass Windows/Linux package consumers, original
+consumer assertions plus Core denial/retry/token witnesses, API/member/provenance
+and symbol checks; producer CI is green. Exact Core96 is required.
+
+Current public costs close after one run and the sole confirmation: 12 of 24
+lanes qualify. Cold text finite overhead is about 1.2%, live-token overhead 101%.
+Cold UTF8 and several warm/control lanes remain inconclusive; raw evidence and
+allocations remain. Keep metering, immutable95 and independent Core/PCRE94.
+No PCRE96, publication, external pin/default change, adoption or full-SPEC
+completion. See artifacts/core-python-scalar96-20261018/HANDOFF.md.
+
 ## Preparation for private Core/PythonRe scalar.96
 
 Stage the Core preparation limits and obsolete-adapter cleanup below as one
