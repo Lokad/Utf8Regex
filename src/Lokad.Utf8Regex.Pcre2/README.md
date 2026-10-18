@@ -1,5 +1,15 @@
 # Lokad.Utf8Regex.Pcre2
 
+Development staging for independent **Core/PCRE2 0.4.0-scalar.94** carries the
+accepted fixed-vector reuse under the existing lexical Count/search owner,
+plus Core's qualified RTL Count repair and unused balancing-scratch reduction
+from scalar.93. Fixed vectors are acquired only at the first candidate;
+nested assertions own separate storage and copied public cursors gain no owned
+scratch. Original interruption and major-capacity admission remain; fewer
+acquisitions intentionally revise numeric cutoffs. Exact-package/platform and
+public-consumer qualification is pending at this producer revision. Core/PythonRe
+scalar.93 remains the independent delivered pair. No Python94 is designated.
+
 Qualified independent **Core/PCRE2 0.4.0-scalar.92**, producer
 `4b8f8ef5dff11ecc41f0d7b53d57162c1ef9603e`, includes the property repairs below
 and inherited qualified Core fixes since76. Same-byte Windows/Linux5865tests,

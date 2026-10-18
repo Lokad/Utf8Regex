@@ -1,5 +1,16 @@
 # Changelog
 
+## Preparation for private Core/PCRE2 scalar.94
+
+This independent pair stages the accepted fixed-vector workspace reuse under
+the existing lexical Count/search owner. It also carries Core's qualified RTL
+Count repair and omission of unused balancing scratch from scalar.93. Package,
+platform and public-consumer checks are pending at this producer revision;
+source correctness, resource controls and bounded public costs already pass.
+Core is the adapter's exact dependency. Core/PythonRe scalar.93 and older PCRE92
+remain immutable; no Python94, publication, adoption or full-SPEC completion is
+implied. Reuse unchanged oracle fixtures and existing qualification tools.
+
 ## Qualified private Core/PythonRe scalar.93
 
 The immutable pair at b4b0778b corrects Core RTL Count across unanchored
