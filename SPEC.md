@@ -70,6 +70,15 @@ exception types, error enums and messages are comparator observations, not the
 product's diagnostic contract. A valid pattern that exceeds a transitional
 representation is migration debt, rather than invalid syntax.
 
+Classes proven empty during parsing use the existing impossible atom. A negated
+complete scalar range is empty even with subtraction; unions of complementary
+digit, whitespace or individual category predicates can establish that range.
+The parser still validates the complete class and subtraction syntax, and public
+operations still validate the whole UTF-8 subject. NonBacktracking repeats over
+these impossible atoms need no expansion proportional to their numeric bounds;
+consuming repeats retain their construction limits. Capture declarations remain
+available, and a zero-minimum repeat leaves its unvisited captures unsuccessful.
+
 An empty pattern has one match at every scalar boundary, including both ends:
 Count on `😀` is two, and Count on `a😀b` is four. Non-overlapping discovery
 advances past an empty result by one complete scalar in the selected direction.

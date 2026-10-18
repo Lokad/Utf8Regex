@@ -1,5 +1,15 @@
 # Changelog
 
+## Development after scalar.98
+
+Simplify complementary digit/whitespace/individual-category class predicates and
+negated complete scalar ranges during owned parsing. Proven impossible classes
+use the existing impossible atom, removing unused class data and numeric repeat
+expansion. Large NonBacktracking repeats can therefore fit smaller construction
+budgets; consuming repeats retain their backstops. Complete subtraction syntax,
+whole-subject strict UTF-8 validation, scalar ranges and capture metadata remain.
+This source change is outside immutable98; no new package is designated.
+
 ## Qualified private Core/PythonRe scalar.98
 
 Clean producer02fde38c batches the controlled decimal IsMatch and bounded URI

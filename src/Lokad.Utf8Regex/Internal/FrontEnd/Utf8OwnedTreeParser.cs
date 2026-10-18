@@ -801,6 +801,14 @@ internal static class Utf8OwnedTreeParser
                 remainingClosers--;
             }
 
+            // A negated complete scalar range is empty, including when followed
+            // by subtraction. Keep parsing all segments before discarding them.
+            if (data.Count >= 5 && data[0] == 1 && data[1] == 2 && data[2] == 0 &&
+                data[3] == 0 && data[4] == 0x110000)
+            {
+                node = Utf8TreeNode.Create(Utf8TreeNodeKind.Nothing, state.Options & ~RegexOptions.IgnoreCase);
+                return true;
+            }
             node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, Utf8ScalarClass.Create(data));
             node.MatchCaseInsensitive = (state.Options & RegexOptions.IgnoreCase) != 0;
             return true;
@@ -1008,6 +1016,14 @@ internal static class Utf8OwnedTreeParser
                 if (merged.Count != 0 && range.Low < merged[merged.Count - 1].High)
                     merged[merged.Count - 1] = (merged[merged.Count - 1].Low, Math.Max(merged[merged.Count - 1].High, range.High));
                 else merged.Add(range);
+            }
+            // Two complementary standalone predicates cover every scalar.
+            // Grouped categories and range predicates have other encodings.
+            if (categories.Count == 2 && categories[0] != 0 && categories[0] == -categories[1])
+            {
+                data.Add(negated ? 1 : 0); data.Add(2); data.Add(0);
+                data.Add(0); data.Add(0x110000);
+                return;
             }
             using var endpoints = Utf8ConstructionBuffer<int>.Create(owner);
             foreach (var range in merged)
