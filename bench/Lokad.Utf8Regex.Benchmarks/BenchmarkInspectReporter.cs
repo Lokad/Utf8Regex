@@ -5931,6 +5931,12 @@ internal static partial class BenchmarkInspectReporter
             decodeThenRegex,
             decodeThenCompiledRegex,
         ];
+        var expected = actions[0]();
+        for (var index = 1; index < actions.Length; index++)
+        {
+            if (actions[index]() != expected)
+                throw new InvalidOperationException($"README benchmark lane {index} disagrees with the UTF-8 result.");
+        }
         var effectiveIterations = CalibrateReadmeIterations(
             requestedIterations,
             iterationTarget,
@@ -5996,6 +6002,17 @@ internal static partial class BenchmarkInspectReporter
                 var measurement = MeasureTimedCore(iterations, actions[index]);
                 elapsedByAction[index][sample] = measurement.Elapsed;
                 sink ^= measurement.Sink;
+            }
+        }
+
+        // Preserve the paired evidence before sorting; report outside timed loops.
+        string[] laneNames = ["Utf8Regex", "Utf8Compiled", "PredecodedRegex", "CompiledRegex", "DecodeThenRegex", "DecodeThenCompiledRegex"];
+        for (var sample = 0; sample < samples; sample++)
+        {
+            for (var index = 0; index < elapsedByAction.Length; index++)
+            {
+                Console.Error.WriteLine(string.Create(CultureInfo.InvariantCulture,
+                    $"ReadmeSample;Index={sample};Lane={laneNames[index]};Iterations={iterations};ElapsedMicroseconds={elapsedByAction[index][sample].TotalMicroseconds:F3}"));
             }
         }
 
@@ -6125,6 +6142,8 @@ internal static partial class BenchmarkInspectReporter
                 (error.Length == 0 ? output : error));
         }
 
+        if (error.Length != 0)
+            Console.Error.WriteLine(error);
         return ParseReadmeCaseRow(output);
     }
 
