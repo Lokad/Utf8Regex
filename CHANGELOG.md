@@ -1,6 +1,16 @@
 # Changelog
 
-## Development after scalar.98
+## Qualified private Core/PythonRe scalar.99
+
+Producer222dc5da batches the three engine changes below into fresh immutable
+Core/PythonRe99 bytes with an exact Core99 dependency. The same DLLs pass complete
+Windows/Linux package-bound suites, unchanged original public consumer assertions,
+fresh mapped-feed/cache restores and API/member/provenance/symbol checks.
+Producer CI is green. Current exact-package measurements qualify6/15lanes;
+Python materialization costs remain inconclusive. Earlier98 and independent
+Core/PCRE94 remain immutable and separate; no PCRE99 or publication is designated.
+
+## Changes after scalar.98
 
 Generic scalar Count validates UTF-8 without deriving an unused UTF-16 length.
 The existing finite ASCII structural lanes retain their validation metadata.

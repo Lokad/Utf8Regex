@@ -1,10 +1,11 @@
 # Resource controls and host ownership
 
-Qualified private Core/PythonRe scalar.98 batches controlled decimal IsMatch and
-bounded URI Count with the earlier finite-deadline and preparation corrections.
+Qualified private Core/PythonRe scalar.99 batches constant-class construction
+simplifications and generic Count's omitted coordinate metadata, inheriting
+scalar.98's decimal/URI and earlier deadline/preparation corrections.
 Same immutable bytes pass Windows/Linux semantic/resource and original consumer
 checks. Exact package identity, costs and exclusions are recorded in
-artifacts/core-python-scalar98-20261018/HANDOFF.md. Common retention and process
+artifacts/core-python-scalar99-20261018/HANDOFF.md. Common retention and process
 memory remain separate; defaults and ownership rules are unchanged.
 
 Finite Core match timeouts enter invocation authority before unpolled native

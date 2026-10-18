@@ -5,13 +5,18 @@ byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences. PythonRe adds pinned Python
 grammar, captures and result shaping over the shared owned engine.
 
-Preparing a private **Core/PythonRe 0.4.0-scalar.99** candidate, batching the two
+Qualified private **Core/PythonRe 0.4.0-scalar.99**, clean producer
+`222dc5da6a1dc05800480f3a26cdf28d91a4e85f`, requires exact Core
+`[0.4.0-scalar.99]`. It batches
 constant-class construction simplifications and generic Count's removal of
-unused UTF-16 metadata. Scalar semantics and finite resource controls remain.
-This source is not yet package-qualified; scalar.98 below remains immutable.
-No PCRE2 candidate, publication or downstream adoption is implied.
+unused UTF-16 metadata. Same immutable bytes pass Windows/Linux semantic,
+resource, consumer, member, provenance and symbol checks.
+[Handoff](../../artifacts/core-python-scalar99-20261018/HANDOFF.md) and
+[consume](../../artifacts/core-python-scalar99-20261018/CONSUMING.md) record the feed
+and scope. Current package costs qualify six of fifteen lanes; Python materialization costs
+remain inconclusive. Older bytes remain immutable; no PCRE99 or publication.
 
-Qualified private **Core/PythonRe 0.4.0-scalar.98**, clean producer
+Earlier qualified private **Core/PythonRe 0.4.0-scalar.98**, clean producer
 `02fde38c8edc81d44dc2bc1da9fc072cfd336f8f`, requires exact Core
 `[0.4.0-scalar.98]`. Same immutable bytes pass Windows/Linux package consumers,
 capture/semantic controls, API/member/provenance/symbol checks and a fresh mapped
