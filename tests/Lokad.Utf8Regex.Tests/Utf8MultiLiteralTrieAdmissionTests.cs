@@ -184,7 +184,13 @@ public sealed class Utf8MultiLiteralTrieAdmissionTests
         var search = PreparedMultiLiteralTrieSearch.Create(literals);
         foreach (var literal in literals) Array.Fill(literal, (byte)'z');
         Array.Fill(literals, Array.Empty<byte>());
-        for (var warm = 0; warm < 1000; warm++) _ = search.IndexOf("xxacbb"u8);
+        // Warm every route below before measuring steady-state allocation.
+        for (var warm = 0; warm < 1000; warm++)
+        {
+            _ = search.IndexOf("xxacbb"u8);
+            _ = search.LastIndexOf("xxacbb"u8);
+            _ = search.TryGetMatchedLiteralInfo("xxacbb"u8, 2, out _, out _);
+        }
         var before = GC.GetAllocatedBytesForCurrentThread();
         var sum = 0;
         for (var iteration = 0; iteration < 1000; iteration++)
