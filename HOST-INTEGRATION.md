@@ -12,6 +12,13 @@ shortcut, missing later lines or undercounting matches. The fix reuses the
 existing admitted prefix proof; scoped line anchors keep their line/scalar
 route. Immutable scalar.102 is unchanged and does not contain this correction.
 
+Development source after scalar.103 delays PythonRe scalar substitution's output
+buffer until the first match. With no replacements, it returns an owned copy of
+the validated input directly, using its known character count for string output.
+This removes unused staging from working/result admission; a smaller finite
+budget may now succeed. Final payload admission, independent mutable byte results,
+template validation and original interruption remain. Scalar.103 is unchanged.
+
 Scalar.101 supports overlapping Core `TryReplace` subject/destination spans by
 staging scalar output before copying. Staging may allocate even for a literal;
 insufficient destinations stay unchanged. UTF-8 templates may alias the

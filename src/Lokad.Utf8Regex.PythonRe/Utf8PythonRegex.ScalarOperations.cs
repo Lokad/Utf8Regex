@@ -373,11 +373,12 @@ public sealed partial class Utf8PythonRegex
         Utf8SliceOutputWriter writer = default;
         try
         {
-            writer = cursor.CreateOutputWriter();
             var last = 0;
             var replaced = 0;
             while ((count == 0 || replaced < count) && cursor.MoveNext())
             {
+                // A miss needs only its final owned copy, with no output staging.
+                if (replaced == 0) writer = cursor.CreateOutputWriter();
                 cursor.AppendBytes(ref writer, input[last..cursor.StartOffsetInBytes]);
                 var resultMarker = cursor.ResultReservation;
                 try
@@ -389,11 +390,13 @@ public sealed partial class Utf8PythonRegex
                 last = cursor.EndOffsetInBytes;
                 replaced++;
             }
-            cursor.AppendBytes(ref writer, input[last..]);
+            if (replaced != 0) cursor.AppendBytes(ref writer, input[last..]);
             byte[] completedBytes = [];
             string completedText = string.Empty;
-            if (textOutput) completedText = cursor.CompleteOutputText(ref writer);
-            else completedBytes = cursor.CompleteOutputBytes(ref writer, validateOutput);
+            if (textOutput) completedText = replaced == 0 ? cursor.GetText(0, input.Length)
+                : cursor.CompleteOutputText(ref writer);
+            else completedBytes = replaced == 0 ? cursor.GetBytes(0, input.Length)
+                : cursor.CompleteOutputBytes(ref writer, validateOutput);
             cursor.Checkpoint();
             if (textOutput) textResult = new Utf8PythonSubnResult { ResultText = completedText, ReplacementCount = replaced };
             else bytesResult = new Utf8PythonSubnUtf8Result { ResultBytes = completedBytes, ReplacementCount = replaced };

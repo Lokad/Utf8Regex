@@ -461,7 +461,8 @@ internal struct PythonReScalarMatchState
             // already own a map and can reuse its derived coordinates.
             // Original whole-subject validation already proves the character
             // count for ASCII captures; do not validate those bytes again.
-            var count = _validation.IsAscii ? end - start : _hasMap
+            var count = _validation.IsAscii ? end - start
+                : start == 0 && end == input.Length ? _validation.Utf16Length : _hasMap
                 ? _map.GetUtf16OffsetForByteOffset(end) - _map.GetUtf16OffsetForByteOffset(start)
                 : Utf8Validation.Validate(input[start..end], ref _invocation).Utf16Length;
             var text = _results.DecodeUtf8(input[start..end], count, ref _invocation);
