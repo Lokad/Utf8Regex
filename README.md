@@ -8,6 +8,10 @@ checks. [Handoff](artifacts/core-python-scalar100-20261018/HANDOFF.md) and
 the Unicode class-construction improvements, current costs and scope. Earlier
 bytes stay immutable. No PCRE100, publication or downstream adoption is implied.
 
+Known scalar.100 issue: Core `TryReplace` requires disjoint subject/destination
+storage. Current 101-dev source fixes overlapping output through staged scalar
+replacement; see [the contract and allocation tradeoff](HOST-INTEGRATION.md).
+
 `Lokad.Utf8Regex` is a `net10.0` library matching Unicode scalars over strict UTF-8 spans, with primary
 byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences. PythonRe adds pinned Python

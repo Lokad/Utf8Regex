@@ -1,5 +1,15 @@
 # Changelog
 
+## Changes after scalar.100
+
+Core `TryReplace` now preserves subject bytes when input and destination overlap.
+It uses the existing staged scalar writer before copying the final result, so
+expanding replacements cannot overwrite unread subject slices. This can allocate
+staging storage for native literals; disjoint destinations keep their existing
+route. Finite admission, original cancellation/deadlines and unchanged storage on
+`DestinationTooSmall` remain. Scalar.100 predates this fix and requires disjoint
+subject/destination storage. No new package is designated by this source change.
+
 ## Qualified private Core/PythonRe scalar.100
 
 Clean producer fa0e2608 freezes Core/PythonRe100 with exact Core100. Same bytes
