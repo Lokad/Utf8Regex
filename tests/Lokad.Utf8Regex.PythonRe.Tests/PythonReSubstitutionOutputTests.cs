@@ -85,15 +85,18 @@ public sealed class PythonReSubstitutionOutputTests
         Assert.NotNull(program);
         var payload = new byte[8193];
         ulong seed;
+        ulong completionWork;
         {
             var measured = new PythonReScalarMatchCursor([], program, 0,
                 Regex.InfiniteMatchTimeout, "(.)", CancellationToken.None, new(100000, 0, 1UL << 20));
             var writer = measured.CreateOutputWriter();
             measured.AppendBytes(ref writer, payload);
             seed = measured.WorkingInvocation.Budget.Steps;
+            Assert.Equal(payload, measured.CompleteOutputBytes(ref writer, false));
+            completionWork = measured.WorkingInvocation.Budget.Steps - seed;
             measured.ReleaseOutput(ref writer); measured.Dispose();
         }
-        for (ulong cutoff = 0; cutoff <= 9; cutoff++)
+        for (ulong cutoff = 0; cutoff <= completionWork; cutoff++)
         {
             var cursor = new PythonReScalarMatchCursor([], program, 0,
                 Regex.InfiniteMatchTimeout, "(.)", CancellationToken.None, new(seed + cutoff, 0, 1UL << 20));
@@ -107,14 +110,14 @@ public sealed class PythonReSubstitutionOutputTests
                 Exception? failure = null;
                 try { result = cursor.CompleteOutputBytes(ref writer, false); }
                 catch (InvalidOperationException error) { failure = error; }
-                if (cutoff == 9) { Assert.Null(failure); Assert.Equal(payload, result); Assert.Equal(0, writer.Length); }
+                if (cutoff == completionWork) { Assert.Null(failure); Assert.Equal(payload, result); Assert.Equal(0, writer.Length); }
                 else
                 {
                     Assert.NotNull(failure); Assert.Empty(result);
                     Assert.Equal(8193, writer.Length); Assert.Equal(payload, writer.WrittenBytes.ToArray());
                 }
                 Assert.Equal(cutoff >= 3 ? Bytes(8193) : 0, cursor.ResultReservation);
-                Assert.Equal(13 + 96 + Bytes(8193) + (cutoff >= 3 && cutoff < 9 ? Bytes(8193) : 0), cursor.ReservedBytes);
+                Assert.Equal(13 + 96 + Bytes(8193) + (cutoff >= 3 && cutoff < completionWork ? Bytes(8193) : 0), cursor.ReservedBytes);
             }
             finally { cursor.ReleaseOutput(ref writer); cursor.Dispose(); }
             Assert.Equal(13UL, cursor.ReservedBytes);
