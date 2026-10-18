@@ -4,6 +4,12 @@
 byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences.
 
+**Prepared Core/PythonRe scalar.91** batches the escaped-Unicode/global-mode
+repairs below, composed capture rollback controls and the
+[shared resource reference](HOST-INTEGRATION.md). Package/platform qualification
+is pending; scalar.90 remains the qualified input recorded below. PCRE2 retains
+its independent milestone.
+
 The qualified private **Core/PythonRe 0.4.0-scalar.90** pair comes from clean
 producer `fd8bade3fe2ddae0ffc6680cf53a1d0295107977`; PythonRe requires exact Core
 `[0.4.0-scalar.90]`. Same immutable bytes pass Windows/Linux consumers,

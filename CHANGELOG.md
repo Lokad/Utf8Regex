@@ -2,6 +2,16 @@
 
 ## Development after scalar.90
 
+These changes are prepared as Core/PythonRe scalar.91. Exact immutable-package,
+platform and current-cost qualification is pending. The shared resource reference
+now distinguishes construction backstops from unlimited invocation defaults,
+lists actual profile entry points/failures and corrects a stale PCRE2 direct-call
+metering claim. Existing matching algorithms and controls are unchanged.
+
+Four added pinned-CPython capture fixtures compose failed assertions/alternatives
+with following capture-participation conditions, including supplementary scalars.
+The existing engine passes; no new matching mechanism is introduced.
+
 - Validate combined global Python ASCII/Unicode modes after parsing, preserving
   body-syntax error precedence and valid scoped mode overrides. Reuse the
   existing compile-option validator and remove unused leading-flag state.
