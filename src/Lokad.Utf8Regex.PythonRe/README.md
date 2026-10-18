@@ -1,5 +1,11 @@
 # Lokad.Utf8Regex.PythonRe
 
+Preparing private **Core/PythonRe 0.4.0-scalar.96** includes Core's accepted
+replacement-preparation byte/work admission and obsolete internal-adapter cleanup.
+PythonRe matching and public APIs are unchanged. Exact Core96 is required;
+same-byte platform/package/consumer checks are pending. Preserve immutable95 and
+independent Core/PCRE94; no PCRE96, publication or downstream adoption is implied.
+
 `Lokad.Utf8Regex` matches Unicode scalars over strict UTF-8 spans, with primary
 byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences. PythonRe adds its pinned

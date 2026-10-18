@@ -1,5 +1,13 @@
 # Changelog
 
+## Preparation for private Core/PythonRe scalar.96
+
+Stage the Core preparation limits and obsolete-adapter cleanup below as one
+coherent downstream increment. PythonRe matching, public APIs and pinned Unicode
+data remain unchanged. Exact Core96 is required. Package/platform/consumer checks
+are pending; preserve immutable95 and independent Core/PCRE94. No PCRE96,
+publication, external pin/default change or adoption is implied.
+
 ## Development after scalar.95
 
 - Remove obsolete internal match/detailed-match offset adapters and an unused
