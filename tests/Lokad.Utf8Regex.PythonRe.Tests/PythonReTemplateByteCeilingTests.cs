@@ -113,6 +113,48 @@ public sealed class PythonReTemplateByteCeilingTests
         Assert.Equal("<😀><a>", regex.ReplaceToString("😀a"u8, @"<\g<x>>"));
     }
 
+    [Theory]
+    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+    public void DistinctCallerAndParentAuthoritiesRemainEffective(int authority)
+    {
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var regex = new Utf8PythonRegex("(?P<x>😀|a)", PythonReCompileOptions.None,
+            TimeSpan.FromMilliseconds(100), new() { MaxWorkingBytes = 1 << 20 });
+        using var caller = new CancellationTokenSource();
+        using var parentToken = new CancellationTokenSource();
+        using var parent = Utf8ConstructionScope.Enter();
+        parent.Budget.CancellationToken = parentToken.Token;
+        var parentDeadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(20));
+        parent.Budget.Deadline = parentDeadline;
+        var checkpoints = 0;
+        Action<ulong> hook = _ =>
+        {
+            if (++checkpoints != 8) return;
+            if (authority == 0) caller.Cancel();
+            else if (authority == 1) parentToken.Cancel();
+            else ticks = authority == 2 ? 110 : 25;
+        };
+        parent.Budget.CheckpointHook = hook;
+        var failure = Record.Exception(() => regex.Replace("😀a"u8, @"<\g<x>>", 0, 0, caller.Token));
+        if (authority < 2)
+            Assert.Equal(authority == 0 ? caller.Token : parentToken.Token,
+                Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+        else
+            Assert.IsType<RegexMatchTimeoutException>(failure);
+        Assert.Same(hook, parent.Budget.CheckpointHook);
+        Assert.Same(parentDeadline, parent.Budget.Deadline);
+        Assert.Equal(parentToken.Token, parent.Budget.CancellationToken);
+        Assert.Equal(0ul, parent.Budget.ReservedBytes);
+        Assert.Equal(0ul, parent.Budget.Depth);
+        Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
+        ticks = 0;
+        parent.Budget.CheckpointHook = null;
+        parent.Budget.CancellationToken = default;
+        parent.Budget.Deadline = Utf8ExecutionDeadline.Infinite;
+        Assert.Equal("<😀><a>", regex.ReplaceToString("😀a"u8, @"<\g<x>>"));
+    }
+
     private static Utf8PythonRegex Create(string pattern, ulong working) => new(pattern,
         PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
         new() { MaxWorkSteps = 128, MaxDepth = 16, MaxWorkingBytes = working, MaxResultBytes = 4096 });

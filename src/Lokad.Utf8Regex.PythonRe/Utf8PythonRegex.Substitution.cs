@@ -76,26 +76,41 @@ public sealed partial class Utf8PythonRegex
     private PythonReReplacementPlan PrepareReplacementPlan(string replacement,
         PythonRePreparationInterruptionControl control)
     {
-        // Only a cache miss allocates this checkpoint closure. Keep parent
-        // authority and fixed preparation backstops, then restore the hook.
+        // Borrow existing authority fields on a cache miss; a distinct parent
+        // retains its original callback chain. Restore both fields and hook.
         // Working bytes also cap this phase's additional parser capacity;
         // construction work/depth and retained-cache admission stay separate.
         using var construction = ResourcePolicy.MaxWorkingBytes is { } maximumBytes
             ? Utf8ConstructionScope.RestrictAdditionalBytes(maximumBytes)
             : Utf8ConstructionScope.Enter();
-        var previousCheckpoint = construction.Budget.CheckpointHook;
-        construction.Budget.CheckpointHook = steps =>
+        var budget = construction.Budget;
+        var previousToken = budget.CancellationToken;
+        var previousDeadline = budget.Deadline;
+        var previousCheckpoint = budget.CheckpointHook;
+        if ((!previousToken.CanBeCanceled || previousToken == control.Token) &&
+            (previousDeadline.IsInfinite || ReferenceEquals(previousDeadline, control.Deadline)))
         {
-            previousCheckpoint?.Invoke(steps);
-            control.Check();
-        };
+            budget.CancellationToken = control.Token;
+            budget.Deadline = control.Deadline;
+        }
+        else
+        {
+            var parentHook = previousCheckpoint;
+            var currentControl = control;
+            budget.CheckpointHook = steps => { parentHook?.Invoke(steps); currentControl.Check(); };
+        }
         try
         {
             var plan = PythonReReplacementParser.Parse(replacement, _translation.CaptureGroupCount, _namedGroups);
             construction.Complete();
             return plan;
         }
-        finally { construction.Budget.CheckpointHook = previousCheckpoint; }
+        finally
+        {
+            budget.CheckpointHook = previousCheckpoint;
+            budget.CancellationToken = previousToken;
+            budget.Deadline = previousDeadline;
+        }
     }
 
     // Existing cache control also polls pending-entry waits and publication.
@@ -103,6 +118,9 @@ public sealed partial class Utf8PythonRegex
     private readonly struct PythonRePreparationInterruptionControl(
         Utf8ExecutionDeadline deadline, CancellationToken token) : IUtf8ConstructionTextControl
     {
+        internal Utf8ExecutionDeadline Deadline => deadline;
+        internal CancellationToken Token => token;
+
         public void Check()
         {
             token.ThrowIfCancellationRequested();

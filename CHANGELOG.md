@@ -13,6 +13,12 @@
   per call. Unchanged controls vary within 3%; noisy warm timings remain
   inconclusive. This development change is outside immutable96 and its separate
   runtime-default operating-cost observations. No new package is designated.
+- Apply the same borrowing to Python cold replacement-plan preparation. Preserve
+  original and distinct parent authority, work/checkpoints, byte admission,
+  restoration/retry and retained results. The qualified public source pair shows
+  about 41% less cold live-token execution time and 104 fewer allocated bytes per
+  call, with unchanged control allocations. Lazy FullMatch stays on its existing
+  preparation path. This is development source after96, with no new package.
 
 ## Qualified private Core/PythonRe scalar.96
 
