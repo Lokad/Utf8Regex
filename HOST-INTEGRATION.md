@@ -1,5 +1,9 @@
 # Resource controls and host ownership
 
+Preparing Core/PythonRe scalar.98 batches the controlled decimal and URI changes
+described below. Exact Core98 is required; actual-package acceptance is pending.
+No control, ownership or unlimited-default contract changes at this boundary.
+
 Qualified private Core/PythonRe scalar.97 includes the finite Core match-timeout
 correction and construction-authority borrowing, alongside earlier cold-preparation
 byte/work ceilings. Exact package identity and scoped consumer acceptance are in

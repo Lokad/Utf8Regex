@@ -1,5 +1,15 @@
 # Changelog
 
+## Preparing private Core/PythonRe scalar.98
+
+Batch the accepted controlled decimal IsMatch and bounded URI Count changes
+below into one immutable downstream candidate. Exact Core98 is required.
+Windows/Linux actual-package semantics, resources, consumer assertions, member/
+provenance/symbol checks and representative finite-policy costs are pending.
+Reuse the completed source comparisons; they do not qualify immutable98 bytes.
+Scalar97 and earlier candidates remain unchanged. PCRE2 retains its independent
+Core94 graph. No publication, consumer pin/default change or full-SPEC claim.
+
 ## Development after scalar.97
 
 - Simplify URI Count's body/query/fragment phases to their equivalent
