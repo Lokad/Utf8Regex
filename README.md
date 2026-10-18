@@ -142,6 +142,13 @@ callback execution/allocations, later standalone getters and retained host stora
 have separate scope; see
 [host composition](HOST-INTEGRATION.md).
 
+The tables below are historical measurements from the revisions and dates in
+`README.Benchmarks.json`; most rows were measured in September 2026. They do not
+qualify the current engine. Current scoped package measurements, finite-limit
+overhead and inconclusive lanes are recorded in the
+[scalar.97 handoff](artifacts/core-python-scalar97-20261018/HANDOFF.md).
+Later source comparisons retain their separate scope in [CHANGELOG.md](CHANGELOG.md).
+
 <!-- BEGIN GENERATED DOTNET_PERFORMANCE BENCHMARKS -->
 ## DotNetPerformance Benchmarks
 
