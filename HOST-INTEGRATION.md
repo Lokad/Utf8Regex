@@ -6,6 +6,13 @@ already qualified in95. Exact package identity and scoped consumer acceptance ar
 in artifacts/core-python-scalar96-20261018/HANDOFF.md. Common retention and process
 memory remain separate; no defaults or ownership rules change.
 
+Development after scalar.96 corrects a finite Core match-timeout bypass in
+unpolled native shortcuts. No-token IsMatch enters the existing invocation;
+qualified native routes retain their authority, and other finite-timeout routes
+use owned scalar execution. A deadline begins before validation/search and stays
+absolute until publication. Immutable scalar.96 predates this correction; use
+the later qualified candidate once supplied for this guarantee.
+
 Choose eager-construction and invocation limits separately. The common policy
 types describe admission scopes; work units and execution failure types depend
 on the regex profile. Matching remains strict UTF-8/scalar with byte coordinates.

@@ -45,6 +45,11 @@ remain unlimited. Full grammar/construction/lazy/default/common-retention/SPEC
 coverage stays open. Frozen package preparation assets retain staging-time status;
 this source view records later acceptance without changing immutable bytes.
 
+Known issue in scalar.96: some no-token native shortcuts bypass a finite Core
+match timeout. Development source now starts existing invocation authority
+before those routes and passes deterministic deadline regressions. This fix
+requires the next immutable candidate; scalar.96 has not been changed.
+
 ## Support Scope
 
 - Development semantics: Unicode-scalar matching over strict UTF-8. Dot, classes, quantifiers, capture boundaries, references and RTL traversal operate on complete scalars.

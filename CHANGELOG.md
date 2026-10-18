@@ -2,6 +2,12 @@
 
 ## Development after scalar.96
 
+- Honor finite Core match timeouts before unpolled native shortcuts. No-token
+  IsMatch now enters the existing invocation first; other non-invocation native
+  fallbacks select the owned scalar program for finite timeouts. Qualified native
+  routes that already carry an invocation remain eligible. This corrects a
+  demonstrated deadline bypass without changing unlimited matching or public APIs.
+  Immutable scalar.96 does not contain this correction.
 - Reuse the construction budget's existing caller token/deadline for Core
   replacement preparation when parent authority is absent or identical. Restore
   the prior token, deadline and hook on every exit; distinct parent authority

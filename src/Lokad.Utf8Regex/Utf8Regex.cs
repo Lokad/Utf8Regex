@@ -402,6 +402,11 @@ public sealed partial class Utf8Regex
     /// <summary>Determines whether the well-formed UTF-8 input contains a match.</summary>
     public bool IsMatch(ReadOnlySpan<byte> input)
     {
+        // The entry shortcuts below prove their answer without polling. A finite
+        // deadline must start before validation/search under the existing owner.
+        if (MatchTimeout != Regex.InfiniteMatchTimeout)
+            return IsMatch(input, CancellationToken.None);
+
         if (!HasFiniteExecutionLimits && _prioritizedBooleanFamilyKind == Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiSignedDecimalWhole)
         {
             if (Utf8AsciiPrefixTokenExecutor.TryMatchSignedDecimalWhole(input, out _))
@@ -462,7 +467,9 @@ public sealed partial class Utf8Regex
 
     private Utf8SliceProgram? GetOwnedSliceProgram(ReadOnlySpan<byte> input)
     {
-        if (HasFiniteExecutionLimits) return _ownedSliceProgram;
+        // Qualified native invocation routes run before this selector. Other
+        // shortcuts must not bypass a finite deadline or restart it after work.
+        if (HasFiniteExecutionLimits || MatchTimeout != Regex.InfiniteMatchTimeout) return _ownedSliceProgram;
         if (_preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex) return _ownedSliceProgram;
         if (_ownedSliceProgram.CanMatchEmpty && _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral ||
              _ownedSliceProgram.UsesInterpretedLazyLoopSemantics ||
