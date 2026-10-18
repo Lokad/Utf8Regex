@@ -79,3 +79,9 @@ remain separate from exact-package99 evidence, closed private-loop campaigns,
 CPython Status and historical snapshots. No second timing run was needed for
 this coarse observation; no precise percentage or general performance claim is
 promoted.
+
+A subsequent mandatory Unicode prefix-search prototype was rejected and reverted:
+its finite public calls slowed by 75–94%, while unchanged .NET controls stayed
+within 6.2% of their original means. Allocations were unchanged. The accepted
+source and measurements above remain current; [the bounded experiment receipt](artifacts/python-unicode-prefix-20261018/RESULT.md)
+preserves the failed candidate and evidence.
