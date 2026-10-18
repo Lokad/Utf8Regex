@@ -1,5 +1,18 @@
 # Changelog
 
+## Qualified private Core/PythonRe scalar.95
+
+The immutable pair at ab23f649 delivers the two preparation byte ceilings below.
+Same-byte Windows/Linux consumers, exact API/member/symbol/provenance, reused
+capture/semantic controls and a fresh final-feed public restore pass. Producer
+CI is green. Current costs close after 160 raw samples: 11 of 16 lanes qualify;
+five remain inconclusive, including warm replacement timings. Cold live-token
+preparation has material cost; basic metering stays. Core code/API/pinned data
+are unchanged from93. Preserve93 and independent PCRE94; no PCRE95, publication,
+external pins/defaults, adoption or full-SPEC completion is implied. See
+artifacts/core-python-scalar95-20261018/HANDOFF.md. Immutable preparation assets
+retain their staging-time status; completion does not mutate package bytes.
+
 ## Preparation for private Core/PythonRe scalar.95
 
 This coherent pair stages the cold replacement-parser and execution-triggered

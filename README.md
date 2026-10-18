@@ -1,53 +1,46 @@
 # Lokad.Utf8Regex
 
-Preparing private **Core/PythonRe 0.4.0-scalar.95** to deliver the two bounded
-cold-preparation changes below. Finite `MaxWorkingBytes` also caps additional
-replacement-parser and execution-triggered FullMatch preparation capacity;
-construction work/depth and retained storage remain separate. Eager `Compile`
-keeps its own construction policy. Exact-package/platform/consumer and current
-operating-cost checks are pending at this producer revision. Preserve the
-qualified scalar.93 pair and independent PCRE2 scalar.94. No PCRE95, publication
-or downstream adoption is implied.
-
 `Lokad.Utf8Regex` matches Unicode scalars over strict UTF-8 spans, with primary
 byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
-coordinates and strings are derived conveniences; PythonRe adds its pinned
+coordinates and strings are derived conveniences. PythonRe adds its pinned
 Python grammar, captures and result shaping over the shared owned engine.
 
-Qualified private **Core/PythonRe 0.4.0-scalar.93**, clean producer
-`b4b0778bd897b173ced8a980e7192c9cda2a62de`, corrects RTL Count across unanchored
-alternatives beside `\G` and omits unused balancing scratch. PythonRe requires
-exact Core `[0.4.0-scalar.93]`. Same immutable Windows/Linux package consumers,
-121 capture / 91 semantic fixtures, API/member/symbol/provenance and a fresh mapped-
-feed public restore pass. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39096987592)
-is green. [Handoff](artifacts/core-python-scalar93-20261018/HANDOFF.md) and
-[consumption](artifacts/core-python-scalar93-20261018/CONSUMING.md) record exact identities and scope.
+Qualified private **Core/PythonRe 0.4.0-scalar.95**, clean producer
+`ab23f649766882fbf55e0b240d37e431cdd94b6c`, requires exact Core
+`[0.4.0-scalar.95]`. Same immutable bytes pass Windows/Linux package consumers,
+121 capture fixtures, 91 structured semantic cases, exact API/member/symbol/
+provenance and a fresh mapped-feed public restore. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39100434806)
+is green. [Handoff](artifacts/core-python-scalar95-20261018/HANDOFF.md) and
+[consumption](artifacts/core-python-scalar95-20261018/CONSUMING.md) record identities and scoped acceptance.
 
-`a|\Gb` over `a xa` now counts both matches in RTL. Mandatory first-anchor
-stopping stays bounded, with scalar/empty advancement, captures, cancellation,
-deadlines and finite limits preserved. Removing unused heads lets a 512-capture
-Count fit 4 KiB without dropping required detailed capture storage or instruction
-metering. PythonRe code/pinned data and public APIs are unchanged from 91. Previous
-parser/capture/folding repairs remain. Core retains only accepted Unsafe.SizeOf;
-PythonRe none. Unchecked reads/generated helpers/native imports/shipped BCL
-matcher/results remain absent. [Shared controls](HOST-INTEGRATION.md) describe actual factories and owners.
+Finite `MaxWorkingBytes` now also bounds additional covered cold replacement-
+parser and execution-triggered FullMatch preparation capacity. Tight caps can
+report `ConstructionBytes` before matching, even on empty input. Fixed construction
+work/depth, original cancellation/deadlines, retry and retained results remain;
+warm hits add no preparation scope. Eager `Compile` keeps its independent
+construction policy. Cache/host retention remains separate; these phase ceilings
+do not establish a common cumulative or combined invocation/retention envelope.
+[Shared controls](HOST-INTEGRATION.md) describe the factories, limits and owners.
 
-[Current exact93 costs](artifacts/core-python-scalar93-20261018/vm-cost/RESULT.md)
-are closed: 500 raw samples, 16 of 25 paired rows qualified after the sole confirmation; nine
-remain unqualified, including captured Core Count. No noisy gain/loss or cause
-is claimed. Qualified finite Python Count 80.378 us, detailed FullMatch 6.201 us;
-Core terminal Count 16.935/17.410/17.543 us and literal 1.616/2.343/2.381 us U/F/live.
-Captured operations allocate 32 B less; controls retain 0/112/112 B. Terminal finite
-cost is about 2.8/3.6%, literal ~0.727/0.765 us plus 112 B. Python unlimited bases are
-unqualified. No more timing, CPython Status, compiled or full-profile parity or
-replacement of the closed original checked-access gate follows.
+[Current exact95 costs](artifacts/core-python-scalar95-20261018/vm-cost/RESULT.md)
+are closed: 160 raw samples, 11 of 16 lanes qualified after the sole confirmation.
+Cold preparation: 128.12/130.19/219.87 us U/F/live; finite overhead about 1.6%,
+live cancellation about 72%. Detailed FullMatch: 1.495/1.470/1.485 us, with 112 B
+added by finite controls. Warm replacement timings and the Core unlimited control
+remain inconclusive; their allocations and exclusions are recorded. No source
+speedup, CPython Status, broad parity or checked-access gate replacement is claimed.
 
-Defaults/static calls remain unlimited. Complete grammar/construction/lazy/
-default/retained-storage/host/SPEC coverage stays open. Preserve 91 and older bytes; 91 retains its documented RTL Count issue.
-Independent Core/PCRE92 and later PCRE source
-work stay separate. No PCRE93, publication, external pin/default change or actual
-adoption is implied. Immutable package preparation assets retain staging-time
-pending status; this source view and handoff record later scoped completion.
+Core C#, public APIs and pinned parser/Unicode data are unchanged from qualified93.
+The earlier RTL Count, scalar/capture and unused-scratch repairs remain. Core
+retains only accepted Unsafe.SizeOf; PythonRe none. Actual unchecked reads,
+generated staging helpers, native imports and shipped BCL matching/results stay
+absent. Preserve [Core/Python93](artifacts/core-python-scalar93-20261018/HANDOFF.md)
+and independent [Core/PCRE94](artifacts/pcre2-scalar94-delivery-20261018/HANDOFF.md).
+No PCRE95, publication, external pins/defaults or actual adoption is implied.
+Defaults/static invocation remain unlimited. Full grammar/construction/lazy/
+default/common-retention/SPEC and host coverage stays open. Immutable package
+preparation assets keep their staging-time pending status; this source view and
+handoff record later scoped completion without changing those package bytes.
 
 ## Support Scope
 
