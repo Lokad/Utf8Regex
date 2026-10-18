@@ -757,10 +757,12 @@ Every execution operation has an explicit `CancellationToken` twin with the core
 `MatchLimit` enforcement depends on the selected managed route; work units are not
 interchangeable with native PCRE2 or another managed engine. A breach raises
 `Pcre2MatchException` with the `MatchLimit` kind. Owned slice global cursors use a
-cumulative invocation across advances. Single-shot `IsMatch`/`Match` enforce
-`MatchLimit` only on stepwise-metered kinds: direct single-call kinds (literal scan,
-`Utf8Regex`-kind core delegation) perform one timeout-governed call, so a first match
-succeeds under any finite limit (see `Pcre2SingleShotLimitTests`). `DepthLimit` and
+cumulative invocation across advances. Single-shot `IsMatch`/`Match` also fund
+validation, discovery and required result projection under the original limit.
+Direct literal paths retain this metering: a boolean first-hit result can fit a
+limit that denies the corresponding value result's endpoint projection. Stepwise
+routes charge their candidate/VM work as well (see `Pcre2SingleShotLimitTests`).
+`DepthLimit` and
 `HeapLimitInBytes` constrain backtracking frames and workspace; admitted output
 builders also charge their covered major working capacities before acquisition.
 On the shared owned slice, depth counts simultaneously live fork/repeat frames
