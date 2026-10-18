@@ -6,7 +6,8 @@ consumers, exact API/member/symbol/provenance and a fresh public restore. Produc
 CI is green on Windows and Linux. [Handoff](../../artifacts/pcre2-scalar94-delivery-20261018/HANDOFF.md)
 and [consumption](../../artifacts/pcre2-scalar94-delivery-20261018/CONSUMING.md)
 record identities and the exact Core `[0.4.0-scalar.94]` pin. Core/PythonRe
-scalar.93 remains independent; no Python94, publication or adoption is implied.
+delivery remains independent; see the [current Core/PythonRe status](../../README.md).
+No Python94, publication or adoption is implied.
 
 This pair reuses lazily acquired fixed vectors under the existing lexical
 Count/search owner, with explicit acquisition/release through the actual owner

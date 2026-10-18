@@ -1,5 +1,18 @@
 # Managed PCRE2 profile qualification
 
+## Current qualified independent scalar.94
+
+Producer `4a369c5612a603112abe3740c1e09a24f2baac3e` is the latest qualified
+independent Core/PCRE2 pair, with exact Core `[0.4.0-scalar.94]`.
+The [handoff](../../artifacts/pcre2-scalar94-delivery-20261018/HANDOFF.md) records
+same-byte Windows/Linux semantics/resources, public consumer assertions,
+API/member/provenance/symbol checks, operating-cost limits and green producer CI.
+It includes the scalar.92 property repairs below and lazy fixed-vector reuse
+under the existing lexical owner. Only permitted Unsafe.SizeOf remains;
+no generated staging helpers, native imports or shipped BCL matching/results.
+Core/PythonRe is qualified separately. Earlier candidates and their evidence
+remain immutable; later source does not inherit this package qualification.
+
 ## Qualified independent scalar.92 properties
 
 Producer `4b8f8ef5dff11ecc41f0d7b53d57162c1ef9603e`, Release/net10.0.
