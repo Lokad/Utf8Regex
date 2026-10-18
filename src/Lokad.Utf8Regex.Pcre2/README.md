@@ -26,6 +26,19 @@ Only Unicode has a qualified unlimited base: finite/live overhead 2.25%/6.52%,
 112 additional bytes. No comparison with older package timings, Status or
 checked-access gate claim. The accepted source comparison remains separate.
 
+## Current source delivery gap
+
+The current email-corpus backtracking Count route disables its leading-run
+candidate search under finite controls. The tested 50-million-work policy denies
+the 92-match corpus; unlimited Count succeeds. A small reuse of the existing
+metered search admitted all92 without relaxing limits and passed the PCRE2
+suite, but its bounded comparison and single confirmation did not qualify the
+unchanged controls or timing floors. The candidate was deferred and reverted;
+no performance claim, snapshot update or new package follows. The patch, raw
+samples and limit/cancellation/capture checks remain in the
+[investigation receipt](../../artifacts/pcre2-email-current-20261018/RESULT.md).
+This does not change the independent qualified94 scope above.
+
 ## Previous qualified scalar.92
 
 Qualified independent **Core/PCRE2 0.4.0-scalar.92**, producer
