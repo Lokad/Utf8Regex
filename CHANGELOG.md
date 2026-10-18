@@ -1,5 +1,18 @@
 # Changelog
 
+## Development after scalar.95
+
+- Bound Core replacement parsing and UTF-8 template-key decoding with the
+  instance's finite working-byte value as a separate preparation ceiling.
+  Text cache hits add no scope; decoded UTF-8 keys still need admission on warm
+  calls. Reuse existing nested restrictions, remove the uncontrolled decoder's
+  empty interruption callback and simplify factory state to the regex owner.
+- Admit byte-template validation work before scanning through the active
+  construction owner or the existing fixed ceiling. Oversized malformed tails
+  can now report construction-work denial first. Original interruption, strict
+  scalar/byte behavior, cache retry, parent restoration and retained results
+  remain. No new API, ownership framework or package designation.
+
 ## Qualified private Core/PythonRe scalar.95
 
 The immutable pair at ab23f649 delivers the two preparation byte ceilings below.

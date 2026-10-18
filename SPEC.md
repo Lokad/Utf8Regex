@@ -495,6 +495,26 @@ application-wide meter. Core static cached operations have no policy parameter a
 retain unlimited defaults. Finite policy routes can have different performance
 from qualified unlimited native shortcuts.
 
+Development source after scalar.95 also uses finite `MaxWorkingBytes` as a
+separate ceiling on additional covered Core replacement-parser capacity. UTF-8
+template-key decoding and nested parsing share that ceiling before acquisition;
+decoded keys still need admission on warm calls. Text-key cache hits add no
+preparation scope. `ConstructionBytes` may precede execution denial and its totals
+include the enclosing construction reservation. Failure restores the parent limit
+and capacity, removes failed cache publication and never refunds admitted work.
+Original cancellation/deadlines, fixed construction backstops and retained values
+remain; invocation work/result counters and cache/host retention keep separate
+scope. This does not establish common cumulative or retained/RSS metering.
+
+The preliminary byte-template validator admits its byte-count work before reading
+the template. An active construction owner supplies cumulative admission and
+bounded parent interruption checkpoints. Without such an owner, the scan enforces
+the existing fixed construction-work ceiling directly, without another owner
+allocation. Its phase admission is separate from later preparation and invocation
+counts. An oversized malformed template can therefore report
+`ConstructionWorkSteps` before an invalid-tail error. Funded strict validation,
+absolute byte-error offsets and direct native replacement eligibility remain.
+
 Development after scalar.85 reuses complete Core literal discovery for exact,
 capture-free Python FullMatch value/string results. The one invocation covers
 full strict validation, suffix start/end checks, derived coordinates and required

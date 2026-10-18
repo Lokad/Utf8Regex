@@ -142,6 +142,16 @@ parsing and UTF-8 template-key decoding still use their separate construction
 backstops; Core's invocation byte caps do not admit that preparation. Keep its
 preparation/retained-storage host reservation separate as well.
 
+Development source after scalar.95 additionally borrows finite `MaxWorkingBytes`
+for Core replacement parsing and UTF-8 key decoding as one nested phase ceiling.
+Text-key hits add no scope; UTF-8 lookup still decodes a key, so warm calls must
+fund that allocation too. Byte-template validation also admits scan work before
+reading through an active construction owner or the existing fixed scan ceiling.
+An oversized malformed template can deny before its tail is read. Original
+interruption and fixed backstops remain. Preparation/retained-storage host admission
+stays separate; this source change does not extend the invocation W+R envelope.
+Immutable scalar.95 retains the documented Core exclusion above.
+
 On denial or interruption, release exclusive cursor scratch through its normal
 failure/EOF/Dispose path, but preserve reservations for surviving results. Prior
 snapshots stay valid; they do not make a failed bulk operation successful or

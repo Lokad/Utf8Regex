@@ -21,6 +21,19 @@ public sealed class Utf8CoreWorkingPolicyTests
         Assert.True(error.Requested > bytes);
     }
 
+    private static void Denied(Utf8ResourceLimitExceededException error, ulong bytes, string operation)
+    {
+        if (operation is "replace" or "replace-bytes" or "replace-text" or "destination" or "destination-bytes" &&
+            error.ResourceKind == Utf8ResourceLimitKind.ConstructionBytes)
+        {
+            // Template preparation has its own additional-capacity ceiling
+            // before execution; diagnostics include its construction parent.
+            Assert.True(error.Limit >= bytes);
+            Assert.True(error.Requested > error.Limit);
+        }
+        else Denied(error, bytes);
+    }
+
     public static IEnumerable<object[]> Modes()
     {
         foreach (var operation in Operations)
@@ -40,7 +53,7 @@ public sealed class Utf8CoreWorkingPolicyTests
         var expected = Utf8CoreWorkPolicyTests.Run(new Utf8Regex(pattern, options), operation, input, token, 0);
         Assert.Equal(expected, Utf8CoreWorkPolicyTests.Run(Create(pattern, ulong.MaxValue, options), operation, input, token, 0));
         Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            Utf8CoreWorkPolicyTests.Run(Create(pattern, 1, options), operation, input, token, 0)), 1);
+            Utf8CoreWorkPolicyTests.Run(Create(pattern, 1, options), operation, input, token, 0)), 1, operation);
         ulong low = 1, high = 1_048_576;
         while (high - low > 1)
         {
@@ -50,11 +63,11 @@ public sealed class Utf8CoreWorkingPolicyTests
                 Assert.Equal(expected, Utf8CoreWorkPolicyTests.Run(Create(pattern, middle, options), operation, input, token, 0));
                 high = middle;
             }
-            catch (Utf8ResourceLimitExceededException error) { Denied(error, middle); low = middle; }
+            catch (Utf8ResourceLimitExceededException error) { Denied(error, middle, operation); low = middle; }
         }
         Assert.Equal(expected, Utf8CoreWorkPolicyTests.Run(Create(pattern, high, options), operation, input, token, 0));
         Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            Utf8CoreWorkPolicyTests.Run(Create(pattern, high - 1, options), operation, input, token, 0)), high - 1);
+            Utf8CoreWorkPolicyTests.Run(Create(pattern, high - 1, options), operation, input, token, 0)), high - 1, operation);
     }
 
     [Theory]

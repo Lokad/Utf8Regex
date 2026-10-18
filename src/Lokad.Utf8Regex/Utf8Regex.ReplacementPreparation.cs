@@ -44,7 +44,9 @@ public sealed partial class Utf8Regex
 
     private Utf8AnalyzedReplacement PrepareReplacement(string replacement, ReplacementPreparationControl control)
     {
-        using var construction = Utf8ConstructionScope.Enter();
+        using var construction = ResourcePolicy.MaxWorkingBytes is { } maximumBytes
+            ? Utf8ConstructionScope.RestrictAdditionalBytes(maximumBytes)
+            : Utf8ConstructionScope.Enter();
         var previous = construction.Budget.CheckpointHook;
         construction.Budget.CheckpointHook = steps => { previous?.Invoke(steps); control.Check(); };
         try
@@ -61,34 +63,63 @@ public sealed partial class Utf8Regex
 
     private static void ValidateReplacementTemplateUtf8(ReadOnlySpan<byte> template, ReplacementPreparationControl control)
     {
-        if (control.IsUncontrolled) { _ = Utf8Validation.Validate(template); return; }
+        control.Check();
+        var construction = Utf8ConstructionScope.IsActive ? Utf8ConstructionScope.CurrentBudget : null;
+        var work = (ulong)template.Length;
+        if (construction is not null) construction.ChargeWork(work);
+        else if (work > Utf8ConstructionScope.DefaultWorkSteps)
+            throw new Utf8ResourceLimitExceededException(Utf8ResourceLimitKind.ConstructionWorkSteps,
+                Utf8ConstructionScope.DefaultWorkSteps, work);
+
+        // This scan acquires no payload and needs no new numeric owner. A live
+        // parent shares its cumulative admission and interruption checkpoints.
+        if (control.IsUncontrolled && (construction is null ||
+            !construction.CancellationToken.CanBeCanceled && construction.Deadline.IsInfinite && construction.CheckpointHook is null))
+        { _ = Utf8Validation.Validate(template); return; }
         for (var offset = 0; offset < template.Length;)
         {
+            construction?.ChargeWork(0);
             control.Check();
             var count = Utf8SliceBufferWork.Utf8BlockLength(template[offset..]);
             if (!Utf8ValidationCore.TryValidate(template.Slice(offset, count), false, out _, out var error))
                 throw Utf8Validation.CreateInvalidUtf8Exception(offset + error);
             offset += count;
         }
+        construction?.ChargeWork(0);
         control.Check();
     }
 
     private Utf8AnalyzedReplacement GetParsedReplacement(ReadOnlySpan<byte> validatedTemplate, ReplacementPreparationControl control)
     {
-        using var construction = Utf8ConstructionScope.Enter();
-        var previous = construction.Budget.CheckpointHook;
-        construction.Budget.CheckpointHook = steps => { previous?.Invoke(steps); control.Check(); };
-        try
+        using var construction = ResourcePolicy.MaxWorkingBytes is { } maximumBytes
+            ? Utf8ConstructionScope.RestrictAdditionalBytes(maximumBytes)
+            : Utf8ConstructionScope.Enter();
+        if (control.IsUncontrolled)
         {
-            control.Check();
-            // The template was strictly validated before route selection. Its
-            // single decoded key still needs admission before acquisition.
             var text = construction.Budget.DecodeUtf8(validatedTemplate, Encoding.UTF8);
             var result = GetParsedReplacement(text, control);
-            control.Check();
             construction.Complete();
             return result;
         }
-        finally { construction.Budget.CheckpointHook = previous; }
+
+        // Keep captured locals in this block so uncontrolled key decoding does
+        // not allocate an empty interruption closure before its early return.
+        {
+            var currentControl = control;
+            var previous = construction.Budget.CheckpointHook;
+            construction.Budget.CheckpointHook = steps => { previous?.Invoke(steps); currentControl.Check(); };
+            try
+            {
+                currentControl.Check();
+                // The template was validated before route selection. Admit its
+                // decoded key and any nested parser overlap before acquisition.
+                var text = construction.Budget.DecodeUtf8(validatedTemplate, Encoding.UTF8);
+                var result = GetParsedReplacement(text, currentControl);
+                currentControl.Check();
+                construction.Complete();
+                return result;
+            }
+            finally { construction.Budget.CheckpointHook = previous; }
+        }
     }
 }

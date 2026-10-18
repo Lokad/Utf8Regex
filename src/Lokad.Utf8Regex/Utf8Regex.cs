@@ -69,7 +69,8 @@ public sealed partial class Utf8Regex
     /// Working bytes cover modeled major active arrays/output controls and old/new overlap; scratch releases synchronously while published cursor maps/tables remain charged for the invocation.
     /// Result bytes cover cumulative modeled major result/staging capacity, including arrays, text, coordinate maps, growth and output controls.
     /// Capacity charges precede acquisition, may conservatively count shared storage and are never refunded; fixed values and borrowed input are excluded.
-    /// Construction and replacement preparation have separate admission bounds. Caller callback execution and later standalone result getters are outside this work cap.
+    /// Replacement parsing and UTF-8 template-key decoding also use the working-byte value as a separate additional-capacity ceiling; ConstructionBytes may precede execution. UTF-8 key decoding needs admission even on cache hits.
+    /// Construction/preparation work and retained storage remain separate. Caller callback execution and later standalone result getters are outside this work cap.
     /// Copied value enumerators share their work allowance while keeping independent positions; concurrent advancement is unsupported.</remarks>
     public Utf8Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
         : this(pattern, options, matchTimeout, resourcePolicy, checkPolicy: true)

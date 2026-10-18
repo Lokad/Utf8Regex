@@ -51,12 +51,20 @@ public sealed partial class Utf8Regex
     {
         return _replacementCache.GetOrAdd(
             replacement,
-            (GroupNumbers: _groupNumbers, GroupNames: _groupNames, Ecma: (Options & RegexOptions.ECMAScript) != 0),
-            static (replacementText, state) => Utf8FrontEndReplacementAnalyzer.Analyze(
-                replacementText,
-                state.GroupNumbers,
-                state.GroupNames,
-                state.Ecma));
+            this,
+            static (replacementText, self) =>
+            {
+                if (self.ResourcePolicy.MaxWorkingBytes is not { } maximumBytes)
+                    return Utf8FrontEndReplacementAnalyzer.Analyze(replacementText, self._groupNumbers,
+                        self._groupNames, (self.Options & RegexOptions.ECMAScript) != 0);
+                // A cache miss needs numeric byte admission, but this lane has
+                // no invocation interruption to forward through a work hook.
+                using var construction = Utf8ConstructionScope.RestrictAdditionalBytes(maximumBytes);
+                var result = Utf8FrontEndReplacementAnalyzer.Analyze(replacementText, self._groupNumbers,
+                    self._groupNames, (self.Options & RegexOptions.ECMAScript) != 0);
+                construction.Complete();
+                return result;
+            });
     }
 
     private static bool TryGetNativeReplacementBytes(

@@ -1,5 +1,12 @@
 # Lokad.Utf8Regex
 
+Development source after the qualified scalar.95 pair additionally bounds Core
+replacement parsing and UTF-8 template-key decoding with a separate working-byte
+ceiling, and admits byte-template validation work before scanning. UTF-8 key
+admission applies on warm calls too. These Core changes are outside immutable95;
+their source checks and bounded costs are recorded in PLAN.md, with full package
+qualification reserved for a later coherent boundary.
+
 `Lokad.Utf8Regex` matches Unicode scalars over strict UTF-8 spans, with primary
 byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences. PythonRe adds its pinned
