@@ -5,6 +5,12 @@ byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences. PythonRe adds pinned Python
 grammar, captures and result shaping over the shared owned engine.
 
+Preparing a private **Core/PythonRe 0.4.0-scalar.99** candidate, batching the two
+constant-class construction simplifications and generic Count's removal of
+unused UTF-16 metadata. Scalar semantics and finite resource controls remain.
+This source is not yet package-qualified; scalar.98 below remains immutable.
+No PCRE2 candidate, publication or downstream adoption is implied.
+
 Qualified private **Core/PythonRe 0.4.0-scalar.98**, clean producer
 `02fde38c8edc81d44dc2bc1da9fc072cfd336f8f`, requires exact Core
 `[0.4.0-scalar.98]`. Same immutable bytes pass Windows/Linux package consumers,
