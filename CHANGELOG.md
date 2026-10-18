@@ -1,5 +1,16 @@
 # Changelog
 
+## Preparation for private Core/PythonRe scalar.95
+
+This coherent pair stages the cold replacement-parser and execution-triggered
+FullMatch byte ceilings below, reusing the existing construction machinery.
+Core runtime source is unchanged from qualified93. API, pinned oracle data and
+scalar/capture matching semantics are unchanged. Tight cold working budgets can
+now deny preparation with ConstructionBytes; eager Compile remains independent.
+Exact package/platform/consumer and current-cost qualification is pending at this
+producer revision. Preserve93 and independent PCRE94; no PCRE95, publication,
+external pin/default change or adoption is implied.
+
 ## Development after scalar.94
 
 - Apply the same separate byte ceiling to execution-triggered lazy Python

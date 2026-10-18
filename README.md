@@ -1,5 +1,14 @@
 # Lokad.Utf8Regex
 
+Preparing private **Core/PythonRe 0.4.0-scalar.95** to deliver the two bounded
+cold-preparation changes below. Finite `MaxWorkingBytes` also caps additional
+replacement-parser and execution-triggered FullMatch preparation capacity;
+construction work/depth and retained storage remain separate. Eager `Compile`
+keeps its own construction policy. Exact-package/platform/consumer and current
+operating-cost checks are pending at this producer revision. Preserve the
+qualified scalar.93 pair and independent PCRE2 scalar.94. No PCRE95, publication
+or downstream adoption is implied.
+
 `Lokad.Utf8Regex` matches Unicode scalars over strict UTF-8 spans, with primary
 byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences; PythonRe adds its pinned

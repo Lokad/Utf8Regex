@@ -1,5 +1,10 @@
 # Lokad.Utf8Regex.PythonRe
 
+Preparing private **Core/PythonRe 0.4.0-scalar.95** to deliver both development
+preparation ceilings below. Exact-package/platform/public-consumer and current
+operating-cost qualification is pending at this producer revision. Qualified93
+and independent PCRE94 stay immutable; no PCRE95 or publication is designated.
+
 Development source additionally bounds cold replacement-template parser capacity
 with finite `MaxWorkingBytes`, using the existing construction scope. Tight caps
 can fail with `ConstructionBytes` before matching; warm hits add no preparation
