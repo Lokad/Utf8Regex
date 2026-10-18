@@ -1,5 +1,16 @@
 # Changelog
 
+## Development after scalar.89
+
+- Omit unobserved capture slots/trail writes during eligible Core Count calls,
+  using existing whole-tree facts and the same scalar VM. References,
+  conditionals, lookarounds, balancing, shared/explicit captures and alternate
+  or NonBacktracking programs retain their capture state. Preserve scalar
+  progression, retained results and original instruction/resource/interruption
+  authority. Required working capacity can fall; other operations keep values.
+  The bounded public source pair improves captured Count10–14% with2192 fewer
+  allocated bytes; this does not update immutable89 or its default-runtime costs.
+
 ## Qualified private Core/PythonRe scalar.89
 
 - Use a fresh immutable identity for the following source repairs. Same bytes pass Windows/Linux consumer/oracle/public-restore and identity

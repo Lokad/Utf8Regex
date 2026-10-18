@@ -1293,7 +1293,17 @@ public sealed partial class Utf8Regex
         var slots = new Utf8SliceSlots([], []);
         try
         {
-            slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
+            // Count publishes no captures. Reuse the existing whole-tree facts;
+            // unknown/alternate programs and any capture-sensitive shape retain
+            // their slots. Other operations continue to request all values.
+            var captureCount = program.GroupCount;
+            if (ReferenceEquals(program, _ownedSliceProgram) &&
+                _preparedRegex.Features is { CaptureCount: > 0, HasBackreferences: false, HasConditionals: false, HasLookarounds: false } &&
+                !program.IsNonBacktracking && !program.HasBalancing &&
+                !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
+                !program.HasConditionalTest && !program.SawLookaround && !program.SawCapturingLookbehind)
+                captureCount = 0;
+            slots = Utf8SliceRunner.RentSlots(captureCount, ref invocation);
             var outcome = Utf8SliceRunner.CountFromBytes(program, input, startByte, slots.Starts, slots.Ends,
                 ref invocation, _preparedRegex.SearchPlan);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)

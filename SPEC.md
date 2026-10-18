@@ -344,6 +344,15 @@ An atomic identifier-tail group must also retain its commitment. The structural
 verifier can rewind ordinary tails, so preparation must not strip an atomic
 wrapper from such a loop. These shapes use the existing owned path, preserving
 atomic failure and the original resource controls.
+Development source after scalar.89 also omits unobserved capture values for Core
+Count on an original backtracking program whose existing tree features prove
+no references, conditionals or lookarounds. Balancing, shared/explicit capture
+declarations and unknown/alternate programs retain their state. The same VM
+still charges every capture instruction, while omitted slots/trail writes lower
+actual storage and acquisition work. Numerical working/work requirements can
+fall. Captures used by matching, other operations/profiles, scalar progression,
+retained results and the original invocation authority remain unchanged. This
+is execution over the same program, with no new engine or cached program variant.
 Development source after scalar.87 also lets finite Core Count borrow the
 existing invocation-aware ASCII structural-family search and verifier. The
 original zero-offset LTR program must be nonempty, nonfolded and free of stateful

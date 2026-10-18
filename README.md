@@ -13,6 +13,11 @@ is green. [Handoff](artifacts/core-python-scalar89-20261018/HANDOFF.md) and
 [consumption](artifacts/core-python-scalar89-20261018/CONSUMING.md) record exact scope/identities.
 Earlier88/87/86 and independentPCRE76/Core76 remain immutable.
 
+Source after scalar.89 omits unobserved capture storage during eligible Core
+Count calls, preserving matching state where it is read and all original
+controls. The focused source experiment is separate from immutable89's costs;
+see the [changelog](CHANGELOG.md#development-after-scalar89).
+
 Scalar.89 repairs demonstrated separator endpoint/overlap and atomic-tail
 matching defects by keeping unproved structural shapes on the existing owned
 path. Python finite repeat bounds through4294967294 remain exact and distinct
