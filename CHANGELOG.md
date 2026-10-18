@@ -2,6 +2,11 @@
 
 ## Development after scalar.94
 
+- Apply the same separate byte ceiling to execution-triggered lazy Python
+  FullMatch preparation. Denial does not publish a partial program; parent
+  capacity and original interruption remain intact. Explicit `Compile` retains
+  its independent eager construction policy. Warm calls acquire no new scope.
+
 - Bound additional cold Python replacement-template parser capacity with the
   instance's finite `MaxWorkingBytes`, reusing the existing nested construction
   restriction. Oversized templates can now fail with `ConstructionBytes` before

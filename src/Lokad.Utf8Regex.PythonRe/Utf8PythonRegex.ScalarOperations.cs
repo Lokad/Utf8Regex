@@ -27,8 +27,21 @@ public sealed partial class Utf8PythonRegex
     private Utf8SliceProgram GetScalarFullProgram(ReadOnlySpan<byte> input,
         Utf8ExecutionDeadline deadline, CancellationToken cancellationToken)
     {
-        if (_lazyScalarFullProgram.IsValueCreated || deadline.IsInfinite && !cancellationToken.CanBeCanceled)
+        if (_lazyScalarFullProgram.IsValueCreated)
             return _lazyScalarFullProgram.Value;
+
+        if (deadline.IsInfinite && !cancellationToken.CanBeCanceled)
+        {
+            if (ResourcePolicy.MaxWorkingBytes is not { } maximumBytes)
+                return _lazyScalarFullProgram.Value;
+            // Restrict only execution-triggered cold preparation. Explicit
+            // Compile completes Lazy.Value under its separate eager owner.
+            // No interruption callback is needed on this uncontrolled lane.
+            using var construction = Utf8ConstructionScope.RestrictAdditionalBytes(maximumBytes);
+            var program = _lazyScalarFullProgram.Value;
+            construction.Complete();
+            return program;
+        }
 
         // Keep the checkpoint closure out of the warm path: the C# compiler
         // otherwise allocates its display class before the early return above.
@@ -39,8 +52,11 @@ public sealed partial class Utf8PythonRegex
         Utf8ExecutionDeadline deadline, CancellationToken cancellationToken)
     {
         // Borrow interruption through the existing construction checkpoints.
-        // Numeric preparation limits and any enclosing authority stay intact.
-        using var construction = Utf8ConstructionScope.Enter();
+        // Preserve fixed backstops and any enclosing authority. Working bytes
+        // also bound this phase's additional covered preparation capacity.
+        using var construction = ResourcePolicy.MaxWorkingBytes is { } maximumBytes
+            ? Utf8ConstructionScope.RestrictAdditionalBytes(maximumBytes)
+            : Utf8ConstructionScope.Enter();
         var previousCheckpoint = construction.Budget.CheckpointHook;
         construction.Budget.CheckpointHook = steps =>
         {

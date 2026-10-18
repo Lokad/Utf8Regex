@@ -23,9 +23,9 @@ public sealed class PythonReFiniteWorkingPolicyTests
 
     private static void Denied(Utf8ResourceLimitExceededException error, ulong bytes, int operation)
     {
-        if (operation is 20 or 21 && error.ResourceKind == Utf8ResourceLimitKind.ConstructionBytes)
+        if (operation is 3 or 7 or 10 or 13 or 20 or 21 && error.ResourceKind == Utf8ResourceLimitKind.ConstructionBytes)
         {
-            // Cold template parsing has an additional-capacity ceiling before
+            // Cold FullMatch/template preparation has a byte ceiling before
             // execution. Its diagnostic totals include the enclosing cache
             // preparation; all other routes retain execution-only diagnostics.
             Assert.True(error.Limit >= bytes);

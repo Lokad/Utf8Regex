@@ -1761,7 +1761,8 @@ construction allowance upfront, even if FullMatch is unused; no construction
 authority is retained. PythonRe constructors keep retryable lazy preparation.
 Replacement preparation and other uncovered acquisitions remain separate.
 PythonRe development additionally reuses finite invocation working bytes as an
-independent additional-capacity ceiling for cold template parsing, as specified
+independent additional-capacity ceiling for cold template parsing and
+execution-triggered FullMatch preparation, as specified
 in SPEC-PYTHONRE.md; this does not unify construction/execution/retention budgets.
 PCRE2 exposes the same four construction caps and independent interruption through
 its own `Compile` factories; its coverage and failures are in `SPEC-PCRE2.md`.

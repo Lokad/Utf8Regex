@@ -126,7 +126,7 @@ public sealed partial class Utf8PythonRegex
 
     /// <summary>Creates a Python-compatible expression from a well-formed UTF-8 pattern with explicit options, timeout, and invocation resource policy.</summary>
     /// <remarks>Finite work/depth/working/result limits select owned scalar execution. Depth bounds live backtracking/continuation frames; working bounds modeled major active capacity/growth overlap, and result capacity covers major array/text, capture/name, coordinate-map and staging requests cumulatively before acquisition.
-    /// Charges can conservatively count shared storage again and never refund. Cold replacement parsing also uses the working-byte value as a separate ceiling on additional construction capacity; a denial reports ConstructionBytes before execution. Construction work/depth, retained-cache admission, caller callbacks, borrowed storage and later standalone getters keep separate scope.</remarks>
+    /// Charges can conservatively count shared storage again and never refund. Cold replacement parsing and execution-triggered FullMatch preparation also use the working-byte value as a separate ceiling on additional construction capacity; a denial reports ConstructionBytes before execution. Construction work/depth, retained-cache admission, caller callbacks, borrowed storage and later standalone getters keep separate scope.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero; use null for unlimited.</exception>
     public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
         : this(new Utf8ConstructionPattern(patternUtf8), options, matchTimeout, resourcePolicy, checkPolicy: true)
@@ -135,7 +135,7 @@ public sealed partial class Utf8PythonRegex
 
     /// <summary>Creates a Python-compatible expression from UTF-16 text with explicit options, timeout, and invocation resource policy.</summary>
     /// <remarks>Finite work/depth/working/result limits select owned scalar execution. Depth bounds live backtracking/continuation frames; working bounds modeled major active capacity/growth overlap, and result capacity covers major array/text, capture/name, coordinate-map and staging requests cumulatively before acquisition.
-    /// Charges can conservatively count shared storage again and never refund. Cold replacement parsing also uses the working-byte value as a separate ceiling on additional construction capacity; a denial reports ConstructionBytes before execution. Construction work/depth, retained-cache admission, caller callbacks, borrowed storage and later standalone getters keep separate scope.</remarks>
+    /// Charges can conservatively count shared storage again and never refund. Cold replacement parsing and execution-triggered FullMatch preparation also use the working-byte value as a separate ceiling on additional construction capacity; a denial reports ConstructionBytes before execution. Construction work/depth, retained-cache admission, caller callbacks, borrowed storage and later standalone getters keep separate scope.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero; use null for unlimited.</exception>
     public Utf8PythonRegex(string pattern, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
         : this(new Utf8ConstructionPattern(pattern), options, matchTimeout, resourcePolicy, checkPolicy: true)

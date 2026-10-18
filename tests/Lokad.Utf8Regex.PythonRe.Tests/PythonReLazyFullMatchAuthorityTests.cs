@@ -145,10 +145,12 @@ public sealed class PythonReLazyFullMatchAuthorityTests
     }
 
     [Fact]
-    public void PreparationKeepsSeparateBackstopAndFiniteExecutionOwner()
+    public void PreparationKeepsSeparateWorkBackstopAndFiniteExecutionOwner()
     {
         var regex = new Utf8PythonRegex("(?P<x>😀|a)+", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 1, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            // Fund the independent preparation byte ceiling; construction
+            // work still does not consume the invocation's one work step.
+            new() { MaxWorkSteps = 1, MaxDepth = 1, MaxWorkingBytes = 16384, MaxResultBytes = 1 });
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.FullMatch("😀a"u8));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
         Assert.Equal(1ul, error.Limit);

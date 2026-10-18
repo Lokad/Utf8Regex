@@ -467,6 +467,14 @@ plans remain separate, so this does not establish common cumulative metering or 
 combined invocation/retention envelope. Warm cache hits allocate no preparation
 scope or checkpoint closure. This change is outside immutable scalar.93.
 
+Uncached FullMatch preparation triggered by execution uses the same separate
+additional-capacity ceiling when `MaxWorkingBytes` is finite. Failure leaves the
+retryable lazy program unpublished and restores the enclosing owner; its byte
+denial can precede invocation denial. Warm calls acquire no preparation scope.
+The explicit `Compile` factory still completes FullMatch directly under its
+eager construction policy and does not borrow the future invocation byte cap.
+Its completed construction token/deadline is not retained for later calls.
+
 Capture-name metadata shares the existing construction owner. The public-name
 array and named-entry array are admitted before acquisition; numeric group labels
 admit their formatted text capacity before materialization. Named strings and the
@@ -530,7 +538,8 @@ arrays, coordinate maps, output controls and old/new growth overlap. Denials rep
 budgets remain invalid. Exclusive scratch releases synchronously; published
 copied-cursor reservations retain their invocation-long credits. Borrowed subjects,
 programs, incidental metadata and caller-retained results have separate scope.
-Cold replacement parsing also borrows this byte value as the separate phase
+Cold replacement parsing and execution-triggered FullMatch preparation also
+borrow this byte value as the separate phase
 ceiling described above; other preparation keeps its documented scope.
 These controls do not establish exact GC traffic, process-memory bounds,
 common construction/live-retention policies or safe defaults.

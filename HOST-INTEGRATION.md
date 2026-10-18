@@ -130,6 +130,9 @@ capacity. It reuses the existing construction owner; construction work/depth and
 retained-cache admission remain separate. A cold byte denial reports
 `ConstructionBytes`, whose totals include the enclosing construction reservation,
 and may precede an execution denial. Warm hits acquire no preparation scope.
+The same development ceiling applies to uncached FullMatch preparation triggered
+by execution. Explicit `Compile` still prepares FullMatch eagerly under its
+separate construction policy, independently of future invocation caps.
 Original cancellation and deadline still apply. Include preparation and surviving
 plans in separate host admission: this phase ceiling does not extend the combined
 invocation envelope to retained storage. Even an empty subject can prepare and
