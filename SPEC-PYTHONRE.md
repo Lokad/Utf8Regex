@@ -84,7 +84,9 @@ Every consumed comment character spends construction work and checks the
 original cancellation/deadline authority. Failed scans unwind their existing
 owner; spent work is not refunded. Removing comment nodes can reduce required
 construction storage/depth. This is a source correction, separate from the
-immutable scalar.89 package and its original107 capture fixtures.
+immutable scalar.89 package and its original107 capture fixtures. Qualified
+scalar.90 includes this correction with114 complete capture fixtures and the
+existing91 semantic catalog on the same Windows/Linux package bytes.
 
 ## Quantified atoms and bracket control escapes
 
@@ -98,7 +100,7 @@ Inside brackets, `\a`, `\b`, `\f`, `\n`, `\r`, `\t` and `\v` denote their contro
 scalars, including in ranges and negated classes. In particular, bracket `\b`
 is backspace while outside `\b` is a word boundary. Existing scalar/capture and
 construction/invocation controls remain authoritative. This correction does
-not alter immutable scalar.89.
+not alter immutable scalar.89; it is included in qualified scalar.90.
 
 ## Nullable repetition and capture state
 

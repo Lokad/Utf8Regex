@@ -3,47 +3,39 @@
 `Lokad.Utf8Regex.PythonRe` is the optional `net10.0` Python-flavored adapter over
 strict UTF-8 scalars, with primary byte coordinates and derived UTF-16 projections.
 
-Private **Core/PythonRe scalar.90** is staged for the source repairs described
-below. Qualification/current costs are pending; preserve the immutable scalar.89
-input and its recorded scope until the new handoff is complete.
+The qualified private **Core/PythonRe 0.4.0-scalar.90** pair comes from clean
+producer `fd8bade3fe2ddae0ffc6680cf53a1d0295107977`; PythonRe requires exact Core
+`[0.4.0-scalar.90]`. Same immutable bytes pass Windows/Linux consumers,
+114capture/91semantic fixtures, API/member/symbol/provenance checks and a fresh
+isolated public restore. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39084642019)
+is green. [Handoff](../../artifacts/core-python-scalar90-20261018/HANDOFF.md) and
+[consumption](../../artifacts/core-python-scalar90-20261018/CONSUMING.md) record exact scope/identities.
+Preserve89/88/87/86 and independentPCRE76/Core76; no PCRE90 package is included.
 
-The qualified private **Core/PythonRe 0.4.0-scalar.89** pair comes from clean
-producer `a290c428ad6f30656e9cc1f46bb65f547942aa59`; PythonRe requires exact Core
-`[0.4.0-scalar.89]`. Same immutable bytes pass Windows/Linux consumers,
-107capture/91semantic fixtures, API/member/symbol/provenance checks and a fresh
-isolated public restore. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39079455973)
-is green. [Handoff](../../artifacts/core-python-scalar89-20261018/HANDOFF.md) and
-[consumption](../../artifacts/core-python-scalar89-20261018/CONSUMING.md) record exact scope/identities.
-Earlier88/87/86 and independentPCRE76/Core76 remain immutable.
-
-Development source after scalar.89 also fixes ignored-comment parsing: leading
-global flags can follow comments/verbose trivia, comments cannot steal an atom's
-quantifier, and escaped closers/newlines stay in their comments. Existing
-construction/interruption controls remain authoritative. See the
-[comment contract](../../SPEC-PYTHONRE.md#ignored-comments-and-leading-flags).
-It also rejects direct anchor/boundary quantifiers and reads bracket control
-escapes as their scalar values; grouped assertions and existing controls remain
-supported. These demonstrated gaps remain in immutable89 outside its recorded
-qualification subset; the next package boundary will carry their repairs.
-
-Scalar.89 includes exact finite Python repetition through4294967294, distinct
-from infinity, with compact invocation state and preserved captures/rollback,
-finite controls and interruption. Shared separator/atomic defects are repaired.
-Core references only permitted Unsafe.SizeOf (accepted by Lython); Python none.
+Scalar.90 batches Core Count capture-state elision and exact finite2147483647
+repeat maxima, plus Python comment/leading-flag parsing, anchor quantifier
+admission and bracket control escapes. Captures, scalar ranges, retained aliases
+and original construction/invocation/cancellation/deadline controls remain.
+Core retains only permitted Unsafe.SizeOf (accepted by Lython); Python none.
 Unchecked reads, generated helpers, native imports and BCL matchers stay absent.
+Immutable89 retains the demonstrated Python gaps outside its recorded subset.
 
-[Current exact89 costs](../../artifacts/core-python-scalar89-20261018/vm-cost/RESULT.md)
-retain500samples from one default-runtime pair plus sole confirmation.24/25 lanes
-qualify; selected affected public changes-1.04..+6.16%, unchanged allocations.
-All selected finite/live lanes qualify, but unlimited captured FullMatch remains
-noisy/unqualified. Python nullable captured Count79.9/82.1us U/finite and finite
-detailed FullMatch6.46us retain substantial .NET gaps. No further timing, broad
-performance/CPythonStatus or inference from discarded64-bit-state/old costs.
+[Current exact90 costs](../../artifacts/core-python-scalar90-20261018/vm-cost/RESULT.md)
+retain500raw samples from one default-runtime pair plus sole confirmation;
+17/25 lanes qualify. Eight remain unqualified, including captured Count timings;
+no further timing or speed/equivalence claim for them. Captured Count allocations
+fall2192B/op. Qualified affected product changes versus89 are-2.31..-0.16%,
+with other allocations unchanged; literal controls-0.26/+1.62/+2.53% U/finite/live.
+Qualified terminal Unicode Count is16.91/17.24/17.59us, and finite detailed
+Python FullMatch6.01us. Finite literal Count adds about0.72us/112B. Substantial
+cost gaps and output-contract differences from .NET remain explicit. This is
+selective operating-cost evidence, not CPythonStatus/compiled/fullSPEC parity or
+an update to the original closed checked-access gate. Old costs retain scope.
 
 Defaults/static calls remain unlimited. [Host composition](../../HOST-INTEGRATION.md)
-explains modeled capacities and surviving owners. Full grammar/construction/lazy/
-default/retained-storage/host/SPEC coverage remains open. No PCRE89, publication,
-external consumer pin/default change or actual adoption is implied.
+explains modeled capacities and surviving owners. Complete grammar/construction/
+lazy/default/retained-storage/host/SPEC coverage remains open. No public
+publication, external consumer pin/default change or adoption is implied.
 
 ## Support Scope
 

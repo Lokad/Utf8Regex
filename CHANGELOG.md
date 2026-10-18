@@ -1,10 +1,16 @@
 # Changelog
 
-## Staged private Core/PythonRe scalar.90
+## Qualified private Core/PythonRe scalar.90
 
-The fresh identity batches the development changes below. Package/platform,
-consumer/provenance and current-cost qualification are pending; no publication
-or downstream promotion is implied. Preserve immutable89 and independentPCRE76.
+The fresh pair at fd8bade3 includes the changes below and passes same-byte
+Windows/Linux consumers,114capture/91semantic fixtures, provenance/member/symbol
+checks, a fresh final-feed public restore and green producer CI. The bounded
+current-cost batch is closed after its sole confirmation:17/25 lanes qualify;
+eight remain unqualified, including captured Count timings. Allocations for
+eligible captured Count fall2192B/op; no timing win is claimed for unqualified
+lanes. Preserve immutable89 and independentPCRE76. No publication/adoption or
+whole-SPEC completion is implied. See artifacts/core-python-scalar90-20261018/HANDOFF.md.
+Source experiment costs below keep their original flags/scope.
 
 ## Development after scalar.89
 

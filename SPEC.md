@@ -351,6 +351,9 @@ NonBacktracking consuming repeat must satisfy the existing finite expansion
 admission; it can fail construction capacity instead of becoming an unbounded
 loop. Existing compact zero-width repeats do not require that expansion. This
 does not widen the Core grammar's accepted numeric range or alter immutable89.
+The bound repair and Count state omission below are included in qualified90;
+its exact-package default Count timings remain unqualified, separately from the
+closed source FullOpts cost evidence.
 Development source after scalar.89 also omits unobserved capture values for Core
 Count on an original backtracking program whose existing tree features prove
 no references, conditionals or lookarounds. Balancing, shared/explicit capture
