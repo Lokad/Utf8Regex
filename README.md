@@ -5,6 +5,13 @@ byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences; PythonRe adds its pinned
 Python grammar, captures and result shaping over the shared owned engine.
 
+Preparation for a fresh **Core/PythonRe 0.4.0-scalar.93** pair is underway.
+It corrects RTL Count across unanchored alternatives beside `\G` and omits
+unused balancing scratch. Exact-package/platform/consumer/current-cost checks
+are pending at this producer revision. Scalar.91 retains that later-discovered
+RTL Count limitation; its recorded Awk/Lython subset and original evidence stay
+intact. No PCRE93, publication or adoption is implied; independent PCRE92 remains.
+
 The qualified private **Core/PythonRe 0.4.0-scalar.91** pair comes from clean
 producer `68a1e39b555cad29d5f488d2c8d2adc6624b68b7`; PythonRe requires exact Core
 `[0.4.0-scalar.91]`. Same immutable bytes pass Windows/Linux package consumers,

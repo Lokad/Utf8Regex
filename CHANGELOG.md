@@ -1,5 +1,15 @@
 # Changelog
 
+## Preparation for private Core/PythonRe scalar.93
+
+This coherent pair includes the Core RTL Count alternative/contiguous-anchor
+repair and omission of unused balancing scratch. PythonRe's implementation and
+pinned oracle inputs are unchanged from91. Exact-package/platform/consumer and
+current-cost qualification is pending at this producer revision. The older91
+bytes retain the demonstrated RTL Count limitation. Preserve91 and independent
+Core/PCRE92; no PCRE93, publication or downstream adoption is implied. The PCRE
+workspace source improvement below has its own later delivery boundary.
+
 ## Development after scalar.92
 
 - Correct right-to-left Count when one alternative contains `\G` and another

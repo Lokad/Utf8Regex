@@ -5,6 +5,12 @@ byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences; PythonRe adds its pinned
 Python grammar, captures and result shaping over the shared owned engine.
 
+Preparation for a fresh **Core/PythonRe 0.4.0-scalar.93** pair is underway.
+Its exact Core dependency includes the RTL Count repair and unused-balancing-
+scratch reduction; PythonRe code and pinned oracle inputs remain unchanged.
+Package/platform/consumer/current-cost checks are pending at this producer
+revision. Preserve91 and independent PCRE92; no PCRE93, publication or adoption.
+
 The qualified private **Core/PythonRe 0.4.0-scalar.91** pair comes from clean
 producer `68a1e39b555cad29d5f488d2c8d2adc6624b68b7`; PythonRe requires exact Core
 `[0.4.0-scalar.91]`. Same immutable bytes pass Windows/Linux package consumers,
