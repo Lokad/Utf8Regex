@@ -92,15 +92,16 @@ public sealed class Pcre2RepeatJournalScopeTests
             new Utf8BytePosition(0), Pcre2MatchOptions.None, out var cursor, budget));
         var frames = Pcre2BacktrackingRunner.CreateFrames(ref budget, 0);
         var repeats = new Pcre2InvocationStateStack<Pcre2RepeatMutation>(int.MaxValue, true);
+        var workspace = new Pcre2BacktrackingWorkspace();
         try
         {
             var count = 0;
-            while (cursor.MoveNext(ref frames, ref repeats)) count++;
+            while (cursor.MoveNext(ref frames, ref repeats, ref workspace)) count++;
             Assert.Equal(100, count);
             Assert.Equal(1UL, budget.Diagnostics.WorkspaceRepeatMutationRents);
-            Assert.True(budget.Diagnostics.WorkspaceFixedRents > 1);
+            Assert.Equal(1UL, budget.Diagnostics.WorkspaceFixedRents);
         }
-        finally { cursor.ReleaseBacktrackingStacks(ref frames, ref repeats); }
+        finally { cursor.ReleaseBacktrackingStorage(ref frames, ref repeats, ref workspace); }
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
 

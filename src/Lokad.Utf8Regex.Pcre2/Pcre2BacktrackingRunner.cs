@@ -199,9 +199,10 @@ internal static class Pcre2BacktrackingRunner
         ref Utf8ValidatedInput input, Utf8BytePosition searchStart, Utf8BytePosition firstMatchingPosition,
         Pcre2MatchOptions matchOptions, ref Pcre2ResourceBudget budget,
         scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
-        scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations)
+        scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
+        scoped ref Pcre2BacktrackingWorkspace workspace)
         => MatchCore(program, candidateSearch, ref input, searchStart, firstMatchingPosition,
-            matchOptions, Pcre2CaptureMaterialization.None, ref budget, ref frames, ref repeatMutations).ToCharacterMatch();
+            matchOptions, Pcre2CaptureMaterialization.None, ref budget, ref frames, ref repeatMutations, ref workspace).ToCharacterMatch();
 
     internal static Pcre2BacktrackingMatch MatchDetailed(
         Pcre2BacktrackingProgram program,
@@ -250,12 +251,13 @@ internal static class Pcre2BacktrackingRunner
     {
         var frames = CreateFrames(ref budget, 0);
         var repeatMutations = new Pcre2InvocationStateStack<Pcre2RepeatMutation>(int.MaxValue, budget.CollectsDiagnostics);
+        var workspace = new Pcre2BacktrackingWorkspace();
         try
         {
             return MatchCore(program, candidateSearch, ref input, start, firstMatchingPosition,
-                matchOptions, captureMaterialization, ref budget, ref frames, ref repeatMutations);
+                matchOptions, captureMaterialization, ref budget, ref frames, ref repeatMutations, ref workspace);
         }
-        finally { repeatMutations.Dispose(ref budget); frames.Dispose(ref budget); }
+        finally { workspace.Dispose(ref budget); repeatMutations.Dispose(ref budget); frames.Dispose(ref budget); }
     }
 
     private static Pcre2BacktrackingMatch MatchCore(
@@ -268,7 +270,8 @@ internal static class Pcre2BacktrackingRunner
         Pcre2CaptureMaterialization captureMaterialization,
         ref Pcre2ResourceBudget budget,
         scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
-        scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations)
+        scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
+        scoped ref Pcre2BacktrackingWorkspace workspace)
     {
         var bytes = input.Bytes;
         var anchored = program.RestrictsSearchToInitialCandidate ||
@@ -325,6 +328,7 @@ internal static class Pcre2BacktrackingRunner
                     ref budget,
                     ref frames,
                     ref repeatMutations,
+                    ref workspace,
                     out var match,
                     out var failure))
             {
@@ -604,13 +608,14 @@ internal static class Pcre2BacktrackingRunner
     {
         var frames = CreateFrames(ref budget, depthBase);
         var repeatMutations = new Pcre2InvocationStateStack<Pcre2RepeatMutation>(int.MaxValue, budget.CollectsDiagnostics);
+        var workspace = new Pcre2BacktrackingWorkspace();
         try
         {
             return TryMatchAt(program, input, ref projectionInput, candidate, firstMatchingPosition,
                 matchOptions, captureMaterialization, initialCaptureStarts, initialCaptureEnds,
-                depthBase, isAssertion, ref budget, ref frames, ref repeatMutations, out match, out failure);
+                depthBase, isAssertion, ref budget, ref frames, ref repeatMutations, ref workspace, out match, out failure);
         }
-        finally { repeatMutations.Dispose(ref budget); frames.Dispose(ref budget); }
+        finally { workspace.Dispose(ref budget); repeatMutations.Dispose(ref budget); frames.Dispose(ref budget); }
     }
 
     private static bool TryMatchAt(
@@ -628,6 +633,7 @@ internal static class Pcre2BacktrackingRunner
         ref Pcre2ResourceBudget budget,
         scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
         scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
+        scoped ref Pcre2BacktrackingWorkspace workspace,
         out Pcre2BacktrackingMatch match,
         out Pcre2BacktrackingFailure failure)
     {
@@ -650,7 +656,7 @@ internal static class Pcre2BacktrackingRunner
             !initialCaptureStarts.IsEmpty;
         var captureSlots = needsCaptureState && program.CaptureSlotCount > 1 ? program.CaptureSlotCount : 0;
         var captureStateLength = checked(captureSlots * 5);
-        using var workspace = new Pcre2BacktrackingWorkspace(program.RepeatCount, captureSlots, program.SubroutineTargets.Length != 0, ref budget);
+        var acquiredWorkspace = workspace.EnsureInitialized(program.RepeatCount, captureSlots, program.SubroutineTargets.Length != 0, ref budget);
         var rentedRepeatState = workspace.RepeatState;
         var rentedCaptureState = workspace.CaptureState;
         var rentedCaptureRestoreGenerations = workspace.CaptureRestoreGenerations;
@@ -1622,7 +1628,7 @@ internal static class Pcre2BacktrackingRunner
                 Math.Max(0, atomicCheckpoints.RentCount - 1) +
                 Math.Max(0, markMutations.RentCount - 1) +
                 Math.Max(0, markTrail.RentCount - 1);
-            var fixedRents = (rentedRepeatState is null ? 0 : 1) +
+            var fixedRents = !acquiredWorkspace ? 0 : (rentedRepeatState is null ? 0 : 1) +
                 (rentedCaptureState is null ? 0 : 1) +
                 (rentedCaptureRestoreGenerations is null ? 0 : 1) +
                 (rentedCaptureRestoreSlots is null ? 0 : 1) +

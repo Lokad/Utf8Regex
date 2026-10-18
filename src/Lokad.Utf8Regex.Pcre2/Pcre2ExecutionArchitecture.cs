@@ -2881,13 +2881,14 @@ internal static class Pcre2GlobalOperationDriver
                 // acquire owned scratch, and release uses the cursor's budget.
                 var frames = Pcre2BacktrackingRunner.CreateFrames(ref budget, 0);
                 var repeatMutations = new Pcre2InvocationStateStack<Pcre2RepeatMutation>(int.MaxValue, budget.CollectsDiagnostics);
+                var workspace = new Pcre2BacktrackingWorkspace();
                 try
                 {
                     result = 0;
-                    while (cursor.MoveNext(ref frames, ref repeatMutations)) result = checked(result + 1);
+                    while (cursor.MoveNext(ref frames, ref repeatMutations, ref workspace)) result = checked(result + 1);
                     return true;
                 }
-                finally { cursor.ReleaseBacktrackingStacks(ref frames, ref repeatMutations); }
+                finally { cursor.ReleaseBacktrackingStorage(ref frames, ref repeatMutations, ref workspace); }
             }
             result = 0;
             while (cursor.MoveNext())
@@ -3263,19 +3264,21 @@ internal ref struct Pcre2GlobalMatchCursor
     }
 
     internal bool MoveNext(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
-        scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations)
+        scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
+        scoped ref Pcre2BacktrackingWorkspace workspace)
     {
         if (_kind != Pcre2GlobalCursorKind.Direct) return MoveNext();
         var control = WorkingBufferControl;
         Pcre2SliceDriver.CheckInvocation(ref control.WorkingInvocation);
-        var moved = _direct.MoveNext(ref frames, ref repeatMutations);
+        var moved = _direct.MoveNext(ref frames, ref repeatMutations, ref workspace);
         Pcre2SliceDriver.CheckInvocation(ref control.WorkingInvocation);
         return moved;
     }
 
-    internal void ReleaseBacktrackingStacks(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
-        scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations)
-        => _direct.ReleaseBacktrackingStacks(ref frames, ref repeatMutations);
+    internal void ReleaseBacktrackingStorage(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
+        scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
+        scoped ref Pcre2BacktrackingWorkspace workspace)
+        => _direct.ReleaseBacktrackingStorage(ref frames, ref repeatMutations, ref workspace);
 
     private enum Pcre2GlobalCursorKind : byte
     {
@@ -3517,9 +3520,11 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             request,
             budget);
 
-    internal void ReleaseBacktrackingStacks(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
-        scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations)
+    internal void ReleaseBacktrackingStorage(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
+        scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
+        scoped ref Pcre2BacktrackingWorkspace workspace)
     {
+        workspace.Dispose(ref _budget);
         repeatMutations.Dispose(ref _budget);
         frames.Dispose(ref _budget);
     }
@@ -3528,12 +3533,14 @@ internal ref struct Pcre2DirectGlobalMatchCursor
     {
         var frames = Pcre2BacktrackingRunner.CreateFrames(ref _budget, 0);
         var repeatMutations = new Pcre2InvocationStateStack<Pcre2RepeatMutation>(int.MaxValue, _budget.CollectsDiagnostics);
-        try { return MoveNext(ref frames, ref repeatMutations); }
-        finally { ReleaseBacktrackingStacks(ref frames, ref repeatMutations); }
+        var workspace = new Pcre2BacktrackingWorkspace();
+        try { return MoveNext(ref frames, ref repeatMutations, ref workspace); }
+        finally { ReleaseBacktrackingStorage(ref frames, ref repeatMutations, ref workspace); }
     }
 
     internal bool MoveNext(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
-        scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations)
+        scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
+        scoped ref Pcre2BacktrackingWorkspace workspace)
     {
         while (_retryState != Pcre2GlobalRetryState.Finished)
         {
@@ -3645,7 +3652,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
                             _restartPosition,
                             _firstMatchingPosition,
                             options,
-                            ref _budget, ref frames, ref repeatMutations);
+                            ref _budget, ref frames, ref repeatMutations, ref workspace);
                         match = new Pcre2DirectGlobalMatch(
                             backtrackingMatch.Success,
                             backtrackingMatch.StartOffsetInBytes,

@@ -3,7 +3,7 @@
 `Lokad.Utf8Regex.Pcre2` is a managed UTF-8 companion, not a mode of
 `Utf8Regex` and not a native PCRE2 binding. Its semantic front end and runtime
 remain removable with the companion project. The base library retains its
-.NET 10 `Regex` contract.
+strict UTF-8 Unicode-scalar contract and its useful .NET-shaped grammar/API.
 
 ## Directional flow
 
@@ -14,6 +14,15 @@ Compilation is one-way:
 Invocation is one-way:
 
 `validated UTF-8 subject -> operation program -> runner/cursor -> public projection`
+
+Backtracking Count and search keep frame/repeat journals and lazily acquired
+fixed vectors under one lexical owner. Candidate attempts borrow and reset that
+storage; assertions own separate vectors while parent capacity stays admitted.
+The fixed workspace stores no budget reference. Acquisition and finally release
+receive the owner's actual budget explicitly, preserving original interruption
+and aggregate capacity. Copied public cursors retain no owned scratch field;
+their individual advances use a lexical scope. Reuse reduces actual rentals,
+without changing instruction metering or adding a pool, lease or execution mode.
 
 Replacement consumes matches from the same compiled operation program and
 global cursor used by the other operations. It does not parse patterns, choose

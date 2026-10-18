@@ -21,6 +21,17 @@ public sealed class Pcre2InvocationWorkspaceTests
         new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = bytes, MatchLimit = checked((uint)steps) },
         Timeout.InfiniteTimeSpan, collectDiagnostics: true);
 
+    private static Pcre2BacktrackingWorkspace Acquire(int repeats, int captures, bool restore, ref Pcre2ResourceBudget budget)
+    {
+        var workspace = new Pcre2BacktrackingWorkspace();
+        try
+        {
+            workspace.EnsureInitialized(repeats, captures, restore, ref budget);
+            return workspace;
+        }
+        catch { workspace.Dispose(ref budget); throw; }
+    }
+
     private static ulong Bytes<T>(T[]? values) where T : struct => values is null ? 0 : Utf8ConstructionBudget.ArrayBytes<T>(values.Length);
 
     private static ulong Physical(ref Pcre2BacktrackingWorkspace workspace) => checked(
@@ -43,10 +54,10 @@ public sealed class Pcre2InvocationWorkspaceTests
     public void FixedVectorsAdmitTheirPhysicalAggregateBeforeAcquisition(int repeats, int captures, bool restoreSubroutines)
     {
         var funded = Budget(1UL << 30);
-        var measured = new Pcre2BacktrackingWorkspace(repeats, captures, restoreSubroutines, ref funded);
+        var measured = Acquire(repeats, captures, restoreSubroutines, ref funded);
         var required = Physical(ref measured);
         Assert.Equal(required, funded.ReservedWorkingBytes);
-        measured.Dispose();
+        measured.Dispose(ref funded);
         Assert.Equal(0UL, funded.ReservedWorkingBytes);
         const ulong parent = 7;
         foreach (var allow in new[] { false, true })
@@ -58,16 +69,16 @@ public sealed class Pcre2InvocationWorkspaceTests
             {
                 if (!allow && required > 0)
                 {
-                    try { workspace = new(repeats, captures, restoreSubroutines, ref budget); Assert.Fail("Expected aggregate heap denial."); }
+                    try { workspace = Acquire(repeats, captures, restoreSubroutines, ref budget); Assert.Fail("Expected aggregate heap denial."); }
                     catch (Pcre2MatchException failure) { Assert.Equal(Pcre2ErrorKind.HeapLimit, failure.ErrorKind); }
                     Assert.Equal(parent, budget.ReservedWorkingBytes);
                 }
                 else
                 {
-                    workspace = new(repeats, captures, restoreSubroutines, ref budget);
+                    workspace = Acquire(repeats, captures, restoreSubroutines, ref budget);
                     Assert.Equal(required, Physical(ref workspace));
                     Assert.Equal(parent + required, budget.ReservedWorkingBytes);
-                    workspace.Dispose();
+                    workspace.Dispose(ref budget);
                     Assert.Equal(parent, budget.ReservedWorkingBytes);
                 }
             }
@@ -89,7 +100,7 @@ public sealed class Pcre2InvocationWorkspaceTests
         budget.ReserveWorking(7);
         try
         {
-            try { _ = new Pcre2BacktrackingWorkspace(1, 2, true, ref budget); Assert.Fail("Expected acquisition work denial."); }
+            try { _ = Acquire(1, 2, true, ref budget); Assert.Fail("Expected acquisition work denial."); }
             catch (Pcre2MatchException failure) { Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind); }
             Assert.Equal(7UL, budget.ReservedWorkingBytes);
             try { budget.ChargeCandidate(); Assert.Fail("Spent work cannot be refunded."); }
@@ -102,7 +113,7 @@ public sealed class Pcre2InvocationWorkspaceTests
     public void NestedWorkspaceAndDifferentStacksShareOneOwner()
     {
         var budget = Budget(1UL << 20);
-        var parent = new Pcre2BacktrackingWorkspace(1, 2, true, ref budget);
+        var parent = Acquire(1, 2, true, ref budget);
         var parentBytes = Physical(ref parent);
         var frames = new Pcre2InvocationStateStack<int>(1024, true);
         var controls = new Pcre2InvocationStateStack<Pcre2AtomicCheckpoint>(1024, true);
@@ -112,14 +123,14 @@ public sealed class Pcre2InvocationWorkspaceTests
             Assert.True(controls.TryPush(new(1, 2), ref budget));
             var outerBytes = parentBytes + Utf8ConstructionBudget.ArrayBytes<int>(16) + Utf8ConstructionBudget.ArrayBytes<Pcre2AtomicCheckpoint>(16);
             Assert.Equal(outerBytes, budget.ReservedWorkingBytes);
-            var nested = new Pcre2BacktrackingWorkspace(3, 4, true, ref budget);
+            var nested = Acquire(3, 4, true, ref budget);
             try { Assert.Equal(outerBytes + Physical(ref nested), budget.ReservedWorkingBytes); }
-            finally { nested.Dispose(); }
+            finally { nested.Dispose(ref budget); }
             Assert.Equal(outerBytes, budget.ReservedWorkingBytes);
             Assert.Equal(42, frames.Pop());
             Assert.Equal(new Pcre2AtomicCheckpoint(1, 2), controls.Pop());
         }
-        finally { controls.Dispose(ref budget); frames.Dispose(ref budget); parent.Dispose(); }
+        finally { controls.Dispose(ref budget); frames.Dispose(ref budget); parent.Dispose(ref budget); }
         Assert.Equal(0UL, budget.ReservedWorkingBytes);
     }
 
@@ -150,14 +161,14 @@ public sealed class Pcre2InvocationWorkspaceTests
     public void GrowthAdmitsOldAndNewCapacityAlongsideParentWorkspace(bool allow)
     {
         var control = Budget(1UL << 20);
-        var measured = new Pcre2BacktrackingWorkspace(1, 2, true, ref control);
+        var measured = Acquire(1, 2, true, ref control);
         var parentBytes = Physical(ref measured);
-        measured.Dispose();
+        measured.Dispose(ref control);
         var oldBytes = Utf8ConstructionBudget.ArrayBytes<int>(16);
         var newBytes = Utf8ConstructionBudget.ArrayBytes<int>(32);
         var maximum = parentBytes + oldBytes + newBytes;
         var budget = Budget(maximum - (allow ? 0UL : 1UL));
-        var parent = new Pcre2BacktrackingWorkspace(1, 2, true, ref budget);
+        var parent = Acquire(1, 2, true, ref budget);
         var stack = new Pcre2InvocationStateStack<int>(1024, true);
         try
         {
@@ -179,7 +190,7 @@ public sealed class Pcre2InvocationWorkspaceTests
             Assert.Equal(parentBytes + (allow ? newBytes : oldBytes), budget.ReservedWorkingBytes);
             for (var i = 0; i < 16; i++) Assert.Equal(i, stack[i]);
         }
-        finally { stack.Dispose(ref budget); parent.Dispose(); }
+        finally { stack.Dispose(ref budget); parent.Dispose(ref budget); }
         Assert.Equal(0UL, budget.ReservedWorkingBytes);
     }
 
@@ -231,10 +242,10 @@ public sealed class Pcre2InvocationWorkspaceTests
         try
         {
             var budget = Budget(1UL << 20);
-            var workspace = new Pcre2BacktrackingWorkspace(1, 2, true, ref budget);
+            var workspace = Acquire(1, 2, true, ref budget);
             var stack = new Pcre2InvocationStateStack<int>(1024, true);
             try { Assert.True(stack.TryPush(1, ref budget)); }
-            finally { stack.Dispose(ref budget); workspace.Dispose(); }
+            finally { stack.Dispose(ref budget); workspace.Dispose(ref budget); }
             Assert.Equal(0, Utf8ExactStatePool.RetainedBytes);
         }
         finally { Utf8ExactStatePool.Clear(); }

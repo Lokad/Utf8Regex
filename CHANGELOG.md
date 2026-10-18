@@ -2,6 +2,14 @@
 
 ## Development after scalar.92
 
+- Reuse fixed PCRE2 VM vectors within the existing lexical Count/search owner.
+  Acquire lazily at the first candidate; nested assertions keep independent
+  storage. Explicit acquisition/release uses the owner's actual budget instead
+  of a stored budget reference. Public copied cursors gain no owned scratch.
+  Major admission, instruction work and original interruption remain; fewer
+  acquisitions intentionally revise numeric work/working cutoffs. No new pool,
+  owner framework, public mode or package is introduced.
+
 - Omit the shared backtracking runner's balancing-head array when the existing
   program flag proves that neither it nor its assertions use balancing groups.
   Captures and references keep their own required storage. This removes one

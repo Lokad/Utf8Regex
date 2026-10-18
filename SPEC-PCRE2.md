@@ -748,10 +748,24 @@ Subsequent source reuses the existing repeat rollback stack alongside frames in
 one lexical Count/search scope. Each attempt truncates logical rollback state;
 nested assertions own separate stacks. Actual growth remains admitted and charged,
 and the actual cursor budget releases both capacities in finally. Public copied
-cursors acquire no owned scratch field. Other stacks/fixed vectors are unchanged.
+cursors acquire no owned scratch field. Other stacks remain unchanged.
 Held high-water capacity can increase later/nested working overlap; fewer actual
 rentals reduce work. These intentional numeric-cutoff changes do not refund spent
 work, weaken capacity bounds or add a GC-dependent lifetime.
+
+Development after scalar.92 also lends one fixed-vector workspace across the
+same lexical Count/search owner. It acquires on the first actual candidate, so
+an impossible short subject needs no workspace. Each attempt resets its logical
+vectors; nested assertions keep separate storage charged alongside the parent.
+The workspace retains no budget reference: explicit acquisition and finally
+release use the actual owner's original authority. Reuse still performs the
+synchronous cancellation/deadline/sticky-denial check; all visited instructions
+retain their charges. Only actual acquisitions spend acquisition work, and rental
+diagnostics count acquisitions rather than reused attempts. Longer live capacity
+can change working overlap and fewer rents can admit tighter work limits. No
+public copied cursor acquires scratch ownership, new pool/lease/mode or GC timing
+dependency. Scalar captures, retained results and exact major admission remain.
+This source change is outside immutable Core/PCRE92 and Core/Python91.
 
 When the admitted search fact proves a leading single literal, the scalar counter
 can seek its next occurrence through the existing bounded metered search before

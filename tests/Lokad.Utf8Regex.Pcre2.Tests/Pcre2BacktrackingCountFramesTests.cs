@@ -7,6 +7,39 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 [Collection(Pcre2AllocationTestCollection.Name)]
 public sealed class Pcre2BacktrackingCountFramesTests
 {
+    [Fact]
+    public void FixedWorkspaceAllocationDoesNotScaleWithCandidateAttempts()
+    {
+        var regex = Create(@"(?<s>\p{Xps}+)(?<x>\p{Xuc}{1,2})", new()
+        {
+            MatchLimit = 10000000, DepthLimit = 256,
+            HeapLimitInBytes = 1UL << 20, ResultLimitInBytes = 1,
+        });
+        var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("\u0085\u180E😀😀!", 1000)));
+        using var token = new CancellationTokenSource();
+        for (var index = 0; index < 3; index++)
+            Assert.Equal(1000, regex.Count(bytes, 0, Pcre2MatchOptions.None, token.Token));
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var count = regex.Count(bytes, 0, Pcre2MatchOptions.None, token.Token);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.Equal(1000, count);
+        Assert.True(allocated < 16384, $"Count allocated {allocated} bytes for fixed candidate scratch.");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("a")]
+    public void ImpossibleShortSubjectDoesNotAcquireFixedWorkspace(string text)
+    {
+        var regex = Create(@"(?<x>\p{Xuc}){3}!", new()
+        {
+            MatchLimit = 10000, DepthLimit = 1, HeapLimitInBytes = 1, ResultLimitInBytes = 1,
+        });
+        using var token = new CancellationTokenSource();
+        Assert.Equal(0, regex.Count(Encoding.UTF8.GetBytes(text), 0, Pcre2MatchOptions.None, token.Token));
+    }
+
     [Theory]
     [InlineData("(?i)(a+)(b)", "😀aaabéab", 2)]
     [InlineData(@"(?i)(a+)\1", "aaaa aaa aa", 3)]

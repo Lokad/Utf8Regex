@@ -4,12 +4,12 @@ using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
-// One lexical workspace admits all fixed VM vectors before any acquisition.
-// Nested assertions borrow the same budget while their parent vectors stay live.
+// One lexical owner acquires fixed VM vectors on the first candidate, then
+// lends them to later attempts. Nested assertions keep separate vectors while
+// the parent stays live. Acquisition and release use the owner's actual budget.
 internal ref struct Pcre2BacktrackingWorkspace
 {
-    private readonly ref Pcre2ResourceBudget _budget;
-    private readonly bool _retain;
+    private bool _retain;
     private ulong _reservedBytes;
     private int[]? _repeatState;
     private int[]? _captureState;
@@ -20,21 +20,18 @@ internal ref struct Pcre2BacktrackingWorkspace
     private int[]? _repeatRestoreIds;
     private Pcre2SubroutineRepeatSnapshot[]? _repeatRestoreSnapshots;
 
-    internal Pcre2BacktrackingWorkspace(int repeatCount, int captureSlotCount, bool restoreSubroutines, ref Pcre2ResourceBudget budget)
+    internal bool EnsureInitialized(int repeatCount, int captureSlotCount, bool restoreSubroutines, scoped ref Pcre2ResourceBudget budget)
     {
+        if (_reservedBytes != 0)
+        {
+            // Reuse still reaches the original synchronous token/deadline and
+            // sticky-denial checkpoint, without charging another acquisition.
+            budget.ReserveWorking(0);
+            return false;
+        }
         ArgumentOutOfRangeException.ThrowIfNegative(repeatCount);
         ArgumentOutOfRangeException.ThrowIfNegative(captureSlotCount);
-        _budget = ref budget;
         _retain = budget.CanRetainWorkspace;
-        _reservedBytes = 0;
-        _repeatState = null;
-        _captureState = null;
-        _captureRestoreGenerations = null;
-        _captureRestoreSlots = null;
-        _captureRestoreSnapshots = null;
-        _repeatRestoreGenerations = null;
-        _repeatRestoreIds = null;
-        _repeatRestoreSnapshots = null;
         var repeatCapacity = restoreSubroutines ? Capacity(repeatCount) : 0;
         var captureCapacity = restoreSubroutines ? Capacity(captureSlotCount) : 0;
         var repeatStateCapacity = Capacity(checked(repeatCount * 2));
@@ -47,18 +44,16 @@ internal ref struct Pcre2BacktrackingWorkspace
             Utf8ConstructionBudget.ArrayBytes<Pcre2SubroutineRepeatSnapshot>(repeatCapacity));
         budget.ReserveWorking(bytes);
         _reservedBytes = bytes;
-        try
-        {
-            _repeatState = Rent<int>(repeatStateCapacity);
-            _captureState = Rent<int>(captureStateCapacity);
-            _captureRestoreGenerations = Rent<int>(captureCapacity);
-            _captureRestoreSlots = Rent<int>(captureCapacity);
-            _captureRestoreSnapshots = Rent<Pcre2SubroutineCaptureSnapshot>(captureCapacity);
-            _repeatRestoreGenerations = Rent<int>(repeatCapacity);
-            _repeatRestoreIds = Rent<int>(repeatCapacity);
-            _repeatRestoreSnapshots = Rent<Pcre2SubroutineRepeatSnapshot>(repeatCapacity);
-        }
-        catch { Dispose(); throw; }
+        // The lexical owner's finally also covers partial acquisition.
+        _repeatState = Rent<int>(repeatStateCapacity, ref budget);
+        _captureState = Rent<int>(captureStateCapacity, ref budget);
+        _captureRestoreGenerations = Rent<int>(captureCapacity, ref budget);
+        _captureRestoreSlots = Rent<int>(captureCapacity, ref budget);
+        _captureRestoreSnapshots = Rent<Pcre2SubroutineCaptureSnapshot>(captureCapacity, ref budget);
+        _repeatRestoreGenerations = Rent<int>(repeatCapacity, ref budget);
+        _repeatRestoreIds = Rent<int>(repeatCapacity, ref budget);
+        _repeatRestoreSnapshots = Rent<Pcre2SubroutineRepeatSnapshot>(repeatCapacity, ref budget);
+        return true;
     }
 
     internal readonly int[]? RepeatState => _repeatState;
@@ -70,7 +65,7 @@ internal ref struct Pcre2BacktrackingWorkspace
     internal readonly int[]? RepeatRestoreIds => _repeatRestoreIds;
     internal readonly Pcre2SubroutineRepeatSnapshot[]? RepeatRestoreSnapshots => _repeatRestoreSnapshots;
 
-    internal void Dispose()
+    internal void Dispose(scoped ref Pcre2ResourceBudget budget)
     {
         Return(ref _repeatState);
         Return(ref _captureState);
@@ -80,14 +75,14 @@ internal ref struct Pcre2BacktrackingWorkspace
         Return(ref _repeatRestoreGenerations);
         Return(ref _repeatRestoreIds);
         Return(ref _repeatRestoreSnapshots);
-        _budget.ReleaseWorking(_reservedBytes);
+        budget.ReleaseWorking(_reservedBytes);
         _reservedBytes = 0;
     }
 
-    private T[]? Rent<T>(int capacity) where T : struct
+    private T[]? Rent<T>(int capacity, scoped ref Pcre2ResourceBudget budget) where T : struct
     {
         if (capacity == 0) return null;
-        _budget.ChargeWorkspaceStep();
+        budget.ChargeWorkspaceStep();
         return Utf8ExactStatePool<T>.Rent(capacity, _retain);
     }
 
