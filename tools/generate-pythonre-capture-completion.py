@@ -112,7 +112,15 @@ CASES = [
     (r"(?P<x>\😀)+", "π😀😀 é😀"),
     (r"(?P<x>[\😀-\😁]+)", "π😀😁é 😀"),
     (r"(?i:(?P<x>\𐐀))(?-i:(?P<y>\𐐀))", "𐐨𐐀 𐐨𐐨"),
+    # A failed assertion or alternative must undo capture participation before a
+    # following conditional chooses its branch. Keep supplementary byte offsets
+    # and last-close identity in the same snapshots as ordinary capture values.
+    (r"(?P<keep>😀)(?!(?P<lost>é)x)(?(lost)y|é)", "x😀é 😀éx😀é"),
+    (r"(?:(?=(?P<lost>😀))😀x|(?P<keep>😀))(?(lost)y|é)", "😀é 😀xé"),
+    (r"(?P<keep>😀)(?!(?=(?P<lost>é))éx)(?(lost)y|é)", "x😀é 😀éx😀é"),
+    (r"(?P<keep>é)(?<!(?P<lost>😀)x)(?(lost)y|a)", "😀éa 😀xa"),
 ]
+
 
 def snapshot(match, text):
     if match is None:
