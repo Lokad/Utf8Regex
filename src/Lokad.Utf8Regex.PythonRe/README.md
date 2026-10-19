@@ -1,5 +1,14 @@
 # Lokad.Utf8Regex.PythonRe
 
+Staging private **Core/PythonRe 0.4.0-scalar.107**, with exact Core107. It batches
+unused native capture preparation/reporting removal and scalar dot/end repeat
+reuse while preserving Python captures, strict UTF-8/scalars, original interruption,
+finite controls and cursor/result lifetimes. Qualification is pending; qualified
+[scalar.106](../../artifacts/core-python-scalar106-20261019/HANDOFF.md) remains the
+usable input until the [107 handoff](../../artifacts/core-python-scalar107-20261019/HANDOFF.md)
+records acceptance. Source comparisons do not qualify new package bytes. No
+PCRE107, publication or downstream pin/adoption change is designated.
+
 Qualified private **Core/PythonRe 0.4.0-scalar.103**, exact Core103, producer
 `6150c4388b3140cfa32c516e8c03d0836a5a84cc`. It inherits the scoped-anchor correction
 and bounded Core simplifications. Same DLLs pass Windows/Linux package and unchanged

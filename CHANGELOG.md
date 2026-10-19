@@ -1,6 +1,12 @@
 # Changelog
 
-## Changes after scalar.106
+## Staged private Core/PythonRe scalar.107
+
+A distinct107 identity freezes the source batch below. Same-byte Windows/Linux,
+original public consumer/oracle, exact identity/symbol and current cost gates are
+pending;106 and all earlier bytes remain immutable. No PCRE107, publication or
+external adoption is designated. Source166f445c supplies the C# batch; this freeze
+changes release metadata and documentation only.
 
 Greedy scalar dot runs reuse the existing repeat scan when a following literal
 or end anchor proves all shorter endpoints useless. End tails conservatively

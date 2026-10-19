@@ -1,5 +1,15 @@
 # Lokad.Utf8Regex
 
+Staging private **Core/PythonRe 0.4.0-scalar.107** as one coherent cleanup and
+operating-cost batch: omit unused native capture metadata, move benchmark-only
+structural reporting out of Core, and reuse the scalar repeat scan for proved
+dot/end tails. Source comparisons record lower construction cost and less public
+Count/lexer rewind work; numeric admission requirements may fall. Qualification
+of the new immutable pair is pending; **scalar.106 remains the qualified input**
+until the [107 handoff](artifacts/core-python-scalar107-20261019/HANDOFF.md) records
+same-DLL platform/consumer/oracle/identity checks and current exact-package costs.
+No PCRE107, publication, external pins or downstream adoption is designated.
+
 Qualified private **Core/PythonRe 0.4.0-scalar.106** batches direct result staging,
 projection-only capture completion, bounded construction interruption, literal-run
 expansion and removal of unused scalar-only native preparation/guard storage.
