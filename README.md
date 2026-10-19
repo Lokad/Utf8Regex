@@ -1,5 +1,12 @@
 # Lokad.Utf8Regex
 
+Core/PythonRe **0.4.0-scalar.104** is being qualified as a new private candidate,
+batching unchanged-output projection, bounded literal guidance and operation-local
+replacement scratch reuse. Earlier103 stays the qualified input until the new
+exact-byte checks finish. Scratch reuse reduces repeated allocation but can raise
+intermediate working overlap; see HOST-INTEGRATION. Timing limitations remain
+explicit. No PCRE104, publication or downstream adoption is designated.
+
 Qualified private **Core/PythonRe 0.4.0-scalar.103**, exact Core103, producer
 `6150c4388b3140cfa32c516e8c03d0836a5a84cc`. It fixes scoped-multiline grouped
 prefixes and reuses admitted literal storage, batching the accepted bounded-copy,
@@ -40,7 +47,7 @@ storage. Scalar.101 fixes overlapping output through staged scalar
 replacement; see [the contract and allocation tradeoff](HOST-INTEGRATION.md).
 
 `Lokad.Utf8Regex` is a `net10.0` library matching Unicode scalars over strict UTF-8 spans, with primary
-byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
+byte offsets and lengths. Dot matches ðŸ˜€ once across its four bytes. UTF-16
 coordinates and strings are derived conveniences. PythonRe adds pinned Python
 grammar, captures and result shaping over the shared owned engine.
 
@@ -170,7 +177,7 @@ var bounded = Utf8Regex.Compile(
     cancellationToken: compileCancellation.Token);
 
 using var callCancellation = new CancellationTokenSource();
-int count = bounded.Count("café 😀 tea"u8, callCancellation.Token); // 2
+int count = bounded.Count("cafÃ© ðŸ˜€ tea"u8, callCancellation.Token); // 2
 ```
 
 These are example application limits, not library defaults. Legacy overloads and
