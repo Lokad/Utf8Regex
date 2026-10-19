@@ -5,6 +5,10 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8CompiledRuntimeFactory
 {
+    // One conservative runtime-object allowance; major referents retain their
+    // independent admission. No mirrored field-transfer descriptor is needed.
+    internal const ulong FixedRuntimeMetadataBytes = 2 * 1024;
+
     public static Utf8CompiledEngineRuntime Create(
         Utf8CompiledEngine compiledEngine,
         Utf8PreparedRegex regexPlan,
@@ -27,21 +31,23 @@ internal static class Utf8CompiledRuntimeFactory
             }
             else
             {
-                // Build the selected runtime directly. No temporary implementation
-                // is needed to transfer borrowed plan and verifier references.
+                budget.CheckBytes(FixedRuntimeMetadataBytes);
+                budget.ChargeWork(2);
+                budget.ReserveBytes(FixedRuntimeMetadataBytes);
                 result = compiledEngine.Kind switch
                 {
                     Utf8CompiledEngineKind.StructuralFamily
-                        => Utf8StructuralFamilyCompiledEngineRuntime.Create(regexPlan, verifierRuntime),
+                        => new Utf8StructuralFamilyCompiledEngineRuntime(regexPlan, verifierRuntime),
                     Utf8CompiledEngineKind.EmittedKernel
-                        => Utf8StructuralLinearAutomatonCompiledEngineRuntime.Create(regexPlan, verifierRuntime, true),
+                        => new Utf8StructuralLinearAutomatonCompiledEngineRuntime(regexPlan, verifierRuntime, true),
                     Utf8CompiledEngineKind.StructuralLinearAutomaton
-                        => Utf8StructuralLinearAutomatonCompiledEngineRuntime.Create(regexPlan, verifierRuntime, (options & RegexOptions.Compiled) != 0),
+                        => new Utf8StructuralLinearAutomatonCompiledEngineRuntime(regexPlan, verifierRuntime, (options & RegexOptions.Compiled) != 0),
                     Utf8CompiledEngineKind.SimplePatternInterpreter
-                        => Utf8SimplePatternCompiledEngineRuntime.Create(regexPlan, verifierRuntime, (options & RegexOptions.Compiled) != 0),
-                    _ => Utf8FallbackRegexCompiledEngineRuntime.Create(regexPlan, verifierRuntime),
+                        => new Utf8SimplePatternCompiledEngineRuntime(regexPlan, verifierRuntime, (options & RegexOptions.Compiled) != 0),
+                    _ => new Utf8FallbackRegexCompiledEngineRuntime(regexPlan),
                 };
             }
+            budget.ChargeWork(0); // Original interruption authority before publication.
             scope.Complete();
             return result;
         }

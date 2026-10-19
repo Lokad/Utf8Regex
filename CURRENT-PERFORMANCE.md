@@ -22,6 +22,15 @@ scoped simplification, not universal overhead/scaling or unchanged-path speedups
 No confirmation, package qualification or snapshot refresh followed.
 [Closed source pair, revised work units and raw evidence](artifacts/finite-count-coarse-admission-20261019/RESULT.md).
 
+A later source109-dev constructor pair, parent54f23023, replaces four mirrored
+runtime transfer records/nested scopes with conservative metadata admission.
+Public import constructors allocated88B less; ordinary/compiled medians changed
+-0.30%/-2.31%, while unchanged literal controls changed+2.46%/+0.11% with unchanged
+allocations. First public Count varied within2.5%. Private attribution was noisy;
+no kernel-speed or general-equivalence claim follows. The single comparison is
+closed, separate from immutable package costs and the checked-access campaign.
+[Admission contract, public count agreement and evidence](artifacts/coarse-runtime-construction-20261019/RESULT.md).
+
 ## Earlier scalar.107 observation
 
 The latest immutable Core/PythonRe scalar.107 observation uses producer

@@ -2,6 +2,14 @@
 
 ## Changes after scalar.108
 
+Replace four compiled runtimes' mirrored construction-state records and nested
+factory scopes with one conservative 2 KiB metadata admission at the existing
+factory. Remove an unread verifier reference. Major buffer/program/emission
+admission and original interruption/rollback remain; modeled construction bytes
+can rise while covered depth decreases. Native execution algorithms and literal
+runtime preparation retain their existing behavior.
+[Contract, Release checks and the closed constructor pair](artifacts/coarse-runtime-construction-20261019/RESULT.md).
+
 Remove the unused deadline-only Strategy finder and test/benchmark-only Count /
 IsMatch forwarders. Tests and attribution tooling call their production targets
 directly. Keep the production cursor's invocation overload and native deadline

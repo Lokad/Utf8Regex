@@ -213,15 +213,15 @@ internal sealed class Utf8LiteralFamilyCompiledEngineRuntime : Utf8CompiledEngin
     public bool ExecuteMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8ValueMatch match) => _inner.TryMatchWithoutValidation(input, budget, out match);
 }
 
-internal sealed partial class Utf8StructuralFamilyCompiledEngineRuntime : Utf8CompiledEngineRuntime
+internal sealed class Utf8StructuralFamilyCompiledEngineRuntime : Utf8CompiledEngineRuntime
 {
     private readonly Utf8PreparedRegex _regexPlan;
     private readonly Utf8VerifierRuntime _verifierRuntime;
 
-    private Utf8StructuralFamilyCompiledEngineRuntime(ConstructionState state)
+    internal Utf8StructuralFamilyCompiledEngineRuntime(Utf8PreparedRegex plan, Utf8VerifierRuntime verifier)
     {
-        _regexPlan = state.RegexPlan;
-        _verifierRuntime = state.VerifierRuntime;
+        _regexPlan = plan;
+        _verifierRuntime = verifier;
     }
 
     public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
@@ -287,7 +287,7 @@ internal sealed partial class Utf8StructuralFamilyCompiledEngineRuntime : Utf8Co
     }
 }
 
-internal sealed partial class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngineRuntime,
+internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngineRuntime,
     IUtf8WellFormedMatchRuntime,
     IUtf8UnvalidatedMatchRuntime
 {
@@ -304,20 +304,66 @@ internal sealed partial class Utf8SimplePatternCompiledEngineRuntime : Utf8Compi
     private readonly AsciiSimplePatternSymmetricLiteralWindowPlan _symmetricLiteralWindowPlan;
     private readonly Utf8CompiledSymmetricLiteralWindowCounter? _compiledSymmetricLiteralWindowCounter;
 
-    private Utf8SimplePatternCompiledEngineRuntime(ConstructionState state)
+    internal Utf8SimplePatternCompiledEngineRuntime(Utf8PreparedRegex plan, Utf8VerifierRuntime verifier, bool emit)
     {
-        _regexPlan = state.RegexPlan;
-        _linearRuntime = state.LinearRuntime;
-        _verifierRuntime = state.VerifierRuntime;
-        _compiledPatternFamily = state.CompiledPatternFamily;
-        _canUseDirectAnchoredValidatorMatch = state.CanUseDirectAnchoredValidatorMatch;
-        _anchoredValidatorAllowsTrailingNewline = state.AnchoredValidatorAllowsTrailingNewline;
-        _anchoredBoundedDatePlan = state.AnchoredBoundedDatePlan;
-        _repeatedDigitGroupPlan = state.RepeatedDigitGroupPlan;
-        _emittedWholeMatcher = state.EmittedWholeMatcher;
-        _boundedSuffixLiteralPlan = state.BoundedSuffixLiteralPlan;
-        _symmetricLiteralWindowPlan = state.SymmetricLiteralWindowPlan;
-        _compiledSymmetricLiteralWindowCounter = state.CompiledSymmetricLiteralWindowCounter;
+        _regexPlan = plan;
+        _linearRuntime = Utf8StructuralLinearRuntime.Create(_regexPlan);
+        _verifierRuntime = verifier;
+        _compiledPatternFamily = _regexPlan.SimplePatternPlan.CompiledPatternFamily;
+        _canUseDirectAnchoredValidatorMatch =
+            _compiledPatternFamily.Kind == Utf8CompiledPatternFamilyKind.AnchoredValidator ||
+            _compiledPatternFamily.Kind == Utf8CompiledPatternFamilyKind.AnchoredBoundedDate;
+        _anchoredValidatorAllowsTrailingNewline = _canUseDirectAnchoredValidatorMatch &&
+            _regexPlan.SimplePatternPlan.AllowsTrailingNewlineBeforeEnd;
+        _anchoredBoundedDatePlan = _compiledPatternFamily.AnchoredBoundedDatePlan;
+        _repeatedDigitGroupPlan = _compiledPatternFamily.RepeatedDigitGroupPlan;
+        _boundedSuffixLiteralPlan = _compiledPatternFamily.BoundedSuffixLiteralPlan;
+        _symmetricLiteralWindowPlan = _compiledPatternFamily.SymmetricLiteralWindowPlan;
+        _compiledSymmetricLiteralWindowCounter = emit && _symmetricLiteralWindowPlan.HasValue
+            ? Utf8CompiledSymmetricLiteralWindowCounter.Create(_symmetricLiteralWindowPlan)
+            : null;
+        var anchoredValidatorPlan = _compiledPatternFamily.AnchoredValidatorPlan;
+        if (!emit)
+        {
+            _emittedWholeMatcher = null;
+        }
+        else if (_anchoredBoundedDatePlan.HasValue)
+        {
+            _emittedWholeMatcher = Utf8EmittedWholeMatcher.TryCreate(
+                _anchoredBoundedDatePlan,
+                _anchoredValidatorAllowsTrailingNewline,
+                out var boundedDateMatcher)
+                ? boundedDateMatcher
+                : null;
+        }
+        else if (_regexPlan.SimplePatternPlan.AnchoredOptionalFieldPlan.HasValue)
+        {
+            _emittedWholeMatcher = Utf8EmittedWholeMatcher.TryCreate(
+                _regexPlan.SimplePatternPlan.AnchoredOptionalFieldPlan,
+                _anchoredValidatorAllowsTrailingNewline,
+                out var optionalFieldMatcher)
+                ? optionalFieldMatcher
+                : null;
+        }
+        else if (_repeatedDigitGroupPlan.HasValue)
+        {
+            _emittedWholeMatcher = Utf8EmittedWholeMatcher.TryCreate(
+                _repeatedDigitGroupPlan,
+                out var repeatedDigitGroupMatcher)
+                ? repeatedDigitGroupMatcher
+                : null;
+        }
+        else
+        {
+            _emittedWholeMatcher =
+                Utf8SimplePatternCompiledRuntimePolicy.ShouldUseEmittedAnchoredValidator(anchoredValidatorPlan) &&
+                Utf8EmittedWholeMatcher.TryCreate(
+                    anchoredValidatorPlan,
+                    _anchoredValidatorAllowsTrailingNewline,
+                    out var anchoredValidatorMatcher)
+                    ? anchoredValidatorMatcher
+                    : null;
+        }
     }
 
     public override Utf8CompiledRuntimeCapabilities Capabilities => new(
@@ -616,7 +662,7 @@ internal sealed partial class Utf8SimplePatternCompiledEngineRuntime : Utf8Compi
 
 }
 
-internal sealed partial class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8CompiledEngineRuntime
+internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8CompiledEngineRuntime
 {
     private readonly Utf8PreparedRegex _regexPlan;
     private readonly Utf8StructuralLinearRuntime _linearRuntime;
@@ -627,16 +673,28 @@ internal sealed partial class Utf8StructuralLinearAutomatonCompiledEngineRuntime
     private readonly Utf8EmittedLiteralFamilyCounter? _emittedBoundaryLiteralFamily;
     private readonly PreparedAsciiFindPlan _orderedWindowTrailingFindPlan;
 
-    private Utf8StructuralLinearAutomatonCompiledEngineRuntime(ConstructionState state)
+    internal Utf8StructuralLinearAutomatonCompiledEngineRuntime(Utf8PreparedRegex plan, Utf8VerifierRuntime verifier, bool emit)
     {
-        _regexPlan = state.RegexPlan;
-        _linearRuntime = state.LinearRuntime;
-        _verifierRuntime = state.VerifierRuntime;
-        _emitEnabled = state.EmitEnabled;
-        _emittedDeterministicMatcher = state.EmittedDeterministicMatcher;
-        _emittedKernelMatcher = state.EmittedKernelMatcher;
-        _emittedBoundaryLiteralFamily = state.EmittedBoundaryLiteralFamily;
-        _orderedWindowTrailingFindPlan = state.OrderedWindowTrailingFindPlan;
+        _regexPlan = plan;
+        _linearRuntime = Utf8StructuralLinearRuntime.Create(plan);
+        _verifierRuntime = verifier;
+        _emitEnabled = emit;
+        _emittedDeterministicMatcher = emit && Utf8EmittedDeterministicMatcher.TryCreate(_regexPlan.StructuralLinearProgram, out var matcher)
+            ? matcher
+            : null;
+        _emittedKernelMatcher = emit && Utf8EmittedKernelMatcher.TryCreate(_regexPlan, out var preparedKernelMatcher)
+            ? preparedKernelMatcher
+            : null;
+        _emittedBoundaryLiteralFamily = emit &&
+            (_regexPlan.SemanticRegex.Options & RegexOptions.RightToLeft) == 0 &&
+            Utf8EmittedLiteralFamilyCounter.TryCreateBoundaryOnlyStructuralFamily(
+                _regexPlan,
+            out var preparedBoundaryLiteralFamily)
+                ? preparedBoundaryLiteralFamily
+                : null;
+        _orderedWindowTrailingFindPlan = _regexPlan.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow
+            ? PreparedAsciiFindPlan.CreateForOrderedWindow(_regexPlan.StructuralLinearProgram.OrderedLiteralWindowPlan)
+            : default;
     }
 
     public override Utf8CompiledRuntimeCapabilities Capabilities => new(
@@ -786,26 +844,26 @@ internal sealed partial class Utf8StructuralLinearAutomatonCompiledEngineRuntime
 
 }
 
-internal sealed partial class Utf8FallbackRegexCompiledEngineRuntime : Utf8CompiledEngineRuntime,
+internal sealed class Utf8FallbackRegexCompiledEngineRuntime : Utf8CompiledEngineRuntime,
     IUtf8AsciiWellFormedMatchRuntime,
     IUtf8WellFormedMatchRuntime,
     IUtf8UnvalidatedMatchRuntime
 {
     private readonly Utf8PreparedRegex _regexPlan;
-    private readonly Utf8VerifierRuntime _verifierRuntime;
     private readonly Utf8FallbackDirectFamilyPlan _directFamily;
     private readonly Utf8EmittedTokenFamilyMatcher? _emittedTokenFamilyMatcher;
     private readonly PreparedAsciiDelimitedTokenSearch _delimitedTokenSearch;
     private readonly PreparedAsciiLiteralStructuredTokenSearch _literalStructuredTokenSearch;
 
-    private Utf8FallbackRegexCompiledEngineRuntime(ConstructionState state)
+    internal Utf8FallbackRegexCompiledEngineRuntime(Utf8PreparedRegex plan)
     {
-        _regexPlan = state.RegexPlan;
-        _verifierRuntime = state.VerifierRuntime;
-        _directFamily = state.DirectFamily;
-        _emittedTokenFamilyMatcher = state.EmittedTokenFamilyMatcher;
-        _delimitedTokenSearch = state.DelimitedTokenSearch;
-        _literalStructuredTokenSearch = state.LiteralStructuredTokenSearch;
+        _regexPlan = plan;
+        _directFamily = plan.FallbackDirectFamily;
+        _emittedTokenFamilyMatcher = Utf8EmittedTokenFamilyMatcher.TryCreate(_directFamily, out var preparedTokenFamilyMatcher)
+            ? preparedTokenFamilyMatcher
+            : null;
+        _delimitedTokenSearch = Utf8FallbackPreparedTokenSearchFactory.CreateDelimitedTokenSearch(_directFamily);
+        _literalStructuredTokenSearch = Utf8FallbackPreparedTokenSearchFactory.CreateLiteralStructuredTokenSearch(_directFamily);
     }
 
     public override Utf8CompiledRuntimeCapabilities Capabilities

@@ -151,13 +151,11 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, 2, 2);
         var runtime = Utf8CompiledRuntimeFactory.Create(new Utf8CompiledEngine((Utf8CompiledEngineKind)kind), plan, verifier, RegexOptions.None);
         Assert.False(runtime is Utf8LiteralFamilyCompiledEngineRuntime or Utf8ExactLiteralCompiledEngineRuntime);
-        // Only the selected nonliteral object's complete field state is acquired.
+        // Only the selected nonliteral object's conservative metadata is admitted.
         // A discarded literal runtime would exceed both the work and depth gates.
-        var state = runtime.GetType().GetNestedType("ConstructionState", BindingFlags.NonPublic)!;
-        var bytes = Math.Max(128ul, (ulong)typeof(Utf8ConstructionBudget).GetMethod("ObjectBytes", BindingFlags.Static | BindingFlags.NonPublic)!
-            .MakeGenericMethod(state).Invoke(null, null)!);
-        Assert.Equal(bytes, owner.Budget.ReservedBytes); Assert.Equal(2ul, owner.Budget.WorkSteps);
-        Assert.Equal(2ul, owner.Budget.PeakDepth); Assert.Equal(0ul, owner.Budget.Depth);
+        Assert.Equal(Utf8CompiledRuntimeFactory.FixedRuntimeMetadataBytes, owner.Budget.ReservedBytes);
+        Assert.Equal(2ul, owner.Budget.WorkSteps);
+        Assert.Equal(1ul, owner.Budget.PeakDepth); Assert.Equal(0ul, owner.Budget.Depth);
         Assert.NotNull(runtime);
     }
 

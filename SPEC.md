@@ -19,6 +19,16 @@ empty metadata, group-zero text and four fixed-size frontend arrays; dynamic maj
 storage keeps its existing admission. Dead helper charges and shared storage can
 be counted again, causing earlier eviction. Production publication does not walk
 object graphs, deduplicate identities or retain manifests/reference counts.
+Development after scalar.108 additionally admits one conservative 2 KiB charge
+before constructing a selected nonliteral compiled-runtime object. Its major
+arrays, programs, searches and emitted payloads retain independent admission.
+Four mirrored field-transfer records and their nested factory scopes are removed;
+the existing outer factory owns rollback, depth and final interruption checks.
+This can increase modeled byte requirements and reduce covered construction depth.
+Numeric thresholds are versioned; the charge is not a physical object-size claim.
+Literal runtime preparation retains its existing admission. Actual SizeOf-based
+major-capacity calculations, instruction/state bounds and original interruption
+authority remain.
 Literal-family capture maps are retained only for their existing detailed LTR
 multi-group literal-family projection route. Other constructors omit unused map
 preparation; diagnostic summaries construct equivalent temporary views on demand.

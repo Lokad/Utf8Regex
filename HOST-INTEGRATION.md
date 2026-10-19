@@ -7,6 +7,15 @@ Independent PCRE2 uses its exact Core/PCRE2 scalar.94 pair; no PCRE108 is design
 Earlier packages retain their recorded contracts and limitations.
 Later109-dev changes below are separate source work, outside immutable108.
 
+Development109-dev admits selected nonliteral compiled-runtime metadata with one
+conservative 2 KiB charge before allocation. Major referents retain separate
+admission. The outer construction factory replaces four mirrored transfer records
+and nested scopes, retaining rollback and a final original-token/deadline check.
+Modeled bytes can increase and covered depth can decrease; work/byte/depth units
+remain versioned. This affects shared Core preparation in adapters too, including
+their separately documented cold-preparation ceilings. It does not extend the
+invocation envelope, default policy or retained-storage scope.
+
 Known scalar.104 Core `NonBacktracking` limitation: nullable bounded repetitions
 can choose shorter matches or incorrect last captures. For example,
 `(?:a?|b){0,3}a` on `baa` returns `ba` then `a` instead of one `baa`. Scalar.105

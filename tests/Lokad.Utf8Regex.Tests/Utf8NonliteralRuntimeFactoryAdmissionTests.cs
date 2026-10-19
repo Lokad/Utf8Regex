@@ -19,11 +19,9 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
         from limit in new[] { "bytes", "work", "depth" } select new object[] { (int)kind, limit };
 
     [Fact]
-    public void CompleteStateCoversEveryFieldAndNoDiscardedImplementationSurvives()
+    public void RemainingPayloadStatesCoverStoredFieldsAndNoDiscardedImplementationSurvives()
     {
-        Type[] types = [typeof(Utf8StructuralFamilyCompiledEngineRuntime), typeof(Utf8SimplePatternCompiledEngineRuntime),
-            typeof(Utf8StructuralLinearAutomatonCompiledEngineRuntime),
-            typeof(Utf8FallbackRegexCompiledEngineRuntime), typeof(Utf8CompiledSymmetricLiteralWindowCounter),
+        Type[] types = [typeof(Utf8CompiledSymmetricLiteralWindowCounter),
             typeof(Utf8EmittedTokenFamilyMatcher)];
         foreach (var type in types)
         {

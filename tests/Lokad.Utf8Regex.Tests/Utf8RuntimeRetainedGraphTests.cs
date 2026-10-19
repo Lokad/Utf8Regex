@@ -54,6 +54,20 @@ public sealed class Utf8RuntimeRetainedGraphTests
         AssertManifest(InspectRuntimeGraph(regex),Collect(Roots(regex)));
     }
 
+    [Theory]
+    [InlineData(typeof(Utf8StructuralFamilyCompiledEngineRuntime))]
+    [InlineData(typeof(Utf8SimplePatternCompiledEngineRuntime))]
+    [InlineData(typeof(Utf8StructuralLinearAutomatonCompiledEngineRuntime))]
+    [InlineData(typeof(Utf8FallbackRegexCompiledEngineRuntime))]
+    public void FixedRuntimeAllowanceCoversStoredInlineFields(Type runtimeType)
+    {
+        // ObjectBytes uses actual Unsafe.SizeOf for each field. Charging a full
+        // modeled object for each field overestimates headers and padding.
+        var upperBound = Fields(runtimeType).Aggregate(32UL,
+            static (bytes, field) => checked(bytes + StateBytes(field.FieldType)));
+        Assert.InRange(upperBound, 1UL, Utf8CompiledRuntimeFactory.FixedRuntimeMetadataBytes);
+    }
+
     [Fact]
     public void EveryStoredRuntimeAndInlineLayoutKeepsInactiveSharedAndDistinctPayloads()
     {
@@ -355,6 +369,8 @@ public sealed class Utf8RuntimeRetainedGraphTests
         if(typeof(Utf8StructuralLinearRuntime).IsAssignableFrom(type)) return Utf8ConstructionBudget.ObjectBytes<Utf8PreparedRegex>();
         return type.Name switch
         {
+            nameof(Utf8StructuralFamilyCompiledEngineRuntime) or nameof(Utf8SimplePatternCompiledEngineRuntime) or nameof(Utf8StructuralLinearAutomatonCompiledEngineRuntime) or nameof(Utf8FallbackRegexCompiledEngineRuntime)
+                => Utf8CompiledRuntimeFactory.FixedRuntimeMetadataBytes,
             nameof(Utf8ExactLiteralCompiledEngineRuntime) or nameof(Utf8LiteralFamilyCompiledEngineRuntime)
                 =>Utf8ConstructionBudget.ObjectBytes<Utf8LiteralCompiledEngineRuntime>(),
             nameof(Utf8EmittedWholeMatcher)=>Utf8ConstructionBudget.ObjectBytes<Utf8EmittedDelegate<Utf8EmittedWholeMatcher.MatchDelegate>>(),
