@@ -10,7 +10,15 @@ namespace Lokad.Utf8Regex.Benchmarks;
 // Python tests, so reference rendering never becomes a library dependency.
 internal static class PythonReDotNetReference
 {
-    private const string AnyUnicodeScalarPattern = PythonReParser.ManagedUnicodeScalarPattern;
+    private const string AnyUnicodeScalarPattern = @"(?:[\u0000-\uD7FF\uE000-\uFFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])";
+
+    // The managed comparator consumes complete surrogate pairs. Native scalar
+    // fragments belong to the parser; this spelling belongs only to tooling.
+    private static string RenderFragment(string fragment)
+    {
+        var withoutNewline = Utf8ConstructionText.Replace(fragment, "(?-s:.)", @"(?!\n)" + AnyUnicodeScalarPattern);
+        return Utf8ConstructionText.Replace(withoutNewline, "(?s:.)", AnyUnicodeScalarPattern);
+    }
 
     internal static string Render(Utf8PythonRegex regex)
     {
@@ -180,7 +188,7 @@ internal static class PythonReDotNetReference
                         // Complete class atoms (PLAN.md C04): emitted as their own
                         // alternation branch so astral scalars keep matching instead
                         // of being dropped by the BMP-only class below.
-                        standaloneAtoms.Add(predefined.RegexClassFragment);
+                        standaloneAtoms.Add(RenderFragment(predefined.RegexClassFragment));
                     }
                     else
                     {
@@ -472,7 +480,7 @@ internal static class PythonReDotNetReference
                 return true;
             case PythonReRawNode raw:
                 Utf8ConstructionScope.ChargeWork((ulong)raw.Text.Length);
-                builder.Append(raw.Text);
+                builder.Append(RenderFragment(raw.Text));
                 return true;
             case PythonReNamedBackreferenceNode named:
                 builder.Append(@"\k<").Append(names[named.Name]).Append('>');
