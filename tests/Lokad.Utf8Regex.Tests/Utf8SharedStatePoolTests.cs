@@ -59,6 +59,37 @@ public sealed class Utf8SharedStatePoolTests
     }
 
     [Fact]
+    public void ReferenceArrayLoansKeepExactElementTypesAndClearPublishedLeaves()
+    {
+        Utf8ExactStatePool.Clear();
+        try
+        {
+            // A covariant return must not admit a string[] as writable object[].
+            var covariant = new string[16];
+            covariant[0] = "kept";
+            Utf8ExactStatePool<object>.Return(covariant, true);
+            Assert.Equal(0, Utf8ExactStatePool.RetainedBytes);
+            Assert.Equal("kept", covariant[0]);
+
+            var strings = Utf8ExactStatePool<string>.Rent(16, true);
+            strings[0] = "capture";
+            Utf8ExactStatePool<string>.Return(strings, true);
+            Assert.Equal(0, Utf8ExactStatePool<object>.RetainedBytes);
+            var objects = Utf8ExactStatePool<object>.Rent(16, false);
+            Assert.NotSame(strings, objects);
+            objects[0] = new object();
+            Utf8ExactStatePool<object>.Return(objects, true);
+
+            Assert.Same(strings, Utf8ExactStatePool<string>.Rent(16, false));
+            Assert.All(strings, value => Assert.Null(value));
+            Assert.Same(objects, Utf8ExactStatePool<object>.Rent(16, false));
+            Assert.All(objects, value => Assert.Null(value));
+            Assert.Equal(0, Inspect().Leaves);
+        }
+        finally { Utf8ExactStatePool.Clear(); }
+    }
+
+    [Fact]
     public void TableAndDistinctLeafLoansMatchTheActualRetainedGraph()
     {
         Utf8ExactStatePool.Clear();

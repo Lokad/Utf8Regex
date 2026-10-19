@@ -1,5 +1,13 @@
 # Changelog
 
+## Changes after scalar.105
+
+Result staging stores values directly in the existing admitted buffer and
+publishes bounded span copies, removing its one-field record wrapper and
+per-element unwrapping loop. Growth overlap, result traffic, checkpoint schedule
+and independent returned arrays remain unchanged. The shared exact-array pool
+checks physical element types before retaining or lending reference arrays.
+
 ## Qualified private Core/PythonRe scalar.105
 
 Producer853a2a2f freezes this batch with exact Core105. The same actual package

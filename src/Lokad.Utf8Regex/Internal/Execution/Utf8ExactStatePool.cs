@@ -7,7 +7,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // Generic entry points carry no retained roots. One shared owner bounds exact
 // array capacity across every thread and state type. Finite storage invocations
 // may borrow existing leaves but cannot initialize or grow retained storage.
-internal static class Utf8ExactStatePool<T> where T : struct
+internal static class Utf8ExactStatePool<T>
 {
     internal const int MaximumRetainedBytes = 16 * 1024;
     internal static int RetainedBytes => Utf8ExactStatePool.RetainedBytesFor<T>();
@@ -37,7 +37,7 @@ internal static class Utf8ExactStatePool
         }
     }
 
-    internal static int RetainedBytesFor<T>() where T : struct
+    internal static int RetainedBytesFor<T>()
     {
         var taken = false;
         try
@@ -46,13 +46,13 @@ internal static class Utf8ExactStatePool
             var bytes = 0;
             if (s_items is { } cache)
                 foreach (var entry in cache)
-                    if (entry.Value is T[]) bytes += entry.Bytes;
+                    if (entry.Value?.GetType() == typeof(T[])) bytes += entry.Bytes;
             return bytes;
         }
         finally { if (taken) s_gate.Exit(); }
     }
 
-    internal static T[] Rent<T>(int capacity, bool retain) where T : struct
+    internal static T[] Rent<T>(int capacity, bool retain)
     {
         if (Bucket(capacity) >= 0)
         {
@@ -72,7 +72,7 @@ internal static class Utf8ExactStatePool
                 }
                 if (taken && s_items is { } cache)
                     for (var index = 0; index < cache.Length; index++)
-                        if (cache[index].Value is T[] items && items.Length == capacity)
+                        if (cache[index].Value is T[] items && items.GetType() == typeof(T[]) && items.Length == capacity)
                         {
                             s_retainedBytes -= cache[index].Bytes;
                             cache[index] = default;
@@ -84,8 +84,11 @@ internal static class Utf8ExactStatePool
         return new T[capacity];
     }
 
-    internal static void Return<T>(T[] items, bool retain) where T : struct
+    internal static void Return<T>(T[] items, bool retain)
     {
+        // Reference arrays are covariant. A pooled leaf must have the exact
+        // requested element type so later borrowers can write any T safely.
+        if (items.GetType() != typeof(T[])) return;
         if (!retain || Bucket(items.Length) < 0) return;
         var extent = Utf8ConstructionBudget.ArrayBytes<T>(items.Length);
         if (extent > (ulong)Utf8ExactStatePool<T>.MaximumRetainedBytes) return;
@@ -108,7 +111,7 @@ internal static class Utf8ExactStatePool
                 var entry = cache[index];
                 if (entry.Value is null) { if (empty < 0) empty = index; }
                 else if (ReferenceEquals(entry.Value, items)) return;
-                else if (entry.Value is T[]) typeBytes += entry.Bytes;
+                else if (entry.Value.GetType() == typeof(T[])) typeBytes += entry.Bytes;
             }
             if (bytes > Utf8ExactStatePool<T>.MaximumRetainedBytes - typeBytes) return;
             while (empty < 0 || bytes > MaximumRetainedBytes - s_retainedBytes)

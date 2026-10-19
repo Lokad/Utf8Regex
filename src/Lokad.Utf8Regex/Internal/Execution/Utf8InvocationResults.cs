@@ -84,18 +84,17 @@ internal struct Utf8InvocationResultLedger
 // overlap accounting and reference clearing. Final roots overlap staging.
 internal struct Utf8InvocationResultBuffer<T>
 {
-    private readonly record struct StoredResult(T Value);
-    private Utf8InvocationStateBuffer<StoredResult> _items;
+    private Utf8InvocationStateBuffer<T> _items;
 
     internal readonly int Count => _items.Count;
-    internal readonly T this[int index] => _items[index].Value;
+    internal readonly T this[int index] => _items[index];
 
     internal void Add(T value, ref Utf8SliceInvocation invocation)
     {
         var control = new Utf8InvocationBufferControl(ref invocation);
         Utf8InvocationOutput.Checkpoint(control);
         Utf8SliceBufferWork.ChargeResultBytes(_items.PendingGrowthBytes, ref invocation);
-        var breach = _items.TryPush(new StoredResult(value), control);
+        var breach = _items.TryPush(value, control);
         if (breach != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException($"Owned result staging exceeded {breach}.");
     }
@@ -107,8 +106,9 @@ internal struct Utf8InvocationResultBuffer<T>
         for (var offset = 0; offset < result.Length;)
         {
             Utf8InvocationOutput.Checkpoint(control);
-            var end = Math.Min(offset + 256, result.Length);
-            for (; offset < end; offset++) result[offset] = _items[offset].Value;
+            var count = Math.Min(256, result.Length - offset);
+            _items.WrittenItems.Slice(offset, count).CopyTo(result.AsSpan(offset, count));
+            offset += count;
         }
         Utf8InvocationOutput.Checkpoint(control);
         return result;

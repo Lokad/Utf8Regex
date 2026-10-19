@@ -5,7 +5,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // Exact extents make aggregate admission authoritative before allocation,
 // including the old/new overlap during growth. Reference-bearing frames borrow
 // immutable programs; popped and retained slots release their graph references.
-internal struct Utf8InvocationStateBuffer<T> where T : struct
+internal struct Utf8InvocationStateBuffer<T>
 {
     private T[]? _items;
     private int _count;
