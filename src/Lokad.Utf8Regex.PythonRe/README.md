@@ -1,13 +1,14 @@
 # Lokad.Utf8Regex.PythonRe
 
-Staging private **Core/PythonRe 0.4.0-scalar.107**, with exact Core107. It batches
-unused native capture preparation/reporting removal and scalar dot/end repeat
-reuse while preserving Python captures, strict UTF-8/scalars, original interruption,
-finite controls and cursor/result lifetimes. Qualification is pending; qualified
-[scalar.106](../../artifacts/core-python-scalar106-20261019/HANDOFF.md) remains the
-usable input until the [107 handoff](../../artifacts/core-python-scalar107-20261019/HANDOFF.md)
-records acceptance. Source comparisons do not qualify new package bytes. No
-PCRE107, publication or downstream pin/adoption change is designated.
+Qualified private **Core/PythonRe 0.4.0-scalar.107**, exact Core107, producer
+`f91be679fb72da0fd05958129b017b528d7af33d`. Same actual DLLs pass Windows/Linux
+package and unchanged original public consumer/oracle checks. [Handoff](../../artifacts/core-python-scalar107-20261019/HANDOFF.md)
+and [consume](../../artifacts/core-python-scalar107-20261019/CONSUMING.md) record
+scope, exact identities and current finite costs/uncertainty. Unused native capture
+preparation/reporting and useless scalar rewind work are removed; captures,
+original interruption, useful limits and cursor/result lifetimes remain. Source
+advances to108-dev;106/older bytes and independent Core/PCRE94 stay unchanged.
+No PCRE107, publication or external consumer pin/adoption change is designated.
 
 Qualified private **Core/PythonRe 0.4.0-scalar.103**, exact Core103, producer
 `6150c4388b3140cfa32c516e8c03d0836a5a84cc`. It inherits the scoped-anchor correction

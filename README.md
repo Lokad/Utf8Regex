@@ -1,14 +1,15 @@
 # Lokad.Utf8Regex
 
-Staging private **Core/PythonRe 0.4.0-scalar.107** as one coherent cleanup and
-operating-cost batch: omit unused native capture metadata, move benchmark-only
-structural reporting out of Core, and reuse the scalar repeat scan for proved
-dot/end tails. Source comparisons record lower construction cost and less public
-Count/lexer rewind work; numeric admission requirements may fall. Qualification
-of the new immutable pair is pending; **scalar.106 remains the qualified input**
-until the [107 handoff](artifacts/core-python-scalar107-20261019/HANDOFF.md) records
-same-DLL platform/consumer/oracle/identity checks and current exact-package costs.
-No PCRE107, publication, external pins or downstream adoption is designated.
+Qualified private **Core/PythonRe 0.4.0-scalar.107** batches unused native capture
+preparation/reporting removal and scalar dot/end repeat reuse. Same actual DLLs
+pass detached Windows/Linux, unchanged original consumer assertions, capture /
+semantic oracles and exact provenance/member/symbol checks. Source166f445c CI is
+green on both platforms. [Handoff](artifacts/core-python-scalar107-20261019/HANDOFF.md),
+[consume](artifacts/core-python-scalar107-20261019/CONSUMING.md) and [current costs](artifacts/core-python-scalar107-20261019/vm-cost/RESULT.md)
+record exact identities, scope and uncertainty. Numeric work/depth/working and
+construction requirements may fall; original controls, captures and lifetimes stay.
+Source advances to108-dev. Immutable106/older and independent Core/PCRE94 stay
+unchanged; no PCRE107, publication, external pin change or adoption is designated.
 
 Qualified private **Core/PythonRe 0.4.0-scalar.106** batches direct result staging,
 projection-only capture completion, bounded construction interruption, literal-run
@@ -238,7 +239,7 @@ literal Count, in both ordinary and compiled sections. These selected current
 results show substantial gaps against predecoded .NET; Russian Count beats the
 decode baseline. They do not qualify other rows or a package. See
 [current measurements and limitations](CURRENT-PERFORMANCE.md).
-Separate immutable [scalar.106 package costs](artifacts/core-python-scalar106-20261019/vm-cost/RESULT.md)
+Separate immutable [scalar.107 package costs](artifacts/core-python-scalar107-20261019/vm-cost/RESULT.md)
 cover finite limits, live tokens and Python materialization, including noisy lanes.
 Earlier source comparisons retain their scope in [CHANGELOG.md](CHANGELOG.md).
 

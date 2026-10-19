@@ -1,5 +1,15 @@
 # Selected current-source performance
 
+The latest immutable Core/PythonRe scalar.107 observation uses producer
+`f91be679fb72da0fd05958129b017b528d7af33d`, .NET10.0.12 and actual package DLLs.
+For10K `(a)(b)` matches, Core Count was100.295us unlimited /163.555us finite,
+112B finite. Python detailed was6.227ms/~3.03MB finite and6.448ms with a live token;
+UTF8 tuples3.912ms/~1.38MB finite and3.961ms with a token. One bounded observation
+is closed;1K/5K lanes have large transitions and some .NET tuple controls are
+noisy. These are descriptive operating costs, not universal overhead/scaling or
+source-regression claims. [Exact costs, raw ranges and scope](artifacts/core-python-scalar107-20261019/vm-cost/RESULT.md)
+remain separate from the source before/after comparison and snapshots below.
+
 ## Scalar dot-repeat follow-through
 
 A subsequent source107-dev comparison, parent `a39f4267`, reuses the existing

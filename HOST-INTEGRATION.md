@@ -1,9 +1,9 @@
 # Resource controls and host ownership
 
-The qualified private Core/PythonRe input is **0.4.0-scalar.106**. Its
-[handoff](artifacts/core-python-scalar106-20261019/HANDOFF.md) records exact
+The qualified private Core/PythonRe input is **0.4.0-scalar.107**. Its
+[handoff](artifacts/core-python-scalar107-20261019/HANDOFF.md) records exact
 identities, same-byte Windows/Linux consumer checks, current costs and exclusions.
-Independent PCRE2 uses its exact Core/PCRE2 scalar.94 pair; no PCRE106 is designated.
+Independent PCRE2 uses its exact Core/PCRE2 scalar.94 pair; no PCRE107 is designated.
 Earlier packages retain their recorded contracts and limitations.
 
 Known scalar.104 Core `NonBacktracking` limitation: nullable bounded repetitions
@@ -77,12 +77,12 @@ findall routes omit that unused scan and can admit smaller work limits. VM
 instruction/backtracking work, required projection charges, original interruption
 and result ownership remain enforced.
 
-Source after scalar.106 also omits useless rewind frames for eligible greedy
+Scalar.107 also omits useless rewind frames for eligible greedy
 dot/class runs before a disjoint literal or end anchor. The end-anchor proof
 requires the repeated atom to exclude LF. This can reduce work/depth/working
 requirements, allowing some previously denied numeric budgets to succeed.
 Per-scalar work, major admission, original token/deadline and capture/result
-publication stay controlled. This source change does not alter immutable106.
+publication stay controlled. Immutable106 does not contain this change.
 
 ## Select the public controls
 

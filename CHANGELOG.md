@@ -1,12 +1,13 @@
 # Changelog
 
-## Staged private Core/PythonRe scalar.107
+## Qualified private Core/PythonRe scalar.107
 
-A distinct107 identity freezes the source batch below. Same-byte Windows/Linux,
-original public consumer/oracle, exact identity/symbol and current cost gates are
-pending;106 and all earlier bytes remain immutable. No PCRE107, publication or
-external adoption is designated. Source166f445c supplies the C# batch; this freeze
-changes release metadata and documentation only.
+Producerf91be679 freezes the batch below. Same actual DLLs pass Windows/Linux
+package suites, unchanged original public consumer/oracle and identity/member /
+symbol checks. Source166f445c CI is green on both platforms. One bounded exact107
+cost observation retains raw finite/token/materialization costs and uncertainty;
+source comparisons stay separate. Source advances to108-dev;106/older remain
+immutable. No PCRE107, publication or adoption. [Handoff](artifacts/core-python-scalar107-20261019/HANDOFF.md).
 
 Greedy scalar dot runs reuse the existing repeat scan when a following literal
 or end anchor proves all shorter endpoints useless. End tails conservatively
