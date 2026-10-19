@@ -1,6 +1,48 @@
 # Selected current-source performance
 
-The latest exact-package observation uses immutable Core/PythonRe scalar.100,
+## Four refreshed public comparisons
+
+On 2026-10-19, clean source `c2373b04ea08dec9c65e9066ee27b09fc31b4fbc`
+was measured on the dedicated quiet VM: .NET 10.0.12, Ubuntu 24.04.4,
+Xeon Platinum 8573C, logical CPU 2, default runtime tiering. The existing
+alternating six-lane README protocol checked result agreement before timing,
+calibrated one shared iteration count and took five samples per case. Each case
+had a 120-second outer cap. Constructors are outside timed public operations;
+required strict UTF-8 validation is included. Policies are unlimited with no token.
+
+Times below are median microseconds per public operation. Each cell lists
+ordinary / compiled options; both versions of each selected snapshot row changed.
+
+| Public workload | Utf8Regex | .NET predecoded | .NET with decode | Utf8Regex allocated bytes |
+| --- | ---: | ---: | ---: | ---: |
+| Email Match, 34 B | 8.782 / 8.767 | 0.338 / 0.801 | 0.377 / 0.833 | 5,856 / 5,856 |
+| Imports Count, 47,858 B | 388.850 / 386.625 | 5.515 / 5.690 | 16.555 / 16.240 | 3,584 / 3,584 |
+| Lexer doc-line prefix loop, real sample corpus | 295.971 / 294.819 | 3.788 / 3.612 | 5.254 / 5.116 | 126,200 / 126,200 |
+| Russian exact-literal Count, 1,570,556 B | 1,414.840 / 1,430.605 | 194.370 / 97.845 | 5,386.230 / 5,333.385 | 0 / 0 |
+
+Email, imports and lexer workloads trail both .NET baselines substantially.
+Russian literal Count beats decode-then-Regex but trails predecoded Regex.
+These are current costs, not a causal before/after comparison with the scalar
+migration, cleanup or checked-access work. Native eligibility must be established
+through actual public routes; a prepared family or an internal replay alone does
+not prove public dispatch.
+
+Managed sample max/min spreads were at most 1.03x. Some short .NET control batches
+were below 2 ms (imports predecoded spread 1.22x; lexer predecoded 1.14x), so small
+percentage differences are not settled. None of these comparisons is near a tie;
+no confirmation or follow-up timing run was performed. Exactly eight selected
+measurement records changed; the other 170 remained identical. Existing CLI
+regenerated the README and parity report and verified parity. Other historical
+snapshot rows remain unqualified for current source.
+
+[Raw samples, exact assembly hashes and receipt](artifacts/current-readme-slice-20261019/RESULT.md)
+are separate from immutable [scalar.106 finite/token/materialization costs](artifacts/core-python-scalar106-20261019/vm-cost/RESULT.md).
+No package, consumer pin, Status, .NET 11 comparison or closed checked52 result
+inherits this observation.
+
+## Earlier exact-package observation
+
+An earlier exact-package observation uses immutable Core/PythonRe scalar.100,
 producer `fa0e260880caf40b3ba139f6e7fa196276d8c783`, on .NET 10.0.12. Existing
 BenchmarkDotNet Short runs in-process to preserve the staged shipping DLLs.
 Eight public lanes include both .NET baselines and all four finite Python limits.

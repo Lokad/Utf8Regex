@@ -221,15 +221,16 @@ callback execution/allocations, later standalone getters and retained host stora
 have separate scope; see
 [host composition](HOST-INTEGRATION.md).
 
-The tables below are historical measurements from the revisions and dates in
-`README.Benchmarks.json`; most rows were measured in September 2026. They do not
-qualify the current engine. Current scoped package measurements, finite-limit
-costs and inconclusive lanes are recorded in the
-[scalar.99 handoff](artifacts/core-python-scalar99-20261018/HANDOFF.md).
-Selected current-source Unicode Count and Python capture workloads have a
-separate [BenchmarkDotNet report](CURRENT-PERFORMANCE.md), including both .NET
-baselines, finite Python policies, allocations, uncertainty and scope.
-Later source comparisons retain their separate scope in [CHANGELOG.md](CHANGELOG.md).
+The tables below mix revisions and dates recorded in `README.Benchmarks.json`;
+most rows remain historical. Four cases were refreshed on source `c2373b04ea08`
+on 2026-10-19: email Match, imports Count, lexer doc-line loops and Russian
+literal Count, in both ordinary and compiled sections. These selected current
+results show substantial gaps against predecoded .NET; Russian Count beats the
+decode baseline. They do not qualify other rows or a package. See
+[current measurements and limitations](CURRENT-PERFORMANCE.md).
+Separate immutable [scalar.106 package costs](artifacts/core-python-scalar106-20261019/vm-cost/RESULT.md)
+cover finite limits, live tokens and Python materialization, including noisy lanes.
+Earlier source comparisons retain their scope in [CHANGELOG.md](CHANGELOG.md).
 
 The README CLI now uses an unboxed allocation sink. Older allocation figures can
 include a 24-byte harness allocation per lane measurement; stored historical rows
@@ -254,7 +255,7 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 |---|---:|---:|---:|
 | `literal/sherlock-en` | 69.909 us | 83.324 us | 858.715 us |
 | `literal/sherlock-casei-en` | 88.400 us | 185.005 us | 628.530 us |
-| `literal/sherlock-ru` | 219.465 us | 94.520 us | 4,917.695 us |
+| `literal/sherlock-ru` | 1,414.840 us | 194.370 us | 5,386.230 us |
 | `literal/sherlock-casei-ru` | 238.545 us | 396.730 us | 5,303.930 us |
 | `literal/sherlock-zh` | 118.745 us | 18.685 us | 1,955.735 us |
 | `literal-alternate/sherlock-en` | 323.090 us | 1,514.050 us | 1,998.180 us |
@@ -280,7 +281,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 
 | Case | Operation | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU |
 |---|---|---:|---:|---:|
-| `common/email-match` | `IsMatch` | 0.042 us | 0.260 us | 0.283 us |
+| `common/email-match` | `IsMatch` | 8.782 us | 0.338 us | 0.377 us |
 | `common/email-miss` | `IsMatch` | 0.053 us | 0.350 us | 0.379 us |
 | `common/date-match` | `IsMatch` | 0.356 us | 0.208 us | 0.322 us |
 | `common/date-miss` | `IsMatch` | 0.084 us | 0.561 us | 0.599 us |
@@ -335,7 +336,7 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 |---|---:|---:|---:|
 | `literal/sherlock-en` | 69.767 us | 70.919 us | 824.710 us |
 | `literal/sherlock-casei-en` | 90.770 us | 75.365 us | 514.820 us |
-| `literal/sherlock-ru` | 220.690 us | 86.570 us | 4,923.715 us |
+| `literal/sherlock-ru` | 1,430.605 us | 97.845 us | 5,333.385 us |
 | `literal/sherlock-casei-ru` | 240.415 us | 195.615 us | 5,114.395 us |
 | `literal/sherlock-zh` | 119.990 us | 23.380 us | 1,953.330 us |
 | `literal-alternate/sherlock-en` | 319.335 us | 334.160 us | 803.360 us |
@@ -361,7 +362,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 
 | Case | Operation | Utf8Regex Compiled CPU | .NET compiled predecoded CPU | .NET compiled + decode CPU |
 |---|---|---:|---:|---:|
-| `common/email-match` | `IsMatch` | 0.044 us | 0.079 us | 0.111 us |
+| `common/email-match` | `IsMatch` | 8.767 us | 0.801 us | 0.833 us |
 | `common/email-miss` | `IsMatch` | 0.056 us | 0.090 us | 0.118 us |
 | `common/date-match` | `IsMatch` | 0.354 us | 0.048 us | 0.140 us |
 | `common/date-miss` | `IsMatch` | 0.085 us | 0.192 us | 0.226 us |
@@ -428,13 +429,13 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `balancing/begin-end-blocks` | 8.980 us | 4,213.635 us | 4,211.590 us |
 | `structural/ordered-modifier-pair` | 4.094 us | 16.771 us | 27.233 us |
 | `structural/modifier-family-to-type-pair` | 23.209 us | 128.188 us | 138.855 us |
-| `lokad/imports/module-imports` | 3.430 us | 4.860 us | 14.280 us |
+| `lokad/imports/module-imports` | 388.850 us | 5.515 us | 16.555 us |
 | `lokad/folding/region-marker` | 5.720 us | 37.445 us | 48.315 us |
 | `lokad/lexer/identifier` | 12.179 us | 16.470 us | 20.153 us |
 | `lokad/lexer/number` | 4.107 us | 7.046 us | 8.067 us |
 | `lokad/lexer/string` | 10.965 us | 42.663 us | 45.789 us |
 | `lokad/lexer/operator-run` | 1.407 us | 1.837 us | 2.470 us |
-| `lokad/lexer/doc-line` | 1.675 us | 2.008 us | 2.887 us |
+| `lokad/lexer/doc-line` | 295.971 us | 3.788 us | 5.254 us |
 | `lokad/docs/inline-doc-prefix` | 1.695 us | 2.587 us | 3.536 us |
 | `lokad/langserv/identifier-validator` | 4.061 us | 8.785 us | 10.558 us |
 | `lokad/langserv/helper-identifier` | 3.018 us | 4.201 us | 5.533 us |
@@ -478,13 +479,13 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `balancing/begin-end-blocks` | 9.205 us | 483.885 us | 493.135 us |
 | `structural/ordered-modifier-pair` | 4.094 us | 8.276 us | 18.550 us |
 | `structural/modifier-family-to-type-pair` | 23.491 us | 56.601 us | 68.097 us |
-| `lokad/imports/module-imports` | 3.455 us | 4.775 us | 14.070 us |
+| `lokad/imports/module-imports` | 386.625 us | 5.690 us | 16.240 us |
 | `lokad/folding/region-marker` | 6.125 us | 38.840 us | 46.440 us |
 | `lokad/lexer/identifier` | 12.176 us | 16.303 us | 20.013 us |
 | `lokad/lexer/number` | 4.102 us | 6.882 us | 8.127 us |
 | `lokad/lexer/string` | 10.881 us | 41.806 us | 45.972 us |
 | `lokad/lexer/operator-run` | 1.389 us | 1.830 us | 2.473 us |
-| `lokad/lexer/doc-line` | 1.763 us | 2.007 us | 2.879 us |
+| `lokad/lexer/doc-line` | 294.819 us | 3.612 us | 5.116 us |
 | `lokad/docs/inline-doc-prefix` | 1.671 us | 2.590 us | 3.495 us |
 | `lokad/langserv/identifier-validator` | 4.050 us | 8.486 us | 10.490 us |
 | `lokad/langserv/helper-identifier` | 3.122 us | 4.264 us | 5.421 us |
