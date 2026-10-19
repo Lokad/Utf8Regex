@@ -63,7 +63,6 @@ public sealed class PythonReFindIterOwnershipTests
             }
         }
 
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> ManagedCases()
@@ -82,6 +81,5 @@ public sealed class PythonReFindIterOwnershipTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var matches = regex.FindIterDetailed(input, startOffsetInBytes);
         Assert.Equal(values, matches.Select(static match => match.Value.ValueText).ToArray());
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 }

@@ -32,7 +32,6 @@ public sealed class PythonReFindAllOwnershipTests
         Assert.Equal(values, strings.ScalarValues);
         var utf8 = regex.FindAllToUtf8(input, startOffsetInBytes);
         Assert.Equal(values, utf8.ScalarValues.Select(Encoding.UTF8.GetString).ToArray());
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> OwnedSingleGroupCases()
@@ -52,7 +51,6 @@ public sealed class PythonReFindAllOwnershipTests
         Assert.Equal(values, matches.Select(static match => match.ValueText).ToArray());
         var strings = regex.FindAllToStrings(input, startOffsetInBytes);
         Assert.Equal(groupValues, strings.ScalarValues);
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> OwnedTupleCases()
@@ -85,7 +83,6 @@ public sealed class PythonReFindAllOwnershipTests
 
         var utf8 = regex.FindAllToUtf8(input, startOffsetInBytes);
         Assert.Equal(tuples.Length, utf8.TupleValues.Length);
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> ManagedCases()
@@ -104,6 +101,5 @@ public sealed class PythonReFindAllOwnershipTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var matches = regex.FindAll(input, startOffsetInBytes);
         Assert.Equal(values, matches.Select(static match => match.ValueText).ToArray());
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 }

@@ -26,7 +26,6 @@ public sealed class PythonReTranslationContinuationTests
             Assert.Equal(depth + 1, result.Groups.Length);
             Assert.Equal("😀", result.Groups[depth].ValueText);
         }
-        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.InRange(construction.Budget.PeakDepth, 1ul, 131072ul);
         Assert.Equal(0ul, construction.Budget.Depth);
     }
@@ -59,7 +58,6 @@ public sealed class PythonReTranslationContinuationTests
         Assert.True(result.Success);
         Assert.Equal((4, 6), (result.Value.StartOffsetInBytes, result.Value.EndOffsetInBytes));
         Assert.Equal("é", result.Groups[1].ValueText);
-        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Theory]
@@ -73,7 +71,6 @@ public sealed class PythonReTranslationContinuationTests
         Assert.True(PythonReTranslator.CanUseUtf8IterationFastPath(parse.Root));
         var regex = new Utf8PythonRegex(pattern);
         Assert.Equal("éab", regex.SearchToString("xéabz"u8));
-        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     public static IEnumerable<object[]> Walkers()
@@ -238,7 +235,6 @@ public sealed class PythonReTranslationContinuationTests
         Assert.False(PythonReTranslator.GetWidth(parse.Root, parse).Max > 0);
         var regex = new Utf8PythonRegex("(?<=(?:)*)x");
         Assert.Equal("x", regex.SearchToString("😀x"u8));
-        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     private static object Run(int operation, PythonReParseResult parse) => operation switch

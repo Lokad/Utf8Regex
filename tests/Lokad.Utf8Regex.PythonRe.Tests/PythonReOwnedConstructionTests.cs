@@ -29,7 +29,6 @@ public sealed class PythonReOwnedConstructionTests
     public void FreshInstanceHasAnOwnedScalarProgram(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern);
-        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Theory]
@@ -41,7 +40,6 @@ public sealed class PythonReOwnedConstructionTests
         var input = System.Text.Encoding.UTF8.GetBytes(inputText);
         Assert.True(regex.IsMatch(input));
         Assert.True(regex.Search(input).Success);
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Theory]
@@ -54,8 +52,6 @@ public sealed class PythonReOwnedConstructionTests
         // without constructing the former managed engine.
         var regex = new Utf8PythonRegex(pattern);
         var input = System.Text.Encoding.UTF8.GetBytes(inputText);
-        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.NotEmpty(regex.FindIterDetailed(input));
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 }

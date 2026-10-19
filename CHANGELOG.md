@@ -2,6 +2,13 @@
 
 ## Changes after scalar.107
 
+Remove PythonRe's obsolete constant backend taxonomy, plan formatter and owned
+program-presence getter. Remove the test-only getter that forced lazy full-match
+compilation; tests now exercise public FullMatch and observe actual cold/warm
+state. Public outcome, control and lifetime checks remain. Benchmark component
+labels stay in tooling, with preparation captions separated from runtime claims.
+[Trace and focused validation](artifacts/python-backend-diagnostics-20261019/RESULT.md).
+
 Omit optional Core preparation for nullable PythonRe patterns whose iteration
 eligibility already rejects Core. Existing candidate and literal-result fences
 also exclude that helper; matching continues through the owned scalar program.

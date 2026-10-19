@@ -13,7 +13,6 @@ public sealed class Utf8PythonRegexConstructionTests
 
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         Assert.False(regex.FullMatch("abc"u8).Success);
-        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
     }
 
@@ -32,7 +31,6 @@ public sealed class Utf8PythonRegexConstructionTests
         var regex = new Utf8PythonRegex("foo");
 
         Assert.True(regex.FullMatch("foo"u8).Success);
-        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Fact]

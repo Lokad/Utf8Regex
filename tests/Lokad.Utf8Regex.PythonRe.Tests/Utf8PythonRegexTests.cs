@@ -57,10 +57,9 @@ public sealed class Utf8PythonRegexTests
         Assert.True(regex.DebugUsesUtf8RegexBackend);
         Assert.True(regex.DebugUsesZeroOffsetUtf8ValueFastPath);
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
-        Assert.True(regex.DebugHasScalarFullProgram);
-        Assert.True(regex.DebugIsScalarFullProgramValueCreated);
+        Assert.True(regex.FullMatch("foo"u8).Success);
+        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         Assert.Equal("foo", PythonReDotNetReference.Render(regex));
-        Assert.Equal("Search=Utf8Regex, Match=Utf8Regex, FullMatch=Utf8Regex, Count=Utf8Regex", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("xxfooyy"u8));
         var nonAsciiPrefixMatch = regex.Search("éfoo"u8);
         Assert.True(nonAsciiPrefixMatch.Success);
@@ -230,7 +229,6 @@ public sealed class Utf8PythonRegexTests
         var regex = new Utf8PythonRegex(@"(?m)^foo$", PythonReCompileOptions.Multiline);
 
         Assert.True(regex.DebugUsesUtf8RegexBackend);
-        Assert.Equal("Search=Utf8Regex, Match=Utf8Regex, FullMatch=Utf8Regex, Count=Utf8Regex", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.Search("bar\nfoo\nbaz"u8).Success);
     }
 
@@ -303,18 +301,16 @@ public sealed class Utf8PythonRegexTests
 
         Assert.True(conditional.DebugUsesUtf8RegexBackend);
         Assert.True(lookahead.DebugUsesUtf8RegexBackend);
-        Assert.True(conditional.DebugHasScalarFullProgram);
-        Assert.True(conditional.DebugIsScalarFullProgramValueCreated);
+        Assert.False(conditional.DebugIsScalarFullProgramValueCreated);
         Assert.False(lookahead.DebugIsScalarFullProgramValueCreated);
-        // The anchored wrapper reuses its admitted scalar program even when
-        // the core classifier has no native full-match plan.
-        Assert.True(lookahead.DebugHasScalarFullProgram);
-        Assert.True(lookahead.DebugIsScalarFullProgramValueCreated);
         Assert.True(conditional.Search("foobar"u8).Success);
         Assert.True(lookahead.Search("foobar"u8).Success);
         Assert.True(conditional.FullMatch("foobar"u8).Success);
         Assert.True(conditional.FullMatch("baz"u8).Success);
         Assert.False(conditional.FullMatch("foo"u8).Success);
+        Assert.True(conditional.DebugIsScalarFullProgramValueCreated);
+        Assert.False(lookahead.FullMatch("foobar"u8).Success);
+        Assert.True(lookahead.DebugIsScalarFullProgramValueCreated);
     }
 
     [Fact]
@@ -340,7 +336,6 @@ public sealed class Utf8PythonRegexTests
         });
 
         Assert.True(native.DebugIsScalarFullProgramValueCreated);
-        Assert.True(native.DebugHasScalarFullProgram);
 
         // The anchored search shape shares a lazily created scalar full
         // matcher across concurrent callers.
@@ -348,8 +343,6 @@ public sealed class Utf8PythonRegexTests
         Assert.False(managed.DebugIsScalarFullProgramValueCreated);
         Parallel.For(0, 32, _ => Assert.True(managed.FullMatch("ab12"u8).Success));
         Assert.True(managed.DebugIsScalarFullProgramValueCreated);
-        Assert.True(managed.DebugHasScalarFullProgram);
-        Assert.True(managed.DebugUsesOwnedSlice);
     }
 
     [Fact]
@@ -451,7 +444,6 @@ public sealed class Utf8PythonRegexTests
 
         var match = regex.FullMatch(input, startOffsetInBytes: 2);
 
-        Assert.Equal("Search=Utf8Regex, Match=Utf8Regex, FullMatch=Utf8Regex, Count=Utf8Regex", regex.DebugDescribeExecutionPlan());
         Assert.True(match.Success);
         Assert.True(match.HasContiguousByteRange);
         Assert.Equal(2, match.StartOffsetInBytes);
@@ -471,7 +463,6 @@ public sealed class Utf8PythonRegexTests
         var detailed = regex.FullMatchDetailed(input, startOffsetInBytes: 2);
         var data = regex.FullMatchDetailedData(input, startOffsetInBytes: 2);
 
-        Assert.Contains("FullMatch=Utf8Regex", regex.DebugDescribeExecutionPlan());
         Assert.True(detailed.Success);
         Assert.Equal("Шерлок Шерлок ", detailed.Value.GetValueString());
         Assert.True(detailed.TryGetFirstSetGroup("word", out var word));
@@ -489,7 +480,6 @@ public sealed class Utf8PythonRegexTests
         var regex = new Utf8PythonRegex("(a+)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
         var input = System.Text.Encoding.UTF8.GetBytes(new string('a', 100_000) + "!");
 
-        Assert.Contains("FullMatch=Utf8Regex", regex.DebugDescribeExecutionPlan());
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FullMatch(input));
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FullMatchDetailedData(input));
     }
@@ -501,8 +491,6 @@ public sealed class Utf8PythonRegexTests
         var input = System.Text.Encoding.UTF8.GetBytes(new string('a', 100_000) + "!");
         // R03 anchor slice: the empty-capable anchor shape now counts on the
         // owned slice, which maps its deadline to the same timeout identity.
-        Assert.Contains("Count=Utf8Regex", regex.DebugDescribeExecutionPlan());
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugFindAllBackend);
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.Count(input));
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FindAllToStrings(input));
     }
@@ -611,7 +599,6 @@ public sealed class Utf8PythonRegexTests
 
         var matches = regex.FindAll("foo x foo"u8);
 
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugFindAllBackend);
         Assert.Equal(2, matches.Length);
         Assert.Equal("foo", matches[0].ValueText);
         Assert.Equal("foo", matches[1].ValueText);
@@ -624,7 +611,6 @@ public sealed class Utf8PythonRegexTests
 
         var matches = regex.FindAll("xx foo-foo yy foo-foo"u8, startOffsetInBytes: 3);
 
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugFindAllBackend);
         Assert.Equal(2, matches.Length);
         Assert.Equal("foo-foo", matches[0].ValueText);
         Assert.Equal("foo-foo", matches[1].ValueText);
@@ -638,7 +624,6 @@ public sealed class Utf8PythonRegexTests
 
         var matches = regex.FindAll("xxfoobaryybar"u8);
 
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugFindAllBackend);
         Assert.Equal(["foo", "bar", "bar"], matches.Select(x => x.ValueText).ToArray());
     }
 
@@ -664,7 +649,6 @@ public sealed class Utf8PythonRegexTests
         var strings = regex.FindAllToStrings(input);
         var utf8 = regex.FindAllToUtf8(input);
 
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugFindAllBackend);
         Assert.Equal(["éé", "é"], structural.Select(static match => match.ValueText).ToArray());
         Assert.Equal(["éé", "é"], strings.ScalarValues);
         Assert.Equal(["éé", "é"], utf8.ScalarValues.Select(System.Text.Encoding.UTF8.GetString).ToArray());
@@ -702,7 +686,6 @@ public sealed class Utf8PythonRegexTests
         var regex = new Utf8PythonRegex("(a+)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
         var input = System.Text.Encoding.UTF8.GetBytes(new string('a', 100_000) + "!");
 
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugFindAllBackend);
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FindAllToStrings(input));
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FindAllToUtf8(input));
     }
@@ -713,9 +696,7 @@ public sealed class Utf8PythonRegexTests
         var regex = new Utf8PythonRegex("x*|(?:(a+)+$)", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
         var input = System.Text.Encoding.UTF8.GetBytes(new string('a', 100_000) + "!");
 
-        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FindAll(input));
-        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Fact]
@@ -875,7 +856,6 @@ public sealed class Utf8PythonRegexTests
         var strings = regex.FindAllToStrings("a::bc"u8);
         var utf8 = regex.FindAllToUtf8("a::bc"u8);
 
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugFindAllBackend);
         Assert.Equal(expected, strings.ScalarValues);
         Assert.Equal(
             expected,
@@ -888,9 +868,7 @@ public sealed class Utf8PythonRegexTests
         var regex = new Utf8PythonRegex("x*|y");
         string[] expected = ["", "y", ""];
 
-        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.Equal(expected, regex.FindAll("y"u8).Select(static match => match.ValueText).ToArray());
-        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.Equal(expected, regex.FindAllToStrings("y"u8).ScalarValues);
         Assert.Equal(
             expected,
@@ -938,8 +916,6 @@ public sealed class Utf8PythonRegexTests
         var repeated = new Utf8PythonRegex("x*");
         var grouped = new Utf8PythonRegex("(?:ab)*");
 
-        Assert.True(repeated.DebugUsesOwnedSlice);
-        Assert.True(grouped.DebugUsesOwnedSlice);
         Assert.Equal("-a-b--d-", repeated.ReplaceToString("abxd"u8, "-"));
         Assert.Equal("-a-b--d-", System.Text.Encoding.UTF8.GetString(repeated.Replace("abxd"u8, "-")));
         var repeatedSubn = repeated.SubnToString("abxd"u8, "-");
@@ -957,7 +933,6 @@ public sealed class Utf8PythonRegexTests
         var alternation = new Utf8PythonRegex("x*|y");
         var reluctant = new Utf8PythonRegex("x*?");
 
-        Assert.True(alternation.DebugUsesOwnedSlice);
         Assert.False(reluctant.DebugUsesOptionalExactCaptureFindAllFastPath);
         Assert.Equal("---", alternation.ReplaceToString("y"u8, "-"));
         Assert.Equal("-----", reluctant.ReplaceToString("xx"u8, "-"));
@@ -972,7 +947,6 @@ public sealed class Utf8PythonRegexTests
         var all = regex.FindAllToStrings(input);
         var afterFirst = regex.FindAllToStrings(input, startOffsetInBytes: "skip item-12 "u8.Length);
 
-        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.Equal(["12", "345", "6"], all.ScalarValues);
         Assert.Equal(["345", "6"], afterFirst.ScalarValues);
     }
@@ -1089,7 +1063,6 @@ public sealed class Utf8PythonRegexTests
 
         var result = regex.FindAllToStrings(System.Text.Encoding.UTF8.GetBytes(input));
 
-        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.Equal([first, second], result.ScalarValues);
     }
 
@@ -1102,7 +1075,6 @@ public sealed class Utf8PythonRegexTests
         var all = regex.FindAllToStrings(input);
         var afterFirst = regex.FindAllToStrings(input, startOffsetInBytes: "skip abc-12 "u8.Length);
 
-        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.Equal([["abc", "12"], ["DEF", "345"], ["ghi", "6"]], all.TupleValues);
         Assert.Equal([["DEF", "345"], ["ghi", "6"]], afterFirst.TupleValues);
     }
@@ -1121,7 +1093,6 @@ public sealed class Utf8PythonRegexTests
 
         var result = regex.FindAllToStrings(System.Text.Encoding.UTF8.GetBytes(input));
 
-        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.Equal([[first, second]], result.TupleValues);
     }
 
@@ -1163,7 +1134,6 @@ public sealed class Utf8PythonRegexTests
         var utf8 = regex.FindAllToUtf8("foobar foo"u8);
         var detailed = regex.FindIterDetailed("foobar foo"u8);
 
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugFindAllBackend);
         Assert.Equal(["foo", "foo"], matches.Select(static match => match.ValueText).ToArray());
         Assert.Equal(["foo", "foo"], strings.ScalarValues);
         Assert.Equal(
@@ -1187,7 +1157,6 @@ public sealed class Utf8PythonRegexTests
         var utf8 = regex.FindAllToUtf8(input, startOffsetInBytes);
         var detailed = regex.FindIterDetailed(input, startOffsetInBytes);
 
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugFindAllBackend);
         Assert.Empty(matches);
         Assert.Empty(strings.ScalarValues);
         Assert.Empty(utf8.ScalarValues);
@@ -1262,7 +1231,6 @@ public sealed class Utf8PythonRegexTests
 
         var replaced = regex.ReplaceToString("foo x foo"u8, "<\\g<word>>");
 
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugReplaceBackend);
         Assert.Equal("<foo> x <foo>", replaced);
     }
 
@@ -1278,7 +1246,6 @@ public sealed class Utf8PythonRegexTests
         var subnText = regex.SubnToString(input, "$🐈");
         var subnUtf8 = regex.Subn(input, "$🐈");
 
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugReplaceBackend);
         Assert.Equal(expected, replacedText);
         Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(replacedUtf8));
         Assert.Equal((expected, 2), (subnText.ResultText, subnText.ReplacementCount));
@@ -1314,7 +1281,6 @@ public sealed class Utf8PythonRegexTests
 
         var replaced = regex.SubnToString("xx foo-foo yy foo-foo"u8, "<\\g<word>>", count: 0, startOffsetInBytes: 3);
 
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugReplaceBackend);
         Assert.Equal("xx <foo> yy <foo>", replaced.ResultText);
         Assert.Equal(2, replaced.ReplacementCount);
     }
@@ -1492,7 +1458,6 @@ public sealed class Utf8PythonRegexTests
 
         var replaced = regex.ReplaceToString(":a:b::c"u8, "-");
 
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugReplaceBackend);
         Assert.Equal("-a---c", replaced);
     }
 
@@ -1775,8 +1740,6 @@ public sealed class Utf8PythonRegexTests
 
         var parts = regex.SplitToStrings(":a:b::c"u8);
 
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugSplitBackend);
-        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.Equal<string?[]>(["", ":", "a", ":", "b", "::", "c"], parts);
     }
 
@@ -1784,31 +1747,20 @@ public sealed class Utf8PythonRegexTests
     public void ScalarSplitPreservesMandatoryOptionalAndEmptyCaptures()
     {
         var mandatory = new Utf8PythonRegex(@"(:+)");
-        Assert.True(mandatory.DebugUsesOwnedSlice);
         Assert.Equal<string?[]>(["", ":", "a", ":", "b::c"], mandatory.SplitToStrings(":a:b::c"u8, maxSplit: 2));
         Assert.Equal<string?[]>(["", ":", "a", ":", "b"], mandatory.SplitToStrings("π :a:b"u8, maxSplit: 0, startOffsetInBytes: "π "u8.Length));
 
         var nestedMandatory = new Utf8PythonRegex(@"((?:a|b)+)-([0-9]+)");
-        Assert.True(nestedMandatory.DebugUsesOwnedSlice);
         Assert.Equal<string?[]>(["x", "ab", "12", "y"], nestedMandatory.SplitToStrings("xab-12y"u8));
 
         var optional = new Utf8PythonRegex(@"(a)?b");
-        Assert.True(optional.DebugUsesOwnedSlice);
         Assert.Equal<string?[]>(["", null, " ", "a", ""], optional.SplitToStrings("b ab"u8));
 
         var alternated = new Utf8PythonRegex(@"(b)|(:+)");
-        Assert.True(alternated.DebugUsesOwnedSlice);
         Assert.Equal<string?[]>(["", null, ":", "a", "b", null, ""], alternated.SplitToStrings(":ab"u8));
 
-        Assert.True(new Utf8PythonRegex(@"(?P<separator>:+)").DebugUsesOwnedSlice);
-        Assert.True(new Utf8PythonRegex(@"(:*)").DebugUsesOwnedSlice);
-        Assert.True(new Utf8PythonRegex("").DebugUsesOwnedSlice);
-        Assert.True(new Utf8PythonRegex(@"(?=:)").DebugUsesOwnedSlice);
-        Assert.True(new Utf8PythonRegex(@"\b|:+").DebugUsesOwnedSlice);
-        Assert.True(new Utf8PythonRegex("x*|y").DebugUsesOwnedSlice);
 
         var asciiBoundary = new Utf8PythonRegex(@"\b", PythonReCompileOptions.Ascii);
-        Assert.True(asciiBoundary.DebugUsesOwnedSlice);
         Assert.Equal<string?[]>(["", "alpha", " ", "beta", ""], asciiBoundary.SplitToStrings("alpha beta"u8));
         Assert.Equal<string?[]>(["", "alpha beta"], asciiBoundary.SplitToStrings("alpha beta"u8, maxSplit: 1));
         Assert.Equal<string?[]>(["π", "alpha", " 𝒜", "beta", ""], asciiBoundary.SplitToStrings("πalpha 𝒜beta"u8));
@@ -1824,7 +1776,6 @@ public sealed class Utf8PythonRegexTests
 
         var parts = regex.SplitToStrings("xxfoobaryybar"u8);
 
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugSplitBackend);
         Assert.Equal<string?[]>(["xx", "", "yy", ""], parts);
     }
 

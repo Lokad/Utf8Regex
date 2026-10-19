@@ -27,7 +27,6 @@ public sealed class PythonScalarAtomRegressionTests
         // class members, while a complemented member still consumes one scalar.
         var regex = new Utf8PythonRegex(pattern);
         AssertSearch(regex, input, success, start, end);
-        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Fact]
@@ -39,9 +38,7 @@ public sealed class PythonScalarAtomRegressionTests
         Assert.True(match.Success);
         Assert.Equal("\U0001f600]", match.GetGroup(0).GetValueString());
         Assert.Equal("\U0001f600]", match.GetGroup(1).GetValueString());
-        Assert.True(regex.DebugUsesOwnedSlice, "Detailed search stays owned.");
         Assert.Equal(new[] { "\U0001f600]", "x]" }, regex.FindAllToStrings(input).ScalarValues);
-        Assert.True(regex.DebugUsesOwnedSlice, "Captured scalar results stay owned.");
         Assert.Equal("<_><_>", regex.ReplaceToString(input, "<_>"));
     }
 

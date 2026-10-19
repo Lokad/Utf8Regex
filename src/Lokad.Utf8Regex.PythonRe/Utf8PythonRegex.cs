@@ -290,14 +290,6 @@ public sealed partial class Utf8PythonRegex
 
     internal bool DebugUsesUtf8RegexBackend => _utf8Regex is not null;
 
-    internal PythonReDirectBackendKind DebugSearchBackend => PythonReDirectBackendKind.Utf8Regex;
-
-    internal PythonReDirectBackendKind DebugMatchBackend => PythonReDirectBackendKind.Utf8Regex;
-
-    internal PythonReDirectBackendKind DebugFullMatchBackend => PythonReDirectBackendKind.Utf8Regex;
-
-    internal PythonReDirectBackendKind DebugCountBackend => PythonReDirectBackendKind.Utf8Regex;
-
     internal int DebugReplacementPlanCacheEntryCount => _replacementPlanCache.Count;
     internal ulong DebugReplacementPlanCachePayloadBytes => _replacementPlanCache.PayloadBytes;
 
@@ -314,8 +306,6 @@ public sealed partial class Utf8PythonRegex
     private RegexMatchTimeoutException CreateMatchTimeoutException(ReadOnlySpan<byte> input, string pattern)
         => Utf8Regex.CreateMatchTimeoutException(input, pattern, MatchTimeout, InvocationLimits);
 
-    internal bool DebugUsesOwnedSlice => _scalarProgram is not null;
-
     internal bool DebugUsesZeroOffsetUtf8ValueFastPath => _canUseZeroOffsetUtf8ValueFastPath;
 
     internal bool DebugUsesZeroOffsetUtf8SearchValueFastPath =>
@@ -323,22 +313,7 @@ public sealed partial class Utf8PythonRegex
 
     internal bool DebugIsScalarFullProgramValueCreated => _lazyScalarFullProgram.IsValueCreated;
 
-    internal bool DebugHasScalarFullProgram => _lazyScalarFullProgram.Value is not null;
-
-
     internal string DebugNativePattern => _translation.NativePattern;
-
-    internal string DebugDescribeExecutionPlan()
-    {
-        return $"Search={DebugSearchBackend}, Match={DebugMatchBackend}, " +
-               $"FullMatch={DebugFullMatchBackend}, Count={DebugCountBackend}";
-    }
-
-    internal PythonReDirectBackendKind DebugFindAllBackend => PythonReDirectBackendKind.Utf8Regex;
-
-    internal PythonReDirectBackendKind DebugReplaceBackend => PythonReDirectBackendKind.Utf8Regex;
-
-    internal PythonReDirectBackendKind DebugSplitBackend => PythonReDirectBackendKind.Utf8Regex;
 
     internal bool DebugUsesOptionalExactCaptureFindAllFastPath => _optionalExactCaptureFindAllValue is not null;
 
@@ -442,9 +417,4 @@ public sealed partial class Utf8PythonRegex
         return entries;
     }
 
-}
-
-internal enum PythonReDirectBackendKind
-{
-    Utf8Regex,
 }

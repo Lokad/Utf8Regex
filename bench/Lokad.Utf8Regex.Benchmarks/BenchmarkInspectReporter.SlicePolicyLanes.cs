@@ -194,14 +194,11 @@ internal static partial class BenchmarkInspectReporter
             sliceCase.Pattern, PythonReCompileOptions.None);
         var pythonFinite = new Utf8PythonRegex(
             sliceCase.Pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
-        Console.WriteLine(
-            "  PythonRe routes: ownedSlice=" + python.DebugUsesOwnedSlice +
-            " search=" + python.DebugSearchBackend +
-            " count=" + python.DebugCountBackend);
+        Console.WriteLine("  PythonRe preparation: coreKind=" +
+            (python.DebugUtf8ExecutionKind ?? "None"));
         Console.WriteLine("  Core/PythonRe finite: work=1000000 depth=1024 working=1048576 result=1048576");
-        Console.WriteLine("  Finite routes: core=" + coreFinite.Inspection.ExecutionKind +
-            " pythonSearch=" + pythonFinite.DebugSearchBackend +
-            " pythonCount=" + pythonFinite.DebugCountBackend);
+        Console.WriteLine("  Finite preparation: core=" + coreFinite.Inspection.ExecutionKind +
+            " pythonCore=" + (pythonFinite.DebugUtf8ExecutionKind ?? "None"));
 
         var pcre2 = new Utf8Pcre2Regex(sliceCase.Pattern, Pcre2CompileOptions.None);
         var pcre2Finite = new Utf8Pcre2Regex(

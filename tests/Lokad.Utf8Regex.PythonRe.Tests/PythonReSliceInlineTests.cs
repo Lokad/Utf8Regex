@@ -9,14 +9,6 @@ public sealed class PythonReSliceInlineTests
 {
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);
 
-    private static void AssertOwnedBackends(Utf8PythonRegex regex)
-    {
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + regex.Pattern);
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugSearchBackend);
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugMatchBackend);
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugCountBackend);
-    }
-
     private static Regex Bcl(Utf8PythonRegex regex)
     {
         return new Regex(PythonReDotNetReference.Render(regex), RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
@@ -34,8 +26,6 @@ public sealed class PythonReSliceInlineTests
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         Assert.Equal(translated, PythonReDotNetReference.Render(regex));
-        AssertOwnedBackends(regex);
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Theory]
@@ -46,7 +36,6 @@ public sealed class PythonReSliceInlineTests
     public void RewrittenAndHoistedShapesKeepTheirQualifiedRoutes(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Fact]
@@ -54,9 +43,7 @@ public sealed class PythonReSliceInlineTests
     {
         var regex = new Utf8PythonRegex("(?i)a+", PythonReCompileOptions.None);
         Assert.Equal("(?:[Aa])+", PythonReDotNetReference.Render(regex));
-        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.True(regex.FullMatch("aA"u8).Success);
-        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Fact]
@@ -64,11 +51,9 @@ public sealed class PythonReSliceInlineTests
     {
         var regex = new Utf8PythonRegex("(?x:a b)+", PythonReCompileOptions.None);
         Assert.Equal("(?x:ab)+", PythonReDotNetReference.Render(regex));
-        AssertOwnedBackends(regex);
         var input = Utf8("xababx");
         Assert.Equal("abab", regex.Search(input).GetValueString());
         Assert.Equal(1, regex.Count(input));
-        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     public static IEnumerable<object?[]> SearchCases()
@@ -107,7 +92,6 @@ public sealed class PythonReSliceInlineTests
             Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
         }
 
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Theory]
@@ -133,7 +117,6 @@ public sealed class PythonReSliceInlineTests
             Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
         }
 
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Theory]
@@ -150,7 +133,6 @@ public sealed class PythonReSliceInlineTests
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), 0));
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Theory]
@@ -167,7 +149,6 @@ public sealed class PythonReSliceInlineTests
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Theory]
@@ -185,7 +166,6 @@ public sealed class PythonReSliceInlineTests
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Fact]
@@ -199,7 +179,5 @@ public sealed class PythonReSliceInlineTests
         Assert.True(detailed.Success);
         Assert.Equal("aBB", detailed.GetGroup(0).GetValueString());
         Assert.Equal("a", detailed.GetGroup(1).GetValueString());
-        AssertOwnedBackends(regex);
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 }

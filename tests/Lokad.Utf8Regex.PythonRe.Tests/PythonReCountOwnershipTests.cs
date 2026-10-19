@@ -36,7 +36,6 @@ public sealed class PythonReCountOwnershipTests
         var input = Encoding.UTF8.GetBytes(inputText);
         Assert.Equal(expected, regex.Count(input, startOffsetInBytes));
         Assert.Equal(regex.FindAll(input, startOffsetInBytes).Length, regex.Count(input, startOffsetInBytes));
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Fact]
@@ -46,9 +45,6 @@ public sealed class PythonReCountOwnershipTests
         // adjacency and agree with the pinned count.
         var regex = new Utf8PythonRegex("\\b|\\w+", PythonReCompileOptions.None);
         var input = Encoding.UTF8.GetBytes("\u00E9 skip y");
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + regex.Pattern);
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugCountBackend);
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugFindAllBackend);
         Assert.Equal(3, regex.Count(input, 8));
         Assert.Equal(3, regex.FindAll(input, 8).Length);
     }
@@ -60,6 +56,5 @@ public sealed class PythonReCountOwnershipTests
         var regex = new Utf8PythonRegex(pattern, options);
         var input = Encoding.UTF8.GetBytes(inputText);
         Assert.Equal(expected, regex.Count(input, startOffsetInBytes));
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 }

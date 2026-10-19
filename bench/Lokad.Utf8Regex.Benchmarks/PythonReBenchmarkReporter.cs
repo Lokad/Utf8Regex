@@ -1267,17 +1267,16 @@ internal static partial class PythonReBenchmarkReporter
         var managedResult = managedFullRegex.IsMatch(subject.AsSpan(prefix.Length));
         var managedMiss = managedFullRegex.IsMatch(missSubject.AsSpan(prefix.Length));
         if (!pythonMatch.Success || pythonMatch.EndOffsetInBytes != input.Length ||
-            pythonDetailedMiss.Success || !managedResult || managedMiss ||
-            !pythonRegex.DebugHasScalarFullProgram || !pythonRegex.DebugUsesOwnedSlice)
+            pythonDetailedMiss.Success || !managedResult || managedMiss)
         {
-            throw new InvalidOperationException("PythonRe start-offset FullMatch diagnostic failed its parity or backend precondition.");
+            throw new InvalidOperationException("PythonRe start-offset FullMatch diagnostic failed its result preflight.");
         }
 
         Console.WriteLine($"Pattern            : {pattern}");
         Console.WriteLine($"InputBytes         : {input.Length}");
         Console.WriteLine($"StartOffsetInBytes : {startOffsetInBytes}");
         Console.WriteLine($"StartOffsetInUtf16 : {prefix.Length}");
-        Console.WriteLine($"ExecutionPlan      : {pythonRegex.DebugDescribeExecutionPlan()}");
+        Console.WriteLine("Implementation     : owned UTF8 engine");
         Console.WriteLine($"Iterations         : {iterations} (capped at 2000)");
         Console.WriteLine($"Samples            : {samples} (capped at 15)");
         PrintOperation("PythonReFullMatch", MeasureOperation(
@@ -1348,13 +1347,11 @@ internal static partial class PythonReBenchmarkReporter
             .ScalarValues.Select(Encoding.UTF8.GetString).ToArray();
         var progressiveCount = progressivePythonRegex.Count(progressiveInput, progressiveStartOffsetInBytes);
 
-        if (pythonRegex.DebugFindAllBackend != PythonReDirectBackendKind.Utf8Regex ||
-            pythonRegex.FindAll(input, startOffsetInBytes).Length != 0 ||
+        if (pythonRegex.FindAll(input, startOffsetInBytes).Length != 0 ||
             pythonRegex.FindAllToStrings(input, startOffsetInBytes).Count != 0 ||
             pythonRegex.FindAllToUtf8(input, startOffsetInBytes).Count != 0 ||
             pythonRegex.FindIterDetailed(input, startOffsetInBytes).Length != 0 ||
             pythonRegex.Count(input, startOffsetInBytes) != 0 ||
-            capturedPythonRegex.DebugFindAllBackend != PythonReDirectBackendKind.Utf8Regex ||
             capturedPythonRegex.FindAllToStrings(input, startOffsetInBytes).Count != 0 ||
             capturedPythonRegex.FindAllToUtf8(input, startOffsetInBytes).Count != 0 ||
             managedRegex.Match(subject, prefix.Length).Success ||
@@ -1371,7 +1368,7 @@ internal static partial class PythonReBenchmarkReporter
             progressiveCount != 3)
         {
             throw new InvalidOperationException(
-                "PythonRe empty global-shape diagnostic failed its parity or backend precondition. " +
+                "PythonRe empty global-shape diagnostic failed its result preflight. " +
                 $"Progressive structural=[{string.Join('|', progressiveStructural)}], " +
                 $"strings=[{string.Join('|', progressiveStrings)}], " +
                 $"utf8=[{string.Join('|', progressiveUtf8)}], count={progressiveCount}.");
@@ -1381,7 +1378,7 @@ internal static partial class PythonReBenchmarkReporter
         Console.WriteLine($"InputBytes         : {input.Length}");
         Console.WriteLine($"StartOffsetInBytes : {startOffsetInBytes}");
         Console.WriteLine($"StartOffsetInUtf16 : {prefix.Length}");
-        Console.WriteLine($"FindAllBackend     : {pythonRegex.DebugFindAllBackend}");
+        Console.WriteLine("Implementation     : owned UTF8 engine");
         Console.WriteLine($"Iterations         : {iterations} (capped at 2000)");
         Console.WriteLine($"Samples            : {samples} (capped at 15)");
         PrintOperation("FindAllEmpty", MeasureOperation(
@@ -2435,19 +2432,15 @@ internal sealed class PythonReBenchmarkContext
     internal string DescribeManagedRoute() => _case.Operation switch
     {
         PythonReBenchmarkOperation.IsMatch => DescribeBackend(
-            _pythonRegex.DebugSearchBackend,
             _pythonRegex.DebugUtf8ExecutionKind,
             "boolean result"),
         PythonReBenchmarkOperation.Search => DescribeBackend(
-            _pythonRegex.DebugSearchBackend,
             _pythonRegex.DebugUtf8ExecutionKind,
             "value ranges"),
         PythonReBenchmarkOperation.SearchFromOffset => DescribeBackend(
-            _pythonRegex.DebugSearchBackend,
             _pythonRegex.DebugUtf8ExecutionKind,
             "value ranges from a nonzero byte offset"),
         PythonReBenchmarkOperation.Match => DescribeBackend(
-            _pythonRegex.DebugMatchBackend,
             _pythonRegex.DebugUtf8ExecutionKind,
             _pythonRegex.DebugUsesAsciiLiteralPrefixDigitMatchFastPath
                 ? "strict validation; direct anchored ASCII literal-prefix/digit-repeat value ranges"
@@ -2455,25 +2448,18 @@ internal sealed class PythonReBenchmarkContext
         PythonReBenchmarkOperation.FullMatch when _pythonRegex.DebugUsesAsciiDotAllFullMatchFastPath =>
             "strict UTF-8 validation; direct ASCII literal-prefix/dot-all/literal-suffix full match; value ranges",
         PythonReBenchmarkOperation.FullMatch => DescribeBackend(
-            _pythonRegex.DebugFullMatchBackend,
             "OwnedScalar",
             "full-match value ranges"),
         PythonReBenchmarkOperation.SearchDetailed => DescribeBackend(
-            _pythonRegex.DebugSearchBackend,
             _pythonRegex.DebugUtf8ExecutionKind,
             "detailed capture projection"),
-        PythonReBenchmarkOperation.Count when _pythonRegex.DebugUsesOwnedSlice && !_pythonRegex.DebugUsesZeroOffsetUtf8SearchValueFastPath =>
+        PythonReBenchmarkOperation.Count when !_pythonRegex.DebugUsesZeroOffsetUtf8SearchValueFastPath =>
             "owned scalar VM; byte-driven Python count progression",
         PythonReBenchmarkOperation.Count => DescribeBackend(
-            _pythonRegex.DebugCountBackend,
             _pythonRegex.DebugUtf8ExecutionKind,
             "Python-style count progression"),
-        PythonReBenchmarkOperation.CountFromOffset when _pythonRegex.DebugUsesOwnedSlice =>
+        PythonReBenchmarkOperation.CountFromOffset =>
             "owned scalar VM; byte-driven Python count from a nonzero offset",
-        PythonReBenchmarkOperation.CountFromOffset => DescribeBackend(
-            _pythonRegex.DebugCountBackend,
-            _pythonRegex.DebugUtf8ExecutionKind,
-            "Python-style count progression from a nonzero byte offset"),
         PythonReBenchmarkOperation.FindAllStrings when _pythonRegex.DebugUsesOptionalExactCaptureFindAllFastPath =>
             "owned scalar VM; direct optional exact-capture string shaping",
         PythonReBenchmarkOperation.FindAllStrings when _pythonRegex.DebugUsesRepeatedExactStringFindAllFastPath =>
@@ -2483,7 +2469,6 @@ internal sealed class PythonReBenchmarkContext
         PythonReBenchmarkOperation.FindAllStrings when _captureCount > 0 =>
             "owned scalar VM; findall string shaping",
         PythonReBenchmarkOperation.FindAllStrings => DescribeBackend(
-            _pythonRegex.DebugFindAllBackend,
             _pythonRegex.DebugUtf8ExecutionKind,
             "findall string shaping"),
         PythonReBenchmarkOperation.FindAllStringsFromOffset =>
@@ -2491,26 +2476,22 @@ internal sealed class PythonReBenchmarkContext
         PythonReBenchmarkOperation.FindAllUtf8 when _captureCount > 0 =>
             "owned scalar VM; findall UTF-8 shaping",
         PythonReBenchmarkOperation.FindAllUtf8 => DescribeBackend(
-            _pythonRegex.DebugFindAllBackend,
             _pythonRegex.DebugUtf8ExecutionKind,
             "findall UTF-8 shaping"),
         PythonReBenchmarkOperation.FindIterDetailed =>
             "owned scalar VM; detailed iteration shaping",
         PythonReBenchmarkOperation.FindAllStructural => DescribeBackend(
-            _pythonRegex.DebugFindAllBackend,
             _pythonRegex.DebugUtf8ExecutionKind,
             "group-zero structural match shaping"),
         PythonReBenchmarkOperation.ReplaceString or
             PythonReBenchmarkOperation.ReplaceStringLimited or
             PythonReBenchmarkOperation.SubnString =>
             DescribeBackend(
-                _pythonRegex.DebugReplaceBackend,
                 _pythonRegex.DebugUtf8ExecutionKind,
                 "replacement; string shaping"),
         PythonReBenchmarkOperation.ReplaceUtf8 or
             PythonReBenchmarkOperation.SubnUtf8 =>
             DescribeBackend(
-                _pythonRegex.DebugReplaceBackend,
                 _pythonRegex.DebugUtf8ExecutionKind,
                 "replacement; UTF-8 shaping"),
         PythonReBenchmarkOperation.SubnEvaluatorString =>
@@ -2528,10 +2509,10 @@ internal sealed class PythonReBenchmarkContext
         _ => throw new ArgumentOutOfRangeException(),
     };
 
+    // Utf8Regex is the historical component label, not an operation route.
     private static string DescribeBackend(
-        PythonReDirectBackendKind backend,
         string? executionKind,
-        string projection) => $"{backend}/{executionKind ?? "OwnedScalar"}; {projection}";
+        string projection) => $"Utf8Regex/{executionKind ?? "OwnedScalar"}; {projection}";
 
     internal PythonReBenchmarkBatch MeasurePythonReBatch(int iterations)
     {

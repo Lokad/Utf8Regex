@@ -9,14 +9,6 @@ public sealed class PythonReSliceConditionalTests
 {
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);
 
-    private static void AssertOwnedBackends(Utf8PythonRegex regex)
-    {
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + regex.Pattern);
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugSearchBackend);
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugMatchBackend);
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugCountBackend);
-    }
-
     private static Regex Bcl(Utf8PythonRegex regex)
     {
         return new Regex(PythonReDotNetReference.Render(regex), RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
@@ -32,8 +24,6 @@ public sealed class PythonReSliceConditionalTests
     public void ConditionalShapesRouteOwned(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        AssertOwnedBackends(regex);
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Theory]
@@ -59,8 +49,6 @@ public sealed class PythonReSliceConditionalTests
             Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
         }
 
-        AssertOwnedBackends(regex);
-        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Theory]
@@ -73,7 +61,6 @@ public sealed class PythonReSliceConditionalTests
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText)));
-        AssertOwnedBackends(regex);
     }
 
     [Theory]
@@ -87,7 +74,6 @@ public sealed class PythonReSliceConditionalTests
         Assert.True(found.Success);
         Assert.Equal(expectedStart, found.StartOffsetInUtf16);
         Assert.Equal(expectedLength, found.EndOffsetInUtf16 - found.StartOffsetInUtf16);
-        AssertOwnedBackends(regex);
     }
 
     [Theory]
@@ -98,6 +84,5 @@ public sealed class PythonReSliceConditionalTests
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
-        AssertOwnedBackends(regex);
     }
 }

@@ -324,7 +324,6 @@ public sealed class PythonReCancellationTests
             canceled.Token));
         Assert.Equal(canceled.Token, exception.CancellationToken);
         Assert.Equal(1, calls);
-        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Fact]
@@ -343,7 +342,6 @@ public sealed class PythonReCancellationTests
             canceled.Token));
         Assert.Equal(canceled.Token, exception.CancellationToken);
         Assert.Equal(1, calls);
-        Assert.True(regex.DebugUsesOwnedSlice);
     }
 
     [Fact]

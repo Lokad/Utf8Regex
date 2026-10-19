@@ -87,6 +87,5 @@ public sealed class PythonReTextAdmissionTests
         var regex = new Utf8PythonRegex(pattern);
         var bytes = System.Text.Encoding.UTF8.GetBytes(subject);
         Assert.True(regex.IsMatch(bytes));
-        Assert.True(regex.DebugUsesOwnedSlice);
     }
 }

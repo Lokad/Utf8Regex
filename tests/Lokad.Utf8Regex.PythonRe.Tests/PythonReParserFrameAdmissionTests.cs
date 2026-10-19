@@ -105,7 +105,6 @@ public sealed class PythonReParserFrameAdmissionTests
         Assert.True(match.Success);
         Assert.Equal("😀", match.GetValueString());
         Assert.Equal(4, match.Value.GetValueBytes().Length);
-        Assert.True(regex.DebugUsesOwnedSlice);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.True(owner.Budget.ReservedBytes > 0);
     }
