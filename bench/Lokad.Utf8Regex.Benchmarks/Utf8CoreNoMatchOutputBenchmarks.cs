@@ -15,6 +15,7 @@ public class Utf8CoreNoMatchOutputBenchmarks
     private CoreRegex _finite = null!;
     private CoreRegex _native = null!;
     private CoreRegex _matched = null!;
+    private CoreRegex _nativeGrouped = null!;
     private Regex _regex = null!;
     private Regex _matchedRegex = null!;
     private CancellationTokenSource _cancellation = null!;
@@ -35,6 +36,7 @@ public class Utf8CoreNoMatchOutputBenchmarks
         _finite = new CoreRegex("(cat)", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan, policy);
         _native = new CoreRegex("cat", RegexOptions.CultureInvariant);
         _matched = new CoreRegex("(dog)", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan, policy);
+        _nativeGrouped = new CoreRegex("^((cat))$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
         _regex = new Regex("(cat)", RegexOptions.CultureInvariant);
         _matchedRegex = new Regex("(dog)", RegexOptions.CultureInvariant);
         _cancellation = new CancellationTokenSource();
@@ -42,7 +44,10 @@ public class Utf8CoreNoMatchOutputBenchmarks
             !FiniteBytes().AsSpan().SequenceEqual(_input) || FiniteDestination() != _input.Length ||
             !_destination.AsSpan().SequenceEqual(_input) || NativeText() != _text ||
             PredecodedRegex() != _text || DecodeThenRegex() != _text ||
-            MatchedFiniteText() != MatchedPredecodedRegex())
+            MatchedFiniteText() != MatchedPredecodedRegex() ||
+            NativeGroupedText() != _text || !NativeGroupedBytes().AsSpan().SequenceEqual(_input) ||
+            NativeGroupedDestination() != _input.Length || !_destination.AsSpan().SequenceEqual(_input) ||
+            MatchedNativeGroupedText() != "cat-cat")
             throw new InvalidOperationException("Core replacement outputs disagree.");
     }
 
@@ -58,6 +63,15 @@ public class Utf8CoreNoMatchOutputBenchmarks
     [Benchmark]
     public int FiniteDestination() => _finite.TryReplace(_input, "tiger", _destination, out var written)
         == OperationStatus.Done ? written : throw new InvalidOperationException("Destination too small.");
+    [Benchmark]
+    public string NativeGroupedText() => _nativeGrouped.ReplaceToString(_input, "$1-$2");
+    [Benchmark]
+    public byte[] NativeGroupedBytes() => _nativeGrouped.Replace(_input, "$1-$2");
+    [Benchmark]
+    public int NativeGroupedDestination() => _nativeGrouped.TryReplace(_input, "$1-$2", _destination, out var written)
+        == OperationStatus.Done ? written : throw new InvalidOperationException("Destination too small.");
+    [Benchmark]
+    public string MatchedNativeGroupedText() => _nativeGrouped.ReplaceToString("cat"u8, "$1-$2");
     [Benchmark]
     public string NativeText() => _native.ReplaceToString(_input, "tiger");
     [Benchmark]

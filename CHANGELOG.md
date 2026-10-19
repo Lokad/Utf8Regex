@@ -2,6 +2,12 @@
 
 ## Changes after scalar.104
 
+Native grouped template replacement discovers a miss before allocating decoded
+subject/builder staging. The existing matched worker and cursor remain. The6656B
+public witness saves26720B per miss; latency qualification remains unachieved
+after the bounded pair/confirmation, with raw limits retained in the receipt.
+
+
 Core NonBacktracking stops a nullable repeat after an empty completion once its
 minimum is satisfied, including bounded repeats. `(?:a?|b){0,3}a` over `baa` now
 returns one `baa` match instead of `ba` followed by `a`; last captures follow the

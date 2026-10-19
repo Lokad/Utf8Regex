@@ -397,13 +397,23 @@ public sealed partial class Utf8Regex
             return false;
         }
 
+        var matches = EnumerateMatches(input);
+        if (!matches.MoveNext())
+        {
+            // No template expansion is needed. Materialize only the owned
+            // string result, without decoded-subject or builder staging.
+            replaced = Encoding.UTF8.GetString(input);
+            return true;
+        }
+
         var decoded = Encoding.UTF8.GetString(input);
         var analysis = Utf8InputAnalyzer.Analyze(input);
         var builder = new StringBuilder(decoded.Length);
         var sourcePosition = 0;
         var first = true;
-        foreach (var valueMatch in EnumerateMatches(input))
+        do
         {
+            var valueMatch = matches.Current;
             Utf8MatchContext context;
             if (_groupedLiteralSpanTable is not null &&
                 TryShapeGroupedLiteralDetailedMatch(input, analysis.BoundaryMap, valueMatch, out var grouped))
@@ -438,7 +448,7 @@ public sealed partial class Utf8Regex
             builder.Append(decoded, sourcePosition, valueMatch.IndexInUtf16 - sourcePosition);
             builder.Append(Utf8ReplacementPlanInterpreter.ApplyOwned(replacement.Plan, decoded, in context));
             sourcePosition = valueMatch.IndexInUtf16 + valueMatch.LengthInUtf16;
-        }
+        } while (matches.MoveNext());
 
         builder.Append(decoded, sourcePosition, decoded.Length - sourcePosition);
         replaced = builder.ToString();
