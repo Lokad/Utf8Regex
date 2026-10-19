@@ -1,5 +1,19 @@
 # Selected current-source performance
 
+The latest immutable Core/PythonRe **scalar.108** observation uses producer
+`92a5a90751bca46eb00394c37589a5ae5b508586`, actual package DLLs and .NET10.0.12.
+For10K `(a)(b)` matches, Core Count was103.950us unlimited/166.200us finite,
+112B finite. Python detailed was6.295ms/~3.03MB finite and6.463ms with live token;
+UTF8 tuples3.849ms/~1.38MB finite and3.919ms with token. Cursor-first1.833us/2936B
+and cursor-ten6.648us/4736B finite. One bounded48-row/240-sample observation is
+closed.1K/5K managed spreads7.06x/1.72x and noisy .NET tuple controls limit claims;
+selected10K managed spreads remain within1.10x. No universal overhead, scaling,
+parity or source-regression claim. [Exact scope/raw evidence](artifacts/core-python-scalar108-20261019/vm-cost/RESULT.md).
+Source constructor pairs stay separate; no benchmark snapshot/Status campaign
+is reopened. Hosted source CI is still queued and is not qualified by these costs.
+
+## Earlier scalar.107 observation
+
 The latest immutable Core/PythonRe scalar.107 observation uses producer
 `f91be679fb72da0fd05958129b017b528d7af33d`, .NET10.0.12 and actual package DLLs.
 For10K `(a)(b)` matches, Core Count was100.295us unlimited /163.555us finite,

@@ -1,13 +1,16 @@
 # Changelog
 
-## Frozen private Core/PythonRe scalar.108
+## Private Core/PythonRe scalar.108 consumer qualification
 
-This cleanup batch is frozen for exact-byte consumer/platform qualification.
-Freeze-time staging is not acceptance or publication. Scalar.107/older and the
-independent exact Core/PCRE94 pair stay immutable; no PCRE108 is designated.
-[Delivery evidence](artifacts/core-python-scalar108-20261019/HANDOFF.md) records
-qualification as it completes. The source changes below preserve scalar semantics,
-useful controls, native algorithms and retained results.
+Producer92a5a907 freezes the cleanup batch below. Same actual package DLLs pass
+Windows/Linux suites, unchanged original public consumer assertions, oracles and
+exact package/loaded/provenance/member/symbol identities. One bounded current
+exact-package finite/token/materialization observation is closed, retaining noise.
+Hosted source CI39281487750 for cumulative C#d213652c remains queued, an explicit
+outstanding source gate. Source advances109-dev without C# changes;108/107/older
+and exact Core/PCRE94 stay immutable. No publication, pin change, adoption or PCRE108.
+[Handoff](artifacts/core-python-scalar108-20261019/HANDOFF.md) and
+[current costs](artifacts/core-python-scalar108-20261019/vm-cost/RESULT.md) retain scope.
 
 ## Changes included after scalar.107
 

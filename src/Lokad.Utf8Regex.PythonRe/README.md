@@ -1,14 +1,17 @@
 # Lokad.Utf8Regex.PythonRe
 
-Private **Core/PythonRe0.4.0-scalar.108** is frozen for the existing consumer
-qualification flow. It batches unused line/native preparation, native-only Python
-rendering, nullable Core-helper elision and obsolete diagnostic/lazy-executor
-removal. Scalar semantics, original controls, captures and lifetimes remain;
-construction requirements may decrease. Owned Python timeouts identify the
-original pattern. [Delivery evidence](../../artifacts/core-python-scalar108-20261019/HANDOFF.md)
-will record acceptance and exact identities; freeze-time staging is not qualification.
-Immutable qualified107/older and independent Core/PCRE94 remain available; no
-PCRE108, publication, pin change or consumer adoption is established.
+Private **Core/PythonRe0.4.0-scalar.108**, clean producer92a5a907, passes
+same-byte Windows/Linux package suites and unchanged original Awk/Lython public
+assertions, capture/semantic oracles and exact identity/provenance/member/symbol
+checks. It removes unused preparation, production UTF16 reference rendering and
+obsolete backend/lazy-test machinery. Owned Python timeouts now identify original
+Pattern; construction requirements may fall. Scalar semantics, controls and
+lifetimes remain. [Handoff](../../artifacts/core-python-scalar108-20261019/HANDOFF.md),
+[consume](../../artifacts/core-python-scalar108-20261019/CONSUMING.md) and
+[exact costs](../../artifacts/core-python-scalar108-20261019/vm-cost/RESULT.md)
+record scope and uncertainty. Hosted source CI39281487750 is still queued; this
+is an outstanding source gate. Source advances109-dev, C# unchanged. Immutable
+107/older and exact Core/PCRE94 stay; no PCRE108, publication, pin change or adoption.
 
 Qualified private **Core/PythonRe 0.4.0-scalar.107**, exact Core107, producer
 `f91be679fb72da0fd05958129b017b528d7af33d`. Same actual DLLs pass Windows/Linux
