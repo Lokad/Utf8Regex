@@ -10,8 +10,8 @@
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <Authors>Lokad</Authors>
     <Company>Lokad</Company>
-    <!-- Next development identity; qualified scalar.105 bytes remain immutable. -->
-    <Version>0.4.0-scalar.106-dev</Version>
+    <!-- Fresh Core/PythonRe candidate; qualified scalar.105 bytes remain immutable. -->
+    <Version>0.4.0-scalar.106</Version>
     <AssemblyVersion>0.4.0</AssemblyVersion>
     <FileVersion>0.4.0</FileVersion>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>

@@ -1,6 +1,6 @@
 # Changelog
 
-## Changes after scalar.105
+## Changes in the scalar.106 candidate
 
 Scalar-only fallback plans no longer build or retain an unused native execution
 tree, doubled instruction array or derived verifier guards. Native/direct-family
