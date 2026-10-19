@@ -2,7 +2,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -26,7 +25,6 @@ public sealed class Utf8ProgramContinuationTests
     public void EnclosingSuffixesRetainOrderedChoicesAndFinalCaptures(int family, bool compiled)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var prepared = Utf8FrontEnd.Compile(Patterns[family], options);
         // Keep the standing stable interpreted oracle for diagnosed .NET 10.0.12
         // compiled finite-lazy capture defects; compiled owned preparation is tested.
         var oracle = new Regex(Patterns[family], RegexOptions.CultureInvariant);
@@ -40,31 +38,7 @@ public sealed class Utf8ProgramContinuationTests
         }
         foreach (var text in texts)
         for (var start = 0; start <= text.Length; start++)
-            AssertAt(prepared.ExecutionProgram, scalar, oracle, text, start);
-    }
-
-    private static void AssertAt(Utf8ExecutionProgram? program, Utf8SliceProgram scalar, Regex oracle, string text, int start)
-    {
-        var expected = oracle.Match(text, start);
-        if (program is not null)
-        {
-            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
-            var success = Utf8ExecutionInterpreter.TryMatchProgram(Encoding.ASCII.GetBytes(text), program, 0, start,
-                ref invocation, out var end, out var breach);
-            Assert.Equal(Utf8ExecutionLimitKind.None, breach);
-            Assert.Equal(expected.Success && expected.Index == start, success);
-            Assert.Equal(success ? expected.Index + expected.Length : 0, end);
-            Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        }
-        Utf8ScalarCaptureWitness.AssertAsciiAt(scalar, oracle, text, start);
-    }
-
-    private static Utf8ExecutionNode Deep(Utf8ExecutionNode node, int depth, int shape)
-    {
-        for (var index = 0; index < depth; index++)
-            node = new Utf8ExecutionNode(shape switch { 0 => Utf8ExecutionNodeKind.Concatenate, 1 => Utf8ExecutionNodeKind.Group, _ => Utf8ExecutionNodeKind.Capture },
-                RegexOptions.CultureInvariant, [node], "", '\0', 0, 1, 1);
-        return node;
+            Utf8ScalarCaptureWitness.AssertAsciiAt(scalar, oracle, text, start);
     }
 
     public static IEnumerable<object[]> DeepCases()
@@ -79,13 +53,10 @@ public sealed class Utf8ProgramContinuationTests
     [MemberData(nameof(DeepCases))]
     public void DeepRuntimeContinuationsMatchWithoutClrRecursion(int depth, int shape, int family, bool compiled)
     {
-        var prepared = Utf8FrontEnd.Compile(Patterns[family], RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
-        var program = prepared.ExecutionTree is { } tree
-            ? Utf8ExecutionProgramLowerer.Lower(new Utf8ExecutionTree(Deep(tree.Root, depth, shape))) : null;
         var oracle = new Regex(Patterns[family], RegexOptions.CultureInvariant);
         var scalar = Utf8ScalarCaptureWitness.Lower(Patterns[family], RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None), depth, shape);
-        AssertAt(program, scalar, oracle, family switch { 0 => "abc", 8 => "b", _ => "aab" }, 0);
-        AssertAt(program, scalar, oracle, "aaad", 0);
+        Utf8ScalarCaptureWitness.AssertAsciiAt(scalar, oracle, family switch { 0 => "abc", 8 => "b", _ => "aab" }, 0);
+        Utf8ScalarCaptureWitness.AssertAsciiAt(scalar, oracle, "aaad", 0);
     }
 
     public static IEnumerable<object[]> ResourceCases()
@@ -97,78 +68,41 @@ public sealed class Utf8ProgramContinuationTests
 
     [Theory]
     [MemberData(nameof(ResourceCases))]
-    public void EveryDeniedByteContinuationReleasesStorageAndRecovers(int depth, int shape, int family)
+    public void EveryDeniedScalarContinuationReleasesStorageAndRecovers(int depth, int shape, int family)
     {
-        // Exercise native alternation and a fixed class interpreter program.
-        // The former lazy scalar-only shape no longer prepares byte instructions.
         var pattern = family == 0 ? Patterns[family] : "ab[0-9]{2}";
-        var prepared = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
-        Assert.NotNull(prepared.ExecutionTree);
-        var program = Utf8ExecutionProgramLowerer.Lower(new Utf8ExecutionTree(Deep(prepared.ExecutionTree.Root, depth, shape)));
-        Assert.NotNull(program);
+        var program = Utf8ScalarCaptureWitness.Lower(pattern, RegexOptions.CultureInvariant, depth, shape);
         var input = Encoding.ASCII.GetBytes(family == 0 ? "abc" : "ab42");
+        var starts = new int[program.GroupCount]; var ends = new int[program.GroupCount];
         var baseline = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
-        Assert.True(Utf8ExecutionInterpreter.TryMatchProgram(input, program, 0, 0, ref baseline, out _, out _));
-        Assert.True(baseline.Budget.PeakDepth > depth);
+        Assert.True(Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, ref baseline).IsMatch);
         Assert.True(baseline.Budget.PeakWorkingBytes > 0);
         Assert.Equal(0UL, baseline.Ledger.ReservedBytes);
         var work = depth == 65 ? Enumerable.Range(1, checked((int)baseline.Budget.Steps - 1)).Select(static value => (ulong)value)
-            : new[] { 1UL, 2UL, 63UL, 64UL, 127UL, 512UL, 4095UL, 4096UL, baseline.Budget.Steps - 1 };
-        var depths = depth == 65 ? Enumerable.Range(1, checked((int)baseline.Budget.PeakDepth - 1)).Select(static value => (uint)value)
-            : new[] { 1U, 2U, 63U, 64U, (uint)depth, baseline.Budget.PeakDepth - 1 };
+            : new[] { 1UL, 2UL, baseline.Budget.Steps - 1 };
+        var depths = Enumerable.Range(1, Math.Max(0, checked((int)baseline.Budget.PeakDepth) - 1)).Select(static value => (uint)value);
         foreach (var limits in work.Select(static limit => new Utf8ExecutionLimits(limit, 0, 0))
             .Concat(depths.Select(static limit => new Utf8ExecutionLimits(0, limit, 0)))
             .Concat(new[] { new Utf8ExecutionLimits(0, 0, 1), new Utf8ExecutionLimits(0, 0, baseline.Budget.PeakWorkingBytes - 1) }))
         {
             var denied = new Utf8SliceInvocation(limits, Regex.InfiniteMatchTimeout, CancellationToken.None);
-            Assert.False(Utf8ExecutionInterpreter.TryMatchProgram(input, program, 0, 0, ref denied, out var end, out var breach));
-            Assert.Equal(limits.MaxWorkSteps != 0 ? Utf8ExecutionLimitKind.WorkSteps : limits.MaxDepth != 0 ? Utf8ExecutionLimitKind.Depth : Utf8ExecutionLimitKind.WorkingBytes, breach);
-            Assert.Equal(0, end);
+            var outcome = Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, ref denied);
+            Assert.False(outcome.IsMatch);
+            Assert.Equal(limits.MaxWorkSteps != 0 ? Utf8ExecutionLimitKind.WorkSteps : limits.MaxDepth != 0 ? Utf8ExecutionLimitKind.Depth : Utf8ExecutionLimitKind.WorkingBytes, outcome.Breach);
             Assert.Equal(0UL, denied.Ledger.ReservedBytes);
         }
         using var source = new CancellationTokenSource();
         var canceled = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
-        canceled.CheckpointHook = _ => source.Cancel();
+        source.Cancel();
         var failure = Assert.Throws<OperationCanceledException>(() =>
-            Utf8ExecutionInterpreter.TryMatchProgram(input, program, 0, 0, ref canceled, out _, out _));
+            Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, ref canceled));
         Assert.Equal(source.Token, failure.CancellationToken);
         Assert.Equal(0UL, canceled.Ledger.ReservedBytes);
         var recovery = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(recovery.Ledger.TryReserve(7));
-        Assert.True(Utf8ExecutionInterpreter.TryMatchProgram(input, program, 0, 0, ref recovery, out _, out _));
+        Assert.True(Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, ref recovery).IsMatch);
         Assert.Equal(7UL, recovery.Ledger.ReservedBytes);
         recovery.Ledger.Release(7);
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void LongLiteralByteChecksReturnEveryLoan(bool expire)
-    {
-        var text = new string('a', 256 * 1024);
-        var prepared = Utf8FrontEnd.Compile("(" + text + ")", RegexOptions.CultureInvariant);
-        Assert.NotNull(prepared.ExecutionProgram);
-        var input = Encoding.ASCII.GetBytes(text);
-        using var source = new CancellationTokenSource();
-        // Expire at the admitted checkpoint itself. A wall clock can expire
-        // during JIT or scheduling before the hook, losing this witness's entry.
-        long ticks = 0;
-        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited,
-            expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout, source.Token);
-        var entered = false;
-        invocation.CheckpointHook = _ => { entered = true; if (expire) ticks = 50; else source.Cancel(); };
-        if (expire)
-            Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
-                Utf8ExecutionInterpreter.TryMatchProgram(input, prepared.ExecutionProgram, 0, 0, ref invocation, out _, out _));
-        else
-        {
-            var failure = Assert.Throws<OperationCanceledException>(() =>
-                Utf8ExecutionInterpreter.TryMatchProgram(input, prepared.ExecutionProgram, 0, 0, ref invocation, out _, out _));
-            Assert.Equal(source.Token, failure.CancellationToken);
-        }
-        Assert.True(entered);
-        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
 
     [Fact]
@@ -254,25 +188,20 @@ public sealed class Utf8ProgramContinuationTests
     [InlineData("(?m:\\A(a)(b))", true)]
     [InlineData("(?m:(a)(b)\\Z)", false)]
     [InlineData("(?m:(a)(b)\\Z)", true)]
-    public void ByteAndScalarAnchorsAgreeWithAbsoluteAndCallerOriginSemantics(string pattern, bool compiled)
+    public void ScalarAnchorsPreserveAbsoluteAndCallerOriginSemantics(string pattern, bool compiled)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var prepared = Utf8FrontEnd.Compile(pattern, options);
         var scalar = Utf8ScalarCaptureWitness.Lower(pattern, options, 0, 0);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
         foreach (var text in new[] { "", "ab", "xab", "\nab", "ab\n", "ab\nx", "\nab\nx" })
         for (var start = 0; start <= text.Length; start++)
-            AssertAt(prepared.ExecutionProgram, scalar, oracle, text, start);
+            Utf8ScalarCaptureWitness.AssertAsciiAt(scalar, oracle, text, start);
         if (!pattern.StartsWith("\\G", StringComparison.Ordinal)) return;
         var starts = new int[scalar.GroupCount]; var ends = new int[scalar.GroupCount];
         var origin = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
         origin.AnchorOriginByte = 0;
-        if (prepared.ExecutionProgram is { } byteProgram)
-            Assert.False(Utf8ExecutionInterpreter.TryMatchProgram("xab"u8, byteProgram, 0, 1, ref origin, out _, out _));
         Assert.False(Utf8SliceRunner.TryMatchAt(scalar, "xab"u8, 1, starts, ends, true, ref origin).IsMatch);
         origin.AnchorOriginByte = 1;
-        if (prepared.ExecutionProgram is { } byteProgramAtOrigin)
-            Assert.True(Utf8ExecutionInterpreter.TryMatchProgram("xab"u8, byteProgramAtOrigin, 0, 1, ref origin, out _, out _));
         Assert.True(Utf8SliceRunner.TryMatchAt(scalar, "xab"u8, 1, starts, ends, true, ref origin).IsMatch);
         Assert.Equal(0UL, origin.Ledger.ReservedBytes);
     }

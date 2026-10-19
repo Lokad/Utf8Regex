@@ -102,33 +102,15 @@ public sealed class Utf8ScalarCaptureContinuationTests
     }
 
     [Fact]
-    public void ByteVerifierSharesTheCallersExpiredDeadlineAndRecovers()
-    {
-        var prepared = Utf8FrontEnd.Compile("(a)(b)", RegexOptions.CultureInvariant);
-        long ticks = 0;
-        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(1));
-        ticks = 50;
-        Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => Utf8ExecutionInterpreter.TryMatchPrefix(
-            "ab"u8, prepared.ExecutionProgram, 0, deadline, out _));
-        Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix("ab"u8, prepared.ExecutionProgram,
-            0, Utf8ExecutionDeadline.Infinite, out var length));
-        Assert.Equal(2, length);
-    }
-
-    [Fact]
     public void WarmByteSimplePatternDiscoveryDoesNotAllocate()
     {
-        var prepared = Utf8FrontEnd.Compile("(?<x>a(?<x>b)c)(d)", RegexOptions.CultureInvariant);
         Assert.True(Utf8AsciiSimplePatternLowerer.TryCreatePlan(Utf8FrontEnd.Analyze("(?<x>a(?<x>b)c)(d)", RegexOptions.CultureInvariant).SemanticRegex,
             RegexOptions.CultureInvariant, out var plan, out _));
         for (var index = 0; index < 32; index++)
-            Assert.True(Utf8ExecutionInterpreter.TryMatchSimplePatternAt("abcd"u8, prepared.ExecutionProgram,
-                plan, 0, Utf8ExecutionDeadline.Infinite, out _));
+            Assert.True(Utf8ExecutionInterpreter.TryMatchSimplePatternAt("abcd"u8, plan, 0, out _));
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var index = 0; index < 256; index++)
-            Assert.True(Utf8ExecutionInterpreter.TryMatchSimplePatternAt("abcd"u8, prepared.ExecutionProgram,
-                plan, 0, Utf8ExecutionDeadline.Infinite, out _));
+            Assert.True(Utf8ExecutionInterpreter.TryMatchSimplePatternAt("abcd"u8, plan, 0, out _));
         Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
     }
 

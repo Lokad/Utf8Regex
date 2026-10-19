@@ -300,13 +300,6 @@ public sealed class Utf8SharedStatePoolTests
                     items[0] = new(new object(), 17);
                     Utf8ExactStatePool<ReferenceState>.Return(items, true);
                     Assert.Equal(default, items[0]);
-                    var prepared = Utf8FrontEnd.Compile("(?:(a)c|(b))d", RegexOptions.CultureInvariant);
-                    for (var index = 0; index < 16; index++)
-                        Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix("bd"u8, prepared.ExecutionProgram, 0, Utf8ExecutionDeadline.Infinite, out _));
-                    var before = GC.GetAllocatedBytesForCurrentThread();
-                    for (var index = 0; index < 256; index++)
-                        Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix("bd"u8, prepared.ExecutionProgram, 0, Utf8ExecutionDeadline.Infinite, out _));
-                    Assert.True(GC.GetAllocatedBytesForCurrentThread() - before > 0);
                     var replacementRegex = new Utf8Regex("foo");
                     var replacementInput = System.Text.Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("foo-", 128)));
                     var replacementDestination = new byte[replacementInput.Length];
@@ -325,9 +318,9 @@ public sealed class Utf8SharedStatePoolTests
             field.SetValue(null, originalGate);
             Assert.Equal(bytes, Inspect().Bytes);
             Assert.Same(original, Utf8ExactStatePool<ReferenceState>.Rent(16, false));
-            // Exact original fixture input, warmup, interval and zero-byte guard
-            // still pass once the optional pool is available without contention.
-            new Utf8ReversibleMatchStateTests().WarmByteBacktrackingHasNoTemporaryAllocation();
+            // The live native verifier retains its zero-byte warm guard once
+            // optional pool retention is available without contention.
+            new Utf8AsciiStructuralRuntimeTests().WarmAsciiRuntimeBorrowsAllStorageWithoutTemporaryAllocation();
             new ReplacementInfrastructureTests().DestinationReplacementHasBoundedWarmedAllocationIndependentOfMatchCount();
         }
         finally

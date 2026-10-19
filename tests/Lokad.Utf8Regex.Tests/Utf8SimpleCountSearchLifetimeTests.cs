@@ -54,7 +54,14 @@ public sealed class Utf8SimpleCountSearchLifetimeTests
                 {
                     var padded = new byte[bytes.Length + offset + 3];
                     bytes.CopyTo(padded, offset);
-                    Assert.Equal(oracle.Count(text), regex.Count(padded.AsSpan(offset, bytes.Length)));
+                    var subject = padded.AsSpan(offset, bytes.Length);
+                    Assert.Equal(oracle.Count(text), regex.Count(subject));
+                    Assert.Equal(oracle.IsMatch(text), regex.IsMatch(subject));
+                    var expected = oracle.Match(text);
+                    var match = regex.Match(subject);
+                    Assert.Equal(expected.Success, match.Success);
+                    if (match.Success)
+                        Assert.Equal((expected.Index, expected.Length), (match.IndexInBytes, match.LengthInBytes));
                 }
             }
         }

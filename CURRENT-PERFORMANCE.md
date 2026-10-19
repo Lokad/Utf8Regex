@@ -25,6 +25,19 @@ The optional-prefix Count case remains1.35-1.79ms across runtimes against49-53us
 for generated predecoded .NET, identifying a current engine mechanism gap. There
 is no universal new-generator advantage or product/runtime qualification claim.
 
+## Rejected ASCII candidates
+
+The next111-dev source removes the general byte-VM retry after a complete ordered
+ASCII branch plan rejects a candidate, together with its now-unused VM/wrappers.
+One source pair plus its sole confirmation is closed. The confirmation uses
+.NET10.0.12 FullOpts/R2R-off: optional-prefix Count miss medians2.53-2.55ms become
+0.842-0.846ms,1792B unchanged; fixed-width controls move about-2%. Hit medians
+remain1.735-1.738ms; finite routes are unchanged and their smaller observations
+move with the finite controls. This deletion does not close the remaining Count
+gap. Initial default-tier samples failed duration/control gates, so no default
+PGO equivalence or fixed speedup is claimed. Immutable110 bytes are unchanged.
+[Source, raw samples, limits and validation](bench/Experiments/AsciiRejection-20261019/README.md).
+
 ## Scalar value-Match projection
 
 Subsequent110-dev source, parent8439227b, reuses full-input validation for ASCII /

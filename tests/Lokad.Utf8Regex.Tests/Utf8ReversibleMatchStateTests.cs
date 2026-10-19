@@ -1,11 +1,8 @@
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Keep the same input, 16 warm calls, 256 measured calls and exact zero-byte
-// threshold on the live byte verifier. Capture publication is tested separately.
 [Collection(Utf8RuntimeAllocationCollection.Name)]
 public sealed class Utf8ReversibleMatchStateTests
 {
@@ -66,17 +63,4 @@ public sealed class Utf8ReversibleMatchStateTests
         Utf8ScalarCaptureWitness.AssertAsciiAt(program, new Regex("((?:a|b)*)z"), "abz", 0);
     }
 
-    [Fact]
-    public void WarmByteBacktrackingHasNoTemporaryAllocation()
-    {
-        var prepared = Utf8FrontEnd.Compile("(?:(a)c|(b))d", RegexOptions.CultureInvariant);
-        for (var i = 0; i < 16; i++)
-            Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix("bd"u8, prepared.ExecutionProgram,
-                0, Utf8ExecutionDeadline.Infinite, out _));
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 256; i++)
-            Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix("bd"u8, prepared.ExecutionProgram,
-                0, Utf8ExecutionDeadline.Infinite, out _));
-        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
-    }
 }
