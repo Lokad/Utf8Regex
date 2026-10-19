@@ -1,5 +1,11 @@
 # .NET 10 / .NET 11 Count comparison
 
+The timed results below remain frozen Core59 evidence. Current qualified
+Core/PythonRe110 has a separate [untimed three-cell preflight](artifacts/runtime11-scalar110-preflight-20261019/RESULT.md):
+four case/range digests and finite/token lanes agree on actual .NET10/.NET11
+execution, with real SDK-specific generated runners. This does not refresh the
+timings below or establish current-runtime performance or full compatibility.
+
 Measured 2026-10-16 on the quiet Xeon Platinum 8573C VM, CPU2, Release FullOpts,
 ReadyToRun off. This four-case experiment adds actual SDK-specific generated
 comparators to the runtime comparison. It is not whole-engine parity, full
@@ -15,8 +21,9 @@ Existing README/adapter benchmark snapshots retain their original evidence.
 
 All three cells load identical Core0.4.0-scalar.59 bytes, producer b67b9233,
 SHA2569453ACFFFC0E1C18A30FE8B1096481E48503A8089134A2EE5B1BBFC2CC99FBE9.
-Core source is unchanged at0be8367f. This does not designate standalone Core59
-for consumers; Core/PythonRe55 remains the primary qualified pair.
+Core source was unchanged at0be8367f. This did not designate standalone Core59
+for consumers; Core/PythonRe55 was the qualified pair at measurement time.
+The current corrected dependency is [Core/PythonRe110](artifacts/core-python-scalar110-20261019/HANDOFF.md).
 
 - R10/G10: SDK10.0.401/net10 driver on runtime10.0.12.
 - R11/G10: that exact driver on runtime11.0.0-rc.1.26425.128. Same IL isolates
