@@ -8,6 +8,13 @@ within1.4%. Initial tiny Detailed+11-12% is not reproduced in confirmation, so n
 fixed tiny-case or default-PGO gain is claimed. No additional package matrix.
 [Public/codegen/raw evidence](bench/Experiments/NativeSelectorOrder-20261020/README.md).
 
+A subsequent Detailed-only ASCII validation-reuse prototype is **deferred and
+reverted**. One public pair and its sole confirmation repeat lower Detailed costs,
+but unchanged tiny Count controls remain 11-19% slower in confirmation. Their
+cause is unproved; no overall acceptable-cost claim, additional timing or package
+qualification follows. Production keeps the accepted selector and shared value
+discovery. [Complete closed evidence](bench/Experiments/DetailedAsciiReuse-20261020/README.md).
+
 The corrected immutable Core/PythonRe **scalar.112** is qualified in its
 [handoff](artifacts/core-python-scalar112-20261019/HANDOFF.md). The changed generic
 Python EOF path has the separate current-source public pair below; no new

@@ -1785,9 +1785,8 @@ public sealed partial class Utf8Regex
 
         if (TryGetOwnedDetailedGroupCount(out var ownedGroupCount))
         {
-            // R03: discovery runs through the shared value path and shaping projects owned
-            // spans, so qualifying literal shapes never execute the BCL engine; semantic declines
-            // inside MatchCore keep their existing BCL routes.
+            // Discovery uses the shared value path; shaping projects the
+            // validated subject with the owned capture catalog.
             Utf8ValueMatch first;
             try
             {

@@ -83,6 +83,44 @@ public sealed class Utf8MatchDetailedShapingTests
         Assert.Equal("b", actual.GetGroup(2).GetValueString());
     }
 
+    [Theory]
+    [InlineData("needle")]
+    [InlineData("(needle)")]
+    [InlineData("needle|other")]
+    [InlineData("(?i:needle)")]
+    [InlineData("(?i:k)")]
+    public void LiteralDetailedViewsKeepCapturesAndScalarCoordinatesOnSlices(string pattern)
+    {
+        foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled,
+                     RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
+        foreach (var text in new[] { "xxneedle other NEEDLE", "é😀needle Kk", "xxxxx" })
+        {
+            var options = mode | RegexOptions.CultureInvariant;
+            var subject = new Utf8ScalarCaptureFixture.Subject(text);
+            var storage = Encoding.UTF8.GetBytes("padding" + text + "padding");
+            var oracle = Utf8ScalarCaptureFixture.Project(new Regex(pattern, options));
+            var regex = new Utf8Regex(pattern, options);
+            var actual = regex.MatchDetailed(storage.AsSpan(7, subject.Input.Length));
+            Utf8SliceSparseGroupTests.AssertDetailed(oracle, oracle.Match(subject.Projected), actual, subject);
+        }
+    }
+
+    [Theory]
+    [InlineData("needle")]
+    [InlineData("(needle)")]
+    [InlineData("needle|other")]
+    public void LiteralDetailedViewsRejectMalformedTailsAfterHitsAndMisses(string pattern)
+    {
+        foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled,
+                     RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
+        foreach (var prefix in new[] { "needle", "xxxxx" })
+        {
+            var regex = new Utf8Regex(pattern, mode | RegexOptions.CultureInvariant);
+            byte[] input = [.. Encoding.UTF8.GetBytes(prefix), 0xff];
+            Assert.Throws<ArgumentException>(() => regex.MatchDetailed(input));
+        }
+    }
+
     [Fact]
     public void GrouplessDetailedShapingStaysBounded()
     {
