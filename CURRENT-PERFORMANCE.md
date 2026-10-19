@@ -1,16 +1,20 @@
 # Selected current-source performance
 
-The latest immutable Core/PythonRe **scalar.109** observation uses producer
-`050448523e7a4446b898a04c11af3f0a42410e9f`, actual package DLLs and .NET10.0.12.
-For10K `(a)(b)` matches, Core Count was103.190us unlimited/133.385us finite,
-112B finite (observed1.293x). Python detailed was6.327ms/~3.03MB finite and6.544ms
-with a live token; UTF8 tuples3.835ms/~1.38MB finite and3.939ms with token.
-Cursor-first1.876us/2936B and cursor-ten6.661us/4736B finite. One bounded48-row /
-240-sample observation is closed.1K/5K managed spreads7.34x/1.59x and .NET tuple
-spreads1.599x/1.340x limit claims; selected10K managed spreads stay within1.065x.
-No universal overhead/scaling/parity, causal finite gain or package speedup claim.
-[Exact scope/raw evidence](artifacts/core-python-scalar109-20261019/vm-cost/RESULT.md).
-Source pairs and historical snapshots below retain their separate scope.
+The latest immutable Core/PythonRe **scalar.110** observation uses clean producer
+`a514fdab2efce69fa9038ecc7a9824160bf3ac11`, actual package DLLs and .NET10.0.12.
+For10K `(a)(b)` matches, Core Count was99.080us unlimited/136.670us finite,
+112B finite (observed1.379x). Python detailed was6.563ms/~3.03MB finite and6.128ms
+with a live token; UTF8 tuples3.695ms/~1.38MB finite and3.811ms with token.
+Cursor-first1.845us/2936B and cursor-ten6.444us/4736B finite. One bounded48-row /
+240-sample observation is closed; raw short-case and .NET tuple noise limits
+scaling/parity/overhead claims. No causal finite gain or package speedup claim.
+[Exact scope/raw evidence](artifacts/core-python-scalar110-20261019/vm-cost/RESULT.md).
+
+Scalar110 corrects terminal native Count cancellation and includes value-Match
+validation reuse. Source265a54ec has green Windows/Linux CI; actual-package gates
+are separate and complete within the handoff scope. Earlier109 remains immutable
+historical evidence and predates the cancellation correction. Broader work remains
+open; source pairs and historical snapshots below retain their separate scope.
 
 ## Scalar value-Match projection
 

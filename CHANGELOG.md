@@ -1,12 +1,14 @@
 # Changelog
 
-## Private Core/PythonRe scalar.110 candidate
+## Private Core/PythonRe scalar.110 qualification
 
-Freeze the native Count terminal cancellation correction and scalar value-Match
-validation reuse for a distinct immutable pair. Qualification is pending; source
-checks are not package acceptance. Scalar.109 remains historical and predates the
-cancellation fix. Preserve earlier bytes; no publication, external adoption or
-PCRE110 designation.
+Frozen producera514fdab/C#265a54ec supplies the native Count terminal cancellation
+correction and scalar value-Match validation reuse. Same actual DLLs pass both
+platforms, original public consumers, oracles and exact identity/member/symbol
+checks. Source CI is green; one bounded actual-package cost observation is closed.
+[Handoff](artifacts/core-python-scalar110-20261019/HANDOFF.md) records scope and
+uncertainty. Scalar.109 remains historical and predates the cancellation fix.
+Earlier bytes stay immutable; no publication, external adoption or PCRE110.
 
 ## Changes after scalar.109
 

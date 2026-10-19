@@ -1,10 +1,15 @@
 # Lokad.Utf8Regex.PythonRe
 
-Private **Core/PythonRe 0.4.0-scalar.110** freezes the Core native Count terminal
-cancellation fix and scalar value-Match validation reuse. Package qualification
-is pending. Scalar.109's historical evidence remains, but its Core Count predates
-this cancellation fix; hold new adoption pending the corrected pair. Earlier
-bytes remain unchanged. No publication, external pin change or PCRE110 designation.
+Private **Core/PythonRe 0.4.0-scalar.110**, producera514fdab/C#265a54ec, passes
+same-byte Windows/Linux suites, original Awk/Lython assertions, oracles and exact
+identity/member/symbol checks. Source CI is green. It fixes Core Count terminal
+cancellation and reuses validation for scalar value-Match projection.
+[Handoff](../../artifacts/core-python-scalar110-20261019/HANDOFF.md),
+[consume](../../artifacts/core-python-scalar110-20261019/CONSUMING.md) and
+[exact costs](../../artifacts/core-python-scalar110-20261019/vm-cost/RESULT.md).
+Use the corrected pair for new adoption;109 predates the cancellation fix.
+Earlier bytes stay immutable. No publication, external pin change or PCRE110;
+broader full-target work remains open.
 
 Private **Core/PythonRe 0.4.0-scalar.109**, producer05044852/C#025b6ffa, passes
 same-byte Windows/Linux suites, original Awk/Lython assertions, oracles and exact

@@ -1,13 +1,13 @@
 # Resource controls and host ownership
 
-Private **Core/PythonRe scalar.110** qualification is pending for the native Count
-terminal cancellation fix. Scalar.109's recorded qualification predates this
-demonstrated gap; hold new adoption pending the corrected pair. Historical
-identities/evidence and all immutable bytes remain unchanged. The source fix
-rechecks the original token before publishing the count, without revising limits.
+The current qualified private pair is **Core/PythonRe scalar.110**. Its
+[handoff](artifacts/core-python-scalar110-20261019/HANDOFF.md) records actual-byte
+platform/consumer/oracle/identity checks and current costs. It corrects native
+Count terminal cancellation without revising numeric work or admission.
+Scalar.109 predates this demonstrated fix; use110 for new adoption. Historical
+identities/evidence and all immutable bytes remain unchanged.
 
-The qualified private Core/PythonRe input is **0.4.0-scalar.109**. Its
-[handoff](artifacts/core-python-scalar109-20261019/HANDOFF.md) records exact
+The historical [Core/PythonRe scalar.109 handoff](artifacts/core-python-scalar109-20261019/HANDOFF.md) records exact
 identities, same-byte Windows/Linux consumer checks, current costs and exclusions.
 Independent PCRE2 uses its exact Core/PCRE2 scalar.94 pair; no PCRE109 is designated.
 Earlier packages retain their recorded contracts and limitations.
@@ -308,7 +308,7 @@ The qualified input is the exact Core/adapter pair recorded by its manifest,
 feed and locks. Adapters consume Core internals and move together with the exact
 qualified Core version. Applications combining adapters need a common qualified
 Core; deliberate dependency overrides have separate compatibility scope.
-The immutable [Core/PythonRe scalar.109 handoff](artifacts/core-python-scalar109-20261019/HANDOFF.md)
+The immutable [Core/PythonRe scalar.110 handoff](artifacts/core-python-scalar110-20261019/HANDOFF.md)
 records same-byte Windows/Linux consumers, exact identities, current costs and
 the recorded semantic/resource subset. Independent PCRE2 evidence stays
 with its [scalar.94 handoff](artifacts/pcre2-scalar94-delivery-20261018/HANDOFF.md).
