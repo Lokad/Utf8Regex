@@ -19,6 +19,13 @@ This removes unused staging from working/result admission; a smaller finite
 budget may now succeed. Final payload admission, independent mutable byte results,
 template validation and original interruption remain. Scalar.103 is unchanged.
 
+The shared Core scalar template/owned-writer replacement path also projects the
+validated subject directly when no match was found. Its existing callback scope
+and control charges stay; returned bytes remain independent. Final payloads keep
+their numeric admission, and `TryReplace` preserves overlapping copies and an
+unchanged destination when capacity is insufficient. Unused byte staging is no
+longer charged on that path. This development change is outside immutable103.
+
 Scalar.101 supports overlapping Core `TryReplace` subject/destination spans by
 staging scalar output before copying. Staging may allocate even for a literal;
 insufficient destinations stay unchanged. UTF-8 templates may alias the

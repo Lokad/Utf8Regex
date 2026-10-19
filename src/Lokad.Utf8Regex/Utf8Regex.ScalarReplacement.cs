@@ -74,6 +74,7 @@ public sealed partial class Utf8Regex
             var position = program.RightToLeft ? input.Length : 0;
             var edgeByte = position;
             var anchor = position;
+            var anyMatch = false;
             while (position >= 0)
             {
                 invocation.AnchorOriginByte = anchor;
@@ -85,6 +86,7 @@ public sealed partial class Utf8Regex
                     if (outcome.Breach != Utf8ExecutionLimitKind.None)
                         throw new InvalidOperationException("Owned replacement execution exceeded the invocation budget.");
                     if (!outcome.Found) break;
+                    anyMatch = true;
                     if (outcome.CaptureStarts is null || outcome.CaptureLengths is null)
                         throw new InvalidOperationException("Owned replacement match is missing capture histories.");
                     // Only callbacks need derived UTF-16 coordinates. Templates
@@ -109,6 +111,8 @@ public sealed partial class Utf8Regex
                 }
                 finally { Utf8SliceRunner.ReleaseHistory(outcome.CaptureStarts, outcome.CaptureLengths, ref invocation); }
             }
+            if (!anyMatch)
+                return CompleteUnchangedOwnedReplacement(input, validation.Utf16Length, resultKind, destination, ref invocation);
             if (program.RightToLeft)
             {
                 writer.Append(input.Slice(0, edgeByte));
@@ -140,6 +144,36 @@ public sealed partial class Utf8Regex
             invocation.Ledger.Release(mapReservation);
             scope.Release();
         }
+    }
+
+    // The original subject is already validated. A miss needs only its final
+    // projection; keep the same scope/authority without staging those bytes.
+    private static Utf8SliceReplacementResult CompleteUnchangedOwnedReplacement(
+        ReadOnlySpan<byte> input, int utf16Length, Utf8SliceReplacementResultKind resultKind,
+        Span<byte> destination, ref Utf8SliceInvocation invocation)
+    {
+        Utf8InvocationResultLedger results = default;
+        try
+        {
+            Utf8SliceBufferWork.Checkpoint(ref invocation);
+            switch (resultKind)
+            {
+                case Utf8SliceReplacementResultKind.Text:
+                    return new(results.DecodeUtf8(input, utf16Length, ref invocation), [], System.Buffers.OperationStatus.Done, 0);
+                case Utf8SliceReplacementResultKind.Bytes:
+                    var bytes = results.AllocateArray<byte>(input.Length, ref invocation);
+                    Utf8SliceBufferWork.Copy(input, bytes, ref invocation);
+                    return new(string.Empty, bytes, System.Buffers.OperationStatus.Done, 0);
+                case Utf8SliceReplacementResultKind.Destination:
+                    if (destination.Length < input.Length)
+                        return new(string.Empty, [], System.Buffers.OperationStatus.DestinationTooSmall, 0);
+                    Utf8SliceBufferWork.Copy(input, destination, ref invocation);
+                    return new(string.Empty, [], System.Buffers.OperationStatus.Done, input.Length);
+                default:
+                    throw new InvalidOperationException("Unknown owned output kind.");
+            }
+        }
+        finally { results.Release(ref invocation); }
     }
 
     private byte[] OwnedSliceReplaceEvaluator<TState>(ReadOnlySpan<byte> input, Utf8SliceProgram program,
