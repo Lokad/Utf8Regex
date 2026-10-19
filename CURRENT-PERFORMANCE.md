@@ -22,6 +22,22 @@ one batch per lane, with noisy tiny controls. Accept the redundant-scan removal
 without a fixed speedup/equivalence claim; no additional run or package refresh.
 [Caller/semantic/resource proof and all observations](artifacts/value-match-validation-reuse-20261019/RESULT.md).
 
+## Deferred detailed-result pre-count
+
+A subsequent110-dev prototype used the existing native literal counter to
+allocate one final PythonRe detailed-result root, preserving scalar capture
+discovery and the original invocation. At10K matches it removed about786KB per
+operation; larger-case timing medians also fell. The1K case remained unresolved:
+unlimited/finite medians were21.7-69.7% slower in the one permitted confirmation,
+while sample spreads reached9.8x across its three lanes. These are insufficient
+to establish a stable regression or acceptable small-case performance.
+
+The prototype and its contract/test changes were reverted. Both pairs, unchanged
+controls and the passing candidate correctness/resource tests are retained in the
+[closed experiment](artifacts/python-detailed-root-20261019/RESULT.md). No threshold,
+mode, benchmark-harness change, further timing or package qualification follows.
+Current source and immutable scalar.109 keep their existing staging and contract.
+
 ## Earlier scalar.108 observation
 
 The immutable Core/PythonRe **scalar.108** observation uses producer
