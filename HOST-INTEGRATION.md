@@ -112,6 +112,13 @@ still precedes every retained major allocation. Exact construction cutoffs and
 checkpoint counts are implementation-dependent. Original cancellation/deadlines,
 invocation limits, NonBacktracking and result/cursor ownership are unchanged.
 
+Development after scalar.106 also omits capture-map preparation when existing
+scalar projection owns a fixed finite-policy/deadline instance or captured Unicode
+atoms, and when no native tree exists. Required native ASCII projections,
+inactive-declaration shaping and the anchored-prefix proof remain. This lowers
+real construction work/storage; it does not change invocation charges, native
+matching algorithms, original interruption or result/cursor lifetimes.
+
 These are existing calls, using each profile's option type. `policy` applies to
 later invocations; `construction`, `constructionTimeout` and `token` apply only
 to eager compilation.

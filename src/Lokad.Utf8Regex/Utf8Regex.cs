@@ -98,6 +98,7 @@ public sealed partial class Utf8Regex
         Pattern = pattern;
         Options = options;
         MatchTimeout = matchTimeout;
+        ResourcePolicy = resourcePolicy;
         construction.Budget.CheckBytes(ProgramFixedMetadataBytes);
         construction.Budget.ChargeWork(1);
         construction.Budget.ReserveBytes(ProgramFixedMetadataBytes);
@@ -154,16 +155,25 @@ public sealed partial class Utf8Regex
         var ownedSliceProgram = preparedRegex.ScalarProgram
             ?? throw new InvalidOperationException("Owned preparation must produce a scalar program.");
         _ownedSliceProgram = ownedSliceProgram;
-        // Only detailed LTR multi-group literal families consume this map.
-        // Other shapes retain scalar capture execution without unused metadata.
-        _literalFamilyCaptureMap =
-            preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals &&
-            _groupNumbers.Length > 2 && !UsesRightToLeft()
-                ? Utf8LiteralFamilyCaptureMap.TryCreate(preparedRegex.ExecutionTree)
-                : null;
         _hasCaptures = preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !preparedRegex.FallbackDirectFamily.HasValue
             ? ownedSliceProgram.GroupCount != 0 : HasOwnedCaptures(preparedRegex.ExecutionTree);
-        _groupedLiteralSpanTable = !_hasCaptures || UsesRightToLeft() ? null : Utf8GroupedLiteralSpanTable.TryCreate(preparedRegex.ExecutionTree, ownedSliceProgram);
+        // Fixed finite policies/deadlines and captured Unicode atoms use scalar
+        // projection. Avoid maps that no public detailed/template route consumes. A missing
+        // native tree cannot produce a map either; inactive catalog declarations
+        // alone must not fence the literal-family native projection.
+        var scalarCaptureProjection = HasFiniteExecutionLimits || matchTimeout != Regex.InfiniteMatchTimeout ||
+            _hasCaptures && ownedSliceProgram.HasUnicodePatternAtoms;
+        var hasNativeCaptureTree = preparedRegex.ExecutionTree is not null && !UsesRightToLeft();
+        _literalFamilyCaptureMap = hasNativeCaptureTree && !scalarCaptureProjection &&
+            preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals &&
+            _groupNumbers.Length > 2
+                ? Utf8LiteralFamilyCaptureMap.TryCreate(preparedRegex.ExecutionTree)
+                : null;
+        // The anchored prefix table also supplies a value-cursor proof before
+        // scalar selection. Preserve that dependency and its existing fences.
+        _groupedLiteralSpanTable = _hasCaptures && hasNativeCaptureTree &&
+            (!scalarCaptureProjection || _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix)
+                ? Utf8GroupedLiteralSpanTable.TryCreate(preparedRegex.ExecutionTree, ownedSliceProgram) : null;
         // The existing literal proof respects each anchor's scoped options. Borrow
         // its admitted bytes instead of collecting/copying the execution tree again.
         _caretAnchoredGroupedLiteralUtf8 =
@@ -173,7 +183,8 @@ public sealed partial class Utf8Regex
             _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } prefix &&
             prefix.Length == spanTable.TotalLengthInUtf16
                 ? prefix : null;
-        _alternationBranchSpanMap = !_hasCaptures || UsesRightToLeft() ? null : Utf8AlternationBranchSpanMap.TryCreate(preparedRegex.ExecutionTree, ownedSliceProgram);
+        _alternationBranchSpanMap = _hasCaptures && hasNativeCaptureTree && !scalarCaptureProjection
+            ? Utf8AlternationBranchSpanMap.TryCreate(preparedRegex.ExecutionTree, ownedSliceProgram) : null;
         static bool CanPrioritizePlainAsciiLiteralCount(
             string pattern,
             Utf8PreparedRegex preparedRegex,
@@ -246,7 +257,6 @@ public sealed partial class Utf8Regex
             };
         }
 
-        ResourcePolicy = resourcePolicy;
         _replacementCache = Utf8ReplacementPlanCache.Create();
         // Scratch has closed; covered retained capacity and conservative helper
         // charges survive successful children. Explicitly cover the facade and

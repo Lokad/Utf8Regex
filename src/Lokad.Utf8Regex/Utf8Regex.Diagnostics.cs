@@ -380,30 +380,6 @@ public sealed partial class Utf8Regex
         return splitCount;
     }
 
-    private string DebugLiteralFamilyCaptureMapSummary()
-    {
-        // Diagnostics can inspect shapes that production never projects here.
-        // Build that temporary view only when requested, without retaining it.
-        var map = _literalFamilyCaptureMap ?? Utf8LiteralFamilyCaptureMap.TryCreate(_preparedRegex.ExecutionTree);
-        if (map is null)
-        {
-            return "declined";
-        }
-
-        var branches = new StringBuilder();
-        for (var i = 0; i < map.BranchGroups.Length; i++)
-        {
-            if (i > 0)
-            {
-                branches.Append(";");
-            }
-
-            branches.Append(string.Join(",", map.BranchGroups[i]));
-        }
-
-        return "whole=[" + string.Join(",", map.WholeMatchGroups) + "];branches=[" + branches.ToString() + "]";
-    }
-
     private int DebugReplaceViaNativeTextOperations(ReadOnlySpan<byte> input, string replacementText)
     {
         var validation = Utf8Validation.Validate(input);
@@ -716,8 +692,6 @@ public sealed partial class Utf8Regex
             string replacementText) =>
             _owner.DebugReplaceViaNativeTextOperations(input, replacementText);
 
-        public string DebugLiteralFamilyCaptureMapSummary() =>
-            _owner.DebugLiteralFamilyCaptureMapSummary();
 
 
 

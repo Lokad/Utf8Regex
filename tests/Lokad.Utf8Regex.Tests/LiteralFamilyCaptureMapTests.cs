@@ -1,4 +1,6 @@
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -24,8 +26,12 @@ public sealed class LiteralFamilyCaptureMapTests
     [InlineData("(abc)", RegexOptions.CultureInvariant, "whole=[1];branches=[]")]
     public void LiteralFamilyCaptureMapMatchesExpectedShape(string pattern, RegexOptions options, string expected)
     {
-        var regex = new Utf8Regex(pattern, options);
-        Assert.Equal(expected, regex.Inspection.DebugLiteralFamilyCaptureMapSummary());
+        var tree = Utf8ExecutionTreeLowerer.Lower(Utf8FrontEnd.Analyze(pattern, options).SemanticRegex);
+        var map = Utf8LiteralFamilyCaptureMap.TryCreate(tree);
+        Assert.NotNull(map);
+        var summary = "whole=[" + string.Join(",", map.WholeMatchGroups) + "];branches=[" +
+            string.Join(";", map.BranchGroups.Select(static groups => string.Join(",", groups))) + "]";
+        Assert.Equal(expected, summary);
     }
 
     [Theory]
@@ -36,7 +42,7 @@ public sealed class LiteralFamilyCaptureMapTests
     [InlineData("(?<=a)(b)|(c)")]
     public void UnsupportedShapesDeclineCaptureMapping(string pattern)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.Equal("declined", regex.Inspection.DebugLiteralFamilyCaptureMapSummary());
+        var tree = Utf8ExecutionTreeLowerer.Lower(Utf8FrontEnd.Analyze(pattern, RegexOptions.CultureInvariant).SemanticRegex);
+        Assert.Null(Utf8LiteralFamilyCaptureMap.TryCreate(tree));
     }
 }

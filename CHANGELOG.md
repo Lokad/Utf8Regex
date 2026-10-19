@@ -1,5 +1,17 @@
 # Changelog
 
+## Changes after scalar.106
+
+Omit native capture-map preparation when the native tree is absent or existing
+scalar projection owns captured Unicode atoms, fixed finite invocation policies
+or finite match timeouts. Keep ASCII native consumers, inactive-declaration
+projections and the grouped anchored-prefix proof used by early value paths.
+Construction work/byte requirements can fall; no policy ceiling is raised.
+Original interruption, useful limits, scalar/capture semantics and lifetimes stay.
+Remove the test-only capture-map formatter; shape tests exercise the production
+lowerer/map directly. Pattern inspection no longer labels the broad fallback kind
+as an active scalar route, since actual selection depends on the operation/input.
+
 ## Qualified private Core/PythonRe scalar.106
 
 Producer57eb9f15 freezes the batch below. The same actual package DLLs pass detached

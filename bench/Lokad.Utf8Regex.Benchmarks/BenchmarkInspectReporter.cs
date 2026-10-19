@@ -5167,7 +5167,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"ExecutionKind     : {regex.Inspection.ExecutionKind}");
         Console.WriteLine($"DirectFamily      : {regex.Inspection.DebugFallbackDirectFamilyKind}");
         Console.WriteLine($"OwnedScalarPlan   : {regex.Inspection.AvailableOwnedSliceProgram is not null}");
-        Console.WriteLine($"ActiveScalarPlan  : {regex.Inspection.DebugUsesOwnedSliceProgram}");
         Console.WriteLine($"ScalarPrepared    : {regex.Inspection.PreparedRegex.ScalarProgram is not null}");
         Console.WriteLine($"SearchKind        : {regex.Inspection.SearchPlan.Kind}");
         Console.WriteLine($"PortfolioKind     : {regex.Inspection.SearchPortfolioKind}");
