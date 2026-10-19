@@ -11,6 +11,18 @@ regression/equivalence proof. No basic-metering removal or retiming rescue.
 [Exact111 scope and raw evidence](artifacts/core-python-scalar111-20261019/vm-cost/RESULT.md).
 Source FullOpts improvements below do not substitute for these package costs.
 
+One subsequent112-dev source change borrows the existing40B readonly prepared
+substring descriptor across the bounded candidate-search helper. The JIT's
+per-call descriptor copy disappears;search/windows/work charges/checkpoints and
+allocations stay. Candidate correctness checks pass. Initial default-tier samples
+fail duration/control gates;the sole FullOpts confirmation records finite
+captured Count277.11->270.37us ordinary/274.54->272.33us compiled,eight-byte
+279.42->269.67us /271.94->261.16us,and Unicode291.18->282.95us /290.90->283.23us.
+Controls stay within1.5%,112B finite unchanged;no fixed speedup/default-PGO claim.
+This does not establish the cause of110/111's separate costs. No more timing or
+package qualification follows this small change.
+[Complete codegen/public evidence](bench/Experiments/LiteralSearchBorrow-20261019/README.md).
+
 The earlier immutable Core/PythonRe **scalar.110** observation uses clean producer
 `a514fdab2efce69fa9038ecc7a9824160bf3ac11`, actual package DLLs and .NET10.0.12.
 For10K `(a)(b)` matches, Core Count was99.080us unlimited/136.670us finite,

@@ -69,7 +69,7 @@ internal static partial class Utf8SearchExecutor
     }
 
     internal static Utf8ExecutionLimitKind TryFindLiteralCandidate(
-        PreparedSubstringSearch search, ReadOnlySpan<byte> input, int low, int high,
+        in PreparedSubstringSearch search, ReadOnlySpan<byte> input, int low, int high,
         bool reverse, ref Utf8SliceInvocation invocation, out int candidate)
     {
         candidate = -1;
