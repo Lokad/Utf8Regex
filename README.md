@@ -269,12 +269,12 @@ have separate scope; see
 
 The tables below mix revisions and dates recorded in `README.Benchmarks.json`;
 most rows remain historical. Four cases were refreshed on source `c2373b04ea08`
-on 2026-10-19: email Match, imports Count, lexer doc-line loops and Russian
-literal Count, in both ordinary and compiled sections. These selected current
+on 2026-10-19: email IsMatch, imports Count, lexer doc-line loops and Russian
+literal Count, in both ordinary and compiled sections. These recorded source
 results show substantial gaps against predecoded .NET; Russian Count beats the
 decode baseline. They do not qualify other rows or a package. See
 [current measurements and limitations](CURRENT-PERFORMANCE.md).
-Separate immutable [scalar.107 package costs](artifacts/core-python-scalar107-20261019/vm-cost/RESULT.md)
+Separate immutable [scalar.110 package costs](artifacts/core-python-scalar110-20261019/vm-cost/RESULT.md)
 cover finite limits, live tokens and Python materialization, including noisy lanes.
 Earlier source comparisons retain their scope in [CHANGELOG.md](CHANGELOG.md).
 

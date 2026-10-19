@@ -26,6 +26,17 @@ one batch per lane, with noisy tiny controls. Accept the redundant-scan removal
 without a fixed speedup/equivalence claim; no additional run or package refresh.
 [Caller/semantic/resource proof and all observations](artifacts/value-match-validation-reuse-20261019/RESULT.md).
 
+## Deferred text-wrapper checkpoints
+
+A separate111-dev trial removed two redundant `GetText` wrapper checks, retaining
+existing admission and bounded decoding checks. Correctness/resource tests passed.
+One public pair plus its final confirmation did not establish acceptable benefit:
+large unlimited detailed medians improved, finite medians tracked shifting controls,
+and small cases remained slower/noisy. Allocations were unchanged. The trial was
+reverted; current source and immutable110 retain their existing checks. No further
+timing or harness rescue follows. [All observations and proof](artifacts/python-text-checkpoints-20261019/RESULT.md)
+also record why constant capture text would require new retained metadata.
+
 ## Deferred detailed-result pre-count
 
 A subsequent110-dev prototype used the existing native literal counter to
