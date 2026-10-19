@@ -1,5 +1,16 @@
 # Changelog
 
+## Development: Python scalar EOF interruption
+
+Check the original invocation once more after the shared Python scalar VM fails
+at end of input. Generic Count and the public match cursor can no longer return
+a count or ordinary EOF after cancellation/deadline expiry on the last VM step.
+Fault cleanup releases exclusive scratch and preserves previously owned snapshots.
+The affected EOF path consumes one additional bounded work unit; native search
+declines, allocation, captures, scalar semantics and byte limits retain their scope.
+The defect is reproduced against immutable scalar.111; corrected candidate
+qualification is pending. Existing packages and historical receipts stay immutable.
+
 ## Private Core/PythonRe scalar.111 qualification
 
 Frozen723d5581/C#10245c82 removes obsolete execution,reuses controlled finite

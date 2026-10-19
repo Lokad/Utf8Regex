@@ -251,6 +251,10 @@ internal struct PythonReScalarMatchState
                 if (!search) { _finished = true; return false; }
                 if (_position == input.Length)
                 {
+                    // The VM can fail on its last instruction after the entry
+                    // poll. Keep EOF and pure Count publication under the
+                    // original authority, just like candidate-search declines.
+                    Checkpoint(input);
                     _finished = true;
                     return false;
                 }

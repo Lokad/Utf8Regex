@@ -537,6 +537,11 @@ beyond that value reports `Requested = ulong.MaxValue` without wrapping.
 
 A step is a bounded engine/checkpoint unit, not one byte or scalar. Work counts
 may change between releases; validation/copy loops operate in bounded blocks.
+Shared scalar discovery checks the original token and absolute deadline after
+a final VM failure before reporting EOF. Generic Count and the explicit match
+cursor therefore cannot report ordinary completion after terminal interruption.
+This EOF boundary consumes one bounded work unit; required numerical work can
+rise by one without changing matching, byte admission or retained snapshots.
 The shared finite forward exact-literal Count path now admits its constant-time
 increment with the bounded candidate search/comparison, retaining the terminal
 publication check; see the versioned work-unit contract in HOST-INTEGRATION.md.

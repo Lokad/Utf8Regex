@@ -1,5 +1,13 @@
 # Selected current-source performance
 
+A subsequent112-dev correctness correction checks original interruption before
+Python scalar EOF. One existing public slice-policy pair (five small patterns,
+four finite controls and token lanes) observes Count medians-1.9..+7.0%, unchanged
+allocations. Short samples and unchanged controls-10.8..+10.2% prevent a precise
+causal overhead/ceiling claim. FullOpts is not default PGO or exact-package cost.
+No confirmation or tuning campaign follows the mandatory one-check correction.
+[Complete counterexamples, raw evidence and limits](artifacts/python-count-publication-20261019/RESULT.md).
+
 The latest immutable **Core/PythonRe scalar.111** observation uses producer
 723d5581,C#10245c82,actual package DLLs and.NET10.0.12/default tiering.10K capture
 matches:Count101.510us unrestricted/255.510us finite,112B finite (2.517x observed);
