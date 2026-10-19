@@ -47,6 +47,21 @@ source result, not default-PGO, PythonRe or immutable110 speedup evidence. Work
 and working requirements fall with removed VM work/storage; basic metering and
 original authority remain. [Caller/contract/measurements](bench/Experiments/FiniteSimpleCount-20261019/README.md).
 
+## Borrow immutable plans during candidate verification
+
+Subsequent111-dev source passes the existing readonly search/simple plans by
+reference across eight interpreter helpers. Actual sizes are2744/536B. Release
+code shows repeated per-candidate copies disappear: the main finder's stack
+reservation falls3752->520B on Linux,3832->552B on Windows. Algorithms, search,
+SIMD, allocations and numeric metering are unchanged.
+
+One closed public Count pair on.NET10.0.12 FullOpts/R2R-off records optional-hit
+1.737ms->0.142ms (ordinary/compiled) and miss0.843-0.846ms->0.171-0.172ms,
+1792B unchanged. Finite controls stay within0.9%; fixed controls move+2.1..+6.4%.
+All120 samples>=74.91ms; no confirmation or further timing. This is scoped source
+evidence, not default-PGO/Python/immutable110/whole-engine parity qualification.
+[Caller/codegen/raw evidence](bench/Experiments/SimplePlanBorrows-20261019/README.md).
+
 ## Scalar value-Match projection
 
 Subsequent110-dev source, parent8439227b, reuses full-input validation for ASCII /

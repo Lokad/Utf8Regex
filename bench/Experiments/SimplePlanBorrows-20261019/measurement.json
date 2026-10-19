@@ -1,0 +1,1614 @@
+{
+  "before": [
+    {
+      "Kind": "identity",
+      "CoreSha256": "B1F47A32B63963388085B70436522142A605A84036AB8B39F1905D1FED63B306",
+      "Runtime": "10.0.12",
+      "HarnessSha256": "45F6D7730B1A184B977BBC98DA1180E778A9DB7128303A38EBA2903790B38407",
+      "Tiering": "0"
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "optional-hit/ordinary/unlimited",
+      "Bytes": 13000,
+      "Count": 2000,
+      "First": 4,
+      "Length": 3
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "optional-hit/ordinary/finite",
+      "Bytes": 13000,
+      "Count": 2000,
+      "First": 4,
+      "Length": 3
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "optional-hit/compiled/unlimited",
+      "Bytes": 13000,
+      "Count": 2000,
+      "First": 4,
+      "Length": 3
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "optional-hit/compiled/finite",
+      "Bytes": 13000,
+      "Count": 2000,
+      "First": 4,
+      "Length": 3
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "optional-miss/ordinary/unlimited",
+      "Bytes": 13000,
+      "Count": 0,
+      "First": -1,
+      "Length": 0
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "optional-miss/ordinary/finite",
+      "Bytes": 13000,
+      "Count": 0,
+      "First": -1,
+      "Length": 0
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "optional-miss/compiled/unlimited",
+      "Bytes": 13000,
+      "Count": 0,
+      "First": -1,
+      "Length": 0
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "optional-miss/compiled/finite",
+      "Bytes": 13000,
+      "Count": 0,
+      "First": -1,
+      "Length": 0
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "fixed-control/ordinary/unlimited",
+      "Bytes": 14000,
+      "Count": 2000,
+      "First": 4,
+      "Length": 4
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "fixed-control/ordinary/finite",
+      "Bytes": 14000,
+      "Count": 2000,
+      "First": 4,
+      "Length": 4
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "fixed-control/compiled/unlimited",
+      "Bytes": 14000,
+      "Count": 2000,
+      "First": 4,
+      "Length": 4
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "fixed-control/compiled/finite",
+      "Bytes": 14000,
+      "Count": 2000,
+      "First": 4,
+      "Length": 4
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/ordinary/unlimited",
+      "Ordinal": 0,
+      "Ns": 1735040.425531915,
+      "Bytes": 1792,
+      "Ms": 81.5469,
+      "Iterations": 47
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/ordinary/finite",
+      "Ordinal": 0,
+      "Ns": 555222.3776223776,
+      "Bytes": 112,
+      "Ms": 79.3968,
+      "Iterations": 143
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/compiled/unlimited",
+      "Ordinal": 0,
+      "Ns": 1736095.744680851,
+      "Bytes": 1792,
+      "Ms": 81.5965,
+      "Iterations": 47
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/compiled/finite",
+      "Ordinal": 0,
+      "Ns": 557069.8630136986,
+      "Bytes": 112,
+      "Ms": 81.3322,
+      "Iterations": 146
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/ordinary/unlimited",
+      "Ordinal": 0,
+      "Ns": 839496.8421052631,
+      "Bytes": 1792,
+      "Ms": 79.7522,
+      "Iterations": 95
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/ordinary/finite",
+      "Ordinal": 0,
+      "Ns": 649085.3658536585,
+      "Bytes": 112,
+      "Ms": 79.8375,
+      "Iterations": 123
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/compiled/unlimited",
+      "Ordinal": 0,
+      "Ns": 831924.7422680412,
+      "Bytes": 1792,
+      "Ms": 80.6967,
+      "Iterations": 97
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/compiled/finite",
+      "Ordinal": 0,
+      "Ns": 653847.2,
+      "Bytes": 112,
+      "Ms": 81.7309,
+      "Iterations": 125
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/ordinary/unlimited",
+      "Ordinal": 0,
+      "Ns": 7924.041313017691,
+      "Bytes": 0,
+      "Ms": 77.4892,
+      "Iterations": 9779
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/ordinary/finite",
+      "Ordinal": 0,
+      "Ns": 19816.62904439428,
+      "Bytes": 112,
+      "Ms": 79.0089,
+      "Iterations": 3987
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/compiled/unlimited",
+      "Ordinal": 0,
+      "Ns": 7870.3647271688415,
+      "Bytes": 0,
+      "Ms": 82.6467,
+      "Iterations": 10501
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/compiled/finite",
+      "Ordinal": 0,
+      "Ns": 19914.15313225058,
+      "Bytes": 112,
+      "Ms": 77.247,
+      "Iterations": 3879
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/compiled/finite",
+      "Ordinal": 1,
+      "Ns": 19727.197731374064,
+      "Bytes": 112,
+      "Ms": 76.5218,
+      "Iterations": 3879
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/compiled/unlimited",
+      "Ordinal": 1,
+      "Ns": 7774.421483668222,
+      "Bytes": 0,
+      "Ms": 81.6392,
+      "Iterations": 10501
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/ordinary/finite",
+      "Ordinal": 1,
+      "Ns": 19884.17356408327,
+      "Bytes": 112,
+      "Ms": 79.2782,
+      "Iterations": 3987
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/ordinary/unlimited",
+      "Ordinal": 1,
+      "Ns": 7660.813989160446,
+      "Bytes": 0,
+      "Ms": 74.9151,
+      "Iterations": 9779
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/compiled/finite",
+      "Ordinal": 1,
+      "Ns": 650465.6,
+      "Bytes": 112,
+      "Ms": 81.3082,
+      "Iterations": 125
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/compiled/unlimited",
+      "Ordinal": 1,
+      "Ns": 843812.3711340206,
+      "Bytes": 1792,
+      "Ms": 81.8498,
+      "Iterations": 97
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/ordinary/finite",
+      "Ordinal": 1,
+      "Ns": 646053.6585365854,
+      "Bytes": 112,
+      "Ms": 79.4646,
+      "Iterations": 123
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/ordinary/unlimited",
+      "Ordinal": 1,
+      "Ns": 842883.1578947369,
+      "Bytes": 1792,
+      "Ms": 80.0739,
+      "Iterations": 95
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/compiled/finite",
+      "Ordinal": 1,
+      "Ns": 556312.3287671233,
+      "Bytes": 112,
+      "Ms": 81.2216,
+      "Iterations": 146
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/compiled/unlimited",
+      "Ordinal": 1,
+      "Ns": 1737412.7659574468,
+      "Bytes": 1792,
+      "Ms": 81.6584,
+      "Iterations": 47
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/ordinary/finite",
+      "Ordinal": 1,
+      "Ns": 559012.5874125874,
+      "Bytes": 112,
+      "Ms": 79.9388,
+      "Iterations": 143
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/ordinary/unlimited",
+      "Ordinal": 1,
+      "Ns": 1736559.574468085,
+      "Bytes": 1792,
+      "Ms": 81.6183,
+      "Iterations": 47
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/ordinary/unlimited",
+      "Ordinal": 2,
+      "Ns": 1736378.7234042552,
+      "Bytes": 1792,
+      "Ms": 81.6098,
+      "Iterations": 47
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/ordinary/finite",
+      "Ordinal": 2,
+      "Ns": 565183.2167832168,
+      "Bytes": 112,
+      "Ms": 80.8212,
+      "Iterations": 143
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/compiled/unlimited",
+      "Ordinal": 2,
+      "Ns": 1746925.5319148935,
+      "Bytes": 1792,
+      "Ms": 82.1055,
+      "Iterations": 47
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/compiled/finite",
+      "Ordinal": 2,
+      "Ns": 554940.4109589041,
+      "Bytes": 112,
+      "Ms": 81.0213,
+      "Iterations": 146
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/ordinary/unlimited",
+      "Ordinal": 2,
+      "Ns": 839215.7894736842,
+      "Bytes": 1792,
+      "Ms": 79.7255,
+      "Iterations": 95
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/ordinary/finite",
+      "Ordinal": 2,
+      "Ns": 647386.9918699187,
+      "Bytes": 112,
+      "Ms": 79.6286,
+      "Iterations": 123
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/compiled/unlimited",
+      "Ordinal": 2,
+      "Ns": 846595.8762886598,
+      "Bytes": 1792,
+      "Ms": 82.1198,
+      "Iterations": 97
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/compiled/finite",
+      "Ordinal": 2,
+      "Ns": 652065.6,
+      "Bytes": 112,
+      "Ms": 81.5082,
+      "Iterations": 125
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/ordinary/unlimited",
+      "Ordinal": 2,
+      "Ns": 7871.847837202168,
+      "Bytes": 0,
+      "Ms": 76.9788,
+      "Iterations": 9779
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/ordinary/finite",
+      "Ordinal": 2,
+      "Ns": 20030.122899423124,
+      "Bytes": 112,
+      "Ms": 79.8601,
+      "Iterations": 3987
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/compiled/unlimited",
+      "Ordinal": 2,
+      "Ns": 7808.49442910199,
+      "Bytes": 0,
+      "Ms": 81.997,
+      "Iterations": 10501
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/compiled/finite",
+      "Ordinal": 2,
+      "Ns": 20087.419437999484,
+      "Bytes": 112,
+      "Ms": 77.9191,
+      "Iterations": 3879
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/compiled/finite",
+      "Ordinal": 3,
+      "Ns": 20065.71281258056,
+      "Bytes": 112,
+      "Ms": 77.8349,
+      "Iterations": 3879
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/compiled/unlimited",
+      "Ordinal": 3,
+      "Ns": 7874.707170745643,
+      "Bytes": 0,
+      "Ms": 82.6923,
+      "Iterations": 10501
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/ordinary/finite",
+      "Ordinal": 3,
+      "Ns": 19973.68949084525,
+      "Bytes": 112,
+      "Ms": 79.6351,
+      "Iterations": 3987
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/ordinary/unlimited",
+      "Ordinal": 3,
+      "Ns": 8007.526331935781,
+      "Bytes": 0,
+      "Ms": 78.3056,
+      "Iterations": 9779
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/compiled/finite",
+      "Ordinal": 3,
+      "Ns": 643288.8,
+      "Bytes": 112,
+      "Ms": 80.4111,
+      "Iterations": 125
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/compiled/unlimited",
+      "Ordinal": 3,
+      "Ns": 847570.1030927835,
+      "Bytes": 1792,
+      "Ms": 82.2143,
+      "Iterations": 97
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/ordinary/finite",
+      "Ordinal": 3,
+      "Ns": 660339.837398374,
+      "Bytes": 112,
+      "Ms": 81.2218,
+      "Iterations": 123
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/ordinary/unlimited",
+      "Ordinal": 3,
+      "Ns": 842688.4210526316,
+      "Bytes": 1792,
+      "Ms": 80.0554,
+      "Iterations": 95
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/compiled/finite",
+      "Ordinal": 3,
+      "Ns": 553837.6712328767,
+      "Bytes": 112,
+      "Ms": 80.8603,
+      "Iterations": 146
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/compiled/unlimited",
+      "Ordinal": 3,
+      "Ns": 1737340.425531915,
+      "Bytes": 1792,
+      "Ms": 81.655,
+      "Iterations": 47
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/ordinary/finite",
+      "Ordinal": 3,
+      "Ns": 560274.1258741259,
+      "Bytes": 112,
+      "Ms": 80.1192,
+      "Iterations": 143
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/ordinary/unlimited",
+      "Ordinal": 3,
+      "Ns": 1743761.7021276595,
+      "Bytes": 1792,
+      "Ms": 81.9568,
+      "Iterations": 47
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/ordinary/unlimited",
+      "Ordinal": 4,
+      "Ns": 1756417.0212765958,
+      "Bytes": 1792,
+      "Ms": 82.5516,
+      "Iterations": 47
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/ordinary/finite",
+      "Ordinal": 4,
+      "Ns": 558930.7692307692,
+      "Bytes": 112,
+      "Ms": 79.9271,
+      "Iterations": 143
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/compiled/unlimited",
+      "Ordinal": 4,
+      "Ns": 1742953.1914893617,
+      "Bytes": 1792,
+      "Ms": 81.9188,
+      "Iterations": 47
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/compiled/finite",
+      "Ordinal": 4,
+      "Ns": 561205.4794520548,
+      "Bytes": 112,
+      "Ms": 81.936,
+      "Iterations": 146
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/ordinary/unlimited",
+      "Ordinal": 4,
+      "Ns": 853630.5263157894,
+      "Bytes": 1792,
+      "Ms": 81.0949,
+      "Iterations": 95
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/ordinary/finite",
+      "Ordinal": 4,
+      "Ns": 655608.1300813009,
+      "Bytes": 112,
+      "Ms": 80.6398,
+      "Iterations": 123
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/compiled/unlimited",
+      "Ordinal": 4,
+      "Ns": 846406.1855670103,
+      "Bytes": 1792,
+      "Ms": 82.1014,
+      "Iterations": 97
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/compiled/finite",
+      "Ordinal": 4,
+      "Ns": 650959.2,
+      "Bytes": 112,
+      "Ms": 81.3699,
+      "Iterations": 125
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/ordinary/unlimited",
+      "Ordinal": 4,
+      "Ns": 7997.310563452295,
+      "Bytes": 0,
+      "Ms": 78.2057,
+      "Iterations": 9779
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/ordinary/finite",
+      "Ordinal": 4,
+      "Ns": 19633.96037120642,
+      "Bytes": 112,
+      "Ms": 78.2806,
+      "Iterations": 3987
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/compiled/unlimited",
+      "Ordinal": 4,
+      "Ns": 7748.690600895153,
+      "Bytes": 0,
+      "Ms": 81.369,
+      "Iterations": 10501
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/compiled/finite",
+      "Ordinal": 4,
+      "Ns": 20037.53544728023,
+      "Bytes": 112,
+      "Ms": 77.7256,
+      "Iterations": 3879
+    },
+    {
+      "Kind": "complete"
+    }
+  ],
+  "after": [
+    {
+      "Kind": "identity",
+      "CoreSha256": "1D1A5003A446C089594E48EA0D8326F119B2CA6A81B06FB60FCF88A3BAA985A9",
+      "Runtime": "10.0.12",
+      "HarnessSha256": "45F6D7730B1A184B977BBC98DA1180E778A9DB7128303A38EBA2903790B38407",
+      "Tiering": "0"
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "optional-hit/ordinary/unlimited",
+      "Bytes": 13000,
+      "Count": 2000,
+      "First": 4,
+      "Length": 3
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "optional-hit/ordinary/finite",
+      "Bytes": 13000,
+      "Count": 2000,
+      "First": 4,
+      "Length": 3
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "optional-hit/compiled/unlimited",
+      "Bytes": 13000,
+      "Count": 2000,
+      "First": 4,
+      "Length": 3
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "optional-hit/compiled/finite",
+      "Bytes": 13000,
+      "Count": 2000,
+      "First": 4,
+      "Length": 3
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "optional-miss/ordinary/unlimited",
+      "Bytes": 13000,
+      "Count": 0,
+      "First": -1,
+      "Length": 0
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "optional-miss/ordinary/finite",
+      "Bytes": 13000,
+      "Count": 0,
+      "First": -1,
+      "Length": 0
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "optional-miss/compiled/unlimited",
+      "Bytes": 13000,
+      "Count": 0,
+      "First": -1,
+      "Length": 0
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "optional-miss/compiled/finite",
+      "Bytes": 13000,
+      "Count": 0,
+      "First": -1,
+      "Length": 0
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "fixed-control/ordinary/unlimited",
+      "Bytes": 14000,
+      "Count": 2000,
+      "First": 4,
+      "Length": 4
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "fixed-control/ordinary/finite",
+      "Bytes": 14000,
+      "Count": 2000,
+      "First": 4,
+      "Length": 4
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "fixed-control/compiled/unlimited",
+      "Bytes": 14000,
+      "Count": 2000,
+      "First": 4,
+      "Length": 4
+    },
+    {
+      "Kind": "preflight",
+      "Lane": "fixed-control/compiled/finite",
+      "Bytes": 14000,
+      "Count": 2000,
+      "First": 4,
+      "Length": 4
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/ordinary/unlimited",
+      "Ordinal": 0,
+      "Ns": 140118.51179673322,
+      "Bytes": 1792,
+      "Ms": 77.2053,
+      "Iterations": 551
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/ordinary/finite",
+      "Ordinal": 0,
+      "Ns": 553630.2816901408,
+      "Bytes": 112,
+      "Ms": 78.6155,
+      "Iterations": 142
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/compiled/unlimited",
+      "Ordinal": 0,
+      "Ns": 142155.57553956835,
+      "Bytes": 1792,
+      "Ms": 79.0385,
+      "Iterations": 556
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/compiled/finite",
+      "Ordinal": 0,
+      "Ns": 562706.2068965518,
+      "Bytes": 112,
+      "Ms": 81.5924,
+      "Iterations": 145
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/ordinary/unlimited",
+      "Ordinal": 0,
+      "Ns": 171268.6274509804,
+      "Bytes": 1792,
+      "Ms": 78.6123,
+      "Iterations": 459
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/ordinary/finite",
+      "Ordinal": 0,
+      "Ns": 635356.3492063492,
+      "Bytes": 112,
+      "Ms": 80.0549,
+      "Iterations": 126
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/compiled/unlimited",
+      "Ordinal": 0,
+      "Ns": 172154.80349344978,
+      "Bytes": 1792,
+      "Ms": 78.8469,
+      "Iterations": 458
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/compiled/finite",
+      "Ordinal": 0,
+      "Ns": 640000.8064516129,
+      "Bytes": 112,
+      "Ms": 79.3601,
+      "Iterations": 124
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/ordinary/unlimited",
+      "Ordinal": 0,
+      "Ns": 8048.964423743931,
+      "Bytes": 0,
+      "Ms": 81.2221,
+      "Iterations": 10091
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/ordinary/finite",
+      "Ordinal": 0,
+      "Ns": 20738.20074746396,
+      "Bytes": 112,
+      "Ms": 77.6853,
+      "Iterations": 3746
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/compiled/unlimited",
+      "Ordinal": 0,
+      "Ns": 8082.779339083245,
+      "Bytes": 0,
+      "Ms": 83.4062,
+      "Iterations": 10319
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/compiled/finite",
+      "Ordinal": 0,
+      "Ns": 21124.15620641562,
+      "Bytes": 112,
+      "Ms": 75.7301,
+      "Iterations": 3585
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/compiled/finite",
+      "Ordinal": 1,
+      "Ns": 21123.403068340307,
+      "Bytes": 112,
+      "Ms": 75.7274,
+      "Iterations": 3585
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/compiled/unlimited",
+      "Ordinal": 1,
+      "Ns": 8127.221630002908,
+      "Bytes": 0,
+      "Ms": 83.8648,
+      "Iterations": 10319
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/ordinary/finite",
+      "Ordinal": 1,
+      "Ns": 21158.96956753871,
+      "Bytes": 112,
+      "Ms": 79.2615,
+      "Iterations": 3746
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/ordinary/unlimited",
+      "Ordinal": 1,
+      "Ns": 8091.378456049945,
+      "Bytes": 0,
+      "Ms": 81.6501,
+      "Iterations": 10091
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/compiled/finite",
+      "Ordinal": 1,
+      "Ns": 652571.7741935484,
+      "Bytes": 112,
+      "Ms": 80.9189,
+      "Iterations": 124
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/compiled/unlimited",
+      "Ordinal": 1,
+      "Ns": 173276.4192139738,
+      "Bytes": 1792,
+      "Ms": 79.3606,
+      "Iterations": 458
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/ordinary/finite",
+      "Ordinal": 1,
+      "Ns": 648242.8571428572,
+      "Bytes": 112,
+      "Ms": 81.6786,
+      "Iterations": 126
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/ordinary/unlimited",
+      "Ordinal": 1,
+      "Ns": 171411.76470588235,
+      "Bytes": 1792,
+      "Ms": 78.678,
+      "Iterations": 459
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/compiled/finite",
+      "Ordinal": 1,
+      "Ns": 555645.5172413794,
+      "Bytes": 112,
+      "Ms": 80.5686,
+      "Iterations": 145
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/compiled/unlimited",
+      "Ordinal": 1,
+      "Ns": 142626.07913669065,
+      "Bytes": 1792,
+      "Ms": 79.3001,
+      "Iterations": 556
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/ordinary/finite",
+      "Ordinal": 1,
+      "Ns": 559978.1690140845,
+      "Bytes": 112,
+      "Ms": 79.5169,
+      "Iterations": 142
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/ordinary/unlimited",
+      "Ordinal": 1,
+      "Ns": 142138.11252268602,
+      "Bytes": 1792,
+      "Ms": 78.3181,
+      "Iterations": 551
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/ordinary/unlimited",
+      "Ordinal": 2,
+      "Ns": 143147.73139745917,
+      "Bytes": 1792,
+      "Ms": 78.8744,
+      "Iterations": 551
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/ordinary/finite",
+      "Ordinal": 2,
+      "Ns": 563238.0281690141,
+      "Bytes": 112,
+      "Ms": 79.9798,
+      "Iterations": 142
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/compiled/unlimited",
+      "Ordinal": 2,
+      "Ns": 142246.94244604316,
+      "Bytes": 1792,
+      "Ms": 79.0893,
+      "Iterations": 556
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/compiled/finite",
+      "Ordinal": 2,
+      "Ns": 560061.3793103448,
+      "Bytes": 112,
+      "Ms": 81.2089,
+      "Iterations": 145
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/ordinary/unlimited",
+      "Ordinal": 2,
+      "Ns": 172155.11982570807,
+      "Bytes": 1792,
+      "Ms": 79.0192,
+      "Iterations": 459
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/ordinary/finite",
+      "Ordinal": 2,
+      "Ns": 648092.8571428572,
+      "Bytes": 112,
+      "Ms": 81.6597,
+      "Iterations": 126
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/compiled/unlimited",
+      "Ordinal": 2,
+      "Ns": 170770.3056768559,
+      "Bytes": 1792,
+      "Ms": 78.2128,
+      "Iterations": 458
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/compiled/finite",
+      "Ordinal": 2,
+      "Ns": 655907.2580645161,
+      "Bytes": 112,
+      "Ms": 81.3325,
+      "Iterations": 124
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/ordinary/unlimited",
+      "Ordinal": 2,
+      "Ns": 8028.14389059558,
+      "Bytes": 0,
+      "Ms": 81.012,
+      "Iterations": 10091
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/ordinary/finite",
+      "Ordinal": 2,
+      "Ns": 21302.50934329952,
+      "Bytes": 112,
+      "Ms": 79.7992,
+      "Iterations": 3746
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/compiled/unlimited",
+      "Ordinal": 2,
+      "Ns": 8183.816261265627,
+      "Bytes": 0,
+      "Ms": 84.4488,
+      "Iterations": 10319
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/compiled/finite",
+      "Ordinal": 2,
+      "Ns": 21295.955369595536,
+      "Bytes": 112,
+      "Ms": 76.346,
+      "Iterations": 3585
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/compiled/finite",
+      "Ordinal": 3,
+      "Ns": 21196.847977684796,
+      "Bytes": 112,
+      "Ms": 75.9907,
+      "Iterations": 3585
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/compiled/unlimited",
+      "Ordinal": 3,
+      "Ns": 8072.8268243046805,
+      "Bytes": 0,
+      "Ms": 83.3035,
+      "Iterations": 10319
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/ordinary/finite",
+      "Ordinal": 3,
+      "Ns": 21340.176187933797,
+      "Bytes": 112,
+      "Ms": 79.9403,
+      "Iterations": 3746
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/ordinary/unlimited",
+      "Ordinal": 3,
+      "Ns": 8245.188782083043,
+      "Bytes": 0,
+      "Ms": 83.2022,
+      "Iterations": 10091
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/compiled/finite",
+      "Ordinal": 3,
+      "Ns": 661458.0645161291,
+      "Bytes": 112,
+      "Ms": 82.0208,
+      "Iterations": 124
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/compiled/unlimited",
+      "Ordinal": 3,
+      "Ns": 171437.11790393014,
+      "Bytes": 1792,
+      "Ms": 78.5182,
+      "Iterations": 458
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/ordinary/finite",
+      "Ordinal": 3,
+      "Ns": 654121.4285714285,
+      "Bytes": 112,
+      "Ms": 82.4193,
+      "Iterations": 126
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/ordinary/unlimited",
+      "Ordinal": 3,
+      "Ns": 171823.9651416122,
+      "Bytes": 1792,
+      "Ms": 78.8672,
+      "Iterations": 459
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/compiled/finite",
+      "Ordinal": 3,
+      "Ns": 556157.9310344828,
+      "Bytes": 112,
+      "Ms": 80.6429,
+      "Iterations": 145
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/compiled/unlimited",
+      "Ordinal": 3,
+      "Ns": 141950.35971223022,
+      "Bytes": 1792,
+      "Ms": 78.9244,
+      "Iterations": 556
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/ordinary/finite",
+      "Ordinal": 3,
+      "Ns": 554249.2957746478,
+      "Bytes": 112,
+      "Ms": 78.7034,
+      "Iterations": 142
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/ordinary/unlimited",
+      "Ordinal": 3,
+      "Ns": 142008.7114337568,
+      "Bytes": 1792,
+      "Ms": 78.2468,
+      "Iterations": 551
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/ordinary/unlimited",
+      "Ordinal": 4,
+      "Ns": 140834.11978221417,
+      "Bytes": 1792,
+      "Ms": 77.5996,
+      "Iterations": 551
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/ordinary/finite",
+      "Ordinal": 4,
+      "Ns": 551354.2253521127,
+      "Bytes": 112,
+      "Ms": 78.2923,
+      "Iterations": 142
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/compiled/unlimited",
+      "Ordinal": 4,
+      "Ns": 141283.09352517987,
+      "Bytes": 1792,
+      "Ms": 78.5534,
+      "Iterations": 556
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-hit/compiled/finite",
+      "Ordinal": 4,
+      "Ns": 554984.1379310344,
+      "Bytes": 112,
+      "Ms": 80.4727,
+      "Iterations": 145
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/ordinary/unlimited",
+      "Ordinal": 4,
+      "Ns": 171572.54901960783,
+      "Bytes": 1792,
+      "Ms": 78.7518,
+      "Iterations": 459
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/ordinary/finite",
+      "Ordinal": 4,
+      "Ns": 653316.6666666666,
+      "Bytes": 112,
+      "Ms": 82.3179,
+      "Iterations": 126
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/compiled/unlimited",
+      "Ordinal": 4,
+      "Ns": 171249.5633187773,
+      "Bytes": 1792,
+      "Ms": 78.4323,
+      "Iterations": 458
+    },
+    {
+      "Kind": "sample",
+      "Lane": "optional-miss/compiled/finite",
+      "Ordinal": 4,
+      "Ns": 648960.4838709678,
+      "Bytes": 112,
+      "Ms": 80.4711,
+      "Iterations": 124
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/ordinary/unlimited",
+      "Ordinal": 4,
+      "Ns": 8161.480527202458,
+      "Bytes": 0,
+      "Ms": 82.3575,
+      "Iterations": 10091
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/ordinary/finite",
+      "Ordinal": 4,
+      "Ns": 20904.057661505605,
+      "Bytes": 112,
+      "Ms": 78.3066,
+      "Iterations": 3746
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/compiled/unlimited",
+      "Ordinal": 4,
+      "Ns": 7972.2453726136255,
+      "Bytes": 0,
+      "Ms": 82.2656,
+      "Iterations": 10319
+    },
+    {
+      "Kind": "sample",
+      "Lane": "fixed-control/compiled/finite",
+      "Ordinal": 4,
+      "Ns": 21217.852161785217,
+      "Bytes": 112,
+      "Ms": 76.066,
+      "Iterations": 3585
+    },
+    {
+      "Kind": "complete"
+    }
+  ],
+  "Summary": {
+    "Identities": {
+      "before": {
+        "Kind": "identity",
+        "CoreSha256": "B1F47A32B63963388085B70436522142A605A84036AB8B39F1905D1FED63B306",
+        "Runtime": "10.0.12",
+        "HarnessSha256": "45F6D7730B1A184B977BBC98DA1180E778A9DB7128303A38EBA2903790B38407",
+        "Tiering": "0"
+      },
+      "after": {
+        "Kind": "identity",
+        "CoreSha256": "1D1A5003A446C089594E48EA0D8326F119B2CA6A81B06FB60FCF88A3BAA985A9",
+        "Runtime": "10.0.12",
+        "HarnessSha256": "45F6D7730B1A184B977BBC98DA1180E778A9DB7128303A38EBA2903790B38407",
+        "Tiering": "0"
+      }
+    },
+    "Rows": [
+      {
+        "Lane": "optional-hit/ordinary/unlimited",
+        "BeforeUs": 1736.559574468085,
+        "AfterUs": 142.00871143375682,
+        "Ratio": 0.08177589385452246,
+        "BeforeBytes": [
+          1792
+        ],
+        "AfterBytes": [
+          1792
+        ],
+        "MinSampleMs": 77.2053,
+        "MaxSpread": 1.0216189821165127
+      },
+      {
+        "Lane": "optional-hit/ordinary/finite",
+        "BeforeUs": 559.0125874125873,
+        "AfterUs": 554.2492957746479,
+        "Ratio": 0.9914790977069289,
+        "BeforeBytes": [
+          112
+        ],
+        "AfterBytes": [
+          112
+        ],
+        "MinSampleMs": 78.2923,
+        "MaxSpread": 1.0215538437368683
+      },
+      {
+        "Lane": "optional-hit/compiled/unlimited",
+        "BeforeUs": 1737.4127659574467,
+        "AfterUs": 142.15557553956836,
+        "Ratio": 0.08182026650485084,
+        "BeforeBytes": [
+          1792
+        ],
+        "AfterBytes": [
+          1792
+        ],
+        "MinSampleMs": 78.5534,
+        "MaxSpread": 1.0095056356567633
+      },
+      {
+        "Lane": "optional-hit/compiled/finite",
+        "BeforeUs": 556.3123287671233,
+        "AfterUs": 556.1579310344828,
+        "Ratio": 0.9997224621410374,
+        "BeforeBytes": [
+          112
+        ],
+        "AfterBytes": [
+          112
+        ],
+        "MinSampleMs": 80.4727,
+        "MaxSpread": 1.0139140354430758
+      },
+      {
+        "Lane": "optional-miss/ordinary/unlimited",
+        "BeforeUs": 842.6884210526316,
+        "AfterUs": 171.57254901960783,
+        "Ratio": 0.20360140798575416,
+        "BeforeBytes": [
+          1792
+        ],
+        "AfterBytes": [
+          1792
+        ],
+        "MinSampleMs": 78.6123,
+        "MaxSpread": 1.0171764366482494
+      },
+      {
+        "Lane": "optional-miss/ordinary/finite",
+        "BeforeUs": 649.0853658536586,
+        "AfterUs": 648.2428571428571,
+        "Ratio": 0.9987020063074549,
+        "BeforeBytes": [
+          112
+        ],
+        "AfterBytes": [
+          112
+        ],
+        "MinSampleMs": 79.4646,
+        "MaxSpread": 1.0295347317903087
+      },
+      {
+        "Lane": "optional-miss/compiled/unlimited",
+        "BeforeUs": 846.4061855670103,
+        "AfterUs": 171.43711790393013,
+        "Ratio": 0.20254709952182573,
+        "BeforeBytes": [
+          1792
+        ],
+        "AfterBytes": [
+          1792
+        ],
+        "MinSampleMs": 78.2128,
+        "MaxSpread": 1.0188062213200788
+      },
+      {
+        "Lane": "optional-miss/compiled/finite",
+        "BeforeUs": 650.9592,
+        "AfterUs": 652.5717741935483,
+        "Ratio": 1.0024772277487566,
+        "BeforeBytes": [
+          112
+        ],
+        "AfterBytes": [
+          112
+        ],
+        "MinSampleMs": 79.3601,
+        "MaxSpread": 1.0335269234791793
+      },
+      {
+        "Lane": "fixed-control/ordinary/unlimited",
+        "BeforeUs": 7.924041313017691,
+        "AfterUs": 8.091378456049945,
+        "Ratio": 1.0211176515141775,
+        "BeforeBytes": [
+          0
+        ],
+        "AfterBytes": [
+          0
+        ],
+        "MinSampleMs": 74.9151,
+        "MaxSpread": 1.0452578986078909
+      },
+      {
+        "Lane": "fixed-control/ordinary/finite",
+        "BeforeUs": 19.88417356408327,
+        "AfterUs": 21.15896956753871,
+        "Ratio": 1.0641110881147255,
+        "BeforeBytes": [
+          112
+        ],
+        "AfterBytes": [
+          112
+        ],
+        "MinSampleMs": 77.6853,
+        "MaxSpread": 1.0290273706866035
+      },
+      {
+        "Lane": "fixed-control/compiled/unlimited",
+        "BeforeUs": 7.80849442910199,
+        "AfterUs": 8.082779339083245,
+        "Ratio": 1.0351264782822927,
+        "BeforeBytes": [
+          0
+        ],
+        "AfterBytes": [
+          0
+        ],
+        "MinSampleMs": 81.369,
+        "MaxSpread": 1.0265384316166175
+      },
+      {
+        "Lane": "fixed-control/compiled/finite",
+        "BeforeUs": 20.037535447280227,
+        "AfterUs": 21.196847977684797,
+        "Ratio": 1.0578570420226967,
+        "BeforeBytes": [
+          112
+        ],
+        "AfterBytes": [
+          112
+        ],
+        "MinSampleMs": 75.7274,
+        "MaxSpread": 1.0182601559294215
+      }
+    ]
+  },
+  "Codegen": {
+    "windows": {
+      "before": [
+        {
+          "Method": "Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:FindNextSimplePattern(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionProgram,byref,byref,int,Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline,byref,byref):int (FullOpts)",
+          "Stack": [
+            "0xEF8"
+          ],
+          "BulkWriteBarrierCalls": 10
+        },
+        {
+          "Method": "Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:TryFindNextSingleBranchFixedLengthSimplePattern(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Planning.Utf8SearchPlan,Lokad.Utf8Regex.Internal.Execution.AsciiSimplePatternPlan,int,Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline,byref,byref):bool (FullOpts)",
+          "Stack": [
+            "664"
+          ],
+          "BulkWriteBarrierCalls": 3
+        },
+        {
+          "Method": "Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:TryMatchSimplePatternAt(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.AsciiSimplePatternPlan,int,byref):bool (FullOpts)",
+          "Stack": [
+            "600"
+          ],
+          "BulkWriteBarrierCalls": 1
+        },
+        {
+          "Method": "Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:TryMatchSimplePatternBranch(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.AsciiSimplePatternToken[],int,Lokad.Utf8Regex.Internal.Execution.AsciiSimplePatternPlan,byref):bool (FullOpts)",
+          "Stack": [
+            "72"
+          ],
+          "BulkWriteBarrierCalls": 0
+        }
+      ],
+      "after": [
+        {
+          "Method": "Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:FindNextSimplePattern(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionProgram,byref,byref,int,Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline,byref,byref):int (FullOpts)",
+          "Stack": [
+            "552"
+          ],
+          "BulkWriteBarrierCalls": 1
+        },
+        {
+          "Method": "Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:TryFindNextSingleBranchFixedLengthSimplePattern(System.ReadOnlySpan`1[byte],byref,byref,int,Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline,byref,byref):bool (FullOpts)",
+          "Stack": [
+            "120"
+          ],
+          "BulkWriteBarrierCalls": 0
+        },
+        {
+          "Method": "Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:TryMatchSimplePatternAt(System.ReadOnlySpan`1[byte],byref,int,byref):bool (FullOpts)",
+          "Stack": [
+            "64"
+          ],
+          "BulkWriteBarrierCalls": 0
+        },
+        {
+          "Method": "Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:TryMatchSimplePatternBranch(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.AsciiSimplePatternToken[],int,byref,byref):bool (FullOpts)",
+          "Stack": [
+            "72"
+          ],
+          "BulkWriteBarrierCalls": 0
+        }
+      ]
+    },
+    "linux": {
+      "before": [
+        {
+          "Method": "Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:FindNextSimplePattern(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionProgram,byref,byref,int,Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline,byref,byref):int (FullOpts)",
+          "Stack": [
+            "0xEA8"
+          ],
+          "BulkWriteBarrierCalls": 1
+        },
+        {
+          "Method": "Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:TryFindNextSingleBranchFixedLengthSimplePattern(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Planning.Utf8SearchPlan,Lokad.Utf8Regex.Internal.Execution.AsciiSimplePatternPlan,int,Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline,byref,byref):bool (FullOpts)",
+          "Stack": [
+            "0xD18"
+          ],
+          "BulkWriteBarrierCalls": 0
+        },
+        {
+          "Method": "Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:TryMatchSimplePatternAt(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.AsciiSimplePatternPlan,int,byref):bool (FullOpts)",
+          "Stack": [
+            "552"
+          ],
+          "BulkWriteBarrierCalls": 0
+        },
+        {
+          "Method": "Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:TryMatchSimplePatternBranch(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.AsciiSimplePatternToken[],int,Lokad.Utf8Regex.Internal.Execution.AsciiSimplePatternPlan,byref):bool (FullOpts)",
+          "Stack": [
+            "56"
+          ],
+          "BulkWriteBarrierCalls": 0
+        }
+      ],
+      "after": [
+        {
+          "Method": "Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:FindNextSimplePattern(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionProgram,byref,byref,int,Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline,byref,byref):int (FullOpts)",
+          "Stack": [
+            "520"
+          ],
+          "BulkWriteBarrierCalls": 1
+        },
+        {
+          "Method": "Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:TryFindNextSingleBranchFixedLengthSimplePattern(System.ReadOnlySpan`1[byte],byref,byref,int,Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline,byref,byref):bool (FullOpts)",
+          "Stack": [
+            "56"
+          ],
+          "BulkWriteBarrierCalls": 0
+        },
+        {
+          "Method": "Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:TryMatchSimplePatternAt(System.ReadOnlySpan`1[byte],byref,int,byref):bool (FullOpts)",
+          "Stack": [
+            "24"
+          ],
+          "BulkWriteBarrierCalls": 0
+        },
+        {
+          "Method": "Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:TryMatchSimplePatternBranch(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.AsciiSimplePatternToken[],int,byref,byref):bool (FullOpts)",
+          "Stack": [
+            "56"
+          ],
+          "BulkWriteBarrierCalls": 0
+        }
+      ]
+    }
+  },
+  "SourceParent": "5e7d1510cfa953704b235a8929332af08a9aa1d8",
+  "EvidenceArchiveSha256": "2B9138CA35C16978FC6743590CA8AEBDC3EED21B84BE9CE5E2CB96EB2F763DC4"
+}

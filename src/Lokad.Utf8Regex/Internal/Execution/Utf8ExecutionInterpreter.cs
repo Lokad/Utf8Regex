@@ -190,8 +190,8 @@ internal static partial class Utf8ExecutionInterpreter
 
     private static bool TryFindNextSingleBranchFixedLengthSimplePattern(
         ReadOnlySpan<byte> input,
-        Utf8SearchPlan searchPlan,
-        AsciiSimplePatternPlan plan,
+        in Utf8SearchPlan searchPlan,
+        in AsciiSimplePatternPlan plan,
         int startIndex,
         Utf8ExecutionDeadline budget,
         out int candidate,
@@ -267,8 +267,8 @@ internal static partial class Utf8ExecutionInterpreter
     }
 
     private static bool TryGetSingleBranchAnchor(
-        Utf8SearchPlan searchPlan,
-        AsciiSimplePatternPlan plan,
+        in Utf8SearchPlan searchPlan,
+        in AsciiSimplePatternPlan plan,
         out byte[] anchorLiteral,
         out int anchorOffset,
         out bool ignoreCase)
@@ -297,7 +297,7 @@ internal static partial class Utf8ExecutionInterpreter
         return false;
     }
 
-    private static bool CanUseCompiledSearchPlan(Utf8SearchPlan searchPlan, AsciiSimplePatternPlan plan)
+    private static bool CanUseCompiledSearchPlan(in Utf8SearchPlan searchPlan, in AsciiSimplePatternPlan plan)
     {
         return searchPlan.Kind switch
         {
@@ -315,7 +315,7 @@ internal static partial class Utf8ExecutionInterpreter
         };
     }
 
-    private static bool ContainsSearchLiteral(AsciiSimplePatternPlan plan, byte[]? literal)
+    private static bool ContainsSearchLiteral(in AsciiSimplePatternPlan plan, byte[]? literal)
     {
         if (literal is null)
         {
@@ -333,7 +333,7 @@ internal static partial class Utf8ExecutionInterpreter
         return false;
     }
 
-    private static bool MatchesFixedLiteralByteAtOffset(AsciiSimplePatternPlan plan, int offset, byte value)
+    private static bool MatchesFixedLiteralByteAtOffset(in AsciiSimplePatternPlan plan, int offset, byte value)
     {
         foreach (var branch in plan.Branches)
         {
@@ -352,7 +352,7 @@ internal static partial class Utf8ExecutionInterpreter
         return true;
     }
 
-    private static bool MatchesFixedLiterals(ReadOnlySpan<byte> input, int candidateStart, AsciiSimplePatternPlan plan)
+    private static bool MatchesFixedLiterals(ReadOnlySpan<byte> input, int candidateStart, in AsciiSimplePatternPlan plan)
     {
         foreach (var check in plan.FixedLiteralChecks)
         {
@@ -375,7 +375,7 @@ internal static partial class Utf8ExecutionInterpreter
     // lowerer. A rejected start is a miss, not a reason to retry a second VM.
     internal static bool TryMatchSimplePatternAt(
         ReadOnlySpan<byte> input,
-        AsciiSimplePatternPlan plan,
+        in AsciiSimplePatternPlan plan,
         int startIndex,
         out int matchedLength)
     {
@@ -404,7 +404,7 @@ internal static partial class Utf8ExecutionInterpreter
         ReadOnlySpan<byte> input,
         AsciiSimplePatternToken[] branch,
         int startIndex,
-        AsciiSimplePatternPlan plan,
+        in AsciiSimplePatternPlan plan,
         out int matchedLength)
     {
         matchedLength = 0;
