@@ -1,5 +1,15 @@
 # Selected current-source performance
 
+A subsequent 113-dev Python Detailed change reuses the character count already
+projected for captures, preserving both original decode checkpoints and exact
+resource charges. One closed FullOpts public pair observes mixed-width Detailed
+enumeration 16-19% lower with unlimited/all-four finite budgets. ASCII Detailed
+medians cost2-8% more; unchanged Core controls stay within 0.7%. Main allocation
+medians match; fractional pooled/CLR differences are retained in the receipt.
+This is a scoped source tradeoff, not default-PGO/package/whole-engine or CPython
+Status qualification. No confirmation or additional timing follows.
+[All public/codegen evidence](bench/Experiments/PythonDetailedCoordinates-20261020/README.md).
+
 A later113-dev selector change orders exact-literal/boundary metadata before an
 irrelevant ASCII scan, without changing selection/validation/meters/allocation.
 One closed FullOpts source pair plus its sole confirmation observes large public

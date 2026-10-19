@@ -442,17 +442,19 @@ internal struct PythonReScalarMatchState
                 projected[i] = new Utf8PythonGroupMatchData { Number = i, ValueText = string.Empty };
                 continue;
             }
+            var startInUtf16 = _map.GetUtf16OffsetForByteOffset(start);
+            var endInUtf16 = _map.GetUtf16OffsetForByteOffset(end);
             projected[i] = new Utf8PythonGroupMatchData
             {
                 Number = i, Success = true,
                 StartOffsetInBytes = start, EndOffsetInBytes = end,
-                StartOffsetInUtf16 = _map.GetUtf16OffsetForByteOffset(start),
-                EndOffsetInUtf16 = _map.GetUtf16OffsetForByteOffset(end),
+                StartOffsetInUtf16 = startInUtf16,
+                EndOffsetInUtf16 = endInUtf16,
                 HasContiguousByteRange = true,
                 // Equal ranges can share owned immutable text; keep every
                 // group's independently projected metadata and mutable slot.
                 ValueText = i > 0 && start == StartOffsetInBytes && end == EndOffsetInBytes
-                    ? projected[0].ValueText : GetText(input, start, end),
+                    ? projected[0].ValueText : GetText(input, start, end, endInUtf16 - startInUtf16),
             };
         }
         var copiedNames = SnapshotNameEntries(input, names);
@@ -461,20 +463,20 @@ internal struct PythonReScalarMatchState
         return result;
     }
 
-    internal string GetText(ReadOnlySpan<byte> input, int start, int end)
+    internal string GetText(ReadOnlySpan<byte> input, int start, int end, int? characterCount = null)
     {
         Checkpoint(input);
         try
         {
             // String-only results need the selected scalar range's char count,
             // not a coordinate map for the complete subject. Detailed results
-            // already own a map and can reuse its derived coordinates.
+            // already project coordinates and can supply their character count.
             // Original whole-subject validation already proves the character
             // count for ASCII captures; do not validate those bytes again.
-            var count = _validation.IsAscii ? end - start
+            var count = characterCount ?? (_validation.IsAscii ? end - start
                 : start == 0 && end == input.Length ? _validation.Utf16Length : _hasMap
                 ? _map.GetUtf16OffsetForByteOffset(end) - _map.GetUtf16OffsetForByteOffset(start)
-                : Utf8Validation.Validate(input[start..end], ref _invocation).Utf16Length;
+                : Utf8Validation.Validate(input[start..end], ref _invocation).Utf16Length);
             var text = _results.DecodeUtf8(input[start..end], count, ref _invocation);
             Checkpoint(input);
             return text;
