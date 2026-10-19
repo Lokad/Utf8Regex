@@ -27,7 +27,11 @@ internal static class Utf8RegexPreparer
                 fallbackReason = null;
             }
 
-            var tree = Utf8ExecutionTreeLowerer.Lower(analyzedRegex.SemanticRegex);
+            // The scalar fallback and its offset/profile adapters do not execute
+            // this native instruction tree. Direct-family kernels retain their
+            // preparation and capture-projection inputs.
+            var tree = analyzedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !fallbackDirectFamily.HasValue
+                ? null : Utf8ExecutionTreeLowerer.Lower(analyzedRegex.SemanticRegex);
             var program = Utf8ExecutionProgramLowerer.Lower(tree);
             var searchPlan = Utf8SearchPlan.Prepare(analyzedRegex.SearchFacts);
             var deterministicGuards = Utf8DeterministicVerifierGuards.Create(tree, searchPlan);

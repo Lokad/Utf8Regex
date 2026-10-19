@@ -23,7 +23,10 @@ public sealed class Utf8CaptureSlotRetirementTests
     [InlineData("(?<piece>é|😀){2}", true)]
     public void CaptureMapsPreserveAlreadyFinalizedCatalogNumbers(string pattern, bool alternation)
     {
-        var prepared = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
+        var analyzed = Utf8FrontEnd.Analyze(pattern, RegexOptions.CultureInvariant);
+        var prepared = Lokad.Utf8Regex.Internal.Planning.Utf8RegexPreparer.Prepare(analyzed);
+        var tree = Utf8ExecutionTreeLowerer.Lower(analyzed.SemanticRegex);
+        Assert.NotNull(tree);
         var catalog = prepared.SemanticRegex.CaptureCatalog!;
         Assert.Same(catalog, prepared.ScalarProgram!.CaptureCatalog);
         Assert.False(catalog.HasSharedCaptureDeclarations);
@@ -31,17 +34,17 @@ public sealed class Utf8CaptureSlotRetirementTests
         IEnumerable<int> mapped;
         if (alternation)
         {
-            var map = Assert.IsType<Utf8AlternationBranchSpanMap>(Utf8AlternationBranchSpanMap.TryCreate(prepared.ExecutionTree, prepared.ScalarProgram!));
+            var map = Assert.IsType<Utf8AlternationBranchSpanMap>(Utf8AlternationBranchSpanMap.TryCreate(tree, prepared.ScalarProgram!));
             mapped = map.WholeMatchGroups.Concat(map.BranchGroups.SelectMany(static groups => groups));
         }
         else
         {
-            var table = Assert.IsType<Utf8GroupedLiteralSpanTable>(Utf8GroupedLiteralSpanTable.TryCreate(prepared.ExecutionTree, prepared.ScalarProgram!));
+            var table = Assert.IsType<Utf8GroupedLiteralSpanTable>(Utf8GroupedLiteralSpanTable.TryCreate(tree, prepared.ScalarProgram!));
             mapped = table.Groups;
         }
         Assert.Equal(catalog.GroupNumbers.Skip(1), mapped.Distinct().Order());
         var pending = new Stack<Utf8ExecutionNode>();
-        pending.Push(prepared.ExecutionTree!.Root);
+        pending.Push(tree!.Root);
         var loweredNumbers = new List<int>();
         while (pending.TryPop(out var node))
         {
@@ -58,7 +61,10 @@ public sealed class Utf8CaptureSlotRetirementTests
     [InlineData("(?<x>é)(?<y-x>😀)")]
     public void StatefulCaptureCatalogsDeclineBeforeScratchAndPreserveParentLoans(string pattern)
     {
-        var prepared = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
+        var analyzed = Utf8FrontEnd.Analyze(pattern, RegexOptions.CultureInvariant);
+        var prepared = Lokad.Utf8Regex.Internal.Planning.Utf8RegexPreparer.Prepare(analyzed);
+        var tree = Utf8ExecutionTreeLowerer.Lower(analyzed.SemanticRegex);
+        Assert.NotNull(tree);
         var program = prepared.ScalarProgram!;
         Assert.True(program.HasBalancing || program.HasSharedCaptureDeclarations || program.HasExplicitCaptureNumbers);
         // One work step belongs to acquiring the parent array; no work or
@@ -66,8 +72,8 @@ public sealed class Utf8CaptureSlotRetirementTests
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, 48, 1, 0);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
         parent[0] = 0xa5;
-        Assert.Null(Utf8GroupedLiteralSpanTable.TryCreate(prepared.ExecutionTree, program));
-        Assert.Null(Utf8AlternationBranchSpanMap.TryCreate(prepared.ExecutionTree, program));
+        Assert.Null(Utf8GroupedLiteralSpanTable.TryCreate(tree, program));
+        Assert.Null(Utf8AlternationBranchSpanMap.TryCreate(tree, program));
         Assert.Equal(48ul, owner.Budget.ReservedBytes);
         Assert.Equal(48ul, owner.Budget.PeakBytes);
         Assert.Equal(1ul, owner.Budget.WorkSteps);

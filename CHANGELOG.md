@@ -2,6 +2,12 @@
 
 ## Changes after scalar.105
 
+Scalar-only fallback plans no longer build or retain an unused native execution
+tree, doubled instruction array or derived verifier guards. Native/direct-family
+preparation and shared search helpers remain. Construction charges fall with the
+removed work/storage; scalar captures, NonBacktracking, strict UTF-8, original
+interruption and invocation/result controls remain unchanged.
+
 Python detailed/context projection derives lastindex/lastgroup from the existing
 successful capture journal before publication. Remove eager completion fields
 from the shared VM outcome and Python discovery state. Core operations and Python

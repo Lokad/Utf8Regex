@@ -53,7 +53,7 @@ public sealed class Utf8ExecutionPrefixScalarTests
         {
             var options = RegexOptions.CultureInvariant | direction;
             var front = Utf8FrontEnd.Compile(pattern, options);
-            var tree = front.ExecutionTree;
+            var tree = Tree(pattern, options);
             Assert.NotNull(tree);
             var guards = Utf8DeterministicVerifierGuards.Create(tree, front.SearchPlan);
             var owned = Utf8OwnedTreeParser.TryParse(pattern, options);

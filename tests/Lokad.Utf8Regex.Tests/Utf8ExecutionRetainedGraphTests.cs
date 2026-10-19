@@ -23,12 +23,16 @@ public sealed class Utf8ExecutionRetainedGraphTests
             var regex = Utf8RegexCache.GetOrAdd(pattern, RegexOptions.CultureInvariant |
                 (compiled ? RegexOptions.Compiled : RegexOptions.None));
             var expected = InspectExecutionGraph(Prepared(regex));
-            Assert.NotEmpty(expected);
+            var prepared = Prepared(regex);
+            Assert.Equal(prepared.ExecutionTree is null, expected.Count == 0);
             var cacheField = typeof(Utf8RegexCache).GetField("s_cache", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(cacheField);
             var cache = cacheField.GetValue(null); Assert.NotNull(cache);
             var entry = Field(cache, "_first"); Assert.NotNull(entry);
             var manifest = Utf8GlobalCacheDescendantTests.InspectEntryPayloads(entry);
+            var scalar = Utf8ScalarRetainedGraphTests.InspectScalarGraph(Utf8ScalarRetainedGraphTests.ScalarProgram(regex));
+            foreach (var pair in scalar)
+                Assert.Contains(manifest, extent => ReferenceEquals(extent.Value, pair.Key) && extent.Bytes == pair.Value);
             foreach (var pair in expected)
                 Assert.Contains(manifest, extent => ReferenceEquals(extent.Value, pair.Key) && extent.Bytes == pair.Value);
             Utf8RegexCache.ResetForTests();

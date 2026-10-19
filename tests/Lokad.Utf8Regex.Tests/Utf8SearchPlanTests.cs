@@ -80,7 +80,7 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void ConstructorCanCreateTreeDerivedSearchPlanForFallbackPattern()
+    public void ScalarFallbackRetainsSearchFactsWithoutUnusedTreeGuards()
     {
         var regex = new Utf8Regex("a.*b", RegexOptions.CultureInvariant);
 
@@ -91,7 +91,11 @@ public sealed class Utf8SearchPlanTests
         Assert.True(regex.Inspection.SearchPlan.HasStructuralCandidates);
         Assert.Equal(Utf8StructuralSearchYieldKind.Start, regex.Inspection.StructuralSearchPlan.YieldKind);
         Assert.Equal(Utf8StructuralSearchStageKind.FindLiteralFamily, regex.Inspection.StructuralSearchPlan.Stages![0].Kind);
-        Assert.Contains(regex.Inspection.StructuralSearchPlan.Stages!, static stage => stage.Kind == Utf8StructuralSearchStageKind.RequireByteAtOffset);
+        Assert.DoesNotContain(regex.Inspection.StructuralSearchPlan.Stages!, static stage => stage.Kind == Utf8StructuralSearchStageKind.RequireByteAtOffset);
+        Assert.Null(regex.Inspection.PreparedRegex.ExecutionTree);
+        Assert.Null(regex.Inspection.PreparedRegex.ExecutionProgram);
+        Assert.Equal(1, regex.Count("a😀b"u8));
+        Assert.Equal(6, regex.Match("a😀b"u8).LengthInBytes);
         Assert.Equal(Utf8StructuralSearchStageKind.YieldStart, regex.Inspection.StructuralSearchPlan.Stages![^1].Kind);
     }
 
@@ -620,7 +624,7 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void RuffNoqaRealPatternUsesByteSafeInterpreterLaneWithStructuralStarts()
+    public void RuffNoqaRealPatternRetainsScalarSearchFacts()
     {
         const string pattern = "(\\s*)((?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?)";
         var scalarAnalysis = Utf8FrontEnd.Compile(pattern, RegexOptions.None);
@@ -645,8 +649,6 @@ public sealed class Utf8SearchPlanTests
         Assert.Equal(Utf8StructuralSearchYieldKind.Start, analysis.StructuralSearchPlan.YieldKind);
         Assert.Equal(Utf8StructuralSearchStageKind.FindAscii, analysis.StructuralSearchPlan.Stages![0].Kind);
         Assert.Contains(analysis.StructuralSearchPlan.Stages!, static stage => stage.Kind == Utf8StructuralSearchStageKind.TransformCandidateStart);
-        Assert.True(analysis.StructuralSearchPlan.Stages!.Count(static stage => stage.Kind == Utf8StructuralSearchStageKind.RequireByteAtOffset) >= 6);
-        Assert.Contains(analysis.StructuralSearchPlan.Stages!, static stage => stage.Kind == Utf8StructuralSearchStageKind.RequireMinLength);
         Assert.Equal(Utf8StructuralSearchStageKind.YieldStart, analysis.StructuralSearchPlan.Stages![^1].Kind);
         Assert.Equal(Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace, analysis.SearchPlan.FallbackStartTransform.Kind);
         Assert.NotNull(analysis.SearchPlan.FixedDistanceSets);
@@ -654,14 +656,10 @@ public sealed class Utf8SearchPlanTests
         Assert.True(analysis.SearchPlan.FixedDistanceSets[0].Distance >= 2);
         var primaryBytes = analysis.SearchPlan.FixedDistanceSets[0].ByteSet.GetPositiveMatchBytes();
         Assert.Contains(primaryBytes, static value => value is (byte)'A' or (byte)'N' or (byte)'O' or (byte)'Q' or (byte)'a' or (byte)'n' or (byte)'o' or (byte)'q');
-        Assert.True(analysis.DeterministicGuards.HasValue);
-        Assert.NotNull(analysis.DeterministicGuards.PrefixGuards);
-        Assert.NotEmpty(analysis.DeterministicGuards.PrefixGuards!);
-        Assert.True(analysis.DeterministicGuards.PrefixGuards!.Length >= 6);
     }
 
     [Fact]
-    public void RuffNoqaTweakedPatternUsesByteSafeInterpreterLane()
+    public void RuffNoqaTweakedPatternUsesScalar()
     {
         const string pattern = "(?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?";
         var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.None);

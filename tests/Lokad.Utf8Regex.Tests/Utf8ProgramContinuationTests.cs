@@ -27,7 +27,6 @@ public sealed class Utf8ProgramContinuationTests
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var prepared = Utf8FrontEnd.Compile(Patterns[family], options);
-        Assert.NotNull(prepared.ExecutionProgram);
         // Keep the standing stable interpreted oracle for diagnosed .NET 10.0.12
         // compiled finite-lazy capture defects; compiled owned preparation is tested.
         var oracle = new Regex(Patterns[family], RegexOptions.CultureInvariant);
@@ -44,16 +43,19 @@ public sealed class Utf8ProgramContinuationTests
             AssertAt(prepared.ExecutionProgram, scalar, oracle, text, start);
     }
 
-    private static void AssertAt(Utf8ExecutionProgram program, Utf8SliceProgram scalar, Regex oracle, string text, int start)
+    private static void AssertAt(Utf8ExecutionProgram? program, Utf8SliceProgram scalar, Regex oracle, string text, int start)
     {
         var expected = oracle.Match(text, start);
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
-        var success = Utf8ExecutionInterpreter.TryMatchProgram(Encoding.ASCII.GetBytes(text), program, 0, start,
-            ref invocation, out var end, out var breach);
-        Assert.Equal(Utf8ExecutionLimitKind.None, breach);
-        Assert.Equal(expected.Success && expected.Index == start, success);
-        Assert.Equal(success ? expected.Index + expected.Length : 0, end);
-        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        if (program is not null)
+        {
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
+            var success = Utf8ExecutionInterpreter.TryMatchProgram(Encoding.ASCII.GetBytes(text), program, 0, start,
+                ref invocation, out var end, out var breach);
+            Assert.Equal(Utf8ExecutionLimitKind.None, breach);
+            Assert.Equal(expected.Success && expected.Index == start, success);
+            Assert.Equal(success ? expected.Index + expected.Length : 0, end);
+            Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        }
         Utf8ScalarCaptureWitness.AssertAsciiAt(scalar, oracle, text, start);
     }
 
@@ -78,9 +80,8 @@ public sealed class Utf8ProgramContinuationTests
     public void DeepRuntimeContinuationsMatchWithoutClrRecursion(int depth, int shape, int family, bool compiled)
     {
         var prepared = Utf8FrontEnd.Compile(Patterns[family], RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
-        Assert.NotNull(prepared.ExecutionTree);
-        var program = Utf8ExecutionProgramLowerer.Lower(new Utf8ExecutionTree(Deep(prepared.ExecutionTree.Root, depth, shape)));
-        Assert.NotNull(program);
+        var program = prepared.ExecutionTree is { } tree
+            ? Utf8ExecutionProgramLowerer.Lower(new Utf8ExecutionTree(Deep(tree.Root, depth, shape))) : null;
         var oracle = new Regex(Patterns[family], RegexOptions.CultureInvariant);
         var scalar = Utf8ScalarCaptureWitness.Lower(Patterns[family], RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None), depth, shape);
         AssertAt(program, scalar, oracle, family switch { 0 => "abc", 8 => "b", _ => "aab" }, 0);
@@ -98,11 +99,14 @@ public sealed class Utf8ProgramContinuationTests
     [MemberData(nameof(ResourceCases))]
     public void EveryDeniedByteContinuationReleasesStorageAndRecovers(int depth, int shape, int family)
     {
-        var prepared = Utf8FrontEnd.Compile(Patterns[family], RegexOptions.CultureInvariant);
+        // Exercise native alternation and a fixed class interpreter program.
+        // The former lazy scalar-only shape no longer prepares byte instructions.
+        var pattern = family == 0 ? Patterns[family] : "ab[0-9]{2}";
+        var prepared = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
         Assert.NotNull(prepared.ExecutionTree);
         var program = Utf8ExecutionProgramLowerer.Lower(new Utf8ExecutionTree(Deep(prepared.ExecutionTree.Root, depth, shape)));
         Assert.NotNull(program);
-        var input = Encoding.ASCII.GetBytes(family == 0 ? "abc" : "aab");
+        var input = Encoding.ASCII.GetBytes(family == 0 ? "abc" : "ab42");
         var baseline = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(Utf8ExecutionInterpreter.TryMatchProgram(input, program, 0, 0, ref baseline, out _, out _));
         Assert.True(baseline.Budget.PeakDepth > depth);
@@ -254,7 +258,6 @@ public sealed class Utf8ProgramContinuationTests
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var prepared = Utf8FrontEnd.Compile(pattern, options);
-        Assert.NotNull(prepared.ExecutionProgram);
         var scalar = Utf8ScalarCaptureWitness.Lower(pattern, options, 0, 0);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
         foreach (var text in new[] { "", "ab", "xab", "\nab", "ab\n", "ab\nx", "\nab\nx" })
@@ -264,10 +267,12 @@ public sealed class Utf8ProgramContinuationTests
         var starts = new int[scalar.GroupCount]; var ends = new int[scalar.GroupCount];
         var origin = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
         origin.AnchorOriginByte = 0;
-        Assert.False(Utf8ExecutionInterpreter.TryMatchProgram("xab"u8, prepared.ExecutionProgram, 0, 1, ref origin, out _, out _));
+        if (prepared.ExecutionProgram is { } byteProgram)
+            Assert.False(Utf8ExecutionInterpreter.TryMatchProgram("xab"u8, byteProgram, 0, 1, ref origin, out _, out _));
         Assert.False(Utf8SliceRunner.TryMatchAt(scalar, "xab"u8, 1, starts, ends, true, ref origin).IsMatch);
         origin.AnchorOriginByte = 1;
-        Assert.True(Utf8ExecutionInterpreter.TryMatchProgram("xab"u8, prepared.ExecutionProgram, 0, 1, ref origin, out _, out _));
+        if (prepared.ExecutionProgram is { } byteProgramAtOrigin)
+            Assert.True(Utf8ExecutionInterpreter.TryMatchProgram("xab"u8, byteProgramAtOrigin, 0, 1, ref origin, out _, out _));
         Assert.True(Utf8SliceRunner.TryMatchAt(scalar, "xab"u8, 1, starts, ends, true, ref origin).IsMatch);
         Assert.Equal(0UL, origin.Ledger.ReservedBytes);
     }

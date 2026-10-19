@@ -23,7 +23,18 @@ public sealed class Utf8CaptureMapAdmissionTests
         yield return [2, "(?<piece>é|😀){2}"];
     }
 
-    private static object? Create(int producer, Utf8PreparedRegex prepared) => producer switch
+    // The map producers still serve native literal families. Exercise their
+    // production inputs directly; scalar-only dispatch need not retain a tree.
+    private static (Utf8ExecutionTree? ExecutionTree, Utf8SliceProgram ScalarProgram) Prepare(string pattern, RegexOptions options)
+    {
+        var analyzed = Utf8FrontEnd.Analyze(pattern, options);
+        var tree = Utf8ExecutionTreeLowerer.Lower(analyzed.SemanticRegex);
+        var scalar = Utf8SliceParser.TryParse(options, analyzed.SemanticRegex.RuntimeTree);
+        Assert.NotNull(tree); Assert.NotNull(scalar);
+        return (tree, scalar);
+    }
+
+    private static object? Create(int producer, (Utf8ExecutionTree? ExecutionTree, Utf8SliceProgram ScalarProgram) prepared) => producer switch
     {
         0 => Utf8LiteralFamilyCaptureMap.TryCreate(prepared.ExecutionTree),
         1 => Utf8GroupedLiteralSpanTable.TryCreate(prepared.ExecutionTree, prepared.ScalarProgram!),
@@ -34,7 +45,7 @@ public sealed class Utf8CaptureMapAdmissionTests
     [MemberData(nameof(Shapes))]
     public void ReturnedProjectionMajorStorageFitsConservativeAdmission(int producer, string pattern)
     {
-        var prepared = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
+        var prepared = Prepare(pattern, RegexOptions.CultureInvariant);
         using var owner = Utf8ConstructionScope.Enter();
         var result = Create(producer, prepared);
         Assert.NotNull(result);
@@ -66,7 +77,7 @@ public sealed class Utf8CaptureMapAdmissionTests
     [MemberData(nameof(Shapes))]
     public void EveryWorkCutoffRestoresTheParentWithoutRefundingWork(int producer, string pattern)
     {
-        var prepared = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
+        var prepared = Prepare(pattern, RegexOptions.CultureInvariant);
         ulong work;
         using (var measured = Utf8ConstructionScope.Enter())
         {
@@ -98,8 +109,8 @@ public sealed class Utf8CaptureMapAdmissionTests
     [MemberData(nameof(Shapes))]
     public void CapacityDenialsRestoreParentAndAllowRecovery(int producer, string pattern)
     {
-        var prepared = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
-        var recoveryInput = Utf8FrontEnd.Compile("(a)", RegexOptions.CultureInvariant);
+        var prepared = Prepare(pattern, RegexOptions.CultureInvariant);
+        var recoveryInput = Prepare("(a)", RegexOptions.CultureInvariant);
         ulong recoveryPeak;
         using (var measured = Utf8ConstructionScope.Enter())
         {
@@ -158,7 +169,7 @@ public sealed class Utf8CaptureMapAdmissionTests
     [MemberData(nameof(Interruptions))]
     public void EveryCheckpointRetainsParentCancellationAndDeadline(int producer, string pattern, bool timeout)
     {
-        var prepared = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
+        var prepared = Prepare(pattern, RegexOptions.CultureInvariant);
         var checkpoints = 0;
         using (var measured = Utf8ConstructionScope.Enter())
         {
@@ -215,8 +226,8 @@ public sealed class Utf8CaptureMapAdmissionTests
     [InlineData(2, "(?<piece>ab|c){7}")]
     public void UnsupportedShapesReleaseScratchAndRetainSpentWork(int producer, string pattern)
     {
-        var prepared = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
-        var recoveryInput = Utf8FrontEnd.Compile("(a)", RegexOptions.CultureInvariant);
+        var prepared = Prepare(pattern, RegexOptions.CultureInvariant);
+        var recoveryInput = Prepare("(a)", RegexOptions.CultureInvariant);
         using var owner = Utf8ConstructionScope.Enter();
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
@@ -233,7 +244,7 @@ public sealed class Utf8CaptureMapAdmissionTests
     [Fact]
     public void OptionalScalarExpansionRetainsRightmostUnwindingAndSourcePreference()
     {
-        var prepared = Utf8FrontEnd.Compile("(?<whole>a(?<x>é)?(?<y>😀)??(?<z>b)?c)", RegexOptions.CultureInvariant);
+        var prepared = Prepare("(?<whole>a(?<x>é)?(?<y>😀)??(?<z>b)?c)", RegexOptions.CultureInvariant);
         using var owner = Utf8ConstructionScope.Enter();
         var result = Utf8AlternationBranchSpanMap.TryCreate(prepared.ExecutionTree, prepared.ScalarProgram!);
         Assert.NotNull(result);

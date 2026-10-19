@@ -161,7 +161,8 @@ public sealed partial class Utf8Regex
             _groupNumbers.Length > 2 && !UsesRightToLeft()
                 ? Utf8LiteralFamilyCaptureMap.TryCreate(preparedRegex.ExecutionTree)
                 : null;
-        _hasCaptures = HasOwnedCaptures(preparedRegex.ExecutionTree);
+        _hasCaptures = preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !preparedRegex.FallbackDirectFamily.HasValue
+            ? ownedSliceProgram.GroupCount != 0 : HasOwnedCaptures(preparedRegex.ExecutionTree);
         _groupedLiteralSpanTable = !_hasCaptures || UsesRightToLeft() ? null : Utf8GroupedLiteralSpanTable.TryCreate(preparedRegex.ExecutionTree, ownedSliceProgram);
         // The existing literal proof respects each anchor's scoped options. Borrow
         // its admitted bytes instead of collecting/copying the execution tree again.

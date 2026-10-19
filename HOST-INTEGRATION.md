@@ -103,6 +103,15 @@ while the old prefix remains charged; class-product order, expansion bounds and
 original interruption remain. Actual work and storage requirements can fall, so
 a tighter construction policy may now succeed without changing its ceilings.
 
+Scalar-only fallback preparation omits the native execution tree, instruction
+array and derived verifier guards. Programs with native or direct-family
+consumers keep their preparation. The scalar program and capture catalog remain
+shared across Core and adapter entry points. Eliminating unused preparation can
+reduce construction work, instruction-capacity and byte requirements; admission
+still precedes every retained major allocation. Exact construction cutoffs and
+checkpoint counts are implementation-dependent. Original cancellation/deadlines,
+invocation limits, NonBacktracking and result/cursor ownership are unchanged.
+
 These are existing calls, using each profile's option type. `policy` applies to
 later invocations; `construction`, `constructionTimeout` and `token` apply only
 to eager compilation.
