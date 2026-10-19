@@ -1,12 +1,16 @@
 # Lokad.Utf8Regex.PythonRe
 
-Private **Core/PythonRe 0.4.0-scalar.112** candidate inputs are frozen from the
-Python scalar EOF correction (C#28970719); exact-package qualification is pending.
-Generic Count and cursor EOF now observe the original token/deadline after a
-final VM failure. This fixes12 demonstrated scalar.111 interruption witnesses,
-with one extra bounded EOF work unit and preserved owned snapshots/byte limits.
-Earlier111/110 packages remain immutable historical inputs. No publication,
-consumer pin/adoption or PCRE112 package is designated.
+Private **Core/PythonRe 0.4.0-scalar.112**,producer64a031fd/C#28970719,is ready.
+The same actual DLLs pass Windows/Linux suites,original Awk/Lython assertions,
+oracles and exact identity/member/symbol checks. It fixes a demonstrated111
+interruption defect: generic Python Count/cursor EOF now checks original authority
+after the final VM failure. EOF needs one additional bounded work unit; scalar
+semantics,captures,byte limits,cleanup and owned snapshots retain their scope.
+[Handoff](../../artifacts/core-python-scalar112-20261019/HANDOFF.md),
+[consume](../../artifacts/core-python-scalar112-20261019/CONSUMING.md),
+[integrity](../../artifacts/core-python-scalar112-20261019/final-integrity.json).
+Source CI is green; all older bytes stay immutable. No publication,external pin /
+adoption or PCRE112. Broader original work remains open.
 
 Private **Core/PythonRe 0.4.0-scalar.111**,producer723d5581/C#10245c82,passes
 same-byte Windows/Linux suites,unchanged original Awk/Lython assertions,oracles

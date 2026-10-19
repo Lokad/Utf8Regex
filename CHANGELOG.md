@@ -1,6 +1,6 @@
 # Changelog
 
-## Private Core/PythonRe scalar.112 inputs: Python scalar EOF interruption
+## Private Core/PythonRe scalar.112 qualification: Python scalar EOF interruption
 
 Check the original invocation once more after the shared Python scalar VM fails
 at end of input. Generic Count and the public match cursor can no longer return
@@ -8,8 +8,12 @@ a count or ordinary EOF after cancellation/deadline expiry on the last VM step.
 Fault cleanup releases exclusive scratch and preserves previously owned snapshots.
 The affected EOF path consumes one additional bounded work unit; native search
 declines, allocation, captures, scalar semantics and byte limits retain their scope.
-The defect is reproduced against immutable scalar.111; corrected candidate
-qualification is pending. Existing packages and historical receipts stay immutable.
+The defect is reproduced against immutable scalar.111. Corrected112, producer
+64a031fd/C#28970719, passes the same actual Windows/Linux DLL suites, original
+consumer assertions, oracles and exact identity/member/symbol checks. Source CI
+is green. Earlier packages and receipts stay immutable; no publication, external
+pin/adoption or PCRE112. [Handoff](artifacts/core-python-scalar112-20261019/HANDOFF.md)
+records scope; broader resource/performance work remains open.
 
 ## Private Core/PythonRe scalar.111 qualification
 

@@ -1,5 +1,11 @@
 # Selected current-source performance
 
+The corrected immutable Core/PythonRe **scalar.112** is qualified in its
+[handoff](artifacts/core-python-scalar112-20261019/HANDOFF.md). The changed generic
+Python EOF path has the separate current-source public pair below; no new
+actual-package/default-PGO cost or inherited speedup is claimed. Earlier actual111
+observations remain historical evidence and predate the EOF correction.
+
 A subsequent112-dev correctness correction checks original interruption before
 Python scalar EOF. One existing public slice-policy pair (five small patterns,
 four finite controls and token lanes) observes Count medians-1.9..+7.0%, unchanged

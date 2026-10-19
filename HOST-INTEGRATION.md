@@ -1,12 +1,16 @@
 # Resource controls and host ownership
 
-Current development corrects a demonstrated PythonRe scalar.111 interruption
-defect: generic Count and cursor EOF could succeed after cancellation/expiry on
-the final VM step. The shared scalar EOF guard now observes original authority
-before returning, with one additional bounded work unit. Corrected immutable
-candidate qualification is pending; existing111 bytes and receipts are unchanged.
+The latest qualified private pair is **Core/PythonRe scalar.112**.
+Its [handoff](artifacts/core-python-scalar112-20261019/HANDOFF.md) records same-byte
+Windows/Linux suites, original public consumers, oracles and exact identities.
+It corrects a demonstrated111 defect: generic Python Count and cursor EOF could
+report completion after original cancellation/expiry on the final VM step.
+The shared EOF guard now checks original authority, adding one bounded work unit.
+Owned snapshots, cleanup, byte limits and strict scalar semantics retain scope.
+Source CI is green. Earlier bytes remain immutable; no publication, external pin /
+adoption or PCRE112. Full common/default/retention and broader goals remain open.
 
-The latest qualified private pair is **Core/PythonRe scalar.111**. Its
+The preceding qualified private pair is **Core/PythonRe scalar.111**. Its
 [handoff](artifacts/core-python-scalar111-20261019/HANDOFF.md) records actual-byte
 Windows/Linux/public/oracle/identity gates and current costs. It removes obsolete
 execution,reuses controlled finite ASCII Count without VM scratch,and borrows
