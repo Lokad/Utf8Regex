@@ -12,6 +12,16 @@ No universal overhead/scaling/parity, causal finite gain or package speedup clai
 [Exact scope/raw evidence](artifacts/core-python-scalar109-20261019/vm-cost/RESULT.md).
 Source pairs and historical snapshots below retain their separate scope.
 
+## Scalar value-Match projection
+
+Subsequent110-dev source, parent8439227b, reuses full-input validation for ASCII /
+whole-subject scalar value-Match coordinates. One bounded warm before/after
+records lexer sample-loop102.492→75.239us ordinary,19.985→20.652us compiled;
+unchanged native literal Match1.165→1.223us /1.229→1.198us. The existing CLI emits
+one batch per lane, with noisy tiny controls. Accept the redundant-scan removal
+without a fixed speedup/equivalence claim; no additional run or package refresh.
+[Caller/semantic/resource proof and all observations](artifacts/value-match-validation-reuse-20261019/RESULT.md).
+
 ## Earlier scalar.108 observation
 
 The immutable Core/PythonRe **scalar.108** observation uses producer
@@ -97,7 +107,7 @@ ordinary / compiled options; both versions of each selected snapshot row changed
 
 | Public workload | Utf8Regex | .NET predecoded | .NET with decode | Utf8Regex allocated bytes |
 | --- | ---: | ---: | ---: | ---: |
-| Email Match, 34 B | 8.782 / 8.767 | 0.338 / 0.801 | 0.377 / 0.833 | 5,856 / 5,856 |
+| Email IsMatch, 34 B | 8.782 / 8.767 | 0.338 / 0.801 | 0.377 / 0.833 | 5,856 / 5,856 |
 | Imports Count, 47,858 B | 388.850 / 386.625 | 5.515 / 5.690 | 16.555 / 16.240 | 3,584 / 3,584 |
 | Lexer doc-line prefix loop, real sample corpus | 295.971 / 294.819 | 3.788 / 3.612 | 5.254 / 5.116 | 126,200 / 126,200 |
 | Russian exact-literal Count, 1,570,556 B | 1,414.840 / 1,430.605 | 194.370 / 97.845 | 5,386.230 / 5,333.385 | 0 / 0 |

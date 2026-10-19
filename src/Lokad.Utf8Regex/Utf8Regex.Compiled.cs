@@ -260,7 +260,7 @@ public sealed partial class Utf8Regex
             }
             var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
             return OwnedSliceMatchFromByte(input, _ownedSliceProgram,
-                _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
+                _ownedSliceProgram.RightToLeft ? input.Length : 0, validation, ref invocation);
         }
 
         return _compiledEngine.Kind switch

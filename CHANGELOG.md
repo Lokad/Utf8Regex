@@ -1,5 +1,15 @@
 # Changelog
 
+## Changes after scalar.109
+
+Reuse complete-input validation for scalar value-Match coordinates. ASCII results
+need no second range/prefix scan; whole Unicode matches reuse the known UTF-16
+length. Partial Unicode projection keeps its bounded scans. Strict validation,
+terminal checkpoints, original authority, matching and major admission remain.
+Removed redundant work can admit smaller numerical work limits; immutable109
+remains unchanged.
+[Caller proof, Release checks and bounded public comparison](artifacts/value-match-validation-reuse-20261019/RESULT.md).
+
 ## Private Core/PythonRe scalar.109 consumer qualification
 
 Producer05044852 freezes C#025b6ffa, whose source CI passes Windows/Linux. Same

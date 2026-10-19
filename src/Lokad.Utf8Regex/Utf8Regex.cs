@@ -1420,7 +1420,7 @@ public sealed partial class Utf8Regex
                 _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
                 return OwnedSliceMatchFromByte(input, _ownedSliceProgram,
-                    0, ref structuralInvocation);
+                    0, structuralValidation, ref structuralInvocation);
             var state = new Utf8StructuralSearchState(default, default);
             var breach = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow
                 ? AsciiOrderedLiteralWindowExecutor.TryFindNext(input, _preparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan,
@@ -1650,7 +1650,7 @@ public sealed partial class Utf8Regex
             }
 
             return OwnedSliceMatchFromByte(input, _ownedSliceProgram,
-                startByte, ref invocation);
+                startByte, validation, ref invocation);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         {
@@ -1665,8 +1665,8 @@ public sealed partial class Utf8Regex
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
         try
         {
-            _ = Utf8Validation.Validate(input, ref invocation);
-            return OwnedSliceMatchFromByte(input, program, startByte, ref invocation);
+            var validation = Utf8Validation.Validate(input, ref invocation);
+            return OwnedSliceMatchFromByte(input, program, startByte, validation, ref invocation);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         {
@@ -1675,7 +1675,7 @@ public sealed partial class Utf8Regex
     }
 
     private Utf8ValueMatch OwnedSliceMatchFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program,
-        int startByte, ref Utf8SliceInvocation invocation)
+        int startByte, Utf8ValidationResult validation, ref Utf8SliceInvocation invocation)
     {
         invocation.AnchorOriginByte = startByte;
         if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program))
@@ -1701,8 +1701,16 @@ public sealed partial class Utf8Regex
             invocation.Budget.ThrowIfCancellationRequested();
             if (!outcome.Found) return Utf8ValueMatch.NoMatch;
             var length = outcome.EndByte - outcome.StartByte;
-            var utf16Length = Utf8Validation.Validate(input.Slice(outcome.StartByte, length), ref invocation).Utf16Length;
-            return Utf8ProjectionExecutor.ProjectMatch(new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16Incremental),
+            // Reuse complete-input facts for derived coordinates. Diagnostic
+            // callers may supply a sentinel instead of complete validation.
+            var completeValidation = validation.ByteLength == input.Length;
+            var ascii = completeValidation && validation.IsAscii;
+            var utf16Length = ascii ? length
+                : completeValidation && outcome.StartByte == 0 && length == input.Length
+                    ? validation.Utf16Length
+                    : Utf8Validation.Validate(input.Slice(outcome.StartByte, length), ref invocation).Utf16Length;
+            return Utf8ProjectionExecutor.ProjectMatch(new Utf8ProjectionPlan(
+                    ascii ? Utf8ProjectionKind.ByteOnly : Utf8ProjectionKind.Utf16Incremental),
                 input, 0, 0, outcome.StartByte, length, utf16Length, ref invocation, out _, out _);
         }
         finally { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }

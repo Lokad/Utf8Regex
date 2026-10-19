@@ -29,6 +29,14 @@ Numeric thresholds are versioned; the charge is not a physical object-size claim
 Literal runtime preparation retains its existing admission. Actual SizeOf-based
 major-capacity calculations, instruction/state bounds and original interruption
 authority remain.
+Development after scalar.109 carries complete-input validation into scalar
+value-Match projection. ASCII results use their already-proved byte coordinates;
+a whole-subject result reuses its known UTF-16 length. Partial Unicode results
+keep their existing bounded coordinate scans. Strict whole-input validation and
+terminal projection checks remain; redundant scans disappear, so numerical work
+requirements can fall. Matching, captures, major admission and original authority
+are unchanged. Diagnostic sentinels do not authorize these shortcuts without
+the complete-input validation length proof.
 Literal-family capture maps are retained only for their existing detailed LTR
 multi-group literal-family projection route. Other constructors omit unused map
 preparation; diagnostic summaries construct equivalent temporary views on demand.
