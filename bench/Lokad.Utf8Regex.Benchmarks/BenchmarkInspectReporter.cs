@@ -3468,7 +3468,7 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"ExecutionKind     : {regex.Inspection.ExecutionKind}");
         Console.WriteLine($"PreparedSearcher  : {regex.Inspection.SearchPlan.PreparedSearcher.Kind}");
         Console.WriteLine($"LiteralLength     : {search.Length}");
-        Console.WriteLine($"CurrentCompare    : {search.GetIgnoreCasePreferredCompareIndex()}");
+        Console.WriteLine($"CurrentCompare    : {(search.IgnoreCase && search.Length > 8 ? search._ignoreCasePreferredCompareIndex : -1)}");
 
         Measure("PreparedCount", iterations, () => ExecutePreparedSubstringCount(search, benchmarkCase.InputBytes));
         Measure("Utf8Regex", iterations, () => benchmarkCase.Utf8Regex.Count(benchmarkCase.InputBytes));
@@ -3481,10 +3481,16 @@ internal static partial class BenchmarkInspectReporter
             return 0;
         }
 
+        var expectedCount = search.CountWithMetrics(benchmarkCase.InputBytes, out _, out _);
         for (var compareIndex = 1; compareIndex < search.Length; compareIndex++)
         {
             var count = search.CountIgnoreCaseWithPreferredCompareIndex(benchmarkCase.InputBytes, compareIndex, out var candidateCount, out var verifyCount);
             Console.WriteLine($"CompareDiag[{compareIndex,2}]: count={count} candidates={candidateCount} verifies={verifyCount}");
+            if (count != expectedCount)
+            {
+                Console.WriteLine($"Compare[{compareIndex}] skipped: count {count} differs from prepared Count {expectedCount}.");
+                continue;
+            }
             Measure($"Compare[{compareIndex}]", iterations, () =>
                 ExecutePreparedSubstringCountWithPreferredCompare(search, benchmarkCase.InputBytes, compareIndex));
         }

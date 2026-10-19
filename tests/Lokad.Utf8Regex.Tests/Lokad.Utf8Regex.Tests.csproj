@@ -22,6 +22,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Lokad.Utf8Regex\Lokad.Utf8Regex.csproj" />
     <None Update="TestData\supplementary-simple-case-16.json" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="..\..\bench\Lokad.Utf8Regex.Benchmarks\Utf8SubstringPreferredCompareReplay.cs"
+             Link="BenchmarkTooling\Utf8SubstringPreferredCompareReplay.cs" />
   </ItemGroup>
 
   <ItemGroup>

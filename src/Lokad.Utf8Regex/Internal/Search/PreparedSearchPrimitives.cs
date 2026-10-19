@@ -94,9 +94,9 @@ internal readonly struct PreparedByteSearch
 
 internal readonly struct PreparedSubstringSearch
 {
-    private readonly byte[]? _foldedNeedle;
+    internal readonly byte[]? _foldedNeedle;
     private readonly int[]? _ignoreCaseShiftTable;
-    private readonly int _ignoreCasePreferredCompareIndex;
+    internal readonly int _ignoreCasePreferredCompareIndex;
     private readonly PreparedExactSearchTier _exactTier;
     private readonly AsciiAnchorSelection _exactAnchors;
 
@@ -206,95 +206,6 @@ internal readonly struct PreparedSubstringSearch
         return count;
     }
 
-    internal int CountIgnoreCaseWithPreferredCompareIndex(ReadOnlySpan<byte> input, int preferredCompareIndex, out int candidateCount, out int verifyCount)
-    {
-        candidateCount = 0;
-        verifyCount = 0;
-
-        if (!IgnoreCase)
-        {
-            return CountWithMetrics(input, out candidateCount, out verifyCount);
-        }
-
-        if (Needle.Length is >= 9 and <= 16 &&
-            preferredCompareIndex > 0 &&
-            _foldedNeedle is { } foldedNeedle &&
-            TryGetCaseVariants(foldedNeedle[preferredCompareIndex], out _, out _))
-        {
-            return CountIgnoreCasePreferredShortWithMetrics(input, foldedNeedle, preferredCompareIndex, ref candidateCount, ref verifyCount);
-        }
-
-        if (Needle.Length <= 10)
-        {
-            return CountWithMetrics(input, out candidateCount, out verifyCount);
-        }
-
-        var count = 0;
-        var index = 0;
-        while (index <= input.Length - Length)
-        {
-            var found = IndexOfIgnoreCaseWithMetrics(input[index..], preferredCompareIndex, ref candidateCount, ref verifyCount);
-            if (found < 0)
-            {
-                return count;
-            }
-
-            count++;
-            index += found + Length;
-        }
-
-        return count;
-    }
-
-    private int CountIgnoreCasePreferredShortWithMetrics(
-        ReadOnlySpan<byte> input,
-        ReadOnlySpan<byte> foldedNeedle,
-        int preferredCompareIndex,
-        ref int candidateCount,
-        ref int verifyCount)
-    {
-        var count = 0;
-        var index = 0;
-        var probe = foldedNeedle[preferredCompareIndex];
-        if (!TryGetCaseVariants(probe, out var lower, out var upper))
-        {
-            lower = probe;
-            upper = probe;
-        }
-
-        while (index <= input.Length - Length)
-        {
-            var searchSlice = input[(index + preferredCompareIndex)..];
-            var relative = lower == upper
-                ? searchSlice.IndexOf(lower)
-                : searchSlice.IndexOfAny(lower, upper);
-            if (relative < 0)
-            {
-                return count;
-            }
-
-            var found = index + preferredCompareIndex + relative;
-            var candidate = found - preferredCompareIndex;
-            if (candidate <= input.Length - Length)
-            {
-                candidateCount++;
-                if (MatchesFoldedTailPreferred(input, candidate, foldedNeedle, preferredCompareIndex))
-                {
-                    verifyCount++;
-                    count++;
-                    index = candidate + Length;
-                    continue;
-                }
-
-                verifyCount++;
-            }
-
-            index = found + 1;
-        }
-
-        return count;
-    }
-
     internal int CountIgnoreCaseWithTier(ReadOnlySpan<byte> input, PreparedIgnoreCaseSearchTier tier, out int candidateCount, out int verifyCount)
     {
         candidateCount = 0;
@@ -331,16 +242,6 @@ internal readonly struct PreparedSubstringSearch
         }
 
         return count;
-    }
-
-    internal int GetIgnoreCasePreferredCompareIndex()
-    {
-        if (!IgnoreCase || Needle.Length <= 8)
-        {
-            return -1;
-        }
-
-        return _ignoreCasePreferredCompareIndex;
     }
 
     private static PreparedExactSearchTier DetermineExactTier(int length)
@@ -730,7 +631,7 @@ internal readonly struct PreparedSubstringSearch
         return -1;
     }
 
-    private int IndexOfIgnoreCaseWithMetrics(ReadOnlySpan<byte> input, int preferredCompareIndex, ref int candidateCount, ref int verifyCount)
+    internal int IndexOfIgnoreCaseWithMetrics(ReadOnlySpan<byte> input, int preferredCompareIndex, ref int candidateCount, ref int verifyCount)
     {
         if (Needle.Length == 0)
         {
@@ -1011,7 +912,7 @@ internal readonly struct PreparedSubstringSearch
         return MatchesFoldedTail(input, index, foldedNeedle);
     }
 
-    private static bool MatchesFoldedTailPreferred(ReadOnlySpan<byte> input, int index, ReadOnlySpan<byte> foldedNeedle, int preferredIndex)
+    internal static bool MatchesFoldedTailPreferred(ReadOnlySpan<byte> input, int index, ReadOnlySpan<byte> foldedNeedle, int preferredIndex)
     {
         if (index + foldedNeedle.Length > input.Length)
         {
