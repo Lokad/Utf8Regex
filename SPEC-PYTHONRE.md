@@ -29,7 +29,7 @@ number; an outer capture can close after its children. The different named/unnam
 numbering used by rendered Core patterns remains local to text construction.
 It is not retained as a cursor projection table or searched after each match.
 
-Development after scalar.105 derives completion metadata only for detailed/context
+Scalar.106 derives completion metadata only for detailed/context
 projection, before publishing its values, from the successful capture journal.
 Value results and capture-dependent findall strings/UTF8 do not compute unused
 completion metadata. Required reads retain the original invocation's bounded

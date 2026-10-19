@@ -1,6 +1,13 @@
 # Changelog
 
-## Changes in the scalar.106 candidate
+## Qualified private Core/PythonRe scalar.106
+
+Producer57eb9f15 freezes the batch below. The same actual package DLLs pass detached
+Windows/Linux and unchanged original consumer/oracle checks, exact identities,
+member inventory and symbols/provenance. Source91e33876 CI is green on both
+platforms. One bounded exact-package observation records finite captured costs
+with raw limitations. Source advances to107-dev; earlier bytes remain immutable.
+No PCRE106, publication or adoption. [Handoff](artifacts/core-python-scalar106-20261019/HANDOFF.md).
 
 Scalar-only fallback plans no longer build or retain an unused native execution
 tree, doubled instruction array or derived verifier guards. Native/direct-family

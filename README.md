@@ -1,15 +1,17 @@
 # Lokad.Utf8Regex
 
-Private **Core/PythonRe 0.4.0-scalar.106 candidate** batches direct result staging,
+Qualified private **Core/PythonRe 0.4.0-scalar.106** batches direct result staging,
 projection-only capture completion, bounded construction interruption, literal-run
-expansion and removal of scalar-only native preparation and unused guard storage.
-Strict UTF8/scalars, captures, NonBacktracking, original cancellation/deadlines,
-finite invocation controls and cursor/result ownership remain. Construction
-requirements can fall with removed work/storage; exact thresholds are versioned.
-[Delivery preflight](artifacts/core-python-scalar106-20261019/PREFLIGHT.md) records
-acceptance. Qualification and designation are pending;105 remains the qualified
-input. Earlier bytes and the independent exact Core/PCRE94 pair stay immutable.
-No publication or external consumer adoption is implied.
+expansion and removal of unused scalar-only native preparation/guard storage.
+The same actual DLLs pass detached Windows/Linux suites, unchanged original
+consumer assertions, capture/semantic oracles and exact identity/provenance/symbol
+checks. Source91e33876 CI is green on both platforms. [Handoff](artifacts/core-python-scalar106-20261019/HANDOFF.md),
+[consume](artifacts/core-python-scalar106-20261019/CONSUMING.md) and [current costs](artifacts/core-python-scalar106-20261019/vm-cost/RESULT.md)
+record scope, versioned construction thresholds, finite costs and raw limitations.
+Strict UTF8/scalars, captures, original interruption, useful limits and result /
+cursor lifetimes remain. Source advances to107-dev; immutable105/older inputs and
+the independent exact Core/PCRE94 pair stay unchanged. No PCRE106, publication or
+external consumer adoption is implied.
 
 Qualified private **Core/PythonRe 0.4.0-scalar.105** contains the nullable
 NonBacktracking correction, native grouped replacement miss staging removal,

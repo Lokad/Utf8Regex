@@ -1,9 +1,9 @@
 # Resource controls and host ownership
 
-The qualified private Core/PythonRe input is **0.4.0-scalar.105**. Its
-[handoff](artifacts/core-python-scalar105-20261019/HANDOFF.md) records exact
+The qualified private Core/PythonRe input is **0.4.0-scalar.106**. Its
+[handoff](artifacts/core-python-scalar106-20261019/HANDOFF.md) records exact
 identities, same-byte Windows/Linux consumer checks, current costs and exclusions.
-Independent PCRE2 uses its exact Core/PCRE2 scalar.94 pair; no PCRE105 is designated.
+Independent PCRE2 uses its exact Core/PCRE2 scalar.94 pair; no PCRE106 is designated.
 Earlier packages retain their recorded contracts and limitations.
 
 Known scalar.104 Core `NonBacktracking` limitation: nullable bounded repetitions
@@ -71,7 +71,7 @@ Choose eager-construction and invocation limits separately. The common policy
 types describe admission scopes; work units and execution failure types depend
 on the regex profile. Matching remains strict UTF-8/scalar with byte coordinates.
 
-Development after scalar.105 charges capture-completion metadata only when a
+Scalar.106 charges capture-completion metadata only when a
 Python detailed/context result observes it. Core operations and Python value /
 findall routes omit that unused scan and can admit smaller work limits. VM
 instruction/backtracking work, required projection charges, original interruption
@@ -97,7 +97,7 @@ and before publishing grown storage; no probe-by-probe cost guarantee is made.
 This changes eager-construction work thresholds, not invocation limits or cursor
 and retained-result ownership. Actual Unsafe.SizeOf queries remain in use.
 
-Development after scalar.105 appends adjacent literal-token runs in one buffer,
+Scalar.106 appends adjacent literal-token runs in one buffer,
 avoiding repeated increasing-prefix allocations. Each new buffer is admitted
 while the old prefix remains charged; class-product order, expansion bounds and
 original interruption remain. Actual work and storage requirements can fall, so

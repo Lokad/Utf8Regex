@@ -1,5 +1,12 @@
 # Bounded checked-access work
 
+Current qualified immutable Core/PythonRe **scalar.106** preserves the completed
+inventory: Core only accepted Unsafe.SizeOf, PythonRe none. [Exact members](artifacts/core-python-scalar106-20261019/exact-member-references.json)
+and [handoff](artifacts/core-python-scalar106-20261019/HANDOFF.md) record same-byte
+Windows/Linux and original consumer checks; source91e33876 CI39250952537 is
+terminal green on both platforms. Earlier bytes and the checked52 campaign stay
+immutable/closed; this is an inventory update, not a new conversion experiment.
+
 Immutable Core/PythonRe scalar.104 keeps only accepted Unsafe.SizeOf in Core,
 none in PythonRe; no unchecked reads/generated staging/native imports/shipped
 BCL matcher/results. Producer and Lython accept SizeOf. Same DLLs pass detached
