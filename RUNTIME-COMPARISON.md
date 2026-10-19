@@ -1,16 +1,46 @@
 # .NET 10 / .NET 11 Count comparison
 
-The latest runtime-comparison experiment used the actual immutable Core/PythonRe110 Core DLL,
-producera514fdab/C#265a54ec, on the quiet VM. Its [numeric source](bench/Experiments/Runtime11-Scalar110-20261019/measurement.json)
-retains all840 raw samples, process order, identities, allocation and exclusions;
-[reproduction fixture](bench/Experiments/Runtime11-Scalar110-20261019/README.md).
-The earlier Core59 results below remain frozen historical evidence. The current
-qualified dependency is [Core/PythonRe114](artifacts/core-python-scalar114-20261020/HANDOFF.md).
-Neither older runtime comparison qualifies114's costs: subsequent engine changes,
-including large plan-copy removal, affect these paths.114's current default-tier
-handoff costs and source FullOpts pairs are recorded separately in
-[CURRENT-PERFORMANCE.md](CURRENT-PERFORMANCE.md). A fresh runtime comparison remains
-a later delivery task; no existing timings or Status are reclassified here.
+## Current immutable Core114, measured 2026-10-20
+
+The actual qualified [Core/PythonRe114](artifacts/core-python-scalar114-20261020/HANDOFF.md)
+Core DLL, producer01968d0f, is identical in every cell. [Numeric source](bench/Experiments/Runtime11-Scalar114-20261020/measurement.json),
+[frozen fixture](bench/Experiments/Runtime11-Scalar114-20261020/README.md),
+[full receipt](artifacts/runtime11-scalar114-comparison-20261020/RESULT.md).
+Older110/59 observations below remain historical and are not reclassified.
+
+SDK10.0.401/net10 runs on10.0.12 and11.0.0-rc.1.26425.128 with identical harness
+IL. SDK11RC1/net11 on that runtime adds fresh TFM/compiler/generator effects.
+Four real generated runners per SDK, with ordinary/compiled controls. ASCII
+Count/range digests agree; dot/emoji scalar/code-unit disagreement stays excluded.
+Installed preview-runtime evidence is not a runtime-upgrade recommendation.
+
+CPU2/FullOpts/R2R-off, one fixed15-process batch267.51s. All840samples exceed65.453ms
+against a50ms floor. No confirmation, retarget, package qualification, Status or
+old-data rerun. These results are separate from [default-tier actual114 costs](artifacts/core-python-scalar114-20261020/vm-cost/RESULT.md)
+and do not qualify complete runtime/profile semantic/resource behavior.
+
+Median public Count us/op, ordinary Core, unlimited / finite / finite+live-token.
+Work50M/depth1024/working64MiB/result128MiB are experiment allowances, not defaults.
+
+| Case | Runtime10/SDK10 | Runtime11/SDK10 | Runtime11/SDK11 |
+| --- | ---: | ---: | ---: |
+| literal-late |4.921 /3.814 /3.841|3.948 /2.787 /2.801|3.792 /2.755 /2.804|
+| fixed-width |7.830 /19.724 /19.330|8.530 /21.039 /20.729|7.365 /19.703 /19.800|
+| optional-prefix |138.814 /539.587 /535.357|134.942 /1143.013 /1138.786|134.062 /1139.508 /1136.508|
+| shadowed-family |114.704 /123.407 /123.021|116.167 /128.449 /125.534|116.934 /130.441 /126.094|
+
+Same-harness runtime11 literal medians improve roughly20-27%, while finite
+optional-prefix costs about2.1x runtime10 (paired median2.116x); the fresh SDK11
+cell retains that gap. This identifies a runtime/JIT-path investigation, without
+attributing a specific defect or removing metering. Generated optional-prefix
+stays49us. Current Core unlimited134-139us and finite0.54-1.14ms should replace
+historical110 costs when choosing the next current-engine investigation.
+
+Some fixed-width/family controls vary (overall maxspread1.541x); small differences
+and universal runtime/generator wins remain unqualified. Fresh SDK11 effects mix
+TFM/compiler/harness/generator changes. All compiled-Core/BCL/generated /
+NonBacktracking/decode/predecoded/allocation lanes and ratios stay in the numeric
+source. Keep source FullOpts and actual-package default-PGO evidence separate.
 
 ## Historical Core110, measured 2026-10-19
 

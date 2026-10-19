@@ -89,6 +89,19 @@ are separate and complete within the handoff scope. Earlier109 remains immutable
 historical evidence and predates the cancellation correction. Broader work remains
 open; source pairs and historical snapshots below retain their separate scope.
 
+## Current114 runtime/generated comparison
+
+The [bounded current114 comparison](RUNTIME-COMPARISON.md) uses actual immutable
+Core114 bytes in three runtime/SDK cells,840samples all>=65.453ms. Same SDK10
+harness on runtime11 lowers literal medians20-27%, but finite optional-prefix
+Count539.587->1143.013us (paired2.116x). Fresh SDK11 retains1139.508us. Current
+unlimited optional-prefix134-139us and generated49us identify the remaining gap.
+FullOpts/R2Roff is separate from default-tier handoff costs. Some controls are
+noisy; no universal new-generator/runtime win, specific defect attribution,
+product retarget, package/Status or full-profile/runtime qualification follows.
+One fixed batch is closed, with no confirmation/tuning or old-data remeasurement.
+[All source/raw/identity evidence](bench/Experiments/Runtime11-Scalar114-20261020/README.md).
+
 ## Historical110 runtime/generated comparison
 
 A separate [bounded four-case .NET10/11 experiment](RUNTIME-COMPARISON.md) uses
