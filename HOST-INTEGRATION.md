@@ -307,3 +307,10 @@ still propagate unchanged. Byte-cap diagnostic Input omission and original
 invocation authority are unchanged. Reference rendering remains in test/benchmark
 tooling and does not add a shipped dependency. Immutable107 bytes retain their
 qualified contract.
+
+Source108-dev omits optional Core construction for nullable Python patterns whose
+iteration eligibility already rejects Core. Scalar discovery and native candidate
+fences already exclude that helper. Covered construction bytes/work can decrease;
+Python validation/program expansion, original authority and major admission stay.
+Other helper/candidate/native routes retain their existing preparation. No public
+API or immutable107 package contract changes.

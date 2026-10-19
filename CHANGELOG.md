@@ -2,6 +2,13 @@
 
 ## Changes after scalar.107
 
+Omit optional Core preparation for nullable PythonRe patterns whose iteration
+eligibility already rejects Core. Existing candidate and literal-result fences
+also exclude that helper; matching continues through the owned scalar program.
+This avoids a second compiler/program without adding a selector or changing
+limits. Validation, original interruption, captures and lifetimes remain.
+[Caller proof and bounded construction costs](artifacts/python-nullable-preparation-20261019/RESULT.md).
+
 PythonRe constructs native scalar text only. Move the former eager UTF-16
 reference renderer, astral surrogate-range branches and comparator options into
 benchmark/test tooling; remove the shipped dual-render mode and debug forwarder.

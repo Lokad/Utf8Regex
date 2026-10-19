@@ -232,13 +232,19 @@ public sealed partial class Utf8PythonRegex
         // lookup without retaining the rest of the parse tree.
         _namedGroups = parseResult.NamedGroups;
 
-        try
+        // Nullable programs do not use Core start hints or nonempty literal
+        // result lanes. If iteration eligibility also declines Core, every
+        // operation already uses the owned Python program or independent kernels.
+        if (!_canMatchEmpty || _canUseUtf8IterationFastPath)
         {
-            _utf8Regex = new Utf8Regex(_translation.NativePattern, _translation.NativeRegexOptions, MatchTimeout);
-        }
-        catch (Exception exception) when (IsOptionalUtf8BackendUnavailableException(exception))
-        {
-            // The optional core fast path may be unavailable; the profile scalar program serves the grammar.
+            try
+            {
+                _utf8Regex = new Utf8Regex(_translation.NativePattern, _translation.NativeRegexOptions, MatchTimeout);
+            }
+            catch (Exception exception) when (IsOptionalUtf8BackendUnavailableException(exception))
+            {
+                // The optional core fast path may be unavailable; the profile scalar program serves the grammar.
+            }
         }
 
         _canUseZeroOffsetUtf8SearchValueFastPath =

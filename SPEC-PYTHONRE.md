@@ -369,8 +369,14 @@ Development after scalar.107 constructs only native scalar text and group metada
 The former eager UTF-16 reference spelling, surrogate-range branches and comparator
 options live in benchmark/test tooling. Removing that pass can reduce covered
 construction work and bytes; limits retain their ceilings, major-buffer admission
-and interruption checkpoints. .NET comparison rendering is outside the shipped
-construction contract and consumes complete surrogate pairs where applicable.
+and interruption checkpoints. Optional Core preparation is also omitted when
+an expression may match empty and its iteration eligibility rejects Core. These
+existing facts exclude Core start hints, nonempty literal result lanes and bulk
+matching; the owned Python program remains authoritative. Other native helpers
+and independent fast paths remain. Construction requirements can decrease again;
+syntax/reference/lookbehind validation still runs before the elision.
+.NET comparison rendering is outside the shipped construction contract and
+consumes complete surrogate pairs where applicable.
 Pre-cancellation wins over argument/decoding failures; later cancellation keeps
 the original token and a deadline failure throws `RegexMatchTimeoutException`.
 For UTF-8 pattern timeout failures the exception's Pattern is empty, avoiding an
