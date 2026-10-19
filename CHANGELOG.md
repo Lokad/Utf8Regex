@@ -2,6 +2,11 @@
 
 ## Changes after scalar.108
 
+Remove the unused deadline-only Strategy finder and test/benchmark-only Count /
+IsMatch forwarders. Tests and attribution tooling call their production targets
+directly. Keep the production cursor's invocation overload and native deadline
+routines; no execution or resource contract changes.
+
 Finite forward exact-literal Count no longer charges twice for an accepted
 candidate. Existing bounded search/comparison admission covers the constant-time
 increment; terminal publication checks, strict validation and the original

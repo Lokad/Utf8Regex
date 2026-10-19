@@ -3716,14 +3716,16 @@ internal static partial class BenchmarkInspectReporter
         {
             var rightToLeft = (benchmarkCase.Options & RegexOptions.RightToLeft) != 0;
             Measure("PreparedFamilyIsMatch", iterations, () =>
-                Utf8SearchStrategyExecutor.IsMatchLiteralFamily(
+                Utf8BackendInstructionExecutor.IsMatchLiteralFamily(
                     regex.Inspection.SearchPlan,
+                    regex.Inspection.SearchPlan.FirstMatchOperation,
                     benchmarkCase.InputBytes,
                     Utf8ExecutionDeadline.Infinite,
                     rightToLeft) ? 1 : 0);
             Measure("CompiledPreparedFamilyIsMatch", iterations, () =>
-                Utf8SearchStrategyExecutor.IsMatchLiteralFamily(
+                Utf8BackendInstructionExecutor.IsMatchLiteralFamily(
                     compiledUtf8Regex.Inspection.SearchPlan,
+                    compiledUtf8Regex.Inspection.SearchPlan.FirstMatchOperation,
                     benchmarkCase.InputBytes,
                     Utf8ExecutionDeadline.Infinite,
                     rightToLeft) ? 1 : 0);

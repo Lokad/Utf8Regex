@@ -559,13 +559,16 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void SearchStrategyExecutorCanCountAndMatchLiteralFamilies()
+    public void ProductionSearchCanCountAndMatchLiteralFamilies()
     {
         var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("Task task ValueTask IAsyncEnumerableX IAsyncEnumerable");
 
-        Assert.Equal(3, Utf8SearchStrategyExecutor.CountLiteralFamily(regex.Inspection.SearchPlan, input, budget: Utf8ExecutionDeadline.Infinite));
-        Assert.True(Utf8SearchStrategyExecutor.IsMatchLiteralFamily(regex.Inspection.SearchPlan, input, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false));
+        var plan = regex.Inspection.SearchPlan;
+        Assert.Equal(3, Utf8BackendInstructionExecutor.CountLiteralFamily(plan, plan.CountOperation,
+            input, budget: Utf8ExecutionDeadline.Infinite));
+        Assert.True(Utf8BackendInstructionExecutor.IsMatchLiteralFamily(plan, plan.FirstMatchOperation,
+            input, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false));
     }
 
     [Fact]
