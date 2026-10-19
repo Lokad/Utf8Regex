@@ -1,15 +1,27 @@
 # Changelog
 
-## Private Core/PythonRe scalar.113 inputs: reuse Detailed capture character counts
+## Private Core/PythonRe scalar.114 corrected inputs
+
+Remove the default value on the internal character-count parameter and pass null
+explicitly where a caller has no count. The repository's source guard stays intact.
+All1060 Python method bodies, signatures, locals, stack bounds and exception regions
+match the measured source candidate; only internal parameter default metadata is
+removed. Original checkpoints, numeric controls, captures and owned outputs remain.
+No repeated performance campaign. Exact114 package qualification/current costs are
+pending; failed113 bytes and READY112 remain unchanged. No publication, external
+adoption or PCRE114 package is designated.
+
+## Historical scalar.113 attempt: source guard rejected a default argument
 
 PythonRe Detailed snapshots reuse their already projected string lengths during
 UTF-8 decoding. Keep original checkpoints, admission, numeric work/byte charges,
 captures and snapshot lifetimes; public APIs and scalar semantics are unchanged.
 A bounded public source pair observes mixed-width enumeration 16-19% faster and
 ASCII Detailed medians 2-8% slower. [Scope and raw evidence](bench/Experiments/PythonDetailedCoordinates-20261020/README.md).
-Core/PythonRe113 inputs are frozen from C#9f5984ff; exact-package qualification
-and current actual-package costs are pending. Immutable112/older remain intact;
-no publication, external adoption or PCRE113 package is designated.
+Frozen113 attempt1ed07281 fails the no-default-parameter source guard. Its
+packages/logs remain failed evidence; no113 candidate was designated. The source
+regex/resource tests otherwise pass. Use corrected114 inputs; immutable112
+and older remain intact.
 
 ## Private Core/PythonRe scalar.112 qualification: Python scalar EOF interruption
 

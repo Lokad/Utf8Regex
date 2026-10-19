@@ -1,12 +1,15 @@
 # Lokad.Utf8Regex.PythonRe
 
-Private **Core/PythonRe 0.4.0-scalar.113** inputs are frozen from C#9f5984ff;
-exact-package qualification is pending. This delivery batches the accepted Core
-selector and PythonRe Detailed character-count reuse. Scalars, captures, original
-interruption, finite controls and result lifetimes retain their contract. Source
-performance receipts are separate from the pending actual-package observation.
-Immutable112 and older packages remain intact. No publication, consumer pin /
-adoption or PCRE113 package is designated.
+Private **Core/PythonRe 0.4.0-scalar.114** inputs correct an internal default
+argument rejected by the repository's source guard. Explicit count arguments
+preserve the measured Python method IL, matching semantics, checkpoints and
+resource admission. Exact-package qualification and current costs are pending.
+Immutable112 and older remain intact; no publication, external pin/adoption or
+PCRE114 package is designated.
+
+Frozen **scalar.113**, producer1ed07281, failed the no-default-parameter source
+guard. Its attempted packages and logs remain preserved as failed evidence;
+no usable113 candidate was designated. Scalar112 remains the qualified dependency.
 
 Private **Core/PythonRe 0.4.0-scalar.112**,producer64a031fd/C#28970719,is ready.
 The same actual DLLs pass Windows/Linux suites,original Awk/Lython assertions,

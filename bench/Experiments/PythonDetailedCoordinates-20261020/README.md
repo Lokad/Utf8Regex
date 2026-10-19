@@ -70,3 +70,13 @@ Frozen driver uses CoreLibraryPath/PythonLibraryPath overrides to reference DLLs
 without rebuilding libraries. Run `--preflight <new.jsonl>` or one new output path
 for measurement. CreateNew preserves receipts. This documents reproducibility,
 not a new framework or an instruction to repeat the closed pair.
+
+Subsequent source qualification rejects the default-valued parameter (repository
+ceiling0). The correction supplies explicit null at the unknown-count caller and
+removes the parameter default. Every one of1060 executable Python method bodies,
+signatures, local signatures, stack bounds and exception regions matches this
+measured candidate; parameter Optional/HasDefault attributes change4112->0.
+The guard is preserved,113 failed package bytes remain intact and corrected114
+has its own identity. No matching code or numeric contract changes and no repeated
+performance pair. Exact proof:artifacts/python-detailed-coordinate-reuse-20261020/
+explicit-count-il-proof.json. This does not qualify114 package bytes by itself.

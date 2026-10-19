@@ -463,7 +463,7 @@ internal struct PythonReScalarMatchState
         return result;
     }
 
-    internal string GetText(ReadOnlySpan<byte> input, int start, int end, int? characterCount = null)
+    internal string GetText(ReadOnlySpan<byte> input, int start, int end, int? characterCount)
     {
         Checkpoint(input);
         try
