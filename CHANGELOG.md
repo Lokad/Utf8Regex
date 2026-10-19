@@ -1,5 +1,13 @@
 # Changelog
 
+## Private Core/PythonRe scalar.110 candidate
+
+Freeze the native Count terminal cancellation correction and scalar value-Match
+validation reuse for a distinct immutable pair. Qualification is pending; source
+checks are not package acceptance. Scalar.109 remains historical and predates the
+cancellation fix. Preserve earlier bytes; no publication, external adoption or
+PCRE110 designation.
+
 ## Changes after scalar.109
 
 Fix native forward literal Count publishing after cancellation at its final work

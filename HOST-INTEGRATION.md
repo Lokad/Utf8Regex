@@ -1,5 +1,11 @@
 # Resource controls and host ownership
 
+Private **Core/PythonRe scalar.110** qualification is pending for the native Count
+terminal cancellation fix. Scalar.109's recorded qualification predates this
+demonstrated gap; hold new adoption pending the corrected pair. Historical
+identities/evidence and all immutable bytes remain unchanged. The source fix
+rechecks the original token before publishing the count, without revising limits.
+
 The qualified private Core/PythonRe input is **0.4.0-scalar.109**. Its
 [handoff](artifacts/core-python-scalar109-20261019/HANDOFF.md) records exact
 identities, same-byte Windows/Linux consumer checks, current costs and exclusions.
