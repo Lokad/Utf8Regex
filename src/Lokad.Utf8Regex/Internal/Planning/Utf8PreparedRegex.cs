@@ -25,7 +25,6 @@ internal sealed class Utf8PreparedRegex
         Utf8ExecutionProgram? ExecutionProgram,
         Utf8SliceProgram? ScalarProgram,
         Utf8StructuralSearchPlan StructuralSearchPlan,
-        Utf8DeterministicVerifierGuards DeterministicGuards,
         Utf8StructuralVerifierPlan StructuralVerifier,
         AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan,
         AsciiStructuralTokenWindowPlan StructuralTokenWindowPlan,
@@ -49,7 +48,6 @@ internal sealed class Utf8PreparedRegex
         ExecutionProgram = state.ExecutionProgram;
         ScalarProgram = state.ScalarProgram;
         StructuralSearchPlan = state.StructuralSearchPlan;
-        DeterministicGuards = state.DeterministicGuards;
         StructuralVerifier = state.StructuralVerifier;
         StructuralIdentifierFamilyPlan = state.StructuralIdentifierFamilyPlan;
         StructuralTokenWindowPlan = state.StructuralTokenWindowPlan;
@@ -72,7 +70,6 @@ internal sealed class Utf8PreparedRegex
         Utf8SliceProgram? scalarProgram,
         Utf8OperationMatchCursorPlans operationMatchCursorPlans,
         Utf8StructuralSearchPlan structuralSearchPlan,
-        Utf8DeterministicVerifierGuards deterministicGuards,
         Utf8StructuralVerifierPlan structuralVerifier,
         AsciiStructuralIdentifierFamilyPlan structuralIdentifierFamilyPlan,
         AsciiStructuralTokenWindowPlan structuralTokenWindowPlan,
@@ -97,7 +94,6 @@ internal sealed class Utf8PreparedRegex
             executionProgram,
             scalarProgram,
             structuralSearchPlan,
-            deterministicGuards,
             structuralVerifier,
             structuralIdentifierFamilyPlan,
             structuralTokenWindowPlan,
@@ -132,8 +128,6 @@ internal sealed class Utf8PreparedRegex
     public ref readonly Utf8SearchPlan SearchPlan => ref _operationMatchCursorPlans.SearchPlan;
 
     public Utf8StructuralSearchPlan StructuralSearchPlan { get; }
-
-    public Utf8DeterministicVerifierGuards DeterministicGuards { get; }
 
     public Utf8StructuralVerifierPlan StructuralVerifier { get; }
 

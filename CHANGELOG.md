@@ -4,8 +4,9 @@
 
 Scalar-only fallback plans no longer build or retain an unused native execution
 tree, doubled instruction array or derived verifier guards. Native/direct-family
-preparation and shared search helpers remain. Construction charges fall with the
-removed work/storage; scalar captures, NonBacktracking, strict UTF-8, original
+preparation and shared search helpers remain. Prepared state also drops its
+unused verifier-guard copy; the live search stages retain the actual checks.
+Construction charges fall with the removed work/storage; scalar captures, NonBacktracking, strict UTF-8, original
 interruption and invocation/result controls remain unchanged.
 
 Python detailed/context projection derives lastindex/lastgroup from the existing

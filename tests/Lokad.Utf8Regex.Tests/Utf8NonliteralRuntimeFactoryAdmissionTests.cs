@@ -87,11 +87,11 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
 
 
     private static Utf8PreparedRegex WithSearch(Utf8PreparedRegex p, Utf8SearchPlan search,
-        Utf8DeterministicVerifierGuards guards, Utf8StructuralLinearProgram program) =>
+        Utf8StructuralLinearProgram program) =>
         Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, NativeExecutionKind.FallbackRegex, p.ExecutionBackend,
             p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram,
             Utf8OperationMatchCursorPlans.Create(p.ExecutionProgram, search, program, p.SimplePatternPlan, p.StructuralSearchPlan, p.StructuralVerifier.AsciiProgram),
-            p.StructuralSearchPlan, guards, p.StructuralVerifier, p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan,
+            p.StructuralSearchPlan, p.StructuralVerifier, p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan,
             p.StructuralRepeatedSegmentPlan, p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan,
             p.LiteralUtf8, "unsupported_loop", p.FallbackDirectFamily);
 
@@ -111,7 +111,7 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
                 .SetValue(boxed, kind == 1 ? Utf8StructuralLinearProgramKind.AsciiCharClassRun : Utf8StructuralLinearProgramKind.AsciiStructuralFamily);
             program = (Utf8StructuralLinearProgram)boxed;
         }
-        var holderPlan = WithSearch(originalPlan, originalPlan.SearchPlan, originalPlan.DeterministicGuards, program);
+        var holderPlan = WithSearch(originalPlan, originalPlan.SearchPlan, program);
         byte[] first = "ab"u8.ToArray(), second = "cd"u8.ToArray();
         var symmetric = new AsciiSimplePatternSymmetricLiteralWindowPlan(first, second, default,
             0, (byte)'a', (byte)'c', 0, 8, false, 1, (byte)'b', (byte)'d', 0, (byte)'a', (byte)'c');

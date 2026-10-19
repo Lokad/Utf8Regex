@@ -214,7 +214,7 @@ internal static class Utf8VerifierTestPlans
     internal static Utf8PreparedRegex WithDirectFamily(Utf8PreparedRegex p, Utf8FallbackDirectFamilyPlan family)
         => Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend,
             p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram, p.OperationMatchCursorPlans,
-            p.StructuralSearchPlan, p.DeterministicGuards, p.StructuralVerifier,
+            p.StructuralSearchPlan, p.StructuralVerifier,
             p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan, p.StructuralRepeatedSegmentPlan,
             p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan, p.LiteralUtf8, p.FallbackReason, family);
 
@@ -223,7 +223,7 @@ internal static class Utf8VerifierTestPlans
             p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram,
             Utf8OperationMatchCursorPlans.Create(p.ExecutionProgram, search, p.StructuralLinearProgram, p.SimplePatternPlan,
                 search.StructuralSearchPlan, p.StructuralVerifier.AsciiProgram),
-            search.StructuralSearchPlan, p.DeterministicGuards, p.StructuralVerifier,
+            search.StructuralSearchPlan, p.StructuralVerifier,
             p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan, p.StructuralRepeatedSegmentPlan,
             p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan, p.LiteralUtf8, p.FallbackReason, p.FallbackDirectFamily);
 
@@ -234,7 +234,7 @@ internal static class Utf8VerifierTestPlans
             p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram,
             Utf8OperationMatchCursorPlans.Create(p.ExecutionProgram, p.SearchPlan, p.StructuralLinearProgram, p.SimplePatternPlan,
                 p.StructuralSearchPlan, structuralVerifier.AsciiProgram),
-            p.StructuralSearchPlan, p.DeterministicGuards, structuralVerifier, p.StructuralIdentifierFamilyPlan,
+            p.StructuralSearchPlan, structuralVerifier, p.StructuralIdentifierFamilyPlan,
             p.StructuralTokenWindowPlan, p.StructuralRepeatedSegmentPlan, p.StructuralQuotedRelationPlan,
             p.OrderedLiteralWindowPlan, p.LiteralUtf8, p.FallbackReason, p.FallbackDirectFamily);
     }

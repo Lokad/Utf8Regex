@@ -70,7 +70,8 @@ public sealed class Utf8PreparedRetainedGraphTests
     public void EveryStoredReferenceBearingLayoutIncludesInactiveAndSharedPayloads()
     {
         var (prepared, layouts) = PopulateStoredLayouts();
-        Assert.Equal(55, layouts);
+        // The construction-only guard descriptor is no longer a retained layout.
+        Assert.Equal(54, layouts);
         var expected = InspectPreparedGraph(prepared);
         Assert.Equal(4, expected.Keys.Count(static value => value is Utf8PreparedRegex or Utf8OperationMatchCursorPlans or
             PreparedByteSet or PreparedAsciiIgnoreCaseLiteralSetSearchData));
@@ -280,7 +281,7 @@ public sealed class Utf8PreparedRetainedGraphTests
             {
                 var (count, bytes) = value switch
                 {
-                    Utf8PreparedRegex => (21, StateBytes(type, "ConstructionState")),
+                    Utf8PreparedRegex => (20, StateBytes(type, "ConstructionState")),
                     Utf8OperationMatchCursorPlans => (6, StateBytes(type, "ConstructionState")),
                     PreparedByteSet => (1, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()),
                     PreparedAsciiIgnoreCaseLiteralSetSearchData => (5, StateBytes(type.Assembly.GetType(

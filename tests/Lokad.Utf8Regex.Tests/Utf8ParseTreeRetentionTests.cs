@@ -58,7 +58,7 @@ public sealed class Utf8ParseTreeRetentionTests
         Assert.All(type.GetProperties(flags), static property => Assert.Null(property.SetMethod));
         Assert.DoesNotContain(fields, static field => field.FieldType == typeof(Utf8OwnedRegexTree) || field.FieldType == typeof(CultureInfo));
         var preparedFields = typeof(Utf8PreparedRegex).GetFields(flags);
-        Assert.Equal(21, preparedFields.Length);
+        Assert.Equal(20, preparedFields.Length);
         Assert.DoesNotContain(preparedFields, static field => field.FieldType == typeof(Utf8SemanticRegex));
     }
 

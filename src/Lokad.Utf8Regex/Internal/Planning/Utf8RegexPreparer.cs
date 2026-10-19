@@ -105,7 +105,6 @@ internal static class Utf8RegexPreparer
                 scalarProgram,
                 operationPlans,
                 structuralSearchPlan,
-                deterministicGuards,
                 structuralVerifier,
                 analyzedRegex.StructuralIdentifierFamilyPlan,
                 analyzedRegex.StructuralTokenWindowPlan,
