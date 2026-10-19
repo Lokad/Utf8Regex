@@ -1,5 +1,23 @@
 # Changelog
 
+## Changes after scalar.107
+
+Remove scalar-shadowed quoted-line/line-prefix Count selectors, their exclusive
+grammar/payload/preparation, runtime finder and unused validation capability.
+Their actual public routes already use scalar execution; benchmark-only counters
+move unchanged into tooling. Existing no-family preparation elides the unused
+native tree/program/guards. Shared live search/native algorithms remain.
+Construction requirements can fall; strict UTF-8/scalars, captures, NonBacktracking,
+original interruption, useful limits and cursor/result lifetimes stay. Public
+outcome tests replace obsolete shape/helper tests. Source only;107 stays immutable.
+
+The bounded Python-rendered constructor probe records small shared metadata
+allocation savings. Raw line-construction speed qualification remains unachieved:
+the existing .NET probe rejected its NonBacktracking \G comparator. The comparator
+now uses absolute \A for construction-only zero-position controls, and the command
+smoke passes. No comparative speed claim or repeated timing campaign follows.
+[Trace and retained results](artifacts/line-count-cleanup-20261019/RESULT.md).
+
 ## Qualified private Core/PythonRe scalar.107
 
 Producerf91be679 freezes the batch below. Same actual DLLs pass Windows/Linux

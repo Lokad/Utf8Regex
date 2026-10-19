@@ -1055,14 +1055,16 @@ internal static partial class BenchmarkInspectReporter
                 benchmarkCase.Pattern,
                 compiledOptions,
                 Regex.InfiniteMatchTimeout));
+        // Construction-only start-anchor controls have no prior match position.
+        // Use the absolute anchor; NonBacktracking does not support \G.
         MeasureFixedConstruction("RegexOrdinaryAnchored", samples, instanceCount,
             () => new Regex(
-                @"\G(?:" + benchmarkCase.Pattern + ")",
+                @"\A(?:" + benchmarkCase.Pattern + ")",
                 ordinaryOptions,
                 Regex.InfiniteMatchTimeout));
         MeasureFixedConstruction("RegexCompiledAnchored", samples, instanceCount,
             () => new Regex(
-                @"\G(?:" + benchmarkCase.Pattern + ")",
+                @"\A(?:" + benchmarkCase.Pattern + ")",
                 compiledOptions,
                 Regex.InfiniteMatchTimeout));
         MeasureFixedConstruction("RegexGroupNumbers", samples, instanceCount,
