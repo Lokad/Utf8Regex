@@ -1,6 +1,17 @@
 # Selected current-source performance
 
-The latest immutable Core/PythonRe **scalar.110** observation uses clean producer
+The latest immutable **Core/PythonRe scalar.111** observation uses producer
+723d5581,C#10245c82,actual package DLLs and.NET10.0.12/default tiering.10K capture
+matches:Count101.510us unrestricted/255.510us finite,112B finite (2.517x observed);
+Python detailed6.086ms finite/6.242ms live-token,UTF8 tuples3.846ms/3.978ms. First
+cursor result1.855us/2936B,ten6.388us/4736B finite. All48rows/240raw samples remain;
+small-case/tuple noise limits comparisons. The255.510us finite Count is higher
+than110's separate136.670us;unpaired observations are a follow-up lead,not causal
+regression/equivalence proof. No basic-metering removal or retiming rescue.
+[Exact111 scope and raw evidence](artifacts/core-python-scalar111-20261019/vm-cost/RESULT.md).
+Source FullOpts improvements below do not substitute for these package costs.
+
+The earlier immutable Core/PythonRe **scalar.110** observation uses clean producer
 `a514fdab2efce69fa9038ecc7a9824160bf3ac11`, actual package DLLs and .NET10.0.12.
 For10K `(a)(b)` matches, Core Count was99.080us unlimited/136.670us finite,
 112B finite (observed1.379x). Python detailed was6.563ms/~3.03MB finite and6.128ms

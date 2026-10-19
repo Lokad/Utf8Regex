@@ -1,6 +1,16 @@
 # Resource controls and host ownership
 
-The current qualified private pair is **Core/PythonRe scalar.110**. Its
+The latest qualified private pair is **Core/PythonRe scalar.111**. Its
+[handoff](artifacts/core-python-scalar111-20261019/HANDOFF.md) records actual-byte
+Windows/Linux/public/oracle/identity gates and current costs. It removes obsolete
+execution,reuses controlled finite ASCII Count without VM scratch,and borrows
+immutable plans. The former can lower numerical work/depth/working requirements;
+the latter preserves metering/allocations/algorithms. Strict scalar semantics,
+captures,original authority and lifetimes remain. Earlier bytes stay immutable;
+no publication,external adoption or PCRE111. Full common/default/retention and
+broader original goals remain open.
+
+The preceding qualified private pair is **Core/PythonRe scalar.110**. Its
 [handoff](artifacts/core-python-scalar110-20261019/HANDOFF.md) records actual-byte
 platform/consumer/oracle/identity checks and current costs. It corrects native
 Count terminal cancellation without revising numeric work or admission.

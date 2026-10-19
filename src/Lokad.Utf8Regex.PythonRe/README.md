@@ -1,13 +1,17 @@
 # Lokad.Utf8Regex.PythonRe
 
-Private **Core/PythonRe 0.4.0-scalar.111** is being frozen from C#10245c82.
-It removes obsolete interpreter execution and reuses controlled branch discovery
-for finite ASCII Count; readonly plan borrows remove per-candidate copies.
-Strict scalar UTF8, captures, NonBacktracking, original authority and lifetimes
-remain. Actual-byte platform/consumer/oracle/identity and current-package cost
-qualification is pending; scalar.110 below remains the qualified input. Earlier
-bytes stay immutable; no publication, external pin change or PCRE111. Full
-common/default/retention and broader R06/R07/R08/R09/R10 stay open.
+Private **Core/PythonRe 0.4.0-scalar.111**,producer723d5581/C#10245c82,passes
+same-byte Windows/Linux suites,unchanged original Awk/Lython assertions,oracles
+and exact identity/member/symbol checks. Source CI is green. It removes obsolete
+execution,reuses controlled branch Count and borrows immutable plans;strict scalar
+UTF8,captures,NonBacktracking,original authority and lifetimes retain their scope.
+[Handoff](../../artifacts/core-python-scalar111-20261019/HANDOFF.md),
+[consume](../../artifacts/core-python-scalar111-20261019/CONSUMING.md),
+[actual-package costs](../../artifacts/core-python-scalar111-20261019/vm-cost/RESULT.md).
+Finite Count requirements can fall;readonly borrows preserve numeric metering.
+The fresh finite literal Count observation is higher than110's separate result;
+unpaired costs do not establish a causal regression. Earlier bytes stay immutable;
+no publication,external pin/adoption or PCRE111. Broader original work stays open.
 
 Private **Core/PythonRe 0.4.0-scalar.110**, producera514fdab/C#265a54ec, passes
 same-byte Windows/Linux suites, original Awk/Lython assertions, oracles and exact
