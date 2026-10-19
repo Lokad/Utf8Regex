@@ -28,17 +28,6 @@ internal sealed class Utf8ConstructionMap<TKey, TValue>(Utf8ConstructionBudget b
         return result;
     }
 
-    // Transfers the funded physical table to an owner that supplies its own
-    // immutable publication and reference-release protocol.
-    internal Entry[] TakeEntries(out int count)
-    {
-        var result = _entries;
-        count = Count;
-        _entries = [];
-        Count = 0;
-        return result;
-    }
-
     internal TValue this[TKey key]
     {
         get => TryGetValue(key, out var value) ? value : throw new KeyNotFoundException();

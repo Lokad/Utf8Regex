@@ -52,28 +52,4 @@ internal static class Utf8CompiledPatternCategories
         };
     }
 
-    public static Utf8CompiledPatternCategory GetRegexPlanCategory(Utf8PreparedRegex regexPlan)
-    {
-        var nativeCategory = GetNativeCategory(regexPlan.ExecutionKind);
-        if (nativeCategory != Utf8CompiledPatternCategory.None)
-        {
-            return nativeCategory;
-        }
-
-        if (regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern)
-        {
-            var simplePatternCategory = GetSimplePatternCategory(regexPlan.SimplePatternPlan.CompiledPatternFamily);
-            if (simplePatternCategory != Utf8CompiledPatternCategory.None)
-            {
-                return simplePatternCategory;
-            }
-
-            if (regexPlan.StructuralLinearProgram.Kind != Utf8StructuralLinearProgramKind.None)
-            {
-                return Utf8CompiledPatternCategory.DeterministicLinear;
-            }
-        }
-
-        return Utf8CompiledPatternCategory.None;
-    }
 }

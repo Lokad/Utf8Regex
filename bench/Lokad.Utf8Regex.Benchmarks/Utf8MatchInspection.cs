@@ -1,4 +1,4 @@
-namespace Lokad.Utf8Regex.Internal.Diagnostics;
+namespace Lokad.Utf8Regex.Benchmarks;
 
 internal static class Utf8MatchInspection
 {

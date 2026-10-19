@@ -92,8 +92,6 @@ public sealed class Utf8TokenMaskPreparationTests
         var input = "😀 a:ab\0xx Ω"u8;
         var search = Structured(); Assert.True(search.TryFindNext(input, 0, out var index, out var length));
         Assert.Equal((5, 7), (index, length)); Assert.Equal(1, search.Count(input));
-        Assert.True(Utf8AsciiLiteralStructuredTokenExecutor.TryFindStructuredToken(input, 0, ":"u8, "ab"u8, "ab"u8, "ab12"u8, [0], "x"u8, [], [], out index, out length));
-        Assert.Equal((5, 7), (index, length));
         var emptyTail = new PreparedAsciiLiteralStructuredTokenSearch(":"u8, "ab"u8, "ab"u8, "ab12"u8, [0], [], [], []);
         Assert.True(emptyTail.TryFindNext(input, 0, out index, out length)); Assert.Equal((5, 5), (index, length));
         Assert.False(search.TryFindNext(input, 6, out _, out _));
@@ -136,17 +134,19 @@ public sealed class Utf8TokenMaskPreparationTests
     private static IEnumerable<string> Subjects(int maximum) => Subjects(maximum, "");
 
     [Fact]
-    public void RawEnumerationPreparesOneLiteralCopyAndUsesTheSharedPreparedMatcher()
+    public void PreparedEnumerationReusesItsAdmittedLiteralCopy()
     {
         foreach (var structured in new[] { false, true })
         {
             using var owner = new Utf8ConstructionScope(0, 48, ulong.MaxValue, ulong.MaxValue);
+            var structuredSearch = structured ? new PreparedAsciiLiteralStructuredTokenSearch(":"u8, "ab"u8, "ab"u8, "ab12"u8, [], [], [], []) : default;
+            var delimitedSearch = structured ? default : Delimited();
             for (var repeat = 0; repeat < 20; repeat++)
             {
                 var count = structured
-                    ? Utf8AsciiLiteralStructuredTokenExecutor.CountStructuredTokens("a:ab b:ab"u8, ":"u8, "ab"u8, "ab"u8, "ab12"u8, [], [], [], [])
-                    : Utf8AsciiDelimitedTokenExecutor.CountDelimitedTokens("a::xy.12 b::xy.12"u8, "::"u8, "."u8, "ab"u8, "xy"u8, "12"u8);
-                Assert.Equal(2, count); Assert.Equal(0ul, owner.Budget.ReservedBytes);
+                    ? structuredSearch.Count("a:ab b:ab"u8)
+                    : delimitedSearch.Count("a::xy.12 b::xy.12"u8);
+                Assert.Equal(2, count); Assert.Equal(Utf8ConstructionBudget.ArrayBytes<byte>(structured ? 1 : 2), owner.Budget.ReservedBytes);
             }
             Assert.Equal(Utf8ConstructionBudget.ArrayBytes<byte>(structured ? 1 : 2), owner.Budget.PeakBytes);
             Assert.Equal(0ul, owner.Budget.Depth); Assert.True(owner.Budget.WorkSteps > 0);

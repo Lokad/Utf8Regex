@@ -1323,13 +1323,6 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
     internal static bool CanUseUpperWordIdentifierKernel(in AsciiStructuralIdentifierFamilyPlan familyPlan, Utf8ExecutionDeadline deadline)
         => TryGetUpperWordIdentifierKernelSpec(familyPlan, deadline, out _, out _);
 
-    internal static bool CanUseSharedPrefixSuffixKernel(
-        in AsciiStructuralIdentifierFamilyPlan familyPlan,
-        Utf8SearchPlan searchPlan)
-    {
-        return TryGetSharedPrefixSuffixKernelSpec(familyPlan, searchPlan, out _, out _);
-    }
-
     internal static bool TryGetUpperWordIdentifierKernelSpec(
         in AsciiStructuralIdentifierFamilyPlan familyPlan,
         Utf8ExecutionDeadline deadline,

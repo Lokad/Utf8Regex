@@ -2,6 +2,11 @@
 
 ## Changes after scalar.104
 
+Remove six verified unused helpers and two test-only token forwarding executors;
+tests exercise the production prepared searches directly. Projection microcost
+replays now belong to benchmark tooling instead of the shipped Core assembly.
+No public semantics or resource contract changes.
+
 Native grouped template replacement discovers a miss before allocating decoded
 subject/builder staging. The existing matched worker and cursor remain. The6656B
 public witness saves26720B per miss; latency qualification remains unachieved

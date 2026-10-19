@@ -71,7 +71,6 @@ internal readonly struct Utf8IlEmitter
 
     public void LoadLocal(Utf8IlLocal local) => _il.Emit(OpCodes.Ldloc, local);
 
-    public void LoadLocalAddress(Utf8IlLocal local) => _il.Emit(OpCodes.Ldloca_S, local);
 
     public void StoreLocal(Utf8IlLocal local) => _il.Emit(OpCodes.Stloc, local);
 

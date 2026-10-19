@@ -7,11 +7,6 @@ using Lokad.Utf8Regex.Internal.Search;
 
 internal static class Utf8ProjectionExecutor
 {
-    public static Utf8ValueMatch ProjectByteAlignedMatch(int indexInBytes, int lengthInBytes)
-    {
-        return new Utf8ValueMatch(true, true, indexInBytes, lengthInBytes, indexInBytes, lengthInBytes);
-    }
-
     internal static Utf8ExecutionLimitKind TryProjectScalarVerification(ReadOnlySpan<byte> input,
         Utf8ValidationResult validation, in Utf8ScalarVerificationResult verification,
         ref Utf8SliceInvocation invocation, out Utf8ValueMatch match)
