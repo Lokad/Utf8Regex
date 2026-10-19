@@ -33,6 +33,14 @@ the same finite policy can admit calls that previously exhausted its work limit.
 The existing eligibility rules and bounded native metering apply. This source
 change is outside immutable103.
 
+Development shared Core replacement also reuses its admitted VM scratch across
+searches, releasing it before final output projection and on failure. Retaining
+scratch through intermediate output/callback shaping can raise working overlap:
+the 6,656-byte captured identity-destination example needs 15,296 modeled working
+bytes instead of fitting 14,000. The configured ceiling still denies before
+acquisition. This trades some tight-budget admission for less repeated allocation;
+the existing 24,000-byte text/byte final-projection example still succeeds.
+
 Scalar.101 supports overlapping Core `TryReplace` subject/destination spans by
 staging scalar output before copying. Staging may allocate even for a literal;
 insufficient destinations stay unchanged. UTF-8 templates may alias the

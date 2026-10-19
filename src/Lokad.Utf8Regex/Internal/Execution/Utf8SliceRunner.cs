@@ -412,6 +412,22 @@ internal static partial class Utf8SliceRunner
         int[] captureStarts, int[] captureEnds, bool collectHistory,
         ref Utf8SliceInvocation invocation)
     {
+        var workspace = new AttemptWorkspace();
+        try
+        {
+            return TryFindFirst(program, input, fromByte, captureStarts, captureEnds,
+                collectHistory, ref workspace, ref invocation);
+        }
+        finally { workspace.Release(ref invocation); }
+    }
+
+    // Repeated searches for one program/invocation can keep their admitted
+    // scratch. The caller releases it; each attempt still resets all VM state.
+    internal static Utf8SliceSearchOutcome TryFindFirst(
+        Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
+        int[] captureStarts, int[] captureEnds, bool collectHistory,
+        ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation)
+    {
         invocation.Budget.ThrowIfCancellationRequested();
         if ((uint)fromByte > (uint)input.Length ||
             fromByte < input.Length && (input[fromByte] & 0xC0) == 0x80)
@@ -422,32 +438,27 @@ internal static partial class Utf8SliceRunner
         var first = program.Instructions[0];
         var seekBeginning = !program.RightToLeft && first.Kind == Utf8SliceInstructionKind.Anchor &&
             first.A == (int)Utf8SliceAnchorKind.Beginning;
-        var workspace = new AttemptWorkspace();
-        try
+        for (var position = fromByte; position >= 0; position = AdvancePastScalar(input, position, program.RightToLeft))
         {
-            for (var position = fromByte; position >= 0; position = AdvancePastScalar(input, position, program.RightToLeft))
+            if (seekBeginning)
             {
-                if (seekBeginning)
-                {
-                    var seekBreach = TrySeekBeginning(program, input, ref position, ref invocation);
-                    if (seekBreach != Utf8ExecutionLimitKind.None)
-                        return new(false, -1, -1, null, null, seekBreach);
-                    if (position < 0) break;
-                }
-                var breach = invocation.TryChargeInputStep();
-                if (breach != Utf8ExecutionLimitKind.None)
-                    return new(false, -1, -1, null, null, breach);
-                invocation.Budget.ThrowIfCancellationRequested();
-                var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds, collectHistory, false, true, ref workspace, ref invocation);
-                if (outcome.Breach != Utf8ExecutionLimitKind.None)
-                    return new(false, -1, -1, null, null, outcome.Breach);
-                if (outcome.IsMatch)
-                    return new(true, Math.Min(position, outcome.EndIndex), Math.Max(position, outcome.EndIndex),
-                        outcome.CaptureStarts, outcome.CaptureLengths, Utf8ExecutionLimitKind.None);
+                var seekBreach = TrySeekBeginning(program, input, ref position, ref invocation);
+                if (seekBreach != Utf8ExecutionLimitKind.None)
+                    return new(false, -1, -1, null, null, seekBreach);
+                if (position < 0) break;
             }
-            return new(false, -1, -1, null, null, Utf8ExecutionLimitKind.None);
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None)
+                return new(false, -1, -1, null, null, breach);
+            invocation.Budget.ThrowIfCancellationRequested();
+            var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds, collectHistory, false, true, ref workspace, ref invocation);
+            if (outcome.Breach != Utf8ExecutionLimitKind.None)
+                return new(false, -1, -1, null, null, outcome.Breach);
+            if (outcome.IsMatch)
+                return new(true, Math.Min(position, outcome.EndIndex), Math.Max(position, outcome.EndIndex),
+                    outcome.CaptureStarts, outcome.CaptureLengths, Utf8ExecutionLimitKind.None);
         }
-        finally { workspace.Release(ref invocation); }
+        return new(false, -1, -1, null, null, Utf8ExecutionLimitKind.None);
     }
 
     // -1 is the exhausted sentinel in either direction; avoid Length + 1 overflow.

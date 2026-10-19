@@ -56,6 +56,7 @@ public sealed partial class Utf8Regex
         var scope = CreateOwnedOutputScope(initialInvocation);
         ref var invocation = ref scope.Invocation;
         var slots = new Utf8SliceSlots([], []);
+        var workspace = new Utf8SliceRunner.AttemptWorkspace();
         ulong mapReservation = 0;
         Utf8NonBacktrackingSearchState? batch = null;
         var boundary = 0;
@@ -89,7 +90,7 @@ public sealed partial class Utf8Regex
                     position = candidateStart;
                 }
                 var outcome = batch is null
-                    ? Utf8SliceRunner.TryFindFirst(program, input, position, slots.Starts, slots.Ends, true, ref invocation)
+                    ? Utf8SliceRunner.TryFindFirst(program, input, position, slots.Starts, slots.Ends, true, ref workspace, ref invocation)
                     : batch.FindFirst(program, ref boundary, slots.Starts, slots.Ends, true, ref invocation);
                 try
                 {
@@ -121,6 +122,9 @@ public sealed partial class Utf8Regex
                 }
                 finally { Utf8SliceRunner.ReleaseHistory(outcome.CaptureStarts, outcome.CaptureLengths, ref invocation); }
             }
+            // Discovery has finished. Avoid retaining scratch into final-output
+            // overlap; finally also covers failures and interrupted callbacks.
+            workspace.Release(ref invocation);
             if (!anyMatch)
                 return CompleteUnchangedOwnedReplacement(input, validation.Utf16Length, resultKind, destination, ref invocation);
             if (program.RightToLeft)
@@ -149,6 +153,7 @@ public sealed partial class Utf8Regex
         }
         finally
         {
+            workspace.Release(ref invocation);
             batch?.Release(ref invocation);
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
             invocation.Ledger.Release(mapReservation);

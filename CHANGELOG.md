@@ -1,5 +1,21 @@
 # Changelog
 
+## Changes after scalar.103
+
+Core shared replacement reuses operation-local VM scratch across searches and
+releases it before final output. Captures, per-attempt resets, cancellation and
+resource bounds remain. Retaining scratch during intermediate output can raise
+working overlap and deny earlier under tight limits; HOST-INTEGRATION records
+the concrete budget tradeoff. A512-match observation reduces allocation from
+about1.24MB to149KB; timing qualification remains unachieved after the bounded
+experiment and confirmation, including an unresolved byte-miss cost.
+
+The batch also avoids unchanged Core/PythonRe substitution output staging and
+guides eligible scalar replacement starts with existing bounded native literal
+discovery. Scalar verification still owns captures/histories; strict UTF8, alias
+safety and original cancellation/resource authority remain. These source changes
+are outside immutable103 and are not yet a qualified104 package.
+
 ## Changes after scalar.102
 
 The shared terminal class-repeat loop reads ASCII directly from an existing
