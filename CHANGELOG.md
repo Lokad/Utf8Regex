@@ -1,6 +1,6 @@
 # Changelog
 
-## Changes after scalar.104
+## Private Core/PythonRe scalar.105 candidate
 
 Construction maps use coarse block work charges for lookups, table scans and
 long collision chains. Major buffer/instruction admission remains before
