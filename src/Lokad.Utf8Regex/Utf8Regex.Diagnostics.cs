@@ -474,10 +474,6 @@ public sealed partial class Utf8Regex
         public AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan =>
             _owner.StructuralIdentifierFamilyPlan;
 
-        public Utf8AsciiStructuralIdentifierFamilyExecutor.SharedPrefixSuffixKernelDiagnostics
-            DebugStructuralSharedPrefixSuffixKernelDiagnostics =>
-                _owner.DebugStructuralSharedPrefixSuffixKernelDiagnostics;
-
         public AsciiSimplePatternPlan SimplePatternPlan => _owner.SimplePatternPlan;
 
         public bool DebugSimplePatternCanUseDirectAnchoredFixedLength =>

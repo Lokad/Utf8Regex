@@ -2,6 +2,12 @@
 
 ## Changes after scalar.106
 
+Move shared-prefix/suffix diagnostic aggregation into the existing benchmark
+inspector. Remove its shipped report record and both facade forwarding properties;
+the tool calls the existing production eligibility helpers and preserves its output.
+Matching, selectors, construction charges, interruption and public contracts stay
+unchanged. No new compatibility mode or diagnostic execution framework.
+
 Omit native capture-map preparation when the native tree is absent or existing
 scalar projection owns captured Unicode atoms, fixed finite invocation policies
 or finite match timeouts. Keep ASCII native consumers, inactive-declaration

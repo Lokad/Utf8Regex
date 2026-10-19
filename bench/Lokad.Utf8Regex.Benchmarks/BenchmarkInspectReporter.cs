@@ -5184,19 +5184,57 @@ internal static partial class BenchmarkInspectReporter
         }
         if (regex.Inspection.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily)
         {
-            var diagnostics = regex.Inspection.DebugStructuralSharedPrefixSuffixKernelDiagnostics;
-            Console.WriteLine($"StructuralSharedPrefixBuckets      : {diagnostics.BucketCount}");
-            Console.WriteLine($"StructuralSharedPrefixLength       : {diagnostics.CommonPrefixLength}");
-            Console.WriteLine($"StructuralSharedPrefixDiscriminator: {diagnostics.HasPrefixDiscriminator}");
-            Console.WriteLine($"StructuralSharedPrefixDiscOffset   : {diagnostics.PrefixDiscriminatorOffset?.ToString() ?? "None"}");
-            Console.WriteLine($"StructuralSuffixLiteralLength      : {diagnostics.SuffixLiteralLength}");
-            Console.WriteLine($"StructuralSeparatorMinCount        : {diagnostics.SeparatorMinCount}");
-            Console.WriteLine($"StructuralWhitespaceSeparator      : {diagnostics.HasAsciiWhitespaceSeparatorClass}");
-            Console.WriteLine($"StructuralLeadingBoundary          : {diagnostics.LeadingBoundary}");
-            Console.WriteLine($"StructuralTrailingBoundary         : {diagnostics.TrailingBoundary}");
-            Console.WriteLine($"StructuralSharedPrefixKernel       : {diagnostics.CanUseSharedPrefixSuffixKernelSpec}");
-            Console.WriteLine($"StructuralSharedPrefixFamilyKernel : {diagnostics.CanUseSharedPrefixSuffixLiteralFamilyKernelSpec}");
-            Console.WriteLine($"StructuralWhitespaceSuffixKernel   : {diagnostics.CanUseAsciiWhitespaceSingleByteSuffixKernel}");
+            // Inspection only: keep aggregation out of the shipped executor and
+            // reuse its live predicates instead of duplicating their eligibility.
+            var familyPlan = regex.Inspection.StructuralIdentifierFamilyPlan;
+            var searchPlan = regex.Inspection.SearchPlan;
+            var searchData = searchPlan.AlternateLiteralSearchData;
+            var bucketCount = searchData?.Buckets.Length ?? 0;
+            var commonPrefixLength = 0;
+            var hasPrefixDiscriminator = false;
+            int? prefixDiscriminatorOffset = null;
+            var suffixLiteralLength = 0;
+            var separatorMinCount = 0;
+            var hasAsciiWhitespaceSeparatorClass =
+                !familyPlan.SeparatorCharClass.IsEmpty &&
+                Utf8AsciiStructuralIdentifierFamilyExecutor.IsAsciiWhitespaceCharClass(familyPlan.SeparatorCharClass);
+            var canUseAsciiWhitespaceSingleByteSuffixKernel = false;
+
+            if (searchData is { Buckets: [var onlyBucket] })
+            {
+                commonPrefixLength = onlyBucket.CommonPrefix.Length;
+                hasPrefixDiscriminator = onlyBucket.PrefixDiscriminator.HasValue;
+                if (hasPrefixDiscriminator)
+                {
+                    prefixDiscriminatorOffset = onlyBucket.PrefixDiscriminator.Offset;
+                }
+            }
+
+            if (Utf8AsciiStructuralIdentifierFamilyExecutor.TryGetSimpleSuffixLiteralKernel(familyPlan, out var suffixLiteral, out separatorMinCount))
+            {
+                suffixLiteralLength = suffixLiteral.Length;
+                canUseAsciiWhitespaceSingleByteSuffixKernel =
+                    Utf8AsciiStructuralIdentifierFamilyExecutor.TryUseAsciiWhitespaceSingleByteSuffixKernel(familyPlan, suffixLiteral, separatorMinCount, out _);
+            }
+
+            var canUseSharedPrefixSuffixKernelSpec =
+                Utf8AsciiStructuralIdentifierFamilyExecutor.TryGetSharedPrefixSuffixKernelSpec(familyPlan, searchPlan, out _, out _);
+            var canUseSharedPrefixSuffixLiteralFamilyKernelSpec =
+                Utf8AsciiStructuralIdentifierFamilyExecutor.TryGetSharedPrefixSuffixLiteralFamilyKernelSpec(familyPlan, searchPlan, out _, out _);
+
+
+            Console.WriteLine($"StructuralSharedPrefixBuckets      : {bucketCount}");
+            Console.WriteLine($"StructuralSharedPrefixLength       : {commonPrefixLength}");
+            Console.WriteLine($"StructuralSharedPrefixDiscriminator: {hasPrefixDiscriminator}");
+            Console.WriteLine($"StructuralSharedPrefixDiscOffset   : {prefixDiscriminatorOffset?.ToString() ?? "None"}");
+            Console.WriteLine($"StructuralSuffixLiteralLength      : {suffixLiteralLength}");
+            Console.WriteLine($"StructuralSeparatorMinCount        : {separatorMinCount}");
+            Console.WriteLine($"StructuralWhitespaceSeparator      : {hasAsciiWhitespaceSeparatorClass}");
+            Console.WriteLine($"StructuralLeadingBoundary          : {familyPlan.LeadingBoundary}");
+            Console.WriteLine($"StructuralTrailingBoundary         : {familyPlan.TrailingBoundary}");
+            Console.WriteLine($"StructuralSharedPrefixKernel       : {canUseSharedPrefixSuffixKernelSpec}");
+            Console.WriteLine($"StructuralSharedPrefixFamilyKernel : {canUseSharedPrefixSuffixLiteralFamilyKernelSpec}");
+            Console.WriteLine($"StructuralWhitespaceSuffixKernel   : {canUseAsciiWhitespaceSingleByteSuffixKernel}");
         }
         Console.WriteLine($"FallbackPlans     : {regex.Inspection.SearchPlan.FallbackCandidatePlans?.Length ?? 0}");
         if (regex.Inspection.SearchPlan.FallbackCandidatePlans is { Length: > 0 } fallbackPlans)

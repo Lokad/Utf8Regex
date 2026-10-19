@@ -7,21 +7,6 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
 {
-    internal readonly record struct SharedPrefixSuffixKernelDiagnostics(
-        int BucketCount,
-        int CommonPrefixLength,
-        bool HasPrefixDiscriminator,
-        int? PrefixDiscriminatorOffset,
-        int SuffixLiteralLength,
-        int SeparatorMinCount,
-        bool HasAsciiWhitespaceSeparatorClass,
-        Utf8BoundaryRequirement LeadingBoundary,
-        Utf8BoundaryRequirement TrailingBoundary,
-        bool CanUseSharedPrefixSuffixKernelSpec,
-        bool CanUseSharedPrefixSuffixLiteralFamilyKernelSpec,
-        bool CanUseAsciiWhitespaceSingleByteSuffixKernel);
-
-
     public static int FindNext(
         ReadOnlySpan<byte> input,
         AsciiStructuralIdentifierFamilyPlan familyPlan,
@@ -1149,7 +1134,7 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
         return -1;
     }
 
-    private static bool TryGetSimpleSuffixLiteralKernel(
+    internal static bool TryGetSimpleSuffixLiteralKernel(
         in AsciiStructuralIdentifierFamilyPlan familyPlan,
         out byte[] suffixLiteral,
         out int separatorMinCount)
@@ -1458,62 +1443,7 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
         return true;
     }
 
-    internal static SharedPrefixSuffixKernelDiagnostics GetSharedPrefixSuffixKernelDiagnostics(
-        in AsciiStructuralIdentifierFamilyPlan familyPlan,
-        Utf8SearchPlan searchPlan)
-    {
-        var searchData = searchPlan.AlternateLiteralSearchData;
-        var bucketCount = searchData?.Buckets.Length ?? 0;
-        var commonPrefixLength = 0;
-        var hasPrefixDiscriminator = false;
-        int? prefixDiscriminatorOffset = null;
-        var suffixLiteralLength = 0;
-        var separatorMinCount = 0;
-        var hasAsciiWhitespaceSeparatorClass =
-            !familyPlan.SeparatorCharClass.IsEmpty &&
-            IsAsciiWhitespaceCharClass(familyPlan.SeparatorCharClass);
-        var canUseSharedPrefixSuffixKernelSpec = false;
-        var canUseSharedPrefixSuffixLiteralFamilyKernelSpec = false;
-        var canUseAsciiWhitespaceSingleByteSuffixKernel = false;
-
-        if (searchData is { Buckets: [var onlyBucket] })
-        {
-            commonPrefixLength = onlyBucket.CommonPrefix.Length;
-            hasPrefixDiscriminator = onlyBucket.PrefixDiscriminator.HasValue;
-            if (hasPrefixDiscriminator)
-            {
-                prefixDiscriminatorOffset = onlyBucket.PrefixDiscriminator.Offset;
-            }
-        }
-
-        if (TryGetSimpleSuffixLiteralKernel(familyPlan, out var suffixLiteral, out separatorMinCount))
-        {
-            suffixLiteralLength = suffixLiteral.Length;
-            canUseAsciiWhitespaceSingleByteSuffixKernel =
-                TryUseAsciiWhitespaceSingleByteSuffixKernel(familyPlan, suffixLiteral, separatorMinCount, out _);
-        }
-
-        canUseSharedPrefixSuffixKernelSpec =
-            TryGetSharedPrefixSuffixKernelSpec(familyPlan, searchPlan, out _, out _);
-        canUseSharedPrefixSuffixLiteralFamilyKernelSpec =
-            TryGetSharedPrefixSuffixLiteralFamilyKernelSpec(familyPlan, searchPlan, out _, out _);
-
-        return new SharedPrefixSuffixKernelDiagnostics(
-            bucketCount,
-            commonPrefixLength,
-            hasPrefixDiscriminator,
-            prefixDiscriminatorOffset,
-            suffixLiteralLength,
-            separatorMinCount,
-            hasAsciiWhitespaceSeparatorClass,
-            familyPlan.LeadingBoundary,
-            familyPlan.TrailingBoundary,
-            canUseSharedPrefixSuffixKernelSpec,
-            canUseSharedPrefixSuffixLiteralFamilyKernelSpec,
-            canUseAsciiWhitespaceSingleByteSuffixKernel);
-    }
-
-    private static bool TryUseAsciiWhitespaceSingleByteSuffixKernel(
+    internal static bool TryUseAsciiWhitespaceSingleByteSuffixKernel(
         in AsciiStructuralIdentifierFamilyPlan familyPlan,
         byte[] suffixLiteral,
         int separatorMinCount,
@@ -1535,7 +1465,7 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
         return true;
     }
 
-    private static bool IsAsciiWhitespaceCharClass(AsciiCharClass charClass)
+    internal static bool IsAsciiWhitespaceCharClass(AsciiCharClass charClass)
     {
         if (charClass.Negated)
         {

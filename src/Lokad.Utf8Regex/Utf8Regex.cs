@@ -375,14 +375,6 @@ public sealed partial class Utf8Regex
 
     private AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan => _preparedRegex.StructuralIdentifierFamilyPlan;
 
-    private Utf8AsciiStructuralIdentifierFamilyExecutor.SharedPrefixSuffixKernelDiagnostics
-        DebugStructuralSharedPrefixSuffixKernelDiagnostics =>
-            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily
-                ? Utf8AsciiStructuralIdentifierFamilyExecutor.GetSharedPrefixSuffixKernelDiagnostics(
-                    _preparedRegex.StructuralIdentifierFamilyPlan,
-                    _preparedRegex.SearchPlan)
-                : default;
-
     private AsciiSimplePatternPlan SimplePatternPlan => _preparedRegex.SimplePatternPlan;
 
     private string? FallbackReason => _preparedRegex.FallbackReason;
