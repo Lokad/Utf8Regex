@@ -10,7 +10,6 @@ internal static class Utf8FallbackDirectFamilyCountRouter
         Utf8ValidationResult validation,
         in Utf8FallbackDirectFamilyPlan directFamily,
         Utf8EmittedTokenFamilyMatcher? emittedTokenFamilyMatcher,
-        Utf8AsciiLiteralFinder linePrefixFinder,
         in PreparedAsciiDelimitedTokenSearch delimitedTokenSearch,
         in PreparedAsciiLiteralStructuredTokenSearch literalStructuredTokenSearch,
         out int count)
@@ -44,25 +43,6 @@ internal static class Utf8FallbackDirectFamilyCountRouter
                 ? 1
                 : 0;
 
-            return true;
-        }
-
-        if (directFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount)
-        {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredQuotedLineSegment);
-            count = 0;
-            return directFamily.LiteralUtf8 is { Length: > 0 } prefix &&
-                Utf8QuotedLineSegmentExecutor.TryCountViaLineWalk(input, prefix, directFamily.SecondaryLiteralUtf8, out count);
-        }
-
-        if (directFamily.Kind == Utf8FallbackDirectFamilyKind.LinePrefixCount &&
-            directFamily.LiteralUtf8 is { Length: > 0 })
-        {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectLinePrefix);
-            count = Utf8LinePrefixExecutor.CountMatchingLines(
-                input,
-                linePrefixFinder,
-                directFamily.TrimLeadingAsciiWhitespace);
             return true;
         }
 

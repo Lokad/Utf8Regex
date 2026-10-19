@@ -84,6 +84,12 @@ requirements, allowing some previously denied numeric budgets to succeed.
 Per-scalar work, major admission, original token/deadline and capture/result
 publication stay controlled. Immutable106 does not contain this change.
 
+Source after scalar.107 removes Count-only line-family metadata and native
+preparation that no public entry point executes after scalar dispatch. Numeric
+construction work/byte requirements may fall; meaningful major acquisition,
+original authority and all invocation/result controls remain. Private diagnostic
+replays move to benchmark tooling. Immutable107 retains its recorded preparation.
+
 ## Select the public controls
 
 `Utf8ResourcePolicy` has positive nullable `MaxWorkSteps`, `MaxDepth`,

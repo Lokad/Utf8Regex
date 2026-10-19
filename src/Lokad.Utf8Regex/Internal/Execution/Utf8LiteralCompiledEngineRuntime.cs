@@ -61,7 +61,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         WellFormedOnlyMatchMissIsDefinitive: _smallAsciiLiteralFamilyPrimitive is not null || CanUseDirectExactSingleScalar(Utf8ExecutionDeadline.Infinite),
         SupportsWellFormedOnlyCount: true,
         SupportsThrowIfInvalidOnlyCount: true,
-        PreferValidateOnlyCount: false,
         SkipRequiredPrefilterForMatch: false,
         SkipRequiredPrefilterForCount: true,
         UsesEmittedWholeMatcher: false,

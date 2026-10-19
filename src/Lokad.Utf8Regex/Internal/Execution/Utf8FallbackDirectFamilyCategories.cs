@@ -71,13 +71,8 @@ internal static class Utf8FallbackDirectFamilyCategories
         Utf8FallbackDirectFamilyKind.Utf8UriToken or
         Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken;
 
-    public static bool IsNativeFallbackOnlyCountFamily(Utf8FallbackDirectFamilyKind kind)
-        => kind is Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount or
-        Utf8FallbackDirectFamilyKind.LinePrefixCount;
-
     public static bool SupportsThrowIfInvalidOnlyCount(Utf8FallbackDirectFamilyKind kind)
-        => IsNativeFallbackOnlyCountFamily(kind) ||
-        kind is Utf8FallbackDirectFamilyKind.AsciiWordBoundedCount or
+        => kind is Utf8FallbackDirectFamilyKind.AsciiWordBoundedCount or
         Utf8FallbackDirectFamilyKind.AsciiIdentifierToken or
         Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount or
@@ -90,8 +85,7 @@ internal static class Utf8FallbackDirectFamilyCategories
         Utf8FallbackDirectFamilyKind.Utf8BalancedBeginEndCount;
 
     public static bool SkipsRequiredPrefilterForCount(Utf8FallbackDirectFamilyKind kind)
-        => kind is Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount or
-        Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or
+        => kind is Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiIdentifierToken or
         Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount or

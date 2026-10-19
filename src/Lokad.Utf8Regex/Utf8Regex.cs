@@ -1089,11 +1089,7 @@ public sealed partial class Utf8Regex
         if (_compiledEngineRuntime.SupportsWellFormedOnlyCount)
         {
             Utf8ValidationResult countValidation;
-            if (_compiledEngineRuntime.PreferValidateOnlyCount)
-            {
-                countValidation = Utf8InputAnalyzer.ValidateOnly(input);
-            }
-            else if (_compiledEngineRuntime.SupportsThrowIfInvalidOnlyCount)
+            if (_compiledEngineRuntime.SupportsThrowIfInvalidOnlyCount)
             {
                 if (!TryUseAsciiInputValidationShortcut(input))
                 {

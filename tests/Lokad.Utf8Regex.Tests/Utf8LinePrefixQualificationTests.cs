@@ -102,45 +102,40 @@ public sealed class Utf8LinePrefixQualificationTests
     }
 
     [Fact]
-    public void TitleCounterConsumesUnicodeIndentAndAdvancesPastCompletePrefixes()
+    public void PublicTitleCountsConsumeUnicodeIndentAndCompletePrefixes()
     {
-        var finder = new Utf8AsciiLiteralFinder("///#"u8);
         var input = " ///#😀\n\t///#x\n"u8;
-        Assert.Equal(2, Utf8LinePrefixExecutor.CountMatchingLines(input, finder, true));
+        Assert.Equal(2, new Utf8Regex(Title, RegexOptions.Multiline).Count(input));
         const string alias = @"^\s*(?:\x2f/)(?<title>/\x23[^\n]*)$";
-        Plan(alias, RegexOptions.Multiline | RegexOptions.CultureInvariant, Utf8FallbackDirectFamilyKind.LinePrefixCount);
         foreach (var options in new[] { RegexOptions.Multiline, RegexOptions.Multiline | RegexOptions.Compiled })
             Assert.Equal(2, new Utf8Regex(alias, options).Count(input));
         var capture = new Utf8Regex(alias, RegexOptions.Multiline).MatchDetailed(input).GetGroup("title");
         Assert.Equal((5, 6), (capture.IndexInBytes, capture.LengthInBytes));
-        Assert.Equal(1, Utf8LinePrefixExecutor.CountMatchingLines("a\na\na\n"u8, new Utf8AsciiLiteralFinder("a\na"u8), false));
+        Assert.Equal(1, new Utf8Regex(@"^a\na.*$", RegexOptions.Multiline).Count("a\na\na\n"u8));
     }
 
     [Fact]
-    public void QuotedLineCounterUsesExactPrefixAndCompleteUnicodeWhitespaceAndBody()
+    public void PublicQuotedLinesUseExactPrefixesAndCompleteUnicodeWhitespaceAndBody()
     {
         foreach (var item in new[] { ("import2 \"x\"", "import2", 1), ("import\n\"😀\"", "import", 1), ("import \"a\nb\"", "import", 1), ("import \"a\\b\"", "import", 0) })
         {
-            Assert.True(Utf8QuotedLineSegmentExecutor.TryCountViaLineWalk(Encoding.UTF8.GetBytes(item.Item1), Encoding.ASCII.GetBytes(item.Item2), [], out var count));
-            Assert.Equal(item.Item3, count);
+            var pattern = "^" + Regex.Escape(item.Item2) + "\\s+\"[^\"\\\\]*\".*$";
+            Assert.Equal(item.Item3, new Utf8Regex(pattern, RegexOptions.Multiline).Count(Encoding.UTF8.GetBytes(item.Item1)));
         }
         const string alias = "^\\x69(?<i>m)port\\s+(?:shared\\s+)?\"(?<p>(\\.|[^\\\\\"]*))\"[^\\n]*$";
-        Plan(alias, RegexOptions.Multiline | RegexOptions.CultureInvariant, Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount);
         PublicRange(alias, RegexOptions.Multiline | RegexOptions.CultureInvariant, "import shared \"😀\nx\"tail", 0, 28, false);
     }
 
     [Fact]
-    public void QuotedLineAndTitleNativeCountsAgreeWithIndependentOverlappingOracle()
+    public void PublicQuotedLineAndTitleCountsAgreeWithIndependentOverlappingOracle()
     {
-        Plan(Import, RegexOptions.Multiline, Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount);
         var imports = new Regex(Import, RegexOptions.Multiline); var titles = new Regex(Title, RegexOptions.Multiline);
-        var finder = new Utf8AsciiLiteralFinder("///#"u8);
         foreach (var a in new[] { "", "import \"\"", "import shared \"x\"", "import\n\"a\nb\"", "import \".\"", "import \"a\\b\"", "import \"x\"" })
         foreach (var b in new[] { "", "\nimport \"z\"", " import \"x\"", "\n///#x", "\n ///#y" })
         {
             var text = a + b; var input = Encoding.UTF8.GetBytes(text);
-            Assert.True(Utf8QuotedLineSegmentExecutor.TryCountViaLineWalk(input, "import"u8, "shared"u8, out var count)); Assert.Equal(imports.Count(text), count);
-            Assert.Equal(titles.Count(text), Utf8LinePrefixExecutor.CountMatchingLines(input, finder, true));
+            Assert.Equal(imports.Count(text), new Utf8Regex(Import, RegexOptions.Multiline).Count(input));
+            Assert.Equal(titles.Count(text), new Utf8Regex(Title, RegexOptions.Multiline).Count(input));
         }
     }
 
@@ -166,11 +161,9 @@ public sealed class Utf8LinePrefixQualificationTests
     public void UnsafeLineWhitespaceDotsOptionsAndOptionalOverlapsKeepScalarGrammar()
     {
         var method = Classifier();
-        foreach (var item in new[] { (Title, RegexOptions.Multiline | RegexOptions.Singleline), (Title, RegexOptions.Multiline | RegexOptions.IgnoreCase),
-            (Trimmed, RegexOptions.Multiline), (Trimmed.Replace("*", "*?"), RegexOptions.None), (Until.Replace("*", "+"), RegexOptions.None),
-            (Trimmed.Replace(@"\[\|", "///"), RegexOptions.None), (Import.Replace("\\s+", "[ ]+"), RegexOptions.Multiline) })
+        foreach (var item in new[] { (Trimmed, RegexOptions.Multiline), (Trimmed.Replace("*", "*?"), RegexOptions.None), (Until.Replace("*", "+"), RegexOptions.None),
+            (Trimmed.Replace(@"\[\|", "///"), RegexOptions.None) })
             Assert.False(Classify(method, Tree(item.Item1, item.Item2)).HasValue);
-        Assert.False(Classify(method, Tree(Title, RegexOptions.Multiline | RegexOptions.RightToLeft)).HasValue);
         Assert.Throws<ArgumentException>(() => new Utf8Regex(Trimmed).IsMatch(new byte[] { 47, 47, 47, 0xff }));
     }
 
@@ -178,7 +171,7 @@ public sealed class Utf8LinePrefixQualificationTests
     public void EveryLineProofCutoffFundsOnlyFinalLiteralsAndRestoresParentState()
     {
         var method = Classifier();
-        foreach (var item in new[] { (Until, RegexOptions.CultureInvariant, 48ul), (Trimmed, RegexOptions.CultureInvariant, 96ul), (Title, RegexOptions.Multiline, 48ul), (Import, RegexOptions.Multiline, 96ul), (Digits, RegexOptions.CultureInvariant, 48ul) })
+        foreach (var item in new[] { (Until, RegexOptions.CultureInvariant, 48ul), (Trimmed, RegexOptions.CultureInvariant, 96ul), (Digits, RegexOptions.CultureInvariant, 48ul) })
         {
             var tree = Tree(item.Item1, item.Item2); ulong peak, work;
             using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
@@ -215,7 +208,7 @@ public sealed class Utf8LinePrefixQualificationTests
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         var spent = owner.Budget.WorkSteps; Assert.True(Classify(method, tree).HasValue); Assert.Equal(128ul + 48ul, owner.Budget.ReservedBytes);
         Assert.True(owner.Budget.WorkSteps > spent); Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
-        foreach (var name in new[] { "TryParseAnchoredPrefixUntilBytePattern", "TryParseAnchoredAsciiLeadingDigitsTail", "TryParseAnchoredTrimmedOptionalLiteralPrefixTailPattern", "TryParseLinePrefixCountFamily", "TryParseAnchoredQuotedLineSegmentCountFamily", "TryParseAnchoredQuotedLineSegmentPattern", "TryParseOptionalLiteralWhitespaceGroup", "TryReadSingleAsciiLiteralAlternationOrDollar", "TryReadSingleAsciiLiteralBranch", "CompactRegexWhitespace", "TryDecodeAsciiLiteral" })
+        foreach (var name in new[] { "TryParseAnchoredPrefixUntilBytePattern", "TryParseAnchoredAsciiLeadingDigitsTail", "TryParseAnchoredTrimmedOptionalLiteralPrefixTailPattern", "TryParseOptionalLiteralWhitespaceGroup", "TryReadSingleAsciiLiteralAlternationOrDollar", "TryReadSingleAsciiLiteralBranch", "CompactRegexWhitespace", "TryDecodeAsciiLiteral" })
             Assert.DoesNotContain(typeof(Utf8FallbackRegexFamilyAnalyzer).GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static), m => m.Name == name);
     }
 }

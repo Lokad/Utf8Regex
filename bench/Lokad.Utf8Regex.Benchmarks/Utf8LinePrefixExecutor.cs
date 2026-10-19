@@ -1,6 +1,8 @@
+using System.Text;
+using Lokad.Utf8Regex.Internal.Execution;
 using System.Buffers;
 
-namespace Lokad.Utf8Regex.Internal.Execution;
+namespace Lokad.Utf8Regex.Benchmarks;
 
 internal static class Utf8LinePrefixExecutor
 {

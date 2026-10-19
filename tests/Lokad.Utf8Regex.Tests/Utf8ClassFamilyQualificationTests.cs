@@ -33,7 +33,7 @@ public sealed class Utf8ClassFamilyQualificationTests
     private static void UnknownValidationCount(string pattern, ReadOnlySpan<byte> input, int expected)
     {
         var plan = Plan(pattern, RegexOptions.CultureInvariant);
-        Assert.True(Utf8FallbackDirectFamilyCountRouter.TryCount(input, default, plan, null, default, default, default, out var count));
+        Assert.True(Utf8FallbackDirectFamilyCountRouter.TryCount(input, default, plan, null, default, default, out var count));
         Assert.Equal(expected, count);
     }
 

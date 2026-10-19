@@ -176,7 +176,6 @@ internal sealed partial class Utf8FallbackRegexCompiledEngineRuntime
         Utf8PreparedRegex RegexPlan,
         Utf8VerifierRuntime VerifierRuntime,
         Utf8FallbackDirectFamilyPlan DirectFamily,
-        Utf8AsciiLiteralFinder LinePrefixFinder,
         Utf8EmittedTokenFamilyMatcher? EmittedTokenFamilyMatcher,
         PreparedAsciiDelimitedTokenSearch DelimitedTokenSearch,
         PreparedAsciiLiteralStructuredTokenSearch LiteralStructuredTokenSearch);
@@ -191,15 +190,12 @@ internal sealed partial class Utf8FallbackRegexCompiledEngineRuntime
             var regexPlan = plan;
             var verifierRuntime = verifier;
             var directFamily = plan.FallbackDirectFamily;
-            var linePrefixFinder = directFamily.LiteralUtf8 is { Length: > 0 } literal
-                ? new Utf8AsciiLiteralFinder(literal)
-                : default;
             var emittedTokenFamilyMatcher = Utf8EmittedTokenFamilyMatcher.TryCreate(directFamily, out var preparedTokenFamilyMatcher)
                 ? preparedTokenFamilyMatcher
                 : null;
             var delimitedTokenSearch = Utf8FallbackPreparedTokenSearchFactory.CreateDelimitedTokenSearch(directFamily);
             var literalStructuredTokenSearch = Utf8FallbackPreparedTokenSearchFactory.CreateLiteralStructuredTokenSearch(directFamily);
-            var result = budget.AllocateObject(new ConstructionState(regexPlan, verifierRuntime, directFamily, linePrefixFinder, emittedTokenFamilyMatcher, delimitedTokenSearch, literalStructuredTokenSearch),
+            var result = budget.AllocateObject(new ConstructionState(regexPlan, verifierRuntime, directFamily, emittedTokenFamilyMatcher, delimitedTokenSearch, literalStructuredTokenSearch),
                 static state => new Utf8FallbackRegexCompiledEngineRuntime(state));
             scope.Complete();
             return result;

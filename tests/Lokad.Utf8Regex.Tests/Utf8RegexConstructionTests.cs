@@ -307,9 +307,6 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex(pattern, RegexOptions.Multiline);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-        // Escaped and unescaped quote spellings now share the owned grammar proof.
-        Assert.Null(regex.Inspection.FallbackReason);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount, regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
         Assert.Equal(1, regex.Count("import \"😀\nx\"tail"u8));
         var path = regex.MatchDetailed("import \"😀\nx\"tail"u8).GetGroup("path");
         Assert.Equal((8, 6), (path.IndexInBytes, path.LengthInBytes));
@@ -1370,27 +1367,6 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal("culture_sensitive_ignore_case", regex.Inspection.FallbackReason);
         Assert.NotNull(regex.Inspection.AvailableOwnedSliceProgram);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-    }
-
-    [Fact]
-    public void ConstructorClearsUnsupportedLoopReasonForDirectImportCountFamily()
-    {
-        var regex = new Utf8Regex("^import\\s+(?<shared>shared\\s+)?\"(?<path>(\\.|[^\\\\\"]*))\".*$", RegexOptions.Multiline);
-
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-        Assert.Null(regex.Inspection.FallbackReason);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount, regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
-    }
-
-    [Fact]
-    public void ConstructorRetainsCompiledDirectImportCountFamily()
-    {
-        var regex = new Utf8Regex("^import\\s+(?<shared>shared\\s+)?\"(?<path>(\\.|[^\\\\\"]*))\".*$", RegexOptions.Multiline | RegexOptions.Compiled);
-
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
-        Assert.Null(regex.Inspection.FallbackReason);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount, regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
     }
 
     [Fact]

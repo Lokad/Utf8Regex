@@ -5,13 +5,11 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal enum Utf8FallbackDirectFamilyKind : byte
 {
     None = 0,
-    AnchoredQuotedLineSegmentCount = 1,
     AnchoredIdentifierPrefix = 2,
     AnchoredNumberPrefix = 3,
     AnchoredOperatorRun = 4,
     AnchoredQuotedStringPrefix = 5,
     UnicodeLetterBoundedCount = 6,
-    LinePrefixCount = 7,
     AsciiIdentifierToken = 8,
     AnchoredPrefixUntilByte = 9,
     AsciiDelimitedTokenCount = 10,
@@ -50,7 +48,6 @@ internal enum Utf8FallbackFindModeKind : byte
     MatchAtStart = 1,
     MatchAtEnd = 4,
     FindToken = 2,
-    CountLines = 3,
 }
 
 internal readonly struct Utf8FallbackLiteralPayload
@@ -81,7 +78,6 @@ internal readonly record struct Utf8FallbackCountBoundsPayload(
     int MaxCount);
 
 internal readonly record struct Utf8FallbackLinePayload(
-    bool TrimLeadingAsciiWhitespace,
     byte TerminatorByte);
 
 internal readonly record struct Utf8FallbackDateTokenPayload(
@@ -195,7 +191,6 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
 
     public byte[] TertiaryLiteralUtf8 => Literals.TertiaryLiteralUtf8;
 
-    public bool TrimLeadingAsciiWhitespace => Line.TrimLeadingAsciiWhitespace;
 
     public byte TerminatorByte => Line.TerminatorByte;
 
@@ -322,26 +317,12 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
             Utf8FallbackDirectFamilyKind.AnchoredPrefixUntilByte,
             Utf8FallbackFindModeKind.MatchAtStart,
             new Utf8FallbackLiteralPayload(literalUtf8, null, null),
-            new Utf8FallbackLinePayload(false, terminatorByte));
+            new Utf8FallbackLinePayload(terminatorByte));
 
     public static Utf8FallbackDirectFamilyPlan ForTrimmedOptionalLiteralPrefixTail(byte[] literalUtf8, byte[]? secondaryLiteralUtf8)
-        => CreateWithLiteralsAndLine(
+        => CreateWithLiterals(
             Utf8FallbackDirectFamilyKind.AnchoredTrimmedOptionalLiteralPrefixTail,
             Utf8FallbackFindModeKind.MatchAtStart,
-            new Utf8FallbackLiteralPayload(literalUtf8, secondaryLiteralUtf8, null),
-            new Utf8FallbackLinePayload(true, 0));
-
-    public static Utf8FallbackDirectFamilyPlan ForLinePrefixCount(byte[] literalUtf8, bool trimLeadingAsciiWhitespace)
-        => CreateWithLiteralsAndLine(
-            Utf8FallbackDirectFamilyKind.LinePrefixCount,
-            Utf8FallbackFindModeKind.CountLines,
-            new Utf8FallbackLiteralPayload(literalUtf8, null, null),
-            new Utf8FallbackLinePayload(trimLeadingAsciiWhitespace, 0));
-
-    public static Utf8FallbackDirectFamilyPlan ForQuotedLineSegmentCount(byte[] literalUtf8, byte[]? secondaryLiteralUtf8)
-        => CreateWithLiterals(
-            Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount,
-            Utf8FallbackFindModeKind.CountLines,
             new Utf8FallbackLiteralPayload(literalUtf8, secondaryLiteralUtf8, null));
 
     public static Utf8FallbackDirectFamilyPlan ForDelimitedTokenCount(byte[] delimiterUtf8,
@@ -398,7 +379,7 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
     public static Utf8FallbackDirectFamilyPlan ForAsciiUntilByteStarCount(byte terminatorByte)
         => CreateWithLine(
             Utf8FallbackDirectFamilyKind.AsciiUntilByteStarCount,
-            new Utf8FallbackLinePayload(false, terminatorByte));
+            new Utf8FallbackLinePayload(terminatorByte));
 
     public static Utf8FallbackDirectFamilyPlan ForAnchoredAsciiQueryWhole(
         Utf8FallbackDirectFamilyKind kind,
@@ -416,7 +397,7 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
 
     public bool SupportsDefinitiveIsMatch => Utf8FallbackDirectFamilySupport.SupportsDefinitiveIsMatch(Kind);
 
-    public bool SupportsNativeFallbackRoute => Utf8FallbackDirectFamilySupport.SupportsNativeFallbackRoute(Kind);
+    public bool SupportsNativeFallbackRoute => Utf8FallbackDirectFamilySupport.SupportsDefinitiveIsMatch(Kind);
 
     public bool SupportsThrowIfInvalidOnlyCount => Utf8FallbackDirectFamilySupport.SupportsThrowIfInvalidOnlyCount(Kind);
 

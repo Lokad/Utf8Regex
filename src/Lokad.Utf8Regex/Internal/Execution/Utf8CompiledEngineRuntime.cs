@@ -11,7 +11,6 @@ internal readonly record struct Utf8CompiledRuntimeCapabilities(
     bool WellFormedOnlyMatchMissIsDefinitive,
     bool SupportsWellFormedOnlyCount,
     bool SupportsThrowIfInvalidOnlyCount,
-    bool PreferValidateOnlyCount,
     bool SkipRequiredPrefilterForMatch,
     bool SkipRequiredPrefilterForCount,
     bool UsesEmittedWholeMatcher,
@@ -70,7 +69,6 @@ internal abstract class Utf8CompiledEngineRuntime
     public bool WellFormedOnlyMatchMissIsDefinitive => Capabilities.WellFormedOnlyMatchMissIsDefinitive;
     public bool SupportsWellFormedOnlyCount => Capabilities.SupportsWellFormedOnlyCount;
     public bool SupportsThrowIfInvalidOnlyCount => Capabilities.SupportsThrowIfInvalidOnlyCount;
-    public bool PreferValidateOnlyCount => Capabilities.PreferValidateOnlyCount;
     public bool SkipRequiredPrefilterForMatch => Capabilities.SkipRequiredPrefilterForMatch;
     public bool SkipRequiredPrefilterForCount => Capabilities.SkipRequiredPrefilterForCount;
     public bool UsesEmittedWholeMatcher => Capabilities.UsesEmittedWholeMatcher;
@@ -328,7 +326,6 @@ internal sealed partial class Utf8SimplePatternCompiledEngineRuntime : Utf8Compi
         WellFormedOnlyMatchMissIsDefinitive: _canUseDirectAnchoredValidatorMatch,
         SupportsWellFormedOnlyCount: false,
         SupportsThrowIfInvalidOnlyCount: false,
-        PreferValidateOnlyCount: false,
         SkipRequiredPrefilterForMatch: _compiledPatternFamily.Category == Utf8CompiledPatternCategory.AnchoredWhole,
         SkipRequiredPrefilterForCount: false,
         UsesEmittedWholeMatcher: _emittedWholeMatcher is not null,
@@ -648,7 +645,6 @@ internal sealed partial class Utf8StructuralLinearAutomatonCompiledEngineRuntime
         WellFormedOnlyMatchMissIsDefinitive: false,
         SupportsWellFormedOnlyCount: false,
         SupportsThrowIfInvalidOnlyCount: false,
-        PreferValidateOnlyCount: false,
         SkipRequiredPrefilterForMatch: false,
         SkipRequiredPrefilterForCount: false,
         UsesEmittedWholeMatcher: false,
@@ -798,7 +794,6 @@ internal sealed partial class Utf8FallbackRegexCompiledEngineRuntime : Utf8Compi
     private readonly Utf8PreparedRegex _regexPlan;
     private readonly Utf8VerifierRuntime _verifierRuntime;
     private readonly Utf8FallbackDirectFamilyPlan _directFamily;
-    private readonly Utf8AsciiLiteralFinder _linePrefixFinder;
     private readonly Utf8EmittedTokenFamilyMatcher? _emittedTokenFamilyMatcher;
     private readonly PreparedAsciiDelimitedTokenSearch _delimitedTokenSearch;
     private readonly PreparedAsciiLiteralStructuredTokenSearch _literalStructuredTokenSearch;
@@ -808,7 +803,6 @@ internal sealed partial class Utf8FallbackRegexCompiledEngineRuntime : Utf8Compi
         _regexPlan = state.RegexPlan;
         _verifierRuntime = state.VerifierRuntime;
         _directFamily = state.DirectFamily;
-        _linePrefixFinder = state.LinePrefixFinder;
         _emittedTokenFamilyMatcher = state.EmittedTokenFamilyMatcher;
         _delimitedTokenSearch = state.DelimitedTokenSearch;
         _literalStructuredTokenSearch = state.LiteralStructuredTokenSearch;
@@ -825,7 +819,6 @@ internal sealed partial class Utf8FallbackRegexCompiledEngineRuntime : Utf8Compi
                 WellFormedOnlyMatchMissIsDefinitive: supportsWellFormedMatch,
                 SupportsWellFormedOnlyCount: true,
                 SupportsThrowIfInvalidOnlyCount: Utf8FallbackDirectFamilyRuntimePolicy.SupportsThrowIfInvalidOnlyCount(_directFamily),
-                PreferValidateOnlyCount: _directFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount,
                 SkipRequiredPrefilterForMatch: Utf8FallbackDirectFamilyRuntimePolicy.SkipRequiredPrefilterForMatch(_directFamily),
                 SkipRequiredPrefilterForCount: Utf8FallbackDirectFamilyRuntimePolicy.SkipRequiredPrefilterForCount(_directFamily),
                 UsesEmittedWholeMatcher: false,
@@ -873,7 +866,6 @@ internal sealed partial class Utf8FallbackRegexCompiledEngineRuntime : Utf8Compi
             validation,
             _directFamily,
             _emittedTokenFamilyMatcher,
-            _linePrefixFinder,
             _delimitedTokenSearch,
             _literalStructuredTokenSearch,
             out var directCount))

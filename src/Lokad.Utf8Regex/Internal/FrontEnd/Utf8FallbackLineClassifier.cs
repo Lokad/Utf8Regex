@@ -22,8 +22,6 @@ internal static class Utf8FallbackLineClassifier
         {
             Utf8FallbackDirectFamilyKind.AnchoredPrefixUntilByte => Utf8FallbackDirectFamilyPlan.ForPrefixUntilByte(primary, shape.Terminator),
             Utf8FallbackDirectFamilyKind.AnchoredTrimmedOptionalLiteralPrefixTail => Utf8FallbackDirectFamilyPlan.ForTrimmedOptionalLiteralPrefixTail(primary, secondary),
-            Utf8FallbackDirectFamilyKind.LinePrefixCount => Utf8FallbackDirectFamilyPlan.ForLinePrefixCount(primary, true),
-            Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount => Utf8FallbackDirectFamilyPlan.ForQuotedLineSegmentCount(primary, secondary),
             _ => Utf8FallbackDirectFamilyPlan.ForLiteral(shape.Kind, Utf8FallbackFindModeKind.MatchAtStart, primary),
         };
         scope.Complete(); return plan;
@@ -33,8 +31,7 @@ internal static class Utf8FallbackLineClassifier
     {
         using var scratch = Utf8ConstructionScope.Enter(); shape = default;
         if (!Admit(root, false)) return false;
-        return TryUntil(root, out shape) || TryTrimmed(root, out shape) || TryTitle(root, out shape) ||
-            TryQuoted(root, out shape) || TryDigits(root, out shape);
+        return TryUntil(root, out shape) || TryTrimmed(root, out shape) || TryDigits(root, out shape);
     }
 
     private static bool TryUntil(Utf8TreeNode root, out Shape shape)
@@ -53,38 +50,12 @@ internal static class Utf8FallbackLineClassifier
         if (!cursor.Next(out var begin) || !IsWholeBegin(begin) || !cursor.Next(out var whitespace) || !IsWhitespace(whitespace, 0, int.MaxValue)) return false;
         LiteralSlice? optional = null;
         if (cursor.Peek(out var candidate) && candidate.Kind == Utf8TreeNodeKind.Loop)
-        { cursor.Next(out _); if (!TryOptionalLiteral(candidate, 0, out var slice)) return false; optional = slice; }
+        { cursor.Next(out _); if (!TryOptionalLiteral(candidate, out var slice)) return false; optional = slice; }
         if (!cursor.ReadLiteral(root, out var prefix) || IsWhiteSpace(First(prefix)) ||
             optional is { } other && (IsWhiteSpace(First(other)) || First(other) == First(prefix)) ||
             !cursor.Next(out whitespace) || !IsWhitespace(whitespace, 0, 1) || !cursor.Next(out var tail) || !IsDotTail(tail) ||
             !cursor.Next(out var end) || !IsWholeEnd(end) || cursor.Peek(out _)) return false;
         shape = new(Utf8FallbackDirectFamilyKind.AnchoredTrimmedOptionalLiteralPrefixTail, prefix, optional, default, 0); return true;
-    }
-
-    private static bool TryTitle(Utf8TreeNode root, out Shape shape)
-    {
-        shape = default; using var cursor = new Cursor(root);
-        if (!cursor.Next(out var begin) || !IsLineBegin(begin) || !cursor.Next(out var whitespace) || !IsWhitespace(whitespace, 0, int.MaxValue) ||
-            !cursor.ReadLiteral(root, out var prefix) || IsWhiteSpace(First(prefix)) || !cursor.Next(out var tail) || !IsDotTail(tail) ||
-            !cursor.Next(out var end) || !IsLineEnd(end) || cursor.Peek(out _)) return false;
-        shape = new(Utf8FallbackDirectFamilyKind.LinePrefixCount, prefix, null, default, 0); return true;
-    }
-
-    private static bool TryQuoted(Utf8TreeNode root, out Shape shape)
-    {
-        shape = default; using var cursor = new Cursor(root);
-        if (!cursor.Next(out var begin) || !IsLineBegin(begin) || !cursor.ReadLiteral(root, out var prefix) ||
-            !cursor.Next(out var whitespace) || !IsWhitespace(whitespace, 1, int.MaxValue)) return false;
-        LiteralSlice? optional = null;
-        if (cursor.Peek(out var candidate) && candidate.Kind == Utf8TreeNodeKind.Loop)
-        {
-            cursor.Next(out _); if (!TryOptionalLiteral(candidate, 1, out var slice) || IsWhiteSpace(First(slice)) || First(slice) == (byte)'"') return false;
-            optional = slice;
-        }
-        if (!cursor.Next(out var quote) || !IsByte(quote, (byte)'"') || !cursor.Next(out var body) || !IsRawQuotedBody(body) ||
-            !cursor.Next(out quote) || !IsByte(quote, (byte)'"') || !cursor.Next(out var tail) || !IsDotTail(tail) ||
-            !cursor.Next(out var end) || !IsLineEnd(end) || cursor.Peek(out _)) return false;
-        shape = new(Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount, prefix, optional, default, 0); return true;
     }
 
     private static bool TryDigits(Utf8TreeNode root, out Shape shape)
@@ -111,12 +82,12 @@ internal static class Utf8FallbackLineClassifier
         return hasEnd && mask.Count <= 8 && !mask.Contains((byte)'\n') && mask.IsDisjoint(AsciiCharClass.FromBytes("0123456789"u8));
     }
 
-    private static bool TryOptionalLiteral(Utf8TreeNode source, int minimumWhitespace, out LiteralSlice slice)
+    private static bool TryOptionalLiteral(Utf8TreeNode source, out LiteralSlice slice)
     {
         slice = default; var node = Unwrap(source);
         if (node.Kind != Utf8TreeNodeKind.Loop || node.M != 0 || node.N != 1 || node.ChildCount != 1) return false;
         var root = node.Child(0); using var cursor = new Cursor(root);
-        return cursor.ReadLiteral(root, out slice) && cursor.Next(out var whitespace) && IsWhitespace(whitespace, minimumWhitespace, int.MaxValue) && !cursor.Peek(out _);
+        return cursor.ReadLiteral(root, out slice) && cursor.Next(out var whitespace) && IsWhitespace(whitespace, 0, int.MaxValue) && !cursor.Peek(out _);
     }
 
     private static byte[] CopySeparators(AsciiCharClass mask, Utf8ConstructionBudget budget)
@@ -129,10 +100,7 @@ internal static class Utf8FallbackLineClassifier
 
     private static bool IsWholeBegin(Utf8TreeNode node) => node.Kind == Utf8TreeNodeKind.Beginning || node.Kind == Utf8TreeNodeKind.Bol && (node.Options & RegexOptions.Multiline) == 0;
     private static bool IsWholeEnd(Utf8TreeNode node) => node.Kind == Utf8TreeNodeKind.EndZ || node.Kind == Utf8TreeNodeKind.Eol && (node.Options & RegexOptions.Multiline) == 0;
-    private static bool IsLineBegin(Utf8TreeNode node) => node.Kind == Utf8TreeNodeKind.Bol && (node.Options & RegexOptions.Multiline) != 0;
-    private static bool IsLineEnd(Utf8TreeNode node) => node.Kind == Utf8TreeNodeKind.Eol && (node.Options & RegexOptions.Multiline) != 0;
     private static bool IsWhiteSpace(byte value) => char.IsWhiteSpace((char)value);
-    private static bool IsByte(Utf8TreeNode node, byte value) => TryLiteral(node, out var literal) && LiteralLength(literal) == 1 && FirstByte(literal) == value;
     private static bool IsWhitespace(Utf8TreeNode node, int minimum, int maximum) => TryRepeat(node, out var atom, out var min, out var max) &&
         min == minimum && max == maximum && IsClass(atom, [0, 0, 1, 100]);
     private static bool IsDotTail(Utf8TreeNode node) => TryRepeat(node, out var atom, out var min, out var max) && min == 0 && max == int.MaxValue &&
@@ -152,14 +120,4 @@ internal static class Utf8FallbackLineClassifier
         if (atom.ScalarClass is not { } scalarClass) return false;
         Utf8ConstructionScope.ChargeWork((ulong)scalarClass.Data.Length); return scalarClass.Data.AsSpan().SequenceEqual(expected);
     }
-    private static bool IsRawQuotedBody(Utf8TreeNode source)
-    {
-        var node = Unwrap(source);
-        if (IsRawQuotedRun(node)) return true;
-        // This grammar has a literal-dot arm (\.), not a backslash escape arm.
-        return node.Kind == Utf8TreeNodeKind.Alternate && node.ChildCount == 2 &&
-            (IsByte(node.Child(0), (byte)'.') && IsRawQuotedRun(node.Child(1)) || IsByte(node.Child(1), (byte)'.') && IsRawQuotedRun(node.Child(0)));
-    }
-    private static bool IsRawQuotedRun(Utf8TreeNode node) => TryRepeat(node, out var atom, out var min, out var max) && min == 0 && max == int.MaxValue &&
-        IsClass(atom, [1, 4, 0, 34, 35, 92, 93]);
 }

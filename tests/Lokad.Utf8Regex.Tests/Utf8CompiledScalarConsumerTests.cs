@@ -88,22 +88,19 @@ public sealed class Utf8CompiledScalarConsumerTests
     [InlineData("import \"abc\"\n", 1, true)]
     [InlineData("import \"😀é\"\n", 1, false)]
     [InlineData("import \"abc\"\nimport shared \"😀é\"\n", 2, false)]
-    public void QuotedLineCounterUsesQualifiedGrammarForCompleteScalarSubjects(string text, int expected, bool isAscii)
+    public void PublicQuotedLinesKeepCompleteScalarSubjects(string text, int expected, bool isAscii)
     {
         const string pattern = "^import\\s+(?<shared>shared\\s+)?\"(?<path>(\\.|[^\\\\\"]*))\".*$";
         const RegexOptions options = RegexOptions.CultureInvariant | RegexOptions.Multiline;
-        var prepared = Prepare(pattern, options);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount, prepared.FallbackDirectFamily.Kind);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(isAscii, Utf8Validation.Validate(input).IsAscii);
-        Assert.True(Utf8QuotedLineSegmentExecutor.TryCountViaLineWalk(input,
-            prepared.FallbackDirectFamily.LiteralUtf8, prepared.FallbackDirectFamily.SecondaryLiteralUtf8, out var nativeCount));
-        Assert.Equal(expected, nativeCount);
-        var verifier = Utf8VerifierRuntime.Create(prepared);
-        var runtime = Utf8CompiledRuntimeFactory.Create(new(Utf8CompiledEngineKind.FallbackRegex), prepared, verifier, options);
-        Assert.Equal(expected, runtime.Count(input, Utf8Validation.Validate(input), Utf8ExecutionDeadline.Infinite));
-        Assert.Equal(expected, runtime.Count(input, default, Utf8ExecutionDeadline.Infinite));
-        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
+        foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
+        {
+            var regex = new Utf8Regex(pattern, options | mode);
+            Assert.Equal(expected, regex.Count(input));
+            Assert.Equal(expected != 0, regex.IsMatch(input));
+            Assert.Equal(expected != 0, regex.MatchDetailed(input).Success);
+        }
     }
 
     [Theory]

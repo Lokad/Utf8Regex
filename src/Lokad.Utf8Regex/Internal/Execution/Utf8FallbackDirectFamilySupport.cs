@@ -9,10 +9,6 @@ internal static class Utf8FallbackDirectFamilySupport
         => SupportsAsciiDefinitiveIsMatch(kind) ||
         kind == Utf8FallbackDirectFamilyKind.AnchoredQuotedStringPrefix;
 
-    public static bool SupportsNativeFallbackRoute(Utf8FallbackDirectFamilyKind kind)
-        => SupportsDefinitiveIsMatch(kind) ||
-        Utf8FallbackDirectFamilyCategories.IsNativeFallbackOnlyCountFamily(kind);
-
     public static bool SupportsThrowIfInvalidOnlyCount(Utf8FallbackDirectFamilyKind kind)
         => Utf8FallbackDirectFamilyCategories.SupportsThrowIfInvalidOnlyCount(kind);
 
