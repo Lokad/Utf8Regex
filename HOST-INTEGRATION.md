@@ -1,10 +1,11 @@
 # Resource controls and host ownership
 
-The qualified private Core/PythonRe input is **0.4.0-scalar.107**. Its
-[handoff](artifacts/core-python-scalar107-20261019/HANDOFF.md) records exact
+The qualified private Core/PythonRe input is **0.4.0-scalar.108**. Its
+[handoff](artifacts/core-python-scalar108-20261019/HANDOFF.md) records exact
 identities, same-byte Windows/Linux consumer checks, current costs and exclusions.
-Independent PCRE2 uses its exact Core/PCRE2 scalar.94 pair; no PCRE107 is designated.
+Independent PCRE2 uses its exact Core/PCRE2 scalar.94 pair; no PCRE108 is designated.
 Earlier packages retain their recorded contracts and limitations.
+Later109-dev changes below are separate source work, outside immutable108.
 
 Known scalar.104 Core `NonBacktracking` limitation: nullable bounded repetitions
 can choose shorter matches or incorrect last captures. For example,
@@ -292,7 +293,7 @@ The qualified input is the exact Core/adapter pair recorded by its manifest,
 feed and locks. Adapters consume Core internals and move together with the exact
 qualified Core version. Applications combining adapters need a common qualified
 Core; deliberate dependency overrides have separate compatibility scope.
-The immutable [Core/PythonRe scalar.102 handoff](artifacts/core-python-scalar102-20261018/HANDOFF.md)
+The immutable [Core/PythonRe scalar.108 handoff](artifacts/core-python-scalar108-20261019/HANDOFF.md)
 records same-byte Windows/Linux consumers, exact identities, current costs and
 the recorded semantic/resource subset. Independent PCRE2 evidence stays
 with its [scalar.94 handoff](artifacts/pcre2-scalar94-delivery-20261018/HANDOFF.md).

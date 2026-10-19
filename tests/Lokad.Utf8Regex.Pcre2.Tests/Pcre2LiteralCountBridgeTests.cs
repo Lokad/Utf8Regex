@@ -77,7 +77,26 @@ public sealed class Pcre2LiteralCountBridgeTests
     [Fact]
     public void BorrowedParentCapacityAndStickyDenialSurviveTheCount()
     {
-        var regex = Create("(a)(b)", new() { MatchLimit = 8, DepthLimit = 1,
+        // Work units are versioned. Fund all but the final required step,
+        // rather than pinning the old per-candidate accounting threshold.
+        var control = Create("(a)(b)", new() { MatchLimit = uint.MaxValue, DepthLimit = 1,
+            HeapLimitInBytes = 1048576, ResultLimitInBytes = 1 });
+        var funded = Pcre2SliceDriver.CreateInvocation(control.DebugCompiledProgram.Request, default);
+        Assert.Equal(Utf8ExecutionLimitKind.None, funded.TryReserveWorking(13));
+        Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate("ab ab ab ab"u8,
+            ref funded, out var controlInput));
+        ulong requiredWork;
+        try
+        {
+            Assert.True(Pcre2GlobalOperationDriver.TryCount(control.DebugCompiledProgram, ref controlInput,
+                new Utf8BytePosition(0), Pcre2MatchOptions.None, ref funded, out var count));
+            Assert.Equal(4, count);
+            requiredWork = funded.Budget.Steps;
+            Assert.InRange(requiredWork, 2UL, uint.MaxValue);
+        }
+        finally { funded.Ledger.Release(13); }
+
+        var regex = Create("(a)(b)", new() { MatchLimit = checked((uint)(requiredWork - 1)), DepthLimit = 1,
             HeapLimitInBytes = 1048576, ResultLimitInBytes = 1 });
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(13));
@@ -88,10 +107,12 @@ public sealed class Pcre2LiteralCountBridgeTests
             for (var attempt = 0; attempt < 2; attempt++)
             {
                 Exception? failure = null;
+                var count = -1;
                 try { Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
-                    new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out _); }
+                    new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out count); }
                 catch (Exception error) { failure = error; }
                 Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
+                Assert.Equal(0, count);
                 Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, invocation.Budget.LimitBreach);
                 Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
                 Assert.Equal(0UL, invocation.Budget.ResultBytes);
