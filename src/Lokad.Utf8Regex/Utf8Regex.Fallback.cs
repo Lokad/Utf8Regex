@@ -773,44 +773,6 @@ public sealed partial class Utf8Regex
 
 
 
-    private int FindFirstLiteralViaInterpreter(ReadOnlySpan<byte> input, bool ignoreCase, Utf8ExecutionDeadline budget)
-    {
-        return FindFirstLiteralViaInterpreter(input, ignoreCase, budget, out _);
-    }
-
-    private int FindFirstLiteralViaInterpreter(ReadOnlySpan<byte> input, bool ignoreCase, Utf8ExecutionDeadline budget, out int matchedLength)
-    {
-        return FindNextLiteralViaInterpreter(input, 0, ignoreCase, budget, out matchedLength);
-    }
-
-    private int FindNextLiteralViaInterpreter(ReadOnlySpan<byte> input, int startIndex, bool ignoreCase, Utf8ExecutionDeadline budget, out int matchedLength)
-    {
-        matchedLength = 0;
-        for (var index = Utf8SearchExecutor.FindNext(_preparedRegex.SearchPlan, input, startIndex);
-             index >= 0;
-             index = Utf8SearchExecutor.FindNext(_preparedRegex.SearchPlan, input, index + 1))
-        {
-            budget.Step();
-            if (Utf8ExecutionInterpreter.TryMatchLiteralPrefix(input[index..], _preparedRegex.ExecutionProgram, ignoreCase, budget, out matchedLength))
-            {
-                return index;
-            }
-        }
-
-        matchedLength = 0;
-        return -1;
-    }
-
-    private int FindFirstSimplePatternViaInterpreter(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
-    {
-        return FindFirstSimplePatternViaInterpreter(input, budget, out _);
-    }
-
-    private int FindFirstSimplePatternViaInterpreter(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out int matchedLength)
-    {
-        return FindNextSimplePatternViaInterpreter(input, 0, budget, out matchedLength);
-    }
-
     private int FindNextSimplePatternViaInterpreter(ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionDeadline budget, out int matchedLength)
     {
         return Utf8ExecutionInterpreter.FindNextSimplePattern(

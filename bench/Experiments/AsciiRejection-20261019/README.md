@@ -54,3 +54,14 @@ same driver; run Release on the quiet VM CPU2. Initial tiering is default; the
 confirmation explicitly sets DOTNET_TieredCompilation=0,DOTNET_ReadyToRun=0.
 Constructors/startup are excluded. This fixture is not a permanent policy switch,
 package qualifier or benchmark framework. Staged/published packages are untouched.
+
+Subsequent caller tracing found that the retained literal-prefix interpreter's
+private caller chain itself has no entry caller. A separate dead-code cleanup
+removes that chain, its exclusive verifier/text helpers and two unused first-match
+wrappers. The live simple-pattern offset adapter helper and search/metadata stay.
+These later deletions have no live workload to measure and do not change the
+frozen source pair or its numeric claims above.
+That follow-through removes149 more source lines/seven methods. Release Core7026
+plus final focused261,Python84 and PCRE72 pass, serialized. Caller proof and
+source receipt:artifacts/interpreter-orphans-20261019/RESULT.md. The unchanged
+live offset helper is exercised by the existing cursor/ASCII operation checks.
