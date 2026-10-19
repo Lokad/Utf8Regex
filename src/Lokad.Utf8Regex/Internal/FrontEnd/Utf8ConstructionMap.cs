@@ -4,7 +4,10 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 /// <summary>Construction-only open-addressed map with exact power-of-two array
 /// capacity. Growth admits old/new overlap before acquiring the replacement;
-/// cached hashes reinsert entries without invoking user equality during copying.</summary>
+/// cached hashes reinsert entries without invoking user equality during copying.
+/// Lookup and long-chain probes use block work charges. Replacement growth
+/// keeps capacity admission and batched source scans. Interruption remains
+/// bounded inside scans and chains; no per-probe charge is kept.</summary>
 internal sealed class Utf8ConstructionMap<TKey, TValue>(Utf8ConstructionBudget budget, IEqualityComparer<TKey> comparer) : IDisposable
     where TKey : notnull
 {
@@ -51,14 +54,16 @@ internal sealed class Utf8ConstructionMap<TKey, TValue>(Utf8ConstructionBudget b
             var grown = budget.AllocateArray<Entry>(capacity, false);
             try
             {
-                foreach (var entry in _entries)
+                for (var slot = 0; slot < _entries.Length; slot++)
                 {
-                    budget.ChargeWork(1);
+                    if ((slot & 63) == 0) budget.ChargeWork(1);
+                    var entry = _entries[slot];
                     if (!entry.Used) continue;
                     var target = entry.Hash & (capacity - 1);
+                    var probes = 0;
                     while (grown[target].Used)
                     {
-                        budget.ChargeWork(1);
+                        if ((++probes & 63) == 0) budget.ChargeWork(1);
                         target = (target + 1) & (capacity - 1);
                     }
                     grown[target] = entry;
@@ -66,6 +71,7 @@ internal sealed class Utf8ConstructionMap<TKey, TValue>(Utf8ConstructionBudget b
                 // The last metered probe must succeed before the new table
                 // replaces the caller's existing capacity and entries.
                 index = Find(grown, key, hash);
+                budget.ChargeWork(0); // Withhold publication if the last comparison was interrupted.
             }
             catch { budget.ReleaseArray(grown, false); throw; }
             budget.ReleaseArray(_entries, false);
@@ -90,10 +96,12 @@ internal sealed class Utf8ConstructionMap<TKey, TValue>(Utf8ConstructionBudget b
     private int Find(Entry[] entries, TKey key, int hash)
     {
         if (entries.Length == 0) return -1;
+        budget.ChargeWork(1);
         var index = hash & (entries.Length - 1);
+        var probes = 0;
         while (entries[index].Used)
         {
-            budget.ChargeWork(1);
+            if ((++probes & 63) == 0) budget.ChargeWork(1);
             if (entries[index].Hash == hash)
             {
                 if (key is string text) budget.ChargeWork((ulong)text.Length);

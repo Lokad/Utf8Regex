@@ -70,7 +70,7 @@ public sealed class Utf8ConstructionMapInsertionTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void FinalGrowthProbeFailureKeepsOldTableAndParentLoan(bool cancel)
+    public void GrowthFailureKeepsOldTableAndParentLoan(bool cancel)
     {
         var budget = new Utf8ConstructionBudget(1000, 1000000);
         budget.ReserveBytes(13);
@@ -108,5 +108,36 @@ public sealed class Utf8ConstructionMapInsertionTests
         budget.CheckpointHook = null; budget.CancellationToken = default; comparer.ThrowAt = 0;
         Assert.Equal(10, map[0]); Assert.Equal(11, map[1]);
         map.Dispose(); Assert.Equal(13UL, budget.ReservedBytes);
+    }
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void CoarseCollisionBlocksStillDenyOrCancelBeforeAnUnboundedChain(bool cancel)
+    {
+        Utf8ConstructionReadOnlyMap<int, int> snapshot;
+        var comparer = new Collisions();
+        using (var preparation = Utf8ConstructionScope.Enter())
+        {
+            using var arena = Utf8ConstructionArena.Create(preparation.Budget);
+            using var map = new Utf8ConstructionMap<int, int>(preparation.Budget, comparer);
+            for (var key = 0; key < 160; key++) map.Add(key, key);
+            snapshot = map.Freeze(arena);
+            arena.Complete(); preparation.Complete();
+        }
+        comparer.EqualityCalls = 0;
+        using var cancellation = new CancellationTokenSource();
+        using (var operation = new Utf8ConstructionScope(ulong.MaxValue, 0, 2, ulong.MaxValue))
+        {
+            operation.Budget.CancellationToken = cancellation.Token;
+            if (cancel) operation.Budget.CheckpointHook = spent => { if (spent == 2) cancellation.Cancel(); };
+            var failure = Record.Exception(() => snapshot.ContainsKey(-1));
+            if (cancel) Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+            else Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(failure).ResourceKind);
+            Assert.InRange(comparer.EqualityCalls, 1, 127);
+            Assert.Equal(0ul, operation.Budget.ReservedBytes);
+        }
+        Assert.Equal(0, snapshot[0]); Assert.Equal(159, snapshot[159]);
+        using var funded = new Utf8ConstructionScope(ulong.MaxValue, 0, 3, ulong.MaxValue);
+        Assert.False(snapshot.ContainsKey(-1));
+        Assert.Equal(3ul, funded.Budget.WorkSteps);
     }
 }

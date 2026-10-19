@@ -79,6 +79,18 @@ on the regex profile. Matching remains strict UTF-8/scalar with byte coordinates
 `MaxInstructionCapacity` and `MaxBytes`. Its null values keep the fixed
 construction backstops; they do **not** mean unlimited construction.
 
+Construction charge units are versioned. Development after scalar.104 charges
+map lookups and long collision chains in blocks, while replacement growth keeps
+its capacity admission and batched source-scan charges. String-key scans and
+comparisons remain covered. Metadata enumeration admits the whole table
+scan before its first element, so early disposal can overcharge. Major arrays,
+growth overlap and instruction/state expansion still require admission before
+allocation. Views and iterator helpers have no individual allocation charge.
+Cancellation and the original deadline are checked at entry, inside long chains
+and before publishing grown storage; no probe-by-probe cost guarantee is made.
+This changes eager-construction work thresholds, not invocation limits or cursor
+and retained-result ownership. Actual Unsafe.SizeOf queries remain in use.
+
 These are existing calls, using each profile's option type. `policy` applies to
 later invocations; `construction`, `constructionTimeout` and `token` apply only
 to eager compilation.

@@ -32,10 +32,12 @@ internal sealed class Utf8ConstructionReadOnlyMap<TKey, TValue>(
         {
             if (key is string text) Utf8ConstructionScope.ChargeWork((ulong)text.Length);
             var hash = comparer.GetHashCode(key) & int.MaxValue;
+            Utf8ConstructionScope.ChargeWork(1);
             var index = hash & (entries.Length - 1);
+            var probes = 0;
             while (entries[index].Used)
             {
-                Utf8ConstructionScope.ChargeWork(1);
+                if ((++probes & 63) == 0) Utf8ConstructionScope.ChargeWork(1);
                 if (entries[index].Hash == hash)
                 {
                     if (key is string candidate) Utf8ConstructionScope.ChargeWork((ulong)candidate.Length);
@@ -51,16 +53,36 @@ internal sealed class Utf8ConstructionReadOnlyMap<TKey, TValue>(
     public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
     {
         Utf8ConstructionScope.ChargeWork(0);
-        return new PairEnumerator(entries);
+        return EnumeratePairs().GetEnumerator();
+    }
+
+    private IEnumerable<KeyValuePair<TKey, TValue>> EnumeratePairs()
+    {
+        // Admit the complete backing-table scan once. Early termination may
+        // overcharge; individual slots and iterator helper objects are not metered.
+        Utf8ConstructionScope.ChargeWork((ulong)entries.Length);
+        for (var index = 0; index < entries.Length; index++)
+        {
+            if ((index & 63) == 0) Utf8ConstructionScope.ChargeWork(0);
+            if (entries[index].Used) yield return new(entries[index].Key, entries[index].Value);
+        }
     }
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
+    private IEnumerable<TKey> EnumerateKeys()
+    {
+        foreach (var entry in this) yield return entry.Key;
+    }
+    private IEnumerable<TValue> EnumerateValues()
+    {
+        foreach (var entry in this) yield return entry.Value;
+    }
     private readonly struct KeyView(Utf8ConstructionReadOnlyMap<TKey, TValue> map) : IEnumerable<TKey>
     {
         public IEnumerator<TKey> GetEnumerator()
         {
             Utf8ConstructionScope.ChargeWork(0);
-            return new KeyEnumerator(map);
+            return map.EnumerateKeys().GetEnumerator();
         }
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
@@ -69,46 +91,8 @@ internal sealed class Utf8ConstructionReadOnlyMap<TKey, TValue>(
         public IEnumerator<TValue> GetEnumerator()
         {
             Utf8ConstructionScope.ChargeWork(0);
-            return new ValueEnumerator(map);
+            return map.EnumerateValues().GetEnumerator();
         }
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
-    private struct PairEnumerator(Utf8ConstructionMap<TKey, TValue>.Entry[] source) : IEnumerator<KeyValuePair<TKey, TValue>>
-    {
-        private int _index = -1;
-        public readonly KeyValuePair<TKey, TValue> Current => new(source[_index].Key, source[_index].Value);
-        readonly object IEnumerator.Current => Current;
-        public bool MoveNext()
-        {
-            while (++_index < source.Length)
-            {
-                Utf8ConstructionScope.ChargeWork(1);
-                if (source[_index].Used) return true;
-            }
-            return false;
-        }
-        public void Reset() => _index = -1;
-        public readonly void Dispose() { }
-    }
-    private struct KeyEnumerator : IEnumerator<TKey>
-    {
-        private PairEnumerator _pairs;
-        internal KeyEnumerator(Utf8ConstructionReadOnlyMap<TKey, TValue> map) => _pairs = new(map.GetEntries());
-        public readonly TKey Current => _pairs.Current.Key;
-        readonly object IEnumerator.Current => Current;
-        public bool MoveNext() => _pairs.MoveNext();
-        public void Reset() => _pairs.Reset();
-        public readonly void Dispose() { }
-    }
-    private struct ValueEnumerator : IEnumerator<TValue>
-    {
-        private PairEnumerator _pairs;
-        internal ValueEnumerator(Utf8ConstructionReadOnlyMap<TKey, TValue> map) => _pairs = new(map.GetEntries());
-        public readonly TValue Current => _pairs.Current.Value;
-        readonly object? IEnumerator.Current => Current;
-        public bool MoveNext() => _pairs.MoveNext();
-        public void Reset() => _pairs.Reset();
-        public readonly void Dispose() { }
-    }
-    private Utf8ConstructionMap<TKey, TValue>.Entry[] GetEntries() => entries;
 }

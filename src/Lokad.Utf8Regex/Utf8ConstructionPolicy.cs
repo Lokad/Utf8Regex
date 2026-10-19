@@ -7,6 +7,11 @@ namespace Lokad.Utf8Regex;
 /// retention or process memory. Temporary immutable-metadata enumerable views
 /// and enumerator boxes have no individual byte/acquisition-work charge;
 /// their backing tables and traversal work remain covered.
+/// Map lookups and long collision chains use block work charges; growth includes
+/// replacement-capacity admission and batched source scans. String-key scan and
+/// comparison work remain covered. Metadata enumeration admits its
+/// complete table scan before its first element; early disposal can overcharge.
+/// Arrays and instruction/state expansion retain admission before allocation.
 /// Construction work units can change by version.</remarks>
 public readonly record struct Utf8ConstructionPolicy
 {

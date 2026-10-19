@@ -2,6 +2,13 @@
 
 ## Changes after scalar.104
 
+Construction maps use coarse block work charges for lookups, table scans and
+long collision chains. Major buffer/instruction admission remains before
+allocation; metadata enumeration admits its whole table scan and can overcharge
+early disposal. Iterator helpers replace custom forwarding enumerators, with
+entry/interruption preflights preserved. Eager-construction work thresholds are
+versioned; invocation policies and result/cursor ownership are unchanged.
+
 Remove the ByteSafeLinear, CompiledFallback and SearchGuidedFallback runtimes
 shadowed by public scalar dispatch, their exclusive compiler/preparation, and
 obsolete existence tests. The live managed ASCII DFA belongs to PCRE2. General
