@@ -537,6 +537,9 @@ beyond that value reports `Requested = ulong.MaxValue` without wrapping.
 
 A step is a bounded engine/checkpoint unit, not one byte or scalar. Work counts
 may change between releases; validation/copy loops operate in bounded blocks.
+The shared finite forward exact-literal Count path now admits its constant-time
+increment with the bounded candidate search/comparison, retaining the terminal
+publication check; see the versioned work-unit contract in HOST-INTEGRATION.md.
 Eligible nonempty searches borrow an existing exact mandatory-prefix plan to skip
 impossible scalar starts. The Python VM still verifies candidates, captures and
 assertions. Anchored operations and empty-match retry preserve their existing

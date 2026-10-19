@@ -350,6 +350,12 @@ scratch requirement. Boundary/trailing assertions, contiguous anchors,
 shared/explicit numbering and balancing retain their qualified routes; captured
 Unicode and NonBacktracking patterns without a native plan also retain the VM.
 Offset interoperability maps keep their separate working/result admission.
+Development after scalar.108 removes the duplicate post-candidate charge from
+finite forward exact-literal Count. A bounded search/comparison admission also
+covers its constant-time count increment; the terminal checkpoint still precedes
+publication. Basic search metering, whole-input validation and the original
+cancellation/deadline authority remain. Numerical work requirements can decrease
+on this shared Core/PythonRe/PCRE2 path without changing storage/depth/result scope.
 Scalar.87 also reuses the existing scalar word-delimited email Count family
 before general VM dispatch. Development source after scalar.87 extends this to
 the prepared URI Count family. Eligibility requires the original

@@ -162,6 +162,13 @@ PCRE2 translates a common null to legacy zero, which means unlimited. Its named
 PCRE2. Direct literal calls retain validation, discovery and required projection
 metering; a boolean result can need fewer units than a value result.
 
+Development after scalar.108 coarsens finite forward exact-literal Count work:
+the bounded candidate search/comparison admits the constant-time count increment
+too. It charges search/comparison windows and the terminal publication checkpoint,
+without a second charge for each accepted increment. Validation and the original
+token/deadline remain in that invocation. This shared Core/PythonRe/PCRE2 path can
+need fewer work units; numeric thresholds are versioned, not matching semantics.
+
 | Failure | Core / PythonRe | PCRE2 |
 | --- | --- | --- |
 | Invocation resource denial | `Utf8ResourceLimitExceededException`, with an `Execution*` resource kind | `Pcre2MatchException`: `MatchLimit`, `DepthLimit`, `HeapLimit` or `ResultLimit` |

@@ -794,6 +794,10 @@ validation, discovery and required result projection under the original limit.
 Direct literal paths retain this metering: a boolean first-hit result can fit a
 limit that denies the corresponding value result's endpoint projection. Stepwise
 routes charge their candidate/VM work as well (see `Pcre2SingleShotLimitTests`).
+The shared finite forward exact-literal Count path admits the constant-time count
+increment with its bounded search/comparison and retains its terminal check.
+Development after scalar.108 can therefore need fewer `MatchLimit` units; strict
+validation and the original token/deadline remain authoritative.
 `DepthLimit` and
 `HeapLimitInBytes` constrain backtracking frames and workspace; admitted output
 builders also charge their covered major working capacities before acquisition.

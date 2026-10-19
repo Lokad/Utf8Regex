@@ -2,6 +2,14 @@
 
 ## Changes after scalar.108
 
+Finite forward exact-literal Count no longer charges twice for an accepted
+candidate. Existing bounded search/comparison admission covers the constant-time
+increment; terminal publication checks, strict validation and the original
+token/deadline remain. Work thresholds can decrease on the shared Core/PythonRe/
+PCRE2 path. One closed public comparison records lower finite Count time with
+unchanged allocation, with raw controls and uncertainty retained.
+[Contract, validation and costs](artifacts/finite-count-coarse-admission-20261019/RESULT.md).
+
 PythonRe parser fragments now use native scalar atoms directly. The managed
 surrogate-pair spelling lives only in reference tooling; remove the shipped
 normalizer and dot-rewrite branch. Pinned class predicates, scoped flags, width /

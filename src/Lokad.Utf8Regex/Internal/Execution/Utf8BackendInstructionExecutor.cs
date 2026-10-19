@@ -159,8 +159,8 @@ internal static class Utf8BackendInstructionExecutor
                     false, ref invocation, out var candidate);
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 if (candidate < 0) break;
-                breach = invocation.TryChargeInputStep();
-                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                // The bounded candidate search/comparison admitted this O(1)
+                // count update. Keep the terminal checkpoint before publication.
                 foundCount++;
                 Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
                 start = candidate + search.Length;

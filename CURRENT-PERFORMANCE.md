@@ -12,6 +12,16 @@ parity or source-regression claim. [Exact scope/raw evidence](artifacts/core-pyt
 Source constructor pairs stay separate; no benchmark snapshot/Status campaign
 is reopened. Source CI39281487750 is green independently of these costs.
 
+Subsequent109-dev source, parent `e8a038eb`, removes duplicate accepted-count
+admission on the finite exact-literal route. One bounded before/after comparison
+of public `(a)(b)` Count over10K matches measured157.490→136.425us (-13.38%),
+112B unchanged. Unlimited Count control was100.455→102.885us (+2.42%); both .NET
+Count controls stayed within0.3%. The1K/5K finite medians fell21.62%/12.89%, but
+some controls and result-materialization lanes were noisy. This supports the
+scoped simplification, not universal overhead/scaling or unchanged-path speedups.
+No confirmation, package qualification or snapshot refresh followed.
+[Closed source pair, revised work units and raw evidence](artifacts/finite-count-coarse-admission-20261019/RESULT.md).
+
 ## Earlier scalar.107 observation
 
 The latest immutable Core/PythonRe scalar.107 observation uses producer
