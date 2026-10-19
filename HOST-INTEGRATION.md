@@ -91,6 +91,12 @@ and before publishing grown storage; no probe-by-probe cost guarantee is made.
 This changes eager-construction work thresholds, not invocation limits or cursor
 and retained-result ownership. Actual Unsafe.SizeOf queries remain in use.
 
+Development after scalar.105 appends adjacent literal-token runs in one buffer,
+avoiding repeated increasing-prefix allocations. Each new buffer is admitted
+while the old prefix remains charged; class-product order, expansion bounds and
+original interruption remain. Actual work and storage requirements can fall, so
+a tighter construction policy may now succeed without changing its ceilings.
+
 These are existing calls, using each profile's option type. `policy` applies to
 later invocations; `construction`, `constructionTimeout` and `token` apply only
 to eager compilation.

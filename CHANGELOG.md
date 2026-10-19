@@ -2,6 +2,13 @@
 
 ## Changes after scalar.105
 
+Adjacent literal tokens expand in one appended buffer per run, instead of
+allocating every increasing prefix. Class-product order and expansion limits
+stay unchanged; major old/new capacity is admitted before allocation and copying
+keeps bounded interruption. Smaller real preparation costs can admit tighter
+construction policies. The 3 KB wrapped-literal witness saves 4.58 MB per public
+construction; the bounded source receipt records timings and their scope.
+
 Result staging stores values directly in the existing admitted buffer and
 publishes bounded span copies, removing its one-field record wrapper and
 per-element unwrapping loop. Growth overlap, result traffic, checkpoint schedule

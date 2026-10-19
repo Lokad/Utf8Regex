@@ -30,7 +30,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         finally { owner.LeaveDepth(); }
     }
 
-    private static bool TryExpandLiteralBranch(IReadOnlyList<AsciiSimplePatternToken> tokens, bool ignoreCase, out byte[][] literals)
+    private static bool TryExpandLiteralBranch(ReadOnlySpan<AsciiSimplePatternToken> tokens, bool ignoreCase, out byte[][] literals)
     {
         literals = [];
         using var construction = Utf8ConstructionScope.Enter();
@@ -39,12 +39,20 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         {
             using var current = Utf8ConstructionBuffer<byte[]>.Create(owner);
             current.Add([]);
-            for (var index = 0; index < tokens.Count; index++)
+            for (var index = 0; index < tokens.Length; index++)
             {
                 owner.ChargeWork(1);
                 var token = tokens[index];
                 if (token.Kind == AsciiSimplePatternTokenKind.Literal)
-                { AppendLiteralByte(current, token.Literal); continue; }
+                {
+                    var end = index + 1;
+                    while (end < tokens.Length && tokens[end].Kind == AsciiSimplePatternTokenKind.Literal)
+                    { owner.ChargeWork(1); end++; }
+                    if (end == index + 1) AppendLiteralByte(current, token.Literal);
+                    else AppendLiteralRun(current, tokens[index..end]);
+                    index = end - 1;
+                    continue;
+                }
                 // Sensitive [Aa] expands in ascending byte order; invariant
                 // folding may collapse it only under the existing folding flag.
                 if (ignoreCase && token.Kind == AsciiSimplePatternTokenKind.CharClass &&
@@ -83,6 +91,36 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             var next = owner.AllocateArray<byte>(checked(previous.Length + 1), false);
             owner.ChargeWork((ulong)previous.Length + 1);
             previous.CopyTo(next, 0); next[^1] = value; literals[index] = next;
+            owner.ReleaseArray(previous, false);
+        }
+    }
+
+    private static void AppendLiteralRun(Utf8ConstructionBuffer<byte[]> literals, ReadOnlySpan<AsciiSimplePatternToken> tokens)
+    {
+        var owner = Utf8ConstructionScope.CurrentBudget;
+        for (var index = 0; index < literals.Count; index++)
+        {
+            owner.ChargeWork(1);
+            var previous = literals[index];
+            // Fund the complete append while its old prefix is still held.
+            // Adjacent literal tokens need one acquisition, not every prefix.
+            var next = owner.AllocateArray<byte>(checked(previous.Length + tokens.Length), false);
+            owner.ChargeWork((ulong)previous.Length + (ulong)tokens.Length);
+            for (var offset = 0; offset < previous.Length;)
+            {
+                owner.ChargeWork(0);
+                var count = Math.Min(2048, previous.Length - offset);
+                previous.AsSpan(offset, count).CopyTo(next.AsSpan(offset, count));
+                offset += count;
+            }
+            for (var offset = 0; offset < tokens.Length;)
+            {
+                owner.ChargeWork(0);
+                var end = offset + Math.Min(2048, tokens.Length - offset);
+                for (; offset < end; offset++) next[previous.Length + offset] = tokens[offset].Literal;
+            }
+            owner.ChargeWork(0);
+            literals[index] = next;
             owner.ReleaseArray(previous, false);
         }
     }

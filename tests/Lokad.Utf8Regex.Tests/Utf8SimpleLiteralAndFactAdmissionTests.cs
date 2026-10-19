@@ -212,6 +212,42 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
         Assert.All(result.Skip(1), branch => Assert.Equal((byte)'x', branch[^1]));
         Assert.Equal(original, tokens);
     }
+
+    [Fact]
+    public void LongLiteralRunsFitBoundedExpansionWithoutAcquiringEveryPrefix()
+    {
+        var prefix = new string('x', 2049);
+        var suffix = new string('y', 2049);
+        var tokens = prefix.Select(value => new AsciiSimplePatternToken((byte)value))
+            .Append(new AsciiSimplePatternToken(AsciiCharClass.FromBytes("BA"u8)))
+            .Concat(suffix.Select(value => new AsciiSimplePatternToken((byte)value))).ToArray();
+        var plan = Plan([tokens], false);
+        using var owner = new Utf8ConstructionScope(1000000, 65536, 64000, 100);
+        owner.Budget.ReserveBytes(7);
+        Assert.True(Utf8AsciiSimplePatternLowerer.TryExtractLiteralBranches(plan, out var result));
+        Assert.Equal(new[] { prefix + "A" + suffix, prefix + "B" + suffix }, result.Select(Encoding.ASCII.GetString));
+        result[0][^1] = (byte)'z';
+        Assert.Equal((byte)'y', result[1][^1]);
+        Assert.InRange(owner.Budget.PeakBytes, 7UL, 65536UL);
+        Assert.Equal(0UL, owner.Budget.Depth);
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void WrappedLiteralConstructionAdmitsLinearWork(bool compiled)
+    {
+        var literal = "A" + new string('x', 3000);
+        var regex = Utf8Regex.Compile("(?:" + literal + ")",
+            RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None), Timeout.InfiniteTimeSpan,
+            new() { MaxWorkSteps = 1000000, MaxDepth = 100, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 },
+            new() { MaxWorkSteps = 1000000, MaxDepth = 100, MaxBytes = 8 << 20, MaxInstructionCapacity = 1000000 },
+            Timeout.InfiniteTimeSpan, default);
+        Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.Inspection.ExecutionKind);
+        var input = Encoding.UTF8.GetBytes("😀" + literal + "中");
+        Assert.Equal(1, regex.Count(input));
+        Assert.Equal(4, regex.Match(input).IndexInBytes);
+        Assert.Equal(literal.Length, regex.Match(input).LengthInBytes);
+    }
     [Fact]
     public void ExpansionAcceptsExactlySixtyFourBranchesAndAnEmptyLiteral()
     {
@@ -235,7 +271,8 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
     [InlineData(false)] [InlineData(true)]
     public void EveryExpansionCheckpointKeepsOriginalInterruptionAndParentCapacity(bool timeout)
     {
-        var input = Plan([[new AsciiSimplePatternToken(AsciiCharClass.FromBytes("AB"u8)), new AsciiSimplePatternToken((byte)'!')]], false);
+        var input = Plan([[new AsciiSimplePatternToken(AsciiCharClass.FromBytes("AB"u8)),
+            new AsciiSimplePatternToken((byte)'!'), new AsciiSimplePatternToken((byte)'x')]], false);
         var checkpoints = 0;
         using (var probe = Utf8ConstructionScope.Enter())
         {
