@@ -20,7 +20,7 @@ public sealed class PythonReBulkDeadlineEntryTests
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => reads++ == 0 ? 0 : 1000);
             var error = Assert.Throws<RegexMatchTimeoutException>(() => Run(regex, input, start, operation));
             Assert.Equal(TimeSpan.FromMilliseconds(1), error.MatchTimeout);
-            Assert.Equal(regex.DebugTranslatedPattern, error.Pattern);
+            Assert.Equal(regex.Pattern, error.Pattern);
             Assert.True(reads >= 2);
         }
     }

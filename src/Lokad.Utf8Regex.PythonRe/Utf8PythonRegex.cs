@@ -319,7 +319,6 @@ public sealed partial class Utf8PythonRegex
 
     internal bool DebugHasScalarFullProgram => _lazyScalarFullProgram.Value is not null;
 
-    internal string DebugTranslatedPattern => _translation.Pattern;
 
     internal string DebugNativePattern => _translation.NativePattern;
 

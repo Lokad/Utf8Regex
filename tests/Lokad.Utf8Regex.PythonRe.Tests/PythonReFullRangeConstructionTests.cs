@@ -102,7 +102,7 @@ public sealed class PythonReFullRangeConstructionTests
             .FindAllToStrings("Kſİı"u8).ScalarValues);
 
     [Fact]
-    public void TimeoutKeepsTheTranslatedPatternContractAndOriginalDeadline()
+    public void TimeoutKeepsOriginalPatternAndDeadline()
     {
         var regex = Utf8PythonRegex.Compile(@"(?i)[\x00-\U0010ffff]+", PythonReCompileOptions.None,
             TimeSpan.FromMilliseconds(20), Limits with { MaxDepth = 4096 }, new() { MaxWorkSteps = 20000 },
@@ -115,7 +115,7 @@ public sealed class PythonReFullRangeConstructionTests
         {
             var error = Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(new byte[65536]));
             Assert.True(reached);
-            Assert.Equal(regex.DebugTranslatedPattern, error.Pattern);
+            Assert.Equal(regex.Pattern, error.Pattern);
             Assert.Equal(TimeSpan.FromMilliseconds(20), error.MatchTimeout);
             Assert.Equal(string.Empty, error.Input);
         }

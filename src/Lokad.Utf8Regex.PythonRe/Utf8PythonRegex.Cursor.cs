@@ -27,6 +27,6 @@ public sealed partial class Utf8PythonRegex
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
         ValidateScalarStartOffset(input.Span, startOffsetInBytes);
         return new Utf8PythonMatchCursor(input, ScalarProgram,
-            _nameEntries, startOffsetInBytes, MatchTimeout, _translation.Pattern, invocation, _utf8Regex);
+            _nameEntries, startOffsetInBytes, MatchTimeout, Pattern, invocation, _utf8Regex);
     }
 }

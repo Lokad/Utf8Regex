@@ -236,7 +236,7 @@ internal static partial class PythonReTranslator
         using var construction = Utf8ConstructionScope.Enter();
         using var widths = Utf8ConstructionMap<PythonReNode, PythonReWidth>.Create(construction.Budget, ReferenceEqualityComparer.Instance);
         Inspect(parseResult.Root, InspectionKind.References, parseResult, null, null);
-        // Validate lookbehind content widths before either spelling is emitted.
+        // Validate scalar lookbehind widths before emitting native pattern text.
         Inspect(parseResult.Root, InspectionKind.Lookbehind, parseResult, widths, null);
 
         using var arena = Utf8ConstructionArena.Create(construction.Budget);
@@ -271,22 +271,17 @@ internal static partial class PythonReTranslator
             }
         }
 
-        AppendTree(parseResult.Root, builder, emittedGroupNames, coreNumbersByPython, false);
-        var translatedPattern = builder.ToText();
-        builder.Clear();
-        AppendTree(parseResult.Root, builder, emittedGroupNames, coreNumbersByPython, true);
+        AppendTree(parseResult.Root, builder, emittedGroupNames, coreNumbersByPython);
         var nativePattern = builder.ToText();
         if ((parseResult.Options & PythonReCompileOptions.Verbose) == 0)
         {
             // Regex.Escape protects spaces for IgnorePatternWhitespace. Outside
             // verbose mode a raw space is equivalent and keeps exact literals
             // visible to the UTF-8 planner instead of forcing fallback.
-            translatedPattern = Utf8ConstructionText.Replace(translatedPattern, @"\ ", " ");
             nativePattern = Utf8ConstructionText.Replace(nativePattern, @"\ ", " ");
         }
 
-        var result = new PythonReTranslation(translatedPattern, nativePattern, ToRegexOptions(parseResult.Options),
-            ToRegexOptions(parseResult.Options) & ~RegexOptions.IgnoreCase, parseResult.CaptureGroupCount,
+        var result = new PythonReTranslation(nativePattern, ToNativeRegexOptions(parseResult.Options), parseResult.CaptureGroupCount,
             emittedGroupNames);
         arena.Complete();
         construction.Complete();
@@ -326,7 +321,7 @@ internal static partial class PythonReTranslator
     {
         using var construction = Utf8ConstructionScope.Enter();
         using var builder = Utf8ConstructionText.Create();
-        AppendTree(node, builder, Utf8ConstructionReadOnlyMap<string, string>.Empty, [], true);
+        AppendTree(node, builder, Utf8ConstructionReadOnlyMap<string, string>.Empty, []);
         var result = builder.ToText();
         construction.Complete();
         return result;
@@ -334,11 +329,6 @@ internal static partial class PythonReTranslator
 
     private static void AppendInlineFlags(PythonReCompileOptions options, Utf8ConstructionText builder)
     {
-        if ((options & PythonReCompileOptions.IgnoreCase) != 0)
-        {
-            builder.Append('i');
-        }
-
         if ((options & PythonReCompileOptions.Multiline) != 0)
         {
             builder.Append('m');
@@ -425,19 +415,11 @@ internal static partial class PythonReTranslator
 
     private static UInt128 UnionMax(UInt128 left, UInt128 right) => left > right ? left : right;
 
-    private static RegexOptions ToRegexOptions(PythonReCompileOptions options)
+    private static RegexOptions ToNativeRegexOptions(PythonReCompileOptions options)
     {
         var translated = RegexOptions.CultureInvariant;
-        // Top-level ASCII runs the backend case-sensitively (PLAN.md C05): every
-        // ASCII case pair is expanded explicitly at parse time, and a folding
-        // backend could not exclude non-ASCII fold partners (U+212A and friends).
-        // Scoped (?i:) regions still fold through inline flags.
-        if ((options & PythonReCompileOptions.IgnoreCase) != 0 &&
-            (options & PythonReCompileOptions.Ascii) == 0)
-        {
-            translated |= RegexOptions.IgnoreCase;
-        }
-
+        // The parser expands Python folding explicitly. Core must not apply a
+        // second, different case-folding policy to the emitted scalar pattern.
         if ((options & PythonReCompileOptions.Multiline) != 0)
         {
             translated |= RegexOptions.Multiline;
@@ -505,7 +487,7 @@ internal static partial class PythonReTranslator
         return complete;
     }
 
-    private static void AppendCharacterClass(PythonReCharacterClassNode node, Utf8ConstructionText builder, bool native)
+    private static void AppendCharacterClass(PythonReCharacterClassNode node, Utf8ConstructionText builder)
     {
         var complete = false;
         for (var index = 0; index < node.Items.Count; index++)
@@ -514,18 +496,14 @@ internal static partial class PythonReTranslator
             if (node.Items[index] is PythonReCharacterClassRangeItem { StartScalar: 0, EndScalar: 0x10ffff })
             { complete = true; break; }
         }
-        // Reuse the existing scalar atom in both renderings. The managed
-        // comparator still consumes a complete surrogate pair, without making
-        // 1024 separate branches for a class that contains every scalar.
-        var positiveAtom = complete ? native ? NativeScalarPattern : AnyUnicodeScalarPattern
-            : native ? BuildScalarCharacterClassAtom(node.Items) : BuildPositiveCharacterClassAtom(node.Items);
+        var positiveAtom = complete ? NativeScalarPattern : BuildScalarCharacterClassAtom(node.Items);
         if (!node.IsNegated)
         {
             builder.Append(positiveAtom);
             return;
         }
 
-        builder.Append("(?:(?!").Append(positiveAtom).Append(')').Append(native ? NativeScalarPattern : AnyUnicodeScalarPattern).Append(')');
+        builder.Append("(?:(?!").Append(positiveAtom).Append(')').Append(NativeScalarPattern).Append(')');
     }
 
     // Only parser-generated raw/predefined fragments contain this internal atom.
@@ -557,7 +535,7 @@ internal static partial class PythonReTranslator
             }
         }
         var rangeClass = BuildRangeCharacterClass(ranges, fragments);
-        return JoinClassBranches(rangeClass, branches.Span, []);
+        return JoinClassBranches(rangeClass, branches.Span);
     }
 
     private static void AddScalarRange(Utf8ConstructionBuffer<(int Start, int End)> ranges, int start, int end)
@@ -566,82 +544,16 @@ internal static partial class PythonReTranslator
         if (end >= 0xE000) ranges.Add((Math.Max(start, 0xE000), end));
     }
 
-    private static string BuildPositiveCharacterClassAtom(IReadOnlyList<PythonReCharacterClassItem> items)
+    private static string JoinClassBranches(string leading, ReadOnlySpan<string> branches)
     {
-        using var bmpRanges = Utf8ConstructionBuffer<(int Start, int End)>.Create(Utf8ConstructionScope.CurrentBudget);
-        using var bmpFragments = Utf8ConstructionBuffer<string>.Create(Utf8ConstructionScope.CurrentBudget);
-        using var standaloneAtoms = Utf8ConstructionBuffer<string>.Create(Utf8ConstructionScope.CurrentBudget);
-        using var astralBranches = Utf8ConstructionBuffer<string>.Create(Utf8ConstructionScope.CurrentBudget);
-
-        for (var itemIndex = 0; itemIndex < items.Count; itemIndex++)
-        {
-            var item = items[itemIndex];
-            Utf8ConstructionScope.ChargeWork(1);
-            switch (item)
-            {
-                case PythonReCharacterClassLiteralItem literal:
-                    if (literal.Scalar <= 0xFFFF)
-                    {
-                        AddBmpRange(bmpRanges, literal.Scalar, literal.Scalar);
-                    }
-                    else
-                    {
-                        astralBranches.Add(BuildAstralScalarBranch(literal.Scalar));
-                    }
-                    break;
-
-                case PythonReCharacterClassRangeItem range:
-                    if (range.EndScalar <= 0xFFFF)
-                    {
-                        AddBmpRange(bmpRanges, range.StartScalar, range.EndScalar);
-                    }
-                    else if (range.StartScalar > 0xFFFF)
-                    {
-                        AppendAstralRangeBranches(astralBranches, range.StartScalar, range.EndScalar);
-                    }
-                    else
-                    {
-                        AddBmpRange(bmpRanges, range.StartScalar, 0xFFFF);
-                        AppendAstralRangeBranches(astralBranches, 0x10000, range.EndScalar);
-                    }
-                    break;
-
-                case PythonReCharacterClassPredefinedItem predefined:
-                    if (predefined.IsStandaloneAtom)
-                    {
-                        // Complete class atoms (PLAN.md C04): emitted as their own
-                        // alternation branch so astral scalars keep matching instead
-                        // of being dropped by the BMP-only class below.
-                        standaloneAtoms.Add(predefined.RegexClassFragment);
-                    }
-                    else
-                    {
-                        bmpFragments.Add(predefined.RegexClassFragment);
-                    }
-
-                    break;
-            }
-        }
-
-        var bmpClass = BuildRangeCharacterClass(bmpRanges, bmpFragments);
-        return JoinClassBranches(bmpClass, standaloneAtoms.Span, astralBranches.Span);
-    }
-
-    private static string JoinClassBranches(string leading, ReadOnlySpan<string> branches, ReadOnlySpan<string> tail)
-    {
-        var count = (leading.Length == 0 ? 0 : 1) + branches.Length + tail.Length;
+        var count = (leading.Length == 0 ? 0 : 1) + branches.Length;
         if (count == 0) return "(?!)";
-        if (count == 1) return leading.Length != 0 ? leading : branches.Length != 0 ? branches[0] : tail[0];
+        if (count == 1) return leading.Length != 0 ? leading : branches[0];
         using var builder = Utf8ConstructionText.Create();
         builder.Append("(?:");
         var first = true;
         if (leading.Length != 0) { builder.Append(leading); first = false; }
         foreach (var branch in branches)
-        {
-            if (!first) builder.Append('|');
-            builder.Append(branch); first = false;
-        }
-        foreach (var branch in tail)
         {
             if (!first) builder.Append('|');
             builder.Append(branch); first = false;
@@ -685,19 +597,6 @@ internal static partial class PythonReTranslator
         return builder.Append(']').ToText();
     }
 
-    private static void AddBmpRange(Utf8ConstructionBuffer<(int Start, int End)> ranges, int start, int end)
-    {
-        if (start <= 0xD7FF)
-        {
-            ranges.Add((start, Math.Min(end, 0xD7FF)));
-        }
-
-        if (end >= 0xE000 && start <= 0xFFFF)
-        {
-            ranges.Add((Math.Max(start, 0xE000), Math.Min(end, 0xFFFF)));
-        }
-    }
-
     private static void AppendClassRange(Utf8ConstructionText builder, int start, int end)
     {
         if (start == end)
@@ -735,53 +634,11 @@ internal static partial class PythonReTranslator
         builder.Append(ch);
     }
 
-    private static string BuildAstralScalarBranch(int scalar)
-    {
-        // The managed comparator groups the pair so a repeat binds the scalar.
-        using var builder = Utf8ConstructionText.Create();
-        return builder.Append("(?:").AppendScalar(scalar).Append(')').ToText();
-    }
 
-    private static void AppendAstralRangeBranches(Utf8ConstructionBuffer<string> branches, int startScalar, int endScalar)
-    {
-        var startHigh = 0xd800 + ((startScalar - 0x10000) >> 10);
-        var endHigh = 0xd800 + ((endScalar - 0x10000) >> 10);
-        var lowStart = (char)(0xdc00 + ((startScalar - 0x10000) & 1023));
-        var lowEnd = (char)(0xdc00 + ((endScalar - 0x10000) & 1023));
-        if (startHigh == endHigh)
-        {
-            branches.Add(BuildSurrogateBranch((char)startHigh, (char)endHigh, lowStart, lowEnd));
-            return;
-        }
-        // Preserve ascending, disjoint scalar intervals. Complete middle rows
-        // form one rectangle; only the two edge rows can need partial lows.
-        if (lowStart != '\uDC00')
-            branches.Add(BuildSurrogateBranch((char)startHigh, (char)startHigh, lowStart, '\uDFFF'));
-        var firstComplete = lowStart == '\uDC00' ? startHigh : startHigh + 1;
-        var lastComplete = lowEnd == '\uDFFF' ? endHigh : endHigh - 1;
-        if (firstComplete <= lastComplete)
-            branches.Add(BuildSurrogateBranch((char)firstComplete, (char)lastComplete, '\uDC00', '\uDFFF'));
-        if (lowEnd != '\uDFFF')
-            branches.Add(BuildSurrogateBranch((char)endHigh, (char)endHigh, '\uDC00', lowEnd));
-    }
-
-    private static string BuildSurrogateBranch(char highStart, char highEnd, char lowStart, char lowEnd)
-    {
-        Utf8ConstructionScope.ChargeWork(1);
-        using var builder = Utf8ConstructionText.Create();
-        builder.Append("(?:");
-        if (highStart == highEnd) builder.Append(@"\u").AppendHex(highStart);
-        else builder.Append(@"[\u").AppendHex(highStart).Append(@"-\u").AppendHex(highEnd).Append(']');
-        if (lowStart == lowEnd) builder.Append(@"\u").AppendHex(lowStart);
-        else builder.Append(@"[\u").AppendHex(lowStart).Append(@"-\u").AppendHex(lowEnd).Append(']');
-        return builder.Append(')').ToText();
-    }
 }
 
 internal readonly record struct PythonReTranslation(
-    string Pattern,
     string NativePattern,
-    RegexOptions RegexOptions,
     RegexOptions NativeRegexOptions,
     int CaptureGroupCount,
     IReadOnlyDictionary<string, string> EmittedGroupNames);

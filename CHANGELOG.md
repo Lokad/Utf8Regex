@@ -2,6 +2,16 @@
 
 ## Changes after scalar.107
 
+PythonRe constructs native scalar text only. Move the former eager UTF-16
+reference renderer, astral surrogate-range branches and comparator options into
+benchmark/test tooling; remove the shipped dual-render mode and debug forwarder.
+Native capture/reference/lookbehind validation and admission remain. Construction
+work/bytes can decrease. Owned timeout errors now identify the original Python
+pattern; byte-cap Input omission, original deadlines/tokens and nested exception
+propagation remain. Existing Core construction/attribution probes now use actual
+native patterns/options. Immutable107 remains unchanged.
+[Trace and bounded constructor observations](artifacts/python-native-rendering-20261019/RESULT.md).
+
 Remove scalar-shadowed quoted-line/line-prefix Count selectors, their exclusive
 grammar/payload/preparation, runtime finder and unused validation capability.
 Their actual public routes already use scalar execution; benchmark-only counters

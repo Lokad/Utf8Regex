@@ -361,20 +361,16 @@ it does not retain a construction owner, policy or token for future calls.
 Positive work/depth/instruction/byte limits
 tighten the fixed ceilings; null retains them. Limits bound covered admission,
 including major growth overlap, rather than every acquisition or process memory.
-Development after scalar.99 keeps a parsed `U+0000..U+10FFFF` class range instead
-of expanding its redundant case closure. Both scalar and managed renderings reuse
-their existing complete-scalar atom, including whole surrogate pairs in the
-managed comparator. Negation and capture/empty-match rules remain unchanged.
-Syntax validation precedes the proof; other ranges retain their expansion
-backstops. These classes can fit smaller construction policies. Their translated
-timeout-pattern spelling can become shorter while retaining equivalent behavior.
-Astral ranges also use at most three disjoint surrogate-pair intervals in the
-managed rendering: partial first/last rows and a complete middle interval.
-The branches retain scalar order and consume complete pairs, including under
-quantifiers and fixed-width lookbehind. Native scalar rendering and the parsed
-class are unchanged. Existing construction admission and interruption apply
-before branch text acquisition; no code-point or high-surrogate enumeration is
-required for this rendering. Nonconstant case folding retains its own backstops.
+The parser keeps a complete `U+0000..U+10FFFF` class range instead of
+expanding redundant case closure. Native rendering reuses its scalar atom;
+negation, captures, empty-match rules and nonconstant folding stay unchanged.
+Syntax/reference and fixed-width-lookbehind validation precede native rendering.
+Development after scalar.107 constructs only native scalar text and group metadata.
+The former eager UTF-16 reference spelling, surrogate-range branches and comparator
+options live in benchmark/test tooling. Removing that pass can reduce covered
+construction work and bytes; limits retain their ceilings, major-buffer admission
+and interruption checkpoints. .NET comparison rendering is outside the shipped
+construction contract and consumes complete surrogate pairs where applicable.
 Pre-cancellation wins over argument/decoding failures; later cancellation keeps
 the original token and a deadline failure throws `RegexMatchTimeoutException`.
 For UTF-8 pattern timeout failures the exception's Pattern is empty, avoiding an
@@ -519,7 +515,9 @@ construction/live-retention/default policies or a process-memory guarantee.
 
 Every execution operation has an explicit `CancellationToken` twin that throws `OperationCanceledException` carrying an already-canceled token before matching begins, ahead of input validation. `FindIterDetailed` materializes its results. Scalar global operations retain one invocation across whole-subject validation, discovery, capture mapping, bounded copying/decoding and callback boundaries. Tokens interrupt work synchronously; cancellation from an evaluator is observed immediately after it returns. The operation deadline persists across matches and callbacks instead of restarting for each discovery call. Library code does not interrupt arbitrary user callback code.
 
-Timeouts pass through with `RegexMatchTimeoutException` identity. PythonRe supports
+PythonRe-created execution timeout exceptions identify the original public
+`Pattern`, rather than a derived UTF-16 reference spelling. Exceptions already
+created by a nested Core operation propagate unchanged. PythonRe supports
 finite `Utf8ResourcePolicy.MaxWorkSteps`. One counter covers full-input validation,
 candidate/backtracking work, required coordinate mapping, bounded result copying,
 decoding, callback-return encoding and publication. The explicit match cursor
@@ -545,9 +543,9 @@ Cancellation and the absolute invocation deadline remain independently enforced.
 When either invocation byte cap is finite, timeout failures omit diagnostic
 subject text: `RegexMatchTimeoutException.Input` is empty. This applies to
 one-shot, bulk, durable cursor and cold preparation failures. The original
-timeout remains authoritative, with the existing route's pattern metadata and
-configured duration; no new result admission replaces it. Unlimited and
-work/depth-only policies keep their diagnostic input. Omitting this copy does
+timeout and configured duration remain authoritative. Owned failures use the
+original Python pattern as described above; no new result admission replaces it.
+Unlimited and work/depth-only policies keep their diagnostic input. Omitting this copy does
 not bound exception metadata, callbacks, retained host storage or process RSS.
 
 PythonRe and core also admit finite `MaxResultBytes`, charging modeled major

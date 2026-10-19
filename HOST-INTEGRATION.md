@@ -297,3 +297,13 @@ The source witnesses are `Utf8ExecutionBudget.TryChargeResultBytes`,
 checks cumulative denial, surviving snapshots and fresh-call allowance.
 `PythonRePersistentCursorTests` and `PythonReFiniteWorkingPolicyTests` cover
 explicit scratch release, aliases, interruption and overlapping working capacity.
+
+Development after scalar.107 removes PythonRe's eager .NET reference-pattern
+rendering. Construction still admits native text, major buffers and scalar program
+expansion, with existing work/depth/instruction/byte ceilings and interruption.
+Numeric requirements may decrease by the removed work and storage. PythonRe-created
+execution timeouts now report its original public `Pattern`; nested Core exceptions
+still propagate unchanged. Byte-cap diagnostic Input omission and original
+invocation authority are unchanged. Reference rendering remains in test/benchmark
+tooling and does not add a shipped dependency. Immutable107 bytes retain their
+qualified contract.

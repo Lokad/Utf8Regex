@@ -44,7 +44,7 @@ public sealed class PythonReFiniteResultPolicyTests
         ticks = 250;
         var error = Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext());
         Assert.Empty(error.Input);
-        Assert.Equal(regex.DebugTranslatedPattern, error.Pattern);
+        Assert.Equal(regex.Pattern, error.Pattern);
         Assert.Equal(TimeSpan.FromMilliseconds(200), error.MatchTimeout);
         Assert.Equal(0ul, invocation.Ledger.ReservedBytes);
         Assert.Equal("😀", retained.Value.ValueText);

@@ -245,7 +245,7 @@ public sealed partial class Utf8PythonRegex
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            throw CreateMatchTimeoutException(input, _translation.Pattern);
+            throw CreateMatchTimeoutException(input, Pattern);
         }
     }
 
@@ -280,7 +280,7 @@ public sealed partial class Utf8PythonRegex
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            throw CreateMatchTimeoutException(input, _translation.Pattern);
+            throw CreateMatchTimeoutException(input, Pattern);
         }
     }
 

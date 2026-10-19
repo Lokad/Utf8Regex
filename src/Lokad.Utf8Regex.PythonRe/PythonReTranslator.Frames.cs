@@ -213,7 +213,7 @@ internal static partial class PythonReTranslator
     }
 
     private static void AppendTree(PythonReNode node, Utf8ConstructionText builder,
-        IReadOnlyDictionary<string, string> emittedGroupNames, int[] coreNumbersByPython, bool native)
+        IReadOnlyDictionary<string, string> emittedGroupNames, int[] coreNumbersByPython)
     {
         var budget = Utf8ConstructionScope.CurrentBudget;
         using var frames = Utf8ConstructionFrames<RenderFrame>.Create(budget, new(node));
@@ -222,7 +222,7 @@ internal static partial class PythonReTranslator
             budget.ChargeWork(1);
             var index = frames.Count - 1;
             var frame = frames[index];
-            var complete = ResumeRender(ref frame, builder, emittedGroupNames, coreNumbersByPython, native, out var child);
+            var complete = ResumeRender(ref frame, builder, emittedGroupNames, coreNumbersByPython, out var child);
             frames[index] = frame;
             if (complete) frames.Pop();
             else frames.Push(child);
@@ -230,18 +230,18 @@ internal static partial class PythonReTranslator
     }
 
     private static bool ResumeRender(ref RenderFrame frame, Utf8ConstructionText builder,
-        IReadOnlyDictionary<string, string> names, int[] numbers, bool native, out RenderFrame child)
+        IReadOnlyDictionary<string, string> names, int[] numbers, out RenderFrame child)
     {
         child = default;
         switch (frame.Kind)
         {
             case RenderKind.Node:
-                return ResumeRenderedNode(ref frame, builder, names, numbers, native, out child);
+                return ResumeRenderedNode(ref frame, builder, names, numbers, out child);
             case RenderKind.Group:
                 if (frame.Stage++ == 0)
                 {
                     var group = (PythonReGroupNode)frame.Node;
-                    AppendGroupPrefix(group, builder, names, native);
+                    AppendGroupPrefix(group, builder, names);
                     child = new(group.Inner);
                     return false;
                 }
@@ -285,8 +285,8 @@ internal static partial class PythonReTranslator
                 AppendQuantifierSuffix((PythonReQuantifierNode)frame.Node, builder, frame.Flavor);
                 return true;
             case RenderKind.Atom:
-                // Group compound atoms and the managed spelling of supplementary
-                // literals. This is pattern interoperability, not subject width.
+                // Keep compound atoms and raw supplementary literals grouped so
+                // the following quantifier applies to the complete atom.
                 var bare = frame.Node is PythonReLiteralNode or PythonReNamedBackreferenceNode
                     or PythonReNumericBackreferenceNode or PythonReGroupNode
                     or PythonReRawNode { Kind: not PythonReRawKind.AstralLiteral };
@@ -304,7 +304,7 @@ internal static partial class PythonReTranslator
     }
 
     private static bool ResumeRenderedNode(ref RenderFrame frame, Utf8ConstructionText builder,
-        IReadOnlyDictionary<string, string> names, int[] numbers, bool native, out RenderFrame child)
+        IReadOnlyDictionary<string, string> names, int[] numbers, out RenderFrame child)
     {
         child = default;
         switch (frame.Node)
@@ -321,17 +321,17 @@ internal static partial class PythonReTranslator
                 child = new(sequence.Elements[frame.Stage++]);
                 return false;
             case PythonReLiteralNode literal:
-                if (native && char.IsSurrogate(literal.Value)) builder.Append("(?!)");
+                if (char.IsSurrogate(literal.Value)) builder.Append("(?!)");
                 else builder.AppendEscaped(literal.Value);
                 return true;
             case PythonReCharacterClassNode characterClass:
-                AppendCharacterClass(characterClass, builder, native);
+                AppendCharacterClass(characterClass, builder);
                 return true;
             case PythonReRawNode raw:
                 Utf8ConstructionScope.ChargeWork((ulong)raw.Text.Length);
-                builder.Append(native ? raw.Kind == PythonReRawKind.Dot
+                builder.Append(raw.Kind == PythonReRawKind.Dot
                     ? raw.Text == AnyUnicodeScalarPattern ? NativeScalarPattern : "(?-s:.)"
-                    : RenderScalarFragment(raw.Text) : raw.Text);
+                    : RenderScalarFragment(raw.Text));
                 return true;
             case PythonReNamedBackreferenceNode named:
                 builder.Append(@"\k<").Append(names[named.Name]).Append('>');
@@ -350,7 +350,7 @@ internal static partial class PythonReTranslator
     }
 
     private static void AppendGroupPrefix(PythonReGroupNode node, Utf8ConstructionText builder,
-        IReadOnlyDictionary<string, string> names, bool native)
+        IReadOnlyDictionary<string, string> names)
     {
         if (node.Kind == PythonReGroupKind.NamedCapturing)
         {
@@ -360,8 +360,8 @@ internal static partial class PythonReTranslator
         else if (node.Kind == PythonReGroupKind.ScopedFlags)
         {
             builder.Append("(?");
-            AppendInlineFlags(native ? node.AddOptions & ~PythonReCompileOptions.IgnoreCase : node.AddOptions, builder);
-            var removed = native ? node.RemoveOptions & ~PythonReCompileOptions.IgnoreCase : node.RemoveOptions;
+            AppendInlineFlags(node.AddOptions & ~PythonReCompileOptions.IgnoreCase, builder);
+            var removed = node.RemoveOptions & ~PythonReCompileOptions.IgnoreCase;
             if (removed != PythonReCompileOptions.None) { builder.Append('-'); AppendInlineFlags(removed, builder); }
             builder.Append(':');
         }

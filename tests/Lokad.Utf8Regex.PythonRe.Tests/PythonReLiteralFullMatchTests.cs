@@ -148,7 +148,7 @@ public sealed class PythonReLiteralFullMatchTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ++reads < 6 ? 0 : 1000);
         var error = Assert.Throws<RegexMatchTimeoutException>(() => Run(regex, input, 0, text, default));
         Assert.Empty(error.Input);
-        Assert.Equal(regex.DebugTranslatedPattern, error.Pattern);
+        Assert.Equal(regex.Pattern, error.Pattern);
     }
 
     private static void Run(Utf8PythonRegex regex, byte[] input, int start, bool text, CancellationToken token)
