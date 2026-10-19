@@ -1,6 +1,6 @@
 # Scalar migration cleanup
 
-Reviewed 2026-10-19 after the scalar.104 source simplification. Historical
+Reviewed 2026-10-19 through the scalar.112-dev source cleanup. Historical
 receipts retain their original revisions; this section describes development source.
 The matching contract is complete Unicode scalars over strictly validated UTF-8;
 byte coordinates are primary. This report describes current source and executable
@@ -16,6 +16,22 @@ DFA and its input instructions now belong to the isolated PCRE2 project. General
 candidate verification and Count census replays belong only to benchmark tooling.
 Shared structural search, start transforms, native kernels and scalar verification
 remain with their real production consumers.
+
+The later preferred-compare Count sweep and its exclusive short replay/getter
+also live only in benchmark tooling (`fda37b17`); shared vector search and folded
+verification remain in production. The move removes 99 net shipped source lines.
+A preexisting replay-only skipped-candidate bug is corrected, with each compare
+alternative checked against production Count before timing. Nine regression cases
+cover rejected anchors, borrowed offsets and incomplete tails; affected Core,
+PythonRe and PCRE2 public checks pass. No matching-performance claim follows from
+the diagnostic correctness smoke.
+
+Two Python result-release forwarding methods used only by a test are removed
+(`c5354e94`). The storage test now exercises the marker release used by production
+substitution and durable cursors, including cumulative result traffic after working
+release. Core's array-release helper stays because UTF-8 result rendering consumes
+it. These deletions change no live method body, public contract, resource admission
+or ownership rule; no package matrix or live-path timing is repeated.
 
 | Mechanism | Current evidence |
 | --- | --- |
