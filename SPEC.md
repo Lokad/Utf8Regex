@@ -29,6 +29,14 @@ Numeric thresholds are versioned; the charge is not a physical object-size claim
 Literal runtime preparation retains its existing admission. Actual SizeOf-based
 major-capacity calculations, instruction/state bounds and original interruption
 authority remain.
+Development after scalar.110 also allows finite ASCII Count to reuse the existing
+controlled complete-branch finder when scalar dispatch proves it eligible. It
+keeps bounded candidate searches, token comparisons, depth admission and terminal
+original-token/deadline checks while omitting unused capture/VM scratch. Preferred
+fixed-width SIMD remains first; non-ASCII, RTL, folded, context-dependent and
+NonBacktracking programs retain their established paths. Lower work/depth/working
+requirements are intentional route-dependent accounting, not exact heap bounds.
+This source change does not alter immutable scalar.110 or retained-result contracts.
 Development after scalar.109 carries complete-input validation into scalar
 value-Match projection. ASCII results use their already-proved byte coordinates;
 a whole-subject result reuses its known UTF-16 length. Partial Unicode results

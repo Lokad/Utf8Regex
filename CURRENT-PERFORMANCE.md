@@ -38,6 +38,15 @@ gap. Initial default-tier samples failed duration/control gates, so no default
 PGO equivalence or fixed speedup is claimed. Immutable110 bytes are unchanged.
 [Source, raw samples, limits and validation](bench/Experiments/AsciiRejection-20261019/README.md).
 
+Finite ASCII simple-pattern Count then reuses the existing controlled branch
+finder after the preferred SIMD counter declines. One closed FullOpts/R2R-off
+public pair records optional-hit1.340-1.343ms->0.559-0.560ms and optional-miss
+2.127-2.142ms->0.654-0.657ms,3664->112B. Unlimited controls move+0.3-0.9%; fixed
+controls-1.1..+2.7%. All120 samples clear50ms, no confirmation. This is a scoped
+source result, not default-PGO, PythonRe or immutable110 speedup evidence. Work
+and working requirements fall with removed VM work/storage; basic metering and
+original authority remain. [Caller/contract/measurements](bench/Experiments/FiniteSimpleCount-20261019/README.md).
+
 ## Scalar value-Match projection
 
 Subsequent110-dev source, parent8439227b, reuses full-input validation for ASCII /

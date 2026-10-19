@@ -44,8 +44,9 @@ public sealed class Utf8FiniteFixedWidthCountTests
         foreach (var option in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var regex = new Utf8Regex("ab[0-9]{2}", option | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, policy);
-            if (Avx2.IsSupported) Assert.Equal(2000, regex.Count(Dense));
-            else Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count(Dense));
+            // The vector kernel stays preferred; its checked branch fallback
+            // also needs no VM storage on hardware without AVX2.
+            Assert.Equal(2000, regex.Count(Dense));
         }
     }
 

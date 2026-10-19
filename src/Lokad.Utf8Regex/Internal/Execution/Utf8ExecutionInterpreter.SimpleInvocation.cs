@@ -6,6 +6,31 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8ExecutionInterpreter
 {
+    // The caller admits a complete, nonempty ASCII branch plan. Count needs
+    // neither capture snapshots nor VM state; use the controlled cursor finder
+    // with its original invocation, bounded searches and token comparisons.
+    internal static Utf8ExecutionLimitKind TryCountSimplePattern(ReadOnlySpan<byte> input,
+        Utf8ExecutionProgram? program, in Utf8SearchPlan search, in AsciiSimplePatternPlan plan,
+        ref Utf8SliceInvocation invocation, out int count)
+    {
+        count = 0;
+        var total = 0;
+        var floor = 0;
+        while (floor <= input.Length)
+        {
+            var breach = TryFindNextSimplePattern(input, program, search, plan, floor,
+                ref invocation, out var index, out var length);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            if (index < 0) break;
+            total++;
+            floor = index + length;
+        }
+        var terminal = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        if (terminal == Utf8ExecutionLimitKind.None) count = total;
+        return terminal;
+    }
+
     internal static Utf8ExecutionLimitKind TryFindNextSimplePattern(ReadOnlySpan<byte> input,
         Utf8ExecutionProgram? program, in Utf8SearchPlan search, in AsciiSimplePatternPlan plan,
         int floor, ref Utf8SliceInvocation invocation, out int index, out int length)
