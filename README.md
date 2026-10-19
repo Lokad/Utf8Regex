@@ -1,5 +1,15 @@
 # Lokad.Utf8Regex
 
+Private **Core/PythonRe0.4.0-scalar.108** is frozen for the existing consumer
+qualification flow. It batches unused line/native preparation, native-only Python
+rendering, nullable Core-helper elision and obsolete diagnostic/lazy-executor
+removal. Scalar semantics, original controls, captures and lifetimes remain;
+construction requirements may decrease. Owned Python timeouts identify the
+original pattern. [Delivery evidence](artifacts/core-python-scalar108-20261019/HANDOFF.md)
+will record acceptance and exact identities; freeze-time staging is not qualification.
+Immutable qualified107/older and independent Core/PCRE94 remain available; no
+PCRE108, publication, pin change or consumer adoption is established.
+
 Qualified private **Core/PythonRe 0.4.0-scalar.107** batches unused native capture
 preparation/reporting removal and scalar dot/end repeat reuse. Same actual DLLs
 pass detached Windows/Linux, unchanged original consumer assertions, capture /

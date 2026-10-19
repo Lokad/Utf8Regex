@@ -1,6 +1,15 @@
 # Changelog
 
-## Changes after scalar.107
+## Frozen private Core/PythonRe scalar.108
+
+This cleanup batch is frozen for exact-byte consumer/platform qualification.
+Freeze-time staging is not acceptance or publication. Scalar.107/older and the
+independent exact Core/PCRE94 pair stay immutable; no PCRE108 is designated.
+[Delivery evidence](artifacts/core-python-scalar108-20261019/HANDOFF.md) records
+qualification as it completes. The source changes below preserve scalar semantics,
+useful controls, native algorithms and retained results.
+
+## Changes included after scalar.107
 
 Remove PythonRe's obsolete constant backend taxonomy, plan formatter and owned
 program-presence getter. Remove the test-only getter that forced lazy full-match
