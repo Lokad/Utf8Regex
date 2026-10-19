@@ -182,7 +182,6 @@ public sealed class PythonReTemplateAuthorityTests
     {
         var regex = new Utf8PythonRegex("(?P<x>😀|a)", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(200));
         using var preparing = new ManualResetEventSlim();
-        using var waiting = new ManualResetEventSlim();
         using var release = new ManualResetEventSlim();
         using var cancellation = new CancellationTokenSource();
         long ownerTicks = 0;
@@ -205,20 +204,20 @@ public sealed class PythonReTemplateAuthorityTests
         try
         {
             Assert.True(preparing.Wait(TimeSpan.FromSeconds(10)), $"Preparation barrier: {ownerError}");
+            Assert.Equal(1, regex.DebugReplacementPlanCacheEntryCount);
             string? waiterResult = null;
             Exception? waiterError = null;
             waiter = new Thread(() => waiterError = Record.Exception(() =>
             {
-                var reads = 0;
-                using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
-                {
-                    if (++reads == 3) waiting.Set();
-                    return 0;
-                });
+                using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => 0);
                 waiterResult = regex.ReplaceToString("😀a"u8, Template);
             })) { IsBackground = true };
             waiter.Start();
-            Assert.True(waiting.Wait(TimeSpan.FromSeconds(10)));
+            // A clock read can precede cache lookup. Keep the owner pending
+            // until this worker actually waits on that entry, so it observes
+            // the failed preparation rather than legitimately creating a new one.
+            Assert.True(SpinWait.SpinUntil(() => (waiter.ThreadState & ThreadState.WaitSleepJoin) != 0,
+                TimeSpan.FromSeconds(10)), "Waiter did not reach the pending preparation.");
             if (timeout) Volatile.Write(ref ownerTicks, 250);
             else cancellation.Cancel();
             release.Set();
