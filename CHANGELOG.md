@@ -1,13 +1,15 @@
 # Changelog
 
-## Development scalar.113: reuse Detailed capture character counts
+## Private Core/PythonRe scalar.113 inputs: reuse Detailed capture character counts
 
 PythonRe Detailed snapshots reuse their already projected string lengths during
 UTF-8 decoding. Keep original checkpoints, admission, numeric work/byte charges,
 captures and snapshot lifetimes; public APIs and scalar semantics are unchanged.
 A bounded public source pair observes mixed-width enumeration 16-19% faster and
 ASCII Detailed medians 2-8% slower. [Scope and raw evidence](bench/Experiments/PythonDetailedCoordinates-20261020/README.md).
-This is separate from immutable scalar.112 and does not designate a new package.
+Core/PythonRe113 inputs are frozen from C#9f5984ff; exact-package qualification
+and current actual-package costs are pending. Immutable112/older remain intact;
+no publication, external adoption or PCRE113 package is designated.
 
 ## Private Core/PythonRe scalar.112 qualification: Python scalar EOF interruption
 

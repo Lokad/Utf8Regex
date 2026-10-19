@@ -1,5 +1,13 @@
 # Lokad.Utf8Regex.PythonRe
 
+Private **Core/PythonRe 0.4.0-scalar.113** inputs are frozen from C#9f5984ff;
+exact-package qualification is pending. This delivery batches the accepted Core
+selector and PythonRe Detailed character-count reuse. Scalars, captures, original
+interruption, finite controls and result lifetimes retain their contract. Source
+performance receipts are separate from the pending actual-package observation.
+Immutable112 and older packages remain intact. No publication, consumer pin /
+adoption or PCRE113 package is designated.
+
 Private **Core/PythonRe 0.4.0-scalar.112**,producer64a031fd/C#28970719,is ready.
 The same actual DLLs pass Windows/Linux suites,original Awk/Lython assertions,
 oracles and exact identity/member/symbol checks. It fixes a demonstrated111
