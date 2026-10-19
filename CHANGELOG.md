@@ -1,6 +1,14 @@
 # Changelog
 
-## Private Core/PythonRe scalar.105 candidate
+## Qualified private Core/PythonRe scalar.105
+
+Producer853a2a2f freezes this batch with exact Core105. The same actual package
+DLLs pass detached Windows/Linux suites and unchanged original public consumers,
+capture/semantic oracles and identity/member/provenance/symbol checks. Source
+2943b233 CI is green on both platforms. One bounded current-package observation
+records finite captured-output costs separately from the closed source comparison.
+Source advances to106-dev; older bytes remain immutable. No PCRE105, publication
+or downstream adoption. Handoff: artifacts/core-python-scalar105-20261019/HANDOFF.md.
 
 Construction maps use coarse block work charges for lookups, table scans and
 long collision chains. Major buffer/instruction admission remains before

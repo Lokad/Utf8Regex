@@ -1,15 +1,17 @@
 # Lokad.Utf8Regex
 
-Private **Core/PythonRe 0.4.0-scalar.105 candidate** contains the nullable
+Qualified private **Core/PythonRe 0.4.0-scalar.105** contains the nullable
 NonBacktracking correction, native grouped replacement miss staging removal,
 retired fallback execution and coarse construction-map work. Scalar semantics,
 strict UTF8, captures, cancellation/deadlines and enforceable finite invocation
 controls remain. Construction work thresholds are versioned; see
-[host integration](HOST-INTEGRATION.md). Source2943b233 passes Windows/Linux CI.
-[Candidate handoff](artifacts/core-python-scalar105-20261019/HANDOFF.md) records
-acceptance and exact identities when designated. No publication or consumer
-adoption is implied. Immutable104 and independent Core/PCRE94 stay unchanged;
-PCRE94 requires its exact Core94 graph, not Core105.
+[host integration](HOST-INTEGRATION.md). The same package DLLs pass detached
+Windows/Linux suites and unchanged original consumer checks; source2943b233 CI
+is green on both platforms. [Handoff](artifacts/core-python-scalar105-20261019/HANDOFF.md)
+and [consume](artifacts/core-python-scalar105-20261019/CONSUMING.md) record exact
+identities, the revised construction work units and current finite costs.
+Source advances to106-dev. Immutable104 and independent Core/PCRE94 stay unchanged;
+PCRE94 requires its exact Core94 graph. No publication or consumer adoption is implied.
 
 Qualified private **Core/PythonRe 0.4.0-scalar.104**, exact Core104, producer
 `da89185b887f1ba943a72602c07d5da3ad0984f8`, batches unchanged-output projection,

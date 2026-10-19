@@ -1,15 +1,15 @@
 # Resource controls and host ownership
 
-The qualified private Core/PythonRe input is **0.4.0-scalar.104**. Its
-[handoff](artifacts/core-python-scalar104-20261019/HANDOFF.md) records exact
+The qualified private Core/PythonRe input is **0.4.0-scalar.105**. Its
+[handoff](artifacts/core-python-scalar105-20261019/HANDOFF.md) records exact
 identities, same-byte Windows/Linux consumer checks, current costs and exclusions.
-Independent PCRE2 uses its exact Core/PCRE2 scalar.94 pair; no PCRE104 is designated.
+Independent PCRE2 uses its exact Core/PCRE2 scalar.94 pair; no PCRE105 is designated.
 Earlier packages retain their recorded contracts and limitations.
 
 Known scalar.104 Core `NonBacktracking` limitation: nullable bounded repetitions
 can choose shorter matches or incorrect last captures. For example,
-`(?:a?|b){0,3}a` on `baa` returns `ba` then `a` instead of one `baa`. Development
-source corrects bounded/minimum-completion progress in the existing graph; the
+`(?:a?|b){0,3}a` on `baa` returns `ba` then `a` instead of one `baa`. Scalar.105
+corrects bounded/minimum-completion progress in the existing graph; the
 immutable104 bytes retain this defect. This is outside the original consumer
 assertion slice. PythonRe does not use this Core option.
 
@@ -79,7 +79,7 @@ on the regex profile. Matching remains strict UTF-8/scalar with byte coordinates
 `MaxInstructionCapacity` and `MaxBytes`. Its null values keep the fixed
 construction backstops; they do **not** mean unlimited construction.
 
-Construction charge units are versioned. Development after scalar.104 charges
+Construction charge units are versioned. Scalar.105 charges
 map lookups and long collision chains in blocks, while replacement growth keeps
 its capacity admission and batched source-scan charges. String-key scans and
 comparisons remain covered. Metadata enumeration admits the whole table
