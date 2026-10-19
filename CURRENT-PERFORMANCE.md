@@ -16,6 +16,15 @@ are separate and complete within the handoff scope. Earlier109 remains immutable
 historical evidence and predates the cancellation correction. Broader work remains
 open; source pairs and historical snapshots below retain their separate scope.
 
+## Current110 runtime/generated comparison
+
+A separate [bounded four-case .NET10/11 experiment](RUNTIME-COMPARISON.md) uses
+actual Core110 bytes, three runtime/compiler cells and840 floor-qualified samples.
+It retains FullOpts/R2R-off and is separate from default-tier package costs above.
+The optional-prefix Count case remains1.35-1.79ms across runtimes against49-53us
+for generated predecoded .NET, identifying a current engine mechanism gap. There
+is no universal new-generator advantage or product/runtime qualification claim.
+
 ## Scalar value-Match projection
 
 Subsequent110-dev source, parent8439227b, reuses full-input validation for ASCII /

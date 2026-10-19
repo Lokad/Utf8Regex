@@ -1,10 +1,46 @@
 # .NET 10 / .NET 11 Count comparison
 
-The timed results below remain frozen Core59 evidence. Current qualified
-Core/PythonRe110 has a separate [untimed three-cell preflight](artifacts/runtime11-scalar110-preflight-20261019/RESULT.md):
-four case/range digests and finite/token lanes agree on actual .NET10/.NET11
-execution, with real SDK-specific generated runners. This does not refresh the
-timings below or establish current-runtime performance or full compatibility.
+The current-input experiment uses the actual immutable Core/PythonRe110 Core DLL,
+producera514fdab/C#265a54ec, on the quiet VM. Its [numeric source](bench/Experiments/Runtime11-Scalar110-20261019/measurement.json)
+retains all840 raw samples, process order, identities, allocation and exclusions;
+[reproduction fixture](bench/Experiments/Runtime11-Scalar110-20261019/README.md).
+The earlier Core59 results below remain frozen historical evidence.
+
+## Current Core110, measured 2026-10-19
+
+All three cells load the same actual Core bytes. SDK10/net10 on runtime10.0.12
+and the identical harness on11.0.0-rc.1.26425.128 isolate runtime/JIT effects.
+SDK11.0.100-rc.1.26425.128/net11 on that runtime adds fresh TFM/compiler/generator
+effects; ordinary/compiled controls prevent generator-only attribution. Four
+real generated runners per SDK, no runtime Regex fallback. ASCII Count/range
+contracts agree; dot/emoji scalar/code-unit disagreement is explicitly excluded.
+
+CPU2/FullOpts/ReadyToRun-off; one fixed15-process comparison,271.89s process time.
+All840 samples meet50ms floor (minimum64.7455ms). No confirmation, product retarget,
+old59 remeasurement, snapshot/Status refresh or package qualification. These are
+not the default-tier [current package costs](artifacts/core-python-scalar110-20261019/vm-cost/RESULT.md)
+or full-runtime semantic/resource qualification. [All evidence/limitations](artifacts/runtime11-scalar110-comparison-20261019/RESULT.md).
+
+Median public Count us/op, ordinary Core, unlimited / finite / finite+live-token.
+Finite allowances are work50M/depth1024/working64MiB/result128MiB, not safe defaults.
+
+| Case | Runtime10/SDK10 | Runtime11/SDK10 | Runtime11/SDK11 |
+| --- | ---: | ---: | ---: |
+| literal-late | 7.216 / 3.929 / 3.934 | 5.231 / 2.823 / 2.841 | 5.247 / 2.871 / 2.852 |
+| fixed-width | 8.000 / 21.031 / 20.287 | 8.666 / 22.052 / 21.297 | 8.610 / 21.911 / 21.099 |
+| optional-prefix | 1784.989 / 1377.266 / 1376.342 | 1786.446 / 1354.162 / 1338.471 | 1793.818 / 1356.086 / 1344.152 |
+| shadowed-family | 117.541 / 135.219 / 133.182 | 118.147 / 130.984 / 128.062 | 120.179 / 132.865 / 130.421 |
+
+Literal Count improves roughly27% on runtime11 with the same SDK10 IL; fixed-width
+Core medians are higher with up to1.262x sample spread. The optional-prefix case
+remains1.35-1.79ms across cells against49-53us generated predecoded .NET: the next
+engine investigation is candidate discovery/verification, not a runtime upgrade
+or metering removal. Fresh SDK11 generated rows show no universal advantage;
+no upstream optimizer port is justified by these timings alone. Every compiled
+Core and BCL ordinary/compiled/generated/NonBacktracking decode/predecoded lane,
+allocation and paired ratio remains in the numeric source.
+
+## Historical Core59 comparison
 
 Measured 2026-10-16 on the quiet Xeon Platinum 8573C VM, CPU2, Release FullOpts,
 ReadyToRun off. This four-case experiment adds actual SDK-specific generated
