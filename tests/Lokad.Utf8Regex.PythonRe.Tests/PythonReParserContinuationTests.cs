@@ -33,8 +33,7 @@ public sealed class PythonReParserContinuationTests
         }
         var atom = Assert.IsType<PythonReRawNode>(node);
         Assert.Equal(PythonReRawKind.Dot, atom.Kind);
-        Assert.Equal(opener == "(?-s:" ? "(?!\\n)" + PythonReParser.ManagedUnicodeScalarPattern
-            : PythonReParser.ManagedUnicodeScalarPattern, atom.Text);
+        Assert.Equal(opener == "(?-s:" ? "(?-s:.)" : PythonReParser.UnicodeScalarPattern, atom.Text);
         Assert.InRange(scope.Budget.PeakDepth, (ulong)depth, Utf8ConstructionScope.DefaultDepth);
         Assert.Equal(0ul, scope.Budget.Depth);
         Assert.True(scope.Budget.ReservedBytes > 0); // Successful AST loans stay with the owner.

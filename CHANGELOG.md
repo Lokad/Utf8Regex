@@ -1,5 +1,14 @@
 # Changelog
 
+## Changes after scalar.108
+
+PythonRe parser fragments now use native scalar atoms directly. The managed
+surrogate-pair spelling lives only in reference tooling; remove the shipped
+normalizer and dot-rewrite branch. Pinned class predicates, scoped flags, width /
+reference validation and resource controls remain. Native text is unchanged;
+construction scans/storage can decrease. Immutable108 remains unchanged.
+[Trace and bounded constructor evidence](artifacts/python-native-fragments-20261019/RESULT.md).
+
 ## Private Core/PythonRe scalar.108 consumer qualification
 
 Producer92a5a907 freezes the cleanup batch below. Same actual package DLLs pass

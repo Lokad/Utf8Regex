@@ -367,7 +367,10 @@ negation, captures, empty-match rules and nonconstant folding stay unchanged.
 Syntax/reference and fixed-width-lookbehind validation precede native rendering.
 Development after scalar.107 constructs only native scalar text and group metadata.
 The former eager UTF-16 reference spelling, surrogate-range branches and comparator
-options live in benchmark/test tooling. Removing that pass can reduce covered
+options live in benchmark/test tooling. Development after scalar.108 also emits
+native scalar atoms directly in parser dot/predefined fragments; the shipped
+surrogate atom, replacement scan and dot normalization are removed. Shared class
+predicates, scoped DotAll and width/reference validation retain their semantics. Removing that pass can reduce covered
 construction work and bytes; limits retain their ceilings, major-buffer admission
 and interruption checkpoints. Optional Core preparation is also omitted when
 an expression may match empty and its iteration eligibility rejects Core. These

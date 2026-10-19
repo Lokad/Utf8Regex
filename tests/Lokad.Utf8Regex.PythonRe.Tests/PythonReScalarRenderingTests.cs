@@ -66,7 +66,6 @@ public sealed class PythonReScalarRenderingTests
             }
         }
         Assert.Equal(expected ? new[] { subject } : [], regex.FindAllToStrings(input).ScalarValues);
-        Assert.DoesNotContain(PythonReParser.ManagedUnicodeScalarPattern, regex.DebugNativePattern);
     }
 
     [Theory]

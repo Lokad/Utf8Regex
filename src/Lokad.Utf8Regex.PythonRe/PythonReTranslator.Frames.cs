@@ -329,9 +329,7 @@ internal static partial class PythonReTranslator
                 return true;
             case PythonReRawNode raw:
                 Utf8ConstructionScope.ChargeWork((ulong)raw.Text.Length);
-                builder.Append(raw.Kind == PythonReRawKind.Dot
-                    ? raw.Text == AnyUnicodeScalarPattern ? NativeScalarPattern : "(?-s:.)"
-                    : RenderScalarFragment(raw.Text));
+                builder.Append(raw.Text);
                 return true;
             case PythonReNamedBackreferenceNode named:
                 builder.Append(@"\k<").Append(names[named.Name]).Append('>');

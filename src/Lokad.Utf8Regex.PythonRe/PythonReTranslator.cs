@@ -5,8 +5,7 @@ namespace Lokad.Utf8Regex.PythonRe;
 
 internal static partial class PythonReTranslator
 {
-    private const string AnyUnicodeScalarPattern = PythonReParser.ManagedUnicodeScalarPattern;
-    private const string NativeScalarPattern = "(?s:.)";
+    private const string NativeScalarPattern = PythonReParser.UnicodeScalarPattern;
 
     public static bool CanMatchEmpty(PythonReNode node, PythonReParseResult parseResult)
     {
@@ -506,11 +505,6 @@ internal static partial class PythonReTranslator
         builder.Append("(?:(?!").Append(positiveAtom).Append(')').Append(NativeScalarPattern).Append(')');
     }
 
-    // Only parser-generated raw/predefined fragments contain this internal atom.
-    // User literals and class endpoints are emitted from their AST values.
-    private static string RenderScalarFragment(string fragment) =>
-        Utf8ConstructionText.Replace(fragment, AnyUnicodeScalarPattern, NativeScalarPattern);
-
     private static string BuildScalarCharacterClassAtom(IReadOnlyList<PythonReCharacterClassItem> items)
     {
         using var ranges = Utf8ConstructionBuffer<(int Start, int End)>.Create(Utf8ConstructionScope.CurrentBudget);
@@ -529,7 +523,7 @@ internal static partial class PythonReTranslator
                     AddScalarRange(ranges, range.StartScalar, range.EndScalar);
                     break;
                 case PythonReCharacterClassPredefinedItem predefined:
-                    if (predefined.IsStandaloneAtom) branches.Add(RenderScalarFragment(predefined.RegexClassFragment));
+                    if (predefined.IsStandaloneAtom) branches.Add(predefined.RegexClassFragment);
                     else fragments.Add(predefined.RegexClassFragment);
                     break;
             }
