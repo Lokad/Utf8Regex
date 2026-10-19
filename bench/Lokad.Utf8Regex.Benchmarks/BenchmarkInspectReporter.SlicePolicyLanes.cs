@@ -340,7 +340,38 @@ internal static partial class BenchmarkInspectReporter
             actions[index] = lanes[index].Action;
         }
 
-        foreach (var action in actions) _ = WarmupCore(action);
+        const int minimumWarmCalls = 256;
+        const double targetSampleMicroseconds = 50_000;
+        var maximumIterations = Math.Max(iterations, 2_000_000);
+        var effectiveIterations = new int[lanes.Length];
+        for (var index = 0; index < actions.Length; index++)
+        {
+            // A duration alone can leave a slow public entry below its tiering
+            // call threshold. Warm that entry before the existing timed warmup.
+            _ = MeasureTimedCore(minimumWarmCalls, actions[index]);
+            _ = WarmupCore(actions[index]);
+            var microseconds = MeasureReadmeProbeMicrosecondsPerOperation(actions[index], maximumIterations);
+            effectiveIterations[index] = (int)Math.Clamp(
+                Math.Ceiling(targetSampleMicroseconds / Math.Max(0.001, microseconds)),
+                iterations, maximumIterations);
+        }
+        for (var index = 0; index < actions.Length; index++)
+        {
+            // Confirm after every lane has warmed, with sampling's GC preflight.
+            // A single allocation-heavy probe can overestimate the settled cost.
+            var fastestMicroseconds = double.PositiveInfinity;
+            for (var attempt = 0; attempt < 3; attempt++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                fastestMicroseconds = Math.Min(fastestMicroseconds,
+                    MeasureTimedCore(effectiveIterations[index], actions[index]).Elapsed.TotalMicroseconds);
+            }
+            effectiveIterations[index] = (int)Math.Clamp(
+                Math.Ceiling(effectiveIterations[index] * targetSampleMicroseconds / Math.Max(1, fastestMicroseconds)),
+                effectiveIterations[index], maximumIterations);
+        }
+        Console.WriteLine("  Protocol: warmupMinimumCalls=256 warmupTargetMs=250 sampleTargetMs=50 finalDurationChecks=3 requestedMinimumIterations=" + iterations);
         var timings = new double[lanes.Length][];
         for (var index = 0; index < lanes.Length; index++) timings[index] = new double[samples];
         var sink = 0;
@@ -351,11 +382,12 @@ internal static partial class BenchmarkInspectReporter
                 var index = (sample & 1) == 0 ? position : lanes.Length - position - 1;
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
-                var measured = MeasureTimedCore(iterations, actions[index]);
-                timings[index][sample] = measured.Elapsed.TotalMicroseconds / iterations;
+                var measured = MeasureTimedCore(effectiveIterations[index], actions[index]);
+                timings[index][sample] = measured.Elapsed.TotalMicroseconds / effectiveIterations[index];
                 sink ^= measured.Sink;
                 Console.WriteLine("  Raw: operation=" + operation + " lane=" + lanes[index].Name +
-                    " sample=" + sample + " iterations=" + iterations + " us/op=" +
+                    " sample=" + sample + " iterations=" + effectiveIterations[index] +
+                    " elapsedMs=" + measured.Elapsed.TotalMilliseconds.ToString("F6", CultureInfo.InvariantCulture) + " us/op=" +
                     timings[index][sample].ToString("F6", CultureInfo.InvariantCulture));
             }
         }
@@ -364,7 +396,7 @@ internal static partial class BenchmarkInspectReporter
         for (var index = 0; index < lanes.Length; index++)
         {
             var allocated = MeasureAllocatedBytesPerOperation(
-                iterations, actions[index]);
+                effectiveIterations[index], actions[index]);
             Console.WriteLine(
                 "    " + lanes[index].Name +
                 ": result=" + lanes[index].ExpectedResult +

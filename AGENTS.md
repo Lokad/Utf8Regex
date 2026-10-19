@@ -262,8 +262,12 @@ Current intended uses:
   - run the R02a focused cost controls over the fixed slice catalog (IsMatch plus Count)
   - reports unlimited/no-token, finite-limits/no-token, and live-token lanes with per-lane results, routes, timings,
     and allocations
-  - validates lane agreement within each profile before timing; defaults to 20000
-    iterations and five samples with alternating sample order
+  - validates lane agreement within each profile before timing; defaults to a 20000
+    iteration minimum and five samples with alternating sample order
+  - warms at least 256 public calls before the existing duration warmup, calibrates
+    each lane toward 50 ms, confirms duration three times after all lanes warm
+    using sampling's GC preflight, and reports effective iterations plus actual
+    elapsed ms; calibration caps at 2M calls unless the requested minimum is larger
   - core/PythonRe finite lanes now exercise all four invocation controls; raw
     samples and decode/predecoded .NET controls accompany end-to-end costs
 - --measure-pythonre-handoff-bulk [iterations] [samples]
@@ -273,6 +277,8 @@ Current intended uses:
   - verifies ranges/capture values first, retains outputs, reports raw warm
     alternating samples and allocations, and includes decode/predecoded controls
     for Count and UTF-8 tuple shaping; diagnostic only, does not set Status
+  - uses the same public-call warmup and per-lane duration calibration as the slice
+    command; the iteration argument is a minimum, and raw duration exposes short samples
 - --measure-count-attribution-case
   - run a bounded, alternating production-route Count breakdown for one case
   - reports the selected ordinary/compiled kernels, required UTF-8 validation,

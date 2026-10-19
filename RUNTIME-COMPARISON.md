@@ -1,12 +1,18 @@
 # .NET 10 / .NET 11 Count comparison
 
-The current-input experiment uses the actual immutable Core/PythonRe110 Core DLL,
+The latest runtime-comparison experiment used the actual immutable Core/PythonRe110 Core DLL,
 producera514fdab/C#265a54ec, on the quiet VM. Its [numeric source](bench/Experiments/Runtime11-Scalar110-20261019/measurement.json)
 retains all840 raw samples, process order, identities, allocation and exclusions;
 [reproduction fixture](bench/Experiments/Runtime11-Scalar110-20261019/README.md).
-The earlier Core59 results below remain frozen historical evidence.
+The earlier Core59 results below remain frozen historical evidence. The current
+qualified dependency is [Core/PythonRe114](artifacts/core-python-scalar114-20261020/HANDOFF.md).
+Neither older runtime comparison qualifies114's costs: subsequent engine changes,
+including large plan-copy removal, affect these paths.114's current default-tier
+handoff costs and source FullOpts pairs are recorded separately in
+[CURRENT-PERFORMANCE.md](CURRENT-PERFORMANCE.md). A fresh runtime comparison remains
+a later delivery task; no existing timings or Status are reclassified here.
 
-## Current Core110, measured 2026-10-19
+## Historical Core110, measured 2026-10-19
 
 All three cells load the same actual Core bytes. SDK10/net10 on runtime10.0.12
 and the identical harness on11.0.0-rc.1.26425.128 isolate runtime/JIT effects.
@@ -32,10 +38,12 @@ Finite allowances are work50M/depth1024/working64MiB/result128MiB, not safe defa
 | shadowed-family | 117.541 / 135.219 / 133.182 | 118.147 / 130.984 / 128.062 | 120.179 / 132.865 / 130.421 |
 
 Literal Count improves roughly27% on runtime11 with the same SDK10 IL; fixed-width
-Core medians are higher with up to1.262x sample spread. The optional-prefix case
-remains1.35-1.79ms across cells against49-53us generated predecoded .NET: the next
-engine investigation is candidate discovery/verification, not a runtime upgrade
-or metering removal. Fresh SDK11 generated rows show no universal advantage;
+Core medians are higher with up to1.262x sample spread. In Core110, the optional-prefix
+case cost1.35-1.79ms across cells against49-53us
+generated predecoded .NET. This identified an engine-path issue at that time;
+later plan-borrow work changed the path. Do not use this historical cost as114's
+current cost or as a reason to remove metering. Fresh SDK11 generated rows show no
+universal advantage;
 no upstream optimizer port is justified by these timings alone. Every compiled
 Core and BCL ordinary/compiled/generated/NonBacktracking decode/predecoded lane,
 allocation and paired ratio remains in the numeric source.
@@ -59,7 +67,8 @@ All three cells load identical Core0.4.0-scalar.59 bytes, producer b67b9233,
 SHA2569453ACFFFC0E1C18A30FE8B1096481E48503A8089134A2EE5B1BBFC2CC99FBE9.
 Core source was unchanged at0be8367f. This did not designate standalone Core59
 for consumers; Core/PythonRe55 was the qualified pair at measurement time.
-The current corrected dependency is [Core/PythonRe110](artifacts/core-python-scalar110-20261019/HANDOFF.md).
+Core/PythonRe110 was the corrected dependency when this page was last refreshed;
+the current qualified dependency is114, linked above.
 
 - R10/G10: SDK10.0.401/net10 driver on runtime10.0.12.
 - R11/G10: that exact driver on runtime11.0.0-rc.1.26425.128. Same IL isolates
