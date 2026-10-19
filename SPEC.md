@@ -374,6 +374,10 @@ covers its constant-time count increment; the terminal checkpoint still precedes
 publication. Basic search metering, whole-input validation and the original
 cancellation/deadline authority remain. Numerical work requirements can decrease
 on this shared Core/PythonRe/PCRE2 path without changing storage/depth/result scope.
+Development after scalar.109 also rechecks the original token after this terminal
+work checkpoint, before publishing the count. Cancellation arriving at that
+checkpoint cannot escape as a successful integer result. Numeric work, storage
+admission, counting algorithms and deadline behavior are unchanged.
 Scalar.87 also reuses the existing scalar word-delimited email Count family
 before general VM dispatch. Development source after scalar.87 extends this to
 the prepared URI Count family. Eligibility requires the original

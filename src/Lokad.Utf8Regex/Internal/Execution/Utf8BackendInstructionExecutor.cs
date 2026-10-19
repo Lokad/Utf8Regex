@@ -166,6 +166,7 @@ internal static class Utf8BackendInstructionExecutor
                 start = candidate + search.Length;
             }
             var terminal = invocation.TryChargeInputStep();
+            invocation.Budget.ThrowIfCancellationRequested();
             if (terminal == Utf8ExecutionLimitKind.None) count = foundCount;
             return terminal;
         }

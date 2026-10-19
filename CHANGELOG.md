@@ -2,6 +2,11 @@
 
 ## Changes after scalar.109
 
+Fix native forward literal Count publishing after cancellation at its final work
+checkpoint. Recheck the original token before assigning the count; keep existing
+work charges, storage admission, deadline behavior and counting algorithms.
+[Public reproduction, Release checks and bounded cost evidence](artifacts/native-count-publication-20261019/RESULT.md).
+
 Reuse complete-input validation for scalar value-Match coordinates. ASCII results
 need no second range/prefix scan; whole Unicode matches reuse the known UTF-16
 length. Partial Unicode projection keeps its bounded scans. Strict validation,
