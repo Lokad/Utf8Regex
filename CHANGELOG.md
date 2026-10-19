@@ -15,8 +15,8 @@ Producer92a5a907 freezes the cleanup batch below. Same actual package DLLs pass
 Windows/Linux suites, unchanged original public consumer assertions, oracles and
 exact package/loaded/provenance/member/symbol identities. One bounded current
 exact-package finite/token/materialization observation is closed, retaining noise.
-Hosted source CI39281487750 for cumulative C#d213652c remains queued, an explicit
-outstanding source gate. Source advances109-dev without C# changes;108/107/older
+Hosted source CI39281487750 for cumulative C#d213652c passes Windows/Linux.
+Source advanced109-dev with the same C# before later parser cleanup;108/107/older
 and exact Core/PCRE94 stay immutable. No publication, pin change, adoption or PCRE108.
 [Handoff](artifacts/core-python-scalar108-20261019/HANDOFF.md) and
 [current costs](artifacts/core-python-scalar108-20261019/vm-cost/RESULT.md) retain scope.

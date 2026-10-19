@@ -10,7 +10,7 @@ closed.1K/5K managed spreads7.06x/1.72x and noisy .NET tuple controls limit clai
 selected10K managed spreads remain within1.10x. No universal overhead, scaling,
 parity or source-regression claim. [Exact scope/raw evidence](artifacts/core-python-scalar108-20261019/vm-cost/RESULT.md).
 Source constructor pairs stay separate; no benchmark snapshot/Status campaign
-is reopened. Hosted source CI is still queued and is not qualified by these costs.
+is reopened. Source CI39281487750 is green independently of these costs.
 
 ## Earlier scalar.107 observation
 

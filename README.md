@@ -9,8 +9,8 @@ Pattern; construction requirements may fall. Scalar semantics, controls and
 lifetimes remain. [Handoff](artifacts/core-python-scalar108-20261019/HANDOFF.md),
 [consume](artifacts/core-python-scalar108-20261019/CONSUMING.md) and
 [exact costs](artifacts/core-python-scalar108-20261019/vm-cost/RESULT.md)
-record scope and uncertainty. Hosted source CI39281487750 is still queued; this
-is an outstanding source gate. Source advances109-dev, C# unchanged. Immutable
+record scope and uncertainty. Hosted source CI39281487750 is green on Windows/Linux. Later109-dev source
+changes have separate gates; frozen108 stays unchanged. Immutable
 107/older and exact Core/PCRE94 stay; no PCRE108, publication, pin change or adoption.
 
 Qualified private **Core/PythonRe 0.4.0-scalar.107** batches unused native capture
