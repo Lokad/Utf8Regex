@@ -8,8 +8,9 @@ source CI is green. [Handoff](artifacts/core-python-scalar104-20261019/HANDOFF.m
 and [consume](artifacts/core-python-scalar104-20261019/CONSUMING.md) record exact
 identities, representative current finite costs and timing limitations. Scratch
 reuse reduces repeated allocation but can raise intermediate working overlap;
-see HOST-INTEGRATION. Earlier inputs remain immutable. Source moves to105-dev;
-no PCRE104, publication or downstream adoption is designated.
+see HOST-INTEGRATION. Its packaged README has a Unicode encoding defect, corrected
+in development documentation; package DLLs and earlier bytes stay unchanged.
+Source moves to105-dev; no PCRE104/publication/downstream adoption is designated.
 
 Qualified private **Core/PythonRe 0.4.0-scalar.103**, exact Core103, producer
 `6150c4388b3140cfa32c516e8c03d0836a5a84cc`. It fixes scoped-multiline grouped
@@ -51,7 +52,7 @@ storage. Scalar.101 fixes overlapping output through staged scalar
 replacement; see [the contract and allocation tradeoff](HOST-INTEGRATION.md).
 
 `Lokad.Utf8Regex` is a `net10.0` library matching Unicode scalars over strict UTF-8 spans, with primary
-byte offsets and lengths. Dot matches Ã°Å¸Ëœâ‚¬ once across its four bytes. UTF-16
+byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
 coordinates and strings are derived conveniences. PythonRe adds pinned Python
 grammar, captures and result shaping over the shared owned engine.
 
@@ -181,7 +182,7 @@ var bounded = Utf8Regex.Compile(
     cancellationToken: compileCancellation.Token);
 
 using var callCancellation = new CancellationTokenSource();
-int count = bounded.Count("cafÃƒÂ© Ã°Å¸Ëœâ‚¬ tea"u8, callCancellation.Token); // 2
+int count = bounded.Count("café 😀 tea"u8, callCancellation.Token); // 2
 ```
 
 These are example application limits, not library defaults. Legacy overloads and

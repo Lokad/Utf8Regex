@@ -163,7 +163,7 @@ Expanded Cyrillic public rows range -37..+4.2%, allocations unchanged. New tests
 retain a prepared strategy while testing finite denial and cancellation during
 the original invocation, including ordinary/compiled and alternative patterns.
 
-The expanded gate also exposed live-token/deadline Count costs of21â€“22% in
+The expanded gate also exposed live-token/deadline Count costs of21–22% in
 bounded ASCII validation. Its2KiB chunks used the general BCL ASCII drain.
 Restore the original SIMD/word algorithm through checked complete-block slices,
 including scalar-word first-high-byte detection. Strict UTF-8, error offsets,
@@ -191,7 +191,7 @@ The generic comparer again uses the original word/byte algorithm, removing BCL
 ASCII equality/validity dispatch. Non-ASCII byte needles keep canonical byte folding;
 Unicode/Kelvin matching and original authority remain on their existing routes.
 
-One fixed-original public pair covers12â€“64-byte folded literals, ordinary/compiled,
+One fixed-original public pair covers12–64-byte folded literals, ordinary/compiled,
 dense/miss/near-miss and all-four-finite controls. Affected medians are -1.23..+4.58%,
 including24-byte Count +4.53% ordinary/+3.41% compiled; unchanged BCL control +0.85%.
 Allocations remain0/112B. Sample floors/spreads are recorded; no confirmation or
@@ -252,7 +252,7 @@ reach Slice. The exact scalar.47 DLL throws for Count of `abcdefgh|xyzzz|ztzzz`
 over `abcde`, in ordinary and compiled modes. One widened end guard fixes equality
 and known-prefix admission and lets the JIT remove the duplicate Slice check.
 Original comparator loads, algorithms and resource controls remain. Code shrinks
-356â†’336 bytes on Linux, but short comparator microbenchmarks still regress; the
+356→336 bytes on Linux, but short comparator microbenchmarks still regress; the
 selected public family Count control shows no penalty. This correctness repair
 does not qualify the previously rejected checked loads or clear the artifact gate.
 Evidence: artifacts/literal-admission-bounds-20261014/.
@@ -312,15 +312,15 @@ query constructors compile the changed helper. One bounded quiet-VM Release
 FullOpts comparison uses fixed sixteen-instance samples over digits/hex/scoped
 alias profiles and an unchanged plain control. Affected construction medians move
 -7.94%..-11.69%, control+0.02%, with identical allocations. Some samples are short
-(10â€“23ms) or noisy; no exact-equivalence/general-speedup claim follows. Matching
-algorithms are unchanged. Windows helper code1403â†’1430 bytes, Linux1374â†’1420;
+(10–23ms) or noisy; no exact-equivalence/general-speedup claim follows. Matching
+algorithms are unchanged. Windows helper code1403→1430 bytes, Linux1374→1420;
 larger code does not imply a public penalty. Existing independent query grammar,
 cutoff, capture, culture, cancellation and source checks pass in Release/Debug.
 No confirmation, package qualification or extra mode follows. Evidence:
 artifacts/query-pair-checked-20261015/.
 
 The BCL folded-equality follow-up removes the last two unaligned reads and the
-custom general word loop in AsciiSearch. It preserves the checked9â€“16-byte
+custom general word loop in AsciiSearch. It preserves the checked9–16-byte
 specialization. Other widths compare the admitted prefix through
 Ascii.EqualsIgnoreCase; non-ASCII needles retain existing byte-fold behavior via
 the checked comparison when BCL ASCII equality rejects them. Prepared generic
@@ -334,7 +334,7 @@ allowance;12-byte rows move-0.20..+0.94%. Exact controls move+0.44/+4.70%, and t
 all-four-finite control+4.55%. Affected allocations stay0B; finite112B. Sample
 floors exceed54ms; some12-byte/control noise remains, so no exact equivalence is
 claimed. No confirmation or further variant follows. The general helper shrinks
-Windows327â†’217 bytes/Linux261â†’150; trusted shared BCL code is excluded from these
+Windows327→217 bytes/Linux261→150; trusted shared BCL code is excluded from these
 sizes. Boundary/offset/tail tests now include all256 candidate byte values,
 non-ASCII needles and admitted prefix extent. Release839/Debug143, sourceguards4
 and PythonRe75 pass. The actual DLL no longer references Unsafe.ReadUnaligned;
@@ -355,8 +355,8 @@ and compiled engines, all four finite controls, and an unchanged literal control
 Confirmation medians for affected operations range about -0.7% to +1.2%; the
 unlimited control moves about -7% to -8%, so exact equivalence is not claimed.
 All allocations match. These are current public-operation costs, not a conclusion
-from the earlier 4â€“7% isolated kernel penalty. The inspected Linux callers grow
-1515â†’2059 and1532â†’1927 bytes and retain some bounds branches. Boundary, offset,
+from the earlier 4–7% isolated kernel penalty. The inspected Linux callers grow
+1515→2059 and1532→1927 bytes and retain some bounds branches. Boundary, offset,
 tail, known-prefix, malformed-input, cutoff and original-interruption checks pass.
 Evidence: artifacts/short-literal-checked-10pct-20261014/. Full platform/package
 qualification is reserved for a coherent delivery batch; scalar.48 bytes stay fixed.
@@ -365,11 +365,11 @@ The PreparedByteSet vector-search conversion is also accepted under the 10%
 public-cost gate. MemoryMarshal.Read on checked suffix spans replaces both
 LoadUnsafe calls. The existing forward/reverse loop, SIMD masks, clamped final
 overlap, scalar fallback and allocations remain unchanged. FullOpts public-route
-code grows1207â†’1314 bytes on Linux and retains bounds branches.
+code grows1207→1314 bytes on Linux and retains bounds branches.
 
 Public IsMatch of a four-literal family demonstrably reaches the changed Find
 method. The one reversed-order noise confirmation covers hits/misses at31,33 and
-4096 bytes: affected medians increase about2â€“4%, with zero allocations in both
+4096 bytes: affected medians increase about2–4%, with zero allocations in both
 versions. Unchanged literal controls move about-0.6% to+1.2% without limits.
 Finite controls retain their existing VM route and are not evidence for the
 changed vector loop. The initial broader run hit its110-second cap before the
@@ -378,11 +378,11 @@ control; its noisy partial samples remain evidence, not acceptance. The single
 run. Focused boundaries, offsets, tails, scalar/resource behavior and managed
 safety checks are retained. Evidence: artifacts/byteset-checked-10pct-20261015/.
 
-The separate folded 9â€“16-byte comparator retains four checked primitive reads.
+The separate folded 9–16-byte comparator retains four checked primitive reads.
 Eight-byte widths, overlapping tails, folding arithmetic, comparison order and
 allocation behavior are unchanged. A broader six-read prototype measured public
 Count of mixed matches/near misses in ordinary/compiled modes. Its12-byte rows
-increase about5â€“6% in the sole reversed-order confirmation; unchanged exact-literal
+increase about5–6% in the sole reversed-order confirmation; unchanged exact-literal
 controls move about+0.9% to+1.3%. Allocations match. These are public-operation
 costs of that broader prototype, not isolated kernel timings or a fresh timing
 of the final subset.
@@ -394,7 +394,7 @@ public vector caller/verifier have identical Release instruction listings to the
 measured prototype; short-helper IL differs only in resolved-identical method
 tokens. The restored general helper has identical baseline IL. Its short dispatch
 register allocation differs from the prototype, so final end-to-end equivalence
-is not claimed. The short helper grows294â†’375 bytes on Linux. Focused ASCII-case,
+is not claimed. The short helper grows294→375 bytes on Linux. Focused ASCII-case,
 punctuation, offset, tail, Unicode-folding, resource and interruption checks pass.
 Evidence: artifacts/folded-comparator-checked-20261015/. Full platform/package
 qualification remains batched; the Core whole-DLL gate is still open.
@@ -403,7 +403,7 @@ The fused ASCII exact-literal Count loop now uses a checked suffix span and
 MemoryMarshal.Read<Vector256<byte>> in place of its single LoadUnsafe. The same
 32-byte loop admission, anchor filtering, complete candidate verification,
 non-ASCII decline, scalar tail and zero-allocation behavior remain. Linux Release
-FullOpts code grows814â†’817 bytes and retains bounds checks.
+FullOpts code grows814→817 bytes and retains bounds checks.
 
 One bounded before/after public Count comparison covers64-byte and4096-byte
 sparse subjects and a4032-byte dense subject, ordinary and compiled options.
@@ -420,9 +420,9 @@ The fixed-width class Count pilot is deferred. Passing the subject span into
 CreateMatchMask and reading a checked suffix preserves SIMD, masks, nonoverlap,
 final overlapping blocks, scalar suffix fallback and allocations. Public Count
 executes the helper for both ordinary and compiled patterns. One bounded actual-
-DLL comparison finds width4 medians about5.7â€“5.8% slower, but width8 about19.6â€“20.5%
-slower; unchanged literal controls move1.3â€“2.5%. The width8 result exceeds10%
-without needing a confirmation. Linux FullOpts helper code grows588â†’635 bytes
+DLL comparison finds width4 medians about5.7–5.8% slower, but width8 about19.6–20.5%
+slower; unchanged literal controls move1.3–2.5%. The width8 result exceeds10%
+without needing a confirmation. Linux FullOpts helper code grows588→635 bytes
 and retains guards. The original source is restored; no width-specific safe/
 unsafe selector or further variant is added. New widths3..8/borrowed-offset/tail
 tests remain, alongside predicate, decline and interruption coverage. Core Release
@@ -439,7 +439,7 @@ from that block and uses checked32-byte reads. This preserves SIMD, masks, dense
 matching, final overlap, scalar fallback and allocations. However, Release code
 still has a width check inside the per-position loop; the initial commentary
 suggesting otherwise was corrected after inspecting that loop. Windows helper
-code grows582â†’645 bytes and Linux589â†’656.
+code grows582→645 bytes and Linux589→656.
 
 One bounded quiet-VM public Count pair finds width8+24.65% ordinary/+28.33%
 compiled, against literal controls-2.31..-3.66% and finite control-4.43%. Width4
@@ -455,14 +455,14 @@ The folded prepared-search conversion is accepted. Four checked suffix reads
 replace its128/256-bit LoadUnsafe calls and remove the ref origin. Correlated
 first/preferred masks, nint stepping, final overlapping clamp, full verification,
 folding fences and allocations remain. Linux Release FullOpts code grows
-1077â†’1149 bytes with some bounds checks retained.
+1077→1149 bytes with some bounds checks retained.
 
 One bounded actual-public Count comparison covers a31B128-bit hit, a4096B256-bit
 miss and dense12/24-byte literals in ordinary/compiled modes. A separate untimed
 wide-miss-only audit confirms that row executes the vector helper. Affected
 medians change about-2.4% to+3.0%; allocations stay0B. Unchanged unlimited literal
 controls move about0%, and the finite control moves-1.5% with112B unchanged.
-Some short/control sample ranges reach16â€“25%, so exact parity is not claimed.
+Some short/control sample ranges reach16–25%, so exact parity is not claimed.
 All samples exceed40ms. The margins support the10% gate without a confirmation.
 Finite folded preflights retain their owned route and agree; they are not changed-
 kernel timing evidence. Independent offset/clamped-tail/false-candidate oracles,
@@ -476,13 +476,13 @@ loads. Its AVX helper receives the subject span; mask offsets, nibble shuffles,
 pending candidates, verification, scalar tails and allocations remain. Public
 Count-only audits separately compile the finder for the38-byte SSE subject,
 wide Chinese hit/miss subjects and folded ASCII hit/miss families. Release FullOpts
-code grows1275â†’1420 bytes on Linux and retains bounds guards.
+code grows1275→1420 bytes on Linux and retains bounds guards.
 
 One70-second-capped public before/after comparison completes with affected
 ordinary/compiled medians about-5.2% to+3.2%, within the10% allowance. Unchanged
 literal controls move-0.1% to+0.5%; the all-four-finite control moves+1.5%.
 Allocations remain0B and112B respectively. Samples exceed33ms; some compiled
-folded-hit samples spread36â€“45%, so no exact parity or general speedup is claimed.
+folded-hit samples spread36–45%, so no exact parity or general speedup is claimed.
 No confirmation or additional variant is needed. Candidate ordering, every
 vector lane/tail, borrowed offsets0/1/17/31, scalar/folding and resource checks
 pass. Evidence: artifacts/packed-search-checked-20261015/. Full package/platform
@@ -493,11 +493,11 @@ the256-bit masks, continuation carry, candidate verification, wider-scalar resum
 nonoverlap, tails and zero allocations. Public Count compiles the kernel; a
 separate untimed ASCII-miss-only audit confirms coverage for that row. One bounded
 ordinary/compiled comparison finds dense Cyrillic and mixed-width medians within
-4%, but4096-byte ASCII misses regress25â€“26.5% against literal controls about1â€“2%.
-The ordinary32-byte hit is noisy (148â€“167% sample spread), so it is not parity
+4%, but4096-byte ASCII misses regress25–26.5% against literal controls about1–2%.
+The ordinary32-byte hit is noisy (148–167% sample spread), so it is not parity
 evidence. The clear ASCII-miss penalty exceeds10% without a confirmation.
 
-Linux Release FullOpts code shrinks1810â†’1808 bytes while bounds guards remain;
+Linux Release FullOpts code shrinks1810→1808 bytes while bounds guards remain;
 smaller code does not establish equivalent cost. Restore the exact original
 source, keep the expanded borrowed-offset/every-tail validation and explicit
 finite/live-token checks, and stop. No safe/unsafe mode, further variant, package
@@ -505,10 +505,10 @@ replay or new candidate follows. Evidence: artifacts/cyrillic-count-checked-2026
 
 The original ASCII validation drain prototype was restored. Counted checked vector spans keep
 the same SIMD reduction and scalar tails and eliminate per-vector range checks,
-but add entry/setup/index work. Linux FullOpts code grows454â†’533 bytes; long
-kernel controls regress30â€“39% and the internal ValidateOnly helper12â€“15%, with unchanged
+but add entry/setup/index work. Linux FullOpts code grows454→533 bytes; long
+kernel controls regress30–39% and the internal ValidateOnly helper12–15%, with unchanged
 allocations. Public unlimited Match measures -2.2% (noisy) at4KiB and +1.9% at128KiB;
-finite public lanes do not show the cited12â€“15% penalty either. These are separate
+finite public lanes do not show the cited12–15% penalty either. These are separate
 driver lanes. The earlier "mixed public validation" classification was incorrect:
 this evidence does not establish a >10% affected-public-operation regression.
 Current public-route coverage through the changed helper must still be demonstrated
@@ -534,9 +534,9 @@ earlier private ValidateOnly lane or a route descriptor alone. One bounded warm
 pair over short/4KiB/128KiB late-Unicode, alternating-width and Kelvin subjects
 measures affected medians -1.49%..+2.98%; exact-literal and all-four-finite controls
 move -1.59%/-0.61%. Allocations stay0B/112B. Samples exceed51ms; one compiled4KiB
-row has46â€“76% spread, so no exact equivalence or general speedup is claimed.
-No confirmation or extra variant is needed. Linux validator code1404â†’1456 bytes
-and Windows1494â†’1534, with the drain now inlined; the old standalone454/510-byte
+row has46–76% spread, so no exact equivalence or general speedup is claimed.
+No confirmation or extra variant is needed. Linux validator code1404→1456 bytes
+and Windows1494→1534, with the drain now inlined; the old standalone454/510-byte
 body is gone. Shared BCL code is outside those sizes. Final whitespace-only
 cleanup retains identical drain/validator IL. Boundary/offset/tail, malformed
 UTF-8, work/cancellation and source checks pass. Evidence:
@@ -552,22 +552,22 @@ The checked BCL drain itself is unchanged. Borrowed-offset/boundary and malforme
 suffix tests verify coordinates and flags independently of the implementation.
 
 One bounded public Count pair reuses the same twelve lanes as the drain pilot.
-Two apparent +10.1%/+14.2% rows have106â€“166% sample spreads. The single allowed
+Two apparent +10.1%/+14.2% rows have106–166% sample spreads. The single allowed
 confirmation runs only those two workload families plus the exact-literal control
 on the quiet VM, with the same frozen DLLs and candidate-first order. Their
 affected medians move -0.33%..-6.42%; allocations match and the apparent regressions
 do not persist. The initial other affected rows are within-4.64%..+0.70%; finite
 control-0.60%. Quiet confirmation's control is-2.23%, with some ordinary/control
 rows still noisy. No exact equivalence or general speedup claim follows, and no
-further timing is performed. The actual public caller's analyzer grows159â†’245
+further timing is performed. The actual public caller's analyzer grows159→245
 bytes on Linux while the validator remains1456 bytes. Final Release/Debug,
 cancellation/source guards and focused PythonRe checks pass. Evidence:
 artifacts/validation-prefix-reuse-20261015/. No package/whole-DLL gate claim follows.
 
 The correlated-literal diagnostic census conversion was historically deferred. Direct checked
 reads keep the existing SIMD algorithm but add guards and increase inspected
-code692â†’766 bytes on Windows and718â†’776 on Linux. Long diagnostic replays regress
-about10â€“11%, with equal zero allocations; the timed production kernel retains
+code692→766 bytes on Windows and718→776 on Linux. Long diagnostic replays regress
+about10–11%, with equal zero allocations; the timed production kernel retains
 identical code578/568 bytes. Production is restored and census boundary fixtures
 remain. Evidence: artifacts/census-checked-load-20261013/. No runtime speedup or
 whole-DLL safety claim follows; the55-site inventory remains unchanged at that
@@ -580,7 +580,7 @@ existing census and selected-runtime fixtures pass in Release and Debug, includi
 borrowed offsets, tails, nonoverlap, finite public controls and malformed input.
 An untimed actual-DLL replay agrees at seven short/long boundaries. Windows
 .NET10.0.13 Release FullOpts production instructions remain identical apart from
-relocated addresses (578 bytes both); diagnostic code grows692â†’766 bytes. The
+relocated addresses (578 bytes both); diagnostic code grows692→766 bytes. The
 historical diagnostic slowdown is accepted as a diagnostic tradeoff, without a
 new matching timing or performance-equivalence claim. This removes three explicit
 sites and one diagnostic origin reference, preserving SIMD masks, candidates,
@@ -589,8 +589,8 @@ claim follows. Evidence: artifacts/diagnostic-census-checked-20261015/.
 
 The original category math-symbol reduction pilot was deferred. Checked vector-span
 indexing removed per-vector checks while preserving widths, comparison order,
-popcounts, tails and allocations. Short kernels improved 4â€“10%, but the 4 KiB
-kernel retained a 0.3â€“1% penalty in normal/reversed runs, with larger helper setup.
+popcounts, tails and allocations. Short kernels improved 4–10%, but the 4 KiB
+kernel retained a 0.3–1% penalty in normal/reversed runs, with larger helper setup.
 Production is restored and boundary fixtures remain. Public Core Count selected
 another route, so its timings do not qualify this kernel. Evidence:
 `artifacts/category-checked-load-20261013/`. Its55-site inventory is historical.
@@ -610,7 +610,7 @@ literal/finite controls move-0.1%/+1.4%. Allocations match. The mixed after lane
 has a21% sample range, so exact parity is not claimed; the observed medians fit
 the10% allowance without a confirmation. These timings exercise256-bit public
 selection;128-bit correctness is covered directly, without a separate public
-128-bit cost claim. The inlined reduction caller grows428â†’450 bytes on Linux
+128-bit cost claim. The inlined reduction caller grows428→450 bytes on Linux
 FullOpts and has no per-vector range checks; the outer category loop stays673B.
 Core Release369/Debug22, PCRE2 Release81/Debug52 and the full PythonRe suite pass.
 Evidence: artifacts/category-public-checked-20261015/. No Core Count speedup,
@@ -618,8 +618,8 @@ benchmark Status, full platform coverage or new package designation is implied.
 
 The original vector-search and short-literal pilots were deferred under the
 former no-regression gate. Checked vector loads retained branches and regressed
-7â€“38%; short-literal variants retained tail checks or inconclusive/regressing
-4â€“7% timings. The short comparator is now accepted under the revised public-cost
+7–38%; short-literal variants retained tail checks or inconclusive/regressing
+4–7% timings. The short comparator is now accepted under the revised public-cost
 gate above; the original measurements remain historical evidence.
 Two fixed 16-byte construction-buffer reads were converted to
 `MemoryMarshal.Read<Vector128<byte>>` with identical FullOpts instructions on
@@ -670,7 +670,7 @@ The parser's seven-int case-fold set staging was also deferred under that old
 gate and is now prioritized for qualification. A fixed stack span
 removed eight generated inline-array helper calls with unchanged wire values,
 work/capacity admission and heap allocations. The reversed-order repeat retained
-about 0.8â€“1.3% parser penalties against roughly 0.5% movement in the unchanged
+about 0.8–1.3% parser penalties against roughly 0.5% movement in the unchanged
 plain control. Inspected stack frames grew16 bytes and gained a stack guard.
 Whole-constructor comparisons had large control drift and do not qualify cost
 equivalence. Restore the original collection expression; no helper-removal or
@@ -696,7 +696,7 @@ One fixed-sixteen-instance public-constructor comparison and its single noise
 confirmation cover emitted family/fixed-width routes, ASCII/Greek/escaped/long
 folded patterns and an unchanged plain control. Confirmation affected medians
 range -2.0% to +4.2%, with equal allocations; control moves +6.4%. Short sample
-floors are0.6â€“1.9ms and some rows remain very noisy, so this is neither exact
+floors are0.6–1.9ms and some rows remain very noisy, so this is neither exact
 equivalence nor cumulative qualification. Dynamic construction was not calibrated
 into an unbounded loop. The confirmation forces GC outside each timed lane and
 excludes that collection time; the initial samples retain the ordinary GC costs.
@@ -705,8 +705,8 @@ An initial source guard rejected three null-forgiving expressions. The final
 unused-argument repair removes them without weakening the guard or changing
 supplied-parameter validation. Its constructor argument setup was not retimed;
 final-source construction cost remains part of the cumulative delivery gate.
-The measured candidate's Linux builder body shrinks1457â†’1414 bytes and folded
-helper grows383â†’414; Windows1248â†’1179 and395â†’444. Final Windows helper sizes
+The measured candidate's Linux builder body shrinks1457→1414 bytes and folded
+helper grows383→414; Windows1248→1179 and395→444. Final Windows helper sizes
 remain1179/444, without an instruction-equivalence claim. Final semantic/resource
 and source checks pass. These implementation changes advance the checked batch;
 they do not qualify the whole Core DLL or designate a package. Evidence:
@@ -715,12 +715,12 @@ artifacts/core-staging-checked-20261015/. No further pilot timing follows.
 The 2026-10-13 vector-span follow-up also remains deferred. Checked span indexing
 removed redundant per-vector checks from the forward loops while preserving block
 order and the overlapping terminal vector. Four bounded code-generation variants
-were investigated. Split width helpers improved long misses about 43â€“46%, but
-short reverse misses regressed 5â€“28%. Inlining reduced the gains and retained short
+were investigated. Split width helpers improved long misses about 43–46%, but
+short reverse misses regressed 5–28%. Inlining reduced the gains and retained short
 reverse regressions. A forward-only shared method still altered reverse code.
 Finally, directional forward AVX2 entry points retained the original `Find` code
 (1205 bytes Windows/1242 Linux) and improved wide forward scans, but 31-byte forward
-fallbacks slowed 8â€“15%. All measured allocations stayed zero; existing boundary,
+fallbacks slowed 8–15%. All measured allocations stayed zero; existing boundary,
 offset, tail and except checks passed. Every prototype is restored; no conversion,
 new selector or speedup claim lands. Evidence: `artifacts/vector-span-pilot-20261013/`.
 Loop-bound elimination is proved useful; eliminating the short-path dispatch/layout
@@ -752,7 +752,7 @@ whole-constructor medians moved +1.09% for operators and +1.02% for the plain co
 These small movements track the unchanged controls; the escaped paths did not
 show a persistent penalty across the bounded runs. The partial conversion is
 accepted within this experiment's resolution, without claiming exact equivalence
-or a speedup. Windows FullOpts escape code changes 1642â†’1647 bytes; octal caller
+or a speedup. Windows FullOpts escape code changes 1642→1647 bytes; octal caller
 and callee stay 354/628 bytes. Additional checked-slice guards remain.
 
 Raw DLL identities, IL callers, code generation, samples and failed observations:
@@ -780,19 +780,19 @@ inline-array helper calls, compared with eight such calls and three Unsafe membe
 references in its baseline. This does not close the core dependency's gate or
 designate a new compliant package. The 55-site core inventory remains separate.
 
-All 000â€“777 octals are checked as raw atoms and class members, with empty and
+All 000–777 octals are checked as raw atoms and class members, with empty and
 supplementary prefixes, valid byte values, range-error messages/positions and
 tails. Numeric-reference ambiguity, finite matching and affected interruption/
 construction checks pass. Nine actual-DLL parser probes preserve exact work,
 reserved/peak bytes, depth and instruction totals, including malformed escapes.
 
 Release FullOpts code on Windows and Linux removes span staging from the numeric
-caller (354â†’284 / 322â†’287 bytes). The one-character callee is smaller than the old
-shared callee (628â†’582 / 655â†’557); the separate three-character callee is 351/341
+caller (354→284 / 322→287 bytes). The one-character callee is smaller than the old
+shared callee (628→582 / 655→557); the separate three-character callee is 351/341
 bytes. Aggregate code grows because the arities are separate; inspected hot
 paths are smaller. Heap allocations remain identical in all measured lanes.
 
-The first warm quiet-VM parser medians improve about 2â€“4%; the reversed repeat is
+The first warm quiet-VM parser medians improve about 2–4%; the reversed repeat is
 near baseline for three-digit parsing. Constructor drift is about +1.5% in both
 runs while the unchanged plain control moves +2.0%/+2.5%. No persistent penalty
 beyond control movement is observed within this pilot's resolution; no speedup
@@ -803,11 +803,11 @@ The whole-pair artifact gate remains open because core hot paths retain unchecke
 references, including the user-approved SizeOf. Further work follows the revised
 bounded public-cost gate above; kernel timings alone do not establish acceptance.
 
-## URI vector-load pilot â€” deferred
+## URI vector-load pilot — deferred
 
 The URI kernel already creates a checked tail span before its LoadUnsafe call.
 A direct MemoryMarshal.Read conversion retains an extra width guard (Windows
-511â†’539 code bytes). Advancing a remaining byte span still retains the guard
+511→539 code bytes). Advancing a remaining byte span still retains the guard
 (542 bytes). A counted vector span removes per-vector checks but grows inspected
 code to 549 bytes on Windows and 524 on Linux, versus 511/499 baseline bytes.
 Vectors, masks, order, stop-byte handling and scalar tails stay the same.
@@ -833,14 +833,14 @@ medians within the allowance therefore do not qualify the changed vector loop.
 The candidate passes346 focused Release checks; exact original source is restored
 and all raw samples are preserved in artifacts/uri-checked-10pct-20261014/.
 
-## Fixed literal-byte indices â€” deferred
+## Fixed literal-byte indices — deferred
 
 Replacing the literal-side trailing byte reads for five- and seven-byte literals
 with checked indices preserves existing exhaustive bounds/offset/mismatch checks.
 Inspected EqualsAt instructions are identical after address normalization on
 Windows (331 bytes) and Linux (281 bytes), with no added bounds branches.
-Nevertheless, the Linux reverse-order repeat retains about 3.4â€“4.6% slower
-selected timings; unchanged lengths also move 4.4â€“8.9%. Windows samples contain
+Nevertheless, the Linux reverse-order repeat retains about 3.4–4.6% slower
+selected timings; unchanged lengths also move 4.4–8.9%. Windows samples contain
 large control noise. All kernel allocations remain zero. These observations do
 not establish the requested performance gate or a causal regression. Production
 is restored in that historical trial; no equivalence claim follows from it.
@@ -899,7 +899,7 @@ One bounded quiet-VM pair covers dense hits, misses, near misses, the short SSE
 subject and Unicode fallback, ordinary/compiled, with unchanged literal and
 all-four-finite controls. Larger affected medians stay-0.67..+1.65%. A short
 compiled+16.27% row has roughly20%spread; the single targeted reversed-first
-confirmation gives short ordinary-1.80%/compiled-1.68%, with2â€“3%spreads. It does
+confirmation gives short ordinary-1.80%/compiled-1.68%, with2–3%spreads. It does
 not reproduce the penalty. Confirmation controls move+4.38/+2.97% and remain
 noisy, so no exact equivalence or general speedup is claimed. Allocations stay
 0B/112B. All initial samples exceed36ms, confirmation88ms. Guards and larger
@@ -1008,7 +1008,7 @@ Actual public Count probes compile the helper. Windows247->295B/Linux205->250B;
 inner element/width guards are eliminated, SIMD remains, scalar-tail checks
 remain. One unchanged-driver quiet pair plus its only targeted confirmation:
 compiled near-miss+8.73%,128KiB sparse miss+8.39%,2.2..4.0% sample spreads. Accept
-this explicit8â€“9% public cost under the10% allowance. Exact control+0.07% and
+this explicit8–9% public cost under the10% allowance. Exact control+0.07% and
 finite+0.88%, with substantial control noise; no exact-equivalence/speedup claim.
 Initial other compiled rows: short-6.81%,dense-1.43%,8KiBmiss+5.18%; ordinary and
 mixed fallback rows largely unchanged, not proof that they use the fused helper.
