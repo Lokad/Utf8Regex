@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>Lokad.Utf8Regex.Benchmarks</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <CoreLibraryPath Condition="'$(CoreLibraryPath)' == ''">../../../src/Lokad.Utf8Regex/bin/Release/net10.0/Lokad.Utf8Regex.dll</CoreLibraryPath>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Lokad.Utf8Regex">
+      <HintPath>$(CoreLibraryPath)</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

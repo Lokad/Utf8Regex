@@ -507,10 +507,10 @@ public sealed partial class Utf8Regex
              // Exact byte literals already preserve scalar endpoints. Native
              // boundary/class predicates need scalar qualification before they
              // can serve mixed subjects without the shared owned VM.
-             !Utf8InputAnalyzer.IsAscii(input) &&
-                (_preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or
+             (_preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or
                     NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals) ||
-                 _preparedRegex.SearchPlan.HasBoundaryRequirements))
+                 _preparedRegex.SearchPlan.HasBoundaryRequirements) &&
+                !Utf8InputAnalyzer.IsAscii(input))
             return _ownedSliceProgram;
         return null;
     }

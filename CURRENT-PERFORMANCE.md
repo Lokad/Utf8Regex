@@ -1,5 +1,13 @@
 # Selected current-source performance
 
+A later113-dev selector change orders exact-literal/boundary metadata before an
+irrelevant ASCII scan, without changing selection/validation/meters/allocation.
+One closed FullOpts source pair plus its sole confirmation observes large public
+Detailed hit/miss~39-44% lower and Value/Count~30-32% lower; finite controls remain
+within1.4%. Initial tiny Detailed+11-12% is not reproduced in confirmation, so no
+fixed tiny-case or default-PGO gain is claimed. No additional package matrix.
+[Public/codegen/raw evidence](bench/Experiments/NativeSelectorOrder-20261020/README.md).
+
 The corrected immutable Core/PythonRe **scalar.112** is qualified in its
 [handoff](artifacts/core-python-scalar112-20261019/HANDOFF.md). The changed generic
 Python EOF path has the separate current-source public pair below; no new
