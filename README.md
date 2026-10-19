@@ -1,11 +1,15 @@
 # Lokad.Utf8Regex
 
-Private **Core/PythonRe 0.4.0-scalar.109** is frozen for qualification from
-C# source025b6ffa. Its simplification batch passes source CI on Windows/Linux;
-exact-package consumer/platform and current cost gates are pending. The
-[delivery predeclaration](artifacts/core-python-scalar109-20261019/PREDECLARED.md)
-defines acceptance. Earlier qualified108 and older bytes remain immutable.
-No publication, consumer pin change or PCRE109 is designated.
+Private **Core/PythonRe 0.4.0-scalar.109**, producer05044852/C#025b6ffa, passes
+same-byte Windows/Linux suites, unchanged Awk/Lython public assertions, oracles
+and exact package/loaded/member/symbol checks. Source CI is green on both platforms.
+Four finite invocation controls, strict scalar UTF8, captures and lifetimes retain
+their declared scope; coarse construction bytes/depth and Count work are versioned.
+[Handoff](artifacts/core-python-scalar109-20261019/HANDOFF.md),
+[consume](artifacts/core-python-scalar109-20261019/CONSUMING.md) and
+[current exact-package costs](artifacts/core-python-scalar109-20261019/vm-cost/RESULT.md)
+record acceptance and exclusions. Earlier candidates stay immutable. No publication,
+consumer pin change, adoption or PCRE109 is designated; full R06/R07/R08/R10 stays open.
 
 Private **Core/PythonRe0.4.0-scalar.108**, clean producer92a5a907, passes
 same-byte Windows/Linux package suites and unchanged original Awk/Lython public

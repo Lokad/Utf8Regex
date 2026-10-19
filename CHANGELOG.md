@@ -1,11 +1,15 @@
 # Changelog
 
-## Private Core/PythonRe scalar.109 qualification in progress
+## Private Core/PythonRe scalar.109 consumer qualification
 
-Freeze the coherent simplification batch below from C#025b6ffa, whose source CI
-passes Windows/Linux. Exact-byte consumer/platform and current-package cost gates
-remain pending. Earlier candidates stay immutable; no publication, consumer pin
-change or PCRE109 is designated. [Acceptance](artifacts/core-python-scalar109-20261019/PREDECLARED.md).
+Producer05044852 freezes C#025b6ffa, whose source CI passes Windows/Linux. Same
+actual DLLs pass detached platform suites, original public consumer assertions,
+oracles and exact identity/member/symbol checks. One bounded current-package
+finite/token/materialization observation is closed with raw uncertainty retained.
+Earlier candidates stay immutable; no publication, consumer pin change, adoption
+or PCRE109. [Handoff](artifacts/core-python-scalar109-20261019/HANDOFF.md) records
+the qualified scope. Packaged READMEs retain their freeze-time pending text;
+the sidecar records completed acceptance without changing package bytes.
 
 ## Changes after scalar.108
 

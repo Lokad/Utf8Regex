@@ -1,6 +1,20 @@
 # Selected current-source performance
 
-The latest immutable Core/PythonRe **scalar.108** observation uses producer
+The latest immutable Core/PythonRe **scalar.109** observation uses producer
+`050448523e7a4446b898a04c11af3f0a42410e9f`, actual package DLLs and .NET10.0.12.
+For10K `(a)(b)` matches, Core Count was103.190us unlimited/133.385us finite,
+112B finite (observed1.293x). Python detailed was6.327ms/~3.03MB finite and6.544ms
+with a live token; UTF8 tuples3.835ms/~1.38MB finite and3.939ms with token.
+Cursor-first1.876us/2936B and cursor-ten6.661us/4736B finite. One bounded48-row /
+240-sample observation is closed.1K/5K managed spreads7.34x/1.59x and .NET tuple
+spreads1.599x/1.340x limit claims; selected10K managed spreads stay within1.065x.
+No universal overhead/scaling/parity, causal finite gain or package speedup claim.
+[Exact scope/raw evidence](artifacts/core-python-scalar109-20261019/vm-cost/RESULT.md).
+Source pairs and historical snapshots below retain their separate scope.
+
+## Earlier scalar.108 observation
+
+The immutable Core/PythonRe **scalar.108** observation uses producer
 `92a5a90751bca46eb00394c37589a5ae5b508586`, actual package DLLs and .NET10.0.12.
 For10K `(a)(b)` matches, Core Count was103.950us unlimited/166.200us finite,
 112B finite. Python detailed was6.295ms/~3.03MB finite and6.463ms with live token;
