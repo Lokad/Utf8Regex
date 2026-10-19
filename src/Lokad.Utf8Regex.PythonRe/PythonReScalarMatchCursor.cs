@@ -44,7 +44,6 @@ internal ref struct PythonReScalarMatchCursor
     internal readonly bool HasCoordinateMap => _state.HasCoordinateMap;
     [UnscopedRef] internal ref Utf8SliceInvocation WorkingInvocation => ref _state.WorkingInvocation;
     internal T[] AllocateResultArray<T>(int count) => _state.AllocateResultArray<T>(_input, count);
-    internal void ReleaseResultArray<T>(T[] array) => _state.ReleaseResultArray(array);
     internal void ReleaseResultsSince(ulong marker) => _state.ReleaseResultsSince(marker);
     internal void AddResult<T>(ref Utf8InvocationResultBuffer<T> buffer, T value) => _state.AddResult(_input, ref buffer, value);
     internal T[] CompleteResults<T>(ref Utf8InvocationResultBuffer<T> buffer) => _state.CompleteResults(_input, ref buffer);

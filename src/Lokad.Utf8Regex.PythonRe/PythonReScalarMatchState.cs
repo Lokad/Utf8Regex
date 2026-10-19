@@ -109,9 +109,6 @@ internal struct PythonReScalarMatchState
         catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
     }
 
-    internal void ReleaseResultArray<T>(T[] array)
-        => _results.ReleaseArray(array, ref _invocation);
-
     internal void ReleaseResultsSince(ulong marker)
         => _results.ReleaseSince(marker, ref _invocation);
 

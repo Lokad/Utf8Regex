@@ -63,12 +63,15 @@ public sealed class PythonReResultExtentTests
             var count = 0;
             do
             {
+                var marker = cursor.ResultReservation;
                 var groups = cursor.SnapshotGroups();
                 Assert.Equal(positioned + ArrayBytes<PythonReGroupData>(2), cursor.ReservedBytes);
                 Assert.Equal(2 * count, groups[1].StartOffsetInBytes);
-                cursor.ReleaseResultArray(groups);
+                var resultTraffic = cursor.WorkingInvocation.Budget.ResultBytes;
+                cursor.ReleaseResultsSince(marker);
                 Assert.Equal(positioned, cursor.ReservedBytes);
-                Assert.Equal(0UL, cursor.ResultReservation);
+                Assert.Equal(marker, cursor.ResultReservation);
+                Assert.Equal(resultTraffic, cursor.WorkingInvocation.Budget.ResultBytes);
                 count++;
             } while (cursor.MoveNext());
             Assert.Equal(1025, count);
