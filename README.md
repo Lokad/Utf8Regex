@@ -1,11 +1,15 @@
 # Lokad.Utf8Regex
 
-Private **Core/PythonRe 0.4.0-scalar.114** inputs correct an internal default
-argument rejected by the repository's source guard. Explicit count arguments
-preserve the measured Python method IL, matching semantics, checkpoints and
-resource admission. Exact-package qualification and current costs are pending.
-Immutable112 and older remain intact; no publication, external pin/adoption or
-PCRE114 package is designated.
+Private **Core/PythonRe 0.4.0-scalar.114**, producer01968d0f, is READY.
+The same actual DLLs pass Windows/Linux suites, original Awk/Lython assertions,
+Unicode fixtures and exact identity/member/symbol checks. This batches the Core
+selector and Python Detailed character-count reuse; scalar/capture, interruption,
+numeric resource and lifetime contracts remain. Source CI is green.
+Current actual-package costs include all four finite limits and token/cursor lanes;
+small-case tier transitions limit performance claims.
+[Handoff](artifacts/core-python-scalar114-20261020/HANDOFF.md), [consume](artifacts/core-python-scalar114-20261020/CONSUMING.md), [integrity](artifacts/core-python-scalar114-20261020/final-integrity.json).
+Immutable112/older and failed113 bytes remain intact. No publication, external
+pin/adoption or PCRE114; broader common-policy/performance goals remain open.
 
 Frozen **scalar.113**, producer1ed07281, failed the no-default-parameter source
 guard. Its attempted packages and logs remain preserved as failed evidence;

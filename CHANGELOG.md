@@ -1,15 +1,18 @@
 # Changelog
 
-## Private Core/PythonRe scalar.114 corrected inputs
+## Private Core/PythonRe scalar.114 qualification
 
 Remove the default value on the internal character-count parameter and pass null
 explicitly where a caller has no count. The repository's source guard stays intact.
 All1060 Python method bodies, signatures, locals, stack bounds and exception regions
 match the measured source candidate; only internal parameter default metadata is
 removed. Original checkpoints, numeric controls, captures and owned outputs remain.
-No repeated performance campaign. Exact114 package qualification/current costs are
-pending; failed113 bytes and READY112 remain unchanged. No publication, external
-adoption or PCRE114 package is designated.
+No repeated source performance campaign. Producer01968d0f qualifies the same actual
+DLLs on Windows/Linux, original public consumers, fixtures and exact provenance /
+member/symbol gates. One current-package observation records finite/token/cursor
+costs with explicit small-case tiering/noise limits. [Handoff](artifacts/core-python-scalar114-20261020/HANDOFF.md).
+Failed113 and older bytes remain intact. No publication, external adoption or
+PCRE114. Development metadata advances to115-dev without a C# change.
 
 ## Historical scalar.113 attempt: source guard rejected a default argument
 

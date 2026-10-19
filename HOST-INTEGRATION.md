@@ -1,6 +1,18 @@
 # Resource controls and host ownership
 
-The latest qualified private pair is **Core/PythonRe scalar.112**.
+The latest qualified private pair is **Core/PythonRe scalar.114**.
+Its [handoff](artifacts/core-python-scalar114-20261020/HANDOFF.md) binds same-byte
+Windows/Linux, original public consumers, fixtures and exact identities. It
+batches the accepted Core selector and Python projected-count reuse; the internal
+count argument is explicit, keeping the source guard intact and all1060 executable
+Python bodies identical to measured source. Public APIs, numeric resource controls,
+strict scalar captures, original interruption and owned result lifetimes retain
+scope. [Current package costs](artifacts/core-python-scalar114-20261020/vm-cost/RESULT.md)
+include finite/token/cursor lanes; smaller rows have tiering/short-sample limits.
+113 is preserved failed source-guard evidence,112/older remain immutable. No
+publication, external adoption or PCRE114; common/default/retention goals remain.
+
+The preceding qualified private pair is **Core/PythonRe scalar.112**.
 Its [handoff](artifacts/core-python-scalar112-20261019/HANDOFF.md) records same-byte
 Windows/Linux suites, original public consumers, oracles and exact identities.
 It corrects a demonstrated111 defect: generic Python Count and cursor EOF could

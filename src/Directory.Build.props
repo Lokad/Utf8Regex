@@ -10,8 +10,8 @@
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <Authors>Lokad</Authors>
     <Company>Lokad</Company>
-    <!-- Corrected Core/PythonRe114 inputs; failed113 bytes remain unchanged. -->
-    <Version>0.4.0-scalar.114</Version>
+    <!-- Next development identity; immutable114 and failed113 remain unchanged. -->
+    <Version>0.4.0-scalar.115-dev</Version>
     <AssemblyVersion>0.4.0</AssemblyVersion>
     <FileVersion>0.4.0</FileVersion>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>

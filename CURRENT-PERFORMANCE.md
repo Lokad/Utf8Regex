@@ -1,5 +1,16 @@
 # Selected current-source performance
 
+Latest immutable **Core/PythonRe scalar.114**, producer01968d0f, has a separate
+[actual-package default-tier observation](artifacts/core-python-scalar114-20261020/vm-cost/RESULT.md).
+For10K captures: Count99.050us unlimited/128.535us finite (observed1.298x),112B
+finite; Python Detailed5.766ms finite/5.941ms live-token; UTF8 tuples3.566ms/3.705ms.
+First cursor1.753us/2936B,ten6.184us/4736B finite. All48rows/240raw samples stay.
+Large Python result lanes exceed70ms with<=1.03x spread; Count/cursor samples are
+short,1K Detailed has tier transitions up to9.792x, and .NET tuple controls vary.
+This is current scoped operating-cost evidence, not settled warm qualification
+of every row, causal package speedup, universal finite overhead or CPython Status.
+No retiming rescue. Source FullOpts pairs below remain separate.
+
 A subsequent 113-dev Python Detailed change reuses the character count already
 projected for captures, preserving both original decode checkpoints and exact
 resource charges. One closed FullOpts public pair observes mixed-width Detailed
@@ -39,7 +50,7 @@ causal overhead/ceiling claim. FullOpts is not default PGO or exact-package cost
 No confirmation or tuning campaign follows the mandatory one-check correction.
 [Complete counterexamples, raw evidence and limits](artifacts/python-count-publication-20261019/RESULT.md).
 
-The latest immutable **Core/PythonRe scalar.111** observation uses producer
+The historical immutable **Core/PythonRe scalar.111** observation uses producer
 723d5581,C#10245c82,actual package DLLs and.NET10.0.12/default tiering.10K capture
 matches:Count101.510us unrestricted/255.510us finite,112B finite (2.517x observed);
 Python detailed6.086ms finite/6.242ms live-token,UTF8 tuples3.846ms/3.978ms. First
