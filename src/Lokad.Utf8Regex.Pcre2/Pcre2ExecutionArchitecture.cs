@@ -4405,4 +4405,3 @@ internal sealed class Pcre2LegacySyntaxTree : IPcre2SyntaxTree
 }
 
 internal readonly record struct Pcre2SyntaxNode(Pcre2SyntaxNodeKind Kind, int StartOffset, int Length);
-

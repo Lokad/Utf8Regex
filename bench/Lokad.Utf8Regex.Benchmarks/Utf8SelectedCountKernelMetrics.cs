@@ -1,4 +1,4 @@
-namespace Lokad.Utf8Regex.Internal.Execution;
+namespace Lokad.Utf8Regex.Benchmarks;
 
 // These values come from untimed semantic replays. Keeping counters out of the
 // production loops avoids perturbing the kernels that the benchmark times.

@@ -11,9 +11,6 @@ internal enum Utf8CompiledSearchMode : byte
     StructuralLinearAutomaton = 4,
     OrderedLiteralWindow = 5,
     SimplePattern = 6,
-    ByteSafeLinear = 7,
-    CompiledFallback = 8,
-    SearchGuidedFallback = 9,
     FallbackRegex = 10,
 }
 
@@ -40,10 +37,7 @@ internal static class Utf8CompiledSearchAnalyzer
 {
     public static Utf8CompiledSearchAnalysis Analyze(Utf8PreparedRegex regexPlan, bool preferCompiled)
     {
-        var canPromoteFallbackExecution = Utf8CompiledSearchAnalysisPolicy.CanPromoteFallbackExecution(regexPlan);
         var countPipeline = regexPlan.SearchPlan.CountOperation;
-        var firstMatchPipeline = regexPlan.SearchPlan.FirstMatchOperation;
-        var shouldKeepFallbackRegexOnCompiledHint = preferCompiled && ShouldKeepFallbackRegexOnCompiledHint(regexPlan);
 
         if (Utf8CompiledPatternBackendPolicy.SupportsLiteralCompiledAnalysis(regexPlan, countPipeline))
         {
@@ -90,55 +84,6 @@ internal static class Utf8CompiledSearchAnalyzer
             return Utf8CompiledPatternBackendPolicy.CreateSimplePatternInterpreterAnalysis(countPipeline);
         }
 
-        if (regexPlan.ExecutionKind == NativeExecutionKind.FallbackRegex && shouldKeepFallbackRegexOnCompiledHint)
-        {
-            return new Utf8CompiledSearchAnalysis(
-                Utf8CompiledSearchMode.FallbackRegex,
-                new Utf8CompiledEngine(Utf8CompiledEngineKind.FallbackRegex),
-                Utf8CompiledEmittedFamily.None,
-                CandidateSourceKind: countPipeline.CandidateSource.Kind);
-        }
-
-        if (regexPlan.ExecutionKind == NativeExecutionKind.FallbackRegex &&
-            canPromoteFallbackExecution &&
-            (regexPlan.StructuralVerifier.ByteSafeLazyDfaProgram.HasValue ||
-             regexPlan.StructuralVerifier.ByteSafeLinearProgram.HasValue) &&
-            Utf8ByteSafeLinearExecutor.HasCandidateSource(regexPlan))
-        {
-            return new Utf8CompiledSearchAnalysis(
-                Utf8CompiledSearchMode.ByteSafeLinear,
-                new Utf8CompiledEngine(Utf8CompiledEngineKind.ByteSafeLinear),
-                Utf8CompiledEmittedFamily.None,
-                CandidateSourceKind: countPipeline.CandidateSource.Kind);
-        }
-
-        if (regexPlan.ExecutionKind == NativeExecutionKind.FallbackRegex &&
-            preferCompiled &&
-            Utf8CompiledSearchAnalysisPolicy.CanUseCompiledFallback(regexPlan))
-        {
-            return new Utf8CompiledSearchAnalysis(
-                Utf8CompiledSearchMode.CompiledFallback,
-                new Utf8CompiledEngine(Utf8CompiledEngineKind.CompiledFallback),
-                Utf8CompiledEmittedFamily.None,
-                CandidateSourceKind: countPipeline.CandidateSource.Kind);
-        }
-
-        if (regexPlan.ExecutionKind == NativeExecutionKind.FallbackRegex &&
-            canPromoteFallbackExecution &&
-            !regexPlan.SearchPlan.HasAlternateLiteralPrefixOverlap &&
-            regexPlan.SearchPlan.FallbackCandidatePlans is { Length: > 0 } candidatePlans &&
-            (regexPlan.SearchPlan.CanGuideFallbackStarts ||
-             regexPlan.SearchPlan.FallbackStartTransform.HasValue ||
-             candidatePlans.Any(static plan => plan.YieldKind == Utf8StructuralSearchYieldKind.Window) ||
-             Utf8CompiledSearchAnalysisPolicy.IsSearchGuidedFallbackPipeline(countPipeline, firstMatchPipeline)))
-        {
-            return new Utf8CompiledSearchAnalysis(
-                Utf8CompiledSearchMode.SearchGuidedFallback,
-                new Utf8CompiledEngine(Utf8CompiledEngineKind.SearchGuidedFallback, Utf8CompiledExecutionBackend.InterpretedInstruction),
-                Utf8CompiledEmittedFamily.None,
-                countPipeline.CandidateSource.Kind);
-        }
-
         return new Utf8CompiledSearchAnalysis(
             Utf8CompiledSearchMode.FallbackRegex,
             new Utf8CompiledEngine(Utf8CompiledEngineKind.FallbackRegex),
@@ -153,17 +98,5 @@ internal static class Utf8CompiledSearchAnalyzer
         Utf8EmittedKernelKind.OrderedAsciiWhitespaceLiteralWindow => Utf8CompiledEmittedFamily.OrderedLiteralWindow,
         _ => Utf8CompiledEmittedFamily.None,
     };
-
-    private static bool ShouldKeepFallbackRegexOnCompiledHint(Utf8PreparedRegex regexPlan)
-    {
-        if (regexPlan.ExecutionKind != NativeExecutionKind.FallbackRegex ||
-            !regexPlan.FallbackDirectFamily.SupportsNativeFallbackRoute)
-        {
-            return false;
-        }
-
-        return string.IsNullOrEmpty(regexPlan.FallbackReason) ||
-            string.Equals(regexPlan.FallbackReason, "unsupported_loop", StringComparison.Ordinal);
-    }
 
 }

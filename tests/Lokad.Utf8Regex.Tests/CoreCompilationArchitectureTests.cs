@@ -62,20 +62,6 @@ public sealed class CoreCompilationArchitectureTests
         }
     }
 
-    [Fact]
-    public void CompilerFailuresAreRecordedWithoutThreadStaticSideChannels()
-    {
-        var sourceRoot = FindCoreSourceDirectory();
-        var linearSource = File.ReadAllText(Path.Combine(sourceRoot, "Internal", "Execution", "Utf8ByteSafeLinearVerifierProgram.cs"));
-        var dfaSource = File.ReadAllText(Path.Combine(sourceRoot, "Internal", "Execution", "Utf8ByteSafeLazyDfaVerifierProgram.cs"));
-
-        Assert.DoesNotContain("[ThreadStatic]", linearSource, StringComparison.Ordinal);
-        Assert.DoesNotContain("[ThreadStatic]", dfaSource, StringComparison.Ordinal);
-        Assert.DoesNotContain("GetCompileFailureKind", linearSource, StringComparison.Ordinal);
-        Assert.DoesNotContain("GetCompileFailureKind", dfaSource, StringComparison.Ordinal);
-        Assert.Contains("Utf8ByteSafeLinearCompileOutcome", linearSource, StringComparison.Ordinal);
-        Assert.Contains("Utf8ByteSafeLazyDfaCompileOutcome", dfaSource, StringComparison.Ordinal);
-    }
 
     [Fact]
     public void SpeculativePreparationDeclinesOversizedProductsBeforeAllocation()

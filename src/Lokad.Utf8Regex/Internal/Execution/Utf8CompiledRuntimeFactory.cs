@@ -16,11 +16,6 @@ internal static class Utf8CompiledRuntimeFactory
         budget.EnterDepth();
         try
         {
-            if (ShouldUseDirectScalarRuntime(compiledEngine.Kind, regexPlan, budget))
-            {
-                compiledEngine = new Utf8CompiledEngine(Utf8CompiledEngineKind.FallbackRegex);
-            }
-
             Utf8CompiledEngineRuntime result;
             if (compiledEngine.Kind is Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily)
             {
@@ -44,12 +39,6 @@ internal static class Utf8CompiledRuntimeFactory
                         => Utf8StructuralLinearAutomatonCompiledEngineRuntime.Create(regexPlan, verifierRuntime, (options & RegexOptions.Compiled) != 0),
                     Utf8CompiledEngineKind.SimplePatternInterpreter
                         => Utf8SimplePatternCompiledEngineRuntime.Create(regexPlan, verifierRuntime, (options & RegexOptions.Compiled) != 0),
-                    Utf8CompiledEngineKind.ByteSafeLinear
-                        => Utf8ByteSafeLinearCompiledEngineRuntime.Create(regexPlan, verifierRuntime),
-                    Utf8CompiledEngineKind.CompiledFallback
-                        => Utf8CompiledFallbackCompiledEngineRuntime.Create(regexPlan, verifierRuntime),
-                    Utf8CompiledEngineKind.SearchGuidedFallback
-                        => Utf8SearchGuidedFallbackCompiledEngineRuntime.Create(regexPlan, verifierRuntime),
                     _ => Utf8FallbackRegexCompiledEngineRuntime.Create(regexPlan, verifierRuntime),
                 };
             }
@@ -57,74 +46,5 @@ internal static class Utf8CompiledRuntimeFactory
             return result;
         }
         finally { budget.LeaveDepth(); }
-    }
-
-    // These are preparation hints for owned scalar execution. Preserve the
-    // existing reason gate and runtime choices; no subject or BCL engine is used.
-    private static bool ShouldUseDirectScalarRuntime(
-        Utf8CompiledEngineKind engineKind,
-        Utf8PreparedRegex regexPlan,
-        Utf8ConstructionBudget budget)
-    {
-        if (engineKind is not (Utf8CompiledEngineKind.ByteSafeLinear or Utf8CompiledEngineKind.CompiledFallback) ||
-            regexPlan.ExecutionKind != NativeExecutionKind.FallbackRegex ||
-            !string.Equals(regexPlan.FallbackReason, "unsupported_loop", StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        return HasWeakFallbackPrefilter(regexPlan) ||
-            engineKind == Utf8CompiledEngineKind.CompiledFallback &&
-            HasVariableWidthFixedDistanceCandidateOutsidePrefix(regexPlan, budget);
-    }
-
-    private static bool HasWeakFallbackPrefilter(Utf8PreparedRegex regexPlan)
-    {
-        return regexPlan.SearchPlan.LiteralUtf8 is { Length: > 0 and <= 3 } &&
-            regexPlan.SearchPlan.FallbackCandidatePlans is { Length: 1 } &&
-            !regexPlan.SearchPlan.HasWindowSearch &&
-            regexPlan.SearchPlan.RequiredWindowPrefilterPlans is not { Length: > 0 };
-    }
-
-    private static bool HasVariableWidthFixedDistanceCandidateOutsidePrefix(Utf8PreparedRegex regexPlan, Utf8ConstructionBudget budget)
-    {
-        var searchPlan = regexPlan.SearchPlan;
-        if (searchPlan.Kind is not (Utf8SearchKind.FixedDistanceAsciiLiteral or Utf8SearchKind.FixedDistanceAsciiChar) ||
-            searchPlan.ExactRequiredLength.HasValue ||
-            searchPlan.LiteralUtf8 is not { Length: > 0 } literal)
-        {
-            return false;
-        }
-
-        var prefixGuards = regexPlan.DeterministicGuards.PrefixGuards;
-        if (prefixGuards is not { Length: > 0 })
-        {
-            return true;
-        }
-
-        for (var i = 0; i < literal.Length; i++)
-        {
-            budget.ChargeWork(1);
-            // A guard's Int32 offset cannot certify an extent that wraps past
-            // the subject coordinate domain. Compare the borrowed facts widely.
-            var offset = (long)searchPlan.Distance + i;
-            var covered = false;
-            foreach (var guard in prefixGuards)
-            {
-                budget.ChargeWork(1);
-                if (guard.Offset == offset && guard.Literal == literal[i])
-                {
-                    covered = true;
-                    break;
-                }
-            }
-
-            if (!covered)
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 }

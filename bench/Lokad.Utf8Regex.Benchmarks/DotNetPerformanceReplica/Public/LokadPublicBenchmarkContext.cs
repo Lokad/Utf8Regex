@@ -183,7 +183,7 @@ internal sealed class LokadPublicBenchmarkContext
             return 0;
         }
 
-        return Utf8Regex.Inspection.DebugIsMatchFallbackViaSearchStarts(InputBytes) ? 1 : 0;
+        return Utf8FallbackReplay.IsMatch(Utf8Regex, InputBytes) ? 1 : 0;
     }
 
     public int ExecuteUtf8CompiledAfterValidationOnly()

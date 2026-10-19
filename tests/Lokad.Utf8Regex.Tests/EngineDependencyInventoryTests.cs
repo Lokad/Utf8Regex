@@ -48,7 +48,7 @@ public sealed class EngineDependencyInventoryTests
         Assert.Null(assembly.GetType("Lokad.Utf8Regex.Internal.FrontEnd.Utf8ConstructionClass"));
         foreach (var name in new[] { "AsciiStructuralIdentifierFamilyPlan", "AsciiStructuralTokenWindowPlan",
             "AsciiStructuralRepeatedSegmentPlan", "AsciiStructuralSuffixPart", "AsciiStructuralVerifierStep",
-            "AsciiStructuralLinearVerifierInstruction", "Utf8StructuralLinearInstruction", "Utf8ByteSafeLinearVerifierStep",
+            "AsciiStructuralLinearVerifierInstruction", "Utf8StructuralLinearInstruction",
             "Utf8DeterministicByteGuard" })
         {
             var type = assembly.GetType("Lokad.Utf8Regex.Internal.Execution." + name)!;
@@ -59,14 +59,6 @@ public sealed class EngineDependencyInventoryTests
                 Assert.DoesNotContain(constructor.GetParameters(), parameter => parameter.ParameterType == typeof(string));
         }
 
-        var linearStep = assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8ByteSafeLinearVerifierStep")!;
-        Assert.Null(linearStep.GetProperty("Set", flags));
-        Assert.Null(linearStep.GetProperty("ProjectedAsciiCharClass", flags));
-        Assert.DoesNotContain(linearStep.GetMethods(flags), method => method.Name is "MatchSet" or "LoopSet" or
-            "MatchProjectedAsciiSet" or "LoopProjectedAsciiSet");
-        var linearKinds = assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8ByteSafeLinearVerifierStepKind")!;
-        Assert.DoesNotContain(Enum.GetNames(linearKinds), name => name is "MatchSet" or "LoopSet" or
-            "MatchProjectedAsciiSet" or "LoopProjectedAsciiSet");
         var node = assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionNode")!;
         Assert.DoesNotContain(node.GetFields(flags), field => field.FieldType == typeof(string));
         Assert.Equal(typeof(object), node.GetProperty("Payload", flags)!.PropertyType);

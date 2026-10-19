@@ -1,21 +1,24 @@
+using Lokad.Utf8Regex.Internal;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 
-namespace Lokad.Utf8Regex.Internal.Execution;
+namespace Lokad.Utf8Regex.Benchmarks;
 
-internal sealed partial class Utf8VerifierRuntime
+internal static class Utf8CandidateVerificationReplay
 {
     // The subject is already strictly validated. Candidate ends can be conservative
     // byte bounds inside a scalar; they never shorten the assertion/matching context.
     // Scratch belongs to the caller's invocation and is released on every exit.
-    internal Utf8ExecutionLimitKind TryVerifyCandidate(ReadOnlySpan<byte> input,
+    internal static Utf8ExecutionLimitKind TryVerifyCandidate(
+        Utf8PreparedRegex prepared,ReadOnlySpan<byte> input,
         Utf8StructuralCandidate candidate, Utf8ValidationResult validation,
         ref Utf8SliceInvocation invocation, out Utf8ScalarVerificationResult result)
     {
         result = default;
         var breach = invocation.TryChargeInputStep();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
-        var program = _preparedRegex.ScalarProgram ??
+        var program = prepared.ScalarProgram ??
             throw new InvalidOperationException("Candidate verification requires the prepared scalar program.");
         var attempt = program.RightToLeft && candidate.EndIndex >= 0
             ? candidate.EndIndex : candidate.StartIndex;
@@ -45,10 +48,10 @@ internal sealed partial class Utf8VerifierRuntime
                 program.RightToLeft && candidate.EndIndex >= 0 && low != candidate.StartIndex)
                 return Utf8ExecutionLimitKind.None;
 
-            var plan = _preparedRegex.ScalarVerifier;
+            var plan = prepared.StructuralSearchPlan;
             if (plan.RequiresCandidateEndCoverage && candidate.EndIndex >= 0 && high < candidate.EndIndex)
                 return Utf8ExecutionLimitKind.None;
-            if (plan.RequiresTrailingAnchorCoverage)
+            if (plan.YieldKind == Utf8StructuralSearchYieldKind.Window)
             {
                 var trailingEnd = (long)candidate.TrailingIndex + candidate.TrailingMatchLength;
                 if (candidate.TrailingMatchLength <= 0 || candidate.TrailingIndex < low ||

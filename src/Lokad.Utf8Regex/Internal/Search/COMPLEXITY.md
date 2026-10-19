@@ -32,10 +32,9 @@ once per compiled regex; scan state is retained by operation cursors.
 | `Utf8AsciiDeterministicFixedWidthCountExecutor` | `O(1)` selection over retained fixed-width checks | `O(n * w)`, therefore `O(n)` for admitted `3 <= w <= 8` | The AVX2 dense-input tier keeps non-overlapping progress in `nextStart`; after four empty literal blocks it transfers once to a monotone scalar suffix instead of restarting the input. |
 
 Compositions may multiply candidate confirmation by the confirmed literal
-length, but no prepared kernel restarts a losing source at byte zero. Candidate
-portfolio merging is accounted for separately by `Utf8CandidatePortfolioCursor`:
-each source advances monotonically and total merge work is linear in the sum
-of source advances plus yielded candidates.
+length, but no prepared kernel restarts a losing source at byte zero. The general candidate portfolio replay now lives in benchmark tooling; it is not
+a shipped matching route. Production structural searches retain their monotone
+source cursors and native/scalar confirmation rules.
 
 Any new retained kernel must add a row here and an adversarial test or warm
 benchmark covering its declared worst-case input shape.

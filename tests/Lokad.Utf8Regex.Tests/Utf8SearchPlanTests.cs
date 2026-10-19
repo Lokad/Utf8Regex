@@ -319,9 +319,9 @@ public sealed class Utf8SearchPlanTests
         var structural = new Utf8Regex("ab[0-9][0-9]cd", RegexOptions.CultureInvariant);
 
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, literalFamily.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8CompiledEngineKind.SearchGuidedFallback, fallback.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, fallback.Inspection.CompiledEngineKind);
         Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, structural.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8CompiledExecutionBackend.InterpretedInstruction, fallback.Inspection.CompiledExecutionBackend);
+        Assert.Equal(Utf8CompiledExecutionBackend.Legacy, fallback.Inspection.CompiledExecutionBackend);
         Assert.Equal(Utf8CompiledExecutionBackend.EmittedInstruction, structural.Inspection.CompiledExecutionBackend);
     }
 
@@ -339,7 +339,7 @@ public sealed class Utf8SearchPlanTests
         var orderedWindowAnalysis = Utf8CompiledSearchAnalyzer.Analyze(orderedWindow.Inspection.PreparedRegex, preferCompiled: true);
 
         Assert.Equal(Utf8CompiledSearchMode.LiteralFamily, literalAnalysis.Mode);
-        Assert.Equal(Utf8CompiledSearchMode.CompiledFallback, fallbackAnalysis.Mode);
+        Assert.Equal(Utf8CompiledSearchMode.FallbackRegex, fallbackAnalysis.Mode);
         Assert.Equal(Utf8CompiledSearchMode.StructuralIdentifierFamily, identifierAnalysis.Mode);
         Assert.Equal(Utf8CompiledEmittedFamily.UpperWordIdentifier, identifierAnalysis.EmittedFamily);
         Assert.Equal(Utf8CompiledSearchMode.OrderedLiteralWindow, orderedWindowAnalysis.Mode);
@@ -428,7 +428,7 @@ public sealed class Utf8SearchPlanTests
         Assert.Equal(Utf8CandidateSearchKind.PreparedSearcher, literalFamily.Inspection.SearchPlan.NativeCandidateSource.Kind);
         Assert.Equal(Utf8CandidateSearchKind.StructuralSearchSet, fallback.SearchPlan.FallbackCandidateSource.Kind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, Utf8CompiledEngineSelector.Select(literalFamily.Inspection.PreparedRegex).Kind);
-        Assert.Equal(Utf8CompiledEngineKind.SearchGuidedFallback, Utf8CompiledEngineSelector.Select(fallback).Kind);
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, Utf8CompiledEngineSelector.Select(fallback).Kind);
         Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, Utf8CompiledEngineSelector.Select(structural).Kind);
         Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, Utf8CompiledEngineSelector.Select(orderedWindow).Kind);
     }
@@ -547,12 +547,10 @@ public sealed class Utf8SearchPlanTests
         var miss = Encoding.UTF8.GetBytes("zzza123czzz");
 
         Assert.False(regex.Inspection.PreparedRegex.SearchPlan.FirstMatchOperation.Projection.HasValue);
-        var runtime = Utf8CompiledRuntimeFactory.Create(new(Utf8CompiledEngineKind.SearchGuidedFallback,
-            Utf8CompiledExecutionBackend.EmittedInstruction), analysis, verifierRuntime, RegexOptions.CultureInvariant);
-        Assert.True(runtime.IsMatch(hit, Utf8Validation.Validate(hit), Utf8ExecutionDeadline.Infinite));
-        Assert.Equal(1, runtime.Count(hit, Utf8Validation.Validate(hit), Utf8ExecutionDeadline.Infinite));
-        Assert.False(runtime.IsMatch(miss, Utf8Validation.Validate(miss), Utf8ExecutionDeadline.Infinite));
-        Assert.Equal(0, runtime.Count(miss, Utf8Validation.Validate(miss), Utf8ExecutionDeadline.Infinite));
+        Assert.True(regex.IsMatch(hit));
+        Assert.Equal(1, regex.Count(hit));
+        Assert.False(regex.IsMatch(miss));
+        Assert.Equal(0, regex.Count(miss));
         Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifierRuntime);
     }
 
@@ -641,8 +639,7 @@ public sealed class Utf8SearchPlanTests
         Assert.Equal(NativeExecutionKind.FallbackRegex, analysis.ExecutionKind);
         Assert.Equal(Utf8SearchKind.FixedDistanceAsciiSets, analysis.SearchPlan.Kind);
         Assert.False(analysis.SearchPlan.HasWindowSearch);
-        Assert.True(Utf8ByteSafeInterpreterExecutor.CanExecute(analysis));
-        Assert.Equal(Utf8CompiledEngineKind.ByteSafeLinear, Utf8CompiledEngineSelector.Select(analysis).Kind);
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, Utf8CompiledEngineSelector.Select(analysis).Kind);
         Assert.True(analysis.SearchPlan.HasFallbackCandidates);
         Assert.True(analysis.StructuralSearchPlan.HasValue);
         Assert.Equal(Utf8StructuralSearchYieldKind.Start, analysis.StructuralSearchPlan.YieldKind);
@@ -670,8 +667,7 @@ public sealed class Utf8SearchPlanTests
         var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.None);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, analysis.ExecutionKind);
-        Assert.True(Utf8ByteSafeInterpreterExecutor.CanExecute(analysis));
-        Assert.Equal(Utf8CompiledEngineKind.ByteSafeLinear, Utf8CompiledEngineSelector.Select(analysis).Kind);
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, Utf8CompiledEngineSelector.Select(analysis).Kind);
     }
 
     [Fact]
@@ -924,84 +920,8 @@ public sealed class Utf8SearchPlanTests
         Assert.False(plan.TryFindNextCandidate(input, ref state, out _));
     }
 
-    [Fact]
-    public void CandidatePortfolioCursorMergesSourcesByStartThenEnd()
-    {
-        var searcher = new PreparedSearcher(
-            new PreparedSubstringSearch(Encoding.UTF8.GetBytes("a"), ignoreCase: false),
-            ignoreCase: false);
-        var plans = new[]
-        {
-            Utf8StructuralSearchPlan.CreateStartPlan(searcher, exactLength: 5),
-            Utf8StructuralSearchPlan.CreateStartPlan(searcher, exactLength: 4),
-        };
-        var input = Encoding.UTF8.GetBytes("a---a----");
 
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
-        using var cursor = new Utf8CandidatePortfolioCursor(plans, input, 0, ref invocation);
 
-        Assert.True(cursor.TryGetNext(out var first));
-        Assert.Equal(0, first.StartIndex);
-        Assert.Equal(4, first.EndIndex);
-        Assert.True(cursor.TryGetNext(out var second));
-        Assert.Equal(0, second.StartIndex);
-        Assert.Equal(5, second.EndIndex);
-    }
-
-    [Fact]
-    public void CandidatePortfolioCursorRetainsMonotoneSourceState()
-    {
-        var dense = new PreparedSearcher(
-            new PreparedSubstringSearch(Encoding.UTF8.GetBytes("a"), ignoreCase: false),
-            ignoreCase: false);
-        var far = new PreparedSearcher(
-            new PreparedSubstringSearch(Encoding.UTF8.GetBytes("z"), ignoreCase: false),
-            ignoreCase: false);
-        var plans = new[]
-        {
-            Utf8StructuralSearchPlan.CreateStartPlan(dense),
-            Utf8StructuralSearchPlan.CreateStartPlan(far),
-        };
-        var input = Encoding.UTF8.GetBytes(new string('a', 512) + "z");
-
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
-        using var cursor = new Utf8CandidatePortfolioCursor(plans, input, 0, ref invocation);
-        var count = 0;
-        while (cursor.TryGetNext(out _))
-        {
-            count++;
-        }
-
-        Assert.Equal(513, count);
-        Assert.Equal(count + plans.Length, cursor.SourceAdvanceCount);
-    }
-
-    [Fact]
-    public void TwoSourceCandidatePortfolioCursorUsesInlineStorage()
-    {
-        var first = new PreparedSearcher(
-            new PreparedSubstringSearch(Encoding.UTF8.GetBytes("a"), ignoreCase: false),
-            ignoreCase: false);
-        var second = new PreparedSearcher(
-            new PreparedSubstringSearch(Encoding.UTF8.GetBytes("z"), ignoreCase: false),
-            ignoreCase: false);
-        var plans = new[]
-        {
-            Utf8StructuralSearchPlan.CreateStartPlan(first),
-            Utf8StructuralSearchPlan.CreateStartPlan(second),
-        };
-        var input = Encoding.UTF8.GetBytes(new string('a', 128) + "z");
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
-        using var cursor = new Utf8CandidatePortfolioCursor(plans, input, 0, ref invocation);
-        var count = 0;
-        while (cursor.TryGetNext(out _))
-        {
-            count++;
-        }
-
-        Assert.Equal(129, count);
-        Assert.False(cursor.UsesPooledStorage);
-    }
 
     [Fact]
     public void StructuralWindowPlanCanApplyBoundaryStages()
@@ -1025,48 +945,7 @@ public sealed class Utf8SearchPlanTests
         Assert.False(plan.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out _));
     }
 
-    [Fact]
-    public void FallbackVerifierPlanRequiresTrailingAnchorCoverageForWindowPlans()
-    {
-        var windowSearch = new PreparedWindowSearch(
-            new PreparedSearcher(new PreparedMultiLiteralSearch([Encoding.UTF8.GetBytes("using var")], ignoreCase: false)),
-            new PreparedSearcher(new PreparedSubstringSearch(Encoding.UTF8.GetBytes("await"), ignoreCase: false), ignoreCase: false),
-            maxGap: 32,
-            sameLine: true);
-        var plan = Utf8StructuralSearchPlan.Create(
-            Utf8SearchKind.None,
-            0,
-            canGuideFallbackStarts: false,
-            default,
-            windowSearch,
-            null,
-            default);
 
-        var verifier = Utf8RegexPreparer.PrepareScalarVerifier(plan);
-
-        Assert.True(verifier.RequiresCandidateEndCoverage);
-        Assert.True(verifier.RequiresTrailingAnchorCoverage);
-        Assert.Equal(2, typeof(Utf8ScalarVerifierPlan).GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Length);
-    }
-
-    [Fact]
-    public void ScalarVerifierPlanKeepsEndCoverageForExactLengthStartPlans()
-    {
-        var plan = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(
-                                              Utf8SearchKind.ExactAsciiLiteral,
-                                              new Utf8SearchFactData
-                                              {
-                                                  LiteralUtf8 = Encoding.UTF8.GetBytes("foo"),
-                                                  CanGuideFallbackStarts = true,
-                                                  ExactRequiredLength = 5,
-                                              })).StructuralSearchPlan;
-
-        var verifier = Utf8RegexPreparer.PrepareScalarVerifier(plan);
-
-        Assert.True(verifier.RequiresCandidateEndCoverage);
-        Assert.False(verifier.RequiresTrailingAnchorCoverage);
-        Assert.Equal(2, typeof(Utf8ScalarVerifierPlan).GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Length);
-    }
 
     [Fact]
     public void ExactLengthFallbackSliceVerificationRequiresFullCandidateCoverage()
@@ -1111,62 +990,16 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void BoundedScalarVerificationReusesOnePreparedUnicodeProgram()
+    public void OffsetMatchingReusesOnePreparedUnicodeProgram()
     {
         var input = Encoding.UTF8.GetBytes("éfoofooéfoofoo");
-        var validation = Utf8Validation.Validate(input);
-        var plan = new Utf8ScalarVerifierPlan(
-            requiresCandidateEndCoverage: true,
-            requiresTrailingAnchorCoverage: false);
-        var prepared = Utf8VerifierTestPlans.WithScalarVerifier(
-            Utf8FrontEnd.Compile("(foo)\\1", RegexOptions.CultureInvariant), plan);
-        var verifier = Utf8VerifierRuntime.Create(prepared);
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
-        Assert.True(invocation.Ledger.TryReserve(7));
-
-        Assert.Equal(Utf8ExecutionLimitKind.None, verifier.TryVerifyCandidate(
-            input,
-            Utf8StructuralCandidate.Start(2, 8, 6, 0),
-            validation,
-            ref invocation,
-            out var first));
-        Assert.True(first.Success);
-        var spent = invocation.Budget.Steps;
-        Assert.Equal(Utf8ExecutionLimitKind.None, verifier.TryVerifyCandidate(
-            input,
-            Utf8StructuralCandidate.Start(10, 16, 6, 0),
-            validation,
-            ref invocation,
-            out var second));
-
-        Assert.True(second.Success);
-        Assert.True(invocation.Budget.Steps > spent);
-        Assert.Equal(7ul, invocation.Ledger.ReservedBytes);
-        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
-        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(verifier);
-        Assert.Equal(2, first.IndexInBytes);
-        Assert.Equal(10, second.IndexInBytes);
+        var regex = new Utf8Regex("(foo)\\1", RegexOptions.CultureInvariant);
+        var first = regex.Match(input);
+        var second = regex.MatchFromUtf16Offset(input, first.IndexInUtf16 + first.LengthInUtf16);
+        Assert.Equal((2, 6), (first.IndexInBytes, first.LengthInBytes));
+        Assert.Equal((10, 6), (second.IndexInBytes, second.LengthInBytes));
     }
 
-    [Fact]
-    public void FallbackVerifierPlanUsesBoundedSliceModeForMaxLengthStartPlans()
-    {
-        var plan = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(
-                                              Utf8SearchKind.ExactAsciiLiteral,
-                                              new Utf8SearchFactData
-                                              {
-                                                  LiteralUtf8 = Encoding.UTF8.GetBytes("foo"),
-                                                  CanGuideFallbackStarts = true,
-                                                  MaxPossibleLength = 6,
-                                              })).StructuralSearchPlan;
-
-        var verifier = Utf8RegexPreparer.PrepareScalarVerifier(plan);
-
-        Assert.True(plan.ProducesBoundedCandidates);
-        Assert.False(verifier.RequiresCandidateEndCoverage);
-        Assert.False(verifier.RequiresTrailingAnchorCoverage);
-        Assert.Equal(2, typeof(Utf8ScalarVerifierPlan).GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Length);
-    }
 
     [Fact]
     public void AnalyzerCanExtractFiniteOrderedWindowGap()

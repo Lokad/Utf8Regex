@@ -369,7 +369,16 @@ internal static partial class Utf8ExecutionInterpreter
         Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
-        return Utf8ByteSafeLinearVerifierRunner.TryMatchPrefix(input, program, startIndex, budget, out matchedLength);
+        matchedLength = 0;
+        if (program is null || program.Instructions.Count == 0 || (uint)startIndex > (uint)input.Length)
+        {
+            budget.Step();
+            return false;
+        }
+        if (!Utf8ExecutionInterpreter.TryMatchProgramAt(input, program, 0, startIndex, budget, out var endIndex))
+            return false;
+        matchedLength = endIndex - startIndex;
+        return true;
     }
 
     public static bool TryMatchSimplePatternAt(

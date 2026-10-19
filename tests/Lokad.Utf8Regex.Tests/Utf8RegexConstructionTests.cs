@@ -297,11 +297,11 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal("unsupported_loop", regex.Inspection.FallbackReason);
-        Assert.Equal(Utf8CompiledEngineKind.SearchGuidedFallback, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
     }
 
     [Fact]
-    public void ConstructorQualifiesEscapedQuoteImportAliasWithoutByteSafeLinear()
+    public void ConstructorQualifiesEscapedQuoteImportAlias()
     {
         const string pattern = "^import\\s+(?<shared>shared\\s+)?\\\"(?<path>(\\.|[^\\\\\\\"]*))\\\".*$";
         var regex = new Utf8Regex(pattern, RegexOptions.Multiline);
@@ -310,14 +310,13 @@ public sealed class Utf8RegexConstructionTests
         // Escaped and unescaped quote spellings now share the owned grammar proof.
         Assert.Null(regex.Inspection.FallbackReason);
         Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount, regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
-        Assert.NotEqual(Utf8CompiledEngineKind.ByteSafeLinear, regex.Inspection.CompiledEngineKind);
         Assert.Equal(1, regex.Count("import \"😀\nx\"tail"u8));
         var path = regex.MatchDetailed("import \"😀\nx\"tail"u8).GetGroup("path");
         Assert.Equal((8, 6), (path.IndexInBytes, path.LengthInBytes));
     }
 
     [Fact]
-    public void ConstructorKeepsUnsupportedOptionFallbackPatternOffByteSafeLinear()
+    public void ConstructorKeepsNonBacktrackingScalarCaptures()
     {
         const string pattern = @"^\s*///(?<title>#.*)$";
         var regex = new Utf8Regex(pattern, RegexOptions.Multiline | RegexOptions.NonBacktracking);
@@ -325,6 +324,7 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal("unsupported_options", regex.Inspection.FallbackReason);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
+        Assert.Equal("#😀", regex.MatchDetailed("///#😀"u8).GetGroup("title").GetValueString());
     }
 
     [Fact]
@@ -1383,7 +1383,7 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void ConstructorKeepsCompiledFallbackForDirectImportCountFamily()
+    public void ConstructorRetainsCompiledDirectImportCountFamily()
     {
         var regex = new Utf8Regex("^import\\s+(?<shared>shared\\s+)?\"(?<path>(\\.|[^\\\\\"]*))\".*$", RegexOptions.Multiline | RegexOptions.Compiled);
 
@@ -1413,14 +1413,14 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void ConstructorCanSelectCompiledFallbackForLoopDrivenFallbackPattern()
+    public void CompiledHintPreservesScalarLoopOperations()
     {
         var baseline = new Utf8Regex("a.*b", RegexOptions.CultureInvariant);
         var compiled = new Utf8Regex("a.*b", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, compiled.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.SearchGuidedFallback, baseline.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8CompiledEngineKind.CompiledFallback, compiled.Inspection.CompiledEngineKind);
+        Assert.True(baseline.IsMatch("😀 a𐐀b"u8));
+        Assert.True(compiled.IsMatch("😀 a𐐀b"u8));
         Assert.Equal(baseline.IsMatch("zz a123b xx"u8), compiled.IsMatch("zz a123b xx"u8));
         Assert.Equal(baseline.Count("a1b a22b"u8), compiled.Count("a1b a22b"u8));
     }

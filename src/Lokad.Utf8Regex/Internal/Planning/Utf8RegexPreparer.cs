@@ -30,7 +30,6 @@ internal static class Utf8RegexPreparer
             var tree = Utf8ExecutionTreeLowerer.Lower(analyzedRegex.SemanticRegex);
             var program = Utf8ExecutionProgramLowerer.Lower(tree);
             var searchPlan = Utf8SearchPlan.Prepare(analyzedRegex.SearchFacts);
-            var deterministicAnchor = Utf8DeterministicAnchorSearch.Create(tree, searchPlan);
             var deterministicGuards = Utf8DeterministicVerifierGuards.Create(tree, searchPlan);
             var structuralSearchPlan = searchPlan.StructuralSearchPlan
                 .WithVerificationGuards(deterministicGuards);
@@ -41,14 +40,6 @@ internal static class Utf8RegexPreparer
                 structuralSearchPlan = Utf8StructuralSearchPlan.CreateStartPlan(searchPlan.PreparedSearcher);
             }
             var structuralVerifier = PrepareStructuralVerifier(analyzedRegex.StructuralIdentifierFamilyPlan);
-            if (!structuralVerifier.HasValue &&
-                analyzedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex &&
-                program is not null &&
-                Utf8DeterministicAnchorSearch.CanUseForByteSafeLinear(tree, deterministicAnchor, structuralSearchPlan))
-            {
-                structuralVerifier = PrepareByteSafeStructuralVerifier(tree, program, deterministicGuards);
-            }
-            var scalarVerifier = PrepareScalarVerifier(structuralSearchPlan);
 
             var structuralLinearProgram = Utf8StructuralLinearProgram.Create(
                 analyzedRegex.ExecutionKind,
@@ -110,9 +101,7 @@ internal static class Utf8RegexPreparer
                 scalarProgram,
                 operationPlans,
                 structuralSearchPlan,
-                deterministicAnchor,
                 deterministicGuards,
-                scalarVerifier,
                 structuralVerifier,
                 analyzedRegex.StructuralIdentifierFamilyPlan,
                 analyzedRegex.StructuralTokenWindowPlan,
@@ -134,36 +123,8 @@ internal static class Utf8RegexPreparer
         return structuralFamilyPlan.VerifierProgram.HasValue
             ? new Utf8StructuralVerifierPlan(
                 Utf8StructuralVerifierKind.AsciiStructuralProgram,
-                structuralFamilyPlan.VerifierProgram,
-                default,
-                default,
-                null,
-                default)
+                structuralFamilyPlan.VerifierProgram)
             : default;
     }
 
-    internal static Utf8StructuralVerifierPlan PrepareByteSafeStructuralVerifier(
-        Utf8ExecutionTree? tree,
-        Utf8ExecutionProgram program,
-        Utf8DeterministicVerifierGuards guards)
-    {
-        var linearOutcome = Utf8ByteSafeLinearVerifierProgram.Compile(tree);
-        var lazyDfaOutcome = Utf8ByteSafeLazyDfaVerifierProgram.Compile(linearOutcome.Program);
-        return new Utf8StructuralVerifierPlan(
-            lazyDfaOutcome.Succeeded
-                ? Utf8StructuralVerifierKind.ByteSafeLazyDfaProgram
-                : Utf8StructuralVerifierKind.ByteSafeLinearProgram,
-            default,
-            linearOutcome,
-            lazyDfaOutcome,
-            program,
-            guards);
-    }
-
-    internal static Utf8ScalarVerifierPlan PrepareScalarVerifier(Utf8StructuralSearchPlan structuralSearchPlan)
-    {
-        return new Utf8ScalarVerifierPlan(
-            structuralSearchPlan.RequiresCandidateEndCoverage,
-            structuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Window);
-    }
 }

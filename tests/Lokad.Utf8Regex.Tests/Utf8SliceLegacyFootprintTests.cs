@@ -48,8 +48,8 @@ public sealed class Utf8SliceLegacyFootprintTests
         Assert.Equal(expectNullTree, prepared.ExecutionTree is null);
         Assert.Equal(expectNullProgram, prepared.ExecutionProgram is null);
         Assert.Equal(expectedVerifierMode, regex.CollectIsMatchDiagnostics([]).FallbackVerifierMode);
-        Assert.Equal(expectEndCoverage, prepared.ScalarVerifier.RequiresCandidateEndCoverage);
-        Assert.Equal(expectTrailingCoverage, prepared.ScalarVerifier.RequiresTrailingAnchorCoverage);
+        Assert.Equal(expectEndCoverage, prepared.StructuralSearchPlan.RequiresCandidateEndCoverage);
+        Assert.Equal(expectTrailingCoverage, prepared.StructuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Window);
         Assert.Equal(expectedFamily, regex.Inspection.DebugFallbackDirectFamilyKind);
         Assert.Equal(expectNullLiteral, prepared.LiteralUtf8 is null);
         Assert.Equal(expectNullCaptureCatalog, prepared.SemanticRegex.CaptureCatalog is null);

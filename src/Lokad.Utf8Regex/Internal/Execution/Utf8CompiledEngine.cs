@@ -5,14 +5,11 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal enum Utf8CompiledEngineKind : byte
 {
     FallbackRegex = 0,
-    SearchGuidedFallback = 1,
-    ByteSafeLinear = 2,
     ExactLiteral = 3,
     LiteralFamily = 4,
     StructuralFamily = 5,
     SimplePatternInterpreter = 6,
     StructuralLinearAutomaton = 7,
-    CompiledFallback = 8,
     EmittedKernel = 9,
 }
 

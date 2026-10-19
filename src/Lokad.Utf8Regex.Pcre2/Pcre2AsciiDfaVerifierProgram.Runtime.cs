@@ -1,8 +1,11 @@
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal;
+using Lokad.Utf8Regex.Internal.Execution;
 using System.Threading;
 
-namespace Lokad.Utf8Regex.Internal.Execution;
+namespace Lokad.Utf8Regex.Pcre2;
 
-internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
+internal readonly partial struct Pcre2AsciiDfaVerifierProgram
 {
     public bool TryMatch(ReadOnlySpan<byte> input, int startIndex, out int matchedLength)
         => TryMatch(input, startIndex, Utf8ExecutionDeadline.Infinite, out matchedLength);
@@ -24,13 +27,13 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
         if (breach != Utf8ExecutionLimitKind.None || !HasValue || (uint)startIndex > (uint)input.Length) return false;
         breach = invocation.Budget.TryNoteDepth(1);
         if (breach != Utf8ExecutionLimitKind.None) return false;
-        if (RequiresBeginning && !Utf8ByteSafeAnchor.MatchesBeginning(input, startIndex, _beginningKind,
+        if (RequiresBeginning && !Pcre2AsciiDfaAnchor.MatchesBeginning(input, startIndex, _beginningKind,
             _beginningOptions, invocation.AnchorOriginByte >= 0 ? invocation.AnchorOriginByte : startIndex)) return false;
 
         var state = 0;
         var index = startIndex;
         var lastAcceptLength = _acceptingStates[state] && (!RequiresEnd ||
-            Utf8ByteSafeAnchor.MatchesEnd(input, index, _endKind, _endOptions)) ? 0 : -1;
+            Pcre2AsciiDfaAnchor.MatchesEnd(input, index, _endKind, _endOptions)) ? 0 : -1;
         while ((uint)index < (uint)input.Length)
         {
             if (((index - startIndex) & 63) == 0)
@@ -46,7 +49,7 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
             // Preserve the last valid accepting position when a greedy suffix
             // consumes a newline and then fails beyond an earlier line end.
             if (_acceptingStates[state] && (!RequiresEnd ||
-                Utf8ByteSafeAnchor.MatchesEnd(input, index, _endKind, _endOptions)))
+                Pcre2AsciiDfaAnchor.MatchesEnd(input, index, _endKind, _endOptions)))
                 lastAcceptLength = index - startIndex;
         }
         breach = invocation.TryChargeInputStep();

@@ -26,7 +26,9 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
             while (sourceNode.ScalarClass is null && sourceNode.ChildCount == 1) sourceNode = sourceNode.Child(0);
             var source = sourceNode.ScalarClass;
             Assert.NotNull(source);
-            var executionNode = Utf8DeterministicAnchorSearch.Unwrap(analysis.ExecutionTree.Root);
+            var executionNode = analysis.ExecutionTree.Root;
+            while (executionNode.Kind is Utf8ExecutionNodeKind.Capture or Utf8ExecutionNodeKind.Group && executionNode.Children.Count == 1)
+                executionNode = executionNode.Children[0];
             Assert.Same(source, executionNode.Payload);
             Assert.Equal(string.Empty, executionNode.Text);
             var atom = Assert.Single(analysis.ExecutionProgram.Instructions.Where(static instruction =>
@@ -37,7 +39,7 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
             {
                 var expected = accepted.Contains((char)value);
                 Assert.Equal(expected, atom.CharClass.Value.Contains((byte)value));
-                Assert.Equal(expected, Utf8ByteSafeLinearVerifierRunner.TryMatchPrefix([(byte)value],
+                Assert.Equal(expected, Utf8ExecutionInterpreter.TryMatchPrefix([(byte)value],
                     analysis.ExecutionProgram, 0, Utf8ExecutionDeadline.Infinite, out var length));
                 Assert.Equal(expected ? 1 : 0, length);
             }
@@ -48,10 +50,10 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
             instruction.Kind == Utf8ExecutionInstructionKind.Enter && instruction.NodeKind == Utf8ExecutionNodeKind.Loop));
         Assert.True(compact.CharClass.HasValue);
         Assert.Equal(string.Empty, compact.Text);
-        Assert.True(Utf8ByteSafeLinearVerifierRunner.TryMatchPrefix("ab"u8, dot.ExecutionProgram, 0,
+        Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix("ab"u8, dot.ExecutionProgram, 0,
             Utf8ExecutionDeadline.Infinite, out var consumed));
         Assert.Equal(2, consumed);
-        Assert.False(Utf8ByteSafeLinearVerifierRunner.TryMatchPrefix("😀"u8, dot.ExecutionProgram, 0,
+        Assert.False(Utf8ExecutionInterpreter.TryMatchPrefix("😀"u8, dot.ExecutionProgram, 0,
             Utf8ExecutionDeadline.Infinite, out consumed));
         Assert.Equal(0, consumed);
         Assert.Equal(4, new Utf8Regex("(?s:.{1,2})", RegexOptions.CultureInvariant).Match("😀"u8).LengthInBytes);
@@ -64,7 +66,7 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
         Assert.NotNull(emptyProgram);
         Assert.True(emptyProgram.Instructions[0].CharClass.HasValue);
         Assert.True(emptyProgram.Instructions[0].CharClass.Value.IsEmpty);
-        Assert.False(Utf8ByteSafeLinearVerifierRunner.TryMatchPrefix("a"u8, emptyProgram, 0,
+        Assert.False(Utf8ExecutionInterpreter.TryMatchPrefix("a"u8, emptyProgram, 0,
             Utf8ExecutionDeadline.Infinite, out _));
         var literal = Utf8ExecutionProgramLowerer.Lower(new(new(Utf8ExecutionNodeKind.One,
             RegexOptions.None, [], string.Empty, 'a', 0, 1, 1)));
@@ -76,7 +78,7 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
             instruction.Kind == Utf8ExecutionInstructionKind.Enter && instruction.NodeKind == Utf8ExecutionNodeKind.Loop));
         Assert.NotNull(unprovedClass.ScalarClass);
         Assert.Null(unprovedClass.CharClass);
-        Assert.False(Utf8ByteSafeLinearVerifierRunner.TryMatchPrefix("\0"u8, unproved.ExecutionProgram, 0,
+        Assert.False(Utf8ExecutionInterpreter.TryMatchPrefix("\0"u8, unproved.ExecutionProgram, 0,
             Utf8ExecutionDeadline.Infinite, out _));
     }
 

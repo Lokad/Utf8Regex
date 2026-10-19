@@ -22,8 +22,7 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
     public void CompleteStateCoversEveryFieldAndNoDiscardedImplementationSurvives()
     {
         Type[] types = [typeof(Utf8StructuralFamilyCompiledEngineRuntime), typeof(Utf8SimplePatternCompiledEngineRuntime),
-            typeof(Utf8StructuralLinearAutomatonCompiledEngineRuntime), typeof(Utf8ByteSafeLinearCompiledEngineRuntime),
-            typeof(Utf8SearchGuidedFallbackCompiledEngineRuntime), typeof(Utf8CompiledFallbackCompiledEngineRuntime),
+            typeof(Utf8StructuralLinearAutomatonCompiledEngineRuntime),
             typeof(Utf8FallbackRegexCompiledEngineRuntime), typeof(Utf8CompiledSymmetricLiteralWindowCounter),
             typeof(Utf8EmittedTokenFamilyMatcher)];
         foreach (var type in types)
@@ -35,12 +34,6 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
             Assert.Empty(type.GetConstructors(BindingFlags.Instance | BindingFlags.Public));
         }
         Assert.Null(typeof(Utf8Regex).Assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8NonLiteralCompiledEngineRuntime"));
-        var guided = typeof(Utf8SearchGuidedFallbackCompiledEngineRuntime);
-        Assert.Null(guided.GetField("_candidatePlans", BindingFlags.NonPublic | BindingFlags.Instance));
-        Assert.Null(guided.GetField("_backend", BindingFlags.NonPublic | BindingFlags.Instance));
-        Assert.Null(guided.GetField("_emittedBackend", BindingFlags.NonPublic | BindingFlags.Instance));
-        Assert.Null(typeof(Utf8Regex).Assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8EmittedSearchGuidedFallback"));
-        Assert.Null(typeof(Utf8Regex).Assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8SearchGuidedFallbackCompiledPolicy"));
         Assert.Single(typeof(Utf8StructuralLinearRuntime).GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
         foreach (var type in new[] { typeof(Utf8NoStructuralLinearRuntime), typeof(Utf8AsciiInstructionLinearRuntime), typeof(Utf8AsciiStructuralFamilyLinearRuntime) })
             Assert.Empty(type.GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
@@ -92,60 +85,13 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
         Assert.Equal(1, successes);
     }
 
-    [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
-    public void PreferenceScanChargesVisitedLiteralBytesAndGuardsAndPreservesTheirOrder(int shape)
-    {
-        var basePlan = Plan("abc");
-        var literal = "abcd"u8.ToArray();
-        Utf8DeterministicByteGuard[] guards = shape switch
-        {
-            0 => [],
-            1 => [new(3, (byte)'d'), new(2, (byte)'c'), new(1, (byte)'b'), new(0, (byte)'a')],
-            2 => [new(0, (byte)'a'), new(1, (byte)'X'), new(2, (byte)'c')],
-            _ => [new(0, (byte)'a'), new(0, (byte)'a'), new(1, (byte)'b'), new(2, (byte)'c'), new(3, (byte)'d')],
-        };
-        var search = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(Utf8SearchKind.FixedDistanceAsciiLiteral,
-            new Utf8SearchFactData { LiteralUtf8 = literal }));
-        var deterministic = new Utf8DeterministicVerifierGuards(guards, null, 0, null, 0, false);
-        var plan = WithSearch(basePlan, search, deterministic, basePlan.StructuralLinearProgram);
-        var original = guards.ToArray();
-        ulong steps = 0; var expected = guards.Length == 0;
-        if (guards.Length > 0)
-        {
-            for (var index = 0; index < literal.Length; index++)
-            {
-                steps++; var covered = false;
-                foreach (var guard in guards)
-                { steps++; if (guard.Offset == index && guard.Literal == literal[index]) { covered = true; break; } }
-                if (!covered) { expected = true; break; }
-            }
-        }
-        var method = typeof(Utf8CompiledRuntimeFactory).GetMethod("HasVariableWidthFixedDistanceCandidateOutsidePrefix", BindingFlags.NonPublic | BindingFlags.Static)!;
-        for (var allowance = 0ul; allowance <= steps; allowance++)
-        {
-            using var owner = new Utf8ConstructionScope(0, 128, 2 + allowance, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static v => new Box(v)); var checkpoint = owner.Budget.ReservedBytes;
-            var error = Record.Exception(() =>
-            {
-                try { Assert.Equal(expected, Assert.IsType<bool>(method.Invoke(null, [plan, owner.Budget]))); }
-                catch (TargetInvocationException wrapped) { ExceptionDispatchInfo.Capture(wrapped.InnerException!).Throw(); }
-            });
-            if (allowance < steps) Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps,
-                Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-            else Assert.Null(error);
-            Assert.Equal(2 + allowance, owner.Budget.WorkSteps); Assert.Equal(128ul, owner.Budget.ReservedBytes);
-            Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(17, parent.Value);
-            Assert.Equal(original, guards); Assert.Equal("abcd"u8.ToArray(), literal);
-        }
-    }
 
     private static Utf8PreparedRegex WithSearch(Utf8PreparedRegex p, Utf8SearchPlan search,
         Utf8DeterministicVerifierGuards guards, Utf8StructuralLinearProgram program) =>
         Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, NativeExecutionKind.FallbackRegex, p.ExecutionBackend,
             p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram,
             Utf8OperationMatchCursorPlans.Create(p.ExecutionProgram, search, program, p.SimplePatternPlan, p.StructuralSearchPlan, p.StructuralVerifier.AsciiProgram),
-            p.StructuralSearchPlan, p.DeterministicAnchor, guards, p.ScalarVerifier, p.StructuralVerifier, p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan,
+            p.StructuralSearchPlan, guards, p.StructuralVerifier, p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan,
             p.StructuralRepeatedSegmentPlan, p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan,
             p.LiteralUtf8, "unsupported_loop", p.FallbackDirectFamily);
 

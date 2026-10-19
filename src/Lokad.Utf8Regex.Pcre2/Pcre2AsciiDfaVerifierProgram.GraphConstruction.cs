@@ -1,25 +1,28 @@
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
-namespace Lokad.Utf8Regex.Internal.Execution;
+namespace Lokad.Utf8Regex.Pcre2;
 
-internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
+internal readonly partial struct Pcre2AsciiDfaVerifierProgram
 {
-    private sealed partial class Compiler
+    private sealed partial class Pcre2DfaCompiler
     {
-        private readonly record struct TransitionBucket(TransitionKey Key, Utf8ConstructionBuffer<int> Targets, int Ordinal);
+        private readonly record struct Pcre2DfaTransitionBucket(Pcre2DfaTransitionKey Key, Utf8ConstructionBuffer<int> Targets, int Ordinal);
 
-        private Utf8ByteSafeLazyDfaVerifierProgram BuildDfa(NfaGraph nfa, bool requiresBeginning, bool requiresEnd)
+        private Pcre2AsciiDfaVerifierProgram BuildDfa(Pcre2DfaNfaGraph nfa, bool requiresBeginning, bool requiresEnd)
         {
             using var scope = Utf8ConstructionScope.Enter();
             _budget.EnterDepth();
-            using var stateSets = Buffer<NfaStateSet>(false);
+            using var stateSets = Buffer<Pcre2DfaNfaStateSet>(false);
             using var accepting = Buffer<bool>(false);
             using var offsets = Buffer<int>(false);
             using var counts = Buffer<int>(false);
             using var sets = Buffer<AsciiCharClass>(false);
             using var targets = Buffer<int>(true);
-            var comparer = _budget.AllocateObject(_budget, static owner => new NfaStateSetComparer(owner));
-            using var stateMap = Utf8ConstructionMap<NfaStateSet, int>.Create(_budget, comparer);
+            var comparer = _budget.AllocateObject(_budget, static owner => new Pcre2DfaNfaStateSetComparer(owner));
+            using var stateMap = Utf8ConstructionMap<Pcre2DfaNfaStateSet, int>.Create(_budget, comparer);
             try
             {
                 var zero = 0;
@@ -39,8 +42,8 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
                 for (var next = 0; next < stateSets.Count; next++)
                 {
                     ChargeCompilationStep();
-                    using var bucketMap = Utf8ConstructionMap<TransitionKey, int>.Create(_budget, TransitionKeyComparer.Instance);
-                    using var buckets = Buffer<TransitionBucket>(false);
+                    using var bucketMap = Utf8ConstructionMap<Pcre2DfaTransitionKey, int>.Create(_budget, Pcre2DfaTransitionKeyComparer.Instance);
+                    using var buckets = Buffer<Pcre2DfaTransitionBucket>(false);
                     try
                     {
                         foreach (var stateId in stateSets[next].States)
@@ -79,14 +82,14 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
                                 if (!stateMap.TryGetValue(closure, out var targetIndex))
                                 {
                                     targetIndex = stateSets.Count;
-                                    if (targetIndex >= MaxDfaStates) throw new CompilationBudgetExceededException();
+                                    if (targetIndex >= MaxDfaStates) throw new Pcre2DfaCompilationBudgetExceededException();
                                     stateSets.Add(closure);
                                     adopted = true;
                                     _budget.ChargeWork(1); // Closing state-set walk.
                                     stateMap.Add(closure, targetIndex);
                                     accepting.Add(closure.Contains(nfa.AcceptState));
                                 }
-                                if (sets.Count >= MaxDfaTransitions) throw new CompilationBudgetExceededException();
+                                if (sets.Count >= MaxDfaTransitions) throw new Pcre2DfaCompilationBudgetExceededException();
                                 sets.Add(bucket.Key.Set);
                                 targets.Add(targetIndex);
                             }
@@ -95,7 +98,7 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
                     }
                     finally { foreach (var bucket in buckets) bucket.Targets.Dispose(); }
                 }
-                var program = new Utf8ByteSafeLazyDfaVerifierProgram(offsets.Take(), counts.Take(),
+                var program = new Pcre2AsciiDfaVerifierProgram(offsets.Take(), counts.Take(),
                     sets.Take(), targets.Take(), accepting.Take(), requiresBeginning, requiresEnd,
                     _beginningAnchor, _endAnchor);
                 scope.Complete();
@@ -108,7 +111,7 @@ internal readonly partial struct Utf8ByteSafeLazyDfaVerifierProgram
             }
         }
 
-        private NfaStateSet ComputeClosure(ReadOnlySpan<int> startStates, NfaGraph nfa)
+        private Pcre2DfaNfaStateSet ComputeClosure(ReadOnlySpan<int> startStates, Pcre2DfaNfaGraph nfa)
         {
             using var scope = Utf8ConstructionScope.Enter();
             using var pending = Buffer<int>(false);

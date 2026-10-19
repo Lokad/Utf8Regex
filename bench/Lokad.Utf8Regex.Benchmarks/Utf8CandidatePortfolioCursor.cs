@@ -1,8 +1,10 @@
+using Lokad.Utf8Regex.Internal;
+using Lokad.Utf8Regex.Internal.Execution;
 using System.Numerics;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
 
-namespace Lokad.Utf8Regex.Internal.Execution;
+namespace Lokad.Utf8Regex.Benchmarks;
 
 /// <summary>
 /// Invocation-local stable merge of structural candidate sources. Each source

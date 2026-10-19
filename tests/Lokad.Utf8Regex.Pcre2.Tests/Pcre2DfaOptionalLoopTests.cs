@@ -1,11 +1,12 @@
+using Lokad.Utf8Regex.Internal;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 
-namespace Lokad.Utf8Regex.Tests;
+namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-public sealed class Utf8DfaOptionalLoopTests
+public sealed class Pcre2DfaOptionalLoopTests
 {
     [Theory]
     [InlineData(Utf8ResourceLimitKind.ConstructionBytes)]
@@ -14,11 +15,11 @@ public sealed class Utf8DfaOptionalLoopTests
     [InlineData(Utf8ResourceLimitKind.ConstructionInstructionCapacity)]
     public void OptionalGraphDenialPreservesTheOriginalOwnerAndCallerProgram(Utf8ResourceLimitKind kind)
     {
-        var input = new Utf8ByteSafeLinearVerifierProgram([
-            Utf8ByteSafeLinearVerifierStep.LoopProgram([
-                Utf8ByteSafeLinearVerifierStep.LoopAsciiClass(AsciiCharClass.ForByte((byte)'a'), 1, -1),
-                Utf8ByteSafeLinearVerifierStep.MatchByte((byte)'b')], 0, 1),
-            Utf8ByteSafeLinearVerifierStep.Accept()]);
+        var input = new Pcre2AsciiDfaInput([
+            Pcre2AsciiDfaStep.LoopProgram([
+                Pcre2AsciiDfaStep.LoopAsciiClass(AsciiCharClass.ForByte((byte)'a'), 1, -1),
+                Pcre2AsciiDfaStep.MatchByte((byte)'b')], 0, 1),
+            Pcre2AsciiDfaStep.Accept()]);
         using var parent = new Utf8ConstructionScope(
             kind == Utf8ResourceLimitKind.ConstructionInstructionCapacity ? 0 : Utf8ConstructionScope.DefaultInstructionCapacity,
             kind == Utf8ResourceLimitKind.ConstructionBytes ? 48 : Utf8ConstructionScope.DefaultBufferBytes,
@@ -26,7 +27,7 @@ public sealed class Utf8DfaOptionalLoopTests
             kind == Utf8ResourceLimitKind.ConstructionDepth ? 0 : Utf8ConstructionScope.DefaultDepth);
         var loan = parent.Budget.AllocateArray<byte>(1, false);
         loan[0] = 37;
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8ByteSafeLazyDfaVerifierProgram.Compile(input));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Pcre2AsciiDfaVerifierProgram.Compile(input));
         Assert.Equal(kind, failure.ResourceKind);
         Assert.Equal(48ul, parent.Budget.ReservedBytes);
         Assert.Equal(0ul, parent.Budget.Reserved);
@@ -40,15 +41,15 @@ public sealed class Utf8DfaOptionalLoopTests
     [InlineData(false)] [InlineData(true)]
     public void OptionalBodyKeepsItsInnerSingleIterationBound(bool prefix)
     {
-        var atom = Utf8ByteSafeLinearVerifierStep.LoopAsciiClass(AsciiCharClass.ForByte((byte)'a'), 0, 1);
-        Utf8ByteSafeLinearVerifierStep[] body = prefix
-            ? [Utf8ByteSafeLinearVerifierStep.MatchByte((byte)'x'), atom, Utf8ByteSafeLinearVerifierStep.MatchByte((byte)'b')]
-            : [atom, Utf8ByteSafeLinearVerifierStep.MatchByte((byte)'b')];
-        var outcome = Utf8ByteSafeLazyDfaVerifierProgram.Compile(new([
-            Utf8ByteSafeLinearVerifierStep.RequireBeginning(RegexOptions.None),
-            Utf8ByteSafeLinearVerifierStep.LoopProgram(body, 0, 1),
-            Utf8ByteSafeLinearVerifierStep.RequireEnd(RegexOptions.None),
-            Utf8ByteSafeLinearVerifierStep.Accept()]));
+        var atom = Pcre2AsciiDfaStep.LoopAsciiClass(AsciiCharClass.ForByte((byte)'a'), 0, 1);
+        Pcre2AsciiDfaStep[] body = prefix
+            ? [Pcre2AsciiDfaStep.MatchByte((byte)'x'), atom, Pcre2AsciiDfaStep.MatchByte((byte)'b')]
+            : [atom, Pcre2AsciiDfaStep.MatchByte((byte)'b')];
+        var outcome = Pcre2AsciiDfaVerifierProgram.Compile(new([
+            Pcre2AsciiDfaStep.RequireBeginning(RegexOptions.None),
+            Pcre2AsciiDfaStep.LoopProgram(body, 0, 1),
+            Pcre2AsciiDfaStep.RequireEnd(RegexOptions.None),
+            Pcre2AsciiDfaStep.Accept()]));
         Assert.True(outcome.Succeeded);
         var oracle = new Regex("^(?:" + (prefix ? "x" : "") + "a?b)?$", RegexOptions.CultureInvariant);
         foreach (var text in new[] { "", "a", "b", "ab", "aab", "aaab", "xa", "xb", "xab", "xaab", "xaaab", "\n", "ab\n", "😀" })
@@ -66,23 +67,23 @@ public sealed class Utf8DfaOptionalLoopTests
     [InlineData(true, false, int.MaxValue)] [InlineData(true, true, int.MaxValue)]
     public void OptionalUnboundedBodiesCompileWithoutPrematureAcceptance(bool repeatedBody, bool prefix, int maximum)
     {
-        var a = Utf8ByteSafeLinearVerifierStep.LoopAsciiClass(AsciiCharClass.ForByte((byte)'a'), 1, maximum);
+        var a = Pcre2AsciiDfaStep.LoopAsciiClass(AsciiCharClass.ForByte((byte)'a'), 1, maximum);
         var body = repeatedBody
-            ? Utf8ByteSafeLinearVerifierStep.LoopProgram([a,
-                Utf8ByteSafeLinearVerifierStep.LoopAsciiClass(AsciiCharClass.ForByte((byte)'b'), 1, maximum)], 1, maximum)
+            ? Pcre2AsciiDfaStep.LoopProgram([a,
+                Pcre2AsciiDfaStep.LoopAsciiClass(AsciiCharClass.ForByte((byte)'b'), 1, maximum)], 1, maximum)
             : a;
         var suffix = (byte)(repeatedBody ? 'c' : 'b');
-        Utf8ByteSafeLinearVerifierStep[] optionalBody = prefix
-            ? [Utf8ByteSafeLinearVerifierStep.MatchByte((byte)'x'), body, Utf8ByteSafeLinearVerifierStep.MatchByte(suffix)]
-            : [body, Utf8ByteSafeLinearVerifierStep.MatchByte(suffix)];
-        var linear = new Utf8ByteSafeLinearVerifierProgram([
-            Utf8ByteSafeLinearVerifierStep.RequireBeginning(RegexOptions.None),
-            Utf8ByteSafeLinearVerifierStep.LoopProgram(optionalBody, 0, 1),
-            Utf8ByteSafeLinearVerifierStep.RequireEnd(RegexOptions.None),
-            Utf8ByteSafeLinearVerifierStep.Accept()]);
+        Pcre2AsciiDfaStep[] optionalBody = prefix
+            ? [Pcre2AsciiDfaStep.MatchByte((byte)'x'), body, Pcre2AsciiDfaStep.MatchByte(suffix)]
+            : [body, Pcre2AsciiDfaStep.MatchByte(suffix)];
+        var linear = new Pcre2AsciiDfaInput([
+            Pcre2AsciiDfaStep.RequireBeginning(RegexOptions.None),
+            Pcre2AsciiDfaStep.LoopProgram(optionalBody, 0, 1),
+            Pcre2AsciiDfaStep.RequireEnd(RegexOptions.None),
+            Pcre2AsciiDfaStep.Accept()]);
         var pattern = "^(?:" + (prefix ? "x" : "") + (repeatedBody ? "(?:a+b+)+c" : "a+b") + ")?$";
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
-        var outcome = Utf8ByteSafeLazyDfaVerifierProgram.Compile(linear);
+        var outcome = Pcre2AsciiDfaVerifierProgram.Compile(linear);
         Assert.True(outcome.Succeeded);
         foreach (var text in new[] { "", "a", "b", "c", "ab", "aab", "aaab", "abab", "abbabb", "abc", "aabc",
             "ababc", "ababcc", "xab", "xaab", "xabab", "xabc", "xaabc", "xababc", "xababcc", "\n", "ab\n", "ab😀", "😀" })
@@ -98,9 +99,9 @@ public sealed class Utf8DfaOptionalLoopTests
     [InlineData(-1)] [InlineData(int.MaxValue)]
     public void AlternativeGraphsRespectBothOpenEndedSentinels(int maximum)
     {
-        var outcome = Utf8ByteSafeLazyDfaVerifierProgram.Compile(new([
-            Utf8ByteSafeLinearVerifierStep.LoopAnyText(["ab"u8.ToArray(), "cd"u8.ToArray()], 1, maximum),
-            Utf8ByteSafeLinearVerifierStep.Accept()]));
+        var outcome = Pcre2AsciiDfaVerifierProgram.Compile(new([
+            Pcre2AsciiDfaStep.LoopAnyText(["ab"u8.ToArray(), "cd"u8.ToArray()], 1, maximum),
+            Pcre2AsciiDfaStep.Accept()]));
         Assert.True(outcome.Succeeded);
         foreach (var text in new[] { "", "ab", "cd", "abcd", "ababcd", "abx", "ax", "😀" })
         {

@@ -22,28 +22,6 @@ internal static class Utf8CompiledSearchAnalysisPolicy
                 Utf8SearchPortfolioKind.AsciiIgnoreCaseFamily;
     }
 
-    public static bool IsSearchGuidedFallbackPipeline(
-        Utf8SearchOperationPlan countPipeline,
-        Utf8SearchOperationPlan firstMatchPipeline)
-    {
-        if (countPipeline.Confirmation.Kind != Utf8ConfirmationKind.ScalarVerifier ||
-            firstMatchPipeline.Confirmation.Kind != Utf8ConfirmationKind.ScalarVerifier)
-        {
-            return false;
-        }
-
-        return countPipeline.CandidateSource.Kind == Utf8CandidateSearchKind.StructuralSearchSet &&
-            firstMatchPipeline.CandidateSource.Kind == Utf8CandidateSearchKind.StructuralSearchSet &&
-            countPipeline.Kind is
-                Utf8SearchOperationKind.SearchThenConfirm or
-                Utf8SearchOperationKind.PrefilterThenConfirm;
-    }
-
-    public static bool CanPromoteFallbackExecution(Utf8PreparedRegex regexPlan)
-    {
-        return !string.Equals(regexPlan.FallbackReason, "unsupported_options", StringComparison.Ordinal);
-    }
-
     public static bool CanUseStructuralLinearSimplePattern(Utf8PreparedRegex regexPlan)
     {
         if (regexPlan.SimplePatternPlan.IsStartAnchored ||
@@ -56,16 +34,6 @@ internal static class Utf8CompiledSearchAnalysisPolicy
         return regexPlan.SimplePatternPlan.RunPlan.HasValue ||
             regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern ||
             regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiLiteralFamilyRun;
-    }
-
-    public static bool CanUseCompiledFallback(Utf8PreparedRegex regexPlan)
-    {
-        return regexPlan.ExecutionProgram is not null &&
-            regexPlan.SearchPlan.FallbackCandidatePlans is { Length: > 0 } &&
-            !regexPlan.ScalarVerifier.RequiresCandidateEndCoverage &&
-            !regexPlan.ScalarVerifier.RequiresTrailingAnchorCoverage &&
-            string.Equals(regexPlan.FallbackReason, "unsupported_loop", StringComparison.Ordinal) &&
-            !HasBackreferenceInstructions(regexPlan.ExecutionProgram);
     }
 
     internal static bool HasBackreferenceInstructions(Utf8ExecutionProgram? executionProgram)

@@ -553,11 +553,6 @@ public sealed partial class Utf8Regex
 
     private Utf8ValidationResult GetWellFormedOnlyValidation(ReadOnlySpan<byte> input)
     {
-        if (_compiledEngineRuntime is Utf8CompiledFallbackCompiledEngineRuntime or Utf8SearchGuidedFallbackCompiledEngineRuntime)
-        {
-            return Utf8InputAnalyzer.ValidateOnly(input);
-        }
-
         if (!TryUseAsciiInputValidationShortcut(input) &&
             _compiledEngineRuntime.SupportsWellFormedOnlyCount &&
             Utf8.IsValid(input))
@@ -775,45 +770,8 @@ public sealed partial class Utf8Regex
         return _preparedRegex.SearchPlan.HasFallbackCandidates;
     }
 
-    private bool IsMatchFallbackViaSearchStarts(ReadOnlySpan<byte> input)
-    {
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, CancellationToken.None);
-        var validation = Utf8Validation.Validate(input, ref invocation);
-        invocation.AnchorOriginByte = 0;
-        if (!Utf8FallbackSearchExecutor.TryFindNextVerifiedMatch(_preparedRegex.SearchPlan.FallbackCandidatePlans ?? [], _verifierRuntime, input, validation, 0, ref invocation, out _, out _))
-        {
-            return false;
-        }
 
-        Utf8SearchDiagnosticsSession.Current?.CountVerifierMatch();
-        return true;
-    }
 
-    private int CountFallbackViaSearchStarts(ReadOnlySpan<byte> input)
-    {
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, CancellationToken.None);
-        var validation = Utf8Validation.Validate(input, ref invocation);
-        invocation.AnchorOriginByte = 0;
-        var count = 0;
-        var startIndex = 0;
-        while ((uint)startIndex <= (uint)input.Length &&
-               Utf8FallbackSearchExecutor.TryFindNextVerifiedMatch(_preparedRegex.SearchPlan.FallbackCandidatePlans ?? [], _verifierRuntime, input, validation, startIndex, ref invocation, out _, out var verification))
-        {
-            Utf8SearchDiagnosticsSession.Current?.CountVerifierMatch();
-            count++;
-            invocation.AnchorOriginByte = verification.IndexInBytes + verification.LengthInBytes;
-            startIndex = verification.LengthInBytes == 0
-                ? Utf8SliceRunner.AdvancePastScalar(input, verification.IndexInBytes, false)
-                : verification.IndexInBytes + verification.LengthInBytes;
-        }
-
-        return count;
-    }
-
-    private int CountFallbackCandidates(ReadOnlySpan<byte> input, bool requireScalarBoundary)
-    {
-        return Utf8SearchStrategyExecutor.CountFallbackCandidates(_preparedRegex.SearchPlan, input, requireScalarBoundary);
-    }
 
     private int FindFirstLiteralViaInterpreter(ReadOnlySpan<byte> input, bool ignoreCase, Utf8ExecutionDeadline budget)
     {

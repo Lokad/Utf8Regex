@@ -126,7 +126,7 @@ public sealed class Utf8AsciiStructuralRuntimeTests
         var program = new AsciiStructuralVerifierProgram(
             [AsciiStructuralVerifierStep.ConsumeSeparator(AsciiCharClass.ForByte((byte)'a'), 1), AsciiStructuralVerifierStep.Accept()]);
         var plan = new Utf8StructuralVerifierPlan(Utf8StructuralVerifierKind.AsciiStructuralProgram,
-            program, default, default, null, default);
+            program);
         var runtime = Utf8StructuralVerifierRuntimeFactory.Create(Utf8VerifierTestPlans.WithStructuralVerifier(plan));
         var deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(10));
         Thread.Sleep(50);

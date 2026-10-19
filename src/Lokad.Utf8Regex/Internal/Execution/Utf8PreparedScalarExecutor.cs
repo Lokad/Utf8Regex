@@ -90,7 +90,7 @@ internal static class Utf8PreparedScalarExecutor
                 return breach;
             }
             return Utf8ProjectionExecutor.TryProjectScalarVerification(input, validation,
-                new(true, outcome.StartByte, outcome.EndByte - outcome.StartByte), ref invocation, out result);
+                outcome.StartByte, outcome.EndByte - outcome.StartByte, ref invocation, out result);
         }
         finally { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }
     }

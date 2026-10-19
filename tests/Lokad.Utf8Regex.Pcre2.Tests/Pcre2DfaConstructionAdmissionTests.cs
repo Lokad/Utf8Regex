@@ -1,16 +1,17 @@
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 
-namespace Lokad.Utf8Regex.Tests;
+namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-public sealed class Utf8DfaConstructionAdmissionTests
+public sealed class Pcre2DfaConstructionAdmissionTests
 {
-    private static Utf8ByteSafeLinearVerifierProgram Literal() => new([
-        Utf8ByteSafeLinearVerifierStep.MatchText("ab"u8.ToArray()),
-        Utf8ByteSafeLinearVerifierStep.Accept()]);
+    private static Pcre2AsciiDfaInput Literal() => new([
+        Pcre2AsciiDfaStep.MatchText("ab"u8.ToArray()),
+        Pcre2AsciiDfaStep.Accept()]);
 
-    private static Utf8ByteSafeLinearVerifierProgram Alternatives() => new([
-        Utf8ByteSafeLinearVerifierStep.MatchAnyText(["ab"u8.ToArray(), "cd"u8.ToArray()]),
-        Utf8ByteSafeLinearVerifierStep.Accept()]);
+    private static Pcre2AsciiDfaInput Alternatives() => new([
+        Pcre2AsciiDfaStep.MatchAnyText(["ab"u8.ToArray(), "cd"u8.ToArray()]),
+        Pcre2AsciiDfaStep.Accept()]);
 
     [Theory]
     [InlineData(false)]
@@ -19,9 +20,9 @@ public sealed class Utf8DfaConstructionAdmissionTests
     {
         using var parent = Utf8ConstructionScope.Enter();
         var input = alternatives ? Alternatives() : Literal();
-        var outcome = Utf8ByteSafeLazyDfaVerifierProgram.Compile(input);
+        var outcome = Pcre2AsciiDfaVerifierProgram.Compile(input);
         Assert.True(outcome.Succeeded);
-        Assert.Equal(Utf8ByteSafeLazyDfaCompileFailureKind.None, outcome.FailureKind);
+        Assert.Equal(Pcre2AsciiDfaCompileFailureKind.None, outcome.FailureKind);
         Assert.True(parent.Budget.PeakBytes > 0);
         Assert.True(parent.Budget.ReservedBytes > 0);
         Assert.True(parent.Budget.WorkSteps > 0);
@@ -47,34 +48,30 @@ public sealed class Utf8DfaConstructionAdmissionTests
             kind == Utf8ResourceLimitKind.ConstructionBytes ? 1 : Utf8ConstructionScope.DefaultBufferBytes,
             kind == Utf8ResourceLimitKind.ConstructionWorkSteps ? 0 : Utf8ConstructionScope.DefaultWorkSteps,
             kind == Utf8ResourceLimitKind.ConstructionDepth ? 0 : Utf8ConstructionScope.DefaultDepth);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8ByteSafeLazyDfaVerifierProgram.Compile(input));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Pcre2AsciiDfaVerifierProgram.Compile(input));
         Assert.Equal(kind, failure.ResourceKind);
         Assert.Equal(0UL, parent.Budget.Reserved);
         Assert.Equal(0UL, parent.Budget.ReservedBytes);
         Assert.Equal(0UL, parent.Budget.Depth);
         Assert.True(failure.Requested > failure.Limit);
-        Assert.True(input.TryMatch("ab"u8, 0, out var width));
-        Assert.Equal(2, width);
     }
 
     [Fact]
     public void OptimizerStateDeclineReturnsCapacityButKeepsWorkSpent()
     {
-        var input = new Utf8ByteSafeLinearVerifierProgram([
-            Utf8ByteSafeLinearVerifierStep.MatchText(Enumerable.Repeat((byte)'a', 256).ToArray()),
-            Utf8ByteSafeLinearVerifierStep.Accept()]);
+        var input = new Pcre2AsciiDfaInput([
+            Pcre2AsciiDfaStep.MatchText(Enumerable.Repeat((byte)'a', 256).ToArray()),
+            Pcre2AsciiDfaStep.Accept()]);
         using var parent = Utf8ConstructionScope.Enter();
-        var outcome = Utf8ByteSafeLazyDfaVerifierProgram.Compile(input);
+        var outcome = Pcre2AsciiDfaVerifierProgram.Compile(input);
         Assert.False(outcome.Succeeded);
-        Assert.Equal(Utf8ByteSafeLazyDfaCompileFailureKind.StateBudgetExceeded, outcome.FailureKind);
+        Assert.Equal(Pcre2AsciiDfaCompileFailureKind.StateBudgetExceeded, outcome.FailureKind);
         Assert.Equal(0UL, parent.Budget.Reserved);
         Assert.Equal(0UL, parent.Budget.ReservedBytes);
         Assert.Equal(0UL, parent.Budget.Depth);
         Assert.True(parent.Budget.WorkSteps > 0);
         Assert.True(parent.Budget.PeakBytes > 0);
-        Assert.True(input.TryMatch(Enumerable.Repeat((byte)'a', 256).ToArray(), 0, out var width));
-        Assert.Equal(256, width);
-        var recovered = Utf8ByteSafeLazyDfaVerifierProgram.Compile(Literal());
+        var recovered = Pcre2AsciiDfaVerifierProgram.Compile(Literal());
         Assert.True(recovered.Succeeded);
         Assert.True(parent.Budget.ReservedBytes > 0);
     }
@@ -86,13 +83,13 @@ public sealed class Utf8DfaConstructionAdmissionTests
         var existing = parent.Budget.AllocateArray<byte>(3840, false);
         var checkpoint = parent.Budget.ReservedBytes;
         var input = Literal();
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8ByteSafeLazyDfaVerifierProgram.Compile(input));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Pcre2AsciiDfaVerifierProgram.Compile(input));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.Equal(checkpoint, parent.Budget.ReservedBytes);
         Assert.Equal(0UL, parent.Budget.Depth);
         parent.Budget.ReleaseArray(existing, false);
         Assert.Equal(0UL, parent.Budget.ReservedBytes);
-        var outcome = Utf8ByteSafeLazyDfaVerifierProgram.Compile(input);
+        var outcome = Pcre2AsciiDfaVerifierProgram.Compile(input);
         Assert.True(outcome.Succeeded);
     }
 
@@ -105,7 +102,7 @@ public sealed class Utf8DfaConstructionAdmissionTests
         ulong work, depth, bytes, slots;
         using (var baseline = Utf8ConstructionScope.Enter())
         {
-            Assert.True(Utf8ByteSafeLazyDfaVerifierProgram.Compile(input).Succeeded);
+            Assert.True(Pcre2AsciiDfaVerifierProgram.Compile(input).Succeeded);
             work = baseline.Budget.WorkSteps;
             depth = baseline.Budget.PeakDepth;
             bytes = baseline.Budget.PeakBytes;
@@ -120,20 +117,20 @@ public sealed class Utf8DfaConstructionAdmissionTests
         AssertDenied(input, Utf8ResourceLimitKind.ConstructionInstructionCapacity, slots - 1);
 
         using var recovery = Utf8ConstructionScope.Enter();
-        var recovered = Utf8ByteSafeLazyDfaVerifierProgram.Compile(input);
+        var recovered = Pcre2AsciiDfaVerifierProgram.Compile(input);
         Assert.True(recovered.Succeeded);
         Assert.True(recovered.Program.TryMatch("abx"u8, 0, out var width));
         Assert.Equal(2, width);
     }
 
-    private static void AssertDenied(Utf8ByteSafeLinearVerifierProgram input, Utf8ResourceLimitKind kind, ulong cutoff)
+    private static void AssertDenied(Pcre2AsciiDfaInput input, Utf8ResourceLimitKind kind, ulong cutoff)
     {
         using var parent = new Utf8ConstructionScope(
             kind == Utf8ResourceLimitKind.ConstructionInstructionCapacity ? cutoff : Utf8ConstructionScope.DefaultInstructionCapacity,
             kind == Utf8ResourceLimitKind.ConstructionBytes ? cutoff : Utf8ConstructionScope.DefaultBufferBytes,
             kind == Utf8ResourceLimitKind.ConstructionWorkSteps ? cutoff : Utf8ConstructionScope.DefaultWorkSteps,
             kind == Utf8ResourceLimitKind.ConstructionDepth ? cutoff : Utf8ConstructionScope.DefaultDepth);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8ByteSafeLazyDfaVerifierProgram.Compile(input));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Pcre2AsciiDfaVerifierProgram.Compile(input));
         Assert.Equal(kind, failure.ResourceKind);
         Assert.Equal(cutoff, failure.Limit);
         Assert.True(failure.Requested > failure.Limit);
@@ -141,7 +138,5 @@ public sealed class Utf8DfaConstructionAdmissionTests
         Assert.Equal(0UL, parent.Budget.ReservedBytes);
         Assert.Equal(0UL, parent.Budget.Depth);
 
-        Assert.True(input.TryMatch("ab"u8, 0, out var width));
-        Assert.Equal(2, width);
     }
 }

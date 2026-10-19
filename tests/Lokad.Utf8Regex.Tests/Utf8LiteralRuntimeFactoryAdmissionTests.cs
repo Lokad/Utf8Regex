@@ -143,9 +143,6 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
 
     [Theory]
     [InlineData((int)Utf8CompiledEngineKind.FallbackRegex)]
-    [InlineData((int)Utf8CompiledEngineKind.SearchGuidedFallback)]
-    [InlineData((int)Utf8CompiledEngineKind.ByteSafeLinear)]
-    [InlineData((int)Utf8CompiledEngineKind.CompiledFallback)]
     [InlineData((int)Utf8CompiledEngineKind.StructuralFamily)]
     public void NonliteralSelectionDoesNotPrepareTheDiscardedLiteralRuntime(int kind)
     {

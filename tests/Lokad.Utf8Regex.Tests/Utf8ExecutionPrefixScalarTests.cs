@@ -20,15 +20,6 @@ public sealed class Utf8ExecutionPrefixScalarTests
 
     private static Utf8SearchPlan EmptyPlan() => Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(Utf8SearchKind.None));
 
-    private static object? Call(string name, params object?[] arguments)
-    {
-        var method = typeof(Utf8DeterministicAnchorSearch).GetMethod(name, BindingFlags.NonPublic | BindingFlags.Static);
-        Assert.NotNull(method);
-        try { return method.Invoke(null, arguments); }
-        catch (TargetInvocationException error) when (error.InnerException is { } inner)
-        { ExceptionDispatchInfo.Capture(inner).Throw(); throw; }
-    }
-
     [Fact]
     public void GuardsCoverNestedWideScalarsAndRawLexicalCaseFibers()
     {
@@ -47,36 +38,7 @@ public sealed class Utf8ExecutionPrefixScalarTests
     }
 
     [Fact]
-    public void LeadingAnchorsCoverStoppedBranchesAndNullableLoopStarts()
-    {
-        foreach (var row in new (string Pattern, string Subject)[]
-        {
-            ("((cat.)|dog)z", "cat😀z"), ("((cat.)|dog)z", "dogz"),
-            ("(?:a*|b)c", "c"), ("(?:a*|b)c", "aaac"), ("(?:a*|b)c", "bc"),
-            ("(?i:cat|dog)", "CAT"),
-        })
-        {
-            var anchor = Utf8DeterministicAnchorSearch.Create(Tree(row.Pattern), EmptyPlan());
-            if (anchor.HasValue) Assert.Equal(0, anchor.Searcher.FindFirst(Encoding.UTF8.GetBytes(row.Subject)));
-        }
-    }
-
-    [Fact]
-    public void FoldedAnchorCompressionRequiresAsciiAndAllDistinctCartesianMembers()
-    {
-        foreach (var family in new[] { new[] { "aa", "aA", "Aa", "Aa" }, new[] { "a0", "Ł0" } })
-        {
-            object?[] arguments = [family, null];
-            Assert.False(Assert.IsType<bool>(Call("TryCreateAsciiIgnoreCaseAnchorLiteral", arguments)));
-            Assert.Empty(Assert.IsType<byte[]>(arguments[1]));
-        }
-        object?[] complete = [new[] { "aa", "aA", "Aa", "AA" }, null];
-        Assert.True(Assert.IsType<bool>(Call("TryCreateAsciiIgnoreCaseAnchorLiteral", complete)));
-        Assert.Equal("aa"u8.ToArray(), Assert.IsType<byte[]>(complete[1]));
-    }
-
-    [Fact]
-    public void AnchorAndGuardFactsCoverIndependentScalarVmMatchesInBothDirections()
+    public void GuardFactsCoverIndependentScalarVmMatchesInBothDirections()
     {
         var patterns = new[] { "((cat.)|dog)z", "(?:a*|b)c", "(ab.)cd", "(ab😀)cd", "(ab(?i:k))cd", "(?i:abc)de",
             "a[é-ê]{2}bc", "[ab](cat|dog)", "a(?=b)bc", "(cat|dog)?z", "(?:|a)b", "(?:a|)b",
@@ -85,7 +47,7 @@ public sealed class Utf8ExecutionPrefixScalarTests
         var inputs = new[] { "cat😀z", "dogz", "catxz", "c", "aaac", "bc", "ab😀cd", "abxcd", "abKcd", "ABCde", "aéêbc",
             "acat", "bdog", "abc", "z", "b", "ab", "CAT", "DOG", "Kab", "Kab", "  abc7", "\u00a0abc7", "ababc", "aabc",
             "abcd", "a😀bc", "a🙏bc", "abab", "xcat😀zy", "" }.Select(Encoding.UTF8.GetBytes).ToArray();
-        var observed = 0; var anchored = 0;
+        var observed = 0;
         foreach (var pattern in patterns)
         foreach (var direction in new[] { RegexOptions.None, RegexOptions.RightToLeft })
         {
@@ -93,7 +55,6 @@ public sealed class Utf8ExecutionPrefixScalarTests
             var front = Utf8FrontEnd.Compile(pattern, options);
             var tree = front.ExecutionTree;
             Assert.NotNull(tree);
-            var anchor = Utf8DeterministicAnchorSearch.Create(tree, front.SearchPlan);
             var guards = Utf8DeterministicVerifierGuards.Create(tree, front.SearchPlan);
             var owned = Utf8OwnedTreeParser.TryParse(pattern, options);
             Assert.NotNull(owned);
@@ -111,14 +72,9 @@ public sealed class Utf8ExecutionPrefixScalarTests
                 observed++;
                 var first = Math.Min(boundary, match.EndIndex); var length = Math.Abs(boundary - match.EndIndex);
                 Assert.True(guards.Matches(input, first), $"guard: {pattern} / {direction} / {Encoding.UTF8.GetString(input)}");
-                if (!anchor.HasValue) continue;
-                anchored++;
-                var found = anchor.Searcher.FindFirst(input.AsSpan(first, length));
-                Assert.InRange(found, 0, anchor.Offset);
             }
         }
         Assert.True(observed > 75);
-        Assert.True(anchored > 40);
         foreach (var row in new (string Pattern, string Subject)[]
         {
             ("((cat.)|dog)z", "cat😀z"), ("(?:a*|b)c", "c"), ("(ab(?i:k))cd", "abKcd"),
@@ -141,7 +97,7 @@ public sealed class Utf8ExecutionPrefixScalarTests
         foreach (var pattern in new[] { "((cat.)|dog)z", "(?:a*|b)c", "(?i:abc)de", "(ab😀)cd", "(?:|a)b" })
         {
             var tree = Tree(pattern); var plan = EmptyPlan();
-            foreach (var route in new[] { 0, 1, 2 })
+            foreach (var route in new[] { 2 })
             {
                 ulong work;
                 using (var measured = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
@@ -161,35 +117,15 @@ public sealed class Utf8ExecutionPrefixScalarTests
                 }
                 void Run()
                 {
-                    if (route == 0) _ = Utf8ExecutionPrefixFamilies.Find(tree.Root);
-                    else if (route == 1) _ = Utf8ExecutionPrefixFacts.FirstMask(tree.Root, out _);
-                    else _ = Utf8DeterministicVerifierGuards.Create(tree, plan);
+                    _ = Utf8DeterministicVerifierGuards.Create(tree, plan);
                 }
             }
         }
     }
 
     [Fact]
-    public void NativeBytePayloadAdmissionAndLexicalFlagTransferHaveNoDuplicateOwner()
+    public void LexicalFlagTransferPreservesEveryLoweredNode()
     {
-        using (var owner = new Utf8ConstructionScope(0, 48, ulong.MaxValue, 0))
-        {
-            Assert.True(Utf8DeterministicAnchorSearch.TryGetAsciiBytes("abc", out var bytes));
-            Assert.Equal("abc"u8.ToArray(), bytes);
-            Assert.Equal(48ul, owner.Budget.ReservedBytes);
-            owner.Budget.ReleaseArray(bytes, false);
-            Assert.Equal(0ul, owner.Budget.ReservedBytes);
-        }
-        using (var owner = new Utf8ConstructionScope(0, 48, ulong.MaxValue, ulong.MaxValue))
-        {
-            var parent = owner.Budget.AllocateArray<byte>(1, false); var checkpoint = owner.Budget.ReservedBytes;
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8DeterministicAnchorSearch.TryGetAsciiBytes("abc", out _));
-            Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
-            Assert.Equal(48ul, owner.Budget.ReservedBytes); Assert.Equal(48ul, owner.Budget.PeakBytes);
-            Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Single(parent);
-            Assert.False(Utf8DeterministicAnchorSearch.TryGetAsciiBytes("a😀", out _));
-            Assert.Equal(48ul, owner.Budget.ReservedBytes);
-        }
         foreach (var pattern in new[] { "(?i:k)", "(?i:abc)", "a(?i:b)c", "(?i:é)" })
         {
             var semantic = Utf8FrontEnd.Analyze(pattern, RegexOptions.CultureInvariant).SemanticRegex;

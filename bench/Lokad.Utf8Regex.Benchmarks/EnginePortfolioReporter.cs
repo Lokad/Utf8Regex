@@ -30,7 +30,7 @@ internal static class EnginePortfolioReporter
                 Console.WriteLine(
                     $"{benchmarkCase.Id} | {benchmarkCase.Operation} | Engine={context.Utf8Regex.Inspection.CompiledEngineKind} | " +
                     $"Exec={diagnostics.ExecutionKind} | Search={diagnostics.SearchKind} | " +
-                    $"{DescribeVerifier(context.Utf8Regex)} | " +
+                    $"{context.Utf8Regex.Inspection.StructuralVerifierPlan.Kind.ToString()} | " +
                     $"Fallback={context.Utf8Regex.Inspection.FallbackReason ?? "<native>"}");
             }
             else if (benchmarkCase.Operation == Utf8RegexBenchmarkOperation.Count)
@@ -39,14 +39,14 @@ internal static class EnginePortfolioReporter
                 Console.WriteLine(
                     $"{benchmarkCase.Id} | {benchmarkCase.Operation} | Engine={context.Utf8Regex.Inspection.CompiledEngineKind} | " +
                     $"Exec={diagnostics.ExecutionKind} | Search={diagnostics.SearchKind} | " +
-                    $"{DescribeVerifier(context.Utf8Regex)} | " +
+                    $"{context.Utf8Regex.Inspection.StructuralVerifierPlan.Kind.ToString()} | " +
                     $"Fallback={context.Utf8Regex.Inspection.FallbackReason ?? "<native>"}");
             }
             else
             {
                 Console.WriteLine(
                     $"{benchmarkCase.Id} | {benchmarkCase.Operation} | Engine={context.Utf8Regex.Inspection.CompiledEngineKind} | " +
-                    $"{DescribeVerifier(context.Utf8Regex)} | " +
+                    $"{context.Utf8Regex.Inspection.StructuralVerifierPlan.Kind.ToString()} | " +
                     $"Fallback={context.Utf8Regex.Inspection.FallbackReason ?? "<native>"}");
             }
         }
@@ -70,7 +70,7 @@ internal static class EnginePortfolioReporter
                 Console.WriteLine(
                     $"{benchmarkCase.Id} | Engine={context.Utf8Regex.Inspection.CompiledEngineKind} | " +
                     $"Exec={diagnostics.ExecutionKind} | Search={diagnostics.SearchKind} | " +
-                    $"{DescribeVerifier(context.Utf8Regex)} | " +
+                    $"{context.Utf8Regex.Inspection.StructuralVerifierPlan.Kind.ToString()} | " +
                     $"Prefilter={(context.Utf8Regex.Inspection.SearchPlan.RequiredPrefilterSearcher.HasValue ? context.Utf8Regex.Inspection.SearchPlan.RequiredPrefilterSearcher.Kind : "None")} | " +
                     $"Fallback={context.Utf8Regex.Inspection.FallbackReason ?? "<native>"}");
             }
@@ -81,20 +81,4 @@ internal static class EnginePortfolioReporter
         }
     }
 
-    private static string DescribeVerifier(Utf8Regex regex)
-    {
-        if (regex.Inspection.CompiledEngineKind == Utf8CompiledEngineKind.ByteSafeLinear)
-        {
-            if (regex.Inspection.StructuralVerifierPlan.ByteSafeLazyDfaProgram.HasValue)
-            {
-                return "Verifier=CompiledByteSafeLazyDfa";
-            }
-
-            return regex.Inspection.StructuralVerifierPlan.ByteSafeLinearProgram.HasValue
-                ? $"Verifier=CompiledByteSafeLinear, LazyDfaReject={regex.Inspection.StructuralVerifierPlan.LazyDfaCompileOutcome.FailureKind}"
-                : "Verifier=CompatByteSafeLinear";
-        }
-
-        return $"Verifier={regex.Inspection.StructuralVerifierPlan.Kind}";
-    }
 }

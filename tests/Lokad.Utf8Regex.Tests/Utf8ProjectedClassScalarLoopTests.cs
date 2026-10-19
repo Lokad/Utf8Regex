@@ -21,31 +21,6 @@ public sealed class Utf8ProjectedClassScalarLoopTests
         return shape == 2 ? "^a" + body + "7$" : "^" + body + "$";
     }
 
-    [Theory]
-    [MemberData(nameof(ProjectionCases))]
-    public void AsciiProjectionAdmitsUnboundedLoopsAndDefersNonAscii(string category, int shape, bool compiled)
-    {
-        var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var analysis = Utf8FrontEnd.Compile(Pattern(category, shape, false), options);
-        Assert.NotNull(analysis.ExecutionTree);
-        var outcome = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree);
-        Assert.True(outcome.Succeeded);
-        Assert.Contains(outcome.Program.Steps, static step => step.Kind == Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass);
-        foreach (var body in new[] { "", "?", "??", "???" })
-        {
-            var input = Encoding.UTF8.GetBytes(shape == 2 ? "a" + body + "7" : body);
-            var hit = outcome.Program.TryMatch(input, 0, out var length, out var defer);
-            Assert.False(defer);
-            Assert.Equal(shape == 0 || body.Length >= 2, hit);
-            if (hit) Assert.Equal(input.Length, length);
-        }
-        foreach (var body in new[] { "😀", "😀😀", "?😀", "😀?" })
-        {
-            var input = Encoding.UTF8.GetBytes(shape == 2 ? "a" + body + "7" : body);
-            Assert.False(outcome.Program.TryMatch(input, 0, out _, out var defer));
-            Assert.True(defer); // The dispatcher must run the owned scalar engine.
-        }
-    }
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
@@ -53,11 +28,6 @@ public sealed class Utf8ProjectedClassScalarLoopTests
     {
         const string pattern = @"^a\D{2,}b$";
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var analysis = Utf8FrontEnd.Compile(pattern, options);
-        Assert.NotNull(analysis.ExecutionTree);
-        var outcome = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree);
-        Assert.False(outcome.Succeeded);
-        Assert.Equal(Utf8ByteSafeLinearCompileFailureKind.NonDisjointVariableLoop, outcome.FailureKind);
         var regex = new Utf8Regex(pattern, options);
         Assert.True(regex.IsMatch("a??b"u8));
         Assert.False(regex.IsMatch("a😀b"u8));

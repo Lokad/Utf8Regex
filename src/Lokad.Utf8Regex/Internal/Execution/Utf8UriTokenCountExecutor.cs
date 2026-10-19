@@ -61,43 +61,8 @@ internal static class Utf8UriTokenCountExecutor
             throw new InvalidOperationException("URI count breached the invocation budget.");
     }
 
-    public static Utf8SelectedCountKernelMetrics InspectMetrics(ReadOnlySpan<byte> input)
-    {
-        var invocation = new Utf8SliceInvocation(default, Timeout.InfiniteTimeSpan, default);
-        var candidates = 0;
-        var matches = 0;
-        var searchFrom = 0;
-        while ((uint)searchFrom < (uint)input.Length)
-        {
-            var relative = input[searchFrom..].IndexOf("://"u8);
-            if (relative < 0)
-            {
-                break;
-            }
 
-            candidates++;
-            var delimiterIndex = searchFrom + relative;
-            if (!TryFindSchemeStart(input, searchFrom, delimiterIndex, ref invocation, out _) ||
-                !TryConsumeBody(input, delimiterIndex + 3, ref invocation, out var tokenEnd))
-            {
-                searchFrom = delimiterIndex + 3;
-                continue;
-            }
-
-            matches++;
-            searchFrom = tokenEnd;
-        }
-
-        return new Utf8SelectedCountKernelMetrics(
-            "FallbackDirect/Utf8UriToken",
-            ":// delimiter probes",
-            candidates,
-            candidates,
-            matches,
-            IncludesUtf8Validation: false);
-    }
-
-    private static bool TryFindSchemeStart(
+    internal static bool TryFindSchemeStart(
         ReadOnlySpan<byte> input,
         int minStartIndex,
         int delimiterIndex,
@@ -139,7 +104,7 @@ internal static class Utf8UriTokenCountExecutor
         return schemeStart < delimiterIndex;
     }
 
-    private static bool TryConsumeBody(ReadOnlySpan<byte> input, int bodyStart, ref Utf8SliceInvocation invocation, out int tokenEnd)
+    internal static bool TryConsumeBody(ReadOnlySpan<byte> input, int bodyStart, ref Utf8SliceInvocation invocation, out int tokenEnd)
     {
         tokenEnd = bodyStart;
         // Host and continuation each require one complete scalar.

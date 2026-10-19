@@ -1,16 +1,17 @@
+using Lokad.Utf8Regex.Internal;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 
-namespace Lokad.Utf8Regex.Tests;
+namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-public sealed class Utf8LazyDfaContinuationTests
+public sealed class Pcre2LazyDfaContinuationTests
 {
     // Private stage tests borrow the parent's owner; public factory/graph loans
     // are independently covered by Utf8DfaConstructionAdmissionTests.
-    private static object Compiler(Utf8ConstructionBudget budget)
+    private static object Pcre2DfaCompiler(Utf8ConstructionBudget budget)
     {
-        var type = typeof(Utf8ByteSafeLazyDfaVerifierProgram).GetNestedType("Compiler", BindingFlags.NonPublic);
+        var type = typeof(Pcre2AsciiDfaVerifierProgram).GetNestedType("Pcre2DfaCompiler", BindingFlags.NonPublic);
         Assert.NotNull(type);
         return Activator.CreateInstance(type, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
             binder: null, args: [budget], culture: null) ?? throw new InvalidOperationException();
@@ -20,14 +21,14 @@ public sealed class Utf8LazyDfaContinuationTests
         => compiler.GetType().GetMethod(name, BindingFlags.NonPublic | BindingFlags.Instance)?.Invoke(compiler, arguments)
             ?? throw new InvalidOperationException(name);
 
-    private static Utf8ByteSafeLazyDfaCompileFailureKind Failure(object compiler)
-        => Assert.IsType<Utf8ByteSafeLazyDfaCompileFailureKind>(compiler.GetType().GetField("_failureKind", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(compiler));
+    private static Pcre2AsciiDfaCompileFailureKind Failure(object compiler)
+        => Assert.IsType<Pcre2AsciiDfaCompileFailureKind>(compiler.GetType().GetField("_failureKind", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(compiler));
 
-    private static Utf8ByteSafeLinearVerifierStep[] Deep(int depth)
+    private static Pcre2AsciiDfaStep[] Deep(int depth)
     {
-        Utf8ByteSafeLinearVerifierStep[] body = [Utf8ByteSafeLinearVerifierStep.MatchText("ab"u8.ToArray())];
-        for (var index = 0; index < depth; index++) body = [Utf8ByteSafeLinearVerifierStep.LoopProgram(body, 1, 1)];
-        return [.. body, Utf8ByteSafeLinearVerifierStep.Accept()];
+        Pcre2AsciiDfaStep[] body = [Pcre2AsciiDfaStep.MatchText("ab"u8.ToArray())];
+        for (var index = 0; index < depth; index++) body = [Pcre2AsciiDfaStep.LoopProgram(body, 1, 1)];
+        return [.. body, Pcre2AsciiDfaStep.Accept()];
     }
 
     [Theory]
@@ -37,7 +38,7 @@ public sealed class Utf8LazyDfaContinuationTests
     public void DeepNfaEmissionReachesBodiesBeforeEnforcingTheExistingStateCap(int depth)
     {
         using var parent = Utf8ConstructionScope.Enter();
-        var compiler = Compiler(parent.Budget);
+        var compiler = Pcre2DfaCompiler(parent.Budget);
         object?[] arguments = [Deep(depth), null, false, false];
         var found = Assert.IsType<bool>(Call(compiler, "TryCompileNfa", arguments));
         Assert.Equal(depth == 65, found);
@@ -47,13 +48,13 @@ public sealed class Utf8LazyDfaContinuationTests
         Assert.True(parent.Budget.PeakBytes > 0);
         if (!found)
         {
-            Assert.Equal(Utf8ByteSafeLazyDfaCompileFailureKind.StateBudgetExceeded, Failure(compiler));
+            Assert.Equal(Pcre2AsciiDfaCompileFailureKind.StateBudgetExceeded, Failure(compiler));
             Assert.Equal(0UL, parent.Budget.ReservedBytes);
             Assert.Equal(0UL, parent.Budget.Reserved);
             return;
         }
         using var graph = Assert.IsAssignableFrom<IDisposable>(arguments[1]);
-        var program = Assert.IsType<Utf8ByteSafeLazyDfaVerifierProgram>(Call(compiler, "BuildDfa", arguments[1], false, false));
+        var program = Assert.IsType<Pcre2AsciiDfaVerifierProgram>(Call(compiler, "BuildDfa", arguments[1], false, false));
         Assert.True(program.HasValue);
         Assert.True(program.TryMatch("abx"u8, 0, out var length));
         Assert.Equal(2, length);
@@ -67,12 +68,12 @@ public sealed class Utf8LazyDfaContinuationTests
     [InlineData(16385, false)]
     public void OptionalFirstTransitionWalkRetainsTailAndFailureSemantics(int depth, bool consume)
     {
-        Utf8ByteSafeLinearVerifierStep[] body = consume ? [Utf8ByteSafeLinearVerifierStep.MatchByte((byte)'a')]
-            : [Utf8ByteSafeLinearVerifierStep.RequireEnd(RegexOptions.None), Utf8ByteSafeLinearVerifierStep.Accept()];
-        for (var index = 0; index < depth; index++) body = [Utf8ByteSafeLinearVerifierStep.LoopProgram(body, 0, 1), Utf8ByteSafeLinearVerifierStep.MatchByte((byte)'z')];
+        Pcre2AsciiDfaStep[] body = consume ? [Pcre2AsciiDfaStep.MatchByte((byte)'a')]
+            : [Pcre2AsciiDfaStep.RequireEnd(RegexOptions.None), Pcre2AsciiDfaStep.Accept()];
+        for (var index = 0; index < depth; index++) body = [Pcre2AsciiDfaStep.LoopProgram(body, 0, 1), Pcre2AsciiDfaStep.MatchByte((byte)'z')];
         using var parent = Utf8ConstructionScope.Enter();
         object?[] arguments = [body, 0, null];
-        Assert.Equal(consume, Assert.IsType<bool>(Call(Compiler(parent.Budget), "TryGetFirstDeterministicTransitionSet", arguments)));
+        Assert.Equal(consume, Assert.IsType<bool>(Call(Pcre2DfaCompiler(parent.Budget), "TryGetFirstDeterministicTransitionSet", arguments)));
         Assert.Equal(consume ? AsciiCharClass.ForByte((byte)'a') : AsciiCharClass.Empty, Assert.IsType<AsciiCharClass>(arguments[2]));
         Assert.True(parent.Budget.WorkSteps >= (ulong)depth);
         Assert.Equal(0UL, parent.Budget.ReservedBytes);
@@ -87,7 +88,7 @@ public sealed class Utf8LazyDfaContinuationTests
         using (var baseline = Utf8ConstructionScope.Enter())
         {
             object?[] arguments = [steps, null, false, false];
-            Assert.True(Assert.IsType<bool>(Call(Compiler(baseline.Budget), "TryCompileNfa", arguments)));
+            Assert.True(Assert.IsType<bool>(Call(Pcre2DfaCompiler(baseline.Budget), "TryCompileNfa", arguments)));
             using var graph = Assert.IsAssignableFrom<IDisposable>(arguments[1]);
             work = baseline.Budget.WorkSteps;
             depth = baseline.Budget.PeakDepth;
@@ -107,7 +108,7 @@ public sealed class Utf8LazyDfaContinuationTests
                 kind == Utf8ResourceLimitKind.ConstructionWorkSteps ? limit : Utf8ConstructionScope.DefaultWorkSteps,
                 kind == Utf8ResourceLimitKind.ConstructionDepth ? limit : Utf8ConstructionScope.DefaultDepth);
             object?[] arguments = [steps, null, false, false];
-            var failure = Assert.Throws<TargetInvocationException>(() => Call(Compiler(parent.Budget), "TryCompileNfa", arguments));
+            var failure = Assert.Throws<TargetInvocationException>(() => Call(Pcre2DfaCompiler(parent.Budget), "TryCompileNfa", arguments));
             Assert.Equal(kind, Assert.IsType<Utf8ResourceLimitExceededException>(failure.InnerException).ResourceKind);
             Assert.Equal(0UL, parent.Budget.ReservedBytes);
             Assert.Equal(0UL, parent.Budget.Reserved);
@@ -117,7 +118,7 @@ public sealed class Utf8LazyDfaContinuationTests
         var existing = recovery.Budget.AllocateArray<byte>(7, false);
         var checkpoint = recovery.Budget.ReservedBytes;
         object?[] recoveryArguments = [steps, null, false, false];
-        Assert.True(Assert.IsType<bool>(Call(Compiler(recovery.Budget), "TryCompileNfa", recoveryArguments)));
+        Assert.True(Assert.IsType<bool>(Call(Pcre2DfaCompiler(recovery.Budget), "TryCompileNfa", recoveryArguments)));
         using var recoveredGraph = Assert.IsAssignableFrom<IDisposable>(recoveryArguments[1]);
         Assert.True(recovery.Budget.ReservedBytes > checkpoint);
         Assert.Equal(0UL, recovery.Budget.Depth);
@@ -144,7 +145,7 @@ public sealed class Utf8LazyDfaContinuationTests
             else source.Cancel();
         };
         object?[] arguments = [Deep(4097), null, false, false];
-        var failure = Assert.Throws<TargetInvocationException>(() => Call(Compiler(parent.Budget), "TryCompileNfa", arguments));
+        var failure = Assert.Throws<TargetInvocationException>(() => Call(Pcre2DfaCompiler(parent.Budget), "TryCompileNfa", arguments));
         if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure.InnerException);
         else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(failure.InnerException).CancellationToken);
         Assert.True(entered);
@@ -160,10 +161,10 @@ public sealed class Utf8LazyDfaContinuationTests
     [InlineData(16385, false)]
     public void DeterministicConstructionAdmitsAtMost256States(int width, bool accepted)
     {
-        var outcome = Utf8ByteSafeLazyDfaVerifierProgram.Compile(new([
-            Utf8ByteSafeLinearVerifierStep.MatchText(Enumerable.Repeat((byte)'a', width).ToArray()), Utf8ByteSafeLinearVerifierStep.Accept()]));
+        var outcome = Pcre2AsciiDfaVerifierProgram.Compile(new([
+            Pcre2AsciiDfaStep.MatchText(Enumerable.Repeat((byte)'a', width).ToArray()), Pcre2AsciiDfaStep.Accept()]));
         Assert.Equal(accepted, outcome.Succeeded);
-        Assert.Equal(accepted ? Utf8ByteSafeLazyDfaCompileFailureKind.None : Utf8ByteSafeLazyDfaCompileFailureKind.StateBudgetExceeded, outcome.FailureKind);
+        Assert.Equal(accepted ? Pcre2AsciiDfaCompileFailureKind.None : Pcre2AsciiDfaCompileFailureKind.StateBudgetExceeded, outcome.FailureKind);
         if (accepted) Assert.Equal(256, outcome.Program.StateCount);
     }
 
@@ -173,8 +174,8 @@ public sealed class Utf8LazyDfaContinuationTests
     public void NfaConstructionAdmitsAtMost2048States(int width, bool accepted)
     {
         using var parent = Utf8ConstructionScope.Enter();
-        var compiler = Compiler(parent.Budget);
-        object?[] arguments = [new[] { Utf8ByteSafeLinearVerifierStep.MatchText(Enumerable.Repeat((byte)'a', width).ToArray()), Utf8ByteSafeLinearVerifierStep.Accept() }, null, false, false];
+        var compiler = Pcre2DfaCompiler(parent.Budget);
+        object?[] arguments = [new[] { Pcre2AsciiDfaStep.MatchText(Enumerable.Repeat((byte)'a', width).ToArray()), Pcre2AsciiDfaStep.Accept() }, null, false, false];
         Assert.Equal(accepted, Assert.IsType<bool>(Call(compiler, "TryCompileNfa", arguments)));
         Assert.Equal(0UL, parent.Budget.Depth);
         if (accepted)
@@ -184,7 +185,7 @@ public sealed class Utf8LazyDfaContinuationTests
         }
         else
         {
-            Assert.Equal(Utf8ByteSafeLazyDfaCompileFailureKind.StateBudgetExceeded, Failure(compiler));
+            Assert.Equal(Pcre2AsciiDfaCompileFailureKind.StateBudgetExceeded, Failure(compiler));
             Assert.Equal(0UL, parent.Budget.ReservedBytes);
         }
     }
@@ -203,8 +204,8 @@ public sealed class Utf8LazyDfaContinuationTests
         counts.Add(0);
         var checkpoint = parent.Budget.ReservedBytes;
         object?[] arguments = [0, AsciiCharClass.ForByte((byte)'b'), 0, offsets, counts, sets, targets];
-        var failure = Assert.Throws<TargetInvocationException>(() => Call(Compiler(parent.Budget), "AddDeterministicTransition", arguments));
-        Assert.Equal("CompilationBudgetExceededException", failure.InnerException?.GetType().Name);
+        var failure = Assert.Throws<TargetInvocationException>(() => Call(Pcre2DfaCompiler(parent.Budget), "AddDeterministicTransition", arguments));
+        Assert.Equal("Pcre2DfaCompilationBudgetExceededException", failure.InnerException?.GetType().Name);
         Assert.Equal(4096, sets.Count);
         Assert.Equal(4096, targets.Count);
         Assert.Equal(checkpoint, parent.Budget.ReservedBytes);

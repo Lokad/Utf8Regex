@@ -1,6 +1,8 @@
-namespace Lokad.Utf8Regex.Internal.Execution;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Execution;
+namespace Lokad.Utf8Regex.Pcre2;
 
-internal static class Utf8ByteSafeAnchor
+internal static class Pcre2AsciiDfaAnchor
 {
     internal static bool MatchesBeginning(ReadOnlySpan<byte> input, int index, Utf8ExecutionNodeKind kind,
         RegexOptions options, int origin)

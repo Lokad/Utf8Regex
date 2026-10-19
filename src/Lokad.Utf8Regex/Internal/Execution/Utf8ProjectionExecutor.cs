@@ -8,13 +8,12 @@ using Lokad.Utf8Regex.Internal.Search;
 internal static class Utf8ProjectionExecutor
 {
     internal static Utf8ExecutionLimitKind TryProjectScalarVerification(ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation, in Utf8ScalarVerificationResult verification,
+        Utf8ValidationResult validation, int byteIndex, int byteLength,
         ref Utf8SliceInvocation invocation, out Utf8ValueMatch match)
     {
         match = Utf8ValueMatch.NoMatch;
-        if (!verification.Success) return Utf8ExecutionLimitKind.None;
-        var index = verification.IndexInBytes;
-        var length = verification.LengthInBytes;
+        var index = byteIndex;
+        var length = byteLength;
         if (!validation.IsAscii)
         {
             var breach = Utf8Validation.TryValidate(input[..index], ref invocation, out var prefix);
@@ -27,7 +26,7 @@ internal static class Utf8ProjectionExecutor
         var final = invocation.TryChargeInputStep();
         invocation.Budget.ThrowIfCancellationRequested();
         if (final != Utf8ExecutionLimitKind.None) return final;
-        match = new(true, true, index, length, verification.IndexInBytes, verification.LengthInBytes);
+        match = new(true, true, index, length, byteIndex, byteLength);
         return Utf8ExecutionLimitKind.None;
     }
 

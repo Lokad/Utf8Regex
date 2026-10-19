@@ -25,9 +25,7 @@ internal sealed class Utf8PreparedRegex
         Utf8ExecutionProgram? ExecutionProgram,
         Utf8SliceProgram? ScalarProgram,
         Utf8StructuralSearchPlan StructuralSearchPlan,
-        Utf8DeterministicAnchorSearch DeterministicAnchor,
         Utf8DeterministicVerifierGuards DeterministicGuards,
-        Utf8ScalarVerifierPlan ScalarVerifier,
         Utf8StructuralVerifierPlan StructuralVerifier,
         AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan,
         AsciiStructuralTokenWindowPlan StructuralTokenWindowPlan,
@@ -51,9 +49,7 @@ internal sealed class Utf8PreparedRegex
         ExecutionProgram = state.ExecutionProgram;
         ScalarProgram = state.ScalarProgram;
         StructuralSearchPlan = state.StructuralSearchPlan;
-        DeterministicAnchor = state.DeterministicAnchor;
         DeterministicGuards = state.DeterministicGuards;
-        ScalarVerifier = state.ScalarVerifier;
         StructuralVerifier = state.StructuralVerifier;
         StructuralIdentifierFamilyPlan = state.StructuralIdentifierFamilyPlan;
         StructuralTokenWindowPlan = state.StructuralTokenWindowPlan;
@@ -76,9 +72,7 @@ internal sealed class Utf8PreparedRegex
         Utf8SliceProgram? scalarProgram,
         Utf8OperationMatchCursorPlans operationMatchCursorPlans,
         Utf8StructuralSearchPlan structuralSearchPlan,
-        Utf8DeterministicAnchorSearch deterministicAnchor,
         Utf8DeterministicVerifierGuards deterministicGuards,
-        Utf8ScalarVerifierPlan scalarVerifier,
         Utf8StructuralVerifierPlan structuralVerifier,
         AsciiStructuralIdentifierFamilyPlan structuralIdentifierFamilyPlan,
         AsciiStructuralTokenWindowPlan structuralTokenWindowPlan,
@@ -103,9 +97,7 @@ internal sealed class Utf8PreparedRegex
             executionProgram,
             scalarProgram,
             structuralSearchPlan,
-            deterministicAnchor,
             deterministicGuards,
-            scalarVerifier,
             structuralVerifier,
             structuralIdentifierFamilyPlan,
             structuralTokenWindowPlan,
@@ -141,11 +133,7 @@ internal sealed class Utf8PreparedRegex
 
     public Utf8StructuralSearchPlan StructuralSearchPlan { get; }
 
-    public Utf8DeterministicAnchorSearch DeterministicAnchor { get; }
-
     public Utf8DeterministicVerifierGuards DeterministicGuards { get; }
-
-    public Utf8ScalarVerifierPlan ScalarVerifier { get; }
 
     public Utf8StructuralVerifierPlan StructuralVerifier { get; }
 

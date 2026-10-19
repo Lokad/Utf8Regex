@@ -6,7 +6,7 @@ namespace Lokad.Utf8Regex.Pcre2;
 internal sealed class Pcre2AsciiAnchoredDfaIsMatchDirectProgram : IPcre2DirectProgram
 {
     internal Pcre2AsciiAnchoredDfaIsMatchDirectProgram(
-        Utf8ByteSafeLazyDfaVerifierProgram dfa,
+        Pcre2AsciiDfaVerifierProgram dfa,
         Pcre2BacktrackingProgram fallback)
     {
         Dfa = dfa;
@@ -15,7 +15,7 @@ internal sealed class Pcre2AsciiAnchoredDfaIsMatchDirectProgram : IPcre2DirectPr
 
     public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Pcre2AsciiAnchoredDfaIsMatch;
 
-    internal Utf8ByteSafeLazyDfaVerifierProgram Dfa { get; }
+    internal Pcre2AsciiDfaVerifierProgram Dfa { get; }
 
     internal Pcre2BacktrackingProgram Fallback { get; }
 }
@@ -44,9 +44,9 @@ internal static class Pcre2AsciiAnchoredDfaIsMatchAnalyzer
             return null;
         }
 
-        var steps = new List<Utf8ByteSafeLinearVerifierStep>
+        var steps = new List<Pcre2AsciiDfaStep>
         {
-            Utf8ByteSafeLinearVerifierStep.RequireBeginning(RegexOptions.None),
+            Pcre2AsciiDfaStep.RequireBeginning(RegexOptions.None),
         };
         var hasUnboundedRepeat = false;
         if (!TryAppend(matchBody, steps, ref hasUnboundedRepeat) || !hasUnboundedRepeat)
@@ -54,10 +54,10 @@ internal static class Pcre2AsciiAnchoredDfaIsMatchAnalyzer
             return null;
         }
 
-        steps.Add(Utf8ByteSafeLinearVerifierStep.RequireEnd(RegexOptions.None));
-        steps.Add(Utf8ByteSafeLinearVerifierStep.Accept());
-        var linearProgram = new Utf8ByteSafeLinearVerifierProgram([.. steps]);
-        var dfaOutcome = Utf8ByteSafeLazyDfaVerifierProgram.Compile(linearProgram);
+        steps.Add(Pcre2AsciiDfaStep.RequireEnd(RegexOptions.None));
+        steps.Add(Pcre2AsciiDfaStep.Accept());
+        var linearProgram = new Pcre2AsciiDfaInput([.. steps]);
+        var dfaOutcome = Pcre2AsciiDfaVerifierProgram.Compile(linearProgram);
         return dfaOutcome.Succeeded
             ? new Pcre2AsciiAnchoredDfaIsMatchDirectProgram(dfaOutcome.Program, fallback)
             : null;
@@ -65,7 +65,7 @@ internal static class Pcre2AsciiAnchoredDfaIsMatchAnalyzer
 
     internal static bool TryAppend(
         IPcre2BacktrackingNode node,
-        List<Utf8ByteSafeLinearVerifierStep> steps,
+        List<Pcre2AsciiDfaStep> steps,
         ref bool hasUnboundedRepeat)
     {
         switch (node)
@@ -80,7 +80,7 @@ internal static class Pcre2AsciiAnchoredDfaIsMatchAnalyzer
                     return false;
                 }
 
-                steps.Add(Utf8ByteSafeLinearVerifierStep.MatchAsciiClass(
+                steps.Add(Pcre2AsciiDfaStep.MatchAsciiClass(
                     characterClass));
                 return true;
             case Pcre2SequenceBacktrackingNode sequence:
@@ -108,7 +108,7 @@ internal static class Pcre2AsciiAnchoredDfaIsMatchAnalyzer
                 }
 
                 hasUnboundedRepeat |= repeat.Maximum == int.MaxValue;
-                steps.Add(Utf8ByteSafeLinearVerifierStep.LoopAsciiClass(
+                steps.Add(Pcre2AsciiDfaStep.LoopAsciiClass(
                     repeatedClass,
                     repeat.Minimum,
                     repeat.Maximum == int.MaxValue ? -1 : repeat.Maximum));

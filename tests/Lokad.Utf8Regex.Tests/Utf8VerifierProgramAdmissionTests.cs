@@ -10,7 +10,7 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8VerifierProgramAdmissionTests
 {
-    public static IEnumerable<object[]> Roots() => from kind in Enumerable.Range(0, 9)
+    public static IEnumerable<object[]> Roots() => from kind in new[] { 0, 1, 4, 5, 8 }
         from limit in new[] { "bytes", "work", "depth" } select new object[] { kind, limit };
 
     private static object Build(int kind, Utf8PreparedRegex prepared)
@@ -26,7 +26,7 @@ public sealed class Utf8VerifierProgramAdmissionTests
     public void RootCutoffsPreserveParentOwnershipAndSpentWork(int kind, string limit)
     {
         var prepared = Utf8VerifierTestPlans.WithStructuralVerifier(new((Utf8StructuralVerifierKind)(kind < 4 ? kind : Math.Min(kind - 4, 3)),
-            default, default, default, null, default));
+            default));
         ulong peak, work, depth, loan, slots;
         using (var funded = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
@@ -100,17 +100,16 @@ public sealed class Utf8VerifierProgramAdmissionTests
         }
         Assert.Equal(2, typeof(Utf8VerifierRuntime).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly).Length);
         Assert.Single(typeof(Utf8StructuralVerifierRuntime).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly));
-        foreach (var type in new[] { typeof(Utf8NoStructuralVerifierRuntime), typeof(Utf8AsciiStructuralVerifierRuntime),
-            typeof(Utf8ByteSafeLinearVerifierRuntime), typeof(Utf8ByteSafeLazyDfaVerifierRuntime) })
+        foreach (var type in new[] { typeof(Utf8NoStructuralVerifierRuntime), typeof(Utf8AsciiStructuralVerifierRuntime) })
             Assert.Empty(type.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly));
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+    [InlineData(0)] [InlineData(1)]
     public void StructuralRootRetainsItsPreparedOwnerWithoutCopyingThePlan(int kind)
     {
         var prepared = Utf8VerifierTestPlans.WithStructuralVerifier(new((Utf8StructuralVerifierKind)kind,
-            default, default, default, null, default));
+            default));
         var runtime = Assert.IsAssignableFrom<Utf8StructuralVerifierRuntime>(Build(kind, prepared));
         var field = Assert.Single(typeof(Utf8StructuralVerifierRuntime)
             .GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly));
@@ -215,7 +214,7 @@ internal static class Utf8VerifierTestPlans
     internal static Utf8PreparedRegex WithDirectFamily(Utf8PreparedRegex p, Utf8FallbackDirectFamilyPlan family)
         => Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend,
             p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram, p.OperationMatchCursorPlans,
-            p.StructuralSearchPlan, p.DeterministicAnchor, p.DeterministicGuards, p.ScalarVerifier, p.StructuralVerifier,
+            p.StructuralSearchPlan, p.DeterministicGuards, p.StructuralVerifier,
             p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan, p.StructuralRepeatedSegmentPlan,
             p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan, p.LiteralUtf8, p.FallbackReason, family);
 
@@ -224,14 +223,7 @@ internal static class Utf8VerifierTestPlans
             p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram,
             Utf8OperationMatchCursorPlans.Create(p.ExecutionProgram, search, p.StructuralLinearProgram, p.SimplePatternPlan,
                 search.StructuralSearchPlan, p.StructuralVerifier.AsciiProgram),
-            search.StructuralSearchPlan, p.DeterministicAnchor, p.DeterministicGuards, p.ScalarVerifier, p.StructuralVerifier,
-            p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan, p.StructuralRepeatedSegmentPlan,
-            p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan, p.LiteralUtf8, p.FallbackReason, p.FallbackDirectFamily);
-
-    internal static Utf8PreparedRegex WithScalarVerifier(Utf8PreparedRegex p, Utf8ScalarVerifierPlan fallback)
-        => Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend,
-            p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram, p.OperationMatchCursorPlans,
-            p.StructuralSearchPlan, p.DeterministicAnchor, p.DeterministicGuards, fallback, p.StructuralVerifier,
+            search.StructuralSearchPlan, p.DeterministicGuards, p.StructuralVerifier,
             p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan, p.StructuralRepeatedSegmentPlan,
             p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan, p.LiteralUtf8, p.FallbackReason, p.FallbackDirectFamily);
 
@@ -240,9 +232,10 @@ internal static class Utf8VerifierTestPlans
         var p = Utf8FrontEnd.Compile("a", RegexOptions.CultureInvariant);
         return Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend,
             p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram,
-            Utf8OperationMatchCursorPlans.Create(p.ExecutionProgram, p.SearchPlan, p.StructuralLinearProgram, p.SimplePatternPlan, p.StructuralSearchPlan, structuralVerifier.AsciiProgram),
-            p.StructuralSearchPlan, p.DeterministicAnchor, p.DeterministicGuards, p.ScalarVerifier, structuralVerifier, p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan,
-            p.StructuralRepeatedSegmentPlan, p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan,
-            p.LiteralUtf8, p.FallbackReason, p.FallbackDirectFamily);
+            Utf8OperationMatchCursorPlans.Create(p.ExecutionProgram, p.SearchPlan, p.StructuralLinearProgram, p.SimplePatternPlan,
+                p.StructuralSearchPlan, structuralVerifier.AsciiProgram),
+            p.StructuralSearchPlan, p.DeterministicGuards, structuralVerifier, p.StructuralIdentifierFamilyPlan,
+            p.StructuralTokenWindowPlan, p.StructuralRepeatedSegmentPlan, p.StructuralQuotedRelationPlan,
+            p.OrderedLiteralWindowPlan, p.LiteralUtf8, p.FallbackReason, p.FallbackDirectFamily);
     }
 }

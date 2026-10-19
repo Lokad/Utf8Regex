@@ -899,7 +899,7 @@ public sealed class PreparedSearchPrimitivesTests
     [Fact]
     public void PreparedFallbackWindowCandidatesCarryTrailingEnd()
     {
-        var source = new PreparedFallbackCandidateSource(
+        var source = Utf8StructuralSearchPlan.CreateWindowPlan(
             new PreparedWindowSearch(
                 new PreparedSearcher(new PreparedMultiLiteralSearch(
                 [
@@ -908,7 +908,7 @@ public sealed class PreparedSearchPrimitivesTests
                 ], ignoreCase: false)),
                 new PreparedSearcher(new PreparedSubstringSearch(Encoding.UTF8.GetBytes("await"), ignoreCase: false), ignoreCase: false)));
         var input = Encoding.UTF8.GetBytes("using var x = await;");
-        var state = new PreparedFallbackCandidateState(default, PreparedWindowScanState.Create(0));
+        var state = new Utf8StructuralSearchState(default, PreparedWindowScanState.Create(0));
 
         Assert.True(source.TryFindNextCandidate(input, ref state, out var candidate));
         Assert.Equal(0, candidate.StartIndex);
@@ -968,16 +968,16 @@ public sealed class PreparedSearchPrimitivesTests
     }
 
     [Fact]
-    public void PreparedFallbackWindowCandidatesStillApplyLegacyLineConstraints()
+    public void StructuralWindowCandidatesApplyLineConstraints()
     {
-        var source = new PreparedFallbackCandidateSource(
+        var source = Utf8StructuralSearchPlan.CreateWindowPlan(
             new PreparedWindowSearch(
                 new PreparedSearcher(new PreparedMultiLiteralSearch([Encoding.UTF8.GetBytes("using var")], ignoreCase: false)),
                 new PreparedSearcher(new PreparedSubstringSearch(Encoding.UTF8.GetBytes("await"), ignoreCase: false), ignoreCase: false),
                 maxGap: 64,
                 sameLine: true));
         var input = Encoding.UTF8.GetBytes("using var value =\nawait");
-        var state = new PreparedFallbackCandidateState(default, PreparedWindowScanState.Create(0));
+        var state = new Utf8StructuralSearchState(default, PreparedWindowScanState.Create(0));
 
         Assert.False(source.TryFindNextCandidate(input, ref state, out _));
     }

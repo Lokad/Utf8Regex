@@ -106,32 +106,6 @@ public sealed partial class Utf8Regex
         return false;
     }
 
-    private bool DebugTryGetSelectedCountKernelMetrics(
-        ReadOnlySpan<byte> input,
-        out Utf8SelectedCountKernelMetrics metrics)
-    {
-        if (_packedNibbleLiteralFamilyCountStrategy is { } packedNibbleLiteralFamilyCountStrategy)
-        {
-            metrics = packedNibbleLiteralFamilyCountStrategy.InspectMetrics(input);
-            return true;
-        }
-
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount)
-        {
-            metrics = Utf8WordDelimitedTokenExecutor.InspectMetrics(input);
-            return true;
-        }
-
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.Utf8UriToken)
-        {
-            metrics = Utf8InputAnalyzer.IsAscii(input)
-                ? Utf8AsciiUriTokenExecutor.InspectMetrics(input)
-                : Utf8UriTokenCountExecutor.InspectMetrics(input);
-            return true;
-        }
-
-        return _compiledEngineRuntime.TryDebugGetSelectedCountKernelMetrics(input, out metrics);
-    }
 
     private bool DebugTryCountExactUtf8LiteralValidatedThreeByte(ReadOnlySpan<byte> input, out int count)
     {
@@ -168,20 +142,8 @@ public sealed partial class Utf8Regex
         return _compiledEngineRuntime.TryDebugMatchExactLiteral(input, out match);
     }
 
-    private int DebugCountFallbackCandidates(ReadOnlySpan<byte> input)
-    {
-        return CountFallbackCandidates(input, requireScalarBoundary: false);
-    }
 
-    private int DebugCountFallbackBoundaryCandidates(ReadOnlySpan<byte> input)
-    {
-        return CountFallbackCandidates(input, requireScalarBoundary: true);
-    }
 
-    private int DebugCountFallbackViaSearchStarts(ReadOnlySpan<byte> input)
-    {
-        return CountFallbackViaSearchStarts(input);
-    }
 
     private Utf8ValueMatch DebugMatchViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation)
     {
@@ -373,15 +335,6 @@ public sealed partial class Utf8Regex
 
     private bool DebugCanGuideFallbackVerification => CanGuideFallbackVerification();
 
-    private bool DebugIsMatchFallbackViaSearchStarts(ReadOnlySpan<byte> input)
-    {
-        if (RejectsByRequiredPrefilter(input) || !CanGuideFallbackVerification())
-        {
-            return false;
-        }
-
-        return IsMatchFallbackViaSearchStarts(input);
-    }
 
     private Utf8ValueMatch DebugMatchAfterValidation(ReadOnlySpan<byte> input, Utf8ValidationResult validation)
     {
@@ -574,11 +527,6 @@ public sealed partial class Utf8Regex
         public bool DebugTryCountSelectedKernelWithoutValidation(ReadOnlySpan<byte> input, out int count) =>
             _owner.DebugTryCountSelectedKernelWithoutValidation(input, out count);
 
-        public bool DebugTryGetSelectedCountKernelMetrics(
-            ReadOnlySpan<byte> input,
-            out Utf8SelectedCountKernelMetrics metrics) =>
-            _owner.DebugTryGetSelectedCountKernelMetrics(input, out metrics);
-
         public bool DebugTryCountExactUtf8LiteralValidatedThreeByte(
             ReadOnlySpan<byte> input,
             out int count) =>
@@ -607,15 +555,6 @@ public sealed partial class Utf8Regex
 
         public bool DebugTryMatchExactLiteral(ReadOnlySpan<byte> input, out Utf8ValueMatch match) =>
             _owner.DebugTryMatchExactLiteral(input, out match);
-
-        public int DebugCountFallbackCandidates(ReadOnlySpan<byte> input) =>
-            _owner.DebugCountFallbackCandidates(input);
-
-        public int DebugCountFallbackBoundaryCandidates(ReadOnlySpan<byte> input) =>
-            _owner.DebugCountFallbackBoundaryCandidates(input);
-
-        public int DebugCountFallbackViaSearchStarts(ReadOnlySpan<byte> input) =>
-            _owner.DebugCountFallbackViaSearchStarts(input);
 
         public Utf8ValueMatch DebugMatchViaCompiledEngine(
             ReadOnlySpan<byte> input,
@@ -754,9 +693,6 @@ public sealed partial class Utf8Regex
             _owner.DebugIsMatchViaCompiledEngine(input, validation);
 
         public bool DebugCanGuideFallbackVerification => _owner.DebugCanGuideFallbackVerification;
-
-        public bool DebugIsMatchFallbackViaSearchStarts(ReadOnlySpan<byte> input) =>
-            _owner.DebugIsMatchFallbackViaSearchStarts(input);
 
         public Utf8ValueMatch DebugMatchAfterValidation(
             ReadOnlySpan<byte> input,

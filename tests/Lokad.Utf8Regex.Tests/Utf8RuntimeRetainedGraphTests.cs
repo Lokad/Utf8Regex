@@ -64,7 +64,7 @@ public sealed class Utf8RuntimeRetainedGraphTests
             type.DeclaringType is not null&&RuntimeTypeNames.Contains(type.DeclaringType.Name))) Assert.Contains(type,layouts);
         // The retired fallback emitter and its two delegate/receipt pairs no
         // longer contribute layouts. The loops above require every live type.
-        Assert.Equal(95,layouts.Count);
+        Assert.Equal(90,layouts.Count);
         var expected=InspectRuntimeGraph(roots);
         Assert.True(expected.Keys.OfType<string>().Count(static text=>text=="qqq")>1);
         AssertManifest(expected,Collect(roots));
@@ -169,11 +169,9 @@ public sealed class Utf8RuntimeRetainedGraphTests
     private static readonly string[] RuntimeTypeNames=[nameof(Utf8RegexProgram),nameof(Utf8VerifierRuntime),
         nameof(Utf8ExactLiteralCompiledEngineRuntime),nameof(Utf8LiteralFamilyCompiledEngineRuntime),nameof(Utf8LiteralCompiledEngineRuntime),
         nameof(Utf8StructuralFamilyCompiledEngineRuntime),nameof(Utf8SimplePatternCompiledEngineRuntime),nameof(Utf8StructuralLinearAutomatonCompiledEngineRuntime),
-        nameof(Utf8ByteSafeLinearCompiledEngineRuntime),nameof(Utf8SearchGuidedFallbackCompiledEngineRuntime),nameof(Utf8CompiledFallbackCompiledEngineRuntime),
         nameof(Utf8FallbackRegexCompiledEngineRuntime),nameof(Utf8CompiledSymmetricLiteralWindowCounter),nameof(Utf8EmittedDeterministicMatcher),
         nameof(Utf8EmittedKernelMatcher),nameof(Utf8EmittedLiteralFamilyCounter),nameof(Utf8EmittedTokenFamilyMatcher),
-        nameof(Utf8EmittedWholeMatcher),nameof(Utf8NoStructuralVerifierRuntime),nameof(Utf8AsciiStructuralVerifierRuntime),
-        nameof(Utf8ByteSafeLinearVerifierRuntime),nameof(Utf8ByteSafeLazyDfaVerifierRuntime),nameof(Utf8NoStructuralLinearRuntime),
+        nameof(Utf8EmittedWholeMatcher),nameof(Utf8NoStructuralVerifierRuntime),nameof(Utf8AsciiStructuralVerifierRuntime),nameof(Utf8NoStructuralLinearRuntime),
         nameof(Utf8AsciiInstructionLinearRuntime),nameof(Utf8AsciiStructuralFamilyLinearRuntime),"CompositeTrailingLiteralSearch"];
     private static IEnumerable<Type> RuntimeTypes(Assembly library)=>library.GetTypes().Where(static type=>RuntimeTypeNames.Contains(type.Name));
 

@@ -2,6 +2,12 @@
 
 ## Changes after scalar.104
 
+Remove the ByteSafeLinear, CompiledFallback and SearchGuidedFallback runtimes
+shadowed by public scalar dispatch, their exclusive compiler/preparation, and
+obsolete existence tests. The live managed ASCII DFA belongs to PCRE2. General
+candidate and Count census replays belong to benchmark tooling; shared native
+search and scalar execution keep their production consumers.
+
 Remove six verified unused helpers and two test-only token forwarding executors;
 tests exercise the production prepared searches directly. Projection microcost
 replays now belong to benchmark tooling instead of the shipped Core assembly.

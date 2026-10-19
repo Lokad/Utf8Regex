@@ -104,17 +104,20 @@ public sealed class DotNetPerformanceRouteGuardrailTests
     }
 
     [Fact]
-    public void RuffTweakedStaysOnByteSafeLinearFallback()
+    public void RuffTweakedRetainsItsScalarPrefilter()
     {
         var regex = new Utf8Regex(
             "(?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?",
             RegexOptions.None);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.ByteSafeLinear, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
         Assert.Equal(Utf8SearchKind.FixedDistanceAsciiSets, regex.Inspection.SearchPlan.Kind);
         Assert.True(regex.Inspection.SearchPlan.PrefilterPlan.HasValue);
         Assert.Equal(PreparedSearcherKind.ExactLiteral, regex.Inspection.SearchPlan.RequiredPrefilterSearcher.Kind);
+        var match = regex.Match("😀 # noqa: A123, B456"u8);
+        Assert.True(match.Success); Assert.Equal(5, match.IndexInBytes);
+        Assert.Equal(1, regex.Count("😀 # noqa: A123, B456"u8));
     }
 
     [Fact]

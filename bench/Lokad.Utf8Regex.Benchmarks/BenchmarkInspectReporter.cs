@@ -762,11 +762,6 @@ internal static partial class BenchmarkInspectReporter
 
             var context = new DotNetPerformanceReplicaBenchmarkContext(dotNetPerformanceCase);
             var analysis = Utf8FrontEnd.Compile(context.Pattern, dotNetPerformanceCase.Options);
-            if (Utf8CompiledEngineSelector.Select(analysis).Kind == Utf8CompiledEngineKind.ByteSafeLinear)
-            {
-                return RunMeasureByteSafeRebarCase(caseId, iterationsText);
-            }
-
             if (analysis.StructuralLinearProgram.HasValue)
             {
                 return RunMeasureStructuralLinearRebarCase(caseId, iterationsText);
@@ -823,58 +818,12 @@ internal static partial class BenchmarkInspectReporter
             }
 
             var context = new LokadReplicaScriptBenchmarkContext(lokadScriptCase);
-            if (context.Utf8Regex.Inspection.CompiledEngineKind == Utf8CompiledEngineKind.ByteSafeLinear)
-            {
-                return RunMeasureLokadScriptByteSafePrefixCase(caseId, iterationsText);
-            }
-
             return RunMeasureLokadScriptPrefixCase(caseId, iterationsText);
         }
 
         Console.WriteLine($"CaseId            : {caseId}");
         Console.WriteLine("MeasureDeep       : case was not found in any benchmark catalog.");
         return 1;
-    }
-
-    public static int RunMeasureCompiledFallbackReplicaCase(string caseId, string? iterationsText)
-    {
-        var benchmarkCase = ReplicaCountBenchmarkCase.Resolve(caseId);
-        if (benchmarkCase.RequiresDedicatedMeasurement)
-        {
-            Console.WriteLine($"CaseId            : {caseId}");
-            Console.WriteLine("CompiledFallback  : this case requires a dedicated measurement path.");
-            return 1;
-        }
-
-        var iterations = ParseIterations(iterationsText);
-        var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Pattern, benchmarkCase.Options | RegexOptions.Compiled);
-        var baselineDiagnostics = benchmarkCase.Utf8Regex.CollectCountDiagnostics(benchmarkCase.InputBytes);
-        var compiledDiagnostics = compiledUtf8Regex.CollectCountDiagnostics(benchmarkCase.InputBytes);
-
-        WriteReplicaCaseHeader(benchmarkCase, iterations);
-        Console.WriteLine($"BaselineEngine    : {benchmarkCase.Utf8Regex.Inspection.CompiledEngineKind}");
-        Console.WriteLine($"CompiledEngine    : {compiledUtf8Regex.Inspection.CompiledEngineKind}");
-        WriteCountDiagnostics("Baseline", baselineDiagnostics);
-        WriteCountDiagnostics("Compiled", compiledDiagnostics);
-
-        Measure("ValidationOnly", iterations, () => ExecuteValidationOnly(benchmarkCase.InputBytes));
-        Measure("WellFormedOnly", iterations, () =>
-        {
-            Utf8Validation.ThrowIfInvalidOnly(benchmarkCase.InputBytes);
-            return benchmarkCase.InputBytes.Length;
-        });
-        Measure("BaselineDirect", iterations, () => benchmarkCase.Utf8Regex.Inspection.DebugCountViaCompiledEngine(benchmarkCase.InputBytes));
-        Measure("CompiledDirect", iterations, () => compiledUtf8Regex.Inspection.DebugCountViaCompiledEngine(benchmarkCase.InputBytes));
-        Measure("Utf8Regex", iterations, () => benchmarkCase.Utf8Regex.Count(benchmarkCase.InputBytes));
-        Measure("Utf8Compiled", iterations, () => compiledUtf8Regex.Count(benchmarkCase.InputBytes));
-        Measure(benchmarkCase.Source == ReplicaBenchmarkSource.DotNetPerformance ? "DotNetRegex" : "DecodeThenRegex", iterations, benchmarkCase.Source == ReplicaBenchmarkSource.DotNetPerformance ? benchmarkCase.CountPredecodedRegex : benchmarkCase.CountDecodeThenRegex);
-        Measure("CompiledRegex", iterations, benchmarkCase.CountPredecodedCompiledRegex);
-        if (benchmarkCase.Source == ReplicaBenchmarkSource.Lokad)
-        {
-            Measure("PredecodedRegex", iterations, benchmarkCase.CountPredecodedRegex);
-        }
-
-        return 0;
     }
 
     public static int RunMeasureLiteralSearchReplicaCase(string caseId, string? iterationsText)
@@ -2469,62 +2418,6 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
-    public static int RunMeasureLokadScriptByteSafePrefixCase(string caseId, string? iterationsText)
-    {
-        var benchmarkCase = LokadReplicaScriptBenchmarkCatalog.Get(caseId);
-        if (benchmarkCase.Model != LokadReplicaScriptBenchmarkModel.PrefixMatchLoop)
-        {
-            Console.WriteLine($"CaseId            : {caseId}");
-            Console.WriteLine($"Model             : {benchmarkCase.Model}");
-            Console.WriteLine("LokadScriptByteSafe  : case is not a PrefixMatchLoop");
-            return 1;
-        }
-
-        var context = new LokadReplicaScriptBenchmarkContext(benchmarkCase);
-        var analysis = Utf8FrontEnd.Compile(context.Pattern, benchmarkCase.Utf8Options);
-        var regexPlan = analysis;
-        if (Utf8CompiledEngineSelector.Select(regexPlan).Kind != Utf8CompiledEngineKind.ByteSafeLinear)
-        {
-            Console.WriteLine($"CaseId            : {caseId}");
-            Console.WriteLine($"CompiledEngine    : {Utf8CompiledEngineSelector.Select(regexPlan).Kind}");
-            Console.WriteLine("LokadScriptByteSafe  : not a byte-safe linear case");
-            return 1;
-        }
-
-        var verifierRuntime = Utf8VerifierRuntime.Create(regexPlan);
-        var iterations = ParseLokadPrefixIterations(iterationsText);
-
-        Console.WriteLine($"CaseId            : {caseId}");
-        Console.WriteLine($"Model             : {benchmarkCase.Model}");
-        Console.WriteLine($"Pattern           : {benchmarkCase.Pattern}");
-        Console.WriteLine($"DotNetOptions     : {benchmarkCase.DotNetOptions}");
-        Console.WriteLine($"Utf8Options       : {benchmarkCase.Utf8Options}");
-        Console.WriteLine($"Iterations        : {iterations}");
-        Console.WriteLine($"InputChars        : {context.InputChars}");
-        Console.WriteLine($"InputBytes        : {context.TotalInputBytes}");
-        Console.WriteLine($"SampleCount       : {context.Samples.Length}");
-        Console.WriteLine($"ExecutionKind     : {context.Utf8Regex.Inspection.ExecutionKind}");
-        Console.WriteLine($"CompiledEngine    : {context.Utf8Regex.Inspection.CompiledEngineKind}");
-        if (!string.IsNullOrEmpty(context.Utf8Regex.Inspection.FallbackReason))
-        {
-            Console.WriteLine($"FallbackReason    : {context.Utf8Regex.Inspection.FallbackReason}");
-        }
-
-        Measure("AnchorCandidates", iterations, () => ExecuteLokadScriptByteSafeAcrossSamples(context.SampleBytes, input => ExecuteByteSafeAnchorCandidateCount(regexPlan, input)));
-        Measure("AnchorCandidateSum", iterations, () => ExecuteLokadScriptByteSafeAcrossSamples(context.SampleBytes, input => ExecuteByteSafeAnchorCandidateIndexSum(regexPlan, input)));
-        Measure("StatefulAnchorCandidates", iterations, () => ExecuteLokadScriptByteSafeAcrossSamples(context.SampleBytes, input => ExecuteByteSafeStatefulAnchorCandidateCount(regexPlan, input)));
-        Measure("StatefulAnchorCandidateSum", iterations, () => ExecuteLokadScriptByteSafeAcrossSamples(context.SampleBytes, input => ExecuteByteSafeStatefulAnchorCandidateIndexSum(regexPlan, input)));
-        Measure("StructuralCandidates", iterations, () => ExecuteLokadScriptByteSafeAcrossSamples(context.SampleBytes, input => ExecuteByteSafeStructuralCandidateCount(regexPlan, input)));
-        Measure("StructuralCandidateSum", iterations, () => ExecuteLokadScriptByteSafeAcrossSamples(context.SampleBytes, input => ExecuteByteSafeStructuralCandidateIndexSum(regexPlan, input)));
-        Measure("VerifierCount", iterations, () => ExecuteLokadScriptByteSafeAcrossSamples(context.SampleBytes, input => ExecuteByteSafeVerifierCount(regexPlan, verifierRuntime, input)));
-        Measure("VerifierIndexSum", iterations, () => ExecuteLokadScriptByteSafeAcrossSamples(context.SampleBytes, input => ExecuteByteSafeVerifierIndexSum(regexPlan, verifierRuntime, input)));
-        Measure("CompiledMatchOnly", iterations, context.ExecuteUtf8PrefixCompiledAfterValidation);
-        Measure("Utf8Regex", iterations, context.ExecuteUtf8Regex);
-        Measure("DecodeThenRegex", iterations, context.ExecuteDecodeThenRegex);
-        Measure("PredecodedRegex", iterations, context.ExecutePredecodedRegex);
-        return 0;
-    }
-
     public static int RunMeasureLokadScriptCountCase(string caseId, string? iterationsText)
     {
         var benchmarkCase = LokadReplicaScriptBenchmarkCatalog.Get(caseId);
@@ -2678,10 +2571,10 @@ internal static partial class BenchmarkInspectReporter
         RequireCountResult("Utf8Regex", expectedResult, ordinaryRegex.Count(input));
         RequireCountResult("Utf8Compiled", expectedResult, compiledRegex.Count(input));
 
-        var hasOrdinaryMetrics = ordinaryRegex.Inspection.DebugTryGetSelectedCountKernelMetrics(
+        var hasOrdinaryMetrics = Utf8CountKernelCensus.TryInspect(ordinaryRegex,
             input,
             out var ordinaryMetrics);
-        var hasCompiledMetrics = compiledRegex.Inspection.DebugTryGetSelectedCountKernelMetrics(
+        var hasCompiledMetrics = Utf8CountKernelCensus.TryInspect(compiledRegex,
             input,
             out var compiledMetrics);
         if (hasOrdinaryMetrics)
@@ -3263,9 +3156,9 @@ internal static partial class BenchmarkInspectReporter
             {
                 Measure("RunPlanDirect", iterations, () => Utf8AsciiCharClassRunExecutor.Count(context.InputBytes, simplePatternPlan.RunPlan, budget: Utf8ExecutionDeadline.Infinite));
             }
-            Measure("FallbackCandidates", iterations, () => context.Utf8Regex.Inspection.DebugCountFallbackCandidates(context.InputBytes));
-            Measure("FallbackBoundaryCandidates", iterations, () => context.Utf8Regex.Inspection.DebugCountFallbackBoundaryCandidates(context.InputBytes));
-            Measure("FallbackVerifiedCount", iterations, () => context.Utf8Regex.Inspection.DebugCountFallbackViaSearchStarts(context.InputBytes));
+            Measure("FallbackCandidates", iterations, () => Utf8FallbackReplay.CountCandidates(context.Utf8Regex.Inspection.SearchPlan, context.InputBytes, false));
+            Measure("FallbackBoundaryCandidates", iterations, () => Utf8FallbackReplay.CountCandidates(context.Utf8Regex.Inspection.SearchPlan, context.InputBytes, true));
+            Measure("FallbackVerifiedCount", iterations, () => Utf8FallbackReplay.Count(context.Utf8Regex, context.InputBytes));
         }
         else if (context.Operation == LokadPublicBenchmarkOperation.IsMatch)
         {
@@ -3526,56 +3419,6 @@ internal static partial class BenchmarkInspectReporter
         });
         Measure("MatchAfterValidation", iterations, () => context.Utf8Regex.Inspection.DebugIsMatchViaCompiledEngine(context.InputBytes, validation) ? 1 : 0);
         Measure("CompiledMatchAfterValidation", iterations, () => context.CompiledUtf8Regex.Inspection.DebugIsMatchViaCompiledEngine(context.InputBytes, validation) ? 1 : 0);
-        Measure("Utf8Regex", iterations, context.ExecuteUtf8Regex);
-        Measure("Utf8Compiled", iterations, context.ExecuteUtf8Compiled);
-        Measure("DecodeThenRegex", iterations, context.ExecuteDecodeThenRegex);
-        Measure("DecodeThenCompiledRegex", iterations, context.ExecuteDecodeThenCompiledRegex);
-        Measure("PredecodedRegex", iterations, context.ExecutePredecodedRegex);
-        Measure("PredecodedCompiledRegex", iterations, context.ExecutePredecodedCompiledRegex);
-        return 0;
-    }
-
-    public static int RunMeasureLokadPublicCompiledFallbackCase(string caseId, string? iterationsText)
-    {
-        var context = new LokadPublicBenchmarkContext(caseId);
-        if (context.Operation != LokadPublicBenchmarkOperation.Count)
-        {
-            Console.WriteLine($"CaseId            : {caseId}");
-            Console.WriteLine($"Operation         : {context.Operation}");
-            Console.WriteLine("CompiledFallback  : only count cases are supported");
-            return 1;
-        }
-
-        var iterations = ParseIterations(iterationsText);
-        var baselineDiagnostics = context.Utf8Regex.CollectCountDiagnostics(context.InputBytes);
-        var compiledDiagnostics = context.CompiledUtf8Regex.CollectCountDiagnostics(context.InputBytes);
-
-        Console.WriteLine($"CaseId            : {caseId}");
-        Console.WriteLine($"Operation         : {context.Operation}");
-        Console.WriteLine($"Pattern           : {context.Pattern}");
-        Console.WriteLine($"Options           : {context.Options}");
-        Console.WriteLine($"InputChars        : {context.InputString.Length}");
-        Console.WriteLine($"InputBytes        : {context.InputBytes.Length}");
-        Console.WriteLine($"BaselineEngine    : {context.Utf8Regex.Inspection.CompiledEngineKind}");
-        Console.WriteLine($"CompiledEngine    : {context.CompiledUtf8Regex.Inspection.CompiledEngineKind}");
-        if (!string.IsNullOrEmpty(context.CompiledUtf8Regex.Inspection.FallbackReason))
-        {
-            Console.WriteLine($"FallbackReason    : {context.CompiledUtf8Regex.Inspection.FallbackReason}");
-        }
-
-        WriteCountDiagnostics("Baseline", baselineDiagnostics);
-        WriteCountDiagnostics("Compiled", compiledDiagnostics);
-
-        Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).Utf16Length);
-        Measure("AsciiOnlyCheck", iterations, () => Utf8InputAnalyzer.IsAscii(context.InputBytes) ? context.InputBytes.Length : 0);
-        Measure("Utf8IsValid", iterations, () => Utf8.IsValid(context.InputBytes) ? context.InputBytes.Length : 0);
-        Measure("WellFormedOnly", iterations, () =>
-        {
-            Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
-            return context.InputBytes.Length;
-        });
-        Measure("BaselineDirect", iterations, () => context.Utf8Regex.Inspection.DebugCountViaCompiledEngine(context.InputBytes));
-        Measure("CompiledDirect", iterations, () => context.CompiledUtf8Regex.Inspection.DebugCountViaCompiledEngine(context.InputBytes));
         Measure("Utf8Regex", iterations, context.ExecuteUtf8Regex);
         Measure("Utf8Compiled", iterations, context.ExecuteUtf8Compiled);
         Measure("DecodeThenRegex", iterations, context.ExecuteDecodeThenRegex);
@@ -4485,45 +4328,6 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
-    public static int RunMeasureByteSafeRebarCase(string caseId, string? iterationsText)
-    {
-        var benchmarkCase = DotNetPerformanceReplicaBenchmarkCatalog.Get(caseId);
-        var context = new DotNetPerformanceReplicaBenchmarkContext(benchmarkCase);
-        var analysis = Utf8FrontEnd.Compile(context.Pattern, benchmarkCase.Options);
-        var regexPlan = analysis;
-        if (Utf8CompiledEngineSelector.Select(regexPlan).Kind != Utf8CompiledEngineKind.ByteSafeLinear)
-        {
-            Console.WriteLine($"CaseId            : {caseId}");
-            Console.WriteLine($"CompiledEngine    : {Utf8CompiledEngineSelector.Select(regexPlan).Kind}");
-            Console.WriteLine("ByteSafe          : not a byte-safe linear/lazy-DFA case");
-            return 1;
-        }
-
-        var verifierRuntime = Utf8VerifierRuntime.Create(regexPlan);
-        var input = context.InputBytes;
-        var iterations = ParseIterations(iterationsText);
-
-        Console.WriteLine($"CaseId            : {caseId}");
-        Console.WriteLine($"Pattern           : {context.Pattern}");
-        Console.WriteLine($"Options           : {benchmarkCase.Options}");
-        Console.WriteLine($"Iterations        : {iterations}");
-        Console.WriteLine($"VerifierKind      : {regexPlan.StructuralVerifier.Kind}");
-        Console.WriteLine($"HasAnchor         : {regexPlan.DeterministicAnchor.HasValue}");
-        Console.WriteLine($"HasStructuralPlan : {regexPlan.StructuralSearchPlan.HasValue}");
-
-        Measure("AnchorCandidates", iterations, () => ExecuteByteSafeAnchorCandidateCount(regexPlan, input));
-        Measure("AnchorCandidateSum", iterations, () => ExecuteByteSafeAnchorCandidateIndexSum(regexPlan, input));
-        Measure("StatefulAnchorCandidates", iterations, () => ExecuteByteSafeStatefulAnchorCandidateCount(regexPlan, input));
-        Measure("StatefulAnchorCandidateSum", iterations, () => ExecuteByteSafeStatefulAnchorCandidateIndexSum(regexPlan, input));
-        Measure("StructuralCandidates", iterations, () => ExecuteByteSafeStructuralCandidateCount(regexPlan, input));
-        Measure("StructuralCandidateSum", iterations, () => ExecuteByteSafeStructuralCandidateIndexSum(regexPlan, input));
-        Measure("VerifierCount", iterations, () => ExecuteByteSafeVerifierCount(regexPlan, verifierRuntime, input));
-        Measure("VerifierIndexSum", iterations, () => ExecuteByteSafeVerifierIndexSum(regexPlan, verifierRuntime, input));
-        Measure("Utf8Regex", iterations, () => context.Utf8Regex.Count(input));
-        Measure("DotNetRegex", iterations, () => context.Regex.Count(context.InputString));
-        return 0;
-    }
-
     public static int RunMeasureBoundedRepeatReplicaCase(string caseId, string? iterationsText)
     {
         var benchmarkCase = ReplicaCountBenchmarkCase.Resolve(caseId);
@@ -5138,14 +4942,6 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
-    public static int RunDumpLazyDfaPattern(string pattern, string? optionsText)
-    {
-        var options = ParseRegexOptions(optionsText);
-        var regex = new Utf8Regex(pattern, options);
-        WriteLazyDfaDump(pattern, options, regex);
-        return 0;
-    }
-
     public static int RunDumpRuntimeTreePattern(string pattern, string? optionsText)
     {
         var options = ParseRegexOptions(optionsText);
@@ -5340,14 +5136,6 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
-    public static int RunDumpLazyDfaRebarCase(string caseId)
-    {
-        var benchmarkCase = DotNetPerformanceReplicaBenchmarkCatalog.Get(caseId);
-        var context = new DotNetPerformanceReplicaBenchmarkContext(benchmarkCase);
-        WriteLazyDfaDump(context.Pattern, benchmarkCase.Options, context.Utf8Regex, caseId, benchmarkCase.Origin);
-        return 0;
-    }
-
     private static void WriteRegexInspection(
         string sourceKind,
         string pattern,
@@ -5420,44 +5208,8 @@ internal static partial class BenchmarkInspectReporter
                 Console.WriteLine($"FallbackPlan[{i}]  : Yield={plan.YieldKind}, Stages={plan.Stages?.Length ?? 0}");
             }
         }
-        Console.WriteLine($"Verifier          : {DescribeVerifier(regex)}");
+        Console.WriteLine($"Verifier          : {regex.Inspection.StructuralVerifierPlan.Kind.ToString()}");
         Console.WriteLine($"FallbackReason    : {regex.Inspection.FallbackReason ?? "<native>"}");
-    }
-
-    private static void WriteLazyDfaDump(
-        string pattern,
-        RegexOptions options,
-        Utf8Regex regex,
-        string? caseId = null,
-        string? origin = null)
-    {
-        var linear = regex.Inspection.StructuralVerifierPlan.ByteSafeLinearProgram;
-        var lazy = regex.Inspection.StructuralVerifierPlan.ByteSafeLazyDfaProgram;
-
-        if (caseId is not null)
-        {
-            Console.WriteLine($"CaseId            : {caseId}");
-        }
-
-        if (origin is not null)
-        {
-            Console.WriteLine($"Origin            : {origin}");
-        }
-
-        Console.WriteLine($"Pattern           : {pattern}");
-        Console.WriteLine($"Options           : {options}");
-        Console.WriteLine($"CompiledEngine    : {regex.Inspection.CompiledEngineKind}");
-        Console.WriteLine($"VerifierKind      : {regex.Inspection.StructuralVerifierPlan.Kind}");
-        Console.WriteLine($"LazyDfaHasValue   : {lazy.HasValue}");
-        Console.WriteLine($"LazyDfaReject     : {Utf8ByteSafeLazyDfaVerifierProgram.Compile(linear).FailureKind}");
-        Console.WriteLine($"LazyDfaStates     : {lazy.StateCount}");
-        Console.WriteLine($"LazyDfaTransitions: {lazy.TransitionCount}");
-        Console.WriteLine($"LinearStepCount   : {linear.Steps.Length}");
-
-        for (var i = 0; i < linear.Steps.Length; i++)
-        {
-            Console.WriteLine($"Step[{i}]          : {FormatLinearStep(linear.Steps[i])}");
-        }
     }
 
     private static void WriteStructuralLinearDump(
@@ -5554,47 +5306,6 @@ internal static partial class BenchmarkInspectReporter
         {
             Console.WriteLine($"Stage[{i}]         : {FormatStructuralSearchStage(stages[i])}");
         }
-    }
-
-    private static string DescribeVerifier(Utf8Regex regex)
-    {
-        if (regex.Inspection.CompiledEngineKind == Utf8CompiledEngineKind.ByteSafeLinear)
-        {
-            if (regex.Inspection.StructuralVerifierPlan.ByteSafeLazyDfaProgram.HasValue)
-            {
-                var lazy = regex.Inspection.StructuralVerifierPlan.ByteSafeLazyDfaProgram;
-                return $"CompiledByteSafeLazyDfa(states={lazy.StateCount}, transitions={lazy.TransitionCount})";
-            }
-
-            return regex.Inspection.StructuralVerifierPlan.ByteSafeLinearProgram.HasValue
-                ? $"CompiledByteSafeLinear(reject={regex.Inspection.StructuralVerifierPlan.LazyDfaCompileOutcome.FailureKind})"
-                : "CompatByteSafeLinear";
-        }
-
-        return regex.Inspection.StructuralVerifierPlan.Kind.ToString();
-    }
-
-    private static string FormatLinearStep(Utf8ByteSafeLinearVerifierStep step)
-    {
-        return step.Kind switch
-        {
-            Utf8ByteSafeLinearVerifierStepKind.MatchByte => $"MatchByte '{(char)step.Value}'",
-            Utf8ByteSafeLinearVerifierStepKind.MatchText => $"MatchText \"{Encoding.UTF8.GetString(step.Text!)}\"",
-            Utf8ByteSafeLinearVerifierStepKind.MatchAsciiClass => $"MatchAsciiClass ascii-bytes={step.CharClass.Count}",
-            Utf8ByteSafeLinearVerifierStepKind.LoopByte => $"LoopByte '{(char)step.Value}' min={step.Min} max={FormatMax(step.Max)}",
-            Utf8ByteSafeLinearVerifierStepKind.LoopText => $"LoopText \"{Encoding.UTF8.GetString(step.Text!)}\" min={step.Min} max={FormatMax(step.Max)}",
-            Utf8ByteSafeLinearVerifierStepKind.LoopAsciiClass => $"LoopAsciiClass ascii-bytes={step.CharClass.Count} min={step.Min} max={FormatMax(step.Max)}",
-            Utf8ByteSafeLinearVerifierStepKind.RequireBeginning => "RequireBeginning",
-            Utf8ByteSafeLinearVerifierStepKind.RequireEnd => "RequireEnd",
-            Utf8ByteSafeLinearVerifierStepKind.RequireBoundary => "RequireBoundary",
-            Utf8ByteSafeLinearVerifierStepKind.RequireNonBoundary => "RequireNonBoundary",
-            Utf8ByteSafeLinearVerifierStepKind.MatchAnyText => $"MatchAnyText [{FormatAlternatives(step.Alternatives!)}]",
-            Utf8ByteSafeLinearVerifierStepKind.MatchAnyTextOptional => $"MatchAnyTextOptional [{FormatAlternatives(step.Alternatives!)}]",
-            Utf8ByteSafeLinearVerifierStepKind.LoopAnyText => $"LoopAnyText [{FormatAlternatives(step.Alternatives!)}] min={step.Min} max={FormatMax(step.Max)}",
-            Utf8ByteSafeLinearVerifierStepKind.LoopProgram => $"LoopProgram steps={step.Program?.Length ?? 0} min={step.Min} max={FormatMax(step.Max)}",
-            Utf8ByteSafeLinearVerifierStepKind.Accept => "Accept",
-            _ => step.Kind.ToString(),
-        };
     }
 
     private static string FormatDeterministicStep(Utf8AsciiDeterministicStep step)
@@ -9268,82 +8979,6 @@ internal static partial class BenchmarkInspectReporter
         return total;
     }
 
-    private static int ExecuteByteSafeAnchorCandidateCount(Utf8PreparedRegex regexPlan, byte[] input)
-    {
-        if (!regexPlan.DeterministicAnchor.HasValue)
-        {
-            return 0;
-        }
-
-        var count = 0;
-        var anchor = regexPlan.DeterministicAnchor;
-        for (var candidate = FindNextAnchorCandidate(input, anchor, 0);
-             candidate >= 0;
-             candidate = FindNextAnchorCandidate(input, anchor, candidate + 1))
-        {
-            var matchStart = candidate - anchor.Offset;
-            if ((uint)matchStart > (uint)input.Length)
-            {
-                continue;
-            }
-
-            count++;
-        }
-
-        return count;
-    }
-
-    private static int ExecuteByteSafeAnchorCandidateIndexSum(Utf8PreparedRegex regexPlan, byte[] input)
-    {
-        if (!regexPlan.DeterministicAnchor.HasValue)
-        {
-            return 0;
-        }
-
-        var sum = 0;
-        var anchor = regexPlan.DeterministicAnchor;
-        for (var candidate = FindNextAnchorCandidate(input, anchor, 0);
-             candidate >= 0;
-             candidate = FindNextAnchorCandidate(input, anchor, candidate + 1))
-        {
-            var matchStart = candidate - anchor.Offset;
-            if ((uint)matchStart > (uint)input.Length)
-            {
-                continue;
-            }
-
-            sum += matchStart;
-        }
-
-        return sum;
-    }
-
-    private static int ExecuteByteSafeVerifierCount(Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime, byte[] input)
-    {
-        var count = 0;
-        var startIndex = 0;
-        while (Utf8ByteSafeLinearExecutor.FindNext(input, regexPlan, verifierRuntime.StructuralVerifierRuntime, startIndex, budget: Utf8ExecutionDeadline.Infinite, out var matchedLength) is var matchIndex && matchIndex >= 0)
-        {
-            count++;
-            startIndex = matchIndex + Math.Max(matchedLength, 1);
-        }
-
-        return count;
-    }
-
-    private static int ExecuteByteSafeVerifierIndexSum(Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime, byte[] input)
-    {
-        var sum = 0;
-        var startIndex = 0;
-        while (Utf8ByteSafeLinearExecutor.FindNext(input, regexPlan, verifierRuntime.StructuralVerifierRuntime, startIndex, budget: Utf8ExecutionDeadline.Infinite, out var matchedLength) is var matchIndex && matchIndex >= 0)
-        {
-            sum += matchIndex;
-            startIndex = matchIndex + Math.Max(matchedLength, 1);
-        }
-
-        return sum;
-    }
-
     private static int ExecuteByteSafeStructuralCandidateCount(Utf8PreparedRegex regexPlan, byte[] input)
     {
         if (!regexPlan.StructuralSearchPlan.HasValue ||
@@ -9411,59 +9046,5 @@ internal static partial class BenchmarkInspectReporter
         return true;
     }
 
-    private static int ExecuteByteSafeStatefulAnchorCandidateCount(Utf8PreparedRegex regexPlan, byte[] input)
-    {
-        if (!regexPlan.DeterministicAnchor.HasValue)
-        {
-            return 0;
-        }
-
-        var count = 0;
-        var anchor = regexPlan.DeterministicAnchor;
-        var state = new PreparedSearchScanState(0, default);
-        while (anchor.Searcher.TryFindNextOverlappingMatch(input, ref state, out var match))
-        {
-            var matchStart = match.Index - anchor.Offset;
-            if ((uint)matchStart <= (uint)input.Length)
-            {
-                count++;
-            }
-        }
-
-        return count;
-    }
-
-    private static int ExecuteByteSafeStatefulAnchorCandidateIndexSum(Utf8PreparedRegex regexPlan, byte[] input)
-    {
-        if (!regexPlan.DeterministicAnchor.HasValue)
-        {
-            return 0;
-        }
-
-        var sum = 0;
-        var anchor = regexPlan.DeterministicAnchor;
-        var state = new PreparedSearchScanState(0, default);
-        while (anchor.Searcher.TryFindNextOverlappingMatch(input, ref state, out var match))
-        {
-            var matchStart = match.Index - anchor.Offset;
-            if ((uint)matchStart <= (uint)input.Length)
-            {
-                sum += matchStart;
-            }
-        }
-
-        return sum;
-    }
-
-    private static int FindNextAnchorCandidate(byte[] input, Utf8DeterministicAnchorSearch anchor, int startIndex)
-    {
-        if ((uint)startIndex >= (uint)input.Length)
-        {
-            return -1;
-        }
-
-        var relative = anchor.Searcher.FindFirst(input[startIndex..]);
-        return relative < 0 ? -1 : startIndex + relative;
-    }
 }
 

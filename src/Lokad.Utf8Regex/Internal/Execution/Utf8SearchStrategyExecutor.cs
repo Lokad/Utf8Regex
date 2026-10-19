@@ -6,10 +6,6 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8SearchStrategyExecutor
 {
-    public static int CountFallbackCandidates(Utf8SearchPlan plan, ReadOnlySpan<byte> input, bool requireScalarBoundary)
-    {
-        return Utf8FallbackSearchExecutor.CountCandidates(plan, input, requireScalarBoundary);
-    }
 
     public static bool TryFindNextLiteralFamilyMatch(
         in Utf8SearchPlan plan,

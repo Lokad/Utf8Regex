@@ -615,7 +615,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     [InlineData(
         "\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\nctx = 1\n\"AIDAABCDEFGHIJKLMNOP\"\n\n\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\nctx = 2\n\"AIDAABCDEFGHIJKLMNOP\"\n",
         2)]
-    public void CountMatchesRuntimeForSearchGuidedFallbackPositiveMultilineWindows(string input, int expectedCount)
+    public void CountMatchesRuntimeForPositiveMultilineWindows(string input, int expectedCount)
     {
         const string pattern = "(('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\").*?(\\n^.*?){0,4}(('|\")[a-zA-Z0-9+/]{40}('|\"))+|('|\")[a-zA-Z0-9+/]{40}('|\").*?(\\n^.*?){0,3}('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\"))+";
         var options = RegexOptions.Multiline;

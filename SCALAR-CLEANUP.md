@@ -1,11 +1,21 @@
 # Scalar migration cleanup
 
-Reviewed 2026-10-13 against `32f8d1b8` and the following scalar.33 cleanup.
+Reviewed 2026-10-19 after the scalar.104 source simplification. Historical
+receipts retain their original revisions; this section describes development source.
 The matching contract is complete Unicode scalars over strictly validated UTF-8;
 byte coordinates are primary. This report describes current source and executable
 checks, rather than treating the absence of a name as proof of semantic coverage.
 
 ## Retired mechanisms
+
+ByteSafeLinear, CompiledFallback and SearchGuidedFallback runtime selection was
+restricted to FallbackRegex plans, which public scalar dispatch already handles.
+Those runtimes, their exclusive tree compiler/interpreter, anchor preparation and
+existence-only tests are removed. Public scalar regressions remain. The live ASCII
+DFA and its input instructions now belong to the isolated PCRE2 project. General
+candidate verification and Count census replays belong only to benchmark tooling.
+Shared structural search, start transforms, native kernels and scalar verification
+remain with their real production consumers.
 
 | Mechanism | Current evidence |
 | --- | --- |
@@ -58,7 +68,7 @@ package designation follows from this source cleanup.
 | Match/group/capture UTF-16 fields and string extraction | These implement the existing derived-coordinate surface and retained capture history. Production constructors consume owned scalar outcomes. Changing their storage is a separate operating-cost decision, not dead-code deletion. |
 | Pattern/replacement string processing | C# string patterns, Unicode escape parsing and replacement-fragment repair remain useful grammar/interoperability. Scalar parsing and byte emission determine execution. A `char` loop alone does not prove code-unit matching. |
 | `Fallback*` names and public inspection labels | They name scalar/general verification or native specialization declines. `Utf8Regex.Fallback.cs` calls owned scalar matching; `NativeExecutionKind.FallbackRegex` is a public diagnostic label. Renaming it without consumer need would add churn and can break stored reports. |
-| Extension-method containers | `PreparedFallbackCandidateExecutor`, `Utf8FallbackStartTransformExecutor` and `Utf8ExecutionRouteText` are called through extension syntax. Their type names appear only in their declarations; a name-count audit is insufficient to remove them. |
+| Extension-method containers | `Utf8FallbackStartTransformExecutor` and `Utf8ExecutionRouteText` have live extension-syntax consumers. The now-unused PreparedFallbackCandidate source/executor pair is retired; structural searches keep their production implementation. A type-name count alone is insufficient evidence. |
 | PCRE2 `CodeUnit` | This is the explicitly opted-in UTF-8 byte escape `\C`, forbidden by the default profile. `SPEC-PCRE2.md` and `Pcre2BackslashCCompilerTests` define split-byte results and projection rejection. It is isolated PCRE2 behavior, not a .NET UTF-16 parity engine or a change to core/PythonRe scalar semantics. |
 | Historical benchmark/parity snapshots | Preserve provenance and previous evidence. Their numbers do not qualify the current engine. Current cost/publication claims require the independent delivery receipts. |
 

@@ -1106,8 +1106,8 @@ The core remains buildable and usable without the companion package.
 
 The C0-C8 work established canonical core owners for compilation/preparation
 (`Utf8RegexAnalysis` and `Utf8PreparedRegex`), validated input and coordinate
-projection (`Utf8ValidatedInput`), search facts and candidate merging
-(`Utf8SearchFacts` and `Utf8CandidatePortfolioCursor`), prepared kernels
+projection (`Utf8ValidatedInput`), search facts and structural candidate search
+(`Utf8SearchFacts` and `Utf8StructuralSearchExecutor`), prepared kernels
 (`Internal.Search`), operation discovery, transactional replacement output,
 ASCII byte sets/scalar neighbors, and capture rollback (`Utf8CaptureSlots`).
 Those commits have independent core tests and benchmark families; PCRE2 is a
