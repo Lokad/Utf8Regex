@@ -1167,11 +1167,26 @@ internal static class Utf8SliceLowerer
                             frame.Stage = 1;
                         }
                         if (Failed) return false;
+                        if (frame.Stage == 5)
+                        {
+                            CompleteNullableNonBacktrackingIteration(ref frame, -1);
+                            frame.Stage = 1;
+                        }
                         if (frame.Stage == 1)
                         {
                             if (frame.Index < frame.Minimum)
                             {
                                 frame.Index++;
+                                // Earlier required copies must still reach the
+                                // minimum. Once it is met, an empty completion
+                                // exits rather than starting optional copies.
+                                if (frame.Index == frame.Minimum && frame.Minimum < frame.Maximum &&
+                                    Facts[repeat.Body].CanMatchEmpty && !Facts[repeat.Body].IsZeroWidth)
+                                {
+                                    frame.ParentScope = NonBacktrackingScope;
+                                    NonBacktrackingScope = new(frame.ParentScope);
+                                    frame.Stage = 5;
+                                }
                                 request = new(repeat.Body, false, false, 0);
                                 return true;
                             }
@@ -1179,10 +1194,13 @@ internal static class Utf8SliceLowerer
                         }
                         if (frame.Stage == 3)
                         {
+                            if (frame.NullableLoop)
+                                CompleteNullableNonBacktrackingIteration(ref frame,
+                                    frame.Maximum == long.MaxValue ? frame.Mark : -1);
                             if (frame.Maximum == long.MaxValue)
                             {
-                                if (frame.NullableLoop && NonBacktrackingScope is { } scope) scope.End = Instructions.Count;
-                                Emit(new(Utf8SliceInstructionKind.Jump, frame.Mark, 0, 0, 0));
+                                if (!frame.NullableLoop)
+                                    Emit(new(Utf8SliceInstructionKind.Jump, frame.Mark, 0, 0, 0));
                                 NonBacktrackingScope = frame.ParentScope;
                                 Patch(frame.Mark, Instructions.Count);
                                 frame.Stage = 4;
@@ -1200,10 +1218,10 @@ internal static class Utf8SliceLowerer
                             frame.Mark = Instructions.Count;
                             Emit(new(Utf8SliceInstructionKind.Fork, 0, repeat.Lazy ? 1 : 0, 0, 0));
                             frame.ParentScope = NonBacktrackingScope;
-                            frame.NullableLoop = frame.Maximum == long.MaxValue && Facts[repeat.Body].CanMatchEmpty;
+                            frame.NullableLoop = Facts[repeat.Body].CanMatchEmpty && !Facts[repeat.Body].IsZeroWidth;
                             if (frame.NullableLoop)
                             {
-                                NonBacktrackingScope = new(frame.ParentScope, frame.Mark);
+                                NonBacktrackingScope = new(frame.ParentScope);
                                 HasNullableNonBacktrackingLoop = true;
                             }
                             frame.Index++;
@@ -1415,6 +1433,20 @@ internal static class Utf8SliceLowerer
                     throw new ArgumentException($"Unsupported slice node {node.Kind}.", nameof(node));
             }
             return false;
+        }
+
+        private void CompleteNullableNonBacktrackingIteration(ref EmissionFrame frame, int continueAt)
+        {
+            var scope = NonBacktrackingScope ?? throw new InvalidOperationException("Missing nullable iteration scope.");
+            scope.End = Instructions.Count;
+            scope.ContinueAt = continueAt < 0 ? Instructions.Count + 1 : continueAt;
+            frame.Scratch ??= Utf8ConstructionBuffer<int>.Create(Budget);
+            frame.Scratch.Add(Instructions.Count);
+            // Lifting replaces this marker with the continuation after scalar
+            // progress or the patched repeat exit after an empty completion.
+            Emit(new(Utf8SliceInstructionKind.Jump, 0, 0, 0, 0));
+            NonBacktrackingScope = frame.ParentScope;
+            HasNullableNonBacktrackingLoop = true;
         }
 
         internal bool EmitLookahead(Utf8SliceNode body, bool positive, ref EmissionFrame frame, out EmissionRequest request)

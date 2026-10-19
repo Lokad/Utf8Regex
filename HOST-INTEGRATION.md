@@ -6,6 +6,13 @@ identities, same-byte Windows/Linux consumer checks, current costs and exclusion
 Independent PCRE2 uses its exact Core/PCRE2 scalar.94 pair; no PCRE104 is designated.
 Earlier packages retain their recorded contracts and limitations.
 
+Known scalar.104 Core `NonBacktracking` limitation: nullable bounded repetitions
+can choose shorter matches or incorrect last captures. For example,
+`(?:a?|b){0,3}a` on `baa` returns `ba` then `a` instead of one `baa`. Development
+source corrects bounded/minimum-completion progress in the existing graph; the
+immutable104 bytes retain this defect. This is outside the original consumer
+assertion slice. PythonRe does not use this Core option.
+
 Scalar.103 fixes a scoped-multiline anchor defect:
 grouped literals such as `(?m:^(abc))` could incorrectly use an absolute-start
 shortcut, missing later lines or undercounting matches. The fix reuses the

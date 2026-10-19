@@ -2,24 +2,23 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-/// <summary>Lexical context of a nullable unbounded iteration in the temporary
+/// <summary>Lexical context of a nullable iteration in the temporary
 /// graph. An atom advances all active contexts. Their progress bits therefore
 /// form a consumed prefix, represented by its depth rather than a bit vector.</summary>
 internal sealed class Utf8NonBacktrackingLoopScope
 {
-    internal Utf8NonBacktrackingLoopScope(Utf8NonBacktrackingLoopScope? parent, int fork)
+    internal Utf8NonBacktrackingLoopScope(Utf8NonBacktrackingLoopScope? parent)
     {
         Depth = (parent?.Depth ?? 0) + 1;
-        Fork = fork;
     }
 
     internal int Depth { get; }
-    internal int Fork { get; }
+    internal int ContinueAt { get; set; } = -1;
     internal int End { get; set; } = -1;
 }
 
 /// <summary>Lifts a regular graph into progress states. A completed empty
-/// iteration exits; a consuming one repeats. The scalar runner can then use
+/// iteration exits; a consuming one continues. The scalar runner can then use
 /// ordinary instruction identity, and the epsilon graph is acyclic. Shared
 /// nested bodies avoid the former repeated whole-body duplication.</summary>
 internal static class Utf8NonBacktrackingLoopGraph
@@ -42,7 +41,7 @@ internal static class Utf8NonBacktrackingLoopGraph
             var scope = scopes[pc];
             if (scope is not null && pc == scope.End)
             {
-                Add(consumed == scope.Depth ? scope.Fork : instructions[scope.Fork].A, consumed);
+                Add(consumed == scope.Depth ? scope.ContinueAt : instruction.A, consumed);
                 continue;
             }
             switch (instruction.Kind)
@@ -71,7 +70,7 @@ internal static class Utf8NonBacktrackingLoopGraph
             var address = addresses[index];
             if (scope is not null && pc == scope.End)
             {
-                var target = consumed == scope.Depth ? scope.Fork : instructions[scope.Fork].A;
+                var target = consumed == scope.Depth ? scope.ContinueAt : instruction.A;
                 result[address] = new(Utf8SliceInstructionKind.Jump, Address(target, consumed), 0, 0, 0);
                 continue;
             }

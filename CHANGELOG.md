@@ -1,5 +1,15 @@
 # Changelog
 
+## Changes after scalar.104
+
+Core NonBacktracking stops a nullable repeat after an empty completion once its
+minimum is satisfied, including bounded repeats. `(?:a?|b){0,3}a` over `baa` now
+returns one `baa` match instead of `ba` followed by `a`; last captures follow the
+same ordered choice. The existing progress-state graph handles these completions,
+while purely zero-width bodies retain compact numeric bounds. Strict scalar
+transitions, finite admission and original cancellation/deadlines remain. This
+source fix is outside immutable104.
+
 ## Qualified private Core/PythonRe scalar.104
 
 Producer da89185b freezes the replacement batch below with exact Core104. Same

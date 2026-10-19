@@ -132,6 +132,11 @@ public sealed class Utf8NonBacktrackingConstructionTests
             ("(?:(?<x>a|)*)*b", "aaab"), ("(?:(?<x>a*)){2,4}b", "aaab"),
             ("(?:(?<x>a*)){2,4}?b", "aaab"), ("(?:(?<x>😀?)*)*b", "😀😀b"),
             ("(?:(?<x>a*))*b|", "aaa"), ("(?:(?<x>a*?))*?b|", "aaa"),
+            ("(?:a?|b){0,3}a", "baa"), ("((a?|b){1,3})a", "ba"),
+            ("(?:(^)|a){0,3}b", "ab"), ("(?:(a?)|b){0,3}$", "b"),
+            ("(?:(a?)|b){0,3}?$", "b"), ("(?:(a?)|b)+?$", "b"),
+            ("(?:😀?|b){0,3}😀", "b😀😀"), ("((😀?|b){1,3})😀", "b😀"),
+            ("(?:(?:a?|b){0,3}){1,2}a", "baaa"),
         ];
         foreach (var row in cases)
         foreach (var compiled in new[] { false, true }) yield return [row.Pattern, row.Text, compiled];
@@ -170,6 +175,38 @@ public sealed class Utf8NonBacktrackingConstructionTests
                 Assert.Equal(wanted.Groups[number].Value, actual.GetGroup(number).GetValueString());
         }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+    }
+
+    [Theory]
+    [InlineData(false, "(?:a?|b){0,3}a", "baa")]
+    [InlineData(true, "(?:a?|b){0,3}a", "baa")]
+    [InlineData(false, "(?:😀?|b){0,3}😀", "b😀😀")]
+    [InlineData(true, "(?:😀?|b){0,3}😀", "b😀😀")]
+    public void FiniteNullableRepeatPreservesScalarPriorityAcrossOperations(bool compiled, string pattern, string text)
+    {
+        var options = RegexOptions.NonBacktracking | RegexOptions.CultureInvariant |
+            (compiled ? RegexOptions.Compiled : 0);
+        var policy = new Utf8ResourcePolicy
+        {
+            MaxWorkSteps = 1000000, MaxDepth = 4096,
+            MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20,
+        };
+        var regex = new Utf8Regex(pattern, options, Timeout.InfiniteTimeSpan, policy);
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.True(regex.IsMatch(input));
+        Assert.Equal(1, regex.Count(input));
+        var first = regex.Match(input);
+        Assert.Equal((0, input.Length), (first.IndexInBytes, first.LengthInBytes));
+        var detailed = regex.MatchDetailed(input);
+        Assert.Equal(text, detailed.GetValueString());
+        var ranges = new List<(int, int)>();
+        foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.IndexInBytes, match.LengthInBytes));
+        Assert.Equal(new[] { (0, input.Length) }, ranges);
+        Assert.Equal("<" + text + ">", regex.ReplaceToString(input, "<$&>"));
+        Assert.Equal(Encoding.UTF8.GetBytes("<" + text + ">"), regex.Replace(input, "<$&>"u8));
+        var splits = new List<(int, int)>();
+        foreach (var split in regex.EnumerateSplits(input)) splits.Add((split.IndexInBytes, split.LengthInBytes));
+        Assert.Equal(new[] { (0, 0), (input.Length, 0) }, splits);
     }
 
     public static IEnumerable<object[]> UnsupportedCases()
