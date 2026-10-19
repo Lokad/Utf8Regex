@@ -8,6 +8,11 @@ per-element unwrapping loop. Growth overlap, result traffic, checkpoint schedule
 and independent returned arrays remain unchanged. The shared exact-array pool
 checks physical element types before retaining or lending reference arrays.
 
+Expanded ASCII literal metadata polls the original construction token and
+deadline in bounded validation/conversion blocks and before publication. Bulk
+work and byte admission remain unchanged; interruption releases the string loan
+without publishing partial text.
+
 ## Qualified private Core/PythonRe scalar.105
 
 Producer853a2a2f freezes this batch with exact Core105. The same actual package

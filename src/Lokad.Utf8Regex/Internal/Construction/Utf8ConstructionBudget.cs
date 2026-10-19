@@ -114,15 +114,28 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
         // Retained literal-pattern metadata only; byte execution reuses input.
         // No subject decoding or temporary UTF-16 character buffer is needed.
         ChargeWork((ulong)input.Length);
-        foreach (var value in input)
-            if (value > 0x7f) throw new ArgumentException("Literal metadata must be ASCII.", nameof(input));
+        for (var offset = 0; offset < input.Length;)
+        {
+            if (offset != 0) ChargeWork(0);
+            var end = offset + Math.Min(2048, input.Length - offset);
+            for (; offset < end; offset++)
+                if (input[offset] > 0x7f) throw new ArgumentException("Literal metadata must be ASCII.", nameof(input));
+        }
         if (input.Length == 0) return string.Empty;
         var bytes = StringBytes(input.Length);
         CheckBytes(bytes); ChargeWork((ulong)input.Length + 1); ReserveBytes(bytes);
         try
         {
-            var result = string.Create(input.Length, input, static (target, source) =>
-            { for (var index = 0; index < source.Length; index++) target[index] = (char)source[index]; });
+            var result = string.Create(input.Length, (Input: input, Budget: this), static (target, state) =>
+            {
+                for (var offset = 0; offset < state.Input.Length;)
+                {
+                    if (offset != 0) state.Budget.ChargeWork(0);
+                    var end = offset + Math.Min(2048, state.Input.Length - offset);
+                    for (; offset < end; offset++) target[offset] = (char)state.Input[offset];
+                }
+            });
+            ChargeWork(0);
             return result;
         }
         catch { ReleaseBytes(bytes); throw; }
