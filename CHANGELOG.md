@@ -1,5 +1,12 @@
 # Changelog
 
+## Private Core/PythonRe scalar.109 qualification in progress
+
+Freeze the coherent simplification batch below from C#025b6ffa, whose source CI
+passes Windows/Linux. Exact-byte consumer/platform and current-package cost gates
+remain pending. Earlier candidates stay immutable; no publication, consumer pin
+change or PCRE109 is designated. [Acceptance](artifacts/core-python-scalar109-20261019/PREDECLARED.md).
+
 ## Changes after scalar.108
 
 Replace four compiled runtimes' mirrored construction-state records and nested
