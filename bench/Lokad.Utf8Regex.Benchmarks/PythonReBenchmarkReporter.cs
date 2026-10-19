@@ -1162,20 +1162,22 @@ internal static partial class PythonReBenchmarkReporter
         const PythonReCompileOptions options = PythonReCompileOptions.None;
         var parseResult = new PythonReParser(pattern).Parse(options);
         var translation = PythonReTranslator.Translate(parseResult);
+        var referencePattern = PythonReDotNetReference.Render(parseResult, translation);
+        var referenceOptions = PythonReDotNetReference.ToRegexOptions(options);
         var input = Encoding.UTF8.GetBytes("prefix item-123 foo Ð¨ÐµÑ€Ð»Ð¾Ðº suffix");
         var fullMatchInputUtf8 = Encoding.UTF8.GetBytes(fullMatchInput);
         var fullMatchMissUtf8 = "__pythonre_fullmatch_miss__"u8.ToArray();
         var prepared = new Utf8PythonRegex(pattern, options);
-        var coreFullPattern = $@"\A(?:{translation.Pattern})\z";
-        var preparedCoreFull = new Utf8Regex(coreFullPattern, translation.RegexOptions);
+        var coreFullPattern = $@"\A(?:{translation.NativePattern})\z";
+        var preparedCoreFull = new Utf8Regex(coreFullPattern, translation.NativeRegexOptions);
         var lazyCoreFull = new Lazy<Utf8Regex>(
-            () => new Utf8Regex(coreFullPattern, translation.RegexOptions),
+            () => new Utf8Regex(coreFullPattern, translation.NativeRegexOptions),
             LazyThreadSafetyMode.ExecutionAndPublication);
         _ = lazyCoreFull.Value;
         var reuseIterations = Math.Max(iterations, 5_000);
 
         Console.WriteLine($"Pattern            : {pattern}");
-        Console.WriteLine($"TranslatedPattern  : {translation.Pattern}");
+        Console.WriteLine($"NativePattern      : {translation.NativePattern}");
         Console.WriteLine($"InputBytes         : {input.Length}");
         Console.WriteLine($"FullMatchInputBytes: {fullMatchInputUtf8.Length}");
         Console.WriteLine($"Iterations         : {iterations} (fixed, capped at 512)");
@@ -1185,24 +1187,24 @@ internal static partial class PythonReBenchmarkReporter
             () =>
             {
                 var parsed = new PythonReParser(pattern).Parse(options);
-                return PythonReTranslator.Translate(parsed).Pattern.Length;
+                return PythonReTranslator.Translate(parsed).NativePattern.Length;
             },
             iterations,
             samples));
         PrintOperation("ManagedSearch", MeasureOperation(
-            () => new Regex(translation.Pattern, translation.RegexOptions, Regex.InfiniteMatchTimeout).GetHashCode(),
+            () => new Regex(referencePattern, referenceOptions, Regex.InfiniteMatchTimeout).GetHashCode(),
             iterations,
             samples));
         PrintOperation("ManagedFull", MeasureOperation(
-            () => new Regex($@"\A(?:{translation.Pattern})\z", translation.RegexOptions, Regex.InfiniteMatchTimeout).GetHashCode(),
+            () => new Regex($@"\A(?:{referencePattern})\z", referenceOptions, Regex.InfiniteMatchTimeout).GetHashCode(),
             iterations,
             samples));
         PrintOperation("CoreSearch", MeasureOperation(
-            () => new Utf8Regex(translation.Pattern, translation.RegexOptions).GetHashCode(),
+            () => new Utf8Regex(translation.NativePattern, translation.NativeRegexOptions).GetHashCode(),
             iterations,
             samples));
         PrintOperation("CoreFull", MeasureOperation(
-            () => new Utf8Regex($@"\A(?:{translation.Pattern})\z", translation.RegexOptions).GetHashCode(),
+            () => new Utf8Regex($@"\A(?:{translation.NativePattern})\z", translation.NativeRegexOptions).GetHashCode(),
             iterations,
             samples));
         PrintOperation("PythonReConstruct", MeasureOperation(
@@ -2057,8 +2059,8 @@ internal sealed class PythonReBenchmarkContext
         _pythonRegex = new Utf8PythonRegex(benchmarkCase.Pattern, benchmarkCase.Options);
         var parsed = new PythonReParser(benchmarkCase.Pattern).Parse(benchmarkCase.Options);
         var translation = PythonReTranslator.Translate(parsed);
-        var translatedPattern = translation.Pattern;
-        var regexOptions = translation.RegexOptions;
+        var translatedPattern = PythonReDotNetReference.Render(parsed, translation);
+        var regexOptions = PythonReDotNetReference.ToRegexOptions(benchmarkCase.Options);
         _regex = new Regex(translatedPattern, regexOptions, Regex.InfiniteMatchTimeout);
         _fullRegex = new Regex($@"\A(?:{translatedPattern})\z", regexOptions, Regex.InfiniteMatchTimeout);
         _captureCount = _regex.GetGroupNumbers().Length - 1;
@@ -2079,7 +2081,7 @@ internal sealed class PythonReBenchmarkContext
                 PythonReBenchmarkOperation.FindAllUtf8 &&
             _captureCount == 0)
         {
-            _coreFindAllRegex = new Utf8Regex(translatedPattern, regexOptions);
+            _coreFindAllRegex = new Utf8Regex(translation.NativePattern, translation.NativeRegexOptions);
             _preparedCoreRanges = CollectCoreRanges().ToArray();
             _preparedCoreStrings = ProjectCoreRangeStrings(_preparedCoreRanges);
             _preparedCoreUtf8 = ProjectCoreRangeUtf8(_preparedCoreRanges);

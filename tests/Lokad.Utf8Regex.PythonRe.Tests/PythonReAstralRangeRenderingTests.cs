@@ -39,7 +39,7 @@ public sealed class PythonReAstralRangeRenderingTests
         {
             var pattern = $"[{(negated ? "^" : "")}\\U{low:X8}-\\U{high:X8}]";
             var regex = Compile(pattern);
-            var managed = new Regex($"\\A(?:{regex.DebugTranslatedPattern})\\z", RegexOptions.CultureInvariant);
+            var managed = new Regex($"\\A(?:{PythonReDotNetReference.Render(regex)})\\z", RegexOptions.CultureInvariant);
             for (var index = 0; index < samples.Length; index++)
             {
                 var expected = (samples[index] >= low && samples[index] <= high) != negated;
@@ -68,7 +68,7 @@ public sealed class PythonReAstralRangeRenderingTests
         Assert.Equal(new[] { 0, 9 }, matches.Select(match => match.Value.StartOffsetInBytes));
         Assert.Equal(new[] { 8, 17 }, matches.Select(match => match.Value.EndOffsetInBytes));
         Assert.All(matches, match => { Assert.Equal(1, match.LastIndex); Assert.Equal("x", match.LastGroup); });
-        Assert.Equal(new[] { first, second }, new Regex(regex.DebugTranslatedPattern, RegexOptions.CultureInvariant)
+        Assert.Equal(new[] { first, second }, new Regex(PythonReDotNetReference.Render(regex), RegexOptions.CultureInvariant)
             .Matches(text).Select(match => match.Value));
     }
 
@@ -81,7 +81,7 @@ public sealed class PythonReAstralRangeRenderingTests
         Assert.Equal(4, match.Value.StartOffsetInBytes);
         Assert.Equal("😀", match.Groups[1].ValueText);
         Assert.Equal(1, match.LastIndex);
-        var managed = new Regex(regex.DebugTranslatedPattern, RegexOptions.CultureInvariant).Match("😀X");
+        var managed = new Regex(PythonReDotNetReference.Render(regex), RegexOptions.CultureInvariant).Match("😀X");
         Assert.True(managed.Success);
         Assert.Equal("😀", managed.Groups[1].Value);
     }

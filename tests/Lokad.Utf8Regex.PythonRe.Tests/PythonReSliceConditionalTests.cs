@@ -19,7 +19,7 @@ public sealed class PythonReSliceConditionalTests
 
     private static Regex Bcl(Utf8PythonRegex regex)
     {
-        return new Regex(regex.DebugTranslatedPattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        return new Regex(PythonReDotNetReference.Render(regex), RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
     }
 
     // R03 conditionals for the Python profile: the translator maps group

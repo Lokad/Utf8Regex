@@ -59,7 +59,7 @@ public sealed class Utf8PythonRegexTests
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         Assert.True(regex.DebugHasScalarFullProgram);
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
-        Assert.Equal("foo", regex.DebugTranslatedPattern);
+        Assert.Equal("foo", PythonReDotNetReference.Render(regex));
         Assert.Equal("Search=Utf8Regex, Match=Utf8Regex, FullMatch=Utf8Regex, Count=Utf8Regex", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("xxfooyy"u8));
         var nonAsciiPrefixMatch = regex.Search("éfoo"u8);
@@ -76,7 +76,7 @@ public sealed class Utf8PythonRegexTests
     {
         var regex = new Utf8PythonRegex("Шерлок Холмс");
 
-        Assert.Equal("Шерлок Холмс", regex.DebugTranslatedPattern);
+        Assert.Equal("Шерлок Холмс", PythonReDotNetReference.Render(regex));
         Assert.Equal("ExactUtf8Literal", regex.DebugUtf8ExecutionKind);
         Assert.Equal(2, regex.Count("Шерлок Холмс и снова Шерлок Холмс"u8));
         Assert.Equal(0, regex.Count("ШерлокХолмс"u8));
@@ -114,7 +114,7 @@ public sealed class Utf8PythonRegexTests
     {
         var regex = new Utf8PythonRegex(@"(?x)Шерлок\ Холмс");
 
-        Assert.Equal(@"Шерлок\ Холмс", regex.DebugTranslatedPattern);
+        Assert.Equal(@"Шерлок\ Холмс", PythonReDotNetReference.Render(regex));
         Assert.Equal(1, regex.Count("Шерлок Холмс"u8));
         Assert.Equal(0, regex.Count("ШерлокХолмс"u8));
     }
@@ -166,7 +166,7 @@ public sealed class Utf8PythonRegexTests
     {
         var regex = new Utf8PythonRegex(@"(?P<word>foo)");
 
-        Assert.Equal(@"(?<word>foo)", regex.DebugTranslatedPattern);
+        Assert.Equal(@"(?<word>foo)", PythonReDotNetReference.Render(regex));
         Assert.Contains("word", regex.GetGroupNames(), StringComparer.Ordinal);
         Assert.True(regex.IsMatch("foo"u8));
     }
@@ -176,7 +176,7 @@ public sealed class Utf8PythonRegexTests
     {
         var regex = new Utf8PythonRegex(@"(?P<word>foo)-(?P=word)");
 
-        Assert.Equal(@"(?<word>foo)-\k<word>", regex.DebugTranslatedPattern);
+        Assert.Equal(@"(?<word>foo)-\k<word>", PythonReDotNetReference.Render(regex));
         Assert.True(regex.IsMatch("foo-foo"u8));
         Assert.False(regex.IsMatch("foo-bar"u8));
     }
@@ -203,7 +203,7 @@ public sealed class Utf8PythonRegexTests
     {
         var regex = new Utf8PythonRegex(@"(?i:foo)");
 
-        Assert.Equal(@"(?i:[Ff][Oo][Oo])", regex.DebugTranslatedPattern);
+        Assert.Equal(@"(?i:[Ff][Oo][Oo])", PythonReDotNetReference.Render(regex));
         Assert.True(regex.IsMatch("FOO"u8));
     }
 
@@ -253,8 +253,8 @@ public sealed class Utf8PythonRegexTests
         var possessive = new Utf8PythonRegex(@"a++b");
         var atomic = new Utf8PythonRegex(@"(?>a+)b");
 
-        Assert.Equal(@"(?>a+)b", possessive.DebugTranslatedPattern);
-        Assert.Equal(@"(?>a+)b", atomic.DebugTranslatedPattern);
+        Assert.Equal(@"(?>a+)b", PythonReDotNetReference.Render(possessive));
+        Assert.Equal(@"(?>a+)b", PythonReDotNetReference.Render(atomic));
         Assert.True(possessive.IsMatch("aaab"u8));
         Assert.True(atomic.IsMatch("aaab"u8));
     }

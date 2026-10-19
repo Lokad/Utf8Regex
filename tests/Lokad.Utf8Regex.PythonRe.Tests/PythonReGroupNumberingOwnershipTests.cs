@@ -40,7 +40,7 @@ public sealed class PythonReGroupNumberingOwnershipTests
         var parser = new PythonReParser(pattern);
         var parseResult = parser.Parse(PythonReCompileOptions.None);
         var translation = PythonReTranslator.Translate(parseResult);
-        var managed = new Regex(translation.Pattern, translation.RegexOptions, Regex.InfiniteMatchTimeout);
+        var managed = new Regex(PythonReDotNetReference.Render(parseResult, translation), PythonReDotNetReference.ToRegexOptions(parseResult.Options), Regex.InfiniteMatchTimeout);
 
         var expected = new int[parseResult.CaptureGroupCount + 1];
         var namesByPythonGroup = new string?[parseResult.CaptureGroupCount + 1];

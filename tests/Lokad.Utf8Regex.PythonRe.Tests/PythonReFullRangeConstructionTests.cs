@@ -43,7 +43,7 @@ public sealed class PythonReFullRangeConstructionTests
 
         // This rendering remains live for comparators and timeout pattern text.
         // Its surrogate-pair atom must still consume a supplementary scalar once.
-        var managed = new Regex(regex.DebugTranslatedPattern, RegexOptions.CultureInvariant);
+        var managed = new Regex(PythonReDotNetReference.Render(regex), RegexOptions.CultureInvariant);
         Assert.Equal(accepts ? scalars : [], managed.Matches(text).Select(match => match.Value));
     }
 

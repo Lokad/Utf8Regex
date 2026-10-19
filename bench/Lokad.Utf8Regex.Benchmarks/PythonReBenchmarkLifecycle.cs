@@ -90,14 +90,14 @@ internal static partial class PythonReBenchmarkReporter
                 () =>
                 {
                     var parsed = new PythonReParser(definition.Pattern).Parse(options);
-                    return PythonReTranslator.Translate(parsed).Pattern.Length;
+                    return PythonReTranslator.Translate(parsed).NativePattern.Length;
                 },
                 iterations,
                 samples)),
             BackendCreation = ToLifecycleTiming(MeasureOperation(
                 () => new Utf8Regex(
-                    translation.Pattern,
-                    translation.RegexOptions).GetGroupNumbers().Length,
+                    translation.NativePattern,
+                    translation.NativeRegexOptions).GetGroupNumbers().Length,
                 iterations,
                 samples)),
             AdapterConstruction = ToLifecycleTiming(MeasureOperation(

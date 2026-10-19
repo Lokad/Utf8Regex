@@ -19,7 +19,7 @@ public sealed class PythonReSliceInlineTests
 
     private static Regex Bcl(Utf8PythonRegex regex)
     {
-        return new Regex(regex.DebugTranslatedPattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        return new Regex(PythonReDotNetReference.Render(regex), RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
     }
 
     // Resolve folding into scalar classes before lowering; preserve other
@@ -33,7 +33,7 @@ public sealed class PythonReSliceInlineTests
     public void InlineShapesRouteOwned(string pattern, string translated)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(translated, regex.DebugTranslatedPattern);
+        Assert.Equal(translated, PythonReDotNetReference.Render(regex));
         AssertOwnedBackends(regex);
         Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
@@ -53,7 +53,7 @@ public sealed class PythonReSliceInlineTests
     public void LeadingToggleHoistsIntoTranslationOptions()
     {
         var regex = new Utf8PythonRegex("(?i)a+", PythonReCompileOptions.None);
-        Assert.Equal("(?:[Aa])+", regex.DebugTranslatedPattern);
+        Assert.Equal("(?:[Aa])+", PythonReDotNetReference.Render(regex));
         Assert.True(regex.DebugUsesOwnedSlice);
         Assert.True(regex.FullMatch("aA"u8).Success);
         Assert.True(regex.DebugUsesOwnedSlice);
@@ -63,7 +63,7 @@ public sealed class PythonReSliceInlineTests
     public void ScopedVerbosePrestripsBeforeTranslation()
     {
         var regex = new Utf8PythonRegex("(?x:a b)+", PythonReCompileOptions.None);
-        Assert.Equal("(?x:ab)+", regex.DebugTranslatedPattern);
+        Assert.Equal("(?x:ab)+", PythonReDotNetReference.Render(regex));
         AssertOwnedBackends(regex);
         var input = Utf8("xababx");
         Assert.Equal("abab", regex.Search(input).GetValueString());
@@ -120,7 +120,7 @@ public sealed class PythonReSliceInlineTests
         // translated-pattern oracle needs the forwarded IgnoreCase flag.
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         var expected = new Regex(
-            regex.DebugTranslatedPattern,
+            PythonReDotNetReference.Render(regex),
             RegexOptions.CultureInvariant | RegexOptions.IgnoreCase,
             Regex.InfiniteMatchTimeout).Match(inputText, 0);
         var found = regex.Search(Utf8(inputText), startByte);

@@ -21,7 +21,7 @@ public sealed class PythonReSliceOwnershipTests
 
     private static Regex Bcl(Utf8PythonRegex regex)
     {
-        return new Regex(regex.DebugTranslatedPattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        return new Regex(PythonReDotNetReference.Render(regex), RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
     }
 
     [Theory]
@@ -248,7 +248,7 @@ public sealed class PythonReSliceOwnershipTests
         var regex = new Utf8PythonRegex("^a|b$", PythonReCompileOptions.Multiline);
         Assert.True(regex.DebugUsesOwnedSlice);
         var expected = new Regex(
-            regex.DebugTranslatedPattern,
+            PythonReDotNetReference.Render(regex),
             RegexOptions.CultureInvariant | RegexOptions.Multiline,
             Regex.InfiniteMatchTimeout).Match("x\na");
         var found = regex.Search(Utf8("x\na"), 0);
