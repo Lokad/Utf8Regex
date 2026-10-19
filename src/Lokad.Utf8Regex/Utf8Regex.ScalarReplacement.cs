@@ -75,9 +75,19 @@ public sealed partial class Utf8Regex
             var edgeByte = position;
             var anchor = position;
             var anyMatch = false;
+            var guideLiteralStarts = batch is null && ReferenceEquals(program, _ownedSliceProgram) &&
+                CanFindNativeLiteralForResult;
             while (position >= 0)
             {
                 invocation.AnchorOriginByte = anchor;
+                // Reuse complete literal discovery only to skip impossible starts.
+                // Scalar verification still owns captures and their histories.
+                if (guideLiteralStarts && TryFindNativeLiteralForResult(input, position, ref invocation,
+                    out var found, out var candidateStart, out _))
+                {
+                    if (!found) break;
+                    position = candidateStart;
+                }
                 var outcome = batch is null
                     ? Utf8SliceRunner.TryFindFirst(program, input, position, slots.Starts, slots.Ends, true, ref invocation)
                     : batch.FindFirst(program, ref boundary, slots.Starts, slots.Ends, true, ref invocation);

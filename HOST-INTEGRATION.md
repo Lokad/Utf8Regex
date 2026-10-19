@@ -26,6 +26,13 @@ their numeric admission, and `TryReplace` preserves overlapping copies and an
 unchanged destination when capacity is insufficient. Unused byte staging is no
 longer charged on that path. This development change is outside immutable103.
 
+Eligible regular scalar replacement now reuses the existing complete native
+literal finder for candidate starts, retaining scalar capture/history verification
+under the original invocation. This reduces search work for misses and gaps;
+the same finite policy can admit calls that previously exhausted its work limit.
+The existing eligibility rules and bounded native metering apply. This source
+change is outside immutable103.
+
 Scalar.101 supports overlapping Core `TryReplace` subject/destination spans by
 staging scalar output before copying. Staging may allocate even for a literal;
 insufficient destinations stay unchanged. UTF-8 templates may alias the
