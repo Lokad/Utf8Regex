@@ -77,6 +77,13 @@ findall routes omit that unused scan and can admit smaller work limits. VM
 instruction/backtracking work, required projection charges, original interruption
 and result ownership remain enforced.
 
+Source after scalar.106 also omits useless rewind frames for eligible greedy
+dot/class runs before a disjoint literal or end anchor. The end-anchor proof
+requires the repeated atom to exclude LF. This can reduce work/depth/working
+requirements, allowing some previously denied numeric budgets to succeed.
+Per-scalar work, major admission, original token/deadline and capture/result
+publication stay controlled. This source change does not alter immutable106.
+
 ## Select the public controls
 
 `Utf8ResourcePolicy` has positive nullable `MaxWorkSteps`, `MaxDepth`,

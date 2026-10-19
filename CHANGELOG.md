@@ -2,6 +2,16 @@
 
 ## Changes after scalar.106
 
+Greedy scalar dot runs reuse the existing repeat scan when a following literal
+or end anchor proves all shorter endpoints useless. End tails conservatively
+require the atom to exclude LF; overlapping, lazy, RTL and NonBacktracking paths
+keep their existing semantics. This removes rewind work and storage while keeping
+per-scalar metering, original interruption and capture publication. Eligible calls
+can need less work, depth and working capacity; no configured ceiling is raised.
+The bounded public comparison records about10% lower imports Count time and60%
+lower lexer loop time; native matching algorithms stay unchanged. See
+[scoped costs and controls](CURRENT-PERFORMANCE.md).
+
 Move shared-prefix/suffix diagnostic aggregation into the existing benchmark
 inspector. Remove its shipped report record and both facade forwarding properties;
 the tool calls the existing production eligibility helpers and preserves its output.

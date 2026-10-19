@@ -99,31 +99,37 @@ internal static partial class Utf8SliceRunner
             instructions[repeatIndex + 2].A != repeatIndex ||
             instructions[repeatIndex + 3].Kind != Utf8SliceInstructionKind.RepeatExit ||
             instructions[repeatIndex + 3].A != repeat.B ||
-            atom.Kind is not (Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Shorthand or
+            atom.Kind is not (Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Shorthand or
                 Utf8SliceInstructionKind.Category or Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid))
             return false;
         var tail = repeatIndex + 4;
         if (instructions[tail].Kind == Utf8SliceInstructionKind.CaptureEnd) tail++;
         if (tail == instructions.Length) return false;
-        var literal = instructions[tail];
+        var suffix = instructions[tail];
         // RunFrom can retry a child after Accept to satisfy its required end.
         // Without that constraint, no shorter successful endpoint is requested.
-        if (literal.Kind == Utf8SliceInstructionKind.Accept && requiredEnd is null)
+        if (suffix.Kind == Utf8SliceInstructionKind.Accept && requiredEnd is null)
         {
             outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
             return true;
         }
-        if (literal.Kind != Utf8SliceInstructionKind.Literal || literal.B != 0 || !Rune.IsValid(literal.A))
-            return false;
+        // End anchors can succeed only at the subject end or before LF. If the
+        // atom excludes LF, no shorter endpoint can satisfy either kind of end.
+        // Keep this conservative proof for absolute ends as well as multiline $.
+        var excludedScalar = suffix.Kind == Utf8SliceInstructionKind.Literal && suffix.B == 0 && Rune.IsValid(suffix.A)
+            ? suffix.A
+            : suffix.Kind == Utf8SliceInstructionKind.Anchor &&
+                suffix.A is (int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd ? '\n' : -1;
+        if (excludedScalar < 0) return false;
 
         // Every shorter greedy boundary points at a scalar accepted by this
-        // side-effect-free atom. If the following exact literal is excluded,
+        // side-effect-free atom. If the following literal/end stop is excluded,
         // none of those alternatives can succeed. CaptureEnd still executes
         // normally, with its original trail and publication authority.
         var breach = invocation.TryChargeStep();
         var includesLiteral = false;
         if (breach == Utf8ExecutionLimitKind.None)
-            breach = TryMatchScalarClass(program, atom, new Rune(literal.A), ref invocation, out includesLiteral);
+            breach = TryMatchScalarClass(program, atom, new Rune(excludedScalar), ref invocation, out includesLiteral);
         if (breach != Utf8ExecutionLimitKind.None)
         {
             outcome = new(false, -1, breach, null, null);
@@ -175,6 +181,11 @@ internal static partial class Utf8SliceRunner
     private static Utf8ExecutionLimitKind TryMatchScalarClass(Utf8SliceProgram program,
         Utf8SliceInstruction instruction, Rune scalar, ref Utf8SliceInvocation invocation, out bool hit)
     {
+        if (instruction.Kind == Utf8SliceInstructionKind.Dot)
+        {
+            hit = instruction.A != 0 || scalar.Value != '\n';
+            return Utf8ExecutionLimitKind.None;
+        }
         if (instruction.Kind == Utf8SliceInstructionKind.Set)
         {
             hit = Utf8SliceScalarClasses.MatchesMask(scalar, program.SetMasks[instruction.A],

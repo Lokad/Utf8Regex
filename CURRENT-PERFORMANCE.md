@@ -1,5 +1,30 @@
 # Selected current-source performance
 
+## Scalar dot-repeat follow-through
+
+A subsequent source107-dev comparison, parent `a39f4267`, reuses the existing
+scalar repeat scan for dots and proved end tails. One quiet-VM before/after batch
+used the same Release driver, .NET10.0.12/CPU2/default tiering and existing
+six-lane alternating runner, five samples, with only the Core DLL replaced.
+Times are median microseconds per complete public operation, ordinary / compiled.
+
+| Operation | Before | After | Allocated bytes before → after |
+| --- | ---: | ---: | ---: |
+| Imports Count |370.465 /368.500|331.005 /332.625|3,584 →3,584|
+| Lexer doc-line sample loop |300.488 /300.621|121.221 /121.001|126,200 →52,080|
+| Unchanged English literal Count |395.925 /397.030|395.135 /398.830|0 →0|
+
+Imports improved about10% and the lexer loop about60%; affected managed sample
+ranges do not overlap. The unchanged managed control stayed within0.5%. The
+runner also measured both .NET baselines: affected-case controls changed within
+6.2%, while the literal's .NET control medians varied up to14%. Small comparator
+differences remain noisy. Both affected public workloads still trail both .NET
+baselines substantially. This is a scoped source improvement, with validation and
+basic metering included, not a universal parity or package/checked52 claim.
+No confirmation or second timing run followed; all raw evidence and limits are
+[in the closed receipt](artifacts/dot-repeat-tail-20261019/RESULT.md).
+Immutable106 finite/token costs and the earlier snapshot below remain separate.
+
 ## Four refreshed public comparisons
 
 On 2026-10-19, clean source `c2373b04ea08dec9c65e9066ee27b09fc31b4fbc`
