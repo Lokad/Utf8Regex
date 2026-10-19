@@ -96,7 +96,6 @@ internal struct PythonReScalarMatchState
 
     internal int StartOffsetInBytes { get; private set; }
     internal int EndOffsetInBytes { get; private set; }
-    internal int? LastIndex { get; private set; }
     internal readonly ulong ReservedBytes => _invocation.Ledger.ReservedBytes;
     internal readonly ulong ResultReservation => _results.ReservedBytes;
     internal readonly bool HasCoordinateMap => _hasMap;
@@ -244,14 +243,6 @@ internal struct PythonReScalarMatchState
                     throw new InvalidOperationException("Scalar discovery exceeded the invocation budget.");
                 if (outcome.IsMatch)
                 {
-                    LastIndex = null;
-                    if (outcome.LastClosedSlot >= 0)
-                    {
-                        // Python lowering uses opening-order slots, including assertions
-                        // and FullMatch. Keep the existing metadata interruption point.
-                        Checkpoint(input);
-                        LastIndex = outcome.LastClosedSlot + 1;
-                    }
                     StartOffsetInBytes = _position;
                     EndOffsetInBytes = outcome.EndIndex;
                     _retryNonEmpty = outcome.EndIndex == _position;
@@ -417,8 +408,26 @@ internal struct PythonReScalarMatchState
         }
     }
 
+    internal int? GetLastIndex(ReadOnlySpan<byte> input)
+    {
+        if (_program.GroupCount == 0) return null;
+        try
+        {
+            // The successful workspace keeps its capture journal until the next
+            // advance. Only detailed/context results observe completion order;
+            // value/string/UTF8 discovery needs no extra scan or metadata state.
+            var breach = _workspace.Stacks.FindLastClosedSlot(ref _invocation, out var slot);
+            if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
+            if (slot < 0) return null;
+            Checkpoint(input);
+            return slot + 1;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
+    }
+
     internal Utf8PythonDetailedMatchData SnapshotDetailed(ReadOnlySpan<byte> input, PythonReNameEntry[] names)
     {
+        var lastIndex = GetLastIndex(input);
         Checkpoint(input);
         EnsureMap(input);
         // Owned snapshots project directly from capture slots. Borrowed contexts
@@ -446,7 +455,7 @@ internal struct PythonReScalarMatchState
             };
         }
         var copiedNames = SnapshotNameEntries(input, names);
-        var result = new Utf8PythonDetailedMatchData { Groups = projected, NameEntries = copiedNames, LastIndex = LastIndex };
+        var result = new Utf8PythonDetailedMatchData { Groups = projected, NameEntries = copiedNames, LastIndex = lastIndex };
         Checkpoint(input);
         return result;
     }

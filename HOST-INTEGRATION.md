@@ -71,6 +71,12 @@ Choose eager-construction and invocation limits separately. The common policy
 types describe admission scopes; work units and execution failure types depend
 on the regex profile. Matching remains strict UTF-8/scalar with byte coordinates.
 
+Development after scalar.105 charges capture-completion metadata only when a
+Python detailed/context result observes it. Core operations and Python value /
+findall routes omit that unused scan and can admit smaller work limits. VM
+instruction/backtracking work, required projection charges, original interruption
+and result ownership remain enforced.
+
 ## Select the public controls
 
 `Utf8ResourcePolicy` has positive nullable `MaxWorkSteps`, `MaxDepth`,

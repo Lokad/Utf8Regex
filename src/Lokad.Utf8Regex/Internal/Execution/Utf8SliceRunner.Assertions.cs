@@ -166,19 +166,13 @@ internal static partial class Utf8SliceRunner
                 if (continuations.Count == 0)
                 {
                     if (!outcome.IsMatch) return outcome;
-                    var lastClosedSlot = -1;
-                    if (program.GroupCount != 0)
-                    {
-                        var completionBreach = stacks.FindLastClosedSlot(ref invocation, out lastClosedSlot);
-                        if (completionBreach != Utf8ExecutionLimitKind.None) return new(false, -1, completionBreach, null, null);
-                    }
                     int[][]? historyStarts = null, historyLengths = null;
                     if (collectHistory)
                     {
                         var historyBreach = stacks.MaterializeHistory(program.GroupCount, ref invocation, out historyStarts, out historyLengths);
                         if (historyBreach != Utf8ExecutionLimitKind.None) return new(false, -1, historyBreach, null, null);
                     }
-                    return new(true, outcome.EndIndex, outcome.Breach, historyStarts, historyLengths, lastClosedSlot);
+                    return new(true, outcome.EndIndex, outcome.Breach, historyStarts, historyLengths);
                 }
                 var exitBreach = invocation.TryChargeInputStep();
                 if (exitBreach != Utf8ExecutionLimitKind.None)

@@ -59,17 +59,12 @@ internal struct Utf8SliceCountMutation
 internal readonly struct Utf8SliceMatchOutcome
 {
     internal Utf8SliceMatchOutcome(bool isMatch, int endIndex, Utf8ExecutionLimitKind breach, int[][]? captureStarts, int[][]? captureLengths)
-        : this(isMatch, endIndex, breach, captureStarts, captureLengths, -1)
-    { }
-
-    internal Utf8SliceMatchOutcome(bool isMatch, int endIndex, Utf8ExecutionLimitKind breach, int[][]? captureStarts, int[][]? captureLengths, int lastClosedSlot)
     {
         IsMatch = isMatch;
         EndIndex = endIndex;
         Breach = breach;
         CaptureStarts = captureStarts;
         CaptureLengths = captureLengths;
-        LastClosedSlot = lastClosedSlot;
     }
 
     internal bool IsMatch { get; }
@@ -77,7 +72,6 @@ internal readonly struct Utf8SliceMatchOutcome
     internal Utf8ExecutionLimitKind Breach { get; }
     internal int[][]? CaptureStarts { get; }
     internal int[][]? CaptureLengths { get; }
-    internal int LastClosedSlot { get; }
 }
 
 internal readonly struct Utf8SliceSlots

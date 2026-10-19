@@ -77,6 +77,7 @@ public sealed class PythonReDetailedPublicationContractTests
                 Assert.True(standalone.MoveNext()); standalone.EnsureMap();
                 var initialWork = standalone.WorkingInvocation.Budget.Steps;
                 var initialBytes = standalone.ReservedBytes;
+                _ = standalone.GetLastIndex();
                 standalone.Checkpoint();
                 _ = standalone.AllocateResultArray<Utf8PythonGroupMatchData>(3);
                 foreach (var range in new[] { (0, input.Length), (0, 4), (4, input.Length) })

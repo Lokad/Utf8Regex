@@ -153,9 +153,10 @@ public sealed partial class Utf8PythonRegex
             Utf8PythonMatchContext result = default;
             if (kind == 0 ? cursor.MoveNext() : cursor.MatchAtCurrentPosition())
             {
+                var lastIndex = cursor.GetLastIndex();
                 var groups = cursor.SnapshotGroups();
                 var names = cursor.SnapshotNameEntries(_nameEntries);
-                result = new Utf8PythonMatchContext(input, groups, names, cursor.LastIndex);
+                result = new Utf8PythonMatchContext(input, groups, names, lastIndex);
             }
             cursor.Checkpoint();
             return result;

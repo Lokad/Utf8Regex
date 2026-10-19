@@ -2,6 +2,12 @@
 
 ## Changes after scalar.105
 
+Python detailed/context projection derives lastindex/lastgroup from the existing
+successful capture journal before publication. Remove eager completion fields
+from the shared VM outcome and Python discovery state. Core operations and Python
+value/findall routes no longer compute unused completion metadata; required
+metadata reads retain their work, cancellation and deadline checks.
+
 Adjacent literal tokens expand in one appended buffer per run, instead of
 allocating every increasing prefix. Class-product order and expansion limits
 stay unchanged; major old/new capacity is admitted before allocation and copying
