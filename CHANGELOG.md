@@ -1,6 +1,14 @@
 # Changelog
 
-## Changes after scalar.103
+## Qualified private Core/PythonRe scalar.104
+
+Producer da89185b freezes the replacement batch below with exact Core104. Same
+DLLs pass detached Windows/Linux suites, unchanged original consumers, capture /
+semantic oracles and identity/member/provenance/symbol checks. Sourcefe1e482b CI
+is green on both platforms. One current-package handoff cost observation records
+finite/live-token/capture/materialization costs and raw noise. Source moves to
+105-dev; no PCRE104/publication/adoption. Handoff:
+artifacts/core-python-scalar104-20261019/HANDOFF.md.
 
 Core shared replacement reuses operation-local VM scratch across searches and
 releases it before final output. Captures, per-attempt resets, cancellation and
@@ -14,7 +22,7 @@ The batch also avoids unchanged Core/PythonRe substitution output staging and
 guides eligible scalar replacement starts with existing bounded native literal
 discovery. Scalar verification still owns captures/histories; strict UTF8, alias
 safety and original cancellation/resource authority remain. These source changes
-are outside immutable103 and are not yet a qualified104 package.
+are included in104 and remain outside immutable103.
 
 ## Changes after scalar.102
 
@@ -22,7 +30,7 @@ The shared terminal class-repeat loop reads ASCII directly from an existing
 positive, case-sensitive mask, avoiding Rune decoding and class dispatch for
 those bytes. Per-scalar/terminal work charges, Unicode/folded/negated fallbacks,
 captures and storage admission remain. A bounded public replacement comparison
-improves bulk medians by3.0–4.1%, with a7.6% short-unlimited slowdown; the
+improves bulk medians by3.0â€“4.1%, with a7.6% short-unlimited slowdown; the
 [source receipt](artifacts/terminal-ascii-set-repeat-20261018/RESULT.md) records
 that tradeoff and unchanged controls. This source change is outside immutable102.
 
@@ -175,9 +183,9 @@ assets retain staging status; this source records acceptance without repacking.
   searches cover at most2048bytes; Unicode/control handling and whole-input UTF8
   validation remain. Original work/token/deadline checks include publication.
   This removes phase dispatch without a new owner, mode, table or allocation.
-- The bounded public source pair qualifies32–38% less time on the URI corpus
+- The bounded public source pair qualifies32â€“38% less time on the URI corpus
   across ordinary/compiled and unlimited/finite/live-token lanes, with unchanged
-  allocations. Long ASCII tails improve about98–99%; literal controls stay
+  allocations. Long ASCII tails improve about98â€“99%; literal controls stay
   within3%. Two decode controls remain inconclusive. Compiled predecoded .NET
   remains faster on the corpus. No confirmation or Status change; included in scalar.98.
 - Let recognized ASCII signed-decimal IsMatch borrow the caller's existing
@@ -461,8 +469,8 @@ The existing engine passes; no new matching mechanism is introduced.
 
 - Read raw escaped Unicode literals as complete scalars inside and outside
   brackets, including range endpoints and quantifiers. Apply lexical Python
-  folding through the existing literal path; `\😀+` matches complete emoji and
-  ignore-case `\é` matches `É`. Explicit escaped surrogate halves stay separate.
+  folding through the existing literal path; `\ðŸ˜€+` matches complete emoji and
+  ignore-case `\Ã©` matches `Ã‰`. Explicit escaped surrogate halves stay separate.
   One shared raw-scalar reader removes duplicate surrogate handling and an
   unused class-item parameter; existing admission and interruption remain.
 
@@ -506,7 +514,7 @@ Source experiment costs below keep their original flags/scope.
   or NonBacktracking programs retain their capture state. Preserve scalar
   progression, retained results and original instruction/resource/interruption
   authority. Required working capacity can fall; other operations keep values.
-  The bounded public source pair improves captured Count10–14% with2192 fewer
+  The bounded public source pair improves captured Count10â€“14% with2192 fewer
   allocated bytes; this does not update immutable89 or its default-runtime costs.
 
 ## Qualified private Core/PythonRe scalar.89
@@ -735,9 +743,9 @@ Source experiment costs below keep their original flags/scope.
 - Stage Python Split string references directly in the existing metered result
   buffer, removing discarded detailed-item staging and its projection loop.
   Captures/nulls, scalar offsets, interruption and finite admission remain intact.
-  The bounded source comparison cuts dense/captured allocations by 24–30%.
-  ASCII Split is 4.8–7.5% slower; this memory tradeoff is accepted explicitly.
-  Captured Unicode is 3.5–4.4% faster; FullOpts scope and unchanged controls are
+  The bounded source comparison cuts dense/captured allocations by 24â€“30%.
+  ASCII Split is 4.8â€“7.5% slower; this memory tradeoff is accepted explicitly.
+  Captured Unicode is 3.5â€“4.4% faster; FullOpts scope and unchanged controls are
   retained in [the evidence](artifacts/pythonre-split-string-staging-20261017/RESULT.md).
   This source change does not refresh CPython Status or immutable scalar.81.
 - Qualify the previously unfinished limited-Split duration check with the existing
@@ -817,7 +825,7 @@ Source experiment costs below keep their original flags/scope.
   packages pass same-byte Windows/Linux consumers, oracles, symbols/provenance/
   member checks and isolated public restore; producer39358de0 CI is green.
 - Record one exact-package current VM pass with finite/live-token lanes and both
-  .NET controls. Selected Python finite overhead is7–10%; Core Count24.6us
+  .NET controls. Selected Python finite overhead is7â€“10%; Core Count24.6us
   unlimited/80.6us finite versus103.9us predecoded .NET. No default-PGO, new
   CPython Status, before/after speedup or full-catalog claim.
   [Delivery receipt](artifacts/core-python-scalar80-20261017/HANDOFF.md).
@@ -877,8 +885,8 @@ Source experiment costs below keep their original flags/scope.
   their existing paths. Preserve captures/completion, empty retries, work metering,
   original interruption and remaining admission. Actual state/work needs fall;
   no new owner, mode, metadata or instruction. Immutable78 predates this change.
-- One bounded Windows public observation records about 10–11% less string-tuple
-  time and 1.9 KB/op less allocation, with ~1–1.5% unchanged managed-control drift.
+- One bounded Windows public observation records about 10â€“11% less string-tuple
+  time and 1.9 KB/op less allocation, with ~1â€“1.5% unchanged managed-control drift.
   Token/BCL variability stays explicit in the [evidence](artifacts/terminal-capture-repeat-20261017/RESULT.md).
   Reuse the frozen BEFORE; no baseline replay or intermediate package.
 
@@ -1245,9 +1253,9 @@ Source experiment costs below keep their original flags/scope.
   execution and unused-vector omission. Preserve basic metering, interruption,
   captures and result/alias lifetimes; reduced actual work/storage revises numeric
   admission. Tiny plain Count and captured/result denial controls pass.
-- Record current exact-package finite costs: Unicode word Count 208 µs, word
-  values 332 µs, 1,000 captured tuples 675 µs; Core family remains 308 µs versus
-  60 µs unlimited. Preserve earlier source comparisons and noisy controls.
+- Record current exact-package finite costs: Unicode word Count 208 Âµs, word
+  values 332 Âµs, 1,000 captured tuples 675 Âµs; Core family remains 308 Âµs versus
+  60 Âµs unlimited. Preserve earlier source comparisons and noisy controls.
 - Keep independent PCRE67 and earlier inputs immutable. Full protection/SPEC and
   actual host adoption remain open; no publication or consumer promotion.
 
@@ -1470,7 +1478,7 @@ Source experiment costs below keep their original flags/scope.
   construction. Groupless programs keep the same null tables and matching routes
   without rejected scratch sessions/walks. Active capture preparation, admission
   and original interruption remain; less work can admit tighter construction caps.
-- One fixed-instance public constructor allocation observation removes 1.3–5.9 KB
+- One fixed-instance public constructor allocation observation removes 1.3â€“5.9 KB
   across five groupless shapes, ordinary/compiled, with unchanged captured/shared/
   sparse controls and output/table flags. No execution-time claim or new package.
 
@@ -1494,8 +1502,8 @@ Source experiment costs below keep their original flags/scope.
   unchanged profile-data witnesses. No repeated source experiments or old-package
   qualification. The Core package includes the derived data's Unicode license.
 - Current selective public costs:135 samples above 50 ms, full validation/required
-  shaping, finite controls/live token. Family Count 65.4 µs unlimited/340 µs finite,
-  about 5.2× remains; Python tuples 0.690/0.738 ms. Preserve raw controls/allocations,
+  shaping, finite controls/live token. Family Count 65.4 Âµs unlimited/340 Âµs finite,
+  about 5.2Ã— remains; Python tuples 0.690/0.738 ms. Preserve raw controls/allocations,
   ordinary-only timing scope and BCL exclusions; no broad parity/Status claim.
 - Prior packages stay immutable. PCRE2, publication, actual consumer adoption and
   complete construction/default/live-retention containment remain separate.
@@ -1506,9 +1514,9 @@ Source experiment costs below keep their original flags/scope.
   trailing confirmation in the existing finder. Keep bounded comparisons, branch
   priority, scalar offsets, original interruption and cumulative resource limits.
   Removed operations can admit tighter work budgets; allocations are unchanged.
-- One bounded public Count pair observes 24–26% lower dense/false-candidate finite
-  costs, 12–13% lower supplementary-family costs and about 5% lower shared-prefix
-  costs. Unchanged single-literal finite controls rise 3–4%, limiting attribution.
+- One bounded public Count pair observes 24â€“26% lower dense/false-candidate finite
+  costs, 12â€“13% lower supplementary-family costs and about 5% lower shared-prefix
+  costs. Unchanged single-literal finite controls rise 3â€“4%, limiting attribution.
   Dense finite cost remains about 5.5 times unlimited. No broad parity or new
   package claim; immutable scalar.62 stays unchanged.
 
@@ -1520,7 +1528,7 @@ Source experiment costs below keep their original flags/scope.
   scalar boundaries, allocation behavior, cancellation and resource admission;
   PythonRe remains pinned separately to Unicode 15.1.
 - Complete normative mapping/gap and focused public scalar/RTL/finite checks pass.
-  One bounded public pair observes 15–20% lower literal/reference Count costs,
+  One bounded public pair observes 15â€“20% lower literal/reference Count costs,
   unchanged allocations, noisy class medians and controls from -1.0% to +9.0%.
   No broad parity or new package; immutable62 retains the demonstrated limitation.
 - Include Unicode source attribution and license for the derived data.
@@ -1544,7 +1552,7 @@ Source experiment costs below keep their original flags/scope.
   Core/PCRE2 retain their previous rule; no repeated-body expansion or new owner.
 - Pinned CPython fixtures and finite denial/interruption/cursor checks cover the
   correction. Correct extra iterations can spend more of the selected limits.
-- One bounded same-result Count comparison observes 34–37% higher cost for a
+- One bounded same-result Count comparison observes 34â€“37% higher cost for a
   nullable-repeat workload, unchanged allocations and controls from -0.7% to +4.1%.
   This is an explicit correctness cost, independent of the unchanged 10%
   checked-access allowance. Immutable scalar.61 retains the demonstrated defect;
@@ -1557,7 +1565,7 @@ Source experiment costs below keep their original flags/scope.
   for each charged 2048-byte window. Ordered full verification, UTF-8/scalar
   semantics, original cancellation/deadline and resource admission stay intact.
   Removed repeated branch scans can admit tighter work limits; no new storage.
-- One bounded current-source public Count pair observes 18–27% lower finite costs
+- One bounded current-source public Count pair observes 18â€“27% lower finite costs
   across four affected families, unchanged allocations, controls from -6.8% to +3.5%
   and explicit compiled outliers. No broad parity or new package claim; immutable
   scalar.61 stays unchanged.
@@ -1568,7 +1576,7 @@ Source experiment costs below keep their original flags/scope.
   family route; remove the redundant runtime selector. Diagnostic summaries build
   unused views on demand, preserving their output. No matching or public API change.
 - Existing construction/capture/cache checks pass with active-map graph coverage
-  retained. A bounded allocation observation shows416–488B less per ordinary
+  retained. A bounded allocation observation shows416â€“488B less per ordinary
   constructor in three inactive-map examples, with unchanged active-map control.
   Lower preparation can admit tighter construction limits. No timing, package or
   broad performance claim; immutable scalar.61 stays unchanged.
@@ -1609,9 +1617,9 @@ Source experiment costs below keep their original flags/scope.
 - Borrow the prepared folded first-byte union for one bounded candidate-window
   scan; retain original ordinal verification, reverse/unprepared fallback and
   original resource/token/deadline authority. No new storage or unchecked API.
-- One public pair observes43–45% lower subtitle Count cost and17–20% lower dense
+- One public pair observes43â€“45% lower subtitle Count cost and17â€“20% lower dense
   family cost with unchanged allocations, including finite/live-token calls.
-  Single-literal controls cost3–5% more; unlimited exact controls improve16–17%,
+  Single-literal controls cost3â€“5% more; unlimited exact controls improve16â€“17%,
   limiting attribution. Focused Release/Debug, differential and PythonRe checks
   pass. This source change is outside scalar.60 and the dated c154 snapshot.
 
@@ -1636,7 +1644,7 @@ Source experiment costs below keep their original flags/scope.
 - The route needs no VM depth/working/result scratch and can admit tighter finite
   limits. Use checked span search for Kelvin to handle incomplete window tails.
 - One bounded public pair against scalar.60 reduces the 899 KB folded family from
-  about210–215ms to21ms with unlimited, finite and live-token policies, and drops
+  about210â€“215ms to21ms with unlimited, finite and live-token policies, and drops
   its Count allocations from1872/1984B to0/112B. Unchanged unlimited exact-literal
   controls stay within1%; retain raw samples and the rejected earlier prototype.
   This is source evidence, outside the immutable scalar.60 package.
@@ -1681,8 +1689,8 @@ Source experiment costs below keep their original flags/scope.
   failed candidates in a single search. Preserve candidate/branch selection,
   verification, strict scalar validation and the original deadline/policy routes;
   no new cached plan, execution mode or accounting owner.
-- One bounded source pair reduces affected compact/dense/miss Count about40–43%
-  and allocation from1.8–5.4MB to1,792B. Finite/token and optimized controls retain
+- One bounded source pair reduces affected compact/dense/miss Count about40â€“43%
+  and allocation from1.8â€“5.4MB to1,792B. Finite/token and optimized controls retain
   their allocations and move by low single digits. Final nullable-flow cleanup
   and package costs are identified separately in the experiment receipt; existing
   immutable inputs and published benchmark snapshots remain unchanged.
@@ -1694,7 +1702,7 @@ Source experiment costs below keep their original flags/scope.
   cancellation/deadlines and four resource controls remain. A successful route
   needs no VM scratch; declined attempts retain spent work before fallback.
 - One bounded public pair reduces dense finite Count about97.8% and allocations
-  1792 ->112B. Tail cases improve93.6–96.8%; measured unlimited/fallback/control
+  1792 ->112B. Tail cases improve93.6â€“96.8%; measured unlimited/fallback/control
   costs stay within about4%, with outliers retained. No new package or expanded
   profile/overload claim; immutable inputs retain their original scope.
 
@@ -1742,9 +1750,9 @@ Source experiment costs below keep their original flags/scope.
   left-to-right slice programs. Empty-match and explicit-option progression stays
   on its cursor. Original metering, cancellation/deadline, capture/reference
   semantics and finite storage/denial/cleanup contracts remain.
-- One bounded public pair reduces selected dense Count time49–66% and allocated
+- One bounded public pair reduces selected dense Count time49â€“66% and allocated
   bytes from about5.8MB to5.9KB per1000 hits. Accept the measured64KiB miss cost
-  increase12–14% as an explicit scratch-lifetime tradeoff; no equivalence claim,
+  increase12â€“14% as an explicit scratch-lifetime tradeoff; no equivalence claim,
   additional tuning round, new package or reopened checked-access gate.
 
 ## Private scalar.58 Core/PCRE2 finite-Count input
@@ -1763,16 +1771,16 @@ Source experiment costs below keep their original flags/scope.
 
 - Mark proved leading single literals as eligible for the existing metered
   scalar Count seek. Selected finite captured/reference/Unicode dense costs fall
-  27–29%; a 64 KiB sparse Count falls from about 5 ms to 4 us in one bounded pair.
+  27â€“29%; a 64 KiB sparse Count falls from about 5 ms to 4 us in one bounded pair.
   Preserve allocations, VM verification and original interruption/resource
-  authority. Literal-family seeking is deferred after a 57–59% dense-overlap
+  authority. Literal-family seeking is deferred after a 57â€“59% dense-overlap
   regression; no new package or broad performance claim.
 - Count proved non-empty literal languages with the owned scalar program/search
   plan under the original finite invocation. Reuse one scratch scope, preserving
   basic metering, cancellation, deadlines, structured denials and fallback cases.
   Less required state can admit smaller work/depth/working caps; detailed capture
   operations still acquire and enforce their state. No new owner/public option.
-- One bounded public pair against frozen57 improves selected finite Count57–78%
+- One bounded public pair against frozen57 improves selected finite Count57â€“78%
   and reduces reference/overlap allocations. Preserve unchanged-control noise,
   raw sample floors and remaining overhead; no new package or broad Status claim.
 
@@ -1794,8 +1802,8 @@ Source experiment costs below keep their original flags/scope.
 
 - Skip capture undo records when no live frame/call can restore old values.
   Keep capture state, instruction metering, finite admission and cursor lifetimes.
-  A bounded public pair reduces selected finite reference Count time17–20% and
-  allocated bytes about82%; DEFINE is5–6% slower with unchanged allocations.
+  A bounded public pair reduces selected finite reference Count time17â€“20% and
+  allocated bytes about82%; DEFINE is5â€“6% slower with unchanged allocations.
   Preserve raw floors/noisy tails; no package or broad equivalence claim.
 - Restore caller captures, including unset slots and byte ranges, after PCRE2
   subroutine/recursive and `(*ACCEPT)` returns. Remove the propagation table,
@@ -1866,7 +1874,7 @@ Source experiment costs below keep their original flags/scope.
   pattern preparation and linear scans over large data. Keep unproved
   host-category native routes ineligible; Core category semantics stay unchanged.
   One bounded overlapping public comparison shows no affected regression;
-  word Count improves about 9–16% and word construction about 9%, with fewer
+  word Count improves about 9â€“16% and word construction about 9%, with fewer
   preparation allocations. Controls/noise remain explicit; no general parity or
   package designation follows this source correction.
 - Validate group names using owned CPython 3.13.2 / Unicode 15.1 identifier data,
@@ -1922,7 +1930,7 @@ Source experiment costs below keep their original flags/scope.
   original invocation controls. Held capacity can conservatively deny earlier;
   removed acquisitions no longer spend allocation work. No new owner or pool.
 - Selected public email Count hit/miss comparisons against frozen scalar.53
-  improve about 40–43% with all-four-finite/live-token lanes. Hit allocations
+  improve about 40â€“43% with all-four-finite/live-token lanes. Hit allocations
   fall from 4.98 MB to 458 KB; miss allocations fall from 12.74 MB to about 3.6 KB. Complete affected Release 5278
   and focused Debug 165 pass. One capped harness run and one corrected bounded
   comparison are recorded; noisy control tails are explicit. No repack or new
@@ -1997,7 +2005,7 @@ Source experiment costs below keep their original flags/scope.
 - Admit folded comparison prefixes and checked word extents explicitly; inline
   only the short comparer and restore the original generic word/byte algorithm.
   Remove BCL equality/validity dispatch without restoring unchecked reads.
-  Public12–64-byte costs remain within4.6% of the fixed original, allocations
+  Public12â€“64-byte costs remain within4.6% of the fixed original, allocations
   unchanged. Keep SIMD discovery, scalar semantics and resource controls.
 - Library builds no longer pack implicitly. Explicit package qualification
   remains responsible for the one producer build, pack and provenance checks.
@@ -2009,11 +2017,11 @@ Source experiment costs below keep their original flags/scope.
 - Fuse fixed-width literal dispatch and mask updates while consuming a checked
   block. Remove the remaining unchecked read in this executor, preserving SIMD,
   overlap/tails, scalar fallback and resource admission. Focused public Count
-  costs15–24% less with unchanged allocations; the later selected cumulative
+  costs15â€“24% less with unchanged allocations; the later selected cumulative
   gate includes this executor.
 - Scan complete emitted-family vector blocks through a bounds-checked typed
   span, preserving SIMD masks, scalar tails, validation and resource routing.
-  Focused compiled sparse/near-miss Count costs about8–9% more, within the10%
+  Focused compiled sparse/near-miss Count costs about8â€“9% more, within the10%
   allowance; allocations are unchanged. Cumulative qualification remains open.
 - Reuse the remaining correlated candidate mask after each non-overlapping
   literal match and check all three vector reads. Preserve scalar tails,
@@ -2033,7 +2041,7 @@ Source experiment costs below keep their original flags/scope.
 - Replace the general folded word loop with checked BCL ASCII equality while
   retaining checked byte folding for non-ASCII needles and the existing short
   specialization. Remove Core's remaining Unsafe.ReadUnaligned references.
-  Accept a measured5–6% affected public Count cost under the10% allowance;
+  Accept a measured5â€“6% affected public Count cost under the10% allowance;
   final cumulative performance and downstream qualification remain open.
 - Remove the last generated inline-array staging in Core query preparation.
   Check the already bounded case-pair mask directly; preserve grammar, charges
@@ -2115,7 +2123,7 @@ Source experiment costs below keep their original flags/scope.
   before VM capture resets and workspace acquisition. Preserve full validation,
   scalar boundaries, captures, cancellation/deadlines and resource admission.
 - The bounded quiet-VM public comparison improves structured imports Count about
-  2.8x with unchanged allocations. All-hit anchored Count costs about1.5–4.3% more;
+  2.8x with unchanged allocations. All-hit anchored Count costs about1.5â€“4.3% more;
   the extra input probe is charged, while skipped VM work/capacity disappears.
   Keep the shared Count loop small; no new mode or per-pattern state is added.
 - These changes are outside the immutable scalar.49 pair. Its handoff and
@@ -2138,9 +2146,9 @@ Source experiment costs below keep their original flags/scope.
 
 ## Unreleased checked folded short comparison (0.4.0-scalar.49-dev)
 
-- Replace four unchecked reads in the folded9–16-byte comparator with checked
+- Replace four unchecked reads in the folded9â€“16-byte comparator with checked
   span reads, preserving folding, overlapping tails, allocations and controls.
-- Retain the short conversion with roughly5–6% affected public Count overhead
+- Retain the short conversion with roughly5â€“6% affected public Count overhead
   in the broader prototype. Restore the separate long-loop reads after its one
   confirmation exceeds10%; preserve boundary checks and bounded evidence.
 
@@ -2148,7 +2156,7 @@ Source experiment costs below keep their original flags/scope.
 
 - Replace both byte-set SIMD LoadUnsafe calls with checked span reads, retaining
   the existing search algorithm, vector widths, final overlap and allocations.
-- Accept an observed roughly 2–4% slowdown on affected public literal-family
+- Accept an observed roughly 2â€“4% slowdown on affected public literal-family
   searches within the 10% allowance. Finite VM controls remain separate; larger
   code and bounds branches are an accepted tradeoff. Full package/platform
   qualification stays batched at the next coherent delivery milestone.
@@ -2216,8 +2224,8 @@ Source experiment costs below keep their original flags/scope.
 
 - Inline the existing budget step into callers without changing work charges,
   saturation, sticky denial, cancellation, deadlines or cursor authority.
-- Focused quiet-VM controls improve finite literal Count about5–6% and dense
-  PythonRe results about8–10%, with larger generated callers. One sparse cursor
+- Focused quiet-VM controls improve finite literal Count about5â€“6% and dense
+  PythonRe results about8â€“10%, with larger generated callers. One sparse cursor
   noise repeat does not reproduce the initial slowdown. This is scoped source
   evidence; scalar.47 package bytes and the Core unchecked API gate are unchanged.
 
@@ -2242,7 +2250,7 @@ Source experiment costs below keep their original flags/scope.
 
 - Cover empty and shorter inputs, offset prefixes, folded/ordinal tails and
   denied multi-block comparisons while preserving caller storage reservations.
-- A suffix-span loop is deferred after a3.5–4.7% finite Count penalty despite
+- A suffix-span loop is deferred after a3.5â€“4.7% finite Count penalty despite
   smaller generated code. The original comparator is restored; the accepted
   invocation-budget improvement remains in place.
 
@@ -2251,7 +2259,7 @@ Source experiment costs below keep their original flags/scope.
 - Borrow the current work budget once before charging and reading checkpoint
   steps. Keep exact work units, sticky denial, shared cursor allowance and the
   original token/deadline; checks after a callback select the current owner again.
-- A focused quiet-VM literal Count control improves finite lanes about10–11%
+- A focused quiet-VM literal Count control improves finite lanes about10â€“11%
   with unchanged allocations. This is source evidence, not a new package or
   universal performance claim; scalar.47 remains immutable.
 
@@ -2269,7 +2277,7 @@ Source experiment costs below keep their original flags/scope.
 - Replace the capture-body hash table and separate open-group buffer with one
   admitted array in opening order. Preserve nested closing, reference validation,
   retained parser results, bounded construction and cancellation/deadlines.
-- Focused constructor controls allocate 56–2,768 fewer bytes per call, with
+- Focused constructor controls allocate 56â€“2,768 fewer bytes per call, with
   modest timing improvements. Public APIs and scalar.46 packages stay unchanged.
 
 ## Unreleased construction map insertion (0.4.0-scalar.47-dev)
@@ -2288,7 +2296,7 @@ Source experiment costs below keep their original flags/scope.
   numeric byte totals. Keep major allocation admission, growth overlap and
   deterministic cleanup. Explicit retention charges shared extents again, so
   construction may be denied earlier; work/depth/instruction limits remain.
-- Focused construction controls remove504–2,768 allocated bytes per call.
+- Focused construction controls remove504â€“2,768 allocated bytes per call.
   Scalar/capture, resource and profile checks pass; scalar.46 remains immutable.
 
 ## Unreleased PythonRe prefix semantic audit (0.4.0-scalar.47-dev)
@@ -2303,7 +2311,7 @@ Source experiment costs below keep their original flags/scope.
 
 - Cover correlated-literal diagnostic census offsets, vector tails, overlap and
   agreement with scalar Count and finite policies. Checked census reads are
-  deferred after a10–11% long-input penalty. Production remains unchanged;
+  deferred after a10â€“11% long-input penalty. Production remains unchanged;
   timed matcher code is identical and scalar.46 packages stay immutable.
 
 ## Private core/PythonRe candidate (0.4.0-scalar.46)
@@ -3530,18 +3538,18 @@ preserving the public API and .NET 10 semantic contract of `Lokad.Utf8Regex`.
 ### Performance And Reliability
 
 - Performance is materially ahead of 0.2.0: affected hot paths are commonly
-  **2–10× faster**, with gains approaching **100×** where former fallback,
+  **2â€“10Ã— faster**, with gains approaching **100Ã—** where former fallback,
   repeated-validation, or result-projection layers were eliminated. Untouched
   or fallback-heavy paths may remain flat.
 - Across the current semantically matched benchmark catalogs, the case-median
-  speedups are approximately **3× versus predecoded .NET Regex** [1.4× versus
-  compiled; 5×/3.4× when per-operation UTF-8 decoding is included], **4× versus
-  PCRE.NET/native PCRE2 NFA** [JIT disabled], and **2.4× versus predecoded
+  speedups are approximately **3Ã— versus predecoded .NET Regex** [1.4Ã— versus
+  compiled; 5Ã—/3.4Ã— when per-operation UTF-8 decoding is included], **4Ã— versus
+  PCRE.NET/native PCRE2 NFA** [JIT disabled], and **2.4Ã— versus predecoded
   CPython `re`/`_sre` public operations**. These are directional workload
   summaries, not per-pattern guarantees.
 - Added reproducible core, PCRE2, and PythonRe comparative snapshots with
   source/runtime provenance, bounded warmup, per-case checkpointing, and
-  adversarial 1×/2×/4×/8× scaling coverage.
+  adversarial 1Ã—/2Ã—/4Ã—/8Ã— scaling coverage.
 - Reused prepared core literal-family search for compatible PCRE2 value
   operations and added AST-certified required literals, leading-byte sets,
   and bounded literal windows before PCRE2 verification.

@@ -1,9 +1,9 @@
 # Resource controls and host ownership
 
-The qualified private Core/PythonRe input is **0.4.0-scalar.103**. Its
-[handoff](artifacts/core-python-scalar103-20261019/HANDOFF.md) records exact
+The qualified private Core/PythonRe input is **0.4.0-scalar.104**. Its
+[handoff](artifacts/core-python-scalar104-20261019/HANDOFF.md) records exact
 identities, same-byte Windows/Linux consumer checks, current costs and exclusions.
-Independent PCRE2 uses its exact Core/PCRE2 scalar.94 pair; no PCRE102 is designated.
+Independent PCRE2 uses its exact Core/PCRE2 scalar.94 pair; no PCRE104 is designated.
 Earlier packages retain their recorded contracts and limitations.
 
 Scalar.103 fixes a scoped-multiline anchor defect:
@@ -12,7 +12,7 @@ shortcut, missing later lines or undercounting matches. The fix reuses the
 existing admitted prefix proof; scoped line anchors keep their line/scalar
 route. Immutable scalar.102 is unchanged and does not contain this correction.
 
-Development source after scalar.103 delays PythonRe scalar substitution's output
+Scalar.104 delays PythonRe scalar substitution's output
 buffer until the first match. With no replacements, it returns an owned copy of
 the validated input directly, using its known character count for string output.
 This removes unused staging from working/result admission; a smaller finite
@@ -24,16 +24,16 @@ validated subject directly when no match was found. Its existing callback scope
 and control charges stay; returned bytes remain independent. Final payloads keep
 their numeric admission, and `TryReplace` preserves overlapping copies and an
 unchanged destination when capacity is insufficient. Unused byte staging is no
-longer charged on that path. This development change is outside immutable103.
+longer charged on that path; scalar.104 includes this change.
 
 Eligible regular scalar replacement now reuses the existing complete native
 literal finder for candidate starts, retaining scalar capture/history verification
 under the original invocation. This reduces search work for misses and gaps;
 the same finite policy can admit calls that previously exhausted its work limit.
-The existing eligibility rules and bounded native metering apply. This source
-change is outside immutable103.
+The existing eligibility rules and bounded native metering apply. Scalar.104
+includes this change; immutable103 retains its prior implementation.
 
-Development shared Core replacement also reuses its admitted VM scratch across
+Scalar.104 shared Core replacement also reuses its admitted VM scratch across
 searches, releasing it before final output projection and on failure. Retaining
 scratch through intermediate output/callback shaping can raise working overlap:
 the 6,656-byte captured identity-destination example needs 15,296 modeled working
