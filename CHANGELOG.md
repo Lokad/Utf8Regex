@@ -1,6 +1,6 @@
 # Changelog
 
-## Development: Python scalar EOF interruption
+## Private Core/PythonRe scalar.112 inputs: Python scalar EOF interruption
 
 Check the original invocation once more after the shared Python scalar VM fails
 at end of input. Generic Count and the public match cursor can no longer return
