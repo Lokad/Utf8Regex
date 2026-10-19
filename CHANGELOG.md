@@ -1,5 +1,18 @@
 # Changelog
 
+## Private Core/PythonRe scalar.111 candidate freeze
+
+Freeze C#10245c82 after removing obsolete byte-VM/interpreter chains and reusing
+the existing controlled branch finder for finite ASCII Count. No VM scratch is
+needed on that admitted route, so work/depth/working numeric requirements can
+fall. Eight existing helpers now borrow immutable plans; algorithms/SIMD/search,
+allocations and numeric metering stay unchanged for that change. Source Release
+and bounded public/codegen evidence pass; actual-package/platform/consumer /
+oracle/identity/current-cost qualification remains pending. Earlier bytes stay
+immutable; no publication, external adoption or PCRE111. SPEC preserves scope.
+[Finite Count](bench/Experiments/FiniteSimpleCount-20261019/README.md),
+[plan borrows](bench/Experiments/SimplePlanBorrows-20261019/README.md).
+
 ## Private Core/PythonRe scalar.110 qualification
 
 Frozen producera514fdab/C#265a54ec supplies the native Count terminal cancellation

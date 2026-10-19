@@ -1,5 +1,14 @@
 # Lokad.Utf8Regex
 
+Private **Core/PythonRe 0.4.0-scalar.111** is being frozen from C#10245c82.
+It removes obsolete interpreter execution and reuses controlled branch discovery
+for finite ASCII Count; readonly plan borrows remove per-candidate copies.
+Strict scalar UTF8, captures, NonBacktracking, original authority and lifetimes
+remain. Actual-byte platform/consumer/oracle/identity and current-package cost
+qualification is pending; scalar.110 below remains the qualified input. Earlier
+bytes stay immutable; no publication, external pin change or PCRE111. Full
+common/default/retention and broader R06/R07/R08/R09/R10 stay open.
+
 Private **Core/PythonRe 0.4.0-scalar.110**, producera514fdab/C#265a54ec, passes
 same-byte Windows/Linux suites, original Awk/Lython assertions, oracles and exact
 identity/member/symbol checks. Source CI is green. It fixes native Count terminal
