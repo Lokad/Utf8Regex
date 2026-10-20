@@ -165,13 +165,6 @@ public sealed partial class Utf8Pcre2Regex
         return fallbackSum;
     }
 
-    internal int DebugEnumeratePublicConstructionOnly(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        ValidateStartOffset(input, startOffsetInBytes);
-        _ = EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None);
-        return 1;
-    }
-
     internal int DebugEnumerateNativeMaterializationOnly(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
@@ -205,30 +198,6 @@ public sealed partial class Utf8Pcre2Regex
             Pcre2MatchOptions.None));
     }
 
-    internal int DebugEnumerateInternalPublicMoveNextCount(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        ValidateStartOffset(input, startOffsetInBytes);
-        return ExecutePublicEnumerateMoveNextCount(EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None));
-    }
-
-    internal int DebugEnumerateInternalPublicIndexSum(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        ValidateStartOffset(input, startOffsetInBytes);
-        return ExecutePublicEnumerateIndexSum(EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None));
-    }
-
-    internal int DebugEnumerateInternalPublicCurrentCount(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        ValidateStartOffset(input, startOffsetInBytes);
-        return ExecutePublicEnumerateCurrentCount(EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None));
-    }
-
-    internal int DebugEnumerateInternalPublicCurrentStartSum(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        ValidateStartOffset(input, startOffsetInBytes);
-        return ExecutePublicEnumerateCurrentStartSum(EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None));
-    }
-
     private static int ExecutePublicEnumerateMoveNextCount(Utf8Pcre2ValueMatchEnumerator enumerator)
     {
         var count = 0;
@@ -246,30 +215,6 @@ public sealed partial class Utf8Pcre2Regex
         while (enumerator.MoveNext())
         {
             sum += enumerator.Current.StartOffsetInBytes;
-        }
-
-        return sum;
-    }
-
-    private static int ExecutePublicEnumerateCurrentCount(Utf8Pcre2ValueMatchEnumerator enumerator)
-    {
-        var count = 0;
-        while (enumerator.MoveNext())
-        {
-            _ = enumerator.Current;
-            count++;
-        }
-
-        return count;
-    }
-
-    private static int ExecutePublicEnumerateCurrentStartSum(Utf8Pcre2ValueMatchEnumerator enumerator)
-    {
-        var sum = 0;
-        while (enumerator.MoveNext())
-        {
-            var current = enumerator.Current;
-            sum += current.StartOffsetInBytes;
         }
 
         return sum;

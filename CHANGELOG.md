@@ -1,5 +1,15 @@
 # Changelog
 
+## Development: PCRE2 enumerator diagnostics
+
+Remove five benchmark-only public-enumerator forwarders and two unused loop
+bodies from the shipped PCRE2 profile. Existing public-operation replays in the
+benchmark reporter replace seven duplicate diagnostic rows; construction-only
+replay now also lives there. It calls the public constructor directly, omitting
+the old diagnostic's extra full-input validation. Public matching, enumeration,
+resource admission and cursor lifetimes are unchanged. No new package or public
+API revision. Focused Release checks and the reporter smoke check pass.
+
 ## Development scalar.116: literal diagnostics and eager string-findall
 
 PythonRe eager scalar string-findall omits a duplicate per-result checkpoint

@@ -359,13 +359,9 @@ internal static partial class BenchmarkInspectReporter
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.EnumerateMatches) != 0)
         {
-            Measure("PublicConstruct", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumeratePublicConstructionOnly(context.InputBytes, 0));
+            Measure("PublicConstruct", samples, iterations, () => ExecutePcre2PublicEnumeratorConstructionOnly(context.Utf8Pcre2Regex, context.InputBytes, 0));
             Measure("NativeMaterialize", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumerateNativeMaterializationOnly(context.InputBytes, 0));
             Measure("RawEnumerateSum", samples, iterations, () => ExecutePcre2PublicRawEnumeratorIndexSum(context.Utf8Pcre2Regex, context.InputBytes));
-            Measure("InternalPublicMoveNext", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumerateInternalPublicMoveNextCount(context.InputBytes, 0));
-            Measure("InternalPublicCurrent", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumerateInternalPublicCurrentCount(context.InputBytes, 0));
-            Measure("InternalPublicCurrentStartSum", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumerateInternalPublicCurrentStartSum(context.InputBytes, 0));
-            Measure("InternalPublicEnumerateSum", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumerateInternalPublicIndexSum(context.InputBytes, 0));
             Measure("PublicMoveNext", samples, iterations, () => ExecutePcre2PublicEnumeratorMoveNextCount(context.Utf8Pcre2Regex, context.InputBytes));
             Measure("PublicCurrentStartSum", samples, iterations, () => ExecutePcre2PublicEnumeratorCurrentStartSum(context.Utf8Pcre2Regex, context.InputBytes));
             Measure("PublicEnumerateSum", samples, iterations, () => ExecutePcre2PublicEnumeratorRangeSink(context.Utf8Pcre2Regex, context.InputBytes));
@@ -449,7 +445,7 @@ internal static partial class BenchmarkInspectReporter
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.EnumerateMatches) != 0)
         {
-            Measure("Pcre2PublicConstruct", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumeratePublicConstructionOnly(context.InputBytes, 0));
+            Measure("Pcre2PublicConstruct", samples, iterations, () => ExecutePcre2PublicEnumeratorConstructionOnly(context.Utf8Pcre2Regex, context.InputBytes, 0));
             Measure("Pcre2PublicMoveNext", samples, iterations, () => ExecutePcre2PublicEnumeratorMoveNextCount(context.Utf8Pcre2Regex, context.InputBytes));
             Measure("Pcre2PublicEnumerateSum", samples, iterations, () => ExecutePcre2PublicEnumeratorRangeSink(context.Utf8Pcre2Regex, context.InputBytes));
             Measure("Utf8EnumerateSum", samples, iterations, () => ExecuteUtf8Pcre2Utf8EnumeratorRangeSink(context));
@@ -709,12 +705,9 @@ internal static partial class BenchmarkInspectReporter
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.EnumerateMatches) != 0)
         {
-            Measure("Pcre2PublicConstruct", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumeratePublicConstructionOnly(context.InputBytes, 0));
+            Measure("Pcre2PublicConstruct", samples, iterations, () => ExecutePcre2PublicEnumeratorConstructionOnly(context.Utf8Pcre2Regex, context.InputBytes, 0));
             Measure("Pcre2NativeMaterialize", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumerateNativeMaterializationOnly(context.InputBytes, 0));
             Measure("Pcre2RawEnumerateSum", samples, iterations, () => ExecutePcre2PublicRawEnumeratorIndexSum(context.Utf8Pcre2Regex, context.InputBytes));
-            Measure("Pcre2InternalPublicMoveNext", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumerateInternalPublicMoveNextCount(context.InputBytes, 0));
-            Measure("Pcre2InternalPublicCurrent", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumerateInternalPublicCurrentCount(context.InputBytes, 0));
-            Measure("Pcre2InternalPublicCurrentStartSum", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumerateInternalPublicCurrentStartSum(context.InputBytes, 0));
             Measure("Pcre2PublicMoveNext", samples, iterations, () => ExecutePcre2PublicEnumeratorMoveNextCount(context.Utf8Pcre2Regex, context.InputBytes));
             Measure("Pcre2PublicCurrentStartSum", samples, iterations, () => ExecutePcre2PublicEnumeratorCurrentStartSum(context.Utf8Pcre2Regex, context.InputBytes));
             Measure("Pcre2PublicEnumerateSum", samples, iterations, () => ExecutePcre2PublicEnumeratorRangeSink(context.Utf8Pcre2Regex, context.InputBytes));

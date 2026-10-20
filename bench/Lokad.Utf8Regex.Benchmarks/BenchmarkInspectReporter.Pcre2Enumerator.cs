@@ -50,8 +50,8 @@ internal static partial class BenchmarkInspectReporter
             iterations,
             samples);
 
-        Func<int> previous = () => context.Utf8Pcre2Regex.DebugEnumeratePublicConstructionOnly(
-            context.InputBytes,
+        Func<int> previous = () => ExecutePcre2PublicEnumeratorConstructionOnly(
+            context.Utf8Pcre2Regex, context.InputBytes,
             0);
         var previousLabel = "construct";
         foreach (var prefixLength in GetPcre2EnumeratorPrefixLengths(matchCount))
@@ -101,6 +101,13 @@ internal static partial class BenchmarkInspectReporter
             samples);
 
         return 0;
+    }
+
+    private static int ExecutePcre2PublicEnumeratorConstructionOnly(
+        Utf8Pcre2Regex regex, ReadOnlySpan<byte> input, int startOffsetInBytes)
+    {
+        _ = regex.EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None);
+        return 1;
     }
 
     private static IEnumerable<int> GetPcre2EnumeratorPrefixLengths(int matchCount)
