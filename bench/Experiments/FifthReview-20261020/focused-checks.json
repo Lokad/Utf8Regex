@@ -1,0 +1,46 @@
+{
+  "Scope": "Release source checks, overlapping filters; complete source matrix is separate. Immutable packages not rebuilt/requalified.",
+  "Checks": [
+    {
+      "Log": "artifacts/fifth-review-20261020/tests-python-focused.log",
+      "Sha256": "0FA0868482982D7C80F3CB36C998184DF14884A8E6D97A076E5C8FBC938F601D",
+      "Passed": 640,
+      "Failed": 0,
+      "Skipped": 0,
+      "Duration": "1 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)"
+    },
+    {
+      "Log": "artifacts/fifth-review-20261020/tests-python-public.log",
+      "Sha256": "2CA024C82384B8925CF714EDA8F5D4A74D454E976522EB85B8E69955CEB5F573",
+      "Passed": 870,
+      "Failed": 0,
+      "Skipped": 0,
+      "Duration": "1 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)"
+    },
+    {
+      "Log": "artifacts/fifth-review-20261020/tests-pcre2-public.log",
+      "Sha256": "FD3165E831A7EA16CDBBC8D3393DBE7B4E5BEF42A3FF65F4885F0015ED2358CC",
+      "Passed": 145,
+      "Failed": 0,
+      "Skipped": 0,
+      "Duration": "294 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)"
+    },
+    {
+      "Log": "artifacts/fifth-review-20261020/tests-pcre2-final-focused.log",
+      "Sha256": "6C51CB28CA62233B4D94E80E64BF3799BA086CBEC253B6B3B708CB00F3418E30",
+      "Passed": 109,
+      "Failed": 0,
+      "Skipped": 0,
+      "Duration": "171 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)"
+    },
+    {
+      "Log": "artifacts/fifth-review-20261020/tests-core.log",
+      "Sha256": "3110B102A7FBE4F1E54CF2DA94C4D20E7CBF5802BF615DAC3DD3F25094285365",
+      "Passed": 31,
+      "Failed": 0,
+      "Skipped": 0,
+      "Duration": "1 s - Lokad.Utf8Regex.Tests.dll (net10.0)"
+    }
+  ],
+  "Corrections": "Initial local runs caught an obsolete test API call, a missed internal Translate call, and an incorrect capture-count subtraction. All were fixed before these passing checks; the owned VM GroupCount excludes whole-match slot zero. Initial failure logs remain under artifacts/fifth-review-20261020."
+}

@@ -1,0 +1,184 @@
+{
+  "Scope": "One bounded before/after comparison using existing Release CLI lanes on the same Windows host; 45-second child caps, sequential runs, unchanged BCL matching controls. No confirmation, qualification/catalog/snapshot/Status writes or reopened checked-access campaign.",
+  "BeforeProducer": "0cdae03e8ca8bb25683c61a56c2e08d704725ed3",
+  "BeforeCheckout": "1c8f96037f35",
+  "AfterProducer": "877c77433afeaf8b2ee2b9a118fd967ee46af7ac",
+  "Protocol": "PCRE2 backtracking/capture-backreference: construction 16 instances/7 samples, warm public IsMatch 20000 operations/5 samples. PythonRe literal/search: 20000 operations/5 samples; scalar-only (?P<α>a)?(?(α)b|) construction: 16 instances/5 samples and prepared reuse 5000. Pattern construction diagnostic remains unchanged and explicitly renders its own comparator. Baseline binaries were frozen before production edits.",
+  "Observations": [
+    {
+      "Subject": "PCRE2 warm public IsMatch",
+      "BeforeMicroseconds": 0.752,
+      "AfterMicroseconds": 0.79,
+      "ChangePercent": 5.05,
+      "BeforeAllocatedBytes": 3872,
+      "AfterAllocatedBytes": 3872
+    },
+    {
+      "Subject": "PCRE2 construction",
+      "BeforeMicroseconds": 195.312,
+      "AfterMicroseconds": 217.906,
+      "ChangePercent": 11.57,
+      "BeforeAllocatedBytes": 57960,
+      "AfterAllocatedBytes": 57960
+    },
+    {
+      "Subject": "PCRE2 first IsMatch",
+      "BeforeMicroseconds": 3.038,
+      "AfterMicroseconds": 3.394,
+      "ChangePercent": 11.72,
+      "BeforeAllocatedBytes": 3872,
+      "AfterAllocatedBytes": 3872
+    },
+    {
+      "Subject": "PythonRe warm public Search",
+      "BeforeMicroseconds": 4.059,
+      "AfterMicroseconds": 3.894,
+      "ChangePercent": -4.07,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0
+    },
+    {
+      "Subject": "PythonRe scalar-only construction",
+      "BeforeMicroseconds": 35.763,
+      "AfterMicroseconds": 31.856,
+      "ChangePercent": -10.92,
+      "BeforeAllocatedBytes": 14098,
+      "AfterAllocatedBytes": 13058
+    },
+    {
+      "Subject": "PythonRe construct plus first Search",
+      "BeforeMicroseconds": 37.419,
+      "AfterMicroseconds": 32.675,
+      "ChangePercent": -12.68,
+      "BeforeAllocatedBytes": 19842,
+      "AfterAllocatedBytes": 18802
+    },
+    {
+      "Subject": "PythonRe construct plus first FullMatch",
+      "BeforeMicroseconds": 40.462,
+      "AfterMicroseconds": 33.131,
+      "ChangePercent": -18.12,
+      "BeforeAllocatedBytes": 20530,
+      "AfterAllocatedBytes": 19490
+    },
+    {
+      "Subject": "PythonRe prepared public FullMatch hit",
+      "BeforeMicroseconds": 2.052,
+      "AfterMicroseconds": 1.861,
+      "ChangePercent": -9.31,
+      "BeforeAllocatedBytes": 5744,
+      "AfterAllocatedBytes": 5744
+    },
+    {
+      "Subject": "PythonRe prepared public FullMatch miss",
+      "BeforeMicroseconds": 1.891,
+      "AfterMicroseconds": 1.789,
+      "ChangePercent": -5.39,
+      "BeforeAllocatedBytes": 5744,
+      "AfterAllocatedBytes": 5744
+    }
+  ],
+  "Controls": [
+    {
+      "Lane": "PCRE2 unchanged decode/predecoded Regex",
+      "BeforeMicroseconds": [
+        2.815,
+        0.132
+      ],
+      "AfterMicroseconds": [
+        2.535,
+        0.127
+      ]
+    },
+    {
+      "Lane": "PythonRe unchanged decode/predecoded Regex",
+      "BeforeMicroseconds": [
+        31.341,
+        3.053
+      ],
+      "AfterMicroseconds": [
+        34.295,
+        3.053
+      ]
+    }
+  ],
+  "Interpretation": "Selected warm public measurements meet the 10% allowance by their medians; allocations are unchanged. Small PCRE2 construction/first-use samples have wide tails and show +11.6/+11.7% medians, not a demonstrated warm-execution regression or a claim of construction equivalence. Python scalar-only construction removes 1040 B/op. Control variation and ranges prohibit universal throughput claims. Prior first-use release concern remains open. Stop timing.",
+  "BinaryIdentities": [
+    {
+      "Side": "Before",
+      "Binaries": [
+        {
+          "Name": "Lokad.Utf8Regex.Benchmarks.dll",
+          "Sha256": "8890597946D8A30CAE3365550DFEB1A75523EA419652530A19D628C228838D67"
+        },
+        {
+          "Name": "Lokad.Utf8Regex.dll",
+          "Sha256": "6FDC5C11A65D2A62158F8562E8C94363B765ABFE5B4D5222386F38B1936FEF5A"
+        },
+        {
+          "Name": "Lokad.Utf8Regex.Pcre2.dll",
+          "Sha256": "9EBEE5E5C792B5B297FDB55D5E2703C2A716DAA80F3D5F73BE08625E999326CD"
+        },
+        {
+          "Name": "Lokad.Utf8Regex.PythonRe.dll",
+          "Sha256": "D414CE4370AAD72F0F163A1A3D70CA7002F523D94A33A04479CE019A32038046"
+        }
+      ]
+    },
+    {
+      "Side": "After",
+      "Binaries": [
+        {
+          "Name": "Lokad.Utf8Regex.Benchmarks.dll",
+          "Sha256": "843BE15678C52884FB6B414C7E0FD34BC4E295D2F275D83A8B1F4D7C8921B787"
+        },
+        {
+          "Name": "Lokad.Utf8Regex.dll",
+          "Sha256": "C4D28F57A48B6D4DB0075E3659E80A60E62015D045B6E20271BDBEFCD4BCC47A"
+        },
+        {
+          "Name": "Lokad.Utf8Regex.Pcre2.dll",
+          "Sha256": "74B426AF2E05578387C4555B95E2ADADD1FFBDE8B1945C029FF22F0A58A0B68B"
+        },
+        {
+          "Name": "Lokad.Utf8Regex.PythonRe.dll",
+          "Sha256": "9B7EDD285CB796C8E1580CCE3940AFDFCA03BDAE154349D93E8425C7D479D224"
+        }
+      ]
+    }
+  ],
+  "Logs": [
+    {
+      "Log": "artifacts/fifth-review-20261020/before-construction.log",
+      "Sha256": "A5A17FFBF0B9C218773271967B28E5A521601EBC8F9B61289FD3F042E9A33CAF"
+    },
+    {
+      "Log": "artifacts/fifth-review-20261020/after-construction.log",
+      "Sha256": "9B4DE4814D3414CCB38EC64EB375109EEBAAB5AA6B36D19FA61BDD6082EE071B"
+    },
+    {
+      "Log": "artifacts/fifth-review-20261020/before-pcre2-public.log",
+      "Sha256": "1078FE95F9639546B2DFB1194AC0027B32D63F124D8ACAEA2A07C910F8BA399A"
+    },
+    {
+      "Log": "artifacts/fifth-review-20261020/after-pcre2-public.log",
+      "Sha256": "6AF1BEFC11224AD0A5260DE8C3ACADB6FA6429B05404218C0FDE00907FC7F0E2"
+    },
+    {
+      "Log": "artifacts/fifth-review-20261020/before-python-public.log",
+      "Sha256": "5AA379AFCA6C201820313EFC72FD63B13D51565E9D25EFDFB740D267D92D416D"
+    },
+    {
+      "Log": "artifacts/fifth-review-20261020/after-python-public.log",
+      "Sha256": "57816C7D001A6ABC3D7EC090C365C50E0BA6C5F5689C4B3DDC32451AB008702A"
+    },
+    {
+      "Log": "artifacts/fifth-review-20261020/before-python-construction.log",
+      "Sha256": "359117BE8B7A5E5CACC0D6C62D55DB97D92963FBC02809E0D268C8F993562A4A"
+    },
+    {
+      "Log": "artifacts/fifth-review-20261020/after-python-construction.log",
+      "Sha256": "708C5D408FD803C5AB0A578804C75EA6AA56BA288A724255DC5A7800D82A129F"
+    }
+  ]
+}

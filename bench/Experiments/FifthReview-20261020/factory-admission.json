@@ -1,0 +1,223 @@
+{
+  "Scope": "Untimed reflection of actual closed generic factory calls and Unsafe.SizeOf<TState>, Windows x64. No production or test-only admission framework added.",
+  "BeforeProducer": "0cdae03e8ca8bb25683c61a56c2e08d704725ed3",
+  "AfterProducer": "877c77433afeaf8b2ee2b9a118fd967ee46af7ac",
+  "Rows": [
+    {
+      "Factory": "PythonReAstFactory",
+      "Method": "Alternation",
+      "BeforeStateBytes": 8,
+      "AfterStateBytes": 8,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReAstFactory",
+      "Method": "Sequence",
+      "BeforeStateBytes": 8,
+      "AfterStateBytes": 8,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReAstFactory",
+      "Method": "Literal",
+      "BeforeStateBytes": 2,
+      "AfterStateBytes": 2,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReAstFactory",
+      "Method": "Raw",
+      "BeforeStateBytes": 16,
+      "AfterStateBytes": 16,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReAstFactory",
+      "Method": "CharacterClass",
+      "BeforeStateBytes": 16,
+      "AfterStateBytes": 16,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReAstFactory",
+      "Method": "Quantifier",
+      "BeforeStateBytes": 24,
+      "AfterStateBytes": 24,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReAstFactory",
+      "Method": "Group",
+      "BeforeStateBytes": 40,
+      "AfterStateBytes": 32,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReAstFactory",
+      "Method": "NamedReference",
+      "BeforeStateBytes": 16,
+      "AfterStateBytes": 16,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReAstFactory",
+      "Method": "NumericReference",
+      "BeforeStateBytes": 16,
+      "AfterStateBytes": 16,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReAstFactory",
+      "Method": "Conditional",
+      "BeforeStateBytes": 32,
+      "AfterStateBytes": 32,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReAstFactory",
+      "Method": "ClassLiteral",
+      "BeforeStateBytes": 4,
+      "AfterStateBytes": 4,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReAstFactory",
+      "Method": "ClassRange",
+      "BeforeStateBytes": 8,
+      "AfterStateBytes": 8,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReAstFactory",
+      "Method": "ClassPredefined",
+      "BeforeStateBytes": 16,
+      "AfterStateBytes": 16,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReScalarNodeFactory",
+      "Method": "Literal",
+      "BeforeStateBytes": 8,
+      "AfterStateBytes": 4,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReScalarNodeFactory",
+      "Method": "Concat",
+      "BeforeStateBytes": 16,
+      "AfterStateBytes": 8,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReScalarNodeFactory",
+      "Method": "Alternation",
+      "BeforeStateBytes": 16,
+      "AfterStateBytes": 8,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReScalarNodeFactory",
+      "Method": "Repeat",
+      "BeforeStateBytes": 32,
+      "AfterStateBytes": 32,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReScalarNodeFactory",
+      "Method": "Atomic",
+      "BeforeStateBytes": 16,
+      "AfterStateBytes": 8,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReScalarNodeFactory",
+      "Method": "Capture",
+      "BeforeStateBytes": 16,
+      "AfterStateBytes": 16,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReScalarNodeFactory",
+      "Method": "Lookahead",
+      "BeforeStateBytes": 16,
+      "AfterStateBytes": 16,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReScalarNodeFactory",
+      "Method": "Lookbehind",
+      "BeforeStateBytes": 16,
+      "AfterStateBytes": 16,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReScalarNodeFactory",
+      "Method": "Backref",
+      "BeforeStateBytes": 16,
+      "AfterStateBytes": 16,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReScalarNodeFactory",
+      "Method": "Conditional",
+      "BeforeStateBytes": 32,
+      "AfterStateBytes": 24,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReScalarNodeFactory",
+      "Method": "Empty",
+      "BeforeStateBytes": 1,
+      "AfterStateBytes": 4,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReScalarNodeFactory",
+      "Method": "Dot",
+      "BeforeStateBytes": 2,
+      "AfterStateBytes": 1,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReScalarNodeFactory",
+      "Method": "Anchor",
+      "BeforeStateBytes": 4,
+      "AfterStateBytes": 1,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    },
+    {
+      "Factory": "PythonReScalarNodeFactory",
+      "Method": "Class",
+      "BeforeStateBytes": 32,
+      "AfterStateBytes": 24,
+      "AdmissionBytes": 128,
+      "WorkSteps": 2
+    }
+  ]
+}
