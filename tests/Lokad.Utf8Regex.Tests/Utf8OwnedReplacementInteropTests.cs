@@ -348,6 +348,7 @@ public sealed class Utf8OwnedReplacementInteropTests
     [Fact]
     public void CallbackFailuresAndExpiredDeadlinesReleaseTheOperationForReuse()
     {
+        using var clock = Utf8DeadlineTestClock.Start();
         var regex = new Utf8Regex("(.)", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(250));
         var input = "\U0001f600x"u8.ToArray();
         var failure = new ApplicationException("evaluator failure");
@@ -355,10 +356,10 @@ public sealed class Utf8OwnedReplacementInteropTests
             static (in Utf8MatchContext context, ref ApplicationException state) => throw state)));
         var calls = new List<int>();
         Assert.Throws<RegexMatchTimeoutException>(() => regex.ReplaceToString(input, calls,
-            static (in Utf8MatchContext context, ref List<int> state) =>
+            (in Utf8MatchContext context, ref List<int> state) =>
             {
                 state.Add(context.IndexInUtf16);
-                Thread.Sleep(300);
+                clock.Advance(300);
                 return "Q";
             }));
         Assert.Single(calls);

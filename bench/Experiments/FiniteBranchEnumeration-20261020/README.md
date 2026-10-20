@@ -78,5 +78,6 @@ Driver4FF0B37B45617B64AE6A83313AE696B8EDB64F446359D34BA3B01C895271A903.
 [Raw samples, preflights, identities and summary](measurement.json). Archive SHA256
 930E971A60FB6FC2EF7DF06E6DC6CC5C53C54499E62A7FD75C451D17D030A96D.
 Private predeclaration/source/probes/logs:artifacts/finite-branch-enumeration-20261020.
-Source CI follows separately. The coherent Count/enumeration package boundary is
-next; broader original R06/R07/R08/R09/R10 remains open.
+Source5d14afc3 [CI39382340297](ci.json) is terminal green on Windows/Linux,
+completed06:50:32/06:51:19UTC. Closed; no terminal repoll. The coherent scalar118
+package boundary follows separately; broader original R06/R07/R08/R09/R10 is open.
