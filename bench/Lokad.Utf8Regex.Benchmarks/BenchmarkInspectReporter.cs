@@ -4659,9 +4659,9 @@ internal static partial class BenchmarkInspectReporter
         WriteCountDiagnostics("Baseline", baselineDiagnostics);
         WriteCountDiagnostics("Compiled", compiledDiagnostics);
 
-        Measure("TrailingCandidates", iterations, () => AsciiOrderedLiteralWindowExecutor.CountSeparatorOnlySingleLiteralTrailingCandidates(context.InputBytes, plan));
-        Measure("SeparatorQualified", iterations, () => AsciiOrderedLiteralWindowExecutor.CountSeparatorOnlySingleLiteralSeparatorQualifiedCandidates(context.InputBytes, plan));
-        Measure("LeadingMatches", iterations, () => AsciiOrderedLiteralWindowExecutor.CountSeparatorOnlySingleLiteralLeadingMatches(context.InputBytes, plan));
+        Measure("TrailingCandidates", iterations, () => Utf8OrderedWindowCountReplay.CountSeparatorOnlySingleLiteralTrailingCandidates(context.InputBytes, plan));
+        Measure("SeparatorQualified", iterations, () => Utf8OrderedWindowCountReplay.CountSeparatorOnlySingleLiteralSeparatorQualifiedCandidates(context.InputBytes, plan));
+        Measure("LeadingMatches", iterations, () => Utf8OrderedWindowCountReplay.CountSeparatorOnlySingleLiteralLeadingMatches(context.InputBytes, plan));
         Measure("BaselineDirect", iterations, () => context.Utf8Regex.CountViaCompiledEngine(context.InputBytes, default, Utf8ExecutionDeadline.Infinite));
         Measure("CompiledDirect", iterations, () => compiledUtf8Regex.CountViaCompiledEngine(context.InputBytes, default, Utf8ExecutionDeadline.Infinite));
         Measure("Utf8Regex", iterations, () => context.Utf8Regex.Count(context.InputBytes));
@@ -4708,9 +4708,9 @@ internal static partial class BenchmarkInspectReporter
         WriteCountDiagnostics("Baseline", baselineDiagnostics);
         WriteCountDiagnostics("Compiled", compiledDiagnostics);
 
-        Measure("TrailingCandidates", iterations, () => AsciiOrderedLiteralWindowExecutor.CountSingleLiteralTrailingBoundaryCandidates(context.InputBytes, plan));
-        Measure("GapQualified", iterations, () => AsciiOrderedLiteralWindowExecutor.CountSingleLiteralGapQualifiedCandidates(context.InputBytes, plan));
-        Measure("LeadingMatches", iterations, () => AsciiOrderedLiteralWindowExecutor.CountSingleLiteralLeadingQualifiedMatches(context.InputBytes, plan));
+        Measure("TrailingCandidates", iterations, () => Utf8OrderedWindowCountReplay.CountSingleLiteralTrailingBoundaryCandidates(context.InputBytes, plan));
+        Measure("GapQualified", iterations, () => Utf8OrderedWindowCountReplay.CountSingleLiteralGapQualifiedCandidates(context.InputBytes, plan));
+        Measure("LeadingMatches", iterations, () => Utf8OrderedWindowCountReplay.CountSingleLiteralLeadingQualifiedMatches(context.InputBytes, plan));
         Measure("BaselineDirect", iterations, () => context.Utf8Regex.CountViaCompiledEngine(context.InputBytes, default, Utf8ExecutionDeadline.Infinite));
         Measure("CompiledDirect", iterations, () => compiledUtf8Regex.CountViaCompiledEngine(context.InputBytes, default, Utf8ExecutionDeadline.Infinite));
         Measure("Utf8Regex", iterations, () => context.Utf8Regex.Count(context.InputBytes));
@@ -4752,16 +4752,16 @@ internal static partial class BenchmarkInspectReporter
 
         if (plan.IsLiteralFamily && plan.HasPairedTrailingLiterals && analysis.SearchPlan.AlternateLiteralSearch is { } familySearch)
         {
-            Measure("LeadingCandidates", iterations, () => AsciiOrderedLiteralWindowExecutor.CountPairedLiteralFamilyLeadingCandidates(context.InputBytes, plan, familySearch));
-            Measure("GapQualified", iterations, () => AsciiOrderedLiteralWindowExecutor.CountPairedLiteralFamilyGapQualifiedCandidates(context.InputBytes, plan, familySearch));
-            Measure("LeadingMatches", iterations, () => AsciiOrderedLiteralWindowExecutor.CountPairedLiteralFamily(context.InputBytes, plan, familySearch, budget: Utf8ExecutionDeadline.Infinite));
-            Measure("TrailingAnchorMatches", iterations, () => AsciiOrderedLiteralWindowExecutor.CountPairedLiteralFamilyTrailingAnchorMatches(context.InputBytes, plan, familySearch));
+            Measure("LeadingCandidates", iterations, () => Utf8OrderedWindowCountReplay.CountPairedLiteralFamilyLeadingCandidates(context.InputBytes, plan, familySearch));
+            Measure("GapQualified", iterations, () => Utf8OrderedWindowCountReplay.CountPairedLiteralFamilyGapQualifiedCandidates(context.InputBytes, plan, familySearch));
+            Measure("LeadingMatches", iterations, () => Utf8OrderedWindowCountReplay.CountPairedLiteralFamily(context.InputBytes, plan, familySearch, budget: Utf8ExecutionDeadline.Infinite));
+            Measure("TrailingAnchorMatches", iterations, () => Utf8OrderedWindowCountReplay.CountPairedLiteralFamilyTrailingAnchorMatches(context.InputBytes, plan, familySearch));
         }
         else
         {
-            Measure("TrailingCandidates", iterations, () => AsciiOrderedLiteralWindowExecutor.CountSingleLiteralTrailingBoundaryCandidates(context.InputBytes, plan));
-            Measure("GapQualified", iterations, () => AsciiOrderedLiteralWindowExecutor.CountSingleLiteralGapQualifiedCandidates(context.InputBytes, plan));
-            Measure("LeadingMatches", iterations, () => AsciiOrderedLiteralWindowExecutor.CountSingleLiteralLeadingQualifiedMatches(context.InputBytes, plan));
+            Measure("TrailingCandidates", iterations, () => Utf8OrderedWindowCountReplay.CountSingleLiteralTrailingBoundaryCandidates(context.InputBytes, plan));
+            Measure("GapQualified", iterations, () => Utf8OrderedWindowCountReplay.CountSingleLiteralGapQualifiedCandidates(context.InputBytes, plan));
+            Measure("LeadingMatches", iterations, () => Utf8OrderedWindowCountReplay.CountSingleLiteralLeadingQualifiedMatches(context.InputBytes, plan));
         }
         Measure("BaselineDirect", iterations, () => context.Utf8Regex.CountViaCompiledEngine(context.InputBytes, default, Utf8ExecutionDeadline.Infinite));
         Measure("CompiledDirect", iterations, () => compiledUtf8Regex.CountViaCompiledEngine(context.InputBytes, default, Utf8ExecutionDeadline.Infinite));
@@ -4772,52 +4772,7 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
-    public static int RunMeasureSymmetricWindowLokadPublicCase(string caseId, string? iterationsText)
-    {
-        var context = new LokadPublicBenchmarkContext(caseId);
-        if (context.Operation != LokadPublicBenchmarkOperation.Count ||
-            context.Utf8Regex.Inspection.ExecutionKind != NativeExecutionKind.AsciiSimplePattern ||
-            !context.Utf8Regex.Inspection.PreparedRegex.SimplePatternPlan.SymmetricLiteralWindowPlan.HasValue)
-        {
-            Console.WriteLine($"CaseId            : {caseId}");
-            Console.WriteLine($"Operation         : {context.Operation}");
-            Console.WriteLine($"ExecutionKind     : {context.Utf8Regex.Inspection.ExecutionKind}");
-            Console.WriteLine("SymmetricWindow   : case is not on a symmetric simple-pattern window");
-            return 1;
-        }
 
-        var plan = context.Utf8Regex.Inspection.PreparedRegex.SimplePatternPlan.SymmetricLiteralWindowPlan;
-        var iterations = ParseIterations(iterationsText);
-        var baselineDiagnostics = context.Utf8Regex.CollectCountDiagnostics(context.InputBytes);
-        var compiledDiagnostics = context.CompiledUtf8Regex.CollectCountDiagnostics(context.InputBytes);
-
-        Console.WriteLine($"CaseId            : {caseId}");
-        Console.WriteLine($"Operation         : {context.Operation}");
-        Console.WriteLine($"Pattern           : {context.Pattern}");
-        Console.WriteLine($"Options           : {context.Options}");
-        Console.WriteLine($"Iterations        : {iterations}");
-        Console.WriteLine($"InputChars        : {context.InputString.Length}");
-        Console.WriteLine($"InputBytes        : {context.InputBytes.Length}");
-        Console.WriteLine($"ExecutionKind     : {context.Utf8Regex.Inspection.ExecutionKind}");
-        Console.WriteLine($"CompiledEngine    : {context.CompiledUtf8Regex.Inspection.CompiledEngineKind}");
-        Console.WriteLine($"AnchorOffset      : {plan.AnchorOffset}");
-        Console.WriteLine($"AnchorBytes       : {(char)plan.AnchorByteA}|{(char)plan.AnchorByteB}");
-        Console.WriteLine($"GapRange          : {plan.MinGap}..{plan.MaxGap}");
-        Console.WriteLine($"GapSameLine       : {plan.GapSameLine}");
-        WriteCountDiagnostics("Baseline", baselineDiagnostics);
-        WriteCountDiagnostics("Compiled", compiledDiagnostics);
-
-        Measure("AnchorCandidates", iterations, () => Utf8AsciiSymmetricLiteralWindowExecutor.CountAnchorCandidates(context.InputBytes, plan));
-        Measure("FilterQualified", iterations, () => Utf8AsciiSymmetricLiteralWindowExecutor.CountFilterQualifiedCandidates(context.InputBytes, plan));
-        Measure("LeadingMatches", iterations, () => Utf8AsciiSymmetricLiteralWindowExecutor.CountLeadingLiteralMatches(context.InputBytes, plan));
-        Measure("Utf8Direct", iterations, () => context.Utf8Regex.CountViaCompiledEngine(context.InputBytes, default, Utf8ExecutionDeadline.Infinite));
-        Measure("Utf8CompiledDirect", iterations, () => context.CompiledUtf8Regex.CountViaCompiledEngine(context.InputBytes, default, Utf8ExecutionDeadline.Infinite));
-        Measure("Utf8Regex", iterations, context.ExecuteUtf8Regex);
-        Measure("Utf8Compiled", iterations, context.ExecuteUtf8Compiled);
-        Measure("PredecodedRegex", iterations, context.ExecutePredecodedRegex);
-        Measure("PredecodedCompiledRegex", iterations, context.ExecutePredecodedCompiledRegex);
-        return 0;
-    }
 
     public static int RunMeasureStructuralLinearRebarCase(string caseId, string? iterationsText)
     {

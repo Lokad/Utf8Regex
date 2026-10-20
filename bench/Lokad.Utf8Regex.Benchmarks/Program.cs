@@ -197,11 +197,6 @@ if (args.Length >= 1 && args[0].Equals("--measure-small-ascii-literal-family-spl
     return BenchmarkInspectReporter.RunMeasureSmallAsciiLiteralFamilySplitControls(args.Length >= 2 ? args[1] : null);
 }
 
-if (args.Length >= 2 && args[0].Equals("--measure-symmetric-window-lokad-public-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureSymmetricWindowLokadPublicCase(args[1], args.Length >= 3 ? args[2] : null);
-}
-
 if (args.Length >= 1 && args[0].Equals("--emit-readme-benchmark-markdown", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunEmitReadmeBenchmarkMarkdown(

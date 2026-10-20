@@ -1,57 +1,7 @@
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-
 internal static class Utf8AsciiSymmetricLiteralWindowExecutor
 {
-    public static int CountAnchorCandidates(ReadOnlySpan<byte> input, AsciiSimplePatternSymmetricLiteralWindowPlan plan)
-    {
-        var count = 0;
-        var startIndex = 0;
-        while (TryFindNextAnchorCandidate(input, plan, startIndex, out var candidateStart))
-        {
-            count++;
-            startIndex = candidateStart + 1;
-        }
-
-        return count;
-    }
-
-    public static int CountFilterQualifiedCandidates(ReadOnlySpan<byte> input, AsciiSimplePatternSymmetricLiteralWindowPlan plan)
-    {
-        var count = 0;
-        var startIndex = 0;
-        while (TryFindNextAnchorCandidate(input, plan, startIndex, out var candidateStart))
-        {
-            if (PassesCandidateFilters(input, candidateStart, plan))
-            {
-                count++;
-            }
-
-            startIndex = candidateStart + 1;
-        }
-
-        return count;
-    }
-
-    public static int CountLeadingLiteralMatches(ReadOnlySpan<byte> input, AsciiSimplePatternSymmetricLiteralWindowPlan plan)
-    {
-        var count = 0;
-        var startIndex = 0;
-        var firstLiteral = plan.FirstLiteralUtf8.AsSpan();
-        var secondLiteral = plan.SecondLiteralUtf8.AsSpan();
-        while (TryFindNextAnchorCandidate(input, plan, startIndex, out var candidateStart))
-        {
-            if (PassesCandidateFilters(input, candidateStart, plan) &&
-                TryMatchLeadingLiteral(input, candidateStart, plan, firstLiteral, secondLiteral, out _, out _))
-            {
-                count++;
-            }
-
-            startIndex = candidateStart + 1;
-        }
-
-        return count;
-    }
 
     public static bool IsMatch(ReadOnlySpan<byte> input, AsciiSimplePatternSymmetricLiteralWindowPlan plan, Utf8ExecutionDeadline budget)
     {
