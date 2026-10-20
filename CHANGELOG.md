@@ -1,5 +1,15 @@
 # Changelog
 
+## Private Core/PythonRe scalar.116 — READY
+
+Freeze e83d1942 batches diagnostic retirement and the documented eager scalar
+string-findall checkpoint reduction. Same immutable DLLs pass Windows/Linux and
+original downstream assertions, Unicode fixtures and exact package/member/symbol
+identity checks. One current-byte finite/token/cursor observation records costs
+and residual variance; no universal overhead or causal package-speed claim.
+[Handoff and scope](artifacts/core-python-scalar116-20261020/HANDOFF.md).
+Earlier candidates remain intact; no publication, external adoption or PCRE116.
+
 ## Development: Core inspection metadata only
 
 Remove shipped input-taking diagnostic execution, split/replacement dispatch,

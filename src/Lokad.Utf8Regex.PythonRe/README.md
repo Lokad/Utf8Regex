@@ -1,11 +1,15 @@
 # Lokad.Utf8Regex.PythonRe
 
-Private **Core/PythonRe scalar.116 preparation is pending**. This coherent source
-boundary completes diagnostic replay retirement and includes the accepted eager
-string-findall checkpoint simplification (one fewer modeled step per result on
-that route). Matching, original interruption, admission and cursor/result contracts
-remain. Exact package, downstream, platform and current-cost gates are pending;
-immutable115 remains READY. [Preparation](../../artifacts/core-python-scalar116-20261020/PREPARATION.md). No publication or PCRE116.
+Private **Core/PythonRe 0.4.0-scalar.116**, producer e83d1942, is READY.
+This coherent boundary completes diagnostic replay retirement and includes eager
+scalar string-findall's one-step/result modeled work reduction. Original scalar,
+interruption, admission and cursor/result contracts remain. Same actual DLLs pass
+Windows/Linux suites, original Awk/Lython assertions, Unicode fixtures and exact
+restore/member/provenance/symbol gates. Source CI is green.
+[Handoff](../../artifacts/core-python-scalar116-20261020/HANDOFF.md), [consume](../../artifacts/core-python-scalar116-20261020/CONSUMING.md), [integrity](../../artifacts/core-python-scalar116-20261020/final-integrity.json).
+Current actual-byte finite/token/cursor costs include explicit variance limits;
+no universal overhead or causal package gain. Older candidates remain immutable.
+No publication, external adoption or PCRE116; broader policy/profile work is open.
 
 Private **Core/PythonRe 0.4.0-scalar.115**, producera335e8ba, is READY.
 Same actual DLLs pass Windows/Linux suites, original public consumers, Unicode

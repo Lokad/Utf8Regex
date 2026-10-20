@@ -10,8 +10,8 @@
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <Authors>Lokad</Authors>
     <Company>Lokad</Company>
-    <!-- Frozen Core/PythonRe116 identity; prior immutable candidates stay intact. -->
-    <Version>0.4.0-scalar.116</Version>
+    <!-- Next development identity; immutable116 and prior candidates stay intact. -->
+    <Version>0.4.0-scalar.117-dev</Version>
     <AssemblyVersion>0.4.0</AssemblyVersion>
     <FileVersion>0.4.0</FileVersion>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>

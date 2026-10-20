@@ -50,3 +50,10 @@ and actual metering remain. The checked-access campaign stays closed.
 This completes the focused diagnostic retirement with the adjacent PCRE2 cursor
 migration. Scalar.115 and exact Core/PCRE2.94 remain immutable READY dependencies;
 source scalar.116-dev is separate. Broader R01-R10 work is not completed by cleanup.
+
+Delivery addendum: source387b226e plus adjacent PCRE97475793 was pushed as one
+source CI boundary. Run39367560373 is terminal success on Windows/Linux, closed.
+Freeze e83d1942 changes metadata/docs only; immutable Core/Python scalar.116 now
+passes same-byte platform/downstream/oracle/member/provenance gates and one bounded
+current-byte cost observation. [Handoff](../../../artifacts/core-python-scalar116-20261020/HANDOFF.md).
+No package or matching throughput gain is inferred from deleting nonlive wrappers.
