@@ -1,5 +1,17 @@
 # Changelog
 
+## Development: finite ASCII branch enumeration
+
+Finite value enumeration can reuse the existing controlled cursor for complete
+nonempty ASCII branch plans instead of acquiring scalar scratch per result.
+Original work/depth/working/result controls, cancellation/deadlines, typed failures
+and cursor-copy/result lifetimes remain; numeric work/depth/working requirements
+can fall as real acquisitions disappear. Other native/scalar selections retain
+their admission. One bounded public pair observes84–86% lower representative
+finite enumeration time and about7.1MB→112B allocation. This is source FullOpts
+evidence; immutable117 and actual-package/default-tier qualification are separate.
+[Public costs, contract and Release checks](bench/Experiments/FiniteBranchEnumeration-20261020/README.md).
+
 ## Development: short-pair candidate preparation
 
 The existing simple-pattern finder searches two bounded exact literals directly

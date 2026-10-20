@@ -37,6 +37,16 @@ fixed-width SIMD remains first; non-ASCII, RTL, folded, context-dependent and
 NonBacktracking programs retain their established paths. Lower work/depth/working
 requirements are intentional route-dependent accounting, not exact heap bounds.
 This source change does not alter immutable scalar.110 or retained-result contracts.
+Development after scalar.117 also admits complete nonempty ASCII branch plans
+for finite value enumeration, using the existing controlled cursor under the
+original invocation. Deterministic programs, mixed-scalar subjects, RTL,
+NonBacktracking, folding and context-sensitive shapes retain their existing
+selection. Omitting per-result scalar attempt scratch can lower numerical work,
+depth and working requirements; every native candidate/token/projection and
+terminal check remains metered. Fixed value results acquire no result payload,
+so their result-capacity scope is unchanged. Cursor copies retain independent
+positions and share allowance; prior values remain valid after EOF or failure.
+This does not revise construction/default/retention guarantees or immutable117.
 Development after scalar.109 carries complete-input validation into scalar
 value-Match projection. ASCII results use their already-proved byte coordinates;
 a whole-subject result reuses its known UTF-16 length. Partial Unicode results

@@ -156,6 +156,15 @@ provenance. Immutable116 retains its original generic path and recorded costs.
 
 ## Select the public controls
 
+Source after scalar.117 reuses the existing controlled native cursor for finite
+value enumeration of complete nonempty ASCII branch plans. It removes per-result
+scalar scratch on those routes. Work/depth/working requirements may fall; the
+original token/deadline, cumulative allowance, major admission and typed denials
+remain authoritative. Fixed values acquire no result payload. Independent cursor
+positions/shared allowance and retained-value validity stay unchanged. Other
+scalar/context/RTL/NonBacktracking/folded/deterministic selections remain. This
+source revision is outside immutable117 and changes no default or host W+R scope.
+
 `Utf8ResourcePolicy` has positive nullable `MaxWorkSteps`, `MaxDepth`,
 `MaxWorkingBytes` and `MaxResultBytes`. Null means unlimited; zero is invalid.
 `Utf8ConstructionPolicy` has positive nullable `MaxWorkSteps`, `MaxDepth`,

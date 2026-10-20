@@ -2420,7 +2420,21 @@ public sealed partial class Utf8Regex
         try
         {
             var validation = Utf8Validation.Validate(input, ref invocation);
-            var cursor = Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, false, out _);
+            // Complete ASCII branches use the same controlled finder as finite
+            // Count, without acquiring scalar attempt scratch for every value.
+            ref readonly var simple = ref _preparedRegex.OperationMatchCursorPlans.SimplePatternPlan;
+            var nativeBranch = HasFiniteExecutionLimits && ReferenceEquals(program, _ownedSliceProgram) &&
+                validation.IsAscii && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+                simple.Branches is { Length: > 0 } && simple.MinLength > 0 && !simple.IgnoreCase &&
+                !_preparedRegex.OperationMatchCursorPlans.StructuralLinearProgram.DeterministicProgram.HasValue &&
+                !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
+                !program.RightToLeft && !program.IgnoreCase && !program.CanMatchEmpty &&
+                !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
+                !program.HasContiguousAnchor && !program.SawLookaround && !program.HasConditionalTest &&
+                !_requiresKelvinSignFallback && (Options & RegexOptions.NonBacktracking) == 0;
+            var cursor = nativeBranch
+                ? new Utf8OperationMatchCursor(input, _preparedRegex, invocation, true)
+                : Utf8OperationMatchCursor.CreateMapped(program, input, validation, ref invocation, false, out _);
             return new Utf8ValueMatchEnumerator(cursor);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
