@@ -1,7 +1,10 @@
-# Current core capture cost
+# Historical scalar.33 core capture assessment
 
 2026-10-13 bounded producer assessment, prompted by the unchanged downstream
-capture/timing handoff. This measures Utf8Regex, not a complete consumer invocation.
+capture/timing handoff. Its timings and clock counts apply to the recorded scalar.33
+bytes; they are not current scalar.116/117 costs. This measures Utf8Regex, not a
+complete consumer invocation. The assessment is closed; its selection/API boundary
+is separate from later Core/Python package qualification.
 
 The input is `sku007`, with pattern `^([\p{L}]+)([0-9]+)$` (the consumer's alpha
 class translation). Public `MatchDetailed(ReadOnlySpan<byte>, CancellationToken)`

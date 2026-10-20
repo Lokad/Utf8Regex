@@ -87,6 +87,13 @@ Use one owned semantic front-end, with native search and execution plans derived
 
 Retain the supported regex grammar and option model, including inline options, `RightToLeft`, `ECMAScript`, `CultureInvariant`, captures, backreferences, balancing groups, conditionals and lookarounds. Apply them to Unicode scalars. Define supplementary literals/classes/ranges and lone-surrogate pattern escapes explicitly as the owned front-end migrates; char-based parser behavior is not an implicit contract. Use .NET grammar observations where they agree with these rules. Reject unsupported syntax deliberately rather than hiding engine dependence behind a fallback.
 
+Core uses ordered choice: at a viable match position, the first successful
+alternative follows pattern order and greedy/lazy priorities. For example,
+`a|aa` on `aa` returns `a`. RightToLeft reverses the search direction; it does
+not select POSIX longest alternatives. Core exposes no POSIX leftmost-longest or
+POSIX subcapture-selection mode. The historical [capture assessment](CAPTURE-COST.md)
+records that consumer boundary; scalar matching does not imply POSIX selection.
+
 Adjacent high/low surrogate spellings, raw or escaped, form one scalar within a literal run or one character-class member. Classes order range endpoints by numeric scalar value, including bounds above U+FFFF; descending supplementary bounds throw `ArgumentException`. An unpaired surrogate atom denotes no scalar and cannot match strict UTF-8. It can be repeated zero times, and negating a singleton class containing it admits every valid scalar. Groups, assertions and separate classes cannot join two such atoms into a scalar. Numeric intervals may span the surrogate gap, but matching considers only valid scalars. An explicit `[\u0000-\uffff]` includes BMP scalars; singleline dot includes every scalar plane.
 
 Invalid pattern syntax throws an owned `ArgumentException` naming `pattern`,

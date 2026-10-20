@@ -1,5 +1,12 @@
 # Lokad.Utf8Regex
 
+Private **Core/PythonRe scalar.117 preparation is pending**. This coherent
+boundary includes the accepted generic bulk discovery change: existing Python
+workspace reuse removes repeated Core attempts/range staging while preserving
+actual native paths and scalar/resource/ownership contracts. Source CI is green;
+exact package/platform/downstream/current-cost gates are pending. Immutable116
+remains READY. [Preparation](artifacts/core-python-scalar117-20261020/PREPARATION.md). No publication or PCRE117.
+
 Private **Core/PythonRe 0.4.0-scalar.116**, producer e83d1942, is READY.
 This coherent boundary completes diagnostic replay retirement and includes eager
 scalar string-findall's one-step/result modeled work reduction. Original scalar,
