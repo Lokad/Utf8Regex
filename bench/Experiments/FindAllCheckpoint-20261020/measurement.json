@@ -1,0 +1,354 @@
+{
+  "seconds": 16.966763089876622,
+  "vm": {
+    "Kind": "vm-preflight",
+    "Busy": 0.0,
+    "OtherDotnetTicks": {
+      "650885": 0,
+      "650890": 0,
+      "775824": 0,
+      "782559": 0
+    },
+    "Cpu": 2,
+    "Uname": "6.17.0-1022-azure",
+    "Utc": "2026-10-20T02:42:05Z"
+  },
+  "lanes": [
+    {
+      "lane": "named/unlimited",
+      "before": {
+        "ns": 283730.23255813954,
+        "spread": 1.0199666643034189,
+        "bytes": 46967.84496124031,
+        "allocationRange": [
+          46952,
+          46967.84496124031
+        ],
+        "minSampleMs": 71.9349,
+        "unitWork": 79
+      },
+      "after": {
+        "ns": 271444.7272727273,
+        "spread": 1.020385773194762,
+        "bytes": 46966.865454545456,
+        "allocationRange": [
+          46952,
+          46966.865454545456
+        ],
+        "minSampleMs": 74.0124,
+        "unitWork": 76
+      },
+      "changePercent": -4.329995141739018
+    },
+    {
+      "lane": "named/finite",
+      "before": {
+        "ns": 307000.40983606555,
+        "spread": 1.0256108916844018,
+        "bytes": 51135.24590163935,
+        "allocationRange": [
+          51135.24590163935,
+          51152
+        ],
+        "minSampleMs": 73.3477,
+        "unitWork": 79
+      },
+      "after": {
+        "ns": 290654.0856031128,
+        "spread": 1.02990370946544,
+        "bytes": 51136.09338521401,
+        "allocationRange": [
+          51136.09338521401,
+          51152
+        ],
+        "minSampleMs": 74.566,
+        "unitWork": 76
+      },
+      "changePercent": -5.324528472675805
+    },
+    {
+      "lane": "named/finite-token",
+      "before": {
+        "ns": 308674.3396226415,
+        "spread": 1.0100960239115706,
+        "bytes": 51152,
+        "allocationRange": [
+          51136.57358490566,
+          51152
+        ],
+        "minSampleMs": 81.0319,
+        "unitWork": 79
+      },
+      "after": {
+        "ns": 287225,
+        "spread": 1.0073619958344102,
+        "bytes": 51152,
+        "allocationRange": [
+          51137.188405797104,
+          51152
+        ],
+        "minSampleMs": 78.9324,
+        "unitWork": 76
+      },
+      "changePercent": -6.948857377928985
+    },
+    {
+      "lane": "tuple/unlimited",
+      "before": {
+        "ns": 314592.74809160305,
+        "spread": 1.0150075825471985,
+        "bytes": 52911.603053435116,
+        "allocationRange": [
+          52896,
+          52911.603053435116
+        ],
+        "minSampleMs": 81.8986,
+        "unitWork": 154
+      },
+      "after": {
+        "ns": 317516.6666666667,
+        "spread": 1.0122987257986111,
+        "bytes": 52912.22222222222,
+        "allocationRange": [
+          52896,
+          52912.22222222222
+        ],
+        "minSampleMs": 79.4066,
+        "unitWork": 151
+      },
+      "changePercent": 0.9294297445827437
+    },
+    {
+      "lane": "tuple/finite",
+      "before": {
+        "ns": 338444.25531914894,
+        "spread": 1.014597141340622,
+        "bytes": 57078.60425531915,
+        "allocationRange": [
+          57078.60425531915,
+          57096
+        ],
+        "minSampleMs": 79.3169,
+        "unitWork": 154
+      },
+      "after": {
+        "ns": 339518.6440677966,
+        "spread": 1.0052245385262688,
+        "bytes": 57078.67796610169,
+        "allocationRange": [
+          57078.67796610169,
+          57096
+        ],
+        "minSampleMs": 79.7391,
+        "unitWork": 151
+      },
+      "changePercent": 0.3174492495476189
+    },
+    {
+      "lane": "tuple/finite-token",
+      "before": {
+        "ns": 338953.9419087137,
+        "spread": 1.031049746970294,
+        "bytes": 57096,
+        "allocationRange": [
+          57096,
+          57096
+        ],
+        "minSampleMs": 80.4451,
+        "unitWork": 154
+      },
+      "after": {
+        "ns": 337498.71244635194,
+        "spread": 1.0179482054357127,
+        "bytes": 57096,
+        "allocationRange": [
+          57096,
+          57096
+        ],
+        "minSampleMs": 78.0468,
+        "unitWork": 151
+      },
+      "changePercent": -0.4293295585137913
+    },
+    {
+      "lane": "empty-scalar/unlimited",
+      "before": {
+        "ns": 101480.46272493573,
+        "spread": 1.0124158948936208,
+        "bytes": 16045.254498714652,
+        "allocationRange": [
+          16045.254498714652,
+          16045.254498714652
+        ],
+        "minSampleMs": 78.4881,
+        "unitWork": 67
+      },
+      "after": {
+        "ns": 101903.94736842105,
+        "spread": 1.01222771980875,
+        "bytes": 16045.378947368421,
+        "allocationRange": [
+          16045.378947368421,
+          16045.378947368421
+        ],
+        "minSampleMs": 76.8418,
+        "unitWork": 64
+      },
+      "changePercent": 0.4173065751909233
+    },
+    {
+      "lane": "empty-scalar/finite",
+      "before": {
+        "ns": 110221.69167803547,
+        "spread": 1.0332041911473222,
+        "bytes": 20234.422919508866,
+        "allocationRange": [
+          20234.422919508866,
+          20240
+        ],
+        "minSampleMs": 78.9569,
+        "unitWork": 67
+      },
+      "after": {
+        "ns": 108659.78552278821,
+        "spread": 1.0198726589325058,
+        "bytes": 20234.520107238604,
+        "allocationRange": [
+          20234.520107238604,
+          20240
+        ],
+        "minSampleMs": 79.9742,
+        "unitWork": 64
+      },
+      "changePercent": -1.4170587762431408
+    },
+    {
+      "lane": "empty-scalar/finite-token",
+      "before": {
+        "ns": 110709.1156462585,
+        "spread": 1.0350582516430598,
+        "bytes": 20240,
+        "allocationRange": [
+          20240,
+          20240
+        ],
+        "minSampleMs": 79.2424,
+        "unitWork": 67
+      },
+      "after": {
+        "ns": 108511.17092866756,
+        "spread": 1.0253397117657983,
+        "bytes": 20240,
+        "allocationRange": [
+          20240,
+          20240
+        ],
+        "minSampleMs": 79.6852,
+        "unitWork": 64
+      },
+      "changePercent": -1.985333099953479
+    },
+    {
+      "lane": "exact-control/unlimited",
+      "before": {
+        "ns": 42687.03703703704,
+        "spread": 1.0280026299758749,
+        "bytes": 6168,
+        "allocationRange": [
+          6168,
+          6168
+        ],
+        "minSampleMs": 78.6319,
+        "unitWork": 28
+      },
+      "after": {
+        "ns": 42284.61117196057,
+        "spread": 1.0240665660946635,
+        "bytes": 6168,
+        "allocationRange": [
+          6168,
+          6168
+        ],
+        "minSampleMs": 76.3632,
+        "unitWork": 27
+      },
+      "changePercent": -0.9427355305248963
+    },
+    {
+      "lane": "exact-control/finite",
+      "before": {
+        "ns": 187313.28828828828,
+        "spread": 1.0245236391300476,
+        "bytes": 47280,
+        "allocationRange": [
+          47280,
+          47280
+        ],
+        "minSampleMs": 82.0229,
+        "unitWork": 28
+      },
+      "after": {
+        "ns": 183071.16279069768,
+        "spread": 1.021851506169294,
+        "bytes": 47280,
+        "allocationRange": [
+          47280,
+          47280
+        ],
+        "minSampleMs": 77.9992,
+        "unitWork": 27
+      },
+      "changePercent": -2.264722132826835
+    },
+    {
+      "lane": "exact-control/finite-token",
+      "before": {
+        "ns": 184694.29223744292,
+        "spread": 1.009985814683423,
+        "bytes": 47280,
+        "allocationRange": [
+          47280,
+          47280
+        ],
+        "minSampleMs": 80.2238,
+        "unitWork": 28
+      },
+      "after": {
+        "ns": 178281.83908045976,
+        "spread": 1.0182735953941096,
+        "bytes": 47280,
+        "allocationRange": [
+          47280,
+          47280
+        ],
+        "minSampleMs": 77.0839,
+        "unitWork": 27
+      },
+      "changePercent": -3.471928168055849
+    }
+  ],
+  "identities": [
+    {
+      "Phase": "before",
+      "Record": {
+        "Kind": "identity",
+        "Core": "865CD637992F52F5C5103664570E58C100B8733BCCA4CD4840542224F59D6B3A",
+        "Python": "2A163B364F3D1E278319123082FD308D9214BD810E5482C33771963234B46DEB",
+        "Harness": "7CAACADB2E80E8C78FFCA8B35A192E9540DDAADBE5D6104F4204AECE4C4E8E92",
+        "Runtime": "10.0.12",
+        "Tiering": "0"
+      }
+    },
+    {
+      "Phase": "after",
+      "Record": {
+        "Kind": "identity",
+        "Core": "865CD637992F52F5C5103664570E58C100B8733BCCA4CD4840542224F59D6B3A",
+        "Python": "C3B30188E99E2165E07BEFF06F17AABF9CF34751F81F79ACF9C94AB4C63B24F4",
+        "Harness": "7CAACADB2E80E8C78FFCA8B35A192E9540DDAADBE5D6104F4204AECE4C4E8E92",
+        "Runtime": "10.0.12",
+        "Tiering": "0"
+      }
+    }
+  ]
+}

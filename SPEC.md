@@ -541,6 +541,12 @@ remain unchanged.
 Denial throws `Utf8ResourceLimitExceededException` with `ExecutionWorkSteps`, the
 configured limit and a saturating requested count. A cap is in bounded engine/
 checkpoint steps, whose granularity may change, not bytes, wall time or RSS.
+Development scalar.116 removes the eager scalar string-findall loop's duplicate
+tail checkpoint immediately before the next advance checks the same invocation.
+This route needs one fewer modeled work step per materialized match. Decoding,
+per-capture, EOF and final-publication guards and major capacity admission stay
+enforced under the original token and absolute deadline. No result is published
+between private staging and the following advance; captured values stay owned.
 Successful early hits still require full-input validation; a work denial can
 precede discovery of a malformed tail. Cancellation and absolute timeout remain
 authoritative at existing checkpoints. Pattern/replacement preparation has separate

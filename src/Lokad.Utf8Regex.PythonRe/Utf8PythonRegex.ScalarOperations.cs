@@ -257,7 +257,8 @@ public sealed partial class Utf8PythonRegex
                     }
                     cursor.AddResult(ref tuples, tuple);
                 }
-                cursor.Checkpoint();
+                // The next MoveNext checks the same invocation before discovery;
+                // staged values stay private until the final publication check.
             }
             var completed = new Utf8PythonFindAllResult
             {

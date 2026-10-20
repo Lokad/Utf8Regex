@@ -125,6 +125,13 @@ findall routes omit that unused scan and can admit smaller work limits. VM
 instruction/backtracking work, required projection charges, original interruption
 and result ownership remain enforced.
 
+Development scalar.116 omits one duplicate work checkpoint per materialized
+match in eager scalar `FindAllToStrings`: the next advance immediately checks
+the same invocation before discovery. Successful work cutoffs can fall by one
+step per result on that route. Decoding/per-capture, EOF and final-publication
+guards, original token/deadline and working/result admission retain their scope.
+This source change does not revise immutable scalar.115 or other staged bytes.
+
 Scalar.107 also omits useless rewind frames for eligible greedy
 dot/class runs before a disjoint literal or end anchor. The end-anchor proof
 requires the repeated atom to exclude LF. This can reduce work/depth/working

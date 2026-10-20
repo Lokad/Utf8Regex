@@ -1,6 +1,15 @@
 # Changelog
 
-## Development scalar.116: benchmark Count probes
+## Development scalar.116: literal diagnostics and eager string-findall
+
+PythonRe eager scalar string-findall omits a duplicate per-result checkpoint
+immediately before the next advance's invocation check. This lowers modeled
+invocation work by one step per materialized match on that route. Decoding,
+per-capture, EOF, allocation admission and final-publication guards remain;
+original cancellation/deadlines and retained results keep their contract.
+Focused Release interruption/resource/ownership checks pass. One bounded public
+[source comparison](bench/Experiments/FindAllCheckpoint-20261020/README.md)
+supports the deletion without another package qualification.
 
 Move alternative literal Count and match probes out of the shipped diagnostic/runtime
 layers into benchmark tooling; delete their shipped inspection dispatcher. They call
