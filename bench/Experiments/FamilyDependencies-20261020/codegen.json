@@ -1,0 +1,1082 @@
+{
+  "before/10.0.12": {
+    "JitSha256": "6EC6C8BCB3BB25ECD61C83D70BFCE2873D5E424F527A783A8DC2A8275F5E5206",
+    "Methods": [
+      {
+        "Signature": "Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:TryFindNextSimplePattern(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionProgram,byref,byref,int,byref,byref,byref):byte (FullOpts)",
+        "FrameSubtractBytes": 3096,
+        "CodeBytes": 2059,
+        "MemzeroCalls": 2
+      },
+      {
+        "Signature": "Lokad.Utf8Regex.Internal.Execution.Utf8SearchExecutor:TryFindLiteralFamilyCore(byref,byte[][],bool,bool,System.ReadOnlySpan`1[byte],int,int,bool,byref,byref,byref):byte (FullOpts)",
+        "FrameSubtractBytes": 216,
+        "CodeBytes": 2346,
+        "MemzeroCalls": 0
+      }
+    ],
+    "Preflight": [
+      {
+        "Kind": "identity",
+        "CoreSha256": "1AB068EDB637A94222191820A0C5AAE461701216239FEF67F650F1C89810B6E6",
+        "Runtime": "10.0.12",
+        "HarnessSha256": "AF5BAE1130DF9E71202E2A6435D3B3F67E0442B977799C09BB5692C730ABD8B6",
+        "Tiering": "0"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-hit/ordinary/unlimited",
+        "Bytes": 13000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C",
+        "UnitMinimumWork": 45
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-hit/ordinary/finite",
+        "Bytes": 13000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C",
+        "UnitMinimumWork": 45
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-hit/compiled/unlimited",
+        "Bytes": 13000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C",
+        "UnitMinimumWork": 45
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-hit/compiled/finite",
+        "Bytes": 13000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C",
+        "UnitMinimumWork": 45
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-miss/ordinary/unlimited",
+        "Bytes": 13000,
+        "Count": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79",
+        "UnitMinimumWork": 53
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-miss/ordinary/finite",
+        "Bytes": 13000,
+        "Count": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79",
+        "UnitMinimumWork": 53
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-miss/compiled/unlimited",
+        "Bytes": 13000,
+        "Count": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79",
+        "UnitMinimumWork": 53
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-miss/compiled/finite",
+        "Bytes": 13000,
+        "Count": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79",
+        "UnitMinimumWork": 53
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "fixed-control/ordinary/unlimited",
+        "Bytes": 14000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "48F3F14C24444F6D49336956F953F1BD5296C3C85BBA484DC338B8477FE828C2",
+        "UnitMinimumWork": 40
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "fixed-control/ordinary/finite",
+        "Bytes": 14000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "48F3F14C24444F6D49336956F953F1BD5296C3C85BBA484DC338B8477FE828C2",
+        "UnitMinimumWork": 40
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "fixed-control/compiled/unlimited",
+        "Bytes": 14000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "48F3F14C24444F6D49336956F953F1BD5296C3C85BBA484DC338B8477FE828C2",
+        "UnitMinimumWork": 40
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "fixed-control/compiled/finite",
+        "Bytes": 14000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "48F3F14C24444F6D49336956F953F1BD5296C3C85BBA484DC338B8477FE828C2",
+        "UnitMinimumWork": 40
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-exact/ordinary/unlimited",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "CCCBDD912C31B755252B6F3EA0641E2A51C5A6D439219F000ADA9518FD3CE1F7",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-exact/ordinary/finite",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "CCCBDD912C31B755252B6F3EA0641E2A51C5A6D439219F000ADA9518FD3CE1F7",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-exact/compiled/unlimited",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "CCCBDD912C31B755252B6F3EA0641E2A51C5A6D439219F000ADA9518FD3CE1F7",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-exact/compiled/finite",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "CCCBDD912C31B755252B6F3EA0641E2A51C5A6D439219F000ADA9518FD3CE1F7",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-folded/ordinary/unlimited",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "93F84CB6D439D454907574564F7C51816785D6FBF2FEFBDA5D9EC8F4EB115FD0",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-folded/ordinary/finite",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "93F84CB6D439D454907574564F7C51816785D6FBF2FEFBDA5D9EC8F4EB115FD0",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-folded/compiled/unlimited",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "93F84CB6D439D454907574564F7C51816785D6FBF2FEFBDA5D9EC8F4EB115FD0",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-folded/compiled/finite",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "93F84CB6D439D454907574564F7C51816785D6FBF2FEFBDA5D9EC8F4EB115FD0",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-unicode/ordinary/unlimited",
+        "Bytes": 27000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 5,
+        "SubjectSha256": "3BD0767322BDCC934D86027BA5D06E3FEE4AE42FE184BCDCC17C0EFB4AB225DF",
+        "UnitMinimumWork": 83
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-unicode/ordinary/finite",
+        "Bytes": 27000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 5,
+        "SubjectSha256": "3BD0767322BDCC934D86027BA5D06E3FEE4AE42FE184BCDCC17C0EFB4AB225DF",
+        "UnitMinimumWork": 83
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-unicode/compiled/unlimited",
+        "Bytes": 27000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 5,
+        "SubjectSha256": "3BD0767322BDCC934D86027BA5D06E3FEE4AE42FE184BCDCC17C0EFB4AB225DF",
+        "UnitMinimumWork": 83
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-unicode/compiled/finite",
+        "Bytes": 27000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 5,
+        "SubjectSha256": "3BD0767322BDCC934D86027BA5D06E3FEE4AE42FE184BCDCC17C0EFB4AB225DF",
+        "UnitMinimumWork": 83
+      },
+      {
+        "Kind": "complete",
+        "VerifyOnly": true
+      }
+    ]
+  },
+  "before/11.0.0-rc.1.26425.128": {
+    "JitSha256": "084A4C9EB0549CDCED3D88433EB6C8698A7D0CCA277CD02E52D6E59BA48718CB",
+    "Methods": [
+      {
+        "Signature": "Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:TryFindNextSimplePattern(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionProgram,byref,byref,int,byref,byref,byref):byte (FullOpts)",
+        "FrameSubtractBytes": 3080,
+        "CodeBytes": 2084,
+        "MemzeroCalls": 0
+      },
+      {
+        "Signature": "Lokad.Utf8Regex.Internal.Execution.Utf8SearchExecutor:TryFindLiteralFamilyCore(byref,byte[][],bool,bool,System.ReadOnlySpan`1[byte],int,int,bool,byref,byref,byref):byte (FullOpts)",
+        "FrameSubtractBytes": 200,
+        "CodeBytes": 2153,
+        "MemzeroCalls": 0
+      }
+    ],
+    "Preflight": [
+      {
+        "Kind": "identity",
+        "CoreSha256": "1AB068EDB637A94222191820A0C5AAE461701216239FEF67F650F1C89810B6E6",
+        "Runtime": "11.0.0",
+        "HarnessSha256": "AF5BAE1130DF9E71202E2A6435D3B3F67E0442B977799C09BB5692C730ABD8B6",
+        "Tiering": "0"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-hit/ordinary/unlimited",
+        "Bytes": 13000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C",
+        "UnitMinimumWork": 45
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-hit/ordinary/finite",
+        "Bytes": 13000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C",
+        "UnitMinimumWork": 45
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-hit/compiled/unlimited",
+        "Bytes": 13000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C",
+        "UnitMinimumWork": 45
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-hit/compiled/finite",
+        "Bytes": 13000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C",
+        "UnitMinimumWork": 45
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-miss/ordinary/unlimited",
+        "Bytes": 13000,
+        "Count": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79",
+        "UnitMinimumWork": 53
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-miss/ordinary/finite",
+        "Bytes": 13000,
+        "Count": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79",
+        "UnitMinimumWork": 53
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-miss/compiled/unlimited",
+        "Bytes": 13000,
+        "Count": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79",
+        "UnitMinimumWork": 53
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-miss/compiled/finite",
+        "Bytes": 13000,
+        "Count": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79",
+        "UnitMinimumWork": 53
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "fixed-control/ordinary/unlimited",
+        "Bytes": 14000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "48F3F14C24444F6D49336956F953F1BD5296C3C85BBA484DC338B8477FE828C2",
+        "UnitMinimumWork": 40
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "fixed-control/ordinary/finite",
+        "Bytes": 14000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "48F3F14C24444F6D49336956F953F1BD5296C3C85BBA484DC338B8477FE828C2",
+        "UnitMinimumWork": 40
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "fixed-control/compiled/unlimited",
+        "Bytes": 14000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "48F3F14C24444F6D49336956F953F1BD5296C3C85BBA484DC338B8477FE828C2",
+        "UnitMinimumWork": 40
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "fixed-control/compiled/finite",
+        "Bytes": 14000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "48F3F14C24444F6D49336956F953F1BD5296C3C85BBA484DC338B8477FE828C2",
+        "UnitMinimumWork": 40
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-exact/ordinary/unlimited",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "CCCBDD912C31B755252B6F3EA0641E2A51C5A6D439219F000ADA9518FD3CE1F7",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-exact/ordinary/finite",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "CCCBDD912C31B755252B6F3EA0641E2A51C5A6D439219F000ADA9518FD3CE1F7",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-exact/compiled/unlimited",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "CCCBDD912C31B755252B6F3EA0641E2A51C5A6D439219F000ADA9518FD3CE1F7",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-exact/compiled/finite",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "CCCBDD912C31B755252B6F3EA0641E2A51C5A6D439219F000ADA9518FD3CE1F7",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-folded/ordinary/unlimited",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "93F84CB6D439D454907574564F7C51816785D6FBF2FEFBDA5D9EC8F4EB115FD0",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-folded/ordinary/finite",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "93F84CB6D439D454907574564F7C51816785D6FBF2FEFBDA5D9EC8F4EB115FD0",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-folded/compiled/unlimited",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "93F84CB6D439D454907574564F7C51816785D6FBF2FEFBDA5D9EC8F4EB115FD0",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-folded/compiled/finite",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "93F84CB6D439D454907574564F7C51816785D6FBF2FEFBDA5D9EC8F4EB115FD0",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-unicode/ordinary/unlimited",
+        "Bytes": 27000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 5,
+        "SubjectSha256": "3BD0767322BDCC934D86027BA5D06E3FEE4AE42FE184BCDCC17C0EFB4AB225DF",
+        "UnitMinimumWork": 83
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-unicode/ordinary/finite",
+        "Bytes": 27000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 5,
+        "SubjectSha256": "3BD0767322BDCC934D86027BA5D06E3FEE4AE42FE184BCDCC17C0EFB4AB225DF",
+        "UnitMinimumWork": 83
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-unicode/compiled/unlimited",
+        "Bytes": 27000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 5,
+        "SubjectSha256": "3BD0767322BDCC934D86027BA5D06E3FEE4AE42FE184BCDCC17C0EFB4AB225DF",
+        "UnitMinimumWork": 83
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-unicode/compiled/finite",
+        "Bytes": 27000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 5,
+        "SubjectSha256": "3BD0767322BDCC934D86027BA5D06E3FEE4AE42FE184BCDCC17C0EFB4AB225DF",
+        "UnitMinimumWork": 83
+      },
+      {
+        "Kind": "complete",
+        "VerifyOnly": true
+      }
+    ]
+  },
+  "after/10.0.12": {
+    "JitSha256": "D9129028DB28E354998D1F96511E39371187A3A53531C363CCD39FBB596ADFCD",
+    "Methods": [
+      {
+        "Signature": "Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:TryFindNextSimplePattern(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionProgram,byref,byref,int,byref,byref,byref):byte (FullOpts)",
+        "FrameSubtractBytes": 424,
+        "CodeBytes": 2075,
+        "MemzeroCalls": 0
+      },
+      {
+        "Signature": "Lokad.Utf8Regex.Internal.Execution.Utf8SearchExecutor:TryFindLiteralFamilyCore(byte[][],bool,bool,System.Nullable`1[Lokad.Utf8Regex.Internal.Search.PreparedByteSearch],byte,byte,byte[],System.ReadOnlySpan`1[byte],int,int,bool,byref,byref,byref):byte (FullOpts)",
+        "FrameSubtractBytes": 200,
+        "CodeBytes": 2063,
+        "MemzeroCalls": 0
+      }
+    ],
+    "Preflight": [
+      {
+        "Kind": "identity",
+        "CoreSha256": "D009B91B982DB9393F5EDD9952269F9CC2E9E9CC963B7B2608F5A5C99C4C20CA",
+        "Runtime": "10.0.12",
+        "HarnessSha256": "AF5BAE1130DF9E71202E2A6435D3B3F67E0442B977799C09BB5692C730ABD8B6",
+        "Tiering": "0"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-hit/ordinary/unlimited",
+        "Bytes": 13000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C",
+        "UnitMinimumWork": 45
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-hit/ordinary/finite",
+        "Bytes": 13000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C",
+        "UnitMinimumWork": 45
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-hit/compiled/unlimited",
+        "Bytes": 13000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C",
+        "UnitMinimumWork": 45
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-hit/compiled/finite",
+        "Bytes": 13000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C",
+        "UnitMinimumWork": 45
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-miss/ordinary/unlimited",
+        "Bytes": 13000,
+        "Count": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79",
+        "UnitMinimumWork": 53
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-miss/ordinary/finite",
+        "Bytes": 13000,
+        "Count": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79",
+        "UnitMinimumWork": 53
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-miss/compiled/unlimited",
+        "Bytes": 13000,
+        "Count": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79",
+        "UnitMinimumWork": 53
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-miss/compiled/finite",
+        "Bytes": 13000,
+        "Count": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79",
+        "UnitMinimumWork": 53
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "fixed-control/ordinary/unlimited",
+        "Bytes": 14000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "48F3F14C24444F6D49336956F953F1BD5296C3C85BBA484DC338B8477FE828C2",
+        "UnitMinimumWork": 40
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "fixed-control/ordinary/finite",
+        "Bytes": 14000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "48F3F14C24444F6D49336956F953F1BD5296C3C85BBA484DC338B8477FE828C2",
+        "UnitMinimumWork": 40
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "fixed-control/compiled/unlimited",
+        "Bytes": 14000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "48F3F14C24444F6D49336956F953F1BD5296C3C85BBA484DC338B8477FE828C2",
+        "UnitMinimumWork": 40
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "fixed-control/compiled/finite",
+        "Bytes": 14000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "48F3F14C24444F6D49336956F953F1BD5296C3C85BBA484DC338B8477FE828C2",
+        "UnitMinimumWork": 40
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-exact/ordinary/unlimited",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "CCCBDD912C31B755252B6F3EA0641E2A51C5A6D439219F000ADA9518FD3CE1F7",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-exact/ordinary/finite",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "CCCBDD912C31B755252B6F3EA0641E2A51C5A6D439219F000ADA9518FD3CE1F7",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-exact/compiled/unlimited",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "CCCBDD912C31B755252B6F3EA0641E2A51C5A6D439219F000ADA9518FD3CE1F7",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-exact/compiled/finite",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "CCCBDD912C31B755252B6F3EA0641E2A51C5A6D439219F000ADA9518FD3CE1F7",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-folded/ordinary/unlimited",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "93F84CB6D439D454907574564F7C51816785D6FBF2FEFBDA5D9EC8F4EB115FD0",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-folded/ordinary/finite",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "93F84CB6D439D454907574564F7C51816785D6FBF2FEFBDA5D9EC8F4EB115FD0",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-folded/compiled/unlimited",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "93F84CB6D439D454907574564F7C51816785D6FBF2FEFBDA5D9EC8F4EB115FD0",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-folded/compiled/finite",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "93F84CB6D439D454907574564F7C51816785D6FBF2FEFBDA5D9EC8F4EB115FD0",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-unicode/ordinary/unlimited",
+        "Bytes": 27000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 5,
+        "SubjectSha256": "3BD0767322BDCC934D86027BA5D06E3FEE4AE42FE184BCDCC17C0EFB4AB225DF",
+        "UnitMinimumWork": 83
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-unicode/ordinary/finite",
+        "Bytes": 27000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 5,
+        "SubjectSha256": "3BD0767322BDCC934D86027BA5D06E3FEE4AE42FE184BCDCC17C0EFB4AB225DF",
+        "UnitMinimumWork": 83
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-unicode/compiled/unlimited",
+        "Bytes": 27000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 5,
+        "SubjectSha256": "3BD0767322BDCC934D86027BA5D06E3FEE4AE42FE184BCDCC17C0EFB4AB225DF",
+        "UnitMinimumWork": 83
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-unicode/compiled/finite",
+        "Bytes": 27000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 5,
+        "SubjectSha256": "3BD0767322BDCC934D86027BA5D06E3FEE4AE42FE184BCDCC17C0EFB4AB225DF",
+        "UnitMinimumWork": 83
+      },
+      {
+        "Kind": "complete",
+        "VerifyOnly": true
+      }
+    ]
+  },
+  "after/11.0.0-rc.1.26425.128": {
+    "JitSha256": "E418B799B1A12B86F3EDA4B61E51B2B9FD69376D9613F3FCB75640ED93EB985F",
+    "Methods": [
+      {
+        "Signature": "Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:TryFindNextSimplePattern(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionProgram,byref,byref,int,byref,byref,byref):byte (FullOpts)",
+        "FrameSubtractBytes": 424,
+        "CodeBytes": 2108,
+        "MemzeroCalls": 0
+      },
+      {
+        "Signature": "Lokad.Utf8Regex.Internal.Execution.Utf8SearchExecutor:TryFindLiteralFamilyCore(byte[][],bool,bool,System.Nullable`1[Lokad.Utf8Regex.Internal.Search.PreparedByteSearch],byte,byte,byte[],System.ReadOnlySpan`1[byte],int,int,bool,byref,byref,byref):byte (FullOpts)",
+        "FrameSubtractBytes": 168,
+        "CodeBytes": 1850,
+        "MemzeroCalls": 0
+      }
+    ],
+    "Preflight": [
+      {
+        "Kind": "identity",
+        "CoreSha256": "D009B91B982DB9393F5EDD9952269F9CC2E9E9CC963B7B2608F5A5C99C4C20CA",
+        "Runtime": "11.0.0",
+        "HarnessSha256": "AF5BAE1130DF9E71202E2A6435D3B3F67E0442B977799C09BB5692C730ABD8B6",
+        "Tiering": "0"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-hit/ordinary/unlimited",
+        "Bytes": 13000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C",
+        "UnitMinimumWork": 45
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-hit/ordinary/finite",
+        "Bytes": 13000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C",
+        "UnitMinimumWork": 45
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-hit/compiled/unlimited",
+        "Bytes": 13000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C",
+        "UnitMinimumWork": 45
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-hit/compiled/finite",
+        "Bytes": 13000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C",
+        "UnitMinimumWork": 45
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-miss/ordinary/unlimited",
+        "Bytes": 13000,
+        "Count": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79",
+        "UnitMinimumWork": 53
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-miss/ordinary/finite",
+        "Bytes": 13000,
+        "Count": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79",
+        "UnitMinimumWork": 53
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-miss/compiled/unlimited",
+        "Bytes": 13000,
+        "Count": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79",
+        "UnitMinimumWork": 53
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "optional-miss/compiled/finite",
+        "Bytes": 13000,
+        "Count": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79",
+        "UnitMinimumWork": 53
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "fixed-control/ordinary/unlimited",
+        "Bytes": 14000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "48F3F14C24444F6D49336956F953F1BD5296C3C85BBA484DC338B8477FE828C2",
+        "UnitMinimumWork": 40
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "fixed-control/ordinary/finite",
+        "Bytes": 14000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "48F3F14C24444F6D49336956F953F1BD5296C3C85BBA484DC338B8477FE828C2",
+        "UnitMinimumWork": 40
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "fixed-control/compiled/unlimited",
+        "Bytes": 14000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "48F3F14C24444F6D49336956F953F1BD5296C3C85BBA484DC338B8477FE828C2",
+        "UnitMinimumWork": 40
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "fixed-control/compiled/finite",
+        "Bytes": 14000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "48F3F14C24444F6D49336956F953F1BD5296C3C85BBA484DC338B8477FE828C2",
+        "UnitMinimumWork": 40
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-exact/ordinary/unlimited",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "CCCBDD912C31B755252B6F3EA0641E2A51C5A6D439219F000ADA9518FD3CE1F7",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-exact/ordinary/finite",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "CCCBDD912C31B755252B6F3EA0641E2A51C5A6D439219F000ADA9518FD3CE1F7",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-exact/compiled/unlimited",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "CCCBDD912C31B755252B6F3EA0641E2A51C5A6D439219F000ADA9518FD3CE1F7",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-exact/compiled/finite",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "CCCBDD912C31B755252B6F3EA0641E2A51C5A6D439219F000ADA9518FD3CE1F7",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-folded/ordinary/unlimited",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "93F84CB6D439D454907574564F7C51816785D6FBF2FEFBDA5D9EC8F4EB115FD0",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-folded/ordinary/finite",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "93F84CB6D439D454907574564F7C51816785D6FBF2FEFBDA5D9EC8F4EB115FD0",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-folded/compiled/unlimited",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "93F84CB6D439D454907574564F7C51816785D6FBF2FEFBDA5D9EC8F4EB115FD0",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-folded/compiled/finite",
+        "Bytes": 30000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 6,
+        "SubjectSha256": "93F84CB6D439D454907574564F7C51816785D6FBF2FEFBDA5D9EC8F4EB115FD0",
+        "UnitMinimumWork": 92
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-unicode/ordinary/unlimited",
+        "Bytes": 27000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 5,
+        "SubjectSha256": "3BD0767322BDCC934D86027BA5D06E3FEE4AE42FE184BCDCC17C0EFB4AB225DF",
+        "UnitMinimumWork": 83
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-unicode/ordinary/finite",
+        "Bytes": 27000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 5,
+        "SubjectSha256": "3BD0767322BDCC934D86027BA5D06E3FEE4AE42FE184BCDCC17C0EFB4AB225DF",
+        "UnitMinimumWork": 83
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-unicode/compiled/unlimited",
+        "Bytes": 27000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 5,
+        "SubjectSha256": "3BD0767322BDCC934D86027BA5D06E3FEE4AE42FE184BCDCC17C0EFB4AB225DF",
+        "UnitMinimumWork": 83
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "family-unicode/compiled/finite",
+        "Bytes": 27000,
+        "Count": 2000,
+        "First": 4,
+        "Length": 5,
+        "SubjectSha256": "3BD0767322BDCC934D86027BA5D06E3FEE4AE42FE184BCDCC17C0EFB4AB225DF",
+        "UnitMinimumWork": 83
+      },
+      {
+        "Kind": "complete",
+        "VerifyOnly": true
+      }
+    ]
+  }
+}

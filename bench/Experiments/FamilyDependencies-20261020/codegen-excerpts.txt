@@ -1,0 +1,270 @@
+=== before runtime10.0.12; exact full disassembly hashes in codegen.json ===
+; Assembly listing for method Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:TryFindNextSimplePattern(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionProgram,byref,byref,int,byref,byref,byref):byte (FullOpts)
+; Emitting BLENDED_CODE for generic X64 + VEX + EVEX on Unix
+; FullOpts code
+; optimized code
+; rbp based frame
+; partially interruptible
+; No PGO data
+; 0 inlinees with PGO data; 79 single block inlinees; 29 inlinees without PGO data
+
+G_M000_IG01:                ;; offset=0x0000
+       push     rbp
+       push     r15
+       push     r14
+       push     r13
+       push     r12
+       push     rbx
+       sub      rsp, 0xC18
+       lea      rbp, [rsp+0xC40]
+       xor      eax, eax
+       mov      qword ptr [rbp-0xBB8], rax
+       vxorps   xmm8, xmm8, xmm8
+       vmovdqa  xmmword ptr [rbp-0xBB0], xmm8
+       mov      rax, -0xB70
+       vmovdqa  xmmword ptr [rbp+rax-0x30], xmm8
+       vmovdqa  xmmword ptr [rbp+rax-0x20], xmm8
+       vmovdqa  xmmword ptr [rbp+rax-0x10], xmm8
+       add      rax, 48
+       jne      SHORT  -5 instr
+       mov      qword ptr [rbp-0x30], rax
+       mov      gword ptr [rbp-0xBD8], rdx
+       mov      bword ptr [rbp-0xBE0], rcx
+       mov      r13, rdi
+       mov      r15d, esi
+       mov      r14, r8
+       mov      r12d, r9d
+       mov      rbx, bword ptr [rbp+0x10]
+       mov      rdx, bword ptr [rbp+0x18]
+       mov      rsi, bword ptr [rbp+0x20]
+
+G_M000_IG02:                ;; offset=0x007B
+       cmp      qword ptr [rbp-0x40], rdi
+       jg       G_M000_IG66
+       mov      rcx, gword ptr [r14+0x08]
+       mov      gword ptr [rbp-0xBF8], rcx
+       movzx    rdx, byte  ptr [r14+0x29]
+       mov      dword ptr [rbp-0xBBC], edx
+       lea      rdi, bword ptr [rbp-0xBB8]
+       mov      esi, 0xAB8
+       call     CORINFO_HELP_MEMZERO
+       lea      rdi, bword ptr [rbp-0xBB8]
+       mov      esi, 0xAB8
+       call     CORINFO_HELP_MEMZERO
+       mov      rax, qword ptr [rbp-0x40]
+       mov      dword ptr [rsp], eax
+       mov      dword ptr [rsp+0x08], r15d
+       xor      r8d, r8d
+       mov      dword ptr [rsp+0x10], r8d
+       mov      bword ptr [rsp+0x18], rbx
+       lea      r8, [rbp-0x50]
+       mov      qword ptr [rsp+0x20], r8
+       lea      r8, [rbp-0x58]
+       mov      qword ptr [rsp+0x28], r8
+       mov      r8, r13
+       mov      r9d, r15d
+       lea      rdi, [rbp-0xBB8]
+       mov      rsi, gword ptr [rbp-0xBF8]
+       mov      edx, dword ptr [rbp-0xBBC]
+       xor      ecx, ecx
+       call     [Lokad.Utf8Regex.Internal.Execution.Utf8SearchExecutor:TryFindLiteralFamilyCore(byref,byte[][],bool,bool,System.ReadOnlySpan`1[byte],int,int,bool,byref,byref,byref):byte]
+       mov      dword ptr [rbp-0x30], eax
+       cmp      byte  ptr [rbp-0x30], 0
+       jne      G_M000_IG82
+       cmp      byte  ptr [rbp-0x58], 0
+       je       G_M000_IG66
+       mov      ecx, dword ptr [rbp-0x50]
+       sub      ecx, dword ptr [r14+0x20]
+       mov      eax, ecx
+       movsxd   rdi, dword ptr [rbp-0x50]
+       inc      rdi
+       mov      qword ptr [rbp-0x40], rdi
+       mov      dword ptr [rbp-0x34], eax
+
+G_M000_IG31:                ;; offset=0x0350
+       mov      rdx, gword ptr [rbp-0xBE8]
+       test     rdx, rdx
+       je       SHORT G_M000_IG33
+
+G_M000_IG32:                ;; offset=0x035C
+       inc      dword ptr [rdx+0x18]
+       mov      rdx, gword ptr [rbp-0xBE8]
+
+G_M000_IG33:                ;; offset=0x0366
+       mov      eax, dword ptr [rbp-0x34]
+=== before runtime11.0.0-rc.1.26425.128; exact full disassembly hashes in codegen.json ===
+; Assembly listing for method Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:TryFindNextSimplePattern(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionProgram,byref,byref,int,byref,byref,byref):byte (FullOpts)
+; Emitting BLENDED_CODE for x64 + VEX + EVEX on Unix
+; FullOpts code
+; optimized code
+; rbp based frame
+; partially interruptible
+; No PGO data
+; 0 inlinees with PGO data; 79 single block inlinees; 29 inlinees without PGO data
+
+G_M000_IG01:                ;; offset=0x0000
+       push     rbp
+       push     r15
+       push     r14
+       push     r13
+       push     r12
+       push     rbx
+       sub      rsp, 0xC08
+       lea      rbp, [rsp+0xC30]
+       xor      eax, eax
+       mov      qword ptr [rbp-0xBB8], rax
+       vxorps   xmm8, xmm8, xmm8
+       vmovdqa  xmmword ptr [rbp-0xBB0], xmm8
+       mov      rax, -0xB70
+
+G_M000_IG98:                ;; offset=0x0039
+       vmovdqa  xmmword ptr [rbp+rax-0x30], xmm8
+       vmovdqa  xmmword ptr [rbp+rax-0x20], xmm8
+       vmovdqa  xmmword ptr [rbp+rax-0x10], xmm8
+       add      rax, 48
+       jne      SHORT G_M000_IG98
+       mov      qword ptr [rbp-0x30], rax
+       mov      gword ptr [rbp-0xBD0], rdx
+       mov      bword ptr [rbp-0xBD8], rcx
+       mov      r13, rdi
+       mov      r15d, esi
+       mov      r14, r8
+       mov      r12d, r9d
+       mov      rbx, bword ptr [rbp+0x10]
+       mov      rdx, bword ptr [rbp+0x18]
+       mov      rsi, bword ptr [rbp+0x20]
+       mov      rax, qword ptr [rbp-0x40]
+       cmp      rax, r8
+       jg       G_M000_IG64
+       mov      rsi, gword ptr [r14+0x08]
+       movzx    rdx, byte  ptr [r14+0x29]
+       xor      r8d, r8d
+       lea      r9, bword ptr [rbp-0xBB8]
+       mov      qword ptr [r9], r8
+       mov      edi, 0xAB0
+
+G_M000_IG31:                ;; offset=0x02BE
+       mov      qword ptr [r9+rdi], r8
+       sub      rdi, 8
+       jne      SHORT G_M000_IG31
+
+G_M000_IG32:                ;; offset=0x02C8
+       lea      r9, bword ptr [rbp-0xBB8]
+       mov      qword ptr [r9], r8
+       mov      edi, 0xAB0
+
+G_M000_IG33:                ;; offset=0x02D7
+       mov      qword ptr [r9+rdi], r8
+       sub      rdi, 8
+       jne      SHORT G_M000_IG33
+       mov      dword ptr [rsp], eax
+       mov      dword ptr [rsp+0x08], r15d
+
+G_M000_IG34:                ;; offset=0x02E9
+       mov      dword ptr [rsp+0x10], r8d
+       mov      bword ptr [rsp+0x18], rbx
+       lea      r8, [rbp-0x50]
+       mov      qword ptr [rsp+0x20], r8
+       lea      r8, [rbp-0x58]
+       mov      qword ptr [rsp+0x28], r8
+       mov      r8, r13
+       mov      r9d, r15d
+       lea      rdi, [rbp-0xBB8]
+       xor      ecx, ecx
+       call     [Lokad.Utf8Regex.Internal.Execution.Utf8SearchExecutor:TryFindLiteralFamilyCore(byref,byte[][],bool,bool,System.ReadOnlySpan`1[byte],int,int,bool,byref,byref,byref):byte]
+       mov      dword ptr [rbp-0x30], eax
+       cmp      byte  ptr [rbp-0x30], 0
+       jne      G_M000_IG88
+       cmp      byte  ptr [rbp-0x58], 0
+       je       G_M000_IG64
+       mov      ecx, dword ptr [rbp-0x50]
+       sub      ecx, dword ptr [r14+0x20]
+       mov      eax, ecx
+       movsxd   rdi, dword ptr [rbp-0x50]
+       inc      rdi
+       mov      qword ptr [rbp-0x40], rdi
+       mov      dword ptr [rbp-0x34], eax
+
+G_M000_IG35:                ;; offset=0x0348
+=== after runtime10.0.12; exact full disassembly hashes in codegen.json ===
+; Assembly listing for method Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:TryFindNextSimplePattern(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionProgram,byref,byref,int,byref,byref,byref):byte (FullOpts)
+; Emitting BLENDED_CODE for generic X64 + VEX + EVEX on Unix
+; FullOpts code
+; optimized code
+; rbp based frame
+; partially interruptible
+; No PGO data
+; 0 inlinees with PGO data; 79 single block inlinees; 29 inlinees without PGO data
+
+G_M000_IG01:                ;; offset=0x0000
+       push     rbp
+       push     r15
+       push     r14
+       push     r13
+       push     r12
+       push     rbx
+       sub      rsp, 424
+       lea      rbp, [rsp+0x1D0]
+       vxorps   xmm8, xmm8, xmm8
+       vmovdqu32 zmmword ptr [rbp-0x120], zmm8
+       vmovdqu32 zmmword ptr [rbp-0xE0], zmm8
+       vmovdqu32 zmmword ptr [rbp-0xA0], zmm8
+       vmovdqu32 zmmword ptr [rbp-0x70], zmm8
+       xor      eax, eax
+       mov      qword ptr [rbp-0x30], rax
+       mov      gword ptr [rbp-0x140], rdx
+       mov      bword ptr [rbp-0x148], rcx
+       mov      r13, rdi
+       mov      r15d, esi
+       mov      r14, r8
+       mov      r12d, r9d
+       mov      rbx, bword ptr [rbp+0x10]
+       mov      rdx, bword ptr [rbp+0x18]
+       mov      rsi, bword ptr [rbp+0x20]
+
+G_M000_IG02:                ;; offset=0x0072
+       mov      bword ptr [rbp+0x18], rdx
+       mov      dword ptr [rdx], -1
+       xor      edi, edi
+       mov      bword ptr [rbp+0x20], rsi
+=== after runtime11.0.0-rc.1.26425.128; exact full disassembly hashes in codegen.json ===
+; Assembly listing for method Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionInterpreter:TryFindNextSimplePattern(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionProgram,byref,byref,int,byref,byref,byref):byte (FullOpts)
+; Emitting BLENDED_CODE for x64 + VEX + EVEX on Unix
+; FullOpts code
+; optimized code
+; rbp based frame
+; partially interruptible
+; No PGO data
+; 0 inlinees with PGO data; 79 single block inlinees; 29 inlinees without PGO data
+
+G_M000_IG01:                ;; offset=0x0000
+       push     rbp
+       push     r15
+       push     r14
+       push     r13
+       push     r12
+       push     rbx
+       sub      rsp, 424
+       lea      rbp, [rsp+0x1D0]
+       vxorps   xmm8, xmm8, xmm8
+       vmovdqu32 zmmword ptr [rbp-0x120], zmm8
+       vmovdqu32 zmmword ptr [rbp-0xE0], zmm8
+       vmovdqu32 zmmword ptr [rbp-0xA0], zmm8
+       vmovdqu32 zmmword ptr [rbp-0x70], zmm8
+       xor      eax, eax
+       mov      qword ptr [rbp-0x30], rax
+       mov      gword ptr [rbp-0x138], rdx
+       mov      bword ptr [rbp-0x140], rcx
+       mov      r13, rdi
+       mov      r15d, esi
+       mov      r14, r8
+       mov      r12d, r9d
+       mov      rbx, bword ptr [rbp+0x10]
+       mov      rdx, bword ptr [rbp+0x18]
+       mov      rsi, bword ptr [rbp+0x20]
+
+G_M000_IG02:                ;; offset=0x0072
+       mov      bword ptr [rbp+0x18], rdx
+       mov      dword ptr [rdx], -1
+       xor      edi, edi
+       mov      bword ptr [rbp+0x20], rsi

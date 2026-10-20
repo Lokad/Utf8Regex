@@ -13,18 +13,33 @@ internal static partial class Utf8SearchExecutor
         in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int start, int end,
         bool reverse, ref Utf8SliceInvocation invocation, out PreparedSearchMatch match,
         out bool found)
-        => TryFindLiteralFamilyCore(plan, plan.AlternateLiteralsUtf8 ?? [],
-            plan.Kind == Utf8SearchKind.AsciiFoldedByteLiterals, true, input, start, end,
-            reverse, ref invocation, out match, out found);
+    {
+        var folded = plan.Kind == Utf8SearchKind.AsciiFoldedByteLiterals;
+        PreparedByteSearch? firstByteSearch = null;
+        if (folded && plan.AlternateIgnoreCaseLiteralSearch is
+            { ShortestLength: > 0 and < int.MaxValue } foldedSearch)
+            firstByteSearch = foldedSearch.FirstByteSearch;
+        else if (!folded && plan.AlternateLiteralSearch is
+            { SearchData.ShortestLength: > 0 and < int.MaxValue } exactSearch)
+            firstByteSearch = exactSearch.SearchData.FirstByteSearch;
+        return TryFindLiteralFamilyCore(plan.AlternateLiteralsUtf8 ?? [], folded, true,
+            firstByteSearch, plan.LeadingBoundary, plan.TrailingBoundary, plan.TrailingLiteralUtf8,
+            input, start, end, reverse, ref invocation, out match, out found);
+    }
 
     internal static Utf8ExecutionLimitKind TryFindLiteralFamilyCandidate(
         byte[][] literals, bool folded, ReadOnlySpan<byte> input, int start, int end,
         bool reverse, ref Utf8SliceInvocation invocation, out PreparedSearchMatch match, out bool found)
-        => TryFindLiteralFamilyCore(default, literals, folded, false, input, start, end,
-            reverse, ref invocation, out match, out found);
+        // Candidate searches have no union or confirmation predicates. Passing
+        // these facts directly avoids materializing a large empty search plan.
+        => TryFindLiteralFamilyCore(literals, folded, false, null,
+            Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None, null,
+            input, start, end, reverse, ref invocation, out match, out found);
 
     private static Utf8ExecutionLimitKind TryFindLiteralFamilyCore(
-        in Utf8SearchPlan plan, byte[][] literals, bool folded, bool confirm,
+        byte[][] literals, bool folded, bool confirm, PreparedByteSearch? firstByteSearch,
+        Utf8BoundaryRequirement leadingBoundary, Utf8BoundaryRequirement trailingBoundary,
+        byte[]? trailingLiteral,
         ReadOnlySpan<byte> input, int start, int end, bool reverse,
         ref Utf8SliceInvocation invocation, out PreparedSearchMatch match, out bool found)
     {
@@ -48,22 +63,13 @@ internal static partial class Utf8SearchExecutor
                 var blockStart = reverse ? high - count + 1 : low;
                 var block = input.Slice(blockStart, count);
                 var candidateByte = -1;
-                if (folded && !reverse && plan.AlternateIgnoreCaseLiteralSearch is
-                    { ShortestLength: > 0 and < int.MaxValue } foldedSearch)
+                if (!reverse && firstByteSearch is { } search)
                 {
                     breach = invocation.TryChargeInputStep();
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     // Borrow the prepared union instead of rescanning this
                     // bounded window once per branch at every false candidate.
-                    var relative = foldedSearch.FirstByteSearch.IndexOf(block);
-                    if (relative >= 0) candidateByte = blockStart + relative;
-                }
-                else if (!folded && !reverse && plan.AlternateLiteralSearch is
-                    { SearchData.ShortestLength: > 0 and < int.MaxValue } exactSearch)
-                {
-                    breach = invocation.TryChargeInputStep();
-                    if (breach != Utf8ExecutionLimitKind.None) return breach;
-                    var relative = exactSearch.SearchData.FirstByteSearch.IndexOf(block);
+                    var relative = search.IndexOf(block);
                     if (relative >= 0) candidateByte = blockStart + relative;
                 }
                 else
@@ -107,8 +113,10 @@ internal static partial class Utf8SearchExecutor
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     if (!equal) continue;
                     var accepted = true;
-                    if (confirm && (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement))
-                        breach = TryConfirmLiteral(plan, input, candidate, literal.Length,
+                    if (confirm && (leadingBoundary != Utf8BoundaryRequirement.None ||
+                        trailingBoundary != Utf8BoundaryRequirement.None || trailingLiteral is { Length: > 0 }))
+                        breach = TryConfirmLiteral(leadingBoundary, trailingBoundary, trailingLiteral,
+                            input, candidate, literal.Length,
                             ref invocation, out accepted);
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     if (accepted)

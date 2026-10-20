@@ -1,5 +1,18 @@
 # Changelog
 
+## Development scalar.115: literal-family dependencies
+
+Pass the shared family search its prepared byte search and literal predicates
+directly, removing repeated initialization of an unused 2744-byte search plan.
+Keep the existing search/confirmation loops, scalar semantics, captures, original
+interruption authority, allocation and exact numeric resource charges. No public
+API or accounting-contract revision. Focused Release checks pass across profiles.
+One public pair and its sole confirmation repeat finite optional Count gains of
+26-33%; other measured family workloads cost 3-5% more. Initial unlimited-control
+regressions do not repeat; both observations and their limits are retained in the
+[receipt](bench/Experiments/FamilyDependencies-20261020/README.md).
+This source change is separate from immutable scalar.114; no new package yet.
+
 ## Private Core/PythonRe scalar.114 qualification
 
 Remove the default value on the internal character-count parameter and pass null

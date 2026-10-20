@@ -1,5 +1,16 @@
 # Selected current-source performance
 
+Development115-dev narrows the shared literal-family kernel's inputs and removes
+two repeated initializations of a2744-byte empty search plan. A bounded runtime10
+FullOpts public pair plus its sole confirmation repeats finite optional Count
+~26-33% lower, with identical allocation medians and short-case work thresholds.
+Other measured family operations cost~3-5% more. The first pair's unlimited
+optional controls regress16-22%; this does not repeat in the candidate-first
+confirmation (within1.8%). Cause is unproved; no universal unlimited-parity,
+default-PGO or runtime11-speedup claim. Release code shows the large temporary
+gone on10/11, but only10 is timed. [Both complete observations](bench/Experiments/FamilyDependencies-20261020/README.md).
+This is current source evidence, separate from the unchanged actual114 package.
+
 Latest immutable **Core/PythonRe scalar.114**, producer01968d0f, has a separate
 [actual-package default-tier observation](artifacts/core-python-scalar114-20261020/vm-cost/RESULT.md).
 For10K captures: Count99.050us unlimited/128.535us finite (observed1.298x),112B
