@@ -105,7 +105,7 @@ internal static partial class BenchmarkInspectReporter
                 attribution = new Pcre2AttributionDiagnostics(
                     Utf8Pcre2BenchmarkOperation.Count,
                     program,
-                    context.Utf8Pcre2Regex.DebugCountWithDiagnostics(context.InputBytes, 0).Execution);
+                    InspectPcre2CountWithDiagnostics(context.Utf8Pcre2Regex, context.InputBytes, 0).Execution);
                 return true;
             }
         }
@@ -129,7 +129,7 @@ internal static partial class BenchmarkInspectReporter
                 attribution = new Pcre2AttributionDiagnostics(
                     Utf8Pcre2BenchmarkOperation.IsMatch,
                     program,
-                    context.Utf8Pcre2Regex.DebugIsMatchWithDiagnostics(context.InputBytes, 0).Execution);
+                    InspectPcre2IsMatchWithDiagnostics(context.Utf8Pcre2Regex, context.InputBytes, 0).Execution);
                 return true;
             }
         }

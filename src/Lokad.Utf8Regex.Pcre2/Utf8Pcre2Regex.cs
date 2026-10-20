@@ -1199,16 +1199,6 @@ public sealed partial class Utf8Pcre2Regex
         return new Utf8Pcre2Regex(pattern, options, compileSettings, defaultExecutionLimits, matchTimeout).Replace(input, replacement, startOffsetInBytes, substitutionOptions, Pcre2MatchOptions.None, cancellationToken);
     }
 
-    private static Utf8ValidatedInput ValidateSubjectAndStart(
-        ReadOnlySpan<byte> input,
-        int startOffsetInBytes,
-        out Utf8BytePosition start)
-    {
-        var subject = Utf8ValidatedInput.Create(input);
-        start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
-        return subject;
-    }
-
     private static void ValidateStartOffset(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         var subject = Utf8ValidatedInput.Create(input);

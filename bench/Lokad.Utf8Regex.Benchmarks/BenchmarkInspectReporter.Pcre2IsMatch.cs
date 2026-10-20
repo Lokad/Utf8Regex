@@ -69,7 +69,7 @@ internal static partial class BenchmarkInspectReporter
                         $"managed checksum={managedChecksum}; native checksum={nativeChecksum}.");
                 }
 
-                var diagnostics = context.Utf8Pcre2Regex.DebugIsMatchWithDiagnostics(
+                var diagnostics = InspectPcre2IsMatchWithDiagnostics(context.Utf8Pcre2Regex,
                     context.InputBytes,
                     0).Execution;
                 var pair = MeasurePcre2DiagnosticPair(

@@ -397,7 +397,15 @@ public sealed class Utf8Pcre2RegexTranslationTests
             "short <abcdefghij> <x_123456789> <yyyyyyyyyy> é<abcdefghij>",
             regex.ReplaceToString(input, "<$0>"));
 
-        var diagnostics = regex.DebugCountWithDiagnostics(input, 0);
+        var compiled = regex.DebugCompiledProgram;
+        var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(compiled.Operations.Enumerate).Program;
+        var subject = Utf8ValidatedInput.Create(input);
+        var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(program, compiled.CandidateSearchPlan,
+            subject, subject.GetBytePosition(0, "startOffsetInBytes"), Pcre2MatchOptions.None,
+            compiled.Request, collectDiagnostics: true);
+        var count = 0;
+        while (cursor.MoveNext()) count = checked(count + 1);
+        var diagnostics = (Count: count, Execution: cursor.Diagnostics);
         Assert.Equal(4, diagnostics.Count);
         Assert.Equal(4UL, diagnostics.Execution.CandidateAttempts);
     }

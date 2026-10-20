@@ -197,7 +197,15 @@ public sealed class Pcre2ExecutionArchitectureTests
         var regex = new Utf8Pcre2Regex("(?P<g>(?:ab|a)+c|d{2,3}e)");
         var input = "ababc ddde nope abac"u8;
 
-        var result = regex.DebugCountWithDiagnostics(input, 0);
+        var compiled = regex.DebugCompiledProgram;
+        var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(compiled.Operations.Enumerate).Program;
+        var subject = Utf8ValidatedInput.Create(input);
+        var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(program, compiled.CandidateSearchPlan,
+            subject, subject.GetBytePosition(0, "startOffsetInBytes"), Pcre2MatchOptions.None,
+            compiled.Request, collectDiagnostics: true);
+        var count = 0;
+        while (cursor.MoveNext()) count = checked(count + 1);
+        var result = (Count: count, Execution: cursor.Diagnostics);
         var diagnostics = result.Execution;
 
         Assert.Equal(3, result.Count);
@@ -243,7 +251,16 @@ public sealed class Pcre2ExecutionArchitectureTests
             default(Utf8Pcre2ExecutionLimits),
             Timeout.InfiniteTimeSpan);
 
-        var result = regex.DebugCountWithDiagnostics("foofoo barbar xx foofoo"u8, 0);
+        var input = "foofoo barbar xx foofoo"u8;
+        var compiled = regex.DebugCompiledProgram;
+        var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(compiled.Operations.Enumerate).Program;
+        var subject = Utf8ValidatedInput.Create(input);
+        var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(program, compiled.CandidateSearchPlan,
+            subject, subject.GetBytePosition(0, "startOffsetInBytes"), Pcre2MatchOptions.None,
+            compiled.Request, collectDiagnostics: true);
+        var count = 0;
+        while (cursor.MoveNext()) count = checked(count + 1);
+        var result = (Count: count, Execution: cursor.Diagnostics);
 
         Assert.Equal(3, result.Count);
         Assert.True(result.Execution.CandidateAttempts > 0);
@@ -490,7 +507,15 @@ public sealed class Pcre2ExecutionArchitectureTests
     {
         var regex = new Utf8Pcre2Regex("^(a+)+b$");
 
-        var result = regex.DebugIsMatchWithDiagnostics("aaaaaaaa"u8, 0);
+        var input = "aaaaaaaa"u8;
+        var compiled = regex.DebugCompiledProgram;
+        var program = Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(compiled.Operations.IsMatch).Fallback;
+        Assert.NotNull(program);
+        var subject = Utf8ValidatedInput.Create(input);
+        var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(program, compiled.CandidateSearchPlan,
+            subject, subject.GetBytePosition(0, "startOffsetInBytes"), Pcre2MatchOptions.None,
+            compiled.Request, collectDiagnostics: true);
+        var result = (IsMatch: cursor.MoveNext(), Execution: cursor.Diagnostics);
 
         Assert.False(result.IsMatch);
         Assert.Equal(1UL, result.Execution.CandidateAttempts);
@@ -526,9 +551,9 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.False(subjectAnchored.IsMatch("aab"u8, 0, Pcre2MatchOptions.NotBol));
         Assert.True(firstMatchingPosition.IsMatch("zaab"u8, 1));
         Assert.True(multiline.IsMatch("x\naaaaaaaab"u8));
-        // The slice runner keeps its own visit budget and never charges the
-        // backtracking candidate counter, so slice IsMatch reports zero here.
-        Assert.Equal(0UL, multiline.DebugIsMatchWithDiagnostics("x\naaaaaaaab"u8, 0).Execution.CandidateAttempts);
+        // Observe the actual selected scalar route; the old diagnostic's
+        // default zero counters did not measure its execution.
+        Assert.IsType<Pcre2SliceDirectProgram>(multiline.DebugCompiledProgram.Operations.IsMatch);
     }
 
     [Theory]
@@ -601,7 +626,15 @@ public sealed class Pcre2ExecutionArchitectureTests
     {
         var regex = new Utf8Pcre2Regex("^a+b$");
 
-        var result = regex.DebugIsMatchWithDiagnostics("aaab"u8, 0);
+        var input = "aaab"u8;
+        var compiled = regex.DebugCompiledProgram;
+        var program = Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(compiled.Operations.IsMatch).Fallback;
+        Assert.NotNull(program);
+        var subject = Utf8ValidatedInput.Create(input);
+        var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(program, compiled.CandidateSearchPlan,
+            subject, subject.GetBytePosition(0, "startOffsetInBytes"), Pcre2MatchOptions.None,
+            compiled.Request, collectDiagnostics: true);
+        var result = (IsMatch: cursor.MoveNext(), Execution: cursor.Diagnostics);
 
         Assert.True(result.IsMatch);
         Assert.Equal(1UL, result.Execution.VmRepeatSteps);

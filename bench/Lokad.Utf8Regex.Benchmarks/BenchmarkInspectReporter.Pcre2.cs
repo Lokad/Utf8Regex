@@ -15,6 +15,81 @@ internal static partial class BenchmarkInspectReporter
     private const string Pcre2BenchmarkSnapshotFileName = "PCRE2.Benchmarks.json";
     private const int Pcre2BenchmarkSchemaVersion = 9;
 
+    // These counters replay the existing backtracking program when available;
+    // they do not describe a selected native/scalar public fast path.
+    private static (bool IsMatch, Pcre2ExecutionDiagnostics Execution) InspectPcre2IsMatchWithDiagnostics(
+        Utf8Pcre2Regex regex, ReadOnlySpan<byte> input, int startOffsetInBytes)
+    {
+        var program = regex.DebugCompiledProgram;
+        var subject = Utf8ValidatedInput.Create(input);
+        var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
+        var backtrackingProgram = program.Operations.IsMatch switch
+        {
+            Pcre2BacktrackingDirectProgram direct => direct.Program,
+            Pcre2AsciiRegularIsMatchDirectProgram asciiRegular => asciiRegular.Fallback,
+            Pcre2LiteralFamilyDirectProgram literalFamily => literalFamily.Fallback,
+            Pcre2MultilinePrefixDirectProgram multilinePrefix => multilinePrefix.Fallback,
+            Pcre2LiteralPrefixRepeatDirectProgram literalPrefixRepeat => literalPrefixRepeat.Fallback,
+            Pcre2PalindromeIsMatchDirectProgram palindrome => palindrome.Fallback,
+            Pcre2LeadingDotStarLiteralIsMatchDirectProgram leadingDotStarLiteral => leadingDotStarLiteral.Fallback,
+            Pcre2SeparatedRunsIsMatchDirectProgram separatedRuns => separatedRuns.Fallback,
+            Pcre2AsciiBoundedIsMatchDirectProgram asciiBounded => asciiBounded.Fallback,
+            Pcre2AsciiAnchoredDfaIsMatchDirectProgram asciiAnchoredDfa => asciiAnchoredDfa.Fallback,
+            _ => null,
+        };
+        if (backtrackingProgram is null)
+        {
+            return (regex.IsMatch(input, startOffsetInBytes), default);
+        }
+
+        var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(
+            backtrackingProgram,
+            program.CandidateSearchPlan,
+            subject,
+            start,
+            Pcre2MatchOptions.None,
+            program.Request,
+            collectDiagnostics: true);
+        return (cursor.MoveNext(), cursor.Diagnostics);
+    }
+
+    private static (int Count, Pcre2ExecutionDiagnostics Execution) InspectPcre2CountWithDiagnostics(
+        Utf8Pcre2Regex regex, ReadOnlySpan<byte> input, int startOffsetInBytes)
+    {
+        var program = regex.DebugCompiledProgram;
+        if (program.Operations.Match is Pcre2BacktrackingDirectProgram { Program.MayReportNonMonotoneMatchOffsets: true })
+            throw new NotSupportedException("SPEC-PCRE2 rejects non-monotone iterative matches.");
+        var subject = Utf8ValidatedInput.Create(input);
+        var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
+        var backtrackingProgram = program.Operations.Enumerate switch
+        {
+            Pcre2BacktrackingDirectProgram direct => direct.Program,
+            Pcre2MultilinePrefixDirectProgram multilinePrefix => multilinePrefix.Fallback,
+            Pcre2LiteralPrefixRepeatDirectProgram literalPrefixRepeat => literalPrefixRepeat.Fallback,
+            _ => null,
+        };
+        if (backtrackingProgram is null)
+        {
+            return (regex.Count(input, startOffsetInBytes), default);
+        }
+
+        var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(
+            backtrackingProgram,
+            program.CandidateSearchPlan,
+            subject,
+            start,
+            Pcre2MatchOptions.None,
+            program.Request,
+            collectDiagnostics: true);
+        var count = 0;
+        while (cursor.MoveNext())
+        {
+            count = checked(count + 1);
+        }
+
+        return (count, cursor.Diagnostics);
+    }
+
     public static int RunInspectUtf8Pcre2Case(string caseId)
     {
         var benchmarkCase = Utf8Pcre2BenchmarkCatalog.Get(caseId);
@@ -48,7 +123,7 @@ internal static partial class BenchmarkInspectReporter
                 3,
                 () => context.Utf8Pcre2Regex.IsMatch(context.InputBytes) ? 1 : 0);
             var stopwatch = Stopwatch.StartNew();
-            var isMatch = context.Utf8Pcre2Regex.DebugIsMatchWithDiagnostics(context.InputBytes, 0);
+            var isMatch = InspectPcre2IsMatchWithDiagnostics(context.Utf8Pcre2Regex, context.InputBytes, 0);
             stopwatch.Stop();
             var execution = isMatch.Execution;
             Console.WriteLine($"IsMatchResult     : {isMatch.IsMatch}");
@@ -89,7 +164,7 @@ internal static partial class BenchmarkInspectReporter
                 3,
                 () => context.Utf8Pcre2Regex.Count(context.InputBytes));
             var stopwatch = Stopwatch.StartNew();
-            var count = context.Utf8Pcre2Regex.DebugCountWithDiagnostics(context.InputBytes, 0);
+            var count = InspectPcre2CountWithDiagnostics(context.Utf8Pcre2Regex, context.InputBytes, 0);
             stopwatch.Stop();
             var seconds = Math.Max(stopwatch.Elapsed.TotalSeconds, double.Epsilon);
             var execution = count.Execution;

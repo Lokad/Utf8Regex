@@ -1,5 +1,15 @@
 # Changelog
 
+## Development: PCRE2 diagnostic cursor ownership
+
+Move diagnostic backtracking selection and counter aggregation into existing
+benchmark tooling. Remove the shipped IsMatch/Count replay methods, their result
+records and their exclusive validation helper. VM tests call the same production
+cursor and compiled programs directly, preserving counter/workspace assertions;
+the multiline fixture observes the actual scalar route instead of default zero
+diagnostic data. VM counters and public matching/resource/lifetime behavior remain
+unchanged. No new shipped accessor or framework.
+
 ## Development: anchored-validator replay cleanup
 
 Delete benchmark-only partial-prefix, first-bounded-segment, suffix and segment

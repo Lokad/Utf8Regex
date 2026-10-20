@@ -107,7 +107,7 @@ internal static partial class BenchmarkInspectReporter
                     $"PCRE2 match-count scaling expected {requestedMatchCount} matches but found {actualMatchCount}.");
             }
 
-            var diagnostics = context.Utf8Pcre2Regex.DebugCountWithDiagnostics(
+            var diagnostics = InspectPcre2CountWithDiagnostics(context.Utf8Pcre2Regex,
                 context.InputBytes,
                 0).Execution;
 
