@@ -48,7 +48,7 @@ The native rendering consumes complete scalars. Supplementary class members and 
 ## Raw escaped Unicode literals
 
 The parser consumes a raw escaped non-ASCII character
-as one scalar: `\ðŸ˜€`, `[\ðŸ˜€]`, escaped range endpoints and their quantifiers keep
+as one scalar: `\😀`, `[\😀]`, escaped range endpoints and their quantifiers keep
 the same scalar unit as an unescaped literal. Escaped BMP and supplementary
 literals use the existing pinned Python folding under their lexical options,
 including scoped ASCII exclusions. Explicit `\uD83D\uDE00` escapes remain two
