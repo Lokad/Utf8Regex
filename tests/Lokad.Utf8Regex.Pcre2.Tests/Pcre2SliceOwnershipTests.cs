@@ -5,11 +5,10 @@ using Lokad.Utf8Regex.Pcre2;
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 // R02a slice ownership for the PCRE2 profile: slice-shaped patterns execute
-// IsMatch, Count, and first-match Match on the shared primary-library slice
-// runner through Pcre2SliceDirectProgram, with PCRE2-owned global
-// progression, budgets, timeout, and failure vocabulary. Detailed results,
-// enumeration, and replacement stay on the backtracking fallback until their
-// owned projections land.
+// all five operations on the shared primary-library slice runner through
+// Pcre2SliceDirectProgram, with PCRE2-owned projection, global progression,
+// budgets, timeout and failure vocabulary. Options outside that admitted route
+// retain the owned backtracking program.
 public sealed class Pcre2SliceOwnershipTests
 {
     public static IEnumerable<object?[]> SliceShapes()

@@ -63,14 +63,17 @@ public sealed class Pcre2ExecutionArchitectureTests
     [Fact]
     public void CompiledProgramUsesTypedOperationBackendsWithOwnedPayloads()
     {
-        var delegated = new Utf8Pcre2Regex("abc").DebugCompiledProgram;
+        var literal = new Utf8Pcre2Regex("abc").DebugCompiledProgram;
+        var delegated = new Utf8Pcre2Regex("^([a-z]+)-([0-9]{2})$").DebugCompiledProgram;
         var special = new Utf8Pcre2Regex("(?|(abc)|(xyz))").DebugCompiledProgram;
 
-        Assert.IsType<Pcre2LiteralDirectProgram>(delegated.Operations.IsMatch);
-        Assert.IsType<Pcre2Utf8ProgramSlot>(delegated.PrimaryUtf8);
+        Assert.IsType<Pcre2LiteralDirectProgram>(literal.Operations.IsMatch);
+        Assert.IsType<Pcre2EmptyUtf8ProgramSlot>(literal.PrimaryUtf8);
+        var direct = Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(delegated.Operations.IsMatch);
+        var primary = Assert.IsType<Pcre2Utf8ProgramSlot>(delegated.PrimaryUtf8);
+        Assert.Same(primary.Regex, direct.Regex);
         Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(special.Operations.IsMatch);
         Assert.IsType<Pcre2EmptyUtf8ProgramSlot>(special.PrimaryUtf8);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(special.Operations.Match);
         Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiSet, special.CandidateSearch.Kind);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(special.Operations.Match);
     }
