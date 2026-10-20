@@ -13,7 +13,7 @@ public sealed class PythonReLeadingAsciiRangeTests
     {
         using var construction = global::Lokad.Utf8Regex.Internal.Utf8ConstructionScope.Enter();
         var parse = PythonReParser.Create(pattern).Parse(PythonReCompileOptions.None);
-        var program = PythonReScalarCompiler.Compile(parse, PythonReTranslator.Translate(parse));
+        var program = PythonReScalarCompiler.Compile(parse, PythonReTranslator.Translate(parse, true));
         construction.Complete();
         return program;
     }

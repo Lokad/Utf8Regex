@@ -35,6 +35,19 @@ internal static partial class PythonReBenchmarkReporter
     private const double PythonReQualificationMaximumSpread = 1.10;
     private static readonly TimeSpan s_cpythonResponseTimeout = TimeSpan.FromSeconds(10);
 
+    // These exact handoffs are preserved inputs, not product/runner source.
+    // Unknown untracked source, data and documents still block snapshot writes.
+    private static string? ReadPythonReQualificationWorktree() => RunGit(
+        "status", "--porcelain=v1", "--untracked-files=all", "--", ".",
+        ":(exclude)PythonRe.Benchmarks.json",
+        ":(exclude)src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md",
+        ":(exclude)PLAN.md",
+        ":(top,literal,exclude)TODO-AWK-CAPTURE-MATCHER-CLOCK-COST.md",
+        ":(top,literal,exclude)TODO-AWK-SCALAR-PACKAGE-RELEASE-IDENTITY.md",
+        ":(top,literal,exclude)TODO-JQ-COMPATIBILITY.md",
+        ":(top,literal,exclude)TODO-PCRE2-NUMERIC-CAPTURES.md",
+        ":(top,literal,exclude)TODO-PYTHONRE-CAPTURES-AND-RESOURCE-CONTRACT.md");
+
     private static int MeasurePairedCase(
         string caseId,
         int samples,
@@ -59,15 +72,7 @@ internal static partial class PythonReBenchmarkReporter
             return 1;
         }
 
-        var worktreeState = RunGit(
-            "status",
-            "--porcelain=v1",
-            "--untracked-files=all",
-            "--",
-            ".",
-            ":(exclude)PythonRe.Benchmarks.json",
-            ":(exclude)src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md",
-            ":(exclude)PLAN.md");
+        var worktreeState = ReadPythonReQualificationWorktree();
         if (worktreeState is null)
         {
             Console.Error.WriteLine("Could not verify the worktree before PythonRe paired measurement.");
@@ -389,6 +394,7 @@ internal static partial class PythonReBenchmarkReporter
             byteTrivialMicroseconds);
         var measuredAtUtc = DateTimeOffset.UtcNow;
         var managedEnvironment = CaptureEnvironment();
+        PrintEnvironment(managedEnvironment);
         var caseDefinitionSha256 = ComputePythonReCaseDefinitionSha256(benchmarkCase, context.InputBytes);
         var catalogSha256 = ComputePythonReCatalogSha256();
         var managedProductSha256 = ComputePythonReManagedProductSha256();
@@ -683,7 +689,8 @@ internal static partial class PythonReBenchmarkReporter
         var managedMetadataMatches = measurement is not null &&
             measurement.ComparatorOwner.Equals(
                 PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase),
-                StringComparison.Ordinal);
+                StringComparison.Ordinal) &&
+            PythonReQualificationFreshnessEvaluator.ManagedAssembliesMatch(evidence?.ManagedEnvironment, currentManaged);
         var resultContractMatches = evidence is not null &&
             evidence.ResultContract.Equals(GetPythonReResultContract(benchmarkCase), StringComparison.Ordinal);
         return PythonReQualificationFreshnessEvaluator.Evaluate(

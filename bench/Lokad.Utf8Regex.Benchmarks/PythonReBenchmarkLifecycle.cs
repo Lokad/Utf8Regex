@@ -57,7 +57,7 @@ internal static partial class PythonReBenchmarkReporter
     {
         const PythonReCompileOptions options = PythonReCompileOptions.None;
         var parseResult = new PythonReParser(definition.Pattern).Parse(options);
-        var translation = PythonReTranslator.Translate(parseResult);
+        var translation = PythonReTranslator.Translate(parseResult, true);
         var inputBytes = Encoding.UTF8.GetBytes(definition.Input);
         if (!new Utf8PythonRegex(definition.Pattern, options).IsMatch(inputBytes))
         {
@@ -90,7 +90,7 @@ internal static partial class PythonReBenchmarkReporter
                 () =>
                 {
                     var parsed = new PythonReParser(definition.Pattern).Parse(options);
-                    return PythonReTranslator.Translate(parsed).NativePattern.Length;
+                    return PythonReTranslator.Translate(parsed, true).NativePattern.Length;
                 },
                 iterations,
                 samples)),

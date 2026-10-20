@@ -230,7 +230,7 @@ internal static partial class PythonReTranslator
         return true;
     }
 
-    public static PythonReTranslation Translate(PythonReParseResult parseResult)
+    public static PythonReTranslation Translate(PythonReParseResult parseResult, bool renderNativePattern)
     {
         using var construction = Utf8ConstructionScope.Enter();
         using var widths = Utf8ConstructionMap<PythonReNode, PythonReWidth>.Create(construction.Budget, ReferenceEqualityComparer.Instance);
@@ -240,6 +240,15 @@ internal static partial class PythonReTranslator
 
         using var arena = Utf8ConstructionArena.Create(construction.Budget);
         var emittedGroupNames = BuildEmittedGroupNames(parseResult.NamedGroups, arena);
+        // References and scalar lookbehind widths are validated even when no
+        // operation can use the optional Core program. Its text rendering and
+        // numbering permutation then have no consumer.
+        if (!renderNativePattern)
+        {
+            arena.Complete();
+            construction.Complete();
+            return new PythonReTranslation(string.Empty, ToNativeRegexOptions(parseResult.Options), emittedGroupNames);
+        }
         using var builder = Utf8ConstructionText.Create();
         // Core text numbers unnamed groups before named groups; Python numbers by
         // opening order. This temporary permutation serves text rendering only.
@@ -280,8 +289,7 @@ internal static partial class PythonReTranslator
             nativePattern = Utf8ConstructionText.Replace(nativePattern, @"\ ", " ");
         }
 
-        var result = new PythonReTranslation(nativePattern, ToNativeRegexOptions(parseResult.Options), parseResult.CaptureGroupCount,
-            emittedGroupNames);
+        var result = new PythonReTranslation(nativePattern, ToNativeRegexOptions(parseResult.Options), emittedGroupNames);
         arena.Complete();
         construction.Complete();
         return result;
@@ -634,5 +642,4 @@ internal static partial class PythonReTranslator
 internal readonly record struct PythonReTranslation(
     string NativePattern,
     RegexOptions NativeRegexOptions,
-    int CaptureGroupCount,
     IReadOnlyDictionary<string, string> EmittedGroupNames);

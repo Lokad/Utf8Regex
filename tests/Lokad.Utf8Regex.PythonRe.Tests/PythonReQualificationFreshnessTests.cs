@@ -4,6 +4,29 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReQualificationFreshnessTests
 {
+    [Theory]
+    [InlineData("core", "python", true)]
+    [InlineData("new-core", "python", false)]
+    [InlineData("core", "new-python", false)]
+    [InlineData("", "python", false)]
+    [InlineData("core", "", false)]
+    public void ActualProductBinariesArePartOfFreshness(string core, string python, bool expected)
+    {
+        var stored = Environment(core, python, "old-benchmark");
+        var current = Environment("core", "python", "new-benchmark");
+        var matches = PythonReQualificationFreshnessEvaluator.ManagedAssembliesMatch(stored, current);
+        Assert.Equal(expected, matches);
+        Assert.Equal(expected ? PythonReQualificationFreshness.Current : PythonReQualificationFreshness.ManagedProductChanged,
+            PythonReQualificationFreshnessEvaluator.Evaluate(Current("case") with { ManagedMetadataMatches = matches }));
+
+        static PythonReBenchmarkEnvironment Environment(string core, string python, string benchmark) => new()
+        {
+            SourceCommit = "checkout", TrackedDirty = false, HasUntrackedFiles = false,
+            Runtime = "runtime", OperatingSystem = "os", Processor = "cpu",
+            CoreAssembly = core, PythonReAssembly = python, BenchmarkAssembly = benchmark,
+        };
+    }
+
     [Fact]
     public void IndependentCatalogGrowthAndReorderingPreserveExistingEvidence()
     {

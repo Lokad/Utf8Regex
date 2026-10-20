@@ -28,11 +28,11 @@ public sealed partial class Utf8PythonRegex
             static (template, self) =>
             {
                 if (self.ResourcePolicy.MaxWorkingBytes is not { } maximumBytes)
-                    return PythonReReplacementParser.Parse(template, self._translation.CaptureGroupCount, self._namedGroups);
+                    return PythonReReplacementParser.Parse(template, self.CaptureGroupCount, self._namedGroups);
                 // No token/deadline to forward on this lane. Restrict parser
                 // bytes without installing an otherwise empty per-work hook.
                 using var construction = Utf8ConstructionScope.RestrictAdditionalBytes(maximumBytes);
-                var plan = PythonReReplacementParser.Parse(template, self._translation.CaptureGroupCount, self._namedGroups);
+                var plan = PythonReReplacementParser.Parse(template, self.CaptureGroupCount, self._namedGroups);
                 construction.Complete();
                 return plan;
             },
@@ -115,7 +115,7 @@ public sealed partial class Utf8PythonRegex
         }
         try
         {
-            var plan = PythonReReplacementParser.Parse(replacement, _translation.CaptureGroupCount, _namedGroups);
+            var plan = PythonReReplacementParser.Parse(replacement, CaptureGroupCount, _namedGroups);
             construction.Complete();
             return plan;
         }

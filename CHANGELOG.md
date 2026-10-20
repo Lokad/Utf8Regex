@@ -2,6 +2,11 @@
 
 ## Unreleased development after 0.4.0-rc.1
 
+- PCRE2 lexical guards consume complete escape operands consistently, so control
+  escapes cannot turn literal class contents into apparent callouts or names.
+- PythonRe no longer retains construction-only translation state. Scalar-only
+  patterns skip unused native rendering while preserving reference/lookbehind
+  validation. Factory argument simplification preserves conservative admission.
 - PCRE2 rejects invalid quantifier bounds, option flags and unknown escapes in
   context, rather than recognizing only particular error examples. If every
   compiler declines, construction fails instead of returning an unusable program.

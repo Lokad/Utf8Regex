@@ -58,7 +58,7 @@ public sealed class PythonReScalarConversionAdmissionTests
     public void RootAdmissionPrecedesArenaMapAndLeafAcquisition(int denial)
     {
         var parse = new PythonReParser("(?P<x>.)").Parse(PythonReCompileOptions.None);
-        var translation = PythonReTranslator.Translate(parse);
+        var translation = PythonReTranslator.Translate(parse, true);
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, denial == 0 ? 48ul : ulong.MaxValue,
             denial == 2 ? 1ul : ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
@@ -80,7 +80,7 @@ public sealed class PythonReScalarConversionAdmissionTests
     public void ConversionByteBoundariesPreserveParentAndAdmitAtTheMeasuredPeak(string pattern, bool full)
     {
         var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
-        var translation = PythonReTranslator.Translate(parse);
+        var translation = PythonReTranslator.Translate(parse, true);
         ulong peak;
         using (var measured = Utf8ConstructionScope.Enter())
         {
@@ -117,7 +117,7 @@ public sealed class PythonReScalarConversionAdmissionTests
     {
         var parse = new PythonReParser("").Parse(PythonReCompileOptions.None)
             with { Root = new PythonReRawNode(@"\C", PythonReRawKind.Escape) };
-        var translation = PythonReTranslator.Translate(parse);
+        var translation = PythonReTranslator.Translate(parse, true);
         using var owner = Utf8ConstructionScope.Enter();
         var parent = PythonReAstFactory.Literal('p');
         var checkpoint = owner.Budget.ReservedBytes;
@@ -129,14 +129,14 @@ public sealed class PythonReScalarConversionAdmissionTests
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.True(owner.Budget.WorkSteps > 2);
         var recovery = new PythonReParser("(?P<x>.)").Parse(PythonReCompileOptions.None);
-        Assert.NotNull(Compile(recovery, PythonReTranslator.Translate(recovery), true));
+        Assert.NotNull(Compile(recovery, PythonReTranslator.Translate(recovery, true), true));
     }
 
     [Fact]
     public void NumericCaptureNamesAndDirectIrNodesKeepTheirCompiledBehavior()
     {
         var parse = new PythonReParser("(a)(b)(?P<é>.)").Parse(PythonReCompileOptions.None);
-        var translation = PythonReTranslator.Translate(parse);
+        var translation = PythonReTranslator.Translate(parse, true);
         using var owner = Utf8ConstructionScope.Enter();
         var program = Compile(parse, translation, true);
         Assert.NotNull(program);

@@ -17,7 +17,7 @@ public sealed class PythonReFullProgramReuseTests
     public void DerivedProgramMatchesIndependentAnchoredLowering(string pattern)
     {
         var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
-        var translation = PythonReTranslator.Translate(parse);
+        var translation = PythonReTranslator.Translate(parse, true);
         var original = PythonReScalarCompiler.Compile(parse, translation);
         var anchored = PythonReScalarCompiler.Compile(parse with
         {
@@ -62,7 +62,7 @@ public sealed class PythonReFullProgramReuseTests
     public void DerivationAdmissionRollsBackWithoutChangingBorrowedProgram(int limit)
     {
         var parse = new PythonReParser("(?P<x>[é😀]+)(?=a)a").Parse(PythonReCompileOptions.None);
-        var original = PythonReScalarCompiler.Compile(parse, PythonReTranslator.Translate(parse));
+        var original = PythonReScalarCompiler.Compile(parse, PythonReTranslator.Translate(parse, true));
         var previous = original.Instructions.ToArray();
         using var owner = new Utf8ConstructionScope(
             limit == 0 ? 1ul : ulong.MaxValue,

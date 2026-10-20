@@ -237,7 +237,7 @@ public sealed partial class Utf8PythonRegex
         Utf8InvocationResultBuffer<string[]> tuples = default;
         try
         {
-            var count = _translation.CaptureGroupCount;
+            var count = CaptureGroupCount;
             while (cursor.MoveNext())
             {
                 if (count <= 1)
@@ -281,7 +281,7 @@ public sealed partial class Utf8PythonRegex
         Utf8InvocationResultBuffer<byte[][]> tuples = default;
         try
         {
-            var count = _translation.CaptureGroupCount;
+            var count = CaptureGroupCount;
             while (cursor.MoveNext())
             {
                 if (count <= 1)
@@ -333,7 +333,7 @@ public sealed partial class Utf8PythonRegex
                 var text = cursor.GetText(last, cursor.StartOffsetInBytes);
                 if (stringsOnly) cursor.AddResult(ref stringParts, text);
                 else cursor.AddResult(ref parts, new Utf8PythonSplitItem { ValueText = text });
-                for (var i = 1; i <= _translation.CaptureGroupCount; i++)
+                for (var i = 1; i <= CaptureGroupCount; i++)
                 {
                     var capture = cursor.TryGetCaptureByteRange(i, out var start, out var end) ? cursor.GetText(start, end) : null;
                     if (stringsOnly) cursor.AddResult(ref stringParts, capture);

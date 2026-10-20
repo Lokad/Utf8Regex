@@ -2,9 +2,9 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
-// Every state includes all stored fields of its AST type. Referenced strings,
-// lists and arrays retain their separate ownership; this admits the node and
-// its retaining descriptor before either object is acquired.
+// Constructor arguments feed the shared allocator's conservative 128-byte
+// minimum before node acquisition. Strings/collections have independent
+// admission; numeric charges retain no extra descriptor object.
 internal static class PythonReAstFactory
 {
     internal static PythonReSequenceNode Empty { get; } = new([]);
@@ -29,7 +29,7 @@ internal static class PythonReAstFactory
 
     internal static PythonReGroupNode Group(PythonReGroupKind kind, PythonReNode inner, string? name,
         PythonReCompileOptions addOptions, PythonReCompileOptions removeOptions, int groupNumber) =>
-        Create((kind, inner, name, addOptions, removeOptions, groupNumber, FixedLookbehindWidth: (uint?)null), static state =>
+        Create((kind, inner, name, addOptions, removeOptions, groupNumber), static state =>
             new PythonReGroupNode(state.kind, state.inner, state.name, state.addOptions, state.removeOptions) { GroupNumber = state.groupNumber });
 
     internal static PythonReNamedBackreferenceNode NamedReference(string name, Func<int, int>? lowerScalar) =>

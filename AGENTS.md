@@ -242,6 +242,13 @@ PythonRe benchmark snapshot and diagnostics:
   plus the supplementary-plane detailed-coordinate sentinel against CPython.
 - Use `--verify-pythonre-qualifications` to recompute paired statistics and
   Status and reject stale source, catalog, runner, interpreter, or pair identity.
+- PythonRe records checkout/source fingerprints separately from loaded assembly
+  producer versions and SHA256 identities. Paired freshness also requires the
+  measured Core/PythonRe binary identities; older rows without those identities
+  remain historical. Benchmark identity is reported while operation/shared
+  protocol fingerprints retain their existing role. No snapshot is refreshed
+  merely to add provenance. The source-cleanliness gate permits exactly the five
+  preserved root TODO handoffs; unknown untracked source/data still blocks writes.
 - PythonRe refresh and direct-case commands invoke an official CPython executable to measure the stdlib `re`/`_sre` oracle in a long-lived per-case process. They exclude interpreter startup and pattern compilation, and report predecoded plus strict UTF-8-decode-per-operation timings.
 - Paired PythonRe qualification applies a one-million-call floor only to
   one-shot subjects at or below 128 UTF-8 bytes. This keeps routes that tier

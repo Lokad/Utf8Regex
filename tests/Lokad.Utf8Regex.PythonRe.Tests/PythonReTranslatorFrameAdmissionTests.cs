@@ -20,7 +20,7 @@ public sealed class PythonReTranslatorFrameAdmissionTests
         Assert.True(PythonReTranslator.CanUseUtf8IterationFastPath(root));
         Assert.True(PythonReTranslator.IsExactLiteral(exact));
         Assert.False(PythonReTranslator.IsExactLiteral(root));
-        var translation = PythonReTranslator.Translate(parsed);
+        var translation = PythonReTranslator.Translate(parsed, true);
         Assert.Equal("(?:a|bc)[😀]", translation.NativePattern);
         Assert.Equal("[😀]", PythonReTranslator.RenderNativeAtom(scalarClass));
     }

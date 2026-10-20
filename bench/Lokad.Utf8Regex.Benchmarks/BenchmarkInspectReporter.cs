@@ -6331,7 +6331,7 @@ internal static partial class BenchmarkInspectReporter
                 "runtime-default",
         };
 
-    private static string GetAssemblyIdentity(Assembly assembly)
+    internal static string GetAssemblyIdentity(Assembly assembly)
     {
         var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "<unknown>";
         using var stream = File.OpenRead(assembly.Location);

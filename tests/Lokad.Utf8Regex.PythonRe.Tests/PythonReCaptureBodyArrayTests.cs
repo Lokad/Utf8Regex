@@ -38,7 +38,7 @@ public sealed class PythonReCaptureBodyArrayTests
         Assert.Equal(count, found);
         Assert.False(parse.TryGetGroupBody(0, out _));
         Assert.False(parse.TryGetGroupBody(count + 1, out _));
-        _ = PythonReTranslator.Translate(parse);
+        _ = PythonReTranslator.Translate(parse, true);
         Assert.False(Utf8ConstructionScope.IsActive);
     }
 

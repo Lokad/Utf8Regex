@@ -31,6 +31,15 @@ internal readonly record struct PythonReQualificationFreshnessInput(
 
 internal static class PythonReQualificationFreshnessEvaluator
 {
+    // Missing legacy identities are historical evidence, not proof that the
+    // currently loaded product binaries are the measured ones. The runner's
+    // identity is reported; operation/shared protocol hashes govern its freshness.
+    internal static bool ManagedAssembliesMatch(PythonReBenchmarkEnvironment? stored, PythonReBenchmarkEnvironment current)
+        => stored is not null && !string.IsNullOrEmpty(stored.CoreAssembly) &&
+            !string.IsNullOrEmpty(stored.PythonReAssembly) &&
+            string.Equals(stored.CoreAssembly, current.CoreAssembly, StringComparison.Ordinal) &&
+            string.Equals(stored.PythonReAssembly, current.PythonReAssembly, StringComparison.Ordinal);
+
     internal static PythonReQualificationFreshness Evaluate(
         in PythonReQualificationFreshnessInput input)
     {
@@ -97,4 +106,17 @@ internal static class PythonReQualificationFreshnessEvaluator
 
     private static bool Equals(string left, string right) =>
         left.Equals(right, StringComparison.Ordinal);
+}
+
+internal sealed class PythonReBenchmarkEnvironment
+{
+    public string BenchmarkAssembly { get; init; } = string.Empty;
+    public string CoreAssembly { get; init; } = string.Empty;
+    public string PythonReAssembly { get; init; } = string.Empty;
+    public required string SourceCommit { get; init; }
+    public required bool TrackedDirty { get; init; }
+    public required bool HasUntrackedFiles { get; init; }
+    public required string Runtime { get; init; }
+    public required string OperatingSystem { get; init; }
+    public required string Processor { get; init; }
 }

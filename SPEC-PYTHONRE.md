@@ -346,7 +346,14 @@ The parser keeps a complete `U+0000..U+10FFFF` class range instead of
 expanding redundant case closure. Native rendering reuses its scalar atom;
 negation, captures, empty-match rules and nonconstant folding stay unchanged.
 Syntax/reference and fixed-width-lookbehind validation precede native rendering.
-Construction produces native scalar text and group metadata. UTF-16 comparator
+Construction validates references and scalar lookbehind widths, builds the owned
+scalar program and prepares native scalar text only when an optional Core route
+can consume it. Translation text/options/name-map state is local to construction;
+runtime capture counts come from the owned program. Scalar-only patterns retain
+their semantic validation while avoiding unused native rendering and numbering
+scratch. Python node factories keep conservative 128-byte/two-work admission
+before allocation; constructor-only arguments replace unused field mirrors.
+Construction charges can fall when that work/storage disappears. UTF-16 comparator
 rendering lives in benchmark/test tooling. Parser dot/predefined fragments emit
 native scalar atoms directly; no surrogate subject encoding is used. Shared class
 predicates, scoped DotAll and width/reference validation retain their semantics.

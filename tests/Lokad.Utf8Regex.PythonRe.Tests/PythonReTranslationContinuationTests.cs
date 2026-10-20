@@ -175,7 +175,7 @@ public sealed class PythonReTranslationContinuationTests
             parse = parse with { NamedGroups = new Dictionary<string, int>() };
         using var scope = Utf8ConstructionScope.Enter();
         var parent = scope.Budget.AllocateArray<byte>(1, false);
-        Assert.StartsWith(message, Assert.Throws<PythonRePatternException>(() => PythonReTranslator.Translate(parse)).Message);
+        Assert.StartsWith(message, Assert.Throws<PythonRePatternException>(() => PythonReTranslator.Translate(parse, true)).Message);
         Assert.Equal(0ul, scope.Budget.Depth);
         Assert.Equal(48ul, scope.Budget.ReservedBytes);
         Assert.True(new Utf8PythonRegex(".").IsMatch("😀"u8));
@@ -205,7 +205,7 @@ public sealed class PythonReTranslationContinuationTests
         Assert.False(PythonReTranslator.CanMatchEmpty(parse.Root, parse));
         Assert.True(PythonReTranslator.GetWidth(parse.Root, parse).Max > 0);
         Assert.Equal("(?<=a{2147483647}|b{2147483647})", PythonReTranslator.Translate(
-            new PythonReParser("(?<=a{2147483647}|b{2147483647})").Parse(PythonReCompileOptions.None)).NativePattern);
+            new PythonReParser("(?<=a{2147483647}|b{2147483647})").Parse(PythonReCompileOptions.None), true).NativePattern);
     }
 
     [Theory]
@@ -221,10 +221,10 @@ public sealed class PythonReTranslationContinuationTests
         var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
         if (error is null)
         {
-            var native = PythonReTranslator.Translate(parse).NativePattern;
+            var native = PythonReTranslator.Translate(parse, true).NativePattern;
             Assert.EndsWith(")x", native);
         }
-        else Assert.StartsWith(error, Assert.Throws<PythonRePatternException>(() => PythonReTranslator.Translate(parse)).Message);
+        else Assert.StartsWith(error, Assert.Throws<PythonRePatternException>(() => PythonReTranslator.Translate(parse, true)).Message);
     }
 
     [Fact]
@@ -244,7 +244,7 @@ public sealed class PythonReTranslationContinuationTests
         2 => PythonReTranslator.CanUseUtf8IterationFastPath(parse.Root),
         3 => PythonReTranslator.GetWidth(parse.Root, parse),
         4 => PythonReTranslator.IsExactLiteral(parse.Root),
-        5 => PythonReTranslator.Translate(parse),
+        5 => PythonReTranslator.Translate(parse, true),
         _ => PythonReTranslator.RenderNativeAtom(parse.Root),
     };
 }

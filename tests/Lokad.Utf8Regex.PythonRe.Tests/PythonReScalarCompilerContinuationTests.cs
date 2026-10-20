@@ -21,7 +21,7 @@ public sealed class PythonReScalarCompilerContinuationTests
     public void DeepResolvedTreesKeepScalarWidthsWithoutRecursiveRecordHashing(int depth, int shape, bool full)
     {
         var parse = new PythonReParser("(?P<x>.)").Parse(PythonReCompileOptions.None);
-        var translation = PythonReTranslator.Translate(parse);
+        var translation = PythonReTranslator.Translate(parse, true);
         var node = parse.Root;
         for (var level = 0; level < depth; level++)
             node = shape switch

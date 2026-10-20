@@ -23,7 +23,7 @@ internal static class PythonReDotNetReference
     internal static string Render(Utf8PythonRegex regex)
     {
         var parsed = new PythonReParser(regex.Pattern).Parse(regex.Options);
-        return Render(parsed, PythonReTranslator.Translate(parsed));
+        return Render(parsed, PythonReTranslator.Translate(parsed, true));
     }
 
     internal static string Render(PythonReParseResult parseResult, PythonReTranslation translation)

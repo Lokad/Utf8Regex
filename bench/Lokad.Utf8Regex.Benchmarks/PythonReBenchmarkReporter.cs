@@ -1161,7 +1161,7 @@ internal static partial class PythonReBenchmarkReporter
     {
         const PythonReCompileOptions options = PythonReCompileOptions.None;
         var parseResult = new PythonReParser(pattern).Parse(options);
-        var translation = PythonReTranslator.Translate(parseResult);
+        var translation = PythonReTranslator.Translate(parseResult, true);
         var referencePattern = PythonReDotNetReference.Render(parseResult, translation);
         var referenceOptions = PythonReDotNetReference.ToRegexOptions(options);
         var input = Encoding.UTF8.GetBytes("prefix item-123 foo Ð¨ÐµÑ€Ð»Ð¾Ðº suffix");
@@ -1187,7 +1187,7 @@ internal static partial class PythonReBenchmarkReporter
             () =>
             {
                 var parsed = new PythonReParser(pattern).Parse(options);
-                return PythonReTranslator.Translate(parsed).NativePattern.Length;
+                return PythonReTranslator.Translate(parsed, true).NativePattern.Length;
             },
             iterations,
             samples));
@@ -1856,6 +1856,7 @@ internal static partial class PythonReBenchmarkReporter
         Console.WriteLine($"InputBytes         : {measurement.InputUtf8Bytes}");
         Console.WriteLine($"Iterations         : {measurement.EffectiveIterations}");
         Console.WriteLine($"Samples            : {measurement.Samples}");
+        PrintEnvironment(measurement.Environment);
         PrintOperation("PythonRe", measurement.PythonRe);
         PrintOperation("DecodeThenRegex", measurement.DecodeThenRegex);
         PrintOperation("PredecodedRegex", measurement.PredecodedRegex);
@@ -1864,6 +1865,14 @@ internal static partial class PythonReBenchmarkReporter
             PrintOperation("CPythonDecode", cpython.DecodeThenRe);
             PrintOperation("CPythonPredecoded", cpython.PredecodedRe);
         }
+    }
+
+    private static void PrintEnvironment(PythonReBenchmarkEnvironment environment)
+    {
+        Console.WriteLine($"CheckoutCommit     : {environment.SourceCommit}");
+        Console.WriteLine($"BenchmarkAssembly  : {environment.BenchmarkAssembly}");
+        Console.WriteLine($"CoreAssembly       : {environment.CoreAssembly}");
+        Console.WriteLine($"PythonReAssembly   : {environment.PythonReAssembly}");
     }
 
     private static void PrintOperation(string name, PythonReOperationMeasurement measurement)
@@ -1903,7 +1912,11 @@ internal static partial class PythonReBenchmarkReporter
             ":(exclude)PLAN.md");
         return new PythonReBenchmarkEnvironment
         {
+            // Checkout provenance and actual loaded bytes are distinct.
             SourceCommit = RunGit("rev-parse", "--short=12", "HEAD") ?? "<unknown>",
+            BenchmarkAssembly = BenchmarkInspectReporter.GetAssemblyIdentity(typeof(PythonReBenchmarkReporter).Assembly),
+            CoreAssembly = BenchmarkInspectReporter.GetAssemblyIdentity(typeof(Utf8Regex).Assembly),
+            PythonReAssembly = BenchmarkInspectReporter.GetAssemblyIdentity(typeof(Utf8PythonRegex).Assembly),
             TrackedDirty = !string.IsNullOrWhiteSpace(trackedStatus),
             HasUntrackedFiles = !string.IsNullOrWhiteSpace(untrackedStatus),
             Runtime = RuntimeInformation.FrameworkDescription,
@@ -2055,7 +2068,7 @@ internal sealed class PythonReBenchmarkContext
         _replacementBytes = Encoding.UTF8.GetBytes(benchmarkCase.Replacement);
         _pythonRegex = new Utf8PythonRegex(benchmarkCase.Pattern, benchmarkCase.Options);
         var parsed = new PythonReParser(benchmarkCase.Pattern).Parse(benchmarkCase.Options);
-        var translation = PythonReTranslator.Translate(parsed);
+        var translation = PythonReTranslator.Translate(parsed, true);
         var translatedPattern = PythonReDotNetReference.Render(parsed, translation);
         var regexOptions = PythonReDotNetReference.ToRegexOptions(benchmarkCase.Options);
         _regex = new Regex(translatedPattern, regexOptions, Regex.InfiniteMatchTimeout);
@@ -5661,14 +5674,4 @@ internal sealed class CpythonBenchmarkEnvironment
     public required string Version { get; init; }
     public required string Executable { get; init; }
     public required string Platform { get; init; }
-}
-
-internal sealed class PythonReBenchmarkEnvironment
-{
-    public required string SourceCommit { get; init; }
-    public required bool TrackedDirty { get; init; }
-    public required bool HasUntrackedFiles { get; init; }
-    public required string Runtime { get; init; }
-    public required string OperatingSystem { get; init; }
-    public required string Processor { get; init; }
 }

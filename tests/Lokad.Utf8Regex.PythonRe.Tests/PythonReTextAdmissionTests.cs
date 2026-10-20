@@ -23,7 +23,7 @@ public sealed class PythonReTextAdmissionTests
         var parse = new PythonReParser(new string(' ', count)).Parse(PythonReCompileOptions.None);
         var allowance = 128ul * (ulong)count;
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, allowance, ulong.MaxValue);
-        var result = PythonReTranslator.Translate(parse);
+        var result = PythonReTranslator.Translate(parse, true);
         Assert.Equal(new string(' ', count), result.NativePattern);
         Assert.InRange(owner.Budget.WorkSteps, (ulong)count, allowance);
     }
@@ -39,14 +39,14 @@ public sealed class PythonReTextAdmissionTests
         ulong peak;
         using (var measured = Utf8ConstructionScope.Enter())
         {
-            _ = PythonReTranslator.Translate(parse);
+            _ = PythonReTranslator.Translate(parse, true);
             peak = measured.Budget.PeakBytes;
         }
         foreach (var allowance in new[] { 0ul, 112ul, peak / 2, peak - 1, peak })
         {
             using var owner = new Utf8ConstructionScope(ulong.MaxValue, allowance + 48, ulong.MaxValue, ulong.MaxValue);
             var parent = owner.Budget.AllocateArray<byte>(1, false);
-            var failure = Record.Exception(() => PythonReTranslator.Translate(parse));
+            var failure = Record.Exception(() => PythonReTranslator.Translate(parse, true));
             Assert.Equal(0ul, owner.Budget.Depth);
             Assert.True(owner.Budget.PeakBytes <= allowance + 48);
             if (failure is not null)
@@ -66,7 +66,7 @@ public sealed class PythonReTextAdmissionTests
     {
         var parse = new PythonReParser("(?P<é>a)(b)(?P=é)").Parse(PythonReCompileOptions.None);
         using var owner = Utf8ConstructionScope.Enter();
-        var result = PythonReTranslator.Translate(parse);
+        var result = PythonReTranslator.Translate(parse, true);
         Assert.Equal("g1", result.EmittedGroupNames["é"]);
         Assert.Equal("(?<g1>a)(b)\\k<g1>", result.NativePattern);
         Assert.True(owner.Budget.ReservedBytes >= Utf8ConstructionBudget.StringBytes(result.NativePattern.Length));

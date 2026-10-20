@@ -73,7 +73,6 @@ public sealed partial class Utf8PythonRegex
     private readonly Utf8SliceProgram _scalarProgram;
     private readonly Lazy<Utf8SliceProgram> _lazyScalarFullProgram;
     private readonly Utf8Regex? _utf8Regex;
-    private readonly PythonReTranslation _translation;
     private readonly PythonReNameEntry[] _nameEntries;
     private readonly IReadOnlyDictionary<string, int> _namedGroups;
     private readonly bool _canMatchEmpty;
@@ -219,8 +218,9 @@ public sealed partial class Utf8PythonRegex
         _asciiDotAllFullMatchPrefix = asciiDotAllFullMatchPrefix;
         _asciiDotAllFullMatchSuffix = asciiDotAllFullMatchSuffix;
         var isExactLiteral = PythonReTranslator.IsExactLiteral(parseResult.Root);
-        _translation = PythonReTranslator.Translate(parseResult);
-        _scalarProgram = PythonReScalarCompiler.Compile(parseResult, _translation);
+        var prepareCore = !_canMatchEmpty || _canUseUtf8IterationFastPath;
+        var translation = PythonReTranslator.Translate(parseResult, prepareCore);
+        _scalarProgram = PythonReScalarCompiler.Compile(parseResult, translation);
         // Failed preparation is retryable: a caller's cancellation must not
         // become a permanently cached failure. Concurrent cold callers may each
         // derive under their own construction scope; only one result is kept.
@@ -235,11 +235,11 @@ public sealed partial class Utf8PythonRegex
         // Nullable programs do not use Core start hints or nonempty literal
         // result lanes. If iteration eligibility also declines Core, every
         // operation already uses the owned Python program or independent kernels.
-        if (!_canMatchEmpty || _canUseUtf8IterationFastPath)
+        if (prepareCore)
         {
             try
             {
-                _utf8Regex = new Utf8Regex(_translation.NativePattern, _translation.NativeRegexOptions, MatchTimeout);
+                _utf8Regex = new Utf8Regex(translation.NativePattern, translation.NativeRegexOptions, MatchTimeout);
             }
             catch (Exception exception) when (IsOptionalUtf8BackendUnavailableException(exception))
             {
@@ -298,6 +298,9 @@ public sealed partial class Utf8PythonRegex
     // Exact profile classes and lexical reference lowerings come from the Python
     // AST, independently of residual native selectors or BCL case flags.
     private Utf8SliceProgram ScalarProgram => _scalarProgram;
+
+    // The VM counts captures only; whole-match slot zero is stored separately.
+    private int CaptureGroupCount => _scalarProgram.GroupCount;
 
     private bool HasFiniteExecutionLimits => ResourcePolicy.MaxWorkSteps.HasValue || ResourcePolicy.MaxDepth.HasValue || ResourcePolicy.MaxWorkingBytes.HasValue || ResourcePolicy.MaxResultBytes.HasValue;
 

@@ -47,7 +47,7 @@ internal static partial class PythonReBenchmarkReporter
         var input = Encoding.UTF8.GetBytes(benchmarkCase.Input);
         var adapter = new Utf8PythonRegex(benchmarkCase.Pattern, benchmarkCase.Options);
         var parsed = new PythonReParser(benchmarkCase.Pattern).Parse(benchmarkCase.Options);
-        var translation = PythonReTranslator.Translate(parsed);
+        var translation = PythonReTranslator.Translate(parsed, true);
         var core = new Utf8Regex(translation.NativePattern, translation.NativeRegexOptions);
 
         var adapterOutcome = ExecuteAdapterSearchAttribution(adapter, input, benchmarkCase.Operation);

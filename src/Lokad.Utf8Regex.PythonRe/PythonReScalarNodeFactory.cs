@@ -3,63 +3,61 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
-// Include the stored base Kind and every derived/initializer field. Referenced
-// arrays, nodes and folding tables retain independent acquisition loans.
-// These factories serve direct Python scalar conversion; core leaf conversion
-// and other IR producers still require their own admission review.
+// Constructor arguments only. The shared allocator's conservative 128-byte
+// minimum covers these node descriptors before acquisition; referenced payloads
+// have independent array/text admission. Do not mirror unused instance fields.
 internal static class PythonReScalarNodeFactory
 {
     internal static Utf8SliceNode.LiteralNode Literal(int scalar) =>
-        Create((Utf8SliceNodeKind.Literal, scalar, FoldCase: false), static state =>
-            new Utf8SliceNode.LiteralNode(state.scalar, state.FoldCase));
+        Create(scalar, static state => new Utf8SliceNode.LiteralNode(state, false));
 
     internal static Utf8SliceNode.ConcatNode Concat(Utf8SliceNode[] children) =>
-        Create((Utf8SliceNodeKind.Concat, children), static state => new Utf8SliceNode.ConcatNode(state.children));
+        Create(children, static state => new Utf8SliceNode.ConcatNode(state));
 
     internal static Utf8SliceNode.AlternationNode Alternation(Utf8SliceNode[][] branches) =>
-        Create((Utf8SliceNodeKind.Alternation, branches), static state => new Utf8SliceNode.AlternationNode(state.branches));
+        Create(branches, static state => new Utf8SliceNode.AlternationNode(state));
 
     internal static Utf8SliceNode.RepeatNode Repeat(Utf8SliceNode body, long minimum, long maximum, bool lazy) =>
-        Create((Utf8SliceNodeKind.Repeat, body, minimum, maximum, lazy, GuardEmptyAfterMinimum: true), static state =>
+        Create((body, minimum, maximum, lazy), static state =>
             new Utf8SliceNode.RepeatNode(state.body, state.minimum, state.maximum, state.lazy)
-            { GuardEmptyAfterMinimum = state.GuardEmptyAfterMinimum });
+            { GuardEmptyAfterMinimum = true });
 
     internal static Utf8SliceNode.AtomicNode Atomic(Utf8SliceNode body) =>
-        Create((Utf8SliceNodeKind.Atomic, body), static state => new Utf8SliceNode.AtomicNode(state.body));
+        Create(body, static state => new Utf8SliceNode.AtomicNode(state));
 
     internal static Utf8SliceNode.CaptureNode Capture(int slot, Utf8SliceNode body) =>
-        Create((Utf8SliceNodeKind.Capture, slot, body), static state => new Utf8SliceNode.CaptureNode(state.slot, state.body));
+        Create((slot, body), static state => new Utf8SliceNode.CaptureNode(state.slot, state.body));
 
     internal static Utf8SliceNode.LookaheadNode Lookahead(Utf8SliceNode body, bool positive) =>
-        Create((Utf8SliceNodeKind.Lookahead, body, positive), static state => new Utf8SliceNode.LookaheadNode(state.body, state.positive));
+        Create((body, positive), static state => new Utf8SliceNode.LookaheadNode(state.body, state.positive));
 
     internal static Utf8SliceNode.LookbehindNode Lookbehind(Utf8SliceNode body, bool positive, uint scalarCount) =>
-        Create((Utf8SliceNodeKind.Lookbehind, body, positive, scalarCount), static state =>
+        Create((body, positive, scalarCount), static state =>
             new Utf8SliceNode.LookbehindNode(state.body, state.positive) { ForwardScalarCount = state.scalarCount });
 
     internal static Utf8SliceNode.BackrefNode Backref(int slot, Func<int, int>? lowerScalar) =>
-        Create((Utf8SliceNodeKind.Backref, slot, lowerScalar is not null, false, lowerScalar), static state =>
-            new Utf8SliceNode.BackrefNode(state.slot, state.Item3, state.Item4) { LowerScalar = state.lowerScalar });
+        Create((slot, lowerScalar), static state =>
+            new Utf8SliceNode.BackrefNode(state.slot, state.lowerScalar is not null, false) { LowerScalar = state.lowerScalar });
 
     internal static Utf8SliceNode.ConditionalNode Conditional(int slot, Utf8SliceNode yes, Utf8SliceNode no) =>
-        Create((Utf8SliceNodeKind.Conditional, slot, yes, no, (Utf8SliceNode?)null), static state =>
-            new Utf8SliceNode.ConditionalNode(state.slot, state.yes, state.no, state.Item5));
+        Create((slot, yes, no), static state =>
+            new Utf8SliceNode.ConditionalNode(state.slot, state.yes, state.no, null));
 
     internal static Utf8SliceNode.EmptyNode Empty() =>
-        Create(Utf8SliceNodeKind.Empty, static _ => new Utf8SliceNode.EmptyNode());
+        Create(0, static _ => new Utf8SliceNode.EmptyNode());
 
     internal static Utf8SliceNode.DotNode Dot() =>
-        Create((Utf8SliceNodeKind.Dot, true), static _ => new Utf8SliceNode.DotNode(true));
+        Create(true, static state => new Utf8SliceNode.DotNode(state));
 
     internal static Utf8SliceNode.AnchorNode Anchor(Utf8SliceAnchorKind kind) =>
-        Create((Utf8SliceNodeKind.Anchor, kind, false), static state => new Utf8SliceNode.AnchorNode(state.kind, false));
+        Create(kind, static state => new Utf8SliceNode.AnchorNode(state, false));
 
     internal static Utf8SliceNode.CategorySetNode Class(byte[] ascii, bool negated, Func<int, bool> predicate, Utf8ConstructionArena arena)
     {
         var members = arena.Allocate<Utf8SliceNode.CategorySetMember>(1, true);
         members[0] = Utf8SliceNode.CategorySetMember.Create(Utf8SliceCategoryTable.ForScalarPredicate(predicate), false);
-        return Create((Utf8SliceNodeKind.CategorySet, ascii, negated, Array.Empty<Utf8SliceShorthand>(), members, false),
-            static state => new Utf8SliceNode.CategorySetNode(state.ascii, state.negated, state.Item4, state.members, false));
+        return Create((ascii, negated, members),
+            static state => new Utf8SliceNode.CategorySetNode(state.ascii, state.negated, Array.Empty<Utf8SliceShorthand>(), state.members, false));
     }
 
     private static TNode Create<TState, TNode>(TState state, Func<TState, TNode> factory) where TNode : class =>
