@@ -1,0 +1,87 @@
+diff --git a/src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceRunner.cs b/src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceRunner.cs
+index 796501d2..cafc9a9c 100644
+--- a/src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceRunner.cs
++++ b/src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceRunner.cs
+@@ -1188,24 +1188,27 @@ internal static partial class Utf8SliceRunner
+                             break;
+                         }
+ 
+-                        var rtlCompared = 0;
+-                        while (rtlCompared < rtlReferLength)
++                        var rtlEqual = true;
++                        for (var remaining = rtlReferLength; remaining > 0;)
+                         {
+-                            var rtlCharge = invocation.TryChargeStep();
++                            // Keep comparison chunks ordered from the right.
++                            // The shared comparer meters each bounded span and
++                            // checks the original token and absolute deadline.
++                            var width = Math.Min(2048, remaining);
++                            var offset = remaining - width;
++                            var rtlCharge = Utf8SearchExecutor.TryCompareLiteral(
++                                input.Slice(inputIndex - rtlReferLength + offset, width),
++                                input.Slice(rtlReferStart + offset, width), false,
++                                ref invocation, out rtlEqual);
+                             if (rtlCharge != Utf8ExecutionLimitKind.None)
+                             {
+                                 return new Utf8SliceMatchOutcome(false, -1, rtlCharge, null, null);
+                             }
+-
+-                            if (input[rtlReferEnd - 1 - rtlCompared] != input[inputIndex - 1 - rtlCompared])
+-                            {
+-                                break;
+-                            }
+-
+-                            rtlCompared++;
++                            if (!rtlEqual) break;
++                            remaining = offset;
+                         }
+ 
+-                        if (rtlCompared < rtlReferLength)
++                        if (!rtlEqual)
+                         {
+                             failed = true;
+                         }
+@@ -1221,9 +1224,9 @@ internal static partial class Utf8SliceRunner
+                     // Ordinal backreference: an unmatched (or in-progress)
+                     // group fails, otherwise the captured bytes must repeat
+                     // verbatim at the current position. Scalar-aligned captures
+-                    // have a unique strict UTF-8 encoding. Each compared byte
+-                    // charges work so long captures stay bounded and
+-                    // cancellable like the rest of the engine.
++                    // have a unique strict UTF-8 encoding. The shared bounded
++                    // comparer charges work and checks original interruption
++                    // before each comparison chunk, without copying captures.
+                     if (captureStarts[instruction.A] < 0 ||
+                         captureEnds[instruction.A] < 0)
+                     {
+@@ -1288,24 +1291,15 @@ internal static partial class Utf8SliceRunner
+                             break;
+                         }
+ 
+-                        var compared = 0;
+-                        while (compared < referLength)
++                        var charge = Utf8SearchExecutor.TryCompareLiteral(
++                            input.Slice(inputIndex, referLength), input.Slice(referStart, referLength),
++                            false, ref invocation, out var equal);
++                        if (charge != Utf8ExecutionLimitKind.None)
+                         {
+-                            var charge = invocation.TryChargeStep();
+-                            if (charge != Utf8ExecutionLimitKind.None)
+-                            {
+-                                return new Utf8SliceMatchOutcome(false, -1, charge, null, null);
+-                            }
+-
+-                            if (input[referStart + compared] != input[inputIndex + compared])
+-                            {
+-                                break;
+-                            }
+-
+-                            compared++;
++                            return new Utf8SliceMatchOutcome(false, -1, charge, null, null);
+                         }
+ 
+-                        if (compared < referLength)
++                        if (!equal)
+                         {
+                             failed = true;
+                         }

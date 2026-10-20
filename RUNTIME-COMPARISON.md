@@ -6,22 +6,26 @@ comparative-lane gate is complete; it does not qualify current118/119 performanc
 or complete runtime/profile behavior. [Current product/source costs](CURRENT-PERFORMANCE.md)
 remain separate. No new comparator framework or repeated closed batch is needed.
 
-## Remaining source-applicability work
+## Current source-applicability decisions
 
 The historical decision to inherit upstream backreference span equality through
-BCL fallback is superseded by engine independence. Current owned
-[ordinal backreference execution](src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceRunner.cs)
-uses separate RTL/LTR bytewise loops. The existing
-[bounded span comparer](src/Lokad.Utf8Regex/Internal/Execution/Utf8SearchExecutor.LiteralInvocation.cs)
-may replace them without capture copying or another helper. Complete strict UTF-8
-captures have unique byte encodings; folded references still require scalar
-comparison because equivalent scalars can have different encoded widths.
+BCL fallback is superseded by engine independence. The owned VM has separate
+ordinal RTL/LTR byte loops; folded references walk complete scalars. A bounded
+prototype reused the existing checked span comparer, retaining right-to-left
+chunk order, original interruption and capture ranges without capture copying.
 
-This is a concrete next investigation, not a measured speedup or accepted port.
-It needs scalar/capture/RTL/empty/ECMA and original-interruption checks, an explicit
-per-byte-to-chunk work/cadence revision, and one bounded public comparison. The
-existing versioned comparator lanes need no replacement. Frozen observations below
-retain their original scope and are not evidence for today's backreference cost.
+That prototype is **rejected and reverted**. Long public hits improved about
+10–14% and supplementary references about 28–31%, but an unchanged unlimited
+literal Count control repeatedly slowed 37% then 41% in the sole reversed-order
+confirmation. The cause is unproved. This fails the declared public-cost gate;
+no port or per-byte-to-chunk accounting change is accepted, and no further timing
+follows. New boundary/capture/original-authority tests remain and pass against the
+byte-identical restored baseline. [Both observations and rejected patch](bench/Experiments/OrdinalBackreference-20261020/README.md).
+
+The separate next source lead concerns impossible candidate starts after a
+mandatory RTL strict-end anchor. It needs its own proof and bounded public test;
+no speedup is claimed yet. Existing versioned comparator lanes need no replacement.
+Frozen observations below retain their original product/runtime scope.
 
 ## Frozen immutable Core114, measured 2026-10-20
 

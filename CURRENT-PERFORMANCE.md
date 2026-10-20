@@ -50,6 +50,14 @@ scope. No current 118/119 runtime 11 or whole-profile certificate is claimed. Th
 original comparative-lane deliverable is complete; a new harness framework or
 repeated closed comparison is unnecessary.
 
+A later ordinal-backreference span-comparison prototype is **rejected and reverted**.
+Long hits improved about 10–14% and supplementary references about 28–31%, but an
+unchanged unlimited literal Count control repeatedly slowed 37–41%. The sole
+reversed-order confirmation did not clear the issue. The cause is unproved; no
+production accounting change, package qualification or further timing follows.
+[Both complete observations and source restoration](bench/Experiments/OrdinalBackreference-20261020/README.md).
+The accepted source119 pair above and immutable118 remain unchanged.
+
 ## Historical observations and closed experiments
 
 Every observation below describes its named frozen source/package, even when its

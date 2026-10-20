@@ -4,11 +4,10 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// R03 backreference slice: single-digit backward references lower to owned
-// ordinal Backref programs (unmatched groups fail, last iteration wins,
-// byte comparison is encoding-indifferent) with BCL parity and zero
-// fallback-engine construction. Multi-digit, undefined, and octal
-// escapes decline to legacy-exact routing.
+// Capture references run in the owned scalar VM. Ordinal references compare
+// strict UTF-8 ranges; folded references compare complete scalars. Numeric
+// references and octal literals resolve before execution; undefined references
+// fail construction. BCL comparisons below cover overlapping scalar outcomes.
 public sealed class Utf8SliceBackrefTests
 {
     public static IEnumerable<object?[]> SliceBackrefShapes()
