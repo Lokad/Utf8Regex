@@ -2,6 +2,13 @@
 
 `Lokad.Utf8Regex.PythonRe` is an optional sidecar package that exposes Python-style regular expression behavior over UTF-8 inputs.
 
+The staged package is **0.4.0-rc.1**; development is **0.4.0-rc.2-dev**.
+The exact API is [the reviewed snapshot](tests/Lokad.Utf8Regex.PythonRe.Tests/PublicApi.Shipped.txt).
+See [migration](MIGRATION.md), [host integration](HOST-INTEGRATION.md) and
+[current evidence](CURRENT-PERFORMANCE.md). Historical scalar-candidate narratives,
+measurements and immutable identities remain in [git](https://github.com/Lokad/Utf8Regex/blob/46318565/SPEC-PYTHONRE.md)
+and local ignored PLAN.HISTORY.md; this specification does not requalify them.
+
 ## Intent
 
 The package exists to model Python `re` semantics as a separate profile from base `Utf8Regex`, whose matching unit is one Unicode scalar over strict UTF-8. The Python profile retains its own grammar, case rules, numbering and global empty-match progression; .NET is a comparator only where behavior overlaps.
@@ -17,8 +24,8 @@ The implementation is parser-first:
 3. resolve lexical case rules and capture identities in the Python AST, then lower it to the shared scalar VM
 4. render exact scalar atoms/ranges for retained native `Utf8Regex` controls; reuse the owned class decoder for profile atoms
 5. execute through owned scalar programs and qualified core fast paths; retain
-   managed-compatible rendering only as development comparator data, with no
-   shipped BCL matcher/result dependency. The semantic authority remains the
+   comparator rendering only in benchmark/test tooling, with no shipped BCL
+   matcher/result dependency. The semantic authority remains the
    pinned CPython 3.13.2 `str`-pattern oracle
 
 Python numbers captures by opening parenthesis, including named groups. The
@@ -29,7 +36,7 @@ number; an outer capture can close after its children. The different named/unnam
 numbering used by rendered Core patterns remains local to text construction.
 It is not retained as a cursor projection table or searched after each match.
 
-Scalar.106 derives completion metadata only for detailed/context
+Completion metadata is derived only for detailed/context
 projection, before publishing its values, from the successful capture journal.
 Value results and capture-dependent findall strings/UTF8 do not compute unused
 completion metadata. Required reads retain the original invocation's bounded
@@ -40,8 +47,8 @@ The native rendering consumes complete scalars. Supplementary class members and 
 
 ## Raw escaped Unicode literals
 
-Development source after scalar.90 consumes a raw escaped non-ASCII character
-as one scalar: `\😀`, `[\😀]`, escaped range endpoints and their quantifiers keep
+The parser consumes a raw escaped non-ASCII character
+as one scalar: `\ðŸ˜€`, `[\ðŸ˜€]`, escaped range endpoints and their quantifiers keep
 the same scalar unit as an unescaped literal. Escaped BMP and supplementary
 literals use the existing pinned Python folding under their lexical options,
 including scoped ASCII exclusions. Explicit `\uD83D\uDE00` escapes remain two
@@ -50,15 +57,11 @@ surrogate atoms and cannot match a strict UTF-8 emoji; `\U0001F600` is one scala
 The parser shares raw scalar acquisition across ordinary literals and class
 items, reusing the existing escaped-literal/case path. It adds no matching engine,
 IR mode or Unicode table. Original construction/invocation admission, synchronous
-cancellation/deadlines and retained-result validity remain. This is outside
-immutable scalar.90 and its114-fixture qualification subset. The immutable
-scalar.91 pair includes this repair and passes the121-fixture capture corpus,
-same-byte Windows/Linux consumers and exact packaged dependency checks; see
-[the handoff](artifacts/core-python-scalar91-20261018/HANDOFF.md).
+cancellation/deadlines and retained-result validity remain. Construction/invocation controls and retained-result validity remain.
 
 ## Effective global modes
 
-Development source after scalar.90 validates the union of constructor and leading
+Global-mode validation checks the union of constructor and leading
 global flags after body syntax. Separate `(?a)(?u)` groups and conflicting
 explicit constructor/inline modes raise `PythonRePatternException` with
 `ASCII and UNICODE flags are incompatible` (CPython uses `ValueError`). Body
@@ -70,7 +73,7 @@ admission/unwind and public argument validation retain their scope.
 
 ## Brace repetition and verbose attachment
 
-Development source after scalar.87 recognizes only complete brace-repeat syntax:
+The parser recognizes only complete brace-repeat syntax:
 `{m}`, `{m,n}`, `{m,}`, `{,n}` and `{,}`. Other braces, including unfinished
 numeric forms and `{}`, are literal text. Omitted minima are zero. Leading
 repeats and repeated quantifiers retain Python's syntax failures and positions;
@@ -83,9 +86,7 @@ on the same AST/compiler/execution paths.
 The lexical brace check spends construction work while peeking, including when
 the text proves literal. Its spent work is never rolled back. Original finite
 construction limits, deadlines and cancellation remain authoritative; no extra
-parser, matching mode or accounting owner is introduced. This repair is outside
-immutable scalar.87. Immutable scalar.88 still overflows for repeat bounds above
-Int32.MaxValue. Development source after scalar.88 admits finite bounds through
+parser, matching mode or accounting owner is introduced. Finite repeat bounds are admitted through
 4294967294, separately from an unbounded maximum. Larger numeric bounds raise
 PythonRePatternException with `the repetition number is too large`; CPython uses
 OverflowError for this range failure and supplies no pattern position.
@@ -98,12 +99,11 @@ affect matching, empty-progress checks or rollback. Active positions are scalar
 boundaries, so the largest optional-phase value remains distinct from inactive
 state. Required nullable iterations still spend work and can be interrupted;
 they are not skipped or changed into unbounded finite repeats. Construction
-bounds metadata grows and remains admitted. The repair is included in qualified scalar.89;
-complete Python grammar coverage remains separate.
+bounds metadata grows and remains admitted. Complete Python grammar coverage remains separate.
 
 ## Ignored comments and leading flags
 
-Development source after scalar.89 treats `(?#...)` comments as ignored syntax
+The parser treats `(?#...)` comments as ignored syntax
 in every option scope, alongside verbose whitespace and `#` line comments where
 verbose mode applies. Global inline flags may follow only such leading trivia;
 real atoms, alternatives and nested scopes keep their existing placement errors.
@@ -120,14 +120,11 @@ The leading-flag, atom and quantifier decisions reuse one admitted trivia scan.
 Every consumed comment character spends construction work and checks the
 original cancellation/deadline authority. Failed scans unwind their existing
 owner; spent work is not refunded. Removing comment nodes can reduce required
-construction storage/depth. This is a source correction, separate from the
-immutable scalar.89 package and its original107 capture fixtures. Qualified
-scalar.90 includes this correction with114 complete capture fixtures and the
-existing91 semantic catalog on the same Windows/Linux package bytes.
+construction storage/depth.
 
 ## Quantified atoms and bracket control escapes
 
-Development source after scalar.89 rejects direct quantification of `^`, `$`,
+The parser rejects direct quantification of `^`, `$`,
 `\A`, `\Z`, `\b` and `\B` with `nothing to repeat` at the quantifier. Grouped
 anchors and quantified lookarounds remain valid; numeric bound failures retain
 precedence over atom eligibility. The parser and width analysis share one
@@ -136,8 +133,7 @@ classification of zero-width escapes.
 Inside brackets, `\a`, `\b`, `\f`, `\n`, `\r`, `\t` and `\v` denote their control
 scalars, including in ranges and negated classes. In particular, bracket `\b`
 is backspace while outside `\b` is a word boundary. Existing scalar/capture and
-construction/invocation controls remain authoritative. This correction does
-not alter immutable scalar.89; it is included in qualified scalar.90.
+construction/invocation controls remain authoritative.
 
 ## Nullable repetition and capture state
 
@@ -149,29 +145,9 @@ and complete supplementary scalars. Zero-minimum and fixed-count controls keep
 their own limits. Captures, lastindex/lastgroup and global progression follow the
 successful path, including required empty captures retained by later iterations.
 
-The development compiler marks this repeat semantic in the existing scalar IR.
-Only nullable bodies with a positive variable minimum select the two explicit
-repeat instruction variants. The shared instruction layout/count, capture journal,
-workspace and original invocation remain; no body duplication, new runner or
-global profile mode. Core/PCRE2 retain their previous repeat rule. Correct extra
-iterations may require more metered work, depth or working/result capacity than
-the formerly incorrect result. All selected caps remain authoritative.
-
-This correction is outside immutable scalar.61, which retains the demonstrated
-conditional/empty-repeat defect. The existing pinned CPython capture fixture
-corpus includes the new states and controls; source qualification does not rewrite
-that package's historical evidence or designate a new candidate by itself.
-The corrected Core/PythonRe scalar.62 pair at 3a67a6db is now qualified with
-original same-byte Windows/Linux consumers, 104 capture fixtures and 91 semantic
-digests. Exact identities and remaining exclusions are in
-artifacts/core-python-scalar62-20261016/HANDOFF.md. The separate source cost pair
-records 34–37% higher nullable Count cost; correctness does not imply performance
-equivalence or revision of the checked-access 10% gate.
-The subsequent qualified scalar.63 pair at a24a3983 preserves this correction and
-PythonRe's pinned Unicode 15.1 implementation/data. Core supplementary casing and metered
-family verification change; original detached Windows/Linux consumers, capture/
-catalog controls and selective current exact-package costs qualify that boundary.
-
+The scalar IR preserves this Python repeat rule separately from Core/PCRE2.
+Required iterations retain metered work, depth and working/result admission under
+the original invocation; no body duplication or separate runner is implied.
 
 ## Current scope
 
@@ -234,13 +210,18 @@ Supported feature families in the current profile:
 * lookahead and fixed-width lookbehind. Within lookbehind, backreferences and
   group-participation conditions must refer to a closed group defined before the
   outermost enclosing lookbehind; nested assertions retain that restriction.
+  Width analysis uses CPython 3.13.2's 2^64 getwidth clamp/sentinel with wide
+  intermediates; fixedness must not collapse at Int32.MaxValue. A fixed lookbehind
+  beyond the 32-bit code limit reports `looks too much behind`.
+  Width analysis uses CPython 3.13.2's 2^64 getwidth clamp/sentinel with wide
+  intermediates; fixedness must not collapse at Int32.MaxValue. A fixed lookbehind
+  beyond the 32-bit code limit reports `looks too much behind`.
 * atomic groups
 * leading and scoped inline flags for `i`, `m`, `s`, `x`, `u` on `str` patterns
 * Python replacement references `\\1` and `\\g<name>`
   Oversized decimal indices are syntax errors, not arithmetic overflow. Valid
   leading-zero group numbers retain their value; error formatting uses admitted
-  construction text like other parser failures. The source correction is outside
-  immutable scalar.63; numeric-error positions retain their existing unknown
+  construction text like other parser failures. Numeric-error positions retain their existing unknown
   sentinel where no position was supplied.
 
 * Python escape parsing for `\x..`, `\u....`, `\U........`, and octal escapes on `str` patterns
@@ -250,7 +231,6 @@ Supported feature families in the current profile:
 
 All `startOffsetInBytes` parameters follow CPython `pos` semantics against the pinned 3.13.2 oracle: the match must start at or after `pos`, while `^` still anchors at the real string start (or after a newline under `MULTILINE`), lookbehind and `\b`/`\B` keep their full prefix context, and lookahead and `$`/`\Z` keep their full suffix context. `FullMatch` additionally requires the match to cover the whole `[pos, end)` input. No `endpos` parameter exists; the input end always plays that role. Value, detailed, string, and bytes entry points agree on these rules.
 
-
 ## Deliberate boundaries
 
 This profile is still incomplete. In particular:
@@ -258,7 +238,7 @@ This profile is still incomplete. In particular:
 * bytes-pattern semantics are intentionally unsupported in this profile; PythonRe only targets `str` regex semantics over UTF-8 inputs
 * `LOCALE` semantics are intentionally unsupported; this profile is culture-invariant by construction
 * `\N{...}` named Unicode escapes are intentionally unsupported; a faithful resolver would require embedding a large Unicode-name table, which is out of scope under the package-size constraint
-* development validates group names with owned CPython 3.13.2 / Unicode 15.1
+* group names are validated with owned CPython 3.13.2 / Unicode 15.1
   identifier data. Declarations, named references/conditionals and replacement
   references share this validator. It includes identifier-only start/continue
   characters and normalization exclusions that general Unicode categories miss;
@@ -266,8 +246,7 @@ This profile is still incomplete. In particular:
   remains unchanged, so canonically equivalent names can remain distinct. The
   existing scalar-decoding/construction work checks remain; no matching kernel,
   invocation limit or cursor/result lifetime changes. The generator's `--check`
-  covers this data as well as scalar folding. This source correction is beyond
-  immutable scalar.52; predefined-class qualification is recorded separately below.
+  covers this data as well as scalar folding.
 * the execution classifier for `Utf8Regex` is conservative by design
 * admitted scalar programs use owned CPython 3.13.2 / Unicode 15.1.0 case data.
   Unicode literals and classes include simple-lower inverses and the extra
@@ -284,7 +263,7 @@ This profile is still incomplete. In particular:
 * native direct matching, detailed discovery and Count now classify supplementary
   word/digit members and scalar-adjacent boundaries through the owned core. The
   comparator spellings remain `[\p{L}\p{N}_]` for `\w`,
-  `[\s\x1c-\x1f]` for `\s`, and decimal digits for `\d`. Development lowers
+  `[\s\x1c-\x1f]` for `\s`, and decimal digits for `\d`. The compiler lowers
   predefined classes directly to owned CPython 3.13.2 / Unicode 15.1 predicates
   in the existing class instructions. Fixed ASCII masks and sorted scalar ranges
   avoid per-pattern data expansion; non-ASCII lookup is logarithmically bounded.
@@ -312,15 +291,7 @@ This profile is still incomplete. In particular:
   scalar program, with byte starts and the original assertion context. General FullMatch
   adds an end assertion before discovery so alternatives can backtrack to a
   complete result. Production BCL matching and result shaping have been removed;
-  complete common resource gates remain open. Immutable scalar.52 predates the
-  class correction: with host Unicode 16 data it wrongly admits U+1C89/U+1E5D0
-  as word members and U+1E5F1 as a word/digit. The direct predicate source fixes
-  that demonstrated gap without changing Core's general-category contract.
-  The earlier expanded-pattern prototype remains rejected for its measured
-  public/preparation costs; its bytes and evidence are preserved separately in
-  `artifacts/python-category-version-20261016/`. Current direct-predicate evidence
-  is in `artifacts/python-pinned-predicates-20261016/`. Source acceptance does not
-  change a frozen candidate or qualify every remaining profile objective.
+  complete common resource gates remain open.
 * CPython 3.13.2 searches a supplementary scalar with a scoped-ASCII complement
   (`(?a:\W)`, `(?a:\D)` and bracket forms) and misses, while its own match/fullmatch
   find the whole scalar. Search, Match, and FullMatch here stay mutually consistent
@@ -328,7 +299,7 @@ This profile is still incomplete. In particular:
 
 Unsupported or incomplete cases should fail explicitly rather than silently approximating Python semantics.
 
-Source beyond immutable scalar.68 may execute a bare positive greedy class run
+The shared VM may execute a bare positive greedy class run
 inside the existing shared VM without per-scalar rewind/journal state. Exact
 capture-free terminal-root eligibility uses the same pinned class predicates;
 no Python class expansion or second matcher is introduced. The same complete
@@ -338,13 +309,11 @@ capture/result storage remains admitted. Removed acquisition work changes numeri
 cutoffs without a replacement charge or new ownership flag. Original scalar work
 charges, token/deadline and working/result admission remain, while fewer actual
 frames/work can admit tighter caps. Captured/lazy/nullable/tail/assertion/full-end
-contexts retain their general paths. The measured tradeoff includes a small
-captured-class Count cost from sharing class matching; current source evidence
-is separate from package qualification and broad profile performance claims.
+contexts retain their general paths.
 
 ## Generic bulk result discovery
 
-Scalar.117 sends capture-free generic bulk discovery through
+Capture-free generic bulk discovery uses
 the existing Python scalar cursor when optional Core has no native or direct-family
 execution. `FindAll`, string values and UTF-8 values reuse one admitted workspace
 instead of repeating generic Core attempts and range staging. Actual native
@@ -352,7 +321,7 @@ literal/family/simple/structural/anchored routes retain their eligibility. Full
 strict UTF-8 validation, scalar offsets, owned values, original interruption and
 major-buffer admission remain. Finite generic/token routes already use this cursor;
 this changes unlimited generic operating cost without revising their numeric limits
-or the public cursor/result lifetime contract. Immutable scalar.116 is unchanged.
+or the public cursor/result lifetime contract.
 
 ## Cancellation and resource contract
 
@@ -360,8 +329,8 @@ Constructors validate an explicit resource policy first, then compile flags and
 the timeout, before decoding UTF-8 pattern bytes or acquiring preparation storage.
 Unsupported/incompatible flags and an invalid timeout therefore take precedence
 over malformed pattern bytes and construction admission. Valid arguments retain
-strict pattern decoding and the existing shared construction backstops. These
-checks do not provide a public construction budget or construction cancellation.
+strict pattern decoding and shared construction backstops. These checks are
+separate from explicit construction controls.
 The explicit `Utf8PythonRegex.Compile` text/UTF-8 factories additionally accept
 `Utf8ConstructionPolicy`, a construction timeout and construction token. They
 share one eager owner through strict decoding, parsing, translation, scalar
@@ -377,19 +346,17 @@ The parser keeps a complete `U+0000..U+10FFFF` class range instead of
 expanding redundant case closure. Native rendering reuses its scalar atom;
 negation, captures, empty-match rules and nonconstant folding stay unchanged.
 Syntax/reference and fixed-width-lookbehind validation precede native rendering.
-Development after scalar.107 constructs only native scalar text and group metadata.
-The former eager UTF-16 reference spelling, surrogate-range branches and comparator
-options live in benchmark/test tooling. Development after scalar.108 also emits
-native scalar atoms directly in parser dot/predefined fragments; the shipped
-surrogate atom, replacement scan and dot normalization are removed. Shared class
-predicates, scoped DotAll and width/reference validation retain their semantics. Removing that pass can reduce covered
-construction work and bytes; limits retain their ceilings, major-buffer admission
-and interruption checkpoints. Optional Core preparation is also omitted when
+Construction produces native scalar text and group metadata. UTF-16 comparator
+rendering lives in benchmark/test tooling. Parser dot/predefined fragments emit
+native scalar atoms directly; no surrogate subject encoding is used. Shared class
+predicates, scoped DotAll and width/reference validation retain their semantics.
+Construction limits retain their ceilings, major-buffer admission and interruption
+checkpoints. Optional Core preparation is also omitted when
 an expression may match empty and its iteration eligibility rejects Core. These
 existing facts exclude Core start hints, nonempty literal result lanes and bulk
 matching; the owned Python program remains authoritative. Other native helpers
-and independent fast paths remain. Construction requirements can decrease again;
-syntax/reference/lookbehind validation still runs before the elision.
+and independent fast paths remain. Syntax/reference/lookbehind validation still
+runs before the elision.
 .NET comparison rendering is outside the shipped construction contract and
 consumes complete surrogate pairs where applicable.
 Pre-cancellation wins over argument/decoding failures; later cancellation keeps
@@ -399,8 +366,7 @@ unbounded diagnostic decode. Construction authority ends before publication;
 the expression's invocation policy/token/timeout remain independent. Replacement
 preparation, CLR/JIT metadata, incidental acquisitions
 and caller retention retain separate scope. Static caches are not consulted.
-Development after scalar.85 lets exact, capture-free literal FullMatch value and
-string operations borrow Core's complete literal finder under the caller's one
+Exact, capture-free literal FullMatch value/string operations borrow Core's complete literal finder under the caller's one
 invocation. Both byte endpoints must cover the requested suffix, including for
 empty literals. Full-subject UTF8 validation, derived UTF16 coordinates, original
 cancellation/deadline and all four finite controls remain. These calls require no
@@ -408,15 +374,15 @@ lazy full-program preparation or per-scalar VM dispatch; explicit Compile still
 eagerly prepares its existing programs. Required text remains result-admitted.
 Detailed, captured, folded, alternating and assertion routes retain their existing
 handling. Actual removed work may lower numerical requirements; public units,
-ownership and unlimited defaults do not change. Immutable85 predates this source.
-Development after scalar.71 counts and decodes UTF8 pattern bytes in scalar-aligned
+ownership and unlimited defaults do not change.
+UTF-8 pattern decoding counts and decodes bytes in scalar-aligned
 blocks of at most4096bytes under that same construction owner. The two original
 numeric work charges and single admitted string remain; no intermediate text/byte
 buffer is acquired. Strict malformed-byte indices/offending bytes stay relative
 to the whole input, although inner decoder diagnostic wording can differ for a
 later block. Cancellation/deadline can precede a later malformed suffix; failed
 fill releases unpublished string capacity and preserves parent reservations.
-Subsequent source acquires non-surrogate semantic BMP literal nodes directly
+Non-surrogate semantic BMP literal nodes are acquired directly
 through the existing admitted scalar-node factory, rather than rendering and
 reparsing each atom through the Core frontend. Python parsing has already expanded
 case partners; the old leaf conversion and direct node both use FoldCase=false.
@@ -451,8 +417,7 @@ invocation authority before subject validation or byte-floor projection. Eligibl
 native collection borrows that invocation through discovery and required shaping;
 it does not start a second deadline after validating a prefix. Native byte entry
 needs no full coordinate map; derived UTF-16 offsets still follow scalar boundaries.
-The canonical counted string-literal route already shares its invocation. Source
-beyond immutable scalar.64 also permits nonempty,capture-free exact literal families
+The canonical counted string-literal route already shares its invocation. The same authority permits nonempty, capture-free exact literal families
 to use the existing prepared cursor with finite invocation limits and live tokens.
 Range staging uses the standard result buffer: work,working/result capacity and
 growth overlap are admitted before acquisition,shared with final shaping. Neutral
@@ -467,21 +432,15 @@ retain owned counting. This pure counter needs no result payload or VM frames,
 so very small working/result/depth caps can succeed. Work, original cancellation,
 the absolute deadline and byte-bounded diagnostics still apply. Captured, empty,
 folded and lexical-sensitive shapes retain their existing Python routes.
-These source corrections preserve the original immutable63/64 receipts.
-They are included in the separately qualified private Core/PythonRe scalar.65
-pair at eceb60da: same-byte Windows/Linux consumers,capture/catalog controls,
-exact dependencies/provenance and current end-to-end costs. See
-artifacts/core-python-scalar65-20261016/HANDOFF.md for scope and remaining limits;
-this does not imply full profile or host-containment completion.
 
-Development beyond scalar.65 can also skip impossible search starts when the
+The owned search can skip impossible search starts when the
 owned program begins with a mandatory exact ASCII literal. Checked span searches
 use bounded, metered windows; every candidate still runs the same Python VM with
 its pinned and lexical predicates. Match/FullMatch remain anchored. Whole-subject
 validation, original cancellation/deadline and storage admission remain in force.
 A miss can avoid VM workspace and therefore succeed under smaller working/depth
 caps. This does not enable Core's broader fixed-distance character-class plan or
-alter result ownership. Current source costs are separate from immutable65.
+alter result ownership.
 
 Template Replace/Subn byte and string operations also create their invocation
 before replacement-cache access. Existing cache checkpoints observe the call's
@@ -494,7 +453,7 @@ and prepares once without caching, rather than inheriting the other caller's
 interruption or entering an unbounded retry loop. A later fresh call may cache it.
 The same invocation continues through subject validation, discovery and output
 shaping. Construction work/depth remain separate from invocation counts.
-Development after scalar.101 additionally admits one invocation-work step per
+Template lookup admits one invocation-work step per
 2,048 UTF-16 template code units (rounding up) before cache access. This coarse
 length charge covers both cold parsing and warm hashing/comparison admission;
 it does not count each parser helper. It shares the original invocation and its
@@ -502,8 +461,8 @@ interruption authority, adds no preparation owner, and is not refunded on failur
 A long template can therefore deny with `ExecutionWorkSteps` before construction
 or cache access, including for an empty subject. Existing cached plans remain
 valid when a later caller cannot fund their lookup. Unlimited, infinite-timeout,
-no-token calls retain their unmetered route. Immutable scalar.101 is unchanged.
-Development source additionally reuses finite `MaxWorkingBytes` as a ceiling on
+no-token calls retain their unmetered route.
+Cold preparation reuses finite `MaxWorkingBytes` as a ceiling on
 additional covered cold-template parser capacity, through the existing nested
 construction owner. Fixed construction ceilings still apply. A byte denial is
 `ConstructionBytes`; its `Limit` and `Requested` include the enclosing construction
@@ -512,7 +471,7 @@ no matches. Failure restores the parent ceiling/capacity and removes the pending
 cache entry; work stays spent. Cache admission, borrowed template keys and retained
 plans remain separate, so this does not establish common cumulative metering or a
 combined invocation/retention envelope. Warm cache hits allocate no preparation
-scope or checkpoint closure. This change is outside immutable scalar.93.
+scope or checkpoint closure.
 
 Uncached FullMatch preparation triggered by execution uses the same separate
 additional-capacity ceiling when `MaxWorkingBytes` is finite. Failure leaves the

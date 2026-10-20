@@ -1,5 +1,13 @@
 # Side-by-side PCRE2 support in `Lokad.Utf8Regex`
 
+Staged packages are **0.4.0-rc.1** with exact Core dependencies; development is
+**0.4.0-rc.2-dev**. See [qualification](src/Lokad.Utf8Regex.Pcre2/QUALIFICATION.md),
+[migration](MIGRATION.md) and [host integration](HOST-INTEGRATION.md).
+Historical scalar-candidate narratives/receipts remain in
+[git](https://github.com/Lokad/Utf8Regex/blob/46318565/SPEC-PCRE2.md) and local ignored
+PLAN.HISTORY.md. This contract does not imply complete upstream equivalence or
+requalify historical measurements.
+
 ### 1. Top-level decision
 
 Keep the existing `Utf8Regex` type bound to **strict UTF-8 Unicode-scalar
@@ -17,8 +25,8 @@ arguments win over malformed byte patterns or admission denial. Pattern-dependen
 checks still run after strict decoding. Finite invocation controls alone do not
 bound pattern construction.
 
-Development source adds explicit `Utf8Pcre2Regex.Compile` text/UTF-8 factories
-with `Utf8ConstructionPolicy`, a separate construction timeout and cancellation
+Explicit `Utf8Pcre2Regex.Compile` text/UTF-8 factories
+accept `Utf8ConstructionPolicy`, a separate construction timeout and cancellation
 token. Pre-cancellation precedes argument/pattern work; construction policy,
 execution policy and construction timeout are validated before the existing
 constructor argument checks. One synchronous numeric construction owner covers
@@ -36,7 +44,6 @@ decoding solely for an exception. PCRE grammar errors retain `Pcre2CompileExcept
 later match failures retain `Pcre2MatchException`. Strict byte validation and both
 decode passes checkpoint scalar-aligned blocks of at most 4096 bytes; malformed
 input retains its absolute byte offset. The original work charges are preserved.
-These source APIs are not present in the immutable scalar.71 package.
 
 Pattern-validation lexical passes admit their full text extent into the shared
 construction-work backstop before scanning. Repeated POSIX-token and control-verb
@@ -160,426 +167,28 @@ Because this library is text-centric and UTF-8-native, the default PCRE2 profile
 
 ### 3. Frozen public surface
 
-The declarations below describe the package contract. The exact mechanically
-enforced surface is
-[`tests/Lokad.Utf8Regex.Pcre2.Tests/PublicApi.Shipped.txt`](tests/Lokad.Utf8Regex.Pcre2.Tests/PublicApi.Shipped.txt);
-implementation work must update neither that snapshot nor these declarations
-without a separate public-API decision.
-
-```csharp
-namespace Lokad.Utf8Regex;
-
-using System.Buffers;
-
-[Flags]
-public enum Pcre2CompileOptions
-{
-    None            = 0,
-    Caseless        = 1 << 0,
-    Multiline       = 1 << 1,
-    DotAll          = 1 << 2,
-    Extended        = 1 << 3,
-    ExtendedMore    = 1 << 4,
-    Anchored        = 1 << 5,
-    EndAnchored     = 1 << 6,
-    DollarEndOnly   = 1 << 7,
-    Ungreedy        = 1 << 8,
-    NoAutoCapture   = 1 << 9,
-    Ucp             = 1 << 10,
-    FirstLine       = 1 << 11
-}
-
-[Flags]
-public enum Pcre2MatchOptions
-{
-    None            = 0,
-    Anchored        = 1 << 0,
-    EndAnchored     = 1 << 1,
-    NotBol          = 1 << 2,
-    NotEol          = 1 << 3,
-    NotEmpty        = 1 << 4,
-    NotEmptyAtStart = 1 << 5
-}
-
-[Flags]
-public enum Pcre2SubstitutionOptions
-{
-    None            = 0,
-    Extended        = 1 << 0,
-    UnsetEmpty      = 1 << 1,
-    UnknownUnset    = 1 << 2
-}
-
-public enum Pcre2PartialMode
-{
-    None = 0,
-    Soft = 1,
-    Hard = 2
-}
-
-public enum Pcre2NewlineConvention
-{
-    Default = 0,
-    Cr,
-    Lf,
-    Crlf,
-    Any,
-    AnyCrlf,
-    Nul
-}
-
-public enum Pcre2BsrConvention
-{
-    Default = 0,
-    AnyCrlf,
-    Unicode
-}
-
-public enum Pcre2BackslashCPolicy
-{
-    Forbid = 0,
-    Allow = 1
-}
-
-public readonly struct Utf8Pcre2CompileSettings
-{
-    public Pcre2NewlineConvention Newline { get; init; }
-    public Pcre2BsrConvention Bsr { get; init; }
-
-    public bool AllowDuplicateNames { get; init; }
-
-    // Default: Forbid
-    public Pcre2BackslashCPolicy BackslashC { get; init; }
-
-    // Default: false
-    public bool AllowLookaroundBackslashK { get; init; }
-}
-
-public readonly struct Utf8Pcre2ExecutionLimits
-{
-    // 0 means "use engine default / unlimited for this library profile".
-    public uint MatchLimit { get; init; }
-    public uint DepthLimit { get; init; }
-    public ulong HeapLimitInBytes { get; init; }
-    public ulong ResultLimitInBytes { get; init; }
-}
-
-public sealed class Utf8Pcre2Regex
-{
-    public Utf8Pcre2Regex(string pattern);
-    public Utf8Pcre2Regex(string pattern, Pcre2CompileOptions options);
-    public Utf8Pcre2Regex(
-        string pattern,
-        Pcre2CompileOptions options,
-        Utf8Pcre2CompileSettings compileSettings,
-        Utf8Pcre2ExecutionLimits defaultExecutionLimits,
-        TimeSpan matchTimeout);
-
-    public Utf8Pcre2Regex(ReadOnlySpan<byte> patternUtf8);
-    public Utf8Pcre2Regex(ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options);
-    public Utf8Pcre2Regex(
-        ReadOnlySpan<byte> patternUtf8,
-        Pcre2CompileOptions options,
-        Utf8Pcre2CompileSettings compileSettings,
-        Utf8Pcre2ExecutionLimits defaultExecutionLimits,
-        TimeSpan matchTimeout);
-
-    public static TimeSpan DefaultMatchTimeout { get; set; }
-
-    public string Pattern { get; }
-    public Pcre2CompileOptions Options { get; }
-    public Utf8Pcre2CompileSettings CompileSettings { get; }
-    public Utf8Pcre2ExecutionLimits DefaultExecutionLimits { get; }
-    public TimeSpan MatchTimeout { get; }
-
-    public bool IsMatch(ReadOnlySpan<byte> input);
-    public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes);
-    public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions);
-
-    public int Count(ReadOnlySpan<byte> input);
-    public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes);
-    public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions);
-
-    public Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input);
-    public Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes);
-    public Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions);
-
-    public Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<byte> input);
-    public Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes);
-    public Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions);
-
-    public Utf8Pcre2ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input);
-    public Utf8Pcre2ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, int startOffsetInBytes);
-    public Utf8Pcre2ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions);
-
-    // Partial matching is a separate probing API.
-    public Utf8Pcre2ProbeResult Probe(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode);
-    public Utf8Pcre2ProbeResult Probe(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes);
-    public Utf8Pcre2ProbeResult Probe(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, Pcre2MatchOptions matchOptions);
-
-    public byte[] Replace(ReadOnlySpan<byte> input, string replacement);
-    public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes);
-    public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions);
-    public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions);
-
-    public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8);
-    public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, int startOffsetInBytes);
-    public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions);
-    public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions);
-
-    public byte[] Replace<TState>(
-        ReadOnlySpan<byte> input,
-        TState state,
-        Pcre2MatchEvaluator<TState> evaluator);
-
-    public byte[] Replace<TState>(
-        ReadOnlySpan<byte> input,
-        TState state,
-        Pcre2MatchEvaluator<TState> evaluator,
-        int startOffsetInBytes,
-        Pcre2MatchOptions matchOptions);
-
-    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement);
-    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes);
-    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, Pcre2SubstitutionOptions substitutionOptions);
-    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions);
-    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions);
-
-    public string ReplaceToString<TState>(
-        ReadOnlySpan<byte> input,
-        TState state,
-        Pcre2Utf16MatchEvaluator<TState> evaluator);
-
-    public string ReplaceToString<TState>(
-        ReadOnlySpan<byte> input,
-        TState state,
-        Pcre2Utf16MatchEvaluator<TState> evaluator,
-        int startOffsetInBytes,
-        Pcre2MatchOptions matchOptions);
-
-    public OperationStatus TryReplace(
-        ReadOnlySpan<byte> input,
-        ReadOnlySpan<byte> replacementPatternUtf8,
-        Span<byte> destination,
-        out int bytesWritten);
-
-    public OperationStatus TryReplace(
-        ReadOnlySpan<byte> input,
-        ReadOnlySpan<byte> replacementPatternUtf8,
-        Span<byte> destination,
-        out int bytesWritten,
-        Pcre2SubstitutionOptions substitutionOptions);
-
-    public OperationStatus TryReplace(
-        ReadOnlySpan<byte> input,
-        ReadOnlySpan<byte> replacementPatternUtf8,
-        Span<byte> destination,
-        out int bytesWritten,
-        int startOffsetInBytes,
-        Pcre2SubstitutionOptions substitutionOptions,
-        Pcre2MatchOptions matchOptions);
-
-    // Name-table-first metadata
-    public int NameEntryCount { get; }
-
-    public int CopyNameEntries(
-        Span<Pcre2NameEntry> destination,
-        out bool isMore);
-
-    public int CopyNumbersForName(
-        string name,
-        Span<int> destination,
-        out bool isMore);
-
-    // Convenience only: returns the first set group for the given name.
-    public bool TryGetFirstSetGroup(
-        ReadOnlySpan<byte> input,
-        string name,
-        out Utf8Pcre2GroupContext group);
-
-    public bool TryGetFirstSetGroup(
-        ReadOnlySpan<byte> input,
-        string name,
-        out Utf8Pcre2GroupContext group,
-        int startOffsetInBytes,
-        Pcre2MatchOptions matchOptions);
-
-    public int MatchMany(
-        ReadOnlySpan<byte> input,
-        Span<Utf8Pcre2MatchData> destination,
-        out bool isMore);
-
-    public int MatchMany(
-        ReadOnlySpan<byte> input,
-        Span<Utf8Pcre2MatchData> destination,
-        out bool isMore,
-        int startOffsetInBytes,
-        Pcre2MatchOptions matchOptions);
-
-    public Utf8Pcre2Analysis Analyze();
-
-    public static bool IsMatch(ReadOnlySpan<byte> input, string pattern);
-    public static bool IsMatch(ReadOnlySpan<byte> input, string pattern, Pcre2CompileOptions options);
-    public static bool IsMatch(ReadOnlySpan<byte> input, string pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, int startOffsetInBytes);
-
-    public static Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, string pattern);
-    public static Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, string pattern, Pcre2CompileOptions options);
-    public static Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, string pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, int startOffsetInBytes);
-
-    public static byte[] Replace(ReadOnlySpan<byte> input, string pattern, string replacement);
-    public static byte[] Replace(ReadOnlySpan<byte> input, string pattern, string replacement, Pcre2CompileOptions options);
-    public static byte[] Replace(ReadOnlySpan<byte> input, string pattern, string replacement, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions);
-}
-
-public readonly struct Pcre2NameEntry
-{
-    public string Name { get; }
-    public int Number { get; }
-}
-
-public readonly ref struct Utf8Pcre2ValueMatch
-{
-    public bool Success { get; }
-
-    // Raw PCRE2-reported offsets, exclusive end.
-    public int StartOffsetInBytes { get; }
-    public int EndOffsetInBytes { get; }
-
-    // True when StartOffsetInBytes <= EndOffsetInBytes.
-    public bool HasContiguousByteRange { get; }
-
-    // True when the contiguous byte range is well-formed UTF-8.
-    public bool IsUtf8SliceWellFormed { get; }
-
-    // True when exact UTF-16 coordinates can be projected.
-    public bool HasUtf16Projection { get; }
-
-    public int StartOffsetInUtf16 { get; }   // throws if !HasUtf16Projection
-    public int EndOffsetInUtf16 { get; }     // throws if !HasUtf16Projection
-
-    public ReadOnlySpan<byte> GetValueBytes(); // throws if !HasContiguousByteRange
-    public string GetValueString();            // throws if !HasUtf16Projection
-}
-
-public readonly struct Utf8Pcre2MatchData
-{
-    public bool Success { get; }
-    public int StartOffsetInBytes { get; }
-    public int EndOffsetInBytes { get; }
-    public bool HasContiguousByteRange { get; }
-    public bool IsUtf8SliceWellFormed { get; }
-    public bool HasUtf16Projection { get; }
-    public int StartOffsetInUtf16 { get; }
-    public int EndOffsetInUtf16 { get; }
-}
-
-public readonly ref struct Utf8Pcre2MatchContext
-{
-    public bool Success { get; }
-    public Utf8Pcre2ValueMatch Value { get; }
-
-    // Highest capture slot count known to the compiled pattern.
-    public int CaptureSlotCount { get; }
-
-    public Utf8Pcre2GroupContext GetGroup(int number);
-    public bool TryGetGroup(int number, out Utf8Pcre2GroupContext group);
-
-    public int NameEntryCount { get; }
-    public int CopyNameEntries(Span<Pcre2NameEntry> destination, out bool isMore);
-    public int CopyNumbersForName(string name, Span<int> destination, out bool isMore);
-    public bool TryGetFirstSetGroup(string name, out Utf8Pcre2GroupContext group);
-
-    // Last encountered named backtracking verb on the matching path, if any.
-    public string? Mark { get; }
-
-    public string GetValueString();
-}
-
-public readonly ref struct Utf8Pcre2GroupContext
-{
-    public bool Success { get; }
-
-    public int Number { get; }
-
-    public int StartOffsetInBytes { get; }
-    public int EndOffsetInBytes { get; }
-    public bool HasContiguousByteRange { get; }
-    public bool IsUtf8SliceWellFormed { get; }
-    public bool HasUtf16Projection { get; }
-
-    public int StartOffsetInUtf16 { get; }   // throws if !HasUtf16Projection
-    public int EndOffsetInUtf16 { get; }     // throws if !HasUtf16Projection
-
-    public ReadOnlySpan<byte> GetValueBytes(); // throws if !HasContiguousByteRange
-    public string GetValueString();            // throws if !HasUtf16Projection
-}
-
-public enum Utf8Pcre2ProbeKind
-{
-    NoMatch = 0,
-    FullMatch = 1,
-    PartialMatch = 2
-}
-
-public readonly ref struct Utf8Pcre2ProbeResult
-{
-    public Utf8Pcre2ProbeKind Kind { get; }
-
-    // For FullMatch or PartialMatch, this is substring 0.
-    public Utf8Pcre2ValueMatch Value { get; }
-
-    // May be set for success, partial, or no-match.
-    public string? Mark { get; }
-
-    public Utf8Pcre2MatchContext GetMatch();          // valid only when Kind == FullMatch
-    public Utf8Pcre2PartialMatchContext GetPartial(); // valid only when Kind == PartialMatch
-}
-
-public readonly ref struct Utf8Pcre2PartialMatchContext
-{
-    // Substring 0 only. Other capture groups are not exposed.
-    public Utf8Pcre2ValueMatch Value { get; }
-    public string? Mark { get; }
-
-    public ReadOnlySpan<byte> GetValueBytes(); // throws if !Value.HasContiguousByteRange
-    public string GetValueString();            // throws if !Value.HasUtf16Projection
-}
-
-public delegate void Pcre2MatchEvaluator<TState>(
-    in Utf8Pcre2MatchContext match,
-    ref Utf8ReplacementWriter writer,
-    ref TState state);
-
-public delegate string Pcre2Utf16MatchEvaluator<TState>(
-    in Utf8Pcre2MatchContext match,
-    ref TState state);
-
-public readonly struct Utf8Pcre2Analysis
-{
-    public bool IsFullyNative { get; }
-    public bool IsExactLiteral { get; }
-    public int MinRequiredLengthInBytes { get; }
-
-    public bool HasDuplicateNames { get; }
-    public bool UsesBranchReset { get; }
-    public bool UsesBacktrackingControlVerbs { get; }
-    public bool UsesRecursion { get; }
-
-    // True when \C is permitted or otherwise the pattern may split a UTF-8 scalar.
-    public bool MayProduceNonUtf8Slices { get; }
-
-    // True when the pattern may report StartOffset > EndOffset.
-    public bool MayReportNonMonotoneMatchOffsets { get; }
-
-    public int CopyRequiredLiterals(
-        Span<Utf8RequiredLiteral> destination,
-        out bool isMore);
-}
-```
+The exact mechanically enforced contract is
+[PublicApi.Shipped.txt](tests/Lokad.Utf8Regex.Pcre2.Tests/PublicApi.Shipped.txt).
+This document does not maintain a second incomplete declaration catalog; the
+[package README](src/Lokad.Utf8Regex.Pcre2/README.md) gives public examples.
+No signature, option or exception surface changes as part of this cleanup.
+
+`Utf8Pcre2Regex` supplies boolean/count/value/detailed/global matching,
+replacement, analysis, named-capture metadata and explicit partial `Probe`.
+Compile/match/substitution/probe options are separate types. Settings define
+newline/BSR, duplicate names and explicit byte/\K opt-ins. `Create` maps common
+invocation policy; `Compile` additionally accepts eager construction controls.
+Result contexts borrow the unchanged UTF-8 subject. Group/name APIs preserve
+PCRE2 slot and name-table semantics; they do not expose Core capture history.
+`Probe` exposes full, partial or no-match; partial results expose only substring0
+and Mark, and its detailed accessor is valid only for the corresponding kind.
+Analysis is advisory: minimum byte length, required literals and possible byte-
+splitting/non-monotone offsets do not authorize bypassing validation or matching.
 
 ### 4. Semantic contract
 
-`Utf8Regex` stays exactly as it is today. No existing constructor, option, result type, replacement grammar, or exception contract changes. The PCRE2 extension is additive only.
+Core retains its separate scalar, capture-history and replacement contracts;
+PCRE2 semantics are selected by the adapter type.
 
 `Utf8Pcre2Regex` uses **PCRE2 standard matcher semantics in UTF-8 mode**. The DFA matcher is outside the managed profile. `RightToLeft` does not exist on the PCRE2 side and must not be emulated. All public start positions on the PCRE2 side are expressed as **byte offsets into the UTF-8 input**, not UTF-16 code-unit offsets. ([PCRE][2])
 
@@ -599,17 +208,15 @@ Those defaults are deliberate. PCRE2 allows duplicate names only when requested,
 
 The detailed PCRE2 group model exposes **only the final value of each capture slot**. There is no `.NET`-style `CaptureCount` / `GetCapture(i)` surface on PCRE2 detailed results. This is intentional and must not be approximated, because `.NET` exposes full capture history for repeated captures while PCRE2 standard matching returns only the last portion matched by a repeated group. ([Microsoft Learn][1])
 
-Development source after the independent scalar.76 pair supports PCRE2's `Xuc`
+The profile supports PCRE2's `Xuc`
 property through the existing scalar predicate dispatch. It matches `$`, `@`,
 U+0060 (grave accent), and valid scalars at or above U+00A0. Surrogate encodings
 remain invalid UTF-8 subjects. `\p{Xuc}`, its complement and bracket forms retain
 the same set under caseless matching: Kelvin sign matches, while ASCII `K` does
 not. Repetition, captures and lookbehind use the existing execution and resource
 controls; no Unicode-name table, new matcher or native dependency is added.
-This source addition is outside immutable Core/PCRE2 scalar.76 and does not alter
-the qualified Core/PythonRe scalar.91 pair.
 
-The same development source unifies Unicode space classification for `Xps`,
+The shared predicate unifies Unicode space classification for `Xps`,
 `Xsp` and UCP generic/POSIX space. Property escapes now include U+0085 (NEL)
 and U+180E (Mongolian vowel separator), matching native PCRE2 10.47. Property
 escapes remain Unicode-aware without UCP; generic `\s` and POSIX space retain
@@ -621,24 +228,20 @@ Caseless literals, class ranges and references use default simple-fold scalar
 equivalence: all partners are symmetric, including Kelvin sign, long S, Greek
 symbol variants and titlecase partners. A class negates the complete positive
 set; folding neither normalizes text nor expands one scalar into multiple scalars.
-Dotted/dotless I are distinct in the default profile. Current development pins
+Dotted/dotless I are distinct in the default profile. The profile pins
 BMP fold equivalence to Unicode 16 using shared owned data and PCRE2-specific
 partners. Supplementary matching and extended-replacement simple casing reuse
 the owned Unicode 16 pairs, including Garay, without host casing dependencies.
 BMP replacement transforms retain their existing Rune route. This does not pin
 all Unicode properties or establish complete Unicode-version compatibility.
-In the qualified scalar.71 overlap corpus, native PCRE2 10.47 turns final sigma
+A recorded native PCRE2 10.47 comparator difference turns final sigma
 (U+03C2) into lowercase sigma (U+03C3) under uppercasing replacement escapes;
 this profile produces uppercase sigma (U+03A3). The twelve observations cover
 four capture/literal transforms under three invocation policies. This is a
 disclosed replacement-casing difference, not a matching-coordinate difference.
 Keep the existing uppercase result rather than copy the native result.
-The [scalar.71 handoff](artifacts/pcre2-scalar71-delivery-20261017/HANDOFF.md)
-preserves the exact native and managed observations. No package bytes change.
-The supplementary and necessary-leading-set changes are included in the scoped
-private Core/PCRE2 scalar.67 input at db9526f3. The exact handoff records platform/
-native/resource evidence and known BMP replacement differences separately from
-this target contract; full profile/containment coverage is not implied.
+Exact observations remain in the historical qualification evidence; this is a
+known replacement-casing boundary, not a new performance or compatibility claim.
 
 Inline `r` restricts caseless matching across the ASCII/non-ASCII boundary.
 `(?ir)k` matches `K` but not Kelvin sign; `(?ir)[kK]` still includes both
@@ -658,8 +261,7 @@ are not published as caller captures. Previously set caller values and their
 byte ranges survive; captures enclosing the call can still capture its consumed
 subject. This applies to ordinary and `(*ACCEPT)` returns and does not make
 subroutine calls atomic. References and capture conditions observe the restored
-state. Development source coverage is recorded separately in the PCRE2
-qualification document; immutable scalar.56 retains a disclosed return defect.
+state. Coverage is recorded separately in the PCRE2 qualification document.
 
 By-name metadata is **name-table-first**. `CopyNameEntries(...)` and `CopyNumbersForName(...)` are the primary APIs. `TryGetFirstSetGroup(name, ...)` is allowed only as a convenience and must follow PCRE2’s by-name convenience behavior: when duplicate names exist, it returns the first set group for that name. ([PCRE][3])
 
@@ -723,7 +325,7 @@ Supported-profile boundary for completion is also explicit:
 
 ### Cancellation, timeouts, and resource limits
 
-Development after scalar.57 can count an already proved non-empty, left-to-right
+The scalar route can count an already proved non-empty, left-to-right
 literal language with the owned scalar runner under the original invocation.
 It rents scratch once for the whole Count and retains validation, candidate search,
 verification, token, absolute deadline and structured failure authority. Empty
@@ -734,7 +336,7 @@ Count publishes no owned result payload. Eliminating capture state can admit
 smaller working/depth/work allowances than the former VM route; units and acquired
 capacity are algorithm-dependent, not exact native-PCRE2 counter equivalence.
 
-Development after scalar.70 reuses Core's bounded metered literal Count backend
+Eligible finite literal Count reuses Core's bounded metered literal Count backend
 for an already compiled finite literal language with no boundary/reset projection:
 one exact nonempty literal, or two/three ordered exact alternatives, with no
 folding or search boundary/trailing requirement. Whole-subject validation and
@@ -753,7 +355,7 @@ Held high-water capacity can increase later/nested working overlap; fewer actual
 rentals reduce work. These intentional numeric-cutoff changes do not refund spent
 work, weaken capacity bounds or add a GC-dependent lifetime.
 
-Development after scalar.92 also lends one fixed-vector workspace across the
+Lexical Count/search also lends one fixed-vector workspace across the
 same lexical Count/search owner. It acquires on the first actual candidate, so
 an impossible short subject needs no workspace. Each attempt resets its logical
 vectors; nested assertions keep separate storage charged alongside the parent.
@@ -765,7 +367,6 @@ diagnostics count acquisitions rather than reused attempts. Longer live capacity
 can change working overlap and fewer rents can admit tighter work limits. No
 public copied cursor acquires scratch ownership, new pool/lease/mode or GC timing
 dependency. Scalar captures, retained results and exact major admission remain.
-This source change is outside immutable Core/PCRE92 and Core/Python91.
 
 When the admitted search fact proves a leading single literal, the scalar counter
 can seek its next occurrence through the existing bounded metered search before
@@ -774,15 +375,14 @@ do not acquire this eligibility. The original invocation still owns validation,
 seeking, verification and publication; skipped impossible starts can reduce work
 requirements. Literal-family seeking remains on its prior eligibility rules.
 
-Development after scalar.58 also reuses that whole-Count scratch scope when the
+Nonempty slice Count also reuses that whole-Count scratch scope when the
 already admitted shared slice program proves nonempty left-to-right matching.
 No new language proof or search plan is inferred. Empty programs retain their
 retry/advancement cursor, and explicit match options retain the existing fallback.
 Scratch stays admitted until Count finishes or fails, then releases synchronously;
 capture/reference state and the original invocation remain authoritative. Work
 units and major state needs can change with this lifetime, so historical numeric
-cutoffs are not preserved as artificial denials. This source change is outside58.
-
+cutoffs are not preserved as artificial denials.
 
 Every execution operation has an explicit `CancellationToken` twin with the core entry contract: an already-canceled token throws `OperationCanceledException` before matching begins. Lazy `EnumerateMatches` observes the token at creation. Evaluator-driven replacement additionally observes the token before every callback on all paths, so canceling from inside the callback aborts deterministically.
 
@@ -796,7 +396,7 @@ limit that denies the corresponding value result's endpoint projection. Stepwise
 routes charge their candidate/VM work as well (see `Pcre2SingleShotLimitTests`).
 The shared finite forward exact-literal Count path admits the constant-time count
 increment with its bounded search/comparison and retains its terminal check.
-Development after scalar.108 can therefore need fewer `MatchLimit` units; strict
+This route can need fewer `MatchLimit` units; strict
 validation and the original token/deadline remain authoritative.
 `DepthLimit` and
 `HeapLimitInBytes` constrain backtracking frames and workspace; admitted output
@@ -920,7 +520,6 @@ Packaging and loading policy must also preserve removability:
 
 * there is no native PCRE2 loading, RID packaging, or “library unavailable” behavior in this project profile
 * the base `Lokad.Utf8Regex` project must not require PCRE2 to load or function
-
 
 [1]: https://learn.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.group.captures?view=net-10.0 "Group.Captures Property (System.Text.RegularExpressions) | Microsoft Learn"
 [2]: https://pcre.org/current/doc/html/pcre2matching.html?utm_source=chatgpt.com "pcre2matching specification - Perl Compatible Regular Expressions"
