@@ -1,6 +1,29 @@
 # .NET 10 / .NET 11 Count comparison
 
-## Current immutable Core114, measured 2026-10-20
+The latest qualified Core/PythonRe dependency is [scalar.118](artifacts/core-python-scalar118-20261020/HANDOFF.md).
+The newest versioned runtime experiment below uses frozen Core114. Its original
+comparative-lane gate is complete; it does not qualify current118/119 performance
+or complete runtime/profile behavior. [Current product/source costs](CURRENT-PERFORMANCE.md)
+remain separate. No new comparator framework or repeated closed batch is needed.
+
+## Remaining source-applicability work
+
+The historical decision to inherit upstream backreference span equality through
+BCL fallback is superseded by engine independence. Current owned
+[ordinal backreference execution](src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceRunner.cs)
+uses separate RTL/LTR bytewise loops. The existing
+[bounded span comparer](src/Lokad.Utf8Regex/Internal/Execution/Utf8SearchExecutor.LiteralInvocation.cs)
+may replace them without capture copying or another helper. Complete strict UTF-8
+captures have unique byte encodings; folded references still require scalar
+comparison because equivalent scalars can have different encoded widths.
+
+This is a concrete next investigation, not a measured speedup or accepted port.
+It needs scalar/capture/RTL/empty/ECMA and original-interruption checks, an explicit
+per-byte-to-chunk work/cadence revision, and one bounded public comparison. The
+existing versioned comparator lanes need no replacement. Frozen observations below
+retain their original scope and are not evidence for today's backreference cost.
+
+## Frozen immutable Core114, measured 2026-10-20
 
 The actual qualified [Core/PythonRe114](artifacts/core-python-scalar114-20261020/HANDOFF.md)
 Core DLL, producer01968d0f, is identical in every cell. [Numeric source](bench/Experiments/Runtime11-Scalar114-20261020/measurement.json),
@@ -33,8 +56,9 @@ Same-harness runtime11 literal medians improve roughly20-27%, while finite
 optional-prefix costs about2.1x runtime10 (paired median2.116x); the fresh SDK11
 cell retains that gap. This identifies a runtime/JIT-path investigation, without
 attributing a specific defect or removing metering. Generated optional-prefix
-stays49us. Current Core unlimited134-139us and finite0.54-1.14ms should replace
-historical110 costs when choosing the next current-engine investigation.
+stays49us. At114, Core unlimited134-139us and finite0.54-1.14ms superseded
+the110 observation for that product. Later source changes make these historical
+costs unsuitable as current118/119 measurements or evidence of a current defect.
 
 Some fixed-width/family controls vary (overall maxspread1.541x); small differences
 and universal runtime/generator wins remain unqualified. Fresh SDK11 effects mix
@@ -98,7 +122,8 @@ SHA2569453ACFFFC0E1C18A30FE8B1096481E48503A8089134A2EE5B1BBFC2CC99FBE9.
 Core source was unchanged at0be8367f. This did not designate standalone Core59
 for consumers; Core/PythonRe55 was the qualified pair at measurement time.
 Core/PythonRe110 was the corrected dependency when this page was last refreshed;
-the current qualified dependency is114, linked above.
+the current qualified dependency is118, linked above;114 remains the newest
+frozen product in this versioned runtime comparison.
 
 - R10/G10: SDK10.0.401/net10 driver on runtime10.0.12.
 - R11/G10: that exact driver on runtime11.0.0-rc.1.26425.128. Same IL isolates

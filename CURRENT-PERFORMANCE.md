@@ -1,5 +1,61 @@
 # Selected current-source performance
 
+The latest qualified dependency is **Core/PythonRe scalar.118**, producer `735776fb`.
+Its [handoff](artifacts/core-python-scalar118-20261020/HANDOFF.md) and
+[default-tier costs](artifacts/core-python-scalar118-20261020/vm-cost/RESULT.md)
+identify the actual DLLs used by consumers. One quiet-VM .NET 10.0.12 observation
+covers 35 public lanes and 175 samples of at least 49.097 ms, including finite
+controls, live tokens, deadlines, native/bulk/captured outputs and equivalent
+strict-decode and predecoded .NET controls. The run took 154 seconds.
+
+Public-operation medians in microseconds:
+
+| Workload | Unlimited | Finite | Finite allocation, B/op |
+| --- | ---: | ---: | ---: |
+| Core Count, 13 KB / 2,000 hits | 55.989 | 207.826 | 112 |
+| Core complete value enumeration, same subject | 125.438 | 271.946 | 112 |
+| Python UTF-8 values, 3,072 words | 667.227 | 785.950 | 190256 |
+| Python UTF-8 tuples, 1,024 two-group matches | 374.022 | 487.899 | 133408 |
+
+All four invocation limits are finite together: 50 million work steps, depth
+1,024, working capacity 64 MiB and result capacity 128 MiB. These are experimental
+allowances, not defaults. Limits retain material costs. Deadline enumeration has
+1.247x sample spread and some .NET controls reach 1.634x; the observation establishes
+neither universal overhead nor a ranking for every row. It was not repeated.
+
+Subsequent source 119 commit `d0bb4cb6` replaces two raw exact-pair candidate scans
+with one checked bounded union scan. Its separate [FullOpts public pair](bench/Experiments/ControlledPairCandidate-20261020/README.md)
+observes finite hit Count 283.137 → 262.544 us and miss 366.975 → 337.360 us; dense
+false-prefix costs roughly halve, with unchanged Core allocations. The maximum
+measured public regression is 3.26%; true .NET controls move −0.58..+0.40%. Raw
+samples and the unexplained unrestricted three-branch neighbor gain remain in
+the receipt. This is source-mechanism evidence, separate from package 118,
+default-tier costs and CPython Status.
+
+The earlier accepted source pairs for [deadline inlining](bench/Experiments/DeadlineInlining-20261020/README.md),
+[short-pair preparation](bench/Experiments/SimplePairPreparation-20261020/README.md)
+and [finite enumeration](bench/Experiments/FiniteBranchEnumeration-20261020/README.md)
+are included in 118. Their paired FullOpts gains remain separate from the package
+observation; unrelated package measurements do not establish causal gains.
+
+Eight frozen 117 PythonRe catalog rows retain their exact product and uncertainty.
+The detailed-iteration and named-template rows qualify opposite winners; detailed
+search is Unqualified and the other five rows are Inconclusive. This does not
+qualify 118/119 CPython Status or the full 90-row catalog. See the [detailed rows](bench/Experiments/PythonReDetailedFour-20261020/README.md)
+and [UTF-8/callback rows](bench/Experiments/PythonReUtf8CallbackFour-20261020/README.md).
+
+The newest versioned .NET 10/11/generated comparison remains frozen **Core114**.
+[RUNTIME-COMPARISON.md](RUNTIME-COMPARISON.md) preserves its exact runtime/product
+scope. No current 118/119 runtime 11 or whole-profile certificate is claimed. The
+original comparative-lane deliverable is complete; a new harness framework or
+repeated closed comparison is unnecessary.
+
+## Historical observations and closed experiments
+
+Every observation below describes its named frozen source/package, even when its
+original prose says current. No old number is promoted to current118/119 evidence.
+Original data, scope, failures and rejected changes remain preserved.
+
 The frozen039 source has four PythonRe rows with quiet-VM paired evidence against
 predecoded CPython 3.12.3: captured findall 172.180 / 77.617 µs, early literal
 search 2.009 / 0.168 µs, anchored match 0.461 / 0.236 µs. CPython is faster on
@@ -28,7 +84,7 @@ Private construction-stage gains do not qualify matching cost. The existing
 admitted root descriptor stays; no accounting-contract change, extra timing or
 package qualification follows. [Both observations and limits](bench/Experiments/LiteralRootConstruction-20261020/README.md).
 
-Latest immutable **Core/PythonRe scalar.115**, producera335e8ba, has a fresh
+Historical immutable **Core/PythonRe scalar.115**, producera335e8ba, has a fresh
 [actual-package default-tier observation](artifacts/core-python-scalar115-20261020/vm-cost/RESULT.md).
 For10K captured matches: Core Count94.799us unlimited/130.265us finite (112B finite,
 observed1.374x); Python Detailed5.897ms finite/6.067ms live token; UTF8 tuples
@@ -150,13 +206,14 @@ are separate and complete within the handoff scope. Earlier109 remains immutable
 historical evidence and predates the cancellation correction. Broader work remains
 open; source pairs and historical snapshots below retain their separate scope.
 
-## Current114 runtime/generated comparison
+## Frozen114 runtime/generated comparison
 
-The [bounded current114 comparison](RUNTIME-COMPARISON.md) uses actual immutable
+The [bounded frozen114 comparison](RUNTIME-COMPARISON.md) uses actual immutable
 Core114 bytes in three runtime/SDK cells,840samples all>=65.453ms. Same SDK10
 harness on runtime11 lowers literal medians20-27%, but finite optional-prefix
-Count539.587->1143.013us (paired2.116x). Fresh SDK11 retains1139.508us. Current
-unlimited optional-prefix134-139us and generated49us identify the remaining gap.
+Count539.587->1143.013us (paired2.116x). Fresh SDK11 retains1139.508us. At114,
+unlimited optional-prefix134-139us and generated49us identified a historical gap;
+those costs do not describe current118/119.
 FullOpts/R2Roff is separate from default-tier handoff costs. Some controls are
 noisy; no universal new-generator/runtime win, specific defect attribution,
 product retarget, package/Status or full-profile/runtime qualification follows.
