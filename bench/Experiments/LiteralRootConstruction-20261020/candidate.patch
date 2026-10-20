@@ -1,0 +1,111 @@
+diff --git a/src/Lokad.Utf8Regex/Internal/Execution/Utf8LiteralCompiledEngineRuntime.Construction.cs b/src/Lokad.Utf8Regex/Internal/Execution/Utf8LiteralCompiledEngineRuntime.Construction.cs
+index 1e6d6d2b..a857b2a1 100644
+--- a/src/Lokad.Utf8Regex/Internal/Execution/Utf8LiteralCompiledEngineRuntime.Construction.cs
++++ b/src/Lokad.Utf8Regex/Internal/Execution/Utf8LiteralCompiledEngineRuntime.Construction.cs
+@@ -6,17 +6,29 @@ namespace Lokad.Utf8Regex.Internal.Execution;
+ 
+ internal sealed partial class Utf8LiteralCompiledEngineRuntime
+ {
+-    // One field per acquired runtime field. Borrowed referenced payloads keep
+-    // their parent's loans; the object and its retainer have independent loans.
+-    private readonly record struct ConstructionState(
+-        Utf8CompiledEngine CompiledEngine, Utf8PreparedRegex RegexPlan, bool UsesRightToLeft,
+-        Utf8CompiledExecutionBackend Backend, Utf8SearchOperationPlan CountProgram,
+-        Utf8SearchOperationPlan FirstMatchProgram, Utf8EmittedLiteralFamilyCounter? EmittedCounter,
+-        byte[][]? SmallFamily, PreparedByteSearch FirstBytes,
+-        PreparedMultiLiteralCandidatePrefilter LeadingPrefilter,
+-        PreparedMultiLiteralAutomatonSearch LeadingAutomaton, PreparedSmallAsciiLiteralFamilySearch? Primitive,
+-        PreparedShortAsciiLiteralFamilyCounter ShortCounter, PreparedBmpThreeByteLiteralFamilySearch BmpSearch,
+-        CompositeTrailingLiteralSearch? CompositeSearch);
++    // Coarse root metadata admission; major child buffers and emitted state keep
++    // separate loans. No field-mirroring transfer record or factory thunk.
++    internal const ulong FixedMetadataBytes = 4 * 1024;
++
++    private Utf8LiteralCompiledEngineRuntime(Utf8CompiledEngine compiledEngine,
++        Utf8PreparedRegex regexPlan, bool usesRightToLeft)
++    {
++        _compiledEngine = compiledEngine;
++        _regexPlan = regexPlan;
++        _usesRightToLeft = usesRightToLeft;
++        _countProgram = regexPlan.SearchPlan.CountOperation;
++        _firstMatchProgram = regexPlan.SearchPlan.FirstMatchOperation;
++        _emittedLiteralFamilyCounter = compiledEngine.Backend == Utf8CompiledExecutionBackend.EmittedInstruction &&
++            Utf8EmittedLiteralFamilyCounter.TryCreate(regexPlan.SearchPlan, _countProgram, _firstMatchProgram, out var counter)
++            ? counter : null;
++        _ = TryCreateSmallAsciiLiteralFamily(regexPlan, usesRightToLeft, out _smallAsciiLiteralFamily, out _smallAsciiLiteralFamilyFirstBytes);
++        _ = TryCreateLeadingUtf8SegmentLiteralFamily(regexPlan, usesRightToLeft, out _leadingUtf8SegmentLiteralFamilyPrefilter, out _leadingUtf8SegmentLiteralFamilyAutomaton);
++        _ = TryCreateBmpThreeByteLiteralFamilySearch(regexPlan, usesRightToLeft, out _bmpThreeByteLiteralFamilySearch);
++        _smallAsciiLiteralFamilyPrimitive = TryCreateSmallAsciiLiteralFamilyPrimitive(regexPlan, usesRightToLeft, out var prepared)
++            ? (PreparedSmallAsciiLiteralFamilySearch?)prepared : null;
++        _ = TryCreateShortAsciiLiteralFamilyCounter(regexPlan, usesRightToLeft, out _shortAsciiLiteralFamilyCounter);
++        _compositeTrailingLiteralSearch = CreateCompositeTrailingLiteralSearch(regexPlan, usesRightToLeft);
++    }
+ 
+     internal static Utf8LiteralCompiledEngineRuntime Create(Utf8CompiledEngine compiledEngine,
+         Utf8PreparedRegex regexPlan, bool usesRightToLeft)
+@@ -26,22 +38,11 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
+         budget.EnterDepth();
+         try
+         {
+-            var count = regexPlan.SearchPlan.CountOperation;
+-            var firstMatch = regexPlan.SearchPlan.FirstMatchOperation;
+-            // Dynamic emission is still a separate unqualified acquisition.
+-            var emitted = compiledEngine.Backend == Utf8CompiledExecutionBackend.EmittedInstruction &&
+-                Utf8EmittedLiteralFamilyCounter.TryCreate(regexPlan.SearchPlan, count, firstMatch, out var counter)
+-                ? counter : null;
+-            _ = TryCreateSmallAsciiLiteralFamily(regexPlan, usesRightToLeft, out var small, out var firstBytes);
+-            _ = TryCreateLeadingUtf8SegmentLiteralFamily(regexPlan, usesRightToLeft, out var prefilter, out var automaton);
+-            _ = TryCreateBmpThreeByteLiteralFamilySearch(regexPlan, usesRightToLeft, out var bmp);
+-            var primitive = TryCreateSmallAsciiLiteralFamilyPrimitive(regexPlan, usesRightToLeft, out var prepared)
+-                ? (PreparedSmallAsciiLiteralFamilySearch?)prepared : null;
+-            _ = TryCreateShortAsciiLiteralFamilyCounter(regexPlan, usesRightToLeft, out var shortCounter);
+-            var composite = CreateCompositeTrailingLiteralSearch(regexPlan, usesRightToLeft);
+-            var result = budget.AllocateObject(new ConstructionState(compiledEngine, regexPlan, usesRightToLeft,
+-                compiledEngine.Backend, count, firstMatch, emitted, small, firstBytes, prefilter, automaton,
+-                primitive, shortCounter, bmp, composite), static state => new Utf8LiteralCompiledEngineRuntime(state));
++            budget.CheckBytes(FixedMetadataBytes);
++            budget.ChargeWork(2);
++            budget.ReserveBytes(FixedMetadataBytes);
++            var result = new Utf8LiteralCompiledEngineRuntime(compiledEngine, regexPlan, usesRightToLeft);
++            budget.ChargeWork(0); // Original interruption authority before publication.
+             scope.Complete();
+             return result;
+         }
+diff --git a/src/Lokad.Utf8Regex/Internal/Execution/Utf8LiteralCompiledEngineRuntime.cs b/src/Lokad.Utf8Regex/Internal/Execution/Utf8LiteralCompiledEngineRuntime.cs
+index 8e6c70aa..3773ea58 100644
+--- a/src/Lokad.Utf8Regex/Internal/Execution/Utf8LiteralCompiledEngineRuntime.cs
++++ b/src/Lokad.Utf8Regex/Internal/Execution/Utf8LiteralCompiledEngineRuntime.cs
+@@ -21,7 +21,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
+     private readonly Utf8CompiledEngine _compiledEngine;
+     private readonly Utf8PreparedRegex _regexPlan;
+     internal readonly bool _usesRightToLeft;
+-    private readonly Utf8CompiledExecutionBackend _backend;
+     private readonly Utf8SearchOperationPlan _countProgram;
+     private readonly Utf8SearchOperationPlan _firstMatchProgram;
+     internal readonly Utf8EmittedLiteralFamilyCounter? _emittedLiteralFamilyCounter;
+@@ -36,25 +35,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
+ 
+     private const int SmallAsciiLiteralFamilyPrimitiveProbeBytes = 16 * 1024;
+ 
+-    private Utf8LiteralCompiledEngineRuntime(ConstructionState state)
+-    {
+-        _compiledEngine = state.CompiledEngine;
+-        _regexPlan = state.RegexPlan;
+-        _usesRightToLeft = state.UsesRightToLeft;
+-        _backend = state.Backend;
+-        _countProgram = state.CountProgram;
+-        _firstMatchProgram = state.FirstMatchProgram;
+-        _emittedLiteralFamilyCounter = state.EmittedCounter;
+-        _smallAsciiLiteralFamily = state.SmallFamily;
+-        _smallAsciiLiteralFamilyFirstBytes = state.FirstBytes;
+-        _leadingUtf8SegmentLiteralFamilyPrefilter = state.LeadingPrefilter;
+-        _leadingUtf8SegmentLiteralFamilyAutomaton = state.LeadingAutomaton;
+-        _smallAsciiLiteralFamilyPrimitive = state.Primitive;
+-        _shortAsciiLiteralFamilyCounter = state.ShortCounter;
+-        _bmpThreeByteLiteralFamilySearch = state.BmpSearch;
+-        _compositeTrailingLiteralSearch = state.CompositeSearch;
+-    }
+-
+     public override Utf8CompiledRuntimeCapabilities Capabilities => new(
+         SupportsAsciiWellFormedOnlyMatch: _smallAsciiLiteralFamilyPrimitive is not null || SupportsAsciiDirectMatch,
+         SupportsWellFormedOnlyMatch: CanUseDirectExactSingleScalar(Utf8ExecutionDeadline.Infinite),

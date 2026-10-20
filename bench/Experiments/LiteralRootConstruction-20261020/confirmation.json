@@ -1,0 +1,966 @@
+{
+  "before": {
+    "control-construction": {
+      "rows": {
+        "Utf8FrontEndCompile": {
+          "us": 173.262,
+          "bytes": 38144.0,
+          "raw": "Utf8FrontEndCompile         :    173.262 us/op | range=159.287..220.300 us/op | allocated=38,144 B/op range=38,144..38,144 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryVerifier": {
+          "us": 0.525,
+          "bytes": 344.0,
+          "raw": "Utf8OrdinaryVerifier        :      0.525 us/op | range=0.163..13.850 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledVerifier": {
+          "us": 0.537,
+          "bytes": 344.0,
+          "raw": "Utf8CompiledVerifier        :      0.537 us/op | range=0.175..13.312 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryRuntime": {
+          "us": 0.312,
+          "bytes": 584.0,
+          "raw": "Utf8OrdinaryRuntime         :      0.312 us/op | range=0.275..19.800 us/op | allocated=584 B/op range=584..584 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledRuntime": {
+          "us": 0.287,
+          "bytes": 584.0,
+          "raw": "Utf8CompiledRuntime         :      0.287 us/op | range=0.275..14.887 us/op | allocated=584 B/op range=584..584 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryProgram": {
+          "us": 177.912,
+          "bytes": 38960.0,
+          "raw": "Utf8OrdinaryProgram         :    177.912 us/op | range=165.713..189.812 us/op | allocated=38,960 B/op range=38,960..38,960 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledProgram": {
+          "us": 176.637,
+          "bytes": 38960.0,
+          "raw": "Utf8CompiledProgram         :    176.637 us/op | range=165.200..203.062 us/op | allocated=38,960 B/op range=38,960..38,960 | instances=8 samples=5 sink=0"
+        },
+        "RegexOrdinaryAnchored": {
+          "us": 5.588,
+          "bytes": 3912.0,
+          "raw": "RegexOrdinaryAnchored       :      5.588 us/op | range=4.200..698.825 us/op | allocated=3,912 B/op range=3,912..3,912 | instances=8 samples=5 sink=0"
+        },
+        "RegexCompiledAnchored": {
+          "us": 16.575,
+          "bytes": 11504.0,
+          "raw": "RegexCompiledAnchored       :     16.575 us/op | range=14.000..50.788 us/op | allocated=11,504 B/op range=11,504..11,504 | instances=8 samples=5 sink=0"
+        },
+        "RegexGroupNumbers": {
+          "us": 0.062,
+          "bytes": 32.0,
+          "raw": "RegexGroupNumbers           :      0.062 us/op | range=0.050..60.513 us/op | allocated=32 B/op range=32..32 | instances=8 samples=5 sink=0"
+        },
+        "RegexGroupNames": {
+          "us": 0.5,
+          "bytes": 32.0,
+          "raw": "RegexGroupNames             :      0.500 us/op | range=0.050..213.812 us/op | allocated=32 B/op range=32..395 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryConstruct": {
+          "us": 171.4,
+          "bytes": 40184.0,
+          "raw": "Utf8OrdinaryConstruct       :    171.400 us/op | range=166.100..226.200 us/op | allocated=40,184 B/op range=40,184..40,184 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledConstruct": {
+          "us": 174.812,
+          "bytes": 40184.0,
+          "raw": "Utf8CompiledConstruct       :    174.812 us/op | range=170.050..211.275 us/op | allocated=40,184 B/op range=40,184..40,184 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryStaticConstruct": {
+          "us": 177.338,
+          "bytes": 40520.0,
+          "raw": "Utf8OrdinaryStaticConstruct :    177.338 us/op | range=167.863..1621.862 us/op | allocated=40,520 B/op range=40,520..40,610 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledStaticConstruct": {
+          "us": 179.012,
+          "bytes": 40520.0,
+          "raw": "Utf8CompiledStaticConstruct :    179.012 us/op | range=170.738..203.125 us/op | allocated=40,520 B/op range=40,520..40,520 | instances=8 samples=5 sink=0"
+        },
+        "RegexOrdinaryConstruct": {
+          "us": 4.05,
+          "bytes": 3432.0,
+          "raw": "RegexOrdinaryConstruct      :      4.050 us/op | range=3.625..28.038 us/op | allocated=3,432 B/op range=3,432..3,432 | instances=8 samples=5 sink=0"
+        },
+        "RegexCompiledConstruct": {
+          "us": 14.113,
+          "bytes": 11032.0,
+          "raw": "RegexCompiledConstruct      :     14.113 us/op | range=12.550..36.300 us/op | allocated=11,032 B/op range=11,032..11,032 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryFirstCountPrimed": {
+          "us": 0.75,
+          "bytes": 0.0,
+          "raw": "Utf8OrdinaryFirstCountPrimed:      0.750 us/op | range=0.738..28.725 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledFirstCountPrimed": {
+          "us": 0.75,
+          "bytes": 0.0,
+          "raw": "Utf8CompiledFirstCountPrimed:      0.750 us/op | range=0.675..29.075 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryStaticFirstCount": {
+          "us": 0.75,
+          "bytes": 0.0,
+          "raw": "Utf8OrdinaryStaticFirstCount:      0.750 us/op | range=0.700..28.413 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledStaticFirstCount": {
+          "us": 0.738,
+          "bytes": 0.0,
+          "raw": "Utf8CompiledStaticFirstCount:      0.738 us/op | range=0.700..28.688 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "RegexOrdinaryFirstCountPrimed": {
+          "us": 0.15,
+          "bytes": 784.0,
+          "raw": "RegexOrdinaryFirstCountPrimed:      0.150 us/op | range=0.113..11.800 us/op | allocated=784 B/op range=784..784 | instances=8 samples=5 sink=0"
+        },
+        "RegexCompiledFirstCountPrimed": {
+          "us": 109.15,
+          "bytes": 1840.0,
+          "raw": "RegexCompiledFirstCountPrimed:    109.150 us/op | range=100.513..127.100 us/op | allocated=1,840 B/op range=1,840..1,840 | instances=8 samples=5 sink=0"
+        }
+      },
+      "log": "CaseId            : lokad/langserv/identifier-validator\nPattern           : ^[a-z][a-z0-9_]*$\nBaseOptions       : IgnoreCase, CultureInvariant\nInstances         : 8\nSamples           : 5\nInputBytes        : 0\nSharedTierPrimeCalls: 64\nSourceCommit      : <unknown>\nTrackedDirty      : False\nHasUntrackedFiles : False\nRuntime           : .NET 10.0.12\nOperatingSystem   : Ubuntu 24.04.4 LTS\nProcessor         : X64\nTieredPGO         : 0\nUtf8FrontEndCompile         :    173.262 us/op | range=159.287..220.300 us/op | allocated=38,144 B/op range=38,144..38,144 | instances=8 samples=5 sink=0\nUtf8OrdinaryVerifier        :      0.525 us/op | range=0.163..13.850 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0\nUtf8CompiledVerifier        :      0.537 us/op | range=0.175..13.312 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0\nUtf8OrdinaryRuntime         :      0.312 us/op | range=0.275..19.800 us/op | allocated=584 B/op range=584..584 | instances=8 samples=5 sink=0\nUtf8CompiledRuntime         :      0.287 us/op | range=0.275..14.887 us/op | allocated=584 B/op range=584..584 | instances=8 samples=5 sink=0\nUtf8OrdinaryProgram         :    177.912 us/op | range=165.713..189.812 us/op | allocated=38,960 B/op range=38,960..38,960 | instances=8 samples=5 sink=0\nUtf8CompiledProgram         :    176.637 us/op | range=165.200..203.062 us/op | allocated=38,960 B/op range=38,960..38,960 | instances=8 samples=5 sink=0\nRegexOrdinaryAnchored       :      5.588 us/op | range=4.200..698.825 us/op | allocated=3,912 B/op range=3,912..3,912 | instances=8 samples=5 sink=0\nRegexCompiledAnchored       :     16.575 us/op | range=14.000..50.788 us/op | allocated=11,504 B/op range=11,504..11,504 | instances=8 samples=5 sink=0\nRegexGroupNumbers           :      0.062 us/op | range=0.050..60.513 us/op | allocated=32 B/op range=32..32 | instances=8 samples=5 sink=0\nRegexGroupNames             :      0.500 us/op | range=0.050..213.812 us/op | allocated=32 B/op range=32..395 | instances=8 samples=5 sink=0\nUtf8OrdinaryConstruct       :    171.400 us/op | range=166.100..226.200 us/op | allocated=40,184 B/op range=40,184..40,184 | instances=8 samples=5 sink=0\nUtf8CompiledConstruct       :    174.812 us/op | range=170.050..211.275 us/op | allocated=40,184 B/op range=40,184..40,184 | instances=8 samples=5 sink=0\nUtf8OrdinaryStaticConstruct :    177.338 us/op | range=167.863..1621.862 us/op | allocated=40,520 B/op range=40,520..40,610 | instances=8 samples=5 sink=0\nUtf8CompiledStaticConstruct :    179.012 us/op | range=170.738..203.125 us/op | allocated=40,520 B/op range=40,520..40,520 | instances=8 samples=5 sink=0\nRegexOrdinaryConstruct      :      4.050 us/op | range=3.625..28.038 us/op | allocated=3,432 B/op range=3,432..3,432 | instances=8 samples=5 sink=0\nRegexCompiledConstruct      :     14.113 us/op | range=12.550..36.300 us/op | allocated=11,032 B/op range=11,032..11,032 | instances=8 samples=5 sink=0\nUtf8OrdinaryFirstCountPrimed:      0.750 us/op | range=0.738..28.725 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nUtf8CompiledFirstCountPrimed:      0.750 us/op | range=0.675..29.075 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nUtf8OrdinaryStaticFirstCount:      0.750 us/op | range=0.700..28.413 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nUtf8CompiledStaticFirstCount:      0.738 us/op | range=0.700..28.688 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nRegexOrdinaryFirstCountPrimed:      0.150 us/op | range=0.113..11.800 us/op | allocated=784 B/op range=784..784 | instances=8 samples=5 sink=0\nRegexCompiledFirstCountPrimed:    109.150 us/op | range=100.513..127.100 us/op | allocated=1,840 B/op range=1,840..1,840 | instances=8 samples=5 sink=0\n"
+    },
+    "control-public": {
+      "rows": {
+        "ValidationOnly": {
+          "us": 0.722,
+          "raw": "ValidationOnly    :     14.440 ms total |      0.722 us/op | sink=0 | samples=1 range=0.722..0.722 us/op | warmup=262144 calls/204.6 ms"
+        },
+        "WellFormedOnly": {
+          "us": 3.099,
+          "raw": "WellFormedOnly    :     61.983 ms total |      3.099 us/op | sink=669 | samples=1 range=3.099..3.099 us/op | warmup=77823 calls/250.1 ms"
+        },
+        "PrefilterOnly": {
+          "us": 14.856,
+          "raw": "PrefilterOnly     :    297.112 ms total |     14.856 us/op | sink=120 | samples=1 range=14.856..14.856 us/op | warmup=17407 calls/262.1 ms"
+        },
+        "DirectMatchHook": {
+          "us": 7.758,
+          "raw": "DirectMatchHook   :    155.166 ms total |      7.758 us/op | sink=669 | samples=1 range=7.758..7.758 us/op | warmup=32767 calls/257.2 ms"
+        },
+        "AnchoredValidatorNative": {
+          "us": 3.428,
+          "raw": "AnchoredValidatorNative:     68.551 ms total |      3.428 us/op | sink=669 | samples=1 range=3.428..3.428 us/op | warmup=71679 calls/251.5 ms"
+        },
+        "HeadTailBoolOnly": {
+          "us": 5.944,
+          "raw": "HeadTailBoolOnly  :    118.874 ms total |      5.944 us/op | sink=669 | samples=1 range=5.944..5.944 us/op | warmup=41983 calls/251.5 ms"
+        },
+        "HeadTailMatchOnly": {
+          "us": 7.268,
+          "raw": "HeadTailMatchOnly :    145.356 ms total |      7.268 us/op | sink=669 | samples=1 range=7.268..7.268 us/op | warmup=33791 calls/254.5 ms"
+        },
+        "SimplePatternBoolOnly": {
+          "us": 1.63,
+          "raw": "SimplePatternBoolOnly:     32.602 ms total |      1.630 us/op | sink=0 | samples=1 range=1.630..1.630 us/op | warmup=144383 calls/250.2 ms"
+        },
+        "SimplePatternMatchOnly": {
+          "us": 2.374,
+          "raw": "SimplePatternMatchOnly:     47.487 ms total |      2.374 us/op | sink=0 | samples=1 range=2.374..2.374 us/op | warmup=104447 calls/252.3 ms"
+        },
+        "WholeMatchProjectionOnly": {
+          "us": 0.283,
+          "raw": "WholeMatchProjectionOnly:      5.670 ms total |      0.283 us/op | sink=0 | samples=1 range=0.283..0.283 us/op | warmup=262144 calls/75.5 ms"
+        },
+        "AnchoredValidatorEmitted": {
+          "us": 0.068,
+          "raw": "AnchoredValidatorEmitted:      1.367 ms total |      0.068 us/op | sink=0 | samples=1 range=0.068..0.068 us/op | warmup=262144 calls/41.5 ms"
+        },
+        "DirectUrlMatcher": {
+          "us": 0.005,
+          "raw": "DirectUrlMatcher  :      0.091 ms total |      0.005 us/op | sink=0 | samples=1 range=0.005..0.005 us/op | warmup=262144 calls/2.3 ms"
+        },
+        "PublicAfterValidation": {
+          "us": 24.563,
+          "raw": "PublicAfterValidation:    491.260 ms total |     24.563 us/op | sink=669 | samples=1 range=24.563..24.563 us/op | warmup=10239 calls/258.6 ms"
+        },
+        "CompiledMatchOnly": {
+          "us": 23.732,
+          "raw": "CompiledMatchOnly :    474.641 ms total |     23.732 us/op | sink=669 | samples=1 range=23.732..23.732 us/op | warmup=11263 calls/270.5 ms"
+        },
+        "Utf8Regex": {
+          "us": 17.71,
+          "raw": "Utf8Regex         :    354.208 ms total |     17.710 us/op | sink=669 | samples=1 range=17.710..17.710 us/op | warmup=14335 calls/265.7 ms"
+        },
+        "Utf8Compiled": {
+          "us": 18.159,
+          "raw": "Utf8Compiled      :    363.173 ms total |     18.159 us/op | sink=669 | samples=1 range=18.159..18.159 us/op | warmup=14335 calls/256.3 ms"
+        },
+        "DecodeThenRegex": {
+          "us": 12.747,
+          "raw": "DecodeThenRegex   :    254.943 ms total |     12.747 us/op | sink=669 | samples=1 range=12.747..12.747 us/op | warmup=17407 calls/259.5 ms"
+        },
+        "DecodeThenCompiledRegex": {
+          "us": 12.468,
+          "raw": "DecodeThenCompiledRegex:    249.354 ms total |     12.468 us/op | sink=669 | samples=1 range=12.468..12.468 us/op | warmup=20479 calls/252.4 ms"
+        },
+        "PredecodedRegex": {
+          "us": 10.015,
+          "raw": "PredecodedRegex   :    200.297 ms total |     10.015 us/op | sink=669 | samples=1 range=10.015..10.015 us/op | warmup=25599 calls/254.1 ms"
+        },
+        "PredecodedCompiledRegex": {
+          "us": 10.491,
+          "raw": "PredecodedCompiledRegex:    209.824 ms total |     10.491 us/op | sink=669 | samples=1 range=10.491..10.491 us/op | warmup=25599 calls/258.8 ms"
+        }
+      },
+      "log": "CaseId            : lokad/langserv/identifier-validator\nModel             : PrefixMatchLoop\nPattern           : ^[a-z][a-z0-9_]*$\nDotNetOptions     : IgnoreCase, Compiled, CultureInvariant\nUtf8Options       : IgnoreCase, CultureInvariant\nIterations        : 20000\nInputChars        : 669\nInputBytes        : 669\nSampleCount       : 120\nExecutionKind     : AsciiSimplePattern\nCompiledEngine    : SimplePatternInterpreter\nSourceCommit      : <unknown>\nTrackedDirty      : False\nHasUntrackedFiles : False\nRuntime           : .NET 10.0.12\nOperatingSystem   : Ubuntu 24.04.4 LTS\nProcessor         : X64\nTieredPGO         : 0\nValidationOnly    :     14.440 ms total |      0.722 us/op | sink=0 | samples=1 range=0.722..0.722 us/op | warmup=262144 calls/204.6 ms\nWellFormedOnly    :     61.983 ms total |      3.099 us/op | sink=669 | samples=1 range=3.099..3.099 us/op | warmup=77823 calls/250.1 ms\nPrefilterOnly     :    297.112 ms total |     14.856 us/op | sink=120 | samples=1 range=14.856..14.856 us/op | warmup=17407 calls/262.1 ms\nDirectMatchHook   :    155.166 ms total |      7.758 us/op | sink=669 | samples=1 range=7.758..7.758 us/op | warmup=32767 calls/257.2 ms\nAnchoredValidatorNative:     68.551 ms total |      3.428 us/op | sink=669 | samples=1 range=3.428..3.428 us/op | warmup=71679 calls/251.5 ms\nHeadTailBoolOnly  :    118.874 ms total |      5.944 us/op | sink=669 | samples=1 range=5.944..5.944 us/op | warmup=41983 calls/251.5 ms\nHeadTailMatchOnly :    145.356 ms total |      7.268 us/op | sink=669 | samples=1 range=7.268..7.268 us/op | warmup=33791 calls/254.5 ms\nSimplePatternBoolOnly:     32.602 ms total |      1.630 us/op | sink=0 | samples=1 range=1.630..1.630 us/op | warmup=144383 calls/250.2 ms\nSimplePatternMatchOnly:     47.487 ms total |      2.374 us/op | sink=0 | samples=1 range=2.374..2.374 us/op | warmup=104447 calls/252.3 ms\nWholeMatchProjectionOnly:      5.670 ms total |      0.283 us/op | sink=0 | samples=1 range=0.283..0.283 us/op | warmup=262144 calls/75.5 ms\nAnchoredValidatorEmitted:      1.367 ms total |      0.068 us/op | sink=0 | samples=1 range=0.068..0.068 us/op | warmup=262144 calls/41.5 ms\nDirectUrlMatcher  :      0.091 ms total |      0.005 us/op | sink=0 | samples=1 range=0.005..0.005 us/op | warmup=262144 calls/2.3 ms\nPublicAfterValidation:    491.260 ms total |     24.563 us/op | sink=669 | samples=1 range=24.563..24.563 us/op | warmup=10239 calls/258.6 ms\nCompiledMatchOnly :    474.641 ms total |     23.732 us/op | sink=669 | samples=1 range=23.732..23.732 us/op | warmup=11263 calls/270.5 ms\nUtf8Regex         :    354.208 ms total |     17.710 us/op | sink=669 | samples=1 range=17.710..17.710 us/op | warmup=14335 calls/265.7 ms\nUtf8Compiled      :    363.173 ms total |     18.159 us/op | sink=669 | samples=1 range=18.159..18.159 us/op | warmup=14335 calls/256.3 ms\nDecodeThenRegex   :    254.943 ms total |     12.747 us/op | sink=669 | samples=1 range=12.747..12.747 us/op | warmup=17407 calls/259.5 ms\nDecodeThenCompiledRegex:    249.354 ms total |     12.468 us/op | sink=669 | samples=1 range=12.468..12.468 us/op | warmup=20479 calls/252.4 ms\nPredecodedRegex   :    200.297 ms total |     10.015 us/op | sink=669 | samples=1 range=10.015..10.015 us/op | warmup=25599 calls/254.1 ms\nPredecodedCompiledRegex:    209.824 ms total |     10.491 us/op | sink=669 | samples=1 range=10.491..10.491 us/op | warmup=25599 calls/258.8 ms\n"
+    },
+    "family-construction": {
+      "rows": {
+        "ExactLiteralSearchData": {
+          "us": 1.425,
+          "bytes": 3608.0,
+          "raw": "ExactLiteralSearchData      :      1.425 us/op | range=0.812..23.250 us/op | allocated=3,608 B/op range=3,608..3,608 | instances=8 samples=5 sink=0"
+        },
+        "Utf8FrontEndCompile": {
+          "us": 90.463,
+          "bytes": 65768.0,
+          "raw": "Utf8FrontEndCompile         :     90.463 us/op | range=86.150..148.613 us/op | allocated=65,768 B/op range=65,768..65,768 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryVerifier": {
+          "us": 0.212,
+          "bytes": 344.0,
+          "raw": "Utf8OrdinaryVerifier        :      0.212 us/op | range=0.150..16.788 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledVerifier": {
+          "us": 0.2,
+          "bytes": 344.0,
+          "raw": "Utf8CompiledVerifier        :      0.200 us/op | range=0.138..12.637 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryRuntime": {
+          "us": 0.237,
+          "bytes": 568.0,
+          "raw": "Utf8OrdinaryRuntime         :      0.237 us/op | range=0.188..19.188 us/op | allocated=568 B/op range=568..568 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledRuntime": {
+          "us": 154.912,
+          "bytes": 122472.0,
+          "raw": "Utf8CompiledRuntime         :    154.912 us/op | range=151.125..218.000 us/op | allocated=122,472 B/op range=122,472..122,472 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryProgram": {
+          "us": 102.75,
+          "bytes": 66728.0,
+          "raw": "Utf8OrdinaryProgram         :    102.750 us/op | range=98.500..129.525 us/op | allocated=66,728 B/op range=66,728..66,728 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledProgram": {
+          "us": 278.062,
+          "bytes": 188712.0,
+          "raw": "Utf8CompiledProgram         :    278.062 us/op | range=268.837..331.050 us/op | allocated=188,712 B/op range=188,712..188,712 | instances=8 samples=5 sink=0"
+        },
+        "RegexOrdinaryAnchored": {
+          "us": 3.513,
+          "bytes": 4120.0,
+          "raw": "RegexOrdinaryAnchored       :      3.513 us/op | range=3.212..29.900 us/op | allocated=4,120 B/op range=4,120..4,120 | instances=8 samples=5 sink=0"
+        },
+        "RegexCompiledAnchored": {
+          "us": 13.625,
+          "bytes": 12840.0,
+          "raw": "RegexCompiledAnchored       :     13.625 us/op | range=12.262..160.400 us/op | allocated=12,840 B/op range=12,840..12,840 | instances=8 samples=5 sink=0"
+        },
+        "RegexGroupNumbers": {
+          "us": 0.062,
+          "bytes": 32.0,
+          "raw": "RegexGroupNumbers           :      0.062 us/op | range=0.037..62.612 us/op | allocated=32 B/op range=32..32 | instances=8 samples=5 sink=0"
+        },
+        "RegexGroupNames": {
+          "us": 0.438,
+          "bytes": 32.0,
+          "raw": "RegexGroupNames             :      0.438 us/op | range=0.037..200.238 us/op | allocated=32 B/op range=32..395 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryConstruct": {
+          "us": 98.875,
+          "bytes": 67736.0,
+          "raw": "Utf8OrdinaryConstruct       :     98.875 us/op | range=95.700..155.938 us/op | allocated=67,736 B/op range=67,736..67,736 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledConstruct": {
+          "us": 262.75,
+          "bytes": 189720.0,
+          "raw": "Utf8CompiledConstruct       :    262.750 us/op | range=257.325..354.625 us/op | allocated=189,720 B/op range=189,720..189,720 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryStaticConstruct": {
+          "us": 105.487,
+          "bytes": 68072.0,
+          "raw": "Utf8OrdinaryStaticConstruct :    105.487 us/op | range=101.325..1608.275 us/op | allocated=68,072 B/op range=68,072..68,162 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledStaticConstruct": {
+          "us": 271.05,
+          "bytes": 190056.0,
+          "raw": "Utf8CompiledStaticConstruct :    271.050 us/op | range=246.287..305.575 us/op | allocated=190,056 B/op range=190,056..190,056 | instances=8 samples=5 sink=0"
+        },
+        "RegexOrdinaryConstruct": {
+          "us": 3.212,
+          "bytes": 3592.0,
+          "raw": "RegexOrdinaryConstruct      :      3.212 us/op | range=3.075..26.688 us/op | allocated=3,592 B/op range=3,592..3,592 | instances=8 samples=5 sink=0"
+        },
+        "RegexCompiledConstruct": {
+          "us": 15.05,
+          "bytes": 13632.0,
+          "raw": "RegexCompiledConstruct      :     15.050 us/op | range=13.275..38.212 us/op | allocated=13,632 B/op range=13,632..13,632 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryFirstCountPrimed": {
+          "us": 21.625,
+          "bytes": 0.0,
+          "raw": "Utf8OrdinaryFirstCountPrimed:     21.625 us/op | range=20.750..52.913 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledFirstCountPrimed": {
+          "us": 7127.0,
+          "bytes": 0.0,
+          "raw": "Utf8CompiledFirstCountPrimed:   7127.000 us/op | range=7116.925..7194.625 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryStaticFirstCount": {
+          "us": 22.613,
+          "bytes": 0.0,
+          "raw": "Utf8OrdinaryStaticFirstCount:     22.613 us/op | range=20.863..59.350 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledStaticFirstCount": {
+          "us": 7067.637,
+          "bytes": 0.0,
+          "raw": "Utf8CompiledStaticFirstCount:   7067.637 us/op | range=7004.600..7244.775 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "RegexOrdinaryFirstCountPrimed": {
+          "us": 13.8,
+          "bytes": 1264.0,
+          "raw": "RegexOrdinaryFirstCountPrimed:     13.800 us/op | range=13.137..30.100 us/op | allocated=1,264 B/op range=1,264..1,264 | instances=8 samples=5 sink=0"
+        },
+        "RegexCompiledFirstCountPrimed": {
+          "us": 1568.463,
+          "bytes": 2112.0,
+          "raw": "RegexCompiledFirstCountPrimed:   1568.463 us/op | range=1546.475..1647.037 us/op | allocated=2,112 B/op range=2,112..2,112 | instances=8 samples=5 sink=0"
+        }
+      },
+      "log": "CaseId            : literal-family/method-token-family\nPattern           : \\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\\b\nBaseOptions       : CultureInvariant\nInstances         : 8\nSamples           : 5\nInputBytes        : 53352\nSharedTierPrimeCalls: 64\nSourceCommit      : <unknown>\nTrackedDirty      : False\nHasUntrackedFiles : False\nRuntime           : .NET 10.0.12\nOperatingSystem   : Ubuntu 24.04.4 LTS\nProcessor         : X64\nTieredPGO         : 0\nExactLiteralSearchData      :      1.425 us/op | range=0.812..23.250 us/op | allocated=3,608 B/op range=3,608..3,608 | instances=8 samples=5 sink=0\nUtf8FrontEndCompile         :     90.463 us/op | range=86.150..148.613 us/op | allocated=65,768 B/op range=65,768..65,768 | instances=8 samples=5 sink=0\nUtf8OrdinaryVerifier        :      0.212 us/op | range=0.150..16.788 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0\nUtf8CompiledVerifier        :      0.200 us/op | range=0.138..12.637 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0\nUtf8OrdinaryRuntime         :      0.237 us/op | range=0.188..19.188 us/op | allocated=568 B/op range=568..568 | instances=8 samples=5 sink=0\nUtf8CompiledRuntime         :    154.912 us/op | range=151.125..218.000 us/op | allocated=122,472 B/op range=122,472..122,472 | instances=8 samples=5 sink=0\nUtf8OrdinaryProgram         :    102.750 us/op | range=98.500..129.525 us/op | allocated=66,728 B/op range=66,728..66,728 | instances=8 samples=5 sink=0\nUtf8CompiledProgram         :    278.062 us/op | range=268.837..331.050 us/op | allocated=188,712 B/op range=188,712..188,712 | instances=8 samples=5 sink=0\nRegexOrdinaryAnchored       :      3.513 us/op | range=3.212..29.900 us/op | allocated=4,120 B/op range=4,120..4,120 | instances=8 samples=5 sink=0\nRegexCompiledAnchored       :     13.625 us/op | range=12.262..160.400 us/op | allocated=12,840 B/op range=12,840..12,840 | instances=8 samples=5 sink=0\nRegexGroupNumbers           :      0.062 us/op | range=0.037..62.612 us/op | allocated=32 B/op range=32..32 | instances=8 samples=5 sink=0\nRegexGroupNames             :      0.438 us/op | range=0.037..200.238 us/op | allocated=32 B/op range=32..395 | instances=8 samples=5 sink=0\nUtf8OrdinaryConstruct       :     98.875 us/op | range=95.700..155.938 us/op | allocated=67,736 B/op range=67,736..67,736 | instances=8 samples=5 sink=0\nUtf8CompiledConstruct       :    262.750 us/op | range=257.325..354.625 us/op | allocated=189,720 B/op range=189,720..189,720 | instances=8 samples=5 sink=0\nUtf8OrdinaryStaticConstruct :    105.487 us/op | range=101.325..1608.275 us/op | allocated=68,072 B/op range=68,072..68,162 | instances=8 samples=5 sink=0\nUtf8CompiledStaticConstruct :    271.050 us/op | range=246.287..305.575 us/op | allocated=190,056 B/op range=190,056..190,056 | instances=8 samples=5 sink=0\nRegexOrdinaryConstruct      :      3.212 us/op | range=3.075..26.688 us/op | allocated=3,592 B/op range=3,592..3,592 | instances=8 samples=5 sink=0\nRegexCompiledConstruct      :     15.050 us/op | range=13.275..38.212 us/op | allocated=13,632 B/op range=13,632..13,632 | instances=8 samples=5 sink=0\nUtf8OrdinaryFirstCountPrimed:     21.625 us/op | range=20.750..52.913 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nUtf8CompiledFirstCountPrimed:   7127.000 us/op | range=7116.925..7194.625 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nUtf8OrdinaryStaticFirstCount:     22.613 us/op | range=20.863..59.350 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nUtf8CompiledStaticFirstCount:   7067.637 us/op | range=7004.600..7244.775 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nRegexOrdinaryFirstCountPrimed:     13.800 us/op | range=13.137..30.100 us/op | allocated=1,264 B/op range=1,264..1,264 | instances=8 samples=5 sink=0\nRegexCompiledFirstCountPrimed:   1568.463 us/op | range=1546.475..1647.037 us/op | allocated=2,112 B/op range=2,112..2,112 | instances=8 samples=5 sink=0\n"
+    },
+    "family-public": {
+      "rows": {
+        "Utf8Regex": {
+          "us": 21.365,
+          "raw": "Utf8Regex         :      0.427 ms total |     21.365 us/op | sink=46 | samples=1 range=21.365..21.365 us/op | warmup=10239 calls/250.7 ms"
+        },
+        "DecodeThenRegex": {
+          "us": 19.705,
+          "raw": "DecodeThenRegex   :      0.394 ms total |     19.705 us/op | sink=46 | samples=1 range=19.705..19.705 us/op | warmup=10239 calls/265.7 ms"
+        },
+        "PredecodedRegex": {
+          "us": 12.605,
+          "raw": "PredecodedRegex   :      0.252 ms total |     12.605 us/op | sink=46 | samples=1 range=12.605..12.605 us/op | warmup=19455 calls/254.8 ms"
+        }
+      },
+      "log": "CaseId            : literal-family/method-token-family\nSource            : Lokad\nPattern           : \\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\\b\nOptions           : CultureInvariant\nIterations        : 20\nPatternMode       : Regex\nGroup             : literal-family\nIntent            : regex_byte_fast\nInputBytes        : 53352\nSourceCommit      : <unknown>\nTrackedDirty      : False\nHasUntrackedFiles : False\nRuntime           : .NET 10.0.12\nOperatingSystem   : Ubuntu 24.04.4 LTS\nProcessor         : X64\nTieredPGO         : 0\nUtf8Regex         :      0.427 ms total |     21.365 us/op | sink=46 | samples=1 range=21.365..21.365 us/op | warmup=10239 calls/250.7 ms\nDecodeThenRegex   :      0.394 ms total |     19.705 us/op | sink=46 | samples=1 range=19.705..19.705 us/op | warmup=10239 calls/265.7 ms\nPredecodedRegex   :      0.252 ms total |     12.605 us/op | sink=46 | samples=1 range=12.605..12.605 us/op | warmup=19455 calls/254.8 ms\n"
+    },
+    "literal-construction": {
+      "rows": {
+        "Utf8FrontEndCompile": {
+          "us": 58.087,
+          "bytes": 53704.0,
+          "raw": "Utf8FrontEndCompile         :     58.087 us/op | range=52.062..112.062 us/op | allocated=53,704 B/op range=53,704..53,704 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryVerifier": {
+          "us": 0.537,
+          "bytes": 344.0,
+          "raw": "Utf8OrdinaryVerifier        :      0.537 us/op | range=0.138..13.675 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledVerifier": {
+          "us": 0.613,
+          "bytes": 344.0,
+          "raw": "Utf8CompiledVerifier        :      0.613 us/op | range=0.163..13.488 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryRuntime": {
+          "us": 3.8,
+          "bytes": 2816.0,
+          "raw": "Utf8OrdinaryRuntime         :      3.800 us/op | range=3.650..23.375 us/op | allocated=2,816 B/op range=2,816..2,816 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledRuntime": {
+          "us": 4.787,
+          "bytes": 2816.0,
+          "raw": "Utf8CompiledRuntime         :      4.787 us/op | range=3.625..18.050 us/op | allocated=2,816 B/op range=2,816..2,816 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryProgram": {
+          "us": 62.538,
+          "bytes": 56752.0,
+          "raw": "Utf8OrdinaryProgram         :     62.538 us/op | range=59.475..105.575 us/op | allocated=56,752 B/op range=56,752..56,752 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledProgram": {
+          "us": 60.337,
+          "bytes": 56752.0,
+          "raw": "Utf8CompiledProgram         :     60.337 us/op | range=55.925..86.750 us/op | allocated=56,752 B/op range=56,752..56,752 | instances=8 samples=5 sink=0"
+        },
+        "RegexOrdinaryAnchored": {
+          "us": 1.087,
+          "bytes": 1600.0,
+          "raw": "RegexOrdinaryAnchored       :      1.087 us/op | range=0.900..1397.625 us/op | allocated=1,600 B/op range=1,600..1,603 | instances=8 samples=5 sink=0"
+        },
+        "RegexCompiledAnchored": {
+          "us": 9.363,
+          "bytes": 6952.0,
+          "raw": "RegexCompiledAnchored       :      9.363 us/op | range=6.300..1122.475 us/op | allocated=6,952 B/op range=6,952..8,660 | instances=8 samples=5 sink=0"
+        },
+        "RegexGroupNumbers": {
+          "us": 0.05,
+          "bytes": 32.0,
+          "raw": "RegexGroupNumbers           :      0.050 us/op | range=0.037..59.875 us/op | allocated=32 B/op range=32..32 | instances=8 samples=5 sink=0"
+        },
+        "RegexGroupNames": {
+          "us": 0.45,
+          "bytes": 32.0,
+          "raw": "RegexGroupNames             :      0.450 us/op | range=0.062..217.287 us/op | allocated=32 B/op range=32..395 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryConstruct": {
+          "us": 60.612,
+          "bytes": 57520.0,
+          "raw": "Utf8OrdinaryConstruct       :     60.612 us/op | range=57.450..119.938 us/op | allocated=57,520 B/op range=57,520..57,520 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledConstruct": {
+          "us": 61.0,
+          "bytes": 57520.0,
+          "raw": "Utf8CompiledConstruct       :     61.000 us/op | range=55.825..91.725 us/op | allocated=57,520 B/op range=57,520..57,520 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryStaticConstruct": {
+          "us": 62.45,
+          "bytes": 57856.0,
+          "raw": "Utf8OrdinaryStaticConstruct :     62.450 us/op | range=58.625..1541.737 us/op | allocated=57,856 B/op range=57,856..57,946 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledStaticConstruct": {
+          "us": 60.825,
+          "bytes": 57856.0,
+          "raw": "Utf8CompiledStaticConstruct :     60.825 us/op | range=58.587..91.062 us/op | allocated=57,856 B/op range=57,856..57,856 | instances=8 samples=5 sink=0"
+        },
+        "RegexOrdinaryConstruct": {
+          "us": 0.65,
+          "bytes": 1224.0,
+          "raw": "RegexOrdinaryConstruct      :      0.650 us/op | range=0.600..23.837 us/op | allocated=1,224 B/op range=1,224..1,224 | instances=8 samples=5 sink=0"
+        },
+        "RegexCompiledConstruct": {
+          "us": 5.55,
+          "bytes": 6328.0,
+          "raw": "RegexCompiledConstruct      :      5.550 us/op | range=5.075..29.238 us/op | allocated=6,328 B/op range=6,328..6,328 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryFirstCountPrimed": {
+          "us": 93.388,
+          "bytes": 0.0,
+          "raw": "Utf8OrdinaryFirstCountPrimed:     93.388 us/op | range=84.338..123.912 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledFirstCountPrimed": {
+          "us": 87.625,
+          "bytes": 0.0,
+          "raw": "Utf8CompiledFirstCountPrimed:     87.625 us/op | range=82.463..115.850 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryStaticFirstCount": {
+          "us": 90.188,
+          "bytes": 0.0,
+          "raw": "Utf8OrdinaryStaticFirstCount:     90.188 us/op | range=86.525..118.650 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledStaticFirstCount": {
+          "us": 87.725,
+          "bytes": 0.0,
+          "raw": "Utf8CompiledStaticFirstCount:     87.725 us/op | range=82.938..116.013 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "RegexOrdinaryFirstCountPrimed": {
+          "us": 122.025,
+          "bytes": 784.0,
+          "raw": "RegexOrdinaryFirstCountPrimed:    122.025 us/op | range=120.138..139.600 us/op | allocated=784 B/op range=784..784 | instances=8 samples=5 sink=0"
+        },
+        "RegexCompiledFirstCountPrimed": {
+          "us": 595.275,
+          "bytes": 1408.0,
+          "raw": "RegexCompiledFirstCountPrimed:    595.275 us/op | range=564.950..613.175 us/op | allocated=1,408 B/op range=1,408..1,408 | instances=8 samples=5 sink=0"
+        }
+      },
+      "log": "CaseId            : literal/sherlock-en\nPattern           : Sherlock Holmes\nBaseOptions       : None\nInstances         : 8\nSamples           : 5\nInputBytes        : 899232\nSharedTierPrimeCalls: 64\nSourceCommit      : <unknown>\nTrackedDirty      : False\nHasUntrackedFiles : False\nRuntime           : .NET 10.0.12\nOperatingSystem   : Ubuntu 24.04.4 LTS\nProcessor         : X64\nTieredPGO         : 0\nUtf8FrontEndCompile         :     58.087 us/op | range=52.062..112.062 us/op | allocated=53,704 B/op range=53,704..53,704 | instances=8 samples=5 sink=0\nUtf8OrdinaryVerifier        :      0.537 us/op | range=0.138..13.675 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0\nUtf8CompiledVerifier        :      0.613 us/op | range=0.163..13.488 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0\nUtf8OrdinaryRuntime         :      3.800 us/op | range=3.650..23.375 us/op | allocated=2,816 B/op range=2,816..2,816 | instances=8 samples=5 sink=0\nUtf8CompiledRuntime         :      4.787 us/op | range=3.625..18.050 us/op | allocated=2,816 B/op range=2,816..2,816 | instances=8 samples=5 sink=0\nUtf8OrdinaryProgram         :     62.538 us/op | range=59.475..105.575 us/op | allocated=56,752 B/op range=56,752..56,752 | instances=8 samples=5 sink=0\nUtf8CompiledProgram         :     60.337 us/op | range=55.925..86.750 us/op | allocated=56,752 B/op range=56,752..56,752 | instances=8 samples=5 sink=0\nRegexOrdinaryAnchored       :      1.087 us/op | range=0.900..1397.625 us/op | allocated=1,600 B/op range=1,600..1,603 | instances=8 samples=5 sink=0\nRegexCompiledAnchored       :      9.363 us/op | range=6.300..1122.475 us/op | allocated=6,952 B/op range=6,952..8,660 | instances=8 samples=5 sink=0\nRegexGroupNumbers           :      0.050 us/op | range=0.037..59.875 us/op | allocated=32 B/op range=32..32 | instances=8 samples=5 sink=0\nRegexGroupNames             :      0.450 us/op | range=0.062..217.287 us/op | allocated=32 B/op range=32..395 | instances=8 samples=5 sink=0\nUtf8OrdinaryConstruct       :     60.612 us/op | range=57.450..119.938 us/op | allocated=57,520 B/op range=57,520..57,520 | instances=8 samples=5 sink=0\nUtf8CompiledConstruct       :     61.000 us/op | range=55.825..91.725 us/op | allocated=57,520 B/op range=57,520..57,520 | instances=8 samples=5 sink=0\nUtf8OrdinaryStaticConstruct :     62.450 us/op | range=58.625..1541.737 us/op | allocated=57,856 B/op range=57,856..57,946 | instances=8 samples=5 sink=0\nUtf8CompiledStaticConstruct :     60.825 us/op | range=58.587..91.062 us/op | allocated=57,856 B/op range=57,856..57,856 | instances=8 samples=5 sink=0\nRegexOrdinaryConstruct      :      0.650 us/op | range=0.600..23.837 us/op | allocated=1,224 B/op range=1,224..1,224 | instances=8 samples=5 sink=0\nRegexCompiledConstruct      :      5.550 us/op | range=5.075..29.238 us/op | allocated=6,328 B/op range=6,328..6,328 | instances=8 samples=5 sink=0\nUtf8OrdinaryFirstCountPrimed:     93.388 us/op | range=84.338..123.912 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nUtf8CompiledFirstCountPrimed:     87.625 us/op | range=82.463..115.850 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nUtf8OrdinaryStaticFirstCount:     90.188 us/op | range=86.525..118.650 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nUtf8CompiledStaticFirstCount:     87.725 us/op | range=82.938..116.013 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nRegexOrdinaryFirstCountPrimed:    122.025 us/op | range=120.138..139.600 us/op | allocated=784 B/op range=784..784 | instances=8 samples=5 sink=0\nRegexCompiledFirstCountPrimed:    595.275 us/op | range=564.950..613.175 us/op | allocated=1,408 B/op range=1,408..1,408 | instances=8 samples=5 sink=0\n"
+    },
+    "literal-public": {
+      "rows": {
+        "Utf8Regex": {
+          "us": 89.215,
+          "raw": "Utf8Regex         :      1.784 ms total |     89.215 us/op | sink=513 | samples=1 range=89.215..89.215 us/op | warmup=3071 calls/281.6 ms"
+        },
+        "DotNetRegex": {
+          "us": 125.03,
+          "raw": "DotNetRegex       :      2.501 ms total |    125.030 us/op | sink=513 | samples=1 range=125.030..125.030 us/op | warmup=2047 calls/264.4 ms"
+        }
+      },
+      "log": "CaseId            : literal/sherlock-en\nSource            : DotNetPerformance\nPattern           : Sherlock Holmes\nOptions           : None\nIterations        : 20\nGroup             : literal\nOrigin            : curated/01-literal.toml :: sherlock-en\nInputBytes        : 899232\nSourceCommit      : <unknown>\nTrackedDirty      : False\nHasUntrackedFiles : False\nRuntime           : .NET 10.0.12\nOperatingSystem   : Ubuntu 24.04.4 LTS\nProcessor         : X64\nTieredPGO         : 0\nUtf8Regex         :      1.784 ms total |     89.215 us/op | sink=513 | samples=1 range=89.215..89.215 us/op | warmup=3071 calls/281.6 ms\nDotNetRegex       :      2.501 ms total |    125.030 us/op | sink=513 | samples=1 range=125.030..125.030 us/op | warmup=2047 calls/264.4 ms\n"
+    }
+  },
+  "after": {
+    "control-construction": {
+      "rows": {
+        "Utf8FrontEndCompile": {
+          "us": 173.037,
+          "bytes": 38144.0,
+          "raw": "Utf8FrontEndCompile         :    173.037 us/op | range=164.738..199.363 us/op | allocated=38,144 B/op range=38,144..38,144 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryVerifier": {
+          "us": 0.575,
+          "bytes": 344.0,
+          "raw": "Utf8OrdinaryVerifier        :      0.575 us/op | range=0.150..13.838 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledVerifier": {
+          "us": 0.5,
+          "bytes": 344.0,
+          "raw": "Utf8CompiledVerifier        :      0.500 us/op | range=0.163..13.637 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryRuntime": {
+          "us": 0.3,
+          "bytes": 584.0,
+          "raw": "Utf8OrdinaryRuntime         :      0.300 us/op | range=0.275..20.200 us/op | allocated=584 B/op range=584..584 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledRuntime": {
+          "us": 0.3,
+          "bytes": 584.0,
+          "raw": "Utf8CompiledRuntime         :      0.300 us/op | range=0.300..14.875 us/op | allocated=584 B/op range=584..584 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryProgram": {
+          "us": 173.2,
+          "bytes": 38960.0,
+          "raw": "Utf8OrdinaryProgram         :    173.200 us/op | range=168.438..198.600 us/op | allocated=38,960 B/op range=38,960..38,960 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledProgram": {
+          "us": 167.137,
+          "bytes": 38960.0,
+          "raw": "Utf8CompiledProgram         :    167.137 us/op | range=163.825..194.938 us/op | allocated=38,960 B/op range=38,960..38,960 | instances=8 samples=5 sink=0"
+        },
+        "RegexOrdinaryAnchored": {
+          "us": 5.975,
+          "bytes": 3912.0,
+          "raw": "RegexOrdinaryAnchored       :      5.975 us/op | range=4.162..688.850 us/op | allocated=3,912 B/op range=3,912..3,912 | instances=8 samples=5 sink=0"
+        },
+        "RegexCompiledAnchored": {
+          "us": 15.65,
+          "bytes": 11504.0,
+          "raw": "RegexCompiledAnchored       :     15.650 us/op | range=13.637..47.138 us/op | allocated=11,504 B/op range=11,504..11,504 | instances=8 samples=5 sink=0"
+        },
+        "RegexGroupNumbers": {
+          "us": 0.05,
+          "bytes": 32.0,
+          "raw": "RegexGroupNumbers           :      0.050 us/op | range=0.050..61.688 us/op | allocated=32 B/op range=32..32 | instances=8 samples=5 sink=0"
+        },
+        "RegexGroupNames": {
+          "us": 0.45,
+          "bytes": 32.0,
+          "raw": "RegexGroupNames             :      0.450 us/op | range=0.050..206.675 us/op | allocated=32 B/op range=32..395 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryConstruct": {
+          "us": 179.15,
+          "bytes": 40184.0,
+          "raw": "Utf8OrdinaryConstruct       :    179.150 us/op | range=173.963..226.175 us/op | allocated=40,184 B/op range=40,184..40,184 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledConstruct": {
+          "us": 184.188,
+          "bytes": 40184.0,
+          "raw": "Utf8CompiledConstruct       :    184.188 us/op | range=179.213..213.375 us/op | allocated=40,184 B/op range=40,184..40,184 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryStaticConstruct": {
+          "us": 180.7,
+          "bytes": 40520.0,
+          "raw": "Utf8OrdinaryStaticConstruct :    180.700 us/op | range=170.887..1709.475 us/op | allocated=40,520 B/op range=40,520..40,610 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledStaticConstruct": {
+          "us": 168.075,
+          "bytes": 40520.0,
+          "raw": "Utf8CompiledStaticConstruct :    168.075 us/op | range=166.887..199.713 us/op | allocated=40,520 B/op range=40,520..40,520 | instances=8 samples=5 sink=0"
+        },
+        "RegexOrdinaryConstruct": {
+          "us": 3.925,
+          "bytes": 3432.0,
+          "raw": "RegexOrdinaryConstruct      :      3.925 us/op | range=3.837..28.800 us/op | allocated=3,432 B/op range=3,432..3,432 | instances=8 samples=5 sink=0"
+        },
+        "RegexCompiledConstruct": {
+          "us": 14.963,
+          "bytes": 11032.0,
+          "raw": "RegexCompiledConstruct      :     14.963 us/op | range=12.625..38.712 us/op | allocated=11,032 B/op range=11,032..11,032 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryFirstCountPrimed": {
+          "us": 0.762,
+          "bytes": 0.0,
+          "raw": "Utf8OrdinaryFirstCountPrimed:      0.762 us/op | range=0.725..31.212 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledFirstCountPrimed": {
+          "us": 0.775,
+          "bytes": 0.0,
+          "raw": "Utf8CompiledFirstCountPrimed:      0.775 us/op | range=0.762..28.925 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryStaticFirstCount": {
+          "us": 0.75,
+          "bytes": 0.0,
+          "raw": "Utf8OrdinaryStaticFirstCount:      0.750 us/op | range=0.738..29.800 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledStaticFirstCount": {
+          "us": 0.8,
+          "bytes": 0.0,
+          "raw": "Utf8CompiledStaticFirstCount:      0.800 us/op | range=0.762..28.750 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "RegexOrdinaryFirstCountPrimed": {
+          "us": 0.163,
+          "bytes": 784.0,
+          "raw": "RegexOrdinaryFirstCountPrimed:      0.163 us/op | range=0.125..11.975 us/op | allocated=784 B/op range=784..784 | instances=8 samples=5 sink=0"
+        },
+        "RegexCompiledFirstCountPrimed": {
+          "us": 110.55,
+          "bytes": 1840.0,
+          "raw": "RegexCompiledFirstCountPrimed:    110.550 us/op | range=103.162..127.100 us/op | allocated=1,840 B/op range=1,840..1,840 | instances=8 samples=5 sink=0"
+        }
+      },
+      "log": "CaseId            : lokad/langserv/identifier-validator\nPattern           : ^[a-z][a-z0-9_]*$\nBaseOptions       : IgnoreCase, CultureInvariant\nInstances         : 8\nSamples           : 5\nInputBytes        : 0\nSharedTierPrimeCalls: 64\nSourceCommit      : <unknown>\nTrackedDirty      : False\nHasUntrackedFiles : False\nRuntime           : .NET 10.0.12\nOperatingSystem   : Ubuntu 24.04.4 LTS\nProcessor         : X64\nTieredPGO         : 0\nUtf8FrontEndCompile         :    173.037 us/op | range=164.738..199.363 us/op | allocated=38,144 B/op range=38,144..38,144 | instances=8 samples=5 sink=0\nUtf8OrdinaryVerifier        :      0.575 us/op | range=0.150..13.838 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0\nUtf8CompiledVerifier        :      0.500 us/op | range=0.163..13.637 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0\nUtf8OrdinaryRuntime         :      0.300 us/op | range=0.275..20.200 us/op | allocated=584 B/op range=584..584 | instances=8 samples=5 sink=0\nUtf8CompiledRuntime         :      0.300 us/op | range=0.300..14.875 us/op | allocated=584 B/op range=584..584 | instances=8 samples=5 sink=0\nUtf8OrdinaryProgram         :    173.200 us/op | range=168.438..198.600 us/op | allocated=38,960 B/op range=38,960..38,960 | instances=8 samples=5 sink=0\nUtf8CompiledProgram         :    167.137 us/op | range=163.825..194.938 us/op | allocated=38,960 B/op range=38,960..38,960 | instances=8 samples=5 sink=0\nRegexOrdinaryAnchored       :      5.975 us/op | range=4.162..688.850 us/op | allocated=3,912 B/op range=3,912..3,912 | instances=8 samples=5 sink=0\nRegexCompiledAnchored       :     15.650 us/op | range=13.637..47.138 us/op | allocated=11,504 B/op range=11,504..11,504 | instances=8 samples=5 sink=0\nRegexGroupNumbers           :      0.050 us/op | range=0.050..61.688 us/op | allocated=32 B/op range=32..32 | instances=8 samples=5 sink=0\nRegexGroupNames             :      0.450 us/op | range=0.050..206.675 us/op | allocated=32 B/op range=32..395 | instances=8 samples=5 sink=0\nUtf8OrdinaryConstruct       :    179.150 us/op | range=173.963..226.175 us/op | allocated=40,184 B/op range=40,184..40,184 | instances=8 samples=5 sink=0\nUtf8CompiledConstruct       :    184.188 us/op | range=179.213..213.375 us/op | allocated=40,184 B/op range=40,184..40,184 | instances=8 samples=5 sink=0\nUtf8OrdinaryStaticConstruct :    180.700 us/op | range=170.887..1709.475 us/op | allocated=40,520 B/op range=40,520..40,610 | instances=8 samples=5 sink=0\nUtf8CompiledStaticConstruct :    168.075 us/op | range=166.887..199.713 us/op | allocated=40,520 B/op range=40,520..40,520 | instances=8 samples=5 sink=0\nRegexOrdinaryConstruct      :      3.925 us/op | range=3.837..28.800 us/op | allocated=3,432 B/op range=3,432..3,432 | instances=8 samples=5 sink=0\nRegexCompiledConstruct      :     14.963 us/op | range=12.625..38.712 us/op | allocated=11,032 B/op range=11,032..11,032 | instances=8 samples=5 sink=0\nUtf8OrdinaryFirstCountPrimed:      0.762 us/op | range=0.725..31.212 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nUtf8CompiledFirstCountPrimed:      0.775 us/op | range=0.762..28.925 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nUtf8OrdinaryStaticFirstCount:      0.750 us/op | range=0.738..29.800 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nUtf8CompiledStaticFirstCount:      0.800 us/op | range=0.762..28.750 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nRegexOrdinaryFirstCountPrimed:      0.163 us/op | range=0.125..11.975 us/op | allocated=784 B/op range=784..784 | instances=8 samples=5 sink=0\nRegexCompiledFirstCountPrimed:    110.550 us/op | range=103.162..127.100 us/op | allocated=1,840 B/op range=1,840..1,840 | instances=8 samples=5 sink=0\n"
+    },
+    "control-public": {
+      "rows": {
+        "ValidationOnly": {
+          "us": 0.773,
+          "raw": "ValidationOnly    :     15.453 ms total |      0.773 us/op | sink=0 | samples=1 range=0.773..0.773 us/op | warmup=262144 calls/201.9 ms"
+        },
+        "WellFormedOnly": {
+          "us": 3.248,
+          "raw": "WellFormedOnly    :     64.963 ms total |      3.248 us/op | sink=669 | samples=1 range=3.248..3.248 us/op | warmup=77823 calls/250.7 ms"
+        },
+        "PrefilterOnly": {
+          "us": 14.869,
+          "raw": "PrefilterOnly     :    297.382 ms total |     14.869 us/op | sink=120 | samples=1 range=14.869..14.869 us/op | warmup=17407 calls/261.7 ms"
+        },
+        "DirectMatchHook": {
+          "us": 7.941,
+          "raw": "DirectMatchHook   :    158.812 ms total |      7.941 us/op | sink=669 | samples=1 range=7.941..7.941 us/op | warmup=31743 calls/250.8 ms"
+        },
+        "AnchoredValidatorNative": {
+          "us": 3.573,
+          "raw": "AnchoredValidatorNative:     71.467 ms total |      3.573 us/op | sink=669 | samples=1 range=3.573..3.573 us/op | warmup=69631 calls/252.5 ms"
+        },
+        "HeadTailBoolOnly": {
+          "us": 6.049,
+          "raw": "HeadTailBoolOnly  :    120.986 ms total |      6.049 us/op | sink=669 | samples=1 range=6.049..6.049 us/op | warmup=41983 calls/254.5 ms"
+        },
+        "HeadTailMatchOnly": {
+          "us": 7.416,
+          "raw": "HeadTailMatchOnly :    148.322 ms total |      7.416 us/op | sink=669 | samples=1 range=7.416..7.416 us/op | warmup=34815 calls/255.3 ms"
+        },
+        "SimplePatternBoolOnly": {
+          "us": 1.746,
+          "raw": "SimplePatternBoolOnly:     34.923 ms total |      1.746 us/op | sink=0 | samples=1 range=1.746..1.746 us/op | warmup=152575 calls/250.4 ms"
+        },
+        "SimplePatternMatchOnly": {
+          "us": 2.417,
+          "raw": "SimplePatternMatchOnly:     48.343 ms total |      2.417 us/op | sink=0 | samples=1 range=2.417..2.417 us/op | warmup=108543 calls/251.7 ms"
+        },
+        "WholeMatchProjectionOnly": {
+          "us": 0.301,
+          "raw": "WholeMatchProjectionOnly:      6.024 ms total |      0.301 us/op | sink=0 | samples=1 range=0.301..0.301 us/op | warmup=262144 calls/75.8 ms"
+        },
+        "AnchoredValidatorEmitted": {
+          "us": 0.071,
+          "raw": "AnchoredValidatorEmitted:      1.419 ms total |      0.071 us/op | sink=0 | samples=1 range=0.071..0.071 us/op | warmup=262144 calls/40.2 ms"
+        },
+        "DirectUrlMatcher": {
+          "us": 0.005,
+          "raw": "DirectUrlMatcher  :      0.097 ms total |      0.005 us/op | sink=0 | samples=1 range=0.005..0.005 us/op | warmup=262144 calls/2.3 ms"
+        },
+        "PublicAfterValidation": {
+          "us": 24.272,
+          "raw": "PublicAfterValidation:    485.448 ms total |     24.272 us/op | sink=669 | samples=1 range=24.272..24.272 us/op | warmup=10239 calls/257.4 ms"
+        },
+        "CompiledMatchOnly": {
+          "us": 23.406,
+          "raw": "CompiledMatchOnly :    468.125 ms total |     23.406 us/op | sink=669 | samples=1 range=23.406..23.406 us/op | warmup=11263 calls/263.4 ms"
+        },
+        "Utf8Regex": {
+          "us": 17.81,
+          "raw": "Utf8Regex         :    356.202 ms total |     17.810 us/op | sink=669 | samples=1 range=17.810..17.810 us/op | warmup=14335 calls/264.3 ms"
+        },
+        "Utf8Compiled": {
+          "us": 18.141,
+          "raw": "Utf8Compiled      :    362.813 ms total |     18.141 us/op | sink=669 | samples=1 range=18.141..18.141 us/op | warmup=14335 calls/253.3 ms"
+        },
+        "DecodeThenRegex": {
+          "us": 12.736,
+          "raw": "DecodeThenRegex   :    254.714 ms total |     12.736 us/op | sink=669 | samples=1 range=12.736..12.736 us/op | warmup=16383 calls/252.1 ms"
+        },
+        "DecodeThenCompiledRegex": {
+          "us": 12.411,
+          "raw": "DecodeThenCompiledRegex:    248.223 ms total |     12.411 us/op | sink=669 | samples=1 range=12.411..12.411 us/op | warmup=20479 calls/255.0 ms"
+        },
+        "PredecodedRegex": {
+          "us": 10.1,
+          "raw": "PredecodedRegex   :    201.996 ms total |     10.100 us/op | sink=669 | samples=1 range=10.100..10.100 us/op | warmup=25599 calls/254.8 ms"
+        },
+        "PredecodedCompiledRegex": {
+          "us": 10.116,
+          "raw": "PredecodedCompiledRegex:    202.316 ms total |     10.116 us/op | sink=669 | samples=1 range=10.116..10.116 us/op | warmup=25599 calls/255.7 ms"
+        }
+      },
+      "log": "CaseId            : lokad/langserv/identifier-validator\nModel             : PrefixMatchLoop\nPattern           : ^[a-z][a-z0-9_]*$\nDotNetOptions     : IgnoreCase, Compiled, CultureInvariant\nUtf8Options       : IgnoreCase, CultureInvariant\nIterations        : 20000\nInputChars        : 669\nInputBytes        : 669\nSampleCount       : 120\nExecutionKind     : AsciiSimplePattern\nCompiledEngine    : SimplePatternInterpreter\nSourceCommit      : <unknown>\nTrackedDirty      : False\nHasUntrackedFiles : False\nRuntime           : .NET 10.0.12\nOperatingSystem   : Ubuntu 24.04.4 LTS\nProcessor         : X64\nTieredPGO         : 0\nValidationOnly    :     15.453 ms total |      0.773 us/op | sink=0 | samples=1 range=0.773..0.773 us/op | warmup=262144 calls/201.9 ms\nWellFormedOnly    :     64.963 ms total |      3.248 us/op | sink=669 | samples=1 range=3.248..3.248 us/op | warmup=77823 calls/250.7 ms\nPrefilterOnly     :    297.382 ms total |     14.869 us/op | sink=120 | samples=1 range=14.869..14.869 us/op | warmup=17407 calls/261.7 ms\nDirectMatchHook   :    158.812 ms total |      7.941 us/op | sink=669 | samples=1 range=7.941..7.941 us/op | warmup=31743 calls/250.8 ms\nAnchoredValidatorNative:     71.467 ms total |      3.573 us/op | sink=669 | samples=1 range=3.573..3.573 us/op | warmup=69631 calls/252.5 ms\nHeadTailBoolOnly  :    120.986 ms total |      6.049 us/op | sink=669 | samples=1 range=6.049..6.049 us/op | warmup=41983 calls/254.5 ms\nHeadTailMatchOnly :    148.322 ms total |      7.416 us/op | sink=669 | samples=1 range=7.416..7.416 us/op | warmup=34815 calls/255.3 ms\nSimplePatternBoolOnly:     34.923 ms total |      1.746 us/op | sink=0 | samples=1 range=1.746..1.746 us/op | warmup=152575 calls/250.4 ms\nSimplePatternMatchOnly:     48.343 ms total |      2.417 us/op | sink=0 | samples=1 range=2.417..2.417 us/op | warmup=108543 calls/251.7 ms\nWholeMatchProjectionOnly:      6.024 ms total |      0.301 us/op | sink=0 | samples=1 range=0.301..0.301 us/op | warmup=262144 calls/75.8 ms\nAnchoredValidatorEmitted:      1.419 ms total |      0.071 us/op | sink=0 | samples=1 range=0.071..0.071 us/op | warmup=262144 calls/40.2 ms\nDirectUrlMatcher  :      0.097 ms total |      0.005 us/op | sink=0 | samples=1 range=0.005..0.005 us/op | warmup=262144 calls/2.3 ms\nPublicAfterValidation:    485.448 ms total |     24.272 us/op | sink=669 | samples=1 range=24.272..24.272 us/op | warmup=10239 calls/257.4 ms\nCompiledMatchOnly :    468.125 ms total |     23.406 us/op | sink=669 | samples=1 range=23.406..23.406 us/op | warmup=11263 calls/263.4 ms\nUtf8Regex         :    356.202 ms total |     17.810 us/op | sink=669 | samples=1 range=17.810..17.810 us/op | warmup=14335 calls/264.3 ms\nUtf8Compiled      :    362.813 ms total |     18.141 us/op | sink=669 | samples=1 range=18.141..18.141 us/op | warmup=14335 calls/253.3 ms\nDecodeThenRegex   :    254.714 ms total |     12.736 us/op | sink=669 | samples=1 range=12.736..12.736 us/op | warmup=16383 calls/252.1 ms\nDecodeThenCompiledRegex:    248.223 ms total |     12.411 us/op | sink=669 | samples=1 range=12.411..12.411 us/op | warmup=20479 calls/255.0 ms\nPredecodedRegex   :    201.996 ms total |     10.100 us/op | sink=669 | samples=1 range=10.100..10.100 us/op | warmup=25599 calls/254.8 ms\nPredecodedCompiledRegex:    202.316 ms total |     10.116 us/op | sink=669 | samples=1 range=10.116..10.116 us/op | warmup=25599 calls/255.7 ms\n"
+    },
+    "family-construction": {
+      "rows": {
+        "ExactLiteralSearchData": {
+          "us": 1.375,
+          "bytes": 3608.0,
+          "raw": "ExactLiteralSearchData      :      1.375 us/op | range=0.812..24.350 us/op | allocated=3,608 B/op range=3,608..3,608 | instances=8 samples=5 sink=0"
+        },
+        "Utf8FrontEndCompile": {
+          "us": 95.575,
+          "bytes": 65768.0,
+          "raw": "Utf8FrontEndCompile         :     95.575 us/op | range=90.588..152.137 us/op | allocated=65,768 B/op range=65,768..65,768 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryVerifier": {
+          "us": 0.15,
+          "bytes": 344.0,
+          "raw": "Utf8OrdinaryVerifier        :      0.150 us/op | range=0.138..16.775 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledVerifier": {
+          "us": 0.212,
+          "bytes": 344.0,
+          "raw": "Utf8CompiledVerifier        :      0.212 us/op | range=0.150..12.775 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryRuntime": {
+          "us": 0.2,
+          "bytes": 568.0,
+          "raw": "Utf8OrdinaryRuntime         :      0.200 us/op | range=0.200..17.212 us/op | allocated=568 B/op range=568..568 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledRuntime": {
+          "us": 151.088,
+          "bytes": 122472.0,
+          "raw": "Utf8CompiledRuntime         :    151.088 us/op | range=145.562..220.800 us/op | allocated=122,472 B/op range=122,472..122,472 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryProgram": {
+          "us": 102.425,
+          "bytes": 66728.0,
+          "raw": "Utf8OrdinaryProgram         :    102.425 us/op | range=98.388..127.300 us/op | allocated=66,728 B/op range=66,728..66,728 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledProgram": {
+          "us": 272.762,
+          "bytes": 188712.0,
+          "raw": "Utf8CompiledProgram         :    272.762 us/op | range=260.837..323.175 us/op | allocated=188,712 B/op range=188,712..188,712 | instances=8 samples=5 sink=0"
+        },
+        "RegexOrdinaryAnchored": {
+          "us": 3.462,
+          "bytes": 4120.0,
+          "raw": "RegexOrdinaryAnchored       :      3.462 us/op | range=3.163..29.250 us/op | allocated=4,120 B/op range=4,120..4,120 | instances=8 samples=5 sink=0"
+        },
+        "RegexCompiledAnchored": {
+          "us": 14.363,
+          "bytes": 12840.0,
+          "raw": "RegexCompiledAnchored       :     14.363 us/op | range=12.762..165.537 us/op | allocated=12,840 B/op range=12,840..12,840 | instances=8 samples=5 sink=0"
+        },
+        "RegexGroupNumbers": {
+          "us": 0.05,
+          "bytes": 32.0,
+          "raw": "RegexGroupNumbers           :      0.050 us/op | range=0.025..61.100 us/op | allocated=32 B/op range=32..32 | instances=8 samples=5 sink=0"
+        },
+        "RegexGroupNames": {
+          "us": 0.475,
+          "bytes": 32.0,
+          "raw": "RegexGroupNames             :      0.475 us/op | range=0.075..205.075 us/op | allocated=32 B/op range=32..395 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryConstruct": {
+          "us": 104.925,
+          "bytes": 67736.0,
+          "raw": "Utf8OrdinaryConstruct       :    104.925 us/op | range=100.725..159.113 us/op | allocated=67,736 B/op range=67,736..67,736 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledConstruct": {
+          "us": 275.725,
+          "bytes": 189720.0,
+          "raw": "Utf8CompiledConstruct       :    275.725 us/op | range=262.000..343.163 us/op | allocated=189,720 B/op range=189,720..189,720 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryStaticConstruct": {
+          "us": 110.737,
+          "bytes": 68072.0,
+          "raw": "Utf8OrdinaryStaticConstruct :    110.737 us/op | range=104.875..1604.275 us/op | allocated=68,072 B/op range=68,072..68,162 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledStaticConstruct": {
+          "us": 269.913,
+          "bytes": 190056.0,
+          "raw": "Utf8CompiledStaticConstruct :    269.913 us/op | range=263.575..297.812 us/op | allocated=190,056 B/op range=190,056..190,056 | instances=8 samples=5 sink=0"
+        },
+        "RegexOrdinaryConstruct": {
+          "us": 3.212,
+          "bytes": 3592.0,
+          "raw": "RegexOrdinaryConstruct      :      3.212 us/op | range=2.925..30.163 us/op | allocated=3,592 B/op range=3,592..3,592 | instances=8 samples=5 sink=0"
+        },
+        "RegexCompiledConstruct": {
+          "us": 13.6,
+          "bytes": 13632.0,
+          "raw": "RegexCompiledConstruct      :     13.600 us/op | range=12.637..37.188 us/op | allocated=13,632 B/op range=13,632..13,632 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryFirstCountPrimed": {
+          "us": 21.65,
+          "bytes": 0.0,
+          "raw": "Utf8OrdinaryFirstCountPrimed:     21.650 us/op | range=21.212..55.862 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledFirstCountPrimed": {
+          "us": 7189.7,
+          "bytes": 0.0,
+          "raw": "Utf8CompiledFirstCountPrimed:   7189.700 us/op | range=7065.363..7254.962 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryStaticFirstCount": {
+          "us": 21.3,
+          "bytes": 0.0,
+          "raw": "Utf8OrdinaryStaticFirstCount:     21.300 us/op | range=20.675..55.362 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledStaticFirstCount": {
+          "us": 7191.613,
+          "bytes": 0.0,
+          "raw": "Utf8CompiledStaticFirstCount:   7191.613 us/op | range=7175.812..7214.012 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "RegexOrdinaryFirstCountPrimed": {
+          "us": 14.113,
+          "bytes": 1264.0,
+          "raw": "RegexOrdinaryFirstCountPrimed:     14.113 us/op | range=12.912..30.188 us/op | allocated=1,264 B/op range=1,264..1,264 | instances=8 samples=5 sink=0"
+        },
+        "RegexCompiledFirstCountPrimed": {
+          "us": 1590.463,
+          "bytes": 2112.0,
+          "raw": "RegexCompiledFirstCountPrimed:   1590.463 us/op | range=1567.713..1633.463 us/op | allocated=2,112 B/op range=2,112..2,112 | instances=8 samples=5 sink=0"
+        }
+      },
+      "log": "CaseId            : literal-family/method-token-family\nPattern           : \\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\\b\nBaseOptions       : CultureInvariant\nInstances         : 8\nSamples           : 5\nInputBytes        : 53352\nSharedTierPrimeCalls: 64\nSourceCommit      : <unknown>\nTrackedDirty      : False\nHasUntrackedFiles : False\nRuntime           : .NET 10.0.12\nOperatingSystem   : Ubuntu 24.04.4 LTS\nProcessor         : X64\nTieredPGO         : 0\nExactLiteralSearchData      :      1.375 us/op | range=0.812..24.350 us/op | allocated=3,608 B/op range=3,608..3,608 | instances=8 samples=5 sink=0\nUtf8FrontEndCompile         :     95.575 us/op | range=90.588..152.137 us/op | allocated=65,768 B/op range=65,768..65,768 | instances=8 samples=5 sink=0\nUtf8OrdinaryVerifier        :      0.150 us/op | range=0.138..16.775 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0\nUtf8CompiledVerifier        :      0.212 us/op | range=0.150..12.775 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0\nUtf8OrdinaryRuntime         :      0.200 us/op | range=0.200..17.212 us/op | allocated=568 B/op range=568..568 | instances=8 samples=5 sink=0\nUtf8CompiledRuntime         :    151.088 us/op | range=145.562..220.800 us/op | allocated=122,472 B/op range=122,472..122,472 | instances=8 samples=5 sink=0\nUtf8OrdinaryProgram         :    102.425 us/op | range=98.388..127.300 us/op | allocated=66,728 B/op range=66,728..66,728 | instances=8 samples=5 sink=0\nUtf8CompiledProgram         :    272.762 us/op | range=260.837..323.175 us/op | allocated=188,712 B/op range=188,712..188,712 | instances=8 samples=5 sink=0\nRegexOrdinaryAnchored       :      3.462 us/op | range=3.163..29.250 us/op | allocated=4,120 B/op range=4,120..4,120 | instances=8 samples=5 sink=0\nRegexCompiledAnchored       :     14.363 us/op | range=12.762..165.537 us/op | allocated=12,840 B/op range=12,840..12,840 | instances=8 samples=5 sink=0\nRegexGroupNumbers           :      0.050 us/op | range=0.025..61.100 us/op | allocated=32 B/op range=32..32 | instances=8 samples=5 sink=0\nRegexGroupNames             :      0.475 us/op | range=0.075..205.075 us/op | allocated=32 B/op range=32..395 | instances=8 samples=5 sink=0\nUtf8OrdinaryConstruct       :    104.925 us/op | range=100.725..159.113 us/op | allocated=67,736 B/op range=67,736..67,736 | instances=8 samples=5 sink=0\nUtf8CompiledConstruct       :    275.725 us/op | range=262.000..343.163 us/op | allocated=189,720 B/op range=189,720..189,720 | instances=8 samples=5 sink=0\nUtf8OrdinaryStaticConstruct :    110.737 us/op | range=104.875..1604.275 us/op | allocated=68,072 B/op range=68,072..68,162 | instances=8 samples=5 sink=0\nUtf8CompiledStaticConstruct :    269.913 us/op | range=263.575..297.812 us/op | allocated=190,056 B/op range=190,056..190,056 | instances=8 samples=5 sink=0\nRegexOrdinaryConstruct      :      3.212 us/op | range=2.925..30.163 us/op | allocated=3,592 B/op range=3,592..3,592 | instances=8 samples=5 sink=0\nRegexCompiledConstruct      :     13.600 us/op | range=12.637..37.188 us/op | allocated=13,632 B/op range=13,632..13,632 | instances=8 samples=5 sink=0\nUtf8OrdinaryFirstCountPrimed:     21.650 us/op | range=21.212..55.862 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nUtf8CompiledFirstCountPrimed:   7189.700 us/op | range=7065.363..7254.962 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nUtf8OrdinaryStaticFirstCount:     21.300 us/op | range=20.675..55.362 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nUtf8CompiledStaticFirstCount:   7191.613 us/op | range=7175.812..7214.012 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nRegexOrdinaryFirstCountPrimed:     14.113 us/op | range=12.912..30.188 us/op | allocated=1,264 B/op range=1,264..1,264 | instances=8 samples=5 sink=0\nRegexCompiledFirstCountPrimed:   1590.463 us/op | range=1567.713..1633.463 us/op | allocated=2,112 B/op range=2,112..2,112 | instances=8 samples=5 sink=0\n"
+    },
+    "family-public": {
+      "rows": {
+        "Utf8Regex": {
+          "us": 21.22,
+          "raw": "Utf8Regex         :      0.424 ms total |     21.220 us/op | sink=46 | samples=1 range=21.220..21.220 us/op | warmup=11263 calls/261.8 ms"
+        },
+        "DecodeThenRegex": {
+          "us": 20.36,
+          "raw": "DecodeThenRegex   :      0.407 ms total |     20.360 us/op | sink=46 | samples=1 range=20.360..20.360 us/op | warmup=10239 calls/267.1 ms"
+        },
+        "PredecodedRegex": {
+          "us": 13.56,
+          "raw": "PredecodedRegex   :      0.271 ms total |     13.560 us/op | sink=46 | samples=1 range=13.560..13.560 us/op | warmup=19455 calls/263.0 ms"
+        }
+      },
+      "log": "CaseId            : literal-family/method-token-family\nSource            : Lokad\nPattern           : \\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\\b\nOptions           : CultureInvariant\nIterations        : 20\nPatternMode       : Regex\nGroup             : literal-family\nIntent            : regex_byte_fast\nInputBytes        : 53352\nSourceCommit      : <unknown>\nTrackedDirty      : False\nHasUntrackedFiles : False\nRuntime           : .NET 10.0.12\nOperatingSystem   : Ubuntu 24.04.4 LTS\nProcessor         : X64\nTieredPGO         : 0\nUtf8Regex         :      0.424 ms total |     21.220 us/op | sink=46 | samples=1 range=21.220..21.220 us/op | warmup=11263 calls/261.8 ms\nDecodeThenRegex   :      0.407 ms total |     20.360 us/op | sink=46 | samples=1 range=20.360..20.360 us/op | warmup=10239 calls/267.1 ms\nPredecodedRegex   :      0.271 ms total |     13.560 us/op | sink=46 | samples=1 range=13.560..13.560 us/op | warmup=19455 calls/263.0 ms\n"
+    },
+    "literal-construction": {
+      "rows": {
+        "Utf8FrontEndCompile": {
+          "us": 55.737,
+          "bytes": 53704.0,
+          "raw": "Utf8FrontEndCompile         :     55.737 us/op | range=52.312..105.487 us/op | allocated=53,704 B/op range=53,704..53,704 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryVerifier": {
+          "us": 0.5,
+          "bytes": 344.0,
+          "raw": "Utf8OrdinaryVerifier        :      0.500 us/op | range=0.150..13.988 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledVerifier": {
+          "us": 0.588,
+          "bytes": 344.0,
+          "raw": "Utf8CompiledVerifier        :      0.588 us/op | range=0.150..12.838 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryRuntime": {
+          "us": 2.625,
+          "bytes": 2816.0,
+          "raw": "Utf8OrdinaryRuntime         :      2.625 us/op | range=2.550..19.150 us/op | allocated=2,816 B/op range=2,816..2,816 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledRuntime": {
+          "us": 2.612,
+          "bytes": 2816.0,
+          "raw": "Utf8CompiledRuntime         :      2.612 us/op | range=2.525..15.588 us/op | allocated=2,816 B/op range=2,816..2,816 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryProgram": {
+          "us": 58.5,
+          "bytes": 56752.0,
+          "raw": "Utf8OrdinaryProgram         :     58.500 us/op | range=55.125..95.700 us/op | allocated=56,752 B/op range=56,752..56,752 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledProgram": {
+          "us": 60.15,
+          "bytes": 56752.0,
+          "raw": "Utf8CompiledProgram         :     60.150 us/op | range=59.638..85.987 us/op | allocated=56,752 B/op range=56,752..56,752 | instances=8 samples=5 sink=0"
+        },
+        "RegexOrdinaryAnchored": {
+          "us": 1.175,
+          "bytes": 1600.0,
+          "raw": "RegexOrdinaryAnchored       :      1.175 us/op | range=0.950..1418.300 us/op | allocated=1,600 B/op range=1,600..1,603 | instances=8 samples=5 sink=0"
+        },
+        "RegexCompiledAnchored": {
+          "us": 8.45,
+          "bytes": 6952.0,
+          "raw": "RegexCompiledAnchored       :      8.450 us/op | range=5.713..1131.650 us/op | allocated=6,952 B/op range=6,952..8,660 | instances=8 samples=5 sink=0"
+        },
+        "RegexGroupNumbers": {
+          "us": 0.062,
+          "bytes": 32.0,
+          "raw": "RegexGroupNumbers           :      0.062 us/op | range=0.025..58.650 us/op | allocated=32 B/op range=32..32 | instances=8 samples=5 sink=0"
+        },
+        "RegexGroupNames": {
+          "us": 0.438,
+          "bytes": 32.0,
+          "raw": "RegexGroupNames             :      0.438 us/op | range=0.062..201.350 us/op | allocated=32 B/op range=32..395 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryConstruct": {
+          "us": 58.362,
+          "bytes": 57520.0,
+          "raw": "Utf8OrdinaryConstruct       :     58.362 us/op | range=56.263..119.175 us/op | allocated=57,520 B/op range=57,520..57,520 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledConstruct": {
+          "us": 58.15,
+          "bytes": 57520.0,
+          "raw": "Utf8CompiledConstruct       :     58.150 us/op | range=57.400..94.438 us/op | allocated=57,520 B/op range=57,520..57,520 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryStaticConstruct": {
+          "us": 63.75,
+          "bytes": 57856.0,
+          "raw": "Utf8OrdinaryStaticConstruct :     63.750 us/op | range=60.812..1555.537 us/op | allocated=57,856 B/op range=57,856..57,946 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledStaticConstruct": {
+          "us": 62.612,
+          "bytes": 57856.0,
+          "raw": "Utf8CompiledStaticConstruct :     62.612 us/op | range=58.663..92.500 us/op | allocated=57,856 B/op range=57,856..57,856 | instances=8 samples=5 sink=0"
+        },
+        "RegexOrdinaryConstruct": {
+          "us": 0.812,
+          "bytes": 1224.0,
+          "raw": "RegexOrdinaryConstruct      :      0.812 us/op | range=0.625..23.812 us/op | allocated=1,224 B/op range=1,224..1,224 | instances=8 samples=5 sink=0"
+        },
+        "RegexCompiledConstruct": {
+          "us": 6.088,
+          "bytes": 6328.0,
+          "raw": "RegexCompiledConstruct      :      6.088 us/op | range=4.950..28.225 us/op | allocated=6,328 B/op range=6,328..6,328 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryFirstCountPrimed": {
+          "us": 106.0,
+          "bytes": 0.0,
+          "raw": "Utf8OrdinaryFirstCountPrimed:    106.000 us/op | range=102.525..138.850 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledFirstCountPrimed": {
+          "us": 104.075,
+          "bytes": 0.0,
+          "raw": "Utf8CompiledFirstCountPrimed:    104.075 us/op | range=102.975..133.037 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "Utf8OrdinaryStaticFirstCount": {
+          "us": 100.812,
+          "bytes": 0.0,
+          "raw": "Utf8OrdinaryStaticFirstCount:    100.812 us/op | range=99.050..133.863 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "Utf8CompiledStaticFirstCount": {
+          "us": 102.625,
+          "bytes": 0.0,
+          "raw": "Utf8CompiledStaticFirstCount:    102.625 us/op | range=97.750..132.300 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0"
+        },
+        "RegexOrdinaryFirstCountPrimed": {
+          "us": 118.1,
+          "bytes": 784.0,
+          "raw": "RegexOrdinaryFirstCountPrimed:    118.100 us/op | range=115.838..137.863 us/op | allocated=784 B/op range=784..784 | instances=8 samples=5 sink=0"
+        },
+        "RegexCompiledFirstCountPrimed": {
+          "us": 566.825,
+          "bytes": 1408.0,
+          "raw": "RegexCompiledFirstCountPrimed:    566.825 us/op | range=533.200..607.250 us/op | allocated=1,408 B/op range=1,408..1,408 | instances=8 samples=5 sink=0"
+        }
+      },
+      "log": "CaseId            : literal/sherlock-en\nPattern           : Sherlock Holmes\nBaseOptions       : None\nInstances         : 8\nSamples           : 5\nInputBytes        : 899232\nSharedTierPrimeCalls: 64\nSourceCommit      : <unknown>\nTrackedDirty      : False\nHasUntrackedFiles : False\nRuntime           : .NET 10.0.12\nOperatingSystem   : Ubuntu 24.04.4 LTS\nProcessor         : X64\nTieredPGO         : 0\nUtf8FrontEndCompile         :     55.737 us/op | range=52.312..105.487 us/op | allocated=53,704 B/op range=53,704..53,704 | instances=8 samples=5 sink=0\nUtf8OrdinaryVerifier        :      0.500 us/op | range=0.150..13.988 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0\nUtf8CompiledVerifier        :      0.588 us/op | range=0.150..12.838 us/op | allocated=344 B/op range=344..344 | instances=8 samples=5 sink=0\nUtf8OrdinaryRuntime         :      2.625 us/op | range=2.550..19.150 us/op | allocated=2,816 B/op range=2,816..2,816 | instances=8 samples=5 sink=0\nUtf8CompiledRuntime         :      2.612 us/op | range=2.525..15.588 us/op | allocated=2,816 B/op range=2,816..2,816 | instances=8 samples=5 sink=0\nUtf8OrdinaryProgram         :     58.500 us/op | range=55.125..95.700 us/op | allocated=56,752 B/op range=56,752..56,752 | instances=8 samples=5 sink=0\nUtf8CompiledProgram         :     60.150 us/op | range=59.638..85.987 us/op | allocated=56,752 B/op range=56,752..56,752 | instances=8 samples=5 sink=0\nRegexOrdinaryAnchored       :      1.175 us/op | range=0.950..1418.300 us/op | allocated=1,600 B/op range=1,600..1,603 | instances=8 samples=5 sink=0\nRegexCompiledAnchored       :      8.450 us/op | range=5.713..1131.650 us/op | allocated=6,952 B/op range=6,952..8,660 | instances=8 samples=5 sink=0\nRegexGroupNumbers           :      0.062 us/op | range=0.025..58.650 us/op | allocated=32 B/op range=32..32 | instances=8 samples=5 sink=0\nRegexGroupNames             :      0.438 us/op | range=0.062..201.350 us/op | allocated=32 B/op range=32..395 | instances=8 samples=5 sink=0\nUtf8OrdinaryConstruct       :     58.362 us/op | range=56.263..119.175 us/op | allocated=57,520 B/op range=57,520..57,520 | instances=8 samples=5 sink=0\nUtf8CompiledConstruct       :     58.150 us/op | range=57.400..94.438 us/op | allocated=57,520 B/op range=57,520..57,520 | instances=8 samples=5 sink=0\nUtf8OrdinaryStaticConstruct :     63.750 us/op | range=60.812..1555.537 us/op | allocated=57,856 B/op range=57,856..57,946 | instances=8 samples=5 sink=0\nUtf8CompiledStaticConstruct :     62.612 us/op | range=58.663..92.500 us/op | allocated=57,856 B/op range=57,856..57,856 | instances=8 samples=5 sink=0\nRegexOrdinaryConstruct      :      0.812 us/op | range=0.625..23.812 us/op | allocated=1,224 B/op range=1,224..1,224 | instances=8 samples=5 sink=0\nRegexCompiledConstruct      :      6.088 us/op | range=4.950..28.225 us/op | allocated=6,328 B/op range=6,328..6,328 | instances=8 samples=5 sink=0\nUtf8OrdinaryFirstCountPrimed:    106.000 us/op | range=102.525..138.850 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nUtf8CompiledFirstCountPrimed:    104.075 us/op | range=102.975..133.037 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nUtf8OrdinaryStaticFirstCount:    100.812 us/op | range=99.050..133.863 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nUtf8CompiledStaticFirstCount:    102.625 us/op | range=97.750..132.300 us/op | allocated=0 B/op range=0..0 | instances=8 samples=5 sink=0\nRegexOrdinaryFirstCountPrimed:    118.100 us/op | range=115.838..137.863 us/op | allocated=784 B/op range=784..784 | instances=8 samples=5 sink=0\nRegexCompiledFirstCountPrimed:    566.825 us/op | range=533.200..607.250 us/op | allocated=1,408 B/op range=1,408..1,408 | instances=8 samples=5 sink=0\n"
+    },
+    "literal-public": {
+      "rows": {
+        "Utf8Regex": {
+          "us": 103.085,
+          "raw": "Utf8Regex         :      2.062 ms total |    103.085 us/op | sink=513 | samples=1 range=103.085..103.085 us/op | warmup=3071 calls/332.9 ms"
+        },
+        "DotNetRegex": {
+          "us": 119.115,
+          "raw": "DotNetRegex       :      2.382 ms total |    119.115 us/op | sink=513 | samples=1 range=119.115..119.115 us/op | warmup=2047 calls/265.7 ms"
+        }
+      },
+      "log": "CaseId            : literal/sherlock-en\nSource            : DotNetPerformance\nPattern           : Sherlock Holmes\nOptions           : None\nIterations        : 20\nGroup             : literal\nOrigin            : curated/01-literal.toml :: sherlock-en\nInputBytes        : 899232\nSourceCommit      : <unknown>\nTrackedDirty      : False\nHasUntrackedFiles : False\nRuntime           : .NET 10.0.12\nOperatingSystem   : Ubuntu 24.04.4 LTS\nProcessor         : X64\nTieredPGO         : 0\nUtf8Regex         :      2.062 ms total |    103.085 us/op | sink=513 | samples=1 range=103.085..103.085 us/op | warmup=3071 calls/332.9 ms\nDotNetRegex       :      2.382 ms total |    119.115 us/op | sink=513 | samples=1 range=119.115..119.115 us/op | warmup=2047 calls/265.7 ms\n"
+    }
+  }
+}

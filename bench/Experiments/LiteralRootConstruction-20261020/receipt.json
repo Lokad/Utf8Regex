@@ -1,0 +1,50 @@
+{
+  "parentRevision": "c6dade89a505df92c2c007ca994937f998847b0c",
+  "identities": {
+    "before-core.dll": "8EA6A50F778841EE0A2C1ECAB11201A1839F4DBF25ADDC68EAEF37E7A47185E8",
+    "Lokad.Utf8Regex.Benchmarks.dll": "1294A402001B52F89AF054489D6E26A3ABDE6A263FB21EB21105236A865D9A28",
+    "Lokad.Utf8Regex.Benchmarks.deps.json": "7778805E0CD993F30A536871FA2551F48E4334AA577EEC55B15BF18365E5F338",
+    "Lokad.Utf8Regex.Benchmarks.runtimeconfig.json": "C230A317A54DD960BCBEB5F347F52E18DC665A26F7EFDA2159FCED9A5AC7E097",
+    "Lokad.Utf8Regex.PythonRe.dll": "EC45BD1318F12CE31B9C5857B0B052D1C34022215FDAA47957EF7FCC5E537396",
+    "Lokad.Utf8Regex.Pcre2.dll": "80D48B65E100D429862326124D8F25FB7E5E40BBC824606AA4BA96C1387CE7A5",
+    "after-core.dll": "AE57907F66F948B268557B8C218473D735D1B4D50F27493EE26DAA8D2C005367",
+    "bench.ps1": "2631696B1C31FC641D807AEFB6CA20265D7654C3EF399F8ED7AF5E186218C22C"
+  },
+  "archives": {
+    "initial": "9EE787718EAA38B6E02F15F5AF7D877995C17C256951F8D9D4CA854F00FC14D3",
+    "confirmation": "3B31FFB2D5D7B28501CBB51E7A7B69B33D2B7B26761895CD71984BC0633C31ED"
+  },
+  "durationsSeconds": {
+    "initial": 79.73119076294824,
+    "confirmation": 79.52543250797316
+  },
+  "quiet": {
+    "initial": {
+      "cpu2_busy_percent": 0.0,
+      "dotnet_cpu_tick_deltas": {
+        "650890": 0,
+        "782559": 0,
+        "775824": 0,
+        "650885": 0
+      }
+    },
+    "confirmation": {
+      "cpu2_busy_percent": 0.0,
+      "dotnet_cpu_tick_deltas": {
+        "782559": 0,
+        "650890": 0,
+        "650885": 0,
+        "775824": 0
+      }
+    }
+  },
+  "decision": "Reject and revert: repeated public first Count penalties exceed 10%; confirmation warm literal Count also exceeds 10%. No further timing or tuning.",
+  "coverage": {
+    "coreConstructionBeforeFinalTokenTest": 186,
+    "corePublicIncludingFinalTokenTest": 988,
+    "python": 250,
+    "pcre2": 301,
+    "skipped": 0
+  },
+  "sourceContractsAfterRevert": "Unchanged; root still uses its existing admitted descriptor. Earlier runtime/probe cleanup and immutable scalar115 remain."
+}

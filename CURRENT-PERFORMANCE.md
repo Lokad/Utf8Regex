@@ -1,5 +1,12 @@
 # Selected current-source performance
 
+A later literal-root construction prototype is **rejected and reverted**.
+One public pair and its sole confirmation repeat 13.5–18.8% slower first Count;
+confirmation warm Count is 15.5% slower with stable unchanged loop controls.
+Private construction-stage gains do not qualify matching cost. The existing
+admitted root descriptor stays; no accounting-contract change, extra timing or
+package qualification follows. [Both observations and limits](bench/Experiments/LiteralRootConstruction-20261020/README.md).
+
 Latest immutable **Core/PythonRe scalar.115**, producera335e8ba, has a fresh
 [actual-package default-tier observation](artifacts/core-python-scalar115-20261020/vm-cost/RESULT.md).
 For10K captured matches: Core Count94.799us unlimited/130.265us finite (112B finite,
