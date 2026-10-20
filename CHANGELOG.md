@@ -1,12 +1,17 @@
 # Changelog
 
-## Private Core/PythonRe scalar.118 — qualification pending
+## Private Core/PythonRe scalar.118 — READY
 
-Batch the accepted deadline, bounded short-pair search and controlled finite branch
-enumeration changes below. Public scalar/capture and lifetime semantics stay;
-numeric work/depth/working requirements can fall where scratch acquisition is
-removed. Existing source comparisons stay distinct from the pending immutable
-package/default-tier costs. Scalar117 remains READY; earlier candidates unchanged.
+Batch deadline inlining, bounded short-pair candidate search and controlled finite
+branch enumeration. Scalar/capture and lifetime semantics remain; numeric work/
+depth/working requirements can fall as scratch acquisition disappears. Same DLLs
+pass Windows/Linux, unchanged producer assertions, Unicode fixtures and exact
+restore/member/symbol gates. One current default-tier package observation includes
+finite/token/deadline costs and .NET controls; source FullOpts pairs stay separate.
+A cold Linux 250 ms callback test race was corrected with the existing diagnostic
+clock; original failure retained and full corrected Core rerun passed against the
+same package. No production deadline change or repack. [Delivery and scope](artifacts/core-python-scalar118-20261020/HANDOFF.md).
+Older/failed bytes stay intact; no publication, external adoption or PCRE118.
 
 ## Development: finite ASCII branch enumeration
 

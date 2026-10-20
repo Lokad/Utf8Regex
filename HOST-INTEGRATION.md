@@ -1,18 +1,20 @@
 # Resource controls and host ownership
 
-The latest qualified private pair is **Core/PythonRe scalar.117**,
-producer04b7a3ed. Its [handoff](artifacts/core-python-scalar117-20261020/HANDOFF.md)
-binds the same actual Windows/Linux DLLs, unchanged producer handoff assertions,
-Unicode fixtures and exact restore/member/provenance/symbol identities. Generic
-bulk results reuse the existing Python workspace; native families, strict scalar
-captures, original interruption, covered admission and ownership retain scope.
-[Current package costs](artifacts/core-python-scalar117-20261020/vm-cost/RESULT.md)
-include all changed eager surfaces, finite/token lanes and both .NET baselines.
-All115 samples exceed48ms; some producer/.NET rows vary up to1.218/1.652x,
-preventing universal finite-overhead or all-row ranking claims. Earlier/failed
-candidates remain immutable. No publication, external adoption or PCRE117.
-Core's ordered choice and the historical Awk/POSIX boundary remain distinct from
-this qualified producer input; common/default/retention goals stay separate.
+The latest qualified private pair is **Core/PythonRe scalar.118**,
+producer `735776fb`. Its [handoff](artifacts/core-python-scalar118-20261020/HANDOFF.md)
+binds the same actual Windows/Linux DLLs, unchanged producer assertions, Unicode
+fixtures and exact restore/member/provenance/symbol identities. Finite ASCII branch
+enumeration reuses the existing controlled cursor; omitting scalar scratch can
+lower numeric work/depth/working requirements. Scalar/capture and ownership
+contracts, major admission, original interruption and result-capacity scope remain.
+[Current package costs](artifacts/core-python-scalar118-20261020/vm-cost/RESULT.md):
+one 154 s default-tier observation includes finite/live-token/deadline, native/bulk/
+captured results and both .NET controls. A 13 KB / 2,000-value enumeration125.438us
+unlimited,271.946us finite/112B. Limits retain material costs; deadline enumeration
+spread of 1.247x and .NET controls up to1.634x prevent universal overhead/ranking claims.
+Earlier/failed candidates stay immutable; no publication, external adoption or
+PCRE118. Core ordered choice and historical Awk/POSIX boundaries remain distinct.
+Common/default/retention scope below is unchanged.
 
 The preceding qualified private pair is **Core/PythonRe scalar.112**.
 Its [handoff](artifacts/core-python-scalar112-20261019/HANDOFF.md) records same-byte
@@ -156,7 +158,7 @@ provenance. Immutable116 retains its original generic path and recorded costs.
 
 ## Select the public controls
 
-Source after scalar.117 reuses the existing controlled native cursor for finite
+Scalar.118 reuses the existing controlled native cursor for finite
 value enumeration of complete nonempty ASCII branch plans. It removes per-result
 scalar scratch on those routes. Work/depth/working requirements may fall; the
 original token/deadline, cumulative allowance, major admission and typed denials

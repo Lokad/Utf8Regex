@@ -1,11 +1,14 @@
 # Lokad.Utf8Regex.PythonRe
 
-Private **Core/PythonRe 0.4.0-scalar.118** is being qualified. It batches measured
-Count/enumeration improvements, preserving strict scalar/capture, interruption and
-lifetime contracts. Eligible finite ASCII branch enumeration omits per-result
-scalar scratch, so numeric work/depth/working requirements can fall. Immutable117
-remains the latest READY input until the same-byte platform/consumer/provenance
-and current default-tier cost gates finish. No publication or PCRE118 designation.
+Private **Core/PythonRe 0.4.0-scalar.118**, producer `735776fb`, is READY.
+This batch reduces Count/enumeration preparation and uses the existing controlled
+cursor for eligible finite ASCII branches. Scalar/capture and result lifetimes
+stay; numeric work/depth/working requirements can fall when scratch disappears.
+Same actual DLLs pass Windows/Linux, original producer handoff assertions, Unicode
+fixtures and exact package/member/symbol gates. Current default-tier measurements
+include finite/token/deadline and equivalent .NET controls, with variance stated.
+[Handoff](../../artifacts/core-python-scalar118-20261020/HANDOFF.md), [consume](../../artifacts/core-python-scalar118-20261020/CONSUMING.md), [integrity](../../artifacts/core-python-scalar118-20261020/final-integrity.json).
+Older candidates remain immutable; no publication, external adoption or PCRE118.
 
 Private **Core/PythonRe 0.4.0-scalar.117**, producer04b7a3ed, is READY.
 Generic eager results reuse Python's admitted workspace, avoiding repeated Core

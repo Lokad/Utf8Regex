@@ -37,7 +37,7 @@ fixed-width SIMD remains first; non-ASCII, RTL, folded, context-dependent and
 NonBacktracking programs retain their established paths. Lower work/depth/working
 requirements are intentional route-dependent accounting, not exact heap bounds.
 This source change does not alter immutable scalar.110 or retained-result contracts.
-Development after scalar.117 also admits complete nonempty ASCII branch plans
+Scalar.118 also admits complete nonempty ASCII branch plans
 for finite value enumeration, using the existing controlled cursor under the
 original invocation. Deterministic programs, mixed-scalar subjects, RTL,
 NonBacktracking, folding and context-sensitive shapes retain their existing
