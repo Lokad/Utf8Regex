@@ -209,8 +209,9 @@ public sealed class EngineDependencyInventoryTests
         }
 
         var pcre2Directory = Path.Combine(srcRoot, "Lokad.Utf8Regex.Pcre2");
+        // Raw benchmark replay no longer contributes a shipped adapter route.
         Assert.Equal(
-            new[] { "Pcre2ExecutionArchitecture.cs", "Utf8Pcre2Regex.Diagnostics.cs", "Utf8Pcre2Regex.cs" },
+            new[] { "Pcre2ExecutionArchitecture.cs", "Utf8Pcre2Regex.cs" },
             NamesIn(pcre2Directory, "ByteOffsetExecution"));
         Assert.Equal(
             new[] { "Pcre2ExecutionArchitecture.cs", "Utf8Pcre2Regex.cs" },
