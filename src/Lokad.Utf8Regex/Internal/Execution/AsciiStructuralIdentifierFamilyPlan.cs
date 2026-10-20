@@ -33,7 +33,6 @@ internal readonly struct AsciiStructuralIdentifierFamilyPlan
             HasIdentifier = identifierStartClass.HasValue;
             IdentifierTailMinCount = identifierTailMinCount;
             IdentifierTailMaxCount = identifierTailMaxCount;
-            SuffixUtf8 = suffixUtf8;
             SuffixParts = suffixParts is { Length: > 0 }
                 ? suffixParts
                 : suffixUtf8 is { Length: > 0 }
@@ -76,8 +75,6 @@ internal readonly struct AsciiStructuralIdentifierFamilyPlan
     public int IdentifierTailMinCount { get; }
 
     public int IdentifierTailMaxCount { get; }
-
-    public byte[]? SuffixUtf8 { get; }
 
     public AsciiStructuralSuffixPart[] SuffixParts { get; }
 

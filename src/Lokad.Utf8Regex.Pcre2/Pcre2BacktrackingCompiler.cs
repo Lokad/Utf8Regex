@@ -6,20 +6,7 @@ using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
-internal interface IPcre2BacktrackingCompileOutcome
-{
-}
-
-internal sealed class Pcre2NotBacktrackingOutcome : IPcre2BacktrackingCompileOutcome
-{
-    internal static Pcre2NotBacktrackingOutcome Instance { get; } = new();
-
-    private Pcre2NotBacktrackingOutcome()
-    {
-    }
-}
-
-internal sealed class Pcre2CompiledBacktrackingOutcome : IPcre2BacktrackingCompileOutcome
+internal sealed class Pcre2CompiledBacktrackingOutcome
 {
     internal Pcre2CompiledBacktrackingOutcome(
         Pcre2BacktrackingSyntaxTree syntaxTree,
@@ -40,12 +27,12 @@ internal sealed class Pcre2CompiledBacktrackingOutcome : IPcre2BacktrackingCompi
 
 internal static class Pcre2BacktrackingCompiler
 {
-    internal static IPcre2BacktrackingCompileOutcome Compile(Pcre2CompileRequest request)
+    internal static Pcre2CompiledBacktrackingOutcome? Compile(Pcre2CompileRequest request)
     {
         var parser = new Pcre2BacktrackingParser(request);
         if (!parser.TryParse(out var root))
         {
-            return Pcre2NotBacktrackingOutcome.Instance;
+            return null;
         }
 
         var nameEntries = parser.NameEntries;

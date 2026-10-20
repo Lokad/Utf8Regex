@@ -74,20 +74,7 @@ internal sealed class Pcre2CharacterProgram
     }
 }
 
-internal interface IPcre2CharacterCompileOutcome
-{
-}
-
-internal sealed class Pcre2NotCharacterOutcome : IPcre2CharacterCompileOutcome
-{
-    internal static Pcre2NotCharacterOutcome Instance { get; } = new();
-
-    private Pcre2NotCharacterOutcome()
-    {
-    }
-}
-
-internal sealed class Pcre2CompiledCharacterOutcome : IPcre2CharacterCompileOutcome
+internal sealed class Pcre2CompiledCharacterOutcome
 {
     internal Pcre2CompiledCharacterOutcome(Pcre2CharacterSyntaxTree syntaxTree, Pcre2CharacterProgram program)
     {
@@ -343,7 +330,7 @@ internal sealed class Pcre2CharacterClass
 
 internal static class Pcre2CharacterCompiler
 {
-    internal static IPcre2CharacterCompileOutcome Compile(Pcre2CompileRequest request)
+    internal static Pcre2CompiledCharacterOutcome? Compile(Pcre2CompileRequest request)
     {
         var parser = new Pcre2CharacterParser(request);
         return parser.TryParse(out var tokens, out var nodes)
@@ -355,7 +342,7 @@ internal static class Pcre2CharacterCompiler
                     GetLeadingAsciiByte(tokens),
                     tokens is [{ Kind: Pcre2CharacterTokenKind.ExtendedGraphemeCluster }, ..],
                     tokens.Any(static token => token.Kind == Pcre2CharacterTokenKind.CodeUnit)))
-            : Pcre2NotCharacterOutcome.Instance;
+            : null;
     }
 
     internal static bool TryCompileSingleToken(

@@ -260,8 +260,6 @@ internal readonly struct Utf8SearchPlan
     public bool HasAlternateLiteralProperStartOverlap =>
         (AlternateLiteralOverlap & Utf8AlternateLiteralOverlapKind.ProperStart) != 0;
 
-    public bool HasFixedDistanceSets => FixedDistanceSets is { Length: > 0 };
-
     public bool HasTrailingLiteralRequirement => TrailingLiteralUtf8 is { Length: > 0 };
 
     public bool HasRequiredPrefilter => PrefilterPlan.HasValue;

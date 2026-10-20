@@ -58,8 +58,6 @@ internal readonly partial struct Pcre2AsciiDfaVerifierProgram
 
     public int StateCount => _acceptingStates?.Length ?? 0;
 
-    public int TransitionCount => _transitionTargets?.Length ?? 0;
-
     // PCRE2-INTEGRATION-POINT: shared byte-safe graph construction.
     public static Pcre2AsciiDfaCompileOutcome Compile(Pcre2AsciiDfaInput linearProgram)
     {

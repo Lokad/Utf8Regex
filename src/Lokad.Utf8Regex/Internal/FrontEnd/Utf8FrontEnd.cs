@@ -25,7 +25,7 @@ internal static class Utf8FrontEnd
         using var owner = Utf8ConstructionScope.Enter();
         var effectiveOptions = options;
         var executionPattern = Utf8OwnedOptionPrelude.NormalizeLeadingGlobalOptions(pattern, ref effectiveOptions);
-        var runtimeTree = Utf8RuntimeTreeProvider.TryParse(pattern, options, out var diagnostic);
+        var runtimeTree = Utf8OwnedTreeParser.TryParse(pattern, options, out var diagnostic);
         if (diagnostic.IsSyntaxError) throw diagnostic.ToException();
         if ((options & RegexOptions.NonBacktracking) != 0 && runtimeTree is not null &&
             Utf8NonBacktrackingGrammar.FindUnsupportedConstruct(runtimeTree.Root) is { } unsupported)

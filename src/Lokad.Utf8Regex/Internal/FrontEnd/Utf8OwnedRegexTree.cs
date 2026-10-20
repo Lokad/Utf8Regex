@@ -4,7 +4,7 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 // Owned parse-tree container: root plus capture accounting, options, and culture.
 // Nodes are owned throughout; the owned parser builds them directly, so the
-// provider seam carries one container type with no conversion step.
+// parsed container passes directly to analysis with no provider conversion.
 internal sealed class Utf8OwnedRegexTree
 {
     private readonly record struct ConstructionState(Utf8TreeNode Root, int CaptureCount, CultureInfo? Culture, string[]? CaptureNames,

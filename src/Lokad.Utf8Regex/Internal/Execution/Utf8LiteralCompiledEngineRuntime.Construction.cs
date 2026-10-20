@@ -28,7 +28,8 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         {
             var count = regexPlan.SearchPlan.CountOperation;
             var firstMatch = regexPlan.SearchPlan.FirstMatchOperation;
-            // Dynamic emission is still a separate unqualified acquisition.
+            // Emitted buffers and final managed copies retain their independent
+            // construction admission; opaque CLR/JIT metadata stays excluded.
             var emitted = compiledEngine.Backend == Utf8CompiledExecutionBackend.EmittedInstruction &&
                 Utf8EmittedLiteralFamilyCounter.TryCreate(regexPlan.SearchPlan, count, firstMatch, out var counter)
                 ? counter : null;

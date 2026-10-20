@@ -14,7 +14,7 @@ public sealed class Utf8LengthArithmeticTests
 {
     private static Utf8OwnedFindFacts Analyze(string pattern)
     {
-        var tree = Utf8RuntimeTreeProvider.TryParse(pattern, RegexOptions.CultureInvariant);
+        var tree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
         Assert.NotNull(tree);
         var facts = Utf8OwnedFindFacts.FromTree(tree);
         Assert.NotNull(facts);

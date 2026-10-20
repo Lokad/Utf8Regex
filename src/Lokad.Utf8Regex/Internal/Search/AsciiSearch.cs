@@ -3,10 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace Lokad.Utf8Regex.Internal.Search;
 
-internal readonly record struct AsciiAnchorSelection(int Anchor2, int Anchor3)
-{
-    public bool HasThirdAnchor => Anchor3 > 0;
-}
+internal readonly record struct AsciiAnchorSelection(int Anchor2, int Anchor3);
 
 internal static partial class AsciiSearch
 {

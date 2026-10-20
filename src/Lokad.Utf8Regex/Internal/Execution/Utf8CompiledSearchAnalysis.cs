@@ -28,10 +28,7 @@ internal readonly record struct Utf8CompiledSearchAnalysis(
     Utf8CompiledSearchMode Mode,
     Utf8CompiledEngine Engine,
     Utf8CompiledEmittedFamily EmittedFamily,
-    Utf8CandidateSearchKind CandidateSourceKind)
-{
-    public bool HasEmittedBackend => Engine.Backend == Utf8CompiledExecutionBackend.EmittedInstruction || Engine.Kind == Utf8CompiledEngineKind.EmittedKernel;
-}
+    Utf8CandidateSearchKind CandidateSourceKind);
 
 internal static class Utf8CompiledSearchAnalyzer
 {

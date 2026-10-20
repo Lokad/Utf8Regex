@@ -93,20 +93,7 @@ internal readonly record struct Pcre2LiteralMatch(
             startOffsetInBytes + lengthInBytes);
 }
 
-internal interface IPcre2LiteralCompileOutcome
-{
-}
-
-internal sealed class Pcre2NotLiteralOutcome : IPcre2LiteralCompileOutcome
-{
-    internal static Pcre2NotLiteralOutcome Instance { get; } = new();
-
-    private Pcre2NotLiteralOutcome()
-    {
-    }
-}
-
-internal sealed class Pcre2CompiledLiteralOutcome : IPcre2LiteralCompileOutcome
+internal sealed class Pcre2CompiledLiteralOutcome
 {
     internal Pcre2CompiledLiteralOutcome(Pcre2LiteralSyntaxTree syntaxTree, Pcre2LiteralProgram program)
     {
@@ -127,9 +114,9 @@ internal static class Pcre2LiteralCompiler
         Pcre2CompileOptions.ExtendedMore |
         Pcre2CompileOptions.FirstLine;
 
-    internal static IPcre2LiteralCompileOutcome Compile(Pcre2CompileRequest request)
+    internal static Pcre2CompiledLiteralOutcome? Compile(Pcre2CompileRequest request)
     {
-        if ((request.Options & UnsupportedOptions) != 0) return Pcre2NotLiteralOutcome.Instance;
+        if ((request.Options & UnsupportedOptions) != 0) return null;
         using var scope = Utf8ConstructionScope.Enter();
         var budget = scope.Budget;
         budget.EnterDepth();
@@ -139,7 +126,7 @@ internal static class Pcre2LiteralCompiler
             // compilation to supply construction bounds or group-zero metadata.
             budget.ChargeWork((ulong)request.Pattern.Length);
             if (!TryParse(request.Pattern, out var atoms, out var startAnchor, out var endAnchored))
-                return Pcre2NotLiteralOutcome.Instance;
+                return null;
             if ((request.Options & Pcre2CompileOptions.Anchored) != 0 && startAnchor == Pcre2LiteralAnchor.None)
                 startAnchor = Pcre2LiteralAnchor.RequestedStart;
             var hasExplicitEndAssertion = endAnchored;

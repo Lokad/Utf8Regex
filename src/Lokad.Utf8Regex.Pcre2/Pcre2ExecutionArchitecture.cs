@@ -35,15 +35,7 @@ internal static class Pcre2Compiler
 
         if (Pcre2CharacterCompiler.Compile(request) is Pcre2CompiledCharacterOutcome character)
         {
-            Pcre2CompiledProgram foundation;
-            try
-            {
-                foundation = foundationProgramFactory(request);
-            }
-            catch (RegexParseException)
-            {
-                foundation = Pcre2CompiledProgramOverlay.CreateGenericFoundation(request);
-            }
+            var foundation = foundationProgramFactory(request);
 
             foundation = Pcre2CompiledProgramOverlay.WithCharacterOneShot(foundation, character.SyntaxTree, character.Program);
             Pcre2ProgramInvariant.Validate(foundation);
@@ -61,14 +53,7 @@ internal static class Pcre2Compiler
             }
             else
             {
-                try
-                {
-                    foundation = foundationProgramFactory(request);
-                }
-                catch (RegexParseException)
-                {
-                    foundation = Pcre2CompiledProgramOverlay.CreateGenericFoundation(request);
-                }
+                foundation = foundationProgramFactory(request);
             }
 
             foundation = Pcre2CompiledProgramOverlay.WithBacktracking(

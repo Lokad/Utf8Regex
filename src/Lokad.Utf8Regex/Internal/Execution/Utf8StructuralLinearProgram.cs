@@ -615,7 +615,6 @@ internal readonly struct Utf8StructuralLinearProgram
         AsciiSimplePatternPlan simplePatternPlan,
         bool allowsUtf8ByteSafe,
         AsciiStructuralTokenWindowPlan tokenWindowPlan,
-        AsciiStructuralRepeatedSegmentPlan repeatedSegmentPlan,
         AsciiStructuralQuotedRelationPlan quotedRelationPlan,
         AsciiOrderedLiteralWindowPlan orderedLiteralWindowPlan,
         AsciiStructuralIdentifierFamilyPlan structuralIdentifierFamilyPlan,
@@ -630,7 +629,6 @@ internal readonly struct Utf8StructuralLinearProgram
         SimplePatternPlan = simplePatternPlan;
         AllowsUtf8ByteSafe = allowsUtf8ByteSafe;
         TokenWindowPlan = tokenWindowPlan;
-        RepeatedSegmentPlan = repeatedSegmentPlan;
         QuotedRelationPlan = quotedRelationPlan;
         OrderedLiteralWindowPlan = orderedLiteralWindowPlan;
         StructuralIdentifierFamilyPlan = structuralIdentifierFamilyPlan;
@@ -653,8 +651,6 @@ internal readonly struct Utf8StructuralLinearProgram
 
     public AsciiStructuralTokenWindowPlan TokenWindowPlan { get; }
 
-    public AsciiStructuralRepeatedSegmentPlan RepeatedSegmentPlan { get; }
-
     public AsciiStructuralQuotedRelationPlan QuotedRelationPlan { get; }
 
     public AsciiOrderedLiteralWindowPlan OrderedLiteralWindowPlan { get; }
@@ -675,20 +671,20 @@ internal readonly struct Utf8StructuralLinearProgram
         AsciiSimplePatternRunPlan runPlan,
         bool allowsUtf8ByteSafe) =>
         new(Utf8StructuralLinearProgramKind.AsciiCharClassRun, instructions, deterministic, runPlan, default,
-            allowsUtf8ByteSafe, default, default, default, default, default, default, default, default);
+            allowsUtf8ByteSafe, default, default, default, default, default, default, default);
 
     private static Utf8StructuralLinearProgram ForFixedTokenPattern(
         Utf8StructuralLinearInstructionProgram instructions,
         Utf8AsciiDeterministicProgram deterministic,
         AsciiSimplePatternPlan simplePatternPlan) =>
         new(Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern, instructions, deterministic, default, simplePatternPlan,
-            simplePatternPlan.IsUtf8ByteSafe, default, default, default, default, default, default, default, default);
+            simplePatternPlan.IsUtf8ByteSafe, default, default, default, default, default, default, default);
 
     private static Utf8StructuralLinearProgram ForLiteralFamilyRun(
         Utf8StructuralLinearInstructionProgram instructions,
         AsciiSimplePatternPlan simplePatternPlan) =>
         new(Utf8StructuralLinearProgramKind.AsciiLiteralFamilyRun, instructions, default, default, simplePatternPlan,
-            simplePatternPlan.IsUtf8ByteSafe, default, default, default, default, default, default, default, default);
+            simplePatternPlan.IsUtf8ByteSafe, default, default, default, default, default, default, default);
 
     private static Utf8StructuralLinearProgram ForStructuralFamily(
         AsciiStructuralIdentifierFamilyPlan familyPlan,
@@ -696,32 +692,31 @@ internal readonly struct Utf8StructuralLinearProgram
         Utf8StructuralSearchPlan structuralSearchPlan,
         Utf8StructuralVerifierPlan verifierPlan) =>
         new(Utf8StructuralLinearProgramKind.AsciiStructuralFamily, default, default, default, default,
-            false, default, default, default, default, familyPlan, searchPlan, structuralSearchPlan, verifierPlan);
+            false, default, default, default, familyPlan, searchPlan, structuralSearchPlan, verifierPlan);
 
     private static Utf8StructuralLinearProgram ForTokenWindow(
         Utf8StructuralLinearInstructionProgram instructions,
         AsciiStructuralTokenWindowPlan plan) =>
         new(Utf8StructuralLinearProgramKind.AsciiTokenWindow, instructions, default, default, default,
-            true, plan, default, default, default, default, default, default, default);
+            true, plan, default, default, default, default, default, default);
 
     private static Utf8StructuralLinearProgram ForRepeatedSegment(
-        Utf8StructuralLinearInstructionProgram instructions,
-        AsciiStructuralRepeatedSegmentPlan plan) =>
+        Utf8StructuralLinearInstructionProgram instructions) =>
         new(Utf8StructuralLinearProgramKind.AsciiRepeatedSegment, instructions, default, default, default,
-            false, default, plan, default, default, default, default, default, default);
+            false, default, default, default, default, default, default, default);
 
     private static Utf8StructuralLinearProgram ForQuotedRelation(
         Utf8StructuralLinearInstructionProgram instructions,
         AsciiStructuralQuotedRelationPlan plan) =>
         new(Utf8StructuralLinearProgramKind.AsciiQuotedRelation, instructions, default, default, default,
-            false, default, default, plan, default, default, default, default, default);
+            false, default, plan, default, default, default, default, default);
 
     private static Utf8StructuralLinearProgram ForOrderedLiteralWindow(
         Utf8StructuralLinearInstructionProgram instructions,
         AsciiOrderedLiteralWindowPlan plan,
         Utf8SearchPlan searchPlan) =>
         new(Utf8StructuralLinearProgramKind.AsciiOrderedLiteralWindow, instructions, default, default, default,
-            true, default, default, default, plan, default, searchPlan, default, default);
+            true, default, default, plan, default, searchPlan, default, default);
 
     public static Utf8StructuralLinearProgram Create(
         NativeExecutionKind executionKind,
@@ -762,7 +757,7 @@ internal readonly struct Utf8StructuralLinearProgram
             NativeExecutionKind.AsciiStructuralTokenWindow when structuralTokenWindowPlan.HasValue
                 => ForTokenWindow(Utf8StructuralLinearInstructionProgram.Create(structuralTokenWindowPlan), structuralTokenWindowPlan),
             NativeExecutionKind.AsciiStructuralRepeatedSegment when structuralRepeatedSegmentPlan.HasValue
-                => ForRepeatedSegment(Utf8StructuralLinearInstructionProgram.Create(structuralRepeatedSegmentPlan), structuralRepeatedSegmentPlan),
+                => ForRepeatedSegment(Utf8StructuralLinearInstructionProgram.Create(structuralRepeatedSegmentPlan)),
             NativeExecutionKind.AsciiStructuralQuotedRelation when structuralQuotedRelationPlan.HasValue
                 => ForQuotedRelation(Utf8StructuralLinearInstructionProgram.Create(structuralQuotedRelationPlan), structuralQuotedRelationPlan),
             NativeExecutionKind.AsciiOrderedLiteralWindow when orderedLiteralWindowPlan.HasValue
