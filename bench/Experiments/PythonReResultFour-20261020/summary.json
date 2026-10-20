@@ -1,0 +1,83 @@
+{
+  "rows": [
+    {
+      "id": "findall/full-strings",
+      "status": "Inconclusive",
+      "reason": "Lane interquartile spreads are 1.080/1.153; the maximum is 1.10.",
+      "ManagedMedianMicroseconds": 1861.5862068965516,
+      "CpythonMedianMicroseconds": 287.9143846153846,
+      "StrongRatioMedian": 6.363518627598334,
+      "StrongRatioLower95": 5.993068066069587,
+      "StrongRatioUpper95": 6.7586423214910365,
+      "ManagedMedianAllocatedBytes": 5408632,
+      "OrderEffect": 0.9350285623876665,
+      "ManagedProductSha256": "EBC0AAE214A2CDCE4398CCA9A60B537FD673D9608BB0626037835FB90B71522F",
+      "CpuAffinityMask": "0x2",
+      "SourceCommit": "e83d19429eba",
+      "pairs": 17
+    },
+    {
+      "id": "findall/many-capture-strings",
+      "status": "Inconclusive",
+      "reason": "Lane interquartile spreads are 1.027/1.188; the maximum is 1.10.",
+      "ManagedMedianMicroseconds": 753.336231884058,
+      "CpythonMedianMicroseconds": 300.13675581395347,
+      "StrongRatioMedian": 2.517266509225705,
+      "StrongRatioLower95": 2.223290657252536,
+      "StrongRatioUpper95": 2.640713791601874,
+      "ManagedMedianAllocatedBytes": 262016,
+      "OrderEffect": 0.9927600844556288,
+      "ManagedProductSha256": "EBC0AAE214A2CDCE4398CCA9A60B537FD673D9608BB0626037835FB90B71522F",
+      "CpuAffinityMask": "0x20",
+      "SourceCommit": "e83d19429eba",
+      "pairs": 17
+    },
+    {
+      "id": "findall/optional-capture-strings",
+      "status": "CpythonFaster",
+      "reason": "Qualified paired evidence.",
+      "ManagedMedianMicroseconds": 143.10628571428572,
+      "CpythonMedianMicroseconds": 52.10633333333334,
+      "StrongRatioMedian": 2.7561442581241833,
+      "StrongRatioLower95": 2.708771706863294,
+      "StrongRatioUpper95": 2.779372291311109,
+      "ManagedMedianAllocatedBytes": 13984,
+      "OrderEffect": 1.0192231074797953,
+      "ManagedProductSha256": "EBC0AAE214A2CDCE4398CCA9A60B537FD673D9608BB0626037835FB90B71522F",
+      "CpuAffinityMask": "0x2",
+      "SourceCommit": "e83d19429eba",
+      "pairs": 9
+    },
+    {
+      "id": "findall/unicode-full-strings",
+      "status": "CpythonFaster",
+      "reason": "Qualified paired evidence.",
+      "ManagedMedianMicroseconds": 38.23659711075442,
+      "CpythonMedianMicroseconds": 23.271952766531715,
+      "StrongRatioMedian": 1.6490763666909154,
+      "StrongRatioLower95": 1.6239938803816918,
+      "StrongRatioUpper95": 1.666350215612286,
+      "ManagedMedianAllocatedBytes": 4120,
+      "OrderEffect": 1.0034404252339733,
+      "ManagedProductSha256": "EBC0AAE214A2CDCE4398CCA9A60B537FD673D9608BB0626037835FB90B71522F",
+      "CpuAffinityMask": "0x10",
+      "SourceCommit": "e83d19429eba",
+      "pairs": 9
+    }
+  ],
+  "archive_sha256": "2832CBBBAB3D14BCC15AE265061D3F296D5E66E09B0C248B6C77BB8A32CA3529",
+  "completion": {
+    "changedRows": [
+      "findall/full-strings",
+      "findall/many-capture-strings",
+      "findall/optional-capture-strings",
+      "findall/unicode-full-strings"
+    ],
+    "seconds": 129.14731155196205,
+    "noBuildRestorePack": true
+  },
+  "minimum_managed_sample_ms": 47.0891,
+  "minimum_cpython_sample_ms": 48.92752,
+  "pairs": 52,
+  "other86_case_objects_unchanged": true
+}

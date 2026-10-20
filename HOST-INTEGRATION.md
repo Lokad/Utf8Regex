@@ -1,16 +1,17 @@
 # Resource controls and host ownership
 
-The latest qualified private pair is **Core/PythonRe scalar.115**.
-Its [handoff](artifacts/core-python-scalar115-20261020/HANDOFF.md) binds the same
-actual Windows/Linux DLLs, original public consumers, Unicode fixtures and exact
-identities. Core narrows literal-family inputs and removes duplicate stored state;
-no public API, numerical admission or ownership contract changes. Strict scalar
-captures, original interruption and useful finite controls retain their scope.
-[Current package costs](artifacts/core-python-scalar115-20261020/vm-cost/RESULT.md)
-include finite/token/cursor lanes. All144 samples exceed33ms; smaller-row/control
-variance and a1K/5K finite Count discrepancy prevent universal overhead claims.
-114/112/older and failed113 bytes remain immutable. No publication, external
-adoption or PCRE115; common/default/retention goals remain explicit below.
+The latest qualified private pair is **Core/PythonRe scalar.116**,
+producer e83d1942. Its [handoff](artifacts/core-python-scalar116-20261020/HANDOFF.md)
+binds the same actual Windows/Linux DLLs, original public-consumer assertions,
+Unicode fixtures and exact restore/member/provenance/symbol identities. It
+completes diagnostic retirement and includes the eager string-findall checkpoint
+reduction documented below. Strict scalar captures, original interruption,
+covered admission and cursor/result ownership keep their scoped contract.
+[Current package costs](artifacts/core-python-scalar116-20261020/vm-cost/RESULT.md)
+include finite/token/cursor lanes. All144 samples exceed31ms; smaller rows and
+comparator controls vary up to1.991x, preventing universal overhead claims.
+Older/failed candidates remain immutable. No publication, external adoption or
+PCRE116; common/default/retention goals remain separate below.
 
 The preceding qualified private pair is **Core/PythonRe scalar.112**.
 Its [handoff](artifacts/core-python-scalar112-20261019/HANDOFF.md) records same-byte
@@ -125,12 +126,12 @@ findall routes omit that unused scan and can admit smaller work limits. VM
 instruction/backtracking work, required projection charges, original interruption
 and result ownership remain enforced.
 
-Development scalar.116 omits one duplicate work checkpoint per materialized
+Scalar.116 omits one duplicate work checkpoint per materialized
 match in eager scalar `FindAllToStrings`: the next advance immediately checks
 the same invocation before discovery. Successful work cutoffs can fall by one
 step per result on that route. Decoding/per-capture, EOF and final-publication
 guards, original token/deadline and working/result admission retain their scope.
-This source change does not revise immutable scalar.115 or other staged bytes.
+This qualified116 revision does not revise immutable scalar.115 or earlier bytes.
 
 Scalar.107 also omits useless rewind frames for eligible greedy
 dot/class runs before a disjoint literal or end anchor. The end-anchor proof

@@ -24,19 +24,18 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-10-20T02:09:56.5374505+00:00`
-- Snapshot SHA-256: `197A2FF30ACF16C0FE7793470471007B441722E20626A9A49C3E8476AC63E3AF`
+- Generated: `2026-10-20T04:32:30.2643899+00:00`
+- Snapshot SHA-256: `BB6B364AC49C039E685FAC4063C1E603DF4B1D160C2935AB58F7860D8F45C472`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `0`
 - Scaling families: `7`
-- Public Status: `56` managed faster, `0` equivalent, `4` CPython faster, `29` inconclusive, `1` unqualified
+- Public Status: `54` managed faster, `0` equivalent, `6` CPython faster, `30` inconclusive, `0` unqualified
 - Historical point measurement environments represented: `1`
 - Paired evidence from source `03981159c8f0`: `4` rows; .NET 10.0.12; CPython 3.12.3
 - Paired evidence from source `101975b4ce6a`: `3` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `185a07de3077`: `4` rows; .NET 10.0.12; CPython 3.13.2
-- Paired evidence from source `1c01183e8d6d`: `1` rows; .NET 10.0.12; CPython 3.12.3
 - Paired evidence from source `227771fc0ef7`: `3` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `30f9b58c44cc`: `3` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `37661064ec3a`: `4` rows; .NET 10.0.12; CPython 3.13.2
@@ -44,17 +43,18 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 - Paired evidence from source `48de72c5cf47`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `5b32ab77b03e`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `653161a993b9`: `4` rows; .NET 10.0.12; CPython 3.13.2
-- Paired evidence from source `675cda546679`: `3` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `675cda546679`: `2` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `69723e1684a5`: `6` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `6ab8f21ace15`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `8bc66679fb5a`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `8cb289db070b`: `1` rows; .NET 10.0.12; CPython 3.12.3
-- Paired evidence from source `9fff67981ce7`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `9fff67981ce7`: `2` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `b2df56e6e3fb`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `b7228bd026e1`: `2` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `b8a54d632b28`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `d91449df7a20`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `e19304ef1f66`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `e83d19429eba`: `4` rows; .NET 10.0.12; CPython 3.12.3
 - Paired evidence from source `f0af29a25688`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `f79efd349de6`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `fffeb0e7f25a`: `4` rows; .NET 10.0.12; CPython 3.13.2
@@ -165,12 +165,12 @@ Historical independent point columns were measured from source `30f9b58c44cc` on
 | `family/count` | `Count` | ScalarResult | Inconclusive | 70.036 us | 1,355.226 us | 0.05x | 1,477.809 us | 764.313 us | 0 B |
 | `class-run/count` | `Count` | ScalarResult | Managed faster | 386.476 us | 1,401.141 us | 0.28x | 1,747.536 us | 697.325 us | 172,056 B |
 | `unicode/count` | `Count` | ScalarResult | Managed faster | 25.337 us | 228.452 us | 0.11x | 360.670 us | 310.392 us | 0 B |
-| `findall/full-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 207.911 us | 227.929 us | 0.90x | 267.831 us | 405.500 us | 165,936 B |
+| `findall/full-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 1,861.586 us | 287.914 us | 6.36x | 267.831 us | 405.500 us | 5,408,632 B |
 | `findall/full-utf8` | `FindAllUtf8` | EagerMaterializedResult | Managed faster | 163.113 us | 308.266 us | 0.53x | 386.740 us | 455.065 us | 165,936 B |
-| `findall/unicode-full-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 12.096 us | 16.155 us | 0.74x | 33.968 us | 72.601 us | 4,120 B |
+| `findall/unicode-full-strings` | `FindAllStrings` | EagerMaterializedResult | CPython faster | 38.237 us | 23.272 us | 1.65x | 33.968 us | 72.601 us | 4,120 B |
 | `findall/unicode-full-utf8` | `FindAllUtf8` | EagerMaterializedResult | Inconclusive | 32.393 us | 37.762 us | 0.85x | 61.262 us | 82.955 us | 24,600 B |
 | `findall/one-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 108.427 us | 128.736 us | 0.84x | 180.681 us | 387.484 us | 149,792 B |
-| `findall/many-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Unqualified | 2,062.956 us | 275.379 us | 7.43x | 308.273 us | 625.652 us | 263,920 B |
+| `findall/many-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 753.336 us | 300.137 us | 2.52x | 308.273 us | 625.652 us | 262,016 B |
 | `findall/many-capture-utf8` | `FindAllUtf8` | EagerMaterializedResult | Inconclusive | 340.432 us | 725.307 us | 0.47x | 1,037.212 us | 719.675 us | 1,528,096 B |
 | `findall/unicode-capture-utf8` | `FindAllUtf8` | EagerMaterializedResult | Managed faster | 211.538 us | 345.114 us | 0.60x | 567.932 us | 382.628 us | 785,704 B |
 | `iteration/finditer-detailed` | `FindIterDetailed` | EagerMaterializedResult | Inconclusive | 95.770 us | 336.809 us | 0.28x | 454.376 us | 162.644 us | 415,976 B |
@@ -183,7 +183,7 @@ Historical independent point columns were measured from source `30f9b58c44cc` on
 | `findall/one-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 1.413 us | 20.913 us | 0.07x | 32.008 us | 0.791 us | 8,288 B |
 | `findall/from-offset-strings` | `FindAllStringsFromOffset` | EagerMaterializedResult | Managed faster | 3.652 us | 11.226 us | 0.31x | 14.357 us | 55.401 us | 4,120 B |
 | `findall/empty-progression-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 0.968 us | 27.912 us | 0.03x | 32.750 us | 48.585 us | 4,128 B |
-| `findall/optional-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 32.219 us | 37.791 us | 0.81x | 45.175 us | 100.983 us | 15,088 B |
+| `findall/optional-capture-strings` | `FindAllStrings` | EagerMaterializedResult | CPython faster | 143.106 us | 52.106 us | 2.76x | 45.175 us | 100.983 us | 13,984 B |
 | `findall/named-capture-strings` | `FindAllStrings` | EagerMaterializedResult | CPython faster | 172.180 us | 77.617 us | 2.21x | 76.012 us | 143.500 us | 46,952 B |
 | `findall/structural-many` | `FindAllStructural` | EagerMaterializedResult | Managed faster | 47.635 us | 115.868 us | 0.41x | 154.318 us | 105.079 us | 46,640 B |
 | `finditer/zero-detailed` | `FindIterDetailed` | EagerMaterializedResult | Managed faster | 1.043 us | 90.601 us | 0.01x | 152.775 us | 0.610 us | 17,456 B |
