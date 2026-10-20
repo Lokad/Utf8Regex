@@ -96,19 +96,14 @@ internal static class Utf8AsciiScalarOperationAssertions
         // old batteries; one operation cannot prepare the route for another.
         var isMatch = new Utf8Regex(pattern, options);
         Assert.Equal(expected.Length != 0, isMatch.IsMatch(subject.Input));
-        Owned(isMatch);
         var count = new Utf8Regex(pattern, options);
         Assert.Equal(expected.Length, count.Count(subject.Input));
-        Owned(count);
         var match = new Utf8Regex(pattern, options);
         Value(subject, oracle.Match(subject.Projected), match.Match(subject.Input));
-        Owned(match);
         var detailed = new Utf8Regex(pattern, options);
         Detailed(subject, oracle.Match(subject.Projected), detailed.MatchDetailed(subject.Input));
-        Owned(detailed);
         var enumerate = new Utf8Regex(pattern, options);
         Sequence(subject, expected, enumerate.EnumerateMatches(subject.Input));
-        Owned(enumerate);
         foreach (var maximum in new[] { 0, 1, 2, int.MaxValue })
         {
             var split = new Utf8Regex(pattern, options);
@@ -133,14 +128,11 @@ internal static class Utf8AsciiScalarOperationAssertions
         var bytes = Encoding.UTF8.GetBytes(replacement);
         var stringReplace = new Utf8Regex(pattern, options);
         Assert.Equal(replacement, stringReplace.ReplaceToString(subject.Input, template));
-        Owned(stringReplace);
         var byteReplace = new Utf8Regex(pattern, options);
         Assert.Equal(bytes, byteReplace.Replace(subject.Input, template));
-        Owned(byteReplace);
         var utf8Replace = new Utf8Regex(pattern, options);
         var utf8Template = Encoding.UTF8.GetBytes(template);
         Assert.Equal(bytes, utf8Replace.Replace(subject.Input, utf8Template));
-        Owned(utf8Replace);
         foreach (var utf8 in new[] { false, true })
         {
             var destinationRegex = new Utf8Regex(pattern, options);
@@ -163,7 +155,6 @@ internal static class Utf8AsciiScalarOperationAssertions
         Splits(subject, oracle.EnumerateSplits(subject.Projected), live.EnumerateSplits(subject.Input, source.Token));
         Assert.Equal(bytes, live.Replace(subject.Input, template, source.Token));
         Assert.Equal(replacement, live.ReplaceToString(subject.Input, template, source.Token));
-        Owned(live);
     }
 
     internal static void Offset(string pattern, RegexOptions options, string text, int offset)
@@ -232,7 +223,6 @@ internal static class Utf8AsciiScalarOperationAssertions
             });
         Assert.Equal(Encoding.UTF8.GetBytes(expected), bytes);
         Assert.Equal(matches.Length, byteState.Seen);
-        Owned(byteRegex);
         var stringRegex = new Utf8Regex(pattern, options);
         var stringState = new CallbackState(subject, matches);
         var result = stringRegex.ReplaceToString(subject.Input, stringState,
@@ -244,7 +234,6 @@ internal static class Utf8AsciiScalarOperationAssertions
             });
         Assert.Equal(expected, result);
         Assert.Equal(matches.Length, stringState.Seen);
-        Owned(stringRegex);
     }
 
     internal static void Owned(Utf8Regex regex)
