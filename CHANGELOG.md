@@ -1,5 +1,15 @@
 # Changelog
 
+## Development scalar.116: benchmark Count probes
+
+Move four alternative literal Count probes out of the shipped diagnostic/runtime
+layers into benchmark tooling. They call the unchanged production counting
+kernels through existing prepared metadata and friend access. Matching algorithms,
+scalar semantics, resource accounting, interruption and public API are unchanged.
+Retain borrowed-view boundary coverage after rejecting a shorter two-byte span
+search whose public-operation regressions exceeded the 10% allowance; the
+[experiment](bench/Experiments/BytePairSearch-20261020/README.md) is closed.
+
 ## Private Core/PythonRe scalar.115 qualification
 
 Frozen producera335e8ba batches literal-family dependency narrowing, unused getter

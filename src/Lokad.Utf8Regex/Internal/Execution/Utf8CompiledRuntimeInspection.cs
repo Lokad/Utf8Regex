@@ -3,46 +3,6 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal static class Utf8CompiledRuntimeInspection
 {
 
-    public static bool TryCountValidatedThreeByte(
-        Utf8CompiledEngineRuntime runtime,
-        ReadOnlySpan<byte> input,
-        out int count)
-    {
-        var literal = GetLiteralRuntime(runtime);
-        return literal is not null && literal.TryInspectCountValidatedThreeByte(input, out count) ||
-            ReturnNoCount(out count);
-    }
-
-    public static bool TryCountLeadingScalarAnchored(
-        Utf8CompiledEngineRuntime runtime,
-        ReadOnlySpan<byte> input,
-        out int count)
-    {
-        var literal = GetLiteralRuntime(runtime);
-        return literal is not null && literal.TryInspectCountLeadingScalarAnchored(input, out count) ||
-            ReturnNoCount(out count);
-    }
-
-    public static bool TryCountPreparedSearch(
-        Utf8CompiledEngineRuntime runtime,
-        ReadOnlySpan<byte> input,
-        out int count)
-    {
-        var literal = GetLiteralRuntime(runtime);
-        return literal is not null && literal.TryInspectCountPreparedSearch(input, out count) ||
-            ReturnNoCount(out count);
-    }
-
-    public static bool TryCountAnchored(
-        Utf8CompiledEngineRuntime runtime,
-        ReadOnlySpan<byte> input,
-        out int count)
-    {
-        var literal = GetLiteralRuntime(runtime);
-        return literal is not null && literal.TryInspectCountAnchored(input, out count) ||
-            ReturnNoCount(out count);
-    }
-
     public static bool TryMatchAsciiLiteralFamily(
         Utf8CompiledEngineRuntime runtime,
         ReadOnlySpan<byte> input,
@@ -116,9 +76,4 @@ internal static class Utf8CompiledRuntimeInspection
         };
     }
 
-    private static bool ReturnNoCount(out int count)
-    {
-        count = 0;
-        return false;
-    }
 }

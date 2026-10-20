@@ -8,6 +8,41 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class PreparedSearchPrimitivesTests
 {
+    [Theory]
+    [InlineData(97, 98)]
+    [InlineData(97, 97)]
+    [InlineData(0, 255)]
+    [InlineData(255, 0)]
+    [InlineData(195, 169)]
+    public void TwoByteExactSearchPreservesViewBoundariesAndCandidatePriority(byte first, byte second)
+    {
+        byte[] literal = [first, second];
+        var prepared = new PreparedSubstringSearch(literal, ignoreCase: false);
+        foreach (var length in new[] { 0, 1, 2, 3, 7, 15, 16, 31, 32, 33, 63, 64, 65, 127, 128 })
+        foreach (var offset in new[] { 0, 1, 3 })
+        foreach (var dense in new[] { false, true })
+        foreach (var placement in new[] { -1, 0, length - 2 })
+        {
+            // Matching bytes outside the borrowed view must not affect discovery.
+            var storage = new byte[offset + length + 3];
+            storage.AsSpan().Fill(first);
+            storage[^2] = second;
+            var view = storage.AsSpan(offset, length);
+            view.Fill(dense ? first : (byte)(first ^ 0x55));
+            if (placement >= 0 && placement <= length - 2)
+            {
+                view[placement] = first;
+                view[placement + 1] = second;
+            }
+            var expected = -1;
+            for (var index = 0; index + 1 < view.Length; index++)
+                if (view[index] == first && view[index + 1] == second)
+                { expected = index; break; }
+            Assert.Equal(expected, AsciiSearch.IndexOfExact(view, literal));
+            Assert.Equal(expected, prepared.IndexOf(view));
+        }
+    }
+
     [Fact]
     public void PreparedByteSearchSupportsSingleTwoThreeAndSetCases()
     {

@@ -107,26 +107,6 @@ public sealed partial class Utf8Regex
     }
 
 
-    private bool DebugTryCountExactUtf8LiteralValidatedThreeByte(ReadOnlySpan<byte> input, out int count)
-    {
-        return _compiledEngineRuntime.TryDebugCountExactUtf8LiteralValidatedThreeByte(input, out count);
-    }
-
-    private bool DebugTryCountExactUtf8LiteralLeadingScalarAnchored(ReadOnlySpan<byte> input, out int count)
-    {
-        return _compiledEngineRuntime.TryDebugCountExactUtf8LiteralLeadingScalarAnchored(input, out count);
-    }
-
-    private bool DebugTryCountExactUtf8LiteralPreparedSearch(ReadOnlySpan<byte> input, out int count)
-    {
-        return _compiledEngineRuntime.TryDebugCountExactUtf8LiteralPreparedSearch(input, out count);
-    }
-
-    private bool DebugTryCountExactUtf8LiteralAnchored(ReadOnlySpan<byte> input, out int count)
-    {
-        return _compiledEngineRuntime.TryDebugCountExactUtf8LiteralAnchored(input, out count);
-    }
-
     private bool DebugTryIsMatchLiteralFamily(ReadOnlySpan<byte> input, out bool isMatch)
     {
         return _compiledEngineRuntime.TryDebugIsMatchLiteralFamily(input, out isMatch);
@@ -498,26 +478,6 @@ public sealed partial class Utf8Regex
 
         public bool DebugTryCountSelectedKernelWithoutValidation(ReadOnlySpan<byte> input, out int count) =>
             _owner.DebugTryCountSelectedKernelWithoutValidation(input, out count);
-
-        public bool DebugTryCountExactUtf8LiteralValidatedThreeByte(
-            ReadOnlySpan<byte> input,
-            out int count) =>
-            _owner.DebugTryCountExactUtf8LiteralValidatedThreeByte(input, out count);
-
-        public bool DebugTryCountExactUtf8LiteralLeadingScalarAnchored(
-            ReadOnlySpan<byte> input,
-            out int count) =>
-            _owner.DebugTryCountExactUtf8LiteralLeadingScalarAnchored(input, out count);
-
-        public bool DebugTryCountExactUtf8LiteralPreparedSearch(
-            ReadOnlySpan<byte> input,
-            out int count) =>
-            _owner.DebugTryCountExactUtf8LiteralPreparedSearch(input, out count);
-
-        public bool DebugTryCountExactUtf8LiteralAnchored(
-            ReadOnlySpan<byte> input,
-            out int count) =>
-            _owner.DebugTryCountExactUtf8LiteralAnchored(input, out count);
 
         public bool DebugTryIsMatchLiteralFamily(ReadOnlySpan<byte> input, out bool isMatch) =>
             _owner.DebugTryIsMatchLiteralFamily(input, out isMatch);

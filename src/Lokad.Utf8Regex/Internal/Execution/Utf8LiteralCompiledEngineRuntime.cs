@@ -533,63 +533,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         return bytes.AsSpan().IndexOfAnyInRange((byte)0x80, byte.MaxValue) < 0;
     }
 
-    internal bool TryInspectCountValidatedThreeByte(ReadOnlySpan<byte> input, out int count)
-    {
-        var literal = _regexPlan.LiteralUtf8;
-        if (_regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
-            literal is { Length: > 0 } &&
-            CanUseFusedValidatedBmpThreeByteLiteralCount(literal))
-        {
-            count = CountExactUtf8LiteralValidatedThreeByte(input, literal);
-            return true;
-        }
-
-        count = 0;
-        return false;
-    }
-
-    internal bool TryInspectCountLeadingScalarAnchored(ReadOnlySpan<byte> input, out int count)
-    {
-        var literal = _regexPlan.LiteralUtf8;
-        if (_regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
-            literal is { Length: > 0 } &&
-            TryGetLeadingUtf8SegmentLength(literal, out var leadingSegmentLength))
-        {
-            count = CountExactUtf8LiteralLeadingScalarAnchored(input, literal, leadingSegmentLength);
-            return true;
-        }
-
-        count = 0;
-        return false;
-    }
-
-    internal bool TryInspectCountPreparedSearch(ReadOnlySpan<byte> input, out int count)
-    {
-        if (_regexPlan.SearchPlan.LiteralSearch is { } literalSearch)
-        {
-            count = literalSearch.CountWithMetrics(input, out _, out _);
-            return true;
-        }
-
-        count = 0;
-        return false;
-    }
-
-    internal bool TryInspectCountAnchored(ReadOnlySpan<byte> input, out int count)
-    {
-        var literal = _regexPlan.LiteralUtf8;
-        if (_regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
-            literal is { Length: > 0 } &&
-            TryGetExactUtf8LiteralAnchor(literal, out var anchorIndex, out var anchorByte))
-        {
-            count = CountExactUtf8LiteralAnchored(input, literal, anchorIndex, anchorByte);
-            return true;
-        }
-
-        count = 0;
-        return false;
-    }
-
 
 
 
@@ -701,7 +644,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         return true;
     }
 
-    private static int CountExactUtf8LiteralValidatedThreeByte(ReadOnlySpan<byte> input, ReadOnlySpan<byte> literal)
+    internal static int CountExactUtf8LiteralValidatedThreeByte(ReadOnlySpan<byte> input, ReadOnlySpan<byte> literal)
     {
         var count = 0;
         var index = 0;
@@ -869,7 +812,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         return count;
     }
 
-    private static int CountExactUtf8LiteralAnchored(ReadOnlySpan<byte> input, ReadOnlySpan<byte> literal, int anchorIndex, byte anchorByte)
+    internal static int CountExactUtf8LiteralAnchored(ReadOnlySpan<byte> input, ReadOnlySpan<byte> literal, int anchorIndex, byte anchorByte)
     {
         var count = 0;
         var searchIndex = anchorIndex;
@@ -904,7 +847,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         return count;
     }
 
-    private static int CountExactUtf8LiteralLeadingScalarAnchored(ReadOnlySpan<byte> input, ReadOnlySpan<byte> literal, int scalarLength)
+    internal static int CountExactUtf8LiteralLeadingScalarAnchored(ReadOnlySpan<byte> input, ReadOnlySpan<byte> literal, int scalarLength)
     {
         var count = 0;
         var searchIndex = 0;

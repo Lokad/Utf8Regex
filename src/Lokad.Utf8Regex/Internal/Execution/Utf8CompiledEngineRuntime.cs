@@ -139,18 +139,6 @@ internal abstract class Utf8CompiledEngineRuntime
         return false;
     }
 
-    public bool TryDebugCountExactUtf8LiteralValidatedThreeByte(ReadOnlySpan<byte> input, out int count)
-        => Utf8CompiledRuntimeInspection.TryCountValidatedThreeByte(this, input, out count);
-
-    public bool TryDebugCountExactUtf8LiteralLeadingScalarAnchored(ReadOnlySpan<byte> input, out int count)
-        => Utf8CompiledRuntimeInspection.TryCountLeadingScalarAnchored(this, input, out count);
-
-    public bool TryDebugCountExactUtf8LiteralPreparedSearch(ReadOnlySpan<byte> input, out int count)
-        => Utf8CompiledRuntimeInspection.TryCountPreparedSearch(this, input, out count);
-
-    public bool TryDebugCountExactUtf8LiteralAnchored(ReadOnlySpan<byte> input, out int count)
-        => Utf8CompiledRuntimeInspection.TryCountAnchored(this, input, out count);
-
     public bool TryDebugMatchAsciiLiteralFamilyRaw(ReadOnlySpan<byte> input, out int index, out int matchedByteLength)
         => Utf8CompiledRuntimeInspection.TryMatchAsciiLiteralFamily(this, input, out index, out matchedByteLength);
 

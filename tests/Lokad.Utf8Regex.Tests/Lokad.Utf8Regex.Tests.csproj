@@ -24,6 +24,8 @@
     <None Update="TestData\supplementary-simple-case-16.json" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="..\..\bench\Lokad.Utf8Regex.Benchmarks\Utf8SubstringPreferredCompareReplay.cs"
              Link="BenchmarkTooling\Utf8SubstringPreferredCompareReplay.cs" />
+    <Compile Include="..\..\bench\Lokad.Utf8Regex.Benchmarks\Utf8MatchInspection.cs"
+             Link="BenchmarkTooling\Utf8MatchInspection.cs" />
   </ItemGroup>
 
   <ItemGroup>
