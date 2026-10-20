@@ -32,7 +32,7 @@ internal static class Pcre2CaptureNameValidator
                 if (offset + 1 < pattern.Length && pattern[offset + 1] == 'Q') quoted = true;
                 else if (inClass && offset + 1 < pattern.Length && pattern[offset + 1] != 'E')
                 { classHasAtom = true; classStart = false; }
-                offset++;
+                if (++offset < pattern.Length) Pcre2PatternCodeScan.SkipEscapeOperand(pattern, ref offset, pattern[offset]);
                 continue;
             }
             if (inClass)

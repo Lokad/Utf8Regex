@@ -1,12 +1,18 @@
 # Managed PCRE2 qualification
 
-## Frozen common release candidate
+## Frozen common release candidate: publication blocked
 
 The current staged release is **0.4.0-rc.1** for Core, PythonRe and PCRE2,
 producer `2e97ac974e6e8c60aac95db1e4808cbda2ff9736`. Both adapters depend on
 exact Core `[0.4.0-rc.1]`; all three restore into one dependency graph. This
-supersedes the separate Core/PCRE2 scalar.94 designation. It is ready for release
-review and **has not been published to NuGet**.
+supersedes the separate Core/PCRE2 scalar.94 designation and **has not been
+published to NuGet**. Later review found PCRE2 defects in this producer: its
+native backtracking compiler can bypass construction depth/instruction limits;
+fixture-specific validation misses neighboring invalid syntax; and compilation
+can publish a program with no executable backend. Lexical guards can also reject
+valid classes when an escape operand resembles a class/group delimiter.
+**Do not publish these PCRE2 bytes.** Keep their original evidence and identities;
+a corrected release requires a fresh immutable candidate and final qualification.
 
 The [release handoff](../../artifacts/utf8regex-0.4.0-rc.1-20261020/HANDOFF.md),
 [restore instructions](../../artifacts/utf8regex-0.4.0-rc.1-20261020/CONSUMING.md)
@@ -68,13 +74,32 @@ consumer adoption.
 
 ## Development after RC1
 
-Source has advanced to **0.4.0-rc.2-dev** for a bounded cleanup: verified dead
-helpers, benchmark replay in shipped Core, test-only cache/collector machinery,
-three construction field-transfer mirrors and duplicated package orchestration.
-Major admission, the three wrappers' previous 128-byte/work-two allowances,
-interruption and public semantics are preserved. Source checks qualify those
-changes; they do **not** replace or relabel RC1's immutable package evidence.
-No new development package has been qualified by this cleanup.
+Source has advanced to **0.4.0-rc.2-dev**. Superseded helpers, shipped benchmark
+replay, test-only cache/collector machinery, construction field-transfer mirrors
+and duplicate package orchestration have been removed. Subsequent corrections
+add the following construction behavior:
+
+- Backtracking parsing/lowering and reference-following analysis use the shared
+  construction owner. Recursive frames have a fixed 256-frame backstop, tightened
+  by smaller caller limits. Instruction/auxiliary buffers admit capacity and
+  growth overlap before allocation. AST/maps/metadata use a conservative 256-byte
+  charge per UTF-16 pattern character, plus 256 bytes per name entry for each
+  lowerer's own lookup. Shared storage can be charged again; earlier refusal is
+  intentional. Character-parser and whole-heap exclusions remain separate.
+- General contextual bounds/flags/escape checks replace fixture-spelling checks.
+  A final all-declined program throws `NotSupportedException` during construction.
+  Empty intermediate foundations still support actual profile compilers.
+- Lexical policy/name/structure guards share complete escape-operand skipping,
+  preserving class and quoted-text boundaries while retaining real policy errors.
+
+Strict UTF-8/scalars, captures, synchronous original tokens/deadlines, owned
+results/cursors and useful work/depth/working/result controls remain required.
+[Fourth-review source evidence](../../bench/Experiments/FourthReview-20261020/README.md)
+records green Windows/Linux CI at `0cdae03e`; subsequent source needs its own
+validation. Source checks **do not** replace or relabel RC1's package evidence.
+No corrected development package has been qualified. The earlier public first-use
+latency concern remains open for a future delivery; no universal performance
+equivalence or fresh benchmark Status is claimed.
 
 For a future real package boundary, use the existing consolidated flow:
 

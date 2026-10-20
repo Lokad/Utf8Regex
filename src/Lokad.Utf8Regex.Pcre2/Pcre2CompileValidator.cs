@@ -261,22 +261,7 @@ internal static class Pcre2CompileValidator
         // syntax and operand validity for recognized escapes belong to the parser.
         if (char.IsAsciiLetter(escape) && "aAbBcCdDeEfFgGhHkKnNoOpPQrRsStTuUvVwWxXzZ".IndexOf(escape) < 0)
             throw new Pcre2CompileException($"Unrecognized escape sequence '\\{escape}'.", Pcre2ErrorKind.UnrecognizedEscape);
-        if (escape == 'c' && offset + 1 < pattern.Length) { offset++; return; }
-        if (escape is not ('x' or 'o' or 'g' or 'k' or 'p' or 'P' or 'N') || offset + 1 >= pattern.Length) return;
-        var opening = pattern[offset + 1];
-        var closing = opening == '{' ? '}' : escape is 'g' or 'k' && opening == '<' ? '>' :
-            escape is 'g' or 'k' && opening == '\'' ? '\'' : '\0';
-        if (closing == '\0') return;
-        // Malformed operands can revisit suffixes. Admit/check bounded blocks
-        // even though the outer lexical pass already admits its text extent.
-        for (var cursor = offset + 2; cursor < pattern.Length;)
-        {
-            var count = Math.Min(2048, pattern.Length - cursor);
-            Utf8ConstructionScope.ChargeWork((ulong)count);
-            var end = pattern.AsSpan(cursor, count).IndexOf(closing);
-            if (end >= 0) { offset = cursor + end; return; }
-            cursor += count;
-        }
+        Pcre2PatternCodeScan.SkipEscapeOperand(pattern, ref offset, escape);
     }
 
     private static void ValidateOptionOpening(string pattern, int offset)
@@ -382,7 +367,7 @@ internal static class Pcre2CompileValidator
                 else if (inCharacterClass && offset + 1 < pattern.Length && pattern[offset + 1] != 'E')
                 { classHasAtom = true; classStart = false; }
 
-                offset++;
+                if (++offset < pattern.Length) Pcre2PatternCodeScan.SkipEscapeOperand(pattern, ref offset, pattern[offset]);
                 continue;
             }
 
@@ -491,6 +476,7 @@ internal static class Pcre2CompileValidator
                     return true;
                 }
 
+                Pcre2PatternCodeScan.SkipEscapeOperand(pattern, ref offset, escape);
                 if (inCharacterClass && escape != 'E') { classHasAtom = true; classStart = false; }
 
                 continue;
@@ -601,6 +587,7 @@ internal static class Pcre2CompileValidator
                     return true;
                 }
 
+                Pcre2PatternCodeScan.SkipEscapeOperand(pattern, ref offset, escape);
                 if (inCharacterClass && escape is not ('Q' or 'E')) { classHasAtom = true; classStart = false; }
 
                 continue;

@@ -46,6 +46,7 @@ internal static class Pcre2PatternCodeScan
                         continue;
                     }
                     offset++;
+                    SkipEscapeOperand(pattern, ref offset, pattern[offset]);
                     classHasAtom = true;
                     classStart = false;
                     continue;
@@ -85,6 +86,7 @@ internal static class Pcre2PatternCodeScan
                 }
 
                 offset++;
+                SkipEscapeOperand(pattern, ref offset, pattern[offset]);
                 continue;
             }
 
@@ -128,6 +130,29 @@ internal static class Pcre2PatternCodeScan
         }
 
         return false;
+    }
+
+    // Offset points at the escape letter, and leaves at the last operand unit.
+    // Quotes are handled by the caller; payload characters never become regex
+    // syntax. The actual parser still validates the operand's meaning.
+    internal static void SkipEscapeOperand(string pattern, ref int offset, char escape)
+    {
+        if (escape == 'c' && offset + 1 < pattern.Length) { offset++; return; }
+        if (escape is not ('x' or 'o' or 'g' or 'k' or 'p' or 'P' or 'N') || offset + 1 >= pattern.Length) return;
+        var opening = pattern[offset + 1];
+        var closing = opening == '{' ? '}' : escape is 'g' or 'k' && opening == '<' ? '>' :
+            escape is 'g' or 'k' && opening == '\'' ? '\'' : '\0';
+        if (closing == '\0') return;
+        // Malformed operands can revisit suffixes. Admit/check bounded blocks
+        // even though the outer lexical pass already admits its text extent.
+        for (var cursor = offset + 2; cursor < pattern.Length;)
+        {
+            var count = Math.Min(2048, pattern.Length - cursor);
+            Utf8ConstructionScope.ChargeWork((ulong)count);
+            var end = pattern.AsSpan(cursor, count).IndexOf(closing);
+            if (end >= 0) { offset = cursor + end; return; }
+            cursor += count;
+        }
     }
 
     // Call outside classes, quotes, escapes and literal verb labels. Leave the
