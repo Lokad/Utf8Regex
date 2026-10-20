@@ -26,6 +26,13 @@ verifier wrappers use their existing 128-byte admission floors directly instead
 of mirrored field-transfer descriptors; their major children retain separate
 admission. These three helper changes preserve their previous byte/work charges.
 They do not extend the documented memory scope or change RC1 package bytes.
+Development PCRE2 literal compilation also admits its own atom capacities and
+UTF-8 buffer, including growth overlap and bounded interruption checkpoints.
+It transfers those immutable buffers to the literal program instead of compiling
+and retaining an unused Core expression. Construction instruction capacity covers
+the atom vector; numeric requirements can change as the redundant Core work and
+copies disappear. Character and other Core-dependent preparation retain their
+existing routes. Invocation semantics and resource scope are unchanged.
 
 These are existing calls, using each profile's option type. `policy` applies to
 later invocations; `construction`, `constructionTimeout` and `token` apply only

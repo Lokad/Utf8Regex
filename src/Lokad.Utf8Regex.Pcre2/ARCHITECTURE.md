@@ -60,6 +60,14 @@ constructs stay with the PCRE2 compiler and runtime. There is no shipped BCL
 `Regex.Escape` do not execute subjects. Semantic and differential fixtures check
 the supported delegation boundaries; they do not establish complete PCRE2 parity.
 
+Development after RC1 builds literal operation programs directly, with canonical
+group-zero metadata and no Core owner. The literal compiler admits atom/UTF-8
+buffers and growth before allocation, retains bounded work/depth/checkpoints and
+transfers immutable buffers without duplicate copies. Its diagnostic translation
+flag is false because no Core preparation exists. Character preparation still
+keeps its Core foundation until its own major buffers and checkpoints can be
+admitted independently; Core-backed specializations also keep their real owners.
+
 ## Invocation and global progress
 
 Capture slots, undo journals, backtracking/call frames, resource counters,

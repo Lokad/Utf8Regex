@@ -28,8 +28,7 @@ internal static class Pcre2Compiler
         Pcre2CompileValidator.ValidatePattern(request.Pattern, request.Options, request.Settings);
         if (Pcre2LiteralCompiler.Compile(request) is Pcre2CompiledLiteralOutcome literal)
         {
-            var literalProgram = foundationProgramFactory(request);
-            literalProgram = Pcre2CompiledProgramOverlay.WithLiteralOneShot(literalProgram, literal.SyntaxTree, literal.Program);
+            var literalProgram = Pcre2CompiledProgramOverlay.CreateLiteral(request, literal.SyntaxTree, literal.Program);
             Pcre2ProgramInvariant.Validate(literalProgram);
             return literalProgram;
         }
@@ -572,29 +571,21 @@ internal static class Pcre2CompiledProgramOverlay
             []);
     }
 
-    internal static Pcre2CompiledProgram WithLiteralOneShot(
-        Pcre2CompiledProgram legacy,
+    internal static Pcre2CompiledProgram CreateLiteral(
+        Pcre2CompileRequest request,
         Pcre2LiteralSyntaxTree syntaxTree,
         Pcre2LiteralProgram literalProgram)
     {
         var direct = new Pcre2LiteralDirectProgram(literalProgram);
-        var operations = legacy.Operations with
-        {
-            IsMatch = direct,
-            Count = direct,
-            Enumerate = direct,
-            Match = direct,
-            Replace = direct,
-        };
         return new Pcre2CompiledProgram(
-            legacy.Request,
-            legacy.PrimaryUtf8,
-            operations,
+            request,
+            Pcre2EmptyUtf8ProgramSlot.Instance,
+            new Pcre2OperationPrograms(direct, direct, direct, direct, direct),
             default,
             Pcre2PartialProbeProgram.None,
             syntaxTree,
-            legacy.GroupNames,
-            legacy.NameEntries);
+            ["0"],
+            []);
     }
 
     internal static Pcre2CompiledProgram WithCharacterOneShot(

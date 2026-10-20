@@ -25,7 +25,7 @@ internal sealed class Pcre2LiteralSyntaxTree : IPcre2SyntaxTree
         Pcre2LiteralAnchor startAnchor,
         bool endAnchored)
     {
-        _atoms = [.. atoms];
+        _atoms = atoms; // The compiler transfers its admitted immutable atom buffer.
         StartAnchor = startAnchor;
         EndAnchored = endAnchored;
     }
@@ -50,7 +50,7 @@ internal sealed class Pcre2LiteralProgram
         bool endAnchored,
         bool hasExplicitEndAssertion)
     {
-        _literalUtf8 = [.. literalUtf8];
+        _literalUtf8 = literalUtf8; // The compiler transfers its admitted UTF-8 buffer.
         Search = new PreparedSubstringSearch(_literalUtf8, ignoreCase: false);
         StartAnchor = startAnchor;
         EndAnchored = endAnchored;
@@ -129,34 +129,45 @@ internal static class Pcre2LiteralCompiler
 
     internal static IPcre2LiteralCompileOutcome Compile(Pcre2CompileRequest request)
     {
-        if ((request.Options & UnsupportedOptions) != 0 ||
-            !TryParse(request.Pattern, out var atoms, out var startAnchor, out var endAnchored))
+        if ((request.Options & UnsupportedOptions) != 0) return Pcre2NotLiteralOutcome.Instance;
+        using var scope = Utf8ConstructionScope.Enter();
+        var budget = scope.Budget;
+        budget.EnterDepth();
+        try
         {
-            return Pcre2NotLiteralOutcome.Instance;
+            // Literal preparation owns its buffers; it needs no second Core
+            // compilation to supply construction bounds or group-zero metadata.
+            budget.ChargeWork((ulong)request.Pattern.Length);
+            if (!TryParse(request.Pattern, out var atoms, out var startAnchor, out var endAnchored))
+                return Pcre2NotLiteralOutcome.Instance;
+            if ((request.Options & Pcre2CompileOptions.Anchored) != 0 && startAnchor == Pcre2LiteralAnchor.None)
+                startAnchor = Pcre2LiteralAnchor.RequestedStart;
+            var hasExplicitEndAssertion = endAnchored;
+            endAnchored |= (request.Options & Pcre2CompileOptions.EndAnchored) != 0;
+            var syntaxTree = budget.AllocateObject((atoms, startAnchor, endAnchored),
+                static state => new Pcre2LiteralSyntaxTree(state.atoms, state.startAnchor, state.endAnchored));
+            var byteCount = 0;
+            budget.ChargeWork((ulong)atoms.Length);
+            for (var index = 0; index < atoms.Length; index++)
+            {
+                if ((index & 1023) == 0) budget.ChargeWork(0);
+                byteCount = checked(byteCount + atoms[index].Scalar.Utf8SequenceLength);
+            }
+            var literalUtf8 = budget.AllocateArray<byte>(byteCount, false);
+            budget.ChargeWork((ulong)byteCount);
+            var written = 0;
+            for (var index = 0; index < atoms.Length; index++)
+            {
+                if ((index & 1023) == 0) budget.ChargeWork(0);
+                written += atoms[index].Scalar.EncodeToUtf8(literalUtf8.AsSpan(written));
+            }
+            var program = budget.AllocateObject((literalUtf8, startAnchor, endAnchored, hasExplicitEndAssertion),
+                static state => new Pcre2LiteralProgram(state.literalUtf8, state.startAnchor,
+                    state.endAnchored, state.hasExplicitEndAssertion));
+            scope.Complete();
+            return new Pcre2CompiledLiteralOutcome(syntaxTree, program);
         }
-
-        if ((request.Options & Pcre2CompileOptions.Anchored) != 0 && startAnchor == Pcre2LiteralAnchor.None)
-        {
-            startAnchor = Pcre2LiteralAnchor.RequestedStart;
-        }
-
-        var hasExplicitEndAssertion = endAnchored;
-        endAnchored |= (request.Options & Pcre2CompileOptions.EndAnchored) != 0;
-        var syntaxTree = new Pcre2LiteralSyntaxTree(atoms, startAnchor, endAnchored);
-
-        var literalUtf8 = new byte[atoms.Sum(static atom => atom.Scalar.Utf8SequenceLength)];
-        var written = 0;
-        foreach (var atom in atoms)
-        {
-            written += atom.Scalar.EncodeToUtf8(literalUtf8.AsSpan(written));
-        }
-
-        var program = new Pcre2LiteralProgram(
-            literalUtf8,
-            startAnchor,
-            endAnchored,
-            hasExplicitEndAssertion);
-        return new Pcre2CompiledLiteralOutcome(syntaxTree, program);
+        finally { budget.LeaveDepth(); }
     }
 
     private static bool TryParse(
@@ -165,7 +176,8 @@ internal static class Pcre2LiteralCompiler
         out Pcre2LiteralAnchor startAnchor,
         out bool endAnchored)
     {
-        var parsedAtoms = new List<Pcre2LiteralAtom>(pattern.Length);
+        var budget = Utf8ConstructionScope.CurrentBudget;
+        using var parsedAtoms = new Utf8ConstructionBuffer<Pcre2LiteralAtom>(budget, instructions: true);
         var position = 0;
         startAnchor = Pcre2LiteralAnchor.None;
         endAnchored = false;
@@ -184,6 +196,7 @@ internal static class Pcre2LiteralCompiler
 
         while (position < pattern.Length)
         {
+            budget.ChargeWork(1);
             if (Pcre2CompileValidator.TrySkipParenthesizedComment(pattern, ref position)) continue;
             if (pattern.AsSpan(position).StartsWith(@"\z", StringComparison.Ordinal))
             {
@@ -224,7 +237,7 @@ internal static class Pcre2LiteralCompiler
             position += consumed;
         }
 
-        atoms = [.. parsedAtoms];
+        atoms = parsedAtoms.Take();
         return true;
     }
 

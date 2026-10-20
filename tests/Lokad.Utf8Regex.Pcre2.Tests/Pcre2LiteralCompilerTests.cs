@@ -1,4 +1,5 @@
 using System.Text;
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
@@ -6,6 +7,66 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 [Collection(Pcre2AllocationTestCollection.Name)]
 public sealed class Pcre2LiteralCompilerTests
 {
+    [Theory]
+    [InlineData("abc")]
+    [InlineData("café")]
+    [InlineData("😀")]
+    public void LiteralProgramsKeepCanonicalGroupZeroWithoutRetainingCore(string pattern)
+    {
+        var program = new Utf8Pcre2Regex(pattern).DebugCompiledProgram;
+        Assert.IsType<Pcre2EmptyUtf8ProgramSlot>(program.PrimaryUtf8);
+        Assert.Equal(new[] { "0" }, program.GroupNames);
+        Assert.Empty(program.NameEntries);
+        Assert.All(new[] { program.Operations.IsMatch, program.Operations.Count, program.Operations.Match,
+            program.Operations.Enumerate, program.Operations.Replace },
+            operation => Assert.Same(program.Operations.Match, operation));
+    }
+
+    [Theory]
+    [InlineData(0, false)] [InlineData(0, true)]
+    [InlineData(1, false)] [InlineData(1, true)]
+    [InlineData(2, false)] [InlineData(2, true)]
+    public void PublicLiteralConstructionStillEnforcesMajorCaps(int kind, bool bytes)
+    {
+        var policy = kind switch
+        {
+            0 => new Utf8ConstructionPolicy { MaxWorkSteps = 1 },
+            1 => new Utf8ConstructionPolicy { MaxInstructionCapacity = 1 },
+            _ => new Utf8ConstructionPolicy { MaxBytes = 1 },
+        };
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+        {
+            if (bytes) _ = Utf8Pcre2Regex.Compile("a😀b"u8, Pcre2CompileOptions.None, default,
+                Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, policy,
+                Timeout.InfiniteTimeSpan, CancellationToken.None);
+            else _ = Utf8Pcre2Regex.Compile("a😀b", Pcre2CompileOptions.None, default,
+                Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, policy,
+                Timeout.InfiniteTimeSpan, CancellationToken.None);
+        });
+        Assert.Equal(kind switch
+        {
+            0 => Utf8ResourceLimitKind.ConstructionWorkSteps,
+            1 => Utf8ResourceLimitKind.ConstructionInstructionCapacity,
+            _ => Utf8ResourceLimitKind.ConstructionBytes,
+        }, failure.ResourceKind);
+        Assert.False(Utf8ConstructionScope.IsActive);
+        Assert.Equal(1, new Utf8Pcre2Regex("a😀b").Count("a😀b"u8));
+    }
+
+    [Fact]
+    public void LiteralByteDenialPrecedesItsFirstMajorAllocation()
+    {
+        using var owner = new Utf8ConstructionScope(1000, 1, 100000, 16);
+        var request = new Pcre2CompileRequest("abc", Pcre2CompileOptions.None, default,
+            default, Timeout.InfiniteTimeSpan);
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Pcre2LiteralCompiler.Compile(request));
+        Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
+        Assert.Equal(0ul, owner.Budget.PeakBytes);
+        Assert.Equal(0ul, owner.Budget.ReservedBytes);
+        Assert.Equal(0ul, owner.Budget.Reserved);
+        Assert.True(owner.Budget.WorkSteps > 0);
+    }
+
     [Theory]
     [InlineData("abc", "xxabczz", 0, 2, 5, 2, 5)]
     [InlineData("café", "--café--", 0, 2, 7, 2, 6)]

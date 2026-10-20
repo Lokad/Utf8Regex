@@ -11,11 +11,11 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Utf8Pcre2RegexTranslationTests
 {
     [Fact]
-    public void ExactLiteralUsesUtf8RegexTranslationForPublicSurface()
+    public void ExactLiteralUsesItsOwnedProgramWithoutCoreTranslation()
     {
         var regex = new Utf8Pcre2Regex("foo");
 
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
+        Assert.False(regex.DebugUsesUtf8RegexTranslation);
         Assert.Equal("IsMatch=Pcre2Literal, Count=Pcre2Literal, Enumerate=Pcre2Literal, Match=Pcre2Literal, Replace=Pcre2Literal", regex.DebugDescribeExecutionPlan());
 
         Assert.True(regex.IsMatch("xxfooyy"u8));
