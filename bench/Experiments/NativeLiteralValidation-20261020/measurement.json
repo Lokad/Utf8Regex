@@ -1,0 +1,5515 @@
+{
+  "attribution_summary": {
+    "identity": {
+      "Kind": "identity",
+      "Runtime": "10.0.12",
+      "Core": "37E34C27C9E51DFA21F8D576DC3B1B4BA3F71793C64B043114B9C59EA951F6F6",
+      "Python": "25204F494A774009ECD14B4447D59F811AA2848B2B80F9B227626CEF8636A48B",
+      "Driver": "2F4693AED0A78B569AA0B8ABDBE90624F09231C33AA7EDD71DEED3E6C210BB4A"
+    },
+    "seconds": 23.527172088623047,
+    "minimum_sample_ms": 8.6018,
+    "maximum_spread": 1.7345314869720858,
+    "rows": [
+      {
+        "Name": "ascii-hit/public-search",
+        "Microseconds": 3.128409529942048,
+        "Bytes": 0,
+        "Spread": 1.019321769829365,
+        "MinimumSampleMs": 24.1334
+      },
+      {
+        "Name": "ascii-hit/metadata-validation",
+        "Microseconds": 2.280412147505423,
+        "Bytes": 0,
+        "Spread": 1.0167584258904634,
+        "MinimumSampleMs": 41.776
+      },
+      {
+        "Name": "ascii-hit/validity-only",
+        "Microseconds": 2.5669291338582676,
+        "Bytes": 0,
+        "Spread": 1.0491408774907576,
+        "MinimumSampleMs": 8.6018
+      },
+      {
+        "Name": "ascii-hit/bcl-validity",
+        "Microseconds": 0.7150571131879542,
+        "Bytes": 0,
+        "Spread": 1.0128131736964543,
+        "MinimumSampleMs": 16.4206
+      },
+      {
+        "Name": "ascii-hit/native-search-prevalidated",
+        "Microseconds": 1.077100990503421,
+        "Bytes": 0,
+        "Spread": 1.0258341106927602,
+        "MinimumSampleMs": 20.6897
+      },
+      {
+        "Name": "ascii-hit/metadata-plus-native",
+        "Microseconds": 3.3239546584928577,
+        "Bytes": 0,
+        "Spread": 1.0087481346145801,
+        "MinimumSampleMs": 57.3608
+      },
+      {
+        "Name": "ascii-hit/production-discovery",
+        "Microseconds": 3.036098435462842,
+        "Bytes": 0,
+        "Spread": 1.021913173334103,
+        "MinimumSampleMs": 55.4461
+      },
+      {
+        "Name": "ascii-miss/public-search",
+        "Microseconds": 3.1047621414723867,
+        "Bytes": 0,
+        "Spread": 1.2715080619869314,
+        "MinimumSampleMs": 61.8582
+      },
+      {
+        "Name": "ascii-miss/metadata-validation",
+        "Microseconds": 2.2728890711502974,
+        "Bytes": 0,
+        "Spread": 1.0105211987154812,
+        "MinimumSampleMs": 55.3359
+      },
+      {
+        "Name": "ascii-miss/validity-only",
+        "Microseconds": 2.580057071661107,
+        "Bytes": 0,
+        "Spread": 1.0893626285503064,
+        "MinimumSampleMs": 63.8466
+      },
+      {
+        "Name": "ascii-miss/bcl-validity",
+        "Microseconds": 0.7182963086687825,
+        "Bytes": 0,
+        "Spread": 1.0258897898779191,
+        "MinimumSampleMs": 63.7201
+      },
+      {
+        "Name": "ascii-miss/native-search-prevalidated",
+        "Microseconds": 1.0633353538414911,
+        "Bytes": 0,
+        "Spread": 1.6496438302559497,
+        "MinimumSampleMs": 55.1984
+      },
+      {
+        "Name": "ascii-miss/metadata-plus-native",
+        "Microseconds": 3.346912535949924,
+        "Bytes": 0,
+        "Spread": 1.7345314869720858,
+        "MinimumSampleMs": 58.5512
+      },
+      {
+        "Name": "ascii-miss/production-discovery",
+        "Microseconds": 3.0453835959357973,
+        "Bytes": 0,
+        "Spread": 1.0552679487116576,
+        "MinimumSampleMs": 61.1367
+      },
+      {
+        "Name": "cyrillic-hit/public-search",
+        "Microseconds": 0.13963550556348342,
+        "Bytes": 0,
+        "Spread": 1.0050916088682196,
+        "MinimumSampleMs": 14.9658
+      },
+      {
+        "Name": "cyrillic-hit/metadata-validation",
+        "Microseconds": 0.03617425,
+        "Bytes": 0,
+        "Spread": 1.0111772592443367,
+        "MinimumSampleMs": 14.3953
+      },
+      {
+        "Name": "cyrillic-hit/validity-only",
+        "Microseconds": 0.062684812318938,
+        "Bytes": 0,
+        "Spread": 1.0233723760505977,
+        "MinimumSampleMs": 63.8446
+      },
+      {
+        "Name": "cyrillic-hit/bcl-validity",
+        "Microseconds": 0.014825714089933955,
+        "Bytes": 0,
+        "Spread": 1.7077935796648618,
+        "MinimumSampleMs": 53.9598
+      },
+      {
+        "Name": "cyrillic-hit/native-search-prevalidated",
+        "Microseconds": 0.05941595329932957,
+        "Bytes": 0,
+        "Spread": 1.4373076441121908,
+        "MinimumSampleMs": 65.4386
+      },
+      {
+        "Name": "cyrillic-hit/metadata-plus-native",
+        "Microseconds": 0.07565724209271255,
+        "Bytes": 0,
+        "Spread": 1.017509620713856,
+        "MinimumSampleMs": 63.6907
+      },
+      {
+        "Name": "cyrillic-hit/production-discovery",
+        "Microseconds": 0.07474977947254,
+        "Bytes": 0,
+        "Spread": 1.0128017073091058,
+        "MinimumSampleMs": 64.2883
+      },
+      {
+        "Name": "cyrillic-miss/public-search",
+        "Microseconds": 0.8690735928263414,
+        "Bytes": 0,
+        "Spread": 1.0113540971253694,
+        "MinimumSampleMs": 60.5156
+      },
+      {
+        "Name": "cyrillic-miss/metadata-validation",
+        "Microseconds": 0.8152771852335182,
+        "Bytes": 0,
+        "Spread": 1.0127397687836264,
+        "MinimumSampleMs": 64.7186
+      },
+      {
+        "Name": "cyrillic-miss/validity-only",
+        "Microseconds": 0.5980439321049288,
+        "Bytes": 0,
+        "Spread": 1.0236162447494679,
+        "MinimumSampleMs": 51.5662
+      },
+      {
+        "Name": "cyrillic-miss/bcl-validity",
+        "Microseconds": 0.35479305848823656,
+        "Bytes": 0,
+        "Spread": 1.0126020096596902,
+        "MinimumSampleMs": 61.2442
+      },
+      {
+        "Name": "cyrillic-miss/native-search-prevalidated",
+        "Microseconds": 0.05107390554262624,
+        "Bytes": 0,
+        "Spread": 1.0098999524595718,
+        "MinimumSampleMs": 65.8387
+      },
+      {
+        "Name": "cyrillic-miss/metadata-plus-native",
+        "Microseconds": 0.8594925360390487,
+        "Bytes": 0,
+        "Spread": 1.015349679687812,
+        "MinimumSampleMs": 60.0664
+      },
+      {
+        "Name": "cyrillic-miss/production-discovery",
+        "Microseconds": 0.8690831490077573,
+        "Bytes": 0,
+        "Spread": 1.0712983486292,
+        "MinimumSampleMs": 54.9059
+      }
+    ],
+    "archive_sha256": "28CC24F3BCE574F51087553B66025D2F5D84DC9416D125095DCCE4AF835B14F7"
+  },
+  "public_pair_summary": {
+    "rows": [
+      {
+        "name": "ru-short-hit",
+        "before": {
+          "us": 0.12537772706842307,
+          "bytes": 0,
+          "spread": 1.0059967049767509,
+          "minimum_sample_ms": 50.5611
+        },
+        "after": {
+          "us": 0.1338858342817755,
+          "bytes": 0,
+          "spread": 1.0128608013283946,
+          "minimum_sample_ms": 49.8647
+        },
+        "change_percent": 6.7859797846783865
+      },
+      {
+        "name": "ru-miss-search",
+        "before": {
+          "us": 0.8318675414746919,
+          "bytes": 0,
+          "spread": 1.108543620103238,
+          "minimum_sample_ms": 50.7759
+        },
+        "after": {
+          "us": 0.5251974548025452,
+          "bytes": 0,
+          "spread": 1.0105598254727746,
+          "minimum_sample_ms": 51.7054
+        },
+        "change_percent": -36.86525454863857
+      },
+      {
+        "name": "ru-miss-match",
+        "before": {
+          "us": 0.8257546595601178,
+          "bytes": 0,
+          "spread": 1.0385273076954027,
+          "minimum_sample_ms": 49.7076
+        },
+        "after": {
+          "us": 0.5301709878735603,
+          "bytes": 0,
+          "spread": 1.051782998604644,
+          "minimum_sample_ms": 51.0264
+        },
+        "change_percent": -35.79558023251311
+      },
+      {
+        "name": "ru-miss-full",
+        "before": {
+          "us": 0.8309901277986237,
+          "bytes": 0,
+          "spread": 1.0180375837838933,
+          "minimum_sample_ms": 59.2596
+        },
+        "after": {
+          "us": 0.517807039133645,
+          "bytes": 0,
+          "spread": 1.022339798951725,
+          "minimum_sample_ms": 50.4257
+        },
+        "change_percent": -37.687943356755895
+      },
+      {
+        "name": "ru-miss-search-text",
+        "before": {
+          "us": 0.8378532777135582,
+          "bytes": 0,
+          "spread": 1.0206372698472952,
+          "minimum_sample_ms": 49.5269
+        },
+        "after": {
+          "us": 0.5351480074757341,
+          "bytes": 0,
+          "spread": 1.015356857820461,
+          "minimum_sample_ms": 52.8754
+        },
+        "change_percent": -36.12867291799409
+      },
+      {
+        "name": "ru-miss-match-text",
+        "before": {
+          "us": 0.8374127224648662,
+          "bytes": 0,
+          "spread": 1.0090938987946296,
+          "minimum_sample_ms": 55.9496
+        },
+        "after": {
+          "us": 0.5376293690751138,
+          "bytes": 0,
+          "spread": 1.0222854502922263,
+          "minimum_sample_ms": 54.5468
+        },
+        "change_percent": -35.79875792994414
+      },
+      {
+        "name": "ru-miss-full-text",
+        "before": {
+          "us": 0.8409343519509656,
+          "bytes": 0,
+          "spread": 1.00674474839392,
+          "minimum_sample_ms": 57.1111
+        },
+        "after": {
+          "us": 0.5412868521345421,
+          "bytes": 0,
+          "spread": 1.5492042820407343,
+          "minimum_sample_ms": 51.2933
+        },
+        "change_percent": -35.6326863234023
+      },
+      {
+        "name": "ru-long-hit",
+        "before": {
+          "us": 190.1293255131965,
+          "bytes": 0,
+          "spread": 1.002942407584461,
+          "minimum_sample_ms": 64.7429
+        },
+        "after": {
+          "us": 189.4603498542274,
+          "bytes": 0,
+          "spread": 1.6675849019207065,
+          "minimum_sample_ms": 64.5804
+        },
+        "change_percent": -0.3518529596438724
+      },
+      {
+        "name": "ru-long-miss",
+        "before": {
+          "us": 95.9581222056632,
+          "bytes": 0,
+          "spread": 1.013518259249027,
+          "minimum_sample_ms": 64.0689
+        },
+        "after": {
+          "us": 10.995755045233125,
+          "bytes": 0,
+          "spread": 1.0156078350088091,
+          "minimum_sample_ms": 62.7185
+        },
+        "change_percent": -88.54108980825369
+      },
+      {
+        "name": "ru-exact-full",
+        "before": {
+          "us": 0.08484375727951185,
+          "bytes": 0,
+          "spread": 1.0075289976228152,
+          "minimum_sample_ms": 66.9279
+        },
+        "after": {
+          "us": 0.09287488079688067,
+          "bytes": 0,
+          "spread": 1.0059764236673563,
+          "minimum_sample_ms": 66.7958
+        },
+        "change_percent": 9.465780129127044
+      },
+      {
+        "name": "ru-exact-full-text",
+        "before": {
+          "us": 0.1238533230429558,
+          "bytes": 40,
+          "spread": 1.2485046762489589,
+          "minimum_sample_ms": 50.1898
+        },
+        "after": {
+          "us": 0.13546996497427896,
+          "bytes": 40,
+          "spread": 1.0116813108304956,
+          "minimum_sample_ms": 64.6674
+        },
+        "change_percent": 9.37935426027623
+      },
+      {
+        "name": "emoji-hit",
+        "before": {
+          "us": 0.27625308543124255,
+          "bytes": 0,
+          "spread": 1.2630510598056872,
+          "minimum_sample_ms": 49.8063
+        },
+        "after": {
+          "us": 0.2645593393396571,
+          "bytes": 0,
+          "spread": 1.0047386132729361,
+          "minimum_sample_ms": 49.8036
+        },
+        "change_percent": -4.23298298128727
+      },
+      {
+        "name": "emoji-miss",
+        "before": {
+          "us": 1.288604538870111,
+          "bytes": 0,
+          "spread": 1.0582090971439668,
+          "minimum_sample_ms": 49.4287
+        },
+        "after": {
+          "us": 1.271760998143591,
+          "bytes": 0,
+          "spread": 1.0162563246970366,
+          "minimum_sample_ms": 58.6787
+        },
+        "change_percent": -1.3071148066333138
+      },
+      {
+        "name": "ru-short-miss",
+        "before": {
+          "us": 0.057285540253809976,
+          "bytes": 0,
+          "spread": 1.0045372576852152,
+          "minimum_sample_ms": 63.8271
+        },
+        "after": {
+          "us": 0.0672531785408724,
+          "bytes": 0,
+          "spread": 1.01178754424367,
+          "minimum_sample_ms": 65.0093
+        },
+        "change_percent": 17.3999201943452
+      },
+      {
+        "name": "ru-empty-input",
+        "before": {
+          "us": 0.05713909869412574,
+          "bytes": 0,
+          "spread": 1.1959339697183249,
+          "minimum_sample_ms": 65.5578
+        },
+        "after": {
+          "us": 0.06128948670008785,
+          "bytes": 0,
+          "spread": 1.0054113559510982,
+          "minimum_sample_ms": 64.5864
+        },
+        "change_percent": 7.263656761860671
+      },
+      {
+        "name": "ascii-hit-control",
+        "before": {
+          "us": 3.1751000307787014,
+          "bytes": 0,
+          "spread": 1.7151781402629729,
+          "minimum_sample_ms": 61.7098
+        },
+        "after": {
+          "us": 3.3919159127195315,
+          "bytes": 0,
+          "spread": 1.0109940753621536,
+          "minimum_sample_ms": 63.1431
+        },
+        "change_percent": 6.828631534095497
+      },
+      {
+        "name": "ascii-miss-control",
+        "before": {
+          "us": 3.1774755802491264,
+          "bytes": 0,
+          "spread": 1.013074862668543,
+          "minimum_sample_ms": 70.4864
+        },
+        "after": {
+          "us": 3.367617748872338,
+          "bytes": 0,
+          "spread": 1.0948009978722302,
+          "minimum_sample_ms": 63.7757
+        },
+        "change_percent": 5.984063884081969
+      },
+      {
+        "name": "ru-miss-full-control",
+        "before": {
+          "us": 0.9009423008968686,
+          "bytes": 112,
+          "spread": 1.0265448191231274,
+          "minimum_sample_ms": 53.0499
+        },
+        "after": {
+          "us": 0.9075182150128724,
+          "bytes": 112,
+          "spread": 1.011105243219942,
+          "minimum_sample_ms": 53.5873
+        },
+        "change_percent": 0.7298929253802156
+      },
+      {
+        "name": "ru-exact-full-control",
+        "before": {
+          "us": 0.17090721632833256,
+          "bytes": 112,
+          "spread": 1.0179756466142642,
+          "minimum_sample_ms": 63.0631
+        },
+        "after": {
+          "us": 0.1844881623449831,
+          "bytes": 112,
+          "spread": 1.0239190276150292,
+          "minimum_sample_ms": 64.7727
+        },
+        "change_percent": 7.946385359504071
+      },
+      {
+        "name": "ru-long-miss-control",
+        "before": {
+          "us": 98.06919770773638,
+          "bytes": 112,
+          "spread": 1.0089367394557194,
+          "minimum_sample_ms": 68.1009
+        },
+        "after": {
+          "us": 98.63255086071987,
+          "bytes": 112,
+          "spread": 1.013475917370718,
+          "minimum_sample_ms": 62.5783
+        },
+        "change_percent": 0.5744445413557786
+      },
+      {
+        "name": "ru-miss-token-control",
+        "before": {
+          "us": 0.888350147497433,
+          "bytes": 112,
+          "spread": 1.6994494748680937,
+          "minimum_sample_ms": 54.1483
+        },
+        "after": {
+          "us": 0.9063718982947002,
+          "bytes": 112,
+          "spread": 1.0140222374949395,
+          "minimum_sample_ms": 53.1085
+        },
+        "change_percent": 2.0286765132010443
+      },
+      {
+        "name": "ru-miss-deadline-control",
+        "before": {
+          "us": 1.0178153010092457,
+          "bytes": 160,
+          "spread": 1.3373261042424582,
+          "minimum_sample_ms": 56.8444
+        },
+        "after": {
+          "us": 1.0449719196411744,
+          "bytes": 160,
+          "spread": 1.0071233918499272,
+          "minimum_sample_ms": 55.2265
+        },
+        "change_percent": 2.668128353444943
+      },
+      {
+        "name": "core-count-control/unlimited",
+        "before": {
+          "us": 4.858522545570835,
+          "bytes": 0,
+          "spread": 1.0117722471225334,
+          "minimum_sample_ms": 60.2179
+        },
+        "after": {
+          "us": 3.175062663051819,
+          "bytes": 0,
+          "spread": 1.0123650819706769,
+          "minimum_sample_ms": 61.5281
+        },
+        "change_percent": -34.64962582202495
+      },
+      {
+        "name": "core-count-control/finite",
+        "before": {
+          "us": 4.659526355996944,
+          "bytes": 112,
+          "spread": 1.0941429544359729,
+          "minimum_sample_ms": 60.201
+        },
+        "after": {
+          "us": 3.9854319227529,
+          "bytes": 112,
+          "spread": 1.0123470719240242,
+          "minimum_sample_ms": 61.1562
+        },
+        "change_percent": -14.46701621027351
+      },
+      {
+        "name": "dotnet-control/ascii/predecoded",
+        "before": {
+          "us": 5.626447486535009,
+          "bytes": 0,
+          "spread": 1.2753201956628861,
+          "minimum_sample_ms": 49.9226
+        },
+        "after": {
+          "us": 3.5193024861878452,
+          "bytes": 0,
+          "spread": 1.231458875007927,
+          "minimum_sample_ms": 50.4608
+        },
+        "change_percent": -37.45071833319159
+      },
+      {
+        "name": "dotnet-control/ascii/decode",
+        "before": {
+          "us": 40.51711924439197,
+          "bytes": 131096,
+          "spread": 1.1726889417910136,
+          "minimum_sample_ms": 100.7731
+        },
+        "after": {
+          "us": 44.85734597156399,
+          "bytes": 131096,
+          "spread": 1.7123375297311583,
+          "minimum_sample_ms": 66.5968
+        },
+        "change_percent": 10.71208123408911
+      },
+      {
+        "name": "dotnet-control/unicode/predecoded",
+        "before": {
+          "us": 0.05439321967725143,
+          "bytes": 0,
+          "spread": 1.0064629447154863,
+          "minimum_sample_ms": 49.9308
+        },
+        "after": {
+          "us": 0.048752991430514286,
+          "bytes": 0,
+          "spread": 1.5884955576552042,
+          "minimum_sample_ms": 50.3788
+        },
+        "change_percent": -10.369359049168448
+      },
+      {
+        "name": "dotnet-control/unicode/decode",
+        "before": {
+          "us": 0.7747550843253969,
+          "bytes": 928,
+          "spread": 1.0078439490253848,
+          "minimum_sample_ms": 49.7581
+        },
+        "after": {
+          "us": 0.7825839809878605,
+          "bytes": 928,
+          "spread": 1.0291906665949941,
+          "minimum_sample_ms": 48.3682
+        },
+        "change_percent": 1.0104995528077865
+      }
+    ],
+    "seconds": 62.218218088150024,
+    "samples": 280,
+    "minimum_sample_ms": 48.3682,
+    "archive_sha256": "A221A2C84DBD7D6C7424FDF77B4CC60DB2BEB92BB47518469EA30CB7CC8F86CA",
+    "identities": {
+      "before": {
+        "Kind": "identity",
+        "Phase": "before",
+        "Core": "CD6BD90A292A1B23F7AAFC4E78C8C72E7739A6352CA0E2B522FE56A6BC3569E6",
+        "Python": "7818965E903D8566BE0D36C8A324058DC9C5A3B7B66ED879AA825D3159053A73",
+        "Driver": "6DAD6910746478B6AE7BECF8FEDC7B6CEBAFF747BB28EF061755AE9DF83A59FB",
+        "Runtime": "10.0.12"
+      },
+      "after": {
+        "Kind": "identity",
+        "Phase": "after",
+        "Core": "AE1604B26A6BBF706F32D0FE14A8C9C1EE9827760DE56E7176C4AB2FE563C806",
+        "Python": "7818965E903D8566BE0D36C8A324058DC9C5A3B7B66ED879AA825D3159053A73",
+        "Driver": "6DAD6910746478B6AE7BECF8FEDC7B6CEBAFF747BB28EF061755AE9DF83A59FB",
+        "Runtime": "10.0.12"
+      }
+    }
+  },
+  "decision": {
+    "decision": "rejected and production reverted",
+    "reason": "Public short Unicode-needle miss +17.40% exceeds predeclared10% ceiling; unchanged Core/.NET controls move14-37% and several phase spreads exceed1.5x. No qualified aggregate/public gain.",
+    "confirmation": false,
+    "retiming": false,
+    "restored_assemblies": {
+      "Lokad.Utf8Regex.dll": "CD6BD90A292A1B23F7AAFC4E78C8C72E7739A6352CA0E2B522FE56A6BC3569E6",
+      "Lokad.Utf8Regex.PythonRe.dll": "7818965E903D8566BE0D36C8A324058DC9C5A3B7B66ED879AA825D3159053A73"
+    },
+    "candidate_tests": 839,
+    "core_tests": 598,
+    "restored_tests": 839,
+    "new_cases": 26,
+    "existing_test_changes": false,
+    "original_fixture_failure": "New test miscounted UTF16 units for \u4e2d\u00e9\ud83d\ude00\u5c3e as6 rather than5; corrected fixture and retained initial failure log.",
+    "public_contract_revision": false,
+    "numeric_policy_revision": false,
+    "unsafe_campaign_reopened": false,
+    "package_qualification": false
+  },
+  "attribution_observations": [
+    {
+      "Kind": "identity",
+      "Runtime": "10.0.12",
+      "Core": "37E34C27C9E51DFA21F8D576DC3B1B4BA3F71793C64B043114B9C59EA951F6F6",
+      "Python": "25204F494A774009ECD14B4447D59F811AA2848B2B80F9B227626CEF8636A48B",
+      "Driver": "2F4693AED0A78B569AA0B8ABDBE90624F09231C33AA7EDD71DEED3E6C210BB4A"
+    },
+    {
+      "Kind": "case",
+      "Name": "ascii-hit",
+      "Pattern": "needle",
+      "Bytes": 65542,
+      "Utf16": 65542,
+      "Found": true,
+      "Subject": "4E381E20D292A1149943470F2827649D9D8D087F6BA87326BFA715A124316FA2",
+      "Route": "ExactAsciiLiteral"
+    },
+    {
+      "Kind": "case",
+      "Name": "ascii-miss",
+      "Pattern": "needle",
+      "Bytes": 65536,
+      "Utf16": 65536,
+      "Found": false,
+      "Subject": "1F8745F0D2D1387EC1AF2211A3CF417B2E9E885E853472649C1D979D0E9370E3",
+      "Route": "ExactAsciiLiteral"
+    },
+    {
+      "Kind": "case",
+      "Name": "cyrillic-hit",
+      "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+      "Bytes": 18,
+      "Utf16": 12,
+      "Found": true,
+      "Subject": "4324A2E9CC0F6EB634296D053D3DE8E677A65647CD660216819BE81AD714DF1B",
+      "Route": "ExactUtf8Literal"
+    },
+    {
+      "Kind": "case",
+      "Name": "cyrillic-miss",
+      "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+      "Bytes": 837,
+      "Utf16": 453,
+      "Found": false,
+      "Subject": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+      "Route": "ExactUtf8Literal"
+    },
+    {
+      "Kind": "warmup",
+      "Name": "ascii-hit/public-search",
+      "Calls": 70880,
+      "Milliseconds": 554.3756
+    },
+    {
+      "Kind": "warmup",
+      "Name": "ascii-hit/metadata-validation",
+      "Calls": 139991,
+      "Milliseconds": 574.1348
+    },
+    {
+      "Kind": "warmup",
+      "Name": "ascii-hit/validity-only",
+      "Calls": 26131,
+      "Milliseconds": 566.3371
+    },
+    {
+      "Kind": "warmup",
+      "Name": "ascii-hit/bcl-validity",
+      "Calls": 197073,
+      "Milliseconds": 567.7516
+    },
+    {
+      "Kind": "warmup",
+      "Name": "ascii-hit/native-search-prevalidated",
+      "Calls": 145370,
+      "Milliseconds": 647.6271
+    },
+    {
+      "Kind": "warmup",
+      "Name": "ascii-hit/metadata-plus-native",
+      "Calls": 123341,
+      "Milliseconds": 558.9056
+    },
+    {
+      "Kind": "warmup",
+      "Name": "ascii-hit/production-discovery",
+      "Calls": 152782,
+      "Milliseconds": 556.9429
+    },
+    {
+      "Kind": "warmup",
+      "Name": "ascii-miss/public-search",
+      "Calls": 150591,
+      "Milliseconds": 565.8882
+    },
+    {
+      "Kind": "warmup",
+      "Name": "ascii-miss/metadata-validation",
+      "Calls": 240474,
+      "Milliseconds": 556.1795
+    },
+    {
+      "Kind": "warmup",
+      "Name": "ascii-miss/validity-only",
+      "Calls": 180193,
+      "Milliseconds": 563.5909
+    },
+    {
+      "Kind": "warmup",
+      "Name": "ascii-miss/bcl-validity",
+      "Calls": 670636,
+      "Milliseconds": 613.1331
+    },
+    {
+      "Kind": "warmup",
+      "Name": "ascii-miss/native-search-prevalidated",
+      "Calls": 458482,
+      "Milliseconds": 555.6572
+    },
+    {
+      "Kind": "warmup",
+      "Name": "ascii-miss/metadata-plus-native",
+      "Calls": 148862,
+      "Milliseconds": 559.0665
+    },
+    {
+      "Kind": "warmup",
+      "Name": "ascii-miss/production-discovery",
+      "Calls": 160983,
+      "Milliseconds": 561.5928
+    },
+    {
+      "Kind": "warmup",
+      "Name": "cyrillic-hit/public-search",
+      "Calls": 870036,
+      "Milliseconds": 556.7336
+    },
+    {
+      "Kind": "warmup",
+      "Name": "cyrillic-hit/metadata-validation",
+      "Calls": 3214362,
+      "Milliseconds": 553.8548
+    },
+    {
+      "Kind": "warmup",
+      "Name": "cyrillic-hit/validity-only",
+      "Calls": 5571512,
+      "Milliseconds": 583.7258
+    },
+    {
+      "Kind": "warmup",
+      "Name": "cyrillic-hit/bcl-validity",
+      "Calls": 10285993,
+      "Milliseconds": 565.014
+    },
+    {
+      "Kind": "warmup",
+      "Name": "cyrillic-hit/native-search-prevalidated",
+      "Calls": 4953614,
+      "Milliseconds": 582.4066
+    },
+    {
+      "Kind": "warmup",
+      "Name": "cyrillic-hit/metadata-plus-native",
+      "Calls": 4388182,
+      "Milliseconds": 575.8055
+    },
+    {
+      "Kind": "warmup",
+      "Name": "cyrillic-hit/production-discovery",
+      "Calls": 4550528,
+      "Milliseconds": 607.4327
+    },
+    {
+      "Kind": "warmup",
+      "Name": "cyrillic-miss/public-search",
+      "Calls": 549309,
+      "Milliseconds": 561.2452
+    },
+    {
+      "Kind": "warmup",
+      "Name": "cyrillic-miss/metadata-validation",
+      "Calls": 594264,
+      "Milliseconds": 565.2338
+    },
+    {
+      "Kind": "warmup",
+      "Name": "cyrillic-miss/validity-only",
+      "Calls": 783187,
+      "Milliseconds": 552.816
+    },
+    {
+      "Kind": "warmup",
+      "Name": "cyrillic-miss/bcl-validity",
+      "Calls": 1300588,
+      "Milliseconds": 561.6686
+    },
+    {
+      "Kind": "warmup",
+      "Name": "cyrillic-miss/native-search-prevalidated",
+      "Calls": 5654250,
+      "Milliseconds": 604.5437
+    },
+    {
+      "Kind": "warmup",
+      "Name": "cyrillic-miss/metadata-plus-native",
+      "Calls": 562861,
+      "Milliseconds": 560.1949
+    },
+    {
+      "Kind": "warmup",
+      "Name": "cyrillic-miss/production-discovery",
+      "Calls": 555927,
+      "Milliseconds": 555.9772
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/public-search",
+      "Sample": 0,
+      "Iterations": 7765,
+      "Ns": 3168.0231809401157,
+      "Bytes": 0,
+      "Ms": 24.5997
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/metadata-validation",
+      "Sample": 0,
+      "Iterations": 18440,
+      "Ns": 2303.4761388286333,
+      "Bytes": 0,
+      "Ms": 42.4761
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/validity-only",
+      "Sample": 0,
+      "Iterations": 3429,
+      "Ns": 2631.816856226305,
+      "Bytes": 0,
+      "Ms": 9.0245
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/bcl-validity",
+      "Sample": 0,
+      "Iterations": 23112,
+      "Ns": 716.5584977500865,
+      "Bytes": 0,
+      "Ms": 16.5611
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/native-search-prevalidated",
+      "Sample": 0,
+      "Iterations": 19586,
+      "Ns": 1081.8697028489737,
+      "Bytes": 0,
+      "Ms": 21.1895
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/metadata-plus-native",
+      "Sample": 0,
+      "Iterations": 17291,
+      "Ns": 3320.9993638308947,
+      "Bytes": 0,
+      "Ms": 57.4234
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/production-discovery",
+      "Sample": 0,
+      "Iterations": 18408,
+      "Ns": 3058.816818774446,
+      "Bytes": 0,
+      "Ms": 56.3067
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/public-search",
+      "Sample": 0,
+      "Iterations": 20117,
+      "Ns": 3085.0077049261818,
+      "Bytes": 0,
+      "Ms": 62.0611
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/metadata-validation",
+      "Sample": 0,
+      "Iterations": 24385,
+      "Ns": 2272.8890711502972,
+      "Bytes": 0,
+      "Ms": 55.4244
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/validity-only",
+      "Sample": 0,
+      "Iterations": 24881,
+      "Ns": 2758.9084040030543,
+      "Bytes": 0,
+      "Ms": 68.6444
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/bcl-validity",
+      "Sample": 0,
+      "Iterations": 89805,
+      "Ns": 712.5961806135516,
+      "Bytes": 0,
+      "Ms": 63.9947
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/native-search-prevalidated",
+      "Sample": 0,
+      "Iterations": 52792,
+      "Ns": 1063.335353841491,
+      "Bytes": 0,
+      "Ms": 56.1356
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/metadata-plus-native",
+      "Sample": 0,
+      "Iterations": 17733,
+      "Ns": 3301.8214628094515,
+      "Bytes": 0,
+      "Ms": 58.5512
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/production-discovery",
+      "Sample": 0,
+      "Iterations": 20373,
+      "Ns": 3021.489225936288,
+      "Bytes": 0,
+      "Ms": 61.5568
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/public-search",
+      "Sample": 0,
+      "Iterations": 107217,
+      "Ns": 139.59073654364514,
+      "Bytes": 0,
+      "Ms": 14.9665
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/metadata-validation",
+      "Sample": 0,
+      "Iterations": 400000,
+      "Ns": 36.17425,
+      "Bytes": 0,
+      "Ms": 14.4697
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/validity-only",
+      "Sample": 0,
+      "Iterations": 1026582,
+      "Ns": 62.306372018991176,
+      "Bytes": 0,
+      "Ms": 63.9626
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/bcl-validity",
+      "Sample": 0,
+      "Iterations": 3794340,
+      "Ns": 14.221129366372017,
+      "Bytes": 0,
+      "Ms": 53.9598
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/native-search-prevalidated",
+      "Sample": 0,
+      "Iterations": 1109877,
+      "Ns": 59.2150301339698,
+      "Bytes": 0,
+      "Ms": 65.7214
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/metadata-plus-native",
+      "Sample": 0,
+      "Iterations": 848774,
+      "Ns": 75.03846724805425,
+      "Bytes": 0,
+      "Ms": 63.6907
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/production-discovery",
+      "Sample": 0,
+      "Iterations": 863838,
+      "Ns": 74.4217087000109,
+      "Bytes": 0,
+      "Ms": 64.2883
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/public-search",
+      "Sample": 0,
+      "Iterations": 70034,
+      "Ns": 873.6042493645944,
+      "Bytes": 0,
+      "Ms": 61.182
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/metadata-validation",
+      "Sample": 0,
+      "Iterations": 79694,
+      "Ns": 812.0887394283133,
+      "Bytes": 0,
+      "Ms": 64.7186
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/validity-only",
+      "Sample": 0,
+      "Iterations": 88136,
+      "Ns": 598.8926204955977,
+      "Bytes": 0,
+      "Ms": 52.784
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/bcl-validity",
+      "Sample": 0,
+      "Iterations": 173334,
+      "Ns": 354.79305848823657,
+      "Bytes": 0,
+      "Ms": 61.4977
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/native-search-prevalidated",
+      "Sample": 0,
+      "Iterations": 1295505,
+      "Ns": 51.073905542626235,
+      "Bytes": 0,
+      "Ms": 66.1665
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/metadata-plus-native",
+      "Sample": 0,
+      "Iterations": 70271,
+      "Ns": 860.6907543652432,
+      "Bytes": 0,
+      "Ms": 60.4816
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/production-discovery",
+      "Sample": 0,
+      "Iterations": 64198,
+      "Ns": 869.935200473535,
+      "Bytes": 0,
+      "Ms": 55.8481
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/production-discovery",
+      "Sample": 1,
+      "Iterations": 64198,
+      "Ns": 868.1485404529736,
+      "Bytes": 0,
+      "Ms": 55.7334
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/metadata-plus-native",
+      "Sample": 1,
+      "Iterations": 70271,
+      "Ns": 859.4925360390488,
+      "Bytes": 0,
+      "Ms": 60.3974
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/native-search-prevalidated",
+      "Sample": 1,
+      "Iterations": 1295505,
+      "Ns": 51.32400106522167,
+      "Bytes": 0,
+      "Ms": 66.4905
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/bcl-validity",
+      "Sample": 1,
+      "Iterations": 173334,
+      "Ns": 357.7832392952335,
+      "Bytes": 0,
+      "Ms": 62.016
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/validity-only",
+      "Sample": 1,
+      "Iterations": 88136,
+      "Ns": 594.5833711536716,
+      "Bytes": 0,
+      "Ms": 52.4042
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/metadata-validation",
+      "Sample": 1,
+      "Iterations": 79694,
+      "Ns": 816.2145205410695,
+      "Bytes": 0,
+      "Ms": 65.0474
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/public-search",
+      "Sample": 1,
+      "Iterations": 70034,
+      "Ns": 869.0735928263415,
+      "Bytes": 0,
+      "Ms": 60.8647
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/production-discovery",
+      "Sample": 1,
+      "Iterations": 863838,
+      "Ns": 74.74977947254,
+      "Bytes": 0,
+      "Ms": 64.5717
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/metadata-plus-native",
+      "Sample": 1,
+      "Iterations": 848774,
+      "Ns": 75.65724209271255,
+      "Bytes": 0,
+      "Ms": 64.2159
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/native-search-prevalidated",
+      "Sample": 1,
+      "Iterations": 1109877,
+      "Ns": 64.75077868989086,
+      "Bytes": 0,
+      "Ms": 71.8654
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/bcl-validity",
+      "Sample": 1,
+      "Iterations": 3794340,
+      "Ns": 24.286753427473553,
+      "Bytes": 0,
+      "Ms": 92.1522
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/validity-only",
+      "Sample": 1,
+      "Iterations": 1026582,
+      "Ns": 63.64498890492917,
+      "Bytes": 0,
+      "Ms": 65.3368
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/metadata-validation",
+      "Sample": 1,
+      "Iterations": 400000,
+      "Ns": 36.13625,
+      "Bytes": 0,
+      "Ms": 14.4545
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/public-search",
+      "Sample": 1,
+      "Iterations": 107217,
+      "Ns": 139.6355055634834,
+      "Bytes": 0,
+      "Ms": 14.9713
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/production-discovery",
+      "Sample": 1,
+      "Iterations": 20373,
+      "Ns": 3045.3835959357975,
+      "Bytes": 0,
+      "Ms": 62.0436
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/metadata-plus-native",
+      "Sample": 1,
+      "Iterations": 17733,
+      "Ns": 3346.912535949924,
+      "Bytes": 0,
+      "Ms": 59.3508
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/native-search-prevalidated",
+      "Sample": 1,
+      "Iterations": 52792,
+      "Ns": 1058.7115472041219,
+      "Bytes": 0,
+      "Ms": 55.8915
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/bcl-validity",
+      "Sample": 1,
+      "Iterations": 89805,
+      "Ns": 709.538444407327,
+      "Bytes": 0,
+      "Ms": 63.7201
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/validity-only",
+      "Sample": 1,
+      "Iterations": 24881,
+      "Ns": 2580.057071661107,
+      "Bytes": 0,
+      "Ms": 64.1944
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/metadata-validation",
+      "Sample": 1,
+      "Iterations": 24385,
+      "Ns": 2283.924543776912,
+      "Bytes": 0,
+      "Ms": 55.6935
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/public-search",
+      "Sample": 1,
+      "Iterations": 20117,
+      "Ns": 3104.7621414723867,
+      "Bytes": 0,
+      "Ms": 62.4585
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/production-discovery",
+      "Sample": 1,
+      "Iterations": 18408,
+      "Ns": 3012.0654063450675,
+      "Bytes": 0,
+      "Ms": 55.4461
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/metadata-plus-native",
+      "Sample": 1,
+      "Iterations": 17291,
+      "Ns": 3337.7363946561795,
+      "Bytes": 0,
+      "Ms": 57.7128
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/native-search-prevalidated",
+      "Sample": 1,
+      "Iterations": 19586,
+      "Ns": 1066.6241192688656,
+      "Bytes": 0,
+      "Ms": 20.8909
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/bcl-validity",
+      "Sample": 1,
+      "Iterations": 23112,
+      "Ns": 715.0571131879542,
+      "Bytes": 0,
+      "Ms": 16.5264
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/validity-only",
+      "Sample": 1,
+      "Iterations": 3429,
+      "Ns": 2508.544765237679,
+      "Bytes": 0,
+      "Ms": 8.6018
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/metadata-validation",
+      "Sample": 1,
+      "Iterations": 18440,
+      "Ns": 2288.177874186551,
+      "Bytes": 0,
+      "Ms": 42.194
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/public-search",
+      "Sample": 1,
+      "Iterations": 7765,
+      "Ns": 3143.49001931745,
+      "Bytes": 0,
+      "Ms": 24.4092
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/public-search",
+      "Sample": 2,
+      "Iterations": 7765,
+      "Ns": 3128.409529942048,
+      "Bytes": 0,
+      "Ms": 24.2921
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/metadata-validation",
+      "Sample": 2,
+      "Iterations": 18440,
+      "Ns": 2280.412147505423,
+      "Bytes": 0,
+      "Ms": 42.0508
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/validity-only",
+      "Sample": 2,
+      "Iterations": 3429,
+      "Ns": 2543.0446194225724,
+      "Bytes": 0,
+      "Ms": 8.7201
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/bcl-validity",
+      "Sample": 2,
+      "Iterations": 23112,
+      "Ns": 712.0889581169954,
+      "Bytes": 0,
+      "Ms": 16.4578
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/native-search-prevalidated",
+      "Sample": 2,
+      "Iterations": 19586,
+      "Ns": 1056.3514755437557,
+      "Bytes": 0,
+      "Ms": 20.6897
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/metadata-plus-native",
+      "Sample": 2,
+      "Iterations": 17291,
+      "Ns": 3323.9546584928576,
+      "Bytes": 0,
+      "Ms": 57.4745
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/production-discovery",
+      "Sample": 2,
+      "Iterations": 18408,
+      "Ns": 3078.0693176879618,
+      "Bytes": 0,
+      "Ms": 56.6611
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/public-search",
+      "Sample": 2,
+      "Iterations": 20117,
+      "Ns": 3909.7877417109908,
+      "Bytes": 0,
+      "Ms": 78.6532
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/metadata-validation",
+      "Sample": 2,
+      "Iterations": 24385,
+      "Ns": 2293.135124051671,
+      "Bytes": 0,
+      "Ms": 55.9181
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/validity-only",
+      "Sample": 2,
+      "Iterations": 24881,
+      "Ns": 2795.390056669748,
+      "Bytes": 0,
+      "Ms": 69.5521
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/bcl-validity",
+      "Sample": 2,
+      "Iterations": 89805,
+      "Ns": 723.5766382718111,
+      "Bytes": 0,
+      "Ms": 64.9808
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/native-search-prevalidated",
+      "Sample": 2,
+      "Iterations": 52792,
+      "Ns": 1067.8095165934233,
+      "Bytes": 0,
+      "Ms": 56.3718
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/metadata-plus-native",
+      "Sample": 2,
+      "Iterations": 17733,
+      "Ns": 3343.2075790898325,
+      "Bytes": 0,
+      "Ms": 59.2851
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/production-discovery",
+      "Sample": 2,
+      "Iterations": 20373,
+      "Ns": 3048.412114072547,
+      "Bytes": 0,
+      "Ms": 62.1053
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/public-search",
+      "Sample": 2,
+      "Iterations": 107217,
+      "Ns": 140.2949159181846,
+      "Bytes": 0,
+      "Ms": 15.042
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/metadata-validation",
+      "Sample": 2,
+      "Iterations": 400000,
+      "Ns": 36.3905,
+      "Bytes": 0,
+      "Ms": 14.5562
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/validity-only",
+      "Sample": 2,
+      "Iterations": 1026582,
+      "Ns": 62.73254352794029,
+      "Bytes": 0,
+      "Ms": 64.4001
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/bcl-validity",
+      "Sample": 2,
+      "Iterations": 3794340,
+      "Ns": 14.521049774137268,
+      "Bytes": 0,
+      "Ms": 55.0978
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/native-search-prevalidated",
+      "Sample": 2,
+      "Iterations": 1109877,
+      "Ns": 59.415953299329566,
+      "Bytes": 0,
+      "Ms": 65.9444
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/metadata-plus-native",
+      "Sample": 2,
+      "Iterations": 848774,
+      "Ns": 75.86719197336393,
+      "Bytes": 0,
+      "Ms": 64.3941
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/production-discovery",
+      "Sample": 2,
+      "Iterations": 863838,
+      "Ns": 75.37443363223197,
+      "Bytes": 0,
+      "Ms": 65.1113
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/public-search",
+      "Sample": 2,
+      "Iterations": 70034,
+      "Ns": 868.6709312619585,
+      "Bytes": 0,
+      "Ms": 60.8365
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/metadata-validation",
+      "Sample": 2,
+      "Iterations": 79694,
+      "Ns": 815.2771852335183,
+      "Bytes": 0,
+      "Ms": 64.9727
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/validity-only",
+      "Sample": 2,
+      "Iterations": 88136,
+      "Ns": 585.075338113824,
+      "Bytes": 0,
+      "Ms": 51.5662
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/bcl-validity",
+      "Sample": 2,
+      "Iterations": 173334,
+      "Ns": 353.33056411321496,
+      "Bytes": 0,
+      "Ms": 61.2442
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/native-search-prevalidated",
+      "Sample": 2,
+      "Iterations": 1295505,
+      "Ns": 51.279539638982484,
+      "Bytes": 0,
+      "Ms": 66.4329
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/metadata-plus-native",
+      "Sample": 2,
+      "Iterations": 70271,
+      "Ns": 867.902833316731,
+      "Bytes": 0,
+      "Ms": 60.9884
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/production-discovery",
+      "Sample": 2,
+      "Iterations": 64198,
+      "Ns": 855.2587308015826,
+      "Bytes": 0,
+      "Ms": 54.9059
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/production-discovery",
+      "Sample": 3,
+      "Iterations": 64198,
+      "Ns": 869.0831490077572,
+      "Bytes": 0,
+      "Ms": 55.7934
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/metadata-plus-native",
+      "Sample": 3,
+      "Iterations": 70271,
+      "Ns": 854.7822003386888,
+      "Bytes": 0,
+      "Ms": 60.0664
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/native-search-prevalidated",
+      "Sample": 3,
+      "Iterations": 1295505,
+      "Ns": 50.82087680093863,
+      "Bytes": 0,
+      "Ms": 65.8387
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/bcl-validity",
+      "Sample": 3,
+      "Iterations": 173334,
+      "Ns": 355.22344144830214,
+      "Bytes": 0,
+      "Ms": 61.5723
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/validity-only",
+      "Sample": 3,
+      "Iterations": 88136,
+      "Ns": 598.0439321049288,
+      "Bytes": 0,
+      "Ms": 52.7092
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/metadata-validation",
+      "Sample": 3,
+      "Iterations": 79694,
+      "Ns": 812.2581373754612,
+      "Bytes": 0,
+      "Ms": 64.7321
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/public-search",
+      "Sample": 3,
+      "Iterations": 70034,
+      "Ns": 864.0888711197418,
+      "Bytes": 0,
+      "Ms": 60.5156
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/production-discovery",
+      "Sample": 3,
+      "Iterations": 863838,
+      "Ns": 74.49128193017673,
+      "Bytes": 0,
+      "Ms": 64.3484
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/metadata-plus-native",
+      "Sample": 3,
+      "Iterations": 848774,
+      "Ns": 75.14367782236496,
+      "Bytes": 0,
+      "Ms": 63.78
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/native-search-prevalidated",
+      "Sample": 3,
+      "Iterations": 1109877,
+      "Ns": 58.960227124266915,
+      "Bytes": 0,
+      "Ms": 65.4386
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/bcl-validity",
+      "Sample": 3,
+      "Iterations": 3794340,
+      "Ns": 14.825714089933955,
+      "Bytes": 0,
+      "Ms": 56.2538
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/validity-only",
+      "Sample": 3,
+      "Iterations": 1026582,
+      "Ns": 62.68481231893799,
+      "Bytes": 0,
+      "Ms": 64.3511
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/metadata-validation",
+      "Sample": 3,
+      "Iterations": 400000,
+      "Ns": 35.98825,
+      "Bytes": 0,
+      "Ms": 14.3953
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/public-search",
+      "Sample": 3,
+      "Iterations": 107217,
+      "Ns": 139.58420772825204,
+      "Bytes": 0,
+      "Ms": 14.9658
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/production-discovery",
+      "Sample": 3,
+      "Iterations": 20373,
+      "Ns": 3000.8687969371226,
+      "Bytes": 0,
+      "Ms": 61.1367
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/metadata-plus-native",
+      "Sample": 3,
+      "Iterations": 17733,
+      "Ns": 3769.2325043703827,
+      "Bytes": 0,
+      "Ms": 66.8398
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/native-search-prevalidated",
+      "Sample": 3,
+      "Iterations": 52792,
+      "Ns": 1724.8389907561752,
+      "Bytes": 0,
+      "Ms": 91.0577
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/bcl-validity",
+      "Sample": 3,
+      "Iterations": 89805,
+      "Ns": 727.9082456433383,
+      "Bytes": 0,
+      "Ms": 65.3698
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/validity-only",
+      "Sample": 3,
+      "Iterations": 24881,
+      "Ns": 2579.5064507053576,
+      "Bytes": 0,
+      "Ms": 64.1807
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/metadata-validation",
+      "Sample": 3,
+      "Iterations": 24385,
+      "Ns": 2269.2597908550338,
+      "Bytes": 0,
+      "Ms": 55.3359
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/public-search",
+      "Sample": 3,
+      "Iterations": 20117,
+      "Ns": 3130.4767112392506,
+      "Bytes": 0,
+      "Ms": 62.9758
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/production-discovery",
+      "Sample": 3,
+      "Iterations": 18408,
+      "Ns": 3036.098435462842,
+      "Bytes": 0,
+      "Ms": 55.8885
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/metadata-plus-native",
+      "Sample": 3,
+      "Iterations": 17291,
+      "Ns": 3346.399861199468,
+      "Bytes": 0,
+      "Ms": 57.8626
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/native-search-prevalidated",
+      "Sample": 3,
+      "Iterations": 19586,
+      "Ns": 1077.100990503421,
+      "Bytes": 0,
+      "Ms": 21.0961
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/bcl-validity",
+      "Sample": 3,
+      "Iterations": 23112,
+      "Ns": 710.4794046382832,
+      "Bytes": 0,
+      "Ms": 16.4206
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/validity-only",
+      "Sample": 3,
+      "Iterations": 3429,
+      "Ns": 2613.1525226013414,
+      "Bytes": 0,
+      "Ms": 8.9605
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/metadata-validation",
+      "Sample": 3,
+      "Iterations": 18440,
+      "Ns": 2265.5097613882863,
+      "Bytes": 0,
+      "Ms": 41.776
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/public-search",
+      "Sample": 3,
+      "Iterations": 7765,
+      "Ns": 3124.2755956213778,
+      "Bytes": 0,
+      "Ms": 24.26
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/public-search",
+      "Sample": 4,
+      "Iterations": 7765,
+      "Ns": 3107.9716677398583,
+      "Bytes": 0,
+      "Ms": 24.1334
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/metadata-validation",
+      "Sample": 4,
+      "Iterations": 18440,
+      "Ns": 2279.229934924078,
+      "Bytes": 0,
+      "Ms": 42.029
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/validity-only",
+      "Sample": 4,
+      "Iterations": 3429,
+      "Ns": 2566.9291338582675,
+      "Bytes": 0,
+      "Ms": 8.802
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/bcl-validity",
+      "Sample": 4,
+      "Iterations": 23112,
+      "Ns": 719.582900657667,
+      "Bytes": 0,
+      "Ms": 16.631
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/native-search-prevalidated",
+      "Sample": 4,
+      "Iterations": 19586,
+      "Ns": 1083.6413764934136,
+      "Bytes": 0,
+      "Ms": 21.2242
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/metadata-plus-native",
+      "Sample": 4,
+      "Iterations": 17291,
+      "Ns": 3317.3789832861025,
+      "Bytes": 0,
+      "Ms": 57.3608
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-hit/production-discovery",
+      "Sample": 4,
+      "Iterations": 18408,
+      "Ns": 3021.2896566710124,
+      "Bytes": 0,
+      "Ms": 55.6159
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/public-search",
+      "Sample": 4,
+      "Iterations": 20117,
+      "Ns": 3074.921708008152,
+      "Bytes": 0,
+      "Ms": 61.8582
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/metadata-validation",
+      "Sample": 4,
+      "Iterations": 24385,
+      "Ns": 2271.314332581505,
+      "Bytes": 0,
+      "Ms": 55.386
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/validity-only",
+      "Sample": 4,
+      "Iterations": 24881,
+      "Ns": 2566.078533820988,
+      "Bytes": 0,
+      "Ms": 63.8466
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/bcl-validity",
+      "Sample": 4,
+      "Iterations": 89805,
+      "Ns": 718.2963086687824,
+      "Bytes": 0,
+      "Ms": 64.5066
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/native-search-prevalidated",
+      "Sample": 4,
+      "Iterations": 52792,
+      "Ns": 1045.582664040006,
+      "Bytes": 0,
+      "Ms": 55.1984
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/metadata-plus-native",
+      "Sample": 4,
+      "Iterations": 17733,
+      "Ns": 5727.113291603226,
+      "Bytes": 0,
+      "Ms": 101.5589
+    },
+    {
+      "Kind": "sample",
+      "Name": "ascii-miss/production-discovery",
+      "Sample": 4,
+      "Iterations": 20373,
+      "Ns": 3166.7206596966575,
+      "Bytes": 0,
+      "Ms": 64.5156
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/public-search",
+      "Sample": 4,
+      "Iterations": 107217,
+      "Ns": 140.2277623884272,
+      "Bytes": 0,
+      "Ms": 15.0348
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/metadata-validation",
+      "Sample": 4,
+      "Iterations": 400000,
+      "Ns": 36.38975,
+      "Bytes": 0,
+      "Ms": 14.5559
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/validity-only",
+      "Sample": 4,
+      "Iterations": 1026582,
+      "Ns": 62.19142747486319,
+      "Bytes": 0,
+      "Ms": 63.8446
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/bcl-validity",
+      "Sample": 4,
+      "Iterations": 3794340,
+      "Ns": 15.539145147772736,
+      "Bytes": 0,
+      "Ms": 58.9608
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/native-search-prevalidated",
+      "Sample": 4,
+      "Iterations": 1109877,
+      "Ns": 84.74398514429977,
+      "Bytes": 0,
+      "Ms": 94.0554
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/metadata-plus-native",
+      "Sample": 4,
+      "Iterations": 848774,
+      "Ns": 76.35236234851679,
+      "Bytes": 0,
+      "Ms": 64.8059
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-hit/production-discovery",
+      "Sample": 4,
+      "Iterations": 863838,
+      "Ns": 75.18932948075913,
+      "Bytes": 0,
+      "Ms": 64.9514
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/public-search",
+      "Sample": 4,
+      "Iterations": 70034,
+      "Ns": 873.8998200873862,
+      "Bytes": 0,
+      "Ms": 61.2027
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/metadata-validation",
+      "Sample": 4,
+      "Iterations": 79694,
+      "Ns": 822.4345622004165,
+      "Bytes": 0,
+      "Ms": 65.5431
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/validity-only",
+      "Sample": 4,
+      "Iterations": 88136,
+      "Ns": 598.5272760279568,
+      "Bytes": 0,
+      "Ms": 52.7518
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/bcl-validity",
+      "Sample": 4,
+      "Iterations": 173334,
+      "Ns": 354.36325244902906,
+      "Bytes": 0,
+      "Ms": 61.4232
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/native-search-prevalidated",
+      "Sample": 4,
+      "Iterations": 1295505,
+      "Ns": 50.86942929591163,
+      "Bytes": 0,
+      "Ms": 65.9016
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/metadata-plus-native",
+      "Sample": 4,
+      "Iterations": 70271,
+      "Ns": 859.2605769093936,
+      "Bytes": 0,
+      "Ms": 60.3811
+    },
+    {
+      "Kind": "sample",
+      "Name": "cyrillic-miss/production-discovery",
+      "Sample": 4,
+      "Iterations": 64198,
+      "Ns": 916.2372659584411,
+      "Bytes": 0,
+      "Ms": 58.8206
+    },
+    {
+      "Kind": "complete"
+    }
+  ],
+  "public_observations": {
+    "before": [
+      {
+        "Kind": "identity",
+        "Phase": "before",
+        "Core": "CD6BD90A292A1B23F7AAFC4E78C8C72E7739A6352CA0E2B522FE56A6BC3569E6",
+        "Python": "7818965E903D8566BE0D36C8A324058DC9C5A3B7B66ED879AA825D3159053A73",
+        "Driver": "6DAD6910746478B6AE7BECF8FEDC7B6CEBAFF747BB28EF061755AE9DF83A59FB",
+        "Runtime": "10.0.12"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-short-hit",
+        "Bytes": 18,
+        "Expected": 31,
+        "Subject": "4324A2E9CC0F6EB634296D053D3DE8E677A65647CD660216819BE81AD714DF1B",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 0,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-miss-search",
+        "Bytes": 837,
+        "Expected": 0,
+        "Subject": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 0,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-miss-match",
+        "Bytes": 837,
+        "Expected": 0,
+        "Subject": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 1,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-miss-full",
+        "Bytes": 837,
+        "Expected": 0,
+        "Subject": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 2,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-miss-search-text",
+        "Bytes": 837,
+        "Expected": -1,
+        "Subject": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 3,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-miss-match-text",
+        "Bytes": 837,
+        "Expected": -1,
+        "Subject": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 4,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-miss-full-text",
+        "Bytes": 837,
+        "Expected": -1,
+        "Subject": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 5,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-long-hit",
+        "Bytes": 106508,
+        "Expected": 327699,
+        "Subject": "FEC455464AA74385FD56B91230CF01921FBF0CD961194A1B897A880AD4EF1CAD",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 0,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-long-miss",
+        "Bytes": 106496,
+        "Expected": 0,
+        "Subject": "FA9E4E5F4ECE82305911CBC2D22C80DCEF4522B5C2A4FBBBF77E38F2DD434449",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 0,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-exact-full",
+        "Bytes": 12,
+        "Expected": 19,
+        "Subject": "059DAB94B2011DF55832B31CEB7DAD2D2610C8E0C4AE1BD2889E4E1FFAD00FA0",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 2,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-exact-full-text",
+        "Bytes": 12,
+        "Expected": 6,
+        "Subject": "059DAB94B2011DF55832B31CEB7DAD2D2610C8E0C4AE1BD2889E4E1FFAD00FA0",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 5,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "emoji-hit",
+        "Bytes": 10,
+        "Expected": 15,
+        "Subject": "4C6CDB8278176E5387AE1C0F86ABC1F2C9C176B44792261D28CD0D95A4B92F69",
+        "Pattern": "\ud83d\ude00",
+        "Operation": 0,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "emoji-miss",
+        "Bytes": 2048,
+        "Expected": 0,
+        "Subject": "0C894F1C5DCB55C41A2B43A60C9EF51A3918FBC44B02FF577AEB5B0BFA8D2931",
+        "Pattern": "\ud83d\ude00",
+        "Operation": 0,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-short-miss",
+        "Bytes": 2,
+        "Expected": 0,
+        "Subject": "5DDE896887F6754C9B15BFE3A441AE4806DF2FDE94001311E08BF110622E0BBE",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 0,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-empty-input",
+        "Bytes": 0,
+        "Expected": 0,
+        "Subject": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 0,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ascii-hit-control",
+        "Bytes": 65542,
+        "Expected": 262157,
+        "Subject": "4E381E20D292A1149943470F2827649D9D8D087F6BA87326BFA715A124316FA2",
+        "Pattern": "needle",
+        "Operation": 0,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ascii-miss-control",
+        "Bytes": 65536,
+        "Expected": 0,
+        "Subject": "1F8745F0D2D1387EC1AF2211A3CF417B2E9E885E853472649C1D979D0E9370E3",
+        "Pattern": "needle",
+        "Operation": 0,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-miss-full-control",
+        "Bytes": 837,
+        "Expected": 0,
+        "Subject": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 2,
+        "Mode": "finite"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-exact-full-control",
+        "Bytes": 12,
+        "Expected": 19,
+        "Subject": "059DAB94B2011DF55832B31CEB7DAD2D2610C8E0C4AE1BD2889E4E1FFAD00FA0",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 2,
+        "Mode": "finite"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-long-miss-control",
+        "Bytes": 106496,
+        "Expected": 0,
+        "Subject": "FA9E4E5F4ECE82305911CBC2D22C80DCEF4522B5C2A4FBBBF77E38F2DD434449",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 0,
+        "Mode": "finite"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-miss-token-control",
+        "Bytes": 837,
+        "Expected": 0,
+        "Subject": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 2,
+        "Mode": "token"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-miss-deadline-control",
+        "Bytes": 837,
+        "Expected": 0,
+        "Subject": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 2,
+        "Mode": "deadline"
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-short-hit",
+        "Calls": 403856,
+        "Milliseconds": 558.3229
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-miss-search",
+        "Calls": 99715,
+        "Milliseconds": 563.4239
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-miss-match",
+        "Calls": 100458,
+        "Milliseconds": 564.2454
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-miss-full",
+        "Calls": 355384,
+        "Milliseconds": 559.2157
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-miss-search-text",
+        "Calls": 330541,
+        "Milliseconds": 563.4736
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-miss-match-text",
+        "Calls": 394823,
+        "Milliseconds": 556.1099
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-miss-full-text",
+        "Calls": 573517,
+        "Milliseconds": 556.3926
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-long-hit",
+        "Calls": 10005,
+        "Milliseconds": 1972.7844
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-long-miss",
+        "Calls": 10005,
+        "Milliseconds": 1026.707
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-exact-full",
+        "Calls": 3700764,
+        "Milliseconds": 594.3476
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-exact-full-text",
+        "Calls": 1609325,
+        "Milliseconds": 551.9989
+      },
+      {
+        "Kind": "warmup",
+        "Name": "emoji-hit",
+        "Calls": 499960,
+        "Milliseconds": 559.4233
+      },
+      {
+        "Kind": "warmup",
+        "Name": "emoji-miss",
+        "Calls": 255937,
+        "Milliseconds": 555.5226
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-short-miss",
+        "Calls": 4310222,
+        "Milliseconds": 586.3513
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-empty-input",
+        "Calls": 4570544,
+        "Milliseconds": 604.8548
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ascii-hit-control",
+        "Calls": 169640,
+        "Milliseconds": 554.8722
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ascii-miss-control",
+        "Calls": 174985,
+        "Milliseconds": 562.0126
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-miss-full-control",
+        "Calls": 518926,
+        "Milliseconds": 554.3788
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-exact-full-control",
+        "Calls": 2367372,
+        "Milliseconds": 597.6969
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-long-miss-control",
+        "Calls": 10005,
+        "Milliseconds": 1105.8128
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-miss-token-control",
+        "Calls": 535829,
+        "Milliseconds": 558.0008
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-miss-deadline-control",
+        "Calls": 470991,
+        "Milliseconds": 557.6249
+      },
+      {
+        "Kind": "warmup",
+        "Name": "core-count-control/unlimited",
+        "Calls": 90767,
+        "Milliseconds": 560.4844
+      },
+      {
+        "Kind": "warmup",
+        "Name": "core-count-control/finite",
+        "Calls": 99707,
+        "Milliseconds": 561.1064
+      },
+      {
+        "Kind": "warmup",
+        "Name": "dotnet-control/ascii/predecoded",
+        "Calls": 55305,
+        "Milliseconds": 566.0108
+      },
+      {
+        "Kind": "warmup",
+        "Name": "dotnet-control/ascii/decode",
+        "Calls": 11572,
+        "Milliseconds": 600.8271
+      },
+      {
+        "Kind": "warmup",
+        "Name": "dotnet-control/unicode/predecoded",
+        "Calls": 3258918,
+        "Milliseconds": 593.3218
+      },
+      {
+        "Kind": "warmup",
+        "Name": "dotnet-control/unicode/decode",
+        "Calls": 217001,
+        "Milliseconds": 559.288
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-short-hit",
+        "Sample": 0,
+        "Iterations": 404922,
+        "Ms": 50.5611,
+        "Ns": 124.86627054099309,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-search",
+        "Sample": 0,
+        "Iterations": 61423,
+        "Ms": 50.7759,
+        "Ns": 826.6593946892858,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-match",
+        "Sample": 0,
+        "Iterations": 60789,
+        "Ms": 51.6227,
+        "Ns": 849.2112059747652,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full",
+        "Sample": 0,
+        "Iterations": 72223,
+        "Ms": 59.6571,
+        "Ns": 826.0124890962712,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-search-text",
+        "Sample": 0,
+        "Iterations": 59691,
+        "Ms": 50.0123,
+        "Ns": 837.8532777135582,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-match-text",
+        "Sample": 0,
+        "Iterations": 67314,
+        "Ms": 56.3939,
+        "Ns": 837.7737172059304,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full-text",
+        "Sample": 0,
+        "Iterations": 68197,
+        "Ms": 57.3492,
+        "Ns": 840.9343519509656,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-hit",
+        "Sample": 0,
+        "Iterations": 341,
+        "Ms": 64.7429,
+        "Ns": 189861.8768328446,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-miss",
+        "Sample": 0,
+        "Iterations": 671,
+        "Ms": 64.0689,
+        "Ns": 95482.71236959762,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full",
+        "Sample": 0,
+        "Iterations": 794181,
+        "Ms": 66.9279,
+        "Ns": 84.27285467670467,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full-text",
+        "Sample": 0,
+        "Iterations": 409444,
+        "Ms": 50.1898,
+        "Ns": 122.58037729213275,
+        "Bytes": 40
+      },
+      {
+        "Kind": "sample",
+        "Name": "emoji-hit",
+        "Sample": 0,
+        "Iterations": 181093,
+        "Ms": 49.8063,
+        "Ns": 275.03161359080696,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "emoji-miss",
+        "Sample": 0,
+        "Iterations": 39349,
+        "Ms": 50.8276,
+        "Ns": 1291.7126229383211,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-short-miss",
+        "Sample": 0,
+        "Iterations": 1115559,
+        "Ms": 63.8764,
+        "Ns": 57.25954431814005,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-empty-input",
+        "Sample": 0,
+        "Iterations": 1147890,
+        "Ms": 65.5724,
+        "Ns": 57.12428891270069,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ascii-hit-control",
+        "Sample": 0,
+        "Iterations": 19494,
+        "Ms": 61.8954,
+        "Ns": 3175.1000307787012,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ascii-miss-control",
+        "Sample": 0,
+        "Iterations": 22318,
+        "Ms": 70.4864,
+        "Ns": 3158.2758311676675,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full-control",
+        "Sample": 0,
+        "Iterations": 59429,
+        "Ms": 53.5421,
+        "Ns": 900.9423008968686,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full-control",
+        "Sample": 0,
+        "Iterations": 371477,
+        "Ms": 63.4197,
+        "Ns": 170.7230864898769,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-miss-control",
+        "Sample": 0,
+        "Iterations": 698,
+        "Ms": 68.7095,
+        "Ns": 98437.67908309455,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-token-control",
+        "Sample": 0,
+        "Iterations": 61357,
+        "Ms": 54.8268,
+        "Ns": 893.5704157634825,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-deadline-control",
+        "Sample": 0,
+        "Iterations": 56676,
+        "Ms": 57.6857,
+        "Ns": 1017.8153010092456,
+        "Bytes": 160
+      },
+      {
+        "Kind": "sample",
+        "Name": "core-count-control/unlimited",
+        "Sample": 0,
+        "Iterations": 12508,
+        "Ms": 60.9268,
+        "Ns": 4871.026543012472,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "core-count-control/finite",
+        "Sample": 0,
+        "Iterations": 13090,
+        "Ms": 60.9932,
+        "Ns": 4659.526355996944,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/ascii/predecoded",
+        "Sample": 0,
+        "Iterations": 8912,
+        "Ms": 50.1429,
+        "Ns": 5626.447486535009,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/ascii/decode",
+        "Sample": 0,
+        "Iterations": 2541,
+        "Ms": 102.954,
+        "Ns": 40517.11924439197,
+        "Bytes": 131096
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/unicode/predecoded",
+        "Sample": 0,
+        "Iterations": 922080,
+        "Ms": 50.2535,
+        "Ns": 54.50015183064376,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/unicode/decode",
+        "Sample": 0,
+        "Iterations": 64512,
+        "Ms": 50.1056,
+        "Ns": 776.686507936508,
+        "Bytes": 928
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/unicode/decode",
+        "Sample": 1,
+        "Iterations": 64512,
+        "Ms": 49.981,
+        "Ns": 774.7550843253969,
+        "Bytes": 928
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/unicode/predecoded",
+        "Sample": 1,
+        "Iterations": 922080,
+        "Ms": 49.9308,
+        "Ns": 54.15018219677251,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/ascii/decode",
+        "Sample": 1,
+        "Iterations": 2541,
+        "Ms": 100.7731,
+        "Ns": 39658.83510428965,
+        "Bytes": 131096
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/ascii/predecoded",
+        "Sample": 1,
+        "Iterations": 8912,
+        "Ms": 50.277,
+        "Ns": 5641.494614003591,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "core-count-control/finite",
+        "Sample": 1,
+        "Iterations": 13090,
+        "Ms": 61.0605,
+        "Ns": 4664.66768525592,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "core-count-control/unlimited",
+        "Sample": 1,
+        "Iterations": 12508,
+        "Ms": 60.7847,
+        "Ns": 4859.665813879117,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-deadline-control",
+        "Sample": 1,
+        "Iterations": 56676,
+        "Ms": 76.0195,
+        "Ns": 1341.2996682899286,
+        "Bytes": 160
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-token-control",
+        "Sample": 1,
+        "Iterations": 61357,
+        "Ms": 92.0223,
+        "Ns": 1499.7848656225044,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-miss-control",
+        "Sample": 1,
+        "Iterations": 698,
+        "Ms": 68.598,
+        "Ns": 98277.93696275071,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full-control",
+        "Sample": 1,
+        "Iterations": 371477,
+        "Ms": 63.4881,
+        "Ns": 170.90721632833257,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full-control",
+        "Sample": 1,
+        "Iterations": 59429,
+        "Ms": 53.3385,
+        "Ns": 897.5163640646822,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ascii-miss-control",
+        "Sample": 1,
+        "Iterations": 22318,
+        "Ms": 71.408,
+        "Ns": 3199.5698539295636,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ascii-hit-control",
+        "Sample": 1,
+        "Iterations": 19494,
+        "Ms": 61.7098,
+        "Ns": 3165.579152559762,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-empty-input",
+        "Sample": 1,
+        "Iterations": 1147890,
+        "Ms": 65.6902,
+        "Ns": 57.22691198634016,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-short-miss",
+        "Sample": 1,
+        "Iterations": 1115559,
+        "Ms": 63.9054,
+        "Ns": 57.28554025380998,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "emoji-miss",
+        "Sample": 1,
+        "Iterations": 39349,
+        "Ms": 49.4287,
+        "Ns": 1256.1615288825637,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "emoji-hit",
+        "Sample": 1,
+        "Iterations": 181093,
+        "Ms": 50.0676,
+        "Ns": 276.4745186175059,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full-text",
+        "Sample": 1,
+        "Iterations": 409444,
+        "Ms": 50.711,
+        "Ns": 123.85332304295581,
+        "Bytes": 40
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full",
+        "Sample": 1,
+        "Iterations": 794181,
+        "Ms": 67.4318,
+        "Ns": 84.90734479923343,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-miss",
+        "Sample": 1,
+        "Iterations": 671,
+        "Ms": 64.3068,
+        "Ns": 95837.25782414306,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-hit",
+        "Sample": 1,
+        "Iterations": 341,
+        "Ms": 64.9334,
+        "Ns": 190420.52785923757,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full-text",
+        "Sample": 1,
+        "Iterations": 68197,
+        "Ms": 57.4288,
+        "Ns": 842.1015587195918,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-match-text",
+        "Sample": 1,
+        "Iterations": 67314,
+        "Ms": 56.3696,
+        "Ns": 837.4127224648662,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-search-text",
+        "Sample": 1,
+        "Iterations": 59691,
+        "Ms": 50.549,
+        "Ns": 846.844582935451,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full",
+        "Sample": 1,
+        "Iterations": 72223,
+        "Ms": 60.3285,
+        "Ns": 835.3086966755743,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-match",
+        "Sample": 1,
+        "Iterations": 60789,
+        "Ms": 50.4266,
+        "Ns": 829.5349487571765,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-search",
+        "Sample": 1,
+        "Iterations": 61423,
+        "Ms": 51.0958,
+        "Ns": 831.8675414746918,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-short-hit",
+        "Sample": 1,
+        "Iterations": 404922,
+        "Ms": 50.7682,
+        "Ns": 125.37772706842306,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-short-hit",
+        "Sample": 2,
+        "Iterations": 404922,
+        "Ms": 50.718,
+        "Ns": 125.25375257456992,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-search",
+        "Sample": 2,
+        "Iterations": 61423,
+        "Ms": 51.072,
+        "Ns": 831.4800644709636,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-match",
+        "Sample": 2,
+        "Iterations": 60789,
+        "Ms": 49.7076,
+        "Ns": 817.7071509648127,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full",
+        "Sample": 2,
+        "Iterations": 72223,
+        "Ms": 60.1655,
+        "Ns": 833.0517979037148,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-search-text",
+        "Sample": 2,
+        "Iterations": 59691,
+        "Ms": 49.5269,
+        "Ns": 829.7213985357927,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-match-text",
+        "Sample": 2,
+        "Iterations": 67314,
+        "Ms": 55.9496,
+        "Ns": 831.1733071872121,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full-text",
+        "Sample": 2,
+        "Iterations": 68197,
+        "Ms": 57.4963,
+        "Ns": 843.0913383286655,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-hit",
+        "Sample": 2,
+        "Iterations": 341,
+        "Ms": 64.8468,
+        "Ns": 190166.568914956,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-miss",
+        "Sample": 2,
+        "Iterations": 671,
+        "Ms": 64.3879,
+        "Ns": 95958.1222056632,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full",
+        "Sample": 2,
+        "Iterations": 794181,
+        "Ms": 67.3979,
+        "Ns": 84.86465931569755,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full-text",
+        "Sample": 2,
+        "Iterations": 409444,
+        "Ms": 50.5429,
+        "Ns": 123.4427662879417,
+        "Bytes": 40
+      },
+      {
+        "Kind": "sample",
+        "Name": "emoji-hit",
+        "Sample": 2,
+        "Iterations": 181093,
+        "Ms": 49.8922,
+        "Ns": 275.5059555035258,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "emoji-miss",
+        "Sample": 2,
+        "Iterations": 39349,
+        "Ms": 50.7053,
+        "Ns": 1288.6045388701111,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-short-miss",
+        "Sample": 2,
+        "Iterations": 1115559,
+        "Ms": 64.0268,
+        "Ns": 57.3943646189937,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-empty-input",
+        "Sample": 2,
+        "Iterations": 1147890,
+        "Ms": 78.4028,
+        "Ns": 68.30166653599213,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ascii-hit-control",
+        "Sample": 2,
+        "Iterations": 19494,
+        "Ms": 105.8433,
+        "Ns": 5429.5321637426905,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ascii-miss-control",
+        "Sample": 2,
+        "Iterations": 22318,
+        "Ms": 70.9149,
+        "Ns": 3177.4755802491263,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full-control",
+        "Sample": 2,
+        "Iterations": 59429,
+        "Ms": 54.4581,
+        "Ns": 916.3556512813609,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full-control",
+        "Sample": 2,
+        "Iterations": 371477,
+        "Ms": 63.0631,
+        "Ns": 169.763134729741,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-miss-control",
+        "Sample": 2,
+        "Iterations": 698,
+        "Ms": 68.1009,
+        "Ns": 97565.75931232092,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-token-control",
+        "Sample": 2,
+        "Iterations": 61357,
+        "Ms": 54.2791,
+        "Ns": 884.6439689033036,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-deadline-control",
+        "Sample": 2,
+        "Iterations": 56676,
+        "Ms": 57.9546,
+        "Ns": 1022.5598136777472,
+        "Bytes": 160
+      },
+      {
+        "Kind": "sample",
+        "Name": "core-count-control/unlimited",
+        "Sample": 2,
+        "Iterations": 12508,
+        "Ms": 60.7704,
+        "Ns": 4858.522545570835,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "core-count-control/finite",
+        "Sample": 2,
+        "Iterations": 13090,
+        "Ms": 60.6487,
+        "Ns": 4633.208556149732,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/ascii/predecoded",
+        "Sample": 2,
+        "Iterations": 8912,
+        "Ms": 49.9226,
+        "Ns": 5601.728007181328,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/ascii/decode",
+        "Sample": 2,
+        "Iterations": 2541,
+        "Ms": 118.1755,
+        "Ns": 46507.47737111373,
+        "Bytes": 131096
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/unicode/predecoded",
+        "Sample": 2,
+        "Iterations": 922080,
+        "Ms": 50.2094,
+        "Ns": 54.452325177858754,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/unicode/decode",
+        "Sample": 2,
+        "Iterations": 64512,
+        "Ms": 49.8536,
+        "Ns": 772.780257936508,
+        "Bytes": 928
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/unicode/decode",
+        "Sample": 3,
+        "Iterations": 64512,
+        "Ms": 50.1484,
+        "Ns": 777.3499503968254,
+        "Bytes": 928
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/unicode/predecoded",
+        "Sample": 3,
+        "Iterations": 922080,
+        "Ms": 49.9676,
+        "Ns": 54.190091965989936,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/ascii/decode",
+        "Sample": 3,
+        "Iterations": 2541,
+        "Ms": 115.7408,
+        "Ns": 45549.31129476584,
+        "Bytes": 131096
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/ascii/predecoded",
+        "Sample": 3,
+        "Iterations": 8912,
+        "Ms": 63.6673,
+        "Ns": 7143.996858168761,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "core-count-control/finite",
+        "Sample": 3,
+        "Iterations": 13090,
+        "Ms": 65.8685,
+        "Ns": 5031.970970206265,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "core-count-control/unlimited",
+        "Sample": 3,
+        "Iterations": 12508,
+        "Ms": 60.7285,
+        "Ns": 4855.172689478733,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-deadline-control",
+        "Sample": 3,
+        "Iterations": 56676,
+        "Ms": 57.0742,
+        "Ns": 1007.0259016162044,
+        "Bytes": 160
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-token-control",
+        "Sample": 3,
+        "Iterations": 61357,
+        "Ms": 54.1483,
+        "Ns": 882.5121827990287,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-miss-control",
+        "Sample": 3,
+        "Iterations": 698,
+        "Ms": 68.1526,
+        "Ns": 97639.82808022923,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full-control",
+        "Sample": 3,
+        "Iterations": 371477,
+        "Ms": 64.1967,
+        "Ns": 172.81473684777256,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full-control",
+        "Sample": 3,
+        "Iterations": 59429,
+        "Ms": 53.0499,
+        "Ns": 892.6601490854633,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ascii-miss-control",
+        "Sample": 3,
+        "Iterations": 22318,
+        "Ms": 71.0171,
+        "Ns": 3182.0548436239806,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ascii-hit-control",
+        "Sample": 3,
+        "Iterations": 19494,
+        "Ms": 61.7558,
+        "Ns": 3167.938852980404,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-empty-input",
+        "Sample": 3,
+        "Iterations": 1147890,
+        "Ms": 65.5894,
+        "Ns": 57.13909869412574,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-short-miss",
+        "Sample": 3,
+        "Iterations": 1115559,
+        "Ms": 63.8271,
+        "Ns": 57.21535122750119,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "emoji-miss",
+        "Sample": 3,
+        "Iterations": 39349,
+        "Ms": 52.3059,
+        "Ns": 1329.2815573458029,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "emoji-hit",
+        "Sample": 3,
+        "Iterations": 181093,
+        "Ms": 62.9079,
+        "Ns": 347.37897102593695,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full-text",
+        "Sample": 3,
+        "Iterations": 409444,
+        "Ms": 62.6622,
+        "Ns": 153.04217426558944,
+        "Bytes": 40
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full",
+        "Sample": 3,
+        "Iterations": 794181,
+        "Ms": 67.3813,
+        "Ns": 84.84375727951185,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-miss",
+        "Sample": 3,
+        "Iterations": 671,
+        "Ms": 64.935,
+        "Ns": 96773.47242921013,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-hit",
+        "Sample": 3,
+        "Iterations": 341,
+        "Ms": 64.8073,
+        "Ns": 190050.7331378299,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full-text",
+        "Sample": 3,
+        "Iterations": 68197,
+        "Ms": 57.1111,
+        "Ns": 837.4429960262181,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-match-text",
+        "Sample": 3,
+        "Iterations": 67314,
+        "Ms": 55.9637,
+        "Ns": 831.3827732715334,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-search-text",
+        "Sample": 3,
+        "Iterations": 59691,
+        "Ms": 49.875,
+        "Ns": 835.5530984570538,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full",
+        "Sample": 3,
+        "Iterations": 72223,
+        "Ms": 59.2596,
+        "Ns": 820.5087022139761,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-match",
+        "Sample": 3,
+        "Iterations": 60789,
+        "Ms": 50.1965,
+        "Ns": 825.7497244567273,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-search",
+        "Sample": 3,
+        "Iterations": 61423,
+        "Ms": 56.2873,
+        "Ns": 916.3879979812123,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-short-hit",
+        "Sample": 3,
+        "Iterations": 404922,
+        "Ms": 50.7928,
+        "Ns": 125.43847950963395,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-short-hit",
+        "Sample": 4,
+        "Iterations": 404922,
+        "Ms": 50.8643,
+        "Ns": 125.61505672697457,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-search",
+        "Sample": 4,
+        "Iterations": 61423,
+        "Ms": 51.3238,
+        "Ns": 835.5795060482229,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-match",
+        "Sample": 4,
+        "Iterations": 60789,
+        "Ms": 50.1968,
+        "Ns": 825.7546595601178,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full",
+        "Sample": 4,
+        "Iterations": 72223,
+        "Ms": 60.0166,
+        "Ns": 830.9901277986237,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-search-text",
+        "Sample": 4,
+        "Iterations": 59691,
+        "Ms": 50.0309,
+        "Ns": 838.1648824780955,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-match-text",
+        "Sample": 4,
+        "Iterations": 67314,
+        "Ms": 56.4584,
+        "Ns": 838.7319131235702,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full-text",
+        "Sample": 4,
+        "Iterations": 68197,
+        "Ms": 57.1667,
+        "Ns": 838.2582811560626,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-hit",
+        "Sample": 4,
+        "Iterations": 341,
+        "Ms": 64.8341,
+        "Ns": 190129.3255131965,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-miss",
+        "Sample": 4,
+        "Iterations": 671,
+        "Ms": 64.5223,
+        "Ns": 96158.42026825633,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full",
+        "Sample": 4,
+        "Iterations": 794181,
+        "Ms": 67.3148,
+        "Ns": 84.76002321888839,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full-text",
+        "Sample": 4,
+        "Iterations": 409444,
+        "Ms": 50.7244,
+        "Ns": 123.88605035120798,
+        "Bytes": 40
+      },
+      {
+        "Kind": "sample",
+        "Name": "emoji-hit",
+        "Sample": 4,
+        "Iterations": 181093,
+        "Ms": 50.0275,
+        "Ns": 276.25308543124254,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "emoji-miss",
+        "Sample": 4,
+        "Iterations": 39349,
+        "Ms": 50.6855,
+        "Ns": 1288.1013494625022,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-short-miss",
+        "Sample": 4,
+        "Iterations": 1115559,
+        "Ms": 64.1167,
+        "Ns": 57.47495201957045,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-empty-input",
+        "Sample": 4,
+        "Iterations": 1147890,
+        "Ms": 65.5578,
+        "Ns": 57.111569923947414,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ascii-hit-control",
+        "Sample": 4,
+        "Iterations": 19494,
+        "Ms": 61.8973,
+        "Ns": 3175.1974966656408,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ascii-miss-control",
+        "Sample": 4,
+        "Iterations": 22318,
+        "Ms": 70.9016,
+        "Ns": 3176.8796487140426,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full-control",
+        "Sample": 4,
+        "Iterations": 59429,
+        "Ms": 54.0665,
+        "Ns": 909.7662757239732,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full-control",
+        "Sample": 4,
+        "Iterations": 371477,
+        "Ms": 63.6942,
+        "Ns": 171.46202860473193,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-miss-control",
+        "Sample": 4,
+        "Iterations": 698,
+        "Ms": 68.4523,
+        "Ns": 98069.19770773638,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-token-control",
+        "Sample": 4,
+        "Iterations": 61357,
+        "Ms": 54.5065,
+        "Ns": 888.350147497433,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-deadline-control",
+        "Sample": 4,
+        "Iterations": 56676,
+        "Ms": 56.8444,
+        "Ns": 1002.9712753193592,
+        "Bytes": 160
+      },
+      {
+        "Kind": "sample",
+        "Name": "core-count-control/unlimited",
+        "Sample": 4,
+        "Iterations": 12508,
+        "Ms": 60.2179,
+        "Ns": 4814.350815478094,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "core-count-control/finite",
+        "Sample": 4,
+        "Iterations": 13090,
+        "Ms": 60.201,
+        "Ns": 4599.006875477464,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/ascii/predecoded",
+        "Sample": 4,
+        "Iterations": 8912,
+        "Ms": 50.0367,
+        "Ns": 5614.530969479354,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/ascii/decode",
+        "Sample": 4,
+        "Iterations": 2541,
+        "Ms": 102.8574,
+        "Ns": 40479.10271546635,
+        "Bytes": 131096
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/unicode/predecoded",
+        "Sample": 4,
+        "Iterations": 922080,
+        "Ms": 50.1549,
+        "Ns": 54.39321967725143,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/unicode/decode",
+        "Sample": 4,
+        "Iterations": 64512,
+        "Ms": 49.7581,
+        "Ns": 771.2999131944445,
+        "Bytes": 928
+      },
+      {
+        "Kind": "complete"
+      }
+    ],
+    "after": [
+      {
+        "Kind": "identity",
+        "Phase": "after",
+        "Core": "AE1604B26A6BBF706F32D0FE14A8C9C1EE9827760DE56E7176C4AB2FE563C806",
+        "Python": "7818965E903D8566BE0D36C8A324058DC9C5A3B7B66ED879AA825D3159053A73",
+        "Driver": "6DAD6910746478B6AE7BECF8FEDC7B6CEBAFF747BB28EF061755AE9DF83A59FB",
+        "Runtime": "10.0.12"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-short-hit",
+        "Bytes": 18,
+        "Expected": 31,
+        "Subject": "4324A2E9CC0F6EB634296D053D3DE8E677A65647CD660216819BE81AD714DF1B",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 0,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-miss-search",
+        "Bytes": 837,
+        "Expected": 0,
+        "Subject": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 0,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-miss-match",
+        "Bytes": 837,
+        "Expected": 0,
+        "Subject": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 1,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-miss-full",
+        "Bytes": 837,
+        "Expected": 0,
+        "Subject": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 2,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-miss-search-text",
+        "Bytes": 837,
+        "Expected": -1,
+        "Subject": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 3,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-miss-match-text",
+        "Bytes": 837,
+        "Expected": -1,
+        "Subject": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 4,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-miss-full-text",
+        "Bytes": 837,
+        "Expected": -1,
+        "Subject": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 5,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-long-hit",
+        "Bytes": 106508,
+        "Expected": 327699,
+        "Subject": "FEC455464AA74385FD56B91230CF01921FBF0CD961194A1B897A880AD4EF1CAD",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 0,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-long-miss",
+        "Bytes": 106496,
+        "Expected": 0,
+        "Subject": "FA9E4E5F4ECE82305911CBC2D22C80DCEF4522B5C2A4FBBBF77E38F2DD434449",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 0,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-exact-full",
+        "Bytes": 12,
+        "Expected": 19,
+        "Subject": "059DAB94B2011DF55832B31CEB7DAD2D2610C8E0C4AE1BD2889E4E1FFAD00FA0",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 2,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-exact-full-text",
+        "Bytes": 12,
+        "Expected": 6,
+        "Subject": "059DAB94B2011DF55832B31CEB7DAD2D2610C8E0C4AE1BD2889E4E1FFAD00FA0",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 5,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "emoji-hit",
+        "Bytes": 10,
+        "Expected": 15,
+        "Subject": "4C6CDB8278176E5387AE1C0F86ABC1F2C9C176B44792261D28CD0D95A4B92F69",
+        "Pattern": "\ud83d\ude00",
+        "Operation": 0,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "emoji-miss",
+        "Bytes": 2048,
+        "Expected": 0,
+        "Subject": "0C894F1C5DCB55C41A2B43A60C9EF51A3918FBC44B02FF577AEB5B0BFA8D2931",
+        "Pattern": "\ud83d\ude00",
+        "Operation": 0,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-short-miss",
+        "Bytes": 2,
+        "Expected": 0,
+        "Subject": "5DDE896887F6754C9B15BFE3A441AE4806DF2FDE94001311E08BF110622E0BBE",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 0,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-empty-input",
+        "Bytes": 0,
+        "Expected": 0,
+        "Subject": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 0,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ascii-hit-control",
+        "Bytes": 65542,
+        "Expected": 262157,
+        "Subject": "4E381E20D292A1149943470F2827649D9D8D087F6BA87326BFA715A124316FA2",
+        "Pattern": "needle",
+        "Operation": 0,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ascii-miss-control",
+        "Bytes": 65536,
+        "Expected": 0,
+        "Subject": "1F8745F0D2D1387EC1AF2211A3CF417B2E9E885E853472649C1D979D0E9370E3",
+        "Pattern": "needle",
+        "Operation": 0,
+        "Mode": "unlimited"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-miss-full-control",
+        "Bytes": 837,
+        "Expected": 0,
+        "Subject": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 2,
+        "Mode": "finite"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-exact-full-control",
+        "Bytes": 12,
+        "Expected": 19,
+        "Subject": "059DAB94B2011DF55832B31CEB7DAD2D2610C8E0C4AE1BD2889E4E1FFAD00FA0",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 2,
+        "Mode": "finite"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-long-miss-control",
+        "Bytes": 106496,
+        "Expected": 0,
+        "Subject": "FA9E4E5F4ECE82305911CBC2D22C80DCEF4522B5C2A4FBBBF77E38F2DD434449",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 0,
+        "Mode": "finite"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-miss-token-control",
+        "Bytes": 837,
+        "Expected": 0,
+        "Subject": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 2,
+        "Mode": "token"
+      },
+      {
+        "Kind": "preflight",
+        "Name": "ru-miss-deadline-control",
+        "Bytes": 837,
+        "Expected": 0,
+        "Subject": "05D2E4664CF198B63D16DF35E81980B09C066D632AEB5B55417A12431A27BD70",
+        "Pattern": "\u0428\u0435\u0440\u043b\u043e\u043a",
+        "Operation": 2,
+        "Mode": "deadline"
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-short-hit",
+        "Calls": 385397,
+        "Milliseconds": 560.1967
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-miss-search",
+        "Calls": 62907,
+        "Milliseconds": 564.714
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-miss-match",
+        "Calls": 63384,
+        "Milliseconds": 562.6206
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-miss-full",
+        "Calls": 391297,
+        "Milliseconds": 550.8408
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-miss-search-text",
+        "Calls": 844300,
+        "Milliseconds": 552.7641
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-miss-match-text",
+        "Calls": 883362,
+        "Milliseconds": 555.2999
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-miss-full-text",
+        "Calls": 889625,
+        "Milliseconds": 551.5101
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-long-hit",
+        "Calls": 10005,
+        "Milliseconds": 1969.431
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-long-miss",
+        "Calls": 45281,
+        "Milliseconds": 563.2007
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-exact-full",
+        "Calls": 3525124,
+        "Milliseconds": 594.6312
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-exact-full-text",
+        "Calls": 2406827,
+        "Milliseconds": 595.4955
+      },
+      {
+        "Kind": "warmup",
+        "Name": "emoji-hit",
+        "Calls": 522781,
+        "Milliseconds": 558.7771
+      },
+      {
+        "Kind": "warmup",
+        "Name": "emoji-miss",
+        "Calls": 265482,
+        "Milliseconds": 559.0694
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-short-miss",
+        "Calls": 4569249,
+        "Milliseconds": 587.8974
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-empty-input",
+        "Calls": 4830612,
+        "Milliseconds": 600.0023
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ascii-hit-control",
+        "Calls": 143489,
+        "Milliseconds": 564.6614
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ascii-miss-control",
+        "Calls": 146203,
+        "Milliseconds": 564.7423
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-miss-full-control",
+        "Calls": 517031,
+        "Milliseconds": 557.6852
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-exact-full-control",
+        "Calls": 2046583,
+        "Milliseconds": 599.0752
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-long-miss-control",
+        "Calls": 10005,
+        "Milliseconds": 1052.265
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-miss-token-control",
+        "Calls": 519639,
+        "Milliseconds": 553.2652
+      },
+      {
+        "Kind": "warmup",
+        "Name": "ru-miss-deadline-control",
+        "Calls": 458395,
+        "Milliseconds": 555.0044
+      },
+      {
+        "Kind": "warmup",
+        "Name": "core-count-control/unlimited",
+        "Calls": 133579,
+        "Milliseconds": 561.8803
+      },
+      {
+        "Kind": "warmup",
+        "Name": "core-count-control/finite",
+        "Calls": 116650,
+        "Milliseconds": 561.4194
+      },
+      {
+        "Kind": "warmup",
+        "Name": "dotnet-control/ascii/predecoded",
+        "Calls": 55837,
+        "Milliseconds": 565.1011
+      },
+      {
+        "Kind": "warmup",
+        "Name": "dotnet-control/ascii/decode",
+        "Calls": 13082,
+        "Milliseconds": 614.8488
+      },
+      {
+        "Kind": "warmup",
+        "Name": "dotnet-control/unicode/predecoded",
+        "Calls": 3606900,
+        "Milliseconds": 598.3755
+      },
+      {
+        "Kind": "warmup",
+        "Name": "dotnet-control/unicode/decode",
+        "Calls": 499130,
+        "Milliseconds": 557.3282
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-short-hit",
+        "Sample": 0,
+        "Iterations": 374298,
+        "Ms": 50.354,
+        "Ns": 134.52917194321103,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-search",
+        "Sample": 0,
+        "Iterations": 99010,
+        "Ms": 51.7054,
+        "Ns": 522.2240177759822,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-match",
+        "Sample": 0,
+        "Iterations": 98545,
+        "Ms": 53.6687,
+        "Ns": 544.6110913795728,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full",
+        "Sample": 0,
+        "Iterations": 97512,
+        "Ms": 50.4257,
+        "Ns": 517.1230207564197,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-search-text",
+        "Sample": 0,
+        "Iterations": 99522,
+        "Ms": 53.259,
+        "Ns": 535.1480074757341,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-match-text",
+        "Sample": 0,
+        "Iterations": 103483,
+        "Ms": 55.2314,
+        "Ns": 533.7243798498304,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full-text",
+        "Sample": 0,
+        "Iterations": 96297,
+        "Ms": 51.2933,
+        "Ns": 532.6572998120398,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-hit",
+        "Sample": 0,
+        "Iterations": 343,
+        "Ms": 64.9849,
+        "Ns": 189460.3498542274,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-miss",
+        "Sample": 0,
+        "Iterations": 5748,
+        "Ms": 63.6974,
+        "Ns": 11081.663187195547,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full",
+        "Sample": 0,
+        "Iterations": 720409,
+        "Ms": 66.8509,
+        "Ns": 92.79575907574724,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full-text",
+        "Sample": 0,
+        "Iterations": 478791,
+        "Ms": 65.2034,
+        "Ns": 136.1834286776485,
+        "Bytes": 40
+      },
+      {
+        "Kind": "sample",
+        "Name": "emoji-hit",
+        "Sample": 0,
+        "Iterations": 189023,
+        "Ms": 50.0078,
+        "Ns": 264.5593393396571,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "emoji-miss",
+        "Sample": 0,
+        "Iterations": 46326,
+        "Ms": 58.9156,
+        "Ns": 1271.760998143591,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-short-miss",
+        "Sample": 0,
+        "Iterations": 971279,
+        "Ms": 65.7756,
+        "Ns": 67.72060345173735,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-empty-input",
+        "Sample": 0,
+        "Iterations": 1057413,
+        "Ms": 64.7432,
+        "Ns": 61.22792135144925,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ascii-hit-control",
+        "Sample": 0,
+        "Iterations": 18790,
+        "Ms": 63.7341,
+        "Ns": 3391.9159127195317,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ascii-miss-control",
+        "Sample": 0,
+        "Iterations": 19066,
+        "Ms": 64.207,
+        "Ns": 3367.617748872338,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full-control",
+        "Sample": 0,
+        "Iterations": 59429,
+        "Ms": 54.1824,
+        "Ns": 911.7165020444564,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full-control",
+        "Sample": 0,
+        "Iterations": 354800,
+        "Ms": 66.322,
+        "Ns": 186.92784667418263,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-miss-control",
+        "Sample": 0,
+        "Iterations": 639,
+        "Ms": 63.0262,
+        "Ns": 98632.55086071987,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-token-control",
+        "Sample": 0,
+        "Iterations": 58758,
+        "Ms": 53.8532,
+        "Ns": 916.5254093059668,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-deadline-control",
+        "Sample": 0,
+        "Iterations": 53062,
+        "Ms": 55.2853,
+        "Ns": 1041.9000414609325,
+        "Bytes": 160
+      },
+      {
+        "Kind": "sample",
+        "Name": "core-count-control/unlimited",
+        "Sample": 0,
+        "Iterations": 19549,
+        "Ms": 61.5442,
+        "Ns": 3148.2019540641463,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "core-count-control/finite",
+        "Sample": 0,
+        "Iterations": 15431,
+        "Ms": 61.1562,
+        "Ns": 3963.2039401205366,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/ascii/predecoded",
+        "Sample": 0,
+        "Iterations": 14480,
+        "Ms": 50.4608,
+        "Ns": 3484.8618784530386,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/ascii/decode",
+        "Sample": 0,
+        "Iterations": 1688,
+        "Ms": 114.0362,
+        "Ns": 67556.99052132701,
+        "Bytes": 131096
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/unicode/predecoded",
+        "Sample": 0,
+        "Iterations": 1064708,
+        "Ms": 80.0265,
+        "Ns": 75.1628615545295,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/unicode/decode",
+        "Sample": 0,
+        "Iterations": 62276,
+        "Ms": 48.7362,
+        "Ns": 782.5839809878605,
+        "Bytes": 928
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/unicode/decode",
+        "Sample": 1,
+        "Iterations": 62276,
+        "Ms": 49.1693,
+        "Ns": 789.5385060055238,
+        "Bytes": 928
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/unicode/predecoded",
+        "Sample": 1,
+        "Iterations": 1064708,
+        "Ms": 50.469,
+        "Ns": 47.40172892473805,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/ascii/decode",
+        "Sample": 1,
+        "Iterations": 1688,
+        "Ms": 66.5968,
+        "Ns": 39453.080568720376,
+        "Bytes": 131096
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/ascii/predecoded",
+        "Sample": 1,
+        "Iterations": 14480,
+        "Ms": 50.9595,
+        "Ns": 3519.3024861878453,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "core-count-control/finite",
+        "Sample": 1,
+        "Iterations": 15431,
+        "Ms": 61.8889,
+        "Ns": 4010.6862808631977,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "core-count-control/unlimited",
+        "Sample": 1,
+        "Iterations": 19549,
+        "Ms": 62.0867,
+        "Ns": 3175.9527341552,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-deadline-control",
+        "Sample": 1,
+        "Iterations": 53062,
+        "Ms": 55.5752,
+        "Ns": 1047.3634616109457,
+        "Bytes": 160
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-token-control",
+        "Sample": 1,
+        "Iterations": 58758,
+        "Ms": 53.1085,
+        "Ns": 903.8513904489602,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-miss-control",
+        "Sample": 1,
+        "Iterations": 639,
+        "Ms": 62.954,
+        "Ns": 98519.56181533646,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full-control",
+        "Sample": 1,
+        "Iterations": 354800,
+        "Ms": 65.8785,
+        "Ns": 185.67784667418263,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full-control",
+        "Sample": 1,
+        "Iterations": 59429,
+        "Ms": 53.8911,
+        "Ns": 906.814854700567,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ascii-miss-control",
+        "Sample": 1,
+        "Iterations": 19066,
+        "Ms": 64.2559,
+        "Ns": 3370.1825238644706,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ascii-hit-control",
+        "Sample": 1,
+        "Iterations": 18790,
+        "Ms": 63.8373,
+        "Ns": 3397.408195848856,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-empty-input",
+        "Sample": 1,
+        "Iterations": 1057413,
+        "Ms": 64.8083,
+        "Ns": 61.289486700087856,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-short-miss",
+        "Sample": 1,
+        "Iterations": 971279,
+        "Ms": 65.0093,
+        "Ns": 66.93164373985229,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "emoji-miss",
+        "Sample": 1,
+        "Iterations": 46326,
+        "Ms": 58.6787,
+        "Ns": 1266.6472391313732,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "emoji-hit",
+        "Sample": 1,
+        "Iterations": 189023,
+        "Ms": 50.0396,
+        "Ns": 264.72757283505183,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full-text",
+        "Sample": 1,
+        "Iterations": 478791,
+        "Ms": 64.6674,
+        "Ns": 135.06394230467993,
+        "Bytes": 40
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full",
+        "Sample": 1,
+        "Iterations": 720409,
+        "Ms": 66.7958,
+        "Ns": 92.71927474531829,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-miss",
+        "Sample": 1,
+        "Iterations": 5748,
+        "Ms": 63.2036,
+        "Ns": 10995.755045233125,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-hit",
+        "Sample": 1,
+        "Iterations": 343,
+        "Ms": 64.8447,
+        "Ns": 189051.60349854227,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full-text",
+        "Sample": 1,
+        "Iterations": 96297,
+        "Ms": 52.1243,
+        "Ns": 541.2868521345421,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-match-text",
+        "Sample": 1,
+        "Iterations": 103483,
+        "Ms": 55.7047,
+        "Ns": 538.2980779451698,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-search-text",
+        "Sample": 1,
+        "Iterations": 99522,
+        "Ms": 52.9047,
+        "Ns": 531.5879905950443,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full",
+        "Sample": 1,
+        "Iterations": 97512,
+        "Ms": 50.4924,
+        "Ns": 517.807039133645,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-match",
+        "Sample": 1,
+        "Iterations": 98545,
+        "Ms": 51.0264,
+        "Ns": 517.7979603226952,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-search",
+        "Sample": 1,
+        "Iterations": 99010,
+        "Ms": 51.969,
+        "Ns": 524.8863751136249,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-short-hit",
+        "Sample": 1,
+        "Iterations": 374298,
+        "Ms": 50.506,
+        "Ns": 134.93526548365207,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-short-hit",
+        "Sample": 2,
+        "Iterations": 374298,
+        "Ms": 49.8647,
+        "Ns": 133.22192477651498,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-search",
+        "Sample": 2,
+        "Iterations": 99010,
+        "Ms": 52.0284,
+        "Ns": 525.4863145136854,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-match",
+        "Sample": 2,
+        "Iterations": 98545,
+        "Ms": 52.0704,
+        "Ns": 528.3921051296362,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full",
+        "Sample": 2,
+        "Iterations": 97512,
+        "Ms": 50.4316,
+        "Ns": 517.1835261301173,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-search-text",
+        "Sample": 2,
+        "Iterations": 99522,
+        "Ms": 53.6874,
+        "Ns": 539.4525833484054,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-match-text",
+        "Sample": 2,
+        "Iterations": 103483,
+        "Ms": 55.6355,
+        "Ns": 537.6293690751138,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full-text",
+        "Sample": 2,
+        "Iterations": 96297,
+        "Ms": 73.5608,
+        "Ns": 763.8950330747583,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-hit",
+        "Sample": 2,
+        "Iterations": 343,
+        "Ms": 107.6933,
+        "Ns": 313974.6355685131,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-miss",
+        "Sample": 2,
+        "Iterations": 5748,
+        "Ms": 63.1683,
+        "Ns": 10989.613778705636,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full",
+        "Sample": 2,
+        "Iterations": 720409,
+        "Ms": 67.195,
+        "Ns": 93.27340441332632,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full-text",
+        "Sample": 2,
+        "Iterations": 478791,
+        "Ms": 64.8361,
+        "Ns": 135.4162881090079,
+        "Bytes": 40
+      },
+      {
+        "Kind": "sample",
+        "Name": "emoji-hit",
+        "Sample": 2,
+        "Iterations": 189023,
+        "Ms": 49.8036,
+        "Ns": 263.47904752331726,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "emoji-miss",
+        "Sample": 2,
+        "Iterations": 46326,
+        "Ms": 58.9653,
+        "Ns": 1272.8338298147908,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-short-miss",
+        "Sample": 2,
+        "Iterations": 971279,
+        "Ms": 65.3216,
+        "Ns": 67.2531785408724,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-empty-input",
+        "Sample": 2,
+        "Iterations": 1057413,
+        "Ms": 64.5864,
+        "Ns": 61.079634920319684,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ascii-hit-control",
+        "Sample": 2,
+        "Iterations": 18790,
+        "Ms": 63.8121,
+        "Ns": 3396.0670569451836,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ascii-miss-control",
+        "Sample": 2,
+        "Iterations": 19066,
+        "Ms": 63.7757,
+        "Ns": 3344.9963285429562,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full-control",
+        "Sample": 2,
+        "Iterations": 59429,
+        "Ms": 53.5873,
+        "Ns": 901.7028723350553,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full-control",
+        "Sample": 2,
+        "Iterations": 354800,
+        "Ms": 64.7727,
+        "Ns": 182.56116121758737,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-miss-control",
+        "Sample": 2,
+        "Iterations": 639,
+        "Ms": 62.5783,
+        "Ns": 97931.61189358373,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-token-control",
+        "Sample": 2,
+        "Iterations": 58758,
+        "Ms": 53.6958,
+        "Ns": 913.8466251404064,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-deadline-control",
+        "Sample": 2,
+        "Iterations": 53062,
+        "Ms": 55.2265,
+        "Ns": 1040.7919038106365,
+        "Bytes": 160
+      },
+      {
+        "Kind": "sample",
+        "Name": "core-count-control/unlimited",
+        "Sample": 2,
+        "Iterations": 19549,
+        "Ms": 62.0693,
+        "Ns": 3175.0626630518186,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "core-count-control/finite",
+        "Sample": 2,
+        "Iterations": 15431,
+        "Ms": 61.4992,
+        "Ns": 3985.4319227529,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/ascii/predecoded",
+        "Sample": 2,
+        "Iterations": 14480,
+        "Ms": 62.1404,
+        "Ns": 4291.46408839779,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/ascii/decode",
+        "Sample": 2,
+        "Iterations": 1688,
+        "Ms": 75.7192,
+        "Ns": 44857.345971563984,
+        "Bytes": 131096
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/unicode/predecoded",
+        "Sample": 2,
+        "Iterations": 1064708,
+        "Ms": 51.9077,
+        "Ns": 48.752991430514285,
+        "Bytes": 6.762417489114386e-05
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/unicode/decode",
+        "Sample": 2,
+        "Iterations": 62276,
+        "Ms": 48.4272,
+        "Ns": 777.6221979574796,
+        "Bytes": 928
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/unicode/decode",
+        "Sample": 3,
+        "Iterations": 62276,
+        "Ms": 48.3682,
+        "Ns": 776.6748024921318,
+        "Bytes": 928
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/unicode/predecoded",
+        "Sample": 3,
+        "Iterations": 1064708,
+        "Ms": 50.3788,
+        "Ns": 47.317010861193864,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/ascii/decode",
+        "Sample": 3,
+        "Iterations": 1688,
+        "Ms": 69.7877,
+        "Ns": 41343.42417061611,
+        "Bytes": 131096
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/ascii/predecoded",
+        "Sample": 3,
+        "Iterations": 14480,
+        "Ms": 51.2043,
+        "Ns": 3536.2085635359117,
+        "Bytes": 0.004972375690607734
+      },
+      {
+        "Kind": "sample",
+        "Name": "core-count-control/finite",
+        "Sample": 3,
+        "Iterations": 15431,
+        "Ms": 61.9113,
+        "Ns": 4012.1379042187805,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "core-count-control/unlimited",
+        "Sample": 3,
+        "Iterations": 19549,
+        "Ms": 61.5281,
+        "Ns": 3147.37838252596,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-deadline-control",
+        "Sample": 3,
+        "Iterations": 53062,
+        "Ms": 55.4483,
+        "Ns": 1044.9719196411745,
+        "Bytes": 160
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-token-control",
+        "Sample": 3,
+        "Iterations": 58758,
+        "Ms": 53.2566,
+        "Ns": 906.3718982947003,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-miss-control",
+        "Sample": 3,
+        "Iterations": 639,
+        "Ms": 63.2097,
+        "Ns": 98919.71830985915,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full-control",
+        "Sample": 3,
+        "Iterations": 354800,
+        "Ms": 65.1807,
+        "Ns": 183.71110484780158,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full-control",
+        "Sample": 3,
+        "Iterations": 59429,
+        "Ms": 53.9329,
+        "Ns": 907.5182150128725,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ascii-miss-control",
+        "Sample": 3,
+        "Iterations": 19066,
+        "Ms": 63.9788,
+        "Ns": 3355.648798909053,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ascii-hit-control",
+        "Sample": 3,
+        "Iterations": 18790,
+        "Ms": 63.3344,
+        "Ns": 3370.6439595529537,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-empty-input",
+        "Sample": 3,
+        "Iterations": 1057413,
+        "Ms": 64.8197,
+        "Ns": 61.300267728881714,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-short-miss",
+        "Sample": 3,
+        "Iterations": 971279,
+        "Ms": 65.3123,
+        "Ns": 67.24360353719167,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "emoji-miss",
+        "Sample": 3,
+        "Iterations": 46326,
+        "Ms": 59.6326,
+        "Ns": 1287.2382679272978,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "emoji-hit",
+        "Sample": 3,
+        "Iterations": 189023,
+        "Ms": 50.0093,
+        "Ns": 264.5672748818927,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full-text",
+        "Sample": 3,
+        "Iterations": 478791,
+        "Ms": 64.8618,
+        "Ns": 135.46996497427895,
+        "Bytes": 40
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full",
+        "Sample": 3,
+        "Iterations": 720409,
+        "Ms": 66.9079,
+        "Ns": 92.87488079688066,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-miss",
+        "Sample": 3,
+        "Iterations": 5748,
+        "Ms": 62.7185,
+        "Ns": 10911.360473208073,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-hit",
+        "Sample": 3,
+        "Iterations": 343,
+        "Ms": 64.5804,
+        "Ns": 188281.04956268222,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full-text",
+        "Sample": 3,
+        "Iterations": 96297,
+        "Ms": 51.9782,
+        "Ns": 539.7696709139433,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-match-text",
+        "Sample": 3,
+        "Iterations": 103483,
+        "Ms": 54.5468,
+        "Ns": 527.1088004793057,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-search-text",
+        "Sample": 3,
+        "Iterations": 99522,
+        "Ms": 52.8754,
+        "Ns": 531.2935833283093,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full",
+        "Sample": 3,
+        "Iterations": 97512,
+        "Ms": 51.3437,
+        "Ns": 526.5372466978423,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-match",
+        "Sample": 3,
+        "Iterations": 98545,
+        "Ms": 52.3409,
+        "Ns": 531.1370439900553,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-search",
+        "Sample": 3,
+        "Iterations": 99010,
+        "Ms": 52.2514,
+        "Ns": 527.7386122613877,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-short-hit",
+        "Sample": 3,
+        "Iterations": 374298,
+        "Ms": 50.1132,
+        "Ns": 133.8858342817755,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-short-hit",
+        "Sample": 4,
+        "Iterations": 374298,
+        "Ms": 50.02,
+        "Ns": 133.63683482145242,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-search",
+        "Sample": 4,
+        "Iterations": 99010,
+        "Ms": 51.9998,
+        "Ns": 525.1974548025452,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-match",
+        "Sample": 4,
+        "Iterations": 98545,
+        "Ms": 52.2457,
+        "Ns": 530.1709878735603,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full",
+        "Sample": 4,
+        "Iterations": 97512,
+        "Ms": 51.5522,
+        "Ns": 528.6754450734269,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-search-text",
+        "Sample": 4,
+        "Iterations": 99522,
+        "Ms": 53.412,
+        "Ns": 536.6853560016881,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-match-text",
+        "Sample": 4,
+        "Iterations": 103483,
+        "Ms": 55.7624,
+        "Ns": 538.8556574509823,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full-text",
+        "Sample": 4,
+        "Iterations": 96297,
+        "Ms": 79.4638,
+        "Ns": 825.1949697290673,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-hit",
+        "Sample": 4,
+        "Iterations": 343,
+        "Ms": 65.0742,
+        "Ns": 189720.69970845483,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-miss",
+        "Sample": 4,
+        "Iterations": 5748,
+        "Ms": 63.2373,
+        "Ns": 11001.617954070982,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full",
+        "Sample": 4,
+        "Iterations": 720409,
+        "Ms": 66.9462,
+        "Ns": 92.92804504108084,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full-text",
+        "Sample": 4,
+        "Iterations": 478791,
+        "Ms": 65.4228,
+        "Ns": 136.641666196733,
+        "Bytes": 40
+      },
+      {
+        "Kind": "sample",
+        "Name": "emoji-hit",
+        "Sample": 4,
+        "Iterations": 189023,
+        "Ms": 50.0056,
+        "Ns": 264.5477005443782,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "emoji-miss",
+        "Sample": 4,
+        "Iterations": 46326,
+        "Ms": 58.8096,
+        "Ns": 1269.4728662090404,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-short-miss",
+        "Sample": 4,
+        "Iterations": 971279,
+        "Ms": 65.7484,
+        "Ns": 67.69259913989698,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-empty-input",
+        "Sample": 4,
+        "Iterations": 1057413,
+        "Ms": 64.9359,
+        "Ns": 61.41015856623666,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ascii-hit-control",
+        "Sample": 4,
+        "Iterations": 18790,
+        "Ms": 63.1431,
+        "Ns": 3360.4630122405533,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ascii-miss-control",
+        "Sample": 4,
+        "Iterations": 19066,
+        "Ms": 69.8217,
+        "Ns": 3662.105318367775,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-full-control",
+        "Sample": 4,
+        "Iterations": 59429,
+        "Ms": 54.049,
+        "Ns": 909.4718066937018,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-exact-full-control",
+        "Sample": 4,
+        "Iterations": 354800,
+        "Ms": 65.4564,
+        "Ns": 184.4881623449831,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-long-miss-control",
+        "Sample": 4,
+        "Iterations": 639,
+        "Ms": 63.4216,
+        "Ns": 99251.33020344288,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-token-control",
+        "Sample": 4,
+        "Iterations": 58758,
+        "Ms": 53.2404,
+        "Ns": 906.0961911569489,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "ru-miss-deadline-control",
+        "Sample": 4,
+        "Iterations": 53062,
+        "Ms": 55.6199,
+        "Ns": 1048.2058723757114,
+        "Bytes": 160
+      },
+      {
+        "Kind": "sample",
+        "Name": "core-count-control/unlimited",
+        "Sample": 4,
+        "Iterations": 19549,
+        "Ms": 62.2889,
+        "Ns": 3186.29597421863,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "core-count-control/finite",
+        "Sample": 4,
+        "Iterations": 15431,
+        "Ms": 61.4874,
+        "Ns": 3984.6672283066555,
+        "Bytes": 112
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/ascii/predecoded",
+        "Sample": 4,
+        "Iterations": 14480,
+        "Ms": 50.6608,
+        "Ns": 3498.6740331491715,
+        "Bytes": 0
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/ascii/decode",
+        "Sample": 4,
+        "Iterations": 1688,
+        "Ms": 81.6812,
+        "Ns": 48389.336492890994,
+        "Bytes": 131096
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/unicode/predecoded",
+        "Sample": 4,
+        "Iterations": 1064708,
+        "Ms": 51.9786,
+        "Ns": 48.819582458289034,
+        "Bytes": 6.762417489114386e-05
+      },
+      {
+        "Kind": "sample",
+        "Name": "dotnet-control/unicode/decode",
+        "Sample": 4,
+        "Iterations": 62276,
+        "Ms": 49.7801,
+        "Ns": 799.3464577044126,
+        "Bytes": 928
+      },
+      {
+        "Kind": "complete"
+      }
+    ]
+  },
+  "predeclarations": [
+    "# Frozen119 literal validation attribution\n\nOne bounded diagnostic, exact119 Core/PythonRe, matching explicit .NET10.0.12 on\nquiet Xeon VM CPU2/default tier switches. Four original ASCII/Cyrillic Search\nhit/miss subjects, seven lanes each: public Search consuming byte/UTF16 ranges,\nproduction native discovery, metadata validation, existing validity-only validation,\nBCL Utf8.IsValid, prevalidated native finder and same-trip metadata+finder replay.\nNo library edit, helper API, package build/restore/qualification or CPython rerun.\nExisting friend assembly only in artifact tooling. Original public frozen119 paired\nresults remain closed; no additive speedup or kernel/public cost conflation.\n\nAll subject/count/coordinate/metadata outcomes preflight, all lanes check timed\nchecksums, final outputs agree.10005calls/500ms warmup,65ms target,five alternating\nlane-order samples,120s process/145s SSH cap; one run, then stop. Report raw sample\nspreads and allocations; no new performance classification or protocol. Attribute\nrather than assume UTF16 counting causes the gap. BCL validity's isolated cost does\nnot prove substitutability for metadata, controlled work or original interruption.\nFull validity/error offsets, scalar/capture/lifetime guarantees and finite/token/\ndeadline routes must survive any later proposed change. Checked52 remains closed.\n",
+    "# Outcome-dependent native Unicode literal metadata pilot\n\nBaseline current120-dev clean2ff637e3; candidate changes only Core FindLiteralForResult.\nPure exact Unicode literals without boundary/trailing requirements, unlimited\nno-token/no-deadline/no-hook calls, search bytes first provisionally. Hits receive\noriginal whole-input metadata validation; misses receive existing strict validity-\nonly validation. Nothing publishes or decodes before complete validation. ASCII,\nempty, controlled/diagnostic routes retain old order. Same native algorithm, APIs,\nworking/result/lifetime/semantic guarantees; no helper, owner, framework or mode.\nNo configured policy work/admission contract changes (controlled paths unchanged).\n\nOne bounded before/after public comparison, CoreDLL-only swap, same Python/driver/\ninputs, .NET10.0.12 default tier switches on quiet VM CPU2.28lanes: Search/Match/\nFullMatch and text counterparts, short/medium/long Unicode hits/misses/empty subject,\nemoji, ASCII controls, controlled full/miss work/token/deadline, native Core Count\nand four unchanged predecoded/decode .NET Match controls. Pre/post exact byte,\nUTF16 and text outputs; timed checksums and retained text.10005calls/500ms warmup,\n65ms calibration then existing three settled-duration checks, five alternating\nlane-order samples.110s/phase,230s total,255s SSH. One confirmation only if noise\nprevents a decision, then stop. No CPython Status refresh, package requalification,\nchecked52 reopening, algorithm/SIMD change or broader validation campaign.\n\nAccept only supported public improvement with stable unchanged controls and no\nmaterial hit/neighbor regressions (10% ceiling); otherwise defer/revert without\ntrying additional modes/tuning. Raw kernel attribution is separate, including its\nweak8.6ms/spread1.735 observations. Prior119 packages and qualifications immutable.\nInitial new test mistakenly expected6UTF16 units for \u4e2d\u00e9\ud83d\ude00\u5c3e; corrected to5, original\nfailed log retained; no production or existing-test semantics weakened. Expanded\nfocused Release839tests pass, including new26cases and original cancellation/\nfinite/deadline/cursor checks, before timing. Preserve original authority/order\nunder hooks and positive finite limits. Broader R01\u2013R10 remains active.\n"
+  ]
+}

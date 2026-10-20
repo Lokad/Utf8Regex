@@ -1,0 +1,32 @@
+diff --git a/src/Lokad.Utf8Regex/Utf8Regex.NativeLiteralInvocation.cs b/src/Lokad.Utf8Regex/Utf8Regex.NativeLiteralInvocation.cs
+index dc2fbb97..1c0c81aa 100644
+--- a/src/Lokad.Utf8Regex/Utf8Regex.NativeLiteralInvocation.cs
++++ b/src/Lokad.Utf8Regex/Utf8Regex.NativeLiteralInvocation.cs
+@@ -18,7 +18,14 @@ public sealed partial class Utf8Regex
+         if (_preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal) ||
+             _preparedRegex.LiteralUtf8 is not { } literal || UsesRightToLeft())
+             throw new InvalidOperationException("Literal result discovery requires an exact LTR literal.");
+-        validation = Utf8Validation.Validate(input, ref invocation);
++        // A pure byte search can provisionally locate an exact Unicode literal
++        // without coordinate metadata. Every outcome still validates the whole
++        // subject before publication; only a miss can omit the UTF-16 count.
++        // Controlled and diagnostic calls retain validation before discovery.
++        var validateAfterSearch = _preparedRegex.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
++            !_preparedRegex.SearchPlan.HasBoundaryRequirements && !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement &&
++            invocation.IsUnmetered && invocation.CheckpointHook is null;
++        validation = validateAfterSearch ? default : Utf8Validation.Validate(input, ref invocation);
+         var control = new Utf8InvocationBufferControl(ref invocation);
+         Utf8InvocationOutput.Checkpoint(control);
+         if (literal.Length == 0)
+@@ -30,6 +37,11 @@ public sealed partial class Utf8Regex
+             input, startOffsetInBytes, input.Length, false, ref invocation, out var match, out var found);
+         if (breach != Utf8ExecutionLimitKind.None)
+             throw new InvalidOperationException($"Native literal result discovery exceeded {breach}.");
++        if (validateAfterSearch)
++        {
++            if (found) validation = Utf8Validation.Validate(input, ref invocation);
++            else Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
++        }
+         Utf8InvocationOutput.Checkpoint(control);
+         if (!found) return false;
+         start = match.Index;
