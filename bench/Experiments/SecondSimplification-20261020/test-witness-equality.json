@@ -1,0 +1,21 @@
+{
+  "OriginalExactMetadataPairs": 4045,
+  "RepresentativeExistingHelperCalls": 501,
+  "RedundantPairsRemoved": 3544,
+  "OtherSourceBytesUnchangedAfterRemovingOnlyMetadataWitnesses": true,
+  "FactTheoryInlineMemberAttributesUnchanged": true,
+  "ExistingHelperRedundantPostOperationChecksRemoved": [
+    "isMatch",
+    "count",
+    "match",
+    "detailed",
+    "enumerate",
+    "stringReplace",
+    "byteReplace",
+    "utf8Replace",
+    "live",
+    "byteRegex",
+    "stringRegex"
+  ],
+  "Scope": "Cold instances, public operation calls and semantic/capture/scalar/resource assertions unchanged. No timing or suite-wall-time claim."
+}

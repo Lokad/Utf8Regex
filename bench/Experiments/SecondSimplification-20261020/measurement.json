@@ -1,0 +1,222 @@
+{
+  "Protocol": "One predeclared before/after batch: existing CLI literal/character construction (16 instances,7 samples) and public character Count (2000 minimum iterations,5 samples), sequential Release,45s cap each, no repeat.",
+  "SourceBefore": "a92e590a (production C# equals reviewed d0fd579b)",
+  "SourceAfter": "1f891b56 (subsequent production edits are comments only)",
+  "Environment": {
+    "Runtime": ".NET 10.0.13",
+    "OS": "Windows 10.0.26200",
+    "CPU": "Intel64 Family 6 Model 183 Stepping 1",
+    "DOTNET_TieredCompilation": "0",
+    "TieredPGO": "Not separately set; CLI prints runtime-default, tiered compilation disabled by the explicit environment setting."
+  },
+  "AssemblyIdentities": {
+    "before": [
+      {
+        "Algorithm": "SHA256",
+        "Hash": "5810E8257C4C487BC97568DDF2D2D5B09EAB9068F1564A8FD85BDA9E6D3AF914",
+        "Path": "D:\\code\\utf8regex\\src\\Lokad.Utf8Regex\\bin\\Release\\net10.0\\Lokad.Utf8Regex.dll"
+      },
+      {
+        "Algorithm": "SHA256",
+        "Hash": "B441E472C7E38DE1182F0A72F36BB926E29297D5072241483F2A11C0A031AEB8",
+        "Path": "D:\\code\\utf8regex\\src\\Lokad.Utf8Regex.Pcre2\\bin\\Release\\net10.0\\Lokad.Utf8Regex.Pcre2.dll"
+      },
+      {
+        "Algorithm": "SHA256",
+        "Hash": "B7FDD89AE54B4502C9EAC8C854CD757A91D2F0F4E53CE477260F26A32B36B3C2",
+        "Path": "D:\\code\\utf8regex\\bench\\Lokad.Utf8Regex.Benchmarks\\bin\\Release\\net10.0\\Lokad.Utf8Regex.Benchmarks.dll"
+      }
+    ],
+    "after": [
+      {
+        "Algorithm": "SHA256",
+        "Hash": "4447DF757CCECE396F7D0ADBA136596C2764DE7BD6021EB34946B92AFF258861",
+        "Path": "D:\\code\\utf8regex\\src\\Lokad.Utf8Regex\\bin\\Release\\net10.0\\Lokad.Utf8Regex.dll"
+      },
+      {
+        "Algorithm": "SHA256",
+        "Hash": "AE3816E37B9EC0B085D70F24FBDD0F90E531615C4FAD427A99055A1F604859DD",
+        "Path": "D:\\code\\utf8regex\\src\\Lokad.Utf8Regex.Pcre2\\bin\\Release\\net10.0\\Lokad.Utf8Regex.Pcre2.dll"
+      },
+      {
+        "Algorithm": "SHA256",
+        "Hash": "07B4F0B39E0FFC4E3D27F3FA6E998AD90321F2FFA85819DC3B8B8928AB018E5F",
+        "Path": "D:\\code\\utf8regex\\bench\\Lokad.Utf8Regex.Benchmarks\\bin\\Release\\net10.0\\Lokad.Utf8Regex.Benchmarks.dll"
+      }
+    ]
+  },
+  "Observations": [
+    {
+      "Phase": "before",
+      "Case": "literal",
+      "RawLog": "artifacts/s2-before-literal.log",
+      "LogSha256": "5416EF8595166C695432549CAE3C34B1ED9F362880AA0C53622F5A970D40CE97",
+      "Rows": [
+        {
+          "Name": "Pcre2Construct",
+          "MedianUs": 30.15,
+          "MinUs": 29.2,
+          "MaxUs": 316.925,
+          "AllocatedBytes": 38568
+        },
+        {
+          "Name": "Pcre2FirstIsMatch",
+          "MedianUs": 0.45,
+          "MinUs": 0.312,
+          "MaxUs": 13.8,
+          "AllocatedBytes": 0
+        },
+        {
+          "Name": "Pcre2FirstCount",
+          "MedianUs": 1.269,
+          "MinUs": 1.219,
+          "MaxUs": 14.369,
+          "AllocatedBytes": 0
+        }
+      ]
+    },
+    {
+      "Phase": "before",
+      "Case": "character",
+      "RawLog": "artifacts/s2-before-character.log",
+      "LogSha256": "178EE8C9B4BD585F4B181BB5704626D20D764EEEC2452538A257E3C099CD0FC5",
+      "Rows": [
+        {
+          "Name": "Pcre2Construct",
+          "MedianUs": 22.488,
+          "MinUs": 21.3,
+          "MaxUs": 162.831,
+          "AllocatedBytes": 32784
+        },
+        {
+          "Name": "Pcre2FirstCount",
+          "MedianUs": 42.394,
+          "MinUs": 41.212,
+          "MaxUs": 57.237,
+          "AllocatedBytes": 0
+        }
+      ]
+    },
+    {
+      "Phase": "before",
+      "Case": "public",
+      "RawLog": "artifacts/s2-before-public.log",
+      "LogSha256": "D0291412D91AD481699D52F6DE07C759C1AFCE40668A645BD7B48CAD29D05636",
+      "Rows": [
+        {
+          "Name": "Pcre2PublicCount",
+          "MedianUs": 90.518,
+          "MinUs": 69.394,
+          "MaxUs": 118.09
+        },
+        {
+          "Name": "Utf8Count",
+          "MedianUs": 509.039,
+          "MinUs": 452.657,
+          "MaxUs": 636.076
+        },
+        {
+          "Name": "DecodeCount",
+          "MedianUs": 367.485,
+          "MinUs": 334.773,
+          "MaxUs": 390.91
+        },
+        {
+          "Name": "PredecodedCount",
+          "MedianUs": 315.129,
+          "MinUs": 302.5,
+          "MaxUs": 356.836
+        }
+      ]
+    },
+    {
+      "Phase": "after",
+      "Case": "literal",
+      "RawLog": "artifacts/s2-after-literal.log",
+      "LogSha256": "C8035D59AD98D879419075B283968F783BBD6035D5353C6E593B905FCDD53DE4",
+      "Rows": [
+        {
+          "Name": "Pcre2Construct",
+          "MedianUs": 0.681,
+          "MinUs": 0.631,
+          "MaxUs": 17.075,
+          "AllocatedBytes": 2168
+        },
+        {
+          "Name": "Pcre2FirstIsMatch",
+          "MedianUs": 0.263,
+          "MinUs": 0.244,
+          "MaxUs": 9.475,
+          "AllocatedBytes": 0
+        },
+        {
+          "Name": "Pcre2FirstCount",
+          "MedianUs": 1.113,
+          "MinUs": 1.069,
+          "MaxUs": 11.662,
+          "AllocatedBytes": 0
+        }
+      ]
+    },
+    {
+      "Phase": "after",
+      "Case": "character",
+      "RawLog": "artifacts/s2-after-character.log",
+      "LogSha256": "AD70E8B4A412BF5162DE47D847D8D6EAC6455C76FCAF9D25DDD18447EA026600",
+      "Rows": [
+        {
+          "Name": "Pcre2Construct",
+          "MedianUs": 21.738,
+          "MinUs": 20.7,
+          "MaxUs": 41.9,
+          "AllocatedBytes": 32632
+        },
+        {
+          "Name": "Pcre2FirstCount",
+          "MedianUs": 39.925,
+          "MinUs": 38.444,
+          "MaxUs": 50.906,
+          "AllocatedBytes": 0
+        }
+      ]
+    },
+    {
+      "Phase": "after",
+      "Case": "public",
+      "RawLog": "artifacts/s2-after-public.log",
+      "LogSha256": "2491FF2DCD47CA7C4CB0C6017EF8A3023471E884301C5DD86BBE5E0DF6F33532",
+      "Rows": [
+        {
+          "Name": "Pcre2PublicCount",
+          "MedianUs": 41.288,
+          "MinUs": 41.046,
+          "MaxUs": 42.114
+        },
+        {
+          "Name": "Utf8Count",
+          "MedianUs": 351.605,
+          "MinUs": 311.156,
+          "MaxUs": 411.022
+        },
+        {
+          "Name": "DecodeCount",
+          "MedianUs": 252.428,
+          "MinUs": 232.486,
+          "MaxUs": 281.324
+        },
+        {
+          "Name": "PredecodedCount",
+          "MedianUs": 254.395,
+          "MinUs": 239.942,
+          "MaxUs": 299.371
+        }
+      ]
+    }
+  ],
+  "Limitations": [
+    "Tiny construction/first-call samples have wide first-sample ranges; no universal overhead or steady-state throughput guarantee.",
+    "Unchanged .NET controls moved substantially between batches; the lower public character Count median is not a demonstrated causal speedup. No observed public regression above the allowance, no confirmation required.",
+    "Character preparation retains its Core foundation. Literal matching runner and character implementation bodies are unchanged.",
+    "Finite policies are functionally tested; this observation does not measure finite-limit overhead, update benchmark Status, qualify packages or reopen checked-access work."
+  ]
+}

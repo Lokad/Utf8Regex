@@ -1,0 +1,14 @@
+[
+  {
+    "File": "src/Lokad.Utf8Regex.Pcre2/Pcre2LiteralCompiler.cs",
+    "Region": "internal static class Pcre2LiteralRunner",
+    "BodiesEqual": true,
+    "Sha256": "13ac9795791cc96a7be6a96f7ba0b84daad8e8bc95b9ab77bc569884d89e0072"
+  },
+  {
+    "File": "src/Lokad.Utf8Regex.Pcre2/Pcre2CharacterCompiler.cs",
+    "Region": "Entire file",
+    "BodiesEqual": true,
+    "Sha256": "72a79378261316b705ada6b3ca29fb6279c776bf153f50833f9e3540fea8a27d"
+  }
+]

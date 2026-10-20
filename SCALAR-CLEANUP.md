@@ -8,7 +8,7 @@ source is 0.4.0-rc.2-dev. Coverage/gate statements below describe that historica
 checkpoint; common public construction controls have since landed. Original
 receipts retain their revisions and are not requalified by this page.
 The matching contract is complete Unicode scalars over strictly validated UTF-8;
-byte coordinates are primary. This report describes current source and executable
+byte coordinates are primary. This report describes source at that checkpoint and executable
 checks, rather than treating the absence of a name as proof of semantic coverage.
 
 ## Retired mechanisms
@@ -38,7 +38,7 @@ release. Core's array-release helper stays because UTF-8 result rendering consum
 it. These deletions change no live method body, public contract, resource admission
 or ownership rule; no package matrix or live-path timing is repeated.
 
-| Mechanism | Current evidence |
+| Mechanism | Evidence at that checkpoint |
 | --- | --- |
 | Production BCL matching/results | `EngineDependencyInventoryTests` checks shipped source for Regex construction/member execution and consumed core types for Regex/Match/Group/Capture owners. PythonRe's managed descriptor and BCL value enumerators are absent. RegexOptions, timeout exceptions/constants and Regex.Escape are compatibility utilities; tests/benchmarks retain overlapping comparators. |
 | Whole-subject decoded fallback owner | `Utf8DecodedInput`, decoded storage fields/getters and string-alias leases are absent from consumed core; dependency/compilation architecture tests pin their retirement. General fallback, native verification and compiled consumers execute the admitted owned scalar program. |

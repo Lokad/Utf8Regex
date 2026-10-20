@@ -1,0 +1,15 @@
+{
+  "Syntax": "test.ps1/bench.ps1/test-packaged-common.ps1 parsed",
+  "Probe": "Disposable real .NET executable through copied bench.ps1",
+  "Passed": [
+    "Combined redirected stdout/stderr",
+    "Literal dollar/space/quote arguments",
+    "Exit code 0 and 7",
+    "One-second outer cap exit124",
+    "Descendant termination",
+    "Actual production inspection redirection",
+    "Actual Release focused test script"
+  ],
+  "InitialHarnessFailure": "Probe changed caller location; harness paths corrected to absolute paths.",
+  "NoPackageQualification": true
+}
