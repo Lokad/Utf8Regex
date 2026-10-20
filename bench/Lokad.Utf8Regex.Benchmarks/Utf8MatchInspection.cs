@@ -1,10 +1,112 @@
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Planning;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Benchmarks;
 
 internal static class Utf8MatchInspection
 {
+    public static bool DebugTryMatchCompiledAsciiLiteralFamilyRaw(
+        this Utf8Regex.Utf8RegexInspection inspection, ReadOnlySpan<byte> input, out int index, out int matchedByteLength)
+    {
+        var runtime = GetLiteralRuntime(inspection);
+        if (runtime is null || !runtime.CanProjectLiteralFamilyAsAscii(input))
+        {
+            index = -1;
+            matchedByteLength = 0;
+            return false;
+        }
+        if (!runtime._usesRightToLeft &&
+            runtime._smallAsciiLiteralFamilyPrimitive is { } primitive &&
+            primitive.TryFindFirst(input, out index, out matchedByteLength))
+            return true;
+        if (!runtime._usesRightToLeft &&
+            runtime._smallAsciiLiteralFamily is { } smallFamily &&
+            runtime._smallAsciiLiteralFamilyFirstBytes.Count > 0 &&
+            Utf8LiteralCompiledEngineRuntime.TryFindNextSmallAsciiLiteralFamily(input, 0, smallFamily,
+                runtime._smallAsciiLiteralFamilyFirstBytes, out index, out matchedByteLength))
+            return true;
+        if (!runtime._usesRightToLeft &&
+            runtime._emittedLiteralFamilyCounter is { } emitted &&
+            emitted.TryMatch(input, out index, out matchedByteLength))
+            return true;
+
+        PreparedSearchMatch match;
+        if (runtime._usesRightToLeft)
+        {
+            if (!Utf8SearchExecutor.TryFindLastMatch(inspection.SearchPlan, input, input.Length, out match))
+            {
+                index = -1;
+                matchedByteLength = 0;
+                return false;
+            }
+        }
+        else if (!Utf8SearchExecutor.TryFindNextMatch(inspection.SearchPlan, input, 0, out match))
+        {
+            index = -1;
+            matchedByteLength = 0;
+            return false;
+        }
+        index = match.Index;
+        matchedByteLength = match.Length;
+        return index >= 0;
+    }
+
+    public static bool DebugTryIsMatchLiteralFamily(
+        this Utf8Regex.Utf8RegexInspection inspection, ReadOnlySpan<byte> input, out bool isMatch)
+    {
+        var runtime = GetLiteralRuntime(inspection);
+        if (runtime is null || runtime._usesRightToLeft ||
+            inspection.ExecutionKind is not (NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals))
+        {
+            isMatch = false;
+            return false;
+        }
+        isMatch = runtime.IsMatchLiteralFamily(input, Utf8ExecutionDeadline.Infinite, rightToLeft: false);
+        return true;
+    }
+
+    public static bool DebugTryIsMatchExactLiteral(
+        this Utf8Regex.Utf8RegexInspection inspection, ReadOnlySpan<byte> input, out bool isMatch)
+    {
+        var runtime = GetLiteralRuntime(inspection);
+        if (runtime is null || runtime._usesRightToLeft ||
+            inspection.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal))
+        {
+            isMatch = false;
+            return false;
+        }
+        isMatch = runtime.FindFirstLiteralViaSearch(input, Utf8ExecutionDeadline.Infinite) >= 0;
+        return true;
+    }
+
+    public static bool DebugTryMatchExactLiteral(
+        this Utf8Regex.Utf8RegexInspection inspection, ReadOnlySpan<byte> input, out Utf8ValueMatch match)
+    {
+        var runtime = GetLiteralRuntime(inspection);
+        if (runtime is null || runtime._usesRightToLeft)
+        {
+            match = Utf8ValueMatch.NoMatch;
+            return false;
+        }
+        match = inspection.ExecutionKind switch
+        {
+            NativeExecutionKind.ExactAsciiLiteral => runtime.MatchExactAsciiLiteral(input, Utf8ExecutionDeadline.Infinite, rightToLeft: false),
+            NativeExecutionKind.ExactUtf8Literal => runtime.MatchExactUtf8Literal(input, Utf8ExecutionDeadline.Infinite, rightToLeft: false),
+            _ => Utf8ValueMatch.NoMatch,
+        };
+        return inspection.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal;
+    }
+
+    private static Utf8LiteralCompiledEngineRuntime? GetLiteralRuntime(Utf8Regex.Utf8RegexInspection inspection)
+        => inspection.CompiledRuntime switch
+        {
+            Utf8LiteralCompiledEngineRuntime direct => direct,
+            Utf8ExactLiteralCompiledEngineRuntime exact => exact.Inner,
+            Utf8LiteralFamilyCompiledEngineRuntime family => family.Inner,
+            _ => null,
+        };
+
     // Alternative Count probes belong to benchmark tooling. Production keeps its
     // selected kernels; these probes reuse existing prepared metadata and bodies.
     public static bool DebugTryCountExactUtf8LiteralValidatedThreeByte(

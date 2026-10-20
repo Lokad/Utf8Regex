@@ -2,9 +2,11 @@
 
 ## Development scalar.116: benchmark Count probes
 
-Move four alternative literal Count probes out of the shipped diagnostic/runtime
-layers into benchmark tooling. They call the unchanged production counting
-kernels through existing prepared metadata and friend access. Matching algorithms,
+Move alternative literal Count and match probes out of the shipped diagnostic/runtime
+layers into benchmark tooling; delete their shipped inspection dispatcher. They call
+unchanged production kernels through existing metadata and friend access. One
+internal read-only runtime accessor replaces the shipped replay/dispatch layers;
+it adds no retained state or public API. Matching algorithms,
 scalar semantics, resource accounting, interruption and public API are unchanged.
 Retain borrowed-view boundary coverage after rejecting a shorter two-byte span
 search whose public-operation regressions exceeded the 10% allowance; the

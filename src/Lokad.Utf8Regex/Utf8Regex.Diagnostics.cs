@@ -107,21 +107,6 @@ public sealed partial class Utf8Regex
     }
 
 
-    private bool DebugTryIsMatchLiteralFamily(ReadOnlySpan<byte> input, out bool isMatch)
-    {
-        return _compiledEngineRuntime.TryDebugIsMatchLiteralFamily(input, out isMatch);
-    }
-
-    private bool DebugTryIsMatchExactLiteral(ReadOnlySpan<byte> input, out bool isMatch)
-    {
-        return _compiledEngineRuntime.TryDebugIsMatchExactLiteral(input, out isMatch);
-    }
-
-    private bool DebugTryMatchExactLiteral(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
-    {
-        return _compiledEngineRuntime.TryDebugMatchExactLiteral(input, out match);
-    }
-
 
 
 
@@ -174,11 +159,6 @@ public sealed partial class Utf8Regex
     private int DebugCountViaCompiledEngineWithCreatedBudget(ReadOnlySpan<byte> input)
     {
         return CountViaCompiledEngine(input, default, CreateExecutionBudget());
-    }
-
-    private bool DebugTryMatchCompiledAsciiLiteralFamilyRaw(ReadOnlySpan<byte> input, out int index, out int matchedLength)
-    {
-        return _compiledEngineRuntime.TryDebugMatchAsciiLiteralFamilyRaw(input, out index, out matchedLength);
     }
 
     private bool DebugTryMatchDirectAnchoredFixedLengthSimplePattern(ReadOnlySpan<byte> input, out int matchedLength)
@@ -416,6 +396,10 @@ public sealed partial class Utf8Regex
 
         public Utf8CompiledEngineKind CompiledEngineKind => _owner.CompiledEngineKind;
 
+        // Friend tooling borrows the existing runtime; no replay or extra owner
+        // is retained in the shipped matcher.
+        internal Utf8CompiledEngineRuntime CompiledRuntime => _owner._compiledEngineRuntime;
+
         public Utf8CompiledExecutionBackend CompiledExecutionBackend => _owner.CompiledExecutionBackend;
 
         public string DebugCompiledEngineRuntimeType => _owner.DebugCompiledEngineRuntimeType;
@@ -479,15 +463,6 @@ public sealed partial class Utf8Regex
         public bool DebugTryCountSelectedKernelWithoutValidation(ReadOnlySpan<byte> input, out int count) =>
             _owner.DebugTryCountSelectedKernelWithoutValidation(input, out count);
 
-        public bool DebugTryIsMatchLiteralFamily(ReadOnlySpan<byte> input, out bool isMatch) =>
-            _owner.DebugTryIsMatchLiteralFamily(input, out isMatch);
-
-        public bool DebugTryIsMatchExactLiteral(ReadOnlySpan<byte> input, out bool isMatch) =>
-            _owner.DebugTryIsMatchExactLiteral(input, out isMatch);
-
-        public bool DebugTryMatchExactLiteral(ReadOnlySpan<byte> input, out Utf8ValueMatch match) =>
-            _owner.DebugTryMatchExactLiteral(input, out match);
-
         public Utf8ValueMatch DebugMatchViaCompiledEngine(
             ReadOnlySpan<byte> input,
             Utf8ValidationResult validation) =>
@@ -531,12 +506,6 @@ public sealed partial class Utf8Regex
 
         public int DebugCountViaCompiledEngineWithCreatedBudget(ReadOnlySpan<byte> input) =>
             _owner.DebugCountViaCompiledEngineWithCreatedBudget(input);
-
-        public bool DebugTryMatchCompiledAsciiLiteralFamilyRaw(
-            ReadOnlySpan<byte> input,
-            out int index,
-            out int matchedLength) =>
-            _owner.DebugTryMatchCompiledAsciiLiteralFamilyRaw(input, out index, out matchedLength);
 
         public bool DebugTryMatchDirectAnchoredFixedLengthSimplePattern(
             ReadOnlySpan<byte> input,

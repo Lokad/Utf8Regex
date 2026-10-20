@@ -139,18 +139,6 @@ internal abstract class Utf8CompiledEngineRuntime
         return false;
     }
 
-    public bool TryDebugMatchAsciiLiteralFamilyRaw(ReadOnlySpan<byte> input, out int index, out int matchedByteLength)
-        => Utf8CompiledRuntimeInspection.TryMatchAsciiLiteralFamily(this, input, out index, out matchedByteLength);
-
-    public bool TryDebugIsMatchLiteralFamily(ReadOnlySpan<byte> input, out bool isMatch)
-        => Utf8CompiledRuntimeInspection.TryIsMatchLiteralFamily(this, input, out isMatch);
-
-    public bool TryDebugIsMatchExactLiteral(ReadOnlySpan<byte> input, out bool isMatch)
-        => Utf8CompiledRuntimeInspection.TryIsMatchExactLiteral(this, input, out isMatch);
-
-    public bool TryDebugMatchExactLiteral(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
-        => Utf8CompiledRuntimeInspection.TryMatchExactLiteral(this, input, out match);
-
     public static Utf8CompiledEngineRuntime Create(Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime, RegexOptions options)
     {
         return Create(Utf8CompiledEngineSelector.Select(regexPlan), regexPlan, verifierRuntime, options);
