@@ -1,0 +1,19 @@
+{
+  "databaseId": 39390290313,
+  "headSha": "e5e24f68b0c3902fb2a0c21e41239bb6148897e8",
+  "status": "completed",
+  "conclusion": "success",
+  "url": "https://github.com/Lokad/Utf8Regex/actions/runs/39390290313",
+  "jobs": [
+    {
+      "name": "tests (windows-latest)",
+      "conclusion": "success",
+      "completedAt": "2026-10-20T08:05:38Z"
+    },
+    {
+      "name": "tests (ubuntu-latest)",
+      "conclusion": "success",
+      "completedAt": "2026-10-20T08:04:30Z"
+    }
+  ]
+}

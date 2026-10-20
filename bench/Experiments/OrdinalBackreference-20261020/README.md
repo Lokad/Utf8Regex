@@ -87,4 +87,5 @@ A separate next lead is that Count retries starts ruled out by a mandatory initi
 RTL strict-end anchor. Its proof must preserve terminal authority, start floors,
 empty/scalar/capture and soft/multiline/alternation behavior. No change or speedup
 is claimed for it here. It does not reopen this closed span-comparison prototype.
-Source/test CI follows separately; the original broad R01–R10 goal remains active.
+Source/test `e5e24f68` [CI39390290313](ci.json) is terminal green on Windows/Linux,
+closed; do not repoll. The original broad R01–R10 goal remains active.
