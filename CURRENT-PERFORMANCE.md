@@ -11,6 +11,11 @@ The [second cleanup observation](bench/Experiments/SecondSimplification-20261020
 has a separate, bounded local construction/public-operation scope. The completed
 checked-access campaign and historical benchmark decisions remain closed.
 
+The [sixth-review cleanup receipt](bench/Experiments/SixthReview-20261020/README.md)
+records a bounded source comparison separately. Frozen RC1 is unpublished and its
+PCRE2 bytes have known defects; original package and benchmark evidence stays
+historical. This page does not qualify the development engine for release.
+
 ## Frozen scalar.119 package costs
 
 The observations below apply to **Core/PythonRe scalar.119**, producer `ca0c8a6f`.

@@ -15,11 +15,11 @@ public sealed partial class Utf8PythonRegex
         return IsMatchCore(input, startOffsetInBytes, CancellationToken.None);
     }
 
-    /// <summary>Tests for a match at or after a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>
+    /// <summary>Tests for a match at or after a zero-based UTF-8 byte offset, observing cancellation during validation, matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
     public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -53,11 +53,11 @@ public sealed partial class Utf8PythonRegex
         return MatchValueScalar(input, startOffsetInBytes, 0, cancellationToken);
     }
 
-    /// <summary>Finds the first match at or after a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>
+    /// <summary>Finds the first match at or after a zero-based UTF-8 byte offset, observing cancellation during validation, matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
     public Utf8PythonValueMatch Search(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -88,11 +88,11 @@ public sealed partial class Utf8PythonRegex
         return MatchValueScalar(input, startOffsetInBytes, 1, cancellationToken);
     }
 
-    /// <summary>Matches exactly at a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>
+    /// <summary>Matches exactly at a zero-based UTF-8 byte offset, observing cancellation during validation, matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
     public Utf8PythonValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -127,11 +127,11 @@ public sealed partial class Utf8PythonRegex
         return MaterializeNativeMatchValue(input, startOffsetInBytes, kind, ref invocation);
     }
 
-    /// <summary>Matches the complete UTF-8 suffix beginning at a zero-based byte offset, observing cancellation before matching begins.</summary>
+    /// <summary>Matches the complete UTF-8 suffix beginning at a zero-based byte offset, observing cancellation during validation, matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
     public Utf8PythonValueMatch FullMatch(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -177,11 +177,11 @@ public sealed partial class Utf8PythonRegex
         finally { cursor.Dispose(); }
     }
 
-    /// <summary>Counts non-overlapping matches at or after a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>
+    /// <summary>Counts non-overlapping matches at or after a zero-based UTF-8 byte offset, observing cancellation during validation, matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
     public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();

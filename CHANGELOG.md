@@ -28,6 +28,10 @@ These changes are development source; the frozen 0.4.0-rc.1 artifacts are unchan
 
 ## 0.4.0-rc.1
 
+Frozen and unpublished. Review found PCRE2 grammar/construction defects; do not
+publish those PCRE2 bytes. A corrected release requires a fresh immutable candidate
+and final qualification. The notes below describe the original staged migration.
+
 This prerelease moves all three packages to one common version. PythonRe and
 PCRE2 each depend on exactly `Lokad.Utf8Regex [0.4.0-rc.1]`. It is a breaking
 semantic and host-integration change from the earlier UTF-16-oriented release.

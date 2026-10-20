@@ -20,12 +20,12 @@ public sealed partial class Utf8PythonRegex
         return values;
     }
 
-    /// <summary>Splits after a zero-based UTF-8 byte offset and returns strings and captures, observing cancellation before matching begins.</summary>
+    /// <summary>Splits after a zero-based UTF-8 byte offset and returns strings and captures, observing cancellation during validation, matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="maxSplit">The maximum number of splits to perform.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
     public string?[] SplitToStrings(ReadOnlySpan<byte> input, int maxSplit, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -48,12 +48,12 @@ public sealed partial class Utf8PythonRegex
         return items;
     }
 
-    /// <summary>Performs a detailed split after a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>
+    /// <summary>Performs a detailed split after a zero-based UTF-8 byte offset, observing cancellation during validation, matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="maxSplit">The maximum number of splits to perform.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
     public Utf8PythonSplitItem[] SplitDetailed(ReadOnlySpan<byte> input, int maxSplit, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();

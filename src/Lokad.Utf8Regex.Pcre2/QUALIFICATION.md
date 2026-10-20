@@ -85,7 +85,15 @@ add the following construction behavior:
   growth overlap before allocation. AST/maps/metadata use a conservative 256-byte
   charge per UTF-16 pattern character, plus 256 bytes per name entry for each
   lowerer's own lookup. Shared storage can be charged again; earlier refusal is
-  intentional. Character-parser and whole-heap exclusions remain separate.
+  intentional. Whole-heap exclusions remain separate.
+- Character tokens and class/property storage now share major-buffer admission,
+  instruction capacity and bounded interruption, including single-token parsing
+  from the backtracking compiler. Character programs omit unused Core preparation
+  and syntax-node/offset vectors; literal Rune staging is temporary.
+- Final compilation requires an owned PCRE2 semantic parse. Unrestricted Core
+  grammar acceptance and its direct executor are removed; undocumented .NET
+  escape/property/balancing extensions now refuse construction. Shared Core fast
+  paths remain behind profile parse and eligibility proofs.
 - General contextual bounds/flags/escape checks replace fixture-spelling checks.
   A final all-declined program throws `NotSupportedException` during construction.
   Empty intermediate foundations still support actual profile compilers.

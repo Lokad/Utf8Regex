@@ -148,13 +148,13 @@ public sealed partial class Utf8PythonRegex
         return SubnTemplateCore(input, replacement, count, startOffsetInBytes, CancellationToken.None).ResultBytes;
     }
 
-    /// <summary>Replaces matches after a byte offset and returns owned UTF-8 bytes, observing cancellation before matching begins.</summary>
+    /// <summary>Replaces matches after a byte offset and returns owned UTF-8 bytes, observing cancellation during validation, matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="replacement">The replacement text.</param>
     /// <param name="count">The maximum number of replacements to perform.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -175,13 +175,13 @@ public sealed partial class Utf8PythonRegex
         return SubnToStringTemplateCore(input, replacement, count, startOffsetInBytes, CancellationToken.None).ResultText;
     }
 
-    /// <summary>Replaces matches after a byte offset and returns a string, observing cancellation before matching begins.</summary>
+    /// <summary>Replaces matches after a byte offset and returns a string, observing cancellation during validation, matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="replacement">The replacement text.</param>
     /// <param name="count">The maximum number of replacements to perform.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -223,13 +223,13 @@ public sealed partial class Utf8PythonRegex
         return scalarResult;
     }
 
-    /// <summary>Replaces matches after a byte offset and returns the string plus count, observing cancellation before matching begins.</summary>
+    /// <summary>Replaces matches after a byte offset and returns the string plus count, observing cancellation during validation, matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="replacement">The replacement text.</param>
     /// <param name="count">The maximum number of replacements to perform.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
     public Utf8PythonSubnResult SubnToString(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -270,13 +270,13 @@ public sealed partial class Utf8PythonRegex
         return scalarResult;
     }
 
-    /// <summary>Replaces matches after a byte offset and returns UTF-8 bytes plus count, observing cancellation before matching begins.</summary>
+    /// <summary>Replaces matches after a byte offset and returns UTF-8 bytes plus count, observing cancellation during validation, matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="replacement">The replacement text.</param>
     /// <param name="count">The maximum number of replacements to perform.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
     public Utf8PythonSubnUtf8Result Subn(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -307,15 +307,15 @@ public sealed partial class Utf8PythonRegex
         return Subn(input, state, evaluator, count, startOffsetInBytes).ResultBytes;
     }
 
-    /// <summary>Replaces matches after a byte offset with a stateful string evaluator, observing cancellation before matching begins.</summary>
+    /// <summary>Replaces matches after a byte offset with a stateful string evaluator, observing cancellation during validation, matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="state">Additional state passed to the evaluator.</param>
     /// <param name="evaluator">The callback invoked for each match.</param>
     /// <param name="count">The maximum number of replacements to perform.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <typeparam name="TState">The type of additional state passed to the evaluator.</typeparam>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
     public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonMatchEvaluator<TState> evaluator, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -346,15 +346,15 @@ public sealed partial class Utf8PythonRegex
         return SubnToString(input, state, evaluator, count, startOffsetInBytes).ResultText;
     }
 
-    /// <summary>Replaces matches after a byte offset with a stateful evaluator and returns a string, observing cancellation before matching begins.</summary>
+    /// <summary>Replaces matches after a byte offset with a stateful evaluator and returns a string, observing cancellation during validation, matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="state">Additional state passed to the evaluator.</param>
     /// <param name="evaluator">The callback invoked for each match.</param>
     /// <param name="count">The maximum number of replacements to perform.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <typeparam name="TState">The type of additional state passed to the evaluator.</typeparam>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
     public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonMatchEvaluator<TState> evaluator, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -401,15 +401,15 @@ public sealed partial class Utf8PythonRegex
         return scalarResult;
     }
 
-    /// <summary>Evaluates replacements after a byte offset and returns the string plus count, observing cancellation before matching begins.</summary>
+    /// <summary>Evaluates replacements after a byte offset and returns the string plus count, observing cancellation during validation, matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="state">Additional state passed to the evaluator.</param>
     /// <param name="evaluator">The callback invoked for each match.</param>
     /// <param name="count">The maximum number of replacements to perform.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <typeparam name="TState">The type of additional state passed to the evaluator.</typeparam>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
     public Utf8PythonSubnResult SubnToString<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonMatchEvaluator<TState> evaluator, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -456,15 +456,15 @@ public sealed partial class Utf8PythonRegex
         return scalarResult;
     }
 
-    /// <summary>Evaluates string replacements after a byte offset and returns UTF-8 bytes plus count, observing cancellation before matching begins.</summary>
+    /// <summary>Evaluates string replacements after a byte offset and returns UTF-8 bytes plus count, observing cancellation during validation, matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="state">Additional state passed to the evaluator.</param>
     /// <param name="evaluator">The callback invoked for each match.</param>
     /// <param name="count">The maximum number of replacements to perform.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <typeparam name="TState">The type of additional state passed to the evaluator.</typeparam>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
     public Utf8PythonSubnUtf8Result Subn<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonMatchEvaluator<TState> evaluator, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -495,15 +495,15 @@ public sealed partial class Utf8PythonRegex
         return Subn(input, state, evaluator, count, startOffsetInBytes).ResultBytes;
     }
 
-    /// <summary>Replaces matches after a byte offset with a stateful UTF-8 evaluator, observing cancellation before matching begins.</summary>
+    /// <summary>Replaces matches after a byte offset with a stateful UTF-8 evaluator, observing cancellation during validation, matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="state">Additional state passed to the evaluator.</param>
     /// <param name="evaluator">The callback invoked for each match.</param>
     /// <param name="count">The maximum number of replacements to perform.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <typeparam name="TState">The type of additional state passed to the evaluator.</typeparam>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
     public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonUtf8MatchEvaluator<TState> evaluator, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -550,15 +550,15 @@ public sealed partial class Utf8PythonRegex
         return scalarResult;
     }
 
-    /// <summary>Evaluates UTF-8 replacements after a byte offset and returns bytes plus count, observing cancellation before matching begins.</summary>
+    /// <summary>Evaluates UTF-8 replacements after a byte offset and returns bytes plus count, observing cancellation during validation, matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="state">Additional state passed to the evaluator.</param>
     /// <param name="evaluator">The callback invoked for each match.</param>
     /// <param name="count">The maximum number of replacements to perform.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <typeparam name="TState">The type of additional state passed to the evaluator.</typeparam>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
+    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
     public Utf8PythonSubnUtf8Result Subn<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonUtf8MatchEvaluator<TState> evaluator, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();

@@ -1,7 +1,8 @@
 # Resource controls and host ownership
 
-This is the **0.4.0-rc.1** host contract for Core, PythonRe and the managed
-PCRE2 adapter. Both adapters require exactly the same Core version. The controls
+This is the development **0.4.0-rc.2-dev** host contract for Core, PythonRe and
+the managed PCRE2 adapter. Frozen RC1 remains unpublished; its PCRE2 bytes have
+known defects and require replacement before release. Both adapters require exactly the same Core version. The controls
 below are enforceable within their documented modeled scope, not a total
 managed-heap/RSS or application-containment guarantee. Defaults remain unlimited.
 

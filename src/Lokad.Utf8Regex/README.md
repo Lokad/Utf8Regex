@@ -1,6 +1,8 @@
 # Lokad.Utf8Regex
 
-**0.4.0-rc.1**, .NET 10. Regular expressions over strict UTF-8
+Development source; a fresh package candidate has not been qualified. The frozen **0.4.0-rc.1** artifacts are unpublished and have known PCRE2 defects; **do not publish those PCRE2 bytes**. A corrected release needs a new immutable candidate.
+
+**0.4.0-rc.2-dev**, .NET 10. Regular expressions over strict UTF-8
 `ReadOnlySpan<byte>` / `Span<byte>`, matching Unicode scalars with primary byte
 coordinates. Dot matches 😀 once across four bytes. UTF-16 coordinates and
 string APIs are derived interoperability conveniences.
@@ -33,7 +35,7 @@ valid after advance/failure/disposal. Copied value cursors retain independent
 positions while sharing allowance/deadline. A host must separately account for
 retained results and its own storage.
 
-Optional `Lokad.Utf8Regex.PythonRe` and `Lokad.Utf8Regex.Pcre2` **0.4.0-rc.1**
+Optional `Lokad.Utf8Regex.PythonRe` and `Lokad.Utf8Regex.Pcre2` **0.4.0-rc.2-dev**
 require exactly this Core version. Both are managed profile adapters with explicit
 compatibility boundaries; no native PCRE2 binary is shipped.
 

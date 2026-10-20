@@ -137,10 +137,6 @@ public sealed partial class Utf8Pcre2Regex
             : new Pcre2Utf8ProgramSlot(utf8Regex);
         var direct = Pcre2NoDirectProgram.Instance;
         var operations = new Pcre2OperationPrograms(direct, direct, direct, direct, direct);
-        var groupNames = utf8Regex?.GetGroupNames() ?? ["0"];
-        var nameEntries = utf8Regex is not null
-            ? GetUtf8RegexNameEntries(utf8Regex)
-            : [];
         return new Pcre2CompiledProgram(
             request,
             primaryUtf8,
@@ -148,8 +144,8 @@ public sealed partial class Utf8Pcre2Regex
             default,
             Pcre2PartialProbeProgram.None,
             Pcre2LegacySyntaxTree.Instance,
-            groupNames,
-            nameEntries);
+            ["0"],
+            []);
     }
 
     /// <summary>Compiles a well-formed UTF-8 PCRE2 pattern with default options, settings, limits, and timeout.</summary>
@@ -1243,20 +1239,6 @@ public sealed partial class Utf8Pcre2Regex
         }
 
         return regexOptions;
-    }
-
-    private static Pcre2NameEntry[] GetUtf8RegexNameEntries(Utf8Regex regex)
-    {
-        return regex
-            .GetGroupNames()
-            .Select((name, index) => (name, index))
-            .Where(static pair => !int.TryParse(pair.name, out _))
-            .Select(static pair => new Pcre2NameEntry
-            {
-                Name = pair.name,
-                Number = pair.index,
-            })
-            .ToArray();
     }
 
     private bool TryReplaceUsingLiteralDriver(

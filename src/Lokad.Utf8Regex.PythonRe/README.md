@@ -1,7 +1,9 @@
 # Lokad.Utf8Regex.PythonRe
 
-**0.4.0-rc.1**, .NET 10. A managed Python `re`-style adapter over strict UTF-8
-Unicode scalars, requiring exactly `Lokad.Utf8Regex [0.4.0-rc.1]`. It can coexist
+Development source; a fresh package candidate has not been qualified. The frozen **0.4.0-rc.1** artifacts are unpublished and have known PCRE2 defects; **do not publish those PCRE2 bytes**. A corrected release needs a new immutable candidate.
+
+**0.4.0-rc.2-dev**, .NET 10. A managed Python `re`-style adapter over strict UTF-8
+Unicode scalars, requiring exactly `Lokad.Utf8Regex [0.4.0-rc.2-dev]`. It can coexist
 with the PCRE2 adapter at the same version. No Python runtime or BCL regex matcher
 is a shipped implementation dependency.
 

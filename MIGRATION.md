@@ -1,10 +1,10 @@
-# Migrating to 0.4.0-rc.1
+# Migrating to the Unicode-scalar 0.4 line
 
 Upgrade `Lokad.Utf8Regex`, `Lokad.Utf8Regex.PythonRe` and
 `Lokad.Utf8Regex.Pcre2` together when using more than one package. Both adapters
-require exactly Core `[0.4.0-rc.1]`. Previous private scalar candidates with
+require exactly the same Core version (currently `[0.4.0-rc.2-dev]` in development). Previous private scalar candidates with
 incompatible exact Core pins cannot be combined by overriding dependencies.
-All packages target .NET 10; this is a prerelease.
+All packages target .NET 10. Development has no freshly qualified package candidate; frozen RC1 is unpublished and its PCRE2 bytes must not be published.
 
 ## Match scalars and use byte coordinates
 
