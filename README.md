@@ -1,5 +1,12 @@
 # Lokad.Utf8Regex
 
+Private **Core/PythonRe scalar.116 preparation is pending**. This coherent source
+boundary completes diagnostic replay retirement and includes the accepted eager
+string-findall checkpoint simplification (one fewer modeled step per result on
+that route). Matching, original interruption, admission and cursor/result contracts
+remain. Exact package, downstream, platform and current-cost gates are pending;
+immutable115 remains READY. [Preparation](artifacts/core-python-scalar116-20261020/PREPARATION.md). No publication or PCRE116.
+
 Private **Core/PythonRe 0.4.0-scalar.115**, producera335e8ba, is READY.
 The same actual DLLs pass Windows/Linux suites, original Awk/Lython public
 assertions, Unicode fixtures and exact identity/member/symbol gates. It batches
