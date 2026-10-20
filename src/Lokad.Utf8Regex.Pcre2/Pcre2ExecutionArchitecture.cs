@@ -66,6 +66,12 @@ internal static class Pcre2Compiler
         }
 
         var program = foundationProgramFactory(request);
+        if (program.Operations.IsMatch is Pcre2NoDirectProgram &&
+            program.Operations.Count is Pcre2NoDirectProgram &&
+            program.Operations.Enumerate is Pcre2NoDirectProgram &&
+            program.Operations.Match is Pcre2NoDirectProgram &&
+            program.Operations.Replace is Pcre2NoDirectProgram)
+            throw new NotSupportedException("The pattern has no executable backend in the managed PCRE2 profile.");
         Pcre2ProgramInvariant.Validate(program);
         return program;
     }

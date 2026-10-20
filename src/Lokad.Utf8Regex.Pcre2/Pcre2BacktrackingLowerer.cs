@@ -1,4 +1,5 @@
 using System.Buffers;
+using Lokad.Utf8Regex.Internal;
 using System.Text;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
@@ -9,11 +10,11 @@ namespace Lokad.Utf8Regex.Pcre2;
 // PLAN.md D09: backtracking lowerer, split from the compiler collection along the lowering ownership boundary.
 internal sealed class Pcre2BacktrackingLowerer
 {
-    private readonly List<Pcre2BacktrackingInstruction> _instructions = [];
-    private readonly List<Pcre2BacktrackingProgram> _assertionPrograms = [];
-    private readonly List<Pcre2BackreferenceSlotSet> _backreferenceSlotSets = [];
-    private readonly List<Pcre2BacktrackingCondition> _conditions = [];
-    private readonly List<string> _markNames = [];
+    private readonly Utf8ConstructionBuffer<Pcre2BacktrackingInstruction> _instructions = new(Utf8ConstructionScope.CurrentBudget, true);
+    private readonly Utf8ConstructionBuffer<Pcre2BacktrackingProgram> _assertionPrograms = new(Utf8ConstructionScope.CurrentBudget, false);
+    private readonly Utf8ConstructionBuffer<Pcre2BackreferenceSlotSet> _backreferenceSlotSets = new(Utf8ConstructionScope.CurrentBudget, false);
+    private readonly Utf8ConstructionBuffer<Pcre2BacktrackingCondition> _conditions = new(Utf8ConstructionScope.CurrentBudget, false);
+    private readonly Utf8ConstructionBuffer<string> _markNames = new(Utf8ConstructionScope.CurrentBudget, false);
     private readonly Dictionary<string, int> _markNameIds = new(StringComparer.Ordinal);
     private readonly int _captureCount;
     private readonly Pcre2NameEntry[] _nameEntries;
@@ -39,6 +40,11 @@ internal sealed class Pcre2BacktrackingLowerer
         Pcre2CompileRequest request,
         string[] groupNames)
     {
+        // Every nested assertion lowerer builds its own name-slot lookup. Admit
+        // that repeated major metadata before LINQ acquires its tables/arrays.
+        var budget = Utf8ConstructionScope.CurrentBudget;
+        budget.ChargeWork((ulong)nameEntries.Length);
+        budget.ReserveBytes(checked((ulong)nameEntries.Length * 256));
         _captureCount = captureCount;
         _nameEntries = nameEntries;
         _captureDefinitions = captureDefinitions;
@@ -59,7 +65,7 @@ internal sealed class Pcre2BacktrackingLowerer
         var subroutineTargets = Array.Empty<int>();
         if (_hasSubroutineCalls)
         {
-            subroutineTargets = new int[_captureCount + 1];
+            subroutineTargets = Utf8ConstructionScope.CurrentBudget.AllocateArray<int>(_captureCount + 1, false);
             subroutineTargets.AsSpan().Fill(-1);
             subroutineTargets[0] = _instructions.Count;
             EmitNode(root, null);
@@ -73,7 +79,7 @@ internal sealed class Pcre2BacktrackingLowerer
         }
 
         return new Pcre2BacktrackingProgram(
-            [.. _instructions],
+            _instructions.Take(),
             _request,
             _repeatCount,
             _captureCount + 1,
@@ -86,11 +92,11 @@ internal sealed class Pcre2BacktrackingLowerer
             SuppressesUnresetEmptyMatches(root),
             Pcre2BacktrackingAnalysis.RestrictsSearchToInitialCandidate(root),
             _autoPossessiveRepeatCount,
-            [.. _assertionPrograms],
-            [.. _backreferenceSlotSets],
-            [.. _conditions],
+            _assertionPrograms.Take(),
+            _backreferenceSlotSets.Take(),
+            _conditions.Take(),
             subroutineTargets,
-            [.. _markNames],
+            _markNames.Take(),
             _groupNames,
             _nameEntries,
             Pcre2BacktrackingAnalysis.GetMinimumByteLength(root),
@@ -106,228 +112,235 @@ internal sealed class Pcre2BacktrackingLowerer
         IPcre2BacktrackingNode node,
         Pcre2CharacterToken? requiredFollowingLiteral)
     {
-        bool CanAutoPossess(
-            Pcre2RepeatBacktrackingNode repeat,
-            Pcre2CharacterToken followingLiteral)
+        var budget = Pcre2BacktrackingCompiler.EnterDepth();
+        try
         {
-            // The current lowering uses an atomic checkpoint. Keep metered plans on
-            // their original instruction/depth accounting until commitment has a
-            // dedicated instruction that preserves those observable limits.
-            if (!Pcre2GlobalOperationDriver.HasUnmeteredExecution(_request) ||
-                repeat.Maximum == 0 ||
-                repeat.Body is not Pcre2TokenBacktrackingNode repeated ||
-                followingLiteral.Kind != Pcre2CharacterTokenKind.Literal ||
-                followingLiteral.Options != Pcre2CharacterOptions.None)
+            bool CanAutoPossess(
+                Pcre2RepeatBacktrackingNode repeat,
+                Pcre2CharacterToken followingLiteral)
             {
+                // The current lowering uses an atomic checkpoint. Keep metered plans on
+                // their original instruction/depth accounting until commitment has a
+                // dedicated instruction that preserves those observable limits.
+                if (!Pcre2GlobalOperationDriver.HasUnmeteredExecution(_request) ||
+                    repeat.Maximum == 0 ||
+                    repeat.Body is not Pcre2TokenBacktrackingNode repeated ||
+                    followingLiteral.Kind != Pcre2CharacterTokenKind.Literal ||
+                    followingLiteral.Options != Pcre2CharacterOptions.None)
+                {
+                    return false;
+                }
+
+                var following = followingLiteral.Literal;
+                var ucp = (_request.Options & Pcre2CompileOptions.Ucp) != 0;
+                return repeated.Token.Kind switch
+                {
+                    Pcre2CharacterTokenKind.Literal =>
+                        !Pcre2CharacterSemantics.Equals(repeated.Token.Literal, following, repeated.Token.Options),
+                    Pcre2CharacterTokenKind.CharacterClass =>
+                        !repeated.Token.CharacterClass.Matches(following, ucp, repeated.Token.Options),
+                    _ => false,
+                };
+            }
+
+            static bool TryGetRequiredLeadingLiteral(
+                IPcre2BacktrackingNode candidate,
+                out Pcre2CharacterToken literal)
+            {
+                Utf8ConstructionScope.ChargeWork(1);
+                switch (candidate)
+                {
+                    case Pcre2TokenBacktrackingNode
+                    {
+                        Token:
+                        {
+                            Kind: Pcre2CharacterTokenKind.Literal,
+                            Options: Pcre2CharacterOptions.None,
+                        } token,
+                    }:
+                        literal = token;
+                        return true;
+                    case Pcre2SequenceBacktrackingNode { Children.Length: > 0 } sequence:
+                        return TryGetRequiredLeadingLiteral(sequence.Children[0], out literal);
+                    case Pcre2AlternationBacktrackingNode alternation:
+                        Pcre2CharacterToken? common = null;
+                        foreach (var alternative in alternation.Alternatives)
+                        {
+                            if (!TryGetRequiredLeadingLiteral(alternative, out var branchLiteral) ||
+                                common is { } value && value.Literal != branchLiteral.Literal)
+                            {
+                                literal = default;
+                                return false;
+                            }
+
+                            common = branchLiteral;
+                        }
+
+                        if (common is { } commonLiteral)
+                        {
+                            literal = commonLiteral;
+                            return true;
+                        }
+                        break;
+                    case Pcre2RepeatBacktrackingNode { Minimum: > 0 } repeat:
+                        return TryGetRequiredLeadingLiteral(repeat.Body, out literal);
+                    case Pcre2CaptureBacktrackingNode capture:
+                        return TryGetRequiredLeadingLiteral(capture.Body, out literal);
+                    case Pcre2AtomicBacktrackingNode atomic:
+                        return TryGetRequiredLeadingLiteral(atomic.Body, out literal);
+                }
+
+                literal = default;
                 return false;
             }
 
-            var following = followingLiteral.Literal;
-            var ucp = (_request.Options & Pcre2CompileOptions.Ucp) != 0;
-            return repeated.Token.Kind switch
+            switch (node)
             {
-                Pcre2CharacterTokenKind.Literal =>
-                    !Pcre2CharacterSemantics.Equals(repeated.Token.Literal, following, repeated.Token.Options),
-                Pcre2CharacterTokenKind.CharacterClass =>
-                    !repeated.Token.CharacterClass.Matches(following, ucp, repeated.Token.Options),
-                _ => false,
-            };
-        }
-
-        static bool TryGetRequiredLeadingLiteral(
-            IPcre2BacktrackingNode candidate,
-            out Pcre2CharacterToken literal)
-        {
-            switch (candidate)
-            {
-                case Pcre2TokenBacktrackingNode
-                {
-                    Token:
+                case Pcre2EmptyBacktrackingNode:
+                    return;
+                case Pcre2TokenBacktrackingNode token:
+                    _instructions.Add(Pcre2BacktrackingInstruction.CreateToken(token.Token));
+                    return;
+                case Pcre2SequenceBacktrackingNode sequence:
+                    for (var index = 0; index < sequence.Children.Length; index++)
                     {
-                        Kind: Pcre2CharacterTokenKind.Literal,
-                        Options: Pcre2CharacterOptions.None,
-                    } token,
-                }:
-                    literal = token;
-                    return true;
-                case Pcre2SequenceBacktrackingNode { Children.Length: > 0 } sequence:
-                    return TryGetRequiredLeadingLiteral(sequence.Children[0], out literal);
+                        Pcre2CharacterToken? childFollowingLiteral = null;
+                        if (index + 1 < sequence.Children.Length)
+                        {
+                            if (TryGetRequiredLeadingLiteral(sequence.Children[index + 1], out var nextLiteral))
+                            {
+                                childFollowingLiteral = nextLiteral;
+                            }
+                        }
+                        else
+                        {
+                            childFollowingLiteral = requiredFollowingLiteral;
+                        }
+
+                        EmitNode(sequence.Children[index], childFollowingLiteral);
+                    }
+                    return;
                 case Pcre2AlternationBacktrackingNode alternation:
-                    Pcre2CharacterToken? common = null;
-                    foreach (var alternative in alternation.Alternatives)
+                    EmitAlternation(alternation, requiredFollowingLiteral);
+                    return;
+                case Pcre2RepeatBacktrackingNode repeat:
+                    var autoPossessive = repeat.Preference == Pcre2RepeatPreference.Greedy &&
+                        requiredFollowingLiteral is { } followingLiteral &&
+                        CanAutoPossess(repeat, followingLiteral);
+                    if (autoPossessive)
                     {
-                        if (!TryGetRequiredLeadingLiteral(alternative, out var branchLiteral) ||
-                            common is { } value && value.Literal != branchLiteral.Literal)
+                        _autoPossessiveRepeatCount++;
+                        var repeatedToken = ((Pcre2TokenBacktrackingNode)repeat.Body).Token;
+                        if (repeatedToken.Kind == Pcre2CharacterTokenKind.CharacterClass &&
+                            (repeatedToken.Options & Pcre2CharacterOptions.Caseless) == 0)
                         {
-                            literal = default;
-                            return false;
+                            repeatedToken.CharacterClass.PrepareAsciiByteSet();
                         }
 
-                        common = branchLiteral;
+                        _instructions.Add(Pcre2BacktrackingInstruction.CreatePossessiveTokenRepeat(
+                            repeatedToken,
+                            repeat.Minimum,
+                            repeat.Maximum));
                     }
-
-                    if (common is { } commonLiteral)
+                    else if (repeat.Preference == Pcre2RepeatPreference.Greedy &&
+                        repeat.Body is Pcre2TokenBacktrackingNode { Token: var collapsibleToken } &&
+                        collapsibleToken.Kind == Pcre2CharacterTokenKind.CharacterClass)
                     {
-                        literal = commonLiteral;
-                        return true;
-                    }
-                    break;
-                case Pcre2RepeatBacktrackingNode { Minimum: > 0 } repeat:
-                    return TryGetRequiredLeadingLiteral(repeat.Body, out literal);
-                case Pcre2CaptureBacktrackingNode capture:
-                    return TryGetRequiredLeadingLiteral(capture.Body, out literal);
-                case Pcre2AtomicBacktrackingNode atomic:
-                    return TryGetRequiredLeadingLiteral(atomic.Body, out literal);
-            }
-
-            literal = default;
-            return false;
-        }
-
-        switch (node)
-        {
-            case Pcre2EmptyBacktrackingNode:
-                return;
-            case Pcre2TokenBacktrackingNode token:
-                _instructions.Add(Pcre2BacktrackingInstruction.CreateToken(token.Token));
-                return;
-            case Pcre2SequenceBacktrackingNode sequence:
-                for (var index = 0; index < sequence.Children.Length; index++)
-                {
-                    Pcre2CharacterToken? childFollowingLiteral = null;
-                    if (index + 1 < sequence.Children.Length)
-                    {
-                        if (TryGetRequiredLeadingLiteral(sequence.Children[index + 1], out var nextLiteral))
+                        var collapsibleId = _repeatCount++;
+                        if (collapsibleToken.Kind == Pcre2CharacterTokenKind.CharacterClass &&
+                            (collapsibleToken.Options & Pcre2CharacterOptions.Caseless) == 0)
                         {
-                            childFollowingLiteral = nextLiteral;
+                            collapsibleToken.CharacterClass.PrepareAsciiByteSet();
                         }
+
+                        var collapsibleIndex = _instructions.Count;
+                        _instructions.Add(default);
+                        EmitRepeat(repeat);
+                        var collapsibleExit = _instructions.Count - 1;
+                        _instructions[collapsibleIndex] = Pcre2BacktrackingInstruction.CreateCollapsibleTokenRepeat(
+                            collapsibleToken,
+                            collapsibleIndex + 1,
+                            collapsibleExit,
+                            collapsibleId,
+                            repeat.Minimum,
+                            repeat.Maximum);
+                    }
+                    else if (repeat.Preference == Pcre2RepeatPreference.Possessive)
+                    {
+                        _instructions.Add(Pcre2BacktrackingInstruction.CreateAtomicStart());
+                        EmitRepeat(new Pcre2RepeatBacktrackingNode(
+                            repeat.Body,
+                            repeat.Minimum,
+                            repeat.Maximum,
+                            Pcre2RepeatPreference.Greedy));
+                        _instructions.Add(Pcre2BacktrackingInstruction.CreateAtomicEnd());
                     }
                     else
                     {
-                        childFollowingLiteral = requiredFollowingLiteral;
+                        EmitRepeat(repeat);
                     }
-
-                    EmitNode(sequence.Children[index], childFollowingLiteral);
-                }
-                return;
-            case Pcre2AlternationBacktrackingNode alternation:
-                EmitAlternation(alternation, requiredFollowingLiteral);
-                return;
-            case Pcre2RepeatBacktrackingNode repeat:
-                var autoPossessive = repeat.Preference == Pcre2RepeatPreference.Greedy &&
-                    requiredFollowingLiteral is { } followingLiteral &&
-                    CanAutoPossess(repeat, followingLiteral);
-                if (autoPossessive)
-                {
-                    _autoPossessiveRepeatCount++;
-                    var repeatedToken = ((Pcre2TokenBacktrackingNode)repeat.Body).Token;
-                    if (repeatedToken.Kind == Pcre2CharacterTokenKind.CharacterClass &&
-                        (repeatedToken.Options & Pcre2CharacterOptions.Caseless) == 0)
+                    return;
+                case Pcre2CaptureBacktrackingNode capture:
+                    _hasCaptureWrites = true;
+                    _instructions.Add(Pcre2BacktrackingInstruction.CreateCaptureStart(capture.Slot));
+                    EmitNode(capture.Body, requiredFollowingLiteral);
+                    _instructions.Add(Pcre2BacktrackingInstruction.CreateCaptureEnd(capture.Slot));
+                    return;
+                case Pcre2BackreferenceBacktrackingNode backreference:
+                    _requiresCaptureState = true;
+                    EmitBackreference(backreference);
+                    return;
+                case Pcre2AssertionBacktrackingNode assertion:
+                    var assertionLowerer = new Pcre2BacktrackingLowerer(
+                        _captureCount,
+                        _nameEntries,
+                        _captureDefinitions,
+                        _request,
+                        _groupNames);
+                    var assertionProgramId = _assertionPrograms.Count;
+                    var assertionProgram = assertionLowerer.Lower(assertion.Body);
+                    _assertionPrograms.Add(assertionProgram);
+                    _requiresCaptureState |= assertionProgram.RequiresCaptureState;
+                    _hasCaptureWrites |= assertionProgram.HasCaptureWrites;
+                    _usesBacktrackingControlVerbs |= assertionProgram.UsesBacktrackingControlVerbs;
+                    _usesMatchBoundaryReset |= assertionProgram.UsesMatchBoundaryReset;
+                    _mayReportNonMonotoneMatchOffsets |= ContainsMatchBoundaryReset(assertion.Body);
+                    _mayThrowDeferredLookaroundReset |=
+                        assertionProgram.UsesMatchBoundaryReset && !ContainsMatchBoundaryReset(assertion.Body);
+                    foreach (var markName in assertionProgram.MarkNames)
                     {
-                        repeatedToken.CharacterClass.PrepareAsciiByteSet();
+                        _ = GetMarkNameId(markName);
                     }
-
-                    _instructions.Add(Pcre2BacktrackingInstruction.CreatePossessiveTokenRepeat(
-                        repeatedToken,
-                        repeat.Minimum,
-                        repeat.Maximum));
-                }
-                else if (repeat.Preference == Pcre2RepeatPreference.Greedy &&
-                    repeat.Body is Pcre2TokenBacktrackingNode { Token: var collapsibleToken } &&
-                    collapsibleToken.Kind == Pcre2CharacterTokenKind.CharacterClass)
-                {
-                    var collapsibleId = _repeatCount++;
-                    if (collapsibleToken.Kind == Pcre2CharacterTokenKind.CharacterClass &&
-                        (collapsibleToken.Options & Pcre2CharacterOptions.Caseless) == 0)
-                    {
-                        collapsibleToken.CharacterClass.PrepareAsciiByteSet();
-                    }
-
-                    var collapsibleIndex = _instructions.Count;
-                    _instructions.Add(default);
-                    EmitRepeat(repeat);
-                    var collapsibleExit = _instructions.Count - 1;
-                    _instructions[collapsibleIndex] = Pcre2BacktrackingInstruction.CreateCollapsibleTokenRepeat(
-                        collapsibleToken,
-                        collapsibleIndex + 1,
-                        collapsibleExit,
-                        collapsibleId,
-                        repeat.Minimum,
-                        repeat.Maximum);
-                }
-                else if (repeat.Preference == Pcre2RepeatPreference.Possessive)
-                {
+                    _instructions.Add(Pcre2BacktrackingInstruction.CreateAssertion(
+                        assertionProgramId,
+                        assertion.AssertionKind));
+                    return;
+                case Pcre2SubroutineCallBacktrackingNode subroutineCall:
+                    _hasSubroutineCalls = true;
+                    _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineCall(
+                        ResolveSubroutine(subroutineCall.Target)));
+                    return;
+                case Pcre2ConditionalBacktrackingNode conditional:
+                    EmitConditional(conditional);
+                    return;
+                case Pcre2AtomicBacktrackingNode atomic:
                     _instructions.Add(Pcre2BacktrackingInstruction.CreateAtomicStart());
-                    EmitRepeat(new Pcre2RepeatBacktrackingNode(
-                        repeat.Body,
-                        repeat.Minimum,
-                        repeat.Maximum,
-                        Pcre2RepeatPreference.Greedy));
+                    EmitNode(atomic.Body, null);
                     _instructions.Add(Pcre2BacktrackingInstruction.CreateAtomicEnd());
-                }
-                else
-                {
-                    EmitRepeat(repeat);
-                }
-                return;
-            case Pcre2CaptureBacktrackingNode capture:
-                _hasCaptureWrites = true;
-                _instructions.Add(Pcre2BacktrackingInstruction.CreateCaptureStart(capture.Slot));
-                EmitNode(capture.Body, requiredFollowingLiteral);
-                _instructions.Add(Pcre2BacktrackingInstruction.CreateCaptureEnd(capture.Slot));
-                return;
-            case Pcre2BackreferenceBacktrackingNode backreference:
-                _requiresCaptureState = true;
-                EmitBackreference(backreference);
-                return;
-            case Pcre2AssertionBacktrackingNode assertion:
-                var assertionLowerer = new Pcre2BacktrackingLowerer(
-                    _captureCount,
-                    _nameEntries,
-                    _captureDefinitions,
-                    _request,
-                    _groupNames);
-                var assertionProgramId = _assertionPrograms.Count;
-                var assertionProgram = assertionLowerer.Lower(assertion.Body);
-                _assertionPrograms.Add(assertionProgram);
-                _requiresCaptureState |= assertionProgram.RequiresCaptureState;
-                _hasCaptureWrites |= assertionProgram.HasCaptureWrites;
-                _usesBacktrackingControlVerbs |= assertionProgram.UsesBacktrackingControlVerbs;
-                _usesMatchBoundaryReset |= assertionProgram.UsesMatchBoundaryReset;
-                _mayReportNonMonotoneMatchOffsets |= ContainsMatchBoundaryReset(assertion.Body);
-                _mayThrowDeferredLookaroundReset |=
-                    assertionProgram.UsesMatchBoundaryReset && !ContainsMatchBoundaryReset(assertion.Body);
-                foreach (var markName in assertionProgram.MarkNames)
-                {
-                    _ = GetMarkNameId(markName);
-                }
-                _instructions.Add(Pcre2BacktrackingInstruction.CreateAssertion(
-                    assertionProgramId,
-                    assertion.AssertionKind));
-                return;
-            case Pcre2SubroutineCallBacktrackingNode subroutineCall:
-                _hasSubroutineCalls = true;
-                _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineCall(
-                    ResolveSubroutine(subroutineCall.Target)));
-                return;
-            case Pcre2ConditionalBacktrackingNode conditional:
-                EmitConditional(conditional);
-                return;
-            case Pcre2AtomicBacktrackingNode atomic:
-                _instructions.Add(Pcre2BacktrackingInstruction.CreateAtomicStart());
-                EmitNode(atomic.Body, null);
-                _instructions.Add(Pcre2BacktrackingInstruction.CreateAtomicEnd());
-                return;
-            case Pcre2ControlVerbBacktrackingNode controlVerb:
-                EmitControlVerb(controlVerb);
-                return;
-            case Pcre2MatchBoundaryResetBacktrackingNode:
-                _usesMatchBoundaryReset = true;
-                _instructions.Add(Pcre2BacktrackingInstruction.CreateMatchBoundaryReset());
-                return;
-            default:
-                throw new InvalidOperationException("The PCRE2 backtracking syntax node is not lowerable.");
+                    return;
+                case Pcre2ControlVerbBacktrackingNode controlVerb:
+                    EmitControlVerb(controlVerb);
+                    return;
+                case Pcre2MatchBoundaryResetBacktrackingNode:
+                    _usesMatchBoundaryReset = true;
+                    _instructions.Add(Pcre2BacktrackingInstruction.CreateMatchBoundaryReset());
+                    return;
+                default:
+                    throw new InvalidOperationException("The PCRE2 backtracking syntax node is not lowerable.");
+            }
+
         }
+        finally { budget.LeaveDepth(); }
     }
 
     private void EmitAlternation(
@@ -608,21 +621,25 @@ internal sealed class Pcre2BacktrackingLowerer
         return slot;
     }
 
-    private static bool ContainsMatchBoundaryReset(IPcre2BacktrackingNode node) => node switch
+    private static bool ContainsMatchBoundaryReset(IPcre2BacktrackingNode node)
     {
-        Pcre2MatchBoundaryResetBacktrackingNode => true,
-        Pcre2SequenceBacktrackingNode sequence => sequence.Children.Any(ContainsMatchBoundaryReset),
-        Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Any(ContainsMatchBoundaryReset),
-        Pcre2RepeatBacktrackingNode repeat => ContainsMatchBoundaryReset(repeat.Body),
-        Pcre2CaptureBacktrackingNode capture => ContainsMatchBoundaryReset(capture.Body),
-        Pcre2AssertionBacktrackingNode assertion => ContainsMatchBoundaryReset(assertion.Body),
-        Pcre2ConditionalBacktrackingNode conditional =>
-            conditional.Assertion is not null && ContainsMatchBoundaryReset(conditional.Assertion.Body) ||
-            ContainsMatchBoundaryReset(conditional.YesBranch) ||
-            ContainsMatchBoundaryReset(conditional.NoBranch),
-        Pcre2AtomicBacktrackingNode atomic => ContainsMatchBoundaryReset(atomic.Body),
-        _ => false,
-    };
+        Utf8ConstructionScope.ChargeWork(1);
+        return node switch
+        {
+            Pcre2MatchBoundaryResetBacktrackingNode => true,
+            Pcre2SequenceBacktrackingNode sequence => sequence.Children.Any(ContainsMatchBoundaryReset),
+            Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Any(ContainsMatchBoundaryReset),
+            Pcre2RepeatBacktrackingNode repeat => ContainsMatchBoundaryReset(repeat.Body),
+            Pcre2CaptureBacktrackingNode capture => ContainsMatchBoundaryReset(capture.Body),
+            Pcre2AssertionBacktrackingNode assertion => ContainsMatchBoundaryReset(assertion.Body),
+            Pcre2ConditionalBacktrackingNode conditional =>
+                conditional.Assertion is not null && ContainsMatchBoundaryReset(conditional.Assertion.Body) ||
+                ContainsMatchBoundaryReset(conditional.YesBranch) ||
+                ContainsMatchBoundaryReset(conditional.NoBranch),
+            Pcre2AtomicBacktrackingNode atomic => ContainsMatchBoundaryReset(atomic.Body),
+            _ => false,
+        };
+    }
 
     private static bool SuppressesUnresetEmptyMatches(IPcre2BacktrackingNode node) =>
         node is Pcre2RepeatBacktrackingNode

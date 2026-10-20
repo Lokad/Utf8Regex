@@ -1,4 +1,5 @@
 using System.Buffers;
+using Lokad.Utf8Regex.Internal;
 using System.Text;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
@@ -27,8 +28,30 @@ internal sealed class Pcre2CompiledBacktrackingOutcome
 
 internal static class Pcre2BacktrackingCompiler
 {
+    // This compiler uses CLR recursion; the iterative Core parser has a different
+    // fixed depth backstop. Check before entering the next recursive frame.
+    internal const ulong MaximumRecursiveDepth = 256;
+
+    internal static Utf8ConstructionBudget EnterDepth()
+    {
+        var budget = Utf8ConstructionScope.CurrentBudget;
+        budget.ChargeWork(1);
+        if (budget.Depth >= MaximumRecursiveDepth)
+            throw new Utf8ResourceLimitExceededException(Utf8ResourceLimitKind.ConstructionDepth,
+                MaximumRecursiveDepth, budget.Depth + 1);
+        budget.EnterDepth();
+        return budget;
+    }
+
     internal static Pcre2CompiledBacktrackingOutcome? Compile(Pcre2CompileRequest request)
     {
+        using var construction = Utf8ConstructionScope.Enter();
+        // Coarse admission for transient AST vectors, capture/name maps and
+        // metadata copies. Shared storage can be charged twice; no helper graph
+        // or per-object ledger is retained. Instructions have separate exact
+        // array/slot admission in the lowerer.
+        construction.Budget.ChargeWork((ulong)request.Pattern.Length);
+        construction.Budget.ReserveBytes(checked((ulong)request.Pattern.Length * 256));
         var parser = new Pcre2BacktrackingParser(request);
         if (!parser.TryParse(out var root))
         {
@@ -44,6 +67,7 @@ internal static class Pcre2BacktrackingCompiler
             request,
             groupNames);
         var program = lowerer.Lower(root);
+        construction.Complete();
         return new Pcre2CompiledBacktrackingOutcome(
             new Pcre2BacktrackingSyntaxTree(root),
             program,
@@ -57,25 +81,29 @@ internal static class Pcre2BacktrackingAnalysis
     // only that every successful path reaches a subject-start or first-match
     // position assertion before any input can be consumed. A failed attempt at
     // the caller's initial candidate therefore cannot be rescued by bumpalong.
-    internal static bool RestrictsSearchToInitialCandidate(IPcre2BacktrackingNode node) => node switch
+    internal static bool RestrictsSearchToInitialCandidate(IPcre2BacktrackingNode node)
     {
-        Pcre2TokenBacktrackingNode { Token: var token } => token.Kind switch
+        Utf8ConstructionScope.ChargeWork(1);
+        return node switch
         {
-            Pcre2CharacterTokenKind.BeginningOfSubject or
-            Pcre2CharacterTokenKind.FirstMatchingPosition => true,
-            Pcre2CharacterTokenKind.BeginningOfLine =>
-                (token.Options & Pcre2CharacterOptions.Multiline) == 0,
+            Pcre2TokenBacktrackingNode { Token: var token } => token.Kind switch
+            {
+                Pcre2CharacterTokenKind.BeginningOfSubject or
+                Pcre2CharacterTokenKind.FirstMatchingPosition => true,
+                Pcre2CharacterTokenKind.BeginningOfLine =>
+                    (token.Options & Pcre2CharacterOptions.Multiline) == 0,
+                _ => false,
+            },
+            Pcre2SequenceBacktrackingNode sequence => SequenceRestrictsSearch(sequence),
+            Pcre2AlternationBacktrackingNode alternation =>
+                alternation.Alternatives.All(RestrictsSearchToInitialCandidate),
+            Pcre2RepeatBacktrackingNode { Minimum: > 0 } repeat =>
+                RestrictsSearchToInitialCandidate(repeat.Body),
+            Pcre2CaptureBacktrackingNode capture => RestrictsSearchToInitialCandidate(capture.Body),
+            Pcre2AtomicBacktrackingNode atomic => RestrictsSearchToInitialCandidate(atomic.Body),
             _ => false,
-        },
-        Pcre2SequenceBacktrackingNode sequence => SequenceRestrictsSearch(sequence),
-        Pcre2AlternationBacktrackingNode alternation =>
-            alternation.Alternatives.All(RestrictsSearchToInitialCandidate),
-        Pcre2RepeatBacktrackingNode { Minimum: > 0 } repeat =>
-            RestrictsSearchToInitialCandidate(repeat.Body),
-        Pcre2CaptureBacktrackingNode capture => RestrictsSearchToInitialCandidate(capture.Body),
-        Pcre2AtomicBacktrackingNode atomic => RestrictsSearchToInitialCandidate(atomic.Body),
-        _ => false,
-    };
+        };
+    }
 
     internal static int GetMinimumByteLength(
         IPcre2BacktrackingNode node,
@@ -85,6 +113,7 @@ internal static class Pcre2BacktrackingAnalysis
 
     internal static int GetMinimumByteLength(IPcre2BacktrackingNode node)
     {
+        Utf8ConstructionScope.ChargeWork(1);
         return node switch
         {
             Pcre2EmptyBacktrackingNode => 0,
@@ -112,49 +141,55 @@ internal static class Pcre2BacktrackingAnalysis
         IReadOnlyDictionary<string, int[]> nameSlots,
         HashSet<int> activeCaptures)
     {
-        switch (node)
+        var budget = Pcre2BacktrackingCompiler.EnterDepth();
+        try
         {
-            case Pcre2EmptyBacktrackingNode:
-                return 0;
-            case Pcre2TokenBacktrackingNode token:
-                return ConsumesInput(token.Token.Kind) ? 1 : 0;
-            case Pcre2SequenceBacktrackingNode sequence:
-                var sequenceMinimum = 0;
-                foreach (var child in sequence.Children)
-                {
-                    sequenceMinimum = SaturatingAdd(
-                        sequenceMinimum,
-                        GetMinimumByteLength(child, captureDefinitions, nameSlots, activeCaptures));
-                }
+            switch (node)
+            {
+                case Pcre2EmptyBacktrackingNode:
+                    return 0;
+                case Pcre2TokenBacktrackingNode token:
+                    return ConsumesInput(token.Token.Kind) ? 1 : 0;
+                case Pcre2SequenceBacktrackingNode sequence:
+                    var sequenceMinimum = 0;
+                    foreach (var child in sequence.Children)
+                    {
+                        sequenceMinimum = SaturatingAdd(
+                            sequenceMinimum,
+                            GetMinimumByteLength(child, captureDefinitions, nameSlots, activeCaptures));
+                    }
 
-                return sequenceMinimum;
-            case Pcre2AlternationBacktrackingNode alternation:
-                return alternation.Alternatives.Min(
-                    child => GetMinimumByteLength(child, captureDefinitions, nameSlots, activeCaptures));
-            case Pcre2RepeatBacktrackingNode repeat:
-                return SaturatingMultiply(
-                    GetMinimumByteLength(repeat.Body, captureDefinitions, nameSlots, activeCaptures),
-                    repeat.Minimum);
-            case Pcre2CaptureBacktrackingNode capture:
-                return GetMinimumByteLength(capture.Body, captureDefinitions, nameSlots, activeCaptures);
-            case Pcre2BackreferenceBacktrackingNode backreference:
-                return GetBackreferenceMinimum(backreference.Target, captureDefinitions, nameSlots, activeCaptures);
-            case Pcre2AssertionBacktrackingNode:
-                return 0;
-            case Pcre2SubroutineCallBacktrackingNode subroutine:
-                var subroutineSlot = ResolveReferenceSlot(subroutine.Target);
-                return subroutineSlot > 0
-                    ? GetCaptureMinimum(subroutineSlot, captureDefinitions, nameSlots, activeCaptures)
-                    : 0;
-            case Pcre2ConditionalBacktrackingNode conditional:
-                return Math.Min(
-                    GetMinimumByteLength(conditional.YesBranch, captureDefinitions, nameSlots, activeCaptures),
-                    GetMinimumByteLength(conditional.NoBranch, captureDefinitions, nameSlots, activeCaptures));
-            case Pcre2AtomicBacktrackingNode atomic:
-                return GetMinimumByteLength(atomic.Body, captureDefinitions, nameSlots, activeCaptures);
-            default:
-                return 0;
+                    return sequenceMinimum;
+                case Pcre2AlternationBacktrackingNode alternation:
+                    return alternation.Alternatives.Min(
+                        child => GetMinimumByteLength(child, captureDefinitions, nameSlots, activeCaptures));
+                case Pcre2RepeatBacktrackingNode repeat:
+                    return SaturatingMultiply(
+                        GetMinimumByteLength(repeat.Body, captureDefinitions, nameSlots, activeCaptures),
+                        repeat.Minimum);
+                case Pcre2CaptureBacktrackingNode capture:
+                    return GetMinimumByteLength(capture.Body, captureDefinitions, nameSlots, activeCaptures);
+                case Pcre2BackreferenceBacktrackingNode backreference:
+                    return GetBackreferenceMinimum(backreference.Target, captureDefinitions, nameSlots, activeCaptures);
+                case Pcre2AssertionBacktrackingNode:
+                    return 0;
+                case Pcre2SubroutineCallBacktrackingNode subroutine:
+                    var subroutineSlot = ResolveReferenceSlot(subroutine.Target);
+                    return subroutineSlot > 0
+                        ? GetCaptureMinimum(subroutineSlot, captureDefinitions, nameSlots, activeCaptures)
+                        : 0;
+                case Pcre2ConditionalBacktrackingNode conditional:
+                    return Math.Min(
+                        GetMinimumByteLength(conditional.YesBranch, captureDefinitions, nameSlots, activeCaptures),
+                        GetMinimumByteLength(conditional.NoBranch, captureDefinitions, nameSlots, activeCaptures));
+                case Pcre2AtomicBacktrackingNode atomic:
+                    return GetMinimumByteLength(atomic.Body, captureDefinitions, nameSlots, activeCaptures);
+                default:
+                    return 0;
+            }
+
         }
+        finally { budget.LeaveDepth(); }
     }
 
     private static int GetBackreferenceMinimum(
@@ -216,90 +251,106 @@ internal static class Pcre2BacktrackingAnalysis
         _ => 0,
     };
 
-    internal static int GetMinimumScalarLength(IPcre2BacktrackingNode node) => node switch
+    internal static int GetMinimumScalarLength(IPcre2BacktrackingNode node)
     {
-        Pcre2EmptyBacktrackingNode => 0,
-        Pcre2TokenBacktrackingNode token => ConsumesScalar(token.Token.Kind) ? 1 : 0,
-        Pcre2SequenceBacktrackingNode sequence => sequence.Children.Aggregate(
-            0,
-            static (length, child) => SaturatingAdd(length, GetMinimumScalarLength(child))),
-        Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Min(GetMinimumScalarLength),
-        Pcre2RepeatBacktrackingNode repeat => SaturatingMultiply(GetMinimumScalarLength(repeat.Body), repeat.Minimum),
-        Pcre2CaptureBacktrackingNode capture => GetMinimumScalarLength(capture.Body),
-        Pcre2BackreferenceBacktrackingNode => 0,
-        Pcre2AssertionBacktrackingNode => 0,
-        Pcre2SubroutineCallBacktrackingNode => 0,
-        Pcre2ConditionalBacktrackingNode conditional => Math.Min(
-            GetMinimumScalarLength(conditional.YesBranch),
-            GetMinimumScalarLength(conditional.NoBranch)),
-        Pcre2AtomicBacktrackingNode atomic => GetMinimumScalarLength(atomic.Body),
-        Pcre2ControlVerbBacktrackingNode => 0,
-        Pcre2MatchBoundaryResetBacktrackingNode => 0,
-        _ => 0,
-    };
-
-    internal static int GetMaximumScalarLength(IPcre2BacktrackingNode node) => node switch
-    {
-        Pcre2EmptyBacktrackingNode => 0,
-        Pcre2TokenBacktrackingNode token => token.Token.Kind switch
+        Utf8ConstructionScope.ChargeWork(1);
+        return node switch
         {
-            Pcre2CharacterTokenKind.NewlineSequence => 2,
-            Pcre2CharacterTokenKind.ExtendedGraphemeCluster => int.MaxValue,
-            _ => ConsumesScalar(token.Token.Kind) ? 1 : 0,
-        },
-        Pcre2SequenceBacktrackingNode sequence => sequence.Children.Aggregate(
-            0,
-            static (length, child) => SaturatingAdd(length, GetMaximumScalarLength(child))),
-        Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Max(GetMaximumScalarLength),
-        Pcre2RepeatBacktrackingNode repeat => SaturatingMultiply(GetMaximumScalarLength(repeat.Body), repeat.Maximum),
-        Pcre2CaptureBacktrackingNode capture => GetMaximumScalarLength(capture.Body),
-        Pcre2BackreferenceBacktrackingNode => int.MaxValue,
-        Pcre2AssertionBacktrackingNode => 0,
-        Pcre2SubroutineCallBacktrackingNode => int.MaxValue,
-        Pcre2ConditionalBacktrackingNode conditional => Math.Max(
-            GetMaximumScalarLength(conditional.YesBranch),
-            GetMaximumScalarLength(conditional.NoBranch)),
-        Pcre2AtomicBacktrackingNode atomic => GetMaximumScalarLength(atomic.Body),
-        Pcre2ControlVerbBacktrackingNode => 0,
-        Pcre2MatchBoundaryResetBacktrackingNode => 0,
-        _ => int.MaxValue,
-    };
+            Pcre2EmptyBacktrackingNode => 0,
+            Pcre2TokenBacktrackingNode token => ConsumesScalar(token.Token.Kind) ? 1 : 0,
+            Pcre2SequenceBacktrackingNode sequence => sequence.Children.Aggregate(
+                0,
+                static (length, child) => SaturatingAdd(length, GetMinimumScalarLength(child))),
+            Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Min(GetMinimumScalarLength),
+            Pcre2RepeatBacktrackingNode repeat => SaturatingMultiply(GetMinimumScalarLength(repeat.Body), repeat.Minimum),
+            Pcre2CaptureBacktrackingNode capture => GetMinimumScalarLength(capture.Body),
+            Pcre2BackreferenceBacktrackingNode => 0,
+            Pcre2AssertionBacktrackingNode => 0,
+            Pcre2SubroutineCallBacktrackingNode => 0,
+            Pcre2ConditionalBacktrackingNode conditional => Math.Min(
+                GetMinimumScalarLength(conditional.YesBranch),
+                GetMinimumScalarLength(conditional.NoBranch)),
+            Pcre2AtomicBacktrackingNode atomic => GetMinimumScalarLength(atomic.Body),
+            Pcre2ControlVerbBacktrackingNode => 0,
+            Pcre2MatchBoundaryResetBacktrackingNode => 0,
+            _ => 0,
+        };
+    }
+
+    internal static int GetMaximumScalarLength(IPcre2BacktrackingNode node)
+    {
+        Utf8ConstructionScope.ChargeWork(1);
+        return node switch
+        {
+            Pcre2EmptyBacktrackingNode => 0,
+            Pcre2TokenBacktrackingNode token => token.Token.Kind switch
+            {
+                Pcre2CharacterTokenKind.NewlineSequence => 2,
+                Pcre2CharacterTokenKind.ExtendedGraphemeCluster => int.MaxValue,
+                _ => ConsumesScalar(token.Token.Kind) ? 1 : 0,
+            },
+            Pcre2SequenceBacktrackingNode sequence => sequence.Children.Aggregate(
+                0,
+                static (length, child) => SaturatingAdd(length, GetMaximumScalarLength(child))),
+            Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Max(GetMaximumScalarLength),
+            Pcre2RepeatBacktrackingNode repeat => SaturatingMultiply(GetMaximumScalarLength(repeat.Body), repeat.Maximum),
+            Pcre2CaptureBacktrackingNode capture => GetMaximumScalarLength(capture.Body),
+            Pcre2BackreferenceBacktrackingNode => int.MaxValue,
+            Pcre2AssertionBacktrackingNode => 0,
+            Pcre2SubroutineCallBacktrackingNode => int.MaxValue,
+            Pcre2ConditionalBacktrackingNode conditional => Math.Max(
+                GetMaximumScalarLength(conditional.YesBranch),
+                GetMaximumScalarLength(conditional.NoBranch)),
+            Pcre2AtomicBacktrackingNode atomic => GetMaximumScalarLength(atomic.Body),
+            Pcre2ControlVerbBacktrackingNode => 0,
+            Pcre2MatchBoundaryResetBacktrackingNode => 0,
+            _ => int.MaxValue,
+        };
+    }
 
     internal static byte? GetLeadingAsciiByte(IPcre2BacktrackingNode node)
     {
         return TryGetLeadingAsciiByte(node, out var leading) ? leading : null;
     }
 
-    internal static bool StartsWithExtendedGraphemeCluster(IPcre2BacktrackingNode node) => node switch
+    internal static bool StartsWithExtendedGraphemeCluster(IPcre2BacktrackingNode node)
     {
-        Pcre2TokenBacktrackingNode token =>
-            token.Token.Kind == Pcre2CharacterTokenKind.ExtendedGraphemeCluster,
-        Pcre2SequenceBacktrackingNode { Children.Length: > 0 } sequence =>
-            StartsWithExtendedGraphemeCluster(sequence.Children[0]),
-        Pcre2AlternationBacktrackingNode alternation =>
-            alternation.Alternatives.All(StartsWithExtendedGraphemeCluster),
-        Pcre2RepeatBacktrackingNode { Minimum: > 0 } repeat =>
-            StartsWithExtendedGraphemeCluster(repeat.Body),
-        Pcre2CaptureBacktrackingNode capture => StartsWithExtendedGraphemeCluster(capture.Body),
-        Pcre2AtomicBacktrackingNode atomic => StartsWithExtendedGraphemeCluster(atomic.Body),
-        _ => false,
-    };
+        Utf8ConstructionScope.ChargeWork(1);
+        return node switch
+        {
+            Pcre2TokenBacktrackingNode token =>
+                token.Token.Kind == Pcre2CharacterTokenKind.ExtendedGraphemeCluster,
+            Pcre2SequenceBacktrackingNode { Children.Length: > 0 } sequence =>
+                StartsWithExtendedGraphemeCluster(sequence.Children[0]),
+            Pcre2AlternationBacktrackingNode alternation =>
+                alternation.Alternatives.All(StartsWithExtendedGraphemeCluster),
+            Pcre2RepeatBacktrackingNode { Minimum: > 0 } repeat =>
+                StartsWithExtendedGraphemeCluster(repeat.Body),
+            Pcre2CaptureBacktrackingNode capture => StartsWithExtendedGraphemeCluster(capture.Body),
+            Pcre2AtomicBacktrackingNode atomic => StartsWithExtendedGraphemeCluster(atomic.Body),
+            _ => false,
+        };
+    }
 
-    internal static bool ContainsCodeUnit(IPcre2BacktrackingNode node) => node switch
+    internal static bool ContainsCodeUnit(IPcre2BacktrackingNode node)
     {
-        Pcre2TokenBacktrackingNode token => token.Token.Kind == Pcre2CharacterTokenKind.CodeUnit,
-        Pcre2SequenceBacktrackingNode sequence => sequence.Children.Any(ContainsCodeUnit),
-        Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Any(ContainsCodeUnit),
-        Pcre2RepeatBacktrackingNode repeat => ContainsCodeUnit(repeat.Body),
-        Pcre2CaptureBacktrackingNode capture => ContainsCodeUnit(capture.Body),
-        Pcre2AssertionBacktrackingNode assertion => ContainsCodeUnit(assertion.Body),
-        Pcre2ConditionalBacktrackingNode conditional =>
-            conditional.Assertion is not null && ContainsCodeUnit(conditional.Assertion.Body) ||
-            ContainsCodeUnit(conditional.YesBranch) ||
-            ContainsCodeUnit(conditional.NoBranch),
-        Pcre2AtomicBacktrackingNode atomic => ContainsCodeUnit(atomic.Body),
-        _ => false,
-    };
+        Utf8ConstructionScope.ChargeWork(1);
+        return node switch
+        {
+            Pcre2TokenBacktrackingNode token => token.Token.Kind == Pcre2CharacterTokenKind.CodeUnit,
+            Pcre2SequenceBacktrackingNode sequence => sequence.Children.Any(ContainsCodeUnit),
+            Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Any(ContainsCodeUnit),
+            Pcre2RepeatBacktrackingNode repeat => ContainsCodeUnit(repeat.Body),
+            Pcre2CaptureBacktrackingNode capture => ContainsCodeUnit(capture.Body),
+            Pcre2AssertionBacktrackingNode assertion => ContainsCodeUnit(assertion.Body),
+            Pcre2ConditionalBacktrackingNode conditional =>
+                conditional.Assertion is not null && ContainsCodeUnit(conditional.Assertion.Body) ||
+                ContainsCodeUnit(conditional.YesBranch) ||
+                ContainsCodeUnit(conditional.NoBranch),
+            Pcre2AtomicBacktrackingNode atomic => ContainsCodeUnit(atomic.Body),
+            _ => false,
+        };
+    }
 
     private static int GetSequenceMinimum(Pcre2SequenceBacktrackingNode sequence)
     {
@@ -332,6 +383,7 @@ internal static class Pcre2BacktrackingAnalysis
 
     private static bool TryGetLeadingAsciiByte(IPcre2BacktrackingNode node, out byte leading)
     {
+        Utf8ConstructionScope.ChargeWork(1);
         switch (node)
         {
             case Pcre2TokenBacktrackingNode token when
@@ -413,24 +465,28 @@ internal static class Pcre2BacktrackingAnalysis
     private static bool ConsumesInput(Pcre2CharacterTokenKind kind) =>
         ConsumesScalar(kind) || kind == Pcre2CharacterTokenKind.CodeUnit;
 
-    private static bool CanConsume(IPcre2BacktrackingNode node) => node switch
+    private static bool CanConsume(IPcre2BacktrackingNode node)
     {
-        Pcre2EmptyBacktrackingNode => false,
-        Pcre2TokenBacktrackingNode token => ConsumesInput(token.Token.Kind),
-        Pcre2SequenceBacktrackingNode sequence => sequence.Children.Any(CanConsume),
-        Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Any(CanConsume),
-        Pcre2RepeatBacktrackingNode repeat => repeat.Maximum > 0 && CanConsume(repeat.Body),
-        Pcre2CaptureBacktrackingNode capture => CanConsume(capture.Body),
-        Pcre2BackreferenceBacktrackingNode => true,
-        Pcre2AssertionBacktrackingNode => false,
-        Pcre2SubroutineCallBacktrackingNode => true,
-        Pcre2ConditionalBacktrackingNode conditional =>
-            CanConsume(conditional.YesBranch) || CanConsume(conditional.NoBranch),
-        Pcre2AtomicBacktrackingNode atomic => CanConsume(atomic.Body),
-        Pcre2ControlVerbBacktrackingNode => false,
-        Pcre2MatchBoundaryResetBacktrackingNode => false,
-        _ => true,
-    };
+        Utf8ConstructionScope.ChargeWork(1);
+        return node switch
+        {
+            Pcre2EmptyBacktrackingNode => false,
+            Pcre2TokenBacktrackingNode token => ConsumesInput(token.Token.Kind),
+            Pcre2SequenceBacktrackingNode sequence => sequence.Children.Any(CanConsume),
+            Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Any(CanConsume),
+            Pcre2RepeatBacktrackingNode repeat => repeat.Maximum > 0 && CanConsume(repeat.Body),
+            Pcre2CaptureBacktrackingNode capture => CanConsume(capture.Body),
+            Pcre2BackreferenceBacktrackingNode => true,
+            Pcre2AssertionBacktrackingNode => false,
+            Pcre2SubroutineCallBacktrackingNode => true,
+            Pcre2ConditionalBacktrackingNode conditional =>
+                CanConsume(conditional.YesBranch) || CanConsume(conditional.NoBranch),
+            Pcre2AtomicBacktrackingNode atomic => CanConsume(atomic.Body),
+            Pcre2ControlVerbBacktrackingNode => false,
+            Pcre2MatchBoundaryResetBacktrackingNode => false,
+            _ => true,
+        };
+    }
 
     private static int SaturatingAdd(int left, int right) =>
         left > int.MaxValue - right ? int.MaxValue : left + right;

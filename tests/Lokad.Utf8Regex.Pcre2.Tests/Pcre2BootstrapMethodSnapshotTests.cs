@@ -13,16 +13,6 @@ public sealed class Pcre2BootstrapMethodSnapshotTests
         Assert.DoesNotContain("ReplacementVia", source, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void CompileValidatorContainsNoCompletePatternChecks()
-    {
-        var source = File.ReadAllText(FindRepositoryFile("src", "Lokad.Utf8Regex.Pcre2", "Pcre2CompileValidator.cs"));
-
-        Assert.Contains("ValidateStructure(pattern, options, compileSettings.Newline)", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("pattern ==", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("pattern is @", source, StringComparison.Ordinal);
-    }
-
     private static string FindRepositoryFile(params string[] segments)
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

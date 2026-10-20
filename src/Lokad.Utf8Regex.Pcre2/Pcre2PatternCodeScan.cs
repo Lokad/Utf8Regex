@@ -11,18 +11,6 @@ internal static class Pcre2PatternCodeScan
     public static bool ContainsCodeText(string pattern, string text,
         Pcre2CompileOptions options, Pcre2NewlineConvention newline)
     {
-        return Scan(pattern, text, false, options, newline);
-    }
-
-    public static bool ContainsNonClassCodeText(string pattern, string text,
-        Pcre2CompileOptions options, Pcre2NewlineConvention newline)
-    {
-        return Scan(pattern, text, true, options, newline);
-    }
-
-    private static bool Scan(string pattern, string text, bool matchInsideClass,
-        Pcre2CompileOptions options, Pcre2NewlineConvention newline)
-    {
         // Admit the full lexical extent, including skipped quotes/comments.
         Utf8ConstructionScope.ChargeWork((ulong)pattern.Length);
         var quoted = false;
@@ -57,11 +45,6 @@ internal static class Pcre2PatternCodeScan
                         offset++;
                         continue;
                     }
-                    if (matchInsideClass && pattern.AsSpan(offset).StartsWith(text, StringComparison.Ordinal))
-                    {
-                        return true;
-                    }
-
                     offset++;
                     classHasAtom = true;
                     classStart = false;
@@ -75,11 +58,6 @@ internal static class Pcre2PatternCodeScan
                     inCharacterClass = false;
                     classHasAtom = false;
                     continue;
-                }
-
-                if (matchInsideClass && pattern.AsSpan(offset).StartsWith(text, StringComparison.Ordinal))
-                {
-                    return true;
                 }
 
                 classHasAtom = true;

@@ -93,7 +93,15 @@ separate scope. Basic bounded state, backtracking and interruption metering
 remain active even when they have a measurable execution cost.
 
 Explicit `Compile` factories provide separate construction work/depth/instruction/
-byte limits, timeout and token. Cold finite-heap replacement preparation borrows
+byte limits, timeout and token. Development after frozen RC1 admits backtracking
+metadata conservatively at 256 bytes per UTF-16 pattern character, plus separate
+name-lookup admission per lowerer and instruction/auxiliary-array capacity with
+growth overlap. Its recursive compiler
+has a fixed 256-frame construction-depth backstop; smaller public caps tighten it.
+These charges can double-count shared storage and cause earlier refusal; they do
+not cover every allocation. An all-declined pattern now fails during construction
+with `NotSupportedException`, rather than returning an unusable expression.
+Cold finite-heap replacement preparation borrows
 remaining working capacity as a construction ceiling and retains its additional
 peak through replacement. Warm plans use a separate conservative cache. See
 packaged [HOST-INTEGRATION.md](HOST-INTEGRATION.md) for exact mappings and scopes.

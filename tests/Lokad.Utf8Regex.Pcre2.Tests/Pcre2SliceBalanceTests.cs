@@ -130,14 +130,9 @@ public sealed class Pcre2SliceBalanceTests
     [InlineData("(?<a-b>x)")]
     public void UndefinedBalanceShapesStayUnsupported(string pattern)
     {
-        // No backward-defined pop target exists, so neither native PCRE2
-        // nor core delegation admits the shape: every operation reports
-        // the explicit unsupported vocabulary instead of running.
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
-        Assert.Equal(
-            "IsMatch=None, Count=None, Enumerate=None, Match=None, Replace=None",
-            regex.DebugDescribeExecutionPlan());
-        Assert.Throws<NotSupportedException>(() => regex.IsMatch(Utf8("b")));
+        // No executable backend admits these undefined pop targets. Refuse
+        // construction instead of publishing an expression with only None slots.
+        Assert.Throws<NotSupportedException>(() => new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None));
     }
 
     [Fact]

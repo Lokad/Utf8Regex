@@ -1,4 +1,5 @@
 using System.Buffers;
+using Lokad.Utf8Regex.Internal;
 using System.Text;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
@@ -83,6 +84,7 @@ internal sealed class Pcre2BacktrackingParser
             }
 
             alternatives.Add(sequence);
+            Utf8ConstructionScope.ChargeWork(1);
             SkipExtendedTrivia();
             if (_offset >= _pattern.Length || _pattern[_offset] != '|')
             {
@@ -104,6 +106,7 @@ internal sealed class Pcre2BacktrackingParser
         var children = new List<IPcre2BacktrackingNode>();
         while (true)
         {
+            Utf8ConstructionScope.ChargeWork(1);
             SkipExtendedTrivia();
             if (_offset >= _pattern.Length || _pattern[_offset] == '|' ||
                 expectClosingParenthesis && _pattern[_offset] == ')')
@@ -170,209 +173,215 @@ internal sealed class Pcre2BacktrackingParser
 
     private bool TryParseAtom(out IPcre2BacktrackingNode node)
     {
-        if (_pattern.AsSpan(_offset).StartsWith("\\K", StringComparison.Ordinal))
+        var budget = Pcre2BacktrackingCompiler.EnterDepth();
+        try
         {
-            _sawControlFlow = true;
-            _offset += 2;
-            node = Pcre2MatchBoundaryResetBacktrackingNode.Instance;
-            return true;
-        }
-
-        if (TryParseBackreference(out node))
-        {
-            return true;
-        }
-
-        if (_pattern[_offset] == '(')
-        {
-            if (_pattern.AsSpan(_offset).StartsWith("(?>", StringComparison.Ordinal) ||
-                _pattern.AsSpan(_offset).StartsWith("(*atomic:", StringComparison.OrdinalIgnoreCase))
-            {
-                return TryParseAtomicGroup(out node);
-            }
-
-            if (TryParseControlVerb(out node))
-            {
-                return true;
-            }
-
-            if (TryParseConditional(out node))
-            {
-                return true;
-            }
-
-            if (TryParseSubroutineCall(out node))
-            {
-                return true;
-            }
-
-            if (_pattern.AsSpan(_offset).StartsWith("(?|", StringComparison.Ordinal))
-            {
-                return TryParseBranchReset(out node);
-            }
-
-            if (TryParseAssertionOpening(out var assertionKind, out var assertionOpeningLength))
+            if (_pattern.AsSpan(_offset).StartsWith("\\K", StringComparison.Ordinal))
             {
                 _sawControlFlow = true;
-                _offset += assertionOpeningLength;
-                var outerOptions = _options;
-                var outerUngreedy = _ungreedy;
-                var outerNoAutoCapture = _noAutoCapture;
-                var outerAllowDuplicateNames = _allowDuplicateNames;
-                if (!TryParseAlternation(true, out var assertionBody) ||
-                    _offset >= _pattern.Length ||
-                    _pattern[_offset] != ')')
+                _offset += 2;
+                node = Pcre2MatchBoundaryResetBacktrackingNode.Instance;
+                return true;
+            }
+
+            if (TryParseBackreference(out node))
+            {
+                return true;
+            }
+
+            if (_pattern[_offset] == '(')
+            {
+                if (_pattern.AsSpan(_offset).StartsWith("(?>", StringComparison.Ordinal) ||
+                    _pattern.AsSpan(_offset).StartsWith("(*atomic:", StringComparison.OrdinalIgnoreCase))
                 {
+                    return TryParseAtomicGroup(out node);
+                }
+
+                if (TryParseControlVerb(out node))
+                {
+                    return true;
+                }
+
+                if (TryParseConditional(out node))
+                {
+                    return true;
+                }
+
+                if (TryParseSubroutineCall(out node))
+                {
+                    return true;
+                }
+
+                if (_pattern.AsSpan(_offset).StartsWith("(?|", StringComparison.Ordinal))
+                {
+                    return TryParseBranchReset(out node);
+                }
+
+                if (TryParseAssertionOpening(out var assertionKind, out var assertionOpeningLength))
+                {
+                    _sawControlFlow = true;
+                    _offset += assertionOpeningLength;
+                    var outerOptions = _options;
+                    var outerUngreedy = _ungreedy;
+                    var outerNoAutoCapture = _noAutoCapture;
+                    var outerAllowDuplicateNames = _allowDuplicateNames;
+                    if (!TryParseAlternation(true, out var assertionBody) ||
+                        _offset >= _pattern.Length ||
+                        _pattern[_offset] != ')')
+                    {
+                        _options = outerOptions;
+                        _ungreedy = outerUngreedy;
+                        _noAutoCapture = outerNoAutoCapture;
+                        _allowDuplicateNames = outerAllowDuplicateNames;
+                        node = Pcre2EmptyBacktrackingNode.Instance;
+                        return false;
+                    }
+
+                    _offset++;
                     _options = outerOptions;
                     _ungreedy = outerUngreedy;
                     _noAutoCapture = outerNoAutoCapture;
                     _allowDuplicateNames = outerAllowDuplicateNames;
-                    node = Pcre2EmptyBacktrackingNode.Instance;
-                    return false;
+                    node = new Pcre2AssertionBacktrackingNode(assertionKind, assertionBody);
+                    return true;
                 }
 
-                _offset++;
-                _options = outerOptions;
-                _ungreedy = outerUngreedy;
-                _noAutoCapture = outerNoAutoCapture;
-                _allowDuplicateNames = outerAllowDuplicateNames;
-                node = new Pcre2AssertionBacktrackingNode(assertionKind, assertionBody);
-                return true;
-            }
-
-            if (TryParseScopedOptionOpening(
-                    out var scopedOptions,
-                    out var scopedUngreedy,
-                    out var scopedNoAutoCapture,
-                    out var scopedAllowDuplicateNames,
-                    out var scopedOpeningLength))
-            {
-                _sawControlFlow = true;
-                var outerOptions = _options;
-                var outerUngreedy = _ungreedy;
-                var outerNoAutoCapture = _noAutoCapture;
-                var outerAllowDuplicateNames = _allowDuplicateNames;
-                _options = scopedOptions;
-                _ungreedy = scopedUngreedy;
-                _noAutoCapture = scopedNoAutoCapture;
-                _allowDuplicateNames = scopedAllowDuplicateNames;
-                _offset += scopedOpeningLength;
-                if (!TryParseAlternation(true, out node) ||
-                    _offset >= _pattern.Length ||
-                    _pattern[_offset] != ')')
+                if (TryParseScopedOptionOpening(
+                        out var scopedOptions,
+                        out var scopedUngreedy,
+                        out var scopedNoAutoCapture,
+                        out var scopedAllowDuplicateNames,
+                        out var scopedOpeningLength))
                 {
+                    _sawControlFlow = true;
+                    var outerOptions = _options;
+                    var outerUngreedy = _ungreedy;
+                    var outerNoAutoCapture = _noAutoCapture;
+                    var outerAllowDuplicateNames = _allowDuplicateNames;
+                    _options = scopedOptions;
+                    _ungreedy = scopedUngreedy;
+                    _noAutoCapture = scopedNoAutoCapture;
+                    _allowDuplicateNames = scopedAllowDuplicateNames;
+                    _offset += scopedOpeningLength;
+                    if (!TryParseAlternation(true, out node) ||
+                        _offset >= _pattern.Length ||
+                        _pattern[_offset] != ')')
+                    {
+                        _options = outerOptions;
+                        _ungreedy = outerUngreedy;
+                        _noAutoCapture = outerNoAutoCapture;
+                        _allowDuplicateNames = outerAllowDuplicateNames;
+                        return false;
+                    }
+
+                    _offset++;
                     _options = outerOptions;
                     _ungreedy = outerUngreedy;
                     _noAutoCapture = outerNoAutoCapture;
                     _allowDuplicateNames = outerAllowDuplicateNames;
-                    return false;
+                    return true;
                 }
 
-                _offset++;
-                _options = outerOptions;
-                _ungreedy = outerUngreedy;
-                _noAutoCapture = outerNoAutoCapture;
-                _allowDuplicateNames = outerAllowDuplicateNames;
-                return true;
-            }
-
-            var explicitNoncapturing = _pattern.AsSpan(_offset).StartsWith("(?:", StringComparison.Ordinal);
-            if (explicitNoncapturing || _noAutoCapture && !_pattern.AsSpan(_offset).StartsWith("(?", StringComparison.Ordinal))
-            {
-                _sawControlFlow = true;
-                _offset += explicitNoncapturing ? 3 : 1;
-                var outerOptions = _options;
-                var outerUngreedy = _ungreedy;
-                var outerNoAutoCapture = _noAutoCapture;
-                var outerAllowDuplicateNames = _allowDuplicateNames;
-                if (!TryParseAlternation(true, out node) || _offset >= _pattern.Length || _pattern[_offset] != ')')
+                var explicitNoncapturing = _pattern.AsSpan(_offset).StartsWith("(?:", StringComparison.Ordinal);
+                if (explicitNoncapturing || _noAutoCapture && !_pattern.AsSpan(_offset).StartsWith("(?", StringComparison.Ordinal))
                 {
+                    _sawControlFlow = true;
+                    _offset += explicitNoncapturing ? 3 : 1;
+                    var outerOptions = _options;
+                    var outerUngreedy = _ungreedy;
+                    var outerNoAutoCapture = _noAutoCapture;
+                    var outerAllowDuplicateNames = _allowDuplicateNames;
+                    if (!TryParseAlternation(true, out node) || _offset >= _pattern.Length || _pattern[_offset] != ')')
+                    {
+                        _options = outerOptions;
+                        _ungreedy = outerUngreedy;
+                        _noAutoCapture = outerNoAutoCapture;
+                        _allowDuplicateNames = outerAllowDuplicateNames;
+                        return false;
+                    }
+
+                    _offset++;
                     _options = outerOptions;
                     _ungreedy = outerUngreedy;
                     _noAutoCapture = outerNoAutoCapture;
                     _allowDuplicateNames = outerAllowDuplicateNames;
-                    return false;
+                    return true;
                 }
 
-                _offset++;
-                _options = outerOptions;
-                _ungreedy = outerUngreedy;
-                _noAutoCapture = outerNoAutoCapture;
-                _allowDuplicateNames = outerAllowDuplicateNames;
-                return true;
-            }
-
-            if (TryParseCaptureOpening(out var captureName, out var openingLength))
-            {
-                _sawControlFlow = true;
-                var slot = ++_captureCount;
-                if (captureName.Length != 0)
+                if (TryParseCaptureOpening(out var captureName, out var openingLength))
                 {
-                    if (!TryRegisterCaptureName(slot, captureName))
+                    _sawControlFlow = true;
+                    var slot = ++_captureCount;
+                    if (captureName.Length != 0)
+                    {
+                        if (!TryRegisterCaptureName(slot, captureName))
+                        {
+                            node = Pcre2EmptyBacktrackingNode.Instance;
+                            return false;
+                        }
+                    }
+
+                    _offset += openingLength;
+                    var outerOptions = _options;
+                    var outerUngreedy = _ungreedy;
+                    var outerNoAutoCapture = _noAutoCapture;
+                    var outerAllowDuplicateNames = _allowDuplicateNames;
+                    if (!TryParseAlternation(true, out var body) || _offset >= _pattern.Length || _pattern[_offset] != ')')
+                    {
+                        _options = outerOptions;
+                        _ungreedy = outerUngreedy;
+                        _noAutoCapture = outerNoAutoCapture;
+                        _allowDuplicateNames = outerAllowDuplicateNames;
+                        node = Pcre2EmptyBacktrackingNode.Instance;
+                        return false;
+                    }
+
+                    _offset++;
+                    _options = outerOptions;
+                    _ungreedy = outerUngreedy;
+                    _noAutoCapture = outerNoAutoCapture;
+                    _allowDuplicateNames = outerAllowDuplicateNames;
+                    node = new Pcre2CaptureBacktrackingNode(slot, captureName, body);
+                    _captureDefinitions.TryAdd(slot, (Pcre2CaptureBacktrackingNode)node);
+                    return true;
+                }
+
+                if (_pattern.AsSpan(_offset).StartsWith("(?#", StringComparison.Ordinal))
+                {
+                    var end = _pattern.IndexOf(')', _offset + 3);
+                    if (end < 0)
                     {
                         node = Pcre2EmptyBacktrackingNode.Instance;
                         return false;
                     }
-                }
 
-                _offset += openingLength;
-                var outerOptions = _options;
-                var outerUngreedy = _ungreedy;
-                var outerNoAutoCapture = _noAutoCapture;
-                var outerAllowDuplicateNames = _allowDuplicateNames;
-                if (!TryParseAlternation(true, out var body) || _offset >= _pattern.Length || _pattern[_offset] != ')')
-                {
-                    _options = outerOptions;
-                    _ungreedy = outerUngreedy;
-                    _noAutoCapture = outerNoAutoCapture;
-                    _allowDuplicateNames = outerAllowDuplicateNames;
+                    _offset = end + 1;
                     node = Pcre2EmptyBacktrackingNode.Instance;
-                    return false;
+                    return true;
                 }
 
-                _offset++;
-                _options = outerOptions;
-                _ungreedy = outerUngreedy;
-                _noAutoCapture = outerNoAutoCapture;
-                _allowDuplicateNames = outerAllowDuplicateNames;
-                node = new Pcre2CaptureBacktrackingNode(slot, captureName, body);
-                _captureDefinitions.TryAdd(slot, (Pcre2CaptureBacktrackingNode)node);
-                return true;
-            }
-
-            if (_pattern.AsSpan(_offset).StartsWith("(?#", StringComparison.Ordinal))
-            {
-                var end = _pattern.IndexOf(')', _offset + 3);
-                if (end < 0)
-                {
-                    node = Pcre2EmptyBacktrackingNode.Instance;
-                    return false;
-                }
-
-                _offset = end + 1;
                 node = Pcre2EmptyBacktrackingNode.Instance;
-                return true;
+                return false;
             }
 
-            node = Pcre2EmptyBacktrackingNode.Instance;
-            return false;
-        }
+            if (!Pcre2CharacterCompiler.TryCompileSingleToken(
+                    _request,
+                    _offset,
+                    _options,
+                    out var token,
+                    out var patternLength) ||
+                patternLength <= 0)
+            {
+                node = Pcre2EmptyBacktrackingNode.Instance;
+                return false;
+            }
 
-        if (!Pcre2CharacterCompiler.TryCompileSingleToken(
-                _request,
-                _offset,
-                _options,
-                out var token,
-                out var patternLength) ||
-            patternLength <= 0)
-        {
-            node = Pcre2EmptyBacktrackingNode.Instance;
-            return false;
-        }
+            _offset += patternLength;
+            node = new Pcre2TokenBacktrackingNode(token);
+            return true;
 
-        _offset += patternLength;
-        node = new Pcre2TokenBacktrackingNode(token);
-        return true;
+        }
+        finally { budget.LeaveDepth(); }
     }
 
     private bool TryParseCaptureOpening(out string name, out int openingLength)
@@ -510,6 +519,7 @@ internal sealed class Pcre2BacktrackingParser
                 break;
             }
 
+            Utf8ConstructionScope.ChargeWork(1);
             var literalStart = _offset;
             if (Rune.DecodeFromUtf16(_pattern.AsSpan(_offset), out var literal, out var length) != OperationStatus.Done)
             {
@@ -1264,6 +1274,9 @@ internal sealed class Pcre2BacktrackingParser
 
     private bool TryRegisterCaptureName(int slot, string name)
     {
+        // Admit this duplicate-name scan as a block, rather than charging each
+        // helper object or equality probe. Names have the profile's length cap.
+        Utf8ConstructionScope.ChargeWork((ulong)_nameEntries.Count + (ulong)name.Length);
         if (_captureSlotNames.TryGetValue(slot, out var existingSlotName) &&
             !string.Equals(existingSlotName, name, StringComparison.Ordinal))
         {
@@ -1272,8 +1285,10 @@ internal sealed class Pcre2BacktrackingParser
                 Pcre2ErrorKind.InvalidAfterParensQuery);
         }
 
+        var scanned = 0;
         foreach (var entry in _nameEntries)
         {
+            if ((scanned++ & 63) == 0) Utf8ConstructionScope.ChargeWork(0);
             if (!string.Equals(entry.Name, name, StringComparison.Ordinal))
             {
                 continue;
@@ -1548,6 +1563,7 @@ internal sealed class Pcre2BacktrackingParser
     {
         while (_offset < _pattern.Length)
         {
+            if ((_offset & 2047) == 0) Utf8ConstructionScope.ChargeWork(0);
             if (Pcre2CompileValidator.TrySkipParenthesizedComment(_pattern, ref _offset))
             {
                 _sawControlFlow = true;

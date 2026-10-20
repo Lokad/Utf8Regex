@@ -51,6 +51,14 @@ factory eagerly prepares the derived FullMatch program too; its constructors
 defer that preparation. Replacement preparation and unmodeled CLR/JIT metadata
 retain their separate scope. Pass the invocation token to each later operation.
 
+Development after frozen RC1 covers PCRE2 backtracking parsing/lowering with the
+same construction owner. Its recursive frames have a fixed 256-frame backstop,
+tightened by smaller caller limits. A conservative 256-byte charge per UTF-16
+pattern character admits transient AST/name/capture metadata; instruction and
+auxiliary program buffers separately admit their actual capacity and growth
+overlap. Shared metadata can be charged twice, so previously accepted patterns
+may hit construction limits earlier. This adds coverage, not whole-heap bounds.
+
 | Common invocation control | Core / PythonRe | PCRE2 mapping |
 | --- | --- | --- |
 | `MaxWorkSteps` | Cumulative covered validation, matching and required shaping work | `MatchLimit`; values above `uint.MaxValue` reject |

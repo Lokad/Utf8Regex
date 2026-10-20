@@ -105,21 +105,9 @@ public sealed class Pcre2SliceCategoryTests
     [Theory]
     [InlineData(@"\p{Greek}+")]
     [InlineData(@"\p{xx}")]
-    public void UnknownNamesKeepNoneProgramVocabulary(string pattern)
+    public void UnservedCategoryNamesFailDuringConstruction(string pattern)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
-        Assert.Equal(
-            "IsMatch=None, Count=None, Enumerate=None, Match=None, Replace=None",
-            regex.DebugDescribeExecutionPlan());
-    }
-
-    [Theory]
-    [InlineData(@"\p{Greek}+", "ab")]
-    [InlineData(@"\p{xx}", "ab")]
-    public void UnknownNamesThrowNotSupported(string pattern, string inputText)
-    {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
-        Assert.Throws<NotSupportedException>(() => regex.IsMatch(Utf8(inputText)));
+        Assert.Throws<NotSupportedException>(() => new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None));
     }
 
     public static IEnumerable<object?[]> IsMatchCases()

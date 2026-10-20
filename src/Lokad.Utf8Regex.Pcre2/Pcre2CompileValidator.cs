@@ -96,26 +96,6 @@ internal static class Pcre2CompileValidator
             throw new Pcre2CompileException("Escape sequence is invalid in character class.", Pcre2ErrorKind.EscapeInvalidInClass);
         }
 
-        if (Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?X)", options, compileSettings.Newline) || Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?z)", options, compileSettings.Newline))
-        {
-            throw new Pcre2CompileException("Invalid character after '(?'.", Pcre2ErrorKind.InvalidAfterParensQuery);
-        }
-
-        if (Pcre2PatternCodeScan.ContainsNonClassCodeText(pattern, @"\idef", options, compileSettings.Newline))
-        {
-            throw new Pcre2CompileException(@"Unrecognized escape sequence '\i'.", Pcre2ErrorKind.UnrecognizedEscape);
-        }
-
-        if (Pcre2PatternCodeScan.ContainsCodeText(pattern, "{5,4}", options, compileSettings.Newline))
-        {
-            throw new Pcre2CompileException("Numbers out of order in quantifier.", Pcre2ErrorKind.QuantifierNumbersOutOfOrder);
-        }
-
-        if (Pcre2PatternCodeScan.ContainsCodeText(pattern, "{65536}", options, compileSettings.Newline))
-        {
-            throw new Pcre2CompileException("Quantifier is too large.", Pcre2ErrorKind.QuantifierTooBig);
-        }
-
         Pcre2CaptureNameValidator.Validate(pattern, options, compileSettings.Newline);
         ValidateStructure(pattern, options, compileSettings.Newline);
     }
@@ -133,6 +113,7 @@ internal static class Pcre2CompileValidator
         var previousWasZeroWidth = true; // No repeatable item at pattern entry.
         for (var offset = 0; offset < pattern.Length; offset++)
         {
+            if ((offset & 2047) == 0) Utf8ConstructionScope.ChargeWork(0);
             var character = pattern[offset];
             if (quoted)
             {
@@ -171,6 +152,7 @@ internal static class Pcre2CompileValidator
                         throw new Pcre2CompileException("Escape sequence is invalid in character class.", Pcre2ErrorKind.EscapeInvalidInClass);
                     }
 
+                    ValidateEscape(pattern, ref offset, escape);
                     classHasAtom = true;
                     classStart = false;
                     continue;
@@ -199,6 +181,7 @@ internal static class Pcre2CompileValidator
                     quoted = true;
                 }
 
+                ValidateEscape(pattern, ref offset, escape);
                 if (escape is not ('Q' or 'E'))
                     previousWasZeroWidth = escape is 'A' or 'b' or 'B' or 'G' or 'z' or 'Z';
                 continue;
@@ -227,6 +210,7 @@ internal static class Pcre2CompileValidator
 
             if (character == '(')
             {
+                ValidateOptionOpening(pattern, offset);
                 if (Pcre2PatternCodeScan.EnterExtendedGroup(pattern, ref offset, ref extended, extendedScopes)) continue;
                 groupDepth++;
                 previousWasZeroWidth = false;
@@ -242,6 +226,13 @@ internal static class Pcre2CompileValidator
                 }
 
                 previousWasZeroWidth = false;
+                continue;
+            }
+
+            if (character == '{' && TryValidateBoundedQuantifier(pattern, ref offset))
+            {
+                if (previousWasZeroWidth)
+                    throw new Pcre2CompileException("Quantifier does not follow a repeatable item.", Pcre2ErrorKind.QuantifierInvalid);
                 continue;
             }
 
@@ -261,6 +252,90 @@ internal static class Pcre2CompileValidator
         if (groupDepth != 0)
         {
             throw new Pcre2CompileException("Missing closing parenthesis.", Pcre2ErrorKind.MissingClosingParenthesis);
+        }
+    }
+
+    private static void ValidateEscape(string pattern, ref int offset, char escape)
+    {
+        // Unknown ASCII letters are errors. Punctuation can be quoted literally;
+        // syntax and operand validity for recognized escapes belong to the parser.
+        if (char.IsAsciiLetter(escape) && "aAbBcCdDeEfFgGhHkKnNoOpPQrRsStTuUvVwWxXzZ".IndexOf(escape) < 0)
+            throw new Pcre2CompileException($"Unrecognized escape sequence '\\{escape}'.", Pcre2ErrorKind.UnrecognizedEscape);
+        if (escape == 'c' && offset + 1 < pattern.Length) { offset++; return; }
+        if (escape is not ('x' or 'o' or 'g' or 'k' or 'p' or 'P' or 'N') || offset + 1 >= pattern.Length) return;
+        var opening = pattern[offset + 1];
+        var closing = opening == '{' ? '}' : escape is 'g' or 'k' && opening == '<' ? '>' :
+            escape is 'g' or 'k' && opening == '\'' ? '\'' : '\0';
+        if (closing == '\0') return;
+        // Malformed operands can revisit suffixes. Admit/check bounded blocks
+        // even though the outer lexical pass already admits its text extent.
+        for (var cursor = offset + 2; cursor < pattern.Length;)
+        {
+            var count = Math.Min(2048, pattern.Length - cursor);
+            Utf8ConstructionScope.ChargeWork((ulong)count);
+            var end = pattern.AsSpan(cursor, count).IndexOf(closing);
+            if (end >= 0) { offset = cursor + end; return; }
+            cursor += count;
+        }
+    }
+
+    private static void ValidateOptionOpening(string pattern, int offset)
+    {
+        if (!pattern.AsSpan(offset).StartsWith("(?", StringComparison.Ordinal) ||
+            pattern.AsSpan(offset).StartsWith("(?R)", StringComparison.Ordinal)) return;
+        var cursor = offset + 2;
+        if (cursor < pattern.Length && pattern[cursor] == '^') cursor++;
+        var invalid = false;
+        for (; cursor < pattern.Length; cursor++)
+        {
+            var flag = pattern[cursor];
+            if (flag is ':' or ')')
+            {
+                if (invalid) throw new Pcre2CompileException("Invalid character after '(?'.", Pcre2ErrorKind.InvalidAfterParensQuery);
+                return;
+            }
+            if (flag == '-') continue;
+            if (!char.IsAsciiLetter(flag)) return; // Capture, reference or assertion syntax.
+            invalid |= "imnsxJUr".IndexOf(flag) < 0;
+        }
+    }
+
+    private static bool TryValidateBoundedQuantifier(string pattern, ref int offset)
+    {
+        var cursor = offset + 1;
+        SkipSpace();
+        if (!ReadNumber(out var minimum)) return false;
+        var maximum = minimum;
+        SkipSpace();
+        if (cursor < pattern.Length && pattern[cursor] == ',')
+        {
+            cursor++;
+            SkipSpace();
+            if (!ReadNumber(out maximum)) maximum = int.MaxValue;
+            SkipSpace();
+        }
+        if (cursor >= pattern.Length || pattern[cursor] != '}') return false;
+        if (minimum > 65535 || maximum != int.MaxValue && maximum > 65535)
+            throw new Pcre2CompileException("Quantifier is too large.", Pcre2ErrorKind.QuantifierTooBig);
+        if (maximum < minimum)
+            throw new Pcre2CompileException("Numbers out of order in quantifier.", Pcre2ErrorKind.QuantifierNumbersOutOfOrder);
+        offset = cursor;
+        return true;
+
+        void SkipSpace()
+        {
+            while (cursor < pattern.Length && pattern[cursor] is ' ' or '\t') cursor++;
+        }
+        bool ReadNumber(out int value)
+        {
+            var start = cursor;
+            value = 0;
+            while (cursor < pattern.Length && pattern[cursor] is >= '0' and <= '9')
+            {
+                if ((cursor & 2047) == 0) Utf8ConstructionScope.ChargeWork(0);
+                value = Math.Min(65536, value * 10 + pattern[cursor++] - '0');
+            }
+            return cursor != start;
         }
     }
 

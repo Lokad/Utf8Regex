@@ -56,6 +56,26 @@ validation stacks and other construction storage. The explicit factory exposes
 covered admission/interruption, not a claim to every allocation, CLR/JIT metadata,
 lazy preparation, caller retention or process memory.
 
+Development after frozen RC1 adds backtracking-compiler admission: before parsing,
+reserve a conservative 256 bytes per UTF-16 pattern character for transient AST
+vectors, capture/name maps and metadata copies. This is a modeled capacity charge,
+can count shared storage twice and stays charged on successful compilation; it is
+not an estimate of total managed allocation. Each lowerer's separate name lookup
+also admits 256 bytes per name entry, including nested assertion lowerers.
+Instruction and auxiliary program
+arrays separately admit capacity and growth overlap before allocation. Parsing,
+lowering and reference-following analysis share work/interruption and depth
+admission. This CLR-recursive compiler has a fixed 256-frame construction
+backstop; a smaller public depth limit tightens it. Earlier construction refusal
+is intentional. Other validation/character-parser coverage exclusions remain.
+
+Compile-time syntax checks apply to quantifier bounds and option/escape grammar
+in context, outside quoted text, comments, classes and escape operands. Finite
+quantifier bounds are at most 65535 and the lower bound cannot exceed the upper.
+If all compilers decline, construction throws `NotSupportedException` instead of
+returning an expression with no executable operation. Empty intermediate
+foundations remain valid while a live profile compiler supplies its operations.
+
 Character-class ranges compare decoded Unicode-scalar endpoints. Raw
 `[😀-😃]` and escaped `[\x{1F600}-\x{1F603}]` have the same membership; UTF-16
 source characters and escape spellings do not define endpoint order. A range

@@ -1,5 +1,19 @@
 # Release notes
 
+## Unreleased development after 0.4.0-rc.1
+
+- PCRE2 rejects invalid quantifier bounds, option flags and unknown escapes in
+  context, rather than recognizing only particular error examples. If every
+  compiler declines, construction fails instead of returning an unusable program.
+- PCRE2 backtracking construction now admits major metadata/instruction buffers
+  and checks work, interruption and recursive depth. Its fixed recursive-depth
+  backstop is 256 frames; smaller caller limits tighten it. Conservative metadata
+  charges can count shared storage twice and cause earlier construction refusal.
+  See [SPEC-PCRE2.md](SPEC-PCRE2.md) for the modeled scope and remaining exclusions.
+- Benchmark-only UTF-8 lead-byte sampling moves out of the shipped Core library.
+
+These changes are development source; the frozen 0.4.0-rc.1 artifacts are unchanged.
+
 ## 0.4.0-rc.1
 
 This prerelease moves all three packages to one common version. PythonRe and
