@@ -1,11 +1,14 @@
 # Changelog
 
-## Private Core/PythonRe scalar.119 — qualification pending
+## Private Core/PythonRe scalar.119 — READY
 
 Batch the controlled exact-pair and mandatory RTL strict-end Count changes below,
 with retained ordinal-reference scalar/capture/resource tests. The rejected span
-prototype stays absent. Source costs remain distinct from pending immutable
-package/default-tier evidence; scalar118 stays READY and earlier bytes unchanged.
+prototype stays absent. Same DLLs pass Windows/Linux, original producer handoff
+assertions, Unicode fixtures and exact identity/member/symbol gates; source CI is
+green. One 106-second default-tier observation records current finite/token/deadline
+and materialization costs, including variance. Earlier bytes remain unchanged.
+[Delivery and exact scope](artifacts/core-python-scalar119-20261020/HANDOFF.md).
 
 ## Development: RTL strict-end Count candidate filtering
 
@@ -16,7 +19,7 @@ and resource admission remain. Numeric work and VM scratch requirements can fall
 One public FullOpts pair observes about85–87% lower long RTL miss costs, bounded
 empty-EOF discovery and faster impossible-offset calls with64B less allocation.
 [Public costs, guards and Release checks](bench/Experiments/RtlStrictEndCount-20261020/README.md).
-Immutable118 is unchanged; package/default-tier qualification remains separate.
+Included in immutable119; the source pair remains separate from default-tier costs.
 
 ## Development: controlled two-literal candidate scanning
 
@@ -27,7 +30,7 @@ No new preparation, cache, owner or API. One public FullOpts pair supports about
 7–9% lower finite hit/miss Count time and roughly halved dense false-prefix costs,
 with unchanged Core allocations; all measured regressions remain below3.3%.
 [Costs, limits and Release checks](bench/Experiments/ControlledPairCandidate-20261020/README.md).
-Immutable scalar118 and its default-tier observations stay unchanged.
+Included in immutable119; earlier118 bytes and observations stay unchanged.
 
 ## Private Core/PythonRe scalar.118 — READY
 

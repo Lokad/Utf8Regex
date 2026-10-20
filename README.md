@@ -1,264 +1,34 @@
 # Lokad.Utf8Regex
 
-Private **Core/PythonRe 0.4.0-scalar.119** is being qualified. This batch includes
-controlled exact-pair candidate scanning and mandatory RTL strict-end Count
-filtering, with retained scalar/capture/resource tests. Numeric work/working
-requirements can fall where real scans, attempts and scratch acquisitions disappear.
-Immutable118 remains the latest READY input until the actual-byte platform,
-consumer, provenance and default-tier cost gates finish. No PCRE119 or publication.
+`Lokad.Utf8Regex` is a `net10.0` library matching Unicode scalars over strict UTF-8
+spans, with primary byte offsets and lengths. Dot matches 😀 once across four
+bytes. UTF-16 coordinates and strings are derived conveniences. PythonRe adds
+pinned Python grammar, captures and result shaping over the shared owned engine.
 
-Private **Core/PythonRe 0.4.0-scalar.118**, producer `735776fb`, is READY.
-This batch reduces Count/enumeration preparation and uses the existing controlled
-cursor for eligible finite ASCII branches. Scalar/capture and result lifetimes
-stay; numeric work/depth/working requirements can fall when scratch disappears.
-Same actual DLLs pass Windows/Linux, original producer handoff assertions, Unicode
-fixtures and exact package/member/symbol gates. Current default-tier measurements
-include finite/token/deadline and equivalent .NET controls, with variance stated.
-[Handoff](artifacts/core-python-scalar118-20261020/HANDOFF.md), [consume](artifacts/core-python-scalar118-20261020/CONSUMING.md), [integrity](artifacts/core-python-scalar118-20261020/final-integrity.json).
-Older candidates remain immutable; no publication, external adoption or PCRE118.
+Private **Core/PythonRe 0.4.0-scalar.119**, producer `ca0c8a6f`, is READY.
+The same immutable DLLs pass Windows/Linux, the original producer Awk/Lython
+handoff assertions, Unicode fixtures and exact package/member/symbol checks.
+Source CI is green. This batch improves controlled pair discovery and RTL
+strict-end Count; scalar semantics, captures, original cancellation/deadlines,
+resource controls and retained-result lifetimes remain. Numeric modeled work/
+working requirements can fall when real scans, attempts and scratch disappear.
+[Handoff](artifacts/core-python-scalar119-20261020/HANDOFF.md),
+[consume](artifacts/core-python-scalar119-20261020/CONSUMING.md),
+[integrity](artifacts/core-python-scalar119-20261020/final-integrity.json).
 
-Private **Core/PythonRe 0.4.0-scalar.117**, producer04b7a3ed, is READY.
-Generic eager results reuse Python's admitted workspace, avoiding repeated Core
-attempts/range staging while preserving actual native paths and scalar/resource/
-ownership contracts. Same actual DLLs pass Windows/Linux, the unchanged producer
-handoff assertions, Unicode fixtures and exact restore/member/provenance/symbol
-gates. Source CI is green. [Handoff](artifacts/core-python-scalar117-20261020/HANDOFF.md), [consume](artifacts/core-python-scalar117-20261020/CONSUMING.md), [integrity](artifacts/core-python-scalar117-20261020/final-integrity.json).
-Current actual-byte costs include all changed eager surfaces, finite/token lanes
-and equivalent decode/predecoded .NET outputs, with residual variance stated.
-No universal overhead, causal package gain, publication, consumer adoption or
-PCRE117. Older immutable candidates retain their recorded scope.
+[Current actual-byte costs](CURRENT-PERFORMANCE.md) include finite limits,
+live tokens, deadlines and equivalent .NET controls. Limits retain material costs;
+measured variance and source/package/runtime scopes are explicit. Core retains
+only permitted `Unsafe.SizeOf`; PythonRe has no unchecked accesses. Shipped BCL
+matchers/results and native imports are absent; timeout/options metadata remains.
+Defaults/static calls are unlimited; [host integration](HOST-INTEGRATION.md)
+defines enforced capacities, host composition and separate retained/getter scope.
 
-Private **Core/PythonRe 0.4.0-scalar.116**, producer e83d1942, is READY.
-This coherent boundary completes diagnostic replay retirement and includes eager
-scalar string-findall's one-step/result modeled work reduction. Original scalar,
-interruption, admission and cursor/result contracts remain. Same actual DLLs pass
-Windows/Linux suites, original Awk/Lython assertions, Unicode fixtures and exact
-restore/member/provenance/symbol gates. Source CI is green.
-[Handoff](artifacts/core-python-scalar116-20261020/HANDOFF.md), [consume](artifacts/core-python-scalar116-20261020/CONSUMING.md), [integrity](artifacts/core-python-scalar116-20261020/final-integrity.json).
-Current actual-byte finite/token/cursor costs include explicit variance limits;
-no universal overhead or causal package gain. Older candidates remain immutable.
-No publication, external adoption or PCRE116; broader policy/profile work is open.
-
-Private **Core/PythonRe 0.4.0-scalar.115**, producera335e8ba, is READY.
-The same actual DLLs pass Windows/Linux suites, original Awk/Lython public
-assertions, Unicode fixtures and exact identity/member/symbol gates. It batches
-narrower literal-family inputs, dead-getter removal and reduced retained runtime
-state; scalar/capture, interruption, numerical resource and lifetime contracts
-remain. Source CI is green. Current package measurements include all four finite
-controls and token/cursor lanes, with residual variance and small-row scaling
-limits stated explicitly.
-[Handoff](artifacts/core-python-scalar115-20261020/HANDOFF.md), [consume](artifacts/core-python-scalar115-20261020/CONSUMING.md), [integrity](artifacts/core-python-scalar115-20261020/final-integrity.json).
-Earlier114/112 and failed113 bytes remain intact. No publication, external adoption
-or PCRE115; broader common-policy/performance goals remain open.
-
-Private **Core/PythonRe 0.4.0-scalar.114**, producer01968d0f, is READY.
-The same actual DLLs pass Windows/Linux suites, original Awk/Lython assertions,
-Unicode fixtures and exact identity/member/symbol checks. This batches the Core
-selector and Python Detailed character-count reuse; scalar/capture, interruption,
-numeric resource and lifetime contracts remain. Source CI is green.
-Current actual-package costs include all four finite limits and token/cursor lanes;
-small-case tier transitions limit performance claims.
-[Handoff](artifacts/core-python-scalar114-20261020/HANDOFF.md), [consume](artifacts/core-python-scalar114-20261020/CONSUMING.md), [integrity](artifacts/core-python-scalar114-20261020/final-integrity.json).
-Immutable112/older and failed113 bytes remain intact. No publication, external
-pin/adoption or PCRE114; broader common-policy/performance goals remain open.
-
-Frozen **scalar.113**, producer1ed07281, failed the no-default-parameter source
-guard. Its attempted packages and logs remain preserved as failed evidence;
-no usable113 candidate was designated. Scalar112 remains the qualified dependency.
-
-Private **Core/PythonRe 0.4.0-scalar.112**,producer64a031fd/C#28970719,is ready.
-The same actual DLLs pass Windows/Linux suites,original Awk/Lython assertions,
-oracles and exact identity/member/symbol checks. It fixes a demonstrated111
-interruption defect: generic Python Count/cursor EOF now checks original authority
-after the final VM failure. EOF needs one additional bounded work unit; scalar
-semantics,captures,byte limits,cleanup and owned snapshots retain their scope.
-[Handoff](artifacts/core-python-scalar112-20261019/HANDOFF.md),
-[consume](artifacts/core-python-scalar112-20261019/CONSUMING.md),
-[integrity](artifacts/core-python-scalar112-20261019/final-integrity.json).
-Source CI is green; all older bytes stay immutable. No publication,external pin /
-adoption or PCRE112. Broader original work remains open.
-
-Private **Core/PythonRe 0.4.0-scalar.111**,producer723d5581/C#10245c82,passes
-same-byte Windows/Linux suites,unchanged original Awk/Lython assertions,oracles
-and exact identity/member/symbol checks. Source CI is green. It removes obsolete
-execution,reuses controlled branch Count and borrows immutable plans;strict scalar
-UTF8,captures,NonBacktracking,original authority and lifetimes retain their scope.
-[Handoff](artifacts/core-python-scalar111-20261019/HANDOFF.md),
-[consume](artifacts/core-python-scalar111-20261019/CONSUMING.md),
-[actual-package costs](artifacts/core-python-scalar111-20261019/vm-cost/RESULT.md).
-Finite Count requirements can fall;readonly borrows preserve numeric metering.
-The fresh finite literal Count observation is higher than110's separate result;
-unpaired costs do not establish a causal regression. Earlier bytes stay immutable;
-no publication,external pin/adoption or PCRE111. Broader original work stays open.
-
-Private **Core/PythonRe 0.4.0-scalar.110**, producera514fdab/C#265a54ec, passes
-same-byte Windows/Linux suites, original Awk/Lython assertions, oracles and exact
-identity/member/symbol checks. Source CI is green. It fixes native Count terminal
-cancellation and reuses validation for scalar value-Match projection.
-[Handoff](artifacts/core-python-scalar110-20261019/HANDOFF.md),
-[consume](artifacts/core-python-scalar110-20261019/CONSUMING.md) and
-[exact costs](artifacts/core-python-scalar110-20261019/vm-cost/RESULT.md) record scope.
-Use the corrected pair for new adoption;109 predates the cancellation fix.
-Earlier bytes remain immutable; no publication, external pin change or PCRE110.
-Full common/default/retention and broader R06/R07/R08/R10 work remains open.
-
-Private **Core/PythonRe 0.4.0-scalar.109**, producer05044852/C#025b6ffa, passes
-same-byte Windows/Linux suites, unchanged Awk/Lython public assertions, oracles
-and exact package/loaded/member/symbol checks. Source CI is green on both platforms.
-Four finite invocation controls, strict scalar UTF8, captures and lifetimes retain
-their declared scope; coarse construction bytes/depth and Count work are versioned.
-[Handoff](artifacts/core-python-scalar109-20261019/HANDOFF.md),
-[consume](artifacts/core-python-scalar109-20261019/CONSUMING.md) and
-[current exact-package costs](artifacts/core-python-scalar109-20261019/vm-cost/RESULT.md)
-record acceptance and exclusions. Earlier candidates stay immutable. No publication,
-consumer pin change, adoption or PCRE109 is designated; full R06/R07/R08/R10 stays open.
-
-Private **Core/PythonRe0.4.0-scalar.108**, clean producer92a5a907, passes
-same-byte Windows/Linux package suites and unchanged original Awk/Lython public
-assertions, capture/semantic oracles and exact identity/provenance/member/symbol
-checks. It removes unused preparation, production UTF16 reference rendering and
-obsolete backend/lazy-test machinery. Owned Python timeouts now identify original
-Pattern; construction requirements may fall. Scalar semantics, controls and
-lifetimes remain. [Handoff](artifacts/core-python-scalar108-20261019/HANDOFF.md),
-[consume](artifacts/core-python-scalar108-20261019/CONSUMING.md) and
-[exact costs](artifacts/core-python-scalar108-20261019/vm-cost/RESULT.md)
-record scope and uncertainty. Hosted source CI39281487750 is green on Windows/Linux. Later109-dev source
-changes have separate gates; frozen108 stays unchanged. Immutable
-107/older and exact Core/PCRE94 stay; no PCRE108, publication, pin change or adoption.
-
-Qualified private **Core/PythonRe 0.4.0-scalar.107** batches unused native capture
-preparation/reporting removal and scalar dot/end repeat reuse. Same actual DLLs
-pass detached Windows/Linux, unchanged original consumer assertions, capture /
-semantic oracles and exact provenance/member/symbol checks. Source166f445c CI is
-green on both platforms. [Handoff](artifacts/core-python-scalar107-20261019/HANDOFF.md),
-[consume](artifacts/core-python-scalar107-20261019/CONSUMING.md) and [current costs](artifacts/core-python-scalar107-20261019/vm-cost/RESULT.md)
-record exact identities, scope and uncertainty. Numeric work/depth/working and
-construction requirements may fall; original controls, captures and lifetimes stay.
-Source advances to108-dev. Immutable106/older and independent Core/PCRE94 stay
-unchanged; no PCRE107, publication, external pin change or adoption is designated.
-
-Qualified private **Core/PythonRe 0.4.0-scalar.106** batches direct result staging,
-projection-only capture completion, bounded construction interruption, literal-run
-expansion and removal of unused scalar-only native preparation/guard storage.
-The same actual DLLs pass detached Windows/Linux suites, unchanged original
-consumer assertions, capture/semantic oracles and exact identity/provenance/symbol
-checks. Source91e33876 CI is green on both platforms. [Handoff](artifacts/core-python-scalar106-20261019/HANDOFF.md),
-[consume](artifacts/core-python-scalar106-20261019/CONSUMING.md) and [current costs](artifacts/core-python-scalar106-20261019/vm-cost/RESULT.md)
-record scope, versioned construction thresholds, finite costs and raw limitations.
-Strict UTF8/scalars, captures, original interruption, useful limits and result /
-cursor lifetimes remain. Source advances to107-dev; immutable105/older inputs and
-the independent exact Core/PCRE94 pair stay unchanged. No PCRE106, publication or
-external consumer adoption is implied.
-
-Qualified private **Core/PythonRe 0.4.0-scalar.105** contains the nullable
-NonBacktracking correction, native grouped replacement miss staging removal,
-retired fallback execution and coarse construction-map work. Scalar semantics,
-strict UTF8, captures, cancellation/deadlines and enforceable finite invocation
-controls remain. Construction work thresholds are versioned; see
-[host integration](HOST-INTEGRATION.md). The same package DLLs pass detached
-Windows/Linux suites and unchanged original consumer checks; source2943b233 CI
-is green on both platforms. [Handoff](artifacts/core-python-scalar105-20261019/HANDOFF.md)
-and [consume](artifacts/core-python-scalar105-20261019/CONSUMING.md) record exact
-identities, the revised construction work units and current finite costs.
-Source advances to106-dev. Immutable104 and independent Core/PCRE94 stay unchanged;
-PCRE94 requires its exact Core94 graph. No publication or consumer adoption is implied.
-
-Qualified private **Core/PythonRe 0.4.0-scalar.104**, exact Core104, producer
-`da89185b887f1ba943a72602c07d5da3ad0984f8`, batches unchanged-output projection,
-bounded literal guidance and operation-local replacement scratch reuse. Same
-DLLs pass Windows/Linux package suites and unchanged original consumer assertions;
-source CI is green. [Handoff](artifacts/core-python-scalar104-20261019/HANDOFF.md)
-and [consume](artifacts/core-python-scalar104-20261019/CONSUMING.md) record exact
-identities, representative current finite costs and timing limitations. Scratch
-reuse reduces repeated allocation but can raise intermediate working overlap;
-see HOST-INTEGRATION. Its packaged README has a Unicode encoding defect, corrected
-in development documentation; package DLLs and earlier bytes stay unchanged.
-Source moves to105-dev; no PCRE104/publication/downstream adoption is designated.
-
-Qualified private **Core/PythonRe 0.4.0-scalar.103**, exact Core103, producer
-`6150c4388b3140cfa32c516e8c03d0836a5a84cc`. It fixes scoped-multiline grouped
-prefixes and reuses admitted literal storage, batching the accepted bounded-copy,
-construction-state and ASCII-repeat changes. Same DLLs pass Windows/Linux package
-and unchanged original consumer checks. [Handoff](artifacts/core-python-scalar103-20261019/HANDOFF.md)
-and [consume](artifacts/core-python-scalar103-20261019/CONSUMING.md) record identities,
-current finite capture costs and timing limitations. Scalar.102 lacks the anchor
-correction. Source moves to104-dev; no PCRE103, publication or adoption is designated.
-
-Qualified private **Core/PythonRe 0.4.0-scalar.102**, exact Core102, clean producer
-`62efe07bc5cf93865549b1d241487efe34b3475f`. It batches bounded required-literal
-absence admission, terminal prefix Count cancellation and coarse Python template
-work admission. Same DLLs pass Windows/Linux detached suites and unchanged
-original public consumer assertions. [Handoff](artifacts/core-python-scalar102-20261018/HANDOFF.md)
-and [consume](artifacts/core-python-scalar102-20261018/CONSUMING.md) record identities,
-the initial allocation-test failure/recovery and current finite replacement costs.
-Source moves to103-dev; no PCRE102, publication or adoption is designated.
-
-Qualified private **Core/PythonRe 0.4.0-scalar.101**, exact Core101, clean producer
-`8ed61eaba2b34d8aa72f791b063d3f8300f8f1a3`. It fixes overlapping Core `TryReplace`
-output and avoids duplicate whole-match text in detailed Python captures. Same
-bytes pass Windows/Linux package suites and unchanged original consumer assertions.
-[Handoff](artifacts/core-python-scalar101-20261018/HANDOFF.md) and
-[consume](artifacts/core-python-scalar101-20261018/CONSUMING.md) record exact
-identities, current finite costs and uncertainty. No PCRE101, publication or
-adoption is designated. Earlier bytes remain immutable.
-
-Qualified private **Core/PythonRe 0.4.0-scalar.100**, clean producer
-`fa0e260880caf40b3ba139f6e7fa196276d8c783`, exact Core100. Same bytes pass
-Windows/Linux package consumers, original public assertions and provenance/member
-checks. [Handoff](artifacts/core-python-scalar100-20261018/HANDOFF.md) and
-[consume](artifacts/core-python-scalar100-20261018/CONSUMING.md) record identities,
-the Unicode class-construction improvements, current costs and scope. Earlier
-bytes stay immutable. No PCRE100, publication or downstream adoption is implied.
-
-Known scalar.100 issue: Core `TryReplace` requires disjoint subject/destination
-storage. Scalar.101 fixes overlapping output through staged scalar
-replacement; see [the contract and allocation tradeoff](HOST-INTEGRATION.md).
-
-`Lokad.Utf8Regex` is a `net10.0` library matching Unicode scalars over strict UTF-8 spans, with primary
-byte offsets and lengths. Dot matches 😀 once across its four bytes. UTF-16
-coordinates and strings are derived conveniences. PythonRe adds pinned Python
-grammar, captures and result shaping over the shared owned engine.
-
-Earlier qualified private **Core/PythonRe 0.4.0-scalar.99**, clean producer
-`222dc5da6a1dc05800480f3a26cdf28d91a4e85f`, requires exact Core
-`[0.4.0-scalar.99]`. It batches
-constant-class construction simplifications and generic Count's removal of
-unused UTF-16 metadata. Same immutable bytes pass Windows/Linux semantic,
-resource, consumer, member, provenance and symbol checks.
-[Handoff](artifacts/core-python-scalar99-20261018/HANDOFF.md) and
-[consume](artifacts/core-python-scalar99-20261018/CONSUMING.md) record the feed and
-scope. Current package costs qualify six of fifteen lanes; Python materialization costs remain
-inconclusive. Older bytes remain immutable; no PCRE99 or publication is implied.
-
-Earlier qualified private **Core/PythonRe 0.4.0-scalar.98**, clean producer
-`02fde38c8edc81d44dc2bc1da9fc072cfd336f8f`, requires exact Core
-`[0.4.0-scalar.98]`. Same immutable bytes pass Windows/Linux package consumers,
-capture/semantic controls, API/member/provenance/symbol checks and a fresh mapped
-feed restore. [Producer CI](https://github.com/Lokad/Utf8Regex/actions/runs/39119349263)
-is green. [Handoff](artifacts/core-python-scalar98-20261018/HANDOFF.md) and
-[consumption](artifacts/core-python-scalar98-20261018/CONSUMING.md) record identities,
-the supported contract and exclusions.
-
-This delivery batches controlled ASCII decimal IsMatch and bounded URI Count
-improvements. Whole-input strict UTF-8 validation, scalar results, captures,
-original cancellation, absolute deadlines and finite work/depth/working/result
-controls remain. Removing unnecessary VM work and URI phase dispatch can admit
-smaller numeric budgets. Earlier deadline and preparation fixes remain included.
-See [shared controls](HOST-INTEGRATION.md) for the exact resource scope.
-
-[Exact98 costs](artifacts/core-python-scalar98-20261018/vm-cost/RESULT.md) close after
-one run and its sole confirmation. Finite/live URI Count costs about3.45ms/112B;
-finite/live16KiB decimal IsMatch about1.16us/112B. Several unlimited/control lanes
-and Python materialization remain inconclusive. Source comparisons retain their
-separate scope; historical README tables do not qualify these package bytes.
-
-Core retains only permitted `Unsafe.SizeOf`; PythonRe none. Producer and Lython
-accept SizeOf. Actual unchecked reads, generated staging helpers, native imports
-and shipped BCL matching/results remain absent. Preserve immutable97/older and
-independent [Core/PCRE94](artifacts/pcre2-scalar94-delivery-20261018/HANDOFF.md).
-Exact Core94/Core98 require separate dependency graphs. Defaults/static calls
-remain unlimited; full SPEC and common-retention coverage remain open. These
-producer checks do not establish downstream adoption or publication.
+Earlier immutable candidates, including [118](artifacts/core-python-scalar118-20261020/HANDOFF.md),
+keep their recorded contracts and evidence. Independent [Core/PCRE94](artifacts/pcre2-scalar94-delivery-20261018/HANDOFF.md)
+requires its exact Core94 dependency graph. Broader SPEC/common-policy/profile
+work remains open. Producer checks establish the listed handoff assertions;
+publication, external consumer adoption and PCRE119 are separate scope.
 
 ## Support Scope
 

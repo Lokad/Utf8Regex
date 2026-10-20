@@ -10,8 +10,8 @@
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <Authors>Lokad</Authors>
     <Company>Lokad</Company>
-    <!-- Coherent Core/PythonRe delivery identity; earlier candidates stay intact. -->
-    <Version>0.4.0-scalar.119</Version>
+    <!-- Development after immutable Core/PythonRe scalar.119 qualification. -->
+    <Version>0.4.0-scalar.120-dev</Version>
     <AssemblyVersion>0.4.0</AssemblyVersion>
     <FileVersion>0.4.0</FileVersion>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>

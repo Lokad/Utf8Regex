@@ -1,0 +1,2670 @@
+{
+  "delivery": {
+    "status": "READY",
+    "version": "0.4.0-scalar.119",
+    "producer": "ca0c8a6f04bd08d67cdd3db1b3184f9db2838480",
+    "source_ci": {
+      "headSha": "6b3b941832b353a185a590dae2a82f1bc8996327",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/Lokad/Utf8Regex/actions/runs/39393751142",
+      "run": 39393751142
+    },
+    "manifest_sha256": "26497A408FC682F57473EE9DF81AED61086403EFB3D21E3EA9415CE3087A568C",
+    "packages": [
+      {
+        "Id": "Lokad.Utf8Regex",
+        "Version": "0.4.0-scalar.119",
+        "RelativePath": "feed/Lokad.Utf8Regex.0.4.0-scalar.119.nupkg",
+        "PackageSha256": "C539DA464CF39BB9A772C87212843EE92B28C8844CCA81AD34661B250D5B38C8",
+        "PackageSha512Base64": "pPPxa6wdAfnbDAFrzQfa92BEcYWi1UH8tuveBWSsySuP+wENAn+vAOf6HNg/qEMA75yPDXWfeMGj6OUNK5lpEw==",
+        "AssemblySha256": "37E34C27C9E51DFA21F8D576DC3B1B4BA3F71793C64B043114B9C59EA951F6F6",
+        "SymbolRelativePath": "feed/Lokad.Utf8Regex.0.4.0-scalar.119.snupkg",
+        "SymbolSha256": "8F3F4787B292D1D3E578B50CA50AFF1A01EA06B282FC09D0DAC30B8F77A79A54",
+        "PdbSha256": "215DB221BEA7A0668F6865A2CC10AAD8D6418CDFB6E1491475D2F17F8B9A0330"
+      },
+      {
+        "Id": "Lokad.Utf8Regex.PythonRe",
+        "Version": "0.4.0-scalar.119",
+        "RelativePath": "feed/Lokad.Utf8Regex.PythonRe.0.4.0-scalar.119.nupkg",
+        "PackageSha256": "6B2932FE72E0A2AECA33F041848C6B0D369232A798C2FE0296DFF0997CAC71EA",
+        "PackageSha512Base64": "qH+jc/OVkJMRXM05Us1M1VGJiNMmuHiEevetPoFvxFLwg/wlD8bYRX2UeGO/30a/uj+xdd8VgDvxgCqxTdid2w==",
+        "AssemblySha256": "25204F494A774009ECD14B4447D59F811AA2848B2B80F9B227626CEF8636A48B",
+        "SymbolRelativePath": "feed/Lokad.Utf8Regex.PythonRe.0.4.0-scalar.119.snupkg",
+        "SymbolSha256": "8A4368F54C5DDAE863C496590C1ECA3F5DCB3127B18EDD942A55BAF7B903464E",
+        "PdbSha256": "B1CD961AF53476ADD450285ED3C71F04E038E5D57A43428D14D5F9D36CDF9F47"
+      }
+    ],
+    "platforms": {
+      "windows": {
+        "suites": [
+          {
+            "TestProject": "Lokad.Utf8Regex.Tests",
+            "Passed": 39870,
+            "Failed": 0,
+            "ProjectReferences": 0,
+            "Payloads": {
+              "Id": "Lokad.Utf8Regex",
+              "Version": "0.4.0-scalar.119",
+              "PackageSha256": "C539DA464CF39BB9A772C87212843EE92B28C8844CCA81AD34661B250D5B38C8",
+              "DllSha256": "37E34C27C9E51DFA21F8D576DC3B1B4BA3F71793C64B043114B9C59EA951F6F6",
+              "TestedFeed": "D:\\code\\utf8regex\\artifacts\\scalar-candidate-attempts\\a95cd0ae9bb8\\feed",
+              "ExactLock": true
+            },
+            "LockSha256": "EE20997DBA394A6DD8DD883A47FC0DF8CCF36F47F686480DB6EDF51098AF5FB4"
+          },
+          {
+            "TestProject": "Lokad.Utf8Regex.DiffTests",
+            "Passed": 1504,
+            "Failed": 0,
+            "ProjectReferences": 0,
+            "Payloads": {
+              "Id": "Lokad.Utf8Regex",
+              "Version": "0.4.0-scalar.119",
+              "PackageSha256": "C539DA464CF39BB9A772C87212843EE92B28C8844CCA81AD34661B250D5B38C8",
+              "DllSha256": "37E34C27C9E51DFA21F8D576DC3B1B4BA3F71793C64B043114B9C59EA951F6F6",
+              "TestedFeed": "D:\\code\\utf8regex\\artifacts\\scalar-candidate-attempts\\a95cd0ae9bb8\\feed",
+              "ExactLock": true
+            },
+            "LockSha256": "EE20997DBA394A6DD8DD883A47FC0DF8CCF36F47F686480DB6EDF51098AF5FB4"
+          },
+          {
+            "TestProject": "Lokad.Utf8Regex.PythonRe.Tests",
+            "Passed": 3855,
+            "Failed": 0,
+            "ProjectReferences": 0,
+            "Payloads": [
+              {
+                "Id": "Lokad.Utf8Regex",
+                "Version": "0.4.0-scalar.119",
+                "PackageSha256": "C539DA464CF39BB9A772C87212843EE92B28C8844CCA81AD34661B250D5B38C8",
+                "DllSha256": "37E34C27C9E51DFA21F8D576DC3B1B4BA3F71793C64B043114B9C59EA951F6F6",
+                "TestedFeed": "D:\\code\\utf8regex\\artifacts\\scalar-candidate-attempts\\a95cd0ae9bb8\\feed",
+                "ExactLock": true
+              },
+              {
+                "Id": "Lokad.Utf8Regex.PythonRe",
+                "Version": "0.4.0-scalar.119",
+                "PackageSha256": "6B2932FE72E0A2AECA33F041848C6B0D369232A798C2FE0296DFF0997CAC71EA",
+                "DllSha256": "25204F494A774009ECD14B4447D59F811AA2848B2B80F9B227626CEF8636A48B",
+                "TestedFeed": "D:\\code\\utf8regex\\artifacts\\scalar-candidate-attempts\\a95cd0ae9bb8\\feed",
+                "ExactLock": true
+              }
+            ],
+            "LockSha256": "F8EB5DC4980F21A597FC14D4A2DC9A02DD9DBBB1324FBC31326B7276E880870D"
+          }
+        ],
+        "original_public_assertions": {
+          "Platform": "windows",
+          "OriginalPublicProgramSha256": "874E2E3A8DDBF3F7B6FEF39B4A7161EA221E3FCAC94453D61A31C2F0FFA7BC84",
+          "ProjectReferences": 0,
+          "ProjectSha256": "C2115BE178600146306D27AC0BBCB3088B81EF26280D9F2B17DD69AFCCEFF576",
+          "LockSha256": "69B8539D25394C926940C01610CB0265BE90F3DC2E645EE476DDC5995ABB5044",
+          "Payloads": [
+            {
+              "Id": "Lokad.Utf8Regex",
+              "Version": "0.4.0-scalar.119+ca0c8a6f04bd08d67cdd3db1b3184f9db2838480",
+              "PackageSha256": "C539DA464CF39BB9A772C87212843EE92B28C8844CCA81AD34661B250D5B38C8",
+              "DllSha256": "37E34C27C9E51DFA21F8D576DC3B1B4BA3F71793C64B043114B9C59EA951F6F6",
+              "ExactLockSha512": true,
+              "Feed": "D:\\code\\utf8regex\\artifacts\\scalar-candidates\\0.4.0-scalar.119\\feed"
+            },
+            {
+              "Id": "Lokad.Utf8Regex.PythonRe",
+              "Version": "0.4.0-scalar.119+ca0c8a6f04bd08d67cdd3db1b3184f9db2838480",
+              "PackageSha256": "6B2932FE72E0A2AECA33F041848C6B0D369232A798C2FE0296DFF0997CAC71EA",
+              "DllSha256": "25204F494A774009ECD14B4447D59F811AA2848B2B80F9B227626CEF8636A48B",
+              "ExactLockSha512": true,
+              "Feed": "D:\\code\\utf8regex\\artifacts\\scalar-candidates\\0.4.0-scalar.119\\feed"
+            }
+          ]
+        },
+        "capture_fixtures": 121,
+        "semantic_fixtures": 91
+      },
+      "linux": {
+        "suites": [
+          {
+            "TestProject": "Lokad.Utf8Regex.Tests",
+            "Passed": 39870,
+            "Failed": 0,
+            "ProjectReferences": 0,
+            "Payloads": {
+              "Id": "Lokad.Utf8Regex",
+              "Version": "0.4.0-scalar.119",
+              "PackageSha256": "C539DA464CF39BB9A772C87212843EE92B28C8844CCA81AD34661B250D5B38C8",
+              "DllSha256": "37E34C27C9E51DFA21F8D576DC3B1B4BA3F71793C64B043114B9C59EA951F6F6",
+              "TestedFeed": "/home/vermorel/utf8regex-scalar119-20261020/feed",
+              "ExactLock": true
+            },
+            "LockSha256": "DC7787ACA937EF1C7A76AB73E8D1CB50FBEB30CA75E807D0128B62B70D7BE7C5"
+          },
+          {
+            "TestProject": "Lokad.Utf8Regex.DiffTests",
+            "Passed": 1504,
+            "Failed": 0,
+            "ProjectReferences": 0,
+            "Payloads": {
+              "Id": "Lokad.Utf8Regex",
+              "Version": "0.4.0-scalar.119",
+              "PackageSha256": "C539DA464CF39BB9A772C87212843EE92B28C8844CCA81AD34661B250D5B38C8",
+              "DllSha256": "37E34C27C9E51DFA21F8D576DC3B1B4BA3F71793C64B043114B9C59EA951F6F6",
+              "TestedFeed": "/home/vermorel/utf8regex-scalar119-20261020/feed",
+              "ExactLock": true
+            },
+            "LockSha256": "DC7787ACA937EF1C7A76AB73E8D1CB50FBEB30CA75E807D0128B62B70D7BE7C5"
+          },
+          {
+            "TestProject": "Lokad.Utf8Regex.PythonRe.Tests",
+            "Passed": 3855,
+            "Failed": 0,
+            "ProjectReferences": 0,
+            "Payloads": [
+              {
+                "Id": "Lokad.Utf8Regex",
+                "Version": "0.4.0-scalar.119",
+                "PackageSha256": "C539DA464CF39BB9A772C87212843EE92B28C8844CCA81AD34661B250D5B38C8",
+                "DllSha256": "37E34C27C9E51DFA21F8D576DC3B1B4BA3F71793C64B043114B9C59EA951F6F6",
+                "TestedFeed": "/home/vermorel/utf8regex-scalar119-20261020/feed",
+                "ExactLock": true
+              },
+              {
+                "Id": "Lokad.Utf8Regex.PythonRe",
+                "Version": "0.4.0-scalar.119",
+                "PackageSha256": "6B2932FE72E0A2AECA33F041848C6B0D369232A798C2FE0296DFF0997CAC71EA",
+                "DllSha256": "25204F494A774009ECD14B4447D59F811AA2848B2B80F9B227626CEF8636A48B",
+                "TestedFeed": "/home/vermorel/utf8regex-scalar119-20261020/feed",
+                "ExactLock": true
+              }
+            ],
+            "LockSha256": "98BC259D27DB9A17F324A6A1C6EEB8CF8ADD10B305DF7EDFAC3F48DDA21B8528"
+          }
+        ],
+        "original_public_assertions": {
+          "Platform": "linux",
+          "OriginalPublicProgramSha256": "874E2E3A8DDBF3F7B6FEF39B4A7161EA221E3FCAC94453D61A31C2F0FFA7BC84",
+          "ProjectReferences": 0,
+          "ProjectSha256": "C2115BE178600146306D27AC0BBCB3088B81EF26280D9F2B17DD69AFCCEFF576",
+          "LockSha256": "7BF9ED8D74A8082D6C3B3454510DA0F7C77B5B193E308F0AB1547F05F8AE99FA",
+          "Payloads": [
+            {
+              "Id": "Lokad.Utf8Regex",
+              "Version": "0.4.0-scalar.119+ca0c8a6f04bd08d67cdd3db1b3184f9db2838480",
+              "PackageSha256": "C539DA464CF39BB9A772C87212843EE92B28C8844CCA81AD34661B250D5B38C8",
+              "DllSha256": "37E34C27C9E51DFA21F8D576DC3B1B4BA3F71793C64B043114B9C59EA951F6F6",
+              "ExactLockSha512": true,
+              "Feed": "/home/vermorel/utf8regex-scalar119-20261020/feed"
+            },
+            {
+              "Id": "Lokad.Utf8Regex.PythonRe",
+              "Version": "0.4.0-scalar.119+ca0c8a6f04bd08d67cdd3db1b3184f9db2838480",
+              "PackageSha256": "6B2932FE72E0A2AECA33F041848C6B0D369232A798C2FE0296DFF0997CAC71EA",
+              "DllSha256": "25204F494A774009ECD14B4447D59F811AA2848B2B80F9B227626CEF8636A48B",
+              "ExactLockSha512": true,
+              "Feed": "/home/vermorel/utf8regex-scalar119-20261020/feed"
+            }
+          ]
+        },
+        "capture_fixtures": 121,
+        "semantic_fixtures": 91
+      }
+    },
+    "members": [
+      {
+        "Id": "Lokad.Utf8Regex",
+        "Sha256": "37E34C27C9E51DFA21F8D576DC3B1B4BA3F71793C64B043114B9C59EA951F6F6",
+        "Members": [
+          "System.Runtime.CompilerServices.Unsafe.SizeOf"
+        ],
+        "ProducerReadAccessGatePass": true,
+        "LythonMemberGatePass": true,
+        "GeneratedInlineArrayHelpers": [],
+        "RegexMemberReferences": [
+          "Regex.InfiniteMatchTimeout",
+          "RegexMatchTimeoutException..ctor"
+        ],
+        "NativeImports": 0,
+        "AssemblyReferences": [
+          "System.Runtime",
+          "System.Text.RegularExpressions",
+          "System.Memory",
+          "System.Runtime.Intrinsics",
+          "System.Reflection.Emit.Lightweight",
+          "System.Reflection.Primitives",
+          "System.Threading",
+          "System.Collections",
+          "System.Text.Encoding.Extensions",
+          "System.Linq"
+        ],
+        "RegexTypeReferences": [
+          "RegexOptions",
+          "RegexMatchTimeoutException",
+          "Regex"
+        ]
+      },
+      {
+        "Id": "Lokad.Utf8Regex.PythonRe",
+        "Sha256": "25204F494A774009ECD14B4447D59F811AA2848B2B80F9B227626CEF8636A48B",
+        "Members": [],
+        "ProducerReadAccessGatePass": true,
+        "LythonMemberGatePass": true,
+        "GeneratedInlineArrayHelpers": [],
+        "RegexMemberReferences": [
+          "RegexMatchTimeoutException..ctor"
+        ],
+        "NativeImports": 0,
+        "AssemblyReferences": [
+          "System.Runtime",
+          "Lokad.Utf8Regex",
+          "System.Text.RegularExpressions",
+          "System.Text.Encoding.Extensions",
+          "System.Memory",
+          "System.Collections",
+          "System.Linq",
+          "System.Threading"
+        ],
+        "RegexTypeReferences": [
+          "RegexOptions",
+          "RegexMatchTimeoutException"
+        ]
+      }
+    ],
+    "producer_builds": 1,
+    "producer_build_wall_seconds": 6.1626421,
+    "packs_per_package": 1,
+    "linux_library_builds": 0,
+    "current_cost": {
+      "runtime": "10.0.12",
+      "default_tiers": true,
+      "driver_seconds": 106.17618775367737,
+      "lanes": 40,
+      "samples": 200,
+      "minimum_sample_ms": 52.890701,
+      "maximum_spread": 1.6904098186855725,
+      "archive_sha256": "843A43C1619B2F99F0DF6C6E4BE461DDEE3CC9E2846C21F29134348F433CF56C"
+    },
+    "scope": {
+      "strict_utf8_scalar_contract": true,
+      "captures_and_lifetimes_unchanged": true,
+      "numeric_work_working_requirements_can_fall": true,
+      "public_api_changed": false,
+      "full_r01_r10_completed": false,
+      "published": false,
+      "external_consumer_adoption": false,
+      "posix_selection_mode": false,
+      "pcre119": false,
+      "prior118_and_pcre94_bytes_reverified": true
+    }
+  },
+  "cost_summary": {
+    "identity": {
+      "Kind": "identity",
+      "Runtime": ".NET 10.0.12",
+      "Core": "37E34C27C9E51DFA21F8D576DC3B1B4BA3F71793C64B043114B9C59EA951F6F6",
+      "Python": "25204F494A774009ECD14B4447D59F811AA2848B2B80F9B227626CEF8636A48B"
+    },
+    "seconds": 106.17618775367737,
+    "lanes": 40,
+    "samples": 200,
+    "min_sample_ms": 52.890701,
+    "max_spread": 1.6904098186855725,
+    "archive_sha256": "843A43C1619B2F99F0DF6C6E4BE461DDEE3CC9E2846C21F29134348F433CF56C",
+    "rows": [
+      {
+        "Name": "words-utf8/unlimited",
+        "Microseconds": 685.897890625,
+        "Allocated": 186151.9375,
+        "Spread": 1.0135862330065348,
+        "MinSampleMs": 87.127462
+      },
+      {
+        "Name": "words-utf8/finite",
+        "Microseconds": 849.992078125,
+        "Allocated": 190256.125,
+        "Spread": 1.0179048804867756,
+        "MinSampleMs": 53.996786
+      },
+      {
+        "Name": "count-control/unlimited",
+        "Microseconds": 35.3678564453125,
+        "Allocated": 0,
+        "Spread": 1.0069765915339044,
+        "MinSampleMs": 72.165899
+      },
+      {
+        "Name": "count-control/finite",
+        "Microseconds": 20.243315673828125,
+        "Allocated": 112,
+        "Spread": 1.0165945234852394,
+        "MinSampleMs": 81.984879
+      },
+      {
+        "Name": "words-utf8/dotnet-predecoded",
+        "Microseconds": 428.7010078125,
+        "Allocated": 926096,
+        "Spread": 1.4692962201710535,
+        "MinSampleMs": 53.118118
+      },
+      {
+        "Name": "words-utf8/dotnet-decode",
+        "Microseconds": 430.704296875,
+        "Allocated": 969128,
+        "Spread": 1.0249556511524063,
+        "MinSampleMs": 54.831188
+      },
+      {
+        "Name": "count-control/dotnet-predecoded",
+        "Microseconds": 69.224171875,
+        "Allocated": 0,
+        "Spread": 1.0049575623956666,
+        "MinSampleMs": 70.740209
+      },
+      {
+        "Name": "count-control/dotnet-decode",
+        "Microseconds": 70.0796328125,
+        "Allocated": 6168,
+        "Spread": 1.0183170026630548,
+        "MinSampleMs": 70.864105
+      },
+      {
+        "Name": "captured-utf8/unlimited",
+        "Microseconds": 381.05009375,
+        "Allocated": 129255.96875,
+        "Spread": 1.007101022734551,
+        "MinSampleMs": 97.160793
+      },
+      {
+        "Name": "captured-utf8/finite",
+        "Microseconds": 518.65859375,
+        "Allocated": 133408.0625,
+        "Spread": 1.008439025645606,
+        "MinSampleMs": 66.0581
+      },
+      {
+        "Name": "captured-utf8/dotnet-predecoded",
+        "Microseconds": 286.7289140625,
+        "Allocated": 696672,
+        "Spread": 1.0342338058556249,
+        "MinSampleMs": 71.86116
+      },
+      {
+        "Name": "captured-utf8/dotnet-decode",
+        "Microseconds": 291.463390625,
+        "Allocated": 702840,
+        "Spread": 1.1223297048884695,
+        "MinSampleMs": 73.214286
+      },
+      {
+        "Name": "pair-count/unlimited",
+        "Microseconds": 55.9264541015625,
+        "Allocated": 0,
+        "Spread": 1.0126039573978791,
+        "MinSampleMs": 56.810411
+      },
+      {
+        "Name": "pair-count/finite",
+        "Microseconds": 167.149185546875,
+        "Allocated": 112,
+        "Spread": 1.0073123669741826,
+        "MinSampleMs": 85.461794
+      },
+      {
+        "Name": "pair-count/token",
+        "Microseconds": 199.612865234375,
+        "Allocated": 112,
+        "Spread": 1.0404712594600083,
+        "MinSampleMs": 100.705119
+      },
+      {
+        "Name": "pair-count/deadline",
+        "Microseconds": 511.708265625,
+        "Allocated": 160,
+        "Spread": 1.03029371118381,
+        "MinSampleMs": 63.996814
+      },
+      {
+        "Name": "pair-count/dotnet-predecoded",
+        "Microseconds": 103.998197265625,
+        "Allocated": 0,
+        "Spread": 1.0094363846680723,
+        "MinSampleMs": 52.890701
+      },
+      {
+        "Name": "pair-count/dotnet-decode",
+        "Microseconds": 105.410806640625,
+        "Allocated": 26024,
+        "Spread": 1.0143369702739073,
+        "MinSampleMs": 53.650038
+      },
+      {
+        "Name": "rtl-strict-miss/unlimited",
+        "Microseconds": 211.90509765625,
+        "Allocated": 105816,
+        "Spread": 1.0049660268333354,
+        "MinSampleMs": 54.113884
+      },
+      {
+        "Name": "rtl-strict-miss/finite",
+        "Microseconds": 238.15146875,
+        "Allocated": 105928,
+        "Spread": 1.0189065073374741,
+        "MinSampleMs": 60.586177
+      },
+      {
+        "Name": "rtl-strict-miss/token",
+        "Microseconds": 234.55985546875,
+        "Allocated": 105928,
+        "Spread": 1.0045828280701972,
+        "MinSampleMs": 59.884638
+      },
+      {
+        "Name": "rtl-strict-miss/deadline",
+        "Microseconds": 250.37480859375,
+        "Allocated": 105976,
+        "Spread": 1.0258464598079209,
+        "MinSampleMs": 63.88933
+      },
+      {
+        "Name": "rtl-strict-miss/dotnet-predecoded",
+        "Microseconds": 28.76945166015625,
+        "Allocated": 0,
+        "Spread": 1.0228923708754112,
+        "MinSampleMs": 58.453797
+      },
+      {
+        "Name": "rtl-strict-miss/dotnet-decode",
+        "Microseconds": 32.12898974609375,
+        "Allocated": 32800,
+        "Spread": 1.5282931211996236,
+        "MinSampleMs": 65.192719
+      },
+      {
+        "Name": "rtl-empty/unlimited",
+        "Microseconds": 2.9014501342773436,
+        "Allocated": 0,
+        "Spread": 1.6904098186855725,
+        "MinSampleMs": 94.776352
+      },
+      {
+        "Name": "rtl-empty/finite",
+        "Microseconds": 2.7879922790527343,
+        "Allocated": 112,
+        "Spread": 1.225275784768806,
+        "MinSampleMs": 90.598912
+      },
+      {
+        "Name": "rtl-empty/token",
+        "Microseconds": 2.7925018615722657,
+        "Allocated": 112,
+        "Spread": 1.0075691796723352,
+        "MinSampleMs": 91.046326
+      },
+      {
+        "Name": "rtl-empty/deadline",
+        "Microseconds": 3.0328960266113283,
+        "Allocated": 160,
+        "Spread": 1.0158782257730385,
+        "MinSampleMs": 98.9569
+      },
+      {
+        "Name": "rtl-empty/dotnet-predecoded",
+        "Microseconds": 0.056730161666870116,
+        "Allocated": 0,
+        "Spread": 1.0119247974841845,
+        "MinSampleMs": 58.967123
+      },
+      {
+        "Name": "rtl-empty/dotnet-decode",
+        "Microseconds": 62.30405078125,
+        "Allocated": 131096,
+        "Spread": 1.0436459671957798,
+        "MinSampleMs": 62.778996
+      },
+      {
+        "Name": "rtl-offset/unlimited",
+        "Microseconds": 0.5299923934936523,
+        "Allocated": 64,
+        "Spread": 1.047009912016899,
+        "MinSampleMs": 68.122059
+      },
+      {
+        "Name": "rtl-offset/finite",
+        "Microseconds": 0.6397967529296875,
+        "Allocated": 176,
+        "Spread": 1.0121385247919772,
+        "MinSampleMs": 83.854506
+      },
+      {
+        "Name": "rtl-offset/token",
+        "Microseconds": 0.6986426620483398,
+        "Allocated": 176,
+        "Spread": 1.0096296731237917,
+        "MinSampleMs": 91.387318
+      },
+      {
+        "Name": "rtl-offset/deadline",
+        "Microseconds": 0.8349448852539062,
+        "Allocated": 224,
+        "Spread": 1.0152530161999433,
+        "MinSampleMs": 54.237535
+      },
+      {
+        "Name": "rtl-offset/dotnet-predecoded",
+        "Microseconds": 0.026463114738464355,
+        "Allocated": 0,
+        "Spread": 1.0191147411180081,
+        "MinSampleMs": 54.849605
+      },
+      {
+        "Name": "rtl-offset/dotnet-decode",
+        "Microseconds": 3.1693244323730467,
+        "Allocated": 32800,
+        "Spread": 1.068059185780979,
+        "MinSampleMs": 99.678536
+      },
+      {
+        "Name": "literal-control/unlimited",
+        "Microseconds": 3.614851806640625,
+        "Allocated": 0,
+        "Spread": 1.0051772922169855,
+        "MinSampleMs": 59.035107
+      },
+      {
+        "Name": "literal-control/finite",
+        "Microseconds": 3.698641662597656,
+        "Allocated": 112,
+        "Spread": 1.099211327258955,
+        "MinSampleMs": 59.839649
+      },
+      {
+        "Name": "literal-control/dotnet-predecoded",
+        "Microseconds": 5.504595336914062,
+        "Allocated": 0,
+        "Spread": 1.060125440622307,
+        "MinSampleMs": 85.923362
+      },
+      {
+        "Name": "literal-control/dotnet-decode",
+        "Microseconds": 68.8394365234375,
+        "Allocated": 131112,
+        "Spread": 1.0146378277512247,
+        "MinSampleMs": 69.834064
+      }
+    ]
+  },
+  "raw_cost_observations": [
+    {
+      "Kind": "identity",
+      "Runtime": ".NET 10.0.12",
+      "Core": "37E34C27C9E51DFA21F8D576DC3B1B4BA3F71793C64B043114B9C59EA951F6F6",
+      "Python": "25204F494A774009ECD14B4447D59F811AA2848B2B80F9B227626CEF8636A48B"
+    },
+    {
+      "Kind": "warmup",
+      "Name": "words-utf8/unlimited",
+      "Calls": 10005,
+      "ElapsedMs": 9487.8856
+    },
+    {
+      "Kind": "warmup",
+      "Name": "words-utf8/finite",
+      "Calls": 10005,
+      "ElapsedMs": 8587.1615
+    },
+    {
+      "Kind": "warmup",
+      "Name": "count-control/unlimited",
+      "Calls": 10005,
+      "ElapsedMs": 1219.6728
+    },
+    {
+      "Kind": "warmup",
+      "Name": "count-control/finite",
+      "Calls": 24684,
+      "ElapsedMs": 500.0145
+    },
+    {
+      "Kind": "warmup",
+      "Name": "words-utf8/dotnet-predecoded",
+      "Calls": 10005,
+      "ElapsedMs": 4854.3531
+    },
+    {
+      "Kind": "warmup",
+      "Name": "words-utf8/dotnet-decode",
+      "Calls": 10005,
+      "ElapsedMs": 4170.2557
+    },
+    {
+      "Kind": "warmup",
+      "Name": "count-control/dotnet-predecoded",
+      "Calls": 10005,
+      "ElapsedMs": 934.847
+    },
+    {
+      "Kind": "warmup",
+      "Name": "count-control/dotnet-decode",
+      "Calls": 10005,
+      "ElapsedMs": 947.6331
+    },
+    {
+      "Kind": "warmup",
+      "Name": "captured-utf8/unlimited",
+      "Calls": 10005,
+      "ElapsedMs": 3799.846
+    },
+    {
+      "Kind": "warmup",
+      "Name": "captured-utf8/finite",
+      "Calls": 10005,
+      "ElapsedMs": 5198.4362
+    },
+    {
+      "Kind": "warmup",
+      "Name": "captured-utf8/dotnet-predecoded",
+      "Calls": 10005,
+      "ElapsedMs": 2705.8416
+    },
+    {
+      "Kind": "warmup",
+      "Name": "captured-utf8/dotnet-decode",
+      "Calls": 10005,
+      "ElapsedMs": 2708.828
+    },
+    {
+      "Kind": "warmup",
+      "Name": "pair-count/unlimited",
+      "Calls": 10005,
+      "ElapsedMs": 680.9832
+    },
+    {
+      "Kind": "warmup",
+      "Name": "pair-count/finite",
+      "Calls": 10005,
+      "ElapsedMs": 2467.761
+    },
+    {
+      "Kind": "warmup",
+      "Name": "pair-count/token",
+      "Calls": 10005,
+      "ElapsedMs": 1972.1854
+    },
+    {
+      "Kind": "warmup",
+      "Name": "pair-count/deadline",
+      "Calls": 10005,
+      "ElapsedMs": 5060.9773
+    },
+    {
+      "Kind": "warmup",
+      "Name": "pair-count/dotnet-predecoded",
+      "Calls": 10005,
+      "ElapsedMs": 1042.676
+    },
+    {
+      "Kind": "warmup",
+      "Name": "pair-count/dotnet-decode",
+      "Calls": 10005,
+      "ElapsedMs": 1057.8772
+    },
+    {
+      "Kind": "warmup",
+      "Name": "rtl-strict-miss/unlimited",
+      "Calls": 10005,
+      "ElapsedMs": 2243.6113
+    },
+    {
+      "Kind": "warmup",
+      "Name": "rtl-strict-miss/finite",
+      "Calls": 10005,
+      "ElapsedMs": 2365.7013
+    },
+    {
+      "Kind": "warmup",
+      "Name": "rtl-strict-miss/token",
+      "Calls": 10005,
+      "ElapsedMs": 2356.8799
+    },
+    {
+      "Kind": "warmup",
+      "Name": "rtl-strict-miss/deadline",
+      "Calls": 10005,
+      "ElapsedMs": 2513.379
+    },
+    {
+      "Kind": "warmup",
+      "Name": "rtl-strict-miss/dotnet-predecoded",
+      "Calls": 17713,
+      "ElapsedMs": 500.014
+    },
+    {
+      "Kind": "warmup",
+      "Name": "rtl-strict-miss/dotnet-decode",
+      "Calls": 15580,
+      "ElapsedMs": 500.0169
+    },
+    {
+      "Kind": "warmup",
+      "Name": "rtl-empty/unlimited",
+      "Calls": 174665,
+      "ElapsedMs": 500.0013
+    },
+    {
+      "Kind": "warmup",
+      "Name": "rtl-empty/finite",
+      "Calls": 196878,
+      "ElapsedMs": 500.0008
+    },
+    {
+      "Kind": "warmup",
+      "Name": "rtl-empty/token",
+      "Calls": 198035,
+      "ElapsedMs": 500.002
+    },
+    {
+      "Kind": "warmup",
+      "Name": "rtl-empty/deadline",
+      "Calls": 178374,
+      "ElapsedMs": 500.0009
+    },
+    {
+      "Kind": "warmup",
+      "Name": "rtl-empty/dotnet-predecoded",
+      "Calls": 5133108,
+      "ElapsedMs": 500
+    },
+    {
+      "Kind": "warmup",
+      "Name": "rtl-empty/dotnet-decode",
+      "Calls": 10005,
+      "ElapsedMs": 622.6209
+    },
+    {
+      "Kind": "warmup",
+      "Name": "rtl-offset/unlimited",
+      "Calls": 831880,
+      "ElapsedMs": 500.0006
+    },
+    {
+      "Kind": "warmup",
+      "Name": "rtl-offset/finite",
+      "Calls": 740039,
+      "ElapsedMs": 500.0005
+    },
+    {
+      "Kind": "warmup",
+      "Name": "rtl-offset/token",
+      "Calls": 626875,
+      "ElapsedMs": 500.0006
+    },
+    {
+      "Kind": "warmup",
+      "Name": "rtl-offset/deadline",
+      "Calls": 584492,
+      "ElapsedMs": 500.0002
+    },
+    {
+      "Kind": "warmup",
+      "Name": "rtl-offset/dotnet-predecoded",
+      "Calls": 7248224,
+      "ElapsedMs": 500.0001
+    },
+    {
+      "Kind": "warmup",
+      "Name": "rtl-offset/dotnet-decode",
+      "Calls": 240947,
+      "ElapsedMs": 500.02
+    },
+    {
+      "Kind": "warmup",
+      "Name": "literal-control/unlimited",
+      "Calls": 131271,
+      "ElapsedMs": 500.0012
+    },
+    {
+      "Kind": "warmup",
+      "Name": "literal-control/finite",
+      "Calls": 133926,
+      "ElapsedMs": 500.0022
+    },
+    {
+      "Kind": "warmup",
+      "Name": "literal-control/dotnet-predecoded",
+      "Calls": 83384,
+      "ElapsedMs": 500.0052
+    },
+    {
+      "Kind": "warmup",
+      "Name": "literal-control/dotnet-decode",
+      "Calls": 10005,
+      "ElapsedMs": 666.7375
+    },
+    {
+      "Kind": "sample",
+      "Name": "words-utf8/unlimited",
+      "Sample": 0,
+      "Iterations": 128,
+      "ElapsedMs": 87.570912,
+      "Nanoseconds": 684147.75,
+      "Allocated": 186151.9375
+    },
+    {
+      "Kind": "sample",
+      "Name": "words-utf8/finite",
+      "Sample": 0,
+      "Iterations": 64,
+      "ElapsedMs": 53.996786,
+      "Nanoseconds": 843699.78125,
+      "Allocated": 190256.125
+    },
+    {
+      "Kind": "sample",
+      "Name": "count-control/unlimited",
+      "Sample": 0,
+      "Iterations": 2048,
+      "ElapsedMs": 72.165899,
+      "Nanoseconds": 35237.25537109375,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "count-control/finite",
+      "Sample": 0,
+      "Iterations": 4096,
+      "ElapsedMs": 82.392304,
+      "Nanoseconds": 20115.30859375,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "words-utf8/dotnet-predecoded",
+      "Sample": 0,
+      "Iterations": 128,
+      "ElapsedMs": 78.04625,
+      "Nanoseconds": 609736.328125,
+      "Allocated": 926096
+    },
+    {
+      "Kind": "sample",
+      "Name": "words-utf8/dotnet-decode",
+      "Sample": 0,
+      "Iterations": 128,
+      "ElapsedMs": 54.831188,
+      "Nanoseconds": 428368.65625,
+      "Allocated": 969128
+    },
+    {
+      "Kind": "sample",
+      "Name": "count-control/dotnet-predecoded",
+      "Sample": 0,
+      "Iterations": 1024,
+      "ElapsedMs": 70.740209,
+      "Nanoseconds": 69082.2353515625,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "count-control/dotnet-decode",
+      "Sample": 0,
+      "Iterations": 1024,
+      "ElapsedMs": 70.864105,
+      "Nanoseconds": 69203.2275390625,
+      "Allocated": 6168
+    },
+    {
+      "Kind": "sample",
+      "Name": "captured-utf8/unlimited",
+      "Sample": 0,
+      "Iterations": 256,
+      "ElapsedMs": 97.850734,
+      "Nanoseconds": 382229.4296875,
+      "Allocated": 129255.96875
+    },
+    {
+      "Kind": "sample",
+      "Name": "captured-utf8/finite",
+      "Sample": 0,
+      "Iterations": 128,
+      "ElapsedMs": 66.273638,
+      "Nanoseconds": 517762.796875,
+      "Allocated": 133408.0625
+    },
+    {
+      "Kind": "sample",
+      "Name": "captured-utf8/dotnet-predecoded",
+      "Sample": 0,
+      "Iterations": 256,
+      "ElapsedMs": 73.402602,
+      "Nanoseconds": 286728.9140625,
+      "Allocated": 696672
+    },
+    {
+      "Kind": "sample",
+      "Name": "captured-utf8/dotnet-decode",
+      "Sample": 0,
+      "Iterations": 256,
+      "ElapsedMs": 73.73422,
+      "Nanoseconds": 288024.296875,
+      "Allocated": 702840
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/unlimited",
+      "Sample": 0,
+      "Iterations": 1024,
+      "ElapsedMs": 56.97544,
+      "Nanoseconds": 55640.078125,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/finite",
+      "Sample": 0,
+      "Iterations": 512,
+      "ElapsedMs": 85.461794,
+      "Nanoseconds": 166917.56640625,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/token",
+      "Sample": 0,
+      "Iterations": 512,
+      "ElapsedMs": 102.201787,
+      "Nanoseconds": 199612.865234375,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/deadline",
+      "Sample": 0,
+      "Iterations": 128,
+      "ElapsedMs": 65.935515,
+      "Nanoseconds": 515121.2109375,
+      "Allocated": 160
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/dotnet-predecoded",
+      "Sample": 0,
+      "Iterations": 512,
+      "ElapsedMs": 52.890701,
+      "Nanoseconds": 103302.150390625,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/dotnet-decode",
+      "Sample": 0,
+      "Iterations": 512,
+      "ElapsedMs": 53.650038,
+      "Nanoseconds": 104785.23046875,
+      "Allocated": 26024
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/unlimited",
+      "Sample": 0,
+      "Iterations": 256,
+      "ElapsedMs": 54.372143,
+      "Nanoseconds": 212391.18359375,
+      "Allocated": 105816
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/finite",
+      "Sample": 0,
+      "Iterations": 256,
+      "ElapsedMs": 60.892179,
+      "Nanoseconds": 237860.07421875,
+      "Allocated": 105928
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/token",
+      "Sample": 0,
+      "Iterations": 256,
+      "ElapsedMs": 59.884638,
+      "Nanoseconds": 233924.3671875,
+      "Allocated": 105928
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/deadline",
+      "Sample": 0,
+      "Iterations": 256,
+      "ElapsedMs": 64.095951,
+      "Nanoseconds": 250374.80859375,
+      "Allocated": 105976
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/dotnet-predecoded",
+      "Sample": 0,
+      "Iterations": 2048,
+      "ElapsedMs": 59.32571,
+      "Nanoseconds": 28967.6318359375,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/dotnet-decode",
+      "Sample": 0,
+      "Iterations": 2048,
+      "ElapsedMs": 65.639924,
+      "Nanoseconds": 32050.744140625,
+      "Allocated": 32800
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/unlimited",
+      "Sample": 0,
+      "Iterations": 32768,
+      "ElapsedMs": 94.905231,
+      "Nanoseconds": 2896.277801513672,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/finite",
+      "Sample": 0,
+      "Iterations": 32768,
+      "ElapsedMs": 91.321952,
+      "Nanoseconds": 2786.9248046875,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/token",
+      "Sample": 0,
+      "Iterations": 32768,
+      "ElapsedMs": 91.189731,
+      "Nanoseconds": 2782.8897399902344,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/deadline",
+      "Sample": 0,
+      "Iterations": 32768,
+      "ElapsedMs": 98.9569,
+      "Nanoseconds": 3019.9249267578125,
+      "Allocated": 160
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/dotnet-predecoded",
+      "Sample": 0,
+      "Iterations": 1048576,
+      "ElapsedMs": 58.967123,
+      "Nanoseconds": 56.23543071746826,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/dotnet-decode",
+      "Sample": 0,
+      "Iterations": 1024,
+      "ElapsedMs": 64.100968,
+      "Nanoseconds": 62598.6015625,
+      "Allocated": 131096
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/unlimited",
+      "Sample": 0,
+      "Iterations": 131072,
+      "ElapsedMs": 71.324471,
+      "Nanoseconds": 544.1625289916992,
+      "Allocated": 64
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/finite",
+      "Sample": 0,
+      "Iterations": 131072,
+      "ElapsedMs": 83.854506,
+      "Nanoseconds": 639.7591094970703,
+      "Allocated": 176
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/token",
+      "Sample": 0,
+      "Iterations": 131072,
+      "ElapsedMs": 92.267348,
+      "Nanoseconds": 703.9440002441406,
+      "Allocated": 176
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/deadline",
+      "Sample": 0,
+      "Iterations": 65536,
+      "ElapsedMs": 54.751561,
+      "Nanoseconds": 835.4425201416016,
+      "Allocated": 224
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/dotnet-predecoded",
+      "Sample": 0,
+      "Iterations": 2097152,
+      "ElapsedMs": 55.684951,
+      "Nanoseconds": 26.552653789520264,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/dotnet-decode",
+      "Sample": 0,
+      "Iterations": 32768,
+      "ElapsedMs": 100.295742,
+      "Nanoseconds": 3060.7831420898438,
+      "Allocated": 32800
+    },
+    {
+      "Kind": "sample",
+      "Name": "literal-control/unlimited",
+      "Sample": 0,
+      "Iterations": 16384,
+      "ElapsedMs": 59.191472,
+      "Nanoseconds": 3612.7607421875,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "literal-control/finite",
+      "Sample": 0,
+      "Iterations": 16384,
+      "ElapsedMs": 60.598545,
+      "Nanoseconds": 3698.6416625976562,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "literal-control/dotnet-predecoded",
+      "Sample": 0,
+      "Iterations": 16384,
+      "ElapsedMs": 91.089542,
+      "Nanoseconds": 5559.6644287109375,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "literal-control/dotnet-decode",
+      "Sample": 0,
+      "Iterations": 1024,
+      "ElapsedMs": 69.906885,
+      "Nanoseconds": 68268.4423828125,
+      "Allocated": 131112
+    },
+    {
+      "Kind": "sample",
+      "Name": "literal-control/dotnet-decode",
+      "Sample": 1,
+      "Iterations": 1024,
+      "ElapsedMs": 70.81051,
+      "Nanoseconds": 69150.888671875,
+      "Allocated": 131112
+    },
+    {
+      "Kind": "sample",
+      "Name": "literal-control/dotnet-predecoded",
+      "Sample": 1,
+      "Iterations": 16384,
+      "ElapsedMs": 90.211667,
+      "Nanoseconds": 5506.083190917969,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "literal-control/finite",
+      "Sample": 1,
+      "Iterations": 16384,
+      "ElapsedMs": 63.901023,
+      "Nanoseconds": 3900.2089233398438,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "literal-control/unlimited",
+      "Sample": 1,
+      "Iterations": 16384,
+      "ElapsedMs": 59.237276,
+      "Nanoseconds": 3615.556396484375,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/dotnet-decode",
+      "Sample": 1,
+      "Iterations": 32768,
+      "ElapsedMs": 106.462576,
+      "Nanoseconds": 3248.97998046875,
+      "Allocated": 32800
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/dotnet-predecoded",
+      "Sample": 1,
+      "Iterations": 2097152,
+      "ElapsedMs": 55.322139,
+      "Nanoseconds": 26.37965154647827,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/deadline",
+      "Sample": 1,
+      "Iterations": 65536,
+      "ElapsedMs": 54.718948,
+      "Nanoseconds": 834.9448852539062,
+      "Allocated": 224
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/token",
+      "Sample": 1,
+      "Iterations": 131072,
+      "ElapsedMs": 91.572491,
+      "Nanoseconds": 698.6426620483398,
+      "Allocated": 176
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/finite",
+      "Sample": 1,
+      "Iterations": 131072,
+      "ElapsedMs": 83.85944,
+      "Nanoseconds": 639.7967529296875,
+      "Allocated": 176
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/unlimited",
+      "Sample": 1,
+      "Iterations": 131072,
+      "ElapsedMs": 68.122059,
+      "Nanoseconds": 519.7300643920898,
+      "Allocated": 64
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/dotnet-decode",
+      "Sample": 1,
+      "Iterations": 1024,
+      "ElapsedMs": 62.778996,
+      "Nanoseconds": 61307.61328125,
+      "Allocated": 131096
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/dotnet-predecoded",
+      "Sample": 1,
+      "Iterations": 1048576,
+      "ElapsedMs": 59.670294,
+      "Nanoseconds": 56.90602684020996,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/deadline",
+      "Sample": 1,
+      "Iterations": 32768,
+      "ElapsedMs": 99.664021,
+      "Nanoseconds": 3041.5045471191406,
+      "Allocated": 160
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/token",
+      "Sample": 1,
+      "Iterations": 32768,
+      "ElapsedMs": 91.504701,
+      "Nanoseconds": 2792.5018615722656,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/finite",
+      "Sample": 1,
+      "Iterations": 32768,
+      "ElapsedMs": 111.008653,
+      "Nanoseconds": 3387.7152404785156,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/unlimited",
+      "Sample": 1,
+      "Iterations": 32768,
+      "ElapsedMs": 160.210876,
+      "Nanoseconds": 4889.2479248046875,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/dotnet-decode",
+      "Sample": 1,
+      "Iterations": 2048,
+      "ElapsedMs": 99.633584,
+      "Nanoseconds": 48649.2109375,
+      "Allocated": 32800
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/dotnet-predecoded",
+      "Sample": 1,
+      "Iterations": 2048,
+      "ElapsedMs": 58.777607,
+      "Nanoseconds": 28700.00341796875,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/deadline",
+      "Sample": 1,
+      "Iterations": 256,
+      "ElapsedMs": 65.540643,
+      "Nanoseconds": 256018.13671875,
+      "Allocated": 105976
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/token",
+      "Sample": 1,
+      "Iterations": 256,
+      "ElapsedMs": 60.059175,
+      "Nanoseconds": 234606.15234375,
+      "Allocated": 105928
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/finite",
+      "Sample": 1,
+      "Iterations": 256,
+      "ElapsedMs": 61.154011,
+      "Nanoseconds": 238882.85546875,
+      "Allocated": 105928
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/unlimited",
+      "Sample": 1,
+      "Iterations": 256,
+      "ElapsedMs": 54.382615,
+      "Nanoseconds": 212432.08984375,
+      "Allocated": 105816
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/dotnet-decode",
+      "Sample": 1,
+      "Iterations": 512,
+      "ElapsedMs": 54.373526,
+      "Nanoseconds": 106198.29296875,
+      "Allocated": 26024
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/dotnet-predecoded",
+      "Sample": 1,
+      "Iterations": 512,
+      "ElapsedMs": 53.389798,
+      "Nanoseconds": 104276.94921875,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/deadline",
+      "Sample": 1,
+      "Iterations": 128,
+      "ElapsedMs": 65.356891,
+      "Nanoseconds": 510600.7109375,
+      "Allocated": 160
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/token",
+      "Sample": 1,
+      "Iterations": 512,
+      "ElapsedMs": 104.780782,
+      "Nanoseconds": 204649.96484375,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/finite",
+      "Sample": 1,
+      "Iterations": 512,
+      "ElapsedMs": 85.580383,
+      "Nanoseconds": 167149.185546875,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/unlimited",
+      "Sample": 1,
+      "Iterations": 1024,
+      "ElapsedMs": 57.323983,
+      "Nanoseconds": 55980.4521484375,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "captured-utf8/dotnet-decode",
+      "Sample": 1,
+      "Iterations": 256,
+      "ElapsedMs": 82.118442,
+      "Nanoseconds": 320775.1640625,
+      "Allocated": 702840
+    },
+    {
+      "Kind": "sample",
+      "Name": "captured-utf8/dotnet-predecoded",
+      "Sample": 1,
+      "Iterations": 256,
+      "ElapsedMs": 72.837295,
+      "Nanoseconds": 284520.68359375,
+      "Allocated": 696672
+    },
+    {
+      "Kind": "sample",
+      "Name": "captured-utf8/finite",
+      "Sample": 1,
+      "Iterations": 128,
+      "ElapsedMs": 66.0581,
+      "Nanoseconds": 516078.90625,
+      "Allocated": 133440
+    },
+    {
+      "Kind": "sample",
+      "Name": "captured-utf8/unlimited",
+      "Sample": 1,
+      "Iterations": 256,
+      "ElapsedMs": 97.548824,
+      "Nanoseconds": 381050.09375,
+      "Allocated": 129255.96875
+    },
+    {
+      "Kind": "sample",
+      "Name": "count-control/dotnet-decode",
+      "Sample": 1,
+      "Iterations": 1024,
+      "ElapsedMs": 71.761544,
+      "Nanoseconds": 70079.6328125,
+      "Allocated": 6168
+    },
+    {
+      "Kind": "sample",
+      "Name": "count-control/dotnet-predecoded",
+      "Sample": 1,
+      "Iterations": 1024,
+      "ElapsedMs": 71.088422,
+      "Nanoseconds": 69422.287109375,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "words-utf8/dotnet-decode",
+      "Sample": 1,
+      "Iterations": 128,
+      "ElapsedMs": 56.199536,
+      "Nanoseconds": 439058.875,
+      "Allocated": 969128
+    },
+    {
+      "Kind": "sample",
+      "Name": "words-utf8/dotnet-predecoded",
+      "Sample": 1,
+      "Iterations": 128,
+      "ElapsedMs": 54.051028,
+      "Nanoseconds": 422273.65625,
+      "Allocated": 926096
+    },
+    {
+      "Kind": "sample",
+      "Name": "count-control/finite",
+      "Sample": 1,
+      "Iterations": 4096,
+      "ElapsedMs": 83.345379,
+      "Nanoseconds": 20347.992919921875,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "count-control/unlimited",
+      "Sample": 1,
+      "Iterations": 2048,
+      "ElapsedMs": 72.449148,
+      "Nanoseconds": 35375.560546875,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "words-utf8/finite",
+      "Sample": 1,
+      "Iterations": 64,
+      "ElapsedMs": 54.963592,
+      "Nanoseconds": 858806.125,
+      "Allocated": 190320
+    },
+    {
+      "Kind": "sample",
+      "Name": "words-utf8/unlimited",
+      "Sample": 1,
+      "Iterations": 128,
+      "ElapsedMs": 88.206227,
+      "Nanoseconds": 689111.1484375,
+      "Allocated": 186151.9375
+    },
+    {
+      "Kind": "sample",
+      "Name": "words-utf8/unlimited",
+      "Sample": 2,
+      "Iterations": 128,
+      "ElapsedMs": 87.79493,
+      "Nanoseconds": 685897.890625,
+      "Allocated": 186120
+    },
+    {
+      "Kind": "sample",
+      "Name": "words-utf8/finite",
+      "Sample": 2,
+      "Iterations": 64,
+      "ElapsedMs": 54.775828,
+      "Nanoseconds": 855872.3125,
+      "Allocated": 190256.125
+    },
+    {
+      "Kind": "sample",
+      "Name": "count-control/unlimited",
+      "Sample": 2,
+      "Iterations": 2048,
+      "ElapsedMs": 72.43337,
+      "Nanoseconds": 35367.8564453125,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "count-control/finite",
+      "Sample": 2,
+      "Iterations": 4096,
+      "ElapsedMs": 83.121228,
+      "Nanoseconds": 20293.2685546875,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "words-utf8/dotnet-predecoded",
+      "Sample": 2,
+      "Iterations": 128,
+      "ElapsedMs": 55.386079,
+      "Nanoseconds": 432703.7421875,
+      "Allocated": 926096
+    },
+    {
+      "Kind": "sample",
+      "Name": "words-utf8/dotnet-decode",
+      "Sample": 2,
+      "Iterations": 128,
+      "ElapsedMs": 55.13015,
+      "Nanoseconds": 430704.296875,
+      "Allocated": 969128
+    },
+    {
+      "Kind": "sample",
+      "Name": "count-control/dotnet-predecoded",
+      "Sample": 2,
+      "Iterations": 1024,
+      "ElapsedMs": 71.090908,
+      "Nanoseconds": 69424.71484375,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "count-control/dotnet-decode",
+      "Sample": 2,
+      "Iterations": 1024,
+      "ElapsedMs": 72.162123,
+      "Nanoseconds": 70470.8232421875,
+      "Allocated": 6168
+    },
+    {
+      "Kind": "sample",
+      "Name": "captured-utf8/unlimited",
+      "Sample": 2,
+      "Iterations": 256,
+      "ElapsedMs": 97.186631,
+      "Nanoseconds": 379635.27734375,
+      "Allocated": 129240
+    },
+    {
+      "Kind": "sample",
+      "Name": "captured-utf8/finite",
+      "Sample": 2,
+      "Iterations": 128,
+      "ElapsedMs": 66.615566,
+      "Nanoseconds": 520434.109375,
+      "Allocated": 133408.0625
+    },
+    {
+      "Kind": "sample",
+      "Name": "captured-utf8/dotnet-predecoded",
+      "Sample": 2,
+      "Iterations": 256,
+      "ElapsedMs": 74.321241,
+      "Nanoseconds": 290317.34765625,
+      "Allocated": 696672
+    },
+    {
+      "Kind": "sample",
+      "Name": "captured-utf8/dotnet-decode",
+      "Sample": 2,
+      "Iterations": 256,
+      "ElapsedMs": 74.614628,
+      "Nanoseconds": 291463.390625,
+      "Allocated": 702840
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/unlimited",
+      "Sample": 2,
+      "Iterations": 1024,
+      "ElapsedMs": 57.526447,
+      "Nanoseconds": 56178.1708984375,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/finite",
+      "Sample": 2,
+      "Iterations": 512,
+      "ElapsedMs": 85.709643,
+      "Nanoseconds": 167401.646484375,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/token",
+      "Sample": 2,
+      "Iterations": 512,
+      "ElapsedMs": 102.718166,
+      "Nanoseconds": 200621.41796875,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/deadline",
+      "Sample": 2,
+      "Iterations": 128,
+      "ElapsedMs": 65.861648,
+      "Nanoseconds": 514544.125,
+      "Allocated": 160
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/dotnet-predecoded",
+      "Sample": 2,
+      "Iterations": 512,
+      "ElapsedMs": 53.247077,
+      "Nanoseconds": 103998.197265625,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/dotnet-decode",
+      "Sample": 2,
+      "Iterations": 512,
+      "ElapsedMs": 53.902557,
+      "Nanoseconds": 105278.431640625,
+      "Allocated": 26024
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/unlimited",
+      "Sample": 2,
+      "Iterations": 256,
+      "ElapsedMs": 54.247705,
+      "Nanoseconds": 211905.09765625,
+      "Allocated": 105816
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/finite",
+      "Sample": 2,
+      "Iterations": 256,
+      "ElapsedMs": 60.586177,
+      "Nanoseconds": 236664.75390625,
+      "Allocated": 105928
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/token",
+      "Sample": 2,
+      "Iterations": 256,
+      "ElapsedMs": 59.941385,
+      "Nanoseconds": 234146.03515625,
+      "Allocated": 105928
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/deadline",
+      "Sample": 2,
+      "Iterations": 256,
+      "ElapsedMs": 64.307861,
+      "Nanoseconds": 251202.58203125,
+      "Allocated": 105976
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/dotnet-predecoded",
+      "Sample": 2,
+      "Iterations": 2048,
+      "ElapsedMs": 58.919837,
+      "Nanoseconds": 28769.45166015625,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/dotnet-decode",
+      "Sample": 2,
+      "Iterations": 2048,
+      "ElapsedMs": 65.800171,
+      "Nanoseconds": 32128.98974609375,
+      "Allocated": 32800
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/unlimited",
+      "Sample": 2,
+      "Iterations": 32768,
+      "ElapsedMs": 95.20645,
+      "Nanoseconds": 2905.4702758789062,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/finite",
+      "Sample": 2,
+      "Iterations": 32768,
+      "ElapsedMs": 92.395177,
+      "Nanoseconds": 2819.677032470703,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/token",
+      "Sample": 2,
+      "Iterations": 32768,
+      "ElapsedMs": 91.71333,
+      "Nanoseconds": 2798.8687133789062,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/deadline",
+      "Sample": 2,
+      "Iterations": 32768,
+      "ElapsedMs": 100.52816,
+      "Nanoseconds": 3067.8759765625,
+      "Allocated": 160
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/dotnet-predecoded",
+      "Sample": 2,
+      "Iterations": 1048576,
+      "ElapsedMs": 59.183132,
+      "Nanoseconds": 56.44143295288086,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/dotnet-decode",
+      "Sample": 2,
+      "Iterations": 1024,
+      "ElapsedMs": 65.519046,
+      "Nanoseconds": 63983.443359375,
+      "Allocated": 131096
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/unlimited",
+      "Sample": 2,
+      "Iterations": 131072,
+      "ElapsedMs": 70.555779,
+      "Nanoseconds": 538.2978744506836,
+      "Allocated": 64
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/finite",
+      "Sample": 2,
+      "Iterations": 131072,
+      "ElapsedMs": 84.409465,
+      "Nanoseconds": 643.9931106567383,
+      "Allocated": 176
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/token",
+      "Sample": 2,
+      "Iterations": 131072,
+      "ElapsedMs": 91.70242,
+      "Nanoseconds": 699.6339416503906,
+      "Allocated": 176
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/deadline",
+      "Sample": 2,
+      "Iterations": 65536,
+      "ElapsedMs": 54.237535,
+      "Nanoseconds": 827.5991058349609,
+      "Allocated": 224
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/dotnet-predecoded",
+      "Sample": 2,
+      "Iterations": 2097152,
+      "ElapsedMs": 55.497174,
+      "Nanoseconds": 26.463114738464355,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/dotnet-decode",
+      "Sample": 2,
+      "Iterations": 32768,
+      "ElapsedMs": 103.852423,
+      "Nanoseconds": 3169.324432373047,
+      "Allocated": 32800
+    },
+    {
+      "Kind": "sample",
+      "Name": "literal-control/unlimited",
+      "Sample": 2,
+      "Iterations": 16384,
+      "ElapsedMs": 59.225732,
+      "Nanoseconds": 3614.851806640625,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "literal-control/finite",
+      "Sample": 2,
+      "Iterations": 16384,
+      "ElapsedMs": 60.491993,
+      "Nanoseconds": 3692.1382446289062,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "literal-control/dotnet-predecoded",
+      "Sample": 2,
+      "Iterations": 16384,
+      "ElapsedMs": 89.942768,
+      "Nanoseconds": 5489.6708984375,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "literal-control/dotnet-decode",
+      "Sample": 2,
+      "Iterations": 1024,
+      "ElapsedMs": 70.491583,
+      "Nanoseconds": 68839.4365234375,
+      "Allocated": 131112
+    },
+    {
+      "Kind": "sample",
+      "Name": "literal-control/dotnet-decode",
+      "Sample": 3,
+      "Iterations": 1024,
+      "ElapsedMs": 70.856283,
+      "Nanoseconds": 69195.5888671875,
+      "Allocated": 131112
+    },
+    {
+      "Kind": "sample",
+      "Name": "literal-control/dotnet-predecoded",
+      "Sample": 3,
+      "Iterations": 16384,
+      "ElapsedMs": 90.18729,
+      "Nanoseconds": 5504.5953369140625,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "literal-control/finite",
+      "Sample": 3,
+      "Iterations": 16384,
+      "ElapsedMs": 65.77642,
+      "Nanoseconds": 4014.674072265625,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "literal-control/unlimited",
+      "Sample": 3,
+      "Iterations": 16384,
+      "ElapsedMs": 59.035107,
+      "Nanoseconds": 3603.2169799804688,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/dotnet-decode",
+      "Sample": 3,
+      "Iterations": 32768,
+      "ElapsedMs": 105.525183,
+      "Nanoseconds": 3220.373016357422,
+      "Allocated": 32800
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/dotnet-predecoded",
+      "Sample": 3,
+      "Iterations": 2097152,
+      "ElapsedMs": 55.898041,
+      "Nanoseconds": 26.654263019561768,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/deadline",
+      "Sample": 3,
+      "Iterations": 65536,
+      "ElapsedMs": 54.675057,
+      "Nanoseconds": 834.2751617431641,
+      "Allocated": 224
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/token",
+      "Sample": 3,
+      "Iterations": 131072,
+      "ElapsedMs": 91.449001,
+      "Nanoseconds": 697.7005081176758,
+      "Allocated": 176
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/finite",
+      "Sample": 3,
+      "Iterations": 131072,
+      "ElapsedMs": 83.857029,
+      "Nanoseconds": 639.7783584594727,
+      "Allocated": 176
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/unlimited",
+      "Sample": 3,
+      "Iterations": 131072,
+      "ElapsedMs": 68.298861,
+      "Nanoseconds": 521.0789566040039,
+      "Allocated": 64
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/dotnet-decode",
+      "Sample": 3,
+      "Iterations": 1024,
+      "ElapsedMs": 63.648618,
+      "Nanoseconds": 62156.853515625,
+      "Allocated": 131096
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/dotnet-predecoded",
+      "Sample": 3,
+      "Iterations": 1048576,
+      "ElapsedMs": 59.485886,
+      "Nanoseconds": 56.73016166687012,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/deadline",
+      "Sample": 3,
+      "Iterations": 32768,
+      "ElapsedMs": 99.381937,
+      "Nanoseconds": 3032.896026611328,
+      "Allocated": 160
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/token",
+      "Sample": 3,
+      "Iterations": 32768,
+      "ElapsedMs": 91.735472,
+      "Nanoseconds": 2799.54443359375,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/finite",
+      "Sample": 3,
+      "Iterations": 32768,
+      "ElapsedMs": 91.356931,
+      "Nanoseconds": 2787.9922790527344,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/unlimited",
+      "Sample": 3,
+      "Iterations": 32768,
+      "ElapsedMs": 94.776352,
+      "Nanoseconds": 2892.3447265625,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/dotnet-decode",
+      "Sample": 3,
+      "Iterations": 2048,
+      "ElapsedMs": 90.736282,
+      "Nanoseconds": 44304.8251953125,
+      "Allocated": 32800
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/dotnet-predecoded",
+      "Sample": 3,
+      "Iterations": 2048,
+      "ElapsedMs": 59.791943,
+      "Nanoseconds": 29195.28466796875,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/deadline",
+      "Sample": 3,
+      "Iterations": 256,
+      "ElapsedMs": 64.059371,
+      "Nanoseconds": 250231.91796875,
+      "Allocated": 105976
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/token",
+      "Sample": 3,
+      "Iterations": 256,
+      "ElapsedMs": 60.047323,
+      "Nanoseconds": 234559.85546875,
+      "Allocated": 105928
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/finite",
+      "Sample": 3,
+      "Iterations": 256,
+      "ElapsedMs": 60.966776,
+      "Nanoseconds": 238151.46875,
+      "Allocated": 105928
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/unlimited",
+      "Sample": 3,
+      "Iterations": 256,
+      "ElapsedMs": 54.141813,
+      "Nanoseconds": 211491.45703125,
+      "Allocated": 105816
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/dotnet-decode",
+      "Sample": 3,
+      "Iterations": 512,
+      "ElapsedMs": 53.970333,
+      "Nanoseconds": 105410.806640625,
+      "Allocated": 26024
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/dotnet-predecoded",
+      "Sample": 3,
+      "Iterations": 512,
+      "ElapsedMs": 53.156472,
+      "Nanoseconds": 103821.234375,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/deadline",
+      "Sample": 3,
+      "Iterations": 128,
+      "ElapsedMs": 65.498658,
+      "Nanoseconds": 511708.265625,
+      "Allocated": 160
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/token",
+      "Sample": 3,
+      "Iterations": 512,
+      "ElapsedMs": 102.048203,
+      "Nanoseconds": 199312.896484375,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/finite",
+      "Sample": 3,
+      "Iterations": 512,
+      "ElapsedMs": 86.086722,
+      "Nanoseconds": 168138.12890625,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/unlimited",
+      "Sample": 3,
+      "Iterations": 1024,
+      "ElapsedMs": 57.268689,
+      "Nanoseconds": 55926.4541015625,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "captured-utf8/dotnet-decode",
+      "Sample": 3,
+      "Iterations": 256,
+      "ElapsedMs": 82.170568,
+      "Nanoseconds": 320978.78125,
+      "Allocated": 702840
+    },
+    {
+      "Kind": "sample",
+      "Name": "captured-utf8/dotnet-predecoded",
+      "Sample": 3,
+      "Iterations": 256,
+      "ElapsedMs": 71.86116,
+      "Nanoseconds": 280707.65625,
+      "Allocated": 696672
+    },
+    {
+      "Kind": "sample",
+      "Name": "captured-utf8/finite",
+      "Sample": 3,
+      "Iterations": 128,
+      "ElapsedMs": 66.3883,
+      "Nanoseconds": 518658.59375,
+      "Allocated": 133440
+    },
+    {
+      "Kind": "sample",
+      "Name": "captured-utf8/unlimited",
+      "Sample": 3,
+      "Iterations": 256,
+      "ElapsedMs": 97.759649,
+      "Nanoseconds": 381873.62890625,
+      "Allocated": 129255.96875
+    },
+    {
+      "Kind": "sample",
+      "Name": "count-control/dotnet-decode",
+      "Sample": 3,
+      "Iterations": 1024,
+      "ElapsedMs": 71.484858,
+      "Nanoseconds": 69809.431640625,
+      "Allocated": 6168
+    },
+    {
+      "Kind": "sample",
+      "Name": "count-control/dotnet-predecoded",
+      "Sample": 3,
+      "Iterations": 1024,
+      "ElapsedMs": 70.766022,
+      "Nanoseconds": 69107.443359375,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "words-utf8/dotnet-decode",
+      "Sample": 3,
+      "Iterations": 128,
+      "ElapsedMs": 55.73255,
+      "Nanoseconds": 435410.546875,
+      "Allocated": 969128
+    },
+    {
+      "Kind": "sample",
+      "Name": "words-utf8/dotnet-predecoded",
+      "Sample": 3,
+      "Iterations": 128,
+      "ElapsedMs": 53.118118,
+      "Nanoseconds": 414985.296875,
+      "Allocated": 926096
+    },
+    {
+      "Kind": "sample",
+      "Name": "count-control/finite",
+      "Sample": 3,
+      "Iterations": 4096,
+      "ElapsedMs": 81.984879,
+      "Nanoseconds": 20015.839599609375,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "count-control/unlimited",
+      "Sample": 3,
+      "Iterations": 2048,
+      "ElapsedMs": 72.335638,
+      "Nanoseconds": 35320.1357421875,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "words-utf8/finite",
+      "Sample": 3,
+      "Iterations": 64,
+      "ElapsedMs": 54.399493,
+      "Nanoseconds": 849992.078125,
+      "Allocated": 190320
+    },
+    {
+      "Kind": "sample",
+      "Name": "words-utf8/unlimited",
+      "Sample": 3,
+      "Iterations": 128,
+      "ElapsedMs": 88.311196,
+      "Nanoseconds": 689931.21875,
+      "Allocated": 186151.9375
+    },
+    {
+      "Kind": "sample",
+      "Name": "words-utf8/unlimited",
+      "Sample": 4,
+      "Iterations": 128,
+      "ElapsedMs": 87.127462,
+      "Nanoseconds": 680683.296875,
+      "Allocated": 186120
+    },
+    {
+      "Kind": "sample",
+      "Name": "words-utf8/finite",
+      "Sample": 4,
+      "Iterations": 64,
+      "ElapsedMs": 54.357059,
+      "Nanoseconds": 849329.046875,
+      "Allocated": 190256.125
+    },
+    {
+      "Kind": "sample",
+      "Name": "count-control/unlimited",
+      "Sample": 4,
+      "Iterations": 2048,
+      "ElapsedMs": 72.669371,
+      "Nanoseconds": 35483.09130859375,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "count-control/finite",
+      "Sample": 4,
+      "Iterations": 4096,
+      "ElapsedMs": 82.916621,
+      "Nanoseconds": 20243.315673828125,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "words-utf8/dotnet-predecoded",
+      "Sample": 4,
+      "Iterations": 128,
+      "ElapsedMs": 54.873729,
+      "Nanoseconds": 428701.0078125,
+      "Allocated": 926096
+    },
+    {
+      "Kind": "sample",
+      "Name": "words-utf8/dotnet-decode",
+      "Sample": 4,
+      "Iterations": 128,
+      "ElapsedMs": 55.070223,
+      "Nanoseconds": 430236.1171875,
+      "Allocated": 969128
+    },
+    {
+      "Kind": "sample",
+      "Name": "count-control/dotnet-predecoded",
+      "Sample": 4,
+      "Iterations": 1024,
+      "ElapsedMs": 70.885552,
+      "Nanoseconds": 69224.171875,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "count-control/dotnet-decode",
+      "Sample": 4,
+      "Iterations": 1024,
+      "ElapsedMs": 71.972157,
+      "Nanoseconds": 70285.3095703125,
+      "Allocated": 6168
+    },
+    {
+      "Kind": "sample",
+      "Name": "captured-utf8/unlimited",
+      "Sample": 4,
+      "Iterations": 256,
+      "ElapsedMs": 97.160793,
+      "Nanoseconds": 379534.34765625,
+      "Allocated": 129240
+    },
+    {
+      "Kind": "sample",
+      "Name": "captured-utf8/finite",
+      "Sample": 4,
+      "Iterations": 128,
+      "ElapsedMs": 66.586299,
+      "Nanoseconds": 520205.4609375,
+      "Allocated": 133408.0625
+    },
+    {
+      "Kind": "sample",
+      "Name": "captured-utf8/dotnet-predecoded",
+      "Sample": 4,
+      "Iterations": 256,
+      "ElapsedMs": 73.695076,
+      "Nanoseconds": 287871.390625,
+      "Allocated": 696672
+    },
+    {
+      "Kind": "sample",
+      "Name": "captured-utf8/dotnet-decode",
+      "Sample": 4,
+      "Iterations": 256,
+      "ElapsedMs": 73.214286,
+      "Nanoseconds": 285993.3046875,
+      "Allocated": 702840
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/unlimited",
+      "Sample": 4,
+      "Iterations": 1024,
+      "ElapsedMs": 56.810411,
+      "Nanoseconds": 55478.9169921875,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/finite",
+      "Sample": 4,
+      "Iterations": 512,
+      "ElapsedMs": 85.573626,
+      "Nanoseconds": 167135.98828125,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/token",
+      "Sample": 4,
+      "Iterations": 512,
+      "ElapsedMs": 100.705119,
+      "Nanoseconds": 196689.685546875,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/deadline",
+      "Sample": 4,
+      "Iterations": 128,
+      "ElapsedMs": 63.996814,
+      "Nanoseconds": 499975.109375,
+      "Allocated": 160
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/dotnet-predecoded",
+      "Sample": 4,
+      "Iterations": 512,
+      "ElapsedMs": 53.34909,
+      "Nanoseconds": 104197.44140625,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "pair-count/dotnet-decode",
+      "Sample": 4,
+      "Iterations": 512,
+      "ElapsedMs": 54.419217,
+      "Nanoseconds": 106287.533203125,
+      "Allocated": 26024
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/unlimited",
+      "Sample": 4,
+      "Iterations": 256,
+      "ElapsedMs": 54.113884,
+      "Nanoseconds": 211382.359375,
+      "Allocated": 105816
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/finite",
+      "Sample": 4,
+      "Iterations": 256,
+      "ElapsedMs": 61.73165,
+      "Nanoseconds": 241139.2578125,
+      "Allocated": 105928
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/token",
+      "Sample": 4,
+      "Iterations": 256,
+      "ElapsedMs": 60.159079,
+      "Nanoseconds": 234996.40234375,
+      "Allocated": 105928
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/deadline",
+      "Sample": 4,
+      "Iterations": 256,
+      "ElapsedMs": 63.88933,
+      "Nanoseconds": 249567.6953125,
+      "Allocated": 105976
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/dotnet-predecoded",
+      "Sample": 4,
+      "Iterations": 2048,
+      "ElapsedMs": 58.453797,
+      "Nanoseconds": 28541.89306640625,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-strict-miss/dotnet-decode",
+      "Sample": 4,
+      "Iterations": 2048,
+      "ElapsedMs": 65.192719,
+      "Nanoseconds": 31832.38232421875,
+      "Allocated": 32800
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/unlimited",
+      "Sample": 4,
+      "Iterations": 32768,
+      "ElapsedMs": 95.074718,
+      "Nanoseconds": 2901.4501342773438,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/finite",
+      "Sample": 4,
+      "Iterations": 32768,
+      "ElapsedMs": 90.598912,
+      "Nanoseconds": 2764.859375,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/token",
+      "Sample": 4,
+      "Iterations": 32768,
+      "ElapsedMs": 91.046326,
+      "Nanoseconds": 2778.5133666992188,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/deadline",
+      "Sample": 4,
+      "Iterations": 32768,
+      "ElapsedMs": 98.97888,
+      "Nanoseconds": 3020.595703125,
+      "Allocated": 160
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/dotnet-predecoded",
+      "Sample": 4,
+      "Iterations": 1048576,
+      "ElapsedMs": 59.609692,
+      "Nanoseconds": 56.84823226928711,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-empty/dotnet-decode",
+      "Sample": 4,
+      "Iterations": 1024,
+      "ElapsedMs": 63.799348,
+      "Nanoseconds": 62304.05078125,
+      "Allocated": 131096
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/unlimited",
+      "Sample": 4,
+      "Iterations": 131072,
+      "ElapsedMs": 69.467163,
+      "Nanoseconds": 529.9923934936523,
+      "Allocated": 64
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/finite",
+      "Sample": 4,
+      "Iterations": 131072,
+      "ElapsedMs": 84.872376,
+      "Nanoseconds": 647.5248413085938,
+      "Allocated": 176
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/token",
+      "Sample": 4,
+      "Iterations": 131072,
+      "ElapsedMs": 91.387318,
+      "Nanoseconds": 697.2299041748047,
+      "Allocated": 176
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/deadline",
+      "Sample": 4,
+      "Iterations": 65536,
+      "ElapsedMs": 55.064821,
+      "Nanoseconds": 840.2224884033203,
+      "Allocated": 224
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/dotnet-predecoded",
+      "Sample": 4,
+      "Iterations": 2097152,
+      "ElapsedMs": 54.849605,
+      "Nanoseconds": 26.154329776763916,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "rtl-offset/dotnet-decode",
+      "Sample": 4,
+      "Iterations": 32768,
+      "ElapsedMs": 99.678536,
+      "Nanoseconds": 3041.947509765625,
+      "Allocated": 32800
+    },
+    {
+      "Kind": "sample",
+      "Name": "literal-control/unlimited",
+      "Sample": 4,
+      "Iterations": 16384,
+      "ElapsedMs": 59.340749,
+      "Nanoseconds": 3621.8718872070312,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "literal-control/finite",
+      "Sample": 4,
+      "Iterations": 16384,
+      "ElapsedMs": 59.839649,
+      "Nanoseconds": 3652.3223266601562,
+      "Allocated": 112
+    },
+    {
+      "Kind": "sample",
+      "Name": "literal-control/dotnet-predecoded",
+      "Sample": 4,
+      "Iterations": 16384,
+      "ElapsedMs": 85.923362,
+      "Nanoseconds": 5244.3458251953125,
+      "Allocated": 0
+    },
+    {
+      "Kind": "sample",
+      "Name": "literal-control/dotnet-decode",
+      "Sample": 4,
+      "Iterations": 1024,
+      "ElapsedMs": 69.834064,
+      "Nanoseconds": 68197.328125,
+      "Allocated": 131112
+    }
+  ],
+  "predeclaration": "# Scalar119 actual-byte cost observation \u2014 predeclared\n\nOne bounded Release observation of exact canonical Core/PythonRe119 DLLs, after\npackage/producer identity checks. Quiet VM CPU2, .NET10.0.12, default tiering,\nPGO and R2R; no environment override. Same existing scalar118 diagnostic protocol:\n10005 calls and500ms minimum warmup,50ms target, three settled-duration calibration\nchecks, five alternating-order samples, retained outputs and pre/post assertions.\nMaximum240s process/265s SSH. No repeat, package comparison, CI polling campaign,\nCPython Status or ranking claim. Source FullOpts before/after receipts are separate.\n\nForty public lanes: original words-to-UTF8, captured two-group UTF8 tuples and\ncaptured Python Count, each unlimited/finite plus strict-decode/predecoded .NET\ncontrols (12); current controlled-pair Count, RTL strict-end captured-ref miss,\nempty EOF Count and wrong UTF16 floor, each unlimited/finite/live-token/deadline\nplus both .NET controls (24); unchanged native literal Count unlimited/finite\nplus both controls (4). .NET wrong-floor control uses public EnumerateMatches\nfrom the same start because Regex.Count has no start overload. Matching subjects\nare ASCII to ensure coordinate/regex semantic overlap; producer scalar/malformed/\ncapture/cancellation/deadline/loan behavior remains covered by package tests.\nAll four invocation limits finite together (50M work,1024 depth,64MiB working,\n128MiB result). Deadline10s per invocation. Report absolute costs, allocations,\nraw variance and observed finite overhead; no universal/free-limit assertion.\nNo public source/package consumer modifications or changes to immutable118/older.\n\nProducer ca0c8a6f04bd08d67cdd3db1b3184f9db2838480. Actual DLL SHA256:\n- Lokad.Utf8Regex: `37E34C27C9E51DFA21F8D576DC3B1B4BA3F71793C64B043114B9C59EA951F6F6`.\n- Lokad.Utf8Regex.PythonRe: `25204F494A774009ECD14B4447D59F811AA2848B2B80F9B227626CEF8636A48B`.\n",
+  "preservation": {
+    "prior118": [
+      {
+        "path": "artifacts\\scalar-candidates\\0.4.0-scalar.118\\candidate.json",
+        "sha256": "39BBFD651648C11B644433317EB03819FD94512C979C7C8CD8E27EC65441A4C8"
+      },
+      {
+        "path": "artifacts\\scalar-candidates\\0.4.0-scalar.118\\feed\\Lokad.Utf8Regex.0.4.0-scalar.118.nupkg",
+        "sha256": "18534DCAED5D2329C0E19575E2324F6DE7A708A6CCBF9796553E0661F55CFA55"
+      },
+      {
+        "path": "artifacts\\scalar-candidates\\0.4.0-scalar.118\\feed\\Lokad.Utf8Regex.0.4.0-scalar.118.snupkg",
+        "sha256": "F344EB76F7613363CEBD36B58C4BC0B77E5C31281875434290F434D4AD8AA8F7"
+      },
+      {
+        "path": "artifacts\\scalar-candidates\\0.4.0-scalar.118\\feed\\Lokad.Utf8Regex.PythonRe.0.4.0-scalar.118.nupkg",
+        "sha256": "CF4454884BE2567666F4CDCAB6DFDD6B48B8C7C49148B77EE790B74AB2265A04"
+      },
+      {
+        "path": "artifacts\\scalar-candidates\\0.4.0-scalar.118\\feed\\Lokad.Utf8Regex.PythonRe.0.4.0-scalar.118.snupkg",
+        "sha256": "20231B1E352911F74382F140BFE36E3710E64B3AFF3DA56E0C69F05EB9EE8185"
+      }
+    ],
+    "exact_pcre94_manifest_sha256": "EFD07FEEF271E3117D3508D7F0E3DB04DC20E4F14AC59D01DAE705E0221A80E5",
+    "exact_pcre94_artifacts_verified": 7
+  }
+}

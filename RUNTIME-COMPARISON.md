@@ -1,8 +1,8 @@
 # .NET 10 / .NET 11 Count comparison
 
-The latest qualified Core/PythonRe dependency is [scalar.118](artifacts/core-python-scalar118-20261020/HANDOFF.md).
+The latest qualified Core/PythonRe dependency is [scalar.119](artifacts/core-python-scalar119-20261020/HANDOFF.md).
 The newest versioned runtime experiment below uses frozen Core114. Its original
-comparative-lane gate is complete; it does not qualify current118/119 performance
+comparative-lane gate is complete; it does not qualify current119 performance
 or complete runtime/profile behavior. [Current product/source costs](CURRENT-PERFORMANCE.md)
 remain separate. No new comparator framework or repeated closed batch is needed.
 

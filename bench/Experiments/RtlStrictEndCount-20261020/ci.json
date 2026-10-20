@@ -1,0 +1,19 @@
+{
+  "run": 39393751142,
+  "head": "6b3b941832b353a185a590dae2a82f1bc8996327",
+  "status": "completed",
+  "conclusion": "success",
+  "url": "https://github.com/Lokad/Utf8Regex/actions/runs/39393751142",
+  "jobs": [
+    {
+      "name": "tests (windows-latest)",
+      "conclusion": "success",
+      "completedAt": "2026-10-20T08:35:53Z"
+    },
+    {
+      "name": "tests (ubuntu-latest)",
+      "conclusion": "success",
+      "completedAt": "2026-10-20T08:33:39Z"
+    }
+  ]
+}
