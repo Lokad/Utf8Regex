@@ -344,7 +344,7 @@ is separate from package qualification and broad profile performance claims.
 
 ## Generic bulk result discovery
 
-Development after scalar.116 sends capture-free generic bulk discovery through
+Scalar.117 sends capture-free generic bulk discovery through
 the existing Python scalar cursor when optional Core has no native or direct-family
 execution. `FindAll`, string values and UTF-8 values reuse one admitted workspace
 instead of repeating generic Core attempts and range staging. Actual native

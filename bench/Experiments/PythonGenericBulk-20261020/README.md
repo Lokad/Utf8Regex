@@ -67,3 +67,10 @@ Source commit461c52f1155d82328b3b0d8ad288c5db42124e7b is pushed.
 is terminal success: Linux04:52:11UTC, Windows04:53:15UTC. The complete source
 Release matrix is green; the run is closed and should not be polled again.
 No immutable117 package is designated by this source CI.
+
+Delivery addendum: immutable Core/Python117, producer04b7a3ed, now contains this
+accepted change. The same DLLs pass Windows/Linux, producer handoff assertions,
+capture/semantic fixtures and exact identities; one actual-byte default-tier
+cost observation is separate from this source FullOpts comparison.
+[Handoff](../../../artifacts/core-python-scalar117-20261020/HANDOFF.md).
+No causal package-to-package improvement or external adoption is inferred.

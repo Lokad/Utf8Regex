@@ -1,11 +1,15 @@
 # Lokad.Utf8Regex.PythonRe
 
-Private **Core/PythonRe scalar.117 preparation is pending**. This coherent
-boundary includes the accepted generic bulk discovery change: existing Python
-workspace reuse removes repeated Core attempts/range staging while preserving
-actual native paths and scalar/resource/ownership contracts. Source CI is green;
-exact package/platform/downstream/current-cost gates are pending. Immutable116
-remains READY. [Preparation](../../artifacts/core-python-scalar117-20261020/PREPARATION.md). No publication or PCRE117.
+Private **Core/PythonRe 0.4.0-scalar.117**, producer04b7a3ed, is READY.
+Generic eager results reuse Python's admitted workspace, avoiding repeated Core
+attempts/range staging while preserving actual native paths and scalar/resource/
+ownership contracts. Same actual DLLs pass Windows/Linux, the unchanged producer
+handoff assertions, Unicode fixtures and exact restore/member/provenance/symbol
+gates. Source CI is green. [Handoff](../../artifacts/core-python-scalar117-20261020/HANDOFF.md), [consume](../../artifacts/core-python-scalar117-20261020/CONSUMING.md), [integrity](../../artifacts/core-python-scalar117-20261020/final-integrity.json).
+Current actual-byte costs include all changed eager surfaces, finite/token lanes
+and equivalent decode/predecoded .NET outputs, with residual variance stated.
+No universal overhead, causal package gain, publication, consumer adoption or
+PCRE117. Older immutable candidates retain their recorded scope.
 
 Private **Core/PythonRe 0.4.0-scalar.116**, producer e83d1942, is READY.
 This coherent boundary completes diagnostic replay retirement and includes eager

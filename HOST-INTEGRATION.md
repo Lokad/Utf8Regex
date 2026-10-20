@@ -1,17 +1,18 @@
 # Resource controls and host ownership
 
-The latest qualified private pair is **Core/PythonRe scalar.116**,
-producer e83d1942. Its [handoff](artifacts/core-python-scalar116-20261020/HANDOFF.md)
-binds the same actual Windows/Linux DLLs, original public-consumer assertions,
-Unicode fixtures and exact restore/member/provenance/symbol identities. It
-completes diagnostic retirement and includes the eager string-findall checkpoint
-reduction documented below. Strict scalar captures, original interruption,
-covered admission and cursor/result ownership keep their scoped contract.
-[Current package costs](artifacts/core-python-scalar116-20261020/vm-cost/RESULT.md)
-include finite/token/cursor lanes. All144 samples exceed31ms; smaller rows and
-comparator controls vary up to1.991x, preventing universal overhead claims.
-Older/failed candidates remain immutable. No publication, external adoption or
-PCRE116; common/default/retention goals remain separate below.
+The latest qualified private pair is **Core/PythonRe scalar.117**,
+producer04b7a3ed. Its [handoff](artifacts/core-python-scalar117-20261020/HANDOFF.md)
+binds the same actual Windows/Linux DLLs, unchanged producer handoff assertions,
+Unicode fixtures and exact restore/member/provenance/symbol identities. Generic
+bulk results reuse the existing Python workspace; native families, strict scalar
+captures, original interruption, covered admission and ownership retain scope.
+[Current package costs](artifacts/core-python-scalar117-20261020/vm-cost/RESULT.md)
+include all changed eager surfaces, finite/token lanes and both .NET baselines.
+All115 samples exceed48ms; some producer/.NET rows vary up to1.218/1.652x,
+preventing universal finite-overhead or all-row ranking claims. Earlier/failed
+candidates remain immutable. No publication, external adoption or PCRE117.
+Core's ordered choice and the historical Awk/POSIX boundary remain distinct from
+this qualified producer input; common/default/retention goals stay separate.
 
 The preceding qualified private pair is **Core/PythonRe scalar.112**.
 Its [handoff](artifacts/core-python-scalar112-20261019/HANDOFF.md) records same-byte
@@ -146,12 +147,12 @@ construction work/byte requirements may fall; meaningful major acquisition,
 original authority and all invocation/result controls remain. Private diagnostic
 replays move to benchmark tooling. Immutable107 retains its recorded preparation.
 
-Development after scalar.116 reuses the existing Python scalar cursor for generic
+Scalar.117 reuses the existing Python scalar cursor for generic
 capture-free bulk results. It omits generic Core per-value attempts and range
 staging while preserving native families, full-input validation, original authority,
 major admission and owned results. Finite generic/token calls already take that
-path; their numeric controls retain scope. These source costs are separate from
-the immutable116 dependency and its recorded package measurements.
+path; their numeric controls retain scope. The source FullOpts comparison and actual117 default-tier costs have separate
+provenance. Immutable116 retains its original generic path and recorded costs.
 
 ## Select the public controls
 
