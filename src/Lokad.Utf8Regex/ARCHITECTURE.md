@@ -11,26 +11,37 @@ parse -> analyze -> prepare -> immutable prepared regex -> invocation runtime
   neither observes subject bytes nor constructs an invocation runtime.
 - `Internal/Planning` owns inert plans and `Utf8PreparedRegex`, the single
   immutable handoff from compilation to execution. `Utf8RegexPreparer` creates
-  search state, verifier programs, fallback metadata, and backend provenance
-  once. Plan constructors and properties do not execute input or create
-  runtimes.
+  the owned scalar program, native search/verifier plans and route provenance
+  once. Native instruction preparation is retained only for live consumers.
+  Plan constructors and properties do not execute input or create runtimes.
 - `Internal/Execution` owns subject-byte execution and runtime factories. It
   consumes prepared artifacts and may create operation-specific runtime state;
   it does not re-run front-end analyzers to rediscover compile decisions.
 
-The semantic tree deliberately contains no selected-backend provenance.
-Backend and fallback-route decisions belong to `Utf8PreparedRegex`, because
-they describe lowering rather than regex meaning. Optional specialized family
-plans are optimization results, not a general regex IR and not an integration
-contract for other regex flavors.
+The semantic tree contains no selected-backend provenance. Route decisions
+belong to `Utf8PreparedRegex`, because they describe lowering rather than regex
+meaning. The owned scalar program supplies general execution, including the
+supported NonBacktracking route; native literal and structural plans accelerate
+their admitted subsets. Internal `FallbackRegex` classification names refer to
+owned execution, not BCL matching. Optional family plans are optimization results,
+not a general regex IR or an integration contract for other regex flavors.
 
 Speculative lowering is semantics-neutral and bounded. Every Cartesian
 literal expansion and finite-repeat expansion reserves checked work and output
 capacity before allocation. When a budget is exhausted, preparation declines
-that optimization and retains the authoritative fallback route. Successful
+that optimization and retains the authoritative owned scalar route. Successful
 `TryPrepare` operations return the prepared object that execution will reuse.
 
 Cross-layer imports must be explicit. Do not recreate project-wide internal
 global usings, put executor methods on plan values, construct runtimes from
 plans, or call front-end analyzers from execution. Architecture tests enforce
 these source-level boundaries in addition to semantic and benchmark coverage.
+
+Construction admits major buffers and bounded expansion before allocation.
+Program/verifier wrappers use conservative metadata allowances, without mirrored
+field-transfer descriptors. Retention caches always use a conservative bounded
+payload policy; shared storage can be charged again. These modeled limits do not
+bound total CLR/JIT memory or arbitrary host retention. See
+[HOST-INTEGRATION.md](../../HOST-INTEGRATION.md) for scope and lifetime contracts.
+Benchmark-only candidate-count replay lives in the benchmark project; production
+search helpers remain in the library where public execution consumes them.

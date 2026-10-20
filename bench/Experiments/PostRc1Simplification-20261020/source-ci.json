@@ -1,0 +1,70 @@
+{
+  "SourceRevision": "0e8238e42ae79d7a8b3332bd9ab6d82aff0ca3f8",
+  "Run": 39406730591,
+  "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/39406730591",
+  "Status": "completed",
+  "Conclusion": "success",
+  "Scope": "Source Release solution build/test; not another package qualification. Later changes are documentation, script consolidation and receipts, with their own preflight checks.",
+  "Platforms": [
+    {
+      "Platform": "windows",
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.DiffTests.dll",
+          "Passed": 1504,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll",
+          "Passed": 3881,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+          "Passed": 5911,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Tests.dll",
+          "Passed": 39693,
+          "Failed": 0,
+          "Skipped": 0
+        }
+      ],
+      "LogSha256": "1F24284AFB27B49575CAE2ABCE194E51F7E92D4C4F6C3C06764E3A2F79A95ACB"
+    },
+    {
+      "Platform": "linux",
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.DiffTests.dll",
+          "Passed": 1504,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll",
+          "Passed": 3881,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+          "Passed": 5911,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Tests.dll",
+          "Passed": 39693,
+          "Failed": 0,
+          "Skipped": 0
+        }
+      ],
+      "LogSha256": "8C4648A9059A9A5EB815491E2002F405BF6203B79379A28CBFB0AFAA26177FB9"
+    }
+  ]
+}

@@ -46,17 +46,19 @@ The compiled program owns:
 - the candidate-search program; and
 - an optional partial-probe program derived from semantic nodes.
 
-Direct operation programs are closed variants: no program, compatible
-`Utf8Regex`, compatible BCL `Regex`, PCRE2 literal, PCRE2 character, or PCRE2
-backtracking. `Pcre2ProgramInvariant` proves that any compatible backend is
-owned by the same compiled program. Literal, character, and backtracking
-programs generically cover the admitted syntax; no `Pcre2ExecutionKind`,
-complete-pattern classifier, or legacy match/replacement router remains.
+Direct operation programs are closed variants: an absent operation, an owned
+Core/scalar program, a PCRE2 literal/character/backtracking program, or a
+specialized operation program such as an ASCII search or DFA verifier.
+`Pcre2ProgramInvariant` checks common-program and fallback ownership. The
+specializations retain the owned general route for option combinations they
+cannot execute. Literal, character, and backtracking programs cover the admitted
+syntax; no complete-pattern classifier or legacy match/replacement router remains.
 
-Delegation to `Utf8Regex` or BCL `Regex` is an optimization for the proven
-common subset. The PCRE2 semantic compiler always owns PCRE2-only constructs,
-and the corpus verifies that delegation does not change the selected PCRE2
-profile.
+Core delegation is limited to the admitted common scalar semantics. PCRE2-only
+constructs stay with the PCRE2 compiler and runtime. There is no shipped BCL
+`Regex` matcher or result dependency. BCL option/timeout metadata and
+`Regex.Escape` do not execute subjects. Semantic and differential fixtures check
+the supported delegation boundaries; they do not establish complete PCRE2 parity.
 
 ## Invocation and global progress
 
@@ -116,8 +118,8 @@ All PCRE2 production types and files live under
 `src/Lokad.Utf8Regex.Pcre2/`. The package targets `net10.0`, depends only on
 the BCL and `Lokad.Utf8Regex`, and contains no P/Invoke, native loader, RID
 asset, external matcher, or generated native payload. Removing the companion
-project and the explicitly tagged core hooks leaves the `.NET`-semantic
-library intact.
+project and the explicitly tagged core hooks leaves the Core scalar library
+and its .NET-style grammar intact.
 
 Release evidence and the reviewed ownership, C#-guideline, package, corpus,
 allocation, and scaling inventories are recorded in

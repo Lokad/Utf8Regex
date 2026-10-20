@@ -1,5 +1,19 @@
 # Bounded checked-access work
 
+The checked-access campaign is **complete and closed**. The staged common
+**0.4.0-rc.1** Core/PCRE2 DLLs retain only permitted `Unsafe.SizeOf` queries;
+PythonRe has none. No unchecked reads, generated staging helpers, native imports
+or shipped BCL matcher/result execution remain. Lython accepts SizeOf.
+[RC1 handoff](artifacts/utf8regex-0.4.0-rc.1-20261020/HANDOFF.md) and
+[final identities](artifacts/utf8regex-0.4.0-rc.1-20261020/final-integrity.json)
+identify the immutable Windows/Linux-qualified bytes. Later development cleanup
+does not inherit package qualification or reopen performance experiments.
+
+## Historical execution ledger
+
+The entries below preserve original source/package/measurement identities and
+limitations; historical "current" designations are superseded by RC1 above.
+
 Current qualified immutable Core/PythonRe **scalar.106** preserves the completed
 inventory: Core only accepted Unsafe.SizeOf, PythonRe none. [Exact members](artifacts/core-python-scalar106-20261019/exact-member-references.json)
 and [handoff](artifacts/core-python-scalar106-20261019/HANDOFF.md) record same-byte
