@@ -1,0 +1,589 @@
+{
+  "Status": "READY",
+  "Version": "0.4.0-rc.1",
+  "SourceRevision": "2e97ac974e6e8c60aac95db1e4808cbda2ff9736",
+  "CreatedAtUtc": "2026-10-20T09:37:24.813473+00:00",
+  "Published": false,
+  "Tagged": false,
+  "ManifestRelativePath": "../release-candidates/0.4.0-rc.1/candidate.json",
+  "ManifestSha256": "B248D69B37AF83FDA009CCDC6D54989A38B1B3275F64F9897E228C7331C6E343",
+  "ProducerBuildCount": 1,
+  "PackCountPerPackage": 1,
+  "LinuxLibraryBuildCount": 0,
+  "Packages": [
+    {
+      "Id": "Lokad.Utf8Regex",
+      "Version": "0.4.0-rc.1",
+      "RelativePath": "feed/Lokad.Utf8Regex.0.4.0-rc.1.nupkg",
+      "PackageSha256": "0F58D0F9373A2CD45EEC4293AC34246BC7215952BCF00AB4376DC69F3558EBC0",
+      "PackageSha512Base64": "Ew+5/DVV21B6XYx4WstScyjSk0lNcJ19lh4PAFUG/k5IWIItd34/H1Nst1J9By2n+C+QVjPut1/pFY50pTdTWA==",
+      "AssemblySha256": "B3755586A36C76B1F7C315A14CD3F9F1B8B57FC08D95E39A64DE73E809D548DB",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.0.4.0-rc.1.snupkg",
+      "SymbolSha256": "B171682BE04C7C599A218B128713A70CBB8FFC859E5F6075256A2B9FEFF4320E",
+      "PdbSha256": "3174678439A85CAD8C54862AF5357054B2E454F2EAEFD98005F12286DEEC15B6"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "Version": "0.4.0-rc.1",
+      "RelativePath": "feed/Lokad.Utf8Regex.PythonRe.0.4.0-rc.1.nupkg",
+      "PackageSha256": "3D6F71F50348B4AA33C60258F4262084373AA4BD1A4FF11932055650DC396D23",
+      "PackageSha512Base64": "DpO9rgnrJ+zD6IF5iMmbCYqekQMzpk6onJUp0Oh7p2ziPHOyM3LOpYevxAuUp9G/D5QFds+07uF9LOd+tPW14g==",
+      "AssemblySha256": "A54BDD2A1F0B2FDC890E836162D1D0F077538C04A1C6A892161936C2D725BF72",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.PythonRe.0.4.0-rc.1.snupkg",
+      "SymbolSha256": "710E085D57749F586A74D6DAFD724C003DD5C3FACA954C115ECD8BC1AF5378F0",
+      "PdbSha256": "CDCB78C1C69331F56F1C1C88F93AE23DF7873C68DA0D1A4F1C7DA1B65E6901A2"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.Pcre2",
+      "Version": "0.4.0-rc.1",
+      "RelativePath": "feed/Lokad.Utf8Regex.Pcre2.0.4.0-rc.1.nupkg",
+      "PackageSha256": "BB7E977A34C09B959B9A7DBF0378151D7693289BF0BA634C592C195427C7F0FD",
+      "PackageSha512Base64": "eVB/Prsjl48VRrfNrFmZ7Fp3rb2OZgFwwHyPjpB6AqL1p4MqKj3/MVCP7N1nzKuH2LFajqHP4P8HseOAyElrQg==",
+      "AssemblySha256": "5F034DACBCD86E274C0280AB8F8120302B1CA2137425F29219EF7847BEF0C182",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.Pcre2.0.4.0-rc.1.snupkg",
+      "SymbolSha256": "862F639ED0067570F972E76D8ED3E9EC9564456BEBBE495CC28A4A0E396E8F82",
+      "PdbSha256": "B1C53EFFF6DFEE53B07CCE15A5471FB3DF3D7663FF451D1FD2F6FD0094903274"
+    }
+  ],
+  "Platforms": {
+    "windows": {
+      "Suites": [
+        {
+          "TestProject": "Lokad.Utf8Regex.Tests",
+          "Passed": 39870,
+          "Failed": 0,
+          "ProjectReferences": 0,
+          "Payloads": {
+            "Id": "Lokad.Utf8Regex",
+            "Version": "0.4.0-rc.1",
+            "PackageSha256": "0F58D0F9373A2CD45EEC4293AC34246BC7215952BCF00AB4376DC69F3558EBC0",
+            "DllSha256": "B3755586A36C76B1F7C315A14CD3F9F1B8B57FC08D95E39A64DE73E809D548DB",
+            "TestedFeed": "D:\\code\\utf8regex\\artifacts\\release-candidate-attempts\\91a087397d78\\feed",
+            "ExactLock": true
+          },
+          "LockSha256": "A9CFD33300E6217A0B9BE0A729B18AE08123E3B8A29A90F90565A2F0AF4D6763"
+        },
+        {
+          "TestProject": "Lokad.Utf8Regex.DiffTests",
+          "Passed": 1504,
+          "Failed": 0,
+          "ProjectReferences": 0,
+          "Payloads": {
+            "Id": "Lokad.Utf8Regex",
+            "Version": "0.4.0-rc.1",
+            "PackageSha256": "0F58D0F9373A2CD45EEC4293AC34246BC7215952BCF00AB4376DC69F3558EBC0",
+            "DllSha256": "B3755586A36C76B1F7C315A14CD3F9F1B8B57FC08D95E39A64DE73E809D548DB",
+            "TestedFeed": "D:\\code\\utf8regex\\artifacts\\release-candidate-attempts\\91a087397d78\\feed",
+            "ExactLock": true
+          },
+          "LockSha256": "A9CFD33300E6217A0B9BE0A729B18AE08123E3B8A29A90F90565A2F0AF4D6763"
+        },
+        {
+          "TestProject": "Lokad.Utf8Regex.PythonRe.Tests",
+          "Passed": 3881,
+          "Failed": 0,
+          "ProjectReferences": 0,
+          "Payloads": [
+            {
+              "Id": "Lokad.Utf8Regex",
+              "Version": "0.4.0-rc.1",
+              "PackageSha256": "0F58D0F9373A2CD45EEC4293AC34246BC7215952BCF00AB4376DC69F3558EBC0",
+              "DllSha256": "B3755586A36C76B1F7C315A14CD3F9F1B8B57FC08D95E39A64DE73E809D548DB",
+              "TestedFeed": "D:\\code\\utf8regex\\artifacts\\release-candidate-attempts\\91a087397d78\\feed",
+              "ExactLock": true
+            },
+            {
+              "Id": "Lokad.Utf8Regex.PythonRe",
+              "Version": "0.4.0-rc.1",
+              "PackageSha256": "3D6F71F50348B4AA33C60258F4262084373AA4BD1A4FF11932055650DC396D23",
+              "DllSha256": "A54BDD2A1F0B2FDC890E836162D1D0F077538C04A1C6A892161936C2D725BF72",
+              "TestedFeed": "D:\\code\\utf8regex\\artifacts\\release-candidate-attempts\\91a087397d78\\feed",
+              "ExactLock": true
+            }
+          ],
+          "LockSha256": "8142E4BFA1E968C0E58067BBC753908F41630E96D1C8538405A1796C6905762D"
+        },
+        {
+          "TestProject": "Lokad.Utf8Regex.Pcre2.Tests",
+          "Passed": 5911,
+          "Failed": 0,
+          "ProjectReferences": 0,
+          "Payloads": [
+            {
+              "Id": "Lokad.Utf8Regex",
+              "Version": "0.4.0-rc.1",
+              "PackageSha256": "0F58D0F9373A2CD45EEC4293AC34246BC7215952BCF00AB4376DC69F3558EBC0",
+              "DllSha256": "B3755586A36C76B1F7C315A14CD3F9F1B8B57FC08D95E39A64DE73E809D548DB",
+              "TestedFeed": "D:\\code\\utf8regex\\artifacts\\release-candidate-attempts\\91a087397d78\\feed",
+              "ExactLock": true
+            },
+            {
+              "Id": "Lokad.Utf8Regex.Pcre2",
+              "Version": "0.4.0-rc.1",
+              "PackageSha256": "BB7E977A34C09B959B9A7DBF0378151D7693289BF0BA634C592C195427C7F0FD",
+              "DllSha256": "5F034DACBCD86E274C0280AB8F8120302B1CA2137425F29219EF7847BEF0C182",
+              "TestedFeed": "D:\\code\\utf8regex\\artifacts\\release-candidate-attempts\\91a087397d78\\feed",
+              "ExactLock": true
+            }
+          ],
+          "LockSha256": "5B55E13AF87E377A4466311BA8E93E81F35F721BD67D780C7AA56310CC4316ED"
+        }
+      ],
+      "PublicConsumers": [
+        {
+          "Platform": "windows",
+          "Name": "core-python",
+          "ProgramSha256": "874E2E3A8DDBF3F7B6FEF39B4A7161EA221E3FCAC94453D61A31C2F0FFA7BC84",
+          "ProjectReferences": 0,
+          "LockSha256": "5E5291F256A59F29CE06DB2A2BBD36445173F6DDC99C3D56F7EBF134C51FF17A",
+          "Payloads": [
+            {
+              "Id": "Lokad.Utf8Regex",
+              "Version": "0.4.0-rc.1+2e97ac974e6e8c60aac95db1e4808cbda2ff9736",
+              "PackageSha256": "0F58D0F9373A2CD45EEC4293AC34246BC7215952BCF00AB4376DC69F3558EBC0",
+              "DllSha256": "B3755586A36C76B1F7C315A14CD3F9F1B8B57FC08D95E39A64DE73E809D548DB",
+              "Feed": "D:\\code\\utf8regex\\artifacts\\release-candidates\\0.4.0-rc.1\\feed",
+              "ExactLock": true
+            },
+            {
+              "Id": "Lokad.Utf8Regex.PythonRe",
+              "Version": "0.4.0-rc.1+2e97ac974e6e8c60aac95db1e4808cbda2ff9736",
+              "PackageSha256": "3D6F71F50348B4AA33C60258F4262084373AA4BD1A4FF11932055650DC396D23",
+              "DllSha256": "A54BDD2A1F0B2FDC890E836162D1D0F077538C04A1C6A892161936C2D725BF72",
+              "Feed": "D:\\code\\utf8regex\\artifacts\\release-candidates\\0.4.0-rc.1\\feed",
+              "ExactLock": true
+            }
+          ],
+          "ConsumerRoot": "D:\\code\\utf8regex\\artifacts\\utf8regex-0.4.0-rc.1-20261020\\windows-public\\core-python"
+        },
+        {
+          "Platform": "windows",
+          "Name": "pcre2",
+          "ProgramSha256": "686AF9A4A2AA6EBE73C97EBE1ED9F94B6DCECC0C47028D731DEFC9A3FE4CD922",
+          "ProjectReferences": 0,
+          "LockSha256": "A84ACAD850E599C858AD471B916B0006F30A09093E6ECF7D150DCF7C6063A119",
+          "Payloads": [
+            {
+              "Id": "Lokad.Utf8Regex",
+              "Version": "0.4.0-rc.1+2e97ac974e6e8c60aac95db1e4808cbda2ff9736",
+              "PackageSha256": "0F58D0F9373A2CD45EEC4293AC34246BC7215952BCF00AB4376DC69F3558EBC0",
+              "DllSha256": "B3755586A36C76B1F7C315A14CD3F9F1B8B57FC08D95E39A64DE73E809D548DB",
+              "Feed": "D:\\code\\utf8regex\\artifacts\\release-candidates\\0.4.0-rc.1\\feed",
+              "ExactLock": true
+            },
+            {
+              "Id": "Lokad.Utf8Regex.Pcre2",
+              "Version": "0.4.0-rc.1+2e97ac974e6e8c60aac95db1e4808cbda2ff9736",
+              "PackageSha256": "BB7E977A34C09B959B9A7DBF0378151D7693289BF0BA634C592C195427C7F0FD",
+              "DllSha256": "5F034DACBCD86E274C0280AB8F8120302B1CA2137425F29219EF7847BEF0C182",
+              "Feed": "D:\\code\\utf8regex\\artifacts\\release-candidates\\0.4.0-rc.1\\feed",
+              "ExactLock": true
+            }
+          ],
+          "ConsumerRoot": "D:\\code\\utf8regex\\artifacts\\utf8regex-0.4.0-rc.1-20261020\\windows-public\\pcre2"
+        },
+        {
+          "Platform": "windows",
+          "Name": "combined",
+          "ProgramSha256": "C3D58888BAAC637E5C30D7E77D8609CE169064B36B87858FA66CE8476FCCE1E7",
+          "ProjectReferences": 0,
+          "LockSha256": "F463410B1029032EF9E5A15DACC44B3F1FE0926D08A3D1AA0EC38B337A7A85C3",
+          "Payloads": [
+            {
+              "Id": "Lokad.Utf8Regex",
+              "Version": "0.4.0-rc.1+2e97ac974e6e8c60aac95db1e4808cbda2ff9736",
+              "PackageSha256": "0F58D0F9373A2CD45EEC4293AC34246BC7215952BCF00AB4376DC69F3558EBC0",
+              "DllSha256": "B3755586A36C76B1F7C315A14CD3F9F1B8B57FC08D95E39A64DE73E809D548DB",
+              "Feed": "D:\\code\\utf8regex\\artifacts\\release-candidates\\0.4.0-rc.1\\feed",
+              "ExactLock": true
+            },
+            {
+              "Id": "Lokad.Utf8Regex.PythonRe",
+              "Version": "0.4.0-rc.1+2e97ac974e6e8c60aac95db1e4808cbda2ff9736",
+              "PackageSha256": "3D6F71F50348B4AA33C60258F4262084373AA4BD1A4FF11932055650DC396D23",
+              "DllSha256": "A54BDD2A1F0B2FDC890E836162D1D0F077538C04A1C6A892161936C2D725BF72",
+              "Feed": "D:\\code\\utf8regex\\artifacts\\release-candidates\\0.4.0-rc.1\\feed",
+              "ExactLock": true
+            },
+            {
+              "Id": "Lokad.Utf8Regex.Pcre2",
+              "Version": "0.4.0-rc.1+2e97ac974e6e8c60aac95db1e4808cbda2ff9736",
+              "PackageSha256": "BB7E977A34C09B959B9A7DBF0378151D7693289BF0BA634C592C195427C7F0FD",
+              "DllSha256": "5F034DACBCD86E274C0280AB8F8120302B1CA2137425F29219EF7847BEF0C182",
+              "Feed": "D:\\code\\utf8regex\\artifacts\\release-candidates\\0.4.0-rc.1\\feed",
+              "ExactLock": true
+            }
+          ],
+          "ConsumerRoot": "D:\\code\\utf8regex\\artifacts\\utf8regex-0.4.0-rc.1-20261020\\windows-public\\combined"
+        }
+      ],
+      "CaptureFixtures": 121,
+      "SemanticDigestCases": 91
+    },
+    "linux": {
+      "Suites": [
+        {
+          "TestProject": "Lokad.Utf8Regex.Tests",
+          "Passed": 39870,
+          "Failed": 0,
+          "ProjectReferences": 0,
+          "Payloads": {
+            "Id": "Lokad.Utf8Regex",
+            "Version": "0.4.0-rc.1",
+            "PackageSha256": "0F58D0F9373A2CD45EEC4293AC34246BC7215952BCF00AB4376DC69F3558EBC0",
+            "DllSha256": "B3755586A36C76B1F7C315A14CD3F9F1B8B57FC08D95E39A64DE73E809D548DB",
+            "TestedFeed": "/home/vermorel/utf8regex-rc1-2e97ac97-20261020/feed",
+            "ExactLock": true
+          },
+          "LockSha256": "78E2AEC9ADBAFA4BA2545E16BF44584110675ACC9540222EAFFAD04C76B25B78"
+        },
+        {
+          "TestProject": "Lokad.Utf8Regex.DiffTests",
+          "Passed": 1504,
+          "Failed": 0,
+          "ProjectReferences": 0,
+          "Payloads": {
+            "Id": "Lokad.Utf8Regex",
+            "Version": "0.4.0-rc.1",
+            "PackageSha256": "0F58D0F9373A2CD45EEC4293AC34246BC7215952BCF00AB4376DC69F3558EBC0",
+            "DllSha256": "B3755586A36C76B1F7C315A14CD3F9F1B8B57FC08D95E39A64DE73E809D548DB",
+            "TestedFeed": "/home/vermorel/utf8regex-rc1-2e97ac97-20261020/feed",
+            "ExactLock": true
+          },
+          "LockSha256": "78E2AEC9ADBAFA4BA2545E16BF44584110675ACC9540222EAFFAD04C76B25B78"
+        },
+        {
+          "TestProject": "Lokad.Utf8Regex.PythonRe.Tests",
+          "Passed": 3881,
+          "Failed": 0,
+          "ProjectReferences": 0,
+          "Payloads": [
+            {
+              "Id": "Lokad.Utf8Regex",
+              "Version": "0.4.0-rc.1",
+              "PackageSha256": "0F58D0F9373A2CD45EEC4293AC34246BC7215952BCF00AB4376DC69F3558EBC0",
+              "DllSha256": "B3755586A36C76B1F7C315A14CD3F9F1B8B57FC08D95E39A64DE73E809D548DB",
+              "TestedFeed": "/home/vermorel/utf8regex-rc1-2e97ac97-20261020/feed",
+              "ExactLock": true
+            },
+            {
+              "Id": "Lokad.Utf8Regex.PythonRe",
+              "Version": "0.4.0-rc.1",
+              "PackageSha256": "3D6F71F50348B4AA33C60258F4262084373AA4BD1A4FF11932055650DC396D23",
+              "DllSha256": "A54BDD2A1F0B2FDC890E836162D1D0F077538C04A1C6A892161936C2D725BF72",
+              "TestedFeed": "/home/vermorel/utf8regex-rc1-2e97ac97-20261020/feed",
+              "ExactLock": true
+            }
+          ],
+          "LockSha256": "05EC4AC2B905947B3C82ED7D5540D965090ADE57329191B0E650A0385860B550"
+        },
+        {
+          "TestProject": "Lokad.Utf8Regex.Pcre2.Tests",
+          "Passed": 5911,
+          "Failed": 0,
+          "ProjectReferences": 0,
+          "Payloads": [
+            {
+              "Id": "Lokad.Utf8Regex",
+              "Version": "0.4.0-rc.1",
+              "PackageSha256": "0F58D0F9373A2CD45EEC4293AC34246BC7215952BCF00AB4376DC69F3558EBC0",
+              "DllSha256": "B3755586A36C76B1F7C315A14CD3F9F1B8B57FC08D95E39A64DE73E809D548DB",
+              "TestedFeed": "/home/vermorel/utf8regex-rc1-2e97ac97-20261020/feed",
+              "ExactLock": true
+            },
+            {
+              "Id": "Lokad.Utf8Regex.Pcre2",
+              "Version": "0.4.0-rc.1",
+              "PackageSha256": "BB7E977A34C09B959B9A7DBF0378151D7693289BF0BA634C592C195427C7F0FD",
+              "DllSha256": "5F034DACBCD86E274C0280AB8F8120302B1CA2137425F29219EF7847BEF0C182",
+              "TestedFeed": "/home/vermorel/utf8regex-rc1-2e97ac97-20261020/feed",
+              "ExactLock": true
+            }
+          ],
+          "LockSha256": "17048C211FBC3746BFFFB11D8837390AAD5CFAAB618F6977F89934A8C6277EAD"
+        }
+      ],
+      "PublicConsumers": [
+        {
+          "Platform": "linux",
+          "Name": "core-python",
+          "ProgramSha256": "874E2E3A8DDBF3F7B6FEF39B4A7161EA221E3FCAC94453D61A31C2F0FFA7BC84",
+          "ProjectReferences": 0,
+          "LockSha256": "62C26D30B981378954198E7405158E7A178F33972E784D15961E6FBEFD03FCA1",
+          "Payloads": [
+            {
+              "Id": "Lokad.Utf8Regex",
+              "Version": "0.4.0-rc.1+2e97ac974e6e8c60aac95db1e4808cbda2ff9736",
+              "PackageSha256": "0F58D0F9373A2CD45EEC4293AC34246BC7215952BCF00AB4376DC69F3558EBC0",
+              "DllSha256": "B3755586A36C76B1F7C315A14CD3F9F1B8B57FC08D95E39A64DE73E809D548DB",
+              "Feed": "/home/vermorel/utf8regex-rc1-2e97ac97-20261020/feed",
+              "ExactLock": true
+            },
+            {
+              "Id": "Lokad.Utf8Regex.PythonRe",
+              "Version": "0.4.0-rc.1+2e97ac974e6e8c60aac95db1e4808cbda2ff9736",
+              "PackageSha256": "3D6F71F50348B4AA33C60258F4262084373AA4BD1A4FF11932055650DC396D23",
+              "DllSha256": "A54BDD2A1F0B2FDC890E836162D1D0F077538C04A1C6A892161936C2D725BF72",
+              "Feed": "/home/vermorel/utf8regex-rc1-2e97ac97-20261020/feed",
+              "ExactLock": true
+            }
+          ],
+          "ConsumerRoot": "/home/vermorel/utf8regex-rc1-2e97ac97-20261020/public/core-python"
+        },
+        {
+          "Platform": "linux",
+          "Name": "pcre2",
+          "ProgramSha256": "686AF9A4A2AA6EBE73C97EBE1ED9F94B6DCECC0C47028D731DEFC9A3FE4CD922",
+          "ProjectReferences": 0,
+          "LockSha256": "216F01A280206019A1978A1B31BF7EB9F5B4ED7A139A16B2F63C3F178EBC4D83",
+          "Payloads": [
+            {
+              "Id": "Lokad.Utf8Regex",
+              "Version": "0.4.0-rc.1+2e97ac974e6e8c60aac95db1e4808cbda2ff9736",
+              "PackageSha256": "0F58D0F9373A2CD45EEC4293AC34246BC7215952BCF00AB4376DC69F3558EBC0",
+              "DllSha256": "B3755586A36C76B1F7C315A14CD3F9F1B8B57FC08D95E39A64DE73E809D548DB",
+              "Feed": "/home/vermorel/utf8regex-rc1-2e97ac97-20261020/feed",
+              "ExactLock": true
+            },
+            {
+              "Id": "Lokad.Utf8Regex.Pcre2",
+              "Version": "0.4.0-rc.1+2e97ac974e6e8c60aac95db1e4808cbda2ff9736",
+              "PackageSha256": "BB7E977A34C09B959B9A7DBF0378151D7693289BF0BA634C592C195427C7F0FD",
+              "DllSha256": "5F034DACBCD86E274C0280AB8F8120302B1CA2137425F29219EF7847BEF0C182",
+              "Feed": "/home/vermorel/utf8regex-rc1-2e97ac97-20261020/feed",
+              "ExactLock": true
+            }
+          ],
+          "ConsumerRoot": "/home/vermorel/utf8regex-rc1-2e97ac97-20261020/public/pcre2"
+        },
+        {
+          "Platform": "linux",
+          "Name": "combined",
+          "ProgramSha256": "C3D58888BAAC637E5C30D7E77D8609CE169064B36B87858FA66CE8476FCCE1E7",
+          "ProjectReferences": 0,
+          "LockSha256": "5859C512062D2A8F5EE2A7B052B293CC8C135CF65FDD6072473DF6A6A9477546",
+          "Payloads": [
+            {
+              "Id": "Lokad.Utf8Regex",
+              "Version": "0.4.0-rc.1+2e97ac974e6e8c60aac95db1e4808cbda2ff9736",
+              "PackageSha256": "0F58D0F9373A2CD45EEC4293AC34246BC7215952BCF00AB4376DC69F3558EBC0",
+              "DllSha256": "B3755586A36C76B1F7C315A14CD3F9F1B8B57FC08D95E39A64DE73E809D548DB",
+              "Feed": "/home/vermorel/utf8regex-rc1-2e97ac97-20261020/feed",
+              "ExactLock": true
+            },
+            {
+              "Id": "Lokad.Utf8Regex.PythonRe",
+              "Version": "0.4.0-rc.1+2e97ac974e6e8c60aac95db1e4808cbda2ff9736",
+              "PackageSha256": "3D6F71F50348B4AA33C60258F4262084373AA4BD1A4FF11932055650DC396D23",
+              "DllSha256": "A54BDD2A1F0B2FDC890E836162D1D0F077538C04A1C6A892161936C2D725BF72",
+              "Feed": "/home/vermorel/utf8regex-rc1-2e97ac97-20261020/feed",
+              "ExactLock": true
+            },
+            {
+              "Id": "Lokad.Utf8Regex.Pcre2",
+              "Version": "0.4.0-rc.1+2e97ac974e6e8c60aac95db1e4808cbda2ff9736",
+              "PackageSha256": "BB7E977A34C09B959B9A7DBF0378151D7693289BF0BA634C592C195427C7F0FD",
+              "DllSha256": "5F034DACBCD86E274C0280AB8F8120302B1CA2137425F29219EF7847BEF0C182",
+              "Feed": "/home/vermorel/utf8regex-rc1-2e97ac97-20261020/feed",
+              "ExactLock": true
+            }
+          ],
+          "ConsumerRoot": "/home/vermorel/utf8regex-rc1-2e97ac97-20261020/public/combined"
+        }
+      ],
+      "CaptureFixtures": 121,
+      "SemanticDigestCases": 91
+    }
+  },
+  "SourceCI": {
+    "Run": 39401075919,
+    "Head": "2e97ac974e6e8c60aac95db1e4808cbda2ff9736",
+    "Status": "completed",
+    "Conclusion": "success",
+    "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/39401075919"
+  },
+  "PackagedDocumentation": [
+    {
+      "Id": "Lokad.Utf8Regex",
+      "Docs": [
+        {
+          "Name": "README.md",
+          "Sha256": "13BF138D8209EE675B864DEFF624D804618B3BD708A7483F79ABE11E20A9AA30"
+        },
+        {
+          "Name": "CHANGELOG.md",
+          "Sha256": "5EE4A5C679FAD33D0EDFDA0E9BD6F0FFEC20D7A0B41118F1760955B78E768E5A"
+        },
+        {
+          "Name": "MIGRATION.md",
+          "Sha256": "084A04A13F3909FA03B5865F4B5A7C3AE4F7ACF8E3647F938C31ADC6748A1B80"
+        },
+        {
+          "Name": "HOST-INTEGRATION.md",
+          "Sha256": "BA564F788E615F1BDB48B19BC691AC8ABCF3B2D2967AD4E52B23BDF37177434D"
+        }
+      ],
+      "ExactCorePin": true
+    },
+    {
+      "Id": "Lokad.Utf8Regex.Pcre2",
+      "Docs": [
+        {
+          "Name": "README.md",
+          "Sha256": "6F9FA026A6A6F97ACA495ABBA8AA3C1B35C722AEF99004260B716A174D39408E"
+        },
+        {
+          "Name": "CHANGELOG.md",
+          "Sha256": "5EE4A5C679FAD33D0EDFDA0E9BD6F0FFEC20D7A0B41118F1760955B78E768E5A"
+        },
+        {
+          "Name": "MIGRATION.md",
+          "Sha256": "084A04A13F3909FA03B5865F4B5A7C3AE4F7ACF8E3647F938C31ADC6748A1B80"
+        },
+        {
+          "Name": "HOST-INTEGRATION.md",
+          "Sha256": "BA564F788E615F1BDB48B19BC691AC8ABCF3B2D2967AD4E52B23BDF37177434D"
+        }
+      ],
+      "ExactCorePin": true
+    },
+    {
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "Docs": [
+        {
+          "Name": "README.md",
+          "Sha256": "C9733EB8ED5D7576941869BCEB8200EFF20920BDB4FD106031CC33E01D90EEAD"
+        },
+        {
+          "Name": "CHANGELOG.md",
+          "Sha256": "5EE4A5C679FAD33D0EDFDA0E9BD6F0FFEC20D7A0B41118F1760955B78E768E5A"
+        },
+        {
+          "Name": "MIGRATION.md",
+          "Sha256": "084A04A13F3909FA03B5865F4B5A7C3AE4F7ACF8E3647F938C31ADC6748A1B80"
+        },
+        {
+          "Name": "HOST-INTEGRATION.md",
+          "Sha256": "BA564F788E615F1BDB48B19BC691AC8ABCF3B2D2967AD4E52B23BDF37177434D"
+        }
+      ],
+      "ExactCorePin": true
+    }
+  ],
+  "MemberInventory": [
+    {
+      "Id": "Lokad.Utf8Regex",
+      "Sha256": "B3755586A36C76B1F7C315A14CD3F9F1B8B57FC08D95E39A64DE73E809D548DB",
+      "Members": [
+        "System.Runtime.CompilerServices.Unsafe.SizeOf"
+      ],
+      "ProducerReadAccessGatePass": true,
+      "LythonMemberGatePass": true,
+      "GeneratedInlineArrayHelpers": [],
+      "RegexMemberReferences": [
+        "Regex.InfiniteMatchTimeout",
+        "RegexMatchTimeoutException..ctor"
+      ],
+      "NativeImports": 0,
+      "AssemblyReferences": [
+        "System.Runtime",
+        "System.Text.RegularExpressions",
+        "System.Memory",
+        "System.Runtime.Intrinsics",
+        "System.Reflection.Emit.Lightweight",
+        "System.Reflection.Primitives",
+        "System.Threading",
+        "System.Collections",
+        "System.Text.Encoding.Extensions",
+        "System.Linq"
+      ],
+      "RegexTypeReferences": [
+        "RegexOptions",
+        "RegexMatchTimeoutException",
+        "Regex"
+      ]
+    },
+    {
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "Sha256": "A54BDD2A1F0B2FDC890E836162D1D0F077538C04A1C6A892161936C2D725BF72",
+      "Members": [],
+      "ProducerReadAccessGatePass": true,
+      "LythonMemberGatePass": true,
+      "GeneratedInlineArrayHelpers": [],
+      "RegexMemberReferences": [
+        "RegexMatchTimeoutException..ctor"
+      ],
+      "NativeImports": 0,
+      "AssemblyReferences": [
+        "System.Runtime",
+        "Lokad.Utf8Regex",
+        "System.Text.RegularExpressions",
+        "System.Text.Encoding.Extensions",
+        "System.Memory",
+        "System.Collections",
+        "System.Linq",
+        "System.Threading"
+      ],
+      "RegexTypeReferences": [
+        "RegexOptions",
+        "RegexMatchTimeoutException"
+      ]
+    },
+    {
+      "Id": "Lokad.Utf8Regex.Pcre2",
+      "Sha256": "5F034DACBCD86E274C0280AB8F8120302B1CA2137425F29219EF7847BEF0C182",
+      "Members": [
+        "System.Runtime.CompilerServices.Unsafe.SizeOf"
+      ],
+      "ProducerReadAccessGatePass": true,
+      "LythonMemberGatePass": true,
+      "GeneratedInlineArrayHelpers": [],
+      "RegexMemberReferences": [
+        "RegexMatchTimeoutException..ctor",
+        "Regex.Escape"
+      ],
+      "NativeImports": 0,
+      "AssemblyReferences": [
+        "System.Runtime",
+        "System.Collections",
+        "Lokad.Utf8Regex",
+        "System.Text.RegularExpressions",
+        "System.Linq",
+        "System.Memory",
+        "System.Runtime.InteropServices"
+      ],
+      "RegexTypeReferences": [
+        "RegexOptions",
+        "RegexParseException",
+        "RegexMatchTimeoutException",
+        "Regex"
+      ]
+    }
+  ],
+  "PreservedInputs": [
+    {
+      "Version": "0.4.0-scalar.119",
+      "ManifestSha256": "26497A408FC682F57473EE9DF81AED61086403EFB3D21E3EA9415CE3087A568C",
+      "PackagesAndSymbolsPreserved": true
+    },
+    {
+      "Version": "0.4.0-scalar.94",
+      "ManifestSha256": "EFD07FEEF271E3117D3508D7F0E3DB04DC20E4F14AC59D01DAE705E0221A80E5",
+      "ArchiveArtifactsPreserved": 7
+    }
+  ],
+  "ProductionEquivalence": {
+    "ReleaseSource": "2e97ac974e6e8c60aac95db1e4808cbda2ff9736",
+    "ComparedWith": "ca0c8a6f04bd08d67cdd3db1b3184f9db2838480",
+    "ProductionCSharpChanges": [],
+    "RejectedPilotIncluded": false,
+    "PerformanceScope": "Existing scalar.119 measurements retain their exact-byte/runtime scope; RC1 has no new benchmark claim."
+  },
+  "Limitations": [
+    "Defaults/static cached calls remain unlimited; modeled capacity controls do not bound all heap/RSS, callbacks, standalone getters or arbitrary host retention.",
+    "Profile grammar/operation limitations remain; no full .NET, Python or PCRE2 equivalence.",
+    "PCRE2 email Count can exhaust a 50-million-step policy; deferred optimization is absent.",
+    "No new RC1 performance campaign: scalar.119 exact-byte and older profile receipts retain their identities.",
+    "Producer handoff assertions do not establish external consumer adoption; no NuGet publication or tag."
+  ]
+}

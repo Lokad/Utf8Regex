@@ -1,0 +1,12 @@
+[
+  {
+    "Name": "core-python",
+    "OriginalProgram": "artifacts/core-python-scalar119-20261020/restore-example/Program.cs",
+    "Sha256": "874E2E3A8DDBF3F7B6FEF39B4A7161EA221E3FCAC94453D61A31C2F0FFA7BC84"
+  },
+  {
+    "Name": "pcre2",
+    "OriginalProgram": "artifacts/pcre2-scalar94-delivery-20261018/restore-example/Program.cs",
+    "Sha256": "686AF9A4A2AA6EBE73C97EBE1ED9F94B6DCECC0C47028D731DEFC9A3FE4CD922"
+  }
+]
