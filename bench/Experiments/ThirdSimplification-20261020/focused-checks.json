@@ -1,0 +1,57 @@
+{
+  "Checks": [
+    {
+      "Scope": "Core structural/search/preparation",
+      "Configuration": "Release",
+      "Passed": 1950,
+      "Failed": 0,
+      "Skipped": 0,
+      "Log": "artifacts/third-simplification-20261020/core-production.log",
+      "LogSha256": "98CDEFC4878266A4A88777586FF6554D71E5010944D588988C1472FC70E456CB"
+    },
+    {
+      "Scope": "Core inventories/API/architecture/invocation/byte limits",
+      "Configuration": "Release",
+      "Passed": 2841,
+      "Failed": 0,
+      "Skipped": 0,
+      "Log": "artifacts/third-simplification-20261020/core-guards-resources.log",
+      "LogSha256": "688F161C3E554292E2492F5ECEAF7E41F4C825F28C1F49D3314406B0D81EEFD1"
+    },
+    {
+      "Scope": "PCRE2 compiler/public routes/admission/authority/source guards",
+      "Configuration": "Release",
+      "Passed": 1294,
+      "Failed": 0,
+      "Skipped": 0,
+      "Log": "artifacts/third-simplification-20261020/pcre2-focused.log",
+      "LogSha256": "B61FD54F9867465EBCAB9B3C973B8985E4BFB3DDCE50F27FCC680D4D914B49BD"
+    },
+    {
+      "Scope": "PythonRe construction/scalars/captures/literals/cancellation/resources/API",
+      "Configuration": "Release",
+      "Passed": 1750,
+      "Failed": 0,
+      "Skipped": 0,
+      "Log": "artifacts/third-simplification-20261020/pythonre-focused.log",
+      "LogSha256": "7221E10AB0F88181B8530E04827B910E885A37E2EE175106FF88CD5F7FBFB31D"
+    }
+  ],
+  "Note": "Filters can overlap; counts are not summed into an invented unique coverage total. Existing compiler/analyzer/discovery warnings remain. Matching binaries were reused; no solution/package matrix repeated locally.",
+  "Documentation": {
+    "EditedPages": [
+      "SPEC.md",
+      "SPEC-PYTHONRE.md",
+      "SPEC-PCRE2.md",
+      "src/Lokad.Utf8Regex/Internal/Search/COMPLEXITY.md",
+      "tests/Lokad.Utf8Regex.Pcre2.Tests/Corpus/PORTING.md"
+    ],
+    "LocalLinksChecked": 22,
+    "InboundSpecificationAnchors": "pass",
+    "CodeFences": "pass",
+    "Utf8Examples": "pass",
+    "OriginalFullTexts": "git 46318565 and ignored PLAN.HISTORY.md",
+    "DraftCorrection": "Explicit UTF-8 reads restored scalar examples; fence checker corrected to count only actual line-start fences, not inline replacement tokens.",
+    "Limitation": "Source/document review, not package qualification."
+  }
+}

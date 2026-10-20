@@ -1,0 +1,75 @@
+{
+  "Run": 39445143639,
+  "SourceRevision": "4b99405de672d1c3ce8bf897acec8c863152d254",
+  "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/39445143639",
+  "Status": "completed",
+  "Conclusion": "success",
+  "Scope": "One complete Release Windows/Linux source boundary after the third cleanup. Existing API, dependency/member inventory, scalar, resource, lifetime and consumer-related source tests pass. No new package/isolated consumer qualification; later edits are receipts only.",
+  "Platforms": [
+    {
+      "Platform": "test-log-ubuntu-latest",
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.DiffTests.dll",
+          "Passed": 1504,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+          "Passed": 5919,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll",
+          "Passed": 3881,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Tests.dll",
+          "Passed": 39692,
+          "Failed": 0,
+          "Skipped": 0
+        }
+      ],
+      "TestLog": "artifacts/third-simplification-20261020/ci/test-log-ubuntu-latest/test.log",
+      "TestLogSha256": "B1DC6B53CD1F5F6B36DA34CF627AD8E9CB8838578FE61AA24E8A542FDAA27E30",
+      "BuildLogSha256": "7634AF9BADD42863D519B6E42AC5E21D1A870D3312411EDD26863EA3BA05ECF8"
+    },
+    {
+      "Platform": "test-log-windows-latest",
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.DiffTests.dll",
+          "Passed": 1504,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll",
+          "Passed": 3881,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+          "Passed": 5919,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Tests.dll",
+          "Passed": 39692,
+          "Failed": 0,
+          "Skipped": 0
+        }
+      ],
+      "TestLog": "artifacts/third-simplification-20261020/ci/test-log-windows-latest/test.log",
+      "TestLogSha256": "3514E9CFAF3116E63831AEF10945E30CC903284F0460BD5EFD7AF77CA54EF569",
+      "BuildLogSha256": "FF4DD38D7B59E96C4E831C9FB4057CD4F8232B6D3931F013A1363415C5F5F95B"
+    }
+  ],
+  "Warnings": "Existing compiler/analyzer and duplicate-PCRE2-case discovery warnings remain; no extra unique tests claimed."
+}

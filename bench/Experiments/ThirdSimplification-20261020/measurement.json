@@ -1,0 +1,568 @@
+{
+  "Protocol": "One predeclared sequential Release before/after batch: 3 public-constructor/first-operation cases (16 instances,7 samples), public character Count (2000 iterations,5 samples),45s cap per child. One reverse-order confirmation for the borderline backtracking constructor/first IsMatch plus unchanged Count controls. No further timing.",
+  "SourceBefore": "46318565b9704031f95d76b07bde68e5de56ec68",
+  "SourceAfter": "4b99405de672d1c3ce8bf897acec8c863152d254",
+  "Environment": {
+    "Runtime": ".NET 10.0.13",
+    "OS": "Windows 10.0.26200",
+    "Processor": "Intel64 Family 6 Model 183 Stepping 1",
+    "DOTNET_TieredCompilation": "0",
+    "TieredPGO": "Not separately set; CLI prints runtime-default while tiered compilation is explicitly disabled."
+  },
+  "AssemblyIdentities": {
+    "before": [
+      {
+        "Algorithm": "SHA256",
+        "Hash": "2512EE8BA382B564DD32FEB71273F5FB52807544BD00BAEE95B845CC40D5E562",
+        "Path": "D:\\code\\utf8regex\\bench\\Lokad.Utf8Regex.Benchmarks\\bin\\Release\\net10.0\\Lokad.Utf8Regex.dll"
+      },
+      {
+        "Algorithm": "SHA256",
+        "Hash": "EA0BA188883CDE42BC435C2FFA7D4CCC1CC4C4117F1B3088CAB05A6B9FDEB1C3",
+        "Path": "D:\\code\\utf8regex\\bench\\Lokad.Utf8Regex.Benchmarks\\bin\\Release\\net10.0\\Lokad.Utf8Regex.Pcre2.dll"
+      },
+      {
+        "Algorithm": "SHA256",
+        "Hash": "81F324C7E86EE4284AF9A2AC285F45351FFA5F1BBDBC6869177C6CABFBEA7D79",
+        "Path": "D:\\code\\utf8regex\\bench\\Lokad.Utf8Regex.Benchmarks\\bin\\Release\\net10.0\\Lokad.Utf8Regex.Benchmarks.dll"
+      }
+    ],
+    "after": [
+      {
+        "Algorithm": "SHA256",
+        "Hash": "1A3241486B101C2370026A3D0AFE23948813EA47C0B37C2B7A7443E74777A253",
+        "Path": "D:\\code\\utf8regex\\bench\\Lokad.Utf8Regex.Benchmarks\\bin\\Release\\net10.0\\Lokad.Utf8Regex.dll"
+      },
+      {
+        "Algorithm": "SHA256",
+        "Hash": "E3A4C94706739C0F008798051929F4ACBE87EE8553E8EB8540B65B595753049E",
+        "Path": "D:\\code\\utf8regex\\bench\\Lokad.Utf8Regex.Benchmarks\\bin\\Release\\net10.0\\Lokad.Utf8Regex.Pcre2.dll"
+      },
+      {
+        "Algorithm": "SHA256",
+        "Hash": "6895B06099612CDFDCBE452541FA987B0756866E7BB46D8C316E186EFA701CA2",
+        "Path": "D:\\code\\utf8regex\\bench\\Lokad.Utf8Regex.Benchmarks\\bin\\Release\\net10.0\\Lokad.Utf8Regex.Benchmarks.dll"
+      }
+    ]
+  },
+  "Confirmation": {
+    "Order": [
+      "after",
+      "frozen before"
+    ],
+    "RequestedConstructorSamples": 17,
+    "EffectiveConstructorSamples": 9,
+    "Reason": "Existing construction CLI clamps to nine; do not relabel the effective protocol. No rerun.",
+    "BeforeHost": "Disposable copy of existing Release dependency closure; the 3 frozen original Core/PCRE2/benchmark DLLs replaced the current equivalents and their hashes were verified. Unchanged PythonRe/runtime dependencies are borrowed.",
+    "Launcher": "Disposable bench.ps1 copy changes only repo/host paths; SkipBuild, literal arguments, cwd and45s child cap remain. Production scripts are unchanged.",
+    "IdentityCaveat": "SourceCommit printed by frozen runner queries the current checkout; original producer identity is established by the verified DLL hashes, not that checkout label."
+  },
+  "Observations": [
+    {
+      "RawLog": "artifacts/third-simplification-20261020/after-backtracking.log",
+      "LogSha256": "4D3B9C90BFAFD40873B028480404E2B7FB8E76DC2C7CFC6F98B274545EA9FA12",
+      "Rows": [
+        {
+          "Name": "Pcre2Construct",
+          "MedianUs": 49.7,
+          "MinUs": 45.019,
+          "MaxUs": 65.469,
+          "AllocatedBytes": 57936,
+          "Samples": 7
+        },
+        {
+          "Name": "Pcre2FirstIsMatch",
+          "MedianUs": 1.775,
+          "MinUs": 1.544,
+          "MaxUs": 18.325,
+          "AllocatedBytes": 3872,
+          "Samples": 7
+        }
+      ]
+    },
+    {
+      "RawLog": "artifacts/third-simplification-20261020/after-character.log",
+      "LogSha256": "B48B33A022889A42D52B743570718728BAC068D38DE67F265FAA2508D6CCC2FD",
+      "Rows": [
+        {
+          "Name": "Pcre2Construct",
+          "MedianUs": 25.644,
+          "MinUs": 21.512,
+          "MaxUs": 69.131,
+          "AllocatedBytes": 32520,
+          "Samples": 7
+        },
+        {
+          "Name": "Pcre2FirstCount",
+          "MedianUs": 41.35,
+          "MinUs": 39.944,
+          "MaxUs": 53.831,
+          "AllocatedBytes": 0,
+          "Samples": 7
+        }
+      ]
+    },
+    {
+      "RawLog": "artifacts/third-simplification-20261020/after-count.log",
+      "LogSha256": "4E5EDBF26ACF1CC6DE064A36D7A44B414C34182ACE46B4C5C4C323B5099C2658",
+      "Rows": [
+        {
+          "Name": "Pcre2PublicCount",
+          "MedianUs": 43.542,
+          "MinUs": 40.276,
+          "MaxUs": 43.742,
+          "Samples": 5
+        },
+        {
+          "Name": "Utf8Count",
+          "MedianUs": 431.036,
+          "MinUs": 329.076,
+          "MaxUs": 505.519,
+          "Samples": 5
+        },
+        {
+          "Name": "DecodeCount",
+          "MedianUs": 350.255,
+          "MinUs": 339.919,
+          "MaxUs": 381.446,
+          "Samples": 5
+        },
+        {
+          "Name": "PredecodedCount",
+          "MedianUs": 360.966,
+          "MinUs": 339.118,
+          "MaxUs": 438.978,
+          "Samples": 5
+        }
+      ]
+    },
+    {
+      "RawLog": "artifacts/third-simplification-20261020/after-literal.log",
+      "LogSha256": "8AF091E022E4A0C6483A0794D7141AB3C8B6C1AED9DD79E70F103864604BDB3D",
+      "Rows": [
+        {
+          "Name": "Pcre2Construct",
+          "MedianUs": 0.781,
+          "MinUs": 0.662,
+          "MaxUs": 21.344,
+          "AllocatedBytes": 2168,
+          "Samples": 7
+        },
+        {
+          "Name": "Pcre2FirstIsMatch",
+          "MedianUs": 0.256,
+          "MinUs": 0.244,
+          "MaxUs": 10.75,
+          "AllocatedBytes": 0,
+          "Samples": 7
+        },
+        {
+          "Name": "Pcre2FirstCount",
+          "MedianUs": 1.156,
+          "MinUs": 1.081,
+          "MaxUs": 12.731,
+          "AllocatedBytes": 0,
+          "Samples": 7
+        }
+      ]
+    },
+    {
+      "RawLog": "artifacts/third-simplification-20261020/before-backtracking.log",
+      "LogSha256": "700D1D374A67581331C796A89ACB010C911B7C2CA36A9E551C03E0CED1B823DE",
+      "Rows": [
+        {
+          "Name": "Pcre2Construct",
+          "MedianUs": 44.837,
+          "MinUs": 40.75,
+          "MaxUs": 62.931,
+          "AllocatedBytes": 58048,
+          "Samples": 7
+        },
+        {
+          "Name": "Pcre2FirstIsMatch",
+          "MedianUs": 1.587,
+          "MinUs": 1.425,
+          "MaxUs": 12.988,
+          "AllocatedBytes": 3872,
+          "Samples": 7
+        }
+      ]
+    },
+    {
+      "RawLog": "artifacts/third-simplification-20261020/before-character.log",
+      "LogSha256": "9ADAE4C973E2215D01BDAC00027E7A75263776AA657FE2F9B10E36CB49F9A5C3",
+      "Rows": [
+        {
+          "Name": "Pcre2Construct",
+          "MedianUs": 24.425,
+          "MinUs": 20.363,
+          "MaxUs": 52.381,
+          "AllocatedBytes": 32632,
+          "Samples": 7
+        },
+        {
+          "Name": "Pcre2FirstCount",
+          "MedianUs": 38.969,
+          "MinUs": 38.362,
+          "MaxUs": 50.75,
+          "AllocatedBytes": 0,
+          "Samples": 7
+        }
+      ]
+    },
+    {
+      "RawLog": "artifacts/third-simplification-20261020/before-count.log",
+      "LogSha256": "A071795ABCD5571AE903376D79036DD8FF891F5ED07014C4D638A55D63CCFE88",
+      "Rows": [
+        {
+          "Name": "Pcre2PublicCount",
+          "MedianUs": 42.911,
+          "MinUs": 41.263,
+          "MaxUs": 44.465,
+          "Samples": 5
+        },
+        {
+          "Name": "Utf8Count",
+          "MedianUs": 486.146,
+          "MinUs": 321.681,
+          "MaxUs": 532.348,
+          "Samples": 5
+        },
+        {
+          "Name": "DecodeCount",
+          "MedianUs": 347.476,
+          "MinUs": 326.326,
+          "MaxUs": 363.834,
+          "Samples": 5
+        },
+        {
+          "Name": "PredecodedCount",
+          "MedianUs": 333.684,
+          "MinUs": 308.788,
+          "MaxUs": 362.829,
+          "Samples": 5
+        }
+      ]
+    },
+    {
+      "RawLog": "artifacts/third-simplification-20261020/before-literal.log",
+      "LogSha256": "D6AB5A62616941AA7A4954B337821B1E2588BC2AD85DD892778796125B840BC2",
+      "Rows": [
+        {
+          "Name": "Pcre2Construct",
+          "MedianUs": 0.775,
+          "MinUs": 0.65,
+          "MaxUs": 17.444,
+          "AllocatedBytes": 2168,
+          "Samples": 7
+        },
+        {
+          "Name": "Pcre2FirstIsMatch",
+          "MedianUs": 0.237,
+          "MinUs": 0.225,
+          "MaxUs": 9.3,
+          "AllocatedBytes": 0,
+          "Samples": 7
+        },
+        {
+          "Name": "Pcre2FirstCount",
+          "MedianUs": 1.087,
+          "MinUs": 1.025,
+          "MaxUs": 11.894,
+          "AllocatedBytes": 0,
+          "Samples": 7
+        }
+      ]
+    },
+    {
+      "RawLog": "artifacts/third-simplification-20261020/confirmation-after-backtracking.log",
+      "LogSha256": "9798730085F62C43AE99941AA18555CBBEE84B27572256D6C6D9A6BDC87CEB87",
+      "Rows": [
+        {
+          "Name": "Pcre2Construct",
+          "MedianUs": 42.906,
+          "MinUs": 41.681,
+          "MaxUs": 78.963,
+          "AllocatedBytes": 57936,
+          "Samples": 9
+        },
+        {
+          "Name": "Pcre2FirstIsMatch",
+          "MedianUs": 1.706,
+          "MinUs": 1.594,
+          "MaxUs": 12.394,
+          "AllocatedBytes": 3872,
+          "Samples": 9
+        }
+      ]
+    },
+    {
+      "RawLog": "artifacts/third-simplification-20261020/confirmation-after-count.log",
+      "LogSha256": "E16A38D5E689501AB52BA3149AC4215570344983F5E5D09EA194162A0B7F0213",
+      "Rows": [
+        {
+          "Name": "Pcre2PublicCount",
+          "MedianUs": 40.283,
+          "MinUs": 40.022,
+          "MaxUs": 41.097,
+          "Samples": 5
+        },
+        {
+          "Name": "Utf8Count",
+          "MedianUs": 325.724,
+          "MinUs": 312.375,
+          "MaxUs": 372.365,
+          "Samples": 5
+        },
+        {
+          "Name": "DecodeCount",
+          "MedianUs": 234.807,
+          "MinUs": 223.832,
+          "MaxUs": 266.637,
+          "Samples": 5
+        },
+        {
+          "Name": "PredecodedCount",
+          "MedianUs": 224.991,
+          "MinUs": 217.113,
+          "MaxUs": 226.443,
+          "Samples": 5
+        }
+      ]
+    },
+    {
+      "RawLog": "artifacts/third-simplification-20261020/confirmation-before-backtracking.log",
+      "LogSha256": "CDD9C8D52A692D22763D6B61177CF10FF71F826EA2D6976DC216C46A29A3D17D",
+      "Rows": [
+        {
+          "Name": "Pcre2Construct",
+          "MedianUs": 39.944,
+          "MinUs": 38.906,
+          "MaxUs": 61.731,
+          "AllocatedBytes": 58048,
+          "Samples": 9
+        },
+        {
+          "Name": "Pcre2FirstIsMatch",
+          "MedianUs": 1.369,
+          "MinUs": 1.319,
+          "MaxUs": 10.981,
+          "AllocatedBytes": 3872,
+          "Samples": 9
+        }
+      ]
+    },
+    {
+      "RawLog": "artifacts/third-simplification-20261020/confirmation-before-count.log",
+      "LogSha256": "C653E90E1667D999063BA6FB9080C38DF910D90BE57667609F8A2A1227BA9D91",
+      "Rows": [
+        {
+          "Name": "Pcre2PublicCount",
+          "MedianUs": 41.628,
+          "MinUs": 40.671,
+          "MaxUs": 43.334,
+          "Samples": 5
+        },
+        {
+          "Name": "Utf8Count",
+          "MedianUs": 321.817,
+          "MinUs": 318.755,
+          "MaxUs": 335.997,
+          "Samples": 5
+        },
+        {
+          "Name": "DecodeCount",
+          "MedianUs": 226.743,
+          "MinUs": 222.155,
+          "MaxUs": 234.624,
+          "Samples": 5
+        },
+        {
+          "Name": "PredecodedCount",
+          "MedianUs": 213.644,
+          "MinUs": 212.714,
+          "MaxUs": 216.173,
+          "Samples": 5
+        }
+      ]
+    }
+  ],
+  "Deltas": [
+    {
+      "Batch": "initial",
+      "Case": "literal",
+      "Name": "Pcre2Construct",
+      "BeforeUs": 0.775,
+      "AfterUs": 0.781,
+      "ChangePercent": 0.774,
+      "BeforeBytes": 2168,
+      "AfterBytes": 2168
+    },
+    {
+      "Batch": "initial",
+      "Case": "literal",
+      "Name": "Pcre2FirstIsMatch",
+      "BeforeUs": 0.237,
+      "AfterUs": 0.256,
+      "ChangePercent": 8.017,
+      "BeforeBytes": 0,
+      "AfterBytes": 0
+    },
+    {
+      "Batch": "initial",
+      "Case": "literal",
+      "Name": "Pcre2FirstCount",
+      "BeforeUs": 1.087,
+      "AfterUs": 1.156,
+      "ChangePercent": 6.348,
+      "BeforeBytes": 0,
+      "AfterBytes": 0
+    },
+    {
+      "Batch": "initial",
+      "Case": "character",
+      "Name": "Pcre2Construct",
+      "BeforeUs": 24.425,
+      "AfterUs": 25.644,
+      "ChangePercent": 4.991,
+      "BeforeBytes": 32632,
+      "AfterBytes": 32520
+    },
+    {
+      "Batch": "initial",
+      "Case": "character",
+      "Name": "Pcre2FirstCount",
+      "BeforeUs": 38.969,
+      "AfterUs": 41.35,
+      "ChangePercent": 6.11,
+      "BeforeBytes": 0,
+      "AfterBytes": 0
+    },
+    {
+      "Batch": "initial",
+      "Case": "backtracking",
+      "Name": "Pcre2Construct",
+      "BeforeUs": 44.837,
+      "AfterUs": 49.7,
+      "ChangePercent": 10.846,
+      "BeforeBytes": 58048,
+      "AfterBytes": 57936
+    },
+    {
+      "Batch": "initial",
+      "Case": "backtracking",
+      "Name": "Pcre2FirstIsMatch",
+      "BeforeUs": 1.587,
+      "AfterUs": 1.775,
+      "ChangePercent": 11.846,
+      "BeforeBytes": 3872,
+      "AfterBytes": 3872
+    },
+    {
+      "Batch": "initial",
+      "Case": "count",
+      "Name": "Pcre2PublicCount",
+      "BeforeUs": 42.911,
+      "AfterUs": 43.542,
+      "ChangePercent": 1.47,
+      "BeforeBytes": null,
+      "AfterBytes": null
+    },
+    {
+      "Batch": "initial",
+      "Case": "count",
+      "Name": "Utf8Count",
+      "BeforeUs": 486.146,
+      "AfterUs": 431.036,
+      "ChangePercent": -11.336,
+      "BeforeBytes": null,
+      "AfterBytes": null
+    },
+    {
+      "Batch": "initial",
+      "Case": "count",
+      "Name": "DecodeCount",
+      "BeforeUs": 347.476,
+      "AfterUs": 350.255,
+      "ChangePercent": 0.8,
+      "BeforeBytes": null,
+      "AfterBytes": null
+    },
+    {
+      "Batch": "initial",
+      "Case": "count",
+      "Name": "PredecodedCount",
+      "BeforeUs": 333.684,
+      "AfterUs": 360.966,
+      "ChangePercent": 8.176,
+      "BeforeBytes": null,
+      "AfterBytes": null
+    },
+    {
+      "Batch": "confirmation",
+      "Case": "backtracking",
+      "Name": "Pcre2Construct",
+      "BeforeUs": 39.944,
+      "AfterUs": 42.906,
+      "ChangePercent": 7.415,
+      "BeforeBytes": 58048,
+      "AfterBytes": 57936
+    },
+    {
+      "Batch": "confirmation",
+      "Case": "backtracking",
+      "Name": "Pcre2FirstIsMatch",
+      "BeforeUs": 1.369,
+      "AfterUs": 1.706,
+      "ChangePercent": 24.617,
+      "BeforeBytes": 3872,
+      "AfterBytes": 3872
+    },
+    {
+      "Batch": "confirmation",
+      "Case": "count",
+      "Name": "Pcre2PublicCount",
+      "BeforeUs": 41.628,
+      "AfterUs": 40.283,
+      "ChangePercent": -3.231,
+      "BeforeBytes": null,
+      "AfterBytes": null
+    },
+    {
+      "Batch": "confirmation",
+      "Case": "count",
+      "Name": "Utf8Count",
+      "BeforeUs": 321.817,
+      "AfterUs": 325.724,
+      "ChangePercent": 1.214,
+      "BeforeBytes": null,
+      "AfterBytes": null
+    },
+    {
+      "Batch": "confirmation",
+      "Case": "count",
+      "Name": "DecodeCount",
+      "BeforeUs": 226.743,
+      "AfterUs": 234.807,
+      "ChangePercent": 3.556,
+      "BeforeBytes": null,
+      "AfterBytes": null
+    },
+    {
+      "Batch": "confirmation",
+      "Case": "count",
+      "Name": "PredecodedCount",
+      "BeforeUs": 213.644,
+      "AfterUs": 224.991,
+      "ChangePercent": 5.311,
+      "BeforeBytes": null,
+      "AfterBytes": null
+    }
+  ],
+  "Decision": {
+    "ChangedConstruction": "Literal +0.77%,character +4.99%; initial backtracking +10.85%, single confirmation +7.42%. Character/backtracking allocate112B less per construction; literal allocation unchanged. No demonstrated >10% changed-construction regression after the bounded confirmation.",
+    "PublicWarmCount": "Initial +1.47%, confirmation -3.23%. Unchanged decode/predecoded controls moved materially; no causal throughput gain or universal no-regression claim.",
+    "FirstUseIsMatch": "Backtracking first-IsMatch median +11.85% initial and +24.62% confirmation, unchanged3872B. Tiny batches/ranges include first-use/JIT effects; this is public first-operation latency, not a steady-state workload or isolated private kernel. Do not claim it passes10% or that source-body equality proves performance equivalence. Further steady-state/first-use release qualification remains deferred; no extra campaign or package is run.",
+    "Scope": "This milestone changes compile metadata/scaffolding, not matching algorithms. Preserve the observed first-use cost concern in PLAN and handoff. No benchmark Status/snapshot, checked-access campaign or frozen package qualification change."
+  }
+}

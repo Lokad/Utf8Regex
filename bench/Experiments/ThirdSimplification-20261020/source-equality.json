@@ -1,0 +1,31 @@
+{
+  "ComparedWith": "46318565b9704031f95d76b07bde68e5de56ec68",
+  "MatchingBodies": [
+    {
+      "Path": "src/Lokad.Utf8Regex.Pcre2/Pcre2LiteralCompiler.cs",
+      "ComparedFrom": "internal static class Pcre2LiteralRunner",
+      "NormalizedSha256": "13AC9795791CC96A7BE6A96F7BA0B84DAAD8E8BC95B9AB77BC569884D89E0072",
+      "Equal": true
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.Pcre2/Pcre2CharacterCompiler.cs",
+      "ComparedFrom": "internal static class Pcre2CharacterRunner",
+      "NormalizedSha256": "B0FFE8048B9369FDA4DF0B2D270FA89BED7FF5678DDB6C8A2F3A2FF59832FC39",
+      "Equal": true
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingRunner.cs",
+      "ComparedFrom": "complete file",
+      "NormalizedSha256": "66A55AD7DEEE5727A7C15C1B01B778161F42E3DFA728FDE670263B65AA5E657E",
+      "Equal": true
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex/Internal/Execution/Utf8StructuralLinearProgram.cs",
+      "ComparedFrom": "internal abstract class Utf8StructuralLinearRuntime",
+      "NormalizedSha256": "51FC0C7D2EB124D4C4872DDBEF0719A8E0757407A4D8375DE4A03B38212DE110",
+      "Equal": true
+    }
+  ],
+  "BehavioralTestEdit": "Utf8LengthArithmeticTests only calls the parser directly; all other bytes/cases unchanged. Source-guard edits merge documentation coverage/remove duplicated style tests and constant ledgers; no semantic case data changed.",
+  "Limitation": "Source equality scopes algorithms; it does not prove identical code placement or first-call execution cost."
+}
