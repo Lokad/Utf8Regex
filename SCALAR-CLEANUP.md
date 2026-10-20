@@ -1,7 +1,12 @@
 # Scalar migration cleanup
 
-Reviewed 2026-10-19 through the scalar.112-dev source cleanup. Historical
-receipts retain their original revisions; this section describes development source.
+Historical review through **scalar.112-dev**, 2026-10-19. Later development
+cleanup is recorded in [the first receipt](bench/Experiments/PostRc1Simplification-20261020/README.md)
+and [the second receipt](bench/Experiments/SecondSimplification-20261020/README.md).
+The staged common release is [0.4.0-rc.1](artifacts/utf8regex-0.4.0-rc.1-20261020/HANDOFF.md);
+source is 0.4.0-rc.2-dev. Coverage/gate statements below describe that historical
+checkpoint; common public construction controls have since landed. Original
+receipts retain their revisions and are not requalified by this page.
 The matching contract is complete Unicode scalars over strictly validated UTF-8;
 byte coordinates are primary. This report describes current source and executable
 checks, rather than treating the absence of a name as proof of semantic coverage.

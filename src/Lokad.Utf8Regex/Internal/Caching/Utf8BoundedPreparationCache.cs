@@ -5,11 +5,11 @@ namespace Lokad.Utf8Regex.Internal.Caching;
 
 /// <summary>Owns bounded preparation-entry metadata. Pending entries share one
 /// preparation without retaining its factory, state or invocation controls.
-/// Qualified immutable payloads or declared root/descendant reservations have
+/// Immutable payload charges or declared root/descendant reservations have
 /// a separate conservative per-entry cap. Shared storage across entries is
 /// charged repeatedly; no retained manifests or global identity registry.
-/// A descendant reservation is not a complete
-/// program graph certificate. Complete public policy remains a separate gate.
+/// These modeled cache charges do not bound total program/process memory;
+/// public invocation and construction policies have their own documented scope.
 /// PCRE2-INTEGRATION-POINT</summary>
 internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : notnull
 {

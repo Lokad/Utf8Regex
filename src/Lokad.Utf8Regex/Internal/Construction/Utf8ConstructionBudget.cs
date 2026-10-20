@@ -28,8 +28,9 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
     internal ulong Depth { get; private set; }
     internal ulong PeakDepth { get; private set; }
     // Optional authority belongs to this shared owner, so nested optimizers
-    // inherit it. Existing constructor entries use no token/infinite timeout;
-    // complete public construction/invocation policy remains a separate gate.
+    // inherit it. Constructors use no construction token/infinite timeout;
+    // explicit Compile factories install the original token/deadline. Invocation
+    // limits are independent of this construction owner.
     internal Utf8ExecutionDeadline Deadline { get; set; } = Utf8ExecutionDeadline.Infinite;
     internal System.Threading.CancellationToken CancellationToken { get; set; }
     internal Action<ulong>? CheckpointHook { get; set; }

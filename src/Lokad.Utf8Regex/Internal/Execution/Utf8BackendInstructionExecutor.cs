@@ -63,8 +63,8 @@ internal static class Utf8BackendInstructionExecutor
         Utf8ExecutionDeadline budget,
         out PreparedSearchMatch match)
     {
-        // Legacy diagnostic callers still supply only a deadline. Each call is
-        // bounded; production cursors pass their retained invocation below.
+        // Unmetered production cursors and friend diagnostics share this search.
+        // Controlled cursors keep their retained invocation in the overload below.
         if (!budget.IsInfinite || Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null)
         {
             var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
