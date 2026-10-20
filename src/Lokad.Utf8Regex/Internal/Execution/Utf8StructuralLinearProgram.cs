@@ -2566,33 +2566,6 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
         return false;
     }
 
-    internal bool TryFindNextCandidateStateful(
-        ReadOnlySpan<byte> input,
-        ref Utf8AsciiStructuralFamilyScanState state,
-        out Utf8StructuralCandidate candidate)
-    {
-        candidate = default;
-        if (!CanUseStatefulSearch())
-        {
-            return false;
-        }
-
-        var searchState = state.SearchState;
-        while (Program.StructuralSearchPlan.TryFindNextCandidate(input, ref searchState, out candidate))
-        {
-            if (candidate.StartIndex < state.MinStartIndex)
-            {
-                continue;
-            }
-
-            state = new Utf8AsciiStructuralFamilyScanState(searchState, candidate.StartIndex + 1);
-            return true;
-        }
-
-        state = new Utf8AsciiStructuralFamilyScanState(searchState, state.MinStartIndex);
-        return false;
-    }
-
     private int FindNext(ReadOnlySpan<byte> input, Utf8VerifierRuntime verifierRuntime, int startIndex, Utf8ExecutionDeadline budget, out int matchedLength)
     {
         matchedLength = 0;

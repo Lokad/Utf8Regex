@@ -42,23 +42,6 @@ internal readonly partial struct PreparedMultiLiteralPackedSearch
         finally { budget.LeaveDepth(); }
     }
 
-    internal static bool TryCreateAtDiscriminatorOffset(byte[][] literals, int offset, out PreparedMultiLiteralPackedSearch search)
-    {
-        search = default;
-        if (literals.Length == 0) return false;
-        using var scope = Utf8ConstructionScope.Enter();
-        var budget = scope.Budget;
-        budget.EnterDepth();
-        try
-        {
-            var shortest = PreparedMultiLiteralConstruction.GetShortestLength(literals, budget);
-            var accepted = shortest > 0 && literals.Length <= 256 && TryCreateAtOffset(literals, shortest, offset, budget, out search);
-            scope.Complete();
-            return accepted;
-        }
-        finally { budget.LeaveDepth(); }
-    }
-
     private static bool TryCreateAtOffset(byte[][] literals, int shortest, int offset, Utf8ConstructionBudget budget,
         out PreparedMultiLiteralPackedSearch search)
     {

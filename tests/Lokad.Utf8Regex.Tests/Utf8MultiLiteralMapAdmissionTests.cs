@@ -9,8 +9,6 @@ public sealed class Utf8MultiLiteralMapAdmissionTests
 {
     public static IEnumerable<object[]> PackedFamilies() => Enumerable.Range(0, 12).Select(i => new object[] { i });
     public static IEnumerable<object[]> SegmentFamilies() => Enumerable.Range(0, 10).Select(i => new object[] { i });
-    public static IEnumerable<object[]> RequestedOffsets() =>
-        from family in Enumerable.Range(0, 12) from offset in new[] { -1, 0, 1, 2, 3, 4, 6, 260 } select new object[] { family, offset };
     public static IEnumerable<object[]> Cutoffs() =>
         from kind in Enumerable.Range(0, 3) from bytes in new[] { false, true } select new object[] { kind, bytes };
     public static IEnumerable<object[]> Depths() =>
@@ -80,19 +78,6 @@ public sealed class Utf8MultiLiteralMapAdmissionTests
         Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved); Assert.Equal(0xa5, parent[0]);
     }
 
-    [Theory]
-    [MemberData(nameof(RequestedOffsets))]
-    public void ExplicitOffsetsAdmitOnlyUniqueInRangeDiscriminators(int family, int offset)
-    {
-        var values = PackedFamily(family); var shortest = values.Length == 0 ? 0 : values.Min(v => v.Length);
-        var expected = offset >= 0 && offset < shortest && values.Select(v => v[offset]).Distinct().Count() == values.Length;
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        var accepted = PreparedMultiLiteralPackedSearch.TryCreateAtDiscriminatorOffset(values, offset, out var p);
-        Assert.Equal(expected, accepted); Assert.Equal(accepted ? PackedLoan(p) : 0, owner.Budget.ReservedBytes);
-        if (accepted) CheckPacked(p, values, offset);
-        Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
-    }
-
     private static int SegmentLength(byte[] value)
     {
         if (value.Length <= 2 || Rune.DecodeFromUtf8(value, out _, out var width) != OperationStatus.Done || width is not (2 or 3)) return 0;
@@ -121,9 +106,8 @@ public sealed class Utf8MultiLiteralMapAdmissionTests
     private static ulong Prepare(int kind)
     {
         if (kind == 2) return SegmentLoan(new PreparedMultiLiteralLeadingUtf8SegmentPrefilter(SegmentFamily(2)));
-        var values = PackedFamily(6);
-        var accepted = kind == 0 ? PreparedMultiLiteralPackedSearch.TryCreate(values, out var p)
-            : PreparedMultiLiteralPackedSearch.TryCreateAtDiscriminatorOffset(values, 2, out p);
+        var values = PackedFamily(kind == 0 ? 6 : 3);
+        var accepted = PreparedMultiLiteralPackedSearch.TryCreate(values, out var p);
         Assert.True(accepted); return PackedLoan(p);
     }
 
@@ -177,7 +161,6 @@ public sealed class Utf8MultiLiteralMapAdmissionTests
     {
         using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
         Assert.False(PreparedMultiLiteralPackedSearch.TryCreate([], out _));
-        Assert.False(PreparedMultiLiteralPackedSearch.TryCreateAtDiscriminatorOffset([], 0, out _));
         Assert.Empty(new PreparedMultiLiteralLeadingUtf8SegmentPrefilter([]).Segments);
         Assert.Equal(0ul, owner.Budget.WorkSteps); Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.PeakDepth);
     }

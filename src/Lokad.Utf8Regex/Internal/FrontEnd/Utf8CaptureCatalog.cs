@@ -249,14 +249,4 @@ internal sealed class Utf8CaptureCatalog
         return uint.TryParse(name, NumberStyles.None, CultureInfo.InvariantCulture, out var numeric) && numeric < GroupNumbers.Length
             ? (int)numeric : -1;
     }
-
-    // Reference syntax accepts a defined number even when the public name table
-    // publishes a named alias for that number. This differs from the name API.
-    internal int ReferenceNumber(string name)
-    {
-        if (name.Length != 0 && char.IsAsciiDigit(name[0]))
-            return int.TryParse(name, NumberStyles.None, CultureInfo.InvariantCulture, out var number) && OrdinalFromNumber(number) >= 0
-                ? number : -1;
-        return NameToNumber is not null && NameToNumber.TryGetValue(name, out var named) ? named : -1;
-    }
 }

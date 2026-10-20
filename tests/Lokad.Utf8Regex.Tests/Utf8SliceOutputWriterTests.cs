@@ -28,7 +28,7 @@ public sealed class Utf8SliceOutputWriterTests
         Assert.True(Utf8SliceOutputWriter.Rent(16, ref invocation, out var writer));
         Assert.True(writer.Append("ab"u8, ref invocation));
         Assert.True(writer.AppendUtf16("caf\u00E9\U0001F600Z".AsSpan(), ref invocation));
-        var result = writer.ToArrayAndRelease(ref invocation);
+        Assert.True(writer.TryToArrayAndRelease(ref invocation, out var result));
         Assert.Equal("abcaf\u00E9\U0001F600Z", Encoding.UTF8.GetString(result));
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
@@ -43,7 +43,7 @@ public sealed class Utf8SliceOutputWriterTests
         Assert.True(writer.Append(payload, ref invocation));
         Assert.True(writer.AppendUtf16("yz".AsSpan(), ref invocation));
         Assert.Equal(102, writer.Length);
-        var result = writer.ToArrayAndRelease(ref invocation);
+        Assert.True(writer.TryToArrayAndRelease(ref invocation, out var result));
         Assert.Equal(102, result.Length);
         Assert.Equal((byte)120, result[0]);
         Assert.Equal((byte)122, result[101]);
@@ -85,7 +85,8 @@ public sealed class Utf8SliceOutputWriterTests
         Assert.True(writer.Append(ReadOnlySpan<byte>.Empty, ref invocation));
         Assert.True(writer.AppendUtf16(ReadOnlySpan<char>.Empty, ref invocation));
         Assert.Equal(0, writer.Length);
-        Assert.Empty(writer.ToArrayAndRelease(ref invocation));
+        Assert.True(writer.TryToArrayAndRelease(ref invocation, out var result));
+        Assert.Empty(result);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
 
@@ -95,7 +96,8 @@ public sealed class Utf8SliceOutputWriterTests
         var invocation = Invoke(0, 0, 0);
         Assert.True(Utf8SliceOutputWriter.Rent(8, ref invocation, out var writer));
         Assert.True(writer.Append("ab"u8, ref invocation));
-        Assert.Equal(2, writer.ToArrayAndRelease(ref invocation).Length);
+        Assert.True(writer.TryToArrayAndRelease(ref invocation, out var result));
+        Assert.Equal(2, result.Length);
         writer.Release(ref invocation);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }

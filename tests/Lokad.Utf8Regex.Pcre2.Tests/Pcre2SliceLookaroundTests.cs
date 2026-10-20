@@ -58,8 +58,6 @@ public sealed class Pcre2SliceLookaroundTests
         yield return new object?[] { "(?=a)a", "xaa", true };
         yield return new object?[] { "(?=(?<w>a))\\k<w>", "xaa", true };
         yield return new object?[] { "(?=(?<w>a))\\k<w>", "bb", false };
-        yield return new object?[] { "(?=(?<w>a))\\k<w>", "xaa", true };
-        yield return new object?[] { "(?=(?<w>a))\\k<w>", "bb", false };
         yield return new object?[] { "a(?!b)", "ac", true };
         yield return new object?[] { "a(?!b)", "ab", false };
         yield return new object?[] { "(?<=a)b", "xab", true };

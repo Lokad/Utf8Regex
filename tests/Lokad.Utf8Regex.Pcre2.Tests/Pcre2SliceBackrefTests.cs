@@ -72,9 +72,6 @@ public sealed class Pcre2SliceBackrefTests
         yield return new object?[] { "(?<x>a)\\k<x>", "aa", true };
         yield return new object?[] { "(?<x>a)\\k<x>", "ab", false };
         yield return new object?[] { "(\\2a|(b))+", "bba", true };
-        yield return new object?[] { "(?<x>a)\\k<x>", "aa", true };
-        yield return new object?[] { "(?<x>a)\\k<x>", "ab", false };
-        yield return new object?[] { "(\\2a|(b))+", "bba", true };
         yield return new object?[] { "(a)\\1", "ab", false };
         yield return new object?[] { "(a|b)+\\1", "abb", true };
         yield return new object?[] { "(a|b)+\\1", "aba", false };

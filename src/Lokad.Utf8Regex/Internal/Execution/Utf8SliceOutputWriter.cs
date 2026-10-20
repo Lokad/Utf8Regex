@@ -101,13 +101,6 @@ internal struct Utf8SliceOutputWriter
         finally { control.ReleaseWorking(reservation); }
     }
 
-    internal byte[] ToArrayAndRelease(ref Utf8SliceInvocation invocation)
-    {
-        if (!TryToArrayAndRelease(ref invocation, out var result))
-            throw new InvalidOperationException("Owned output exceeded the working storage budget.");
-        return result;
-    }
-
     internal void Release(ref Utf8SliceInvocation invocation)
     {
         invocation.Ledger.Release(_reservedBytes);

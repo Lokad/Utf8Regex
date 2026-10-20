@@ -349,11 +349,6 @@ if (args.Length >= 2 && args[0].Equals("--measure-exact-literal-family-case", St
     return BenchmarkInspectReporter.RunMeasureExactLiteralFamilyReplicaCase(args[1], args.Length >= 3 ? args[2] : null);
 }
 
-if (args.Length >= 2 && args[0].Equals("--measure-exact-literal-family-packed-offsets-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureExactLiteralFamilyPackedOffsetsReplicaCase(args[1], args.Length >= 3 ? args[2] : null);
-}
-
 if (args.Length >= 2 && args[0].Equals("--measure-exact-literal-family-ismatch-case", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunMeasureExactLiteralFamilyIsMatchReplicaCase(args[1], args.Length >= 3 ? args[2] : null);

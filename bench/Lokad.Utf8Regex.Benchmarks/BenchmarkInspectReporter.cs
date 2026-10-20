@@ -4027,47 +4027,6 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
-    public static int RunMeasureExactLiteralFamilyPackedOffsetsReplicaCase(string caseId, string? iterationsText)
-    {
-        var benchmarkCase = ReplicaCountBenchmarkCase.Resolve(caseId);
-        var regex = benchmarkCase.Utf8Regex;
-        var iterations = ParseIterations(iterationsText);
-        if (regex.Inspection.ExecutionKind != NativeExecutionKind.ExactUtf8Literals)
-        {
-            Console.WriteLine($"CaseId            : {caseId}");
-            Console.WriteLine($"ExecutionKind     : {regex.Inspection.ExecutionKind}");
-            Console.WriteLine("LiteralFamily     : case is not on ExactUtf8Literals");
-            return 1;
-        }
-
-        var literals = regex.Inspection.SearchPlan.MultiLiteralSearch.Literals;
-        var shortestLength = literals.Min(static literal => literal.Length);
-
-        WriteReplicaCaseHeader(benchmarkCase, iterations);
-        Console.WriteLine($"LiteralCount      : {literals.Length}");
-        Console.WriteLine($"ShortestLength    : {shortestLength}");
-
-        for (var offset = 0; offset < shortestLength; offset++)
-        {
-            if (!PreparedMultiLiteralPackedSearch.TryCreateAtDiscriminatorOffset(literals, offset, out var packed))
-            {
-                continue;
-            }
-
-            Console.WriteLine($"PackedOffset      : {offset}");
-            Console.WriteLine($"PackedValues      : {FormatByteSet(packed.DiscriminatorSearch.Values)}");
-            Measure($"PackedOffset{offset}Candidates", iterations, () => ExecutePackedLiteralSetCount(packed, benchmarkCase.InputBytes));
-            Measure($"PackedOffset{offset}BoundaryCount", iterations, () => ExecutePackedLiteralSetCountWithBoundaries(packed, regex.Inspection.SearchPlan, benchmarkCase.InputBytes));
-        }
-
-        Measure("PreparedSearcherBoundaryCount", iterations, () => ExecutePreparedSearcherCountWithBoundaries(regex.Inspection.SearchPlan.PreparedSearcher, regex.Inspection.SearchPlan, benchmarkCase.InputBytes));
-        Measure("Utf8Regex", iterations, () => benchmarkCase.Utf8Regex.Count(benchmarkCase.InputBytes));
-        Measure("DecodeThenRegex", iterations, benchmarkCase.CountDecodeThenRegex);
-        Measure("PredecodedRegex", iterations, benchmarkCase.CountPredecodedRegex);
-        Measure("CompiledRegex", iterations, benchmarkCase.CountPredecodedCompiledRegex);
-        return 0;
-    }
-
     public static int RunMeasureExactLiteralFamilyIsMatchReplicaCase(string caseId, string? iterationsText)
     {
         var benchmarkCase = ReplicaCountBenchmarkCase.Resolve(caseId);
@@ -4472,8 +4431,8 @@ internal static partial class BenchmarkInspectReporter
         Measure("NativeFindNextSum", iterations, () => ExecuteStructuralFamilyFindNextIndexSum(linearRuntime, verifierRuntime, input, validation));
         if (structuralFamilyRuntime is not null && structuralFamilyRuntime.CanUseStatefulSearch())
         {
-            Measure("StatefulCandidates", iterations, () => ExecuteStructuralFamilyStatefulCandidateCount(structuralFamilyRuntime, input));
-            Measure("StatefulCandidateSum", iterations, () => ExecuteStructuralFamilyStatefulCandidateIndexSum(structuralFamilyRuntime, input));
+            Measure("StatefulCandidates", iterations, () => ExecuteStructuralFamilyStatefulCandidateCount(program.StructuralSearchPlan, input));
+            Measure("StatefulCandidateSum", iterations, () => ExecuteStructuralFamilyStatefulCandidateIndexSum(program.StructuralSearchPlan, input));
             Measure("StatefulCount", iterations, () => ExecuteStructuralFamilyStatefulCount(structuralFamilyRuntime, verifierRuntime, input));
             Measure("StatefulFindNextCount", iterations, () => ExecuteStructuralFamilyStatefulFindNextCount(structuralFamilyRuntime, verifierRuntime, input));
             Measure("StatefulFindNextSum", iterations, () => ExecuteStructuralFamilyStatefulFindNextIndexSum(structuralFamilyRuntime, verifierRuntime, input));
@@ -4524,8 +4483,8 @@ internal static partial class BenchmarkInspectReporter
         Measure("NativeFindNextSum", iterations, () => ExecuteStructuralFamilyFindNextIndexSum(linearRuntime, verifierRuntime, context.InputBytes, validation));
         if (structuralFamilyRuntime is not null && structuralFamilyRuntime.CanUseStatefulSearch())
         {
-            Measure("StatefulCandidates", iterations, () => ExecuteStructuralFamilyStatefulCandidateCount(structuralFamilyRuntime, context.InputBytes));
-            Measure("StatefulCandidateSum", iterations, () => ExecuteStructuralFamilyStatefulCandidateIndexSum(structuralFamilyRuntime, context.InputBytes));
+            Measure("StatefulCandidates", iterations, () => ExecuteStructuralFamilyStatefulCandidateCount(program.StructuralSearchPlan, context.InputBytes));
+            Measure("StatefulCandidateSum", iterations, () => ExecuteStructuralFamilyStatefulCandidateIndexSum(program.StructuralSearchPlan, context.InputBytes));
             Measure("StatefulCount", iterations, () => ExecuteStructuralFamilyStatefulCount(structuralFamilyRuntime, verifierRuntime, context.InputBytes));
             Measure("StatefulFindNextCount", iterations, () => ExecuteStructuralFamilyStatefulFindNextCount(structuralFamilyRuntime, verifierRuntime, context.InputBytes));
             Measure("StatefulFindNextSum", iterations, () => ExecuteStructuralFamilyStatefulFindNextIndexSum(structuralFamilyRuntime, verifierRuntime, context.InputBytes));
@@ -8635,13 +8594,41 @@ internal static partial class BenchmarkInspectReporter
         return sum;
     }
 
+    private static bool TryFindNextCandidateStateful(
+        Utf8StructuralSearchPlan plan,
+        ReadOnlySpan<byte> input,
+        ref Utf8AsciiStructuralFamilyScanState state,
+        out Utf8StructuralCandidate candidate)
+    {
+        candidate = default;
+        if (!plan.HasValue || plan.YieldKind != Utf8StructuralSearchYieldKind.Start)
+        {
+            return false;
+        }
+
+        var searchState = state.SearchState;
+        while (plan.TryFindNextCandidate(input, ref searchState, out candidate))
+        {
+            if (candidate.StartIndex < state.MinStartIndex)
+            {
+                continue;
+            }
+
+            state = new Utf8AsciiStructuralFamilyScanState(searchState, candidate.StartIndex + 1);
+            return true;
+        }
+
+        state = new Utf8AsciiStructuralFamilyScanState(searchState, state.MinStartIndex);
+        return false;
+    }
+
     private static int ExecuteStructuralFamilyStatefulCandidateCount(
-        Utf8AsciiStructuralFamilyLinearRuntime linearRuntime,
+        Utf8StructuralSearchPlan plan,
         byte[] input)
     {
         var count = 0;
-        var state = linearRuntime.CreateScanState(0);
-        while (linearRuntime.TryFindNextCandidateStateful(input, ref state, out _))
+        var state = new Utf8AsciiStructuralFamilyScanState(new Utf8StructuralSearchState(new PreparedSearchScanState(0, default), default), 0);
+        while (TryFindNextCandidateStateful(plan, input, ref state, out _))
         {
             count++;
         }
@@ -8650,12 +8637,12 @@ internal static partial class BenchmarkInspectReporter
     }
 
     private static int ExecuteStructuralFamilyStatefulCandidateIndexSum(
-        Utf8AsciiStructuralFamilyLinearRuntime linearRuntime,
+        Utf8StructuralSearchPlan plan,
         byte[] input)
     {
         var sum = 0;
-        var state = linearRuntime.CreateScanState(0);
-        while (linearRuntime.TryFindNextCandidateStateful(input, ref state, out var candidate))
+        var state = new Utf8AsciiStructuralFamilyScanState(new Utf8StructuralSearchState(new PreparedSearchScanState(0, default), default), 0);
+        while (TryFindNextCandidateStateful(plan, input, ref state, out var candidate))
         {
             sum += candidate.StartIndex;
         }
