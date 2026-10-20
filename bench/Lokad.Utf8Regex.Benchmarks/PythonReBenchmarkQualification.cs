@@ -48,6 +48,33 @@ internal static partial class PythonReBenchmarkReporter
         ":(top,literal,exclude)TODO-PCRE2-NUMERIC-CAPTURES.md",
         ":(top,literal,exclude)TODO-PYTHONRE-CAPTURES-AND-RESOURCE-CONTRACT.md");
 
+    // Reporting hashes and a clean checkout are independent observations. Before
+    // qualifying a row, also prove that each loaded producer has matching code.
+    // Git's source diff accepts later documentation-only commits without retiming.
+    private static void RequirePythonReLoadedSources(PythonReBenchmarkEnvironment environment)
+    {
+        foreach (var (label, identity, project) in new[]
+        {
+            ("benchmark runner", environment.BenchmarkAssembly, "bench/Lokad.Utf8Regex.Benchmarks"),
+            ("Core", environment.CoreAssembly, "src/Lokad.Utf8Regex"),
+            ("PythonRe", environment.PythonReAssembly, "src/Lokad.Utf8Regex.PythonRe"),
+        })
+        {
+            var plus = identity.LastIndexOf('+');
+            var hash = identity.IndexOf(" sha256=", StringComparison.Ordinal);
+            var producer = plus >= 0 && hash > plus ? identity[(plus + 1)..hash] : string.Empty;
+            if (producer.Length != 40 || !producer.All(char.IsAsciiHexDigit))
+                throw new InvalidOperationException($"PythonRe qualification cannot verify the {label} producer. Rebuild matching Release binaries.");
+            var changes = RunGit("diff", "--name-only", producer, "--",
+                "Directory.Build.props", "Directory.Build.targets", "src/Directory.Build.props", "global.json",
+                $":(glob){project}/**/*.cs", $":(glob){project}/*.csproj");
+            if (changes is null)
+                throw new InvalidOperationException($"PythonRe qualification cannot resolve the {label} producer {producer} in this checkout.");
+            if (!string.IsNullOrWhiteSpace(changes))
+                throw new InvalidOperationException($"PythonRe qualification loaded stale {label} code from {producer}. Rebuild matching Release binaries. Changed source: {changes}");
+        }
+    }
+
     private static int MeasurePairedCase(
         string caseId,
         int samples,
@@ -87,6 +114,8 @@ internal static partial class PythonReBenchmarkReporter
             return 1;
         }
 
+        if (writeMode == PythonReQualificationWriteMode.Snapshot)
+            RequirePythonReLoadedSources(CaptureEnvironment());
         using var processorScope = BenchmarkProcessorScope.EnterSingleHighestEfficiencyProcessor();
         using var currentProcess = Process.GetCurrentProcess();
         var context = new PythonReBenchmarkContext(benchmarkCase);
@@ -394,6 +423,8 @@ internal static partial class PythonReBenchmarkReporter
             byteTrivialMicroseconds);
         var measuredAtUtc = DateTimeOffset.UtcNow;
         var managedEnvironment = CaptureEnvironment();
+        if (writeMode == PythonReQualificationWriteMode.Snapshot)
+            RequirePythonReLoadedSources(managedEnvironment);
         PrintEnvironment(managedEnvironment);
         var caseDefinitionSha256 = ComputePythonReCaseDefinitionSha256(benchmarkCase, context.InputBytes);
         var catalogSha256 = ComputePythonReCatalogSha256();
@@ -595,6 +626,7 @@ internal static partial class PythonReBenchmarkReporter
         }
 
         var currentManaged = CaptureEnvironment();
+        RequirePythonReLoadedSources(currentManaged);
         var currentManagedProductSha256 = ComputePythonReManagedProductSha256();
         var measured = 0;
         var skipped = 0;
@@ -747,6 +779,7 @@ internal static partial class PythonReBenchmarkReporter
         var snapshot = LoadPythonReBenchmarkSnapshot();
         using var worker = new CpythonStreamWorker();
         var currentManaged = CaptureEnvironment();
+        RequirePythonReLoadedSources(currentManaged);
         var currentManagedProductSha256 = ComputePythonReManagedProductSha256();
         var counts = new Dictionary<PythonReQualificationFreshness, int>();
 
@@ -1247,6 +1280,7 @@ internal static partial class PythonReBenchmarkReporter
         using var worker = new CpythonStreamWorker();
         var currentCpython = worker.Environment;
         var currentManaged = CaptureEnvironment();
+        RequirePythonReLoadedSources(currentManaged);
         var currentManagedProductSha256 = ComputePythonReManagedProductSha256();
         var pairedEvidenceRows = 0;
         var missingEvidenceRows = 0;
@@ -1920,19 +1954,6 @@ internal static partial class PythonReBenchmarkReporter
         return ComputePythonReSha256(identity);
     }
 
-    private static string ComputeLegacyPythonReCaseDefinitionSha256(
-        PythonReBenchmarkCase benchmarkCase,
-        byte[] inputBytes) => ComputePythonReSha256(
-            string.Join(
-                '\n',
-                benchmarkCase.Id,
-                benchmarkCase.Pattern,
-                ((int)benchmarkCase.Options).ToString(CultureInfo.InvariantCulture),
-                benchmarkCase.Operation.ToString(),
-                benchmarkCase.Replacement,
-                benchmarkCase.IncludesResultMaterialization.ToString(),
-                Convert.ToHexString(SHA256.HashData(inputBytes))));
-
     private static string ComputePythonReCatalogSha256()
     {
         var definitions = PythonReBenchmarkCatalog.Cases.Select(benchmarkCase =>
@@ -2001,33 +2022,6 @@ internal static partial class PythonReBenchmarkReporter
                     "unavailable",
                 cpythonFirst ? "CPython" : "PythonRe",
                 samples.ToString(System.Globalization.CultureInfo.InvariantCulture)));
-
-    private static string ComputeLegacyPythonReQualificationId(
-        string caseDefinitionSha256,
-        string catalogSha256,
-        string sourceCommit,
-        CpythonStreamEnvironment cpython,
-        string cpuPolicy,
-        string cpuAffinityMask,
-        int? cpuEfficiencyClass,
-        bool cpythonFirst,
-        int samples) => ComputePythonReSha256(
-            string.Join(
-                '\n',
-                PythonReQualificationProtocolVersion.ToString(CultureInfo.InvariantCulture),
-                caseDefinitionSha256,
-                catalogSha256,
-                sourceCommit,
-                cpython.VersionDetail,
-                string.Join('|', cpython.Git),
-                cpython.ExecutableSha256,
-                cpython.RuntimeLibrarySha256,
-                cpython.RunnerSha256,
-                cpuPolicy,
-                cpuAffinityMask,
-                cpuEfficiencyClass?.ToString(CultureInfo.InvariantCulture) ?? "unavailable",
-                cpythonFirst ? "CPython" : "PythonRe",
-                samples.ToString(CultureInfo.InvariantCulture)));
 
     private static string ComputePythonReSha256(string value) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));

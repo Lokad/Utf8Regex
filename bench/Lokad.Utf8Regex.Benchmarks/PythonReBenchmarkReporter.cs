@@ -231,12 +231,6 @@ internal static partial class PythonReBenchmarkReporter
             return true;
         }
 
-        if (args.Length >= 1 && args[0].Equals("--migrate-pythonre-benchmark-snapshot", StringComparison.Ordinal))
-        {
-            exitCode = MigratePythonReBenchmarkSnapshot();
-            return true;
-        }
-
         if (args.Length >= 1 && args[0].Equals("--invalidate-pythonre-qualifications", StringComparison.Ordinal))
         {
             exitCode = InvalidatePythonReQualifications();
@@ -336,7 +330,7 @@ internal static partial class PythonReBenchmarkReporter
         {
             Console.Error.WriteLine(
                 $"PythonRe selective refresh requires a schema-{PythonReBenchmarkSchemaVersion} snapshot. " +
-                "Run --migrate-pythonre-benchmark-snapshot once to migrate the current snapshot.");
+                "Historical schemas remain in repository history; they are not rewritten by current tooling.");
             return 1;
         }
 
@@ -359,179 +353,6 @@ internal static partial class PythonReBenchmarkReporter
         Console.WriteLine($"Snapshot           : {Path.GetFullPath(SnapshotFileName)}");
         return 0;
     }
-
-    private static int MigratePythonReBenchmarkSnapshot()
-    {
-        var snapshotPath = FindRepositoryFile(SnapshotFileName);
-        var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(snapshotPath));
-        if (snapshot is null || snapshot.SchemaVersion is not 3 and not 4 and not 5 and not 6 and not 7 and not 8 and not 9 and
-            not PythonReBenchmarkSchemaVersion)
-        {
-            Console.Error.WriteLine(
-                $"PythonRe migration requires a schema-3 through schema-{PythonReBenchmarkSchemaVersion - 1} or " +
-                $"schema-{PythonReBenchmarkSchemaVersion} snapshot.");
-            return 1;
-        }
-
-        if (snapshot.SchemaVersion == PythonReBenchmarkSchemaVersion)
-        {
-            Console.WriteLine($"{SnapshotFileName} is already schema {PythonReBenchmarkSchemaVersion}.");
-            return 0;
-        }
-
-        var legacyQualificationSetMatches = snapshot.SchemaVersion == 6 &&
-            ComputePythonReLegacyQualificationSetSha256(snapshot)
-                .Equals(PythonReLegacySchema6QualificationSetSha256, StringComparison.Ordinal);
-        var currentManagedProductSha256 = ComputePythonReManagedProductSha256();
-        var currentManaged = CaptureEnvironment();
-        CpythonStreamWorker? worker = null;
-        if (legacyQualificationSetMatches)
-        {
-            worker = new CpythonStreamWorker();
-        }
-
-        var migrated = 0;
-        var invalidated = 0;
-        foreach (var (caseId, measurement) in snapshot.Cases)
-        {
-            RefreshMeasurementMetadata(caseId, measurement);
-            var evidence = measurement.Qualification?.PairedEvidence;
-            if (evidence is null)
-            {
-                measurement.Qualification = PythonReQualificationMeasurement.CreateUnqualified(
-                    measurement.Qualification?.StatusReason ??
-                    "Historical independent-median evidence predates paired qualification protocol v3.");
-                continue;
-            }
-
-            if (snapshot.SchemaVersion is 7 or 8 or 9)
-            {
-                migrated++;
-                continue;
-            }
-
-            var benchmarkCase = PythonReBenchmarkCatalog.Cases.Single(
-                candidate => candidate.Id.Equals(caseId, StringComparison.Ordinal));
-            var failure = legacyQualificationSetMatches && worker is not null
-                ? TryMigratePythonReSchema6Evidence(
-                    benchmarkCase,
-                    measurement,
-                    evidence,
-                    currentManagedProductSha256,
-                    worker.Environment,
-                    currentManaged)
-                : "The paired evidence does not match the exact recognized schema-6 qualification set.";
-            if (failure is not null)
-            {
-                measurement.Qualification = PythonReQualificationMeasurement.CreateUnqualified(failure);
-                invalidated++;
-                continue;
-            }
-
-            migrated++;
-        }
-
-        worker?.Dispose();
-
-        WriteSnapshot(new PythonReBenchmarkSnapshot
-        {
-            SchemaVersion = PythonReBenchmarkSchemaVersion,
-            GeneratedAtUtc = snapshot.GeneratedAtUtc,
-            CatalogSha256 = ComputePythonReCatalogSha256(),
-            CatalogCaseIds = GetPythonReCatalogCaseIds(),
-            Corpus = snapshot.Corpus,
-            Cases = snapshot.Cases,
-            Lifecycle = snapshot.Lifecycle,
-            ScalingFamilies = snapshot.ScalingFamilies,
-        });
-        Console.WriteLine(
-            $"Migrated {SnapshotFileName} to schema {PythonReBenchmarkSchemaVersion}; " +
-            $"preserved {migrated} exact paired rows and invalidated {invalidated} unproven rows.");
-        return 0;
-    }
-
-    private static string? TryMigratePythonReSchema6Evidence(
-        PythonReBenchmarkCase benchmarkCase,
-        PythonReCaseMeasurement measurement,
-        PythonRePairedEvidence evidence,
-        string currentManagedProductSha256,
-        CpythonStreamEnvironment currentCpython,
-        PythonReBenchmarkEnvironment currentManaged)
-    {
-        var inputBytes = Encoding.UTF8.GetBytes(benchmarkCase.Input);
-        var legacyCaseDefinitionSha256 =
-            ComputeLegacyPythonReCaseDefinitionSha256(benchmarkCase, inputBytes);
-        var currentRunnerSha256 = Convert.ToHexString(SHA256.HashData(
-            File.ReadAllBytes(FindRepositoryFile(CpythonRunnerRelativePath))));
-        var expectedLegacyQualificationId = ComputeLegacyPythonReQualificationId(
-            evidence.CaseDefinitionSha256,
-            evidence.CatalogSha256,
-            evidence.SourceCommit,
-            evidence.CpythonEnvironment,
-            evidence.CpuPolicy,
-            evidence.CpuAffinityMask,
-            evidence.CpuEfficiencyClass,
-            evidence.InitialLane.Equals("CPython", StringComparison.Ordinal),
-            evidence.Samples.Length);
-        var productChanges = RunGit(
-            "diff",
-            "--name-only",
-            evidence.SourceCommit,
-            "HEAD",
-            "--",
-            "Directory.Build.props",
-            "src/Lokad.Utf8Regex",
-            "src/Lokad.Utf8Regex.PythonRe",
-            ":(exclude)src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md");
-
-        if (evidence.ProtocolVersion != PythonReQualificationProtocolVersion ||
-            !evidence.WorktreeQualified ||
-            !evidence.CaseDefinitionSha256.Equals(legacyCaseDefinitionSha256, StringComparison.Ordinal) ||
-            !evidence.CatalogSha256.Equals(PythonReLegacySchema6CatalogSha256, StringComparison.Ordinal) ||
-            !evidence.CpythonEnvironment.RunnerSha256.Equals(
-                PythonReLegacySchema6RunnerSha256,
-                StringComparison.Ordinal) ||
-            !currentRunnerSha256.Equals(PythonReLegacySchema6RunnerSha256, StringComparison.Ordinal) ||
-            !evidence.QualificationId.Equals(expectedLegacyQualificationId, StringComparison.Ordinal) ||
-            !evidence.ResultContract.Equals(GetPythonReResultContract(benchmarkCase), StringComparison.Ordinal) ||
-            !evidence.SemanticDigestAlgorithm.Equals(PythonReSemanticDigestAlgorithm, StringComparison.Ordinal) ||
-            !PythonReManagedRuntimeMatches(evidence.ManagedEnvironment, currentManaged) ||
-            !PythonReInterpreterMatches(evidence.CpythonEnvironment, currentCpython) ||
-            productChanges is null ||
-            !string.IsNullOrWhiteSpace(productChanges))
-        {
-            return "Schema-6 paired evidence failed exact case, product, interpreter, runner, result-contract, or protocol equivalence.";
-        }
-
-        evidence.CaseDefinitionSha256 = ComputePythonReCaseDefinitionSha256(benchmarkCase, inputBytes);
-        evidence.ManagedProductSha256 = currentManagedProductSha256;
-        evidence.ManagedOperationProtocolSha256 =
-            ComputePythonReManagedOperationProtocolSha256(benchmarkCase.Operation);
-        evidence.CpythonOperationProtocolSha256 =
-            ComputePythonReCpythonOperationProtocolSha256(benchmarkCase.Operation);
-        evidence.SharedProtocolSha256 = ComputePythonReSharedProtocolSha256();
-        evidence.QualificationId = ComputePythonReQualificationId(
-            evidence.CaseDefinitionSha256,
-            evidence.ManagedProductSha256,
-            evidence.ManagedOperationProtocolSha256,
-            evidence.CpythonOperationProtocolSha256,
-            evidence.SharedProtocolSha256,
-            evidence.ManagedEnvironment,
-            evidence.CpythonEnvironment,
-            evidence.CpuPolicy,
-            evidence.CpuAffinityMask,
-            evidence.CpuEfficiencyClass,
-            evidence.InitialLane.Equals("CPython", StringComparison.Ordinal),
-            evidence.Samples.Length);
-        return null;
-    }
-
-    private static string ComputePythonReLegacyQualificationSetSha256(
-        PythonReBenchmarkSnapshot snapshot) => ComputePythonReSha256(
-            string.Join(
-                '\n',
-                snapshot.Cases.Select(pair =>
-                    $"{pair.Key}={pair.Value.Qualification?.PairedEvidence?.QualificationId ?? "<none>"}")));
 
     private static int InvalidatePythonReQualifications()
     {

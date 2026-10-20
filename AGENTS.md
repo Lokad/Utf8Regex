@@ -236,8 +236,8 @@ PythonRe benchmark snapshot and diagnostics:
   and modeled break-even sizes. It is diagnostic evidence, not Status.
 - Use `--refresh-pythonre-benchmarks [iterations] [samples]` for the complete 90-row catalog.
 - Use `--rewrite-pythonre-benchmark-markdown` after a snapshot repair and `--verify-pythonre-benchmark-markdown` in validation. Normal snapshot refresh rewrites the page automatically.
-- Use `--migrate-pythonre-benchmark-snapshot` only for an explicit schema
-  migration; it does not reclassify historical measurements as qualified.
+- Current PythonRe tooling uses schema10. Retired schema migrations remain in
+  repository history; do not rewrite historical snapshots with current tooling.
 - Use `--verify-pythonre-semantic-digests` to preflight the complete catalog
   plus the supplementary-plane detailed-coordinate sentinel against CPython.
 - Use `--verify-pythonre-qualifications` to recompute paired statistics and
@@ -249,6 +249,11 @@ PythonRe benchmark snapshot and diagnostics:
   protocol fingerprints retain their existing role. No snapshot is refreshed
   merely to add provenance. The source-cleanliness gate permits exactly the five
   preserved root TODO handoffs; unknown untracked source/data still blocks writes.
+  Snapshot qualification and freshness/verification preflight loaded runner,
+  Core and PythonRe producer revisions against relevant source/build files.
+  Later documentation-only commits are accepted; differing or unresolvable code
+  requires matching Release binaries. Non-persisted diagnostics still report
+  actual loaded identities and dirty state without claiming source qualification.
 - PythonRe refresh and direct-case commands invoke an official CPython executable to measure the stdlib `re`/`_sre` oracle in a long-lived per-case process. They exclude interpreter startup and pattern compilation, and report predecoded plus strict UTF-8-decode-per-operation timings.
 - Paired PythonRe qualification applies a one-million-call floor only to
   one-shot subjects at or below 128 UTF-8 bytes. This keeps routes that tier
