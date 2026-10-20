@@ -1,5 +1,15 @@
 # Changelog
 
+## Development: deadline checkpoint call overhead
+
+Inline the existing shared deadline polling/check methods without changing their
+bodies, work charges, clock reads, interruption authority or resource contracts.
+One bounded public FullOpts comparison supports29–33% lower finite optional-prefix
+Count time and15–16% lower finite-deadline time, with measured Core/PythonRe/PCRE2
+neighbors and unchanged .NET controls. Generated code grows; this is scoped source
+evidence, not a default-tier or immutable117 package performance claim.
+[Code generation, public costs and Release checks](bench/Experiments/DeadlineInlining-20261020/README.md).
+
 ## Private Core/PythonRe scalar.117 — READY
 
 Capture-free generic `FindAll` and string/UTF-8 shaping now reuse the existing

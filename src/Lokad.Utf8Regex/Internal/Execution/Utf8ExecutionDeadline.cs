@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 /// <summary>
@@ -78,6 +80,7 @@ internal sealed class Utf8ExecutionDeadline
     /// Returns true once the deadline has expired. Non-polling cadence steps
     /// and the infinite state are allocation-free and do not read the clock.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Poll()
     {
         if (IsInfinite || --_remainingChecks > 0)
@@ -100,6 +103,7 @@ internal sealed class Utf8ExecutionDeadline
     // Buffer work charges one step per bounded block instead of one per VM
     // instruction. Check its deadline directly so polling cannot be diluted
     // by multiplying the VM cadence by the block size.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void CheckNow()
     {
         if (!IsInfinite && ReadTickCount64() - _startTickCount64 >= _timeoutMilliseconds)
