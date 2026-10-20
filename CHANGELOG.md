@@ -12,6 +12,9 @@ One public pair and its sole confirmation repeat finite optional Count gains of
 regressions do not repeat; both observations and their limits are retained in the
 [receipt](bench/Experiments/FamilyDependencies-20261020/README.md).
 This source change is separate from immutable scalar.114; no new package yet.
+Remove five unused or test-only compiled-specialization getters. Existing
+portfolio tests assert the production prepared category directly; live selectors,
+compiled engines, fields and resource accounting remain unchanged.
 
 ## Private Core/PythonRe scalar.114 qualification
 

@@ -115,9 +115,6 @@ internal readonly struct AsciiSimplePatternPlan
 
     public Utf8CompiledPatternCategory CompiledPatternCategory => CompiledPatternFamily.Category;
 
-    public bool HasWholeInputCompiledSpecialization => CompiledPatternCategory == Utf8CompiledPatternCategory.AnchoredWhole;
-
-    public bool HasSearchCompiledSpecialization => CompiledPatternCategory == Utf8CompiledPatternCategory.SearchGuided;
 }
 
 internal enum Utf8CompiledPatternFamilyKind : byte
@@ -160,13 +157,7 @@ internal readonly struct Utf8CompiledPatternFamilyPlan
 
     public AsciiSimplePatternSymmetricLiteralWindowPlan SymmetricLiteralWindowPlan { get; }
 
-    public bool HasValue => Kind != Utf8CompiledPatternFamilyKind.None;
-
     public Utf8CompiledPatternCategory Category => Utf8CompiledPatternCategories.GetSimplePatternCategory(this);
-
-    public bool HasWholeInputSpecialization => Category == Utf8CompiledPatternCategory.AnchoredWhole;
-
-    public bool HasSearchSpecialization => Category == Utf8CompiledPatternCategory.SearchGuided;
 
     private static Utf8CompiledPatternFamilyPlan ForAnchoredValidator(AsciiSimplePatternAnchoredValidatorPlan plan) =>
         new(Utf8CompiledPatternFamilyKind.AnchoredValidator, plan, default, default, default, default);

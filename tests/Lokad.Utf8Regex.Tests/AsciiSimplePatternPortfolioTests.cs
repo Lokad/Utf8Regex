@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -10,8 +11,7 @@ public sealed class AsciiSimplePatternPortfolioTests
         var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
-        Assert.True(regex.Inspection.SimplePatternPlan.HasWholeInputCompiledSpecialization);
-        Assert.False(regex.Inspection.SimplePatternPlan.HasSearchCompiledSpecialization);
+        Assert.Equal(Utf8CompiledPatternCategory.AnchoredWhole, regex.Inspection.PreparedRegex.CompiledPatternCategory);
     }
 
     [Fact]
@@ -20,7 +20,7 @@ public sealed class AsciiSimplePatternPortfolioTests
         var regex = new Utf8Regex(@"^[0-9]{1,2}/[0-9]{1,2}/[0-9]{2,4}$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         Assert.True(regex.Inspection.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue);
-        Assert.True(regex.Inspection.SimplePatternPlan.HasWholeInputCompiledSpecialization);
+        Assert.Equal(Utf8CompiledPatternCategory.AnchoredWhole, regex.Inspection.PreparedRegex.CompiledPatternCategory);
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public sealed class AsciiSimplePatternPortfolioTests
         var regex = new Utf8Regex(@"^([0-9]{4}[- ]){3}[0-9]{3,4}$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         Assert.True(regex.Inspection.SimplePatternPlan.RepeatedDigitGroupPlan.HasValue);
-        Assert.True(regex.Inspection.SimplePatternPlan.HasWholeInputCompiledSpecialization);
+        Assert.Equal(Utf8CompiledPatternCategory.AnchoredWhole, regex.Inspection.PreparedRegex.CompiledPatternCategory);
     }
 
     [Fact]
@@ -39,8 +39,7 @@ public sealed class AsciiSimplePatternPortfolioTests
 
         Assert.True(regex.Inspection.SimplePatternPlan.BoundedSuffixLiteralPlan.HasValue);
         Assert.True(regex.Inspection.SimplePatternPlan.BoundedSuffixLiteralPlan.SupportsValidatedUtf8Input);
-        Assert.True(regex.Inspection.SimplePatternPlan.HasSearchCompiledSpecialization);
-        Assert.False(regex.Inspection.SimplePatternPlan.HasWholeInputCompiledSpecialization);
+        Assert.Equal(Utf8CompiledPatternCategory.SearchGuided, regex.Inspection.PreparedRegex.CompiledPatternCategory);
     }
 
     [Theory]
