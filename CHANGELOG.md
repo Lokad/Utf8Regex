@@ -1,15 +1,17 @@
 # Changelog
 
-## Private Core/PythonRe scalar.115 qualification pending
+## Private Core/PythonRe scalar.115 qualification
 
-Freeze the accepted development batch after source CI passes Windows/Linux:
-literal-family dependency narrowing, unused getter removal and constructor-local
-compiled-family state. Original scalar/capture, interruption, numeric admission
-and lifetime contracts remain. Source cost observations below retain their scope;
-they are not inherited exact-package speedup claims. Build the affected closure
-once, pack each library and symbols once, then qualify the actual bytes through
-the existing consumer/platform/provenance gates. Scalar.114 remains ready; earlier
-artifacts stay immutable. No publication, external adoption or PCRE115 candidate.
+Frozen producera335e8ba batches literal-family dependency narrowing, unused getter
+removal and reduced retained runtime state. Same actual DLLs pass Windows/Linux
+Core/differential/Python suites, original public consumer assertions, capture and
+semantic fixtures, exact provenance/member/restore/symbol checks. Original scalar,
+resource and lifetime contracts retain scope. Source CI is green. One producer
+closure build10.68s, pack/symbol once per library, no Linux library build. One
+current-package finite/token/cursor observation retains48rows/144samples,all>33ms;
+smaller-row/control variance limits throughput/overhead claims. [Handoff](artifacts/core-python-scalar115-20261020/HANDOFF.md).
+Earlier bytes remain immutable. No publication, external adoption or PCRE115.
+Development metadata advances to116-dev without a C# change.
 
 ## Development scalar.115: literal-family dependencies
 
@@ -22,7 +24,7 @@ One public pair and its sole confirmation repeat finite optional Count gains of
 26-33%; other measured family workloads cost 3-5% more. Initial unlimited-control
 regressions do not repeat; both observations and their limits are retained in the
 [receipt](bench/Experiments/FamilyDependencies-20261020/README.md).
-This source change is separate from immutable scalar.114; no new package yet.
+These source observations are separate from exact-package cost evidence; scalar.115 now qualifies the resulting batch.
 Remove five unused or test-only compiled-specialization getters. Existing
 portfolio tests assert the production prepared category directly; live selectors,
 compiled engines, fields and resource accounting remain unchanged.

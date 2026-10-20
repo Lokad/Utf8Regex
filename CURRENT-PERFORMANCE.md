@@ -1,5 +1,17 @@
 # Selected current-source performance
 
+Latest immutable **Core/PythonRe scalar.115**, producera335e8ba, has a fresh
+[actual-package default-tier observation](artifacts/core-python-scalar115-20261020/vm-cost/RESULT.md).
+For10K captured matches: Core Count94.799us unlimited/130.265us finite (112B finite,
+observed1.374x); Python Detailed5.897ms finite/6.067ms live token; UTF8 tuples
+3.573/3.728ms. Finite cursor first1.835us/2936B,ten6.280us/4736B. All48rows/144
+samples are retained and>=33.5785ms. Larger result-heavy rows vary<1.03x,while
+some smaller/control rows vary up to1.506x.1K finite Count115.239us exceeds5K's
+66.011us; cause is unproved. This is current scoped operating-cost evidence,
+not settled warm qualification of every row, universal overhead, a causal
+package-to-package improvement or CPython Status. No rescue retiming. Source
+FullOpts/constructor pairs below remain separate; immutable114 data is historical.
+
 Further115-dev simplification removes a duplicate retained compiled-family value.
 Public identifier-validator constructors allocate40416->40184B (232B less),with
 medians1078.062->1072.838us ordinary /1079.725->1092.013us compiled. Literal
@@ -21,7 +33,7 @@ default-PGO or runtime11-speedup claim. Release code shows the large temporary
 gone on10/11, but only10 is timed. [Both complete observations](bench/Experiments/FamilyDependencies-20261020/README.md).
 This is current source evidence, separate from the unchanged actual114 package.
 
-Latest immutable **Core/PythonRe scalar.114**, producer01968d0f, has a separate
+Historical immutable **Core/PythonRe scalar.114**, producer01968d0f, has a separate
 [actual-package default-tier observation](artifacts/core-python-scalar114-20261020/vm-cost/RESULT.md).
 For10K captures: Count99.050us unlimited/128.535us finite (observed1.298x),112B
 finite; Python Detailed5.766ms finite/5.941ms live-token; UTF8 tuples3.566ms/3.705ms.

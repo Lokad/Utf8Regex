@@ -1,16 +1,16 @@
 # Resource controls and host ownership
 
-The latest qualified private pair is **Core/PythonRe scalar.114**.
-Its [handoff](artifacts/core-python-scalar114-20261020/HANDOFF.md) binds same-byte
-Windows/Linux, original public consumers, fixtures and exact identities. It
-batches the accepted Core selector and Python projected-count reuse; the internal
-count argument is explicit, keeping the source guard intact and all1060 executable
-Python bodies identical to measured source. Public APIs, numeric resource controls,
-strict scalar captures, original interruption and owned result lifetimes retain
-scope. [Current package costs](artifacts/core-python-scalar114-20261020/vm-cost/RESULT.md)
-include finite/token/cursor lanes; smaller rows have tiering/short-sample limits.
-113 is preserved failed source-guard evidence,112/older remain immutable. No
-publication, external adoption or PCRE114; common/default/retention goals remain.
+The latest qualified private pair is **Core/PythonRe scalar.115**.
+Its [handoff](artifacts/core-python-scalar115-20261020/HANDOFF.md) binds the same
+actual Windows/Linux DLLs, original public consumers, Unicode fixtures and exact
+identities. Core narrows literal-family inputs and removes duplicate stored state;
+no public API, numerical admission or ownership contract changes. Strict scalar
+captures, original interruption and useful finite controls retain their scope.
+[Current package costs](artifacts/core-python-scalar115-20261020/vm-cost/RESULT.md)
+include finite/token/cursor lanes. All144 samples exceed33ms; smaller-row/control
+variance and a1K/5K finite Count discrepancy prevent universal overhead claims.
+114/112/older and failed113 bytes remain immutable. No publication, external
+adoption or PCRE115; common/default/retention goals remain explicit below.
 
 The preceding qualified private pair is **Core/PythonRe scalar.112**.
 Its [handoff](artifacts/core-python-scalar112-20261019/HANDOFF.md) records same-byte

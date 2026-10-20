@@ -1,10 +1,13 @@
 # Lokad.Utf8Regex.PythonRe
 
-Core/PythonRe **0.4.0-scalar.115** is frozen for qualification. Core removes
-repeated empty-plan initialization and duplicate retained runtime state; PythonRe
-keeps its current scalar, capture, interruption and resource contracts. Source CI
-passes Windows/Linux. Exact-package consumer, platform and operating-cost gates
-remain pending; scalar.114 below stays ready until those checks pass.
+Private **Core/PythonRe 0.4.0-scalar.115**, producera335e8ba, is READY.
+Same actual DLLs pass Windows/Linux suites, original public consumers, Unicode
+fixtures and exact identity/member/symbol checks. Core reduces repeated empty-plan
+initialization and duplicate stored state; PythonRe retains its scalar/capture,
+interruption, numerical-resource and ownership contracts. Current finite/token /
+cursor costs and measurement limits are recorded with the candidate.
+[Handoff](../../artifacts/core-python-scalar115-20261020/HANDOFF.md), [consume](../../artifacts/core-python-scalar115-20261020/CONSUMING.md), [integrity](../../artifacts/core-python-scalar115-20261020/final-integrity.json).
+Earlier bytes remain immutable; no publication, external adoption or PCRE115.
 
 Private **Core/PythonRe 0.4.0-scalar.114**, producer01968d0f, is READY.
 The same actual DLLs pass Windows/Linux suites, original Awk/Lython assertions,

@@ -1,12 +1,16 @@
 # Lokad.Utf8Regex
 
-Core/PythonRe **0.4.0-scalar.115** is frozen for qualification. This batch removes
-repeated empty-plan initialization, duplicate retained runtime state and unused
-specialization getters. Source CI passes Windows/Linux; source measurements and
-their limits are recorded in [CURRENT-PERFORMANCE.md](CURRENT-PERFORMANCE.md).
-Exact package, consumer, cross-platform and operating-cost acceptance is pending.
-Scalar.114 below remains the ready dependency until those gates pass. Earlier
-immutable packages and the independent PCRE2 candidate remain intact.
+Private **Core/PythonRe 0.4.0-scalar.115**, producera335e8ba, is READY.
+The same actual DLLs pass Windows/Linux suites, original Awk/Lython public
+assertions, Unicode fixtures and exact identity/member/symbol gates. It batches
+narrower literal-family inputs, dead-getter removal and reduced retained runtime
+state; scalar/capture, interruption, numerical resource and lifetime contracts
+remain. Source CI is green. Current package measurements include all four finite
+controls and token/cursor lanes, with residual variance and small-row scaling
+limits stated explicitly.
+[Handoff](artifacts/core-python-scalar115-20261020/HANDOFF.md), [consume](artifacts/core-python-scalar115-20261020/CONSUMING.md), [integrity](artifacts/core-python-scalar115-20261020/final-integrity.json).
+Earlier114/112 and failed113 bytes remain intact. No publication, external adoption
+or PCRE115; broader common-policy/performance goals remain open.
 
 Private **Core/PythonRe 0.4.0-scalar.114**, producer01968d0f, is READY.
 The same actual DLLs pass Windows/Linux suites, original Awk/Lython assertions,
