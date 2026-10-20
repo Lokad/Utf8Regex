@@ -1,5 +1,14 @@
 # Selected current-source performance
 
+Four current PythonRe rows now have fresh quiet-VM paired evidence against
+predecoded CPython 3.12.3: captured findall 172.180 / 77.617 µs, early literal
+search 2.009 / 0.168 µs, anchored match 0.461 / 0.236 µs. CPython is faster on
+these three qualified rows. Limited split remains Inconclusive after its
+17-pair extension because lane-order medians differ 7.77%. All final samples
+exceed49ms;required strict UTF-8 validation and result materialization remain.
+Exactly four rows are current;86 retain historical products. [Evidence and limits](bench/Experiments/PythonReCurrentFour-20261020/README.md).
+These default-policy source costs are separate from immutable115 finite/token/cursor costs below.
+
 A later literal-root construction prototype is **rejected and reverted**.
 One public pair and its sole confirmation repeat 13.5–18.8% slower first Count;
 confirmation warm Count is 15.5% slower with stable unchanged loop controls.

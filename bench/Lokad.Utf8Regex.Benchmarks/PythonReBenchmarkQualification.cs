@@ -798,13 +798,14 @@ internal static partial class PythonReBenchmarkReporter
                 })
             .ToArray();
 
-        Console.WriteLine("Qualified public CPython wins by relative gap:");
+        Console.WriteLine("Recorded paired qualifications apply to their measured product/runtime; use --emit-pythonre-freshness-report for currentness.");
+        Console.WriteLine("Recorded public CPython wins by relative gap:");
         PrintPublicPriorities(qualifiedWins.OrderByDescending(
             static pair => pair.Value.Qualification!.PairedEvidence!.StrongRatioMedian));
-        Console.WriteLine("Qualified public CPython wins by absolute recurring gap:");
+        Console.WriteLine("Recorded public CPython wins by absolute recurring gap:");
         PrintPublicPriorities(qualifiedWins.OrderByDescending(
             static pair => pair.Value.Qualification!.PairedEvidence!.StrongDifferenceMicroseconds));
-        Console.WriteLine("Qualified bytes-control CPython engine wins by relative gap:");
+        Console.WriteLine("Recorded bytes-control CPython engine wins by relative gap:");
         foreach (var (caseId, measurement) in engineWins.OrderByDescending(
                      static pair => pair.Value.Qualification!.PairedEvidence!.ByteControl!.RatioMedian))
         {
@@ -813,7 +814,8 @@ internal static partial class PythonReBenchmarkReporter
             Console.WriteLine(
                 $"  {caseId}: Rbyte={bytes.RatioMedian:F3} " +
                 $"[{bytes.RatioLower95:F3}, {bytes.RatioUpper95:F3}]; " +
-                $"route={measurement.ManagedRoute}");
+                $"paired-source={evidence.SourceCommit}; " +
+                $"point-source={measurement.Environment.SourceCommit}; point-route={measurement.ManagedRoute}");
         }
 
         if (engineWins.Length == 0)
@@ -834,7 +836,8 @@ internal static partial class PythonReBenchmarkReporter
                     $"  {caseId}: Rstrong={evidence.StrongRatioMedian:F3} " +
                     $"[{evidence.StrongRatioLower95:F3}, {evidence.StrongRatioUpper95:F3}]; " +
                     $"Estrong={evidence.StrongDifferenceMicroseconds:+0.000;-0.000;0.000} us; " +
-                    $"owner={measurement.ComparatorOwner}; route={measurement.ManagedRoute}");
+                    $"owner={measurement.ComparatorOwner}; paired-source={evidence.SourceCommit}; " +
+                    $"point-source={measurement.Environment.SourceCommit}; point-route={measurement.ManagedRoute}");
                 count++;
             }
 
