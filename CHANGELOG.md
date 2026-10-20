@@ -1,5 +1,13 @@
 # Changelog
 
+## Private Core/PythonRe scalar.118 — qualification pending
+
+Batch the accepted deadline, bounded short-pair search and controlled finite branch
+enumeration changes below. Public scalar/capture and lifetime semantics stay;
+numeric work/depth/working requirements can fall where scratch acquisition is
+removed. Existing source comparisons stay distinct from the pending immutable
+package/default-tier costs. Scalar117 remains READY; earlier candidates unchanged.
+
 ## Development: finite ASCII branch enumeration
 
 Finite value enumeration can reuse the existing controlled cursor for complete

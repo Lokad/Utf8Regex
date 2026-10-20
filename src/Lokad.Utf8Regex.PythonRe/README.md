@@ -1,5 +1,12 @@
 # Lokad.Utf8Regex.PythonRe
 
+Private **Core/PythonRe 0.4.0-scalar.118** is being qualified. It batches measured
+Count/enumeration improvements, preserving strict scalar/capture, interruption and
+lifetime contracts. Eligible finite ASCII branch enumeration omits per-result
+scalar scratch, so numeric work/depth/working requirements can fall. Immutable117
+remains the latest READY input until the same-byte platform/consumer/provenance
+and current default-tier cost gates finish. No publication or PCRE118 designation.
+
 Private **Core/PythonRe 0.4.0-scalar.117**, producer04b7a3ed, is READY.
 Generic eager results reuse Python's admitted workspace, avoiding repeated Core
 attempts/range staging while preserving actual native paths and scalar/resource/
