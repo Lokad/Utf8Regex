@@ -1,0 +1,280 @@
+{
+  "rows": [
+    {
+      "name": "count-control/finite",
+      "before_ns": 25163.302978515625,
+      "after_ns": 24559.921630859375,
+      "change_percent": -2.3978622686036677,
+      "before_spread": 1.0183917238654596,
+      "after_spread": 1.015907850836901,
+      "before_allocated": 112,
+      "after_allocated": 112
+    },
+    {
+      "name": "count-control/token",
+      "before_ns": 25092.16015625,
+      "after_ns": 24555.93994140625,
+      "change_percent": -2.137002998166293,
+      "before_spread": 1.0316193350934706,
+      "after_spread": 1.0293920286760485,
+      "before_allocated": 112,
+      "after_allocated": 112
+    },
+    {
+      "name": "count-control/unlimited",
+      "before_ns": 50768.34033203125,
+      "after_ns": 50114.974609375,
+      "change_percent": -1.2869550558146203,
+      "before_spread": 1.0203916200404446,
+      "after_spread": 1.0316035785575093,
+      "before_allocated": 0,
+      "after_allocated": 0
+    },
+    {
+      "name": "miss/finite",
+      "before_ns": 8651.146911621094,
+      "after_ns": 8481.361083984375,
+      "change_percent": -1.9625817174442561,
+      "before_spread": 1.0234319666005611,
+      "after_spread": 1.0197174028357419,
+      "before_allocated": 112,
+      "after_allocated": 112
+    },
+    {
+      "name": "miss/token",
+      "before_ns": 8641.706848144531,
+      "after_ns": 8529.454284667969,
+      "change_percent": -1.2989628721398305,
+      "before_spread": 1.0101989458676843,
+      "after_spread": 1.0111967323843558,
+      "before_allocated": 112,
+      "after_allocated": 112
+    },
+    {
+      "name": "miss/unlimited",
+      "before_ns": 802465,
+      "after_ns": 8423.585876464844,
+      "change_percent": -98.95028619610015,
+      "before_spread": 1.03619657121118,
+      "after_spread": 1.0147699751641142,
+      "before_allocated": 31424,
+      "after_allocated": 0
+    },
+    {
+      "name": "mixed/finite",
+      "before_ns": 220336.359375,
+      "after_ns": 217342.400390625,
+      "change_percent": -1.3588129498316004,
+      "before_spread": 1.0165172426213076,
+      "after_spread": 1.0206453141007101,
+      "before_allocated": 30504,
+      "after_allocated": 30496.015625
+    },
+    {
+      "name": "mixed/token",
+      "before_ns": 211219.5234375,
+      "after_ns": 209227.708984375,
+      "change_percent": -0.9430067925110031,
+      "before_spread": 1.013562320916799,
+      "after_spread": 1.0241762483660928,
+      "before_allocated": 30504,
+      "after_allocated": 30504
+    },
+    {
+      "name": "mixed/unlimited",
+      "before_ns": 618353.09765625,
+      "after_ns": 180860.33203125,
+      "change_percent": -70.75128551684034,
+      "before_spread": 1.1356198469244252,
+      "after_spread": 1.0258593449196085,
+      "before_allocated": 907632,
+      "after_allocated": 26311.984375
+    },
+    {
+      "name": "native-family-control/finite",
+      "before_ns": 309972.23828125,
+      "after_ns": 310414.212890625,
+      "change_percent": 0.14258522370445004,
+      "before_spread": 1.017451412701138,
+      "after_spread": 1.0702953956153185,
+      "before_allocated": 73744.53125,
+      "after_allocated": 73760.265625
+    },
+    {
+      "name": "native-family-control/token",
+      "before_ns": 298433.34375,
+      "after_ns": 288745.306640625,
+      "change_percent": -3.24629848248148,
+      "before_spread": 1.0180443773196648,
+      "after_spread": 1.01007329843999,
+      "before_allocated": 73776,
+      "after_allocated": 73776
+    },
+    {
+      "name": "native-family-control/unlimited",
+      "before_ns": 389258.4921875,
+      "after_ns": 389374.546875,
+      "change_percent": 0.02981429816670822,
+      "before_spread": 1.0206247189665112,
+      "after_spread": 1.0336317712165246,
+      "before_allocated": 65720,
+      "after_allocated": 65750.375
+    },
+    {
+      "name": "native-prefix-control/finite",
+      "before_ns": 1663.6116485595703,
+      "after_ns": 1592.0603790283203,
+      "change_percent": -4.300959878058219,
+      "before_spread": 1.01299323025219,
+      "after_spread": 1.008807123494893,
+      "before_allocated": 328,
+      "after_allocated": 328
+    },
+    {
+      "name": "native-prefix-control/token",
+      "before_ns": 1628.1979370117188,
+      "after_ns": 1624.5065612792969,
+      "change_percent": -0.22671541638216164,
+      "before_spread": 1.0299647955750206,
+      "after_spread": 1.0152302029278173,
+      "before_allocated": 328,
+      "after_allocated": 328
+    },
+    {
+      "name": "native-prefix-control/unlimited",
+      "before_ns": 1553.195068359375,
+      "after_ns": 1483.401840209961,
+      "change_percent": -4.493526252509672,
+      "before_spread": 1.0188347243499714,
+      "after_spread": 1.0396931866854793,
+      "before_allocated": 176.0042724609375,
+      "after_allocated": 176.0042724609375
+    },
+    {
+      "name": "structural/finite",
+      "before_ns": 646480.796875,
+      "after_ns": 619510.859375,
+      "change_percent": -4.171807984145703,
+      "before_spread": 1.024871153494436,
+      "after_spread": 1.0123584354101214,
+      "before_allocated": 69264,
+      "after_allocated": 69232.0625
+    },
+    {
+      "name": "structural/token",
+      "before_ns": 625432.8828125,
+      "after_ns": 609507.55859375,
+      "change_percent": -2.546288283905962,
+      "before_spread": 1.0096695739151682,
+      "after_spread": 1.0167188746943938,
+      "before_allocated": 69264,
+      "after_allocated": 69264
+    },
+    {
+      "name": "structural/unlimited",
+      "before_ns": 1194721.5390625,
+      "after_ns": 574401.3125,
+      "change_percent": -51.92174128284874,
+      "before_spread": 1.0408325190327485,
+      "after_spread": 1.0331274664797785,
+      "before_allocated": 3712840,
+      "after_allocated": 65079.96875
+    },
+    {
+      "name": "words-strings/finite",
+      "before_ns": 1093437.390625,
+      "after_ns": 1031008.578125,
+      "change_percent": -5.709408973504759,
+      "before_spread": 1.0131082733484134,
+      "after_spread": 1.0117294069780274,
+      "before_allocated": 190320,
+      "after_allocated": 190288.0625
+    },
+    {
+      "name": "words-strings/token",
+      "before_ns": 1079969.171875,
+      "after_ns": 1026845.796875,
+      "change_percent": -4.918971428394503,
+      "before_spread": 1.0065709576194914,
+      "after_spread": 1.0199697255884441,
+      "before_allocated": 190320,
+      "after_allocated": 190320
+    },
+    {
+      "name": "words-strings/unlimited",
+      "before_ns": 2778322.59375,
+      "after_ns": 953999.109375,
+      "change_percent": -65.66276675282138,
+      "before_spread": 1.0348516312384235,
+      "after_spread": 1.0219753428330378,
+      "before_allocated": 5408632,
+      "after_allocated": 186151.9375
+    },
+    {
+      "name": "words-utf8/finite",
+      "before_ns": 1134561.1640625,
+      "after_ns": 1078259.421875,
+      "change_percent": -4.962424589424641,
+      "before_spread": 1.0132357880864842,
+      "after_spread": 1.024599954293503,
+      "before_allocated": 190320,
+      "after_allocated": 190288.0625
+    },
+    {
+      "name": "words-utf8/token",
+      "before_ns": 1115146.125,
+      "after_ns": 1059831.875,
+      "change_percent": -4.960269220323033,
+      "before_spread": 1.0129522190259699,
+      "after_spread": 1.0647753781122538,
+      "before_allocated": 190320,
+      "after_allocated": 190320
+    },
+    {
+      "name": "words-utf8/unlimited",
+      "before_ns": 2851842.0625,
+      "after_ns": 1048339.5625,
+      "change_percent": -63.23991513116971,
+      "before_spread": 1.0165315976226792,
+      "after_spread": 1.0170423063383838,
+      "before_allocated": 5408632,
+      "after_allocated": 186151.9375
+    },
+    {
+      "name": "words-values/finite",
+      "before_ns": 1350709.46875,
+      "after_ns": 1303774.328125,
+      "change_percent": -3.4748509365552627,
+      "before_spread": 1.0270813506197332,
+      "after_spread": 1.0239780223149324,
+      "before_allocated": 460272,
+      "after_allocated": 460022.125
+    },
+    {
+      "name": "words-values/token",
+      "before_ns": 1340816.5625,
+      "after_ns": 1293503.828125,
+      "change_percent": -3.528650801179223,
+      "before_spread": 1.0242572801691383,
+      "after_spread": 1.0268034873312102,
+      "before_allocated": 460272,
+      "after_allocated": 460272
+    },
+    {
+      "name": "words-values/unlimited",
+      "before_ns": 3357039.46875,
+      "after_ns": 1222407.515625,
+      "change_percent": -63.58673983418592,
+      "before_spread": 1.0474719555608127,
+      "after_spread": 1.008094119282417,
+      "before_allocated": 5482360,
+      "after_allocated": 444292.9375
+    }
+  ],
+  "raw_samples": 270,
+  "minimum_sample_ms": 78.723197,
+  "batch_seconds": 55.75194479012862,
+  "archive_sha256": "9499DD28C4D0F6EC651DBA3FF7B7883082059AD5E6D712DBEEF0FDDD1E855992",
+  "decision": "Accepted: substantial generic unlimited public time/allocation reductions, actual native neighbors preserved. No confirmation required.",
+  "control_scope": "Finite generic/token and Count routes do not enter changed helper; native neighbors retain dispatch but execute new guard. Control shifts are reported, not normalized."
+}

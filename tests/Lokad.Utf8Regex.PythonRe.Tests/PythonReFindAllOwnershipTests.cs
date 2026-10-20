@@ -102,4 +102,41 @@ public sealed class PythonReFindAllOwnershipTests
         var matches = regex.FindAll(input, startOffsetInBytes);
         Assert.Equal(values, matches.Select(static match => match.ValueText).ToArray());
     }
+    [Theory]
+    [InlineData("[a-z]+", "alpha beta gamma 123 ", 1024, 3072)]
+    [InlineData("[a-z]+[0-9]+", "item12 other345 ", 512, 1024)]
+    public void GenericBulkStringsDoNotAcquirePerMatchVmWorkspaces(
+        string pattern, string unit, int repetitions, int expectedCount)
+    {
+        var text = string.Concat(Enumerable.Repeat(unit, repetitions));
+        var input = Encoding.UTF8.GetBytes(text);
+        var regex = new Utf8PythonRegex(pattern);
+        for (var warmup = 0; warmup < 4; warmup++) regex.FindAllToStrings(input);
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var result = regex.FindAllToStrings(input);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        Assert.Equal(expectedCount, result.Count);
+        // Required strings and roots fit comfortably. A fresh VM workspace for
+        // each result previously allocated 3.7-5.4 MB on these public workloads.
+        Assert.InRange(allocated, 0, 1_048_576);
+        var oracle = new System.Text.RegularExpressions.Regex(pattern);
+        var expected = oracle.Matches(text).Select(static match => match.Value).ToArray();
+        Assert.Equal(expected, result.ScalarValues);
+        Assert.Equal(expected, regex.FindAllToUtf8(input).ScalarValues.Select(Encoding.UTF8.GetString));
+        Assert.Equal(expected, regex.FindAll(input).Select(static match => match.ValueText));
+    }
+
+    [Fact]
+    public void GenericBulkMissStillValidatesTheWholeSubject()
+    {
+        var regex = new Utf8PythonRegex("[a-z]+");
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("123 ", 1024)));
+        input[^1] = 0xff;
+        Assert.Throws<ArgumentException>(() => regex.FindAllToStrings(input));
+        Assert.Throws<ArgumentException>(() => regex.FindAllToUtf8(input));
+        Assert.Throws<ArgumentException>(() => regex.FindAll(input));
+    }
+
 }

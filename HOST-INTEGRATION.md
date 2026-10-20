@@ -146,6 +146,13 @@ construction work/byte requirements may fall; meaningful major acquisition,
 original authority and all invocation/result controls remain. Private diagnostic
 replays move to benchmark tooling. Immutable107 retains its recorded preparation.
 
+Development after scalar.116 reuses the existing Python scalar cursor for generic
+capture-free bulk results. It omits generic Core per-value attempts and range
+staging while preserving native families, full-input validation, original authority,
+major admission and owned results. Finite generic/token calls already take that
+path; their numeric controls retain scope. These source costs are separate from
+the immutable116 dependency and its recorded package measurements.
+
 ## Select the public controls
 
 `Utf8ResourcePolicy` has positive nullable `MaxWorkSteps`, `MaxDepth`,

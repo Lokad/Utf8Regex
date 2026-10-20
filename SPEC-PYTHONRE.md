@@ -342,6 +342,18 @@ contexts retain their general paths. The measured tradeoff includes a small
 captured-class Count cost from sharing class matching; current source evidence
 is separate from package qualification and broad profile performance claims.
 
+## Generic bulk result discovery
+
+Development after scalar.116 sends capture-free generic bulk discovery through
+the existing Python scalar cursor when optional Core has no native or direct-family
+execution. `FindAll`, string values and UTF-8 values reuse one admitted workspace
+instead of repeating generic Core attempts and range staging. Actual native
+literal/family/simple/structural/anchored routes retain their eligibility. Full
+strict UTF-8 validation, scalar offsets, owned values, original interruption and
+major-buffer admission remain. Finite generic/token routes already use this cursor;
+this changes unlimited generic operating cost without revising their numeric limits
+or the public cursor/result lifetime contract. Immutable scalar.116 is unchanged.
+
 ## Cancellation and resource contract
 
 Constructors validate an explicit resource policy first, then compile flags and

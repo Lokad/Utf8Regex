@@ -120,7 +120,12 @@ public sealed partial class Utf8PythonRegex
         CancellationToken cancellationToken,
         out PythonReUtf8MatchRangeBuffer ranges)
     {
-        if (_utf8Regex is null)
+        // Generic Core enumeration rents fresh attempt scratch per value.
+        // The existing Python cursor reuses its admitted workspace. Keep real
+        // native enumerators, including direct families classified as fallback.
+        if (_utf8Regex is null ||
+            _utf8Regex.Inspection.ExecutionKind == NativeExecutionKind.FallbackRegex &&
+            _utf8Regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.None)
         {
             ranges = default;
             return false;

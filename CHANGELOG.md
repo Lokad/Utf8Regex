@@ -1,5 +1,16 @@
 # Changelog
 
+## Development scalar.117: generic Python bulk discovery
+
+Capture-free generic `FindAll` and string/UTF-8 shaping now reuse the existing
+Python scalar cursor and admitted workspace. Optional Core range collection still
+serves actual native and direct families. This removes per-match generic attempt
+allocation and intermediate range staging; one public comparison supports the
+change while retaining native neighbors. Finite generic/token paths, strict
+whole-input validation, original interruption and result ownership stay unchanged.
+[Caller proof, public costs and checks](bench/Experiments/PythonGenericBulk-20261020/README.md).
+No new package or public API; immutable116 remains the qualified dependency.
+
 ## Private Core/PythonRe scalar.116 — READY
 
 Freeze e83d1942 batches diagnostic retirement and the documented eager scalar
