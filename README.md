@@ -1,5 +1,13 @@
 # Lokad.Utf8Regex
 
+Core/PythonRe **0.4.0-scalar.115** is frozen for qualification. This batch removes
+repeated empty-plan initialization, duplicate retained runtime state and unused
+specialization getters. Source CI passes Windows/Linux; source measurements and
+their limits are recorded in [CURRENT-PERFORMANCE.md](CURRENT-PERFORMANCE.md).
+Exact package, consumer, cross-platform and operating-cost acceptance is pending.
+Scalar.114 below remains the ready dependency until those gates pass. Earlier
+immutable packages and the independent PCRE2 candidate remain intact.
+
 Private **Core/PythonRe 0.4.0-scalar.114**, producer01968d0f, is READY.
 The same actual DLLs pass Windows/Linux suites, original Awk/Lython assertions,
 Unicode fixtures and exact identity/member/symbol checks. This batches the Core

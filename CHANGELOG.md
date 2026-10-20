@@ -1,5 +1,16 @@
 # Changelog
 
+## Private Core/PythonRe scalar.115 qualification pending
+
+Freeze the accepted development batch after source CI passes Windows/Linux:
+literal-family dependency narrowing, unused getter removal and constructor-local
+compiled-family state. Original scalar/capture, interruption, numeric admission
+and lifetime contracts remain. Source cost observations below retain their scope;
+they are not inherited exact-package speedup claims. Build the affected closure
+once, pack each library and symbols once, then qualify the actual bytes through
+the existing consumer/platform/provenance gates. Scalar.114 remains ready; earlier
+artifacts stay immutable. No publication, external adoption or PCRE115 candidate.
+
 ## Development scalar.115: literal-family dependencies
 
 Pass the shared family search its prepared byte search and literal predicates
