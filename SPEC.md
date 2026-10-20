@@ -47,6 +47,13 @@ terminal check remains metered. Fixed value results acquire no result payload,
 so their result-capacity scope is unchanged. Cursor copies retain independent
 positions and share allowance; prior values remain valid after EOF or failure.
 This does not revise construction/default/retention guarantees or immutable117.
+Development after scalar.118 combines raw exact two-literal LTR candidate scans
+into one checked first-byte union search per bounded window. Complete ordered
+literal verification remains. One scan charge replaces two; numeric work limits
+can admit more work as the redundant scan disappears. Every scan still checks the
+original cancellation token and absolute deadline before at most 2048 bytes.
+Depth, major/state allocation, result capacity, aliases and retained values keep
+their existing scope. Prepared/confirmed, reverse and folded searches are unchanged.
 Development after scalar.109 carries complete-input validation into scalar
 value-Match projection. ASCII results use their already-proved byte coordinates;
 a whole-subject result reuses its known UTF-16 length. Partial Unicode results

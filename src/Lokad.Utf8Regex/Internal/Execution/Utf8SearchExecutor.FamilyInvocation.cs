@@ -72,6 +72,17 @@ internal static partial class Utf8SearchExecutor
                     var relative = search.IndexOf(block);
                     if (relative >= 0) candidateByte = blockStart + relative;
                 }
+                else if (!confirm && !reverse && !folded && literals.Length == 2 &&
+                    literals[0].Length > 0 && literals[1].Length > 0)
+                {
+                    breach = invocation.TryChargeInputStep();
+                    if (breach != Utf8ExecutionLimitKind.None) return breach;
+                    // Raw exact pairs need one bounded union scan. Keep the
+                    // ordered full-literal verification below, including when
+                    // both literals have the same first byte.
+                    var relative = block.IndexOfAny(literals[0][0], literals[1][0]);
+                    if (relative >= 0) candidateByte = blockStart + relative;
+                }
                 else
                 {
                     for (var id = 0; id < literals.Length; id++)

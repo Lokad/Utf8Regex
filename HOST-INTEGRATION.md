@@ -156,6 +156,12 @@ major admission and owned results. Finite generic/token calls already take that
 path; their numeric controls retain scope. The source FullOpts comparison and actual117 default-tier costs have separate
 provenance. Immutable116 retains its original generic path and recorded costs.
 
+Development after scalar.118 uses one checked first-byte union scan for raw exact
+LTR two-literal candidates. Numeric work requirements can fall by one scan charge
+per bounded window; original cancellation/deadlines remain checked before each
+at-most-2048-byte scan. Complete ordered comparisons and all other resource and
+ownership scope remain. This source change leaves immutable118 unchanged.
+
 ## Select the public controls
 
 Scalar.118 reuses the existing controlled native cursor for finite

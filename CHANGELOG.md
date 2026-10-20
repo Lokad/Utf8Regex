@@ -1,5 +1,16 @@
 # Changelog
 
+## Development: controlled two-literal candidate scanning
+
+Replace two bounded first-byte scans with one checked span union search for raw
+exact LTR pairs. Ordered full verification and original interruption remain; one
+scan charge/window disappears, intentionally lowering modeled work requirements.
+No new preparation, cache, owner or API. One public FullOpts pair supports about
+7–9% lower finite hit/miss Count time and roughly halved dense false-prefix costs,
+with unchanged Core allocations; all measured regressions remain below3.3%.
+[Costs, limits and Release checks](bench/Experiments/ControlledPairCandidate-20261020/README.md).
+Immutable scalar118 and its default-tier observations stay unchanged.
+
 ## Private Core/PythonRe scalar.118 — READY
 
 Batch deadline inlining, bounded short-pair candidate search and controlled finite
