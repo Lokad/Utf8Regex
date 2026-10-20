@@ -1,0 +1,132 @@
+{
+  "Scope": "Untimed private preflight tests; no measurements or qualification writes. Identity substitutions prove refusal behavior, not measurement provenance.",
+  "MatchingAndNegativeCases": {
+    "Scope": "Untimed private preflight reflection only; identity substitutions test refusals, not benchmark evidence. No snapshot writes or qualification.",
+    "Environment": {
+      "HasUntrackedFiles": true,
+      "SourceCommit": "1609aa039e84",
+      "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+      "PythonReAssembly": "0.4.0-rc.2-dev+1609aa039e848e87aee4ca324b3ba85e0ee6f8ee sha256=453EE11FB54C3D97C86BCD38107EBEE911745C36690653559E6D0B3771136187",
+      "CoreAssembly": "0.4.0-rc.2-dev+1609aa039e848e87aee4ca324b3ba85e0ee6f8ee sha256=0F0E060577936C766ADEB70838266C80F0D6FE711A740CA26C5077994D0021D2",
+      "TrackedDirty": false,
+      "OperatingSystem": "Microsoft Windows 10.0.26200",
+      "BenchmarkAssembly": "1.0.0+1609aa039e848e87aee4ca324b3ba85e0ee6f8ee sha256=ED877C3E227BD87837A0CC86E2D2D57CD560C836D6F0E5AA86256EA8DEB9C35D",
+      "Runtime": ".NET 10.0.12"
+    },
+    "Cases": [
+      {
+        "Name": "Actual matching producer DLLs",
+        "Accepted": true,
+        "Message": null
+      },
+      {
+        "Name": "Documentation-only source difference",
+        "Accepted": true,
+        "Message": null
+      },
+      {
+        "Name": "Stale BenchmarkAssembly producer",
+        "Accepted": false,
+        "Message": "PythonRe qualification loaded stale benchmark runner code from 0cdae03e8ca8bb25683c61a56c2e08d704725ed3. Rebuild matching Release binaries. Changed source: bench/Lokad.Utf8Regex.Benchmarks/BenchmarkInspectReporter.cs\nbench/Lokad.Utf8Regex.Benchmarks/Program.cs\nbench/Lokad.Utf8Regex.Benchmarks/PythonReBenchmarkLifecycle.cs\nbench/Lokad.Utf8Regex.Benchmarks/PythonReBenchmarkMarkdown.cs\nbench/Lokad.Utf8Regex.Benchmarks/PythonReBenchmarkQualification.cs\nbench/Lokad.Utf8Regex.Benchmarks/PythonReBenchmarkReporter.PythonReSearchAttribution.cs\nbench/Lokad.Utf8Regex.Benchmarks/PythonReBenchmarkReporter.cs\nbench/Lokad.Utf8Regex.Benchmarks/PythonReDotNetReference.cs\nbench/Lokad.Utf8Regex.Benchmarks/PythonReQualificationFreshness.cs\nbench/Lokad.Utf8Regex.Benchmarks/PythonReQualificationIdentity.cs"
+      },
+      {
+        "Name": "Missing BenchmarkAssembly producer",
+        "Accepted": false,
+        "Message": "PythonRe qualification cannot verify the benchmark runner producer. Rebuild matching Release binaries."
+      },
+      {
+        "Name": "Malformed BenchmarkAssembly producer",
+        "Accepted": false,
+        "Message": "PythonRe qualification cannot verify the benchmark runner producer. Rebuild matching Release binaries."
+      },
+      {
+        "Name": "Unresolvable BenchmarkAssembly producer",
+        "Accepted": false,
+        "Message": "PythonRe qualification cannot resolve the benchmark runner producer 1111111111111111111111111111111111111111 in this checkout."
+      },
+      {
+        "Name": "Stale CoreAssembly producer",
+        "Accepted": false,
+        "Message": "PythonRe qualification loaded stale Core code from 0cdae03e8ca8bb25683c61a56c2e08d704725ed3. Rebuild matching Release binaries. Changed source: src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceOutputWriter.cs\nsrc/Lokad.Utf8Regex/Internal/Execution/Utf8StructuralLinearProgram.cs\nsrc/Lokad.Utf8Regex/Internal/FrontEnd/Utf8CaptureCatalog.cs\nsrc/Lokad.Utf8Regex/Internal/Search/PreparedMultiLiteralMaps.Construction.cs\nsrc/Lokad.Utf8Regex/Utf8Regex.cs"
+      },
+      {
+        "Name": "Missing CoreAssembly producer",
+        "Accepted": false,
+        "Message": "PythonRe qualification cannot verify the Core producer. Rebuild matching Release binaries."
+      },
+      {
+        "Name": "Malformed CoreAssembly producer",
+        "Accepted": false,
+        "Message": "PythonRe qualification cannot verify the Core producer. Rebuild matching Release binaries."
+      },
+      {
+        "Name": "Unresolvable CoreAssembly producer",
+        "Accepted": false,
+        "Message": "PythonRe qualification cannot resolve the Core producer 1111111111111111111111111111111111111111 in this checkout."
+      },
+      {
+        "Name": "Stale PythonReAssembly producer",
+        "Accepted": false,
+        "Message": "PythonRe qualification loaded stale PythonRe code from 0cdae03e8ca8bb25683c61a56c2e08d704725ed3. Rebuild matching Release binaries. Changed source: src/Lokad.Utf8Regex.PythonRe/PythonReAstFactory.cs\nsrc/Lokad.Utf8Regex.PythonRe/PythonReScalarNodeFactory.cs\nsrc/Lokad.Utf8Regex.PythonRe/PythonReTranslator.cs\nsrc/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.Detailed.cs\nsrc/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.FindAll.cs\nsrc/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.FindIter.cs\nsrc/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.ScalarOperations.cs\nsrc/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.Split.cs\nsrc/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.Substitution.cs\nsrc/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.Value.cs\nsrc/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.cs"
+      },
+      {
+        "Name": "Missing PythonReAssembly producer",
+        "Accepted": false,
+        "Message": "PythonRe qualification cannot verify the PythonRe producer. Rebuild matching Release binaries."
+      },
+      {
+        "Name": "Malformed PythonReAssembly producer",
+        "Accepted": false,
+        "Message": "PythonRe qualification cannot verify the PythonRe producer. Rebuild matching Release binaries."
+      },
+      {
+        "Name": "Unresolvable PythonReAssembly producer",
+        "Accepted": false,
+        "Message": "PythonRe qualification cannot resolve the PythonRe producer 1111111111111111111111111111111111111111 in this checkout."
+      },
+      {
+        "Name": "Original five handoffs accepted; unknown untracked source detected; clean gate restored",
+        "Accepted": true
+      },
+      {
+        "Name": "Current schema-10 snapshot loads",
+        "Accepted": true
+      }
+    ]
+  },
+  "ActualStaleProductCase": {
+    "Scope": "Untimed private preflight reflection only; identity substitutions test refusals, not benchmark evidence. No snapshot writes or qualification.",
+    "Environment": {
+      "OperatingSystem": "Microsoft Windows 10.0.26200",
+      "HasUntrackedFiles": true,
+      "Runtime": ".NET 10.0.12",
+      "PythonReAssembly": "0.4.0-rc.2-dev+0cdae03e8ca8bb25683c61a56c2e08d704725ed3 sha256=D414CE4370AAD72F0F163A1A3D70CA7002F523D94A33A04479CE019A32038046",
+      "TrackedDirty": false,
+      "BenchmarkAssembly": "1.0.0+1609aa039e848e87aee4ca324b3ba85e0ee6f8ee sha256=ED877C3E227BD87837A0CC86E2D2D57CD560C836D6F0E5AA86256EA8DEB9C35D",
+      "SourceCommit": "1609aa039e84",
+      "CoreAssembly": "0.4.0-rc.2-dev+0cdae03e8ca8bb25683c61a56c2e08d704725ed3 sha256=6FDC5C11A65D2A62158F8562E8C94363B765ABFE5B4D5222386F38B1936FEF5A",
+      "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel"
+    },
+    "Cases": [
+      {
+        "Name": "Actual current runner loaded with old product DLLs",
+        "Accepted": false,
+        "Message": "PythonRe qualification loaded stale Core code from 0cdae03e8ca8bb25683c61a56c2e08d704725ed3. Rebuild matching Release binaries. Changed source: src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceOutputWriter.cs\nsrc/Lokad.Utf8Regex/Internal/Execution/Utf8StructuralLinearProgram.cs\nsrc/Lokad.Utf8Regex/Internal/FrontEnd/Utf8CaptureCatalog.cs\nsrc/Lokad.Utf8Regex/Internal/Search/PreparedMultiLiteralMaps.Construction.cs\nsrc/Lokad.Utf8Regex/Utf8Regex.cs"
+      }
+    ]
+  },
+  "ToolingSmoke": {
+    "HistoricalSchema9Refusal": "PythonRe.Benchmarks.json requires schema 10; historical schemas remain in repository history.",
+    "MovedReplayEmptyPlanSmoke": {
+      "ExecuteStructuralFamilyStatefulCandidateCount": 0,
+      "ExecuteStructuralFamilyStatefulCandidateIndexSum": 0
+    },
+    "LiveReplay": {
+      "Subject": "x LogError( z LogWarning ( end",
+      "Pattern": "\\b(?:LogError|LogWarning|LogInformation)\\s*\\(",
+      "CandidateIndexSum": 16,
+      "CandidateCount": 2
+    },
+    "OriginalSnapshotsUnchanged": true
+  }
+}

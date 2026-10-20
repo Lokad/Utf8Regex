@@ -423,7 +423,7 @@ capture/reference state and the original invocation remain authoritative. Work
 units and major state needs can change with this lifetime, so historical numeric
 cutoffs are not preserved as artificial denials.
 
-Every execution operation has an explicit `CancellationToken` twin with the core entry contract: an already-canceled token throws `OperationCanceledException` before matching begins. Lazy `EnumerateMatches` observes the token at creation. Evaluator-driven replacement additionally observes the token before every callback on all paths, so canceling from inside the callback aborts deterministically.
+Every execution operation has an explicit `CancellationToken` twin. An already-canceled token throws `OperationCanceledException` at entry; validation, matching and required result processing retain the original token and absolute deadline at bounded synchronous checkpoints. Lazy `EnumerateMatches` observes the token at creation and during advances. Evaluator-driven replacement additionally observes the token before every callback on all paths, so canceling from inside the callback aborts deterministically.
 
 `MatchLimit` enforcement depends on the selected managed route; work units are not
 interchangeable with native PCRE2 or another managed engine. A breach raises

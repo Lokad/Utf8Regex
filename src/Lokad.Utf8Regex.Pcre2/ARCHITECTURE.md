@@ -46,27 +46,30 @@ The compiled program owns:
 - the candidate-search program; and
 - an optional partial-probe program derived from semantic nodes.
 
-Direct operation programs are closed variants: an absent operation, an owned
-Core/scalar program, a PCRE2 literal/character/backtracking program, or a
+Direct operation programs are closed variants: an absent intermediate operation,
+a PCRE2 literal/character/backtracking program, or a
 specialized operation program such as an ASCII search or DFA verifier.
 `Pcre2ProgramInvariant` checks common-program and fallback ownership. The
 specializations retain the owned general route for option combinations they
 cannot execute. Literal, character, and backtracking programs cover the admitted
 syntax; no complete-pattern classifier or legacy match/replacement router remains.
 
-Core delegation is limited to the admitted common scalar semantics. PCRE2-only
+Core delegation requires a successful owned PCRE2 parse and an existing
+common-scalar eligibility proof. There is no unrestricted Core-grammar fallback;
+if every profile compiler declines, construction refuses. PCRE2-only
 constructs stay with the PCRE2 compiler and runtime. There is no shipped BCL
 `Regex` matcher or result dependency. BCL option/timeout metadata and
 `Regex.Escape` do not execute subjects. Semantic and differential fixtures check
 the supported delegation boundaries; they do not establish complete PCRE2 parity.
 
-Development after RC1 builds literal operation programs directly, with canonical
-group-zero metadata and no Core owner. The literal compiler admits atom/UTF-8
-buffers and growth before allocation, retains bounded work/depth/checkpoints and
-transfers immutable buffers without duplicate copies. Its diagnostic translation
-flag is false because no Core preparation exists. Character preparation still
-keeps its Core foundation until its own major buffers and checkpoints can be
-admitted independently; Core-backed specializations also keep their real owners.
+Development after RC1 builds literal and character operation programs directly,
+with canonical group-zero metadata and no unused Core owner. Literal Rune staging
+is admitted, temporary and released after encoding runtime UTF-8 bytes. Character
+token/class/property buffers admit capacity and growth/final-copy overlap before
+allocation, with token instruction admission and bounded work/checkpoints. Marker
+syntax trees retain no unused literal-atom or character-node vectors. Backtracking
+trees remain for real Probe consumers. Core-backed specializations retain their
+real owners after profile parsing; Core capture-name copies are not authoritative.
 
 ## Invocation and global progress
 

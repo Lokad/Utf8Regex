@@ -1,0 +1,94 @@
+{
+  "Scope": "Incremental affected-project Release builds with test.ps1; focused filters overlap. Complete Windows/Linux source CI is separate. No build-server shutdown or package qualification.",
+  "Checks": [
+    {
+      "Name": "tests-boundary",
+      "Result": "Passed!  - Failed:     0, Passed:    74, Skipped:     0, Total:    74, Duration: 319 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)",
+      "Log": {
+        "Path": "artifacts/sixth-review-20261020/tests-boundary.log",
+        "Sha256": "11BEC3F10371A98F2484BB274E88306CBE6EB265A345468756E3A8D78FC7C86A",
+        "Bytes": 24208
+      }
+    },
+    {
+      "Name": "tests-character",
+      "Result": "Passed!  - Failed:     0, Passed:   175, Skipped:     0, Total:   175, Duration: 255 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)",
+      "Log": {
+        "Path": "artifacts/sixth-review-20261020/tests-character.log",
+        "Sha256": "647568E317278A3285987FCE40F756C69D4E741B50C5039131F1C0D75D635659",
+        "Bytes": 24208
+      }
+    },
+    {
+      "Name": "tests-profile-final",
+      "Result": "Passed!  - Failed:     0, Passed:   154, Skipped:     0, Total:   154, Duration: 350 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)",
+      "Log": {
+        "Path": "artifacts/sixth-review-20261020/tests-profile-final.log",
+        "Sha256": "444EAF806E164CDB9542E9456BA69D950ED90410377368379ACE5E5CD63CE8F3",
+        "Bytes": 23530
+      }
+    },
+    {
+      "Name": "tests-core",
+      "Result": "Passed!  - Failed:     0, Passed:   129, Skipped:     0, Total:   129, Duration: 369 ms - Lokad.Utf8Regex.Tests.dll (net10.0)",
+      "Log": {
+        "Path": "artifacts/sixth-review-20261020/tests-core.log",
+        "Sha256": "6D97A1E4EEB49BF7F96BF997F68A41F6E12D073849546F2A7D6D9936D8DF6F9A",
+        "Bytes": 28808
+      }
+    },
+    {
+      "Name": "tests-pcre2-final",
+      "Result": "Passed!  - Failed:     0, Passed:   189, Skipped:     0, Total:   189, Duration: 317 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)",
+      "Log": {
+        "Path": "artifacts/sixth-review-20261020/tests-pcre2-final.log",
+        "Sha256": "61CB0B8EBD43762E51B5D97D2EDCEAA691B328B9B0258CF26C0BB47C3159A2D2",
+        "Bytes": 23530
+      }
+    },
+    {
+      "Name": "tests-pythonre",
+      "Result": "Passed!  - Failed:     0, Passed:   268, Skipped:     0, Total:   268, Duration: 607 ms - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)",
+      "Log": {
+        "Path": "artifacts/sixth-review-20261020/tests-pythonre.log",
+        "Sha256": "4C525E21F131420350095C18BB297F8CF7AD8B7386CA131C40F0D88C5E1B5211",
+        "Bytes": 12549
+      }
+    },
+    {
+      "Name": "verify-pythonre-markdown",
+      "Result": "PythonRe benchmark page is current: D:\\code\\utf8regex\\src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md",
+      "Log": {
+        "Path": "artifacts/sixth-review-20261020/verify-pythonre-markdown.log",
+        "Sha256": "6B295B1B6B104D80B40AAA080CE84284CBCA407ED0FB0E7A40C77783F8786E0E",
+        "Bytes": 98
+      }
+    },
+    {
+      "Name": "verify-pcre2-markdown",
+      "Result": "PCRE2 benchmark page is current: D:\\code\\utf8regex\\src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md",
+      "Log": {
+        "Path": "artifacts/sixth-review-20261020/verify-pcre2-markdown.log",
+        "Sha256": "E004206D4A2F8D956F505D8687D1700D6BE70A7B2BBD3E1E7208F43DA3A74925",
+        "Bytes": 92
+      }
+    },
+    {
+      "Name": "verify-readme-parity-final",
+      "Result": "Verified README.Parity.json against README.Benchmarks.json.",
+      "Log": {
+        "Path": "artifacts/sixth-review-20261020/verify-readme-parity-final.log",
+        "Sha256": "AF7327FEF829FBB1EDD56CCEC1D8BEDFC4E715096130545D439F2D4234B7D072",
+        "Bytes": 61
+      }
+    }
+  ],
+  "Corrections": "Initial PCRE2 full/focused checks exposed fixtures pinning undocumented Core extensions and aliases. Valid PCRE2 hex/category forms and physical capture numbering replace those expectations; balancing-only tests are removed, negative boundary tests added. A valid escaped punctuation route formerly depending on raw Core acceptance is now parsed by the owned compiler. Independent byte-denial tests use 16KiB: after deleting unused storage, the text 1000-token program legitimately fits 32KiB but cap1 instructions still refuses. Final matching checks are identified separately.",
+  "EarlierDiagnosticLogs": [
+    {
+      "Path": "artifacts/sixth-review-20261020/tests-pcre2.log",
+      "Sha256": "FFDA0733C109D43C3AFFF5A6324639FEEF047E90C5138A88313945D4DF9C70D7",
+      "Bytes": 38308
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "Run": 39468662223,
+  "SourceRevision": "1609aa039e848e87aee4ca324b3ba85e0ee6f8ee",
+  "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/39468662223",
+  "Status": "completed",
+  "Conclusion": "success",
+  "Scope": "One complete Windows/Linux Release source boundary, all four suites. Includes scalar/capture/resource/cancellation/lifetime/API/managed dependency and member inventories. Five duplicate PCRE2 discovery warnings are gone; existing analyzer warnings remain. Later closeout changes are docs/receipts and parity derivative metadata only, with no new C# or build configuration. No package or isolated-consumer qualification.",
+  "Platforms": [
+    {
+      "Platform": "test-log-ubuntu-latest",
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.DiffTests.dll",
+          "Passed": 1504,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "6 s"
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+          "Passed": 5930,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "38 s"
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll",
+          "Passed": 3890,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "40 s"
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Tests.dll",
+          "Passed": 39596,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "2 m 31 s"
+        }
+      ],
+      "DuplicatePcre2DiscoveryWarnings": 0,
+      "TestLog": "artifacts/sixth-review-20261020/ci/test-log-ubuntu-latest/test.log",
+      "TestLogSha256": "2E0857C0E80425AD4981E060891CF336763A87148795E6877416E1B106EF3F99",
+      "BuildLogSha256": "7C6D1900EB72F8CF49FDFF09BC8C47B3166C2890425B200F5E186B305B1BF298"
+    },
+    {
+      "Platform": "test-log-windows-latest",
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll",
+          "Passed": 3890,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "37 s"
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+          "Passed": 5930,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "41 s"
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.DiffTests.dll",
+          "Passed": 1504,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "3 s"
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Tests.dll",
+          "Passed": 39596,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "1 m 47 s"
+        }
+      ],
+      "DuplicatePcre2DiscoveryWarnings": 0,
+      "TestLog": "artifacts/sixth-review-20261020/ci/test-log-windows-latest/test.log",
+      "TestLogSha256": "77ECA8DF0A98C2A5016AAB0B1AB43E12AA142D5497D6AE5B1AFE0C0323FB684C",
+      "BuildLogSha256": "AF59F43B0605CC9555E4F21E7F4273AE1DF6CC381FB5DE66FB7C1AA319BD7C98"
+    }
+  ]
+}

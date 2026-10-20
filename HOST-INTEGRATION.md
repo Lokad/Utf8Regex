@@ -29,8 +29,8 @@ admission. These three helper changes preserve their previous byte/work charges.
 They do not extend the documented memory scope or change RC1 package bytes.
 Development PCRE2 literal compilation also admits its own atom capacities and
 UTF-8 buffer, including growth overlap and bounded interruption checkpoints.
-It transfers those immutable buffers to the literal program instead of compiling
-and retaining an unused Core expression. Construction instruction capacity covers
+It retains runtime UTF-8 bytes and releases temporary Rune staging, without
+compiling an unused Core expression. Construction instruction capacity covers
 the atom vector; numeric requirements can change as the redundant Core work and
 copies disappear. Character token/class/property buffers now use the same owner,
 with token capacity admitted as instructions and bytes. Growth/final-copy overlap

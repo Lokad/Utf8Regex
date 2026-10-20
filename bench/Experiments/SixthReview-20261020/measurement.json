@@ -1,0 +1,479 @@
+{
+  "Scope": "One bounded before/after batch, sequential Release CLI lanes, fixed before binaries, five samples, unchanged BCL controls. One backreference confirmation only; timing stopped. No package/Status/snapshot qualification or reopened checked-access campaign.",
+  "Protocol": "Character public Count 2000 operations; backreference public IsMatch 20000 operations; construction and first-use 16 instances. 45-second child caps. The copied baseline host was invoked directly with the same CLI and cap for confirmation; all other runs use bench.ps1.",
+  "Identities": {
+    "before": {
+      "CheckoutCommit": "32a986d51333",
+      "BenchmarkAssembly": "1.0.0+877c77433afeaf8b2ee2b9a118fd967ee46af7ac sha256=843BE15678C52884FB6B414C7E0FD34BC4E295D2F275D83A8B1F4D7C8921B787",
+      "CoreAssembly": "0.4.0-rc.2-dev+877c77433afeaf8b2ee2b9a118fd967ee46af7ac sha256=C4D28F57A48B6D4DB0075E3659E80A60E62015D045B6E20271BDBEFCD4BCC47A",
+      "Pcre2Assembly": "0.4.0-rc.2-dev+877c77433afeaf8b2ee2b9a118fd967ee46af7ac sha256=74B426AF2E05578387C4555B95E2ADADD1FFBDE8B1945C029FF22F0A58A0B68B",
+      "PythonReAssembly": "0.4.0-rc.2-dev+877c77433afeaf8b2ee2b9a118fd967ee46af7ac sha256=9B7EDD285CB796C8E1580CCE3940AFDFCA03BDAE154349D93E8425C7D479D224",
+      "Runtime": ".NET 10.0.13",
+      "OperatingSystem": "Microsoft Windows 10.0.26200",
+      "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+      "TieredPGO": "runtime-default"
+    },
+    "after": {
+      "CheckoutCommit": "1609aa039e84",
+      "BenchmarkAssembly": "1.0.0+1609aa039e848e87aee4ca324b3ba85e0ee6f8ee sha256=ED877C3E227BD87837A0CC86E2D2D57CD560C836D6F0E5AA86256EA8DEB9C35D",
+      "CoreAssembly": "0.4.0-rc.2-dev+1609aa039e848e87aee4ca324b3ba85e0ee6f8ee sha256=0F0E060577936C766ADEB70838266C80F0D6FE711A740CA26C5077994D0021D2",
+      "Pcre2Assembly": "0.4.0-rc.2-dev+1609aa039e848e87aee4ca324b3ba85e0ee6f8ee sha256=C6B4C461D6C1FDB45764A5D6E537E0253EEF82DA79A25477051A8B2EA3529046",
+      "PythonReAssembly": "0.4.0-rc.2-dev+1609aa039e848e87aee4ca324b3ba85e0ee6f8ee sha256=453EE11FB54C3D97C86BCD38107EBEE911745C36690653559E6D0B3771136187",
+      "Runtime": ".NET 10.0.13",
+      "OperatingSystem": "Microsoft Windows 10.0.26200",
+      "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+      "TieredPGO": "runtime-default"
+    }
+  },
+  "Observations": [
+    {
+      "Lane": "character-public",
+      "Operation": "Pcre2PublicCount",
+      "Before": {
+        "Microseconds": 19.254,
+        "RangeMicroseconds": [
+          19.097,
+          20.054
+        ]
+      },
+      "After": {
+        "Microseconds": 19.377,
+        "RangeMicroseconds": [
+          19.048,
+          19.783
+        ]
+      },
+      "ChangePercent": 0.64
+    },
+    {
+      "Lane": "backreference-public",
+      "Operation": "Pcre2IsMatch",
+      "Before": {
+        "Microseconds": 0.67,
+        "RangeMicroseconds": [
+          0.654,
+          0.801
+        ],
+        "AllocatedBytes": 3872
+      },
+      "After": {
+        "Microseconds": 0.773,
+        "RangeMicroseconds": [
+          0.727,
+          0.832
+        ],
+        "AllocatedBytes": 3872
+      },
+      "ChangePercent": 15.37
+    },
+    {
+      "Lane": "character-construction",
+      "Operation": "Pcre2Construct",
+      "Before": {
+        "Microseconds": 86.631,
+        "RangeMicroseconds": [
+          84.006,
+          93.812
+        ],
+        "AllocatedBytes": 32360
+      },
+      "After": {
+        "Microseconds": 17.156,
+        "RangeMicroseconds": [
+          16.606,
+          23.95
+        ],
+        "AllocatedBytes": 2912
+      },
+      "ChangePercent": -80.2
+    },
+    {
+      "Lane": "character-construction",
+      "Operation": "Pcre2FirstCount",
+      "Before": {
+        "Microseconds": 103.669,
+        "RangeMicroseconds": [
+          90.05,
+          126.237
+        ],
+        "AllocatedBytes": 0
+      },
+      "After": {
+        "Microseconds": 91.694,
+        "RangeMicroseconds": [
+          89.625,
+          97.575
+        ],
+        "AllocatedBytes": 0
+      },
+      "ChangePercent": -11.55
+    },
+    {
+      "Lane": "backreference-construction",
+      "Operation": "Pcre2Construct",
+      "Before": {
+        "Microseconds": 262.394,
+        "RangeMicroseconds": [
+          249.2,
+          286.062
+        ],
+        "AllocatedBytes": 57960
+      },
+      "After": {
+        "Microseconds": 192.875,
+        "RangeMicroseconds": [
+          178.738,
+          218.525
+        ],
+        "AllocatedBytes": 57384
+      },
+      "ChangePercent": -26.49
+    },
+    {
+      "Lane": "backreference-construction",
+      "Operation": "Pcre2FirstIsMatch",
+      "Before": {
+        "Microseconds": 4.112,
+        "RangeMicroseconds": [
+          3.763,
+          10.1
+        ],
+        "AllocatedBytes": 3872
+      },
+      "After": {
+        "Microseconds": 3.475,
+        "RangeMicroseconds": [
+          3.131,
+          9.225
+        ],
+        "AllocatedBytes": 3872
+      },
+      "ChangePercent": -15.49
+    },
+    {
+      "Lane": "literal-construction",
+      "Operation": "Pcre2Construct",
+      "Before": {
+        "Microseconds": 3.737,
+        "RangeMicroseconds": [
+          3.606,
+          9.45
+        ],
+        "AllocatedBytes": 2240
+      },
+      "After": {
+        "Microseconds": 4.125,
+        "RangeMicroseconds": [
+          3.55,
+          11.694
+        ],
+        "AllocatedBytes": 2040
+      },
+      "ChangePercent": 10.38
+    },
+    {
+      "Lane": "literal-construction",
+      "Operation": "Pcre2FirstIsMatch",
+      "Before": {
+        "Microseconds": 0.894,
+        "RangeMicroseconds": [
+          0.756,
+          4.669
+        ],
+        "AllocatedBytes": 0
+      },
+      "After": {
+        "Microseconds": 0.894,
+        "RangeMicroseconds": [
+          0.794,
+          5.638
+        ],
+        "AllocatedBytes": 0
+      },
+      "ChangePercent": 0.0
+    }
+  ],
+  "Controls": [
+    {
+      "Lane": "character-public",
+      "Operation": "Utf8Count",
+      "Before": {
+        "Microseconds": 207.092,
+        "RangeMicroseconds": [
+          204.531,
+          399.045
+        ]
+      },
+      "After": {
+        "Microseconds": 366.956,
+        "RangeMicroseconds": [
+          204.793,
+          384.82
+        ]
+      }
+    },
+    {
+      "Lane": "character-public",
+      "Operation": "DecodeCount",
+      "Before": {
+        "Microseconds": 223.659,
+        "RangeMicroseconds": [
+          204.602,
+          238.723
+        ]
+      },
+      "After": {
+        "Microseconds": 227.424,
+        "RangeMicroseconds": [
+          225.708,
+          232.025
+        ]
+      }
+    },
+    {
+      "Lane": "character-public",
+      "Operation": "PredecodedCount",
+      "Before": {
+        "Microseconds": 215.06,
+        "RangeMicroseconds": [
+          210.723,
+          217.037
+        ]
+      },
+      "After": {
+        "Microseconds": 212.796,
+        "RangeMicroseconds": [
+          207.101,
+          214.951
+        ]
+      }
+    },
+    {
+      "Lane": "backreference-public",
+      "Operation": "Utf8ValidationOnly",
+      "Before": {
+        "Microseconds": 0.283,
+        "RangeMicroseconds": [
+          0.278,
+          0.374
+        ]
+      },
+      "After": {
+        "Microseconds": 0.279,
+        "RangeMicroseconds": [
+          0.278,
+          0.375
+        ]
+      }
+    },
+    {
+      "Lane": "backreference-public",
+      "Operation": "Utf8IsMatch",
+      "Before": {
+        "Microseconds": 1.029,
+        "RangeMicroseconds": [
+          1.006,
+          1.55
+        ]
+      },
+      "After": {
+        "Microseconds": 1.098,
+        "RangeMicroseconds": [
+          1.029,
+          2.407
+        ]
+      }
+    },
+    {
+      "Lane": "backreference-public",
+      "Operation": "DecodeIsMatch",
+      "Before": {
+        "Microseconds": 2.458,
+        "RangeMicroseconds": [
+          2.348,
+          2.501
+        ]
+      },
+      "After": {
+        "Microseconds": 2.553,
+        "RangeMicroseconds": [
+          2.389,
+          2.625
+        ]
+      }
+    },
+    {
+      "Lane": "backreference-public",
+      "Operation": "PredecodedIsMatch",
+      "Before": {
+        "Microseconds": 0.13,
+        "RangeMicroseconds": [
+          0.129,
+          0.132
+        ]
+      },
+      "After": {
+        "Microseconds": 0.125,
+        "RangeMicroseconds": [
+          0.125,
+          0.132
+        ]
+      }
+    }
+  ],
+  "SingleConfirmation": [
+    {
+      "Operation": "Pcre2IsMatch",
+      "Before": {
+        "Microseconds": 1.58,
+        "RangeMicroseconds": [
+          1.332,
+          2.274
+        ]
+      },
+      "After": {
+        "Microseconds": 1.129,
+        "RangeMicroseconds": [
+          0.879,
+          1.541
+        ]
+      },
+      "ChangePercent": -28.54
+    },
+    {
+      "Operation": "Utf8ValidationOnly",
+      "Before": {
+        "Microseconds": 0.441,
+        "RangeMicroseconds": [
+          0.412,
+          0.465
+        ]
+      },
+      "After": {
+        "Microseconds": 0.288,
+        "RangeMicroseconds": [
+          0.287,
+          0.591
+        ]
+      },
+      "ChangePercent": -34.69
+    },
+    {
+      "Operation": "Utf8IsMatch",
+      "Before": {
+        "Microseconds": 1.537,
+        "RangeMicroseconds": [
+          1.505,
+          4.216
+        ]
+      },
+      "After": {
+        "Microseconds": 1.414,
+        "RangeMicroseconds": [
+          1.265,
+          2.254
+        ]
+      },
+      "ChangePercent": -8.0
+    },
+    {
+      "Operation": "DecodeIsMatch",
+      "Before": {
+        "Microseconds": 17.299,
+        "RangeMicroseconds": [
+          8.588,
+          24.936
+        ]
+      },
+      "After": {
+        "Microseconds": 3.539,
+        "RangeMicroseconds": [
+          3.15,
+          4.707
+        ]
+      },
+      "ChangePercent": -79.54
+    },
+    {
+      "Operation": "PredecodedIsMatch",
+      "Before": {
+        "Microseconds": 0.216,
+        "RangeMicroseconds": [
+          0.142,
+          0.269
+        ]
+      },
+      "After": {
+        "Microseconds": 0.057,
+        "RangeMicroseconds": [
+          0.055,
+          0.059
+        ]
+      },
+      "ChangePercent": -73.61
+    }
+  ],
+  "Decision": "Character public Count +0.64% fits the selected 10% allowance. Backreference initial +15.37%; confirmation -28.54% with severe unchanged-control and sample variation is inconclusive, not evidence of a public win or a demonstrated >10% regression. No 10% acceptance/equivalence claim for that path. First-use/construction are distinct; previous first-use concern remains for delivery qualification. No additional timing this milestone.",
+  "RawLogs": [
+    {
+      "Path": "artifacts/sixth-review-20261020/after-backreference-public.log",
+      "Sha256": "F806A6EE588C2074A0EFBF5AA5B37BCDC51605BD6448DAA3A05DB4935E3CFD85",
+      "Bytes": 1918
+    },
+    {
+      "Path": "artifacts/sixth-review-20261020/after-character-public.log",
+      "Sha256": "38577D5AA4C12390844C81737F3CDC5C4142299490B5E8A69AB50456BEBB676F",
+      "Bytes": 3333
+    },
+    {
+      "Path": "artifacts/sixth-review-20261020/before-backreference-public.log",
+      "Sha256": "604A29E80E7F1817026C44BC4D0FB3D3E9F9BD61BFF0DEDA7DF634B00F89AA8D",
+      "Bytes": 1918
+    },
+    {
+      "Path": "artifacts/sixth-review-20261020/before-character-public.log",
+      "Sha256": "7612E0BF1EF9A19554BF36B408EF0D70C30D90152DA32A9E15C1B856EEB2CFFE",
+      "Bytes": 1781
+    },
+    {
+      "Path": "artifacts/sixth-review-20261020/confirmation-after-backreference-public.log",
+      "Sha256": "DCA0F3B97F84CC495DDC59BECA426CEBCBCF5CC4AABA6AA0CE8A87B5C8682312",
+      "Bytes": 1916
+    },
+    {
+      "Path": "artifacts/sixth-review-20261020/confirmation-before-backreference-public.log",
+      "Sha256": "F53693165046AE18A621281E77DBEFCF9A60D7EA052913F624E9F09D7DF91250",
+      "Bytes": 1917
+    },
+    {
+      "Path": "artifacts/sixth-review-20261020/after-backreference-construction.log",
+      "Sha256": "497890E5AA502DA57F6306DD2C74C366435BFBB42863304B498584B9E7D434D7",
+      "Bytes": 1423
+    },
+    {
+      "Path": "artifacts/sixth-review-20261020/after-character-construction.log",
+      "Sha256": "B247C7C590944B4012F51CD48B4659B89782C946B8E0A96308BD093204A9A1B1",
+      "Bytes": 1404
+    },
+    {
+      "Path": "artifacts/sixth-review-20261020/after-literal-construction.log",
+      "Sha256": "0FBD06D740082EEA5FEAE0F5C6725DC9EAB010E9BC81C6D138E41B3E18B62F89",
+      "Bytes": 1377
+    },
+    {
+      "Path": "artifacts/sixth-review-20261020/before-backreference-construction.log",
+      "Sha256": "E1907FEFE15C91668AC65E2628C3602F4BD7C100B4A7ACD15A8B8F5C2C4C22DF",
+      "Bytes": 1424
+    },
+    {
+      "Path": "artifacts/sixth-review-20261020/before-character-construction.log",
+      "Sha256": "FCBB899B5B095CFAC435888C2EB52876534E8E12EBC76DCB667FB9D344036744",
+      "Bytes": 1408
+    },
+    {
+      "Path": "artifacts/sixth-review-20261020/before-literal-construction.log",
+      "Sha256": "BF57481F3313EEBE265975DC3BFEBD2AED14755BD8FDD6B6C683CE5AE0055D96",
+      "Bytes": 1376
+    }
+  ]
+}

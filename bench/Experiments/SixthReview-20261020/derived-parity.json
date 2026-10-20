@@ -1,0 +1,28 @@
+{
+  "Scope": "Generated derivative synchronization only. All 178 prior rows and every old field are exactly equal after removing four newly serialized empty identity strings per row. No measurement snapshot, timing, Status, summary or snapshot hash changes.",
+  "SnapshotSha256": "4DDA92671D84DB9851D3D012F6A79F8D414A573A72D5E7AD9CCC852236F9E7FA",
+  "Summary": {
+    "Rows": 178,
+    "Wins": 135,
+    "TieCandidates": 4,
+    "Gaps": 39,
+    "Unqualified": 0
+  },
+  "AddedFieldsPerRow": [
+    "BenchmarkAssembly",
+    "CoreAssembly",
+    "Pcre2Assembly",
+    "PythonReAssembly"
+  ],
+  "Values": "Empty = historical loaded identity not recorded; no inferred producer.",
+  "OriginalRefusalLog": {
+    "Path": "artifacts/sixth-review-20261020/verify-readme-parity.log",
+    "Sha256": "4BA88B4E4A1C07508CA525CCE539692277269724C1612768AA7ADE5A3F2B5255",
+    "Bytes": 462
+  },
+  "FinalVerificationLog": {
+    "Path": "artifacts/sixth-review-20261020/verify-readme-parity-final.log",
+    "Sha256": "AF7327FEF829FBB1EDD56CCEC1D8BEDFC4E715096130545D439F2D4234B7D072",
+    "Bytes": 61
+  }
+}

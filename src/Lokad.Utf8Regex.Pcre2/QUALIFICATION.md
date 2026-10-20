@@ -102,13 +102,13 @@ add the following construction behavior:
 
 Strict UTF-8/scalars, captures, synchronous original tokens/deadlines, owned
 results/cursors and useful work/depth/working/result controls remain required.
-[Fifth-review source evidence](../../bench/Experiments/FifthReview-20261020/README.md)
-records green Windows/Linux CI at `877c7743`, including the escape-operand fix;
-subsequent source needs its own validation. Source checks **do not** replace or
+[Sixth-review source evidence](../../bench/Experiments/SixthReview-20261020/README.md)
+records green Windows/Linux CI at `1609aa03`, including the grammar boundary,
+character admission and retained-state cleanup. Source checks **do not** replace or
 relabel RC1's package evidence.
 No corrected development package has been qualified. The earlier public first-use
-latency concern remains open for a future delivery; no universal performance
-equivalence or fresh benchmark Status is claimed.
+latency concern and inconclusive backreference timing remain open for a future
+delivery; no universal performance equivalence or fresh benchmark Status is claimed.
 
 For a future real package boundary, use the existing consolidated flow:
 
