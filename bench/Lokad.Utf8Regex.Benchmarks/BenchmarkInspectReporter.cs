@@ -2939,12 +2939,7 @@ internal static partial class BenchmarkInspectReporter
                     }
                     if (context.Utf8Regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
                     {
-                        Console.WriteLine($"AnchoredValidatorSegments   : {context.Utf8Regex.Inspection.DebugAnchoredValidatorSegmentSummary}");
                         Measure("AnchoredValidatorBoolOnly", iterations, context.ExecuteUtf8DirectBoolOnly);
-                        Measure("AnchoredValidatorFixedPrefix", iterations, context.ExecuteAnchoredValidatorFixedPrefixOnly);
-                        Measure("AnchoredValidatorFirstBounded", iterations, context.ExecuteAnchoredValidatorFirstBoundedSegmentOnly);
-                        Measure("AnchoredValidatorSuffixAfterFirstBounded", iterations, context.ExecuteAnchoredValidatorSuffixAfterFirstBoundedOnly);
-                        Measure("AnchoredValidatorNativeWhole", iterations, context.ExecuteAnchoredValidatorNativeWholeOnly);
                         Measure("CompiledAnchoredValidatorNativeDirect", iterations, context.ExecuteCompiledAnchoredValidatorDirectOnly);
                     }
                     if (context.CompiledUtf8Regex.Inspection.DebugUsesEmittedWholeMatcher)

@@ -1,5 +1,15 @@
 # Changelog
 
+## Development: anchored-validator replay cleanup
+
+Delete benchmark-only partial-prefix, first-bounded-segment, suffix and segment
+summary implementations, their diagnostic forwarding layers and obsolete rows.
+Keep full native validation and shared matching predicates unchanged. Tighten the
+PCRE2 Core-route inventory to the two actual production files after removing its
+diagnostic route. Focused Release matching/resource and Windows/Linux inventory
+checks pass. [Caller proof and validation](bench/Experiments/AnchoredReplayPrune-20261020/README.md).
+No matching/resource/lifetime revision, new accessors or package qualification.
+
 ## Development: direct diagnostic execution
 
 Remove the Core fixed-pattern/repeated-digit benchmark forwarding layers and

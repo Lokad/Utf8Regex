@@ -128,45 +128,6 @@ public sealed partial class Utf8Regex
 
     private bool DebugUsesEmittedWholeMatcher => _compiledEngineRuntime.UsesEmittedWholeMatcher;
 
-    private string DebugAnchoredValidatorSegmentSummary =>
-        Utf8AsciiAnchoredValidatorExecutor.GetSegmentSummary(_anchoredValidatorPlan);
-
-    private bool DebugTryMatchAnchoredValidatorFixedPrefixOnly(ReadOnlySpan<byte> input, out int matchedLength)
-    {
-        return Utf8AsciiAnchoredValidatorExecutor.TryMatchWholeFixedPrefixOnly(
-            input,
-            _anchoredValidatorPlan,
-            _allowsTrailingNewlineBeforeEnd,
-            out matchedLength);
-    }
-
-    private bool DebugTryMatchAnchoredValidatorFirstBoundedSegmentOnly(ReadOnlySpan<byte> input, out int matchedLength)
-    {
-        return Utf8AsciiAnchoredValidatorExecutor.TryMatchWholeFirstBoundedSegmentOnly(
-            input,
-            _anchoredValidatorPlan,
-            _allowsTrailingNewlineBeforeEnd,
-            out matchedLength);
-    }
-
-    private bool DebugTryMatchAnchoredValidatorSuffixAfterFirstBounded(ReadOnlySpan<byte> input, out int matchedLength)
-    {
-        return Utf8AsciiAnchoredValidatorExecutor.TryMatchWholeSuffixAfterFirstBounded(
-            input,
-            _anchoredValidatorPlan,
-            _allowsTrailingNewlineBeforeEnd,
-            out matchedLength);
-    }
-
-    private bool DebugTryMatchAnchoredValidatorNativeWhole(ReadOnlySpan<byte> input, out int matchedLength)
-    {
-        return Utf8AsciiAnchoredValidatorExecutor.TryMatchWhole(
-            input,
-            _anchoredValidatorPlan,
-            _allowsTrailingNewlineBeforeEnd,
-            out matchedLength);
-    }
-
     private bool DebugTryMatchCompiledAnchoredValidatorWithoutValidation(ReadOnlySpan<byte> input, out int matchedLength)
     {
         if (_compiledEngine.Kind != Utf8CompiledEngineKind.SimplePatternInterpreter ||
@@ -399,29 +360,6 @@ public sealed partial class Utf8Regex
 
         public bool DebugUsesEmittedWholeMatcher =>
             _owner.DebugUsesEmittedWholeMatcher;
-
-        public string DebugAnchoredValidatorSegmentSummary =>
-            _owner.DebugAnchoredValidatorSegmentSummary;
-
-        public bool DebugTryMatchAnchoredValidatorFixedPrefixOnly(
-            ReadOnlySpan<byte> input,
-            out int matchedLength) =>
-            _owner.DebugTryMatchAnchoredValidatorFixedPrefixOnly(input, out matchedLength);
-
-        public bool DebugTryMatchAnchoredValidatorFirstBoundedSegmentOnly(
-            ReadOnlySpan<byte> input,
-            out int matchedLength) =>
-            _owner.DebugTryMatchAnchoredValidatorFirstBoundedSegmentOnly(input, out matchedLength);
-
-        public bool DebugTryMatchAnchoredValidatorSuffixAfterFirstBounded(
-            ReadOnlySpan<byte> input,
-            out int matchedLength) =>
-            _owner.DebugTryMatchAnchoredValidatorSuffixAfterFirstBounded(input, out matchedLength);
-
-        public bool DebugTryMatchAnchoredValidatorNativeWhole(
-            ReadOnlySpan<byte> input,
-            out int matchedLength) =>
-            _owner.DebugTryMatchAnchoredValidatorNativeWhole(input, out matchedLength);
 
         public bool DebugTryMatchCompiledAnchoredValidatorWithoutValidation(
             ReadOnlySpan<byte> input,

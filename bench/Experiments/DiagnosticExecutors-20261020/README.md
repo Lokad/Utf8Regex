@@ -62,3 +62,14 @@ stay fixed. Broader diagnostic cleanup remains: Core composite replay/dispatch
 helpers and PCRE2 diagnostic Count/IsMatch wrappers with genuine test consumers.
 Migrate tests to production implementations; retain useful counters and public
 diagnostics. Full original R01-R10 remains open.
+
+CI addendum:39362919462 failed the same one source-inventory expectation on both
+platforms: the test still required the deleted PCRE2 Diagnostics ByteOffsetExecution
+route. Core39784 other checks and all5911 PCRE2 checks passed per platform.
+Correctionb404e4da narrows that reviewed route-file set from three files to the two
+actual production files, retaining exact equality. All10 inventory checks pass
+on Windows and then the same built assemblies on WSL/.NET10.0.12 (19.44s).
+A silent zero-exit Linux project invocation is not counted as test evidence;
+direct VSTest supplies the actual pass. Original CI logs are retained under
+artifacts/anchored-replay-prune-20261020. The failed run is terminal and closed;
+the fix is batched with the next nonlive replay deletion for one new CI boundary.

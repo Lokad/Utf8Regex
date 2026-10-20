@@ -246,54 +246,6 @@ internal sealed class LokadPublicBenchmarkContext
             : 0;
     }
 
-    public int ExecuteAnchoredValidatorFixedPrefixOnly()
-    {
-        if (!Utf8Regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
-        {
-            return 0;
-        }
-
-        return Utf8Regex.Inspection.DebugTryMatchAnchoredValidatorFixedPrefixOnly(InputBytes, out var matchedLength)
-            ? matchedLength
-            : 0;
-    }
-
-    public int ExecuteAnchoredValidatorFirstBoundedSegmentOnly()
-    {
-        if (!Utf8Regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
-        {
-            return 0;
-        }
-
-        return Utf8Regex.Inspection.DebugTryMatchAnchoredValidatorFirstBoundedSegmentOnly(InputBytes, out var matchedLength)
-            ? matchedLength
-            : 0;
-    }
-
-    public int ExecuteAnchoredValidatorSuffixAfterFirstBoundedOnly()
-    {
-        if (!Utf8Regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
-        {
-            return 0;
-        }
-
-        return Utf8Regex.Inspection.DebugTryMatchAnchoredValidatorSuffixAfterFirstBounded(InputBytes, out var matchedLength)
-            ? matchedLength
-            : 0;
-    }
-
-    public int ExecuteAnchoredValidatorNativeWholeOnly()
-    {
-        if (!Utf8Regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
-        {
-            return 0;
-        }
-
-        return Utf8Regex.Inspection.DebugTryMatchAnchoredValidatorNativeWhole(InputBytes, out var matchedLength)
-            ? matchedLength
-            : 0;
-    }
-
     public int ExecuteCompiledAnchoredValidatorDirectOnly()
     {
         if (!CompiledUtf8Regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
