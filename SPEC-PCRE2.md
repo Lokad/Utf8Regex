@@ -70,6 +70,17 @@ vectors, capture/name maps and metadata copies. This is a modeled capacity charg
 can count shared storage twice and stays charged on successful compilation; it is
 not an estimate of total managed allocation. Each lowerer's separate name lookup
 also admits 256 bytes per name entry, including nested assertion lowerers.
+
+Character compilation now shares the construction owner too. Token-vector
+capacity counts toward instructions and bytes; class-term vectors, property
+normalization storage and returned text admit their major extents before
+allocation, including growth/final-copy overlap. Traversals and delimiter scans
+use bounded interruption checkpoints. Backtracking's single-token parser shares
+these controls. Earlier refusal is intentional; incidental helpers and whole-heap
+memory remain outside the modeled scope. Character programs no longer prepare
+an unused Core expression. Literal compilation releases its temporary Rune vector
+after encoding; runtime literal atoms/anchors and character syntax-node/offset
+mirrors are removed. Probe's live backtracking tree remains.
 Instruction and auxiliary program
 arrays separately admit capacity and growth overlap before allocation. Parsing,
 lowering and reference-following analysis share work/interruption and depth

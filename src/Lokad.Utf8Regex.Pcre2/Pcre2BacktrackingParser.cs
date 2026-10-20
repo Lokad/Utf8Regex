@@ -471,9 +471,7 @@ internal sealed class Pcre2BacktrackingParser
                 var patternLength = octalCursor - _offset;
                 node = new Pcre2TokenBacktrackingNode(Pcre2CharacterToken.CreateLiteral(
                     new Rune(octal),
-                    _options,
-                    _offset,
-                    patternLength));
+                    _options));
                 _offset = octalCursor;
                 return true;
             }
@@ -530,9 +528,7 @@ internal sealed class Pcre2BacktrackingParser
             _offset += length;
             result.Add(new Pcre2TokenBacktrackingNode(Pcre2CharacterToken.CreateLiteral(
                 literal,
-                _options,
-                literalStart,
-                length)));
+                _options)));
         }
 
         children = [.. result];

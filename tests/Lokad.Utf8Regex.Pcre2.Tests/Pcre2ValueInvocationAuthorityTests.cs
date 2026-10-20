@@ -15,7 +15,7 @@ public sealed class Pcre2ValueInvocationAuthorityTests
             yield return [".", "😀", value];
             yield return ["(?<x>a)b", "ab", value];
             yield return [@"(?<x>a)\k<x>", "aa", value];
-            yield return [@"\u0041+", "AAA", value];
+            yield return [@"\x41+", "AAA", value];
             yield return ["[ab]+", "ab", value];
         }
     }

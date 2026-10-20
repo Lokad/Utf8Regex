@@ -5,6 +5,10 @@
 - PCRE2 no longer accepts unsupported patterns through unrestricted Core grammar.
   Shared Core search remains behind a successful PCRE2 parse and eligibility proof;
   accidental .NET escape/property/balancing extensions are rejected.
+- PCRE2 character compilation now admits major token/class/property storage,
+  instruction expansion and bounded interruption. It removes unused Core
+  preparation, syntax-node vectors, token offsets and retained literal atoms.
+  Covered construction thresholds can change as storage/work disappears.
 - PCRE2 lexical guards consume complete escape operands consistently, so control
   escapes cannot turn literal class contents into apparent callouts or names.
 - PythonRe no longer retains construction-only translation state. Scalar-only

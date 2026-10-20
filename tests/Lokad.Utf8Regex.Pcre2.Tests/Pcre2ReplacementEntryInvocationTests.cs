@@ -14,7 +14,7 @@ public sealed class Pcre2ReplacementEntryInvocationTests
             yield return ["abc", "xabc", mode];
             yield return ["(?<x>a)b", "xab", mode];
             yield return [@"(?<x>a)\k<x>", "xaa", mode];
-            yield return [@"(?<x>\u0041+)", "xAAA", mode];
+            yield return [@"(?<x>\x41+)", "xAAA", mode];
         }
     }
 
@@ -58,7 +58,7 @@ public sealed class Pcre2ReplacementEntryInvocationTests
         Assert.Equal("😀xZ", Run(regex, input, mode, start: 4));
     }
 
-    [Theory] [InlineData("abc")] [InlineData(@"(?<x>a)\k<x>")] [InlineData(@"(?<x>\u0041+)")]
+    [Theory] [InlineData("abc")] [InlineData(@"(?<x>a)\k<x>")] [InlineData(@"(?<x>\x41+)")]
     public void Utf8TemplateValidationAndDecodeUseOriginalLimits(string pattern)
     {
         var malformed = new byte[16385]; malformed.AsSpan().Fill((byte)'x'); malformed[^1] = 0xff;

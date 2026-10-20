@@ -38,13 +38,13 @@ public sealed class Pcre2ProbePublicationAuthorityTests
     [Fact]
     public void NonPartialProbePreservesOwnedNamesMarkAndRetainedCaptures()
     {
-        var regex = new Utf8Pcre2Regex(@"(?<v>\u0041)(😀)");
+        var regex = new Utf8Pcre2Regex(@"(?<v>\x41)(😀)");
         var result = regex.Probe("A😀"u8, Pcre2PartialMode.None);
         var retained = result.GetMatch();
         Assert.True(retained.TryGetFirstSetGroup("v", out var named));
         Assert.Equal("A", named.GetValueString());
-        Assert.Equal(3, retained.NameEntryCount);
-        Assert.Equal("😀", retained.GetGroup(1).GetValueString());
+        Assert.Equal(1, retained.NameEntryCount);
+        Assert.Equal("😀", retained.GetGroup(2).GetValueString());
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, regex.Probe("xA😀"u8, Pcre2PartialMode.None).Kind);
         Assert.Equal("A😀", retained.GetValueString());
         var marked = new Utf8Pcre2Regex("(*MARK:tag)(é)(😀)").Probe("é😀"u8, Pcre2PartialMode.None);

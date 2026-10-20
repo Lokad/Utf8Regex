@@ -15,7 +15,7 @@ public sealed class Pcre2ResultPolicyTests
     [InlineData("[A-Z]", "A")]
     [InlineData("(é)(😀)", "é😀")]
     [InlineData("(*MARK:x)(é)(😀)", "é😀")]
-    [InlineData(@"\u0041+", "AAA")]
+    [InlineData(@"\x41+", "AAA")]
     public void ResultOnlyPolicyBoundsDetailedPublicationWithoutBoundingScalarValues(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
@@ -62,7 +62,7 @@ public sealed class Pcre2ResultPolicyTests
     [Theory]
     [InlineData("A", "A", 1)]
     [InlineData("(é)(😀)", "é😀", 3)]
-    [InlineData(@"(?<v>\u0041)(😀)", "A😀", 3)]
+    [InlineData(@"(?<v>\x41)(😀)", "A😀", 3)]
     public void DetailedArrayHasAnExactModeledBoundary(string pattern, string text, int slots)
     {
         var cap = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(slots);
@@ -87,7 +87,7 @@ public sealed class Pcre2ResultPolicyTests
 
     [Theory]
     [InlineData("A", "AzA", "!", "!z!", Pcre2SubstitutionOptions.None)]
-    [InlineData(@"(?<v>\u0041)😀", "A😀xA😀", "${v}!", "A!xA!", Pcre2SubstitutionOptions.None)]
+    [InlineData(@"(?<v>\x41)😀", "A😀xA😀", "${v}!", "A!xA!", Pcre2SubstitutionOptions.None)]
     [InlineData("(*MARK:x)(é)(😀)", "é😀xé😀", "$2$1", "😀éx😀é", Pcre2SubstitutionOptions.None)]
     [InlineData("A", "AzA", @"\Ué\E$0", "ÉAzÉA", Pcre2SubstitutionOptions.Extended)]
     public void ActualReplacementProducersEnforceCumulativeResultCapacity(string pattern, string text,
@@ -125,10 +125,10 @@ public sealed class Pcre2ResultPolicyTests
     [Fact]
     public void CallbackResultFailureIsStructuredAndFreshCallsReset()
     {
-        var error = Assert.Throws<Pcre2MatchException>(() => Create(@"(?<v>\u0041)😀", 1).ReplaceToString("A😀"u8, 0,
+        var error = Assert.Throws<Pcre2MatchException>(() => Create(@"(?<v>\x41)😀", 1).ReplaceToString("A😀"u8, 0,
             static (in Utf8Pcre2MatchContext match, ref int state) => "!"));
         Assert.Equal("ResultLimit", error.ErrorKind.ToString());
-        var regex = Create(@"(?<v>\u0041)😀", 1 << 20);
+        var regex = Create(@"(?<v>\x41)😀", 1 << 20);
         Assert.Equal("!", regex.ReplaceToString("A😀"u8, 0, static (in Utf8Pcre2MatchContext match, ref int state) => "!"));
         Assert.Equal("!", regex.ReplaceToString("A😀"u8, 0, static (in Utf8Pcre2MatchContext match, ref int state) => "!"));
     }

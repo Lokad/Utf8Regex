@@ -7,7 +7,7 @@ public sealed class Pcre2PartialEndAnchoredTests
     [Theory]
     [InlineData("a")] // literal driver
     [InlineData("(a)b+")] // specialized partial helper
-    [InlineData(@"(?<v>\u0041)(😀)")] // normal detailed matcher
+    [InlineData(@"(?<v>\x41)(😀)")] // normal detailed matcher
     public void PartialEndAnchoredFailsBeforeAnyResult(string pattern)
     {
         var regex = new Utf8Pcre2Regex(pattern);

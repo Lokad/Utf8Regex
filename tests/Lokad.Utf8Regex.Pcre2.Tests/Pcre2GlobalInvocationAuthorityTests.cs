@@ -15,7 +15,7 @@ public sealed class Pcre2GlobalInvocationAuthorityTests
             yield return [".", "😀", enumerate];
             yield return ["(?<x>a)b", "ab", enumerate];
             yield return [@"(?<x>a)\k<x>", "aa", enumerate];
-            yield return [@"\u0041+", "AAA", enumerate];
+            yield return [@"\x41+", "AAA", enumerate];
             yield return ["[ab]+", "ab", enumerate];
         }
     }
@@ -97,12 +97,15 @@ public sealed class Pcre2GlobalInvocationAuthorityTests
     }
 
     [Theory]
-    [InlineData("abc")] [InlineData("(?<x>a)b")] [InlineData(@"(?<x>a)\k<x>")] [InlineData(@"\u0041+")]
-    public void CursorCopiesCannotForkSpentValidationOrLoseOriginalCancellation(string pattern)
+    [InlineData("abc", "abc aa ab")]
+    [InlineData("(?<x>a)b", "abc aa ab")]
+    [InlineData(@"(?<x>a)\k<x>", "abc aa ab")]
+    [InlineData(@"\x41+", "AAA AAA")]
+    public void CursorCopiesCannotForkSpentValidationOrLoseOriginalCancellation(string pattern, string subject)
     {
         using var source = new CancellationTokenSource();
         var regex = Create(pattern, 100000);
-        var input = Encoding.UTF8.GetBytes(pattern.Contains("0041") ? "AAA AAA" : "abc aa ab");
+        var input = Encoding.UTF8.GetBytes(subject);
         var original = regex.EnumerateMatches(input, 0, Pcre2MatchOptions.None, source.Token);
         Assert.True(original.MoveNext());
         var alias = original;

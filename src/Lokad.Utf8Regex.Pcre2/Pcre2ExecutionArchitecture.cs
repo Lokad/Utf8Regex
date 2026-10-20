@@ -35,9 +35,7 @@ internal static class Pcre2Compiler
 
         if (Pcre2CharacterCompiler.Compile(request) is Pcre2CompiledCharacterOutcome character)
         {
-            var foundation = foundationProgramFactory(request);
-
-            foundation = Pcre2CompiledProgramOverlay.WithCharacterOneShot(foundation, character.SyntaxTree, character.Program);
+            var foundation = Pcre2CompiledProgramOverlay.CreateCharacter(request, character.SyntaxTree, character.Program);
             Pcre2ProgramInvariant.Validate(foundation);
             return foundation;
         }
@@ -546,29 +544,21 @@ internal static class Pcre2CompiledProgramOverlay
             []);
     }
 
-    internal static Pcre2CompiledProgram WithCharacterOneShot(
-        Pcre2CompiledProgram legacy,
+    internal static Pcre2CompiledProgram CreateCharacter(
+        Pcre2CompileRequest request,
         Pcre2CharacterSyntaxTree syntaxTree,
         Pcre2CharacterProgram characterProgram)
     {
         var direct = new Pcre2CharacterDirectProgram(characterProgram);
-        var operations = legacy.Operations with
-        {
-            IsMatch = direct,
-            Count = direct,
-            Enumerate = direct,
-            Match = direct,
-            Replace = direct,
-        };
         return new Pcre2CompiledProgram(
-            legacy.Request,
-            legacy.PrimaryUtf8,
-            operations,
+            request,
+            Pcre2EmptyUtf8ProgramSlot.Instance,
+            new Pcre2OperationPrograms(direct, direct, direct, direct, direct),
             default,
-            Pcre2PartialProbeCompiler.Compile(characterProgram, legacy.Request),
+            Pcre2PartialProbeCompiler.Compile(characterProgram, request),
             syntaxTree,
-            legacy.GroupNames,
-            legacy.NameEntries);
+            ["0"],
+            []);
     }
 
     internal static Pcre2CompiledProgram WithBacktracking(
@@ -4311,5 +4301,3 @@ internal sealed class Pcre2LegacySyntaxTree : IPcre2SyntaxTree
 
     public Pcre2SyntaxNodeKind RootKind => Pcre2SyntaxNodeKind.LegacyPattern;
 }
-
-internal readonly record struct Pcre2SyntaxNode(Pcre2SyntaxNodeKind Kind, int StartOffset, int Length);

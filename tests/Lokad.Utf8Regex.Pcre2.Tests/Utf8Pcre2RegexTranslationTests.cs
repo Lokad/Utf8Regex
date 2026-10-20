@@ -39,7 +39,7 @@ public sealed class Utf8Pcre2RegexTranslationTests
     {
         var regex = new Utf8Pcre2Regex("httpclient", Pcre2CompileOptions.Caseless);
 
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
+        Assert.False(regex.DebugUsesUtf8RegexTranslation);
         Assert.Equal("IsMatch=Pcre2Character, Count=Pcre2Character, Enumerate=Pcre2Character, Match=Pcre2Character, Replace=Pcre2Character", regex.DebugDescribeExecutionPlan());
         Assert.Equal(3, regex.Count("HttpClient x httpclient HTTPCLIENT"u8));
     }
@@ -871,13 +871,13 @@ public sealed class Utf8Pcre2RegexTranslationTests
     }
 
     [Fact]
-    public void UnicodePropertyPatternsUseUtf8RegexTranslation()
+    public void UnicodePropertyPatternsUseTheirOwnedCharacterPrograms()
     {
         var letters = new Utf8Pcre2Regex(@"\p{L}");
         var symbols = new Utf8Pcre2Regex(@"\p{Sm}");
 
-        Assert.True(letters.DebugUsesUtf8RegexTranslation);
-        Assert.True(symbols.DebugUsesUtf8RegexTranslation);
+        Assert.False(letters.DebugUsesUtf8RegexTranslation);
+        Assert.False(symbols.DebugUsesUtf8RegexTranslation);
         Assert.Equal(3, letters.Count("abc123"u8));
         Assert.Equal(1, symbols.Count("a+b"u8));
     }

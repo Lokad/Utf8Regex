@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Globalization;
 using System.Text;
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
@@ -9,14 +10,9 @@ namespace Lokad.Utf8Regex.Pcre2;
 
 internal sealed class Pcre2CharacterSyntaxTree : IPcre2SyntaxTree
 {
-    internal Pcre2CharacterSyntaxTree(Pcre2SyntaxNode[] nodes)
-    {
-        Nodes = nodes;
-    }
-
+    internal static Pcre2CharacterSyntaxTree Instance { get; } = new();
+    private Pcre2CharacterSyntaxTree() { }
     public Pcre2SyntaxNodeKind RootKind => Pcre2SyntaxNodeKind.CharacterProgram;
-
-    internal Pcre2SyntaxNode[] Nodes { get; }
 }
 
 internal sealed class Pcre2CharacterProgram
@@ -150,16 +146,12 @@ internal readonly struct Pcre2CharacterToken
         Pcre2CharacterTokenKind kind,
         Rune literal,
         Pcre2CharacterClass characterClass,
-        Pcre2CharacterOptions options,
-        int patternOffset,
-        int patternLength)
+        Pcre2CharacterOptions options)
     {
         Kind = kind;
         Literal = literal;
         CharacterClass = characterClass;
         Options = options;
-        PatternOffset = patternOffset;
-        PatternLength = patternLength;
     }
 
     internal Pcre2CharacterTokenKind Kind { get; }
@@ -170,30 +162,20 @@ internal readonly struct Pcre2CharacterToken
 
     internal Pcre2CharacterOptions Options { get; }
 
-    internal int PatternOffset { get; }
-
-    internal int PatternLength { get; }
-
     internal static Pcre2CharacterToken Create(
         Pcre2CharacterTokenKind kind,
-        Pcre2CharacterOptions options,
-        int patternOffset,
-        int patternLength) =>
-        new(kind, default, Pcre2CharacterClass.Empty, options, patternOffset, patternLength);
+        Pcre2CharacterOptions options) =>
+        new(kind, default, Pcre2CharacterClass.Empty, options);
 
     internal static Pcre2CharacterToken CreateLiteral(
         Rune literal,
-        Pcre2CharacterOptions options,
-        int patternOffset,
-        int patternLength) =>
-        new(Pcre2CharacterTokenKind.Literal, literal, Pcre2CharacterClass.Empty, options, patternOffset, patternLength);
+        Pcre2CharacterOptions options) =>
+        new(Pcre2CharacterTokenKind.Literal, literal, Pcre2CharacterClass.Empty, options);
 
     internal static Pcre2CharacterToken CreateClass(
         Pcre2CharacterClass characterClass,
-        Pcre2CharacterOptions options,
-        int patternOffset,
-        int patternLength) =>
-        new(Pcre2CharacterTokenKind.CharacterClass, default, characterClass, options, patternOffset, patternLength);
+        Pcre2CharacterOptions options) =>
+        new(Pcre2CharacterTokenKind.CharacterClass, default, characterClass, options);
 }
 
 internal enum Pcre2CharacterClassTermKind : byte
@@ -332,17 +314,17 @@ internal static class Pcre2CharacterCompiler
 {
     internal static Pcre2CompiledCharacterOutcome? Compile(Pcre2CompileRequest request)
     {
-        var parser = new Pcre2CharacterParser(request);
-        return parser.TryParse(out var tokens, out var nodes)
-            ? new Pcre2CompiledCharacterOutcome(
-                new Pcre2CharacterSyntaxTree(nodes),
-                new Pcre2CharacterProgram(
-                    tokens,
-                    request,
-                    GetLeadingAsciiByte(tokens),
-                    tokens is [{ Kind: Pcre2CharacterTokenKind.ExtendedGraphemeCluster }, ..],
-                    tokens.Any(static token => token.Kind == Pcre2CharacterTokenKind.CodeUnit)))
-            : null;
+        using var construction = Utf8ConstructionScope.Enter();
+        construction.Budget.ChargeWork((ulong)request.Pattern.Length + 1);
+        using var parser = new Pcre2CharacterParser(request);
+        if (!parser.TryParse(out var tokens)) return null;
+        var result = new Pcre2CompiledCharacterOutcome(
+            Pcre2CharacterSyntaxTree.Instance,
+            new Pcre2CharacterProgram(tokens, request, GetLeadingAsciiByte(tokens),
+                tokens is [{ Kind: Pcre2CharacterTokenKind.ExtendedGraphemeCluster }, ..],
+                tokens.Any(static token => token.Kind == Pcre2CharacterTokenKind.CodeUnit)));
+        construction.Complete();
+        return result;
     }
 
     internal static bool TryCompileSingleToken(
@@ -352,8 +334,12 @@ internal static class Pcre2CharacterCompiler
         out Pcre2CharacterToken token,
         out int patternLength)
     {
-        var parser = new Pcre2CharacterParser(request, patternOffset, options);
-        return parser.TryParseOne(out token, out patternLength);
+        using var construction = Utf8ConstructionScope.Enter();
+        construction.Budget.ChargeWork(1);
+        using var parser = new Pcre2CharacterParser(request, patternOffset, options);
+        if (!parser.TryParseOne(out token, out patternLength)) return false;
+        construction.Complete();
+        return true;
     }
 
     private static byte? GetLeadingAsciiByte(Pcre2CharacterToken[] tokens)
@@ -370,12 +356,13 @@ internal static class Pcre2CharacterCompiler
     }
 }
 
-internal sealed class Pcre2CharacterParser
+internal sealed class Pcre2CharacterParser : IDisposable
 {
     private readonly Pcre2CompileRequest _request;
     private readonly string _pattern;
-    private readonly List<Pcre2CharacterToken> _tokens = [];
-    private readonly List<Pcre2SyntaxNode> _nodes = [];
+    private readonly Utf8ConstructionBudget _budget;
+    private readonly Utf8ConstructionBuffer<Pcre2CharacterToken> _tokens;
+    private int _nextCheckpoint;
     private int _offset;
     private Pcre2CharacterOptions _options;
     private bool _requiresCharacterProgram;
@@ -391,6 +378,8 @@ internal sealed class Pcre2CharacterParser
         Pcre2CharacterOptions options)
     {
         _request = request;
+        _budget = Utf8ConstructionScope.CurrentBudget;
+        _tokens = new Utf8ConstructionBuffer<Pcre2CharacterToken>(_budget, instructions: true);
         _pattern = request.Pattern;
         _offset = patternOffset;
         _options = options;
@@ -401,10 +390,11 @@ internal sealed class Pcre2CharacterParser
              Pcre2CompileOptions.FirstLine)) != 0;
     }
 
-    internal bool TryParse(out Pcre2CharacterToken[] tokens, out Pcre2SyntaxNode[] nodes)
+    internal bool TryParse(out Pcre2CharacterToken[] tokens)
     {
         while (_offset < _pattern.Length)
         {
+            Checkpoint(_offset);
             if (TrySkipExtendedTrivia())
             {
                 continue;
@@ -414,9 +404,9 @@ internal sealed class Pcre2CharacterParser
             var ch = _pattern[_offset];
             if (ch == '(')
             {
-                if (!TryParseGlobalOptions(start))
+                if (!TryParseGlobalOptions())
                 {
-                    return Fail(out tokens, out nodes);
+                    return Fail(out tokens);
                 }
 
                 continue;
@@ -424,17 +414,17 @@ internal sealed class Pcre2CharacterParser
 
             if (ch is ')' or '|' or '*' or '+' or '?' or '{')
             {
-                return Fail(out tokens, out nodes);
+                return Fail(out tokens);
             }
 
             if (ch == '[')
             {
                 if (!TryParseClass(start, out var characterClass))
                 {
-                    return Fail(out tokens, out nodes);
+                    return Fail(out tokens);
                 }
 
-                Add(Pcre2CharacterToken.CreateClass(characterClass, _options, start, _offset - start));
+                Add(Pcre2CharacterToken.CreateClass(characterClass, _options));
                 continue;
             }
 
@@ -442,7 +432,7 @@ internal sealed class Pcre2CharacterParser
             {
                 if (!TryParseEscape(start))
                 {
-                    return Fail(out tokens, out nodes);
+                    return Fail(out tokens);
                 }
 
                 continue;
@@ -452,31 +442,31 @@ internal sealed class Pcre2CharacterParser
             switch (ch)
             {
                 case '.':
-                    Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.Any, _options, start, 1));
+                    Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.Any, _options));
                     break;
                 case '^':
-                    Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.BeginningOfLine, _options, start, 1));
+                    Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.BeginningOfLine, _options));
                     break;
                 case '$':
-                    Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.EndOfLine, _options, start, 1));
+                    Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.EndOfLine, _options));
                     break;
                 default:
                     _offset = start;
                     if (!TryReadPatternRune(out var literal, out var length))
                     {
-                        return Fail(out tokens, out nodes);
+                        return Fail(out tokens);
                     }
 
-                    Add(Pcre2CharacterToken.CreateLiteral(literal, _options, start, length));
+                    Add(Pcre2CharacterToken.CreateLiteral(literal, _options));
                     break;
             }
         }
 
-        tokens = [.. _tokens];
-        nodes = [.. _nodes];
-        return _requiresCharacterProgram ||
-            tokens.Any(static token => token.Kind != Pcre2CharacterTokenKind.Literal) ||
-            tokens.Length == 0;
+        var serves = _requiresCharacterProgram || _tokens.Count == 0;
+        foreach (var token in _tokens.Span) serves |= token.Kind != Pcre2CharacterTokenKind.Literal;
+        if (!serves) return Fail(out tokens);
+        tokens = _tokens.Take();
+        return true;
     }
 
     internal bool TryParseOne(out Pcre2CharacterToken token, out int patternLength)
@@ -499,7 +489,7 @@ internal sealed class Pcre2CharacterParser
                 return false;
             }
 
-            token = Pcre2CharacterToken.CreateClass(characterClass, _options, start, _offset - start);
+            token = Pcre2CharacterToken.CreateClass(characterClass, _options);
         }
         else if (ch == '\\')
         {
@@ -517,9 +507,9 @@ internal sealed class Pcre2CharacterParser
             _offset++;
             token = ch switch
             {
-                '.' => Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.Any, _options, start, 1),
-                '^' => Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.BeginningOfLine, _options, start, 1),
-                '$' => Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.EndOfLine, _options, start, 1),
+                '.' => Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.Any, _options),
+                '^' => Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.BeginningOfLine, _options),
+                '$' => Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.EndOfLine, _options),
                 _ => CreateLiteralToken(start),
             };
         }
@@ -535,11 +525,11 @@ internal sealed class Pcre2CharacterParser
                 return default;
             }
 
-            return Pcre2CharacterToken.CreateLiteral(literal, _options, literalStart, length);
+            return Pcre2CharacterToken.CreateLiteral(literal, _options);
         }
     }
 
-    private bool TryParseGlobalOptions(int start)
+    private bool TryParseGlobalOptions()
     {
         if (_offset + 2 >= _pattern.Length || _pattern[_offset + 1] != '?')
         {
@@ -562,6 +552,7 @@ internal sealed class Pcre2CharacterParser
         var disabledX = false;
         while (cursor < _pattern.Length && _pattern[cursor] != ')')
         {
+            Checkpoint(cursor);
             if (_pattern[cursor] == '-')
             {
                 if (hyphenSeen || resetAll)
@@ -613,7 +604,6 @@ internal sealed class Pcre2CharacterParser
         _options = Pcre2CharacterOptionsFactory.ApplyExtendedOptions(_options, enabledX, enabledMore, disabledX);
         _offset = cursor + 1;
         _requiresCharacterProgram = true;
-        _nodes.Add(new Pcre2SyntaxNode(Pcre2SyntaxNodeKind.CharacterProgram, start, _offset - start));
         return true;
     }
 
@@ -630,28 +620,28 @@ internal sealed class Pcre2CharacterParser
         switch (escape)
         {
             case 'A':
-                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.BeginningOfSubject, _options, start, 2));
+                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.BeginningOfSubject, _options));
                 return true;
             case 'Z':
-                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline, _options, start, 2));
+                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline, _options));
                 return true;
             case 'z':
-                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.EndOfSubject, _options, start, 2));
+                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.EndOfSubject, _options));
                 return true;
             case 'G':
-                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.FirstMatchingPosition, _options, start, 2));
+                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.FirstMatchingPosition, _options));
                 return true;
             case 'b':
-                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.WordBoundary, _options, start, 2));
+                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.WordBoundary, _options));
                 return true;
             case 'B':
-                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.NonWordBoundary, _options, start, 2));
+                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.NonWordBoundary, _options));
                 return true;
             case 'R':
-                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.NewlineSequence, _options, start, 2));
+                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.NewlineSequence, _options));
                 return true;
             case 'X':
-                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.ExtendedGraphemeCluster, _options, start, 2));
+                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.ExtendedGraphemeCluster, _options));
                 return true;
             case 'C':
                 if (_request.Settings.BackslashC != Pcre2BackslashCPolicy.Allow)
@@ -659,35 +649,35 @@ internal sealed class Pcre2CharacterParser
                     return false;
                 }
 
-                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.CodeUnit, _options, start, 2));
+                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.CodeUnit, _options));
                 return true;
             case 'N':
                 if (_offset < _pattern.Length && _pattern[_offset] == '{')
                 {
-                    return TryParseNamedCodePoint(start);
+                    return TryParseNamedCodePoint();
                 }
 
-                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.AnyNotNewline, _options, start, 2));
+                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.AnyNotNewline, _options));
                 return true;
             case 'd':
             case 'D':
-                AddClass(Pcre2CharacterClassTermKind.Digit, escape == 'D', start);
+                AddClass(Pcre2CharacterClassTermKind.Digit, escape == 'D');
                 return true;
             case 's':
             case 'S':
-                AddClass(Pcre2CharacterClassTermKind.Space, escape == 'S', start);
+                AddClass(Pcre2CharacterClassTermKind.Space, escape == 'S');
                 return true;
             case 'w':
             case 'W':
-                AddClass(Pcre2CharacterClassTermKind.Word, escape == 'W', start);
+                AddClass(Pcre2CharacterClassTermKind.Word, escape == 'W');
                 return true;
             case 'h':
             case 'H':
-                AddClass(Pcre2CharacterClassTermKind.HorizontalSpace, escape == 'H', start);
+                AddClass(Pcre2CharacterClassTermKind.HorizontalSpace, escape == 'H');
                 return true;
             case 'v':
             case 'V':
-                AddClass(Pcre2CharacterClassTermKind.VerticalSpace, escape == 'V', start);
+                AddClass(Pcre2CharacterClassTermKind.VerticalSpace, escape == 'V');
                 return true;
             case 'p':
             case 'P':
@@ -699,27 +689,27 @@ internal sealed class Pcre2CharacterParser
                 AddClass(Pcre2CharacterClassTerm.CreateNamed(
                     Pcre2CharacterClassTermKind.Property,
                     property,
-                    (escape == 'P') != propertyNegated), start);
+                    (escape == 'P') != propertyNegated));
                 return true;
             case 'Q':
                 return TryParseQuotedLiterals(start);
             case 'a':
-                AddLiteral(new Rune('\a'), start);
+                AddLiteral(new Rune('\a'));
                 return true;
             case 'e':
-                AddLiteral(new Rune(0x1B), start);
+                AddLiteral(new Rune(0x1B));
                 return true;
             case 'f':
-                AddLiteral(new Rune('\f'), start);
+                AddLiteral(new Rune('\f'));
                 return true;
             case 'n':
-                AddLiteral(new Rune('\n'), start);
+                AddLiteral(new Rune('\n'));
                 return true;
             case 'r':
-                AddLiteral(new Rune('\r'), start);
+                AddLiteral(new Rune('\r'));
                 return true;
             case 't':
-                AddLiteral(new Rune('\t'), start);
+                AddLiteral(new Rune('\t'));
                 return true;
             case 'c':
                 if (_offset >= _pattern.Length)
@@ -734,14 +724,14 @@ internal sealed class Pcre2CharacterParser
                 }
 
                 control = control is >= 'a' and <= 'z' ? (char)(control - 0x20) : control;
-                AddLiteral(new Rune(control ^ 0x40), start);
+                AddLiteral(new Rune(control ^ 0x40));
                 return true;
             case 'x':
-                return TryParseHexEscape(start);
+                return TryParseHexEscape();
             case 'o':
-                return TryParseBracedNumber(start, 8);
+                return TryParseBracedNumber(8);
             case '0':
-                return TryParseZeroOctal(start);
+                return TryParseZeroOctal();
             case 'E':
                 return true;
             case '\\':
@@ -760,10 +750,16 @@ internal sealed class Pcre2CharacterParser
             case '|':
             case '-':
             case '#':
-                AddLiteral(new Rune(escape), start);
+                AddLiteral(new Rune(escape));
                 return true;
             default:
-                return false;
+                // PCRE2 quotes non-alphanumeric scalars with a backslash. The
+                // profile parser must establish that meaning before Core reuse.
+                if (char.IsAsciiLetterOrDigit(escape)) return false;
+                _offset--;
+                if (!TryReadPatternRune(out var quoted, out _)) return false;
+                AddLiteral(quoted);
+                return true;
         }
     }
 
@@ -778,10 +774,11 @@ internal sealed class Pcre2CharacterParser
             _offset++;
         }
 
-        var terms = new List<Pcre2CharacterClassTerm>();
+        using var terms = new Utf8ConstructionBuffer<Pcre2CharacterClassTerm>(_budget);
         var first = true;
         while (_offset < _pattern.Length)
         {
+            Checkpoint(_offset);
             SkipClassTrivia(ref _offset, ref quoted);
             if (_offset == _pattern.Length) break;
 
@@ -845,6 +842,7 @@ internal sealed class Pcre2CharacterParser
         // state when peeking across a range delimiter; its endpoint is a Rune.
         while (offset < _pattern.Length)
         {
+            Checkpoint(offset);
             if (offset + 1 < _pattern.Length && _pattern[offset] == '\\' &&
                 (_pattern[offset + 1] == 'E' || !quoted && _pattern[offset + 1] == 'Q'))
             {
@@ -1026,7 +1024,7 @@ internal sealed class Pcre2CharacterParser
             return false;
         }
 
-        var end = _pattern.IndexOf(":]", _offset + 2, StringComparison.Ordinal);
+        var end = FindPatternDelimiter(":]", _offset + 2);
         if (end < 0)
         {
             return false;
@@ -1039,7 +1037,7 @@ internal sealed class Pcre2CharacterParser
             nameStart++;
         }
 
-        var name = Pcre2CharacterSemantics.NormalizePropertyName(_pattern[nameStart..end]);
+        var name = Pcre2CharacterSemantics.NormalizePropertyName(_pattern.AsSpan(nameStart, end - (nameStart)));
         if (!Pcre2CharacterSemantics.IsKnownPosixName(name))
         {
             return false;
@@ -1050,24 +1048,31 @@ internal sealed class Pcre2CharacterParser
         return true;
     }
 
-    private Pcre2CharacterClass CreateClass(List<Pcre2CharacterClassTerm> terms, bool negated)
+    private Pcre2CharacterClass CreateClass(Utf8ConstructionBuffer<Pcre2CharacterClassTerm> terms, bool negated)
     {
-        var positiveTerms = terms.ToArray();
+        var positiveTerms = terms.Take();
+        _budget.ChargeWork(checked((ulong)positiveTerms.Length * 256));
         var ucp = (_request.Options & Pcre2CompileOptions.Ucp) != 0;
         var semanticClass = new Pcre2CharacterClass(positiveTerms, negated, AsciiCharClass.Empty);
         var ascii = Pcre2AsciiByteSetFactory.CreatePredicate(
-            value => semanticClass.MatchesSemantic(new Rune(value), ucp, Pcre2CharacterOptions.None),
+            value =>
+            {
+                _budget.ChargeWork(0);
+                return semanticClass.MatchesSemantic(new Rune(value), ucp, Pcre2CharacterOptions.None);
+            },
             negated: false);
         return new Pcre2CharacterClass(positiveTerms, negated, ascii);
     }
 
-    private void AddClass(Pcre2CharacterClassTermKind kind, bool negated, int start) =>
-        AddClass(Pcre2CharacterClassTerm.CreatePredicate(kind, negated), start);
+    private void AddClass(Pcre2CharacterClassTermKind kind, bool negated) =>
+        AddClass(Pcre2CharacterClassTerm.CreatePredicate(kind, negated));
 
-    private void AddClass(Pcre2CharacterClassTerm term, int start)
+    private void AddClass(Pcre2CharacterClassTerm term)
     {
-        var characterClass = CreateClass([term], negated: false);
-        Add(Pcre2CharacterToken.CreateClass(characterClass, _options, start, _offset - start));
+        using var terms = new Utf8ConstructionBuffer<Pcre2CharacterClassTerm>(_budget);
+        terms.Add(term);
+        var characterClass = CreateClass(terms, negated: false);
+        Add(Pcre2CharacterToken.CreateClass(characterClass, _options));
     }
 
     private bool TryReadPropertyName(out string property, out bool negated)
@@ -1093,7 +1098,7 @@ internal sealed class Pcre2CharacterParser
             return false;
         }
 
-        var end = _pattern.IndexOf('}', _offset + 1);
+        var end = FindPatternDelimiter("}", _offset + 1);
         if (end < 0)
         {
             return false;
@@ -1106,7 +1111,7 @@ internal sealed class Pcre2CharacterParser
             propertyStart++;
         }
 
-        property = Pcre2CharacterSemantics.NormalizePropertyName(_pattern[propertyStart..end]);
+        property = Pcre2CharacterSemantics.NormalizePropertyName(_pattern.AsSpan(propertyStart, end - (propertyStart)));
         if (!Pcre2CharacterSemantics.IsKnownProperty(property))
         {
             return false;
@@ -1120,6 +1125,7 @@ internal sealed class Pcre2CharacterParser
     {
         while (_offset < _pattern.Length)
         {
+            Checkpoint(_offset);
             if (_offset + 1 < _pattern.Length && _pattern[_offset] == '\\' && _pattern[_offset + 1] == 'E')
             {
                 _offset += 2;
@@ -1132,37 +1138,37 @@ internal sealed class Pcre2CharacterParser
                 return false;
             }
 
-            Add(Pcre2CharacterToken.CreateLiteral(literal, _options, literalStart, length));
+            Add(Pcre2CharacterToken.CreateLiteral(literal, _options));
         }
 
         return _offset > start + 2;
     }
 
-    private bool TryParseHexEscape(int start)
+    private bool TryParseHexEscape()
     {
         if (!TryReadHexScalar(out var scalar))
         {
             return false;
         }
 
-        AddLiteral(scalar, start);
+        AddLiteral(scalar);
         return true;
     }
 
-    private bool TryParseNamedCodePoint(int start)
+    private bool TryParseNamedCodePoint()
     {
         if (!TryReadNamedCodePoint(out var scalar))
         {
             return false;
         }
 
-        AddLiteral(scalar, start);
+        AddLiteral(scalar);
         return true;
     }
 
     private bool TryReadNamedCodePoint(out Rune scalar)
     {
-        var end = _pattern.IndexOf('}', _offset + 1);
+        var end = FindPatternDelimiter("}", _offset + 1);
         const string Prefix = "U+";
         if (end < 0 ||
             !_pattern.AsSpan(_offset + 1, end - _offset - 1).StartsWith(Prefix, StringComparison.OrdinalIgnoreCase) ||
@@ -1208,7 +1214,7 @@ internal sealed class Pcre2CharacterParser
             return false;
         }
 
-        var end = _pattern.IndexOf('}', _offset + 1);
+        var end = FindPatternDelimiter("}", _offset + 1);
         if (end < 0 || !TryParseScalarNumber(_pattern.AsSpan(_offset + 1, end - _offset - 1), radix, out scalar))
         {
             scalar = default;
@@ -1219,18 +1225,18 @@ internal sealed class Pcre2CharacterParser
         return true;
     }
 
-    private bool TryParseBracedNumber(int start, int radix)
+    private bool TryParseBracedNumber(int radix)
     {
         if (!TryReadBracedScalar(radix, out var scalar))
         {
             return false;
         }
 
-        AddLiteral(scalar, start);
+        AddLiteral(scalar);
         return true;
     }
 
-    private bool TryParseZeroOctal(int start)
+    private bool TryParseZeroOctal()
     {
         var begin = _offset - 1;
         var end = begin;
@@ -1245,7 +1251,7 @@ internal sealed class Pcre2CharacterParser
         }
 
         _offset = end;
-        AddLiteral(scalar, start);
+        AddLiteral(scalar);
         return true;
     }
 
@@ -1258,8 +1264,10 @@ internal sealed class Pcre2CharacterParser
         }
 
         var value = 0;
-        foreach (var ch in text)
+        for (var index = 0; index < text.Length; index++)
         {
+            if ((index & 2047) == 0) Utf8ConstructionScope.ChargeWork((ulong)Math.Min(2048, text.Length - index));
+            var ch = text[index];
             var digit = ch switch
             {
                 >= '0' and <= '9' => ch - '0',
@@ -1272,7 +1280,8 @@ internal sealed class Pcre2CharacterParser
                 return false;
             }
 
-            value = checked(value * radix + digit);
+            if (value > (0x10FFFF - digit) / radix) return false;
+            value = value * radix + digit;
         }
 
         if (!Rune.IsValid(value))
@@ -1301,6 +1310,7 @@ internal sealed class Pcre2CharacterParser
         var moved = false;
         while (_offset < _pattern.Length)
         {
+            Checkpoint(_offset);
             if (Pcre2CompileValidator.TrySkipParenthesizedComment(_pattern, ref _offset))
             {
                 _requiresCharacterProgram = true;
@@ -1328,6 +1338,29 @@ internal sealed class Pcre2CharacterParser
         return moved;
     }
 
+    public void Dispose() => _tokens.Dispose();
+
+    private void Checkpoint(int position)
+    {
+        if (position < _nextCheckpoint) return;
+        _budget.ChargeWork(0);
+        _nextCheckpoint = position + 2048;
+    }
+
+    private int FindPatternDelimiter(ReadOnlySpan<char> delimiter, int offset)
+    {
+        for (var cursor = offset; cursor < _pattern.Length;)
+        {
+            var count = Math.Min(2048, _pattern.Length - cursor);
+            var available = Math.Min(_pattern.Length - cursor, count + delimiter.Length - 1);
+            _budget.ChargeWork((ulong)available);
+            var found = _pattern.AsSpan(cursor, available).IndexOf(delimiter);
+            if (found >= 0) return cursor + found;
+            cursor += count;
+        }
+        return -1;
+    }
+
     private static bool IsExtendedPatternWhitespace(char value) => value is
         ' ' or '\t' or '\n' or '\v' or '\f' or '\r';
 
@@ -1343,19 +1376,17 @@ internal sealed class Pcre2CharacterParser
         return true;
     }
 
-    private void AddLiteral(Rune literal, int start) =>
-        Add(Pcre2CharacterToken.CreateLiteral(literal, _options, start, _offset - start));
+    private void AddLiteral(Rune literal) =>
+        Add(Pcre2CharacterToken.CreateLiteral(literal, _options));
 
     private void Add(Pcre2CharacterToken token)
     {
         _tokens.Add(token);
-        _nodes.Add(new Pcre2SyntaxNode(Pcre2SyntaxNodeKind.CharacterProgram, token.PatternOffset, token.PatternLength));
     }
 
-    private static bool Fail(out Pcre2CharacterToken[] tokens, out Pcre2SyntaxNode[] nodes)
+    private static bool Fail(out Pcre2CharacterToken[] tokens)
     {
         tokens = [];
-        nodes = [];
         return false;
     }
 
@@ -2041,21 +2072,28 @@ internal static class Pcre2CharacterSemantics
         };
     }
 
-    internal static string NormalizePropertyName(string value)
+    internal static string NormalizePropertyName(ReadOnlySpan<char> value)
     {
-        Span<char> normalized = value.Length <= 128 ? stackalloc char[value.Length] : new char[value.Length];
-        var length = 0;
-        foreach (var character in value)
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        budget.ChargeWork((ulong)value.Length);
+        var storage = value.Length <= 128 ? null : budget.AllocateArray<char>(value.Length, false);
+        try
         {
-            if (character is '_' or '-' or ' ' or '\t' or '\n' or '\v' or '\f' or '\r')
+            Span<char> normalized = storage is null ? stackalloc char[128] : storage;
+            var length = 0;
+            for (var index = 0; index < value.Length; index++)
             {
-                continue;
+                if ((index & 2047) == 0) budget.ChargeWork(0);
+                var character = value[index];
+                if (character is '_' or '-' or ' ' or '\t' or '\n' or '\v' or '\f' or '\r') continue;
+                normalized[length++] = char.ToUpperInvariant(character);
             }
-
-            normalized[length++] = char.ToUpperInvariant(character);
+            var result = budget.CopyText(normalized[..length]);
+            construction.Complete();
+            return result;
         }
-
-        return new string(normalized[..length]);
+        finally { if (storage is not null) budget.ReleaseArray(storage, false); }
     }
 
     internal static bool IsWordBoundary(ReadOnlySpan<byte> input, int offset, bool ucp)

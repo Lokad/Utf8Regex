@@ -31,8 +31,12 @@ UTF-8 buffer, including growth overlap and bounded interruption checkpoints.
 It transfers those immutable buffers to the literal program instead of compiling
 and retaining an unused Core expression. Construction instruction capacity covers
 the atom vector; numeric requirements can change as the redundant Core work and
-copies disappear. Character and other Core-dependent preparation retain their
-existing routes. Invocation semantics and resource scope are unchanged.
+copies disappear. Character token/class/property buffers now use the same owner,
+with token capacity admitted as instructions and bytes. Growth/final-copy overlap
+and bounded work/interruption remain covered; incidental helper objects and RSS
+remain excluded. Character programs omit unused Core preparation and syntax-node
+vectors; literal Rune staging is temporary. Other qualified Core-dependent paths
+remain. Invocation semantics and resource scope are unchanged.
 
 These are existing calls, using each profile's option type. `policy` applies to
 later invocations; `construction`, `constructionTimeout` and `token` apply only

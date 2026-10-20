@@ -13,7 +13,7 @@ public sealed class Pcre2TryReplaceInvocationTests
         yield return ["abc", "xabc", "Z", "xZ"];
         yield return ["(?<x>a)b", "xab", "${x}", "xa"];
         yield return [@"(?<x>a)\k<x>", "xaa", "${x}", "xa"];
-        yield return [@"(?<x>\u0041+)", "xAAA", "${x}", "xAAA"];
+        yield return [@"(?<x>\x41+)", "xAAA", "${x}", "xAAA"];
         yield return ["abc", "xabc", "$0", "xabc"];
     }
 

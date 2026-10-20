@@ -14,29 +14,11 @@ internal enum Pcre2LiteralAnchor : byte
     RequestedStart = 2,
 }
 
-internal readonly record struct Pcre2LiteralAtom(Rune Scalar, int PatternOffsetInUtf16, int PatternLengthInUtf16);
-
 internal sealed class Pcre2LiteralSyntaxTree : IPcre2SyntaxTree
 {
-    private readonly Pcre2LiteralAtom[] _atoms;
-
-    internal Pcre2LiteralSyntaxTree(
-        Pcre2LiteralAtom[] atoms,
-        Pcre2LiteralAnchor startAnchor,
-        bool endAnchored)
-    {
-        _atoms = atoms; // The compiler transfers its admitted immutable atom buffer.
-        StartAnchor = startAnchor;
-        EndAnchored = endAnchored;
-    }
-
+    internal static Pcre2LiteralSyntaxTree Instance { get; } = new();
+    private Pcre2LiteralSyntaxTree() { }
     public Pcre2SyntaxNodeKind RootKind => Pcre2SyntaxNodeKind.Literal;
-
-    internal ReadOnlySpan<Pcre2LiteralAtom> Atoms => _atoms;
-
-    internal Pcre2LiteralAnchor StartAnchor { get; }
-
-    internal bool EndAnchored { get; }
 }
 
 internal sealed class Pcre2LiteralProgram
@@ -127,44 +109,46 @@ internal static class Pcre2LiteralCompiler
             budget.ChargeWork((ulong)request.Pattern.Length);
             if (!TryParse(request.Pattern, out var atoms, out var startAnchor, out var endAnchored))
                 return null;
-            if ((request.Options & Pcre2CompileOptions.Anchored) != 0 && startAnchor == Pcre2LiteralAnchor.None)
-                startAnchor = Pcre2LiteralAnchor.RequestedStart;
-            var hasExplicitEndAssertion = endAnchored;
-            endAnchored |= (request.Options & Pcre2CompileOptions.EndAnchored) != 0;
-            var syntaxTree = budget.AllocateObject((atoms, startAnchor, endAnchored),
-                static state => new Pcre2LiteralSyntaxTree(state.atoms, state.startAnchor, state.endAnchored));
-            var byteCount = 0;
-            budget.ChargeWork((ulong)atoms.Length);
-            for (var index = 0; index < atoms.Length; index++)
+            try
             {
-                if ((index & 1023) == 0) budget.ChargeWork(0);
-                byteCount = checked(byteCount + atoms[index].Scalar.Utf8SequenceLength);
+                if ((request.Options & Pcre2CompileOptions.Anchored) != 0 && startAnchor == Pcre2LiteralAnchor.None)
+                    startAnchor = Pcre2LiteralAnchor.RequestedStart;
+                var hasExplicitEndAssertion = endAnchored;
+                endAnchored |= (request.Options & Pcre2CompileOptions.EndAnchored) != 0;
+                var byteCount = 0;
+                budget.ChargeWork((ulong)atoms.Length);
+                for (var index = 0; index < atoms.Length; index++)
+                {
+                    if ((index & 1023) == 0) budget.ChargeWork(0);
+                    byteCount = checked(byteCount + atoms[index].Utf8SequenceLength);
+                }
+                var literalUtf8 = budget.AllocateArray<byte>(byteCount, false);
+                budget.ChargeWork((ulong)byteCount);
+                var written = 0;
+                for (var index = 0; index < atoms.Length; index++)
+                {
+                    if ((index & 1023) == 0) budget.ChargeWork(0);
+                    written += atoms[index].EncodeToUtf8(literalUtf8.AsSpan(written));
+                }
+                var program = budget.AllocateObject((literalUtf8, startAnchor, endAnchored, hasExplicitEndAssertion),
+                    static state => new Pcre2LiteralProgram(state.literalUtf8, state.startAnchor,
+                        state.endAnchored, state.hasExplicitEndAssertion));
+                scope.Complete();
+                return new Pcre2CompiledLiteralOutcome(Pcre2LiteralSyntaxTree.Instance, program);
             }
-            var literalUtf8 = budget.AllocateArray<byte>(byteCount, false);
-            budget.ChargeWork((ulong)byteCount);
-            var written = 0;
-            for (var index = 0; index < atoms.Length; index++)
-            {
-                if ((index & 1023) == 0) budget.ChargeWork(0);
-                written += atoms[index].Scalar.EncodeToUtf8(literalUtf8.AsSpan(written));
-            }
-            var program = budget.AllocateObject((literalUtf8, startAnchor, endAnchored, hasExplicitEndAssertion),
-                static state => new Pcre2LiteralProgram(state.literalUtf8, state.startAnchor,
-                    state.endAnchored, state.hasExplicitEndAssertion));
-            scope.Complete();
-            return new Pcre2CompiledLiteralOutcome(syntaxTree, program);
+            finally { budget.ReleaseArray(atoms, true); }
         }
         finally { budget.LeaveDepth(); }
     }
 
     private static bool TryParse(
         string pattern,
-        out Pcre2LiteralAtom[] atoms,
+        out Rune[] atoms,
         out Pcre2LiteralAnchor startAnchor,
         out bool endAnchored)
     {
         var budget = Utf8ConstructionScope.CurrentBudget;
-        using var parsedAtoms = new Utf8ConstructionBuffer<Pcre2LiteralAtom>(budget, instructions: true);
+        using var parsedAtoms = new Utf8ConstructionBuffer<Rune>(budget, instructions: true);
         var position = 0;
         startAnchor = Pcre2LiteralAnchor.None;
         endAnchored = false;
@@ -193,7 +177,6 @@ internal static class Pcre2LiteralCompiler
                 endAnchored = true;
                 break;
             }
-            var atomOffset = position;
             if (pattern[position] == '\\')
             {
                 if (position + 1 >= pattern.Length || !IsEscapedLiteralMetacharacter(pattern[position + 1]))
@@ -202,7 +185,7 @@ internal static class Pcre2LiteralCompiler
                     return false;
                 }
 
-                parsedAtoms.Add(new Pcre2LiteralAtom(new Rune(pattern[position + 1]), atomOffset, 2));
+                parsedAtoms.Add(new Rune(pattern[position + 1]));
                 position += 2;
                 continue;
             }
@@ -220,7 +203,7 @@ internal static class Pcre2LiteralCompiler
                 return false;
             }
 
-            parsedAtoms.Add(new Pcre2LiteralAtom(scalar, atomOffset, consumed));
+            parsedAtoms.Add(scalar);
             position += consumed;
         }
 

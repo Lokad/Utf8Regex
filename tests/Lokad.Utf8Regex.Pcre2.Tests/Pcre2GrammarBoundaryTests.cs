@@ -9,6 +9,9 @@ public sealed class Pcre2GrammarBoundaryTests
     [InlineData(@"[\u0041]")]
     [InlineData(@"\p{IsGreek}+")]
     [InlineData("(?<a>x)(?<b-a>y)")]
+    [InlineData("(?<a>x)(?<-a>y)")]
+    [InlineData(@"\p{IsBasicLatin}+")]
+    [InlineData(@"\p{_xmlC}+")]
     public void CoreOnlyGrammarCannotEnterThePcre2Profile(string pattern)
     {
         Assert.Throws<NotSupportedException>(() => new Utf8Pcre2Regex(pattern));
@@ -33,4 +36,12 @@ public sealed class Pcre2GrammarBoundaryTests
         Assert.Equal(1, regex.Count(bytes));
         Assert.True(regex.MatchDetailed(bytes).Success);
     }
+
+    [Theory]
+    [InlineData(@"\/", "/")]
+    [InlineData(@"\!", "!")]
+    [InlineData(@"\é", "é")]
+    [InlineData(@"\😀", "😀")]
+    public void QuotedLiteralScalarsAreEstablishedByTheProfileParser(string pattern, string subject)
+        => Assert.Equal(subject, new Utf8Pcre2Regex(pattern).Match(Encoding.UTF8.GetBytes(subject)).GetValueString());
 }

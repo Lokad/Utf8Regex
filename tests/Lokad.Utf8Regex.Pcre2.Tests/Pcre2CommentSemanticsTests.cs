@@ -104,16 +104,6 @@ public sealed class Pcre2CommentSemanticsTests
     }
 
     [Fact]
-    public void LiteralAtomsKeepOriginalPatternCoordinates()
-    {
-        var regex = new Utf8Pcre2Regex("(?#c)é(?#xx)😀");
-        var syntax = Assert.IsType<Pcre2LiteralSyntaxTree>(regex.DebugCompiledProgram.SyntaxTree);
-        Assert.Equal(2, syntax.Atoms.Length);
-        Assert.Equal((5, 1), (syntax.Atoms[0].PatternOffsetInUtf16, syntax.Atoms[0].PatternLengthInUtf16));
-        Assert.Equal((12, 2), (syntax.Atoms[1].PatternOffsetInUtf16, syntax.Atoms[1].PatternLengthInUtf16));
-    }
-
-    [Fact]
     public void CommentedLiteralKeepsNativeDeadlineAuthority()
     {
         var armed = false; var reads = 0;

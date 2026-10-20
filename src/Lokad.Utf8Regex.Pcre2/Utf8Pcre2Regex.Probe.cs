@@ -137,7 +137,7 @@ public sealed partial class Utf8Pcre2Regex
         var start = startOffsetInBytes + index;
         var end = start + literal.Length;
         var dot = Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.Any,
-            dotAll ? Pcre2CharacterOptions.DotAll : Pcre2CharacterOptions.None, 0, 0);
+            dotAll ? Pcre2CharacterOptions.DotAll : Pcre2CharacterOptions.None);
         return ProbeDotStar(input, partialMode, start, end, dot, request);
     }
 
@@ -422,7 +422,7 @@ public sealed partial class Utf8Pcre2Regex
     private Utf8Pcre2ProbeResult ProbeViaNegativeStartClassDotStar(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
         int startOffsetInBytes, Pcre2CompileRequest request)
     {
-        var dot = Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.Any, Pcre2CharacterOptions.None, 0, 0);
+        var dot = Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.Any, Pcre2CharacterOptions.None);
         var candidate = startOffsetInBytes;
         while (CanStartCandidate(candidate))
         {
@@ -483,7 +483,7 @@ public sealed partial class Utf8Pcre2Regex
     {
         var cursor = startOffsetInBytes;
         var count = 0;
-        var newline = Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.NewlineSequence, Pcre2CharacterOptions.None, 0, 0);
+        var newline = Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.NewlineSequence, Pcre2CharacterOptions.None);
         while (count < maxCount && Pcre2CharacterRunner.TryMatchToken(newline, request, input,
             cursor, _originalStart, _matchOptions, out var next))
         {
@@ -550,7 +550,7 @@ public sealed partial class Utf8Pcre2Regex
         var remaining = input[startOffsetInBytes..];
         if (remaining.StartsWith("abc"u8))
         {
-            var dot = Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.Any, Pcre2CharacterOptions.None, 0, 0);
+            var dot = Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.Any, Pcre2CharacterOptions.None);
             return ProbeDotStar(input, partialMode, startOffsetInBytes, startOffsetInBytes, dot, request);
         }
 

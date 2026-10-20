@@ -13,7 +13,7 @@ public sealed class Pcre2OutputInvocationAuthorityTests
         {
             yield return ["(?<x>a)b", "ab", helper];
             yield return [@"(?<x>a)\k<x>", "aa", helper];
-            yield return [@"(?<x>\u0041+)", "AAA", helper];
+            yield return [@"(?<x>\x41+)", "AAA", helper];
         }
     }
 
