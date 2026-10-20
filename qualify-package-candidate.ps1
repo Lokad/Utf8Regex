@@ -1,34 +1,50 @@
 [CmdletBinding()]
-param([switch] $SkipBuild)
+param(
+    [ValidateSet("Core", "PythonRe", "Pcre2")]
+    [string[]] $Profiles = @("Core", "PythonRe"),
+    [ValidateSet("Debug", "Release")]
+    [string] $Configuration = "Release",
+    [switch] $SkipBuild
+)
 
-# Core/PythonRe delivery has its own candidate. PCRE2 qualifies separately through
-# test-packaged-pcre2.ps1 and must not block this downstream input.
-# A successful candidate is designated once. Failed attempts retain their evidence.
-# This flow never publishes packages or changes a consumer's global NuGet cache.
+# One immutable candidate, one Core pack, selected adapter packages/tests.
+# Existing shared provenance, package-shape and isolated-consumer checks remain.
+# Publication and broader profile qualification are separate actions.
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 . (Join-Path $PSScriptRoot "test-packaged-common.ps1")
 
 $repositoryRoot = [IO.Path]::GetFullPath($PSScriptRoot)
 $version = Read-CoherentPackageVersion $repositoryRoot
-if ($version -notmatch '^\d+\.\d+\.\d+-scalar\.\d+$') {
-    throw "Scalar candidates require a distinct version such as 0.4.0-scalar.1."
+if ($version -notmatch '^\d+\.\d+\.\d+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?$') {
+    throw "Package candidates require a valid common NuGet version."
 }
 $artifactsRoot = [IO.Path]::GetFullPath((Join-Path $repositoryRoot "artifacts"))
-$candidateRoot = Join-Path $artifactsRoot "scalar-candidates/$version"
-if (Test-Path -LiteralPath $candidateRoot) {
-    throw "The immutable scalar candidate already exists: $candidateRoot. Use a new version for new bytes."
+$candidateRoot = Join-Path $artifactsRoot "package-candidates/$version"
+foreach ($existing in @($candidateRoot, (Join-Path $artifactsRoot "scalar-candidates/$version"),
+    (Join-Path $artifactsRoot "release-candidates/$version"))) {
+    if (Test-Path -LiteralPath $existing) {
+        throw "An immutable candidate already exists: $existing. Use a new version for new bytes."
+    }
 }
 $sourceRevision = (& git -C $repositoryRoot rev-parse HEAD).Trim()
 if ($LASTEXITCODE -ne 0) { throw "Could not resolve the candidate source revision." }
 [void] (Read-PackageQualificationSource $repositoryRoot $sourceRevision $true)
 
 $attemptName = [Guid]::NewGuid().ToString("N").Substring(0, 12)
-$attemptRoot = Join-Path $artifactsRoot "scalar-candidate-attempts/$attemptName"
+$attemptRoot = Join-Path $artifactsRoot "package-candidate-attempts/$attemptName"
 [void] (New-Item -ItemType Directory -Path $attemptRoot)
 $feed = (New-Item -ItemType Directory -Path (Join-Path $attemptRoot "feed")).FullName
 $steps = [Collections.Generic.List[object]]::new()
-$packages = @("Lokad.Utf8Regex", "Lokad.Utf8Regex.PythonRe")
+# Core is always required by the selected adapter graph and the shared fixture suite.
+$packages = @("Lokad.Utf8Regex")
+$testProjects = @("Lokad.Utf8Regex.Tests", "Lokad.Utf8Regex.DiffTests")
+foreach ($adapter in @("PythonRe", "Pcre2")) {
+    if ($adapter -in $Profiles) {
+        $packages += "Lokad.Utf8Regex.$adapter"
+        $testProjects += "Lokad.Utf8Regex.$adapter.Tests"
+    }
+}
 $startedAt = [DateTime]::UtcNow
 
 function Invoke-CandidateStep([string] $Name, [scriptblock] $Action) {
@@ -53,27 +69,28 @@ $transcriptStarted = $false
 try {
     [void] (Start-Transcript -LiteralPath (Join-Path $attemptRoot "qualification.log"))
     $transcriptStarted = $true
-    Write-Host "Scalar candidate attempt: $attemptRoot"
+    Write-Host "Package candidate attempt: $attemptRoot"
     $toolchain = & dotnet --info
     if ($LASTEXITCODE -ne 0) { throw "Could not inspect the candidate toolchain." }
     $toolchain | Set-Content -LiteralPath (Join-Path $attemptRoot "dotnet-info.txt") -Encoding utf8
-    $stableBuildArguments = @("--disable-build-servers", "/m:1", "/nodeReuse:false", "/p:UseSharedCompilation=false")
+    # Core inventory needs all three matching library DLLs; this existing closure
+    # also supplies the semantic-oracle host without building the fixture projects.
     if (-not $SkipBuild) {
         Invoke-CandidateStep "build-once" {
-            Invoke-DotNet (@(
-                "build", (Join-Path $repositoryRoot "src/Lokad.Utf8Regex.PythonRe/Lokad.Utf8Regex.PythonRe.csproj"),
-                "-c", "Release", "--tl:off", "--nologo", "-v", "minimal",
+            Invoke-DotNet @(
+                "build", (Join-Path $repositoryRoot "bench/Lokad.Utf8Regex.Benchmarks/Lokad.Utf8Regex.Benchmarks.csproj"),
+                "-c", $Configuration, "--tl:off", "--nologo", "-v", "minimal",
                 "-p:GeneratePackageOnBuild=false"
-            ) + $stableBuildArguments)
+            )
         }
     }
     foreach ($packageId in $packages) {
         Invoke-CandidateStep "pack-once/$packageId" {
-            Invoke-DotNet (@(
+            Invoke-DotNet @(
                 "pack", (Join-Path $repositoryRoot "src/$packageId/$packageId.csproj"),
-                "-c", "Release", "--no-build", "--tl:off", "--nologo", "-v", "minimal",
+                "-c", $Configuration, "--no-build", "--tl:off", "--nologo", "-v", "minimal",
                 "-p:GeneratePackageOnBuild=false", "-p:PackageOutputPath=$feed"
-            ) + $stableBuildArguments)
+            )
         }
         $dependency = if ($packageId -eq "Lokad.Utf8Regex") { "" } else { "Lokad.Utf8Regex" }
         Assert-PackageShape (Join-Path $feed "$packageId.$version.nupkg") "$packageId.dll" $dependency $version
@@ -81,7 +98,7 @@ try {
     $packagePaths = @($packages | ForEach-Object { Join-Path $feed "$_.$version.nupkg" })
     $assemblyNames = @($packages | ForEach-Object { "$_.dll" })
     [void] (Write-PackageProvenanceEvidence -RepositoryRoot $repositoryRoot -QualificationRoot $attemptRoot `
-        -SourceRevision $sourceRevision -Configuration "Release" -PackagePaths $packagePaths `
+        -SourceRevision $sourceRevision -Configuration $Configuration -PackagePaths $packagePaths `
         -ExpectedAssemblies $assemblyNames -RequireCleanSource $true)
     $provenance = Get-Content -LiteralPath (Join-Path $attemptRoot "package-provenance.json") -Raw | ConvertFrom-Json
     $packageRecords = @(foreach ($record in $provenance.Packages) {
@@ -90,7 +107,7 @@ try {
             throw "Unexpected informational version for $packageId."
         }
         $packagePath = Join-Path $feed $record.Package
-        $buildAssembly = Join-Path $repositoryRoot "src/$packageId/bin/Release/net10.0/$($record.Assembly)"
+        $buildAssembly = Join-Path $repositoryRoot "src/$packageId/bin/$Configuration/net10.0/$($record.Assembly)"
         if ((Get-FileHash -LiteralPath $buildAssembly -Algorithm SHA256).Hash -ne $record.AssemblySha256) {
             throw "Packed and built assembly identities differ for $packageId."
         }
@@ -101,20 +118,18 @@ try {
             SymbolSha256 = $record.SymbolPackageSha256; PdbSha256 = $record.PdbSha256
         }
     })
-    if (@(Get-ChildItem -LiteralPath $feed -File).Count -ne 4) {
-        throw "The candidate feed must contain exactly core/PythonRe packages and their symbols."
+    if (@(Get-ChildItem -LiteralPath $feed -File).Count -ne (2 * $packages.Count)) {
+        throw "The candidate feed must contain exactly the selected packages and their symbols."
     }
 
     $consumerRecords = [Collections.Generic.List[object]]::new()
-    foreach ($testProjectName in @(
-        "Lokad.Utf8Regex.Tests", "Lokad.Utf8Regex.DiffTests",
-        "Lokad.Utf8Regex.PythonRe.Tests"
-    )) {
+    foreach ($testProjectName in $testProjects) {
         # Short storage names keep dependency paths below legacy Windows limits.
         $consumerName = switch ($testProjectName) {
             "Lokad.Utf8Regex.Tests" { "core" }
             "Lokad.Utf8Regex.DiffTests" { "diff" }
             "Lokad.Utf8Regex.PythonRe.Tests" { "pythonre" }
+            "Lokad.Utf8Regex.Pcre2.Tests" { "pcre2" }
         }
         $consumerRoot = (New-Item -ItemType Directory -Path (Join-Path $attemptRoot "consumers/$consumerName")).FullName
         $testDirectory = (New-Item -ItemType Directory -Path (Join-Path $consumerRoot "tests")).FullName
@@ -123,10 +138,11 @@ try {
         if ($testProjectName -eq "Lokad.Utf8Regex.PythonRe.Tests") {
             $packageIds += "Lokad.Utf8Regex.PythonRe"
         }
+        if ($testProjectName -eq "Lokad.Utf8Regex.Pcre2.Tests") { $packageIds += "Lokad.Utf8Regex.Pcre2" }
         $resultsDirectory = Join-Path $consumerRoot "results"
         Invoke-CandidateStep "consumer/$testProjectName" {
             Invoke-IsolatedConsumerTests -RepositoryRoot $repositoryRoot -QualificationRoot $consumerRoot `
-                -PackageDirectory $feed -TestDirectory $testDirectory -PackageCache $cache -Configuration "Release" `
+                -PackageDirectory $feed -TestDirectory $testDirectory -PackageCache $cache -Configuration $Configuration `
                 -SourceTestProjectName $testProjectName -PackageIds $packageIds -Version $version `
                 -PinQualifiedPackageSources -TestResultsDirectory $resultsDirectory
         }
@@ -157,7 +173,7 @@ try {
             $cachedRoot = Join-Path $cache "$lowerId/$version"
             $cachedPackage = Join-Path $cachedRoot "$lowerId.$version.nupkg"
             $cachedAssembly = Join-Path $cachedRoot "lib/net10.0/$packageId.dll"
-            $consumerAssembly = Join-Path $testDirectory "bin/Release/net10.0/$packageId.dll"
+            $consumerAssembly = Join-Path $testDirectory "bin/$Configuration/net10.0/$packageId.dll"
             $locked = $packageLock.dependencies["net10.0"][$packageId]
             $cachedMetadata = Get-Content -LiteralPath (Join-Path $cachedRoot ".nupkg.metadata") -Raw | ConvertFrom-Json
             if ((Get-FileHash -LiteralPath $cachedPackage -Algorithm SHA256).Hash -ne $record.PackageSha256 -or
@@ -189,11 +205,11 @@ try {
 <configuration>
   <packageSources>
     <clear />
-    <add key="scalar-candidate" value="feed" />
+    <add key="package-candidate" value="feed" />
     <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
   </packageSources>
   <packageSourceMapping>
-    <packageSource key="scalar-candidate">
+    <packageSource key="package-candidate">
 $patterns
     </packageSource>
     <packageSource key="nuget.org"><package pattern="*" /></packageSource>
@@ -204,9 +220,9 @@ $patterns
     $transcriptStarted = $false
     $manifest = [ordered]@{
         SchemaVersion = 1; PackageVersion = $version; SourceRevision = $sourceRevision; CleanSource = $true
-        Configuration = "Release"; TargetFramework = "net10.0"
+        Configuration = $Configuration; TargetFramework = "net10.0"
         StartedAtUtc = $startedAt.ToString("O"); CompletedAtUtc = [DateTime]::UtcNow.ToString("O")
-        QualificationScope = "Core/PythonRe scalar integration candidate; complete detached fixture suites, exact provenance and restore identities. PCRE2, downstream promotion, current performance measurements and publication are separate acceptance steps."
+        QualificationScope = "Selected Core/adapter candidate; complete detached fixture suites, exact provenance and restore identities. Other platforms, broader profiles, downstream adoption, performance and publication are separate acceptance steps."
         Published = $false; BuildCount = $(if ($SkipBuild) { 0 } else { 1 }); PackCountPerPackage = 1
         Packages = $packageRecords; Consumers = $consumerRecords.ToArray(); Steps = $steps.ToArray()
         ProvenanceRelativePath = "package-provenance.json"
@@ -225,7 +241,7 @@ $patterns
     [void] (New-Item -ItemType Directory -Path (Split-Path -Parent $candidateRoot) -Force)
     if (Test-Path -LiteralPath $candidateRoot) { throw "Candidate appeared during qualification; refusing to overwrite it." }
     [IO.Directory]::Move($attemptRoot, $candidateRoot)
-    Write-Host "Qualified immutable scalar candidate: $candidateRoot"
+    Write-Host "Qualified immutable package candidate: $candidateRoot"
 }
 finally {
     if ($transcriptStarted) { [void] (Stop-Transcript) }

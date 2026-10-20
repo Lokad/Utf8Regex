@@ -34,10 +34,19 @@ package qualification keeps its separate build/provenance/pack steps.
 ./test.ps1 -Configuration Release -Project tests/Lokad.Utf8Regex.Tests/Lokad.Utf8Regex.Tests.csproj -SkipBuild -Filter 'FullyQualifiedName~Utf8CoreWorkPolicyTests'
 ```
 
-Package qualification scripts accept `-SkipBuild` only for matching binaries;
-the existing producer-revision/provenance checks still reject stale assemblies.
-They otherwise build the affected library dependency closure incrementally.
-Do not repeat source/package qualification for unchanged code or immutable bytes.
+Use `./qualify-package-candidate.ps1` at a package delivery boundary. It always
+includes Core; select `-Profiles Core,PythonRe,Pcre2` for all three packages
+(the default is Core/PythonRe). It builds the existing benchmark/library closure
+once, packs each selected package once, then runs detached fixture suites with
+exact source/feed/cache/lock/DLL/symbol checks. `-SkipBuild` requires matching
+configuration/revision binaries; provenance rejects stale assemblies. Clean
+tracked source and a new common version are required. Successful candidates live
+under `artifacts/package-candidates/<version>` and cannot be overwritten.
+Historical scalar/release candidates remain immutable. The retired per-package
+pack scripts and scalar-only entry point are replaced by this command; historical
+receipts retain their original paths. Platform, public downstream and performance
+acceptance remain separate milestone checks. Do not repeat source/package
+qualification for unchanged code or immutable bytes.
 
 The complete Core suite includes a shipped-assembly inventory check. In a fresh
 checkout, build the PythonRe and PCRE2 library projects in the tested configuration

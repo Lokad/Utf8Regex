@@ -1,6 +1,5 @@
-# Shared machinery for isolated package-consumer qualification scripts (PLAN.md D08).
-# Each per-package script dot-sources this file; the per-package flow (packs,
-# shape asserts, evidence manifest) stays in the calling script.
+# Shared provenance and detached-consumer checks for qualify-package-candidate.ps1.
+# verify-pcre2-qualification.ps1 also uses these readers for historical archives.
 
 function Invoke-DotNet {
     param([string[]] $Arguments)
@@ -308,51 +307,6 @@ function Read-CoherentPackageVersion {
     }
 
     return $versionNode.InnerText
-}
-
-function New-PackageQualificationRoot {
-    param(
-        [string]$RepositoryRoot,
-        [string]$SourceRevision,
-        [bool]$Archive
-    )
-
-    $artifactsParent = [System.IO.Path]::GetFullPath((Join-Path $RepositoryRoot "artifacts"))
-    $qualificationParent = [System.IO.Path]::GetFullPath((Join-Path $artifactsParent "package-qualification"))
-
-    if ($Archive) {
-        [void] (Read-PackageQualificationSource $RepositoryRoot $SourceRevision $true)
-
-        $qualificationRoot = [System.IO.Path]::GetFullPath(
-            (Join-Path $qualificationParent (Join-Path "archive" $SourceRevision)))
-    }
-    else {
-        $qualificationRoot = [System.IO.Path]::GetFullPath((Join-Path $qualificationParent "current"))
-    }
-
-    $requiredPrefix = $artifactsParent.TrimEnd([System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar
-    if (!$qualificationRoot.StartsWith($requiredPrefix, [StringComparison]::OrdinalIgnoreCase)) {
-        throw "Qualification output escaped the repository artifacts directory."
-    }
-
-    if (Test-Path -LiteralPath $qualificationRoot) {
-        if ($Archive) {
-            throw "The immutable qualification archive already exists: $qualificationRoot"
-        }
-
-        Remove-Item -LiteralPath $qualificationRoot -Recurse -Force
-    }
-
-    $packageDirectory = New-Item -ItemType Directory -Path (Join-Path $qualificationRoot "packages")
-    $testDirectory = New-Item -ItemType Directory -Path (Join-Path $qualificationRoot "tests")
-    $packageCache = New-Item -ItemType Directory -Path (Join-Path $qualificationRoot "package-cache")
-
-    return [pscustomobject]@{
-        QualificationRoot = $qualificationRoot
-        PackageDirectory = $packageDirectory.FullName
-        TestDirectory = $testDirectory.FullName
-        PackageCache = $packageCache.FullName
-    }
 }
 
 function Invoke-IsolatedConsumerTests {

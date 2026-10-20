@@ -1,0 +1,84 @@
+{
+  "Scope": "Preflight and existing selection fragment only; no build, pack, restore or package qualification.",
+  "Parse": "Passed",
+  "ConfigurationDefault": "Release",
+  "InvalidProfile": "Rejected",
+  "DirtySource": "Rejected before attempt",
+  "ExistingCandidateRoots": "All three rejected before attempt",
+  "Selections": [
+    {
+      "Requested": [
+        "Core"
+      ],
+      "Packages": [
+        "Lokad.Utf8Regex"
+      ],
+      "Tests": [
+        "Lokad.Utf8Regex.Tests",
+        "Lokad.Utf8Regex.DiffTests"
+      ]
+    },
+    {
+      "Requested": [
+        "PythonRe"
+      ],
+      "Packages": [
+        "Lokad.Utf8Regex",
+        "Lokad.Utf8Regex.PythonRe"
+      ],
+      "Tests": [
+        "Lokad.Utf8Regex.Tests",
+        "Lokad.Utf8Regex.DiffTests",
+        "Lokad.Utf8Regex.PythonRe.Tests"
+      ]
+    },
+    {
+      "Requested": [
+        "Pcre2"
+      ],
+      "Packages": [
+        "Lokad.Utf8Regex",
+        "Lokad.Utf8Regex.Pcre2"
+      ],
+      "Tests": [
+        "Lokad.Utf8Regex.Tests",
+        "Lokad.Utf8Regex.DiffTests",
+        "Lokad.Utf8Regex.Pcre2.Tests"
+      ]
+    },
+    {
+      "Requested": [
+        "Core",
+        "PythonRe",
+        "Pcre2"
+      ],
+      "Packages": [
+        "Lokad.Utf8Regex",
+        "Lokad.Utf8Regex.PythonRe",
+        "Lokad.Utf8Regex.Pcre2"
+      ],
+      "Tests": [
+        "Lokad.Utf8Regex.Tests",
+        "Lokad.Utf8Regex.DiffTests",
+        "Lokad.Utf8Regex.PythonRe.Tests",
+        "Lokad.Utf8Regex.Pcre2.Tests"
+      ]
+    },
+    {
+      "Requested": [
+        "PythonRe",
+        "PythonRe"
+      ],
+      "Packages": [
+        "Lokad.Utf8Regex",
+        "Lokad.Utf8Regex.PythonRe"
+      ],
+      "Tests": [
+        "Lokad.Utf8Regex.Tests",
+        "Lokad.Utf8Regex.DiffTests",
+        "Lokad.Utf8Regex.PythonRe.Tests"
+      ]
+    }
+  ],
+  "FixtureRoot": "D:\\code\\utf8regex\\artifacts\\h5-preflight-89d8f102"
+}
