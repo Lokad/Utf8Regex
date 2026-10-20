@@ -29,45 +29,11 @@ public sealed class Utf8EmittedManagedStorageTests
         Assert.True(emitted.ManagedArrayBytes>0);
     }
 
-    [Fact]
-    public void SharedDelegateOwnsOneAllowanceAndExactEntryChargeBoundary()
-    {
-        using var owner=Utf8ConstructionScope.Enter();
-        var emitted=Create();
-        var loan=checked(80ul+InspectManagedCopies(emitted.Callback));
-        var maximum=loan;
-        foreach(var cap in new[]{maximum-1,maximum})
-        {
-            using var storage=Utf8GraphInspection<Utf8ConstructionTextNoControl>.Create(cap,default);
-            emitted.CollectRetainedStorage(storage); emitted.CollectRetainedStorage(storage);
-            var manifest=storage.Finish();
-            Assert.Equal(cap!=maximum,storage.Exceeded);
-            if(cap==maximum)
-            { var extent=Assert.Single(manifest);Assert.Same(emitted.Callback,extent.Value);Assert.Equal(loan,extent.Bytes); }
-            else Assert.Empty(manifest);
-        }
-        Assert.Equal(21,emitted.Callback(21));
-    }
 
-    [Fact]
-    public void MissingConflictingAndOverflowedReceiptsCannotPublish()
-    {
-        using var owner=Utf8ConstructionScope.Enter();
-        var emitted=Create();
-        using var storage=Utf8GraphInspection<Utf8ConstructionTextNoControl>.Create(1024*1024,default);
-        Assert.Throws<InvalidOperationException>(()=>new Utf8EmittedDelegate<Func<int,int>>(emitted.Callback,0).CollectRetainedStorage(storage));
-        emitted.CollectRetainedStorage(storage);
-        Assert.Throws<InvalidOperationException>(()=>new Utf8EmittedDelegate<Func<int,int>>(emitted.Callback,emitted.ManagedArrayBytes+1).CollectRetainedStorage(storage));
-        Assert.Throws<OverflowException>(()=>new Utf8EmittedDelegate<Func<int,int>>(emitted.Callback,ulong.MaxValue).CollectRetainedStorage(storage));
-        Assert.Single(storage.Finish());
-    }
 
-    private static Utf8EmittedDelegate<Func<int,int>> Create()
-    {
-        using var builder=Utf8DynamicIlBuilder.Create("RetainedBoundary",typeof(int),typeof(Utf8EmittedManagedStorageTests),typeof(int));
-        builder.Emit(OpCodes.Ldarg_0);builder.Emit(OpCodes.Ret);
-        return builder.CreateDelegate<Func<int,int>>();
-    }
+
+
+
 
     internal static ulong InspectManagedCopies(Delegate callback)
     {

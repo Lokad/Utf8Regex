@@ -271,10 +271,9 @@ public sealed class Utf8PreparationCachePayloadTests
         public bool TryGetValueCharge<TControl>(object value, ulong maximum, TControl control, out ulong computedCharge)
             where TControl : struct, IUtf8ConstructionTextControl
         {
-            using var storage = Utf8GraphInspection<TControl>.Create(maximum, control);
-            storage.Add(value, charge);
-            computedCharge = storage.FinishCharge();
-            return !storage.Exceeded;
+            control.Check();
+            computedCharge = charge;
+            return charge <= maximum;
         }
     }
 
@@ -286,10 +285,9 @@ public sealed class Utf8PreparationCachePayloadTests
         public bool TryGetValueCharge<TControl>(byte[] value, ulong maximum, TControl control, out ulong charge)
             where TControl : struct, IUtf8ConstructionTextControl
         {
-            using var storage = Utf8GraphInspection<TControl>.Create(maximum, control);
-            storage.Array(value); storage.Array(value);
-            charge = storage.FinishCharge();
-            return !storage.Exceeded;
+            control.Check();
+            charge = Utf8ConstructionBudget.ArrayBytes<byte>(value.Length);
+            return charge <= maximum;
         }
     }
 
@@ -320,10 +318,9 @@ public sealed class Utf8PreparationCachePayloadTests
         public bool TryGetValueCharge<TControl>(byte[] value, ulong maximum, TControl control, out ulong charge)
             where TControl : struct, IUtf8ConstructionTextControl
         {
-            using var storage = Utf8GraphInspection<TControl>.Create(maximum, control);
-            storage.Array(value);
-            charge = storage.FinishCharge();
-            return !storage.Exceeded;
+            control.Check();
+            charge = Utf8ConstructionBudget.ArrayBytes<byte>(value.Length);
+            return charge <= maximum;
         }
     }
     private readonly struct TokenControl(CancellationToken token) : IUtf8ConstructionTextControl

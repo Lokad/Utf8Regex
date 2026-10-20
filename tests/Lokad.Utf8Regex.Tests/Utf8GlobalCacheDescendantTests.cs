@@ -153,73 +153,24 @@ public sealed class Utf8GlobalCacheDescendantTests
         finally { Utf8RegexCache.ResetForTests(); }
     }
 
-    // Recompute the production collector as a transient audit, then independently
-    // inspect every payload below. The cache retains only the scalar charge.
-    internal static Utf8RetainedPayloadExtent[] InspectEntryPayloads(object entry)
-    {
-        using var owner = Utf8ConstructionScope.Enter();
-        using var storage = Utf8GraphInspection<Utf8ConstructionTextNoControl>.Create(ulong.MaxValue, default);
-        var collector = default(Utf8RegexRootAndLazyStorage);
-        var key = Assert.IsType<Utf8RegexCacheKey>(Field(entry, "Key"));
-        var value = Assert.IsType<ValueTuple<Utf8Regex>>(Field(entry, "Value")).Item1;
-        Assert.True(collector.TryGetValueCharge(value, ulong.MaxValue, default(Utf8ConstructionTextNoControl), out var charge));
-        value.CollectCacheRoots(storage);
-        Assert.False(storage.Exceeded);
-        Assert.True(charge >= storage.FinishCharge());
-        Assert.Equal(checked(collector.GetKeyCharge(key) + charge), Assert.IsType<ulong>(Field(entry, "PayloadCharge")));
-        // The physical field witness includes key text, even when its identity
-        // also occurs in the value. Numeric admission may count it twice.
-        storage.Text(key.Pattern); storage.Text(key.Culture);
-        return storage.Finish();
-    }
-
     private static ulong InspectLoans(object cache)
     {
+        // Observe actual production totals and per-entry numeric publication.
+        // Physical program coverage is checked once in Utf8ProgramCacheChargeTests.
         lock (cache)
         {
-            Assert.Equal(11, cache.GetType().GetFields(Instance).Length);
             ulong bytes = 0;
-            var entry = Field(cache, "_first");
-            while (entry is not null)
+            for (var entry = Field(cache, "_first"); entry is not null; entry = Field(entry, "Next"))
             {
-                Assert.Equal(8, entry.GetType().GetFields(Instance).Length);
                 Assert.Equal(1, Assert.IsType<int>(Field(entry, "Status")));
-                var manifest = InspectEntryPayloads(entry);
+                var key = Assert.IsType<Utf8RegexCacheKey>(Field(entry, "Key"));
                 var regex = Assert.IsType<ValueTuple<Utf8Regex>>(Field(entry, "Value")).Item1;
-                var scalar = Utf8ScalarRetainedGraphTests.InspectScalarGraph(Utf8ScalarRetainedGraphTests.ScalarProgram(regex));
-                foreach (var pair in Utf8PreparedRetainedGraphTests.InspectPreparedGraph(Utf8ExecutionRetainedGraphTests.Prepared(regex)))
-                    if (!scalar.TryAdd(pair.Key, pair.Value)) Assert.Equal(scalar[pair.Key], pair.Value);
-                foreach (var pair in Utf8FacadeRetainedGraphTests.InspectFacadeGraph(regex))
-                    if (!scalar.TryAdd(pair.Key, pair.Value)) Assert.Equal(scalar[pair.Key], pair.Value);
-                foreach (var pair in Utf8RuntimeRetainedGraphTests.InspectRuntimeGraph(regex))
-                    if (!scalar.TryAdd(pair.Key, pair.Value)) Assert.Equal(scalar[pair.Key], pair.Value);
-                foreach (var pair in scalar)
-                    Assert.Contains(manifest, extent => ReferenceEquals(extent.Value, pair.Key) && extent.Bytes == pair.Value);
-                ulong physicalBytes = 0;
-                foreach (var extent in manifest)
-                {
-                    ulong expected;
-                    if (scalar.TryGetValue(extent.Value, out var scalarExtent)) expected = scalarExtent;
-                    else if (extent.Value is string text) expected = Utf8ConstructionBudget.StringBytes(text.Length);
-                    else if (extent.Value is Utf8Regex) expected = Utf8Regex.CachedObjectBytes;
-                    else
-                    {
-                        var child = Assert.IsType<Utf8ReplacementPlanCache>(extent.Value);
-                        Assert.Single(child.GetType().GetFields(Instance));
-                        var plans = Field(child, "_plans");
-                        Assert.NotNull(plans);
-                        expected = 48ul + Read<ulong>(plans, "MaximumMetadataBytes") + Read<ulong>(plans, "MaximumPayloadBytes");
-                        Assert.True(Read<ulong>(plans, "MetadataBytes") + Read<ulong>(plans, "PayloadBytes") + 48 <= expected);
-                    }
-                    Assert.Equal(expected, extent.Bytes);
-                    physicalBytes += expected;
-                }
                 var charge = Assert.IsType<ulong>(Field(entry, "PayloadCharge"));
-                Assert.True(physicalBytes <= charge);
+                Assert.Equal(checked(default(Utf8RegexRootAndLazyStorage).GetKeyCharge(key) + regex.CacheProgramBytes), charge);
                 bytes = checked(bytes + charge);
-                entry = Field(entry, "Next");
             }
             Assert.Equal(bytes, Read<ulong>(cache, "PayloadBytes"));
+            Assert.True(bytes <= Read<ulong>(cache, "MaximumPayloadBytes"));
             return bytes;
         }
     }

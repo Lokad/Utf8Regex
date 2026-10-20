@@ -96,10 +96,9 @@ public sealed class Utf8NumericCacheKeyTests
         public bool TryGetValueCharge<TControl>(string value, ulong maximum, TControl control, out ulong charge)
             where TControl : struct, IUtf8ConstructionTextControl
         {
-            using var storage = Utf8GraphInspection<TControl>.Create(maximum, control);
-            clear?.Clear(); storage.Text(value);
-            charge = storage.FinishCharge();
-            return !storage.Exceeded;
+            control.Check(); clear?.Clear();
+            charge = Utf8ConstructionBudget.StringBytes(value.Length);
+            return charge <= maximum;
         }
     }
 
@@ -111,10 +110,9 @@ public sealed class Utf8NumericCacheKeyTests
         public bool TryGetValueCharge<TControl>(object value, ulong maximum, TControl control, out ulong charge)
             where TControl : struct, IUtf8ConstructionTextControl
         {
-            using var storage = Utf8GraphInspection<TControl>.Create(maximum, control);
-            storage.Add(value, valueCharge);
-            charge = storage.FinishCharge();
-            return !storage.Exceeded;
+            control.Check();
+            charge = valueCharge;
+            return charge <= maximum;
         }
     }
 }

@@ -8,59 +8,59 @@ using Lokad.Utf8Regex.Internal.Replacement;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Independent qualification only. Shipped cache admission uses a numeric program
-// certificate; these physical/cycle/alias models are never a production strategy.
+// One independent test-only bound on representative compiled program storage.
+// Shipped cache admission uses conservative numeric charges.
 internal static class Utf8GraphQualification
 {
     private const BindingFlags Fields = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
     private const BindingFlags Static = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
-    internal static void Collect<TControl>(object? root, Utf8GraphInspection<TControl> storage)
-        where TControl : struct, IUtf8ConstructionTextControl
+    // Independent test-only lower bound for covered immutable program storage.
+    // No construction budget, cache publication, collector transaction or schema census.
+    internal static ulong Measure(object root)
     {
-        var pending = new Queue<object>();
-        if (root is not null) pending.Enqueue(root);
-        while (pending.TryDequeue(out var value))
+        var pending = new Stack<object>();
+        var seen = new HashSet<object>(ReferenceEqualityComparer.Instance);
+        pending.Push(root);
+        ulong bytes = 0;
+        while (pending.TryPop(out var value))
         {
-            storage.Check(); var type = value.GetType();
+            var type = value.GetType();
             if (type.IsPrimitive || type.IsEnum) continue;
-            if (ReferenceEquals(value, StringComparer.Ordinal) || ReferenceEquals(value, EqualityComparer<string>.Default) || ReferenceEquals(value, EqualityComparer<int>.Default)) continue;
-            if (value is string text) { storage.Text(text); continue; }
+            if (ReferenceEquals(value, StringComparer.Ordinal) || ReferenceEquals(value, EqualityComparer<string>.Default) ||
+                ReferenceEquals(value, EqualityComparer<int>.Default)) continue;
+            if (!type.IsValueType && !seen.Add(value)) continue;
+            if (value is string text) { bytes += Utf8ConstructionBudget.StringBytes(text.Length); continue; }
             if (value is Array array)
             {
-                var element = type.GetElementType()!;
-                var bytes = (ulong)typeof(Utf8ConstructionBudget).GetMethod("ArrayBytes", Static)!.MakeGenericMethod(element).Invoke(null, [array.Length])!;
-                if (!storage.TryAdd(array, bytes)) continue;
-                foreach (var child in array) if (child is not null) pending.Enqueue(child);
+                bytes += (ulong)typeof(Utf8ConstructionBudget).GetMethod("ArrayBytes", Static)!
+                    .MakeGenericMethod(type.GetElementType()!).Invoke(null, [array.Length])!;
+                foreach (var child in array) if (child is not null) pending.Push(child);
+                continue;
+            }
+            if (value is Utf8ReplacementPlanCache replacement)
+            {
+                bytes += replacement.MaximumRetainedBytes;
                 continue;
             }
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Utf8EmittedDelegate<>))
             {
                 var callback = (Delegate?)type.GetProperty("Callback")!.GetValue(value);
-                if (callback is null) continue;
-                var receipt = (ulong)type.GetProperty("ManagedArrayBytes")!.GetValue(value)!;
-                if (receipt == 0) throw new InvalidOperationException("Missing managed delegate copy receipt.");
-                CollectDelegate(callback, storage, receipt); continue;
+                var copies = (ulong)type.GetProperty("ManagedArrayBytes")!.GetValue(value)!;
+                if (callback is not null && seen.Add(callback)) bytes += checked(80UL + copies);
+                continue;
             }
-            if (value is Delegate callbackValue) { CollectDelegate(callbackValue, storage); continue; }
-            if (value is Utf8SliceProgram scalar && scalar.BackreferenceLowerings.Length != 0)
-                throw new InvalidOperationException("Profile scalar delegates require their own qualification.");
+            if (value is Delegate) { bytes += 80; continue; } // Opaque CLR/JIT metadata is outside the declared model.
             if (!type.IsValueType)
             {
-                if (type.Assembly != typeof(Utf8Regex).Assembly) throw new InvalidOperationException("Unknown owned graph child: " + type);
-                if (!storage.TryAdd(value, MetadataBytes(type))) continue;
+                Assert.Equal(typeof(Utf8Regex).Assembly, type.Assembly);
+                bytes += MetadataBytes(type);
             }
             foreach (var field in AllFields(type))
-                if (!field.FieldType.IsPrimitive && !field.FieldType.IsEnum && field.GetValue(value) is { } child) pending.Enqueue(child);
+                if (!field.FieldType.IsPrimitive && !field.FieldType.IsEnum && field.GetValue(value) is { } child)
+                    pending.Push(child);
         }
-    }
-
-    internal static void CollectDelegate<TControl>(Delegate? callback, Utf8GraphInspection<TControl> storage, ulong bytes = 0)
-        where TControl : struct, IUtf8ConstructionTextControl
-    {
-        if (callback is null) return;
-        if (!callback.HasSingleTarget || callback.Target is not null) throw new InvalidOperationException("A delegate qualification requires one static target.");
-        storage.Add(callback, checked(80UL + bytes));
+        return bytes;
     }
 
     internal static ulong MetadataBytes(Type type)
@@ -103,49 +103,4 @@ internal static class Utf8GraphQualification
             foreach (var field in current.GetFields(Fields)) yield return field;
     }
 
-    internal static void CollectRetainedStorage<TControl>(this object value, Utf8GraphInspection<TControl> storage)
-        where TControl : struct, IUtf8ConstructionTextControl => Collect(value, storage);
-    internal static void CollectStorage<TControl>(this object value, Utf8GraphInspection<TControl> storage)
-        where TControl : struct, IUtf8ConstructionTextControl => Collect(value, storage);
-    internal static void CollectCacheRoots<TControl>(this Utf8Regex value, Utf8GraphInspection<TControl> storage)
-        where TControl : struct, IUtf8ConstructionTextControl
-    {
-        storage.Add(value, Utf8Regex.CachedObjectBytes); storage.Text(value.Pattern);
-        var flags = BindingFlags.Instance | BindingFlags.NonPublic;
-        var child = (Utf8ReplacementPlanCache)typeof(Utf8Regex).GetField("_replacementCache", flags)!.GetValue(value)!;
-        storage.Add(child, child.MaximumRetainedBytes);
-        Collect(typeof(Utf8Regex).GetField("_ownedSliceProgram", flags)!.GetValue(value), storage);
-        Collect(typeof(Utf8Regex).GetField("_program", flags)!.GetValue(value), storage);
-        Collect(typeof(Utf8Regex).GetField("_fusedAsciiBoundaryLiteralFamilyCounter", flags)!.GetValue(value), storage);
-        CollectFacadeHelpers(value, storage);
-    }
-    internal static void CollectFacadeHelpers<TControl>(this Utf8Regex value, Utf8GraphInspection<TControl> storage)
-        where TControl : struct, IUtf8ConstructionTextControl
-    {
-        foreach (var name in new[] { "_invariantCyrillicLiteralCountStrategy", "_packedNibbleLiteralFamilyCountStrategy", "_literalFamilyCaptureMap", "_groupedLiteralSpanTable", "_caretAnchoredGroupedLiteralUtf8", "_alternationBranchSpanMap" })
-            Collect(typeof(Utf8Regex).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(value), storage);
-    }
-}
-
-// Compatibility of the independent qualification call sites, with no per-type
-// production collectors or hooks. Actual field/schema models remain separate.
-internal static class Utf8ExecutionRetainedStorage
-{
-    internal static void Collect<TControl>(Utf8ExecutionTree? tree, Utf8ExecutionProgram? program, Utf8GraphInspection<TControl> storage)
-        where TControl : struct, IUtf8ConstructionTextControl { Utf8GraphQualification.Collect(tree, storage); Utf8GraphQualification.Collect(program, storage); }
-}
-internal static class Utf8ScalarProgramRetainedStorage
-{
-    internal static void Collect<TControl>(Utf8SliceProgram program, Utf8GraphInspection<TControl> storage)
-        where TControl : struct, IUtf8ConstructionTextControl => Utf8GraphQualification.Collect(program, storage);
-}
-internal static class Utf8PreparedRetainedStorage
-{
-    internal static void Collect<TControl>(Lokad.Utf8Regex.Internal.Planning.Utf8PreparedRegex value, Utf8GraphInspection<TControl> storage)
-        where TControl : struct, IUtf8ConstructionTextControl => Utf8GraphQualification.Collect(value, storage);
-}
-internal static class Utf8RuntimeRetainedStorage
-{
-    internal static void CollectDelegate<TControl>(Delegate? callback, Utf8GraphInspection<TControl> storage)
-        where TControl : struct, IUtf8ConstructionTextControl => Utf8GraphQualification.CollectDelegate(callback, storage);
 }

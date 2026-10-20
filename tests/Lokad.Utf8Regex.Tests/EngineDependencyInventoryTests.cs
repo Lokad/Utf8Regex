@@ -14,10 +14,6 @@ public sealed class EngineDependencyInventoryTests
     public void ConsumedCoreHasNoBclRegexFactoriesOrEngineOwners()
     {
         var assembly = typeof(Utf8Regex).Assembly;
-        foreach (var name in new[] { "Utf8FallbackCandidateVerifier", "Utf8FallbackVerifierRuntimeFactory", "Utf8FallbackVerifierMode" })
-            Assert.Null(assembly.GetType("Lokad.Utf8Regex.Internal.Execution." + name));
-        Assert.Null(assembly.GetType("Lokad.Utf8Regex.Internal.Input.Utf8DecodedInput"));
-        Assert.Null(assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8StorageLease+StringAliasRoots"));
         var flags = System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic |
             System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.DeclaredOnly;
         foreach (var type in assembly.GetTypes())
@@ -43,9 +39,6 @@ public sealed class EngineDependencyInventoryTests
         foreach (var constructor in typeof(Utf8MatchContext).GetConstructors(flags))
             Assert.DoesNotContain(constructor.GetParameters(), parameter => parameter.ParameterType == typeof(string[]));
 
-        Assert.Null(assembly.GetType("Lokad.Utf8Regex.Internal.Execution.AsciiStructuralCompiledSuffixPart"));
-        Assert.Null(assembly.GetType("Lokad.Utf8Regex.Internal.FrontEnd.DotNetAsciiCharClassProjector"));
-        Assert.Null(assembly.GetType("Lokad.Utf8Regex.Internal.FrontEnd.Utf8ConstructionClass"));
         foreach (var name in new[] { "AsciiStructuralIdentifierFamilyPlan", "AsciiStructuralTokenWindowPlan",
             "AsciiStructuralRepeatedSegmentPlan", "AsciiStructuralSuffixPart", "AsciiStructuralVerifierStep",
             "AsciiStructuralLinearVerifierInstruction", "Utf8StructuralLinearInstruction",

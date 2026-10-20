@@ -14,6 +14,8 @@ public sealed class Utf8ProgramCacheChargeTests
     [Theory]
     [InlineData("", false)] [InlineData("abc", false)] [InlineData("abc", true)]
     [InlineData(@"[\p{L}-[AE]]+", true)] [InlineData(@"(?<n>😀)\k<n>", false)]
+    [InlineData("foo|bar", true)] [InlineData("Holmes.{0,25}Watson|Watson.{0,25}Holmes", true)]
+    [InlineData("\\b(?:record|struct|class)\\s+[A-Z][A-Za-z0-9_]+", true)]
     public void CompletedCertificateCoversPhysicalGraphsAndExactPublicationBoundary(string pattern, bool compiled)
     {
         using var owner = Utf8ConstructionScope.Enter(); owner.Budget.ReserveBytes(7);
@@ -22,9 +24,7 @@ public sealed class Utf8ProgramCacheChargeTests
         var completed = owner.Budget.ReservedBytes - before;
         var child = (Utf8ReplacementPlanCache)typeof(Utf8Regex).GetField("_replacementCache", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(value)!;
         Assert.Equal(checked(completed + Utf8Regex.CachedObjectBytes + Utf8ConstructionBudget.StringBytes(pattern.Length) + child.MaximumRetainedBytes), value.CacheProgramBytes);
-        using var physical = Utf8GraphInspection<Utf8ConstructionTextNoControl>.Create(ulong.MaxValue, default);
-        value.CollectCacheRoots(physical);
-        Assert.True(value.CacheProgramBytes >= physical.FinishCharge());
+        Assert.True(value.CacheProgramBytes >= Utf8GraphQualification.Measure(value));
         var provider = default(Utf8RegexRootAndLazyStorage);
         Assert.True(provider.TryGetValueCharge(value, value.CacheProgramBytes, default(Utf8ConstructionTextNoControl), out var exact));
         Assert.Equal(value.CacheProgramBytes, exact);
