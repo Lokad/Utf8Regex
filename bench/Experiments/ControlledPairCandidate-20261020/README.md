@@ -69,4 +69,7 @@ candidate `6053493C7B76CD05FB7135195AA3FC9729932ABED5B46B4E8A0F3DF36A380F38`.
 [Raw samples, preflights, identities and summary](measurement.json).
 Archive `655AA0DA3ADE54EEBCD5D7EB1B035F9A3FDA32A97E5D9B1669A7700A756BCDA6`.
 Private source/predeclaration/logs: `artifacts/controlled-pair-candidate-20261020`.
-Source CI follows separately. Broader original R06/R07/R08/R09/R10 remains open.
+Source `d0bb4cb6` [CI39385691193](ci.json) is terminal green on Windows/Linux,
+closed; do not repoll. The original versioned R09 comparison lanes are complete,
+while a fresh source review identifies ordinal backreference comparison as the
+next applicability investigation. Broader R06/R07/R08/R09/R10 remains open.
