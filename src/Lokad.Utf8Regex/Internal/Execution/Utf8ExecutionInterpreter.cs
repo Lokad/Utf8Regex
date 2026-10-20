@@ -136,11 +136,39 @@ internal static partial class Utf8ExecutionInterpreter
             {
                 budget.Step();
 
-                var relative = plan.SearchLiterals.Length == 1
-                    ? (plan.IgnoreCase
+                int relative;
+                if (plan.SearchLiterals.Length == 1)
+                    relative = plan.IgnoreCase
                         ? Internal.Search.AsciiSearch.IndexOfIgnoreCase(input[searchFrom..], plan.SearchLiterals[0])
-                        : Internal.Search.AsciiSearch.IndexOfExact(input[searchFrom..], plan.SearchLiterals[0]))
-                    : (literalSearch ??= new PreparedLiteralSetSearch(
+                        : Internal.Search.AsciiSearch.IndexOfExact(input[searchFrom..], plan.SearchLiterals[0]);
+                else if (!plan.IgnoreCase && plan.SearchLiterals is
+                    [{ Length: > 0 and <= 16 } first, { Length: > 0 and <= 16 } second])
+                {
+                    // A short pair needs no bucket maps. Search the first-byte
+                    // union, then verify complete literals before yielding a start.
+                    var remaining = input[searchFrom..];
+                    var skipped = 0;
+                    var firstByte = first[0];
+                    var secondByte = second[0];
+                    while (true)
+                    {
+                        var next = remaining.IndexOfAny(firstByte, secondByte);
+                        if (next < 0) { relative = -1; break; }
+                        var tail = remaining[next..];
+                        var value = tail[0];
+                        if (value == firstByte && tail.StartsWith(first) ||
+                            value == secondByte && tail.StartsWith(second))
+                        {
+                            relative = skipped + next;
+                            break;
+                        }
+                        budget.Step();
+                        skipped += next + 1;
+                        remaining = tail[1..];
+                    }
+                }
+                else
+                    relative = (literalSearch ??= new PreparedLiteralSetSearch(
                         AsciiSearch.CreateExactLiteralSearchData(plan.SearchLiterals))).IndexOf(input[searchFrom..]);
                 if (relative < 0)
                 {

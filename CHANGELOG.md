@@ -1,5 +1,16 @@
 # Changelog
 
+## Development: short-pair candidate preparation
+
+The existing simple-pattern finder searches two bounded exact literals directly
+with checked span operations, retaining full verification and the ordered branch
+matcher. It avoids runtime search-map preparation without a new cache or owner.
+Finite/token routes, resource admission, strict UTF-8/scalars and retained-result
+contracts stay unchanged. One public FullOpts pair supports32–47% lower Count time
+on representative optional-prefix hit/miss workloads and about87% lower full
+enumeration time on the hit workload, eliminating repeated map allocations. Other shapes keep
+their existing prepared searches. [Evidence and scope](bench/Experiments/SimplePairPreparation-20261020/README.md).
+
 ## Development: deadline checkpoint call overhead
 
 Inline the existing shared deadline polling/check methods without changing their

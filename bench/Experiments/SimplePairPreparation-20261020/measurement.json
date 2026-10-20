@@ -1,0 +1,7362 @@
+{
+  "identities": {
+    "before": {
+      "driver.dll": "2B427BA59DECA76F8F27B5C03526E0317C22966ABF0973D1D6CDE19FB2DEB692",
+      "Lokad.Utf8Regex.dll": "BAE88E2A657900B3DCE4BE61C88E4BED386CF58513F684E926575E600FBB841A",
+      "Lokad.Utf8Regex.Pcre2.dll": "ABC1C5B7B92EADB1B04387DDAFCA591516C3AF2A6D19A3EA1A5E61DDF93BB087",
+      "Lokad.Utf8Regex.PythonRe.dll": "7FA62B865BE64CA89B8563D99BE911A12D39AF26232A063AC6F2189CE4F10F19"
+    },
+    "after": {
+      "driver.dll": "2B427BA59DECA76F8F27B5C03526E0317C22966ABF0973D1D6CDE19FB2DEB692",
+      "Lokad.Utf8Regex.dll": "B7D4336AF24D6F4E4F8F9EF998E6364D11CF8EBD0674E90AB2ED7C9D0E51D926",
+      "Lokad.Utf8Regex.Pcre2.dll": "ABC1C5B7B92EADB1B04387DDAFCA591516C3AF2A6D19A3EA1A5E61DDF93BB087",
+      "Lokad.Utf8Regex.PythonRe.dll": "7FA62B865BE64CA89B8563D99BE911A12D39AF26232A063AC6F2189CE4F10F19"
+    }
+  },
+  "summary": {
+    "rows": {
+      "hit/ordinary/unlimited/count": {
+        "before": {
+          "ns": 146169.31608133088,
+          "bytes": 1792,
+          "spread": 1.0045306794623576
+        },
+        "after": {
+          "ns": 98979.70479704798,
+          "bytes": 0,
+          "spread": 1.021879230235654
+        },
+        "changePercent": -32.284211590636346
+      },
+      "hit/ordinary/unlimited/enumerate": {
+        "before": {
+          "ns": 1543884.9056603773,
+          "bytes": 3585792,
+          "spread": 1.0267588814807442
+        },
+        "after": {
+          "ns": 200470.8229426434,
+          "bytes": 0,
+          "spread": 1.014138216444241
+        },
+        "changePercent": -87.01517048274434
+      },
+      "hit/ordinary/finite/count": {
+        "before": {
+          "ns": 289207.60869565216,
+          "bytes": 112,
+          "spread": 1.0120401955156815
+        },
+        "after": {
+          "ns": 285429.60288808664,
+          "bytes": 112,
+          "spread": 1.0192844866000381
+        },
+        "changePercent": -1.3063300182884596
+      },
+      "hit/ordinary/finite/enumerate": {
+        "before": {
+          "ns": 2542250,
+          "bytes": 7107664,
+          "spread": 1.029051782111634
+        },
+        "after": {
+          "ns": 2532581.25,
+          "bytes": 7107664,
+          "spread": 1.022410969606218
+        },
+        "changePercent": -0.3803225489231954
+      },
+      "hit/ordinary/live/count": {
+        "before": {
+          "ns": 278548.7804878049,
+          "bytes": 112,
+          "spread": 1.0161042286383815
+        },
+        "after": {
+          "ns": 276203.07167235494,
+          "bytes": 112,
+          "spread": 1.0195892448354884
+        },
+        "changePercent": -0.842117783227081
+      },
+      "hit/ordinary/live/enumerate": {
+        "before": {
+          "ns": 2540337.5,
+          "bytes": 7107664,
+          "spread": 1.037792792907516
+        },
+        "after": {
+          "ns": 2529243.75,
+          "bytes": 7107664,
+          "spread": 1.0395993777732442
+        },
+        "changePercent": -0.4367037844380861
+      },
+      "hit/compiled/unlimited/count": {
+        "before": {
+          "ns": 145999.81684981685,
+          "bytes": 1792,
+          "spread": 1.0114196638020658
+        },
+        "after": {
+          "ns": 99080.32178217822,
+          "bytes": 0,
+          "spread": 1.0226091039796616
+        },
+        "changePercent": -32.13668077125228
+      },
+      "hit/compiled/unlimited/enumerate": {
+        "before": {
+          "ns": 1535761.8181818181,
+          "bytes": 3585792,
+          "spread": 1.0153915275688894
+        },
+        "after": {
+          "ns": 200285.75,
+          "bytes": 0,
+          "spread": 1.0153728728602025
+        },
+        "changePercent": -86.95854086038436
+      },
+      "hit/compiled/finite/count": {
+        "before": {
+          "ns": 290032.5259515571,
+          "bytes": 112,
+          "spread": 1.0046484386228838
+        },
+        "after": {
+          "ns": 286788.4476534296,
+          "bytes": 112,
+          "spread": 1.0290562549915199
+        },
+        "changePercent": -1.1185222372849801
+      },
+      "hit/compiled/finite/enumerate": {
+        "before": {
+          "ns": 2565003.125,
+          "bytes": 7107664,
+          "spread": 1.0252848078873504
+        },
+        "after": {
+          "ns": 2515909.375,
+          "bytes": 7107664,
+          "spread": 1.0247235498459069
+        },
+        "changePercent": -1.9139840229239535
+      },
+      "miss/ordinary/unlimited/count": {
+        "before": {
+          "ns": 175277.41228070174,
+          "bytes": 1792,
+          "spread": 1.005581995927806
+        },
+        "after": {
+          "ns": 92572.58823529411,
+          "bytes": 0,
+          "spread": 1.0157960428048207
+        },
+        "changePercent": -47.185101017442136
+      },
+      "miss/ordinary/unlimited/enumerate": {
+        "before": {
+          "ns": 179090.76576576577,
+          "bytes": 1792,
+          "spread": 1.0117829735968251
+        },
+        "after": {
+          "ns": 100798.60935524652,
+          "bytes": 0,
+          "spread": 1.0203250901974863
+        },
+        "changePercent": -43.716467499456776
+      },
+      "miss/ordinary/finite/count": {
+        "before": {
+          "ns": 371115.668202765,
+          "bytes": 112,
+          "spread": 1.0247826919009297
+        },
+        "after": {
+          "ns": 366868.98148148146,
+          "bytes": 112,
+          "spread": 1.0079459623865767
+        },
+        "changePercent": -1.1443027296177855
+      },
+      "miss/ordinary/finite/enumerate": {
+        "before": {
+          "ns": 2127859.375,
+          "bytes": 3664,
+          "spread": 1.006603951469869
+        },
+        "after": {
+          "ns": 2145846.875,
+          "bytes": 3664,
+          "spread": 1.015023738360985
+        },
+        "changePercent": 0.8453331179368861
+      },
+      "miss/ordinary/live/count": {
+        "before": {
+          "ns": 359939.4618834081,
+          "bytes": 112,
+          "spread": 1.0061851691272847
+        },
+        "after": {
+          "ns": 352207.0796460177,
+          "bytes": 112,
+          "spread": 1.025393942644914
+        },
+        "changePercent": -2.148245206827326
+      },
+      "miss/ordinary/live/enumerate": {
+        "before": {
+          "ns": 2126331.25,
+          "bytes": 3664,
+          "spread": 1.0065485396268707
+        },
+        "after": {
+          "ns": 2137456.25,
+          "bytes": 3664,
+          "spread": 1.0047719723908357
+        },
+        "changePercent": 0.5232016413246887
+      },
+      "miss/compiled/unlimited/count": {
+        "before": {
+          "ns": 175576.7895878525,
+          "bytes": 1792,
+          "spread": 1.015736444584591
+        },
+        "after": {
+          "ns": 92785.56701030929,
+          "bytes": 0,
+          "spread": 1.01402150462585
+        },
+        "changePercent": -47.153853747916585
+      },
+      "miss/compiled/unlimited/enumerate": {
+        "before": {
+          "ns": 180092.1052631579,
+          "bytes": 1792,
+          "spread": 1.0037500961328354
+        },
+        "after": {
+          "ns": 100038.81334981459,
+          "bytes": 0,
+          "spread": 1.0181709419141733
+        },
+        "changePercent": -44.451305511902476
+      },
+      "miss/compiled/finite/count": {
+        "before": {
+          "ns": 372748.14814814815,
+          "bytes": 112,
+          "spread": 1.0055562766456663
+        },
+        "after": {
+          "ns": 367079.7235023042,
+          "bytes": 112,
+          "spread": 1.0100105936862633
+        },
+        "changePercent": -1.5207116853578784
+      },
+      "miss/compiled/finite/enumerate": {
+        "before": {
+          "ns": 2124450,
+          "bytes": 3664,
+          "spread": 1.0103667954810418
+        },
+        "after": {
+          "ns": 2136400,
+          "bytes": 3664,
+          "spread": 1.0098172989502658
+        },
+        "changePercent": 0.5624985290310525
+      },
+      "dense-false-hit/ordinary/unlimited/count": {
+        "before": {
+          "ns": 49876.11285266458,
+          "bytes": 1792,
+          "spread": 1.010672382928748
+        },
+        "after": {
+          "ns": 46630.23529411765,
+          "bytes": 0,
+          "spread": 1.0167177319860925
+        },
+        "changePercent": -6.5078799707894985
+      },
+      "dense-false-hit/ordinary/unlimited/enumerate": {
+        "before": {
+          "ns": 56537.15194908512,
+          "bytes": 3584,
+          "spread": 1.0116840204839388
+        },
+        "after": {
+          "ns": 52727.933333333334,
+          "bytes": 0,
+          "spread": 1.0132952514784832
+        },
+        "changePercent": -6.737549530585129
+      },
+      "dense-false-hit/ordinary/finite/count": {
+        "before": {
+          "ns": 284760.98484848486,
+          "bytes": 112,
+          "spread": 1.1011107781383935
+        },
+        "after": {
+          "ns": 261627.56183745584,
+          "bytes": 112,
+          "spread": 1.0484151012418748
+        },
+        "changePercent": -8.123803555229948
+      },
+      "dense-false-hit/ordinary/finite/enumerate": {
+        "before": {
+          "ns": 752992.4528301887,
+          "bytes": 7216,
+          "spread": 1.007726979229739
+        },
+        "after": {
+          "ns": 764327.619047619,
+          "bytes": 7216,
+          "spread": 1.0263067448426508
+        },
+        "changePercent": 1.505349246838561
+      },
+      "dense-false-hit/ordinary/live/count": {
+        "before": {
+          "ns": 288508.39416058396,
+          "bytes": 112,
+          "spread": 1.0974311276703321
+        },
+        "after": {
+          "ns": 267381.660899654,
+          "bytes": 112,
+          "spread": 1.035394446783092
+        },
+        "changePercent": -7.322744741066645
+      },
+      "dense-false-hit/ordinary/live/enumerate": {
+        "before": {
+          "ns": 753979.4392523364,
+          "bytes": 7216,
+          "spread": 1.0085016086315965
+        },
+        "after": {
+          "ns": 751568.5714285715,
+          "bytes": 7216,
+          "spread": 1.0170844246506936
+        },
+        "changePercent": -0.31975246250157685
+      },
+      "dense-false-hit/compiled/unlimited/count": {
+        "before": {
+          "ns": 49969.95785671283,
+          "bytes": 1792,
+          "spread": 1.0101934001559247
+        },
+        "after": {
+          "ns": 46839.20187793427,
+          "bytes": 0,
+          "spread": 1.0141658741716892
+        },
+        "changePercent": -6.265276404186482
+      },
+      "dense-false-hit/compiled/unlimited/enumerate": {
+        "before": {
+          "ns": 56607.73519163763,
+          "bytes": 3584,
+          "spread": 1.0144430112351148
+        },
+        "after": {
+          "ns": 52733.28912466844,
+          "bytes": 0,
+          "spread": 1.0197576934549308
+        },
+        "changePercent": -6.844375691507166
+      },
+      "dense-false-hit/compiled/finite/count": {
+        "before": {
+          "ns": 282700,
+          "bytes": 112,
+          "spread": 1.1385418252752968
+        },
+        "after": {
+          "ns": 269545.6140350877,
+          "bytes": 112,
+          "spread": 1.0686491184672429
+        },
+        "changePercent": -4.653125562402649
+      },
+      "dense-false-hit/compiled/finite/enumerate": {
+        "before": {
+          "ns": 754539.2523364486,
+          "bytes": 7216,
+          "spread": 1.0106822268853968
+        },
+        "after": {
+          "ns": 761194.2307692308,
+          "bytes": 7216,
+          "spread": 1.0287535959637952
+        },
+        "changePercent": 0.8819923432975552
+      },
+      "short-hit/ordinary/unlimited/count": {
+        "before": {
+          "ns": 1111.0438564203237,
+          "bytes": 1792,
+          "spread": 1.015061193097389
+        },
+        "after": {
+          "ns": 435.97193229823586,
+          "bytes": 0,
+          "spread": 1.0150378624606902
+        },
+        "changePercent": -60.76015093563494
+      },
+      "short-hit/ordinary/unlimited/enumerate": {
+        "before": {
+          "ns": 8109.597823975131,
+          "bytes": 5376,
+          "spread": 1.0172349801427787
+        },
+        "after": {
+          "ns": 6061.014263074485,
+          "bytes": 0,
+          "spread": 1.0123381947812349
+        },
+        "changePercent": -25.261222632326298
+      },
+      "short-hit/ordinary/finite/count": {
+        "before": {
+          "ns": 532.2478214945868,
+          "bytes": 112,
+          "spread": 1.0255689088491358
+        },
+        "after": {
+          "ns": 514.3810345162984,
+          "bytes": 112,
+          "spread": 1.0192698587230093
+        },
+        "changePercent": -3.3568548816446553
+      },
+      "short-hit/ordinary/finite/enumerate": {
+        "before": {
+          "ns": 3422.427390791027,
+          "bytes": 10768,
+          "spread": 1.0352680968146026
+        },
+        "after": {
+          "ns": 3378.7842083349105,
+          "bytes": 10768,
+          "spread": 1.0566710030362394
+        },
+        "changePercent": -1.2752113477571547
+      },
+      "short-hit/ordinary/live/count": {
+        "before": {
+          "ns": 521.4409932996896,
+          "bytes": 112,
+          "spread": 1.0145237841702541
+        },
+        "after": {
+          "ns": 505.5604700290467,
+          "bytes": 112,
+          "spread": 1.0160220191462865
+        },
+        "changePercent": -3.0455072529205207
+      },
+      "short-hit/ordinary/live/enumerate": {
+        "before": {
+          "ns": 3381.803095210528,
+          "bytes": 10768,
+          "spread": 1.0508458674172456
+        },
+        "after": {
+          "ns": 3296.674956249424,
+          "bytes": 10768,
+          "spread": 1.0516805152648347
+        },
+        "changePercent": -2.517241145165028
+      },
+      "short-hit/compiled/unlimited/count": {
+        "before": {
+          "ns": 1065.801886792453,
+          "bytes": 1792,
+          "spread": 1.0495456940535401
+        },
+        "after": {
+          "ns": 435.6355166066687,
+          "bytes": 0,
+          "spread": 1.0164637553913092
+        },
+        "changePercent": -59.126032520197505
+      },
+      "short-hit/compiled/unlimited/enumerate": {
+        "before": {
+          "ns": 8061.31,
+          "bytes": 5376,
+          "spread": 1.0242153749248721
+        },
+        "after": {
+          "ns": 6032.384638737098,
+          "bytes": 0,
+          "spread": 1.0167946403213373
+        },
+        "changePercent": -25.168680540295597
+      },
+      "short-hit/compiled/finite/count": {
+        "before": {
+          "ns": 533.2248481647742,
+          "bytes": 112,
+          "spread": 1.015210151649618
+        },
+        "after": {
+          "ns": 519.8978677061406,
+          "bytes": 112,
+          "spread": 1.0238063886125672
+        },
+        "changePercent": -2.499317221337638
+      },
+      "short-hit/compiled/finite/enumerate": {
+        "before": {
+          "ns": 3396.0050286352844,
+          "bytes": 10768,
+          "spread": 1.0731035968124059
+        },
+        "after": {
+          "ns": 3345.3786213786216,
+          "bytes": 10768,
+          "spread": 1.0347908443616571
+        },
+        "changePercent": -1.4907636128267843
+      },
+      "same-head-hit/ordinary/unlimited/count": {
+        "before": {
+          "ns": 160145.49098196393,
+          "bytes": 1720,
+          "spread": 1.0091095130098144
+        },
+        "after": {
+          "ns": 104787.8590078329,
+          "bytes": 0,
+          "spread": 1.0212739790290475
+        },
+        "changePercent": -34.56708748694371
+      },
+      "same-head-hit/ordinary/unlimited/enumerate": {
+        "before": {
+          "ns": 1475360,
+          "bytes": 3441720,
+          "spread": 1.040899172947367
+        },
+        "after": {
+          "ns": 205340.20618556702,
+          "bytes": 0,
+          "spread": 1.0169046494416478
+        },
+        "changePercent": -86.08202701811307
+      },
+      "same-head-hit/ordinary/finite/count": {
+        "before": {
+          "ns": 317851.16279069765,
+          "bytes": 112,
+          "spread": 1.004146122677749
+        },
+        "after": {
+          "ns": 309390.7335907336,
+          "bytes": 112,
+          "spread": 1.0205165744287454
+        },
+        "changePercent": -2.6617581404083657
+      },
+      "same-head-hit/ordinary/finite/enumerate": {
+        "before": {
+          "ns": 2338146.875,
+          "bytes": 7105792,
+          "spread": 1.062006596357518
+        },
+        "after": {
+          "ns": 2339931.25,
+          "bytes": 7105792,
+          "spread": 1.0296534135335063
+        },
+        "changePercent": 0.07631577892215358
+      },
+      "same-head-hit/ordinary/live/count": {
+        "before": {
+          "ns": 308033.3333333333,
+          "bytes": 112,
+          "spread": 1.0086200923501785
+        },
+        "after": {
+          "ns": 301661.5094339623,
+          "bytes": 112,
+          "spread": 1.00850281642408
+        },
+        "changePercent": -2.0685501242412196
+      },
+      "same-head-hit/ordinary/live/enumerate": {
+        "before": {
+          "ns": 2333490.625,
+          "bytes": 7105792,
+          "spread": 1.0347529407909826
+        },
+        "after": {
+          "ns": 2278187.5,
+          "bytes": 7105792,
+          "spread": 1.0529366904007373
+        },
+        "changePercent": -2.369974166919997
+      },
+      "same-head-hit/compiled/unlimited/count": {
+        "before": {
+          "ns": 160158.5657370518,
+          "bytes": 1720,
+          "spread": 1.006845214014079
+        },
+        "after": {
+          "ns": 103990.41994750657,
+          "bytes": 0,
+          "spread": 1.0179038435634353
+        },
+        "changePercent": -35.07033515882132
+      },
+      "same-head-hit/compiled/unlimited/enumerate": {
+        "before": {
+          "ns": 1476667.2727272727,
+          "bytes": 3441720,
+          "spread": 1.0211530690914319
+        },
+        "after": {
+          "ns": 205564.01028277635,
+          "bytes": 0,
+          "spread": 1.0155825918893515
+        },
+        "changePercent": -86.07919237601047
+      },
+      "same-head-hit/compiled/finite/count": {
+        "before": {
+          "ns": 318034.1176470588,
+          "bytes": 112,
+          "spread": 1.0089136573152628
+        },
+        "after": {
+          "ns": 308575.09727626457,
+          "bytes": 112,
+          "spread": 1.0053320370452206
+        },
+        "changePercent": -2.9742156095628247
+      },
+      "same-head-hit/compiled/finite/enumerate": {
+        "before": {
+          "ns": 2344278.125,
+          "bytes": 7105792,
+          "spread": 1.040213272707589
+        },
+        "after": {
+          "ns": 2328659.375,
+          "bytes": 7105792,
+          "spread": 1.0237454840394449
+        },
+        "changePercent": -0.6662498716955789
+      },
+      "three-neighbor/ordinary": {
+        "before": {
+          "ns": 151586.33776091083,
+          "bytes": 1904,
+          "spread": 1.0097745033667593
+        },
+        "after": {
+          "ns": 148645.16728624536,
+          "bytes": 1904,
+          "spread": 1.0066190692412091
+        },
+        "changePercent": -1.9402609219997258
+      },
+      "three-neighbor/compiled": {
+        "before": {
+          "ns": 151234.4696969697,
+          "bytes": 1904,
+          "spread": 1.0092349447489468
+        },
+        "after": {
+          "ns": 148646.92737430168,
+          "bytes": 1904,
+          "spread": 1.0038934207469088
+        },
+        "changePercent": -1.7109474631363475
+      },
+      "python/unlimited": {
+        "before": {
+          "ns": 1344578.68852459,
+          "bytes": 3552,
+          "spread": 1.0126943628630645
+        },
+        "after": {
+          "ns": 1338745,
+          "bytes": 3552,
+          "spread": 1.0153810163605477
+        },
+        "changePercent": -0.433867394625409
+      },
+      "pcre/unlimited": {
+        "before": {
+          "ns": 865826.8817204301,
+          "bytes": 15.913978494623656,
+          "spread": 1.0143528405595594
+        },
+        "after": {
+          "ns": 885912.2222222222,
+          "bytes": 16.444444444444443,
+          "spread": 1.008914847445146
+        },
+        "changePercent": 2.3197871220955735
+      },
+      "python/finite": {
+        "before": {
+          "ns": 1359656.6666666667,
+          "bytes": 3664,
+          "spread": 1.0071466163009744
+        },
+        "after": {
+          "ns": 1356722.0338983051,
+          "bytes": 3664,
+          "spread": 1.0193549861369244
+        },
+        "changePercent": -0.2158363092909399
+      },
+      "pcre/finite": {
+        "before": {
+          "ns": 2598915.625,
+          "bytes": 1545.75,
+          "spread": 1.0092696255637097
+        },
+        "after": {
+          "ns": 2625846.875,
+          "bytes": 1545.75,
+          "spread": 1.0097035718779772
+        },
+        "changePercent": 1.036249493478647
+      },
+      "dotnet/predecoded/count": {
+        "before": {
+          "ns": 125992.3197492163,
+          "bytes": 0,
+          "spread": 1.0058199862398094
+        },
+        "after": {
+          "ns": 125237.55795981453,
+          "bytes": 0,
+          "spread": 1.0146530087843355
+        },
+        "changePercent": -0.5990538081242613
+      },
+      "dotnet/decode/count": {
+        "before": {
+          "ns": 130429.42097026604,
+          "bytes": 26024,
+          "spread": 1.0109237665146942
+        },
+        "after": {
+          "ns": 130748.70967741935,
+          "bytes": 26024,
+          "spread": 1.005941034674578
+        },
+        "changePercent": 0.24479807146127186
+      },
+      "dotnet/predecoded/enumerate": {
+        "before": {
+          "ns": 133862.95681063124,
+          "bytes": 0,
+          "spread": 1.0068981010564941
+        },
+        "after": {
+          "ns": 132451.4503816794,
+          "bytes": 0,
+          "spread": 1.0099333290000279
+        },
+        "changePercent": -1.0544413948278542
+      },
+      "dotnet/decode/enumerate": {
+        "before": {
+          "ns": 137882.83185840707,
+          "bytes": 26024,
+          "spread": 1.0075396096160543
+        },
+        "after": {
+          "ns": 137147.4870017331,
+          "bytes": 26024,
+          "spread": 1.0212627465206356
+        },
+        "changePercent": -0.5333113969033465
+      }
+    },
+    "totalSamples": 600,
+    "minimumSampleMilliseconds": 67.5908,
+    "maximumSpread": 1.1385418252752968,
+    "archiveSha256": "176EAB5F391970BB9688FF310A57CD7519BFC0041395D5878B541DB3724F3402",
+    "seconds": 75.79631285415962
+  },
+  "phases": {
+    "before": [
+      {
+        "Kind": "identity",
+        "CoreSha256": "BAE88E2A657900B3DCE4BE61C88E4BED386CF58513F684E926575E600FBB841A",
+        "DriverSha256": "2B427BA59DECA76F8F27B5C03526E0317C22966ABF0973D1D6CDE19FB2DEB692",
+        "Runtime": "10.0.12",
+        "Tiering": "0"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "hit/ordinary/unlimited",
+        "Bytes": 13000,
+        "Count": 2000,
+        "RangeChecksum": 13008000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "hit/ordinary/finite",
+        "Bytes": 13000,
+        "Count": 2000,
+        "RangeChecksum": 13008000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "hit/ordinary/live",
+        "Bytes": 13000,
+        "Count": 2000,
+        "RangeChecksum": 13008000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "hit/compiled/unlimited",
+        "Bytes": 13000,
+        "Count": 2000,
+        "RangeChecksum": 13008000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "hit/compiled/finite",
+        "Bytes": 13000,
+        "Count": 2000,
+        "RangeChecksum": 13008000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "miss/ordinary/unlimited",
+        "Bytes": 13000,
+        "Count": 0,
+        "RangeChecksum": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "miss/ordinary/finite",
+        "Bytes": 13000,
+        "Count": 0,
+        "RangeChecksum": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "miss/ordinary/live",
+        "Bytes": 13000,
+        "Count": 0,
+        "RangeChecksum": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "miss/compiled/unlimited",
+        "Bytes": 13000,
+        "Count": 0,
+        "RangeChecksum": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "miss/compiled/finite",
+        "Bytes": 13000,
+        "Count": 0,
+        "RangeChecksum": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "dense-false-hit/ordinary/unlimited",
+        "Bytes": 4099,
+        "Count": 1,
+        "RangeChecksum": 4100,
+        "First": 4095,
+        "Length": 4,
+        "SubjectSha256": "AA7307443207CB683B8B68BD20707780C8AC9B9A4BE28FFC861E337718BE8D5C"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "dense-false-hit/ordinary/finite",
+        "Bytes": 4099,
+        "Count": 1,
+        "RangeChecksum": 4100,
+        "First": 4095,
+        "Length": 4,
+        "SubjectSha256": "AA7307443207CB683B8B68BD20707780C8AC9B9A4BE28FFC861E337718BE8D5C"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "dense-false-hit/ordinary/live",
+        "Bytes": 4099,
+        "Count": 1,
+        "RangeChecksum": 4100,
+        "First": 4095,
+        "Length": 4,
+        "SubjectSha256": "AA7307443207CB683B8B68BD20707780C8AC9B9A4BE28FFC861E337718BE8D5C"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "dense-false-hit/compiled/unlimited",
+        "Bytes": 4099,
+        "Count": 1,
+        "RangeChecksum": 4100,
+        "First": 4095,
+        "Length": 4,
+        "SubjectSha256": "AA7307443207CB683B8B68BD20707780C8AC9B9A4BE28FFC861E337718BE8D5C"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "dense-false-hit/compiled/finite",
+        "Bytes": 4099,
+        "Count": 1,
+        "RangeChecksum": 4100,
+        "First": 4095,
+        "Length": 4,
+        "SubjectSha256": "AA7307443207CB683B8B68BD20707780C8AC9B9A4BE28FFC861E337718BE8D5C"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "short-hit/ordinary/unlimited",
+        "Bytes": 8,
+        "Count": 2,
+        "RangeChecksum": 13,
+        "First": 0,
+        "Length": 3,
+        "SubjectSha256": "4F57E9A519B8D533089209BCFB345E4D1E2E7B59B2B0682CDEEB2C1EFF6C151B"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "short-hit/ordinary/finite",
+        "Bytes": 8,
+        "Count": 2,
+        "RangeChecksum": 13,
+        "First": 0,
+        "Length": 3,
+        "SubjectSha256": "4F57E9A519B8D533089209BCFB345E4D1E2E7B59B2B0682CDEEB2C1EFF6C151B"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "short-hit/ordinary/live",
+        "Bytes": 8,
+        "Count": 2,
+        "RangeChecksum": 13,
+        "First": 0,
+        "Length": 3,
+        "SubjectSha256": "4F57E9A519B8D533089209BCFB345E4D1E2E7B59B2B0682CDEEB2C1EFF6C151B"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "short-hit/compiled/unlimited",
+        "Bytes": 8,
+        "Count": 2,
+        "RangeChecksum": 13,
+        "First": 0,
+        "Length": 3,
+        "SubjectSha256": "4F57E9A519B8D533089209BCFB345E4D1E2E7B59B2B0682CDEEB2C1EFF6C151B"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "short-hit/compiled/finite",
+        "Bytes": 8,
+        "Count": 2,
+        "RangeChecksum": 13,
+        "First": 0,
+        "Length": 3,
+        "SubjectSha256": "4F57E9A519B8D533089209BCFB345E4D1E2E7B59B2B0682CDEEB2C1EFF6C151B"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "same-head-hit/ordinary/unlimited",
+        "Bytes": 15000,
+        "Count": 2000,
+        "RangeChecksum": 15009000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "CD0F28FFA720D8AE23C6394FFE34459562DE51DEA9E9646A8E833D58B586D776"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "same-head-hit/ordinary/finite",
+        "Bytes": 15000,
+        "Count": 2000,
+        "RangeChecksum": 15009000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "CD0F28FFA720D8AE23C6394FFE34459562DE51DEA9E9646A8E833D58B586D776"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "same-head-hit/ordinary/live",
+        "Bytes": 15000,
+        "Count": 2000,
+        "RangeChecksum": 15009000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "CD0F28FFA720D8AE23C6394FFE34459562DE51DEA9E9646A8E833D58B586D776"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "same-head-hit/compiled/unlimited",
+        "Bytes": 15000,
+        "Count": 2000,
+        "RangeChecksum": 15009000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "CD0F28FFA720D8AE23C6394FFE34459562DE51DEA9E9646A8E833D58B586D776"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "same-head-hit/compiled/finite",
+        "Bytes": 15000,
+        "Count": 2000,
+        "RangeChecksum": 15009000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "CD0F28FFA720D8AE23C6394FFE34459562DE51DEA9E9646A8E833D58B586D776"
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "hit/ordinary/unlimited/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "hit/ordinary/unlimited/enumerate",
+        "Expected": 13008000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "hit/ordinary/finite/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "hit/ordinary/finite/enumerate",
+        "Expected": 13008000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "hit/ordinary/live/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "hit/ordinary/live/enumerate",
+        "Expected": 13008000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "hit/compiled/unlimited/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "hit/compiled/unlimited/enumerate",
+        "Expected": 13008000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "hit/compiled/finite/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "hit/compiled/finite/enumerate",
+        "Expected": 13008000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "miss/ordinary/unlimited/count",
+        "Expected": 0
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "miss/ordinary/unlimited/enumerate",
+        "Expected": 0
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "miss/ordinary/finite/count",
+        "Expected": 0
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "miss/ordinary/finite/enumerate",
+        "Expected": 0
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "miss/ordinary/live/count",
+        "Expected": 0
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "miss/ordinary/live/enumerate",
+        "Expected": 0
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "miss/compiled/unlimited/count",
+        "Expected": 0
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "miss/compiled/unlimited/enumerate",
+        "Expected": 0
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "miss/compiled/finite/count",
+        "Expected": 0
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "miss/compiled/finite/enumerate",
+        "Expected": 0
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dense-false-hit/ordinary/unlimited/count",
+        "Expected": 1
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dense-false-hit/ordinary/unlimited/enumerate",
+        "Expected": 4100
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dense-false-hit/ordinary/finite/count",
+        "Expected": 1
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dense-false-hit/ordinary/finite/enumerate",
+        "Expected": 4100
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dense-false-hit/ordinary/live/count",
+        "Expected": 1
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dense-false-hit/ordinary/live/enumerate",
+        "Expected": 4100
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dense-false-hit/compiled/unlimited/count",
+        "Expected": 1
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dense-false-hit/compiled/unlimited/enumerate",
+        "Expected": 4100
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dense-false-hit/compiled/finite/count",
+        "Expected": 1
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dense-false-hit/compiled/finite/enumerate",
+        "Expected": 4100
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "short-hit/ordinary/unlimited/count",
+        "Expected": 2
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "short-hit/ordinary/unlimited/enumerate",
+        "Expected": 13
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "short-hit/ordinary/finite/count",
+        "Expected": 2
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "short-hit/ordinary/finite/enumerate",
+        "Expected": 13
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "short-hit/ordinary/live/count",
+        "Expected": 2
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "short-hit/ordinary/live/enumerate",
+        "Expected": 13
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "short-hit/compiled/unlimited/count",
+        "Expected": 2
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "short-hit/compiled/unlimited/enumerate",
+        "Expected": 13
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "short-hit/compiled/finite/count",
+        "Expected": 2
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "short-hit/compiled/finite/enumerate",
+        "Expected": 13
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "same-head-hit/ordinary/unlimited/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "same-head-hit/ordinary/unlimited/enumerate",
+        "Expected": 15009000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "same-head-hit/ordinary/finite/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "same-head-hit/ordinary/finite/enumerate",
+        "Expected": 15009000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "same-head-hit/ordinary/live/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "same-head-hit/ordinary/live/enumerate",
+        "Expected": 15009000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "same-head-hit/compiled/unlimited/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "same-head-hit/compiled/unlimited/enumerate",
+        "Expected": 15009000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "same-head-hit/compiled/finite/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "same-head-hit/compiled/finite/enumerate",
+        "Expected": 15009000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "three-neighbor/ordinary",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "three-neighbor/compiled",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "python/unlimited",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "pcre/unlimited",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "python/finite",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "pcre/finite",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dotnet/predecoded/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dotnet/decode/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dotnet/predecoded/enumerate",
+        "Expected": 13008000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dotnet/decode/enumerate",
+        "Expected": 13008000
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/unlimited/count",
+        "Ordinal": 0,
+        "Ns": 145689.8336414048,
+        "Bytes": 1792,
+        "Ms": 78.8182,
+        "Iterations": 541
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/unlimited/enumerate",
+        "Ordinal": 0,
+        "Ns": 1555409.433962264,
+        "Bytes": 3585792,
+        "Ms": 82.4367,
+        "Iterations": 53
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/finite/count",
+        "Ordinal": 0,
+        "Ns": 286570.28985507245,
+        "Bytes": 112,
+        "Ms": 79.0934,
+        "Iterations": 276
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/finite/enumerate",
+        "Ordinal": 0,
+        "Ns": 2509312.5,
+        "Bytes": 7107664,
+        "Ms": 80.298,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/live/count",
+        "Ordinal": 0,
+        "Ns": 276171.08013937285,
+        "Bytes": 112,
+        "Ms": 79.2611,
+        "Iterations": 287
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/live/enumerate",
+        "Ordinal": 0,
+        "Ns": 2454006.25,
+        "Bytes": 7107664,
+        "Ms": 78.5282,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/unlimited/count",
+        "Ordinal": 0,
+        "Ns": 144984.79853479852,
+        "Bytes": 1792,
+        "Ms": 79.1617,
+        "Iterations": 546
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/unlimited/enumerate",
+        "Ordinal": 0,
+        "Ns": 1533221.8181818181,
+        "Bytes": 3585792,
+        "Ms": 84.3272,
+        "Iterations": 55
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/finite/count",
+        "Ordinal": 0,
+        "Ns": 290032.5259515571,
+        "Bytes": 112,
+        "Ms": 83.8194,
+        "Iterations": 289
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/finite/enumerate",
+        "Ordinal": 0,
+        "Ns": 2574571.875,
+        "Bytes": 7107664,
+        "Ms": 82.3863,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/unlimited/count",
+        "Ordinal": 0,
+        "Ns": 175430.48245614034,
+        "Bytes": 1792,
+        "Ms": 79.9963,
+        "Iterations": 456
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/unlimited/enumerate",
+        "Ordinal": 0,
+        "Ns": 179688.28828828828,
+        "Bytes": 1792,
+        "Ms": 79.7816,
+        "Iterations": 444
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/finite/count",
+        "Ordinal": 0,
+        "Ns": 367335.48387096776,
+        "Bytes": 112,
+        "Ms": 79.7118,
+        "Iterations": 217
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/finite/enumerate",
+        "Ordinal": 0,
+        "Ns": 2127859.375,
+        "Bytes": 3664,
+        "Ms": 68.0915,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/live/count",
+        "Ordinal": 0,
+        "Ns": 357864.5739910314,
+        "Bytes": 112,
+        "Ms": 79.8038,
+        "Iterations": 223
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/live/enumerate",
+        "Ordinal": 0,
+        "Ns": 2113543.75,
+        "Bytes": 3664,
+        "Ms": 67.6334,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/unlimited/count",
+        "Ordinal": 0,
+        "Ns": 173354.44685466378,
+        "Bytes": 1792,
+        "Ms": 79.9164,
+        "Iterations": 461
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/unlimited/enumerate",
+        "Ordinal": 0,
+        "Ns": 179644.51754385966,
+        "Bytes": 1792,
+        "Ms": 81.9179,
+        "Iterations": 456
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/finite/count",
+        "Ordinal": 0,
+        "Ns": 370951.85185185185,
+        "Bytes": 112,
+        "Ms": 80.1256,
+        "Iterations": 216
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/finite/enumerate",
+        "Ordinal": 0,
+        "Ns": 2122103.125,
+        "Bytes": 3664,
+        "Ms": 67.9073,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/unlimited/count",
+        "Ordinal": 0,
+        "Ns": 49731.5987460815,
+        "Bytes": 1792,
+        "Ms": 79.3219,
+        "Iterations": 1595
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 0,
+        "Ns": 56050.2784407319,
+        "Bytes": 3584,
+        "Ms": 70.4552,
+        "Iterations": 1257
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/finite/count",
+        "Ordinal": 0,
+        "Ns": 286792.80303030304,
+        "Bytes": 112,
+        "Ms": 75.7133,
+        "Iterations": 264
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/finite/enumerate",
+        "Ordinal": 0,
+        "Ns": 751354.716981132,
+        "Bytes": 7216,
+        "Ms": 79.6436,
+        "Iterations": 106
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/live/count",
+        "Ordinal": 0,
+        "Ns": 288508.39416058396,
+        "Bytes": 112,
+        "Ms": 79.0513,
+        "Iterations": 274
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/live/enumerate",
+        "Ordinal": 0,
+        "Ns": 755540.1869158879,
+        "Bytes": 7216,
+        "Ms": 80.8428,
+        "Iterations": 107
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/unlimited/count",
+        "Ordinal": 0,
+        "Ns": 49577.00180614088,
+        "Bytes": 1792,
+        "Ms": 82.3474,
+        "Iterations": 1661
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/unlimited/enumerate",
+        "Ordinal": 0,
+        "Ns": 56607.73519163763,
+        "Bytes": 3584,
+        "Ms": 81.2321,
+        "Iterations": 1435
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/finite/count",
+        "Ordinal": 0,
+        "Ns": 298460.9195402299,
+        "Bytes": 112,
+        "Ms": 77.8983,
+        "Iterations": 261
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/finite/enumerate",
+        "Ordinal": 0,
+        "Ns": 755315.8878504672,
+        "Bytes": 7216,
+        "Ms": 80.8188,
+        "Iterations": 107
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/unlimited/count",
+        "Ordinal": 0,
+        "Ns": 1111.0438564203237,
+        "Bytes": 1792,
+        "Ms": 81.4984,
+        "Iterations": 73353
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 0,
+        "Ns": 8136.380415776181,
+        "Bytes": 5376,
+        "Ms": 83.7559,
+        "Iterations": 10294
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/finite/count",
+        "Ordinal": 0,
+        "Ns": 526.234486400845,
+        "Bytes": 112,
+        "Ms": 79.714,
+        "Iterations": 151480
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/finite/enumerate",
+        "Ordinal": 0,
+        "Ns": 3429.940968122786,
+        "Bytes": 10768,
+        "Ms": 72.629,
+        "Iterations": 21175
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/live/count",
+        "Ordinal": 0,
+        "Ns": 517.6787132254021,
+        "Bytes": 112,
+        "Ms": 78.8844,
+        "Iterations": 152381
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/live/enumerate",
+        "Ordinal": 0,
+        "Ns": 3290.783836980433,
+        "Bytes": 10768,
+        "Ms": 85.2675,
+        "Iterations": 25911
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/unlimited/count",
+        "Ordinal": 0,
+        "Ns": 1057.3275862068965,
+        "Bytes": 1792,
+        "Ms": 78.0054,
+        "Iterations": 73776
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/unlimited/enumerate",
+        "Ordinal": 0,
+        "Ns": 7969.73,
+        "Bytes": 5376,
+        "Ms": 79.6973,
+        "Iterations": 10000
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/finite/count",
+        "Ordinal": 0,
+        "Ns": 527.5118827567995,
+        "Bytes": 112,
+        "Ms": 79.9075,
+        "Iterations": 151480
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/finite/enumerate",
+        "Ordinal": 0,
+        "Ns": 3396.0050286352844,
+        "Bytes": 10768,
+        "Ms": 72.936,
+        "Iterations": 21477
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/unlimited/count",
+        "Ordinal": 0,
+        "Ns": 160145.49098196393,
+        "Bytes": 1720,
+        "Ms": 79.9126,
+        "Iterations": 499
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 0,
+        "Ns": 1470201.8181818181,
+        "Bytes": 3441720,
+        "Ms": 80.8611,
+        "Iterations": 55
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/finite/count",
+        "Ordinal": 0,
+        "Ns": 317168.2170542636,
+        "Bytes": 112,
+        "Ms": 81.8294,
+        "Iterations": 258
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/finite/enumerate",
+        "Ordinal": 0,
+        "Ns": 2338146.875,
+        "Bytes": 7105792,
+        "Ms": 74.8207,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/live/count",
+        "Ordinal": 0,
+        "Ns": 306146.9696969697,
+        "Bytes": 112,
+        "Ms": 80.8228,
+        "Iterations": 264
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/live/enumerate",
+        "Ordinal": 0,
+        "Ns": 2354609.375,
+        "Bytes": 7105792,
+        "Ms": 75.3475,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/unlimited/count",
+        "Ordinal": 0,
+        "Ns": 160047.41035856574,
+        "Bytes": 1720,
+        "Ms": 80.3438,
+        "Iterations": 502
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/unlimited/enumerate",
+        "Ordinal": 0,
+        "Ns": 1469040,
+        "Bytes": 3441720,
+        "Ms": 80.7972,
+        "Iterations": 55
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/finite/count",
+        "Ordinal": 0,
+        "Ns": 317088.23529411765,
+        "Bytes": 112,
+        "Ms": 80.8575,
+        "Iterations": 255
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/finite/enumerate",
+        "Ordinal": 0,
+        "Ns": 2321806.25,
+        "Bytes": 7105792,
+        "Ms": 74.2978,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "three-neighbor/ordinary",
+        "Ordinal": 0,
+        "Ns": 150567.93168880456,
+        "Bytes": 1904,
+        "Ms": 79.3493,
+        "Iterations": 527
+      },
+      {
+        "Kind": "sample",
+        "Lane": "three-neighbor/compiled",
+        "Ordinal": 0,
+        "Ns": 151234.4696969697,
+        "Bytes": 1904,
+        "Ms": 79.8518,
+        "Iterations": 528
+      },
+      {
+        "Kind": "sample",
+        "Lane": "python/unlimited",
+        "Ordinal": 0,
+        "Ns": 1342232.786885246,
+        "Bytes": 3552,
+        "Ms": 81.8762,
+        "Iterations": 61
+      },
+      {
+        "Kind": "sample",
+        "Lane": "pcre/unlimited",
+        "Ordinal": 0,
+        "Ns": 859969.8924731183,
+        "Bytes": 15.913978494623656,
+        "Ms": 79.9772,
+        "Iterations": 93
+      },
+      {
+        "Kind": "sample",
+        "Lane": "python/finite",
+        "Ordinal": 0,
+        "Ns": 1359255,
+        "Bytes": 3664,
+        "Ms": 81.5553,
+        "Iterations": 60
+      },
+      {
+        "Kind": "sample",
+        "Lane": "pcre/finite",
+        "Ordinal": 0,
+        "Ns": 2584718.75,
+        "Bytes": 1545.75,
+        "Ms": 82.711,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/predecoded/count",
+        "Ordinal": 0,
+        "Ns": 125757.6802507837,
+        "Bytes": 0,
+        "Ms": 80.2334,
+        "Iterations": 638
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/decode/count",
+        "Ordinal": 0,
+        "Ns": 130429.42097026604,
+        "Bytes": 26024,
+        "Ms": 83.3444,
+        "Iterations": 639
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/predecoded/enumerate",
+        "Ordinal": 0,
+        "Ns": 133095.5149501661,
+        "Bytes": 0,
+        "Ms": 80.1235,
+        "Iterations": 602
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/decode/enumerate",
+        "Ordinal": 0,
+        "Ns": 137882.83185840707,
+        "Bytes": 26024,
+        "Ms": 77.9038,
+        "Iterations": 565
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/decode/enumerate",
+        "Ordinal": 1,
+        "Ns": 137726.90265486727,
+        "Bytes": 26024,
+        "Ms": 77.8157,
+        "Iterations": 565
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/predecoded/enumerate",
+        "Ordinal": 1,
+        "Ns": 133700.16611295682,
+        "Bytes": 0,
+        "Ms": 80.4875,
+        "Iterations": 602
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/decode/count",
+        "Ordinal": 1,
+        "Ns": 130367.13615023474,
+        "Bytes": 26024,
+        "Ms": 83.3046,
+        "Iterations": 639
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/predecoded/count",
+        "Ordinal": 1,
+        "Ns": 125526.802507837,
+        "Bytes": 0,
+        "Ms": 80.0861,
+        "Iterations": 638
+      },
+      {
+        "Kind": "sample",
+        "Lane": "pcre/finite",
+        "Ordinal": 1,
+        "Ns": 2586950,
+        "Bytes": 1592,
+        "Ms": 82.7824,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "python/finite",
+        "Ordinal": 1,
+        "Ns": 1363461.6666666667,
+        "Bytes": 3664,
+        "Ms": 81.8077,
+        "Iterations": 60
+      },
+      {
+        "Kind": "sample",
+        "Lane": "pcre/unlimited",
+        "Ordinal": 1,
+        "Ns": 867602.1505376344,
+        "Bytes": 15.913978494623656,
+        "Ms": 80.687,
+        "Iterations": 93
+      },
+      {
+        "Kind": "sample",
+        "Lane": "python/unlimited",
+        "Ordinal": 1,
+        "Ns": 1335173.7704918033,
+        "Bytes": 3552,
+        "Ms": 81.4456,
+        "Iterations": 61
+      },
+      {
+        "Kind": "sample",
+        "Lane": "three-neighbor/compiled",
+        "Ordinal": 1,
+        "Ns": 150449.62121212122,
+        "Bytes": 1904,
+        "Ms": 79.4374,
+        "Iterations": 528
+      },
+      {
+        "Kind": "sample",
+        "Lane": "three-neighbor/ordinary",
+        "Ordinal": 1,
+        "Ns": 151586.33776091083,
+        "Bytes": 1904,
+        "Ms": 79.886,
+        "Iterations": 527
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/finite/enumerate",
+        "Ordinal": 1,
+        "Ns": 2402112.5,
+        "Bytes": 7105792,
+        "Ms": 76.8676,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/finite/count",
+        "Ordinal": 1,
+        "Ns": 318601.56862745096,
+        "Bytes": 112,
+        "Ms": 81.2434,
+        "Iterations": 255
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/unlimited/enumerate",
+        "Ordinal": 1,
+        "Ns": 1497912.7272727273,
+        "Bytes": 3441720,
+        "Ms": 82.3852,
+        "Iterations": 55
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/unlimited/count",
+        "Ordinal": 1,
+        "Ns": 160158.5657370518,
+        "Bytes": 1720,
+        "Ms": 80.3996,
+        "Iterations": 502
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/live/enumerate",
+        "Ordinal": 1,
+        "Ns": 2368471.875,
+        "Bytes": 7105792,
+        "Ms": 75.7911,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/live/count",
+        "Ordinal": 1,
+        "Ns": 308301.13636363635,
+        "Bytes": 112,
+        "Ms": 81.3915,
+        "Iterations": 264
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/finite/enumerate",
+        "Ordinal": 1,
+        "Ns": 2382784.375,
+        "Bytes": 7105792,
+        "Ms": 76.2491,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/finite/count",
+        "Ordinal": 1,
+        "Ns": 317851.16279069765,
+        "Bytes": 112,
+        "Ms": 82.0056,
+        "Iterations": 258
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 1,
+        "Ns": 1485792.7272727273,
+        "Bytes": 3441720,
+        "Ms": 81.7186,
+        "Iterations": 55
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/unlimited/count",
+        "Ordinal": 1,
+        "Ns": 159978.15631262524,
+        "Bytes": 1720,
+        "Ms": 79.8291,
+        "Iterations": 499
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/finite/enumerate",
+        "Ordinal": 1,
+        "Ns": 3479.829585137589,
+        "Bytes": 10768,
+        "Ms": 74.7363,
+        "Iterations": 21477
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/finite/count",
+        "Ordinal": 1,
+        "Ns": 533.9028254555056,
+        "Bytes": 112,
+        "Ms": 80.8756,
+        "Iterations": 151480
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/unlimited/enumerate",
+        "Ordinal": 1,
+        "Ns": 8108.67,
+        "Bytes": 5376,
+        "Ms": 81.0867,
+        "Iterations": 10000
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/unlimited/count",
+        "Ordinal": 1,
+        "Ns": 1106.9480589893733,
+        "Bytes": 1792,
+        "Ms": 81.6662,
+        "Iterations": 73776
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/live/enumerate",
+        "Ordinal": 1,
+        "Ns": 3458.1065956543553,
+        "Bytes": 10768,
+        "Ms": 89.603,
+        "Iterations": 25911
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/live/count",
+        "Ordinal": 1,
+        "Ns": 520.5832748177266,
+        "Bytes": 112,
+        "Ms": 79.327,
+        "Iterations": 152381
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/finite/enumerate",
+        "Ordinal": 1,
+        "Ns": 3422.427390791027,
+        "Bytes": 10768,
+        "Ms": 72.4699,
+        "Iterations": 21175
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/finite/count",
+        "Ordinal": 1,
+        "Ns": 532.2478214945868,
+        "Bytes": 112,
+        "Ms": 80.6249,
+        "Iterations": 151480
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 1,
+        "Ns": 8035.311832135224,
+        "Bytes": 5376,
+        "Ms": 82.7155,
+        "Iterations": 10294
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/unlimited/count",
+        "Ordinal": 1,
+        "Ns": 1111.23880413889,
+        "Bytes": 1792,
+        "Ms": 81.5127,
+        "Iterations": 73353
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/finite/enumerate",
+        "Ordinal": 1,
+        "Ns": 750778.5046728972,
+        "Bytes": 7216,
+        "Ms": 80.3333,
+        "Iterations": 107
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/finite/count",
+        "Ordinal": 1,
+        "Ns": 266727.2030651341,
+        "Bytes": 112,
+        "Ms": 69.6158,
+        "Iterations": 261
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/unlimited/enumerate",
+        "Ordinal": 1,
+        "Ns": 55916.02787456446,
+        "Bytes": 3584,
+        "Ms": 80.2395,
+        "Iterations": 1435
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/unlimited/count",
+        "Ordinal": 1,
+        "Ns": 50082.36002408188,
+        "Bytes": 1792,
+        "Ms": 83.1868,
+        "Iterations": 1661
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/live/enumerate",
+        "Ordinal": 1,
+        "Ns": 750824.2990654205,
+        "Bytes": 7216,
+        "Ms": 80.3382,
+        "Iterations": 107
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/live/count",
+        "Ordinal": 1,
+        "Ns": 269964.23357664235,
+        "Bytes": 112,
+        "Ms": 73.9702,
+        "Iterations": 274
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/finite/enumerate",
+        "Ordinal": 1,
+        "Ns": 752992.4528301887,
+        "Bytes": 7216,
+        "Ms": 79.8172,
+        "Iterations": 106
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/finite/count",
+        "Ordinal": 1,
+        "Ns": 267966.6666666667,
+        "Bytes": 112,
+        "Ms": 70.7432,
+        "Iterations": 264
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 1,
+        "Ns": 56297.93158313445,
+        "Bytes": 3584,
+        "Ms": 70.7665,
+        "Iterations": 1257
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/unlimited/count",
+        "Ordinal": 1,
+        "Ns": 49487.58620689655,
+        "Bytes": 1792,
+        "Ms": 78.9327,
+        "Iterations": 1595
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/finite/enumerate",
+        "Ordinal": 1,
+        "Ns": 2134109.375,
+        "Bytes": 3664,
+        "Ms": 68.2915,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/finite/count",
+        "Ordinal": 1,
+        "Ns": 373012.962962963,
+        "Bytes": 112,
+        "Ms": 80.5708,
+        "Iterations": 216
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/unlimited/enumerate",
+        "Ordinal": 1,
+        "Ns": 180183.77192982455,
+        "Bytes": 1792,
+        "Ms": 82.1638,
+        "Iterations": 456
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/unlimited/count",
+        "Ordinal": 1,
+        "Ns": 174869.6312364425,
+        "Bytes": 1792,
+        "Ms": 80.6149,
+        "Iterations": 461
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/live/enumerate",
+        "Ordinal": 1,
+        "Ns": 2117953.125,
+        "Bytes": 3664,
+        "Ms": 67.7745,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/live/count",
+        "Ordinal": 1,
+        "Ns": 359259.6412556054,
+        "Bytes": 112,
+        "Ms": 80.1149,
+        "Iterations": 223
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/finite/enumerate",
+        "Ordinal": 1,
+        "Ns": 2134856.25,
+        "Bytes": 3664,
+        "Ms": 68.3154,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/finite/count",
+        "Ordinal": 1,
+        "Ns": 371115.668202765,
+        "Bytes": 112,
+        "Ms": 80.5321,
+        "Iterations": 217
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/unlimited/enumerate",
+        "Ordinal": 1,
+        "Ns": 177974.77477477476,
+        "Bytes": 1792,
+        "Ms": 79.0208,
+        "Iterations": 444
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/unlimited/count",
+        "Ordinal": 1,
+        "Ns": 175277.41228070174,
+        "Bytes": 1792,
+        "Ms": 79.9265,
+        "Iterations": 456
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/finite/enumerate",
+        "Ordinal": 1,
+        "Ns": 2580971.875,
+        "Bytes": 7107664,
+        "Ms": 82.5911,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/finite/count",
+        "Ordinal": 1,
+        "Ns": 288894.1176470588,
+        "Bytes": 112,
+        "Ms": 83.4904,
+        "Iterations": 289
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/unlimited/enumerate",
+        "Ordinal": 1,
+        "Ns": 1543021.8181818181,
+        "Bytes": 3585792,
+        "Ms": 84.8662,
+        "Iterations": 55
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/unlimited/count",
+        "Ordinal": 1,
+        "Ns": 145999.81684981685,
+        "Bytes": 1792,
+        "Ms": 79.7159,
+        "Iterations": 546
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/live/enumerate",
+        "Ordinal": 1,
+        "Ns": 2546750,
+        "Bytes": 7107664,
+        "Ms": 81.496,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/live/count",
+        "Ordinal": 1,
+        "Ns": 278970.0348432056,
+        "Bytes": 112,
+        "Ms": 80.0644,
+        "Iterations": 287
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/finite/enumerate",
+        "Ordinal": 1,
+        "Ns": 2576715.625,
+        "Bytes": 7107664,
+        "Ms": 82.4549,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/finite/count",
+        "Ordinal": 1,
+        "Ns": 289571.73913043475,
+        "Bytes": 112,
+        "Ms": 79.9218,
+        "Iterations": 276
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/unlimited/enumerate",
+        "Ordinal": 1,
+        "Ns": 1543884.9056603773,
+        "Bytes": 3585792,
+        "Ms": 81.8259,
+        "Iterations": 53
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/unlimited/count",
+        "Ordinal": 1,
+        "Ns": 146169.31608133088,
+        "Bytes": 1792,
+        "Ms": 79.0776,
+        "Iterations": 541
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/unlimited/count",
+        "Ordinal": 2,
+        "Ns": 146349.90757855822,
+        "Bytes": 1792,
+        "Ms": 79.1753,
+        "Iterations": 541
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/unlimited/enumerate",
+        "Ordinal": 2,
+        "Ns": 1557418.8679245282,
+        "Bytes": 3585792,
+        "Ms": 82.5432,
+        "Iterations": 53
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/finite/count",
+        "Ordinal": 2,
+        "Ns": 288404.71014492755,
+        "Bytes": 112,
+        "Ms": 79.5997,
+        "Iterations": 276
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/finite/enumerate",
+        "Ordinal": 2,
+        "Ns": 2582212.5,
+        "Bytes": 7107664,
+        "Ms": 82.6308,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/live/count",
+        "Ordinal": 2,
+        "Ns": 280412.1951219512,
+        "Bytes": 112,
+        "Ms": 80.4783,
+        "Iterations": 287
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/live/enumerate",
+        "Ordinal": 2,
+        "Ns": 2533878.125,
+        "Bytes": 7107664,
+        "Ms": 81.0841,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/unlimited/count",
+        "Ordinal": 2,
+        "Ns": 145481.13553113554,
+        "Bytes": 1792,
+        "Ms": 79.4327,
+        "Iterations": 546
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/unlimited/enumerate",
+        "Ordinal": 2,
+        "Ns": 1549114.5454545454,
+        "Bytes": 3585792,
+        "Ms": 85.2013,
+        "Iterations": 55
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/finite/count",
+        "Ordinal": 2,
+        "Ns": 290102.0761245675,
+        "Bytes": 112,
+        "Ms": 83.8395,
+        "Iterations": 289
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/finite/enumerate",
+        "Ordinal": 2,
+        "Ns": 2565003.125,
+        "Bytes": 7107664,
+        "Ms": 82.0801,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/unlimited/count",
+        "Ordinal": 2,
+        "Ns": 174590.13157894736,
+        "Bytes": 1792,
+        "Ms": 79.6131,
+        "Iterations": 456
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/unlimited/enumerate",
+        "Ordinal": 2,
+        "Ns": 179090.76576576577,
+        "Bytes": 1792,
+        "Ms": 79.5163,
+        "Iterations": 444
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/finite/count",
+        "Ordinal": 2,
+        "Ns": 375091.24423963134,
+        "Bytes": 112,
+        "Ms": 81.3948,
+        "Iterations": 217
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/finite/enumerate",
+        "Ordinal": 2,
+        "Ns": 2123115.625,
+        "Bytes": 3664,
+        "Ms": 67.9397,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/live/count",
+        "Ordinal": 2,
+        "Ns": 360078.0269058296,
+        "Bytes": 112,
+        "Ms": 80.2974,
+        "Iterations": 223
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/live/enumerate",
+        "Ordinal": 2,
+        "Ns": 2127384.375,
+        "Bytes": 3664,
+        "Ms": 68.0763,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/unlimited/count",
+        "Ordinal": 2,
+        "Ns": 176082.4295010846,
+        "Bytes": 1792,
+        "Ms": 81.174,
+        "Iterations": 461
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/unlimited/enumerate",
+        "Ordinal": 2,
+        "Ns": 180318.20175438595,
+        "Bytes": 1792,
+        "Ms": 82.2251,
+        "Iterations": 456
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/finite/count",
+        "Ordinal": 2,
+        "Ns": 372303.24074074073,
+        "Bytes": 112,
+        "Ms": 80.4175,
+        "Iterations": 216
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/finite/enumerate",
+        "Ordinal": 2,
+        "Ns": 2112212.5,
+        "Bytes": 3664,
+        "Ms": 67.5908,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/unlimited/count",
+        "Ordinal": 2,
+        "Ns": 50015.73667711599,
+        "Bytes": 1792,
+        "Ms": 79.7751,
+        "Iterations": 1595
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 2,
+        "Ns": 56659.3476531424,
+        "Bytes": 3584,
+        "Ms": 71.2208,
+        "Iterations": 1257
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/finite/count",
+        "Ordinal": 2,
+        "Ns": 268846.9696969697,
+        "Bytes": 112,
+        "Ms": 70.9756,
+        "Iterations": 264
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/finite/enumerate",
+        "Ordinal": 2,
+        "Ns": 750983.0188679246,
+        "Bytes": 7216,
+        "Ms": 79.6042,
+        "Iterations": 106
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/live/count",
+        "Ordinal": 2,
+        "Ns": 273406.93430656934,
+        "Bytes": 112,
+        "Ms": 74.9135,
+        "Iterations": 274
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/live/enumerate",
+        "Ordinal": 2,
+        "Ns": 754944.8598130841,
+        "Bytes": 7216,
+        "Ms": 80.7791,
+        "Iterations": 107
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/unlimited/count",
+        "Ordinal": 2,
+        "Ns": 49866.82721252258,
+        "Bytes": 1792,
+        "Ms": 82.8288,
+        "Iterations": 1661
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/unlimited/enumerate",
+        "Ordinal": 2,
+        "Ns": 56370.94076655052,
+        "Bytes": 3584,
+        "Ms": 80.8923,
+        "Iterations": 1435
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/finite/count",
+        "Ordinal": 2,
+        "Ns": 282700,
+        "Bytes": 112,
+        "Ms": 73.7847,
+        "Iterations": 261
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/finite/enumerate",
+        "Ordinal": 2,
+        "Ns": 747332.7102803738,
+        "Bytes": 7216,
+        "Ms": 79.9646,
+        "Iterations": 107
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/unlimited/count",
+        "Ordinal": 2,
+        "Ns": 1095.4180469783103,
+        "Bytes": 1792,
+        "Ms": 80.3522,
+        "Iterations": 73353
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 2,
+        "Ns": 8079.881484359821,
+        "Bytes": 5376,
+        "Ms": 83.1743,
+        "Iterations": 10294
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/finite/count",
+        "Ordinal": 2,
+        "Ns": 532.6056245048851,
+        "Bytes": 112,
+        "Ms": 80.6791,
+        "Iterations": 151480
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/finite/enumerate",
+        "Ordinal": 2,
+        "Ns": 3377.87012987013,
+        "Bytes": 10768,
+        "Ms": 71.5264,
+        "Iterations": 21175
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/live/count",
+        "Ordinal": 2,
+        "Ns": 522.8873678476975,
+        "Bytes": 112,
+        "Ms": 79.6781,
+        "Iterations": 152381
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/live/enumerate",
+        "Ordinal": 2,
+        "Ns": 3355.5362587318127,
+        "Bytes": 10768,
+        "Ms": 86.9453,
+        "Iterations": 25911
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/unlimited/count",
+        "Ordinal": 2,
+        "Ns": 1054.692582953806,
+        "Bytes": 1792,
+        "Ms": 77.811,
+        "Iterations": 73776
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/unlimited/enumerate",
+        "Ordinal": 2,
+        "Ns": 8047.03,
+        "Bytes": 5376,
+        "Ms": 80.4703,
+        "Iterations": 10000
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/finite/count",
+        "Ordinal": 2,
+        "Ns": 525.9037496699234,
+        "Bytes": 112,
+        "Ms": 79.6639,
+        "Iterations": 151480
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/finite/enumerate",
+        "Ordinal": 2,
+        "Ns": 3242.7713367788797,
+        "Bytes": 10768,
+        "Ms": 69.645,
+        "Iterations": 21477
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/unlimited/count",
+        "Ordinal": 2,
+        "Ns": 159229.25851703406,
+        "Bytes": 1720,
+        "Ms": 79.4554,
+        "Iterations": 499
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 2,
+        "Ns": 1427412.7272727273,
+        "Bytes": 3441720,
+        "Ms": 78.5077,
+        "Iterations": 55
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/finite/count",
+        "Ordinal": 2,
+        "Ns": 316724.4186046512,
+        "Bytes": 112,
+        "Ms": 81.7149,
+        "Iterations": 258
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/finite/enumerate",
+        "Ordinal": 2,
+        "Ns": 2243662.5,
+        "Bytes": 7105792,
+        "Ms": 71.7972,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/live/count",
+        "Ordinal": 2,
+        "Ns": 308785.98484848486,
+        "Bytes": 112,
+        "Ms": 81.5195,
+        "Iterations": 264
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/live/enumerate",
+        "Ordinal": 2,
+        "Ns": 2288925,
+        "Bytes": 7105792,
+        "Ms": 73.2456,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/unlimited/count",
+        "Ordinal": 2,
+        "Ns": 161122.31075697212,
+        "Bytes": 1720,
+        "Ms": 80.8834,
+        "Iterations": 502
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/unlimited/enumerate",
+        "Ordinal": 2,
+        "Ns": 1466883.6363636365,
+        "Bytes": 3441720,
+        "Ms": 80.6786,
+        "Iterations": 55
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/finite/count",
+        "Ordinal": 2,
+        "Ns": 316236.4705882353,
+        "Bytes": 112,
+        "Ms": 80.6403,
+        "Iterations": 255
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/finite/enumerate",
+        "Ordinal": 2,
+        "Ns": 2344278.125,
+        "Bytes": 7105792,
+        "Ms": 75.0169,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "three-neighbor/ordinary",
+        "Ordinal": 2,
+        "Ns": 152039.65844402276,
+        "Bytes": 1904,
+        "Ms": 80.1249,
+        "Iterations": 527
+      },
+      {
+        "Kind": "sample",
+        "Lane": "three-neighbor/compiled",
+        "Ordinal": 2,
+        "Ns": 151279.73484848486,
+        "Bytes": 1904,
+        "Ms": 79.8757,
+        "Iterations": 528
+      },
+      {
+        "Kind": "sample",
+        "Lane": "python/unlimited",
+        "Ordinal": 2,
+        "Ns": 1352122.950819672,
+        "Bytes": 3552,
+        "Ms": 82.4795,
+        "Iterations": 61
+      },
+      {
+        "Kind": "sample",
+        "Lane": "pcre/unlimited",
+        "Ordinal": 2,
+        "Ns": 865826.8817204301,
+        "Bytes": 0,
+        "Ms": 80.5219,
+        "Iterations": 93
+      },
+      {
+        "Kind": "sample",
+        "Lane": "python/finite",
+        "Ordinal": 2,
+        "Ns": 1359656.6666666667,
+        "Bytes": 3664,
+        "Ms": 81.5794,
+        "Iterations": 60
+      },
+      {
+        "Kind": "sample",
+        "Lane": "pcre/finite",
+        "Ordinal": 2,
+        "Ns": 2600031.25,
+        "Bytes": 1545.75,
+        "Ms": 83.201,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/predecoded/count",
+        "Ordinal": 2,
+        "Ns": 126016.77115987461,
+        "Bytes": 0,
+        "Ms": 80.3987,
+        "Iterations": 638
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/decode/count",
+        "Ordinal": 2,
+        "Ns": 130402.19092331768,
+        "Bytes": 26024,
+        "Ms": 83.327,
+        "Iterations": 639
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/predecoded/enumerate",
+        "Ordinal": 2,
+        "Ns": 134013.62126245847,
+        "Bytes": 0,
+        "Ms": 80.6762,
+        "Iterations": 602
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/decode/enumerate",
+        "Ordinal": 2,
+        "Ns": 137839.82300884955,
+        "Bytes": 26024,
+        "Ms": 77.8795,
+        "Iterations": 565
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/decode/enumerate",
+        "Ordinal": 3,
+        "Ns": 138316.46017699115,
+        "Bytes": 26024,
+        "Ms": 78.1488,
+        "Iterations": 565
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/predecoded/enumerate",
+        "Ordinal": 3,
+        "Ns": 133862.95681063124,
+        "Bytes": 0,
+        "Ms": 80.5855,
+        "Iterations": 602
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/decode/count",
+        "Ordinal": 3,
+        "Ns": 131648.20031298904,
+        "Bytes": 26024,
+        "Ms": 84.1232,
+        "Iterations": 639
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/predecoded/count",
+        "Ordinal": 3,
+        "Ns": 125992.3197492163,
+        "Bytes": 0,
+        "Ms": 80.3831,
+        "Iterations": 638
+      },
+      {
+        "Kind": "sample",
+        "Lane": "pcre/finite",
+        "Ordinal": 3,
+        "Ns": 2608678.125,
+        "Bytes": 1592,
+        "Ms": 83.4777,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "python/finite",
+        "Ordinal": 3,
+        "Ns": 1355420,
+        "Bytes": 3664,
+        "Ms": 81.3252,
+        "Iterations": 60
+      },
+      {
+        "Kind": "sample",
+        "Lane": "pcre/unlimited",
+        "Ordinal": 3,
+        "Ns": 865625.8064516129,
+        "Bytes": 15.913978494623656,
+        "Ms": 80.5032,
+        "Iterations": 93
+      },
+      {
+        "Kind": "sample",
+        "Lane": "python/unlimited",
+        "Ordinal": 3,
+        "Ns": 1344578.68852459,
+        "Bytes": 3552,
+        "Ms": 82.0193,
+        "Iterations": 61
+      },
+      {
+        "Kind": "sample",
+        "Lane": "three-neighbor/compiled",
+        "Ordinal": 3,
+        "Ns": 150555.49242424243,
+        "Bytes": 1904,
+        "Ms": 79.4933,
+        "Iterations": 528
+      },
+      {
+        "Kind": "sample",
+        "Lane": "three-neighbor/ordinary",
+        "Ordinal": 3,
+        "Ns": 151203.79506641367,
+        "Bytes": 1904,
+        "Ms": 79.6844,
+        "Iterations": 527
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/finite/enumerate",
+        "Ordinal": 3,
+        "Ns": 2367712.5,
+        "Bytes": 7105792,
+        "Ms": 75.7668,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/finite/count",
+        "Ordinal": 3,
+        "Ns": 318034.1176470588,
+        "Bytes": 112,
+        "Ms": 81.0987,
+        "Iterations": 255
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/unlimited/enumerate",
+        "Ordinal": 3,
+        "Ns": 1481670.9090909092,
+        "Bytes": 3441720,
+        "Ms": 81.4919,
+        "Iterations": 55
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/unlimited/count",
+        "Ordinal": 3,
+        "Ns": 160026.89243027888,
+        "Bytes": 1720,
+        "Ms": 80.3335,
+        "Iterations": 502
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/live/enumerate",
+        "Ordinal": 3,
+        "Ns": 2333490.625,
+        "Bytes": 7105792,
+        "Ms": 74.6717,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/live/count",
+        "Ordinal": 3,
+        "Ns": 307554.92424242425,
+        "Bytes": 112,
+        "Ms": 81.1945,
+        "Iterations": 264
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/finite/enumerate",
+        "Ordinal": 3,
+        "Ns": 2365496.875,
+        "Bytes": 7105792,
+        "Ms": 75.6959,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/finite/count",
+        "Ordinal": 3,
+        "Ns": 317913.9534883721,
+        "Bytes": 112,
+        "Ms": 82.0218,
+        "Iterations": 258
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 3,
+        "Ns": 1484605.4545454546,
+        "Bytes": 3441720,
+        "Ms": 81.6533,
+        "Iterations": 55
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/unlimited/count",
+        "Ordinal": 3,
+        "Ns": 160597.39478957915,
+        "Bytes": 1720,
+        "Ms": 80.1381,
+        "Iterations": 499
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/finite/enumerate",
+        "Ordinal": 3,
+        "Ns": 3444.1216184755785,
+        "Bytes": 10768,
+        "Ms": 73.9694,
+        "Iterations": 21477
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/finite/count",
+        "Ordinal": 3,
+        "Ns": 533.2248481647742,
+        "Bytes": 112,
+        "Ms": 80.7729,
+        "Iterations": 151480
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/unlimited/enumerate",
+        "Ordinal": 3,
+        "Ns": 8162.72,
+        "Bytes": 5376,
+        "Ms": 81.6272,
+        "Iterations": 10000
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/unlimited/count",
+        "Ordinal": 3,
+        "Ns": 1097.5113858165257,
+        "Bytes": 1792,
+        "Ms": 80.97,
+        "Iterations": 73776
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/live/enumerate",
+        "Ordinal": 3,
+        "Ns": 3381.803095210528,
+        "Bytes": 10768,
+        "Ms": 87.6259,
+        "Iterations": 25911
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/live/count",
+        "Ordinal": 3,
+        "Ns": 521.4409932996896,
+        "Bytes": 112,
+        "Ms": 79.4577,
+        "Iterations": 152381
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/finite/enumerate",
+        "Ordinal": 3,
+        "Ns": 3411.0885478158207,
+        "Bytes": 10768,
+        "Ms": 72.2298,
+        "Iterations": 21175
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/finite/count",
+        "Ordinal": 3,
+        "Ns": 531.7025349881172,
+        "Bytes": 112,
+        "Ms": 80.5423,
+        "Iterations": 151480
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 3,
+        "Ns": 8109.597823975131,
+        "Bytes": 5376,
+        "Ms": 83.4802,
+        "Iterations": 10294
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/unlimited/count",
+        "Ordinal": 3,
+        "Ns": 1101.3632707592055,
+        "Bytes": 1792,
+        "Ms": 80.7883,
+        "Iterations": 73353
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/finite/enumerate",
+        "Ordinal": 3,
+        "Ns": 754539.2523364486,
+        "Bytes": 7216,
+        "Ms": 80.7357,
+        "Iterations": 107
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/finite/count",
+        "Ordinal": 3,
+        "Ns": 279790.4214559387,
+        "Bytes": 112,
+        "Ms": 73.0253,
+        "Iterations": 261
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/unlimited/enumerate",
+        "Ordinal": 3,
+        "Ns": 56723.62369337979,
+        "Bytes": 3584,
+        "Ms": 81.3984,
+        "Iterations": 1435
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/unlimited/count",
+        "Ordinal": 3,
+        "Ns": 50021.13184828417,
+        "Bytes": 1792,
+        "Ms": 83.0851,
+        "Iterations": 1661
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/live/enumerate",
+        "Ordinal": 3,
+        "Ns": 753979.4392523364,
+        "Bytes": 7216,
+        "Ms": 80.6758,
+        "Iterations": 107
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/live/count",
+        "Ordinal": 3,
+        "Ns": 291437.2262773723,
+        "Bytes": 112,
+        "Ms": 79.8538,
+        "Iterations": 274
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/finite/enumerate",
+        "Ordinal": 3,
+        "Ns": 756785.8490566037,
+        "Bytes": 7216,
+        "Ms": 80.2193,
+        "Iterations": 106
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/finite/count",
+        "Ordinal": 3,
+        "Ns": 284760.98484848486,
+        "Bytes": 112,
+        "Ms": 75.1769,
+        "Iterations": 264
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 3,
+        "Ns": 56705.171042163885,
+        "Bytes": 3584,
+        "Ms": 71.2784,
+        "Iterations": 1257
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/unlimited/count",
+        "Ordinal": 3,
+        "Ns": 49993.98119122257,
+        "Bytes": 1792,
+        "Ms": 79.7404,
+        "Iterations": 1595
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/finite/enumerate",
+        "Ordinal": 3,
+        "Ns": 2131959.375,
+        "Bytes": 3664,
+        "Ms": 68.2227,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/finite/count",
+        "Ordinal": 3,
+        "Ns": 372914.35185185185,
+        "Bytes": 112,
+        "Ms": 80.5495,
+        "Iterations": 216
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/unlimited/enumerate",
+        "Ordinal": 3,
+        "Ns": 180092.1052631579,
+        "Bytes": 1792,
+        "Ms": 82.122,
+        "Iterations": 456
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/unlimited/count",
+        "Ordinal": 3,
+        "Ns": 175649.67462039046,
+        "Bytes": 1792,
+        "Ms": 80.9745,
+        "Iterations": 461
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/live/enumerate",
+        "Ordinal": 3,
+        "Ns": 2126331.25,
+        "Bytes": 3664,
+        "Ms": 68.0426,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/live/count",
+        "Ordinal": 3,
+        "Ns": 359965.9192825112,
+        "Bytes": 112,
+        "Ms": 80.2724,
+        "Iterations": 223
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/finite/enumerate",
+        "Ordinal": 3,
+        "Ns": 2135371.875,
+        "Bytes": 3664,
+        "Ms": 68.3319,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/finite/count",
+        "Ordinal": 3,
+        "Ns": 366020.2764976958,
+        "Bytes": 112,
+        "Ms": 79.4264,
+        "Iterations": 217
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/unlimited/enumerate",
+        "Ordinal": 3,
+        "Ns": 179052.25225225225,
+        "Bytes": 1792,
+        "Ms": 79.4992,
+        "Iterations": 444
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/unlimited/count",
+        "Ordinal": 3,
+        "Ns": 175178.0701754386,
+        "Bytes": 1792,
+        "Ms": 79.8812,
+        "Iterations": 456
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/finite/enumerate",
+        "Ordinal": 3,
+        "Ns": 2547434.375,
+        "Bytes": 7107664,
+        "Ms": 81.5179,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/finite/count",
+        "Ordinal": 3,
+        "Ns": 290237.0242214533,
+        "Bytes": 112,
+        "Ms": 83.8785,
+        "Iterations": 289
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/unlimited/enumerate",
+        "Ordinal": 3,
+        "Ns": 1535761.8181818181,
+        "Bytes": 3585792,
+        "Ms": 84.4669,
+        "Iterations": 55
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/unlimited/count",
+        "Ordinal": 3,
+        "Ns": 146206.04395604396,
+        "Bytes": 1792,
+        "Ms": 79.8285,
+        "Iterations": 546
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/live/enumerate",
+        "Ordinal": 3,
+        "Ns": 2540337.5,
+        "Bytes": 7107664,
+        "Ms": 81.2908,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/live/count",
+        "Ordinal": 3,
+        "Ns": 278548.7804878049,
+        "Bytes": 112,
+        "Ms": 79.9435,
+        "Iterations": 287
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/finite/enumerate",
+        "Ordinal": 3,
+        "Ns": 2523756.25,
+        "Bytes": 7107664,
+        "Ms": 80.7602,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/finite/count",
+        "Ordinal": 3,
+        "Ns": 289207.60869565216,
+        "Bytes": 112,
+        "Ms": 79.8213,
+        "Iterations": 276
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/unlimited/enumerate",
+        "Ordinal": 3,
+        "Ns": 1516830.1886792453,
+        "Bytes": 3585792,
+        "Ms": 80.392,
+        "Iterations": 53
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/unlimited/count",
+        "Ordinal": 3,
+        "Ns": 146171.16451016636,
+        "Bytes": 1792,
+        "Ms": 79.0786,
+        "Iterations": 541
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/unlimited/count",
+        "Ordinal": 4,
+        "Ns": 146012.93900184843,
+        "Bytes": 1792,
+        "Ms": 78.993,
+        "Iterations": 541
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/unlimited/enumerate",
+        "Ordinal": 4,
+        "Ns": 1542247.1698113207,
+        "Bytes": 3585792,
+        "Ms": 81.7391,
+        "Iterations": 53
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/finite/count",
+        "Ordinal": 4,
+        "Ns": 290020.652173913,
+        "Bytes": 112,
+        "Ms": 80.0457,
+        "Iterations": 276
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/finite/enumerate",
+        "Ordinal": 4,
+        "Ns": 2542250,
+        "Bytes": 7107664,
+        "Ms": 81.352,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/live/count",
+        "Ordinal": 4,
+        "Ns": 275967.9442508711,
+        "Bytes": 112,
+        "Ms": 79.2028,
+        "Iterations": 287
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/live/enumerate",
+        "Ordinal": 4,
+        "Ns": 2542212.5,
+        "Bytes": 7107664,
+        "Ms": 81.3508,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/unlimited/count",
+        "Ordinal": 4,
+        "Ns": 146640.47619047618,
+        "Bytes": 1792,
+        "Ms": 80.0657,
+        "Iterations": 546
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/unlimited/enumerate",
+        "Ordinal": 4,
+        "Ns": 1525632.7272727273,
+        "Bytes": 3585792,
+        "Ms": 83.9098,
+        "Iterations": 55
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/finite/count",
+        "Ordinal": 4,
+        "Ns": 289476.4705882353,
+        "Bytes": 112,
+        "Ms": 83.6587,
+        "Iterations": 289
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/finite/enumerate",
+        "Ordinal": 4,
+        "Ns": 2517321.875,
+        "Bytes": 7107664,
+        "Ms": 80.5543,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/unlimited/count",
+        "Ordinal": 4,
+        "Ns": 175564.69298245615,
+        "Bytes": 1792,
+        "Ms": 80.0575,
+        "Iterations": 456
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/unlimited/enumerate",
+        "Ordinal": 4,
+        "Ns": 180071.84684684683,
+        "Bytes": 1792,
+        "Ms": 79.9519,
+        "Iterations": 444
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/finite/count",
+        "Ordinal": 4,
+        "Ns": 373742.39631336404,
+        "Bytes": 112,
+        "Ms": 81.1021,
+        "Iterations": 217
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/finite/enumerate",
+        "Ordinal": 4,
+        "Ns": 2121362.5,
+        "Bytes": 3664,
+        "Ms": 67.8836,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/live/count",
+        "Ordinal": 4,
+        "Ns": 359939.4618834081,
+        "Bytes": 112,
+        "Ms": 80.2665,
+        "Iterations": 223
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/live/enumerate",
+        "Ordinal": 4,
+        "Ns": 2127137.5,
+        "Bytes": 3664,
+        "Ms": 68.0684,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/unlimited/count",
+        "Ordinal": 4,
+        "Ns": 175576.7895878525,
+        "Bytes": 1792,
+        "Ms": 80.9409,
+        "Iterations": 461
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/unlimited/enumerate",
+        "Ordinal": 4,
+        "Ns": 179795.3947368421,
+        "Bytes": 1792,
+        "Ms": 81.9867,
+        "Iterations": 456
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/finite/count",
+        "Ordinal": 4,
+        "Ns": 372748.14814814815,
+        "Bytes": 112,
+        "Ms": 80.5136,
+        "Iterations": 216
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/finite/enumerate",
+        "Ordinal": 4,
+        "Ns": 2124450,
+        "Bytes": 3664,
+        "Ms": 67.9824,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/unlimited/count",
+        "Ordinal": 4,
+        "Ns": 49876.11285266458,
+        "Bytes": 1792,
+        "Ms": 79.5524,
+        "Iterations": 1595
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 4,
+        "Ns": 56537.15194908512,
+        "Bytes": 3584,
+        "Ms": 71.0672,
+        "Iterations": 1257
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/finite/count",
+        "Ordinal": 4,
+        "Ns": 295060.98484848486,
+        "Bytes": 112,
+        "Ms": 77.8961,
+        "Iterations": 264
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/finite/enumerate",
+        "Ordinal": 4,
+        "Ns": 755313.2075471698,
+        "Bytes": 7216,
+        "Ms": 80.0632,
+        "Iterations": 106
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/live/count",
+        "Ordinal": 4,
+        "Ns": 296267.15328467154,
+        "Bytes": 112,
+        "Ms": 81.1772,
+        "Iterations": 274
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/live/enumerate",
+        "Ordinal": 4,
+        "Ns": 749171.0280373832,
+        "Bytes": 7216,
+        "Ms": 80.1613,
+        "Iterations": 107
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/unlimited/count",
+        "Ordinal": 4,
+        "Ns": 49969.95785671283,
+        "Bytes": 1792,
+        "Ms": 83.0001,
+        "Iterations": 1661
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/unlimited/enumerate",
+        "Ordinal": 4,
+        "Ns": 56693.31010452961,
+        "Bytes": 3584,
+        "Ms": 81.3549,
+        "Iterations": 1435
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/finite/count",
+        "Ordinal": 4,
+        "Ns": 303680.0766283525,
+        "Bytes": 112,
+        "Ms": 79.2605,
+        "Iterations": 261
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/finite/enumerate",
+        "Ordinal": 4,
+        "Ns": 755217.7570093458,
+        "Bytes": 7216,
+        "Ms": 80.8083,
+        "Iterations": 107
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/unlimited/count",
+        "Ordinal": 4,
+        "Ns": 1111.9163497062152,
+        "Bytes": 1792,
+        "Ms": 81.5624,
+        "Iterations": 73353
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 4,
+        "Ns": 8173.800272003109,
+        "Bytes": 5376,
+        "Ms": 84.1411,
+        "Iterations": 10294
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/finite/count",
+        "Ordinal": 4,
+        "Ns": 539.6897280169,
+        "Bytes": 112,
+        "Ms": 81.7522,
+        "Iterations": 151480
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/finite/enumerate",
+        "Ordinal": 4,
+        "Ns": 3497.001180637544,
+        "Bytes": 10768,
+        "Ms": 74.049,
+        "Iterations": 21175
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/live/count",
+        "Ordinal": 4,
+        "Ns": 525.1973671258228,
+        "Bytes": 112,
+        "Ms": 80.0301,
+        "Iterations": 152381
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/live/enumerate",
+        "Ordinal": 4,
+        "Ns": 3406.12095249122,
+        "Bytes": 10768,
+        "Ms": 88.256,
+        "Iterations": 25911
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/unlimited/count",
+        "Ordinal": 4,
+        "Ns": 1065.801886792453,
+        "Bytes": 1792,
+        "Ms": 78.6306,
+        "Iterations": 73776
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/unlimited/enumerate",
+        "Ordinal": 4,
+        "Ns": 8061.31,
+        "Bytes": 5376,
+        "Ms": 80.6131,
+        "Iterations": 10000
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/finite/count",
+        "Ordinal": 4,
+        "Ns": 533.4697649854767,
+        "Bytes": 112,
+        "Ms": 80.81,
+        "Iterations": 151480
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/finite/enumerate",
+        "Ordinal": 4,
+        "Ns": 3358.1086743958654,
+        "Bytes": 10768,
+        "Ms": 72.1221,
+        "Iterations": 21477
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/unlimited/count",
+        "Ordinal": 4,
+        "Ns": 160679.75951903808,
+        "Bytes": 1720,
+        "Ms": 80.1792,
+        "Iterations": 499
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 4,
+        "Ns": 1475360,
+        "Bytes": 3441720,
+        "Ms": 81.1448,
+        "Iterations": 55
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/finite/count",
+        "Ordinal": 4,
+        "Ns": 318037.5968992248,
+        "Bytes": 112,
+        "Ms": 82.0537,
+        "Iterations": 258
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/finite/enumerate",
+        "Ordinal": 4,
+        "Ns": 2330256.25,
+        "Bytes": 7105792,
+        "Ms": 74.5682,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/live/count",
+        "Ordinal": 4,
+        "Ns": 308033.3333333333,
+        "Bytes": 112,
+        "Ms": 81.3208,
+        "Iterations": 264
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/live/enumerate",
+        "Ordinal": 4,
+        "Ns": 2327643.75,
+        "Bytes": 7105792,
+        "Ms": 74.4846,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/unlimited/count",
+        "Ordinal": 4,
+        "Ns": 160527.29083665338,
+        "Bytes": 1720,
+        "Ms": 80.5847,
+        "Iterations": 502
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/unlimited/enumerate",
+        "Ordinal": 4,
+        "Ns": 1476667.2727272727,
+        "Bytes": 3441720,
+        "Ms": 81.2167,
+        "Iterations": 55
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/finite/count",
+        "Ordinal": 4,
+        "Ns": 319055.29411764705,
+        "Bytes": 112,
+        "Ms": 81.3591,
+        "Iterations": 255
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/finite/enumerate",
+        "Ordinal": 4,
+        "Ns": 2309250,
+        "Bytes": 7105792,
+        "Ms": 73.896,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "three-neighbor/ordinary",
+        "Ordinal": 4,
+        "Ns": 151740.03795066415,
+        "Bytes": 1904,
+        "Ms": 79.967,
+        "Iterations": 527
+      },
+      {
+        "Kind": "sample",
+        "Lane": "three-neighbor/compiled",
+        "Ordinal": 4,
+        "Ns": 151839.01515151514,
+        "Bytes": 1904,
+        "Ms": 80.171,
+        "Iterations": 528
+      },
+      {
+        "Kind": "sample",
+        "Lane": "python/unlimited",
+        "Ordinal": 4,
+        "Ns": 1349342.6229508198,
+        "Bytes": 3552,
+        "Ms": 82.3099,
+        "Iterations": 61
+      },
+      {
+        "Kind": "sample",
+        "Lane": "pcre/unlimited",
+        "Ordinal": 4,
+        "Ns": 872312.9032258064,
+        "Bytes": 0,
+        "Ms": 81.1251,
+        "Iterations": 93
+      },
+      {
+        "Kind": "sample",
+        "Lane": "python/finite",
+        "Ordinal": 4,
+        "Ns": 1365106.6666666667,
+        "Bytes": 3664,
+        "Ms": 81.9064,
+        "Iterations": 60
+      },
+      {
+        "Kind": "sample",
+        "Lane": "pcre/finite",
+        "Ordinal": 4,
+        "Ns": 2598915.625,
+        "Bytes": 1545.75,
+        "Ms": 83.1653,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/predecoded/count",
+        "Ordinal": 4,
+        "Ns": 126257.36677115987,
+        "Bytes": 0,
+        "Ms": 80.5522,
+        "Iterations": 638
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/decode/count",
+        "Ordinal": 4,
+        "Ns": 131791.23630672926,
+        "Bytes": 26024,
+        "Ms": 84.2146,
+        "Iterations": 639
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/predecoded/enumerate",
+        "Ordinal": 4,
+        "Ns": 133969.76744186046,
+        "Bytes": 0,
+        "Ms": 80.6498,
+        "Iterations": 602
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/decode/enumerate",
+        "Ordinal": 4,
+        "Ns": 138765.30973451328,
+        "Bytes": 26024,
+        "Ms": 78.4024,
+        "Iterations": 565
+      },
+      {
+        "Kind": "complete"
+      }
+    ],
+    "after": [
+      {
+        "Kind": "identity",
+        "CoreSha256": "B7D4336AF24D6F4E4F8F9EF998E6364D11CF8EBD0674E90AB2ED7C9D0E51D926",
+        "DriverSha256": "2B427BA59DECA76F8F27B5C03526E0317C22966ABF0973D1D6CDE19FB2DEB692",
+        "Runtime": "10.0.12",
+        "Tiering": "0"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "hit/ordinary/unlimited",
+        "Bytes": 13000,
+        "Count": 2000,
+        "RangeChecksum": 13008000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "hit/ordinary/finite",
+        "Bytes": 13000,
+        "Count": 2000,
+        "RangeChecksum": 13008000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "hit/ordinary/live",
+        "Bytes": 13000,
+        "Count": 2000,
+        "RangeChecksum": 13008000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "hit/compiled/unlimited",
+        "Bytes": 13000,
+        "Count": 2000,
+        "RangeChecksum": 13008000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "hit/compiled/finite",
+        "Bytes": 13000,
+        "Count": 2000,
+        "RangeChecksum": 13008000,
+        "First": 4,
+        "Length": 3,
+        "SubjectSha256": "2EA109B58B0ACCF69BE9848C61EF290FB9B88F68E4520564B67290C4BDB0FE7C"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "miss/ordinary/unlimited",
+        "Bytes": 13000,
+        "Count": 0,
+        "RangeChecksum": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "miss/ordinary/finite",
+        "Bytes": 13000,
+        "Count": 0,
+        "RangeChecksum": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "miss/ordinary/live",
+        "Bytes": 13000,
+        "Count": 0,
+        "RangeChecksum": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "miss/compiled/unlimited",
+        "Bytes": 13000,
+        "Count": 0,
+        "RangeChecksum": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "miss/compiled/finite",
+        "Bytes": 13000,
+        "Count": 0,
+        "RangeChecksum": 0,
+        "First": -1,
+        "Length": 0,
+        "SubjectSha256": "12274BA342E2BC31E72AC61518036B865B4DEC1488F4E1641CB5D6A8E1EDCD79"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "dense-false-hit/ordinary/unlimited",
+        "Bytes": 4099,
+        "Count": 1,
+        "RangeChecksum": 4100,
+        "First": 4095,
+        "Length": 4,
+        "SubjectSha256": "AA7307443207CB683B8B68BD20707780C8AC9B9A4BE28FFC861E337718BE8D5C"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "dense-false-hit/ordinary/finite",
+        "Bytes": 4099,
+        "Count": 1,
+        "RangeChecksum": 4100,
+        "First": 4095,
+        "Length": 4,
+        "SubjectSha256": "AA7307443207CB683B8B68BD20707780C8AC9B9A4BE28FFC861E337718BE8D5C"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "dense-false-hit/ordinary/live",
+        "Bytes": 4099,
+        "Count": 1,
+        "RangeChecksum": 4100,
+        "First": 4095,
+        "Length": 4,
+        "SubjectSha256": "AA7307443207CB683B8B68BD20707780C8AC9B9A4BE28FFC861E337718BE8D5C"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "dense-false-hit/compiled/unlimited",
+        "Bytes": 4099,
+        "Count": 1,
+        "RangeChecksum": 4100,
+        "First": 4095,
+        "Length": 4,
+        "SubjectSha256": "AA7307443207CB683B8B68BD20707780C8AC9B9A4BE28FFC861E337718BE8D5C"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "dense-false-hit/compiled/finite",
+        "Bytes": 4099,
+        "Count": 1,
+        "RangeChecksum": 4100,
+        "First": 4095,
+        "Length": 4,
+        "SubjectSha256": "AA7307443207CB683B8B68BD20707780C8AC9B9A4BE28FFC861E337718BE8D5C"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "short-hit/ordinary/unlimited",
+        "Bytes": 8,
+        "Count": 2,
+        "RangeChecksum": 13,
+        "First": 0,
+        "Length": 3,
+        "SubjectSha256": "4F57E9A519B8D533089209BCFB345E4D1E2E7B59B2B0682CDEEB2C1EFF6C151B"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "short-hit/ordinary/finite",
+        "Bytes": 8,
+        "Count": 2,
+        "RangeChecksum": 13,
+        "First": 0,
+        "Length": 3,
+        "SubjectSha256": "4F57E9A519B8D533089209BCFB345E4D1E2E7B59B2B0682CDEEB2C1EFF6C151B"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "short-hit/ordinary/live",
+        "Bytes": 8,
+        "Count": 2,
+        "RangeChecksum": 13,
+        "First": 0,
+        "Length": 3,
+        "SubjectSha256": "4F57E9A519B8D533089209BCFB345E4D1E2E7B59B2B0682CDEEB2C1EFF6C151B"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "short-hit/compiled/unlimited",
+        "Bytes": 8,
+        "Count": 2,
+        "RangeChecksum": 13,
+        "First": 0,
+        "Length": 3,
+        "SubjectSha256": "4F57E9A519B8D533089209BCFB345E4D1E2E7B59B2B0682CDEEB2C1EFF6C151B"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "short-hit/compiled/finite",
+        "Bytes": 8,
+        "Count": 2,
+        "RangeChecksum": 13,
+        "First": 0,
+        "Length": 3,
+        "SubjectSha256": "4F57E9A519B8D533089209BCFB345E4D1E2E7B59B2B0682CDEEB2C1EFF6C151B"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "same-head-hit/ordinary/unlimited",
+        "Bytes": 15000,
+        "Count": 2000,
+        "RangeChecksum": 15009000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "CD0F28FFA720D8AE23C6394FFE34459562DE51DEA9E9646A8E833D58B586D776"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "same-head-hit/ordinary/finite",
+        "Bytes": 15000,
+        "Count": 2000,
+        "RangeChecksum": 15009000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "CD0F28FFA720D8AE23C6394FFE34459562DE51DEA9E9646A8E833D58B586D776"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "same-head-hit/ordinary/live",
+        "Bytes": 15000,
+        "Count": 2000,
+        "RangeChecksum": 15009000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "CD0F28FFA720D8AE23C6394FFE34459562DE51DEA9E9646A8E833D58B586D776"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "same-head-hit/compiled/unlimited",
+        "Bytes": 15000,
+        "Count": 2000,
+        "RangeChecksum": 15009000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "CD0F28FFA720D8AE23C6394FFE34459562DE51DEA9E9646A8E833D58B586D776"
+      },
+      {
+        "Kind": "preflight",
+        "Lane": "same-head-hit/compiled/finite",
+        "Bytes": 15000,
+        "Count": 2000,
+        "RangeChecksum": 15009000,
+        "First": 4,
+        "Length": 4,
+        "SubjectSha256": "CD0F28FFA720D8AE23C6394FFE34459562DE51DEA9E9646A8E833D58B586D776"
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "hit/ordinary/unlimited/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "hit/ordinary/unlimited/enumerate",
+        "Expected": 13008000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "hit/ordinary/finite/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "hit/ordinary/finite/enumerate",
+        "Expected": 13008000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "hit/ordinary/live/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "hit/ordinary/live/enumerate",
+        "Expected": 13008000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "hit/compiled/unlimited/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "hit/compiled/unlimited/enumerate",
+        "Expected": 13008000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "hit/compiled/finite/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "hit/compiled/finite/enumerate",
+        "Expected": 13008000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "miss/ordinary/unlimited/count",
+        "Expected": 0
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "miss/ordinary/unlimited/enumerate",
+        "Expected": 0
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "miss/ordinary/finite/count",
+        "Expected": 0
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "miss/ordinary/finite/enumerate",
+        "Expected": 0
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "miss/ordinary/live/count",
+        "Expected": 0
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "miss/ordinary/live/enumerate",
+        "Expected": 0
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "miss/compiled/unlimited/count",
+        "Expected": 0
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "miss/compiled/unlimited/enumerate",
+        "Expected": 0
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "miss/compiled/finite/count",
+        "Expected": 0
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "miss/compiled/finite/enumerate",
+        "Expected": 0
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dense-false-hit/ordinary/unlimited/count",
+        "Expected": 1
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dense-false-hit/ordinary/unlimited/enumerate",
+        "Expected": 4100
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dense-false-hit/ordinary/finite/count",
+        "Expected": 1
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dense-false-hit/ordinary/finite/enumerate",
+        "Expected": 4100
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dense-false-hit/ordinary/live/count",
+        "Expected": 1
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dense-false-hit/ordinary/live/enumerate",
+        "Expected": 4100
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dense-false-hit/compiled/unlimited/count",
+        "Expected": 1
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dense-false-hit/compiled/unlimited/enumerate",
+        "Expected": 4100
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dense-false-hit/compiled/finite/count",
+        "Expected": 1
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dense-false-hit/compiled/finite/enumerate",
+        "Expected": 4100
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "short-hit/ordinary/unlimited/count",
+        "Expected": 2
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "short-hit/ordinary/unlimited/enumerate",
+        "Expected": 13
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "short-hit/ordinary/finite/count",
+        "Expected": 2
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "short-hit/ordinary/finite/enumerate",
+        "Expected": 13
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "short-hit/ordinary/live/count",
+        "Expected": 2
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "short-hit/ordinary/live/enumerate",
+        "Expected": 13
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "short-hit/compiled/unlimited/count",
+        "Expected": 2
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "short-hit/compiled/unlimited/enumerate",
+        "Expected": 13
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "short-hit/compiled/finite/count",
+        "Expected": 2
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "short-hit/compiled/finite/enumerate",
+        "Expected": 13
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "same-head-hit/ordinary/unlimited/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "same-head-hit/ordinary/unlimited/enumerate",
+        "Expected": 15009000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "same-head-hit/ordinary/finite/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "same-head-hit/ordinary/finite/enumerate",
+        "Expected": 15009000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "same-head-hit/ordinary/live/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "same-head-hit/ordinary/live/enumerate",
+        "Expected": 15009000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "same-head-hit/compiled/unlimited/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "same-head-hit/compiled/unlimited/enumerate",
+        "Expected": 15009000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "same-head-hit/compiled/finite/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "same-head-hit/compiled/finite/enumerate",
+        "Expected": 15009000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "three-neighbor/ordinary",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "three-neighbor/compiled",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "python/unlimited",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "pcre/unlimited",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "python/finite",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "pcre/finite",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dotnet/predecoded/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dotnet/decode/count",
+        "Expected": 2000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dotnet/predecoded/enumerate",
+        "Expected": 13008000
+      },
+      {
+        "Kind": "lane-preflight",
+        "Lane": "dotnet/decode/enumerate",
+        "Expected": 13008000
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/unlimited/count",
+        "Ordinal": 0,
+        "Ns": 98800.61500615007,
+        "Bytes": 0,
+        "Ms": 80.3249,
+        "Iterations": 813
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/unlimited/enumerate",
+        "Ordinal": 0,
+        "Ns": 199889.52618453864,
+        "Bytes": 0,
+        "Ms": 80.1557,
+        "Iterations": 401
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/finite/count",
+        "Ordinal": 0,
+        "Ns": 285429.60288808664,
+        "Bytes": 112,
+        "Ms": 79.064,
+        "Iterations": 277
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/finite/enumerate",
+        "Ordinal": 0,
+        "Ns": 2551925,
+        "Bytes": 7107664,
+        "Ms": 81.6616,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/live/count",
+        "Ordinal": 0,
+        "Ns": 272386.0068259386,
+        "Bytes": 112,
+        "Ms": 79.8091,
+        "Iterations": 293
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/live/enumerate",
+        "Ordinal": 0,
+        "Ns": 2450875,
+        "Bytes": 7107664,
+        "Ms": 78.428,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/unlimited/count",
+        "Ordinal": 0,
+        "Ns": 98044.92574257425,
+        "Bytes": 0,
+        "Ms": 79.2203,
+        "Iterations": 808
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/unlimited/enumerate",
+        "Ordinal": 0,
+        "Ns": 197507,
+        "Bytes": 0,
+        "Ms": 79.0028,
+        "Iterations": 400
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/finite/count",
+        "Ordinal": 0,
+        "Ns": 284798.1949458484,
+        "Bytes": 112,
+        "Ms": 78.8891,
+        "Iterations": 277
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/finite/enumerate",
+        "Ordinal": 0,
+        "Ns": 2565456.25,
+        "Bytes": 7107664,
+        "Ms": 82.0946,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/unlimited/count",
+        "Ordinal": 0,
+        "Ns": 93449.41176470589,
+        "Bytes": 0,
+        "Ms": 79.432,
+        "Iterations": 850
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/unlimited/enumerate",
+        "Ordinal": 0,
+        "Ns": 100798.60935524652,
+        "Bytes": 0,
+        "Ms": 79.7317,
+        "Iterations": 791
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/finite/count",
+        "Ordinal": 0,
+        "Ns": 366868.98148148146,
+        "Bytes": 112,
+        "Ms": 79.2437,
+        "Iterations": 216
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/finite/enumerate",
+        "Ordinal": 0,
+        "Ns": 2134925,
+        "Bytes": 3664,
+        "Ms": 68.3176,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/live/count",
+        "Ordinal": 0,
+        "Ns": 346452.21238938055,
+        "Bytes": 112,
+        "Ms": 78.2982,
+        "Iterations": 226
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/live/enumerate",
+        "Ordinal": 0,
+        "Ns": 2136090.625,
+        "Bytes": 3664,
+        "Ms": 68.3549,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/unlimited/count",
+        "Ordinal": 0,
+        "Ns": 92257.84650630012,
+        "Bytes": 0,
+        "Ms": 80.5411,
+        "Iterations": 873
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/unlimited/enumerate",
+        "Ordinal": 0,
+        "Ns": 100038.81334981459,
+        "Bytes": 0,
+        "Ms": 80.9314,
+        "Iterations": 809
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/finite/count",
+        "Ordinal": 0,
+        "Ns": 367993.5483870968,
+        "Bytes": 112,
+        "Ms": 79.8546,
+        "Iterations": 217
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/finite/enumerate",
+        "Ordinal": 0,
+        "Ns": 2138384.375,
+        "Bytes": 3664,
+        "Ms": 68.4283,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/unlimited/count",
+        "Ordinal": 0,
+        "Ns": 46517.05882352941,
+        "Bytes": 0,
+        "Ms": 79.079,
+        "Iterations": 1700
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 0,
+        "Ns": 53264,
+        "Bytes": 0,
+        "Ms": 79.896,
+        "Iterations": 1500
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/finite/count",
+        "Ordinal": 0,
+        "Ns": 261319.08127208482,
+        "Bytes": 112,
+        "Ms": 73.9533,
+        "Iterations": 283
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/finite/enumerate",
+        "Ordinal": 0,
+        "Ns": 764925.7142857143,
+        "Bytes": 7216,
+        "Ms": 80.3172,
+        "Iterations": 105
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/live/count",
+        "Ordinal": 0,
+        "Ns": 273013.84083044983,
+        "Bytes": 112,
+        "Ms": 78.901,
+        "Iterations": 289
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/live/enumerate",
+        "Ordinal": 0,
+        "Ns": 760376.1904761905,
+        "Bytes": 7216,
+        "Ms": 79.8395,
+        "Iterations": 105
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/unlimited/count",
+        "Ordinal": 0,
+        "Ns": 46869.072769953054,
+        "Bytes": 0,
+        "Ms": 79.8649,
+        "Iterations": 1704
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/unlimited/enumerate",
+        "Ordinal": 0,
+        "Ns": 52552.254641909814,
+        "Bytes": 0,
+        "Ms": 79.2488,
+        "Iterations": 1508
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/finite/count",
+        "Ordinal": 0,
+        "Ns": 273028.0701754386,
+        "Bytes": 112,
+        "Ms": 77.813,
+        "Iterations": 285
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/finite/enumerate",
+        "Ordinal": 0,
+        "Ns": 770918.2692307692,
+        "Bytes": 7216,
+        "Ms": 80.1755,
+        "Iterations": 104
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/unlimited/count",
+        "Ordinal": 0,
+        "Ns": 436.94515892730266,
+        "Bytes": 0,
+        "Ms": 79.3322,
+        "Iterations": 181561
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 0,
+        "Ns": 6037.5518828767645,
+        "Bytes": 0,
+        "Ms": 80.0036,
+        "Iterations": 13251
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/finite/count",
+        "Ordinal": 0,
+        "Ns": 524.1536276804762,
+        "Bytes": 112,
+        "Ms": 80.8334,
+        "Iterations": 154217
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/finite/enumerate",
+        "Ordinal": 0,
+        "Ns": 3415.780309625648,
+        "Bytes": 10768,
+        "Ms": 90.2415,
+        "Iterations": 26419
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/live/count",
+        "Ordinal": 0,
+        "Ns": 507.14219698970163,
+        "Bytes": 112,
+        "Ms": 76.8219,
+        "Iterations": 151480
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/live/enumerate",
+        "Ordinal": 0,
+        "Ns": 3296.674956249424,
+        "Bytes": 10768,
+        "Ms": 71.584,
+        "Iterations": 21714
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/unlimited/count",
+        "Ordinal": 0,
+        "Ns": 437.50278270973484,
+        "Bytes": 0,
+        "Ms": 80.5762,
+        "Iterations": 184173
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/unlimited/enumerate",
+        "Ordinal": 0,
+        "Ns": 6032.384638737098,
+        "Bytes": 0,
+        "Ms": 79.4827,
+        "Iterations": 13176
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/finite/count",
+        "Ordinal": 0,
+        "Ns": 521.4730159573409,
+        "Bytes": 112,
+        "Ms": 78.5281,
+        "Iterations": 150589
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/finite/enumerate",
+        "Ordinal": 0,
+        "Ns": 3393.7062937062938,
+        "Bytes": 10768,
+        "Ms": 84.9275,
+        "Iterations": 25025
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/unlimited/count",
+        "Ordinal": 0,
+        "Ns": 104787.8590078329,
+        "Bytes": 0,
+        "Ms": 80.2675,
+        "Iterations": 766
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 0,
+        "Ns": 206104.8969072165,
+        "Bytes": 0,
+        "Ms": 79.9687,
+        "Iterations": 388
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/finite/count",
+        "Ordinal": 0,
+        "Ns": 309700.7722007722,
+        "Bytes": 112,
+        "Ms": 80.2125,
+        "Iterations": 259
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/finite/enumerate",
+        "Ordinal": 0,
+        "Ns": 2356184.375,
+        "Bytes": 7105792,
+        "Ms": 75.3979,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/live/count",
+        "Ordinal": 0,
+        "Ns": 299523.3962264151,
+        "Bytes": 112,
+        "Ms": 79.3737,
+        "Iterations": 265
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/live/enumerate",
+        "Ordinal": 0,
+        "Ns": 2257150,
+        "Bytes": 7105792,
+        "Ms": 72.2288,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/unlimited/count",
+        "Ordinal": 0,
+        "Ns": 103271.12860892389,
+        "Bytes": 0,
+        "Ms": 78.6926,
+        "Iterations": 762
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/unlimited/enumerate",
+        "Ordinal": 0,
+        "Ns": 205814.6529562982,
+        "Bytes": 0,
+        "Ms": 80.0619,
+        "Iterations": 389
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/finite/count",
+        "Ordinal": 0,
+        "Ns": 309286.3813229572,
+        "Bytes": 112,
+        "Ms": 79.4866,
+        "Iterations": 257
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/finite/enumerate",
+        "Ordinal": 0,
+        "Ns": 2370556.25,
+        "Bytes": 7105792,
+        "Ms": 75.8578,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "three-neighbor/ordinary",
+        "Ordinal": 0,
+        "Ns": 148792.00743494424,
+        "Bytes": 1904,
+        "Ms": 80.0501,
+        "Iterations": 538
+      },
+      {
+        "Kind": "sample",
+        "Lane": "three-neighbor/compiled",
+        "Ordinal": 0,
+        "Ns": 148848.23091247672,
+        "Bytes": 1904,
+        "Ms": 79.9315,
+        "Iterations": 537
+      },
+      {
+        "Kind": "sample",
+        "Lane": "python/unlimited",
+        "Ordinal": 0,
+        "Ns": 1338745,
+        "Bytes": 3552,
+        "Ms": 80.3247,
+        "Iterations": 60
+      },
+      {
+        "Kind": "sample",
+        "Lane": "pcre/unlimited",
+        "Ordinal": 0,
+        "Ns": 885212.2222222222,
+        "Bytes": 16.444444444444443,
+        "Ms": 79.6691,
+        "Iterations": 90
+      },
+      {
+        "Kind": "sample",
+        "Lane": "python/finite",
+        "Ordinal": 0,
+        "Ns": 1359606.779661017,
+        "Bytes": 3664,
+        "Ms": 80.2168,
+        "Iterations": 59
+      },
+      {
+        "Kind": "sample",
+        "Lane": "pcre/finite",
+        "Ordinal": 0,
+        "Ns": 2625846.875,
+        "Bytes": 1545.75,
+        "Ms": 84.0271,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/predecoded/count",
+        "Ordinal": 0,
+        "Ns": 125237.55795981453,
+        "Bytes": 0,
+        "Ms": 81.0287,
+        "Iterations": 647
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/decode/count",
+        "Ordinal": 0,
+        "Ns": 130917.41935483871,
+        "Bytes": 26024,
+        "Ms": 81.1688,
+        "Iterations": 620
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/predecoded/enumerate",
+        "Ordinal": 0,
+        "Ns": 131533.4351145038,
+        "Bytes": 0,
+        "Ms": 86.1544,
+        "Iterations": 655
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/decode/enumerate",
+        "Ordinal": 0,
+        "Ns": 136132.92894280763,
+        "Bytes": 26024,
+        "Ms": 78.5487,
+        "Iterations": 577
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/decode/enumerate",
+        "Ordinal": 1,
+        "Ns": 137331.54246100519,
+        "Bytes": 26024,
+        "Ms": 79.2403,
+        "Iterations": 577
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/predecoded/enumerate",
+        "Ordinal": 1,
+        "Ns": 132840,
+        "Bytes": 0,
+        "Ms": 87.0102,
+        "Iterations": 655
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/decode/count",
+        "Ordinal": 1,
+        "Ns": 130737.41935483871,
+        "Bytes": 26024,
+        "Ms": 81.0572,
+        "Iterations": 620
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/predecoded/count",
+        "Ordinal": 1,
+        "Ns": 125968.77897990726,
+        "Bytes": 0,
+        "Ms": 81.5018,
+        "Iterations": 647
+      },
+      {
+        "Kind": "sample",
+        "Lane": "pcre/finite",
+        "Ordinal": 1,
+        "Ns": 2607609.375,
+        "Bytes": 1592,
+        "Ms": 83.4435,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "python/finite",
+        "Ordinal": 1,
+        "Ns": 1360932.2033898304,
+        "Bytes": 3664,
+        "Ms": 80.295,
+        "Iterations": 59
+      },
+      {
+        "Kind": "sample",
+        "Lane": "pcre/unlimited",
+        "Ordinal": 1,
+        "Ns": 889032.2222222222,
+        "Bytes": 16.444444444444443,
+        "Ms": 80.0129,
+        "Iterations": 90
+      },
+      {
+        "Kind": "sample",
+        "Lane": "python/unlimited",
+        "Ordinal": 1,
+        "Ns": 1352761.6666666667,
+        "Bytes": 3552,
+        "Ms": 81.1657,
+        "Iterations": 60
+      },
+      {
+        "Kind": "sample",
+        "Lane": "three-neighbor/compiled",
+        "Ordinal": 1,
+        "Ns": 148771.50837988826,
+        "Bytes": 1904,
+        "Ms": 79.8903,
+        "Iterations": 537
+      },
+      {
+        "Kind": "sample",
+        "Lane": "three-neighbor/ordinary",
+        "Ordinal": 1,
+        "Ns": 149167.10037174722,
+        "Bytes": 1904,
+        "Ms": 80.2519,
+        "Iterations": 538
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/finite/enumerate",
+        "Ordinal": 1,
+        "Ns": 2362825,
+        "Bytes": 7105792,
+        "Ms": 75.6104,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/finite/count",
+        "Ordinal": 1,
+        "Ns": 309816.34241245134,
+        "Bytes": 112,
+        "Ms": 79.6228,
+        "Iterations": 257
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/unlimited/enumerate",
+        "Ordinal": 1,
+        "Ns": 204727.76349614395,
+        "Bytes": 0,
+        "Ms": 79.6391,
+        "Iterations": 389
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/unlimited/count",
+        "Ordinal": 1,
+        "Ns": 103725.7217847769,
+        "Bytes": 0,
+        "Ms": 79.039,
+        "Iterations": 762
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/live/enumerate",
+        "Ordinal": 1,
+        "Ns": 2326890.625,
+        "Bytes": 7105792,
+        "Ms": 74.4605,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/live/count",
+        "Ordinal": 1,
+        "Ns": 301381.1320754717,
+        "Bytes": 112,
+        "Ms": 79.866,
+        "Iterations": 265
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/finite/enumerate",
+        "Ordinal": 1,
+        "Ns": 2290103.125,
+        "Bytes": 7105792,
+        "Ms": 73.2833,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/finite/count",
+        "Ordinal": 1,
+        "Ns": 306475.6756756757,
+        "Bytes": 112,
+        "Ms": 79.3772,
+        "Iterations": 259
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 1,
+        "Ns": 204415.46391752578,
+        "Bytes": 0,
+        "Ms": 79.3132,
+        "Iterations": 388
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/unlimited/count",
+        "Ordinal": 1,
+        "Ns": 104840.86161879895,
+        "Bytes": 0,
+        "Ms": 80.3081,
+        "Iterations": 766
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/finite/enumerate",
+        "Ordinal": 1,
+        "Ns": 3414.197802197802,
+        "Bytes": 10768,
+        "Ms": 85.4403,
+        "Iterations": 25025
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/finite/count",
+        "Ordinal": 1,
+        "Ns": 520.0001328118256,
+        "Bytes": 112,
+        "Ms": 78.3063,
+        "Iterations": 150589
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/unlimited/enumerate",
+        "Ordinal": 1,
+        "Ns": 6086.445051608986,
+        "Bytes": 0,
+        "Ms": 80.195,
+        "Iterations": 13176
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/unlimited/count",
+        "Ordinal": 1,
+        "Ns": 434.87807659103123,
+        "Bytes": 0,
+        "Ms": 80.0928,
+        "Iterations": 184173
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/live/enumerate",
+        "Ordinal": 1,
+        "Ns": 3395.9196831537256,
+        "Bytes": 10768,
+        "Ms": 73.739,
+        "Iterations": 21714
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/live/count",
+        "Ordinal": 1,
+        "Ns": 512.2359387377871,
+        "Bytes": 112,
+        "Ms": 77.5935,
+        "Iterations": 151480
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/finite/enumerate",
+        "Ordinal": 1,
+        "Ns": 3245.296945380219,
+        "Bytes": 10768,
+        "Ms": 85.7375,
+        "Iterations": 26419
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/finite/count",
+        "Ordinal": 1,
+        "Ns": 514.3810345162984,
+        "Bytes": 112,
+        "Ms": 79.3263,
+        "Iterations": 154217
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 1,
+        "Ns": 6112.044374009509,
+        "Bytes": 0,
+        "Ms": 80.9907,
+        "Iterations": 13251
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/unlimited/count",
+        "Ordinal": 1,
+        "Ns": 434.16427536750734,
+        "Bytes": 0,
+        "Ms": 78.8273,
+        "Iterations": 181561
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/finite/enumerate",
+        "Ordinal": 1,
+        "Ns": 769325,
+        "Bytes": 7216,
+        "Ms": 80.0098,
+        "Iterations": 104
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/finite/count",
+        "Ordinal": 1,
+        "Ns": 259575.7894736842,
+        "Bytes": 112,
+        "Ms": 73.9791,
+        "Iterations": 285
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/unlimited/enumerate",
+        "Ordinal": 1,
+        "Ns": 53276.59151193634,
+        "Bytes": 0,
+        "Ms": 80.3411,
+        "Iterations": 1508
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/unlimited/count",
+        "Ordinal": 1,
+        "Ns": 46839.20187793427,
+        "Bytes": 0,
+        "Ms": 79.814,
+        "Iterations": 1704
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/live/enumerate",
+        "Ordinal": 1,
+        "Ns": 751568.5714285715,
+        "Bytes": 7216,
+        "Ms": 78.9147,
+        "Iterations": 105
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/live/count",
+        "Ordinal": 1,
+        "Ns": 267381.660899654,
+        "Bytes": 112,
+        "Ms": 77.2733,
+        "Iterations": 289
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/finite/enumerate",
+        "Ordinal": 1,
+        "Ns": 767851.4285714285,
+        "Bytes": 7216,
+        "Ms": 80.6244,
+        "Iterations": 105
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/finite/count",
+        "Ordinal": 1,
+        "Ns": 263482.6855123675,
+        "Bytes": 112,
+        "Ms": 74.5656,
+        "Iterations": 283
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 1,
+        "Ns": 52727.933333333334,
+        "Bytes": 0,
+        "Ms": 79.0919,
+        "Iterations": 1500
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/unlimited/count",
+        "Ordinal": 1,
+        "Ns": 46849.882352941175,
+        "Bytes": 0,
+        "Ms": 79.6448,
+        "Iterations": 1700
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/finite/enumerate",
+        "Ordinal": 1,
+        "Ns": 2136400,
+        "Bytes": 3664,
+        "Ms": 68.3648,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/finite/count",
+        "Ordinal": 1,
+        "Ns": 366756.2211981567,
+        "Bytes": 112,
+        "Ms": 79.5861,
+        "Iterations": 217
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/unlimited/enumerate",
+        "Ordinal": 1,
+        "Ns": 99392.58343634116,
+        "Bytes": 0,
+        "Ms": 80.4086,
+        "Iterations": 809
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/unlimited/count",
+        "Ordinal": 1,
+        "Ns": 92785.56701030929,
+        "Bytes": 0,
+        "Ms": 81.0018,
+        "Iterations": 873
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/live/enumerate",
+        "Ordinal": 1,
+        "Ns": 2137456.25,
+        "Bytes": 3664,
+        "Ms": 68.3986,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/live/count",
+        "Ordinal": 1,
+        "Ns": 352207.0796460177,
+        "Bytes": 112,
+        "Ms": 79.5988,
+        "Iterations": 226
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/finite/enumerate",
+        "Ordinal": 1,
+        "Ns": 2121434.375,
+        "Bytes": 3664,
+        "Ms": 67.8859,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/finite/count",
+        "Ordinal": 1,
+        "Ns": 368217.5925925926,
+        "Bytes": 112,
+        "Ms": 79.535,
+        "Iterations": 216
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/unlimited/enumerate",
+        "Ordinal": 1,
+        "Ns": 100308.47029077118,
+        "Bytes": 0,
+        "Ms": 79.344,
+        "Iterations": 791
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/unlimited/count",
+        "Ordinal": 1,
+        "Ns": 92413.05882352941,
+        "Bytes": 0,
+        "Ms": 78.5511,
+        "Iterations": 850
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/finite/enumerate",
+        "Ordinal": 1,
+        "Ns": 2541659.375,
+        "Bytes": 7107664,
+        "Ms": 81.3331,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/finite/count",
+        "Ordinal": 1,
+        "Ns": 289741.5162454874,
+        "Bytes": 112,
+        "Ms": 80.2584,
+        "Iterations": 277
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/unlimited/enumerate",
+        "Ordinal": 1,
+        "Ns": 200442.25,
+        "Bytes": 0,
+        "Ms": 80.1769,
+        "Iterations": 400
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/unlimited/count",
+        "Ordinal": 1,
+        "Ns": 100125.74257425743,
+        "Bytes": 0,
+        "Ms": 80.9016,
+        "Iterations": 808
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/live/enumerate",
+        "Ordinal": 1,
+        "Ns": 2535700,
+        "Bytes": 7107664,
+        "Ms": 81.1424,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/live/count",
+        "Ordinal": 1,
+        "Ns": 277407.50853242324,
+        "Bytes": 112,
+        "Ms": 81.2804,
+        "Iterations": 293
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/finite/enumerate",
+        "Ordinal": 1,
+        "Ns": 2532581.25,
+        "Bytes": 7107664,
+        "Ms": 81.0426,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/finite/count",
+        "Ordinal": 1,
+        "Ns": 289024.18772563175,
+        "Bytes": 112,
+        "Ms": 80.0597,
+        "Iterations": 277
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/unlimited/enumerate",
+        "Ordinal": 1,
+        "Ns": 200470.8229426434,
+        "Bytes": 0,
+        "Ms": 80.3888,
+        "Iterations": 401
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/unlimited/count",
+        "Ordinal": 1,
+        "Ns": 98979.70479704798,
+        "Bytes": 0,
+        "Ms": 80.4705,
+        "Iterations": 813
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/unlimited/count",
+        "Ordinal": 2,
+        "Ns": 98769.86469864698,
+        "Bytes": 0,
+        "Ms": 80.2999,
+        "Iterations": 813
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/unlimited/enumerate",
+        "Ordinal": 2,
+        "Ns": 199455.86034912718,
+        "Bytes": 0,
+        "Ms": 79.9818,
+        "Iterations": 401
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/finite/count",
+        "Ordinal": 2,
+        "Ns": 284445.48736462096,
+        "Bytes": 112,
+        "Ms": 78.7914,
+        "Iterations": 277
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/finite/enumerate",
+        "Ordinal": 2,
+        "Ns": 2524834.375,
+        "Bytes": 7107664,
+        "Ms": 80.7947,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/live/count",
+        "Ordinal": 2,
+        "Ns": 272877.8156996587,
+        "Bytes": 112,
+        "Ms": 79.9532,
+        "Iterations": 293
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/live/enumerate",
+        "Ordinal": 2,
+        "Ns": 2529243.75,
+        "Bytes": 7107664,
+        "Ms": 80.9358,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/unlimited/count",
+        "Ordinal": 2,
+        "Ns": 99080.32178217822,
+        "Bytes": 0,
+        "Ms": 80.0569,
+        "Iterations": 808
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/unlimited/enumerate",
+        "Ordinal": 2,
+        "Ns": 200285.75,
+        "Bytes": 0,
+        "Ms": 80.1143,
+        "Iterations": 400
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/finite/count",
+        "Ordinal": 2,
+        "Ns": 281614.80144404335,
+        "Bytes": 112,
+        "Ms": 78.0073,
+        "Iterations": 277
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/finite/enumerate",
+        "Ordinal": 2,
+        "Ns": 2503559.375,
+        "Bytes": 7107664,
+        "Ms": 80.1139,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/unlimited/count",
+        "Ordinal": 2,
+        "Ns": 91996.23529411765,
+        "Bytes": 0,
+        "Ms": 78.1968,
+        "Iterations": 850
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/unlimited/enumerate",
+        "Ordinal": 2,
+        "Ns": 100874.96839443743,
+        "Bytes": 0,
+        "Ms": 79.7921,
+        "Iterations": 791
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/finite/count",
+        "Ordinal": 2,
+        "Ns": 365314.81481481483,
+        "Bytes": 112,
+        "Ms": 78.908,
+        "Iterations": 216
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/finite/enumerate",
+        "Ordinal": 2,
+        "Ns": 2149271.875,
+        "Bytes": 3664,
+        "Ms": 68.7767,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/live/count",
+        "Ordinal": 2,
+        "Ns": 351581.41592920356,
+        "Bytes": 112,
+        "Ms": 79.4574,
+        "Iterations": 226
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/live/enumerate",
+        "Ordinal": 2,
+        "Ns": 2143075,
+        "Bytes": 3664,
+        "Ms": 68.5784,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/unlimited/count",
+        "Ordinal": 2,
+        "Ns": 93194.61626575029,
+        "Bytes": 0,
+        "Ms": 81.3589,
+        "Iterations": 873
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/unlimited/enumerate",
+        "Ordinal": 2,
+        "Ns": 99862.7935723115,
+        "Bytes": 0,
+        "Ms": 80.789,
+        "Iterations": 809
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/finite/count",
+        "Ordinal": 2,
+        "Ns": 366708.2949308756,
+        "Bytes": 112,
+        "Ms": 79.5757,
+        "Iterations": 217
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/finite/enumerate",
+        "Ordinal": 2,
+        "Ns": 2136234.375,
+        "Bytes": 3664,
+        "Ms": 68.3595,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/unlimited/count",
+        "Ordinal": 2,
+        "Ns": 46153.882352941175,
+        "Bytes": 0,
+        "Ms": 78.4616,
+        "Iterations": 1700
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 2,
+        "Ns": 52866.666666666664,
+        "Bytes": 0,
+        "Ms": 79.3,
+        "Iterations": 1500
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/finite/count",
+        "Ordinal": 2,
+        "Ns": 261627.56183745584,
+        "Bytes": 112,
+        "Ms": 74.0406,
+        "Iterations": 283
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/finite/enumerate",
+        "Ordinal": 2,
+        "Ns": 751432.380952381,
+        "Bytes": 7216,
+        "Ms": 78.9004,
+        "Iterations": 105
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/live/count",
+        "Ordinal": 2,
+        "Ns": 263857.78546712804,
+        "Bytes": 112,
+        "Ms": 76.2549,
+        "Iterations": 289
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/live/enumerate",
+        "Ordinal": 2,
+        "Ns": 747603.8095238095,
+        "Bytes": 7216,
+        "Ms": 78.4984,
+        "Iterations": 105
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/unlimited/count",
+        "Ordinal": 2,
+        "Ns": 46440.25821596244,
+        "Bytes": 0,
+        "Ms": 79.1342,
+        "Iterations": 1704
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/unlimited/enumerate",
+        "Ordinal": 2,
+        "Ns": 52244.36339522547,
+        "Bytes": 0,
+        "Ms": 78.7845,
+        "Iterations": 1508
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/finite/count",
+        "Ordinal": 2,
+        "Ns": 269545.6140350877,
+        "Bytes": 112,
+        "Ms": 76.8205,
+        "Iterations": 285
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/finite/enumerate",
+        "Ordinal": 2,
+        "Ns": 760827.8846153846,
+        "Bytes": 7216,
+        "Ms": 79.1261,
+        "Iterations": 104
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/unlimited/count",
+        "Ordinal": 2,
+        "Ns": 431.89561634932613,
+        "Bytes": 0,
+        "Ms": 78.4154,
+        "Iterations": 181561
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 2,
+        "Ns": 6042.253414836616,
+        "Bytes": 0,
+        "Ms": 80.0659,
+        "Iterations": 13251
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/finite/count",
+        "Ordinal": 2,
+        "Ns": 516.2835485063255,
+        "Bytes": 112,
+        "Ms": 79.6197,
+        "Iterations": 154217
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/finite/enumerate",
+        "Ordinal": 2,
+        "Ns": 3415.27309890609,
+        "Bytes": 10768,
+        "Ms": 90.2281,
+        "Iterations": 26419
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/live/count",
+        "Ordinal": 2,
+        "Ns": 504.9716134143121,
+        "Bytes": 112,
+        "Ms": 76.4931,
+        "Iterations": 151480
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/live/enumerate",
+        "Ordinal": 2,
+        "Ns": 3229.0411715943633,
+        "Bytes": 10768,
+        "Ms": 70.1154,
+        "Iterations": 21714
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/unlimited/count",
+        "Ordinal": 2,
+        "Ns": 435.6355166066687,
+        "Bytes": 0,
+        "Ms": 80.2323,
+        "Iterations": 184173
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/unlimited/enumerate",
+        "Ordinal": 2,
+        "Ns": 5985.913782635094,
+        "Bytes": 0,
+        "Ms": 78.8704,
+        "Iterations": 13176
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/finite/count",
+        "Ordinal": 2,
+        "Ns": 519.8978677061406,
+        "Bytes": 112,
+        "Ms": 78.2909,
+        "Iterations": 150589
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/finite/enumerate",
+        "Ordinal": 2,
+        "Ns": 3345.3786213786216,
+        "Bytes": 10768,
+        "Ms": 83.7181,
+        "Iterations": 25025
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/unlimited/count",
+        "Ordinal": 2,
+        "Ns": 103414.09921671018,
+        "Bytes": 0,
+        "Ms": 79.2152,
+        "Iterations": 766
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 2,
+        "Ns": 205340.20618556702,
+        "Bytes": 0,
+        "Ms": 79.672,
+        "Iterations": 388
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/finite/count",
+        "Ordinal": 2,
+        "Ns": 305920.8494208494,
+        "Bytes": 112,
+        "Ms": 79.2335,
+        "Iterations": 259
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/finite/enumerate",
+        "Ordinal": 2,
+        "Ns": 2326734.375,
+        "Bytes": 7105792,
+        "Ms": 74.4555,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/live/count",
+        "Ordinal": 2,
+        "Ns": 301661.5094339623,
+        "Bytes": 112,
+        "Ms": 79.9403,
+        "Iterations": 265
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/live/enumerate",
+        "Ordinal": 2,
+        "Ns": 2241415.625,
+        "Bytes": 7105792,
+        "Ms": 71.7253,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/unlimited/count",
+        "Ordinal": 2,
+        "Ns": 103990.41994750657,
+        "Bytes": 0,
+        "Ms": 79.2407,
+        "Iterations": 762
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/unlimited/enumerate",
+        "Ordinal": 2,
+        "Ns": 204301.54241645243,
+        "Bytes": 0,
+        "Ms": 79.4733,
+        "Iterations": 389
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/finite/count",
+        "Ordinal": 2,
+        "Ns": 308173.1517509728,
+        "Bytes": 112,
+        "Ms": 79.2005,
+        "Iterations": 257
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/finite/enumerate",
+        "Ordinal": 2,
+        "Ns": 2328659.375,
+        "Bytes": 7105792,
+        "Ms": 74.5171,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "three-neighbor/ordinary",
+        "Ordinal": 2,
+        "Ns": 148645.16728624536,
+        "Bytes": 1904,
+        "Ms": 79.9711,
+        "Iterations": 538
+      },
+      {
+        "Kind": "sample",
+        "Lane": "three-neighbor/compiled",
+        "Ordinal": 2,
+        "Ns": 148646.92737430168,
+        "Bytes": 1904,
+        "Ms": 79.8234,
+        "Iterations": 537
+      },
+      {
+        "Kind": "sample",
+        "Lane": "python/unlimited",
+        "Ordinal": 2,
+        "Ns": 1332270,
+        "Bytes": 3552,
+        "Ms": 79.9362,
+        "Iterations": 60
+      },
+      {
+        "Kind": "sample",
+        "Lane": "pcre/unlimited",
+        "Ordinal": 2,
+        "Ns": 881176.6666666666,
+        "Bytes": 0,
+        "Ms": 79.3059,
+        "Iterations": 90
+      },
+      {
+        "Kind": "sample",
+        "Lane": "python/finite",
+        "Ordinal": 2,
+        "Ns": 1335091.5254237289,
+        "Bytes": 3664,
+        "Ms": 78.7704,
+        "Iterations": 59
+      },
+      {
+        "Kind": "sample",
+        "Lane": "pcre/finite",
+        "Ordinal": 2,
+        "Ns": 2628087.5,
+        "Bytes": 1545.75,
+        "Ms": 84.0988,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/predecoded/count",
+        "Ordinal": 2,
+        "Ns": 124149.61360123647,
+        "Bytes": 0,
+        "Ms": 80.3248,
+        "Iterations": 647
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/decode/count",
+        "Ordinal": 2,
+        "Ns": 130475.80645161291,
+        "Bytes": 26024,
+        "Ms": 80.895,
+        "Iterations": 620
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/predecoded/enumerate",
+        "Ordinal": 2,
+        "Ns": 132301.8320610687,
+        "Bytes": 0,
+        "Ms": 86.6577,
+        "Iterations": 655
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/decode/enumerate",
+        "Ordinal": 2,
+        "Ns": 137147.4870017331,
+        "Bytes": 26024,
+        "Ms": 79.1341,
+        "Iterations": 577
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/decode/enumerate",
+        "Ordinal": 3,
+        "Ns": 134725.9965337955,
+        "Bytes": 26024,
+        "Ms": 77.7369,
+        "Iterations": 577
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/predecoded/enumerate",
+        "Ordinal": 3,
+        "Ns": 132799.54198473282,
+        "Bytes": 0,
+        "Ms": 86.9837,
+        "Iterations": 655
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/decode/count",
+        "Ordinal": 3,
+        "Ns": 130748.70967741935,
+        "Bytes": 26024,
+        "Ms": 81.0642,
+        "Iterations": 620
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/predecoded/count",
+        "Ordinal": 3,
+        "Ns": 125635.23956723338,
+        "Bytes": 0,
+        "Ms": 81.286,
+        "Iterations": 647
+      },
+      {
+        "Kind": "sample",
+        "Lane": "pcre/finite",
+        "Ordinal": 3,
+        "Ns": 2610546.875,
+        "Bytes": 1592,
+        "Ms": 83.5375,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "python/finite",
+        "Ordinal": 3,
+        "Ns": 1336259.3220338982,
+        "Bytes": 3664,
+        "Ms": 78.8393,
+        "Iterations": 59
+      },
+      {
+        "Kind": "sample",
+        "Lane": "pcre/unlimited",
+        "Ordinal": 3,
+        "Ns": 887372.2222222222,
+        "Bytes": 16.444444444444443,
+        "Ms": 79.8635,
+        "Iterations": 90
+      },
+      {
+        "Kind": "sample",
+        "Lane": "python/unlimited",
+        "Ordinal": 3,
+        "Ns": 1340786.6666666667,
+        "Bytes": 3552,
+        "Ms": 80.4472,
+        "Iterations": 60
+      },
+      {
+        "Kind": "sample",
+        "Lane": "three-neighbor/compiled",
+        "Ordinal": 3,
+        "Ns": 148270.94972067038,
+        "Bytes": 1904,
+        "Ms": 79.6215,
+        "Iterations": 537
+      },
+      {
+        "Kind": "sample",
+        "Lane": "three-neighbor/ordinary",
+        "Ordinal": 3,
+        "Ns": 148186.24535315984,
+        "Bytes": 1904,
+        "Ms": 79.7242,
+        "Iterations": 538
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/finite/enumerate",
+        "Ordinal": 3,
+        "Ns": 2324500,
+        "Bytes": 7105792,
+        "Ms": 74.384,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/finite/count",
+        "Ordinal": 3,
+        "Ns": 308422.5680933852,
+        "Bytes": 112,
+        "Ms": 79.2646,
+        "Iterations": 257
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/unlimited/enumerate",
+        "Ordinal": 3,
+        "Ns": 205564.01028277635,
+        "Bytes": 0,
+        "Ms": 79.9644,
+        "Iterations": 389
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/unlimited/count",
+        "Ordinal": 3,
+        "Ns": 104007.87401574804,
+        "Bytes": 0,
+        "Ms": 79.254,
+        "Iterations": 762
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/live/enumerate",
+        "Ordinal": 3,
+        "Ns": 2360068.75,
+        "Bytes": 7105792,
+        "Ms": 75.5222,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/live/count",
+        "Ordinal": 3,
+        "Ns": 302070.1886792453,
+        "Bytes": 112,
+        "Ms": 80.0486,
+        "Iterations": 265
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/finite/enumerate",
+        "Ordinal": 3,
+        "Ns": 2358012.5,
+        "Bytes": 7105792,
+        "Ms": 75.4564,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/finite/count",
+        "Ordinal": 3,
+        "Ns": 312197.2972972973,
+        "Bytes": 112,
+        "Ms": 80.8591,
+        "Iterations": 259
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 3,
+        "Ns": 204070.61855670103,
+        "Bytes": 0,
+        "Ms": 79.1794,
+        "Iterations": 388
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/unlimited/count",
+        "Ordinal": 3,
+        "Ns": 102964.75195822454,
+        "Bytes": 0,
+        "Ms": 78.871,
+        "Iterations": 766
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/finite/enumerate",
+        "Ordinal": 3,
+        "Ns": 3340.4235764235764,
+        "Bytes": 10768,
+        "Ms": 83.5941,
+        "Iterations": 25025
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/finite/count",
+        "Ordinal": 3,
+        "Ns": 509.3472962832611,
+        "Bytes": 112,
+        "Ms": 76.7021,
+        "Iterations": 150589
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/unlimited/enumerate",
+        "Ordinal": 3,
+        "Ns": 6011.460230722526,
+        "Bytes": 0,
+        "Ms": 79.207,
+        "Iterations": 13176
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/unlimited/count",
+        "Ordinal": 3,
+        "Ns": 430.4165105634376,
+        "Bytes": 0,
+        "Ms": 79.2711,
+        "Iterations": 184173
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/live/enumerate",
+        "Ordinal": 3,
+        "Ns": 3380.620797642074,
+        "Bytes": 10768,
+        "Ms": 73.4068,
+        "Iterations": 21714
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/live/count",
+        "Ordinal": 3,
+        "Ns": 504.1583047266966,
+        "Bytes": 112,
+        "Ms": 76.3699,
+        "Iterations": 151480
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/finite/enumerate",
+        "Ordinal": 3,
+        "Ns": 3232.5863961542827,
+        "Bytes": 10768,
+        "Ms": 85.4017,
+        "Iterations": 26419
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/finite/count",
+        "Ordinal": 3,
+        "Ns": 514.3187845697945,
+        "Bytes": 112,
+        "Ms": 79.3167,
+        "Iterations": 154217
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 3,
+        "Ns": 6061.014263074485,
+        "Bytes": 0,
+        "Ms": 80.3145,
+        "Iterations": 13251
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/unlimited/count",
+        "Ordinal": 3,
+        "Ns": 438.39040322536226,
+        "Bytes": 0,
+        "Ms": 79.5946,
+        "Iterations": 181561
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/finite/enumerate",
+        "Ordinal": 3,
+        "Ns": 749371.1538461539,
+        "Bytes": 7216,
+        "Ms": 77.9346,
+        "Iterations": 104
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/finite/count",
+        "Ordinal": 3,
+        "Ns": 260360.70175438595,
+        "Bytes": 112,
+        "Ms": 74.2028,
+        "Iterations": 285
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/unlimited/enumerate",
+        "Ordinal": 3,
+        "Ns": 52733.28912466844,
+        "Bytes": 0,
+        "Ms": 79.5218,
+        "Iterations": 1508
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/unlimited/count",
+        "Ordinal": 3,
+        "Ns": 46220.481220657275,
+        "Bytes": 0,
+        "Ms": 78.7597,
+        "Iterations": 1704
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/live/enumerate",
+        "Ordinal": 3,
+        "Ns": 747694.2857142857,
+        "Bytes": 7216,
+        "Ms": 78.5079,
+        "Iterations": 105
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/live/count",
+        "Ordinal": 3,
+        "Ns": 264309.34256055363,
+        "Bytes": 112,
+        "Ms": 76.3854,
+        "Iterations": 289
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/finite/enumerate",
+        "Ordinal": 3,
+        "Ns": 748169.5238095238,
+        "Bytes": 7216,
+        "Ms": 78.5578,
+        "Iterations": 105
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/finite/count",
+        "Ordinal": 3,
+        "Ns": 258869.96466431094,
+        "Bytes": 112,
+        "Ms": 73.2602,
+        "Iterations": 283
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 3,
+        "Ns": 52565.13333333333,
+        "Bytes": 0,
+        "Ms": 78.8477,
+        "Iterations": 1500
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/unlimited/count",
+        "Ordinal": 3,
+        "Ns": 46630.23529411765,
+        "Bytes": 0,
+        "Ms": 79.2714,
+        "Iterations": 1700
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/finite/enumerate",
+        "Ordinal": 3,
+        "Ns": 2127621.875,
+        "Bytes": 3664,
+        "Ms": 68.0839,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/finite/count",
+        "Ordinal": 3,
+        "Ns": 370379.26267281105,
+        "Bytes": 112,
+        "Ms": 80.3723,
+        "Iterations": 217
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/unlimited/enumerate",
+        "Ordinal": 3,
+        "Ns": 100856.36588380717,
+        "Bytes": 0,
+        "Ms": 81.5928,
+        "Iterations": 809
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/unlimited/count",
+        "Ordinal": 3,
+        "Ns": 93071.7067583047,
+        "Bytes": 0,
+        "Ms": 81.2516,
+        "Iterations": 873
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/live/enumerate",
+        "Ordinal": 3,
+        "Ns": 2132896.875,
+        "Bytes": 3664,
+        "Ms": 68.2527,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/live/count",
+        "Ordinal": 3,
+        "Ns": 355250,
+        "Bytes": 112,
+        "Ms": 80.2865,
+        "Iterations": 226
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/finite/enumerate",
+        "Ordinal": 3,
+        "Ns": 2153306.25,
+        "Bytes": 3664,
+        "Ms": 68.9058,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/finite/count",
+        "Ordinal": 3,
+        "Ns": 366877.31481481483,
+        "Bytes": 112,
+        "Ms": 79.2455,
+        "Iterations": 216
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/unlimited/enumerate",
+        "Ordinal": 3,
+        "Ns": 100005.30973451327,
+        "Bytes": 0,
+        "Ms": 79.1042,
+        "Iterations": 791
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/unlimited/count",
+        "Ordinal": 3,
+        "Ns": 92572.58823529411,
+        "Bytes": 0,
+        "Ms": 78.6867,
+        "Iterations": 850
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/finite/enumerate",
+        "Ordinal": 3,
+        "Ns": 2515909.375,
+        "Bytes": 7107664,
+        "Ms": 80.5091,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/finite/count",
+        "Ordinal": 3,
+        "Ns": 289797.4729241877,
+        "Bytes": 112,
+        "Ms": 80.2739,
+        "Iterations": 277
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/unlimited/enumerate",
+        "Ordinal": 3,
+        "Ns": 200543.25,
+        "Bytes": 0,
+        "Ms": 80.2173,
+        "Iterations": 400
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/unlimited/count",
+        "Ordinal": 3,
+        "Ns": 100261.63366336633,
+        "Bytes": 0,
+        "Ms": 81.0114,
+        "Iterations": 808
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/live/enumerate",
+        "Ordinal": 3,
+        "Ns": 2547928.125,
+        "Bytes": 7107664,
+        "Ms": 81.5337,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/live/count",
+        "Ordinal": 3,
+        "Ns": 277721.84300341294,
+        "Bytes": 112,
+        "Ms": 81.3725,
+        "Iterations": 293
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/finite/enumerate",
+        "Ordinal": 3,
+        "Ns": 2495987.5,
+        "Bytes": 7107664,
+        "Ms": 79.8716,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/finite/count",
+        "Ordinal": 3,
+        "Ns": 283555.95667870034,
+        "Bytes": 112,
+        "Ms": 78.545,
+        "Iterations": 277
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/unlimited/enumerate",
+        "Ordinal": 3,
+        "Ns": 202275.81047381545,
+        "Bytes": 0,
+        "Ms": 81.1126,
+        "Iterations": 401
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/unlimited/count",
+        "Ordinal": 3,
+        "Ns": 100930.87330873309,
+        "Bytes": 0,
+        "Ms": 82.0568,
+        "Iterations": 813
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/unlimited/count",
+        "Ordinal": 4,
+        "Ns": 100158.79458794589,
+        "Bytes": 0,
+        "Ms": 81.4291,
+        "Iterations": 813
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/unlimited/enumerate",
+        "Ordinal": 4,
+        "Ns": 200525.43640897755,
+        "Bytes": 0,
+        "Ms": 80.4107,
+        "Iterations": 401
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/finite/count",
+        "Ordinal": 4,
+        "Ns": 286910.83032490977,
+        "Bytes": 112,
+        "Ms": 79.4743,
+        "Iterations": 277
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/finite/enumerate",
+        "Ordinal": 4,
+        "Ns": 2551803.125,
+        "Bytes": 7107664,
+        "Ms": 81.6577,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/live/count",
+        "Ordinal": 4,
+        "Ns": 276203.07167235494,
+        "Bytes": 112,
+        "Ms": 80.9275,
+        "Iterations": 293
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/ordinary/live/enumerate",
+        "Ordinal": 4,
+        "Ns": 2525634.375,
+        "Bytes": 7107664,
+        "Ms": 80.8203,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/unlimited/count",
+        "Ordinal": 4,
+        "Ns": 98349.62871287129,
+        "Bytes": 0,
+        "Ms": 79.4665,
+        "Iterations": 808
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/unlimited/enumerate",
+        "Ordinal": 4,
+        "Ns": 199378.5,
+        "Bytes": 0,
+        "Ms": 79.7514,
+        "Iterations": 400
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/finite/count",
+        "Ordinal": 4,
+        "Ns": 286788.4476534296,
+        "Bytes": 112,
+        "Ms": 79.4404,
+        "Iterations": 277
+      },
+      {
+        "Kind": "sample",
+        "Lane": "hit/compiled/finite/enumerate",
+        "Ordinal": 4,
+        "Ns": 2515587.5,
+        "Bytes": 7107664,
+        "Ms": 80.4988,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/unlimited/count",
+        "Ordinal": 4,
+        "Ns": 93102.4705882353,
+        "Bytes": 0,
+        "Ms": 79.1371,
+        "Iterations": 850
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/unlimited/enumerate",
+        "Ordinal": 4,
+        "Ns": 102037.92667509482,
+        "Bytes": 0,
+        "Ms": 80.712,
+        "Iterations": 791
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/finite/count",
+        "Ordinal": 4,
+        "Ns": 366175.462962963,
+        "Bytes": 112,
+        "Ms": 79.0939,
+        "Iterations": 216
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/finite/enumerate",
+        "Ordinal": 4,
+        "Ns": 2145846.875,
+        "Bytes": 3664,
+        "Ms": 68.6671,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/live/count",
+        "Ordinal": 4,
+        "Ns": 353783.62831858406,
+        "Bytes": 112,
+        "Ms": 79.9551,
+        "Iterations": 226
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/ordinary/live/enumerate",
+        "Ordinal": 4,
+        "Ns": 2139175,
+        "Bytes": 3664,
+        "Ms": 68.4536,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/unlimited/count",
+        "Ordinal": 4,
+        "Ns": 91905.95647193586,
+        "Bytes": 0,
+        "Ms": 80.2339,
+        "Iterations": 873
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/unlimited/enumerate",
+        "Ordinal": 4,
+        "Ns": 101198.64029666255,
+        "Bytes": 0,
+        "Ms": 81.8697,
+        "Iterations": 809
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/finite/count",
+        "Ordinal": 4,
+        "Ns": 367079.7235023042,
+        "Bytes": 112,
+        "Ms": 79.6563,
+        "Iterations": 217
+      },
+      {
+        "Kind": "sample",
+        "Lane": "miss/compiled/finite/enumerate",
+        "Ordinal": 4,
+        "Ns": 2148509.375,
+        "Bytes": 3664,
+        "Ms": 68.7523,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/unlimited/count",
+        "Ordinal": 4,
+        "Ns": 46925.470588235294,
+        "Bytes": 0,
+        "Ms": 79.7733,
+        "Iterations": 1700
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 4,
+        "Ns": 52690.666666666664,
+        "Bytes": 0,
+        "Ms": 79.036,
+        "Iterations": 1500
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/finite/count",
+        "Ordinal": 4,
+        "Ns": 271403.1802120141,
+        "Bytes": 112,
+        "Ms": 76.8071,
+        "Iterations": 283
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/finite/enumerate",
+        "Ordinal": 4,
+        "Ns": 764327.619047619,
+        "Bytes": 7216,
+        "Ms": 80.2544,
+        "Iterations": 105
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/live/count",
+        "Ordinal": 4,
+        "Ns": 273196.8858131488,
+        "Bytes": 112,
+        "Ms": 78.9539,
+        "Iterations": 289
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/ordinary/live/enumerate",
+        "Ordinal": 4,
+        "Ns": 758980.9523809524,
+        "Bytes": 7216,
+        "Ms": 79.693,
+        "Iterations": 105
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/unlimited/count",
+        "Ordinal": 4,
+        "Ns": 46875.234741784036,
+        "Bytes": 0,
+        "Ms": 79.8754,
+        "Iterations": 1704
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/unlimited/enumerate",
+        "Ordinal": 4,
+        "Ns": 52911.206896551725,
+        "Bytes": 0,
+        "Ms": 79.7901,
+        "Iterations": 1508
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/finite/count",
+        "Ordinal": 4,
+        "Ns": 277395.43859649124,
+        "Bytes": 112,
+        "Ms": 79.0577,
+        "Iterations": 285
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dense-false-hit/compiled/finite/enumerate",
+        "Ordinal": 4,
+        "Ns": 761194.2307692308,
+        "Bytes": 7216,
+        "Ms": 79.1642,
+        "Iterations": 104
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/unlimited/count",
+        "Ordinal": 4,
+        "Ns": 435.97193229823586,
+        "Bytes": 0,
+        "Ms": 79.1555,
+        "Iterations": 181561
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 4,
+        "Ns": 6093.87970719191,
+        "Bytes": 0,
+        "Ms": 80.75,
+        "Iterations": 13251
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/finite/count",
+        "Ordinal": 4,
+        "Ns": 514.2442143213783,
+        "Bytes": 112,
+        "Ms": 79.3052,
+        "Iterations": 154217
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/finite/enumerate",
+        "Ordinal": 4,
+        "Ns": 3378.7842083349105,
+        "Bytes": 10768,
+        "Ms": 89.2641,
+        "Iterations": 26419
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/live/count",
+        "Ordinal": 4,
+        "Ns": 505.5604700290467,
+        "Bytes": 112,
+        "Ms": 76.5823,
+        "Iterations": 151480
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/ordinary/live/enumerate",
+        "Ordinal": 4,
+        "Ns": 3287.52417794971,
+        "Bytes": 10768,
+        "Ms": 71.3853,
+        "Iterations": 21714
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/unlimited/count",
+        "Ordinal": 4,
+        "Ns": 437.1400802506339,
+        "Bytes": 0,
+        "Ms": 80.5094,
+        "Iterations": 184173
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/unlimited/enumerate",
+        "Ordinal": 4,
+        "Ns": 6074.35488767456,
+        "Bytes": 0,
+        "Ms": 80.0357,
+        "Iterations": 13176
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/finite/count",
+        "Ordinal": 4,
+        "Ns": 517.5988950056113,
+        "Bytes": 112,
+        "Ms": 77.9447,
+        "Iterations": 150589
+      },
+      {
+        "Kind": "sample",
+        "Lane": "short-hit/compiled/finite/enumerate",
+        "Ordinal": 4,
+        "Ns": 3299.4085914085913,
+        "Bytes": 10768,
+        "Ms": 82.5677,
+        "Iterations": 25025
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/unlimited/count",
+        "Ordinal": 4,
+        "Ns": 105155.22193211489,
+        "Bytes": 0,
+        "Ms": 80.5489,
+        "Iterations": 766
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/unlimited/enumerate",
+        "Ordinal": 4,
+        "Ns": 207520.36082474227,
+        "Bytes": 0,
+        "Ms": 80.5179,
+        "Iterations": 388
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/finite/count",
+        "Ordinal": 4,
+        "Ns": 309390.7335907336,
+        "Bytes": 112,
+        "Ms": 80.1322,
+        "Iterations": 259
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/finite/enumerate",
+        "Ordinal": 4,
+        "Ns": 2339931.25,
+        "Bytes": 7105792,
+        "Ms": 74.8778,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/live/count",
+        "Ordinal": 4,
+        "Ns": 302069.8113207547,
+        "Bytes": 112,
+        "Ms": 80.0485,
+        "Iterations": 265
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/ordinary/live/enumerate",
+        "Ordinal": 4,
+        "Ns": 2278187.5,
+        "Bytes": 7105792,
+        "Ms": 72.902,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/unlimited/count",
+        "Ordinal": 4,
+        "Ns": 105120.07874015748,
+        "Bytes": 0,
+        "Ms": 80.1015,
+        "Iterations": 762
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/unlimited/enumerate",
+        "Ordinal": 4,
+        "Ns": 207485.08997429305,
+        "Bytes": 0,
+        "Ms": 80.7117,
+        "Iterations": 389
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/finite/count",
+        "Ordinal": 4,
+        "Ns": 308575.09727626457,
+        "Bytes": 112,
+        "Ms": 79.3038,
+        "Iterations": 257
+      },
+      {
+        "Kind": "sample",
+        "Lane": "same-head-hit/compiled/finite/enumerate",
+        "Ordinal": 4,
+        "Ns": 2315571.875,
+        "Bytes": 7105792,
+        "Ms": 74.0983,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "three-neighbor/ordinary",
+        "Ordinal": 4,
+        "Ns": 148247.39776951674,
+        "Bytes": 1904,
+        "Ms": 79.7571,
+        "Iterations": 538
+      },
+      {
+        "Kind": "sample",
+        "Lane": "three-neighbor/compiled",
+        "Ordinal": 4,
+        "Ns": 148492.17877094971,
+        "Bytes": 1904,
+        "Ms": 79.7403,
+        "Iterations": 537
+      },
+      {
+        "Kind": "sample",
+        "Lane": "python/unlimited",
+        "Ordinal": 4,
+        "Ns": 1333733.3333333333,
+        "Bytes": 3552,
+        "Ms": 80.024,
+        "Iterations": 60
+      },
+      {
+        "Kind": "sample",
+        "Lane": "pcre/unlimited",
+        "Ordinal": 4,
+        "Ns": 885912.2222222222,
+        "Bytes": 0,
+        "Ms": 79.7321,
+        "Iterations": 90
+      },
+      {
+        "Kind": "sample",
+        "Lane": "python/finite",
+        "Ordinal": 4,
+        "Ns": 1356722.0338983051,
+        "Bytes": 3664,
+        "Ms": 80.0466,
+        "Iterations": 59
+      },
+      {
+        "Kind": "sample",
+        "Lane": "pcre/finite",
+        "Ordinal": 4,
+        "Ns": 2632912.5,
+        "Bytes": 1545.75,
+        "Ms": 84.2532,
+        "Iterations": 32
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/predecoded/count",
+        "Ordinal": 4,
+        "Ns": 124555.48686244203,
+        "Bytes": 0,
+        "Ms": 80.5874,
+        "Iterations": 647
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/decode/count",
+        "Ordinal": 4,
+        "Ns": 131250.96774193548,
+        "Bytes": 26024,
+        "Ms": 81.3756,
+        "Iterations": 620
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/predecoded/enumerate",
+        "Ordinal": 4,
+        "Ns": 132451.4503816794,
+        "Bytes": 0,
+        "Ms": 86.7557,
+        "Iterations": 655
+      },
+      {
+        "Kind": "sample",
+        "Lane": "dotnet/decode/enumerate",
+        "Ordinal": 4,
+        "Ns": 137590.6412478336,
+        "Bytes": 26024,
+        "Ms": 79.3898,
+        "Iterations": 577
+      },
+      {
+        "Kind": "complete"
+      }
+    ]
+  },
+  "tests": {
+    "coreFocused": 564,
+    "coreNative": 6589,
+    "pythonFocused": 745,
+    "pcreFocused": 94,
+    "failed": 0,
+    "skipped": 0,
+    "coreHashes": {
+      "Core": "B7D4336AF24D6F4E4F8F9EF998E6364D11CF8EBD0674E90AB2ED7C9D0E51D926",
+      "PythonRe": "B7D4336AF24D6F4E4F8F9EF998E6364D11CF8EBD0674E90AB2ED7C9D0E51D926",
+      "Pcre2": "B7D4336AF24D6F4E4F8F9EF998E6364D11CF8EBD0674E90AB2ED7C9D0E51D926"
+    },
+    "untimedPublicWitnesses": 147,
+    "unchangedMetadataRecords": 21
+  },
+  "protocol": {
+    "runtime": "10.0.12",
+    "tiering": "FullOpts",
+    "readyToRun": false,
+    "cpu": 2,
+    "warmupMilliseconds": 120,
+    "targetSampleMilliseconds": 80,
+    "samplesPerLane": 5,
+    "phaseOrder": [
+      "before",
+      "after"
+    ],
+    "phaseCapSeconds": 60,
+    "batchCapSeconds": 180,
+    "confirmationRun": false
+  }
+}
