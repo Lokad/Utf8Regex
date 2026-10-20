@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal.Input;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Planning;
@@ -37,7 +38,7 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
     {
         var regex = new Utf8Regex(pattern, options);
         var input = Encoding.UTF8.GetBytes("cat caf\u00E9 horse ni\u00F1o");
-        Assert.True(regex.Inspection.DebugCanUseNativeSplit(input), "pattern=" + pattern + " options=" + options.ToString());
+        Assert.True(regex.CanUseNativeSplit(Utf8Validation.Validate(input)), "pattern=" + pattern + " options=" + options.ToString());
     }
 
     public static IEnumerable<object?[]> ExcludedRouteCases()
@@ -52,7 +53,7 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
     {
         var regex = new Utf8Regex(pattern, options);
         var input = Encoding.UTF8.GetBytes("cat horse caf\u00E9 noir");
-        Assert.False(regex.Inspection.DebugCanUseNativeSplit(input), "pattern=" + pattern + " options=" + options.ToString());
+        Assert.False(regex.CanUseNativeSplit(Utf8Validation.Validate(input)), "pattern=" + pattern + " options=" + options.ToString());
     }
 
     public static IEnumerable<object?[]> SplitParityCases()
@@ -122,7 +123,7 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
     {
         var regex = new Utf8Regex(pattern, options);
         var input = Encoding.UTF8.GetBytes(inputText);
-        Assert.True(regex.Inspection.DebugCanUseNativeSplit(input), "pattern=" + pattern + " options=" + options.ToString());
+        Assert.True(regex.CanUseNativeSplit(Utf8Validation.Validate(input)), "pattern=" + pattern + " options=" + options.ToString());
         // Literal alternatives and BMP subjects overlap the comparator's
         // code-unit semantics. EnumerateSplits returns gaps without captures.
         var oracle = new Regex(pattern, options);
@@ -134,7 +135,9 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
             expected = 0;
             foreach (var _ in oracle.EnumerateSplits(inputText, count)) expected++;
         }
-        Assert.Equal(expected, regex.Inspection.DebugCountSplitsViaCompiledEngine(input, count));
+        var actual = 0;
+        foreach (var _ in regex.EnumerateSplits(input, count)) actual++;
+        Assert.Equal(expected, actual);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }
@@ -167,14 +170,13 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
 
     [Theory]
     [MemberData(nameof(ReplaceParityCases))]
-    public void OwnedLiteralFamilyReplaceLengthsMatchOverlappingComparator(string pattern, RegexOptions options, string inputText, string replacement)
+    public void OwnedLiteralFamilyReplaceValuesMatchOverlappingComparator(string pattern, RegexOptions options, string inputText, string replacement)
     {
         var regex = new Utf8Regex(pattern, options);
         var input = Encoding.UTF8.GetBytes(inputText);
-        var nativeLength = regex.Inspection.DebugReplaceViaNativeTextOperations(input, replacement);
-        Assert.True(nativeLength >= 0, "pattern=" + pattern + " options=" + options.ToString() + " replacement=" + replacement);
+        var actual = regex.Replace(input, replacement);
         var oracle = new Regex(pattern, options);
-        Assert.Equal(Encoding.UTF8.GetByteCount(oracle.Replace(inputText, replacement)), nativeLength);
+        Assert.Equal(Encoding.UTF8.GetBytes(oracle.Replace(inputText, replacement)), actual);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
     }

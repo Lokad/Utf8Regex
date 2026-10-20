@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal.Planning;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -22,16 +23,21 @@ public sealed class DotNetPerformanceReplicaRuntimeTests
         {
             var regex = new Utf8Regex(pattern, options);
 
-            if (!regex.Inspection.DebugTryCountSelectedKernelWithoutValidation(inputBytes, out var selectedCount))
+            int selectedCount;
+            if (regex._packedNibbleLiteralFamilyCountStrategy is { } packed)
+                selectedCount = packed.Count(inputBytes);
+            else if (regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind is
+                         Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or Utf8FallbackDirectFamilyKind.Utf8UriToken ||
+                     regex.Inspection.CompiledEngineKind is Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily)
+                selectedCount = regex.CountViaCompiledEngine(inputBytes, default, Utf8ExecutionDeadline.Infinite);
+            else
             {
-                // SIMD-gated kernels legitimately decline without vector support; the public
-                // Count must still match the .NET oracle on every ISA.
+                // SIMD-gated kernels can decline; keep the public oracle check on every ISA.
                 var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
                 Assert.Equal(oracle.Count(input), regex.Count(inputBytes));
                 continue;
             }
 
-            Assert.NotEqual("Unsupported", regex.Inspection.DebugSelectedCountKernelKind);
             Assert.Equal(regex.Count(inputBytes), selectedCount);
 
         }

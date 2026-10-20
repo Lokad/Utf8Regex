@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal.Input;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -194,7 +195,7 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
         var actual = EnumerateUtf8Splits(utf8Regex, input, count);
 
         Assert.Equal(expected, actual);
-        Assert.True(utf8Regex.Inspection.DebugCanUseNativeSplit(Encoding.UTF8.GetBytes(input)));
+        Assert.True(utf8Regex.CanUseNativeSplit(Utf8Validation.Validate(Encoding.UTF8.GetBytes(input))));
     }
 
     private static List<(string Value, int Index, int Length)> EnumerateRuntimeSplits(

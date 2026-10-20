@@ -222,7 +222,7 @@ public sealed class Utf8SmallFamilyAdmissionTests
         {
             var regex = new Utf8Regex(string.Join("|", values.Select(Encoding.UTF8.GetString)),
                 RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
-            Assert.True(regex.Inspection.DebugCanUseSmallAsciiLiteralFamilySplit(input));
+            Assert.True(regex.TryGetSmallAsciiLiteralFamilySplitSearch(input, out _));
             Assert.Equal(appendValid, regex.IsMatch(input)); Assert.Equal(appendValid ? 1 : 0, regex.Count(input));
             var gaps = new List<(int, int)>(); foreach (var gap in regex.EnumerateSplits(input)) gaps.Add((gap.IndexInBytes, gap.LengthInBytes));
             Assert.Equal(appendValid ? new[] { (0, falseCandidate.Length + 1), (input.Length, 0) } : new[] { (0, input.Length) }, gaps);

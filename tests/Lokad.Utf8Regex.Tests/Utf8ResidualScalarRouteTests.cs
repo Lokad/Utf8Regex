@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal.Execution;
 using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -29,9 +30,9 @@ public sealed class Utf8ResidualScalarRouteTests
             foreach (var found in regex.EnumerateMatches(input))
                 ranges.Add((found.IndexInBytes, found.LengthInBytes));
             Assert.Equal(index >= 0 ? new[] { (index, length) } : Array.Empty<(int, int)>(), ranges);
-            // Adapter callers can reach the compiled router directly.
-            Assert.Equal(index >= 0, regex.Inspection.DebugIsMatchViaCompiledEngine(input, Utf8Validation.Validate(input)));
-            Assert.Equal(index >= 0 ? 1 : 0, regex.Inspection.DebugCountViaCompiledEngine(input));
+            // Exercise the actual production router directly.
+            Assert.Equal(index >= 0, regex.IsMatchViaCompiledEngine(input, Utf8Validation.Validate(input), Utf8ExecutionDeadline.Infinite));
+            Assert.Equal(index >= 0 ? 1 : 0, regex.CountViaCompiledEngine(input, default, Utf8ExecutionDeadline.Infinite));
             AssertOwned(regex);
         }
     }
@@ -51,7 +52,7 @@ public sealed class Utf8ResidualScalarRouteTests
             var regex = new Utf8Regex(pattern, Options(compiled));
             var expected = gap == 25 ? 1 : 0;
             Assert.Equal(expected, regex.Count(bytes));
-            Assert.Equal(expected, regex.Inspection.DebugCountViaCompiledEngine(bytes));
+            Assert.Equal(expected, regex.CountViaCompiledEngine(bytes, default, Utf8ExecutionDeadline.Infinite));
             var input = Utf8ValidatedInput.Create(bytes);
             Assert.Equal(expected, regex.ByteOffsetExecution.CountPrepared(input, input.GetBytePosition(0, "start")));
             var match = regex.Match(bytes);

@@ -42,7 +42,7 @@ public sealed partial class Utf8Regex
     private readonly bool _prioritizeOrderedLiteralWindowCount;
     private readonly bool _requiresKelvinSignFallback;
     private readonly Utf8InvariantCyrillicLiteralCountStrategy? _invariantCyrillicLiteralCountStrategy;
-    private readonly Utf8PackedNibbleLiteralFamilyCountStrategy? _packedNibbleLiteralFamilyCountStrategy;
+    internal readonly Utf8PackedNibbleLiteralFamilyCountStrategy? _packedNibbleLiteralFamilyCountStrategy;
     private readonly Utf8LiteralFamilyCaptureMap? _literalFamilyCaptureMap;
     private readonly bool _hasCaptures;
     private readonly Utf8GroupedLiteralSpanTable? _groupedLiteralSpanTable;
@@ -3102,7 +3102,7 @@ public sealed partial class Utf8Regex
         return true;
     }
 
-    private bool CanUseNativeSplit(Utf8ValidationResult validation)
+    internal bool CanUseNativeSplit(Utf8ValidationResult validation)
     {
         // Both ordinary and emitted window selections use the same owned
         // cursor. Admission follows the window program, not the backend kind.
@@ -3127,7 +3127,7 @@ public sealed partial class Utf8Regex
         };
     }
 
-    private bool TryGetSmallAsciiLiteralFamilySplitSearch(
+    internal bool TryGetSmallAsciiLiteralFamilySplitSearch(
         ReadOnlySpan<byte> input,
         out PreparedSmallAsciiLiteralFamilySearch search)
     {

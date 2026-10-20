@@ -1,5 +1,16 @@
 # Changelog
 
+## Development: Core inspection metadata only
+
+Remove shipped input-taking diagnostic execution, split/replacement dispatch,
+emitter/budget probes and their obsolete benchmark rows. Tests call production
+implementations directly; split tests enumerate public cursors and replacement
+tests compare exact UTF-8 output. Tooling owns its selected-kernel aggregation.
+Five existing methods and one readonly field become internal for existing friend
+assemblies; their bodies, public API and matching/resource/lifetime contracts stay
+unchanged. Read-only inspection metadata and live native/scalar kernels remain.
+[Deletion and focused Release checks](bench/Experiments/CoreReplayRetirement-20261020/README.md).
+
 ## Development: PCRE2 diagnostic cursor ownership
 
 Move diagnostic backtracking selection and counter aggregation into existing

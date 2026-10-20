@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal.Input;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -161,7 +162,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
             actualValues.Add(split.GetValueString());
         }
 
-        Assert.True(actual.Inspection.DebugCanUseNativeSplit(bytes));
+        Assert.True(actual.CanUseNativeSplit(Utf8Validation.Validate(bytes)));
         Assert.Equal(expected.Split(input, count), actualValues);
     }
 
@@ -186,7 +187,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
             var actual = new Utf8Regex(testCase.Pattern, caseOptions);
             var actualValues = new List<string>();
 
-            Assert.False(actual.Inspection.DebugCanUseNativeSplit(bytes));
+            Assert.False(actual.CanUseNativeSplit(Utf8Validation.Validate(bytes)));
             foreach (var split in actual.EnumerateSplits(bytes))
             {
                 actualValues.Add(split.GetValueString());

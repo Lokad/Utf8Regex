@@ -72,7 +72,7 @@ internal static class Utf8FallbackReplay
 
     internal static bool IsMatch(Utf8Regex regex, ReadOnlySpan<byte> input)
     {
-        if (!regex.Inspection.DebugCanGuideFallbackVerification || regex.Inspection.DebugRejectsByRequiredPrefilter(input)) return false;
+        if (!regex.Inspection.DebugCanGuideFallbackVerification || Utf8PrefilterExecutor.Rejects(regex.Inspection.SearchPlan.PrefilterPlan, input)) return false;
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, regex.MatchTimeout, default);
         var validation = Utf8Validation.Validate(input, ref invocation);
         invocation.AnchorOriginByte = 0;

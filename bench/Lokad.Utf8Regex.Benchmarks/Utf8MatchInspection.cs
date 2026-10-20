@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
@@ -6,6 +7,41 @@ namespace Lokad.Utf8Regex.Benchmarks;
 
 internal static class Utf8MatchInspection
 {
+    public static bool IsMatchCompiled(Utf8Regex regex, ReadOnlySpan<byte> input, Utf8ValidationResult validation)
+        => !Utf8PrefilterExecutor.Rejects(regex.Inspection.SearchPlan.PrefilterPlan, input) &&
+           regex.IsMatchViaCompiledEngine(input, validation, Utf8ExecutionDeadline.Infinite);
+
+    public static Utf8ValueMatch MatchCompiled(Utf8Regex regex, ReadOnlySpan<byte> input, Utf8ValidationResult validation)
+        => Utf8PrefilterExecutor.Rejects(regex.Inspection.SearchPlan.PrefilterPlan, input)
+            ? Utf8ValueMatch.NoMatch
+            : regex.MatchViaCompiledEngine(input, validation, Utf8ExecutionDeadline.Infinite);
+
+    public static bool TryCountSelectedKernelWithoutValidation(Utf8Regex regex, ReadOnlySpan<byte> input, out int count)
+    {
+        if (regex._packedNibbleLiteralFamilyCountStrategy is { } packed)
+        {
+            count = packed.Count(input);
+            return true;
+        }
+        if (regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind is
+                Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or Utf8FallbackDirectFamilyKind.Utf8UriToken ||
+            regex.Inspection.CompiledEngineKind is Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily)
+        {
+            count = regex.CountViaCompiledEngine(input, default, Utf8ExecutionDeadline.Infinite);
+            return true;
+        }
+        count = 0;
+        return false;
+    }
+
+    public static string SelectedCountKernelKind(Utf8Regex regex)
+        => regex._packedNibbleLiteralFamilyCountStrategy is not null ? "PackedNibbleLiteralFamily"
+            : regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind is
+                Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or Utf8FallbackDirectFamilyKind.Utf8UriToken
+                ? $"FallbackDirect/{regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind}"
+                : regex.Inspection.CompiledEngineKind is Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily
+                    ? $"{regex.Inspection.CompiledEngineKind}/{regex.Inspection.CompiledRuntime.GetType().Name}" : "Unsupported";
+
     public static bool DebugTryMatchCompiledAsciiLiteralFamilyRaw(
         this Utf8Regex.Utf8RegexInspection inspection, ReadOnlySpan<byte> input, out int index, out int matchedByteLength)
     {

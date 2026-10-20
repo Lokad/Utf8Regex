@@ -2122,7 +2122,7 @@ public sealed class Utf8RegexConstructionTests
             var actual = new List<string>();
 
             Assert.True(
-                regex.Inspection.DebugCanUseSmallAsciiLiteralFamilySplit(bytes),
+                regex.TryGetSmallAsciiLiteralFamilySplitSearch(bytes, out _),
                 $"Expected small ASCII literal-family Split route for '{testCase.Pattern}'.");
             foreach (var split in regex.EnumerateSplits(bytes))
             {
@@ -2206,7 +2206,7 @@ public sealed class Utf8RegexConstructionTests
             var bytes = Encoding.UTF8.GetBytes(testCase.Input);
             var actual = new List<string>();
 
-            Assert.False(regex.Inspection.DebugCanUseSmallAsciiLiteralFamilySplit(bytes));
+            Assert.False(regex.TryGetSmallAsciiLiteralFamilySplitSearch(bytes, out _));
             foreach (var split in regex.EnumerateSplits(bytes))
             {
                 actual.Add(split.GetValueString());
@@ -2216,18 +2216,18 @@ public sealed class Utf8RegexConstructionTests
         }
 
         Assert.False(new Utf8Regex("(alpha|bravo|charlie)", options)
-            .Inspection.DebugCanUseSmallAsciiLiteralFamilySplit("alpha bravo"u8));
+            .TryGetSmallAsciiLiteralFamilySplitSearch("alpha bravo"u8, out _));
         Assert.False(new Utf8Regex(
                 "alpha|bravo|charlie",
                 options,
                 TimeSpan.FromSeconds(1))
-            .Inspection.DebugCanUseSmallAsciiLiteralFamilySplit("alpha bravo"u8));
+            .TryGetSmallAsciiLiteralFamilySplitSearch("alpha bravo"u8, out _));
         Assert.False(new Utf8Regex("alpha|bravo|charlie", options | RegexOptions.RightToLeft)
-            .Inspection.DebugCanUseSmallAsciiLiteralFamilySplit("alpha bravo"u8));
+            .TryGetSmallAsciiLiteralFamilySplitSearch("alpha bravo"u8, out _));
 
         var malformed = new byte[] { (byte)'a', 0xC3, 0x28, (byte)'b' };
         var eligible = new Utf8Regex("alpha|bravo|charlie", options);
-        Assert.False(eligible.Inspection.DebugCanUseSmallAsciiLiteralFamilySplit(malformed));
+        Assert.False(eligible.TryGetSmallAsciiLiteralFamilySplitSearch(malformed, out _));
         Assert.Throws<ArgumentException>(() =>
         {
             _ = eligible.EnumerateSplits(malformed);
