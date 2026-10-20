@@ -1,53 +1,50 @@
 # Lokad.Utf8Regex
 
-`Lokad.Utf8Regex` is a `net10.0` library matching Unicode scalars over strict UTF-8
-spans, with primary byte offsets and lengths. Dot matches 😀 once across four
-bytes. UTF-16 coordinates and strings are derived conveniences. PythonRe adds
-pinned Python grammar, captures and result shaping over the shared owned engine.
+`Lokad.Utf8Regex` **0.4.0-rc.1** is a `net10.0` library matching Unicode
+scalars over strict UTF-8 spans, with byte offsets and lengths. Dot matches 😀
+once across four bytes. UTF-16 coordinates and strings are derived conveniences.
 
-Private **Core/PythonRe 0.4.0-scalar.119**, producer `ca0c8a6f`, is READY.
-The same immutable DLLs pass Windows/Linux, the original producer Awk/Lython
-handoff assertions, Unicode fixtures and exact package/member/symbol checks.
-Source CI is green. This batch improves controlled pair discovery and RTL
-strict-end Count; scalar semantics, captures, original cancellation/deadlines,
-resource controls and retained-result lifetimes remain. Numeric modeled work/
-working requirements can fall when real scans, attempts and scratch disappear.
-[Handoff](artifacts/core-python-scalar119-20261020/HANDOFF.md),
-[consume](artifacts/core-python-scalar119-20261020/CONSUMING.md),
-[integrity](artifacts/core-python-scalar119-20261020/final-integrity.json).
+The release contains three packages at the same version: **Lokad.Utf8Regex**,
+**Lokad.Utf8Regex.PythonRe** and **Lokad.Utf8Regex.Pcre2**. Both adapters require
+exactly Core **[0.4.0-rc.1]** and can share one dependency graph. Upgrade them
+together; do not override an adapter's Core dependency.
 
-[Current actual-byte costs](CURRENT-PERFORMANCE.md) include finite limits,
-live tokens, deadlines and equivalent .NET controls. Limits retain material costs;
-measured variance and source/package/runtime scopes are explicit. Core retains
-only permitted `Unsafe.SizeOf`; PythonRe has no unchecked accesses. Shipped BCL
-matchers/results and native imports are absent; timeout/options metadata remains.
-Defaults/static calls are unlimited; [host integration](HOST-INTEGRATION.md)
-defines enforced capacities, host composition and separate retained/getter scope.
-
-Earlier immutable candidates, including [118](artifacts/core-python-scalar118-20261020/HANDOFF.md),
-keep their recorded contracts and evidence. Independent [Core/PCRE94](artifacts/pcre2-scalar94-delivery-20261018/HANDOFF.md)
-requires its exact Core94 dependency graph. Broader SPEC/common-policy/profile
-work remains open. Producer checks establish the listed handoff assertions;
-publication, external consumer adoption and PCRE119 are separate scope.
+Read the [release notes](CHANGELOG.md), [migration guide](MIGRATION.md) and
+[host resource/ownership contract](HOST-INTEGRATION.md). The
+[PythonRe](src/Lokad.Utf8Regex.PythonRe/README.md) and
+[PCRE2](src/Lokad.Utf8Regex.Pcre2/README.md) profiles have their own grammar,
+capture and operation boundaries. This release does not promise complete
+.NET, CPython or native PCRE2 equivalence.
 
 ## Support Scope
 
-- Development semantics: Unicode-scalar matching over strict UTF-8. Dot, classes, quantifiers, capture boundaries, references and RTL traversal operate on complete scalars.
-- Primary I/O model: UTF-8 `ReadOnlySpan<byte>` / `Span<byte>` with primary byte coordinates. Existing UTF-16 coordinate/string APIs provide interoperability and do not define matching width.
-- Primary option scope: `RegexOptions.CultureInvariant` is the main supported and performance-tested mode.
-- Execution model: owned scalar execution with qualified native UTF-8 fast paths. BCL Regex is a comparator in tests and benchmarks where its code-unit semantics overlap.
-- Byte coordinates: successful core matches and captures use scalar-aligned UTF-8 byte ranges.
-- Comparators: use .NET Regex only where its behavior overlaps the scalar contract; direct scalar fixtures define supplementary behavior.
-- Resource scope: core instances accept finite `Utf8ResourcePolicy.MaxWorkSteps`, `MaxDepth`, `MaxWorkingBytes` and `MaxResultBytes`. Work covers strict UTF-8 validation, scalar matching and required shaping cumulatively. Depth bounds live backtracking/continuation frames or pending linear alternatives before acquisition/copy; the selected route determines its depth requirement, and a stack-free linear replay uses no depth allowance. Result bytes conservatively charge major array/text and output-control capacity before acquisition, including staging/growth; charges are not refunded and can count shared storage again. Finite calls select owned metered execution. Core Count can reuse the bounded native counter for prepared nonempty exact LTR literals, including ordinary ASCII literal captures; scalar.49 and later qualified pairs extend this to eligible exact two/three-literal families. That route needs no VM capture/depth/result scratch, and removing verification/workspace lowers its charged requirements. Scalar.48 predates the family extension; larger or semantically excluded families retain the VM. Offset maps retain their own admission. Working bytes bound modeled major active storage/output controls and growth overlap. Exclusive scratch releases synchronously; published copied-cursor maps/tables stay charged for the invocation. Incidental owner metadata and caller-retained results have separate scope. Defaults and static cached calls remain unlimited. Construction/replacement preparation, caller callback execution/allocations, borrowed subjects, fixed value results and later standalone getters have separate scope. These are operation controls, not wall-time, live-retention or process-memory guarantees.
-- Cancellation and deadlines: caller cancellation is checked synchronously during validation, search, backtracking and required result shaping. A match deadline is absolute across an invocation, including waits between persistent cursor advances. Caller callback execution has its own lifetime; copying/encoding its returned output remains controlled.
-- PythonRe delivery: Python-order captures/backreferences and nullable last-closed `LastIndex`/`LastGroup` are authoritative backend metadata. The persistent memory-based cursor has explicit disposal and owned snapshots that survive advance/disposal; aliases share its position and lifetime. See the [PythonRe contract](src/Lokad.Utf8Regex.PythonRe/README.md) for subject lifetime, supported syntax and exclusions.
-- Stability: use the qualified private Core/PythonRe pair identified above; its immutable manifest and handoff define the qualification scope. Later development changes do not alter those bytes or inherit package qualification. Defaults/static cached calls remain unlimited; embedders must select finite policies for bounded invocations. Lython accepts the permitted `Unsafe.SizeOf` reference; actual unchecked accesses remain excluded.
+- Dot, classes, quantifiers, captures, references, lookarounds, RTL traversal and
+  empty-match advancement respect complete Unicode scalars. Core includes an
+  owned NonBacktracking route for its supported regular subset.
+- Input must be well-formed UTF-8 throughout, even when a match occurs early.
+  Primary match/capture coordinates are bytes. Core uses ordered alternatives;
+  it does not implement POSIX leftmost-longest matching.
+- Execution is managed and owned, with native UTF-8 fast paths. Shipped libraries
+  do not use BCL regex matchers/results or a native PCRE2 binary. BCL regex is a
+  comparator only where its UTF-16 behavior overlaps the scalar contract.
+- Core uses .NET-style grammar within its supported scope. CultureInvariant is
+  the primary supported and performance-tested mode; see [SPEC.md](SPEC.md).
+- Instances accept finite work, depth, working-capacity and result-capacity
+  policies. **Defaults and static cached calls are unlimited.** Construction has
+  separate controls and fixed backstops. These controls do not bound total heap,
+  RSS, callbacks, arbitrary caller retention or all preparation as one envelope.
+- Cancellation is synchronous and uses the original token. One absolute deadline
+  spans validation, matching, shaping and persistent cursor advances, including
+  waits between moves. Caller callbacks cannot be forcibly interrupted.
+- Owned snapshots survive advance, failure and disposal. Borrowed subjects/views
+  require their owner to stay alive and their bytes to remain unchanged. Core
+  value-cursor copies have independent positions/shared allowance; PythonRe
+  reference aliases share position and disposal.
 
-PythonRe reuses its private VM workspace across cursor moves.
-Scratch stays charged while positioned and overlaps projection; EOF/failure/Dispose
-releases it synchronously. Tight working caps can deny earlier. Returned snapshots
-remain independent. Package/handoff receipts record each exact version's coverage
-and costs; earlier candidates remain immutable and do not qualify later source.
+[Current performance evidence](CURRENT-PERFORMANCE.md) records explicit source,
+package and runtime identities, finite-limit costs and uncertainty. Benchmark
+snapshots below retain their recorded versions; they are not a new RC1 timing
+campaign or a claim that every row qualifies the current implementation.
 
 ## Public API
 

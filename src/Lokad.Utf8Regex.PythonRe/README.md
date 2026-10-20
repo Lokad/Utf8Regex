@@ -1,129 +1,60 @@
 # Lokad.Utf8Regex.PythonRe
 
-`Lokad.Utf8Regex` is a `net10.0` library matching Unicode scalars over strict UTF-8
-spans, with primary byte offsets and lengths. Dot matches 😀 once across four
-bytes. UTF-16 coordinates and strings are derived conveniences. PythonRe adds
-pinned Python grammar, captures and result shaping over the shared owned engine.
+**0.4.0-rc.1**, .NET 10. A managed Python `re`-style adapter over strict UTF-8
+Unicode scalars, requiring exactly `Lokad.Utf8Regex [0.4.0-rc.1]`. It can coexist
+with the PCRE2 adapter at the same version. No Python runtime or BCL regex matcher
+is a shipped implementation dependency.
 
-Private **Core/PythonRe 0.4.0-scalar.119**, producer `ca0c8a6f`, is READY.
-The same immutable DLLs pass Windows/Linux, the original producer Awk/Lython
-handoff assertions, Unicode fixtures and exact package/member/symbol checks.
-Source CI is green. This batch improves controlled pair discovery and RTL
-strict-end Count; scalar semantics, captures, original cancellation/deadlines,
-resource controls and retained-result lifetimes remain. Numeric modeled work/
-working requirements can fall when real scans, attempts and scratch disappear.
-[Handoff](../../artifacts/core-python-scalar119-20261020/HANDOFF.md),
-[consume](../../artifacts/core-python-scalar119-20261020/CONSUMING.md),
-[integrity](../../artifacts/core-python-scalar119-20261020/final-integrity.json).
+## Supported scope
 
-[Current actual-byte costs](../../CURRENT-PERFORMANCE.md) include finite limits,
-live tokens, deadlines and equivalent .NET controls. Limits retain material costs;
-measured variance and source/package/runtime scopes are explicit. Core retains
-only permitted `Unsafe.SizeOf`; PythonRe has no unchecked accesses. Shipped BCL
-matchers/results and native imports are absent; timeout/options metadata remains.
-Defaults/static calls are unlimited; [host integration](../../HOST-INTEGRATION.md)
-defines enforced capacities, host composition and separate retained/getter scope.
+The profile targets the documented CPython 3.13.2 `str` grammar with owned Unicode
+15.1.0 identifier/class/case data. Patterns are parsed before scalar lowering.
+Captures are numbered in opening order; references/conditionals, fixed-width
+lookbehind, greedy/lazy repetition, scoped flags and Python empty-match retry use
+the owned engine. `LastIndex`/`LastGroup` identify the last capture to close on the
+successful path; an unnamed last capture has a null name. Unmatched captures keep
+the documented null/empty shaping for each API.
 
-Earlier immutable candidates, including [118](../../artifacts/core-python-scalar118-20261020/HANDOFF.md),
-keep their recorded contracts and evidence. Independent [Core/PCRE94](../../artifacts/pcre2-scalar94-delivery-20261018/HANDOFF.md)
-requires its exact Core94 dependency graph. Broader SPEC/common-policy/profile
-work remains open. Producer checks establish the listed handoff assertions;
-publication, external consumer adoption and PCRE119 are separate scope.
+Search, Match and FullMatch expose value, detailed, string and UTF-8 forms.
+`FindIterDetailed` returns owned capture snapshots. `FindAllToStrings` and
+`FindAllToUtf8` provide Python-shaped scalar/tuple outputs; `FindAll` is the
+structural full-match collector. Split and template/callback replacement include
+capture-aware output shaping and substitution counts. Primary ranges are byte
+coordinates; derived UTF-16 coordinates do not define matching width.
 
-## Support Scope
+Bytes-pattern semantics, LOCALE and `\N{...}` Unicode-name lookup are excluded.
+There is no `endpos` parameter. Start offsets follow the documented Python `pos`
+contract without resetting prefix/suffix assertion context. This is a selected
+profile, not complete Python `re` equivalence. See the
+[profile specification](https://github.com/Lokad/Utf8Regex/blob/master/SPEC-PYTHONRE.md).
 
-Scalar.88 fixes literal/unfinished braces, omitted-lower repeat
-bounds and verbose quantifier attachment. Scalar captures and existing matching
-paths remain, with metered construction lookahead. Scalar.89
-extends finite repeat bounds through4294967294 without enlarging invocation
-counter/frame/journal layouts. Invalid larger bounds use PythonRePatternException;
-required nullable work remains interruptible and metered. See the
-[contract](../../SPEC-PYTHONRE.md#brace-repetition-and-verbose-attachment) and
-[evidence](../../artifacts/python-wide-repeats-20261018/RESULT.md). Immutable88
-retains its original grammar and qualification scope.
+## Controls and lifetimes
 
-- Semantic target: `Utf8PythonRegex` models the standard `re` surface, while remaining a managed .NET library.
-- Implementation model: parser-first translation. Python-style patterns are parsed into a dedicated AST before any backend is selected.
-- Native rendering: the AST emits Unicode scalar atoms/ranges for `Utf8Regex`; native execution receives scalar spellings instead of UTF-16 surrogate-class compensation.
-- Global operations: admitted scalar programs serve captured iteration, Python empty-match retry, substitution and split over the original UTF-8 bytes, with one operation deadline/token and owned capture snapshots.
-- Case folding: admitted Python ASTs lower to the shared UTF-8 scalar VM with owned CPython 3.13.2 / Unicode 15.1.0 data. Literal classes include extra fold partners; references use lexical simple lowercase, with ASCII scopes restricted to ASCII letters. The four formerly skipped case-folding regressions are active.
-- Engine ownership: the adapter uses owned scalar execution and qualified core fast paths. Production BCL engines, UTF-16 progression and BCL result shaping have been removed from both adapter and core. Managed-compatible pattern rendering supplies the established timeout-exception pattern identity and benchmark comparators. Finite `MaxWorkSteps`, `MaxDepth`, `MaxWorkingBytes` and `MaxResultBytes` select owned metered execution, including qualified prepared literal-family routes. Work covers validation, matching and required shaping cumulatively. Depth bounds live backtracking/continuation frames before acquisition. Working bytes admit modeled major active arrays/output controls and growth overlap; exclusive scratch releases synchronously. Result bytes charge modeled major array/text, capture/name, coordinate-map and staging/output capacity before acquisition, including growth/final roots. Charges can conservatively count reused storage again and never refund, including across memory-cursor moves. Exhaustion reports `ExecutionWorkSteps`, `ExecutionDepth`, `ExecutionWorkingBytes` or `ExecutionResultBytes`; the first denial stays authoritative. Compilation/preparation, caller callback execution/allocations, fixed values, borrowed subjects and later standalone getters have separate scope. These controls do not bound live caller retention or process memory. Incidental owner metadata, shared fixed profile data and caller-retained results have separate working scope. Development predefined classes use the pinned profile data; remaining common resource gates remain unfinished.
-- Dependency model: the only non-BCL implementation dependency is `Lokad.Utf8Regex`.
-- Primary I/O model: the main API surface operates on UTF-8 `ReadOnlySpan<byte>`.
-- Capture-aware APIs use PythonRe-specific result/context types, independent from the PCRE2 sidecar.
-- Detailed owned matches and borrowed contexts expose nullable `LastIndex` and `LastGroup`: the Python number of the last capture to close on the successful path, and that capture's name. Nested `((a))` closes group 1 last; an unnamed last capture has a null name. Failed and nonparticipating matches have null completion metadata. Fixed-width lookbehind evaluates its body forward from the preceding scalar boundary, preserving Python capture values and close order even for repeated or nested groups.
-- Culture model: the profile is culture-invariant by construction; Python `re.LOCALE` is intentionally unsupported.
-- Named Unicode escapes: `\N{...}` is intentionally unsupported to avoid embedding a large Unicode-name table in the package.
-- `FindAll(...)` is a structural full-match collector.
-- `FindAllToStrings(...)` provides CPython-shaped `re.findall(...)` string result shaping.
-- `FindAllToUtf8(...)` provides the same host-facing shape with UTF-8 byte outputs.
-- `SearchToString(...)`, `MatchToString(...)`, and `FullMatchToString(...)` provide host-friendly scalar helpers.
-- `SearchDetailedData(...)`, `MatchDetailedData(...)`, `FullMatchDetailedData(...)`, and `FindIterDetailed(...)` provide non-`ref struct` match snapshots for runtime hosts.
-- `ReplaceToString<TState>(...)` / `SubnToString<TState>(...)` support evaluator-driven replacement over match snapshots.
-- `Subn(...)` / `Subn<TState>(...)` provide UTF-8 replacement outputs with replacement counts for bytes-first hosts.
-- `Replace<TState>(...)` / `Subn<TState>(...)` also expose byte-oriented evaluator overloads for hosts that want to stay UTF-8-native end to end.
-- `SplitDetailed(...)` exposes split output with segment/capture metadata.
+Instances accept positive nullable `Utf8ResourcePolicy.MaxWorkSteps`, `MaxDepth`,
+`MaxWorkingBytes` and `MaxResultBytes`. Null is unlimited; zero is invalid.
+**Defaults remain unlimited.** Work includes covered validation, matching and
+required shaping cumulatively. Depth admits live frames before acquisition;
+working/result controls admit modeled major capacities and growth overlap.
+Result/staging charges do not refund and may conservatively count storage again.
+Denials use `Utf8ResourceLimitExceededException` with the corresponding
+`Execution*` resource kind. This is not a total heap/RSS or caller-retention bound.
+
+Strict full-subject validation, original synchronous cancellation and one absolute
+deadline apply through required shaping and persistent cursor advances, including
+waits between moves. Caller callbacks cannot be preempted; copying/encoding their
+returned output remains covered. Timeouts use `RegexMatchTimeoutException`; its
+Input is empty when working or result bytes are bounded to avoid decoding the
+subject for diagnostics after expiry.
+
+Explicit `Compile` factories accept separate construction limits, timeout and
+token, and eagerly prepare FullMatch. Constructors keep fixed construction
+backstops and lazy FullMatch preparation. Cold FullMatch/replacement preparation,
+cache retention, incidental owners, standalone getters, callback allocations and
+host containers retain separate documented scope. The execution token must be
+passed on each operation. See packaged [HOST-INTEGRATION.md](HOST-INTEGRATION.md)
+and [MIGRATION.md](MIGRATION.md).
 
 ## Public API
-
-Constructor errors are checked before UTF-8 pattern decoding: explicit resource
-policy first, then compile flags and timeout. Unsupported/incompatible flags and
-invalid timeouts spend no construction allowance. With valid arguments, malformed
-UTF-8 and pattern syntax retain their existing failures. Construction itself still
-uses separate fixed backstops, rather than the finite invocation policy.
-
-The explicit text/UTF-8 `Utf8PythonRegex.Compile` factories accept
-`Utf8ConstructionPolicy`, a construction timeout and a construction token.
-Positive work/depth/instruction/byte limits tighten the fixed backstops for
-covered eager decoding, parsing, translation, compilation and capture metadata.
-Scalar.52 also prepares the derived FullMatch program under
-that same owner before returning. This pays its instruction-copy/metadata cost
-upfront, even if FullMatch is unused, and tighter budgets can consequently deny
-more compilations. Constructors remain lazy; replacement preparation, incidental
-acquisitions and process memory remain outside this partial construction bound.
-Scalar.82 excludes individual charges for temporary
-immutable-metadata views and enumerator boxes. Their backing tables, traversal
-work and original cancellation/deadline checks remain covered.
-Construction authority ends before expression publication; execution policy and
-the token supplied to each operation remain independent.
-
-Scalar.72 checks that same construction authority between
-scalar-aligned4096-byte count/decode blocks for UTF8 patterns. Strict decoding,
-absolute malformed-byte offsets, original numeric charges and one admitted string
-remain. Failed decoding releases unpublished text capacity; interruption may win
-before a later malformed suffix. Inner decoder wording can differ for later
-blocks. This change is outside immutable Core/Python69 and PCRE71 packages;
-it does not complete construction/default/live-retention or host containment.
-
-Scalar.72 also constructs existing semantic BMP literal nodes directly through
-the admitted scalar-node factory, omitting per-atom Core parsing. Python case
-expansion, surrogate rejection, scalar VM, captures and original construction
-authority remain. Less actual preparation lowers numeric work/depth/byte needs;
-explicit caps still deny. One public source comparison reduces8KiB byte-pattern
-Compile48.7->19.4ms and33.0->11.9MB; the class-only control is unchanged within
-noise. Remaining cost and raw observations are explicit. The private
-Core/PythonRe scalar.72 input includes this and bounded UTF8 construction decoding;
-its handoff records qualification. Immutable69/71 bytes remain unchanged.
-
-This candidate additionally preserves the original call deadline through
-cold scalar FullMatch and template substitution preparation. Construction/cache
-checkpoints observe call interruption; interrupted preparation is retryable and
-warm reuse has no preparation scope allocation. These fixes are included in the
-qualified scalar.51 pair and preserved in scalar.52.
-See [SPEC-PYTHONRE.md](../../SPEC-PYTHONRE.md) for the exact scopes and exclusions.
-
-Scalar.86 reuses Core's complete literal finder for exact,
-capture-free `FullMatch` value and string results. It checks both suffix endpoints,
-validates the entire subject and keeps the original deadline/token and all four
-finite controls. These calls omit per-scalar VM dispatch and lazy full-program
-preparation; detailed/capture-dependent and alternative routes retain their
-existing handling. Required strings still need result-byte admission. Lower
-actual work can admit tighter policies; resource units and defaults are unchanged.
-One bounded FullOpts source comparison shows short ASCII/scalar value calls
-55-83% faster and scalar string output44-51% faster, with unchanged allocations.
-The offset case and controls differ by a few percent; those small differences
-are not precise causal claims. These source comparisons do not establish package-default costs or CPythonStatus.
-[Evidence](../../artifacts/python-literal-fullmatch-20261017/RESULT.md).
 
 ```csharp
 using System;
@@ -178,69 +109,15 @@ waits count against the original absolute match deadline. The offset/token
 overloads preserve scalar-aligned byte offsets and the original invocation token.
 Existing span APIs retain their existing contracts.
 
-Scalar.5 reuses the cursor's existing private VM workspace across
-moves. Scratch remains charged while positioned, including during projection and
-host waits; EOF, failure and disposal release it synchronously. It never backs
-published snapshots. Scratch/publication overlap can raise the required finite
-working cap. The larger persistent owner has a fixed allocation cost; measured
-bulk improvements do not imply every first-result path is faster. Scalar.4
-package bytes predate this change.
 
-A finite work or result-capacity policy applies cumulatively through cursor construction,
-validation, each move and required snapshot publication. Result capacity covers
-modeled major arrays/text, coordinate maps and staging/output growth, with no refunds.
-Depth caps live backtracking/continuation frames and can be combined with these
-cumulative limits. Exhaustion throws `Utf8ResourceLimitExceededException` with
-`ExecutionWorkSteps`, `ExecutionDepth`, `ExecutionWorkingBytes` or `ExecutionResultBytes`; faulted cursors
-release scratch immediately. Separate calls get separate counters. Work units are
-bounded engine/checkpoint steps and may change between releases. Development after
-scalar.101 also admits one invocation step per 2,048 UTF-16 template code units
-before cold or warm replacement-cache lookup, sharing the operation's work,
-cancellation and deadline. Large templates can deny before parsing even on empty
-subjects; a denied lookup preserves a previously cached plan. Fine-grained
-compilation and replacement-plan preparation keep separate construction backstops. Arbitrary user
-callback execution and later standalone result getters are outside this cap;
-encoding/copying callback returns is charged. Cancellation and deadlines still apply.
-Scalar.82 stages `SplitToStrings` references directly
-in the existing metered result buffer. `SplitDetailed` keeps its capture metadata
-route. Full validation, captures/nulls, scalar starts, original interruption and
-admission remain; less actual staging can admit tighter work/byte policies.
-One bounded source comparison reduces dense/captured allocations by 24–30%,
-with an explicit 4.8–7.5% ASCII execution-time cost and 3.5–4.4% faster captured
-Unicode. These are FullOpts source results, not new default-PGO CPython Status
-or package results. [Evidence](../../artifacts/pythonre-split-string-staging-20261017/RESULT.md).
-Working bytes bound modeled major active capacity and old/new overlap, with reusable exclusive scratch and invocation-long published cursor credits. Working publication does not bound caller retention; incidental owner/deadline metadata is outside this model. Depth does not bound pattern
-nesting, workspace, result size or cumulative work. Result capacity traffic
-has separate scope from live caller retention; these controls do not complete safe defaults.
+A cursor has cumulative work/result allowance across all moves. Scratch remains
+charged while positioned and releases at EOF/failure/Dispose. Published snapshots
+never borrow reusable scratch. Faults preserve earlier snapshots; a new call gets
+a new allowance and needs new host admission while earlier results survive.
+Core value-cursor copies have independent positions/shared allowance; PythonRe
+reference aliases share position/disposal. No finalizer-based lease is required.
 
-The [host integration recipe](../../HOST-INTEGRATION.md) composes finite working
-and result caps with an existing host batch owner. Its reservation must survive
-retained snapshots and fresh calls need new admission. It covers only the already
-modeled payloads; complete host containment and downstream acceptance remain open.
-
-Scalar.52 leaves `RegexMatchTimeoutException.Input` empty when
-working or result bytes are bounded. Timeout failure therefore does not copy the
-subject into diagnostic text. Existing pattern/duration metadata and cancellation
-remain; this is not a complete exception or process-memory cap.
-
-Scalar.51 derives the lazy `FullMatch` program from existing
-immutable instructions and shares predicate/assertion tables. It no longer
-retains the parse tree for a second conversion. Cold preparation still observes
-the original call's cancellation/deadline and admits new instruction storage;
-complete construction and retained-storage policies remain separate.
-
-```csharp
-var bounded = new Utf8PythonRegex("(?P<word>\\w+)", PythonReCompileOptions.None,
-    TimeSpan.FromSeconds(1), new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 1_024, MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 });
-```
-
-## Development Notes
-
-- Benchmarks: [BENCHMARKS.md](./BENCHMARKS.md)
-- Packaged qualification: run `./test-packaged-pythonre.ps1 -Configuration Release` from the repository root to rebuild a version-coherent core/companion pair, verify NuSpec/assembly/SourceLink revisions and PDB identities, and execute the complete PythonRe suite from an isolated NuGet cache. The output includes `package-provenance.json`; `-Archive` requires a clean source revision and preserves the packages, symbols and report hashes.
-- Project: [Lokad.Utf8Regex.PythonRe.csproj](./Lokad.Utf8Regex.PythonRe.csproj)
-- Main runtime: [Utf8PythonRegex.cs](./Utf8PythonRegex.cs)
-- Core match/result types: [PythonReCoreTypes.cs](./PythonReCoreTypes.cs)
-- Parser: [PythonReParser.cs](./PythonReParser.cs)
-- Translator: [PythonReTranslator.cs](./PythonReTranslator.cs)
-- Support spec: [SPEC-PYTHONRE.md](../../SPEC-PYTHONRE.md)
+Read packaged [release notes](CHANGELOG.md). Repository
+[benchmark results](https://github.com/Lokad/Utf8Regex/blob/master/src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md)
+retain their recorded source/package/runtime identities and qualification status;
+older rows do not automatically qualify this release.

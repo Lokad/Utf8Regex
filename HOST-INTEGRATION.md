@@ -1,185 +1,11 @@
 # Resource controls and host ownership
 
-The latest qualified private pair is **Core/PythonRe scalar.118**,
-producer `735776fb`. Its [handoff](artifacts/core-python-scalar118-20261020/HANDOFF.md)
-binds the same actual Windows/Linux DLLs, unchanged producer assertions, Unicode
-fixtures and exact restore/member/provenance/symbol identities. Finite ASCII branch
-enumeration reuses the existing controlled cursor; omitting scalar scratch can
-lower numeric work/depth/working requirements. Scalar/capture and ownership
-contracts, major admission, original interruption and result-capacity scope remain.
-[Current package costs](artifacts/core-python-scalar118-20261020/vm-cost/RESULT.md):
-one 154 s default-tier observation includes finite/live-token/deadline, native/bulk/
-captured results and both .NET controls. A 13 KB / 2,000-value enumeration125.438us
-unlimited,271.946us finite/112B. Limits retain material costs; deadline enumeration
-spread of 1.247x and .NET controls up to1.634x prevent universal overhead/ranking claims.
-Earlier/failed candidates stay immutable; no publication, external adoption or
-PCRE118. Core ordered choice and historical Awk/POSIX boundaries remain distinct.
-Common/default/retention scope below is unchanged.
-
-The preceding qualified private pair is **Core/PythonRe scalar.112**.
-Its [handoff](artifacts/core-python-scalar112-20261019/HANDOFF.md) records same-byte
-Windows/Linux suites, original public consumers, oracles and exact identities.
-It corrects a demonstrated111 defect: generic Python Count and cursor EOF could
-report completion after original cancellation/expiry on the final VM step.
-The shared EOF guard now checks original authority, adding one bounded work unit.
-Owned snapshots, cleanup, byte limits and strict scalar semantics retain scope.
-Source CI is green. Earlier bytes remain immutable; no publication, external pin /
-adoption or PCRE112. Full common/default/retention and broader goals remain open.
-
-The preceding qualified private pair is **Core/PythonRe scalar.111**. Its
-[handoff](artifacts/core-python-scalar111-20261019/HANDOFF.md) records actual-byte
-Windows/Linux/public/oracle/identity gates and current costs. It removes obsolete
-execution,reuses controlled finite ASCII Count without VM scratch,and borrows
-immutable plans. The former can lower numerical work/depth/working requirements;
-the latter preserves metering/allocations/algorithms. Strict scalar semantics,
-captures,original authority and lifetimes remain. Earlier bytes stay immutable;
-no publication,external adoption or PCRE111. Full common/default/retention and
-broader original goals remain open.
-
-The preceding qualified private pair is **Core/PythonRe scalar.110**. Its
-[handoff](artifacts/core-python-scalar110-20261019/HANDOFF.md) records actual-byte
-platform/consumer/oracle/identity checks and current costs. It corrects native
-Count terminal cancellation without revising numeric work or admission.
-Scalar.109 predates this demonstrated fix; use110 for new adoption. Historical
-identities/evidence and all immutable bytes remain unchanged.
-
-The historical [Core/PythonRe scalar.109 handoff](artifacts/core-python-scalar109-20261019/HANDOFF.md) records exact
-identities, same-byte Windows/Linux consumer checks, current costs and exclusions.
-Independent PCRE2 uses its exact Core/PCRE2 scalar.94 pair; no PCRE109 is designated.
-Earlier packages retain their recorded contracts and limitations.
-Later development changes are separate source work, outside immutable109.
-
-Scalar.109 admits selected nonliteral compiled-runtime metadata with one
-conservative 2 KiB charge before allocation. Major referents retain separate
-admission. The outer construction factory replaces four mirrored transfer records
-and nested scopes, retaining rollback and a final original-token/deadline check.
-Modeled bytes can increase and covered depth can decrease; work/byte/depth units
-remain versioned. This affects shared Core preparation in adapters too, including
-their separately documented cold-preparation ceilings. It does not extend the
-invocation envelope, default policy or retained-storage scope.
-
-Known scalar.104 Core `NonBacktracking` limitation: nullable bounded repetitions
-can choose shorter matches or incorrect last captures. For example,
-`(?:a?|b){0,3}a` on `baa` returns `ba` then `a` instead of one `baa`. Scalar.105
-corrects bounded/minimum-completion progress in the existing graph; the
-immutable104 bytes retain this defect. This is outside the original consumer
-assertion slice. PythonRe does not use this Core option.
-
-Scalar.103 fixes a scoped-multiline anchor defect:
-grouped literals such as `(?m:^(abc))` could incorrectly use an absolute-start
-shortcut, missing later lines or undercounting matches. The fix reuses the
-existing admitted prefix proof; scoped line anchors keep their line/scalar
-route. Immutable scalar.102 is unchanged and does not contain this correction.
-
-Scalar.104 delays PythonRe scalar substitution's output
-buffer until the first match. With no replacements, it returns an owned copy of
-the validated input directly, using its known character count for string output.
-This removes unused staging from working/result admission; a smaller finite
-budget may now succeed. Final payload admission, independent mutable byte results,
-template validation and original interruption remain. Scalar.103 is unchanged.
-
-The shared Core scalar template/owned-writer replacement path also projects the
-validated subject directly when no match was found. Its existing callback scope
-and control charges stay; returned bytes remain independent. Final payloads keep
-their numeric admission, and `TryReplace` preserves overlapping copies and an
-unchanged destination when capacity is insufficient. Unused byte staging is no
-longer charged on that path; scalar.104 includes this change.
-
-Eligible regular scalar replacement now reuses the existing complete native
-literal finder for candidate starts, retaining scalar capture/history verification
-under the original invocation. This reduces search work for misses and gaps;
-the same finite policy can admit calls that previously exhausted its work limit.
-The existing eligibility rules and bounded native metering apply. Scalar.104
-includes this change; immutable103 retains its prior implementation.
-
-Scalar.104 shared Core replacement also reuses its admitted VM scratch across
-searches, releasing it before final output projection and on failure. Retaining
-scratch through intermediate output/callback shaping can raise working overlap:
-the 6,656-byte captured identity-destination example needs 15,296 modeled working
-bytes instead of fitting 14,000. The configured ceiling still denies before
-acquisition. This trades some tight-budget admission for less repeated allocation;
-the existing 24,000-byte text/byte final-projection example still succeeds.
-
-Scalar.101 supports overlapping Core `TryReplace` subject/destination spans by
-staging scalar output before copying. Staging may allocate even for a literal;
-insufficient destinations stay unchanged. UTF-8 templates may alias the
-destination too. Use disjoint subject/destination storage with scalar.100 and
-earlier. Detailed Python snapshots may share an immutable string for captures
-covering the whole match; capture metadata and returned mutable arrays remain
-independent.
-
-Scalar.102 adds changes outside immutable101: eligible controlled
-Core `IsMatch`/`Count` calls reject a planner-proved absent required literal before
-VM acquisition, and scalar prefix Count rechecks the original token after its
-terminal work checkpoint. The first can admit smaller limits; a one-byte modeled
-working cap does not imply one physical allocated byte. The second corrects a
-shared-invocation cancellation edge. Controlled PythonRe template substitution
-also admits one invocation-work step per 2,048 UTF-16 template code units before
-cache lookup, for cold and warm calls. Large templates can deny before parsing,
-even on empty subjects; detailed construction work keeps its separate backstop.
-These changes are qualified in scalar.102; earlier bytes remain unchanged.
-
-Choose eager-construction and invocation limits separately. The common policy
-types describe admission scopes; work units and execution failure types depend
-on the regex profile. Matching remains strict UTF-8/scalar with byte coordinates.
-
-Scalar.106 charges capture-completion metadata only when a
-Python detailed/context result observes it. Core operations and Python value /
-findall routes omit that unused scan and can admit smaller work limits. VM
-instruction/backtracking work, required projection charges, original interruption
-and result ownership remain enforced.
-
-Scalar.116 omits one duplicate work checkpoint per materialized
-match in eager scalar `FindAllToStrings`: the next advance immediately checks
-the same invocation before discovery. Successful work cutoffs can fall by one
-step per result on that route. Decoding/per-capture, EOF and final-publication
-guards, original token/deadline and working/result admission retain their scope.
-This qualified116 revision does not revise immutable scalar.115 or earlier bytes.
-
-Scalar.107 also omits useless rewind frames for eligible greedy
-dot/class runs before a disjoint literal or end anchor. The end-anchor proof
-requires the repeated atom to exclude LF. This can reduce work/depth/working
-requirements, allowing some previously denied numeric budgets to succeed.
-Per-scalar work, major admission, original token/deadline and capture/result
-publication stay controlled. Immutable106 does not contain this change.
-
-Source after scalar.107 removes Count-only line-family metadata and native
-preparation that no public entry point executes after scalar dispatch. Numeric
-construction work/byte requirements may fall; meaningful major acquisition,
-original authority and all invocation/result controls remain. Private diagnostic
-replays move to benchmark tooling. Immutable107 retains its recorded preparation.
-
-Scalar.117 reuses the existing Python scalar cursor for generic
-capture-free bulk results. It omits generic Core per-value attempts and range
-staging while preserving native families, full-input validation, original authority,
-major admission and owned results. Finite generic/token calls already take that
-path; their numeric controls retain scope. The source FullOpts comparison and actual117 default-tier costs have separate
-provenance. Immutable116 retains its original generic path and recorded costs.
-
-Development after scalar.118 uses one checked first-byte union scan for raw exact
-LTR two-literal candidates. Numeric work requirements can fall by one scan charge
-per bounded window; original cancellation/deadlines remain checked before each
-at-most-2048-byte scan. Complete ordered comparisons and all other resource and
-ownership scope remain. This source change leaves immutable118 unchanged.
-
-Development after scalar.118 filters impossible RTL Count starts when the initial
-instruction is a mandatory strict-end anchor. The existing terminal guard checks
-the original token/deadline; full-subject UTF-8 validation still precedes matching.
-Work requirements can fall and an impossible start floor can avoid VM scratch
-(caller capture slots retain their admission). Soft/multiline ends and alternative
-presence do not enable this shortcut. Captures and retained results keep their
-contract. No ordinal-reference per-byte-to-chunk change is accepted.
+This is the **0.4.0-rc.1** host contract for Core, PythonRe and the managed
+PCRE2 adapter. Both adapters require exactly the same Core version. The controls
+below are enforceable within their documented modeled scope, not a total
+managed-heap/RSS or application-containment guarantee. Defaults remain unlimited.
 
 ## Select the public controls
-
-Scalar.118 reuses the existing controlled native cursor for finite
-value enumeration of complete nonempty ASCII branch plans. It removes per-result
-scalar scratch on those routes. Work/depth/working requirements may fall; the
-original token/deadline, cumulative allowance, major admission and typed denials
-remain authoritative. Fixed values acquire no result payload. Independent cursor
-positions/shared allowance and retained-value validity stay unchanged. Other
-scalar/context/RTL/NonBacktracking/folded/deterministic selections remain. This
-source revision is outside immutable117 and changes no default or host W+R scope.
 
 `Utf8ResourcePolicy` has positive nullable `MaxWorkSteps`, `MaxDepth`,
 `MaxWorkingBytes` and `MaxResultBytes`. Null means unlimited; zero is invalid.
@@ -187,39 +13,13 @@ source revision is outside immutable117 and changes no default or host W+R scope
 `MaxInstructionCapacity` and `MaxBytes`. Its null values keep the fixed
 construction backstops; they do **not** mean unlimited construction.
 
-Construction charge units are versioned. Scalar.105 charges
-map lookups and long collision chains in blocks, while replacement growth keeps
-its capacity admission and batched source-scan charges. String-key scans and
-comparisons remain covered. Metadata enumeration admits the whole table
-scan before its first element, so early disposal can overcharge. Major arrays,
-growth overlap and instruction/state expansion still require admission before
-allocation. Views and iterator helpers have no individual allocation charge.
-Cancellation and the original deadline are checked at entry, inside long chains
-and before publishing grown storage; no probe-by-probe cost guarantee is made.
-This changes eager-construction work thresholds, not invocation limits or cursor
-and retained-result ownership. Actual Unsafe.SizeOf queries remain in use.
-
-Scalar.106 appends adjacent literal-token runs in one buffer,
-avoiding repeated increasing-prefix allocations. Each new buffer is admitted
-while the old prefix remains charged; class-product order, expansion bounds and
-original interruption remain. Actual work and storage requirements can fall, so
-a tighter construction policy may now succeed without changing its ceilings.
-
-Scalar-only fallback preparation omits the native execution tree, instruction
-array and derived verifier guards. Programs with native or direct-family
-consumers keep their preparation. The scalar program and capture catalog remain
-shared across Core and adapter entry points. Eliminating unused preparation can
-reduce construction work, instruction-capacity and byte requirements; admission
-still precedes every retained major allocation. Exact construction cutoffs and
-checkpoint counts are implementation-dependent. Original cancellation/deadlines,
-invocation limits, NonBacktracking and result/cursor ownership are unchanged.
-
-Development after scalar.106 also omits capture-map preparation when existing
-scalar projection owns a fixed finite-policy/deadline instance or captured Unicode
-atoms, and when no native tree exists. Required native ASCII projections,
-inactive-declaration shaping and the anchored-prefix proof remain. This lowers
-real construction work/storage; it does not change invocation charges, native
-matching algorithms, original interruption or result/cursor lifetimes.
+Construction charges are conservative and versioned. Major buffers, growth
+overlap and instruction/state expansion require admission before allocation.
+Coarse traversal/probe checkpoints bound interruption; individual helper objects,
+views and enumerator boxes do not each receive a charge. Cache retention uses
+conservative per-program charges and eviction, which can count shared storage
+again. Exact numeric thresholds may change when real work or storage disappears.
+Actual `Unsafe.SizeOf<T>()` queries remain; they perform no unchecked access.
 
 These are existing calls, using each profile's option type. `policy` applies to
 later invocations; `construction`, `constructionTimeout` and `token` apply only
@@ -251,13 +51,6 @@ PCRE2 translates a common null to legacy zero, which means unlimited. Its named
 PCRE2. Direct literal calls retain validation, discovery and required projection
 metering; a boolean result can need fewer units than a value result.
 
-Development after scalar.108 coarsens finite forward exact-literal Count work:
-the bounded candidate search/comparison admits the constant-time count increment
-too. It charges search/comparison windows and the terminal publication checkpoint,
-without a second charge for each accepted increment. Validation and the original
-token/deadline remain in that invocation. This shared Core/PythonRe/PCRE2 path can
-need fewer work units; numeric thresholds are versioned, not matching semantics.
-
 | Failure | Core / PythonRe | PCRE2 |
 | --- | --- | --- |
 | Invocation resource denial | `Utf8ResourceLimitExceededException`, with an `Execution*` resource kind | `Pcre2MatchException`: `MatchLimit`, `DepthLimit`, `HeapLimit` or `ResultLimit` |
@@ -273,21 +66,21 @@ selected explicitly. Match timeout is independent of these budgets. Program/cach
 retention uses separate conservative accounting; eviction must preserve held
 programs and results. Shared storage can be counted again and cause earlier denial.
 
-The exact surfaces are pinned by the [Core](tests/Lokad.Utf8Regex.Tests/PublicApi.Shipped.txt),
-[PythonRe](tests/Lokad.Utf8Regex.PythonRe.Tests/PublicApi.Shipped.txt) and
-[PCRE2](tests/Lokad.Utf8Regex.Pcre2.Tests/PublicApi.Shipped.txt) API snapshots.
-[SPEC.md](SPEC.md#37-cancellation-and-resource-limits),
-[SPEC-PYTHONRE.md](SPEC-PYTHONRE.md#cancellation-and-resource-contract) and
-[SPEC-PCRE2.md](SPEC-PCRE2.md) define each covered scope. The composition recipe
+The exact surfaces are pinned by the [Core](https://github.com/Lokad/Utf8Regex/blob/master/tests/Lokad.Utf8Regex.Tests/PublicApi.Shipped.txt),
+[PythonRe](https://github.com/Lokad/Utf8Regex/blob/master/tests/Lokad.Utf8Regex.PythonRe.Tests/PublicApi.Shipped.txt) and
+[PCRE2](https://github.com/Lokad/Utf8Regex/blob/master/tests/Lokad.Utf8Regex.Pcre2.Tests/PublicApi.Shipped.txt) API snapshots.
+[SPEC.md](https://github.com/Lokad/Utf8Regex/blob/master/SPEC.md#37-cancellation-and-resource-limits),
+[SPEC-PYTHONRE.md](https://github.com/Lokad/Utf8Regex/blob/master/SPEC-PYTHONRE.md#cancellation-and-resource-contract) and
+[SPEC-PCRE2.md](https://github.com/Lokad/Utf8Regex/blob/master/SPEC-PCRE2.md) define each covered scope. The composition recipe
 below is qualified for Core/PythonRe; it does not infer an equivalent PCRE2 host
 envelope or complete construction, lazy/default or retained-storage coverage.
 
 ## Compose the Core/PythonRe invocation envelope
 
-Core and PythonRe's qualified scalar packages provide invocation limits. A host
+Core and PythonRe provide invocation limits. A host
 can conservatively compose their **covered payload** bounds using its existing
 batch/result owners, without a new regex ownership API. This recipe does not
-complete Lython's artifact or full memory-containment acceptance gates.
+establish complete host memory containment or downstream adoption.
 
 For an instance with positive finite `MaxWorkingBytes = W` and
 `MaxResultBytes = R`, reserve `checked(W + R)` from the host **before** entering
@@ -334,7 +127,7 @@ separate program/subject owner alive while a surviving result or view borrows it
 storage. The envelope does not turn these exclusions into covered allocations.
 Host-created lists of snapshots, for example, need their own admission.
 
-Core/PythonRe scalar.102 and current source have the following preparation scope.
+Core/PythonRe have the following preparation scope.
 These are separate phase ceilings, not additions to the invocation W + R promise.
 
 | Preparation | Admission and reuse |
@@ -353,12 +146,12 @@ read. Even an empty subject can prepare and cache a template before finding no
 matches. Reserve separately for preparation and surviving plans; finite invocation
 caps alone do not bound their combined retained storage.
 
-PCRE2's independent scalar.94 contract additionally charges controlled replacement
+PCRE2 additionally charges controlled replacement
 preparation checkpoints to invocation work. Cold finite-heap preparation borrows
 the remaining heap capacity as a construction ceiling and holds its additional
 peak reservation through replacement. Warm plans use their separate bounded cache.
 This differs from the Core/PythonRe phase scope above; see
-[SPEC-PCRE2.md](SPEC-PCRE2.md) for its covered capacities and failure mapping.
+[SPEC-PCRE2.md](https://github.com/Lokad/Utf8Regex/blob/master/SPEC-PCRE2.md) for its covered capacities and failure mapping.
 
 On denial or interruption, release exclusive cursor scratch through its normal
 failure/EOF/Dispose path, but preserve reservations for surviving results. Prior
@@ -372,20 +165,11 @@ type's size and performs no unchecked read, pointer arithmetic or reference
 reinterpretation. Keep excluding actual unchecked APIs, including other Unsafe
 members and SIMD LoadUnsafe; do not replace SizeOf with manual estimates.
 
-This resolves the former SizeOf acceptance disagreement. It does not establish
-consumer adoption or complete construction/lazy/default/live-retention policies
-and host ownership integration. This recipe composes already qualified scope;
-it introduces no shared engine meter or new package designation.
-
-The qualified input is the exact Core/adapter pair recorded by its manifest,
-feed and locks. Adapters consume Core internals and move together with the exact
-qualified Core version. Applications combining adapters need a common qualified
-Core; deliberate dependency overrides have separate compatibility scope.
-The immutable [Core/PythonRe scalar.110 handoff](artifacts/core-python-scalar110-20261019/HANDOFF.md)
-records same-byte Windows/Linux consumers, exact identities, current costs and
-the recorded semantic/resource subset. Independent PCRE2 evidence stays
-with its [scalar.94 handoff](artifacts/pcre2-scalar94-delivery-20261018/HANDOFF.md).
-Earlier candidates remain immutable; actual consumer ownership/adoption is separate.
+The qualified input is the exact three-package release recorded by the release
+manifest, feed and locks. Adapters consume Core internals and must move with the
+exact qualified Core version. Previous immutable packages retain their original
+evidence. Producer qualification of handoff assertions does not establish actual
+external adoption or completion of consumer host-ownership integration.
 
 The source witnesses are `Utf8ExecutionBudget.TryChargeResultBytes`,
 `Utf8InvocationResultLedger.ReleaseSince` and `Utf8PythonMatchCursor.MoveNext`.
@@ -393,20 +177,3 @@ The source witnesses are `Utf8ExecutionBudget.TryChargeResultBytes`,
 checks cumulative denial, surviving snapshots and fresh-call allowance.
 `PythonRePersistentCursorTests` and `PythonReFiniteWorkingPolicyTests` cover
 explicit scratch release, aliases, interruption and overlapping working capacity.
-
-Development after scalar.107 removes PythonRe's eager .NET reference-pattern
-rendering. Construction still admits native text, major buffers and scalar program
-expansion, with existing work/depth/instruction/byte ceilings and interruption.
-Numeric requirements may decrease by the removed work and storage. PythonRe-created
-execution timeouts now report its original public `Pattern`; nested Core exceptions
-still propagate unchanged. Byte-cap diagnostic Input omission and original
-invocation authority are unchanged. Reference rendering remains in test/benchmark
-tooling and does not add a shipped dependency. Immutable107 bytes retain their
-qualified contract.
-
-Source108-dev omits optional Core construction for nullable Python patterns whose
-iteration eligibility already rejects Core. Scalar discovery and native candidate
-fences already exclude that helper. Covered construction bytes/work can decrease;
-Python validation/program expansion, original authority and major admission stay.
-Other helper/candidate/native routes retain their existing preparation. No public
-API or immutable107 package contract changes.
