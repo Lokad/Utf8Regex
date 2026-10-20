@@ -24,35 +24,36 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-10-20T05:29:10.2609732+00:00`
-- Snapshot SHA-256: `4DB8B9332C75374D65FA49A141C5D6ADCF5B4143E18F294BB6971A1D34489EEB`
+- Generated: `2026-10-20T08:49:16.2537368+00:00`
+- Snapshot SHA-256: `F0E233C1716AAF3602C785FF4AE3D635BF77DFA8D88E9C4E058C0248A22004CD`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `0`
 - Scaling families: `7`
-- Public Status: `52` managed faster, `0` equivalent, `7` CPython faster, `30` inconclusive, `1` unqualified
+- Public Status: `53` managed faster, `0` equivalent, `8` CPython faster, `28` inconclusive, `1` unqualified
 - Historical point measurement environments represented: `1`
 - Paired evidence from source `03981159c8f0`: `4` rows; .NET 10.0.12; CPython 3.12.3
 - Paired evidence from source `04b7a3ed1273`: `8` rows; .NET 10.0.12; CPython 3.12.3
 - Paired evidence from source `101975b4ce6a`: `2` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `185a07de3077`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `227771fc0ef7`: `3` rows; .NET 10.0.12; CPython 3.13.2
-- Paired evidence from source `30f9b58c44cc`: `3` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `30f9b58c44cc`: `1` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `37661064ec3a`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `4127a964c29e`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `48de72c5cf47`: `4` rows; .NET 10.0.12; CPython 3.13.2
-- Paired evidence from source `5b32ab77b03e`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `5b32ab77b03e`: `3` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `653161a993b9`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `675cda546679`: `2` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `69723e1684a5`: `6` rows; .NET 10.0.12; CPython 3.13.2
-- Paired evidence from source `6ab8f21ace15`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `6ab8f21ace15`: `3` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `8bc66679fb5a`: `3` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `8cb289db070b`: `1` rows; .NET 10.0.12; CPython 3.12.3
 - Paired evidence from source `9fff67981ce7`: `1` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `b2df56e6e3fb`: `4` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `b7228bd026e1`: `2` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `b8a54d632b28`: `4` rows; .NET 10.0.12; CPython 3.13.2
+- Paired evidence from source `ca0c8a6f04bd`: `4` rows; .NET 10.0.12; CPython 3.12.3
 - Paired evidence from source `d91449df7a20`: `3` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `e19304ef1f66`: `2` rows; .NET 10.0.12; CPython 3.13.2
 - Paired evidence from source `e83d19429eba`: `4` rows; .NET 10.0.12; CPython 3.12.3
@@ -115,8 +116,8 @@ Historical independent point columns were measured from source `30f9b58c44cc` on
 | Case | Operation | Contract | Status | PythonRe elapsed | CPython predecoded elapsed | Rstrong | CPython + decode elapsed | .NET + decode elapsed | PythonRe alloc |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|
 | `literal/ismatch` | `IsMatch` | ScalarResult | Managed faster | 1.759 us | 12.139 us | 0.14x | 26.157 us | 21.753 us | 0 B |
-| `literal/search` | `Search` | ConsumedGroupZeroRanges | Inconclusive | 1.919 us | 12.356 us | 0.15x | 26.397 us | 15.507 us | 0 B |
-| `literal/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 1.871 us | 12.245 us | 0.15x | 25.872 us | 14.743 us | 0 B |
+| `literal/search` | `Search` | ConsumedGroupZeroRanges | Managed faster | 3.104 us | 22.663 us | 0.14x | 26.397 us | 15.507 us | 0 B |
+| `literal/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 2.706 us | 22.375 us | 0.12x | 25.872 us | 14.743 us | 0 B |
 | `prefix/match` | `Match` | ConsumedGroupZeroRanges | CPython faster | 0.461 us | 0.236 us | 1.97x | 1.635 us | 2.192 us | 0 B |
 | `literal/fullmatch` | `FullMatch` | ConsumedGroupZeroRanges | Managed faster | 0.145 us | 0.227 us | 0.64x | 0.362 us | 0.175 us | 360 B |
 | `unicode/fullmatch` | `FullMatch` | ConsumedGroupZeroRanges | Inconclusive | 84.096 us | 15.976 us | 5.38x | 23.220 us | 27.260 us | 43,752 B |
@@ -145,8 +146,8 @@ Historical independent point columns were measured from source `30f9b58c44cc` on
 | `atomic/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.063 us | 0.189 us | 0.33x | 0.289 us | 0.110 us | 40 B |
 | `possessive/search-hit` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.102 us | 0.215 us | 0.47x | 0.274 us | 0.135 us | 248 B |
 | `leading-inline/search-hit` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.112 us | 0.232 us | 0.48x | 0.300 us | 0.173 us | 272 B |
-| `unicode-literal/search-hit` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.119 us | 0.143 us | 0.83x | 0.257 us | 0.124 us | 0 B |
-| `unicode-literal/search-miss` | `Search` | ConsumedGroupZeroRanges | Inconclusive | 0.294 us | 0.177 us | 1.67x | 1.016 us | 0.999 us | 0 B |
+| `unicode-literal/search-hit` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.118 us | 0.174 us | 0.68x | 0.257 us | 0.124 us | 0 B |
+| `unicode-literal/search-miss` | `Search` | ConsumedGroupZeroRanges | CPython faster | 0.832 us | 0.255 us | 3.26x | 1.016 us | 0.999 us | 0 B |
 | `unicode-category/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.055 us | 0.148 us | 0.37x | 0.264 us | 0.045 us | 32 B |
 | `greedy/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.064 us | 0.136 us | 0.47x | 0.262 us | 0.076 us | 32 B |
 | `alternation/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.089 us | 0.148 us | 0.60x | 0.265 us | 0.111 us | 48 B |
@@ -340,8 +341,8 @@ These fields prevent a composed host-language operation or a managed decode fall
 | Case | CPython operation owner | Managed route | Byte control / engine evidence |
 |---|---|---|---|
 | `literal/ismatch` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; boolean result` | Rbyte 0.14x [0.14, 0.15]; ManagedFaster |
-| `literal/search` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Rbyte 0.15x [0.15, 0.16]; ManagedFaster |
-| `literal/search-miss` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Rbyte 0.15x [0.15, 0.15]; ManagedFaster |
+| `literal/search` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Rbyte 0.14x [0.14, 0.14]; ManagedFaster |
+| `literal/search-miss` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Rbyte 0.12x [0.12, 0.12]; ManagedFaster |
 | `prefix/match` | `_sre C Pattern.match` | `Utf8Regex/FallbackRegex; strict validation; direct anchored ASCII literal-prefix/digit-repeat value ranges` | Rbyte 1.60x [1.57, 1.65]; NotApplicable |
 | `literal/fullmatch` | `_sre C Pattern.fullmatch` | `Utf8Regex/AsciiSimplePattern; full-match value ranges` | Rbyte 0.55x [0.54, 0.57]; Inconclusive |
 | `unicode/fullmatch` | `_sre C Pattern.fullmatch` | `strict UTF-8 decode; .NET Regex; full-match value ranges` | Excluded: pattern or subject is not entirely ASCII. |

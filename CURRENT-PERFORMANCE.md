@@ -63,6 +63,18 @@ Newest versioned .NET 10/11/generated lanes remain frozen at Core 114; the origi
 comparative-lane deliverable is complete. [Exact runtime scope](RUNTIME-COMPARISON.md).
 No new framework or repeated closed package/checked-access qualification.
 
+Four additional [frozen119 literal Search rows](bench/Experiments/PythonReLiteralFour119-20261020/README.md)
+now have qualified public CPython comparisons: ASCII late hit 3.104/22.663 µs,
+ASCII miss 2.706/22.375 µs, Cyrillic hit 0.118/0.174 µs, Cyrillic miss 0.832/0.255 µs
+(managed/predecoded CPython). Zero managed allocation. Nine pairs each, no extension
+or retiming; all managed/CPython samples at least 48.099/49.829 ms. Both ASCII bytes controls
+qualify managed wins; Cyrillic remains Not engine-comparable/NotApplicable.
+The 3.26x Cyrillic miss is a current public-operation lead, not an attributed engine
+or removable-validation gap. CPython harness-floor bounds and full provenance are
+preserved. The other 86 catalog rows, including eight frozen 117 rows, are unchanged.
+The .NET timings elsewhere in those rows retain historical scope; finite controls
+remain covered by the separate actual-byte observation above.
+
 ## Historical source119 and immutable118 checkpoint
 
 The following paragraphs preserve the previous checkpoint. References to current,
