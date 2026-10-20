@@ -1,0 +1,71 @@
+{
+  "Run": 39418654844,
+  "SourceRevision": "2ef80c411cdcc85b6fc50d3d15e938b6ede1c036",
+  "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/39418654844",
+  "Status": "completed",
+  "Conclusion": "success",
+  "Scope": "Full Release source build/test on Windows/Linux after the stale architecture witness correction. Later changes are documentation/receipts only. No package qualification.",
+  "Platforms": [
+    {
+      "Platform": "windows",
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.DiffTests.dll",
+          "Passed": 1504,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll",
+          "Passed": 3881,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+          "Passed": 5921,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Tests.dll",
+          "Passed": 39693,
+          "Failed": 0,
+          "Skipped": 0
+        }
+      ],
+      "LogSha256": "B8C32588A2611B072DF9C6ED1F77E0ABEB46360541B3AD1AB20C416B46CF2AEC"
+    },
+    {
+      "Platform": "linux",
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.DiffTests.dll",
+          "Passed": 1504,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll",
+          "Passed": 3881,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+          "Passed": 5921,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Tests.dll",
+          "Passed": 39693,
+          "Failed": 0,
+          "Skipped": 0
+        }
+      ],
+      "LogSha256": "930F8916D531760A5A9985B2C5E26D6A87FB35A9DB7E621E51104A8A0D2BF6D9"
+    }
+  ],
+  "Warnings": "Preexisting compiler/analyzer and duplicate-PCRE2 discovery-ID warnings remain; no failed/skipped test results."
+}

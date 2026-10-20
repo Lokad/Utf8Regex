@@ -65,6 +65,16 @@ constant; field-type coverage/immutability remains. Initial workflow/source-proo
 harness mistakes and their corrected runs do not remove semantic assertions.
 Logs remain under `artifacts/s1-*`, `s2-*`, `s3-*` and `s4-*`.
 
-Complete Windows/Linux source CI and final RC1 identity checks are recorded in
-adjacent receipts at completion. Source CI is separate from package qualification.
+[Initial source CI](initial-ci.json) caught one stale architecture assertion on
+both platforms: it demanded a Core owner for the wholly owned literal program.
+The correction tests literal ownership and exact identity on a real delegated
+pattern; all public behavior checks remain. The full corrected local PCRE2
+Release suite passes. [Final source CI](source-ci.json) is terminal green on
+Windows/Linux at `2ef80c41`, with the full Core/differential/PythonRe/PCRE2 suites
+and actual API/member/resource/semantic checks passing. Existing duplicate-case
+and compiler/analyzer warnings remain disclosed. Later receipts/docs do not alter
+that C# source; the initial failed run is not hidden or relabeled.
+
+[RC1 identity checks](rc1-unchanged.json) preserve the original frozen bytes.
+Complete Windows/Linux source CI is separate from package qualification.
 Broader profile/default/retention/performance/publication work remains deferred.

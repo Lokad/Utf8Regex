@@ -11,5 +11,6 @@
     "Actual Release focused test script"
   ],
   "InitialHarnessFailure": "Probe changed caller location; harness paths corrected to absolute paths.",
-  "NoPackageQualification": true
+  "NoPackageQualification": true,
+  "Platform": "Local Windows, .NET 10.0.13; these launcher probes are separate from Windows/Linux C# source CI."
 }

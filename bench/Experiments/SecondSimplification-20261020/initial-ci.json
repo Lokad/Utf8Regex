@@ -1,0 +1,20 @@
+{
+  "Run": 39417824517,
+  "SourceRevision": "d066b9fb1f289263eccdc64454ca761fac6b3b16",
+  "Conclusion": "failure",
+  "Logs": [
+    {
+      "Platform": "windows",
+      "Log": "artifacts/second-cleanup-ci-initial/windows/test.log",
+      "Sha256": "8CFC0C8E0CB3D3C6690EE51C1B34B736410862113A4C33934D438B24BCA2EF03",
+      "Failure": "One stale architecture witness demanded Core for the wholly owned literal program. Core/differential/PythonRe passed; public PCRE2 semantic/resource cases passed."
+    },
+    {
+      "Platform": "linux",
+      "Log": "artifacts/second-cleanup-ci-initial/linux/test.log",
+      "Sha256": "8A22D62AFB687D214031B4D30C789BA370C739205696C2EB0C73B0C41C5E8BFA",
+      "Failure": "One stale architecture witness demanded Core for the wholly owned literal program. Core/differential/PythonRe passed; public PCRE2 semantic/resource cases passed."
+    }
+  ],
+  "Correction": "2ef80c41: assert literal ownership and exact Core identity on an actual delegated pattern; retain public behavior checks. Complete local PCRE2 Release suite5921 passes."
+}
