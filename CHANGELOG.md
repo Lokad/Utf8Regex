@@ -1,5 +1,12 @@
 # Changelog
 
+## Private Core/PythonRe scalar.119 — qualification pending
+
+Batch the controlled exact-pair and mandatory RTL strict-end Count changes below,
+with retained ordinal-reference scalar/capture/resource tests. The rejected span
+prototype stays absent. Source costs remain distinct from pending immutable
+package/default-tier evidence; scalar118 stays READY and earlier bytes unchanged.
+
 ## Development: RTL strict-end Count candidate filtering
 
 A mandatory initial strict-end anchor proves only EOF can be a candidate start.

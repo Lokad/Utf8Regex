@@ -1,5 +1,12 @@
 # Lokad.Utf8Regex
 
+Private **Core/PythonRe 0.4.0-scalar.119** is being qualified. This batch includes
+controlled exact-pair candidate scanning and mandatory RTL strict-end Count
+filtering, with retained scalar/capture/resource tests. Numeric work/working
+requirements can fall where real scans, attempts and scratch acquisitions disappear.
+Immutable118 remains the latest READY input until the actual-byte platform,
+consumer, provenance and default-tier cost gates finish. No PCRE119 or publication.
+
 Private **Core/PythonRe 0.4.0-scalar.118**, producer `735776fb`, is READY.
 This batch reduces Count/enumeration preparation and uses the existing controlled
 cursor for eligible finite ASCII branches. Scalar/capture and result lifetimes
