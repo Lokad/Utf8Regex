@@ -1,5 +1,15 @@
 # Selected current-source performance
 
+Further115-dev simplification removes a duplicate retained compiled-family value.
+Public identifier-validator constructors allocate40416->40184B (232B less),with
+medians1078.062->1072.838us ordinary /1079.725->1092.013us compiled. Literal
+constructor controls allocate57520B unchanged and vary-2.7%/-2.4%. The existing
+669B public prefix-loop diagnostic observes64.238->62.936us /65.465->63.521us,
+but has one warmed average per lane. Literal first-call Count controls rise~15-16%;
+private attribution is noisy. Accept the reduced stored state/allocation; no
+causal speedup,general Count parity or precise throughput ceiling claim. The
+fixed2KiB admission,numeric controls and algorithms remain. [All evidence](bench/Experiments/CompiledFamilyRetention-20261020/README.md).
+
 Development115-dev narrows the shared literal-family kernel's inputs and removes
 two repeated initializations of a2744-byte empty search plan. A bounded runtime10
 FullOpts public pair plus its sole confirmation repeats finite optional Count

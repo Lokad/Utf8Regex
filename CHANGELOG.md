@@ -16,6 +16,14 @@ Remove five unused or test-only compiled-specialization getters. Existing
 portfolio tests assert the production prepared category directly; live selectors,
 compiled engines, fields and resource accounting remain unchanged.
 
+Keep the compiled-family descriptor local to runtime construction instead of
+retaining a second copy of the selected plans. Existing fields supply its later
+category check. Public identifier-validator constructors allocate 232 bytes less;
+the fixed 2 KiB metadata admission and all major-buffer/resource checks stay.
+Focused Release checks pass across profiles. The bounded constructor/public-loop
+[receipt](bench/Experiments/CompiledFamilyRetention-20261020/README.md) retains
+noisy first-call controls and makes no general throughput-equivalence claim.
+
 ## Private Core/PythonRe scalar.114 qualification
 
 Remove the default value on the internal character-count parameter and pass null

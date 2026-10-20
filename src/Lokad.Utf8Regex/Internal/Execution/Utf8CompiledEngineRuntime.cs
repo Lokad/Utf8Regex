@@ -294,7 +294,6 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
     private readonly Utf8PreparedRegex _regexPlan;
     private readonly Utf8StructuralLinearRuntime _linearRuntime;
     private readonly Utf8VerifierRuntime _verifierRuntime;
-    private readonly Utf8CompiledPatternFamilyPlan _compiledPatternFamily;
     private readonly bool _canUseDirectAnchoredValidatorMatch;
     private readonly bool _anchoredValidatorAllowsTrailingNewline;
     private readonly AsciiSimplePatternAnchoredBoundedDatePlan _anchoredBoundedDatePlan;
@@ -309,20 +308,20 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
         _regexPlan = plan;
         _linearRuntime = Utf8StructuralLinearRuntime.Create(_regexPlan);
         _verifierRuntime = verifier;
-        _compiledPatternFamily = _regexPlan.SimplePatternPlan.CompiledPatternFamily;
+        var compiledPatternFamily = _regexPlan.SimplePatternPlan.CompiledPatternFamily;
         _canUseDirectAnchoredValidatorMatch =
-            _compiledPatternFamily.Kind == Utf8CompiledPatternFamilyKind.AnchoredValidator ||
-            _compiledPatternFamily.Kind == Utf8CompiledPatternFamilyKind.AnchoredBoundedDate;
+            compiledPatternFamily.Kind == Utf8CompiledPatternFamilyKind.AnchoredValidator ||
+            compiledPatternFamily.Kind == Utf8CompiledPatternFamilyKind.AnchoredBoundedDate;
         _anchoredValidatorAllowsTrailingNewline = _canUseDirectAnchoredValidatorMatch &&
             _regexPlan.SimplePatternPlan.AllowsTrailingNewlineBeforeEnd;
-        _anchoredBoundedDatePlan = _compiledPatternFamily.AnchoredBoundedDatePlan;
-        _repeatedDigitGroupPlan = _compiledPatternFamily.RepeatedDigitGroupPlan;
-        _boundedSuffixLiteralPlan = _compiledPatternFamily.BoundedSuffixLiteralPlan;
-        _symmetricLiteralWindowPlan = _compiledPatternFamily.SymmetricLiteralWindowPlan;
+        _anchoredBoundedDatePlan = compiledPatternFamily.AnchoredBoundedDatePlan;
+        _repeatedDigitGroupPlan = compiledPatternFamily.RepeatedDigitGroupPlan;
+        _boundedSuffixLiteralPlan = compiledPatternFamily.BoundedSuffixLiteralPlan;
+        _symmetricLiteralWindowPlan = compiledPatternFamily.SymmetricLiteralWindowPlan;
         _compiledSymmetricLiteralWindowCounter = emit && _symmetricLiteralWindowPlan.HasValue
             ? Utf8CompiledSymmetricLiteralWindowCounter.Create(_symmetricLiteralWindowPlan)
             : null;
-        var anchoredValidatorPlan = _compiledPatternFamily.AnchoredValidatorPlan;
+        var anchoredValidatorPlan = compiledPatternFamily.AnchoredValidatorPlan;
         if (!emit)
         {
             _emittedWholeMatcher = null;
@@ -372,7 +371,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
         WellFormedOnlyMatchMissIsDefinitive: _canUseDirectAnchoredValidatorMatch,
         SupportsWellFormedOnlyCount: false,
         SupportsThrowIfInvalidOnlyCount: false,
-        SkipRequiredPrefilterForMatch: _compiledPatternFamily.Category == Utf8CompiledPatternCategory.AnchoredWhole,
+        SkipRequiredPrefilterForMatch: _canUseDirectAnchoredValidatorMatch || _repeatedDigitGroupPlan.HasValue,
         SkipRequiredPrefilterForCount: false,
         UsesEmittedWholeMatcher: _emittedWholeMatcher is not null,
         UsesEmittedKernelMatcher: false);

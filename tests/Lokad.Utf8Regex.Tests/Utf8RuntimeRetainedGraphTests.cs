@@ -76,9 +76,9 @@ public sealed class Utf8RuntimeRetainedGraphTests
         foreach(var type in RuntimeTypes(library)) Assert.Contains(type,layouts);
         foreach(var type in library.GetTypes().Where(static type=>type.IsSubclassOf(typeof(MulticastDelegate))&&
             type.DeclaringType is not null&&RuntimeTypeNames.Contains(type.DeclaringType.Name))) Assert.Contains(type,layouts);
-        // The retired fallback emitter and its two delegate/receipt pairs no
-        // longer contribute layouts. The loops above require every live type.
-        Assert.Equal(90,layouts.Count);
+        // The constructor-local family descriptor and its validator plan/segment
+        // no longer occupy runtime fields. The loops above require every live type.
+        Assert.Equal(87,layouts.Count);
         var expected=InspectRuntimeGraph(roots);
         Assert.True(expected.Keys.OfType<string>().Count(static text=>text=="qqq")>1);
         AssertManifest(expected,Collect(roots));
