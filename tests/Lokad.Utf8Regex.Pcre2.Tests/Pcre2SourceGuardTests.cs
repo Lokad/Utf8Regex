@@ -1,34 +1,13 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
+// Common syntax/documentation/project rules are checked once across src by the
+// Core source guard. This fixture owns PCRE2 isolation and semantic dependencies.
 public sealed class Pcre2SourceGuardTests
 {
-    private static readonly Regex s_nullForgivingExpression = new(
-        @"(?<target>[A-Za-z_][A-Za-z0-9_]*)!(?=[.\[;,)])",
-        RegexOptions.CultureInvariant);
-
-    [Fact]
-    public void Pcre2ContractsDoNotUseDefaultParameters()
-    {
-        var assembly = typeof(Utf8Pcre2Regex).Assembly;
-        var offenders = assembly.GetTypes()
-            .SelectMany(static type =>
-                type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
-                    .Cast<MethodBase>()
-                    .Concat(type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)))
-            .SelectMany(static member => member.GetParameters().Select(parameter => (Member: member, Parameter: parameter)))
-            .Where(static item => item.Parameter.HasDefaultValue || item.Parameter.IsOptional)
-            .Select(static item => $"{item.Member.DeclaringType?.FullName}.{item.Member.Name}({item.Parameter.Name})")
-            .OrderBy(static value => value, StringComparer.Ordinal)
-            .ToArray();
-
-        Assert.Empty(offenders);
-    }
-
     [Fact]
     public void Pcre2TypeNamesCarryPcre2Ownership()
     {
@@ -42,30 +21,6 @@ public sealed class Pcre2SourceGuardTests
             .ToArray();
 
         Assert.Empty(offenders);
-    }
-
-    [Fact]
-    public void Pcre2OwnedSourceDoesNotGrowMechanicalCSharpDebt()
-    {
-        var sourceDirectory = FindPcre2SourceDirectory();
-        var sourceFiles = Directory.GetFiles(sourceDirectory, "*.cs", SearchOption.AllDirectories);
-        var source = string.Join('\n', sourceFiles.OrderBy(static path => path, StringComparer.Ordinal).Select(File.ReadAllText));
-
-        var actualNullForgivingCounts = s_nullForgivingExpression.Matches(source)
-            .Select(static match => match.Groups["target"].Value)
-            .GroupBy(static target => target, StringComparer.Ordinal)
-            .ToDictionary(static group => group.Key, static group => group.Count(), StringComparer.Ordinal);
-
-        Assert.Empty(actualNullForgivingCounts);
-
-        Assert.DoesNotContain(" abstract ", source, StringComparison.Ordinal);
-        Assert.DoesNotContain(" virtual ", source, StringComparison.Ordinal);
-
-        var projectFiles = Directory.GetFiles(sourceDirectory, "*.csproj", SearchOption.AllDirectories);
-        foreach (var projectFile in projectFiles)
-        {
-            Assert.DoesNotContain("<InternalsVisibleTo", File.ReadAllText(projectFile), StringComparison.Ordinal);
-        }
     }
 
     [Fact]

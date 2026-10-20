@@ -1,2 +1,0 @@
-# Closure ledger for the removed whole-pattern match and replacement bootstrap.
-bootstrap-specific-method-count = 0

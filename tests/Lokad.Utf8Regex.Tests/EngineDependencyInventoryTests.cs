@@ -127,25 +127,24 @@ public sealed class EngineDependencyInventoryTests
         var repoRoot = FindRepositoryRoot();
         var srcRoot = Path.Combine(repoRoot, "src");
 
-        string[] FilesContaining(string token)
-        {
-            return Directory.EnumerateFiles(srcRoot, "*.cs", SearchOption.AllDirectories)
-                .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) && !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
-                .Where(path => File.ReadLines(path).Any(line => line.Contains(token, StringComparison.Ordinal)))
-                .Select(path => Path.GetFileName(path))
-                .Order(StringComparer.Ordinal)
-                .ToArray();
-        }
+        // Read this test's source set once; all token inventories below borrow it.
+        var sources = Directory.EnumerateFiles(srcRoot, "*.cs", SearchOption.AllDirectories)
+            .Where(static path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase) &&
+                !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+            .Select(static path => (Path: path, Text: File.ReadAllText(path)))
+            .ToArray();
 
-        string[] FilesContainingAny(params string[] tokens)
-        {
-            return Directory.EnumerateFiles(srcRoot, "*.cs", SearchOption.AllDirectories)
-            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) && !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
-                .Where(path => File.ReadLines(path).Any(line => tokens.Any(token => line.Contains(token, StringComparison.Ordinal))))
-                .Select(path => Path.GetFileName(path))
-                .Order(StringComparer.Ordinal)
-                .ToArray();
-        }
+        string[] FilesContaining(string token) => sources
+            .Where(source => source.Text.Contains(token, StringComparison.Ordinal))
+            .Select(static source => Path.GetFileName(source.Path))
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        string[] FilesContainingAny(params string[] tokens) => sources
+            .Where(source => tokens.Any(token => source.Text.Contains(token, StringComparison.Ordinal)))
+            .Select(static source => Path.GetFileName(source.Path))
+            .Order(StringComparer.Ordinal)
+            .ToArray();
 
         // 1. Core fallback execution (union of the three receiver spellings below).
         //    Public execution now uses qualified native paths or the scalar program.
@@ -162,10 +161,7 @@ public sealed class EngineDependencyInventoryTests
         Assert.Empty(FilesContaining("Regex.ValueMatchEnumerator"));
 
         // 3. PythonRe managed execution has been removed; no descriptor may return.
-        var managedHits = Directory.EnumerateFiles(srcRoot, "*.cs", SearchOption.AllDirectories)
-            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) && !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
-            .Where(path => File.ReadLines(path).Any(line => line.Contains("_managedRegex", StringComparison.Ordinal)))
-            .ToArray();
+        var managedHits = FilesContaining("_managedRegex");
         Assert.Empty(managedHits);
 
         // 4. Evaluators use the cached scalar program and owned capture histories.

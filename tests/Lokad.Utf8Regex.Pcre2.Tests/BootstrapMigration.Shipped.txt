@@ -1,2 +1,0 @@
-# Closure ledger for the retired execution-kind classifier and bootstrap routing.
-legacy-specific-count = 0

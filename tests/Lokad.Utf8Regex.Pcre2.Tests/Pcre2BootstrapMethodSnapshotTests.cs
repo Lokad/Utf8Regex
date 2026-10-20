@@ -11,9 +11,6 @@ public sealed class Pcre2BootstrapMethodSnapshotTests
         Assert.DoesNotContain("MatchDetailedVia", source, StringComparison.Ordinal);
         Assert.DoesNotContain("ReplaceVia", source, StringComparison.Ordinal);
         Assert.DoesNotContain("ReplacementVia", source, StringComparison.Ordinal);
-
-        var ledger = File.ReadAllText(FindRepositoryFile("tests", "Lokad.Utf8Regex.Pcre2.Tests", "BootstrapMethods.Shipped.txt"));
-        Assert.Contains("bootstrap-specific-method-count = 0", ledger, StringComparison.Ordinal);
     }
 
     [Fact]

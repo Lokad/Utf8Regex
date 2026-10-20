@@ -35,7 +35,9 @@ public sealed class CSharpGuidelineSourceGuardTests
         var undocumentedPublicDeclarations = syntaxFiles.SelectMany(static file =>
             file.Root.DescendantNodes()
                 .OfType<MemberDeclarationSyntax>()
-                .Where(IsEffectivelyPublic)
+                .Where(static declaration => IsEffectivelyPublic(declaration) ||
+                    declaration is MethodDeclarationSyntax method &&
+                    (method.Modifiers.Any(SyntaxKind.AbstractKeyword) || method.Modifiers.Any(SyntaxKind.VirtualKeyword)))
                 .Where(static declaration => !declaration.GetLeadingTrivia().Any(SyntaxKind.SingleLineDocumentationCommentTrivia))
                 .Select(declaration => Describe(file, declaration)))
             .ToArray();
@@ -45,24 +47,6 @@ public sealed class CSharpGuidelineSourceGuardTests
         AssertDebtAtOrBelow("defensive null guards", DefensiveNullGuardDebtCeiling, defensiveNullGuards);
         AssertDebtAtOrBelow("undocumented public declarations", UndocumentedPublicDeclarationDebtCeiling, undocumentedPublicDeclarations);
     }
-
-    [Fact]
-    public void AbstractAndVirtualProductionMethodsDocumentImplementorSemantics()
-    {
-        var offenders = ReadProductionSyntax().SelectMany(static file =>
-            file.Root.DescendantNodes()
-                .OfType<MethodDeclarationSyntax>()
-                .Where(static method =>
-                    method.Modifiers.Any(SyntaxKind.AbstractKeyword) ||
-                    method.Modifiers.Any(SyntaxKind.VirtualKeyword))
-                .Where(static method => !method.GetLeadingTrivia().Any(SyntaxKind.SingleLineDocumentationCommentTrivia))
-                .Select(method => Describe(file, method)))
-            .ToArray();
-
-        Assert.True(offenders.Length == 0, "Undocumented abstract/virtual methods:" + Environment.NewLine + string.Join(Environment.NewLine, offenders));
-    }
-
-
 
     [Fact]
     public void ProductionProjectsDoNotDeclareInternalsVisibleTo()
@@ -134,7 +118,9 @@ public sealed class CSharpGuidelineSourceGuardTests
     {
         var root = FindRepositoryRoot();
         var sourceRoot = Path.Combine(root, "src");
-        return Directory.GetFiles(sourceRoot, "*.cs", SearchOption.AllDirectories)
+        return Directory.EnumerateFiles(sourceRoot, "*.cs", SearchOption.AllDirectories)
+            .Where(static path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase) &&
+                !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
             .OrderBy(static path => path, StringComparer.Ordinal)
             .Select(path => new SourceSyntax(
                 Path.GetRelativePath(root, path).Replace('\\', '/'),

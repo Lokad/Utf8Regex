@@ -67,10 +67,9 @@ coverage comprises 16 compile, 117 match, 97 detailed-match, 40 count, 37
 enumeration, 119 probe, and 172 replacement rows. The local backlog ledgers
 must contain exactly one reasoned disposition for every non-active row.
 
-`BootstrapMigration.Shipped.txt` and `BootstrapMethods.Shipped.txt` are closure
-ledgers: both counts are zero. A newly accepted corpus row must execute through
-the generic compiler/runtime; it may not add a complete-pattern classifier or
-fixture-specific match/replacement method.
+The bootstrap source guards directly reject whole-pattern classifiers and
+pattern-specific match/replacement methods. Historical constant-zero closure
+ledgers are retired; semantic corpus outcomes remain the coverage authority.
 
 ## Coverage maintenance
 
