@@ -58,6 +58,15 @@ production accounting change, package qualification or further timing follows.
 [Both complete observations and source restoration](bench/Experiments/OrdinalBackreference-20261020/README.md).
 The accepted source119 pair above and immutable118 remain unchanged.
 
+The later accepted RTL strict-end Count filter is a separate source119 change.
+An initial mandatory strict-end opcode admits only EOF; the existing terminal
+check replaces retries at impossible positions. One [bounded public pair](bench/Experiments/RtlStrictEndCount-20261020/README.md)
+observes finite RTL misses1820.650→276.920us and1782.256→238.934us, with unchanged
+allocation. Pure strict-end Count over64KiB6042.257→2.760us; impossible-offset
+Count766.270→0.699us and240→176B. No measured Core regression exceeds2.3%.
+This101s FullOpts source observation is separate from immutable118/default tiers;
+no package or closed span-comparison rescue follows it.
+
 ## Historical observations and closed experiments
 
 Every observation below describes its named frozen source/package, even when its

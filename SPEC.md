@@ -54,6 +54,15 @@ can admit more work as the redundant scan disappears. Every scan still checks th
 original cancellation token and absolute deadline before at most 2048 bytes.
 Depth, major/state allocation, result capacity, aliases and retained values keep
 their existing scope. Prepared/confirmed, reverse and folded searches are unchanged.
+Development after scalar.118 also stops RTL Count candidate discovery when an
+initial mandatory strict-end instruction proves the next position cannot match.
+Only the full subject's end is eligible; soft/multiline ends and an anchor merely
+inside an alternative or assertion do not establish that proof. The existing
+terminal step checks original cancellation/deadline authority before publishing
+Count. Avoiding impossible attempts can lower numeric work and VM working-capacity
+requirements, including calls with an earlier start floor. Full-input validation,
+captures, empty matches, major admission and result/cursor lifetimes retain scope.
+Ordinal backreference comparison remains per-byte; its span prototype was rejected.
 Development after scalar.109 carries complete-input validation into scalar
 value-Match projection. ASCII results use their already-proved byte coordinates;
 a whole-subject result reuses its known UTF-16 length. Partial Unicode results

@@ -568,6 +568,8 @@ internal static partial class Utf8SliceRunner
         var first = program.Instructions[0];
         var seekBeginning = !program.RightToLeft && first.Kind == Utf8SliceInstructionKind.Anchor &&
             first.A == (int)Utf8SliceAnchorKind.Beginning;
+        var seekVeryEnd = program.RightToLeft && first.Kind == Utf8SliceInstructionKind.Anchor &&
+            first.A == (int)Utf8SliceAnchorKind.VeryEnd;
         // A distance-zero exact prefix is necessary, never sufficient. The scalar
         // VM still verifies every candidate; stateful/empty/casefold starts decline.
         var seekLiteral = !program.RightToLeft && !program.CanMatchEmpty &&
@@ -580,6 +582,11 @@ internal static partial class Utf8SliceRunner
         {
             while (true)
             {
+                // A mandatory initial strict-end anchor admits only EOF, even
+                // after an empty match. Keep original terminal authority when
+                // an offset or the preceding match has moved below that start.
+                if (seekVeryEnd && position != input.Length)
+                    return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
                 if (seekLiteral)
                 {
                     Utf8ExecutionLimitKind seekBreach;

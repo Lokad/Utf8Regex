@@ -22,9 +22,12 @@ no port or per-byte-to-chunk accounting change is accepted, and no further timin
 follows. New boundary/capture/original-authority tests remain and pass against the
 byte-identical restored baseline. [Both observations and rejected patch](bench/Experiments/OrdinalBackreference-20261020/README.md).
 
-The separate next source lead concerns impossible candidate starts after a
-mandatory RTL strict-end anchor. It needs its own proof and bounded public test;
-no speedup is claimed yet. Existing versioned comparator lanes need no replacement.
+A separate owned-engine change now filters impossible candidate starts after a
+mandatory initial RTL strict-end opcode. Focused scalar/capture/resource/original-
+authority checks and one public FullOpts pair support85–87% lower long-miss Count
+costs, with no measured Core regression above2.3%. [Evidence and scope](bench/Experiments/RtlStrictEndCount-20261020/README.md).
+This implements an owned candidate proof; it does not transfer UTF16 length rules
+or reopen the rejected ordinal-span comparison. Existing versioned comparator lanes need no replacement.
 Frozen observations below retain their original product/runtime scope.
 
 ## Frozen immutable Core114, measured 2026-10-20

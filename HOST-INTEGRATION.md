@@ -162,6 +162,14 @@ per bounded window; original cancellation/deadlines remain checked before each
 at-most-2048-byte scan. Complete ordered comparisons and all other resource and
 ownership scope remain. This source change leaves immutable118 unchanged.
 
+Development after scalar.118 filters impossible RTL Count starts when the initial
+instruction is a mandatory strict-end anchor. The existing terminal guard checks
+the original token/deadline; full-subject UTF-8 validation still precedes matching.
+Work requirements can fall and an impossible start floor can avoid VM scratch
+(caller capture slots retain their admission). Soft/multiline ends and alternative
+presence do not enable this shortcut. Captures and retained results keep their
+contract. No ordinal-reference per-byte-to-chunk change is accepted.
+
 ## Select the public controls
 
 Scalar.118 reuses the existing controlled native cursor for finite

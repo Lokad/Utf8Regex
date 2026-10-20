@@ -1,5 +1,16 @@
 # Changelog
 
+## Development: RTL strict-end Count candidate filtering
+
+A mandatory initial strict-end anchor proves only EOF can be a candidate start.
+Skip later impossible starts through the existing terminal authority check, without
+new state, helpers or APIs. Full-input validation, captures, scalar/empty semantics
+and resource admission remain. Numeric work and VM scratch requirements can fall.
+One public FullOpts pair observes about85–87% lower long RTL miss costs, bounded
+empty-EOF discovery and faster impossible-offset calls with64B less allocation.
+[Public costs, guards and Release checks](bench/Experiments/RtlStrictEndCount-20261020/README.md).
+Immutable118 is unchanged; package/default-tier qualification remains separate.
+
 ## Development: controlled two-literal candidate scanning
 
 Replace two bounded first-byte scans with one checked span union search for raw
