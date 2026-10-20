@@ -135,9 +135,7 @@ public sealed partial class Utf8Pcre2Regex
         IPcre2Utf8ProgramSlot primaryUtf8 = utf8Regex is null
             ? Pcre2EmptyUtf8ProgramSlot.Instance
             : new Pcre2Utf8ProgramSlot(utf8Regex);
-        IPcre2DirectProgram direct = primaryUtf8 is Pcre2Utf8ProgramSlot utf8Slot
-            ? new Pcre2Utf8DirectProgram(utf8Slot.Regex)
-            : Pcre2NoDirectProgram.Instance;
+        var direct = Pcre2NoDirectProgram.Instance;
         var operations = new Pcre2OperationPrograms(direct, direct, direct, direct, direct);
         var groupNames = utf8Regex?.GetGroupNames() ?? ["0"];
         var nameEntries = utf8Regex is not null
@@ -483,7 +481,7 @@ public sealed partial class Utf8Pcre2Regex
         {
             return directGroups.Length != 0 || directMark is not null
                 ? Utf8Pcre2MatchContext.Create(input, directGroups,
-                    _program.Operations.Match is Pcre2Utf8DirectProgram coreProgram ? coreProgram.ContextNameEntries : NameEntries, directMark)
+                    NameEntries, directMark)
                 : default;
         }
 
@@ -540,9 +538,6 @@ public sealed partial class Utf8Pcre2Regex
         Utf8ValidatedInput subject, Utf8BytePosition start, Pcre2MatchOptions matchOptions,
         Utf8SliceInvocation invocation)
     {
-        if (_program.Operations.Enumerate is Pcre2Utf8DirectProgram coreProgram)
-            return new Utf8Pcre2ValueMatchEnumerator(input,
-                new Pcre2SliceGlobalMatchCursor(coreProgram.ScalarProgram, invocation, subject, start, _program.Request));
         var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, false);
         if (Pcre2GlobalOperationDriver.TryCreateCursor(_program, subject, start, matchOptions, out var directCursor, budget))
             return new Utf8Pcre2ValueMatchEnumerator(input, directCursor);
@@ -1642,12 +1637,6 @@ public sealed partial class Utf8Pcre2Regex
                 sliceProgram.SliceProgram,
                 replacement,
                 substitutionOptions,
-                invocation, text);
-        }
-
-        if (_program.Operations.Replace is Pcre2Utf8DirectProgram coreProgram)
-        {
-            return ReplaceSliceDetailed(input, subject, start, coreProgram.ScalarProgram, replacement, substitutionOptions,
                 invocation, text);
         }
 

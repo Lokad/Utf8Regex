@@ -18,6 +18,14 @@ its isolated byte features. Do not add a flavor flag or a shared option bag to t
 core. Core capture history and PCRE2 last-capture/duplicate-name rules retain their
 own contracts; .NET is an overlapping test/benchmark comparator only.
 
+Development after frozen RC1 requires a successful PCRE2 semantic parse before
+reusing Core execution/search. If all profile compilers decline, construction
+throws `NotSupportedException`; the original text is not accepted merely because
+it compiles as Core grammar. Undocumented .NET-only forms such as `\u0041`,
+`\p{IsGreek}` and balancing groups are no longer accepted. Existing shared fast
+paths retain their profile eligibility proofs. PCRE2 physical capture numbering
+and duplicate-name rules apply, without Core's named-group numbering or aliases.
+
 `Create` validates its resource policy first. PCRE2 constructors then validate
 match timeout, option bits and compile settings, before pattern-byte decoding and construction
 admission. This preserves string-entry error precedence while making invalid

@@ -71,7 +71,6 @@ public sealed class Pcre2CommentSemanticsTests
     public void CommentsPreserveLexicalContextsAndQuantifierAssociation(string pattern, string subject, string? expected)
     {
         var regex = new Utf8Pcre2Regex(pattern);
-        Assert.NotEqual(Pcre2DirectProgramKind.Utf8Regex, regex.DebugCompiledProgram.Operations.Match.Kind);
         var match = regex.Match(Encoding.UTF8.GetBytes(subject));
         Assert.Equal(expected is not null, match.Success);
         if (expected is not null) Assert.Equal(expected, match.GetValueString());

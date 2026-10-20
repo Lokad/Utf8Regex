@@ -84,9 +84,7 @@ public sealed partial class Utf8Pcre2Regex
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             scope = Utf8SliceByteOutputScope.Enter(invocation);
             var output = new Pcre2CallbackReplacementOutput<TState, TExpansion>(input, scope, expansion, state);
-            if (_program.Operations.Replace is Pcre2Utf8DirectProgram coreProgram)
-                ReplaceCapturedCallback(input, subject, start, coreProgram, matchOptions, scope.Invocation, ref output);
-            else if (_program.Operations.Replace is Pcre2SliceDirectProgram slice)
+            if (_program.Operations.Replace is Pcre2SliceDirectProgram slice)
                 ReplaceCapturedCallback(input, subject, start, slice, matchOptions, scope.Invocation, ref output);
             else if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram captured &&
                 (captured.Program.CaptureSlotCount > 1 || captured.Program.SuppressesUnresetEmptyMatches))
@@ -160,8 +158,7 @@ public sealed partial class Utf8Pcre2Regex
             return;
         }
 
-        var scalarProgram = program is Pcre2Utf8DirectProgram coreProgram ? coreProgram.ScalarProgram
-            : ((Pcre2SliceDirectProgram)program).SliceProgram;
+        var scalarProgram = ((Pcre2SliceDirectProgram)program).SliceProgram;
         var cursor = new Pcre2SliceGlobalMatchCursor(scalarProgram, invocation, subject, start, _program.Request);
         while (true)
         {
@@ -171,7 +168,7 @@ public sealed partial class Utf8Pcre2Regex
             // Preserve the precise yield, including the nonempty same-start retry.
             var groups = cursor.CaptureGroupsAt(range.StartOffsetInBytes, range.EndOffsetInBytes > range.StartOffsetInBytes);
             var context = Utf8Pcre2MatchContext.Create(input, groups,
-                program is Pcre2Utf8DirectProgram coreNames ? coreNames.ContextNameEntries : NameEntries, null);
+                NameEntries, null);
             output.Append(in context);
         }
     }

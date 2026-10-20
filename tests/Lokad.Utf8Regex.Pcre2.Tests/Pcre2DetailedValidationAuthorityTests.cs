@@ -13,7 +13,7 @@ public sealed class Pcre2DetailedValidationAuthorityTests
         {
             yield return [@"(?<x>a)\k<x>", "aa", "a", "Pcre2SliceDirectProgram", probe];
             yield return ["(?<x>a)b", "ab", "a", "Pcre2BacktrackingDirectProgram", probe];
-            yield return [@"(?<x>\u0041+)", "AAA", "AAA", "Pcre2Utf8DirectProgram", probe];
+            yield return [@"(?<x>\x{41}+)", "AAA", "AAA", "Pcre2BacktrackingDirectProgram", probe];
         }
     }
 

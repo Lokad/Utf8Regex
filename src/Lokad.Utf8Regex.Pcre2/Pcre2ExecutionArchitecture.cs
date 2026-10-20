@@ -65,15 +65,7 @@ internal static class Pcre2Compiler
             return foundation;
         }
 
-        var program = foundationProgramFactory(request);
-        if (program.Operations.IsMatch is Pcre2NoDirectProgram &&
-            program.Operations.Count is Pcre2NoDirectProgram &&
-            program.Operations.Enumerate is Pcre2NoDirectProgram &&
-            program.Operations.Match is Pcre2NoDirectProgram &&
-            program.Operations.Replace is Pcre2NoDirectProgram)
-            throw new NotSupportedException("The pattern has no executable backend in the managed PCRE2 profile.");
-        Pcre2ProgramInvariant.Validate(program);
-        return program;
+        throw new NotSupportedException("The pattern is not supported by the managed PCRE2 grammar.");
     }
 }
 
@@ -120,30 +112,6 @@ internal sealed class Pcre2NoDirectProgram : IPcre2DirectProgram
     }
 
     public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.None;
-}
-
-internal sealed class Pcre2Utf8DirectProgram : IPcre2DirectProgram
-{
-    internal Pcre2Utf8DirectProgram(Utf8Regex regex)
-    {
-        Regex = regex;
-        // Preserve the delegated context's numeric/name aliases as immutable
-        // compile-time metadata instead of rebuilding the table per match.
-        using var owner = Utf8ConstructionScope.Enter();
-        var names = ScalarProgram.GroupNames;
-        ContextNameEntries = owner.Budget.AllocateArray<Pcre2NameEntry>(names.Length, false);
-        for (var index = 0; index < names.Length; index++)
-            ContextNameEntries[index] = new Pcre2NameEntry { Name = names[index], Number = index };
-        owner.Complete();
-    }
-
-    public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Utf8Regex;
-
-    internal Utf8Regex Regex { get; }
-
-    internal Utf8SliceProgram ScalarProgram => Regex.Inspection.AvailableOwnedSliceProgram;
-
-    internal Pcre2NameEntry[] ContextNameEntries { get; }
 }
 
 internal sealed class Pcre2LiteralDirectProgram : IPcre2DirectProgram
@@ -367,7 +335,6 @@ internal readonly record struct Pcre2FiniteLiteralBoundaryAlternative(
 internal enum Pcre2DirectProgramKind : byte
 {
     None = 0,
-    Utf8Regex = 1,
     Pcre2Literal = 3,
     Pcre2Character = 4,
     Pcre2Backtracking = 5,
@@ -1107,16 +1074,6 @@ internal static class Pcre2ProgramInvariant
 
     private static void ValidateDirectProgram(IPcre2DirectProgram directProgram, Pcre2CompiledProgram program)
     {
-        if (directProgram is Pcre2Utf8DirectProgram utf8Program)
-        {
-            var isOwnedUtf8Program = program.PrimaryUtf8 is Pcre2Utf8ProgramSlot primary &&
-                ReferenceEquals(primary.Regex, utf8Program.Regex);
-            if (!isOwnedUtf8Program)
-            {
-                throw new InvalidOperationException("A direct UTF-8 backend must be owned by its compiled PCRE2 program.");
-            }
-        }
-
         if (directProgram is Pcre2SliceDirectProgram sliceProgram)
         {
             var isOwnedSliceProgram = program.PrimaryUtf8 is Pcre2Utf8ProgramSlot slicePrimary &&
@@ -2474,13 +2431,6 @@ internal static partial class Pcre2Runner
             return true;
         }
 
-        if (program is Pcre2Utf8DirectProgram utf8Program)
-        {
-            result = Pcre2SliceDriver.IsMatch(utf8Program.ScalarProgram, ref input, start,
-                compiledProgram.Request, ref invocation);
-            return true;
-        }
-
         result = false;
         return false;
     }
@@ -2493,16 +2443,6 @@ internal static partial class Pcre2Runner
         scoped ref Utf8SliceInvocation invocation,
         out Pcre2GroupData result)
     {
-        if (compiledProgram.Operations.Match is Pcre2Utf8DirectProgram coreProgram)
-        {
-            var cursor = new Pcre2SliceGlobalMatchCursor(coreProgram.ScalarProgram, invocation, input, start,
-                compiledProgram.Request);
-            if (!cursor.MoveNext()) { result = default; return true; }
-            var projection = input.CreateProjectionCursor();
-            result = Pcre2GlobalCursorProjection.Project(cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes,
-                ref input, ref projection, new Pcre2CaptureProjectionBudget(ref cursor.WorkingInvocation));
-            return true;
-        }
         var budget = new Pcre2ResourceBudget(compiledProgram.Request.DefaultLimits, invocation, false);
         Pcre2CharacterMatch directMatch;
         if (compiledProgram.Operations.Match is Pcre2SliceDirectProgram sliceProgram)
@@ -2607,9 +2547,6 @@ internal static partial class Pcre2Runner
         out Pcre2GroupData[] result,
         out string? mark)
     {
-        if (compiledProgram.Operations.Match is Pcre2Utf8DirectProgram coreProgram)
-            return Pcre2SliceDriver.TryMatchDetailed(coreProgram.ScalarProgram, ref input, start,
-                ref invocation, out result, out mark);
         if (compiledProgram.Operations.Match is Pcre2SliceDirectProgram sliceProgram)
         {
             if (matchOptions != Pcre2MatchOptions.None)
@@ -2925,13 +2862,6 @@ internal static class Pcre2GlobalOperationDriver
                 start,
                 compiledProgram.Request,
                 ref invocation);
-            return true;
-        }
-
-        if (program is Pcre2Utf8DirectProgram utf8Program)
-        {
-            result = Pcre2SliceDriver.Count(utf8Program.ScalarProgram, ref input, start,
-                compiledProgram.Request, ref invocation);
             return true;
         }
 

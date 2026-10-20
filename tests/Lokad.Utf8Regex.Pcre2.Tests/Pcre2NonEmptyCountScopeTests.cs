@@ -32,14 +32,13 @@ public sealed class Pcre2NonEmptyCountScopeTests
     }
 
     [Fact]
-    public void CoreGrammarDelegationUsesItsAlreadyAdmittedScalarProgram()
+    public void ProfileCharacterRepeatsKeepGlobalProgression()
     {
-        var regex = Create(@"\u0041+", result: 1);
-        Assert.IsType<Pcre2Utf8DirectProgram>(regex.DebugCompiledProgram.Operations.Count);
+        var regex = Create(@"\x{41}+", result: 1);
         using var token = new CancellationTokenSource();
         Assert.Equal(2, regex.Count("😀AAA A"u8, 4));
         Assert.Equal(2, regex.Count("😀AAA A"u8, 4, Pcre2MatchOptions.None, token.Token));
-        Assert.Equal(3, Create(@"\u0041*").Count("😀AA"u8));
+        Assert.Equal(3, Create(@"\x{41}*").Count("😀AA"u8));
     }
 
     [Fact]

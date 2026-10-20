@@ -5,17 +5,16 @@ using Lokad.Utf8Regex.Internal.Execution;
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 [Collection(Pcre2AllocationTestCollection.Name)]
-public sealed class Pcre2CoreGrammarResourceTests
+public sealed class Pcre2ProfileResourceTests
 {
     [Theory]
-    [InlineData(@"\u0041+", "AAA")]
-    [InlineData(@"\p{IsGreek}+", "αβ")]
-    [InlineData("(?<a>x)(?<b-a>y)", "xy")]
-    public void SingleAndDetailedMatchingEnforceCoreGrammarWork(string pattern, string text)
+    [InlineData(@"\x{41}+", "AAA")]
+    [InlineData(@"\p{L}+", "αβ")]
+    [InlineData("(?<a>x)(?<b>y)", "xy")]
+    public void SingleAndDetailedMatchingEnforceProfileWork(string pattern, string text)
     {
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
             new() { MatchLimit = 1 }, Timeout.InfiniteTimeSpan);
-        Assert.IsType<Pcre2Utf8DirectProgram>(regex.DebugCompiledProgram.Operations.Match);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(input)).ErrorKind);
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => regex.Match(input)).ErrorKind);
@@ -23,9 +22,9 @@ public sealed class Pcre2CoreGrammarResourceTests
     }
 
     [Fact]
-    public void CoreGrammarExecutionFramesEnforceDepthBeforeAcquisition()
+    public void CapturedExecutionFramesEnforceDepthBeforeAcquisition()
     {
-        const string pattern = @"(?<open>\u0041)+(?<-open>B)+";
+        const string pattern = @"(?<open>A)+B+";
         Assert.True(new Utf8Pcre2Regex(pattern).IsMatch("AAB"u8));
         var limited = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
             new() { DepthLimit = 1 }, Timeout.InfiniteTimeSpan);
@@ -36,7 +35,7 @@ public sealed class Pcre2CoreGrammarResourceTests
     [InlineData(false)] [InlineData(true)]
     public void NoMatchOutputCannotEscapeTheHeapLimit(bool text)
     {
-        var regex = new Utf8Pcre2Regex(@"\u0041+", Pcre2CompileOptions.None, default,
+        var regex = new Utf8Pcre2Regex(@"\x{41}+", Pcre2CompileOptions.None, default,
             new() { HeapLimitInBytes = 4096 }, Timeout.InfiniteTimeSpan);
         var input = new byte[1 << 20]; input.AsSpan().Fill((byte)'z');
         var failure = Assert.Throws<Pcre2MatchException>(() =>
@@ -48,9 +47,9 @@ public sealed class Pcre2CoreGrammarResourceTests
     }
 
     [Fact]
-    public void CoreGrammarEmptyRetryUsesTheNonemptyAlternativeBeforeAdvancing()
+    public void ProfileEmptyRetryUsesTheNonemptyAlternativeBeforeAdvancing()
     {
-        var regex = new Utf8Pcre2Regex(@"\u0041*?");
+        var regex = new Utf8Pcre2Regex(@"\x{41}*?");
         var cursor = regex.EnumerateMatches("A😀"u8);
         var ranges = new List<(int Start, int End)>();
         while (cursor.MoveNext()) ranges.Add((cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));
@@ -62,28 +61,26 @@ public sealed class Pcre2CoreGrammarResourceTests
     [Fact]
     public void MixedNamesAndRetainedFinalCapturesKeepTheirPublicCoordinates()
     {
-        var regex = new Utf8Pcre2Regex(@"\u0041(?<face>😀)(é)");
+        var regex = new Utf8Pcre2Regex(@"\x{41}(?<face>😀)(é)");
         var context = regex.MatchDetailed("xA😀éA😀é"u8, 1);
         Assert.Equal(3, context.CaptureSlotCount);
-        Assert.Equal(3, context.NameEntryCount);
         Assert.Equal("A😀é", context.GetValueString());
-        Assert.Equal("é", context.GetGroup(1).GetValueString());
-        Assert.True(context.TryGetFirstSetGroup("1", out var anonymous));
-        Assert.Equal("é", anonymous.GetValueString());
+        Assert.Equal("😀", context.GetGroup(1).GetValueString());
+        Assert.Equal("é", context.GetGroup(2).GetValueString());
         Assert.True(context.TryGetFirstSetGroup("face", out var named));
         Assert.Equal((2, 6), (named.StartOffsetInBytes, named.EndOffsetInBytes));
         Assert.Equal((2, 4), (named.StartOffsetInUtf16, named.EndOffsetInUtf16));
         Assert.True(regex.MatchDetailed("A😀é"u8).Success);
         Assert.Equal("😀", named.GetValueString());
 
-        var balance = new Utf8Pcre2Regex("(?<a>😀)+(?<-a>é)").MatchDetailed("😀😀é"u8);
-        Assert.True(balance.TryGetFirstSetGroup("a", out var restored));
-        Assert.Equal((0, 4), (restored.StartOffsetInBytes, restored.EndOffsetInBytes));
-        Assert.False(new Utf8Pcre2Regex("(?<a>😀)(?<-a>é)").MatchDetailed("😀é"u8).GetGroup(1).Success);
-        var shared = new Utf8Pcre2Regex(@"(?<v>\u0041)(?<v>😀)", Pcre2CompileOptions.None,
+        var repeated = new Utf8Pcre2Regex("(?<a>😀)+é").MatchDetailed("😀😀é"u8);
+        Assert.True(repeated.TryGetFirstSetGroup("a", out var retained));
+        Assert.Equal((4, 8), (retained.StartOffsetInBytes, retained.EndOffsetInBytes));
+        var shared = new Utf8Pcre2Regex(@"(?<v>\x{41})(?<v>😀)", Pcre2CompileOptions.None,
             new() { AllowDuplicateNames = true }, default, Timeout.InfiniteTimeSpan).MatchDetailed("A😀"u8);
-        Assert.True(shared.TryGetFirstSetGroup("v", out var last));
-        Assert.Equal("😀", last.GetValueString());
+        Assert.True(shared.TryGetFirstSetGroup("v", out var first));
+        Assert.Equal("A", first.GetValueString());
+        Assert.Equal("😀", shared.GetGroup(2).GetValueString());
     }
 
     [Theory]
@@ -92,9 +89,8 @@ public sealed class Pcre2CoreGrammarResourceTests
     {
         string Invoke(ulong cap)
         {
-            var regex = new Utf8Pcre2Regex(@"(?<v>\u0041)😀", Pcre2CompileOptions.None, default,
+            var regex = new Utf8Pcre2Regex(@"(?<v>\x{41})😀", Pcre2CompileOptions.None, default,
                 new() { MatchLimit = heap ? 0 : (uint)cap, HeapLimitInBytes = heap ? cap : 0 }, Timeout.InfiniteTimeSpan);
-            Assert.IsType<Pcre2Utf8DirectProgram>(regex.DebugCompiledProgram.Operations.Replace);
             return regex.ReplaceToString("A😀éA😀"u8, "${v}:😀");
         }
         var kind = heap ? Pcre2ErrorKind.HeapLimit : Pcre2ErrorKind.MatchLimit;
@@ -116,7 +112,7 @@ public sealed class Pcre2CoreGrammarResourceTests
     [Fact]
     public void CopiedCursorKeepsIndependentPositionAndSharedStickyAllowance()
     {
-        var regex = new Utf8Pcre2Regex(@"\u0041", Pcre2CompileOptions.None, default,
+        var regex = new Utf8Pcre2Regex(@"\x{41}", Pcre2CompileOptions.None, default,
             new() { MatchLimit = 16 }, Timeout.InfiniteTimeSpan);
         var cursor = regex.EnumerateMatches("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"u8);
         Assert.True(cursor.MoveNext());
@@ -145,7 +141,7 @@ public sealed class Pcre2CoreGrammarResourceTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(@"\u0041", Pcre2CompileOptions.None, default,
+        var regex = new Utf8Pcre2Regex(@"\x{41}", Pcre2CompileOptions.None, default,
             new() { HeapLimitInBytes = 1000000 }, TimeSpan.FromMilliseconds(20));
         var cursor = regex.EnumerateMatches("AA"u8, 0, Pcre2MatchOptions.None, source.Token);
         Assert.True(cursor.MoveNext());
@@ -163,7 +159,7 @@ public sealed class Pcre2CoreGrammarResourceTests
     public void CallbackCancellationUsesTheOriginalTokenAndLeavesRetainedCaptureValid()
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(@"(?<v>\u0041)😀");
+        var regex = new Utf8Pcre2Regex(@"(?<v>\x{41})😀");
         var state = new CallbackState(source);
         var failure = Assert.Throws<OperationCanceledException>(() => regex.Replace("A😀A😀"u8, state,
             static (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref CallbackState state) =>
