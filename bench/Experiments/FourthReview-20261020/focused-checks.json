@@ -1,0 +1,59 @@
+{
+  "Scope": "Local Release source checks; filters overlap. Full source matrix belongs to final CI; immutable packages were not requalified.",
+  "Checks": [
+    {
+      "Log": "artifacts/fourth-review-20261020/tests-regressions.log",
+      "Sha256": "FE2F124D6810EE1096399D21182D560B59B7A519E164901039D05673847B03C1",
+      "Passed": 83,
+      "Failed": 0,
+      "Skipped": 0,
+      "Duration": "204 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)"
+    },
+    {
+      "Log": "artifacts/fourth-review-20261020/tests-pcre2.log",
+      "Sha256": "2E79C694C6DA374FBCFC4983A24A36B95F636292ED94BFA3001642EAFC99239E",
+      "Passed": 5944,
+      "Failed": 0,
+      "Skipped": 0,
+      "Duration": "9 s - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)"
+    },
+    {
+      "Log": "artifacts/fourth-review-20261020/tests-final-focused-pcre2.log",
+      "Sha256": "D62EBB320BDB34EA8C541992175A0C68583FF6173B0C5D808995ABEBFC858B0C",
+      "Passed": 169,
+      "Failed": 0,
+      "Skipped": 0,
+      "Duration": "160 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)"
+    },
+    {
+      "Log": "artifacts/fourth-review-20261020/tests-core.log",
+      "Sha256": "42C0CB860F1BB5ECC910C5697DD8EEA659C0ED6739161B5B2BED70399DF8C763",
+      "Passed": 111,
+      "Failed": 0,
+      "Skipped": 0,
+      "Duration": "184 ms - Lokad.Utf8Regex.Tests.dll (net10.0)"
+    },
+    {
+      "Log": "artifacts/fourth-review-20261020/tests-inventory.log",
+      "Sha256": "ECFF8144D30F3897C3B4C705ADC2435AE785145E6986A14CD2CC5213E28EDCE6",
+      "Passed": 31,
+      "Failed": 0,
+      "Skipped": 0,
+      "Duration": "1 s - Lokad.Utf8Regex.Tests.dll (net10.0)"
+    },
+    {
+      "Log": "artifacts/fourth-review-20261020/tests-pythonre.log",
+      "Sha256": "887CC9103FC21632C996D45B6402487C44A58087FCE03DAED9D8264CA3C79E63",
+      "Passed": 101,
+      "Failed": 0,
+      "Skipped": 0,
+      "Duration": "1 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)"
+    }
+  ],
+  "Corrections": [
+    "Corrected a test enum name before running assertions.",
+    "Replaced an incorrectly escaped all-declined test witness with the intended raw Unicode escape.",
+    "Replaced obsolete tests of None programs with construction-time refusal tests.",
+    "Named subroutine references use a conservative minimum of zero; the depth-analysis witness uses a numeric dependency chain instead."
+  ]
+}

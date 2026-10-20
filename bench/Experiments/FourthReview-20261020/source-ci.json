@@ -1,0 +1,74 @@
+{
+  "Run": 39452239922,
+  "SourceRevision": "0cdae03e8ca8bb25683c61a56c2e08d704725ed3",
+  "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/39452239922",
+  "Status": "completed",
+  "Conclusion": "success",
+  "Scope": "One complete Windows/Linux Release source boundary, including API, dependency/member inventory, semantic, resource, cancellation, lifetime and consumer-related source checks. Later edits are receipts only. No package or isolated-consumer requalification.",
+  "Platforms": [
+    {
+      "Platform": "test-log-ubuntu-latest",
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.DiffTests.dll",
+          "Passed": 1504,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll",
+          "Passed": 3881,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+          "Passed": 5946,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Tests.dll",
+          "Passed": 39692,
+          "Failed": 0,
+          "Skipped": 0
+        }
+      ],
+      "TestLog": "artifacts/fourth-review-20261020/ci/test-log-ubuntu-latest/test.log",
+      "TestLogSha256": "F557C0631A8965EC07B480596A7490BD97A18B127563CBD47898F907DB531284",
+      "BuildLogSha256": "44AC5555549E3DEC58BFBABC09EE5BC3C2FB91B8779AD0298396C1C8E32A3B55"
+    },
+    {
+      "Platform": "test-log-windows-latest",
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.DiffTests.dll",
+          "Passed": 1504,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll",
+          "Passed": 3881,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+          "Passed": 5946,
+          "Failed": 0,
+          "Skipped": 0
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Tests.dll",
+          "Passed": 39692,
+          "Failed": 0,
+          "Skipped": 0
+        }
+      ],
+      "TestLog": "artifacts/fourth-review-20261020/ci/test-log-windows-latest/test.log",
+      "TestLogSha256": "5F53D14522C981188A8B0AAFE2A52D71E48B7850781E7B4A6B2EB717F87CCFCF",
+      "BuildLogSha256": "DD8EC0671073C78D6E729DB50990E60DE59E785AF00A38E4D7B0DCB7742B168F"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "Command": "./bench.ps1 -SkipBuild -CommandArgs --inspect-utf8-validation-route,industry/mariomka-email-count -MaxWallTimeSeconds 30",
+  "ExitCode": 0,
+  "Log": "artifacts/fourth-review-20261020/diagnostic-smoke.log",
+  "Sha256": "2BBD7B88746B5D0519986FE62C1942510C29BEA9DE8B17E5FF19F0F2666EDAF6",
+  "Scope": "Untimed diagnostic smoke after moving the unchanged lead-byte sampler into benchmark tooling."
+}

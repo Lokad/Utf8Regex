@@ -1,0 +1,182 @@
+{
+  "Scope": "One initial local Release batch and the one allowed reverse-order confirmation. Stop measuring. Constructor and first-use lanes are separate from warm public matching.",
+  "SourceBefore": "eb96f003 (receipts-only checkout); loaded producers are recorded independently below.",
+  "SourceAfter": "0cdae03e8ca8bb25683c61a56c2e08d704725ed3",
+  "Runtime": ".NET 10.0.13",
+  "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+  "InitialProtocol": {
+    "ConstructionInstances": 16,
+    "ConstructionSamples": 7,
+    "WarmPublicIterations": 2000,
+    "WarmPublicSamples": 5,
+    "ChildWallCapSeconds": 45,
+    "Order": "before then after, separate children",
+    "Interpretation": "Initial public samples are short/noisy; do not claim a performance pass from them."
+  },
+  "ConfirmationProtocol": {
+    "Order": "after then frozen before",
+    "WarmPublicIterations": 20000,
+    "WarmPublicSamples": 5,
+    "ProcessorAffinityMask": 4,
+    "ChildWallCapSeconds": 45,
+    "Reason": "Longer samples on one logical processor for the single allowed confirmation; retained same catalog/input/operations/runtime. No constructor or first-use rerun."
+  },
+  "Observations": [
+    {
+      "Operation": "literal control construction",
+      "BeforeUs": 3.712,
+      "AfterUs": 3.306,
+      "ChangePercent": -10.94,
+      "BeforeAllocated": 2168,
+      "AfterAllocated": 2008,
+      "Interpretation": "Small first-instance batches; removed four lexical scans/stacks also affect literal construction; not a truly unchanged constructor control."
+    },
+    {
+      "Operation": "backtracking construction",
+      "BeforeUs": 192.887,
+      "AfterUs": 200.312,
+      "ChangePercent": 3.85,
+      "BeforeAllocated": 57968,
+      "AfterAllocated": 57960,
+      "AfterAllocatedRange": [
+        57960,
+        58731
+      ],
+      "Interpretation": "Added admission/work/depth protection; small constructor batches with wide tails, not steady matching."
+    },
+    {
+      "Operation": "backtracking first IsMatch",
+      "BeforeUs": 3.212,
+      "AfterUs": 3.431,
+      "ChangePercent": 6.82,
+      "BeforeAllocated": 3872,
+      "AfterAllocated": 3872,
+      "Interpretation": "First operation only, wide first-sample ranges. Does not close the previous milestone latency concern."
+    },
+    {
+      "Operation": "initial warm public PCRE2 IsMatch",
+      "BeforeUs": 1.491,
+      "AfterUs": 2.366,
+      "ChangePercent": 58.69,
+      "Interpretation": "Too noisy/short; prompted the sole confirmation, not accepted as parity."
+    },
+    {
+      "Operation": "confirmation warm public PCRE2 IsMatch",
+      "BeforeUs": 2.42,
+      "AfterUs": 2.574,
+      "ChangePercent": 6.36,
+      "BeforeAllocated": 3872,
+      "AfterAllocated": 3872,
+      "Interpretation": "Within the 10% representative affected public workload allowance in this bounded comparison; no universal equivalence claim."
+    },
+    {
+      "Operation": "confirmation unchanged decode-then-Regex control",
+      "BeforeUs": 2.556,
+      "AfterUs": 2.54,
+      "ChangePercent": -0.63
+    },
+    {
+      "Operation": "confirmation unchanged predecoded-Regex control",
+      "BeforeUs": 0.079,
+      "AfterUs": 0.077,
+      "ChangePercent": -2.53
+    },
+    {
+      "Operation": "confirmation UTF-8 validation control",
+      "BeforeUs": 0.689,
+      "AfterUs": 0.641,
+      "ChangePercent": -6.97
+    }
+  ],
+  "AssemblyIdentities": [
+    {
+      "Lane": "before",
+      "Path": "artifacts\\fourth-review-20261020\\before\\Lokad.Utf8Regex.dll",
+      "Sha256": "1A3241486B101C2370026A3D0AFE23948813EA47C0B37C2B7A7443E74777A253",
+      "Version": "0.4.0-rc.2-dev+4b99405de672d1c3ce8bf897acec8c863152d254"
+    },
+    {
+      "Lane": "before",
+      "Path": "artifacts\\fourth-review-20261020\\before\\Lokad.Utf8Regex.Pcre2.dll",
+      "Sha256": "E3A4C94706739C0F008798051929F4ACBE87EE8553E8EB8540B65B595753049E",
+      "Version": "0.4.0-rc.2-dev+4b99405de672d1c3ce8bf897acec8c863152d254"
+    },
+    {
+      "Lane": "before",
+      "Path": "artifacts\\fourth-review-20261020\\before\\Lokad.Utf8Regex.PythonRe.dll",
+      "Sha256": "CAC1D3FB44EB992C1F6AD9000F75BB76A061C095FDEAF6027CDB306B14A099A0",
+      "Version": "0.4.0-rc.2-dev+4b99405de672d1c3ce8bf897acec8c863152d254"
+    },
+    {
+      "Lane": "before",
+      "Path": "artifacts\\fourth-review-20261020\\before\\Lokad.Utf8Regex.Benchmarks.dll",
+      "Sha256": "6895B06099612CDFDCBE452541FA987B0756866E7BB46D8C316E186EFA701CA2",
+      "Version": "1.0.0+4b99405de672d1c3ce8bf897acec8c863152d254"
+    },
+    {
+      "Lane": "after",
+      "Path": "bench\\Lokad.Utf8Regex.Benchmarks\\bin\\Release\\net10.0\\Lokad.Utf8Regex.dll",
+      "Sha256": "6FDC5C11A65D2A62158F8562E8C94363B765ABFE5B4D5222386F38B1936FEF5A",
+      "Version": "0.4.0-rc.2-dev+0cdae03e8ca8bb25683c61a56c2e08d704725ed3"
+    },
+    {
+      "Lane": "after",
+      "Path": "bench\\Lokad.Utf8Regex.Benchmarks\\bin\\Release\\net10.0\\Lokad.Utf8Regex.Pcre2.dll",
+      "Sha256": "9EBEE5E5C792B5B297FDB55D5E2703C2A716DAA80F3D5F73BE08625E999326CD",
+      "Version": "0.4.0-rc.2-dev+0cdae03e8ca8bb25683c61a56c2e08d704725ed3"
+    },
+    {
+      "Lane": "after",
+      "Path": "bench\\Lokad.Utf8Regex.Benchmarks\\bin\\Release\\net10.0\\Lokad.Utf8Regex.PythonRe.dll",
+      "Sha256": "D414CE4370AAD72F0F163A1A3D70CA7002F523D94A33A04479CE019A32038046",
+      "Version": "0.4.0-rc.2-dev+0cdae03e8ca8bb25683c61a56c2e08d704725ed3"
+    },
+    {
+      "Lane": "after",
+      "Path": "bench\\Lokad.Utf8Regex.Benchmarks\\bin\\Release\\net10.0\\Lokad.Utf8Regex.Benchmarks.dll",
+      "Sha256": "8890597946D8A30CAE3365550DFEB1A75523EA419652530A19D628C228838D67",
+      "Version": "1.0.0+0cdae03e8ca8bb25683c61a56c2e08d704725ed3"
+    }
+  ],
+  "Logs": [
+    {
+      "Path": "artifacts/fourth-review-20261020/before-control.log",
+      "Sha256": "ECB82D12FC6097EC11C55A55DBDE3B451BAA84D6BFB6AAB16A008A33A9A9BF4C"
+    },
+    {
+      "Path": "artifacts/fourth-review-20261020/before-construction.log",
+      "Sha256": "306867FA9FD162D6F13CB3198001FE9230453A8FBD4596D315B93E6F198D8211"
+    },
+    {
+      "Path": "artifacts/fourth-review-20261020/before-public-compatible.log",
+      "Sha256": "FA28A84C89A670CF77F0727918CC24F31A1CB2448CC44FE0A8A03A1AD414F994"
+    },
+    {
+      "Path": "artifacts/fourth-review-20261020/after-control.log",
+      "Sha256": "C56912FC19EE402ACC5B93C73B6A787BA28164E59A75D61697FE7CC68E2B3690"
+    },
+    {
+      "Path": "artifacts/fourth-review-20261020/after-construction.log",
+      "Sha256": "67CDF6D682D3045C5ECA9A671D601E41F668EFBB9F6A3CADA993ABFD86B39ED8"
+    },
+    {
+      "Path": "artifacts/fourth-review-20261020/after-public-compatible.log",
+      "Sha256": "E116F3507521048290F01B8B902BB136E2FB719160AA9CC77DDEDD0E57E02903"
+    },
+    {
+      "Path": "artifacts/fourth-review-20261020/confirmation-after.log",
+      "Sha256": "913C104CD4E8786D70AB8E2E2AFAD570CAACDF2375358152FA2CF315DBB72B5D"
+    },
+    {
+      "Path": "artifacts/fourth-review-20261020/confirmation-before.log",
+      "Sha256": "EB4354DB5B04EA8958625B9625195D581C5B5C74A3A3378CA06D2E434C54FC2C"
+    }
+  ],
+  "Limitations": [
+    "Old CLI labels checkout HEAD as SourceCommit even for frozen assemblies; preserve original logs and rely on exact DLL identities. New CLI separates checkout and loaded identities.",
+    "The initial special-case command declined because the chosen catalog row is managed-compatible, not PCRE2-only; no timing from that refused command was used.",
+    "Literal construction also benefits from removed lexical scans, so unchanged BCL controls govern confirmation interpretation.",
+    "No snapshot/Status refresh, closed checked-access campaign, new package qualification or claim of universal 10% equivalence.",
+    "Prior milestone first-use/steady-state release concern is preserved and was not remeasured by this confirmation."
+  ]
+}
