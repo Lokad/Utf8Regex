@@ -86,7 +86,9 @@ public sealed class Pcre2ReplacementByteExpansionTests
     [Fact]
     public void GrowingOutputAdmitsOldAndNewWorkingBuffersAndAlwaysReleases()
     {
-        var writer = new Pcre2ReplacementTemplateWriter("😀"u8, [], 96, Timeout.InfiniteTimeSpan, default);
+        var writer = new Pcre2ReplacementTemplateWriter("😀"u8, [],
+            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 96),
+                Timeout.InfiniteTimeSpan, default));
         try
         {
             Assert.Equal(48ul, writer.ReservedWorkingBytes);
@@ -100,7 +102,9 @@ public sealed class Pcre2ReplacementByteExpansionTests
         writer.Release();
         Assert.Equal(0ul, writer.ReservedWorkingBytes);
 
-        var limited = new Pcre2ReplacementTemplateWriter("😀"u8, [], 95, Timeout.InfiniteTimeSpan, default);
+        var limited = new Pcre2ReplacementTemplateWriter("😀"u8, [],
+            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 95),
+                Timeout.InfiniteTimeSpan, default));
         try
         {
             Pcre2MatchException? failure = null;
@@ -121,8 +125,9 @@ public sealed class Pcre2ReplacementByteExpansionTests
         using var token = new CancellationTokenSource();
         long clock = 10000;
         using var clockScope = Utf8ExecutionDeadline.UseClockForDiagnostics(() => clock);
-        var writer = new Pcre2ReplacementTemplateWriter("😀"u8, [], 0,
-            deadline ? TimeSpan.FromMilliseconds(1) : Timeout.InfiniteTimeSpan, token.Token);
+        var writer = new Pcre2ReplacementTemplateWriter("😀"u8, [],
+            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0),
+                deadline ? TimeSpan.FromMilliseconds(1) : Timeout.InfiniteTimeSpan, token.Token));
         if (deadline) clock++;
         else token.Cancel();
         try

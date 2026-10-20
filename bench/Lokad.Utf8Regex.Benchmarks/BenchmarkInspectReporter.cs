@@ -3173,18 +3173,14 @@ internal static partial class BenchmarkInspectReporter
             if (context.Utf8Regex.Inspection.ExecutionKind == NativeExecutionKind.AsciiSimplePattern)
             {
                 var simplePatternPlan = context.Utf8Regex.Inspection.SimplePatternPlan;
-                Console.WriteLine($"BranchCount       : {context.Utf8Regex.Inspection.DebugSimplePatternBranchCount}");
-                Console.WriteLine($"BranchLengths     : {context.Utf8Regex.Inspection.DebugSimplePatternBranchLengths}");
+                Console.WriteLine($"BranchCount       : {context.Utf8Regex.Inspection.SimplePatternPlan.Branches.Length}");
+                Console.WriteLine($"BranchLengths     : {string.Join(",", context.Utf8Regex.Inspection.SimplePatternPlan.Branches.Select(static branch => branch.Length))}");
                 Console.WriteLine($"HasAnchoredValidator : {simplePatternPlan.AnchoredValidatorPlan.HasValue}");
                 Console.WriteLine($"HasAnchoredOptional  : {simplePatternPlan.AnchoredOptionalFieldPlan.HasValue}");
                 Console.WriteLine($"HasAnchoredHeadTail  : {simplePatternPlan.AnchoredHeadTailRunPlan.HasValue}");
                 Console.WriteLine($"HasRepeatedDigitGroup: {simplePatternPlan.RepeatedDigitGroupPlan.HasValue}");
-                Console.WriteLine($"CanDirectFixedLength : {context.Utf8Regex.Inspection.DebugSimplePatternCanUseDirectAnchoredFixedLength}");
-                Console.WriteLine($"CanDirectFixedAlt    : {context.Utf8Regex.Inspection.DebugSimplePatternCanUseDirectAnchoredFixedAlternation}");
-                if (context.Utf8Regex.Inspection.DebugSimplePatternCanUseDirectAnchoredFixedAlternation)
-                {
-                    Console.WriteLine($"DirectFixedAltEval  : {context.Utf8Regex.Inspection.DebugDirectAnchoredFixedAlternationSummary(context.InputBytes)}");
-                }
+                Console.WriteLine($"CanDirectFixedLength : {Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedLengthSimplePattern(context.Utf8Regex.Inspection.PreparedRegex)}");
+                Console.WriteLine($"CanDirectFixedAlt    : {Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedAlternationSimplePattern(context.Utf8Regex.Inspection.PreparedRegex)}");
                 Console.WriteLine($"CompiledUsesEmittedWhole     : {context.CompiledUtf8Regex.Inspection.DebugUsesEmittedWholeMatcher}");
             }
 
@@ -3197,18 +3193,18 @@ internal static partial class BenchmarkInspectReporter
             if (context.Utf8Regex.Inspection.ExecutionKind == NativeExecutionKind.AsciiSimplePattern)
             {
                 var simplePatternPlan = context.Utf8Regex.Inspection.SimplePatternPlan;
-                if (context.Utf8Regex.Inspection.DebugSimplePatternCanUseDirectAnchoredFixedLength)
+                if (Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedLengthSimplePattern(context.Utf8Regex.Inspection.PreparedRegex))
                 {
                     Measure("DirectFixedLengthOnly", iterations, () =>
-                        context.Utf8Regex.Inspection.DebugTryMatchDirectAnchoredFixedLengthSimplePattern(context.InputBytes, out var matchedLength)
+                        Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedLengthSimplePattern(context.Utf8Regex.Inspection.PreparedRegex, context.InputBytes, out var matchedLength)
                             ? matchedLength
                             : 0);
                 }
 
-                if (context.Utf8Regex.Inspection.DebugSimplePatternCanUseDirectAnchoredFixedAlternation)
+                if (Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedAlternationSimplePattern(context.Utf8Regex.Inspection.PreparedRegex))
                 {
                     Measure("DirectFixedAlternationOnly", iterations, () =>
-                        context.Utf8Regex.Inspection.DebugTryMatchDirectAnchoredFixedAlternationSimplePattern(context.InputBytes, out var matchedLength)
+                        Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedAlternationSimplePattern(context.Utf8Regex.Inspection.PreparedRegex, context.InputBytes, out var matchedLength)
                             ? matchedLength
                             : 0);
                 }
@@ -3295,8 +3291,8 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"InputBytes        : {context.InputBytes.Length}");
         Console.WriteLine($"ExecutionKind     : {context.Utf8Regex.Inspection.ExecutionKind}");
         Console.WriteLine($"CompiledEngine    : {context.Utf8Regex.Inspection.CompiledEngineKind}");
-        Console.WriteLine($"CanDirectFixedLength : {context.Utf8Regex.Inspection.DebugSimplePatternCanUseDirectAnchoredFixedLength}");
-        Console.WriteLine($"CanDirectFixedAlt    : {context.Utf8Regex.Inspection.DebugSimplePatternCanUseDirectAnchoredFixedAlternation}");
+        Console.WriteLine($"CanDirectFixedLength : {Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedLengthSimplePattern(context.Utf8Regex.Inspection.PreparedRegex)}");
+        Console.WriteLine($"CanDirectFixedAlt    : {Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedAlternationSimplePattern(context.Utf8Regex.Inspection.PreparedRegex)}");
 
         Measure("ValidationOnly", iterations, context.ExecuteUtf8ValidationOnly);
         Measure("WellFormedOnly", iterations, context.ExecuteUtf8WellFormedOnly);
@@ -3306,12 +3302,12 @@ internal static partial class BenchmarkInspectReporter
         {
             Measure("FallbackSearchStartsOnly", iterations, context.ExecuteUtf8FallbackSearchStartsOnly);
         }
-        if (context.Utf8Regex.Inspection.DebugSimplePatternCanUseDirectAnchoredFixedLength)
+        if (Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedLengthSimplePattern(context.Utf8Regex.Inspection.PreparedRegex))
         {
             Measure("DirectFixedLengthOnly", iterations, context.ExecuteUtf8DirectFixedLengthOnly);
         }
 
-        if (context.Utf8Regex.Inspection.DebugSimplePatternCanUseDirectAnchoredFixedAlternation)
+        if (Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedAlternationSimplePattern(context.Utf8Regex.Inspection.PreparedRegex))
         {
             Measure("DirectFixedAlternationOnly", iterations, context.ExecuteUtf8DirectFixedAlternationOnly);
         }
@@ -3403,8 +3399,8 @@ internal static partial class BenchmarkInspectReporter
             Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
             return context.InputBytes.Length;
         });
-        Measure("TryMatchNoValidation", iterations, () => context.Utf8Regex.Inspection.DebugTryMatchWithoutValidation(context.InputBytes, out _) ? 1 : 0);
-        Measure("CompiledTryMatchNoValidation", iterations, () => context.CompiledUtf8Regex.Inspection.DebugTryMatchWithoutValidation(context.InputBytes, out _) ? 1 : 0);
+        Measure("TryMatchNoValidation", iterations, () => context.Utf8Regex.TryMatchDirectWithoutValidation(context.InputBytes, out _) ? 1 : 0);
+        Measure("CompiledTryMatchNoValidation", iterations, () => context.CompiledUtf8Regex.TryMatchDirectWithoutValidation(context.InputBytes, out _) ? 1 : 0);
         if (context.Utf8Regex.Inspection.DebugCanGuideFallbackVerification)
         {
             Measure("FallbackSearchStartsOnly", iterations, context.ExecuteUtf8FallbackSearchStartsOnly);
@@ -3674,7 +3670,7 @@ internal static partial class BenchmarkInspectReporter
 
         Measure("UnvalidatedMatchProbe", iterations, () =>
         {
-            var handled = regex.Inspection.DebugTryMatchWithoutValidation(benchmarkCase.InputBytes, out var match);
+            var handled = regex.TryMatchDirectWithoutValidation(benchmarkCase.InputBytes, out var match);
             if (!handled)
             {
                 return -1;
@@ -3684,7 +3680,7 @@ internal static partial class BenchmarkInspectReporter
         });
         Measure("CompiledUnvalidatedMatchProbe", iterations, () =>
         {
-            var handled = compiledUtf8Regex.Inspection.DebugTryMatchWithoutValidation(benchmarkCase.InputBytes, out var match);
+            var handled = compiledUtf8Regex.TryMatchDirectWithoutValidation(benchmarkCase.InputBytes, out var match);
             if (!handled)
             {
                 return -1;
@@ -3760,7 +3756,7 @@ internal static partial class BenchmarkInspectReporter
             asciiMiss.AsSpan().Fill((byte)'x');
             Measure("AsciiMissUnvalidatedProbe", iterations, () =>
             {
-                var handled = regex.Inspection.DebugTryMatchWithoutValidation(asciiMiss, out var match);
+                var handled = regex.TryMatchDirectWithoutValidation(asciiMiss, out var match);
                 if (!handled)
                 {
                     return -1;
@@ -6533,16 +6529,6 @@ internal static partial class BenchmarkInspectReporter
 
     private static string FormatLedgerValue(double? microseconds)
         => microseconds is null ? "-" : microseconds.Value.ToString("F3", CultureInfo.InvariantCulture);
-
-    private static string FormatLedgerRatio(double? numerator, double? denominator)
-    {
-        if (numerator is null || denominator is null || denominator.Value == 0)
-        {
-            return "-";
-        }
-
-        return (numerator.Value / denominator.Value).ToString("F2", CultureInfo.InvariantCulture) + "x";
-    }
 
     private static double MeasureMicroseconds(int samples, int iterations, Func<int> action)
         => MeasureMedianCore(samples, iterations, action).Elapsed.TotalMicroseconds / iterations;

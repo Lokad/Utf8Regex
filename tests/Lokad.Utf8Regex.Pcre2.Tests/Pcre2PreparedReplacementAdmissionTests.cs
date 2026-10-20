@@ -111,7 +111,9 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
     {
         var preparation = new Pcre2ReplacementPreparation(null, Pcre2PreparedReplacementParser.Parse("${1:+A:B}", Pcre2SubstitutionOptions.Extended));
         var groups = new[] { Pcre2GroupData.FromByteOffsets("x"u8, 0, 0, 1), Pcre2GroupData.FromByteOffsets("x"u8, 1, 0, 1) };
-        var writer = new Pcre2ReplacementTemplateWriter("x"u8, [], 144, Timeout.InfiniteTimeSpan, default);
+        var writer = new Pcre2ReplacementTemplateWriter("x"u8, [],
+            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 144),
+                Timeout.InfiniteTimeSpan, default));
         try
         {
             Assert.Equal(48ul, writer.ReservedWorkingBytes);
@@ -121,7 +123,9 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
             Assert.Equal(0ul, writer.ReservedWorkingBytes);
         }
         finally { writer.Release(); }
-        var denied = new Pcre2ReplacementTemplateWriter("x"u8, [], 143, Timeout.InfiniteTimeSpan, default);
+        var denied = new Pcre2ReplacementTemplateWriter("x"u8, [],
+            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 143),
+                Timeout.InfiniteTimeSpan, default));
         try
         {
             Pcre2MatchException? failure = null;
@@ -197,7 +201,9 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
     {
         var preparation = new Pcre2ReplacementPreparation(null, Pcre2PreparedReplacementParser.Parse("${1:+A:${missing:+B:C}}", Pcre2SubstitutionOptions.Extended));
         var groups = new[] { Pcre2GroupData.FromByteOffsets("x"u8, 0, 0, 1), Pcre2GroupData.FromByteOffsets("x"u8, 1, 0, 1) };
-        var writer = new Pcre2ReplacementTemplateWriter("x"u8, [], 144, Timeout.InfiniteTimeSpan, default);
+        var writer = new Pcre2ReplacementTemplateWriter("x"u8, [],
+            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 144),
+                Timeout.InfiniteTimeSpan, default));
         try
         {
             Pcre2SubstitutionException? failure = null;
@@ -225,7 +231,9 @@ public sealed class Pcre2PreparedReplacementAdmissionTests
             if (++reads >= 50) { if (timeout) return 30001; token.Cancel(); }
             return 30000;
         });
-        var writer = new Pcre2ReplacementTemplateWriter("x"u8, [], 0, timeout ? TimeSpan.FromMilliseconds(1) : TimeSpan.FromHours(1), token.Token);
+        var writer = new Pcre2ReplacementTemplateWriter("x"u8, [],
+            new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0),
+                timeout ? TimeSpan.FromMilliseconds(1) : TimeSpan.FromHours(1), token.Token));
         try
         {
             Exception? failure = null;

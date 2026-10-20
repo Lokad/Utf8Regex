@@ -494,7 +494,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        var handled = regex.Inspection.DebugTryMatchWithoutValidation("alpha_123"u8, out var match);
+        var handled = regex.TryMatchDirectWithoutValidation("alpha_123"u8, out var match);
 
         Assert.True(handled);
         Assert.True(match.Success);
@@ -507,7 +507,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        var handled = regex.Inspection.DebugTryMatchWithoutValidation("1alpha"u8, out var match);
+        var handled = regex.TryMatchDirectWithoutValidation("1alpha"u8, out var match);
 
         Assert.True(handled);
         Assert.False(match.Success);
@@ -518,7 +518,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        var handled = regex.Inspection.DebugTryMatchWithoutValidation("alphé"u8, out _);
+        var handled = regex.TryMatchDirectWithoutValidation("alphé"u8, out _);
 
         Assert.False(handled);
     }
@@ -528,7 +528,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(@"([0-9]{4}[- ]){3}[0-9]{3,4}", RegexOptions.Compiled);
 
-        var handled = regex.Inspection.DebugTryIsMatchAsciiSimplePatternWithoutValidation("1234-5678-1234-456"u8, out var isMatch);
+        var handled = regex.TryIsMatchAsciiSimplePatternWithoutValidation("1234-5678-1234-456"u8, out var isMatch);
 
         Assert.True(handled);
         Assert.True(isMatch);
@@ -734,7 +734,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("[a-zA-Z][a-zA-Z0-9]*", RegexOptions.Compiled);
 
-        var handled = regex.Inspection.DebugTryMatchWithoutValidation("123alpha9"u8, out var match);
+        var handled = regex.TryMatchDirectWithoutValidation("123alpha9"u8, out var match);
 
         Assert.True(handled);
         Assert.True(match.Success);
@@ -748,7 +748,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("[a-zA-Z][a-zA-Z0-9]*", RegexOptions.Compiled);
 
-        var handled = regex.Inspection.DebugTryMatchWithoutValidation("123__"u8, out var match);
+        var handled = regex.TryMatchDirectWithoutValidation("123__"u8, out var match);
 
         Assert.True(handled);
         Assert.False(match.Success);
@@ -759,7 +759,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("[a-zA-Z][a-zA-Z0-9]*", RegexOptions.Compiled);
 
-        var handled = regex.Inspection.DebugTryMatchWithoutValidation("éalpha"u8, out _);
+        var handled = regex.TryMatchDirectWithoutValidation("éalpha"u8, out _);
 
         Assert.False(handled);
     }
@@ -1067,7 +1067,7 @@ public sealed class Utf8RegexConstructionTests
     public void CompiledDocLineDirectHookHandlesMatchWithoutValidation()
     {
         var regex = new Utf8Regex("\\G///[^\\n]*\\n", RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-        var handled = regex.Inspection.DebugTryMatchWithoutValidation("/// doc line\n"u8, out var match);
+        var handled = regex.TryMatchDirectWithoutValidation("/// doc line\n"u8, out var match);
 
         Assert.True(handled);
         Assert.True(match.Success);
@@ -1467,7 +1467,7 @@ public sealed class Utf8RegexConstructionTests
             }
             Assert.Equal(baseline.IsMatch(input), compiled.IsMatch(input));
 
-            var handled = compiled.Inspection.DebugTryMatchWithoutValidation(input, out var directMatch);
+            var handled = compiled.TryMatchDirectWithoutValidation(input, out var directMatch);
             if (!Utf8InputAnalyzer.IsAscii(input) && !handled)
             {
                 continue;
@@ -2595,7 +2595,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("tempus|magna|semper", RegexOptions.None);
 
-        var handled = regex.Inspection.DebugTryMatchWithoutValidation("xxx magna yyy"u8, out var match);
+        var handled = regex.TryMatchDirectWithoutValidation("xxx magna yyy"u8, out var match);
 
         Assert.True(handled);
         Assert.True(match.Success);
@@ -2621,7 +2621,7 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex("tempus|magna|semper", RegexOptions.None);
         var bytes = Encoding.UTF8.GetBytes(builder.ToString());
 
-        var handled = regex.Inspection.DebugTryMatchWithoutValidation(bytes, out var match);
+        var handled = regex.TryMatchDirectWithoutValidation(bytes, out var match);
 
         Assert.True(handled);
         Assert.True(match.Success);
@@ -2634,7 +2634,7 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex("tempus|magna|semper", RegexOptions.None);
         var bytes = Encoding.UTF8.GetBytes("magna café");
 
-        var handled = regex.Inspection.DebugTryMatchWithoutValidation(bytes, out var match);
+        var handled = regex.TryMatchDirectWithoutValidation(bytes, out var match);
 
         Assert.True(handled);
         Assert.True(match.Success);
@@ -2648,7 +2648,7 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex("tempus|magna|semper", RegexOptions.None);
         var bytes = Encoding.UTF8.GetBytes("café magna");
 
-        Assert.False(regex.Inspection.DebugTryMatchWithoutValidation(bytes, out _));
+        Assert.False(regex.TryMatchDirectWithoutValidation(bytes, out _));
 
         var match = regex.Match(bytes);
         Assert.True(match.Success);
@@ -2677,7 +2677,7 @@ public sealed class Utf8RegexConstructionTests
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var regex = new Utf8Regex("tempus|magna|semper", options);
 
-        var handled = regex.Inspection.DebugTryMatchWithoutValidation("xxx nihil yyy"u8, out var match);
+        var handled = regex.TryMatchDirectWithoutValidation("xxx nihil yyy"u8, out var match);
 
         Assert.True(handled);
         Assert.False(match.Success);
@@ -2695,7 +2695,7 @@ public sealed class Utf8RegexConstructionTests
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var regex = new Utf8Regex("alpha|bravo|charlie|delta|echo", options);
 
-        var handled = regex.Inspection.DebugTryMatchWithoutValidation("xxx foxtrot yyy"u8, out var match);
+        var handled = regex.TryMatchDirectWithoutValidation("xxx foxtrot yyy"u8, out var match);
 
         Assert.True(handled);
         Assert.False(match.Success);

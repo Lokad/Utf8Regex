@@ -310,7 +310,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         var total = 0;
         foreach (var sample in SampleBytes)
         {
-            CompiledUtf8Regex.Inspection.DebugTryMatchWithoutValidation(sample, out var match);
+            CompiledUtf8Regex.TryMatchDirectWithoutValidation(sample, out var match);
             if (match.Success)
             {
                 total += match.IsByteAligned ? match.LengthInBytes : match.LengthInUtf16;
@@ -331,7 +331,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         var total = 0;
         foreach (var sample in SampleBytes)
         {
-            if (Utf8Regex.Inspection.DebugTryIsMatchAnchoredHeadTailWithoutValidation(sample, out var isMatch) && isMatch)
+            if (Utf8Regex.TryIsMatchAnchoredHeadTailWithoutValidation(sample, out var isMatch) && isMatch)
             {
                 total += sample.Length;
             }
@@ -351,7 +351,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         var total = 0;
         foreach (var sample in SampleBytes)
         {
-            if (Utf8Regex.Inspection.DebugTryMatchAnchoredHeadTailWithoutValidation(sample, out var match) && match.Success)
+            if (Utf8Regex.TryMatchAnchoredHeadTailWithoutValidation(sample, out var match) && match.Success)
             {
                 total += match.LengthInUtf16;
             }
@@ -371,7 +371,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         var total = 0;
         foreach (var sample in SampleBytes)
         {
-            if (Utf8Regex.Inspection.DebugTryIsMatchAsciiSimplePatternWithoutValidation(sample, out var isMatch) && isMatch)
+            if (Utf8Regex.TryIsMatchAsciiSimplePatternWithoutValidation(sample, out var isMatch) && isMatch)
             {
                 total += sample.Length;
             }
@@ -391,7 +391,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         var total = 0;
         foreach (var sample in SampleBytes)
         {
-            if (Utf8Regex.Inspection.DebugTryMatchAsciiSimplePatternWithoutValidation(sample, out var match) && match.Success)
+            if (Utf8Regex.TryMatchAsciiSimplePatternWithoutValidation(sample, out var match) && match.Success)
             {
                 total += match.LengthInUtf16;
             }
@@ -569,7 +569,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         var total = 0;
         foreach (var sample in SampleBytes)
         {
-            Utf8Regex.Inspection.DebugTryMatchWithoutValidation(sample, out var match);
+            Utf8Regex.TryMatchDirectWithoutValidation(sample, out var match);
             if (match.Success)
             {
                 total += match.IsByteAligned ? match.LengthInBytes : match.LengthInUtf16;

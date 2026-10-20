@@ -1274,17 +1274,6 @@ public sealed partial class Utf8Pcre2Regex
             .ToArray();
     }
 
-    private static Pcre2GroupData[] CaptureGroups(Utf8Pcre2MatchContext match)
-    {
-        var groups = new Pcre2GroupData[match.CaptureSlotCount];
-        for (var i = 0; i < groups.Length; i++)
-        {
-            groups[i] = match.GetGroup(i)._data;
-        }
-
-        return groups;
-    }
-
     private bool TryReplaceUsingLiteralDriver(
         ReadOnlySpan<byte> input,
         Utf8ValidatedInput subject,

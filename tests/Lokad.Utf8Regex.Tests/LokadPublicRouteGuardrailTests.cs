@@ -170,7 +170,7 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.Equal(
             (options & RegexOptions.Compiled) != 0,
             regex.Inspection.DebugUsesEmittedWholeMatcher);
-        Assert.True(regex.Inspection.DebugTryIsMatchWithoutValidation("12/12/2001"u8, out var directMatch));
+        Assert.True(regex.TryIsMatchDirectWithoutValidation("12/12/2001"u8, out var directMatch));
         Assert.True(directMatch);
 
         string[] inputs =
@@ -207,11 +207,11 @@ public sealed class LokadPublicRouteGuardrailTests
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
         Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
-        Assert.True(regex.Inspection.DebugTryIsMatchWithoutValidation(
+        Assert.True(regex.TryIsMatchDirectWithoutValidation(
             "https://example.com/path?q=1"u8,
             out var isMatch));
         Assert.True(isMatch);
-        Assert.False(regex.Inspection.DebugTryIsMatchWithoutValidation(
+        Assert.False(regex.TryIsMatchDirectWithoutValidation(
             "https://example.com/caf\u00E9"u8,
             out _));
 
@@ -270,11 +270,11 @@ public sealed class LokadPublicRouteGuardrailTests
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
         Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
-        Assert.True(regex.Inspection.DebugTryIsMatchWithoutValidation("bbb.ccc"u8, out var asciiMatch));
+        Assert.True(regex.TryIsMatchDirectWithoutValidation("bbb.ccc"u8, out var asciiMatch));
         Assert.True(asciiMatch);
-        Assert.True(regex.Inspection.DebugTryIsMatchWithoutValidation("no literal"u8, out var asciiMiss));
+        Assert.True(regex.TryIsMatchDirectWithoutValidation("no literal"u8, out var asciiMiss));
         Assert.False(asciiMiss);
-        Assert.False(regex.Inspection.DebugTryIsMatchWithoutValidation("é.ccc"u8, out _));
+        Assert.False(regex.TryIsMatchDirectWithoutValidation("é.ccc"u8, out _));
         Assert.Throws<ArgumentException>(() => regex.IsMatch([(byte)'b', (byte)'.', 0xFF]));
         Assert.Throws<ArgumentException>(() => regex.IsMatch([(byte)'b', (byte)'.', (byte)'c', 0xFF]));
     }
@@ -290,7 +290,7 @@ public sealed class LokadPublicRouteGuardrailTests
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
         Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
-        Assert.True(regex.Inspection.DebugTryIsMatchWithoutValidation(
+        Assert.True(regex.TryIsMatchDirectWithoutValidation(
             "Essential services are provided by regular exprs."u8,
             out var isMatch));
         Assert.True(isMatch);
@@ -449,15 +449,15 @@ public sealed class LokadPublicRouteGuardrailTests
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
         Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
-        Assert.True(regex.Inspection.DebugTryMatchWithoutValidation(
+        Assert.True(regex.TryMatchDirectWithoutValidation(
             "Today is 11/18/2019."u8,
             out var match));
         Assert.True(match.Success);
-        Assert.True(regex.Inspection.DebugTryIsMatchWithoutValidation(
+        Assert.True(regex.TryIsMatchDirectWithoutValidation(
             "Today is 11/18/2019."u8,
             out var isMatch));
         Assert.True(isMatch);
-        Assert.False(regex.Inspection.DebugTryMatchWithoutValidation(
+        Assert.False(regex.TryMatchDirectWithoutValidation(
             "Today is 11/18/2019. \xC3"u8,
             out _));
 
@@ -520,7 +520,7 @@ public sealed class LokadPublicRouteGuardrailTests
     {
         var regex = new Utf8Regex(@"^[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}$", RegexOptions.Compiled);
 
-        Assert.True(regex.Inspection.DebugTryMatchWithoutValidation("12/12/2001"u8, out var match));
+        Assert.True(regex.TryMatchDirectWithoutValidation("12/12/2001"u8, out var match));
         Assert.True(match.Success);
     }
 
@@ -568,7 +568,7 @@ public sealed class LokadPublicRouteGuardrailTests
         const string pattern = @"^[-+]?\d*\.?\d*$";
         var regex = new Utf8Regex(pattern, options);
 
-        Assert.True(regex.Inspection.DebugTryMatchWithoutValidation("-3.14159"u8, out var match));
+        Assert.True(regex.TryMatchDirectWithoutValidation("-3.14159"u8, out var match));
         Assert.True(match.Success);
 
         string[] inputs =

@@ -353,15 +353,12 @@ internal static partial class BenchmarkInspectReporter
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.Count) != 0)
         {
-            Measure("RawCount", samples, iterations, () => context.Utf8Pcre2Regex.DebugCountRaw(context.InputBytes, 0));
             Measure("PublicCount", samples, iterations, () => context.Utf8Pcre2Regex.Count(context.InputBytes));
         }
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.EnumerateMatches) != 0)
         {
             Measure("PublicConstruct", samples, iterations, () => ExecutePcre2PublicEnumeratorConstructionOnly(context.Utf8Pcre2Regex, context.InputBytes, 0));
-            Measure("NativeMaterialize", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumerateNativeMaterializationOnly(context.InputBytes, 0));
-            Measure("RawEnumerateSum", samples, iterations, () => ExecutePcre2PublicRawEnumeratorIndexSum(context.Utf8Pcre2Regex, context.InputBytes));
             Measure("PublicMoveNext", samples, iterations, () => ExecutePcre2PublicEnumeratorMoveNextCount(context.Utf8Pcre2Regex, context.InputBytes));
             Measure("PublicCurrentStartSum", samples, iterations, () => ExecutePcre2PublicEnumeratorCurrentStartSum(context.Utf8Pcre2Regex, context.InputBytes));
             Measure("PublicEnumerateSum", samples, iterations, () => ExecutePcre2PublicEnumeratorRangeSink(context.Utf8Pcre2Regex, context.InputBytes));
@@ -383,7 +380,6 @@ internal static partial class BenchmarkInspectReporter
             }
 
             Measure("ReplacementCursorEnumerate", samples, iterations, () => ExecutePcre2PublicEnumeratorRangeSink(context.Utf8Pcre2Regex, context.InputBytes));
-            Measure("ReplacementOnly", samples, iterations, () => context.Utf8Pcre2Regex.DebugEvaluateFirstReplacementOnly(context.InputBytes, context.Replacement, Pcre2SubstitutionOptions.None, 0));
             Measure("PublicReplace", samples, iterations, () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.Replacement).Length);
         }
 
@@ -436,7 +432,6 @@ internal static partial class BenchmarkInspectReporter
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.Count) != 0)
         {
-            Measure("Pcre2RawCount", samples, iterations, () => context.Utf8Pcre2Regex.DebugCountRaw(context.InputBytes, 0));
             Measure("Pcre2PublicCount", samples, iterations, () => context.Utf8Pcre2Regex.Count(context.InputBytes));
             Measure("Utf8Count", samples, iterations, () => context.Utf8Regex!.Count(context.InputBytes));
             Measure("DecodeCount", samples, iterations, () => context.Regex!.Count(Encoding.UTF8.GetString(context.InputBytes)));
@@ -469,7 +464,6 @@ internal static partial class BenchmarkInspectReporter
             }
 
             Measure("Pcre2ReplacementCursorEnumerate", samples, iterations, () => ExecutePcre2PublicEnumeratorRangeSink(context.Utf8Pcre2Regex, context.InputBytes));
-            Measure("Pcre2ReplacementOnly", samples, iterations, () => context.Utf8Pcre2Regex.DebugEvaluateFirstReplacementOnly(context.InputBytes, context.Replacement, Pcre2SubstitutionOptions.None, 0));
             Measure("Pcre2PublicReplace", samples, iterations, () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.Replacement).Length);
             Measure("Utf8Replace", samples, iterations, () => context.Utf8Regex!.Replace(context.InputBytes, Encoding.UTF8.GetBytes(context.Replacement)).Length);
             Measure("DecodeReplace", samples, iterations, () => RegexBenchmarkResult.ReplaceUtf8Length(context.Regex!, Encoding.UTF8.GetString(context.InputBytes), context.Replacement));
@@ -699,15 +693,12 @@ internal static partial class BenchmarkInspectReporter
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.Count) != 0)
         {
-            Measure("Pcre2RawCount", samples, iterations, () => context.Utf8Pcre2Regex.DebugCountRaw(context.InputBytes, 0));
             Measure("Pcre2PublicCount", samples, iterations, () => context.Utf8Pcre2Regex.Count(context.InputBytes));
         }
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.EnumerateMatches) != 0)
         {
             Measure("Pcre2PublicConstruct", samples, iterations, () => ExecutePcre2PublicEnumeratorConstructionOnly(context.Utf8Pcre2Regex, context.InputBytes, 0));
-            Measure("Pcre2NativeMaterialize", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumerateNativeMaterializationOnly(context.InputBytes, 0));
-            Measure("Pcre2RawEnumerateSum", samples, iterations, () => ExecutePcre2PublicRawEnumeratorIndexSum(context.Utf8Pcre2Regex, context.InputBytes));
             Measure("Pcre2PublicMoveNext", samples, iterations, () => ExecutePcre2PublicEnumeratorMoveNextCount(context.Utf8Pcre2Regex, context.InputBytes));
             Measure("Pcre2PublicCurrentStartSum", samples, iterations, () => ExecutePcre2PublicEnumeratorCurrentStartSum(context.Utf8Pcre2Regex, context.InputBytes));
             Measure("Pcre2PublicEnumerateSum", samples, iterations, () => ExecutePcre2PublicEnumeratorRangeSink(context.Utf8Pcre2Regex, context.InputBytes));
@@ -720,7 +711,6 @@ internal static partial class BenchmarkInspectReporter
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.Replace) != 0)
         {
-            Measure("Pcre2ReplacementOnly", samples, iterations, () => context.Utf8Pcre2Regex.DebugEvaluateFirstReplacementOnly(context.InputBytes, context.Replacement, Pcre2SubstitutionOptions.None, 0));
             Measure("Pcre2PublicReplace", samples, iterations, () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.Replacement).Length);
             var allocatedBytes = MeasureAllocatedBytesPerInvocation(
                 iterations,
@@ -1043,14 +1033,14 @@ internal static partial class BenchmarkInspectReporter
 
         Console.WriteLine($"Samples: {samples}");
         Console.WriteLine();
-        Console.WriteLine("| Case | Kind | Plan | IsMatch us | RawCount us | PublicCount us | Count Tax | NativeMaterialize us | RawEnumerate us | PublicEnumerate us | Enumerate Tax | MatchMany us | MatchMany Tax | ReplacementOnly us | PublicReplace us | Replace Tax |");
-        Console.WriteLine("|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|");
+        Console.WriteLine("| Case | Kind | Plan | IsMatch us | Count us | Enumerate us | MatchMany us | Replace us |");
+        Console.WriteLine("|---|---|---|---:|---:|---:|---:|---:|");
 
         foreach (var caseId in cases)
         {
             var row = MeasureUtf8Pcre2CaseOutOfProcess(caseId, iterations, samples);
             Console.WriteLine(
-                $"| {caseId} | {row.ExecutionKind} | `{row.ExecutionPlan}` | {FormatLedgerValue(row.IsMatch)} | {FormatLedgerValue(row.RawCount)} | {FormatLedgerValue(row.PublicCount)} | {FormatLedgerRatio(row.PublicCount, row.RawCount)} | {FormatLedgerValue(row.NativeMaterialize)} | {FormatLedgerValue(row.RawEnumerate)} | {FormatLedgerValue(row.PublicEnumerate)} | {FormatLedgerRatio(row.PublicEnumerate, row.RawEnumerate)} | {FormatLedgerValue(row.MatchMany)} | {FormatLedgerRatio(row.MatchMany, row.RawEnumerate)} | {FormatLedgerValue(row.ReplacementOnly)} | {FormatLedgerValue(row.PublicReplace)} | {FormatLedgerRatio(row.PublicReplace, row.ReplacementOnly)} |");
+                $"| {caseId} | {row.ExecutionKind} | `{row.ExecutionPlan}` | {FormatLedgerValue(row.IsMatch)} | {FormatLedgerValue(row.PublicCount)} | {FormatLedgerValue(row.PublicEnumerate)} | {FormatLedgerValue(row.MatchMany)} | {FormatLedgerValue(row.PublicReplace)} |");
         }
 
         return 0;
@@ -1113,13 +1103,9 @@ internal static partial class BenchmarkInspectReporter
         string ExecutionKind,
         string ExecutionPlan,
         double? IsMatch,
-        double? RawCount,
         double? PublicCount,
-        double? NativeMaterialize,
-        double? RawEnumerate,
         double? PublicEnumerate,
         double? MatchMany,
-        double? ReplacementOnly,
         double? PublicReplace);
 
     private static Utf8Pcre2CaseMeasurementRow MeasureUtf8Pcre2CaseOutOfProcess(string caseId, int iterations, int samples)
@@ -1159,13 +1145,9 @@ internal static partial class BenchmarkInspectReporter
         string executionKind = string.Empty;
         string executionPlan = string.Empty;
         double? isMatch = null;
-        double? rawCount = null;
         double? publicCount = null;
-        double? nativeMaterialize = null;
-        double? rawEnumerate = null;
         double? publicEnumerate = null;
         double? matchMany = null;
-        double? replacementOnly = null;
         double? publicReplace = null;
 
         foreach (var line in text.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
@@ -1183,13 +1165,9 @@ internal static partial class BenchmarkInspectReporter
             }
 
             if (TryParseMicrosecondsLine(line, "Pcre2IsMatch", out var value)) { isMatch = value; continue; }
-            if (TryParseMicrosecondsLine(line, "RawCount", out value)) { rawCount = value; continue; }
             if (TryParseMicrosecondsLine(line, "PublicCount", out value)) { publicCount = value; continue; }
-            if (TryParseMicrosecondsLine(line, "NativeMaterialize", out value)) { nativeMaterialize = value; continue; }
-            if (TryParseMicrosecondsLine(line, "RawEnumerateSum", out value)) { rawEnumerate = value; continue; }
             if (TryParseMicrosecondsLine(line, "PublicEnumerateSum", out value)) { publicEnumerate = value; continue; }
             if (TryParseMicrosecondsLine(line, "MatchManySum", out value)) { matchMany = value; continue; }
-            if (TryParseMicrosecondsLine(line, "ReplacementOnly", out value)) { replacementOnly = value; continue; }
             if (TryParseMicrosecondsLine(line, "PublicReplace", out value)) { publicReplace = value; continue; }
         }
 
@@ -1197,18 +1175,11 @@ internal static partial class BenchmarkInspectReporter
             executionKind,
             executionPlan,
             isMatch,
-            rawCount,
             publicCount,
-            nativeMaterialize,
-            rawEnumerate,
             publicEnumerate,
             matchMany,
-            replacementOnly,
             publicReplace);
     }
-
-    private static int ExecutePcre2PublicRawEnumeratorIndexSum(Utf8Pcre2Regex regex, byte[] input)
-        => regex.DebugEnumerateRawIndexSum(input, 0);
 
     private static int ExecutePcre2PublicEnumeratorRangeSink(Utf8Pcre2Regex regex, byte[] input)
     {

@@ -6,9 +6,8 @@ using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
-// Prepared templates expand directly into bytes. Continuations share the shaping
-// ledger with output. Slice/native detailed templates borrow their discovery
-// invocation; foundation iteration still owns a separate shaping invocation.
+// Prepared templates expand directly into bytes. Production writers receive
+// their caller's invocation; continuations share its shaping ledger with output.
 internal ref struct Pcre2ReplacementTemplateWriter
 {
     private readonly ReadOnlySpan<byte> _input;
@@ -20,11 +19,6 @@ internal ref struct Pcre2ReplacementTemplateWriter
     private Pcre2ReplacementRuntimeFrame[] _frames;
     private int _frameCount;
     private ulong _frameReservation;
-
-    internal Pcre2ReplacementTemplateWriter(ReadOnlySpan<byte> input, Pcre2NameEntry[] names,
-        ulong heapLimit, TimeSpan timeout, CancellationToken token)
-        : this(input, names, new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, heapLimit), timeout, token))
-    { }
 
     internal Pcre2ReplacementTemplateWriter(ReadOnlySpan<byte> input, Pcre2NameEntry[] names,
         Utf8SliceInvocation invocation)

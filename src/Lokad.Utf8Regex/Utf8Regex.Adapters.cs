@@ -16,7 +16,7 @@ namespace Lokad.Utf8Regex;
 /// <summary>Byte-offset operation adapters and direct probes for <see cref="Utf8Regex"/>.</summary>
 public sealed partial class Utf8Regex
 {
-    private bool TryMatchDirectWithoutValidation(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
+    internal bool TryMatchDirectWithoutValidation(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
     {
         if (TryMatchAnchoredHeadTailWithoutValidation(input, out match))
         {
@@ -42,7 +42,7 @@ public sealed partial class Utf8Regex
         return _compiledEngineRuntime.TryMatchWithoutValidation(input, budget: Utf8ExecutionDeadline.Infinite, out match);
     }
 
-    private bool TryIsMatchDirectWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
+    internal bool TryIsMatchDirectWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
     {
         var prioritizeFallbackFamily = _hasDirectFallbackTokenFamilyWithoutValidation ||
             _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral;
@@ -72,7 +72,7 @@ public sealed partial class Utf8Regex
         return false;
     }
 
-    private bool TryMatchAnchoredHeadTailWithoutValidation(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
+    internal bool TryMatchAnchoredHeadTailWithoutValidation(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
     {
         match = Utf8ValueMatch.NoMatch;
         if (!_hasDirectAnchoredHeadTailWithoutValidation)
@@ -98,7 +98,7 @@ public sealed partial class Utf8Regex
         return true;
     }
 
-    private bool TryIsMatchAnchoredHeadTailWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
+    internal bool TryIsMatchAnchoredHeadTailWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
     {
         isMatch = false;
         if (!_hasDirectAnchoredHeadTailWithoutValidation)

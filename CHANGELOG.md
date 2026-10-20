@@ -1,5 +1,23 @@
 # Changelog
 
+## Development: direct diagnostic execution
+
+Remove the Core fixed-pattern/repeated-digit benchmark forwarding layers and
+obsolete per-branch diagnostic formatter. Existing prepared plans, policy and
+matching kernels now supply those probes directly in benchmark tooling.
+Six existing Core execution helpers become internal to existing friend assemblies;
+tests and tooling call their production implementations instead of Debug aliases.
+Their bodies and the public API stay unchanged.
+
+Remove benchmark-only PCRE2 raw-count, enumeration/materialization and isolated
+template-expansion replays, their exclusive loops and unused capture-copy helper.
+The reporter keeps public operation measurements and adjacent enumerator phases;
+its legacy ledger drops the retired private-attribution columns and ratios.
+Remove the test-only standalone template-writer constructor; existing authority
+and admission tests pass the same explicit invocation to the production constructor.
+No matching, resource-accounting or lifetime contract changes, new hooks, package
+qualification or speedup claim. [Deletion and focused checks](bench/Experiments/DiagnosticExecutors-20261020/README.md).
+
 ## Development: PCRE2 enumerator diagnostics
 
 Remove five benchmark-only public-enumerator forwarders and two unused loop

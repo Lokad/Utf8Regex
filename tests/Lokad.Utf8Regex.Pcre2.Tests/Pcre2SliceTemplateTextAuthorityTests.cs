@@ -270,7 +270,9 @@ public sealed class Pcre2SliceTemplateTextAuthorityTests
         var input = new byte[1000000]; input.AsSpan().Fill((byte)'a');
         string Complete(bool measure)
         {
-            var writer = new Pcre2ReplacementTemplateWriter(input, [], 0, Timeout.InfiniteTimeSpan, CancellationToken.None);
+            var writer = new Pcre2ReplacementTemplateWriter(input, [],
+                new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0),
+                    Timeout.InfiniteTimeSpan, CancellationToken.None));
             writer.AppendGap(0, input.Length);
             var before = GC.GetAllocatedBytesForCurrentThread();
             string result;

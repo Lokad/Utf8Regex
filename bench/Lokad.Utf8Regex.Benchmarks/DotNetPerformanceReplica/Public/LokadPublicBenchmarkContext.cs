@@ -154,13 +154,13 @@ internal sealed class LokadPublicBenchmarkContext
 
     public int ExecuteUtf8DirectHookOnly()
     {
-        Utf8Regex.Inspection.DebugTryMatchWithoutValidation(InputBytes, out var match);
+        Utf8Regex.TryMatchDirectWithoutValidation(InputBytes, out var match);
         return MeasureMatch(match);
     }
 
     public int ExecuteUtf8DirectBoolOnly()
     {
-        return Utf8Regex.Inspection.DebugTryIsMatchWithoutValidation(InputBytes, out var isMatch) && isMatch
+        return Utf8Regex.TryIsMatchDirectWithoutValidation(InputBytes, out var isMatch) && isMatch
             ? 1
             : 0;
     }
@@ -211,8 +211,8 @@ internal sealed class LokadPublicBenchmarkContext
     {
         return Operation switch
         {
-            LokadPublicBenchmarkOperation.IsMatch => CompiledUtf8Regex.Inspection.DebugTryMatchWithoutValidation(InputBytes, out var match) && match.Success ? 1 : 0,
-            LokadPublicBenchmarkOperation.Match => MeasureMatch(CompiledUtf8Regex.Inspection.DebugTryMatchWithoutValidation(InputBytes, out var match) ? match : Utf8ValueMatch.NoMatch),
+            LokadPublicBenchmarkOperation.IsMatch => CompiledUtf8Regex.TryMatchDirectWithoutValidation(InputBytes, out var match) && match.Success ? 1 : 0,
+            LokadPublicBenchmarkOperation.Match => MeasureMatch(CompiledUtf8Regex.TryMatchDirectWithoutValidation(InputBytes, out var match) ? match : Utf8ValueMatch.NoMatch),
             _ => 0,
         };
     }
@@ -351,38 +351,46 @@ internal sealed class LokadPublicBenchmarkContext
 
     public int ExecuteRepeatedDigitGroupWholeOnly()
     {
-        return Utf8Regex.Inspection.DebugTryMatchRepeatedDigitGroupWhole(InputBytes, out var matchedLength)
+        var plan = Utf8Regex.Inspection.SimplePatternPlan.RepeatedDigitGroupPlan;
+        return plan.HasValue && Utf8AsciiRepeatedDigitGroupExecutor.TryMatchWhole(
+            InputBytes, plan, out var matchedLength, out _)
             ? matchedLength
             : 0;
     }
 
     public int ExecuteRepeatedDigitGroupFindOnly()
     {
-        return Utf8Regex.Inspection.DebugTryFindRepeatedDigitGroup(InputBytes, out var matchedLength)
+        var plan = Utf8Regex.Inspection.SimplePatternPlan.RepeatedDigitGroupPlan;
+        return plan.HasValue && Utf8AsciiRepeatedDigitGroupExecutor.TryFind(
+            InputBytes, plan, out _, out var matchedLength)
             ? matchedLength
             : 0;
     }
 
     public int ExecuteUtf8DirectFixedLengthOnly()
     {
-        if (!Utf8Regex.Inspection.DebugSimplePatternCanUseDirectAnchoredFixedLength)
+        var prepared = Utf8Regex.Inspection.PreparedRegex;
+        if (!Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedLengthSimplePattern(prepared))
         {
             return 0;
         }
 
-        return Utf8Regex.Inspection.DebugTryMatchDirectAnchoredFixedLengthSimplePattern(InputBytes, out var matchedLength)
+        return Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedLengthSimplePattern(
+            prepared, InputBytes, out var matchedLength)
             ? matchedLength
             : 0;
     }
 
     public int ExecuteUtf8DirectFixedAlternationOnly()
     {
-        if (!Utf8Regex.Inspection.DebugSimplePatternCanUseDirectAnchoredFixedAlternation)
+        var prepared = Utf8Regex.Inspection.PreparedRegex;
+        if (!Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedAlternationSimplePattern(prepared))
         {
             return 0;
         }
 
-        return Utf8Regex.Inspection.DebugTryMatchDirectAnchoredFixedAlternationSimplePattern(InputBytes, out var matchedLength)
+        return Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedAlternationSimplePattern(
+            prepared, InputBytes, out var matchedLength)
             ? matchedLength
             : 0;
     }

@@ -48,17 +48,6 @@ public sealed partial class Utf8Regex
     private bool DebugHasFusedAsciiBoundaryLiteralFamilyCount =>
         _fusedAsciiBoundaryLiteralFamilyCounter is not null;
 
-    private bool DebugSimplePatternCanUseDirectAnchoredFixedLength =>
-        Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedLengthSimplePattern(_preparedRegex);
-
-    private bool DebugSimplePatternCanUseDirectAnchoredFixedAlternation =>
-        Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedAlternationSimplePattern(_preparedRegex);
-
-    private int DebugSimplePatternBranchCount => _preparedRegex.SimplePatternPlan.Branches.Length;
-
-    private string DebugSimplePatternBranchLengths =>
-        string.Join(",", _preparedRegex.SimplePatternPlan.Branches.Select(static branch => branch.Length));
-
     private bool DebugRejectsByRequiredPrefilter(ReadOnlySpan<byte> input)
     {
         return RejectsByRequiredPrefilter(input);
@@ -120,36 +109,6 @@ public sealed partial class Utf8Regex
         return MatchViaCompiledEngine(input, validation, budget: Utf8ExecutionDeadline.Infinite);
     }
 
-    private bool DebugTryMatchWithoutValidation(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
-    {
-        return TryMatchDirectWithoutValidation(input, out match);
-    }
-
-    private bool DebugTryIsMatchWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
-    {
-        return TryIsMatchDirectWithoutValidation(input, out isMatch);
-    }
-
-    private bool DebugTryIsMatchAsciiSimplePatternWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
-    {
-        return TryIsMatchAsciiSimplePatternWithoutValidation(input, out isMatch);
-    }
-
-    private bool DebugTryIsMatchAnchoredHeadTailWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
-    {
-        return TryIsMatchAnchoredHeadTailWithoutValidation(input, out isMatch);
-    }
-
-    private bool DebugTryMatchAsciiSimplePatternWithoutValidation(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
-    {
-        return TryMatchAsciiSimplePatternWithoutValidation(input, out match);
-    }
-
-    private bool DebugTryMatchAnchoredHeadTailWithoutValidation(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
-    {
-        return TryMatchAnchoredHeadTailWithoutValidation(input, out match);
-    }
-
     private bool DebugCanUseFusedCompiledUtf8LiteralCount => CanUseFusedCompiledUtf8LiteralCount();
 
     private bool DebugCanUseFusedCompiledUtf8LiteralFamilyCount => CanUseFusedCompiledUtf8LiteralFamilyCount();
@@ -159,21 +118,6 @@ public sealed partial class Utf8Regex
     private int DebugCountViaCompiledEngineWithCreatedBudget(ReadOnlySpan<byte> input)
     {
         return CountViaCompiledEngine(input, default, CreateExecutionBudget());
-    }
-
-    private bool DebugTryMatchDirectAnchoredFixedLengthSimplePattern(ReadOnlySpan<byte> input, out int matchedLength)
-    {
-        return Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedLengthSimplePattern(_preparedRegex, input, out matchedLength);
-    }
-
-    private bool DebugTryMatchDirectAnchoredFixedAlternationSimplePattern(ReadOnlySpan<byte> input, out int matchedLength)
-    {
-        return Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedAlternationSimplePattern(_preparedRegex, input, out matchedLength);
-    }
-
-    private string DebugDirectAnchoredFixedAlternationSummary(ReadOnlySpan<byte> input)
-    {
-        return Utf8SimplePatternCompiledWholeMatcher.GetDirectAnchoredFixedAlternationDebugSummary(_preparedRegex, input);
     }
 
     private bool DebugSupportsWellFormedOnlyMatch => _compiledEngineRuntime.SupportsWellFormedOnlyMatch;
@@ -221,30 +165,6 @@ public sealed partial class Utf8Regex
             _anchoredValidatorPlan,
             _allowsTrailingNewlineBeforeEnd,
             out matchedLength);
-    }
-
-    private bool DebugTryMatchRepeatedDigitGroupWhole(ReadOnlySpan<byte> input, out int matchedLength)
-    {
-        matchedLength = 0;
-        var plan = _preparedRegex.SimplePatternPlan.RepeatedDigitGroupPlan;
-        return plan.HasValue &&
-            Utf8AsciiRepeatedDigitGroupExecutor.TryMatchWhole(
-                input,
-                plan,
-                out matchedLength,
-                out _);
-    }
-
-    private bool DebugTryFindRepeatedDigitGroup(ReadOnlySpan<byte> input, out int matchedLength)
-    {
-        matchedLength = 0;
-        var plan = _preparedRegex.SimplePatternPlan.RepeatedDigitGroupPlan;
-        return plan.HasValue &&
-            Utf8AsciiRepeatedDigitGroupExecutor.TryFind(
-                input,
-                plan,
-                out _,
-                out matchedLength);
     }
 
     private bool DebugTryMatchCompiledAnchoredValidatorWithoutValidation(ReadOnlySpan<byte> input, out int matchedLength)
@@ -440,16 +360,6 @@ public sealed partial class Utf8Regex
 
         public AsciiSimplePatternPlan SimplePatternPlan => _owner.SimplePatternPlan;
 
-        public bool DebugSimplePatternCanUseDirectAnchoredFixedLength =>
-            _owner.DebugSimplePatternCanUseDirectAnchoredFixedLength;
-
-        public bool DebugSimplePatternCanUseDirectAnchoredFixedAlternation =>
-            _owner.DebugSimplePatternCanUseDirectAnchoredFixedAlternation;
-
-        public int DebugSimplePatternBranchCount => _owner.DebugSimplePatternBranchCount;
-
-        public string DebugSimplePatternBranchLengths => _owner.DebugSimplePatternBranchLengths;
-
         public string? FallbackReason => _owner.FallbackReason;
 
         public bool DebugRejectsByRequiredPrefilter(ReadOnlySpan<byte> input) =>
@@ -468,34 +378,6 @@ public sealed partial class Utf8Regex
             Utf8ValidationResult validation) =>
             _owner.DebugMatchViaCompiledEngine(input, validation);
 
-        public bool DebugTryMatchWithoutValidation(
-            ReadOnlySpan<byte> input,
-            out Utf8ValueMatch match) =>
-            _owner.DebugTryMatchWithoutValidation(input, out match);
-
-        public bool DebugTryIsMatchWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch) =>
-            _owner.DebugTryIsMatchWithoutValidation(input, out isMatch);
-
-        public bool DebugTryIsMatchAsciiSimplePatternWithoutValidation(
-            ReadOnlySpan<byte> input,
-            out bool isMatch) =>
-            _owner.DebugTryIsMatchAsciiSimplePatternWithoutValidation(input, out isMatch);
-
-        public bool DebugTryIsMatchAnchoredHeadTailWithoutValidation(
-            ReadOnlySpan<byte> input,
-            out bool isMatch) =>
-            _owner.DebugTryIsMatchAnchoredHeadTailWithoutValidation(input, out isMatch);
-
-        public bool DebugTryMatchAsciiSimplePatternWithoutValidation(
-            ReadOnlySpan<byte> input,
-            out Utf8ValueMatch match) =>
-            _owner.DebugTryMatchAsciiSimplePatternWithoutValidation(input, out match);
-
-        public bool DebugTryMatchAnchoredHeadTailWithoutValidation(
-            ReadOnlySpan<byte> input,
-            out Utf8ValueMatch match) =>
-            _owner.DebugTryMatchAnchoredHeadTailWithoutValidation(input, out match);
-
         public bool DebugCanUseFusedCompiledUtf8LiteralCount =>
             _owner.DebugCanUseFusedCompiledUtf8LiteralCount;
 
@@ -506,19 +388,6 @@ public sealed partial class Utf8Regex
 
         public int DebugCountViaCompiledEngineWithCreatedBudget(ReadOnlySpan<byte> input) =>
             _owner.DebugCountViaCompiledEngineWithCreatedBudget(input);
-
-        public bool DebugTryMatchDirectAnchoredFixedLengthSimplePattern(
-            ReadOnlySpan<byte> input,
-            out int matchedLength) =>
-            _owner.DebugTryMatchDirectAnchoredFixedLengthSimplePattern(input, out matchedLength);
-
-        public bool DebugTryMatchDirectAnchoredFixedAlternationSimplePattern(
-            ReadOnlySpan<byte> input,
-            out int matchedLength) =>
-            _owner.DebugTryMatchDirectAnchoredFixedAlternationSimplePattern(input, out matchedLength);
-
-        public string DebugDirectAnchoredFixedAlternationSummary(ReadOnlySpan<byte> input) =>
-            _owner.DebugDirectAnchoredFixedAlternationSummary(input);
 
         public bool DebugSupportsWellFormedOnlyMatch => _owner.DebugSupportsWellFormedOnlyMatch;
 
@@ -553,16 +422,6 @@ public sealed partial class Utf8Regex
             ReadOnlySpan<byte> input,
             out int matchedLength) =>
             _owner.DebugTryMatchAnchoredValidatorNativeWhole(input, out matchedLength);
-
-        public bool DebugTryMatchRepeatedDigitGroupWhole(
-            ReadOnlySpan<byte> input,
-            out int matchedLength) =>
-            _owner.DebugTryMatchRepeatedDigitGroupWhole(input, out matchedLength);
-
-        public bool DebugTryFindRepeatedDigitGroup(
-            ReadOnlySpan<byte> input,
-            out int matchedLength) =>
-            _owner.DebugTryFindRepeatedDigitGroup(input, out matchedLength);
 
         public bool DebugTryMatchCompiledAnchoredValidatorWithoutValidation(
             ReadOnlySpan<byte> input,

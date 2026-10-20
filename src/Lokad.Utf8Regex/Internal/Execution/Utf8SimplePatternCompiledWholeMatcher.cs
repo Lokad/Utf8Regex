@@ -3,25 +3,6 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8SimplePatternCompiledWholeMatcher
 {
-    internal static string GetDirectAnchoredFixedAlternationDebugSummary(Utf8PreparedRegex regexPlan, ReadOnlySpan<byte> input)
-    {
-        if (!Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedAlternationSimplePattern(regexPlan))
-        {
-            return "unavailable";
-        }
-
-        var parts = new string[regexPlan.SimplePatternPlan.Branches.Length];
-        for (var i = 0; i < regexPlan.SimplePatternPlan.Branches.Length; i++)
-        {
-            var branch = regexPlan.SimplePatternPlan.Branches[i];
-            var candidate = MatchesDirectAnchoredFixedAlternationCandidate(regexPlan, input, branch.Length);
-            var matched = candidate && TryMatchDirectFixedBranch(regexPlan, input, branch, out _);
-            parts[i] = $"{branch.Length}:{(candidate ? "candidate" : "skip")}:{(matched ? "match" : "miss")}";
-        }
-
-        return string.Join(",", parts);
-    }
-
     public static bool TryMatchDirectAnchoredFixedLengthSimplePattern(Utf8PreparedRegex regexPlan, ReadOnlySpan<byte> input, out int matchedLength)
     {
         matchedLength = 0;
