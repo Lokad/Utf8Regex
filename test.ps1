@@ -28,8 +28,7 @@ function Stop-StaleProcesses {
     # Only test hosts launched from this repository are eligible: their command
     # line references this repository's test output. VBCSCompiler is deliberately
     # excluded on Windows: it is a shared SDK-wide compiler server without
-    # repository identity, and this repository's builds set
-    # UseSharedCompilation=false, so it never locks repository outputs.
+    # repository identity. Ordinary builds reuse the SDK's build/compiler servers.
     # Recovery is attempted only after an observed file-lock failure.
     if ($IsWindows) {
         Get-CimInstance Win32_Process -Filter "Name = 'testhost.exe'" -ErrorAction SilentlyContinue |
@@ -74,12 +73,6 @@ if (-not (Test-Path -LiteralPath $Project -PathType Leaf)) {
     throw "Test project or solution does not exist: $Project"
 }
 
-$stableDotNetArgs = @(
-    "--disable-build-servers",
-    "/nodeReuse:false",
-    "/p:UseSharedCompilation=false"
-)
-
 if (-not $SkipBuild) {
     $buildArguments = @(
         "build",
@@ -90,7 +83,7 @@ if (-not $SkipBuild) {
         "-v", "minimal",
         "--no-restore",
         "-p:GeneratePackageOnBuild=false"
-    ) + $stableDotNetArgs
+    )
 
     $buildExitCode = Invoke-DotNetWithRetry -Arguments $buildArguments -MaxAttempts $RetryCount
     if ($buildExitCode -ne 0) {
@@ -107,7 +100,7 @@ $testArguments = @(
     "-v", "minimal",
     "--no-build",
     "--no-restore"
-) + $stableDotNetArgs
+)
 
 if ($Filter) {
     $testArguments += @("--filter", $Filter)

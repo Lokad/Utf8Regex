@@ -54,7 +54,7 @@ if (-not $CommandArgs) {
 }
 
 if (-not $SkipBuild) {
-    dotnet build ./bench/Lokad.Utf8Regex.Benchmarks/Lokad.Utf8Regex.Benchmarks.csproj --configuration $Configuration --tl:off --nologo -v minimal --no-restore -p:GeneratePackageOnBuild=false --disable-build-servers /nodeReuse:false /p:UseSharedCompilation=false
+    dotnet build ./bench/Lokad.Utf8Regex.Benchmarks/Lokad.Utf8Regex.Benchmarks.csproj --configuration $Configuration --tl:off --nologo -v minimal --no-restore -p:GeneratePackageOnBuild=false
     if ($LASTEXITCODE -ne 0) {
         exit $LASTEXITCODE
     }
@@ -94,6 +94,8 @@ if ($effectiveMaxWallTimeSeconds -lt 0) {
 $processInfo = [System.Diagnostics.ProcessStartInfo]::new()
 $processInfo.FileName = "dotnet"
 $processInfo.UseShellExecute = $false
+$processInfo.RedirectStandardOutput = $true
+$processInfo.RedirectStandardError = $true
 # The DLL resolves repository files (CPython runner, corpus data) from its working
 # directory. Set it explicitly: PowerShell location and process CWD can diverge on
 # non-Windows hosts, and .NET child processes inherit the latter, not the former.
@@ -111,12 +113,43 @@ if ($null -eq $benchmarkProcess) {
     throw "Unable to start the benchmark process."
 }
 
-if ($effectiveMaxWallTimeSeconds -gt 0 -and -not $benchmarkProcess.WaitForExit($effectiveMaxWallTimeSeconds * 1000)) {
-    $benchmarkProcess.Kill($true)
+try {
+    # Drain both pipes concurrently: a full stderr pipe must not block stdout.
+    # Forward both as PowerShell output so ordinary redirection retains the full
+    # measurement receipt. The child's exit code remains the success authority.
+    $readers = @{ Out = $benchmarkProcess.StandardOutput; Error = $benchmarkProcess.StandardError }
+    $pendingReads = @{ Out = $readers.Out.ReadLineAsync(); Error = $readers.Error.ReadLineAsync() }
+    $elapsed = [Diagnostics.Stopwatch]::StartNew()
+    $timedOut = $false
+    while ($pendingReads.Count -gt 0 -or -not $benchmarkProcess.HasExited) {
+        foreach ($name in @($pendingReads.Keys)) {
+            if ($pendingReads[$name].IsCompleted) {
+                $line = $pendingReads[$name].GetAwaiter().GetResult()
+                if ($null -eq $line) { $pendingReads.Remove($name) }
+                else {
+                    Write-Output $line
+                    $pendingReads[$name] = $readers[$name].ReadLineAsync()
+                }
+            }
+        }
+        if (-not $timedOut -and -not $benchmarkProcess.HasExited -and $effectiveMaxWallTimeSeconds -gt 0 -and
+            $elapsed.Elapsed.TotalSeconds -ge $effectiveMaxWallTimeSeconds) {
+            $timedOut = $true
+            if (-not $benchmarkProcess.HasExited) { $benchmarkProcess.Kill($true) }
+        }
+        if ($pendingReads.Count -gt 0) {
+            [void][Threading.Tasks.Task]::WaitAny([Threading.Tasks.Task[]]@($pendingReads.Values), 100)
+        }
+        elseif (-not $benchmarkProcess.HasExited) { [void]$benchmarkProcess.WaitForExit(100) }
+    }
     $benchmarkProcess.WaitForExit()
-    Write-Error "Benchmark exceeded the $effectiveMaxWallTimeSeconds second wall-time cap. Pass -MaxWallTimeSeconds 0 only for a preflighted milestone refresh."
-    exit 124
+    if ($timedOut) {
+        Write-Error "Benchmark exceeded the $effectiveMaxWallTimeSeconds second wall-time cap. Pass -MaxWallTimeSeconds 0 only for a preflighted milestone refresh." -ErrorAction Continue
+        exit 124
+    }
+    exit $benchmarkProcess.ExitCode
 }
-
-$benchmarkProcess.WaitForExit()
-exit $benchmarkProcess.ExitCode
+finally {
+    if (-not $benchmarkProcess.HasExited) { $benchmarkProcess.Kill($true) }
+    $benchmarkProcess.Dispose()
+}

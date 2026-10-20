@@ -418,9 +418,6 @@ $sourceMapping
         if ($TestResultsDirectory) {
             $testArguments += @("--logger", "trx;LogFileName=qualified.trx", "--results-directory", $TestResultsDirectory)
         }
-        if ($PinQualifiedPackageSources) {
-            $testArguments += @("--disable-build-servers", "/m:1", "/nodeReuse:false", "/p:UseSharedCompilation=false")
-        }
         Invoke-DotNet $testArguments
     }
     finally {

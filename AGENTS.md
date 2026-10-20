@@ -28,6 +28,9 @@ relevant configuration/platform/package checks are due. Normal runs do not stop
 build servers or test hosts; Windows file-lock retries recover repository hosts.
 Test and benchmark script builds disable incidental NuGet packing; explicit
 package qualification keeps its separate build/provenance/pack steps.
+Ordinary builds reuse SDK build/compiler servers. Repository test-host recovery
+is limited to an observed file-lock failure; do not disable shared compilation
+or server reuse on every invocation.
 
 ```powershell
 ./test.ps1 -Configuration Release -Project tests/Lokad.Utf8Regex.Tests/Lokad.Utf8Regex.Tests.csproj -Filter 'FullyQualifiedName~Utf8FiniteLiteralCountTests'
@@ -75,6 +78,9 @@ Important benchmark rule:
 - Both routes launch the built DLL directly. Matching `-SkipBuild` hosts can be
   reused across platforms without a platform-specific apphost; BDN still builds
   its generated measurement worker through its normal toolchain.
+- Child stdout and stderr stream through PowerShell's output stream, preserving
+  ordinary redirection and the original exit code. The outer wall-time cap also
+  terminates descendants; a cap returns exit code 124.
 - Custom benchmark commands have a default 120-second outer wall-time cap. Use
   `-MaxWallTimeSeconds` to choose a smaller bounded investigation window, and
   use `-MaxWallTimeSeconds 0` only for a preflighted milestone refresh.
