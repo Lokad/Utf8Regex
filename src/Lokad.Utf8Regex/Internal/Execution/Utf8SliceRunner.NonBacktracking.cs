@@ -352,7 +352,6 @@ internal static partial class Utf8SliceRunner
                 return Utf8SliceScalarClasses.MatchesMask(scalar, program.SetMasks[instruction.A], instruction.C != 0, program.CaseBehavior) != (instruction.B != 0);
             case Utf8SliceInstructionKind.Shorthand:
                 return Utf8SliceScalarClasses.MatchesShorthand(scalar, (Utf8SliceShorthand)instruction.A);
-            case Utf8SliceInstructionKind.Category:
             case Utf8SliceInstructionKind.Hybrid:
             case Utf8SliceInstructionKind.CategorySet:
                 breach = TryMatchScalarClass(program, instruction, scalar, ref invocation, out var hit);

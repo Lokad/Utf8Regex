@@ -1094,7 +1094,6 @@ internal static partial class Utf8SliceRunner
 
                     break;
                 case Utf8SliceInstructionKind.Shorthand:
-                case Utf8SliceInstructionKind.Category:
                 case Utf8SliceInstructionKind.CategorySet:
                 case Utf8SliceInstructionKind.Hybrid:
                     {

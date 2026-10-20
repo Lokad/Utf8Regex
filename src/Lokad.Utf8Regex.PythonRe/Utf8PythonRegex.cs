@@ -313,7 +313,6 @@ public sealed partial class Utf8PythonRegex
 
     internal bool DebugIsScalarFullProgramValueCreated => _lazyScalarFullProgram.IsValueCreated;
 
-    internal string DebugNativePattern => _translation.NativePattern;
 
     internal bool DebugUsesOptionalExactCaptureFindAllFastPath => _optionalExactCaptureFindAllValue is not null;
 

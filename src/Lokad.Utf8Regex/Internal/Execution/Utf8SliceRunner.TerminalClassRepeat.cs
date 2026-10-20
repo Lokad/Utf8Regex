@@ -17,7 +17,7 @@ internal static partial class Utf8SliceRunner
             instructions[2].Kind != Utf8SliceInstructionKind.RepeatEnd || instructions[2].A != 0 ||
             instructions[3].Kind != Utf8SliceInstructionKind.RepeatExit || instructions[3].A != 0 ||
             instructions[4].Kind != Utf8SliceInstructionKind.Accept ||
-            atom.Kind is not (Utf8SliceInstructionKind.Shorthand or Utf8SliceInstructionKind.Category or
+            atom.Kind is not (Utf8SliceInstructionKind.Shorthand or
                 Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid))
             return false;
         // Keep each fused base step bounded. A nested class program retains its
@@ -100,7 +100,7 @@ internal static partial class Utf8SliceRunner
             instructions[repeatIndex + 3].Kind != Utf8SliceInstructionKind.RepeatExit ||
             instructions[repeatIndex + 3].A != repeat.B ||
             atom.Kind is not (Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Shorthand or
-                Utf8SliceInstructionKind.Category or Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid))
+                Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid))
             return false;
         var tail = repeatIndex + 4;
         if (instructions[tail].Kind == Utf8SliceInstructionKind.CaptureEnd) tail++;
@@ -196,12 +196,6 @@ internal static partial class Utf8SliceRunner
         {
             hit = Utf8SliceScalarClasses.MatchesShorthand(scalar, (Utf8SliceShorthand)instruction.A);
             return Utf8ExecutionLimitKind.None;
-        }
-        if (instruction.Kind == Utf8SliceInstructionKind.Category)
-        {
-            hit = Utf8SliceScalarClasses.MatchesTable(scalar, program.CategoryTables[instruction.A],
-                (instruction.B & 2) != 0, (instruction.B & 1) != 0, program.CaseBehavior, ref invocation, out var breach);
-            return breach;
         }
         var categorySet = instruction.Kind == Utf8SliceInstructionKind.CategorySet;
         var members = categorySet ? program.CategorySetMembers[instruction.D] : null;

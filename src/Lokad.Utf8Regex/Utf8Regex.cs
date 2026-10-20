@@ -288,7 +288,6 @@ public sealed partial class Utf8Regex
         }
     }
 
-    internal static TimeSpan DefaultTimeout => DefaultMatchTimeout;
 
     /// <summary>Gets the regular-expression pattern.</summary>
     public string Pattern { get; }

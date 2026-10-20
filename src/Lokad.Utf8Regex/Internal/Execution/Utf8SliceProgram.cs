@@ -26,7 +26,6 @@ internal enum Utf8SliceNodeKind : byte
     Balance = 14,
     Atomic = 15,
     Conditional = 16,
-    Category = 17,
     CategorySet = 18,
     Fail = 19,
 }
@@ -101,7 +100,6 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
         // An owned profile may supply a bounded simple-scalar lowercase table.
         internal Func<int, int>? LowerScalar { get; init; }
     }
-    internal sealed record CategoryNode(uint Mask, ushort[] Ranges, bool Negated, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Category);
     internal sealed record CategorySetMember
     {
         private CategorySetMember(Utf8SliceCategoryTable table, bool negated) { Table = table; Negated = negated; }
@@ -152,7 +150,6 @@ internal enum Utf8SliceInstructionKind : byte
     AtomicCommit = 21,
     Lookahead = 22,
     TestGroup = 23,
-    Category = 24,
     CategorySet = 25,
     BalanceStart = 27,
     RepeatGreedyAfterMinimum = 28,
@@ -282,7 +279,6 @@ internal sealed class Utf8SliceProgram
         int[] NonBacktrackingEpsilonOrder,
         Func<int, int>[] BackreferenceLowerings,
         byte[][] SetMasks,
-        Utf8SliceCategoryTable[] CategoryTables,
         Utf8SliceNode.CategorySetMember[][] CategorySetMembers,
         int RepeatCount,
         int GroupCount,
@@ -320,7 +316,6 @@ internal sealed class Utf8SliceProgram
         NonBacktrackingEpsilonOrder = state.NonBacktrackingEpsilonOrder;
         BackreferenceLowerings = state.BackreferenceLowerings;
         SetMasks = state.SetMasks;
-        CategoryTables = state.CategoryTables;
         CategorySetMembers = state.CategorySetMembers;
         RepeatCount = state.RepeatCount;
         GroupCount = state.GroupCount;
@@ -349,7 +344,7 @@ internal sealed class Utf8SliceProgram
         RequiresUnicodeCategory = state.RequiresUnicodeCategory;
     }
 
-    internal static Utf8SliceProgram Create(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceCategoryTable[] categoryTables, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool isNonBacktracking, int nonBacktrackingCaptureOpeningCount, int[] nonBacktrackingEpsilonOrder, Func<int, int>[] backreferenceLowerings)
+    internal static Utf8SliceProgram Create(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool isNonBacktracking, int nonBacktrackingCaptureOpeningCount, int[] nonBacktrackingEpsilonOrder, Func<int, int>[] backreferenceLowerings)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
@@ -392,7 +387,6 @@ internal sealed class Utf8SliceProgram
             nonBacktrackingEpsilonOrder,
             backreferenceLowerings,
             setMasks,
-            categoryTables,
             categorySetMembers,
             repeatCount,
             groupCount,
@@ -431,7 +425,6 @@ internal sealed class Utf8SliceProgram
 
     internal byte[][] SetMasks { get; }
 
-    internal Utf8SliceCategoryTable[] CategoryTables { get; }
 
     internal Utf8SliceNode.CategorySetMember[][] CategorySetMembers { get; }
     internal int RepeatCount { get; }
@@ -744,7 +737,7 @@ internal static class Utf8SliceLowerer
                     return literal.FoldCase ? (1, 4) : (width, width);
                 case Utf8SliceNode.SetNode set: return set.Negated || set.FoldCase || set.Members.Length != 0 ? (1, 4) : (1, 1);
                 case Utf8SliceNode.DotNode: return (1, 4);
-                case Utf8SliceNode.ShorthandNode or Utf8SliceNode.CategoryNode or Utf8SliceNode.CategorySetNode: return (1, 4);
+                case Utf8SliceNode.ShorthandNode or Utf8SliceNode.CategorySetNode: return (1, 4);
                 case Utf8SliceNode.BackrefNode: return (0, int.MaxValue);
                 case Utf8SliceNode.CaptureNode capture: return (facts[capture.Body].Minimum, facts[capture.Body].Maximum);
                 case Utf8SliceNode.BalanceNode balance: return (facts[balance.Body].Minimum, facts[balance.Body].Maximum);
@@ -882,7 +875,7 @@ internal static class Utf8SliceLowerer
             // These flags describe language features for consumers whose own
             // predicates are ASCII-scoped; scalar execution needs no input fence.
             shorthand |= instruction.Kind is Utf8SliceInstructionKind.Hybrid or Utf8SliceInstructionKind.CategorySet;
-            category |= instruction.Kind is Utf8SliceInstructionKind.Category or Utf8SliceInstructionKind.CategorySet;
+            category |= instruction.Kind is Utf8SliceInstructionKind.CategorySet;
         }
 
         foreach (var instruction in lowerer.Instructions)
@@ -963,7 +956,6 @@ internal static class Utf8SliceLowerer
         return Utf8SliceProgram.Create(
             instructions,
             lowerer.SetMasks.Take(),
-            lowerer.CategoryTables.Take(),
             lowerer.CategorySetMembers.Take(),
             lowerer.RepeatCount,
             lowerer.GroupCount,
@@ -984,7 +976,6 @@ internal static class Utf8SliceLowerer
         internal readonly Utf8ConstructionBuffer<Func<int, int>> BackreferenceLowerings;
         internal readonly Utf8ConstructionBuffer<byte[]> SetMasks;
         internal readonly Utf8ConstructionBuffer<Utf8SliceNode.CategorySetMember[]> CategorySetMembers;
-        internal readonly Utf8ConstructionBuffer<Utf8SliceCategoryTable> CategoryTables;
         internal int RepeatCount;
         internal int CaptureOpeningCount;
         internal readonly Utf8ConstructionMap<Utf8SliceNode.CaptureNode, int>? CaptureOpenings;
@@ -1015,7 +1006,6 @@ internal static class Utf8SliceLowerer
             BackreferenceLowerings = new(budget);
             SetMasks = new(budget);
             CategorySetMembers = new(budget);
-            CategoryTables = new(budget);
             Assertions = new(budget);
             GroupNames = groupNames;
             MaintainBalance = maintainBalance;
@@ -1037,7 +1027,6 @@ internal static class Utf8SliceLowerer
             BackreferenceLowerings.Dispose();
             SetMasks.Dispose();
             CategorySetMembers.Dispose();
-            CategoryTables.Dispose();
             Assertions.Dispose();
             CaptureOpenings?.Dispose();
             NonBacktrackingScopes?.Dispose();
@@ -1269,19 +1258,6 @@ internal static class Utf8SliceLowerer
                     break;
                 case Utf8SliceNode.ShorthandNode shorthand:
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Shorthand, (int)shorthand.Shorthand, 0, 0, 0));
-                    break;
-                case Utf8SliceNode.CategoryNode category:
-                    // One table per atom (B holds the negated bit plus the
-                    // IgnoreCase fold bit, which only widens Ll/Lu/Lt to
-                    // their union at match time).
-                    var categoryIndex = CategoryTables.Count;
-                    CategoryTables.Add(Utf8SliceCategoryTable.Create(category.Mask, category.Ranges));
-                    Emit(new Utf8SliceInstruction(
-                        Utf8SliceInstructionKind.Category,
-                        categoryIndex,
-                        (category.Negated ? 1 : 0) | (category.FoldCase ? 2 : 0),
-                        0,
-                        0));
                     break;
                 case Utf8SliceNode.CategorySetNode categorySet:
                     var categorySetMaskIndex = SetMasks.Count;

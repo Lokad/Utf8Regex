@@ -34,7 +34,6 @@ public sealed class PythonReFullProgramReuseTests
         Assert.Equal(anchored.UsesCaptureOpeningJournal, derived.UsesCaptureOpeningJournal);
         Assert.Equal(anchored.CanMatchEmpty, derived.CanMatchEmpty);
         Assert.Same(original.SetMasks, derived.SetMasks);
-        Assert.Same(original.CategoryTables, derived.CategoryTables);
         Assert.Same(original.CategorySetMembers, derived.CategorySetMembers);
         Assert.Same(original.Assertions, derived.Assertions);
         Assert.Same(original.BackreferenceLowerings, derived.BackreferenceLowerings);

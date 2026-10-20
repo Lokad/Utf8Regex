@@ -7,10 +7,10 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal sealed partial class Utf8LiteralCompiledEngineRuntime
 {
     // One field per acquired runtime field. Borrowed referenced payloads keep
-    // their parent's loans; the object and its retainer have independent loans.
+    // their parent's admission; the wrapper has its own conservative charge.
     private readonly record struct ConstructionState(
         Utf8CompiledEngine CompiledEngine, Utf8PreparedRegex RegexPlan, bool UsesRightToLeft,
-        Utf8CompiledExecutionBackend Backend, Utf8SearchOperationPlan CountProgram,
+        Utf8SearchOperationPlan CountProgram,
         Utf8SearchOperationPlan FirstMatchProgram, Utf8EmittedLiteralFamilyCounter? EmittedCounter,
         byte[][]? SmallFamily, PreparedByteSearch FirstBytes,
         PreparedMultiLiteralCandidatePrefilter LeadingPrefilter,
@@ -40,7 +40,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             _ = TryCreateShortAsciiLiteralFamilyCounter(regexPlan, usesRightToLeft, out var shortCounter);
             var composite = CreateCompositeTrailingLiteralSearch(regexPlan, usesRightToLeft);
             var result = budget.AllocateObject(new ConstructionState(compiledEngine, regexPlan, usesRightToLeft,
-                compiledEngine.Backend, count, firstMatch, emitted, small, firstBytes, prefilter, automaton,
+                count, firstMatch, emitted, small, firstBytes, prefilter, automaton,
                 primitive, shortCounter, bmp, composite), static state => new Utf8LiteralCompiledEngineRuntime(state));
             scope.Complete();
             return result;

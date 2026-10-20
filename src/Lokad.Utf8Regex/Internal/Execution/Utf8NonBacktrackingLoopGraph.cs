@@ -117,6 +117,6 @@ internal static class Utf8NonBacktrackingLoopGraph
         static bool IsAtom(Utf8SliceInstructionKind kind)
             => kind is Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Set or
                 Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Shorthand or
-                Utf8SliceInstructionKind.Category or Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid;
+                Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid;
     }
 }

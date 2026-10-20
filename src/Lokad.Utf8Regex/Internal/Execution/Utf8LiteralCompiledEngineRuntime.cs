@@ -21,7 +21,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
     private readonly Utf8CompiledEngine _compiledEngine;
     private readonly Utf8PreparedRegex _regexPlan;
     internal readonly bool _usesRightToLeft;
-    private readonly Utf8CompiledExecutionBackend _backend;
     private readonly Utf8SearchOperationPlan _countProgram;
     private readonly Utf8SearchOperationPlan _firstMatchProgram;
     internal readonly Utf8EmittedLiteralFamilyCounter? _emittedLiteralFamilyCounter;
@@ -41,7 +40,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         _compiledEngine = state.CompiledEngine;
         _regexPlan = state.RegexPlan;
         _usesRightToLeft = state.UsesRightToLeft;
-        _backend = state.Backend;
         _countProgram = state.CountProgram;
         _firstMatchProgram = state.FirstMatchProgram;
         _emittedLiteralFamilyCounter = state.EmittedCounter;
