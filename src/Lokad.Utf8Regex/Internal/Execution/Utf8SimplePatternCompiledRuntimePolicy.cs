@@ -78,14 +78,4 @@ internal static class Utf8SimplePatternCompiledRuntimePolicy
         return true;
     }
 
-    public static bool IsEndAnchoredWholeInputMatch(Utf8SearchPlan searchPlan, ReadOnlySpan<byte> input, int matchedLength)
-    {
-        return searchPlan.Kind switch
-        {
-            Utf8SearchKind.TrailingAnchorFixedLengthEnd or Utf8SearchKind.None => matchedLength == input.Length,
-            Utf8SearchKind.TrailingAnchorFixedLengthEndZ => matchedLength == input.Length ||
-                (matchedLength + 1 == input.Length && input[matchedLength] == (byte)'\n'),
-            _ => matchedLength == input.Length,
-        };
-    }
 }

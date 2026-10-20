@@ -37,7 +37,6 @@ internal readonly struct Utf8CompiledEngine
 
     public Utf8CompiledExecutionBackend Backend { get; }
 
-    public bool HasValue => Kind != Utf8CompiledEngineKind.FallbackRegex || true;
 }
 
 internal static class Utf8CompiledEngineSelector

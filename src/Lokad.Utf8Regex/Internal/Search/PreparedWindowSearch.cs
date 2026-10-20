@@ -31,12 +31,6 @@ internal readonly partial struct PreparedWindowSearch
 
     public bool HasValue => LeadingSearcher.HasValue && TrailingSearcher.HasValue;
 
-    public int FindFirstStart(ReadOnlySpan<byte> input, int startIndex)
-    {
-        var state = PreparedWindowScanState.Create(startIndex);
-        return TryFindNextWindow(input, ref state, out var window) ? window.Leading.Index : -1;
-    }
-
     public bool TryFindNextWindow(ReadOnlySpan<byte> input, ref PreparedWindowScanState state, out PreparedWindowMatch window)
     {
         window = default;

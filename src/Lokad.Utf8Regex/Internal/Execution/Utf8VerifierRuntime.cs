@@ -5,15 +5,11 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal sealed partial class Utf8VerifierRuntime
 {
     private readonly record struct ConstructionState(
-        Utf8StructuralVerifierRuntime StructuralVerifierRuntime,
-        Utf8PreparedRegex PreparedRegex);
-
-    private readonly Utf8PreparedRegex _preparedRegex;
+        Utf8StructuralVerifierRuntime StructuralVerifierRuntime);
 
     private Utf8VerifierRuntime(ConstructionState state)
     {
         StructuralVerifierRuntime = state.StructuralVerifierRuntime;
-        _preparedRegex = state.PreparedRegex;
     }
 
     public Utf8StructuralVerifierPlan StructuralVerifierPlan => StructuralVerifierRuntime.Plan;
@@ -28,7 +24,7 @@ internal sealed partial class Utf8VerifierRuntime
         try
         {
             var structural = Utf8StructuralVerifierRuntimeFactory.Create(regexPlan);
-            var result = budget.AllocateObject(new ConstructionState(structural, regexPlan),
+            var result = budget.AllocateObject(new ConstructionState(structural),
                 static state => new Utf8VerifierRuntime(state));
             scope.Complete();
             return result;

@@ -596,15 +596,4 @@ internal readonly struct Utf8FixedDistanceSet
     public static Utf8FixedDistanceSet FromBytes(int distance, byte[]? chars, bool negated)
         => new(distance, AsciiCharClass.FromBytes(chars ?? [], negated));
 
-    public static Utf8FixedDistanceSet FromBytesAndRange(
-        int distance,
-        byte[]? chars,
-        bool negated,
-        byte rangeLow,
-        byte rangeHigh)
-    {
-        var bytes = AsciiCharClass.FromBytes(chars ?? []);
-        var range = AsciiCharClass.FromRange(Utf8InclusiveByteRange.Create(rangeLow, rangeHigh));
-        return new Utf8FixedDistanceSet(distance, AsciiCharClass.CombinePositive(bytes, range, negated));
-    }
 }

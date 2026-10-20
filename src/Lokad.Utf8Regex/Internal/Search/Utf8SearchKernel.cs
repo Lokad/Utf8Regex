@@ -41,11 +41,6 @@ internal static class Utf8SearchKernel
         return search.IndexOf(input);
     }
 
-    public static int IndexOfAnyIgnoreCaseLiteral(ReadOnlySpan<byte> input, PreparedAsciiIgnoreCaseLiteralSetSearch search)
-    {
-        return search.IndexOf(input);
-    }
-
     public static int LastIndexOfAnyLiteral(ReadOnlySpan<byte> input, AsciiExactLiteralSearchData searchData)
     {
         return AsciiSearch.LastIndexOfAnyExact(input, searchData);
@@ -57,11 +52,6 @@ internal static class Utf8SearchKernel
     }
 
     public static int LastIndexOfAnyLiteral(ReadOnlySpan<byte> input, PreparedMultiLiteralSearch search)
-    {
-        return search.LastIndexOf(input);
-    }
-
-    public static int LastIndexOfAnyIgnoreCaseLiteral(ReadOnlySpan<byte> input, PreparedAsciiIgnoreCaseLiteralSetSearch search)
     {
         return search.LastIndexOf(input);
     }
