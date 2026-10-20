@@ -4,13 +4,13 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal abstract class Utf8StructuralVerifierRuntime
 {
-    internal readonly record struct ConstructionState(Utf8PreparedRegex RegexPlan);
+    internal static ulong ObjectBytes => 128;
 
     private readonly Utf8PreparedRegex _regexPlan;
 
-    protected Utf8StructuralVerifierRuntime(ConstructionState state)
+    protected Utf8StructuralVerifierRuntime(Utf8PreparedRegex regexPlan)
     {
-        _regexPlan = state.RegexPlan;
+        _regexPlan = regexPlan;
     }
 
     public Utf8StructuralVerifierPlan Plan => _regexPlan.StructuralVerifier;
@@ -26,8 +26,8 @@ internal abstract class Utf8StructuralVerifierRuntime
 
 internal sealed class Utf8NoStructuralVerifierRuntime : Utf8StructuralVerifierRuntime
 {
-    internal Utf8NoStructuralVerifierRuntime(ConstructionState state)
-        : base(state)
+    internal Utf8NoStructuralVerifierRuntime(Utf8PreparedRegex regexPlan)
+        : base(regexPlan)
     {
     }
 
@@ -40,8 +40,8 @@ internal sealed class Utf8NoStructuralVerifierRuntime : Utf8StructuralVerifierRu
 
 internal sealed class Utf8AsciiStructuralVerifierRuntime : Utf8StructuralVerifierRuntime
 {
-    internal Utf8AsciiStructuralVerifierRuntime(ConstructionState state)
-        : base(state)
+    internal Utf8AsciiStructuralVerifierRuntime(Utf8PreparedRegex regexPlan)
+        : base(regexPlan)
     {
     }
 

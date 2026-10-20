@@ -85,24 +85,23 @@ public sealed class Utf8VerifierProgramAdmissionTests
     }
 
     [Fact]
-    public void CompleteFieldStateIncludesSourcesAndBorrowsStructuralPayload()
+    public void CoarseHelperAdmissionCoversTheActualStoredFieldSizes()
     {
-        Type[] types = [typeof(Utf8VerifierRuntime), typeof(Utf8StructuralVerifierRuntime), typeof(Utf8RegexProgram)];
-        foreach (var type in types)
+        foreach (var type in new[] { typeof(Utf8VerifierRuntime), typeof(Utf8StructuralVerifierRuntime), typeof(Utf8RegexProgram) })
         {
-            Assert.NotNull(type);
-            var state = type.GetNestedType("ConstructionState", BindingFlags.NonPublic)!;
-            Assert.NotNull(state);
-            var fields = type.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-            var stateFields = state.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-            Assert.Equal(fields.Select(field => field.FieldType.FullName).Order(), stateFields.Select(field => field.FieldType.FullName).Order());
-            Assert.Empty(type.GetConstructors(BindingFlags.Instance | BindingFlags.Public));
+            ulong required = 32;
+            foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
+            {
+                var size = (ulong)typeof(Utf8VerifierProgramAdmissionTests).GetMethod(nameof(FieldBytes),
+                    BindingFlags.Static | BindingFlags.NonPublic)!.MakeGenericMethod(field.FieldType).Invoke(null, null)!;
+                required = checked(required + ((size + 15) & ~15UL));
+            }
+            var admitted = (ulong)type.GetProperty("ObjectBytes", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+            Assert.InRange(required, 1UL, admitted);
         }
-        Assert.Equal(2, typeof(Utf8VerifierRuntime).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly).Length);
-        Assert.Single(typeof(Utf8StructuralVerifierRuntime).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly));
-        foreach (var type in new[] { typeof(Utf8NoStructuralVerifierRuntime), typeof(Utf8AsciiStructuralVerifierRuntime) })
-            Assert.Empty(type.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly));
     }
+
+    private static ulong FieldBytes<T>() => (ulong)System.Runtime.CompilerServices.Unsafe.SizeOf<T>();
 
     [Theory]
     [InlineData(0)] [InlineData(1)]
@@ -131,7 +130,7 @@ public sealed class Utf8VerifierProgramAdmissionTests
         {
             var result = Assert.IsType<Utf8VerifierRuntime>(BuildSource());
             Utf8OwnedVerifierAssertions.RetainsPreparedOwner(result);
-            Assert.Same(prepared, typeof(Utf8VerifierRuntime).GetField("_preparedRegex", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(result));
+            Assert.Equal(prepared.StructuralVerifier, result.StructuralVerifierPlan);
             Assert.Equal(timeout, regex.MatchTimeout);
             Assert.Equal(RegexOptions.None, regex.Options);
             capacity = funded.Budget.ReservedBytes; work = funded.Budget.WorkSteps;

@@ -1,0 +1,52 @@
+{
+  "Protocol": "Existing --measure-compiled-construction-case structural/method-family-call 8 5; one bounded before/after, no repeat.",
+  "Runtime": ".NET 10.0.13",
+  "SourceBefore": "f946948aad6b",
+  "SourceAfter": "f946948aad6b plus cleanup patch",
+  "Identities": {
+    "before": {
+      "Algorithm": "SHA256",
+      "Hash": "0FA3E43ACAF16B7C7FEC261A72A98135A605F3FBFF8F2BB1C3471774F4F3A00B",
+      "Path": "D:\\code\\utf8regex\\src\\Lokad.Utf8Regex\\bin\\Release\\net10.0\\Lokad.Utf8Regex.dll"
+    },
+    "after": {
+      "Algorithm": "SHA256",
+      "Hash": "AE2CD2BBE025993F238C9D4B7B21682FF583068459E6D380084A6711142363D4",
+      "Path": "D:\\code\\utf8regex\\src\\Lokad.Utf8Regex\\bin\\Release\\net10.0\\Lokad.Utf8Regex.dll"
+    }
+  },
+  "ObservedPublicPrimedCountUs": {
+    "Ordinary": [
+      1211.775,
+      1164.45
+    ],
+    "Compiled": [
+      1166.662,
+      1152.912
+    ],
+    "StaticOrdinary": [
+      1176.412,
+      1161.575
+    ],
+    "StaticCompiled": [
+      1167.662,
+      1159.463
+    ]
+  },
+  "ObservedCountAllocatedBytes": 0,
+  "UnchangedControlsUs": {
+    "RegexOrdinaryPrimedCount": [
+      9.25,
+      10.225
+    ],
+    "RegexCompiledPrimedCount": [
+      1168.25,
+      1138.075
+    ]
+  },
+  "Limitations": [
+    "Only the observed output excerpt is recorded; child inherited stdout bypassed PS log redirection and after tool output was truncated.",
+    "Small construction/control samples are noisy; no constructor-throughput, steady-state kernel, universal parity, package or causal speedup claim.",
+    "No confirmation, tuning, extra measurement or package qualification."
+  ]
+}

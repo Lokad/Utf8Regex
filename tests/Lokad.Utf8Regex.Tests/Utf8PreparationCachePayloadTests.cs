@@ -212,16 +212,6 @@ public sealed class Utf8PreparationCachePayloadTests
     private readonly struct ClearControl(ClearProbe probe) : IUtf8ConstructionTextControl
     { public void Check() => probe.Check(); }
 
-    [Fact]
-    public void UncertifiedGraphsCannotEnterAPayloadBoundedCache()
-    {
-        var cache = Create(2, 4096);
-        Assert.Throws<InvalidOperationException>(() => cache.GetOrAdd("key", static _ => new byte[100]));
-        Assert.True(cache.IsPayloadBounded); Assert.Equal(0, cache.Count); Assert.Equal(0ul, cache.PayloadBytes);
-        var globalControl = Utf8BoundedPreparationCache<string, byte[]>.Create(2);
-        Assert.False(globalControl.IsPayloadBounded);
-    }
-
     [Theory]
     [InlineData(false)] [InlineData(true)]
     public void EntryChargeBoundaryAdmitsOrDeclinesWithoutTruncatingTheValue(bool exact)
@@ -265,7 +255,6 @@ public sealed class Utf8PreparationCachePayloadTests
 
     private readonly struct HugeStorage(ulong charge) : IUtf8RetainedStorage<int, object>
     {
-        public bool IsCertified => true;
         public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
         public ulong GetKeyCharge(int key) => 0;
         public bool TryGetValueCharge<TControl>(object value, ulong maximum, TControl control, out ulong computedCharge)
@@ -279,7 +268,6 @@ public sealed class Utf8PreparationCachePayloadTests
 
     private readonly struct ByteStorage : IUtf8RetainedStorage<string, byte[]>
     {
-        public bool IsCertified => true;
         public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
         public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
         public bool TryGetValueCharge<TControl>(byte[] value, ulong maximum, TControl control, out ulong charge)
@@ -312,7 +300,6 @@ public sealed class Utf8PreparationCachePayloadTests
 
     private readonly struct DescendantByteStorage : IUtf8RetainedStorage<string, byte[]>
     {
-        public bool IsCertified => true;
         public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.RootsAndBoundedDescendants;
         public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
         public bool TryGetValueCharge<TControl>(byte[] value, ulong maximum, TControl control, out ulong charge)

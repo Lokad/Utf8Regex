@@ -5,24 +5,19 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal sealed class Utf8RegexProgram
 {
-    private readonly record struct ConstructionState(
-        Utf8PreparedRegex PreparedRegex,
-        Utf8CompiledEngine CompiledEngine,
-        Utf8VerifierRuntime VerifierRuntime,
-        Utf8CompiledEngineRuntime CompiledEngineRuntime,
-        Utf8EmittedKernelMatcher? DirectStructuralFamilyKernelMatcher,
-        Utf8CaptureCatalog CaptureCatalog);
+    // Conservative helper metadata; major program/search payloads are admitted separately.
+    internal static ulong ObjectBytes => 128;
 
-    internal static ulong ObjectBytes => Utf8ConstructionBudget.ObjectBytes<ConstructionState>();
-
-    private Utf8RegexProgram(ConstructionState state)
+    private Utf8RegexProgram(Utf8PreparedRegex preparedRegex, Utf8CompiledEngine compiledEngine,
+        Utf8VerifierRuntime verifierRuntime, Utf8CompiledEngineRuntime compiledEngineRuntime,
+        Utf8EmittedKernelMatcher? directStructuralFamilyKernelMatcher, Utf8CaptureCatalog captureCatalog)
     {
-        PreparedRegex = state.PreparedRegex;
-        CompiledEngine = state.CompiledEngine;
-        VerifierRuntime = state.VerifierRuntime;
-        CompiledEngineRuntime = state.CompiledEngineRuntime;
-        DirectStructuralFamilyKernelMatcher = state.DirectStructuralFamilyKernelMatcher;
-        CaptureCatalog = state.CaptureCatalog;
+        PreparedRegex = preparedRegex;
+        CompiledEngine = compiledEngine;
+        VerifierRuntime = verifierRuntime;
+        CompiledEngineRuntime = compiledEngineRuntime;
+        DirectStructuralFamilyKernelMatcher = directStructuralFamilyKernelMatcher;
+        CaptureCatalog = captureCatalog;
     }
 
     public Utf8PreparedRegex PreparedRegex { get; }
@@ -73,10 +68,11 @@ internal sealed class Utf8RegexProgram
                         ? structuralFamilyKernelMatcher
                         : null;
 
-            var result = budget.AllocateObject(new ConstructionState(
-                preparedRegex, compiledEngine, verifierRuntime, compiledEngineRuntime,
-                directStructuralFamilyKernelMatcher, captureCatalog),
-                static state => new Utf8RegexProgram(state));
+            budget.CheckBytes(ObjectBytes);
+            budget.ChargeWork(2);
+            budget.ReserveBytes(ObjectBytes);
+            var result = new Utf8RegexProgram(preparedRegex, compiledEngine, verifierRuntime,
+                compiledEngineRuntime, directStructuralFamilyKernelMatcher, captureCatalog);
             scope.Complete();
             return result;
         }

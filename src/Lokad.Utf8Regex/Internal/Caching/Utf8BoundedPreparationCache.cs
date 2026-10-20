@@ -37,16 +37,6 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
         (TKey, ValueTuple<TValue>, Exception?, CacheEntry?, int, int, int, ulong)>();
     private ulong BaseMetadataBytes => ObjectBytes;
 
-    internal static Utf8BoundedPreparationCache<TKey, TValue> Create(int capacity)
-        => Create(capacity, EqualityComparer<TKey>.Default, DefaultMaximumMetadataBytes);
-
-    internal static Utf8BoundedPreparationCache<TKey, TValue> Create(int capacity, IEqualityComparer<TKey> comparer)
-        => Create(capacity, comparer, DefaultMaximumMetadataBytes);
-
-    internal static Utf8BoundedPreparationCache<TKey, TValue> Create(int capacity,
-        IEqualityComparer<TKey> comparer, ulong maximumMetadataBytes)
-        => Create(capacity, comparer, maximumMetadataBytes, 0, Utf8RetainedStorageScope.Uncertified);
-
     internal static Utf8BoundedPreparationCache<TKey, TValue> CreateRetained(int capacity, IEqualityComparer<TKey> comparer)
         => CreateRetained(capacity, comparer, DefaultMaximumMetadataBytes, DefaultMaximumPayloadBytes);
 
@@ -81,7 +71,6 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
     internal int QueueLengthForTests => Count;
     internal ulong MetadataBytes { get { lock (this) return BaseMetadataBytes + (ulong)_count * EntryBytes; } }
     internal ulong MaximumMetadataBytes => _maximumMetadataBytes;
-    internal bool IsPayloadBounded => _maximumPayloadBytes != 0;
     internal Utf8RetainedStorageScope StorageScope => _storageScope;
     internal ulong PayloadBytes { get { lock (this) return _payloadBytes; } }
     internal ulong MaximumPayloadBytes => _maximumPayloadBytes;
@@ -101,29 +90,19 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
         }
     }
 
-    internal TValue GetOrAdd(TKey key, Func<TKey, TValue> factory)
-        => GetOrAdd(key, factory, static (itemKey, itemFactory) => itemFactory(itemKey));
-
-    internal TValue GetOrAdd<TState>(TKey key, TState state, Func<TKey, TState, TValue> factory)
-        => GetOrAdd(key, state, factory, default(Utf8ConstructionTextNoControl));
-
-    internal TValue GetOrAdd<TState, TControl>(TKey key, TState state, Func<TKey, TState, TValue> factory, TControl control)
-        where TControl : struct, IUtf8ConstructionTextControl
-        => GetOrAdd(key, state, factory, control, default(Utf8UncertifiedStorage<TKey, TValue>));
-
     internal TValue GetOrAdd<TState, TControl, TStorage>(TKey key, TState state,
         Func<TKey, TState, TValue> factory, TControl control, TStorage storage)
         where TControl : struct, IUtf8ConstructionTextControl
         where TStorage : struct, IUtf8RetainedStorage<TKey, TValue>
     {
-        if (IsPayloadBounded && (!storage.IsCertified || storage.Scope != _storageScope))
-            throw new InvalidOperationException("Retention requires a certified charge for the owner's declared scope.");
+        if (storage.Scope != _storageScope)
+            throw new InvalidOperationException("Retention requires the owner's declared storage scope.");
         Utf8ConstructionScope? cleanup = null;
         try
         {
             control.Check();
             if (Capacity == 0) return PrepareUncached(key, state, factory, control);
-            var keyCharge = IsPayloadBounded ? storage.GetKeyCharge(key) : 0;
+            var keyCharge = storage.GetKeyCharge(key);
             if (keyCharge > _maximumPayloadBytes)
             {
                 // This immutable owner can never retain the key. Do not hash or
@@ -143,19 +122,15 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
                 if (existing is not null) return Read(existing, control);
                 preparation = Utf8ConstructionScope.Enter();
                 cleanup = preparation;
-                if (IsPayloadBounded)
-                {
-                    control.Check();
-                    preparation.Budget.ChargeWork(1);
-                }
+                control.Check();
+                preparation.Budget.ChargeWork(1);
                 if (CanAdd())
                 {
                     entry = Acquire(key, default, null, 0, Environment.CurrentManagedThreadId, hash, keyCharge);
                     control.Check();
-                    if (_generation == generation && CanAdd() && Find(key, hash, control) is null &&
-                        (!IsPayloadBounded || PublishCharge(entry, null, keyCharge, false, generation, control)))
-                    { if (!IsPayloadBounded) Append(entry); }
-                    else entry = null;
+                    if (_generation != generation || !CanAdd() || Find(key, hash, control) is not null ||
+                        !PublishCharge(entry, null, keyCharge, false, generation, control))
+                        entry = null;
                 }
             }
             // A full cache does not evict a useful value before knowing that a new
@@ -191,12 +166,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
                         while (victim is not null && victim.Status == 0) { control.Check(); victim = victim.Next; }
                         if (victim is null) return Complete(preparation, value);
                     }
-                    if (IsPayloadBounded) _ = PublishCharge(completed, null, charge, true, generation, control);
-                    else
-                    {
-                        if (victim is not null) Remove(victim);
-                        Append(completed);
-                    }
+                    _ = PublishCharge(completed, null, charge, true, generation, control);
                 }
                 return Complete(preparation, value);
             }
@@ -205,7 +175,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
                 var value = PrepareUncached(key, state, factory, control);
                 lock (this)
                 {
-                    if (IsPayloadBounded && Contains(entry))
+                    if (Contains(entry))
                     {
                         var charge = CollectCharge(keyCharge, value, storage, control, out var fits);
                         if (!fits || !PublishCharge(entry, entry, charge, true, generation, control)) Remove(entry);
@@ -250,7 +220,6 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
         where TControl : struct, IUtf8ConstructionTextControl
         where TStorage : struct, IUtf8RetainedStorage<TKey, TValue>
     {
-        if (!IsPayloadBounded) { fits = true; return 0; }
         if (keyCharge > _maximumPayloadBytes) { fits = false; return 0; }
         var remaining = _maximumPayloadBytes - keyCharge;
         fits = storage.TryGetValueCharge(value, remaining, control, out var valueCharge) && valueCharge <= remaining;

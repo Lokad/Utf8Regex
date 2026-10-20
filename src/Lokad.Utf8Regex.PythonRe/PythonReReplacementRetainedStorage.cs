@@ -5,7 +5,6 @@ namespace Lokad.Utf8Regex.PythonRe;
 
 internal readonly struct PythonReReplacementRetainedStorage : IUtf8RetainedStorage<string, PythonReReplacementPlan>
 {
-    public bool IsCertified => true;
     public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
     public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
     public bool TryGetValueCharge<TControl>(PythonReReplacementPlan value, ulong maximum, TControl control, out ulong charge)

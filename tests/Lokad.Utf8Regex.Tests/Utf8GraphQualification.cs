@@ -68,7 +68,7 @@ internal static class Utf8GraphQualification
         if (type == typeof(Utf8Regex)) return Utf8Regex.CachedObjectBytes;
         if (type.GetProperty("ObjectBytes", Static) is { } modeled) return (ulong)modeled.GetValue(null)!;
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Utf8ConstructionReadOnlyMap<,>)) return 64;
-        if (typeof(Utf8StructuralVerifierRuntime).IsAssignableFrom(type)) return Utf8ConstructionBudget.ObjectBytes<Utf8StructuralVerifierRuntime.ConstructionState>();
+        if (typeof(Utf8StructuralVerifierRuntime).IsAssignableFrom(type)) return Utf8StructuralVerifierRuntime.ObjectBytes;
         if (typeof(Utf8StructuralLinearRuntime).IsAssignableFrom(type)) return Utf8ConstructionBudget.ObjectBytes<Lokad.Utf8Regex.Internal.Planning.Utf8PreparedRegex>();
         var state = type.GetNestedType("ConstructionState", BindingFlags.NonPublic);
         if (state is not null) return StateBytes(state);

@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Caching;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -10,12 +11,12 @@ public sealed class BoundedPreparationCacheFailureTests
     [Fact]
     public void DistinctFailuresDoNotAccumulateQueueRecords()
     {
-        var cache = Utf8BoundedPreparationCache<string, string>.Create(3);
+        var cache = Utf8BoundedPreparationCache<string, string>.CreateRetained(3, StringComparer.Ordinal);
 
         for (var i = 0; i < 100; i++)
         {
             var key = $"key-{i}";
-            Assert.Throws<InvalidOperationException>(() => cache.GetOrAdd(key, static _ => throw new InvalidOperationException()));
+            Assert.Throws<InvalidOperationException>(() => cache.GetOrAdd(key, 0, static (_, _) => throw new InvalidOperationException(), default(Utf8ConstructionTextNoControl), default(Utf8CacheTestStorage<string>)));
         }
 
         Assert.Equal(0, cache.Count);
@@ -25,11 +26,11 @@ public sealed class BoundedPreparationCacheFailureTests
     [Fact]
     public void RepeatedIdenticalFailuresDoNotAccumulateQueueRecords()
     {
-        var cache = Utf8BoundedPreparationCache<string, string>.Create(3);
+        var cache = Utf8BoundedPreparationCache<string, string>.CreateRetained(3, StringComparer.Ordinal);
 
         for (var i = 0; i < 50; i++)
         {
-            Assert.Throws<InvalidOperationException>(() => cache.GetOrAdd("bad", static _ => throw new InvalidOperationException()));
+            Assert.Throws<InvalidOperationException>(() => cache.GetOrAdd("bad", 0, static (_, _) => throw new InvalidOperationException(), default(Utf8ConstructionTextNoControl), default(Utf8CacheTestStorage<string>)));
         }
 
         Assert.Equal(0, cache.Count);
@@ -39,33 +40,33 @@ public sealed class BoundedPreparationCacheFailureTests
     [Fact]
     public void SuccessesRemainCachedAndEvictOldestAfterFailures()
     {
-        var cache = Utf8BoundedPreparationCache<string, string>.Create(2);
-        Assert.Equal("a!", cache.GetOrAdd("a", static key => key + "!"));
-        Assert.Equal("b!", cache.GetOrAdd("b", static key => key + "!"));
+        var cache = Utf8BoundedPreparationCache<string, string>.CreateRetained(2, StringComparer.Ordinal);
+        Assert.Equal("a!", cache.GetOrAdd("a", 0, static (key, _) => key + "!", default(Utf8ConstructionTextNoControl), default(Utf8CacheTestStorage<string>)));
+        Assert.Equal("b!", cache.GetOrAdd("b", 0, static (key, _) => key + "!", default(Utf8ConstructionTextNoControl), default(Utf8CacheTestStorage<string>)));
         for (var i = 0; i < 10; i++)
         {
             var key = $"bad-{i}";
-            Assert.Throws<InvalidOperationException>(() => cache.GetOrAdd(key, static _ => throw new InvalidOperationException()));
+            Assert.Throws<InvalidOperationException>(() => cache.GetOrAdd(key, 0, static (_, _) => throw new InvalidOperationException(), default(Utf8ConstructionTextNoControl), default(Utf8CacheTestStorage<string>)));
         }
 
-        Assert.Equal("c!", cache.GetOrAdd("c", static key => key + "!"));
+        Assert.Equal("c!", cache.GetOrAdd("c", 0, static (key, _) => key + "!", default(Utf8ConstructionTextNoControl), default(Utf8CacheTestStorage<string>)));
 
         Assert.Equal(2, cache.Count);
         Assert.True(cache.QueueLengthForTests <= 2, $"Queue holds {cache.QueueLengthForTests} records.");
-        Assert.Equal("b!", cache.GetOrAdd("b", static _ => throw new InvalidOperationException("recomputed")));
-        Assert.Equal("c!", cache.GetOrAdd("c", static _ => throw new InvalidOperationException("recomputed")));
+        Assert.Equal("b!", cache.GetOrAdd("b", 0, static (_, _) => throw new InvalidOperationException("recomputed"), default(Utf8ConstructionTextNoControl), default(Utf8CacheTestStorage<string>)));
+        Assert.Equal("c!", cache.GetOrAdd("c", 0, static (_, _) => throw new InvalidOperationException("recomputed"), default(Utf8ConstructionTextNoControl), default(Utf8CacheTestStorage<string>)));
     }
 
     [Fact]
     public void CapacityShrinkStaysBoundedAfterFailures()
     {
-        var cache = Utf8BoundedPreparationCache<string, string>.Create(4);
-        Assert.Equal("a!", cache.GetOrAdd("a", static key => key + "!"));
-        Assert.Equal("b!", cache.GetOrAdd("b", static key => key + "!"));
+        var cache = Utf8BoundedPreparationCache<string, string>.CreateRetained(4, StringComparer.Ordinal);
+        Assert.Equal("a!", cache.GetOrAdd("a", 0, static (key, _) => key + "!", default(Utf8ConstructionTextNoControl), default(Utf8CacheTestStorage<string>)));
+        Assert.Equal("b!", cache.GetOrAdd("b", 0, static (key, _) => key + "!", default(Utf8ConstructionTextNoControl), default(Utf8CacheTestStorage<string>)));
         for (var i = 0; i < 10; i++)
         {
             var key = $"bad-{i}";
-            Assert.Throws<InvalidOperationException>(() => cache.GetOrAdd(key, static _ => throw new InvalidOperationException()));
+            Assert.Throws<InvalidOperationException>(() => cache.GetOrAdd(key, 0, static (_, _) => throw new InvalidOperationException(), default(Utf8ConstructionTextNoControl), default(Utf8CacheTestStorage<string>)));
         }
 
         cache.Capacity = 1;
@@ -77,18 +78,18 @@ public sealed class BoundedPreparationCacheFailureTests
     [Fact]
     public async Task ConcurrentFailuresShareOneGenerationWithoutQueueGrowth()
     {
-        var cache = Utf8BoundedPreparationCache<string, string>.Create(8);
+        var cache = Utf8BoundedPreparationCache<string, string>.CreateRetained(8, StringComparer.Ordinal);
         var attempts = 0;
         var requests = Enumerable.Range(0, 32)
             .Select(_ => Task.Run(() =>
             {
                 try
                 {
-                    cache.GetOrAdd("bad", _ =>
+                    cache.GetOrAdd("bad", 0, (_, _) =>
                     {
                         Interlocked.Increment(ref attempts);
                         throw new InvalidOperationException();
-                    });
+                    }, default(Utf8ConstructionTextNoControl), default(Utf8CacheTestStorage<string>));
                 }
                 catch (InvalidOperationException)
                 {
@@ -105,14 +106,14 @@ public sealed class BoundedPreparationCacheFailureTests
     [Fact]
     public async Task ConcurrentSuccessesPrepareOnceAndQueueOnce()
     {
-        var cache = Utf8BoundedPreparationCache<string, string>.Create(8);
+        var cache = Utf8BoundedPreparationCache<string, string>.CreateRetained(8, StringComparer.Ordinal);
         var preparations = 0;
         var requests = Enumerable.Range(0, 32)
-            .Select(_ => Task.Run(() => cache.GetOrAdd("good", _ =>
+            .Select(_ => Task.Run(() => cache.GetOrAdd("good", 0, (_, _) =>
             {
                 Interlocked.Increment(ref preparations);
                 return "good!";
-            })))
+            }, default(Utf8ConstructionTextNoControl), default(Utf8CacheTestStorage<string>))))
             .ToArray();
 
         var values = await Task.WhenAll(requests);

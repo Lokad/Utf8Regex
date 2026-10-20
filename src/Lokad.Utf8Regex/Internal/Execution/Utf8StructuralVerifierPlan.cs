@@ -35,12 +35,14 @@ internal static class Utf8StructuralVerifierRuntimeFactory
         budget.EnterDepth();
         try
         {
-            var result = budget.AllocateObject<Utf8StructuralVerifierRuntime.ConstructionState, Utf8StructuralVerifierRuntime>(
-                new(regexPlan), static state => state.RegexPlan.StructuralVerifier.Kind switch
-                {
-                    Utf8StructuralVerifierKind.AsciiStructuralProgram => new Utf8AsciiStructuralVerifierRuntime(state),
-                    _ => new Utf8NoStructuralVerifierRuntime(state),
-                });
+            budget.CheckBytes(Utf8StructuralVerifierRuntime.ObjectBytes);
+            budget.ChargeWork(2);
+            budget.ReserveBytes(Utf8StructuralVerifierRuntime.ObjectBytes);
+            Utf8StructuralVerifierRuntime result = regexPlan.StructuralVerifier.Kind switch
+            {
+                Utf8StructuralVerifierKind.AsciiStructuralProgram => new Utf8AsciiStructuralVerifierRuntime(regexPlan),
+                _ => new Utf8NoStructuralVerifierRuntime(regexPlan),
+            };
             scope.Complete();
             return result;
         }

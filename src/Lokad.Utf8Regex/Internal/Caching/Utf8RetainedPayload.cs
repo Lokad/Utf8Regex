@@ -12,27 +12,16 @@ namespace Lokad.Utf8Regex.Internal.Caching;
 // String/array loans include modeled headers and physical capacity.
 internal enum Utf8RetainedStorageScope : byte
 {
-    Uncertified = 0,
     CompletePayload = 1,
     RootsAndBoundedDescendants = 2,
 }
 
 internal interface IUtf8RetainedStorage<TKey, TValue>
 {
-    bool IsCertified { get; }
     Utf8RetainedStorageScope Scope { get; }
     // Keys have closed, length-based storage. Charge them independently of the
     // value graph; shared text may be counted again without an identity map.
     ulong GetKeyCharge(TKey key);
     bool TryGetValueCharge<TControl>(TValue value, ulong maximum, TControl control, out ulong charge)
         where TControl : struct, IUtf8ConstructionTextControl;
-}
-
-internal readonly struct Utf8UncertifiedStorage<TKey, TValue> : IUtf8RetainedStorage<TKey, TValue>
-{
-    public bool IsCertified => false;
-    public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.Uncertified;
-    public ulong GetKeyCharge(TKey key) => 0;
-    public bool TryGetValueCharge<TControl>(TValue value, ulong maximum, TControl control, out ulong charge)
-        where TControl : struct, IUtf8ConstructionTextControl { charge = 0; return true; }
 }

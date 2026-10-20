@@ -96,7 +96,6 @@ public sealed class Utf8PreparationCacheKeyAdmissionTests
 
     private readonly struct Storage : IUtf8RetainedStorage<string, object>
     {
-        public bool IsCertified => true;
         public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
         public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
         public bool TryGetValueCharge<TControl>(object value, ulong maximum, TControl control, out ulong charge)

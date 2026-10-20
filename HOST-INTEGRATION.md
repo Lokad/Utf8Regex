@@ -20,6 +20,12 @@ views and enumerator boxes do not each receive a charge. Cache retention uses
 conservative per-program charges and eviction, which can count shared storage
 again. Exact numeric thresholds may change when real work or storage disappears.
 Actual `Unsafe.SizeOf<T>()` queries remain; they perform no unchecked access.
+Development after the frozen RC1 removes the test-only unbounded cache mode.
+Every producer supplies a conservative bounded payload policy. Program and
+verifier wrappers use their existing 128-byte admission floors directly instead
+of mirrored field-transfer descriptors; their major children retain separate
+admission. These three helper changes preserve their previous byte/work charges.
+They do not extend the documented memory scope or change RC1 package bytes.
 
 These are existing calls, using each profile's option type. `policy` applies to
 later invocations; `construction`, `constructionTimeout` and `token` apply only
