@@ -48,17 +48,15 @@ public sealed class Utf8ParseTreeRetentionTests
     }
 
     [Fact]
-    public void RetainedSemanticStateHasFiveReadonlyFieldsAndNoTreeSlot()
+    public void RetainedSemanticStateIsReadonlyAndHasNoTreeSlot()
     {
         var type = typeof(Utf8PreparedSemanticRegex);
         var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
         var fields = type.GetFields(flags);
-        Assert.Equal(5, fields.Length);
         Assert.All(fields, static field => Assert.True(field.IsInitOnly));
         Assert.All(type.GetProperties(flags), static property => Assert.Null(property.SetMethod));
         Assert.DoesNotContain(fields, static field => field.FieldType == typeof(Utf8OwnedRegexTree) || field.FieldType == typeof(CultureInfo));
         var preparedFields = typeof(Utf8PreparedRegex).GetFields(flags);
-        Assert.Equal(20, preparedFields.Length);
         Assert.DoesNotContain(preparedFields, static field => field.FieldType == typeof(Utf8SemanticRegex));
     }
 

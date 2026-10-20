@@ -1,4 +1,6 @@
 using System.Text;
+using System.Reflection;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Buffers;
@@ -1651,6 +1653,10 @@ internal static partial class BenchmarkInspectReporter
             measurement.DecodeThenRegex > 0 &&
             measurement.DecodeThenCompiledRegex > 0 &&
             measured.SourceCommit == current.SourceCommit &&
+            measured.BenchmarkAssembly == current.BenchmarkAssembly &&
+            measured.CoreAssembly == current.CoreAssembly &&
+            measured.Pcre2Assembly == current.Pcre2Assembly &&
+            measured.PythonReAssembly == current.PythonReAssembly &&
             measured.Runtime == current.Runtime &&
             measured.OperatingSystem == current.OperatingSystem &&
             measured.Processor == current.Processor &&
@@ -2776,8 +2782,8 @@ internal static partial class BenchmarkInspectReporter
 
         Utf8Validation.ThrowIfInvalidOnly(input);
         var census = Utf8ValidationRouteCensus.Analyze(input);
-        var first256 = Utf8InputAnalyzer.DescribeLeadByteSample(input, 256);
-        var first4096 = Utf8InputAnalyzer.DescribeLeadByteSample(input, 4096);
+        var first256 = Utf8LeadByteSampling.DescribeLeadByteSample(input, 256);
+        var first4096 = Utf8LeadByteSampling.DescribeLeadByteSample(input, 4096);
 
         Console.WriteLine($"CaseId                    : {caseId}");
         Console.WriteLine($"Origin                    : {origin}");
@@ -3001,7 +3007,7 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"CompiledGateUtf8LiteralFamily: {compiledUtf8Regex.Inspection.DebugCanUseFusedCompiledUtf8LiteralFamilyCount}");
         Console.WriteLine($"CompiledThrowIfInvalidCount  : {compiledUtf8Regex.Inspection.DebugSupportsThrowIfInvalidOnlyCount}");
         Console.WriteLine($"ThrowIfInvalidMode          : {Utf8InputAnalyzer.SelectThrowIfInvalidOnlyMode(replicaCase.InputBytes)}");
-        var inputShape = Utf8InputAnalyzer.DescribeLeadByteSample(replicaCase.InputBytes);
+        var inputShape = Utf8LeadByteSampling.DescribeLeadByteSample(replicaCase.InputBytes);
         Console.WriteLine($"ShapeSampleBytes            : {inputShape.SampleLength}");
         Console.WriteLine($"ShapeAsciiBytes             : {inputShape.AsciiBytes}");
         Console.WriteLine($"ShapeFirstNonAscii          : {inputShape.FirstNonAsciiOffset}");
@@ -6281,7 +6287,11 @@ internal static partial class BenchmarkInspectReporter
 
         s_wroteMeasurementEnvironment = true;
         var environment = CaptureBenchmarkEnvironment();
-        Console.WriteLine($"SourceCommit      : {environment.SourceCommit}");
+        Console.WriteLine($"CheckoutCommit    : {environment.SourceCommit}");
+        Console.WriteLine($"BenchmarkAssembly : {environment.BenchmarkAssembly}");
+        Console.WriteLine($"CoreAssembly      : {environment.CoreAssembly}");
+        Console.WriteLine($"Pcre2Assembly     : {environment.Pcre2Assembly}");
+        Console.WriteLine($"PythonReAssembly  : {environment.PythonReAssembly}");
         Console.WriteLine($"TrackedDirty      : {environment.TrackedDirty}");
         Console.WriteLine($"HasUntrackedFiles : {environment.HasUntrackedFiles}");
         Console.WriteLine($"Runtime           : {environment.Runtime}");
@@ -6293,7 +6303,13 @@ internal static partial class BenchmarkInspectReporter
     private static BenchmarkEnvironmentJson CaptureBenchmarkEnvironment()
         => s_measurementEnvironment ??= new BenchmarkEnvironmentJson
         {
+            // SourceCommit remains the checkout identity in historical JSON.
+            // Assembly producer versions and hashes identify the code actually loaded.
             SourceCommit = RunGit("rev-parse", "--short=12", "HEAD") ?? "<unknown>",
+            BenchmarkAssembly = GetAssemblyIdentity(typeof(BenchmarkInspectReporter).Assembly),
+            CoreAssembly = GetAssemblyIdentity(typeof(Utf8Regex).Assembly),
+            Pcre2Assembly = GetAssemblyIdentity(typeof(Utf8Pcre2Regex).Assembly),
+            PythonReAssembly = GetAssemblyIdentity(typeof(PythonRe.Utf8PythonRegex).Assembly),
             TrackedDirty = !string.IsNullOrWhiteSpace(RunGit(
                 "status",
                 "--porcelain=v1",
@@ -6315,8 +6331,20 @@ internal static partial class BenchmarkInspectReporter
                 "runtime-default",
         };
 
+    private static string GetAssemblyIdentity(Assembly assembly)
+    {
+        var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "<unknown>";
+        using var stream = File.OpenRead(assembly.Location);
+        return $"{version} sha256={Convert.ToHexString(SHA256.HashData(stream))}";
+    }
+
     private sealed class BenchmarkEnvironmentJson
     {
+        public string BenchmarkAssembly { get; set; } = string.Empty;
+        public string CoreAssembly { get; set; } = string.Empty;
+        public string Pcre2Assembly { get; set; } = string.Empty;
+        public string PythonReAssembly { get; set; } = string.Empty;
+
         public required string SourceCommit { get; set; }
 
         public bool TrackedDirty { get; set; }

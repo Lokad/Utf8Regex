@@ -660,7 +660,8 @@ internal static partial class BenchmarkInspectReporter
         var instanceCount = string.IsNullOrWhiteSpace(instancesText)
             ? 4
             : Math.Clamp(ParseIterations(instancesText), 1, 16);
-        var samples = Math.Clamp(ParseSamples(samplesText), 1, 9);
+        var requestedSamples = ParseSamples(samplesText);
+        var samples = Math.Clamp(requestedSamples, 1, 9);
         var context = new Utf8Pcre2BenchmarkContext(benchmarkCase);
 
         Console.WriteLine($"CaseId            : {benchmarkCase.Id}");
@@ -668,9 +669,10 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"Options           : {benchmarkCase.Options}");
         Console.WriteLine($"Instances         : {instanceCount}");
         Console.WriteLine($"Samples           : {samples}");
+        Console.WriteLine($"RequestedSamples  : {requestedSamples}");
         Console.WriteLine($"InputBytes        : {context.InputBytes.Length}");
 
-        // Prime shared JIT outside every timed sample; the first-use rows below intentionally isolate per-instance work.
+        // Prime shared JIT once before the samples; the first-use rows below intentionally isolate per-instance work.
         const int sharedTierPrimeCalls = 64;
         var primeRegex = new Utf8Pcre2Regex(benchmarkCase.Pattern, Utf8Pcre2BenchmarkCatalog.ToPcre2Options(benchmarkCase.Options));
         var primeSink = 0;
