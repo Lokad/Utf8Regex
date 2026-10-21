@@ -87,6 +87,15 @@ inconclusive: public changes reverse alongside moving controls and wide spreads.
 Timing is closed, with no attributed speedup or precise final 10% bound. Fresh
 package/host cost acceptance remains deferred.
 
+The [fifteenth-review receipt](bench/Experiments/FifteenthReview-20261021/README.md)
+records removal of duplicate emitted-kernel preparation and unused metadata.
+One bounded Linux comparison has selected public median changes from -5.09% to
++6.10%, within the allowance, with unchanged matching allocations and unchanged
+control medians moving about -2%. Selected compiled identifier construction
+allocates 61,696 fewer managed bytes (35.22%); its short timing samples remain
+separate from public throughput. VM background activity and remaining outliers
+are disclosed. Timing is closed; this does not qualify a fresh package.
+
 ## Frozen scalar.119 package costs
 
 The observations below apply to **Core/PythonRe scalar.119**, producer `ca0c8a6f`.

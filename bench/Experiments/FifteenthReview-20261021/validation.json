@@ -1,0 +1,62 @@
+{
+  "Source": "08cb2ed65a7ea413d6596a0e2c8b5478fc1ae2a5",
+  "OriginalCheckout": "b433aced80553440dc10452b85edc74e1904927b",
+  "OriginalCore": {
+    "Producer": "0.4.0-rc.2-dev+097c83439aa4a55ba86da665008d9657076c7028",
+    "Sha256": "B408438364BCC69C7164243576CA51197B9169829295FCA3074354EE0F361CF0"
+  },
+  "MeasuredCore": {
+    "Producer": "0.4.0-rc.2-dev+08cb2ed65a7ea413d6596a0e2c8b5478fc1ae2a5",
+    "Sha256": "B885256981400243BB7BB08DF86291524564B4B6896B17BC5B6FE33AB16688FD"
+  },
+  "LocalReleaseChecks": [
+    {
+      "Scope": "Initial engine selection/kernel/factory/scalar",
+      "Passed": 537
+    },
+    {
+      "Scope": "Final affected Core search/cache/construction/resource",
+      "Passed": 821
+    },
+    {
+      "Scope": "Affected PCRE2 replacement/resource/cache/capture",
+      "Passed": 295
+    },
+    {
+      "Scope": "Full Core",
+      "Passed": 39584,
+      "Failed": 0,
+      "Skipped": 0,
+      "Duration": "1m22s"
+    }
+  ],
+  "CI": {
+    "Run": 39626984182,
+    "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/39626984182",
+    "Source": "08cb2ed65a7ea413d6596a0e2c8b5478fc1ae2a5",
+    "Conclusion": "success",
+    "Jobs": [
+      {
+        "Name": "tests (ubuntu-latest)",
+        "Conclusion": "success"
+      },
+      {
+        "Name": "tests (windows-latest)",
+        "Conclusion": "success"
+      }
+    ],
+    "Scope": "Complete Release solution build/test, four fixture projects on Windows/Linux"
+  },
+  "ExistingChecks": [
+    "Generated README parity and PythonRe/PCRE2 markdown current",
+    "Read-only producer/PE/PDB/compiled-source reuse accepted"
+  ],
+  "ImmutableFiles": {
+    "Snapshots": 4,
+    "FrozenRC1Files": 9,
+    "Unchanged": true
+  },
+  "Timing": "One bounded Linux pair closed; no confirmation. Public medians within 10%, unchanged matching allocations; no exact universal bound or package qualification.",
+  "DriverSha256": "07108BA2983B0B83561F066692297E38E35DBA766595C023A3710FAA732C51E7",
+  "Planning": "PLAN.md/PLAN.HISTORY.md ignored, five original TODOs untouched"
+}

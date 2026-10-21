@@ -1,0 +1,85 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Planning;
+
+const string pattern = @"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+";
+const string windowPattern = @"\bpublic\s+async\b";
+const RegexOptions options = RegexOptions.CultureInvariant;
+var text = string.Concat(Enumerable.Repeat("class Bravo struct Delta record Echo public async é😀!\n", 8));
+var bytes = Encoding.UTF8.GetBytes(text);
+var late = Encoding.UTF8.GetBytes(new string('!', 4096) + "class Bravo é😀!");
+var ordinary = new Utf8Regex(pattern, options);
+var compiled = new Utf8Regex(pattern, options | RegexOptions.Compiled);
+var finite = new Utf8Regex(pattern, options | RegexOptions.Compiled, Timeout.InfiniteTimeSpan,
+    new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 2048, MaxWorkingBytes = 16*1024*1024, MaxResultBytes = 16*1024*1024 });
+var window = new Utf8Regex(windowPattern, options | RegexOptions.Compiled);
+var guided = new Utf8Regex("a.*b", options);
+var oracle = new Regex(pattern, options);
+var strict = new UTF8Encoding(false, true);
+var lanes = new[] {
+ new Lane("core/identifier-ordinary/Count", () => ordinary.Count(bytes), 24, bytes.Length, 128),
+ new Lane("core/identifier-compiled/Count", () => compiled.Count(bytes), 24, bytes.Length, 128),
+ new Lane("core/identifier-compiled-finite-four/Count", () => finite.Count(bytes), 24, bytes.Length, 4),
+ new Lane("core/identifier-compiled/Match", () => compiled.Match(bytes).LengthInBytes, 11, bytes.Length, 1024),
+ new Lane("core/identifier-compiled/IsMatch-late", () => compiled.IsMatch(late) ? 1 : 0, 1, late.Length, 1024),
+ new Lane("core/identifier-compiled/EnumerateMatches", () => Enumerate(compiled, bytes), 24, bytes.Length, 128),
+ new Lane("core/window-compiled/Count", () => window.Count(bytes), 8, bytes.Length, 128),
+ new Lane("core/guided/Count", () => guided.Count(bytes), 8, bytes.Length, 64),
+ new Lane("control/predecoded-Regex/Count", () => oracle.Count(text), 24, bytes.Length, 10000),
+ new Lane("control/decode-then-Regex/Count", () => oracle.Count(strict.GetString(bytes)), 24, bytes.Length, 10000)
+};
+if(args.Contains("--preflight")) {
+ Console.WriteLine(JsonSerializer.Serialize(lanes.Select(l=>new {l.Id,l.InputBytes,l.Expected,Sample=Run(l,1)}),new JsonSerializerOptions {WriteIndented=true}));return;
+}
+foreach(var lane in lanes) {
+ Console.Error.WriteLine("Warm " + lane.Id);
+ var warm=Stopwatch.StartNew(); int calls=0;
+ do {Run(lane,Math.Min(lane.Minimum,32));calls+=Math.Min(lane.Minimum,32);} while(warm.ElapsedMilliseconds<750 || calls<lane.Minimum);
+ lane.Iterations=lane.Minimum;
+ for(int attempt=0;attempt<4;attempt++) {
+  var s=Run(lane,lane.Iterations);if(s.WallMilliseconds>=35)break;
+  lane.Iterations=(int)Math.Clamp(Math.Ceiling(lane.Iterations*45/Math.Max(.01,s.WallMilliseconds)),lane.Minimum,2000000);
+ }
+}
+for(int sample=0;sample<5;sample++)
+ foreach(var i in sample%2==0?Enumerable.Range(0,lanes.Length):Enumerable.Range(0,lanes.Length).Reverse())
+  lanes[i].Samples.Add(Run(lanes[i],lanes[i].Iterations));
+var construction = new List<object>();
+foreach(var expression in new[]{pattern,windowPattern}) {
+ // Fixed total: one untimed warm instance and five measured batches of three.
+ GC.KeepAlive(new Utf8Regex(expression,options|RegexOptions.Compiled));
+ var samples=new List<Sample>();
+ for(int s=0;s<5;s++) samples.Add(Run(new Lane("construction",()=>Construct(expression),expression.Length,0,3),3));
+ construction.Add(new {Pattern=expression,TotalInstances=16,Samples=samples});
+}
+var assembly=typeof(Utf8Regex).Assembly;
+var program=(Utf8RegexProgram)typeof(Utf8Regex).GetField("_program",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(compiled)!;
+var runtimeKernel=program.CompiledEngineRuntime.GetType().GetField("_emittedKernelMatcher",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(program.CompiledEngineRuntime);
+Console.WriteLine(JsonSerializer.Serialize(new {
+ AtUtc=DateTime.UtcNow,Runtime=RuntimeInformation.FrameworkDescription,OS=RuntimeInformation.OSDescription,
+ Core=new {Producer=assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,Sha256=Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location)))},
+ Protocol="Fixed b433aced checkout/097c8343 producer; identical driver bytes; external taskset single CPU; default tiers; >=750ms bounded warm and fixed call floors; 35ms calibration floor/45ms target; five alternating samples; 60s child cap. One reversed-order confirmation at most. Same input finite-four controls: work1M/depth2048/working+result16MiB/infinite timeout/no token. Construction separately fixed16 instances/expression. No Status/package qualification.",
+ Facts=new {CandidateBytes=Unsafe.SizeOf<Utf8CandidateSearchPlan>(),OperationBytes=Unsafe.SizeOf<Utf8SearchOperationPlan>(),SearchPlanBytes=Unsafe.SizeOf<Utf8SearchPlan>(),CursorBytes=Unsafe.SizeOf<Utf8OperationMatchCursor>(),SharedKernel=ReferenceEquals(runtimeKernel,program.DirectStructuralFamilyKernelMatcher),CompiledEngine=compiled.Inspection.CompiledEngineKind.ToString(),UsesEmitted=compiled.Inspection.DebugUsesEmittedKernelMatcher},
+ Lanes=lanes.Select(l=>new {l.Id,l.InputBytes,l.Expected,l.Iterations,l.Samples}),Construction=construction
+},new JsonSerializerOptions {WriteIndented=true}));
+static int Construct(string p) {var r=new Utf8Regex(p,RegexOptions.CultureInvariant|RegexOptions.Compiled);GC.KeepAlive(r);return r.Pattern.Length;}
+static int Enumerate(Utf8Regex r,byte[] bytes) {int n=0;foreach(var m in r.EnumerateMatches(bytes)){if(m.LengthInBytes<1)throw new Exception("Empty");n++;}return n;}
+static Sample Run(Lane lane,int iterations) {
+ var a=GC.GetAllocatedBytesForCurrentThread();var start=Stopwatch.GetTimestamp();long sum=0;
+ for(int i=0;i<iterations;i++)sum+=lane.Action();
+ var elapsed=Stopwatch.GetTimestamp()-start;a=GC.GetAllocatedBytesForCurrentThread()-a;
+ if(sum!=(long)iterations*lane.Expected)throw new Exception("Wrong result: "+lane.Id);
+ return new(elapsed*1e9/Stopwatch.Frequency/iterations,(double)a/iterations,elapsed*1000.0/Stopwatch.Frequency,sum);
+}
+sealed class Lane(string id,Func<int> action,int expected,int inputBytes,int minimum) {
+ public string Id=id;public Func<int> Action=action;public int Expected=expected;public int InputBytes=inputBytes;public int Minimum=minimum;public int Iterations;public List<Sample> Samples=[];
+}
+sealed record Sample(double NanosecondsPerOperation,double AllocatedBytesPerOperation,double WallMilliseconds,long Checksum);

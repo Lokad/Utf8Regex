@@ -1,0 +1,11 @@
+# Fixed source packages are not repacked. Compile the temporary driver once
+# against baseline Core; stage identical driver DLL/deps/runtimeconfig in both
+# directories and change only Lokad.Utf8Regex.dll. Product hashes are in summary.
+# Run sequentially, default tiers, CPU7; no build/test process on the bench VM.
+# RAM directory avoids the VM's full root disk. Existing VM files are untouched.
+$ErrorActionPreference = 'Stop'
+$benchKey = Join-Path $env:USERPROFILE '.ssh/id_utf8regex-bench.pem'
+$remoteCommand = 'cd /dev/shm/utf8regex-fifteenth-20261021 && ulimit -c 0 && export TMPDIR=$PWD/tmp DOTNET_EnableDiagnostics=0 && taskset -c 7 timeout 60 dotnet cost-before/Lokad.Utf8Regex.Benchmarks.dll > before-cost.json 2> before-cost.err && taskset -c 7 timeout 60 dotnet cost-after/Lokad.Utf8Regex.Benchmarks.dll > after-cost.json 2> after-cost.err'
+ssh -i $benchKey -o BatchMode=yes -o ConnectTimeout=8 vermorel@20.13.128.207 $remoteCommand
+if ($LASTEXITCODE -ne 0) { throw 'Bounded comparison failed.' }
+# Actual comparison completed once. No confirmation or further timing is active.

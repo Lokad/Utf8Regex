@@ -1,0 +1,245 @@
+{
+  "Scope": "One bounded Linux/.NET 10.0.12 fixed-original comparison, default tiers, CPU7. No confirmation needed: all affected public medians within 10%; unchanged controls move -2.13%/-1.82%. Some outliers remain; no exact universal bound, attributed speedup or package qualification. Background services busy, root disk full; isolated tmpfs driver directories, no existing files changed. Timing closed.",
+  "BaselineCheckout": "b433aced80553440dc10452b85edc74e1904927b",
+  "BeforeCore": {
+    "Producer": "0.4.0-rc.2-dev+097c83439aa4a55ba86da665008d9657076c7028",
+    "Sha256": "B408438364BCC69C7164243576CA51197B9169829295FCA3074354EE0F361CF0"
+  },
+  "AfterCore": {
+    "Producer": "0.4.0-rc.2-dev+08cb2ed65a7ea413d6596a0e2c8b5478fc1ae2a5",
+    "Sha256": "B885256981400243BB7BB08DF86291524564B4B6896B17BC5B6FE33AB16688FD"
+  },
+  "DriverSha256": "07108BA2983B0B83561F066692297E38E35DBA766595C023A3710FAA732C51E7",
+  "IdenticalDriverBytes": true,
+  "Facts": {
+    "before": {
+      "CandidateBytes": 440,
+      "OperationBytes": 896,
+      "SearchPlanBytes": 2744,
+      "CursorBytes": 1440,
+      "SharedKernel": false,
+      "CompiledEngine": "EmittedKernel",
+      "UsesEmitted": true
+    },
+    "after": {
+      "CandidateBytes": 440,
+      "OperationBytes": 896,
+      "SearchPlanBytes": 2720,
+      "CursorBytes": 1440,
+      "SharedKernel": true,
+      "CompiledEngine": "StructuralLinearAutomaton",
+      "UsesEmitted": true
+    }
+  },
+  "Rows": [
+    {
+      "Id": "core/identifier-ordinary/Count",
+      "InputBytes": 464,
+      "Before": {
+        "MedianNs": 35968.47756410256,
+        "MedianAllocatedBytes": 3552,
+        "MaxMinRatio": 1.0401921103313543,
+        "MinimumSampleMs": 11.015545
+      },
+      "After": {
+        "MedianNs": 35664.032679738564,
+        "MedianAllocatedBytes": 3552,
+        "MaxMinRatio": 1.0771117170104247,
+        "MinimumSampleMs": 10.502295
+      },
+      "ChangePercent": -0.8464213805586263
+    },
+    {
+      "Id": "core/identifier-compiled/Count",
+      "InputBytes": 464,
+      "Before": {
+        "MedianNs": 36440.42105263158,
+        "MedianAllocatedBytes": 3552,
+        "MaxMinRatio": 1.0388133364672372,
+        "MinimumSampleMs": 10.742725
+      },
+      "After": {
+        "MedianNs": 34587.35430463576,
+        "MedianAllocatedBytes": 3552,
+        "MaxMinRatio": 1.020786200630611,
+        "MinimumSampleMs": 10.405461
+      },
+      "ChangePercent": -5.0851957646685815
+    },
+    {
+      "Id": "core/identifier-compiled-finite-four/Count",
+      "InputBytes": 464,
+      "Before": {
+        "MedianNs": 32056.42715231788,
+        "MedianAllocatedBytes": 3664,
+        "MaxMinRatio": 1.0252965156344511,
+        "MinimumSampleMs": 9.471423
+      },
+      "After": {
+        "MedianNs": 32333.846645367412,
+        "MedianAllocatedBytes": 3664,
+        "MaxMinRatio": 1.0697716716832577,
+        "MinimumSampleMs": 9.555626
+      },
+      "ChangePercent": 0.8654098965282575
+    },
+    {
+      "Id": "core/identifier-compiled/Match",
+      "InputBytes": 464,
+      "Before": {
+        "MedianNs": 2408.758624251188,
+        "MedianAllocatedBytes": 3552,
+        "MaxMinRatio": 1.0285647856386786,
+        "MinimumSampleMs": 22.88146
+      },
+      "After": {
+        "MedianNs": 2345.5954419002783,
+        "MedianAllocatedBytes": 3552,
+        "MaxMinRatio": 1.0356997586584,
+        "MinimumSampleMs": 21.821352
+      },
+      "ChangePercent": -2.622229629610362
+    },
+    {
+      "Id": "core/identifier-compiled/IsMatch-late",
+      "InputBytes": 4115,
+      "Before": {
+        "MedianNs": 260149.248046875,
+        "MedianAllocatedBytes": 3552,
+        "MaxMinRatio": 1.019583635335405,
+        "MinimumSampleMs": 261.706262
+      },
+      "After": {
+        "MedianNs": 276015.833984375,
+        "MedianAllocatedBytes": 3552,
+        "MaxMinRatio": 1.0069416230789334,
+        "MinimumSampleMs": 281.584001
+      },
+      "ChangePercent": 6.099032019743178
+    },
+    {
+      "Id": "core/identifier-compiled/EnumerateMatches",
+      "InputBytes": 464,
+      "Before": {
+        "MedianNs": 61953.7271468144,
+        "MedianAllocatedBytes": 89168,
+        "MaxMinRatio": 1.0217700046108553,
+        "MinimumSampleMs": 44.269444
+      },
+      "After": {
+        "MedianNs": 62247.28215223097,
+        "MedianAllocatedBytes": 89168,
+        "MaxMinRatio": 1.0266711928840906,
+        "MinimumSampleMs": 46.929547
+      },
+      "ChangePercent": 0.47382945132730114
+    },
+    {
+      "Id": "core/window-compiled/Count",
+      "InputBytes": 464,
+      "Before": {
+        "MedianNs": 10997.379114080673,
+        "MedianAllocatedBytes": 1680,
+        "MaxMinRatio": 1.021542893467752,
+        "MinimumSampleMs": 43.880178
+      },
+      "After": {
+        "MedianNs": 11008.318104906937,
+        "MedianAllocatedBytes": 1680,
+        "MaxMinRatio": 1.3544328314188634,
+        "MinimumSampleMs": 44.867339
+      },
+      "ChangePercent": 0.09946907088305146
+    },
+    {
+      "Id": "core/guided/Count",
+      "InputBytes": 464,
+      "Before": {
+        "MedianNs": 34014.63010590015,
+        "MedianAllocatedBytes": 3552,
+        "MaxMinRatio": 1.041079395907078,
+        "MinimumSampleMs": 44.188235
+      },
+      "After": {
+        "MedianNs": 34265.98410295231,
+        "MedianAllocatedBytes": 3552,
+        "MaxMinRatio": 1.0354649755919325,
+        "MinimumSampleMs": 44.358694
+      },
+      "ChangePercent": 0.7389584901249968
+    },
+    {
+      "Id": "control/predecoded-Regex/Count",
+      "InputBytes": 464,
+      "Before": {
+        "MedianNs": 7113.9133,
+        "MedianAllocatedBytes": 0,
+        "MaxMinRatio": 1.0199947912834328,
+        "MinimumSampleMs": 69.936614
+      },
+      "After": {
+        "MedianNs": 6962.4703,
+        "MedianAllocatedBytes": 0,
+        "MaxMinRatio": 1.8584440325689957,
+        "MinimumSampleMs": 68.824474
+      },
+      "ChangePercent": -2.128828306074526
+    },
+    {
+      "Id": "control/decode-then-Regex/Count",
+      "InputBytes": 464,
+      "Before": {
+        "MedianNs": 7470.0072,
+        "MedianAllocatedBytes": 904,
+        "MaxMinRatio": 1.0271443909290385,
+        "MinimumSampleMs": 73.271528
+      },
+      "After": {
+        "MedianNs": 7334.3294,
+        "MedianAllocatedBytes": 904,
+        "MaxMinRatio": 1.715078583678368,
+        "MinimumSampleMs": 72.682841
+      },
+      "ChangePercent": -1.816300792855996
+    }
+  ],
+  "Construction": [
+    {
+      "Pattern": "\\b(?:record|struct|class)\\s+[A-Z][A-Za-z0-9_]+",
+      "TotalInstancesPerSide": 16,
+      "Before": {
+        "MedianNs": 1275350.6666666667,
+        "MedianAllocatedBytes": 175168,
+        "MaxMinRatio": 1.1587114895063229,
+        "MinimumSampleMs": 3.672116
+      },
+      "After": {
+        "MedianNs": 882594.3333333334,
+        "MedianAllocatedBytes": 113472,
+        "MaxMinRatio": 1.8398520119897184,
+        "MinimumSampleMs": 2.543179
+      },
+      "TimeChangePercent": -30.795948408437734,
+      "AllocationChangePercent": -35.22104493971502
+    },
+    {
+      "Pattern": "\\bpublic\\s+async\\b",
+      "TotalInstancesPerSide": 16,
+      "Before": {
+        "MedianNs": 644949,
+        "MedianAllocatedBytes": 92440,
+        "MaxMinRatio": 1.086295907908054,
+        "MinimumSampleMs": 1.861444
+      },
+      "After": {
+        "MedianNs": 645287,
+        "MedianAllocatedBytes": 92248,
+        "MaxMinRatio": 1.0642073928733653,
+        "MinimumSampleMs": 1.873507
+      },
+      "TimeChangePercent": 0.05240724460384705,
+      "AllocationChangePercent": -0.20770229337948587
+    }
+  ],
+  "PreflightCorrection": "Initial untimed preflight expected one a.*b match but the newline-separated subject has eight; expected count corrected to8 before sampling. No product defect or aborted timed campaign."
+}
