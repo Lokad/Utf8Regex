@@ -93,7 +93,6 @@ public sealed class Utf8SearchPlanTests
         Assert.Equal(Utf8StructuralSearchStageKind.FindLiteralFamily, regex.Inspection.StructuralSearchPlan.Stages![0].Kind);
         Assert.DoesNotContain(regex.Inspection.StructuralSearchPlan.Stages!, static stage => stage.Kind == Utf8StructuralSearchStageKind.RequireByteAtOffset);
         Assert.Null(regex.Inspection.PreparedRegex.ExecutionTree);
-        Assert.Null(regex.Inspection.PreparedRegex.ExecutionProgram);
         Assert.Equal(1, regex.Count("a😀b"u8));
         Assert.Equal(6, regex.Match("a😀b"u8).LengthInBytes);
         Assert.Equal(Utf8StructuralSearchStageKind.YieldStart, regex.Inspection.StructuralSearchPlan.Stages![^1].Kind);

@@ -26,7 +26,7 @@ internal static class Utf8CompiledSearchAnalysisPolicy
     {
         if (regexPlan.SimplePatternPlan.IsStartAnchored ||
             regexPlan.SimplePatternPlan.IsEndAnchored ||
-            HasBackreferenceInstructions(regexPlan.ExecutionProgram))
+            regexPlan.Features.HasBackreferences)
         {
             return false;
         }
@@ -34,23 +34,5 @@ internal static class Utf8CompiledSearchAnalysisPolicy
         return regexPlan.SimplePatternPlan.RunPlan.HasValue ||
             regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern ||
             regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiLiteralFamilyRun;
-    }
-
-    internal static bool HasBackreferenceInstructions(Utf8ExecutionProgram? executionProgram)
-    {
-        if (executionProgram is null)
-        {
-            return false;
-        }
-
-        foreach (var instruction in executionProgram.Instructions)
-        {
-            if (instruction.NodeKind == Utf8ExecutionNodeKind.Backreference)
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 }

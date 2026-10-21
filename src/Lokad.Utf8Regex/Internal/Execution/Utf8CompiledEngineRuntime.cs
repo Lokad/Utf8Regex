@@ -442,7 +442,6 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
 
             return Utf8ExecutionInterpreter.FindNextSimplePattern(
                 input,
-                _regexPlan.ExecutionProgram,
                 _regexPlan.SearchPlan,
                 _regexPlan.SimplePatternPlan,
                 0,
@@ -516,7 +515,6 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
 
         return Utf8ExecutionInterpreter.CountSimplePattern(
             input,
-            _regexPlan.ExecutionProgram,
             _regexPlan.SearchPlan,
             _regexPlan.SimplePatternPlan,
             budget);
@@ -578,7 +576,6 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
 
             var index = Utf8ExecutionInterpreter.FindNextSimplePattern(
                 input,
-                _regexPlan.ExecutionProgram,
                 _regexPlan.SearchPlan,
                 _regexPlan.SimplePatternPlan,
                 0,

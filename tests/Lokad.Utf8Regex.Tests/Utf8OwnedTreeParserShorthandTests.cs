@@ -150,7 +150,7 @@ public sealed class Utf8OwnedTreeParserShorthandTests
     public static IEnumerable<object?[]> ShorthandClassAnchorDeclineCases()
     {
         // Anchor escapes are BCL-invalid inside a class (UnrecognizedEscape);
-        // the owned parser declines them to the BCL fallback exactly like the oracle.
+        // the owned parser rejects them with the same error as the oracle.
         yield return new object?[] { "[\\A\\d]", 512, RegexParseError.UnrecognizedEscape, 3 };
     }
 
@@ -447,8 +447,8 @@ public sealed class Utf8OwnedTreeParserShorthandTests
 
     public static IEnumerable<object?[]> UnknownPropertyCases()
     {
-        // Unknown property names decline in the owned parser while BCL raises a
-        // parse error; construction fails BCL-exactly through the fallback.
+        // Unknown property names fail in the owned parser with the pinned error,
+        // compared here with the BCL oracle.
         yield return new object?[] { "\\p{Nope}", RegexParseError.UnrecognizedUnicodeProperty, 8 };
         yield return new object?[] { "\\p{Any}", RegexParseError.UnrecognizedUnicodeProperty, 7 };
         yield return new object?[] { "\\p{Assigned}", RegexParseError.UnrecognizedUnicodeProperty, 12 };

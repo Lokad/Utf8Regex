@@ -25,7 +25,6 @@ internal sealed class Utf8PreparedRegex
         Utf8ExecutionBackend executionBackend,
         Utf8CompiledPatternCategory compiledPatternCategory,
         Utf8ExecutionTree? executionTree,
-        Utf8ExecutionProgram? executionProgram,
         Utf8SliceProgram? scalarProgram,
         Utf8StructuralSearchPlan structuralSearchPlan,
         Utf8StructuralVerifierPlan structuralVerifier,
@@ -46,7 +45,6 @@ internal sealed class Utf8PreparedRegex
         ExecutionBackend = executionBackend;
         CompiledPatternCategory = compiledPatternCategory;
         ExecutionTree = executionTree;
-        ExecutionProgram = executionProgram;
         ScalarProgram = scalarProgram;
         StructuralSearchPlan = structuralSearchPlan;
         StructuralVerifier = structuralVerifier;
@@ -67,7 +65,6 @@ internal sealed class Utf8PreparedRegex
         Utf8ExecutionBackend executionBackend,
         Utf8CompiledPatternCategory compiledPatternCategory,
         Utf8ExecutionTree? executionTree,
-        Utf8ExecutionProgram? executionProgram,
         Utf8SliceProgram? scalarProgram,
         Utf8OperationMatchCursorPlans operationMatchCursorPlans,
         Utf8StructuralSearchPlan structuralSearchPlan,
@@ -95,7 +92,6 @@ internal sealed class Utf8PreparedRegex
             executionBackend,
             compiledPatternCategory,
             executionTree,
-            executionProgram,
             scalarProgram,
             structuralSearchPlan,
             structuralVerifier,
@@ -123,8 +119,6 @@ internal sealed class Utf8PreparedRegex
     public Utf8CompiledPatternCategory CompiledPatternCategory { get; }
 
     public Utf8ExecutionTree? ExecutionTree { get; }
-
-    public Utf8ExecutionProgram? ExecutionProgram { get; }
 
     public Utf8SliceProgram? ScalarProgram { get; }
 

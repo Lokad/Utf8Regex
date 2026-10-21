@@ -101,6 +101,5 @@ public sealed class Utf8ScalarPreparationAdmissionTests
         Assert.True(owner.Budget.ReservedBytes >= Utf8PreparedRegex.ObjectBytes);
         Assert.NotNull(prepared.ScalarProgram);
         Assert.Same(prepared.SemanticRegex.CaptureCatalog, prepared.ScalarProgram.CaptureCatalog);
-        Assert.Same(prepared.ExecutionProgram, prepared.OperationMatchCursorPlans.ExecutionProgram);
     }
 }

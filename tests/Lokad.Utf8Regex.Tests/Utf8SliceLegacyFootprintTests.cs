@@ -39,7 +39,6 @@ public sealed class Utf8SliceLegacyFootprintTests
         Assert.Equal(expectedReason, regex.Inspection.FallbackReason);
         var prepared = regex.Inspection.PreparedRegex;
         Assert.Equal(expectedFamily == "None", prepared.ExecutionTree is null);
-        Assert.Equal(expectedFamily == "None", prepared.ExecutionProgram is null);
         Assert.Equal("Scalar", regex.CollectIsMatchDiagnostics([]).FallbackVerifierMode);
         Assert.Equal(expectedFamily, regex.Inspection.DebugFallbackDirectFamilyKind);
         Assert.Null(prepared.LiteralUtf8);

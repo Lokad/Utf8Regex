@@ -2601,8 +2601,8 @@ public sealed class AsciiSimplePatternTests
     public void ScalarLiteralTemplateOwnsNonAsciiInput(string pattern, RegexOptions options, string text, string template)
     {
         // R05: scalar-verifiable shapes expand literal templates through the scalar cursor
-        // on astral-free non-ASCII input, so byte, string, and destination cores never
-        // construct the fallback engine. Astral inputs keep BCL routing.
+        // on these non-ASCII inputs. Supplementary inputs use complete scalar boundaries
+        // through the owned engine as well.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var expected = oracle.Replace(text, template);

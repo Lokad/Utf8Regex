@@ -53,7 +53,7 @@ public sealed class Utf8SliceLegacyReasonTests
         // "(?(?=a)b|c)" left the set at the parser flip: the owned tree parser declines
         // expression conditionals, so the pipeline reports the generic unsupported_pattern
         // while the slice fallback program retains conditional detail and the mapping
-        // premise no longer holds. Matching stays BCL-exact through the fallback.
+        // premise no longer holds. Matching uses the owned scalar program.
         yield return new object?[] { "(?<n>a)+(?(n)b|c)" };
         yield return new object?[] { "(a)?(?(1)ab|cd)+" };
         yield return new object?[] { "(a)\\1(?(1)x|y)" };

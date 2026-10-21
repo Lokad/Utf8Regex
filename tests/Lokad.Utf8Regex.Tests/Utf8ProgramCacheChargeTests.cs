@@ -83,7 +83,6 @@ public sealed class Utf8ProgramCacheChargeTests
         Assert.InRange(shared + fixedArrays, 1UL, Utf8Regex.ProgramFixedMetadataBytes);
         // Static empties have no nonempty child payload; the stored schema witnesses
         // and semantic acquisition audit separately cover all reference fields.
-        Assert.True(Utf8OperationMatchCursorPlans.Empty.ExecutionProgram is null);
         Assert.Equal(0, Utf8ConstructionReadOnlyMap<string, int>.Empty.Count);
         Assert.Equal(0, Utf8ConstructionReadOnlyMap<int, int>.Empty.Count);
         Assert.False(PreparedByteSet.Empty.Contains((byte)'a'));

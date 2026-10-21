@@ -219,7 +219,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
                 return Utf8ValueMatch.NoMatch;
             }
 
-            var match = cursor.Current.ToValueMatch();
+            var match = cursor.CurrentValueMatch;
             // The ASCII literal cursors above project byte offsets as UTF-16
             // coordinates (this override runs without validation by design, so the
             // factory ASCII-only gate cannot see it): remap the index through the

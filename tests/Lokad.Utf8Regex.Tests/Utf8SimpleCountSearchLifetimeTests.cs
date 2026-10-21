@@ -104,8 +104,7 @@ public sealed class Utf8SimpleCountSearchLifetimeTests
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("b12", 4096)));
         ticks = 25;
         Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
-            Utf8ExecutionInterpreter.CountSimplePattern(input, prepared.ExecutionProgram,
-                prepared.SearchPlan, prepared.SimplePatternPlan, deadline));
+            Utf8ExecutionInterpreter.CountSimplePattern(input, prepared.SearchPlan, prepared.SimplePatternPlan, deadline));
     }
 
     private static RegexOptions Options(bool compiled) => RegexOptions.CultureInvariant |

@@ -427,7 +427,7 @@ public sealed partial class Utf8Regex
     }
 
     // R03: suffix slicing loses absolute-origin anchors and left context (word boundaries,
-    // lookbehind). From a nonzero start those shapes keep full-input BCL verification;
+    // lookbehind). From a nonzero start those shapes keep full-input owned scalar verification;
     // multiline-anchored patterns divert conservatively, while \G anchors at the search
     // start exactly like BCL startat and stay native.
     private bool RequiresOriginSemanticsForOffsetSearch()

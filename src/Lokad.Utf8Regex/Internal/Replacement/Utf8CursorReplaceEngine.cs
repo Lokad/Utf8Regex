@@ -71,7 +71,7 @@ internal static class Utf8CursorReplaceEngine
         var outputLength = new Utf8ReplacementOutputLength(inputLength);
         while (cursor.MoveNext())
         {
-            var match = cursor.Current;
+            var match = cursor.CurrentValueMatch;
             if (!match.IsByteAligned)
             {
                 throw new InvalidOperationException("A replacement match is not aligned to UTF-8 scalar boundaries.");

@@ -4,16 +4,11 @@ using System.Text.RegularExpressions;
 namespace Lokad.Utf8Regex.Tests;
 
 /// <summary>
-/// R00 route-coverage matrix (core profile): for each feature row, pins the construction
-/// route (ExecutionKind plus FallbackReason) and the IsMatch/Count BCL-verifier footprint
-/// on a representative input. Row names carry feature, replacement owner, and covering tests.
-/// Owners: R03 core engine; R04 adapters (adapter-profile matrices follow in their own test
-/// projects). BCL dependence of Match/Replace/Split/Enumerate per row is pinned at file level
-/// by EngineDependencyInventoryTests and behaviorally by DiffTests until R03 lands
-/// per-operation owned execution with dedicated counters.
-/// Nonzero verifier invocations can include owned native confirmation; BCL execution
-/// must be assessed with the fallback construction flags as well.
-/// The counter records verification attempts; whether BCL executed follows the construction flags (a created anchored fallback witnesses execution: its Lazy is only evaluated inside TryVerify paths).
+/// Core route matrix: pins native provenance (ExecutionKind/FallbackReason) and
+/// owned IsMatch/Count verification attempts. Counts describe owned candidate
+/// confirmation, not BCL matcher calls. EngineDependencyInventoryTests separately
+/// checks that shipped profiles have no BCL matcher/result dependencies; DiffTests
+/// compare overlapping scalar/code-unit behavior with the test-only BCL oracle.
 /// </summary>
 public sealed class EngineRouteCoverageMatrixTests
 {
@@ -28,7 +23,7 @@ public sealed class EngineRouteCoverageMatrixTests
         yield return new object?[] { "case-pair-class-family", "[Aa][Bb][Cc]", RegexOptions.CultureInvariant, "xxABCxx", "ExactUtf8Literals", null, true, true };
         yield return new object?[] { "single-upper-class-literal", "[A]", RegexOptions.CultureInvariant, "A", "ExactAsciiLiteral", null, true, true };
         yield return new object?[] { "case-pair-class-ignorecase", "[Aa][Bb][Cc]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxABCxx", "AsciiLiteralIgnoreCase", null, true, true };
-        // Structural and multi-branch ignorecase families: native routes with per-op BCL verifier footprints pinned honestly (structural candidates verify on hits).
+        // Structural and multi-branch ignorecase families: native routes with per-operation owned verifier counts (structural candidates verify on hits).
         yield return new object?[] { "structural-identifier-family", "\\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\\b", RegexOptions.CultureInvariant, "logger.LogError(\"bad\");", "AsciiStructuralIdentifierFamily", null, false, false };
         // Greedy Count shares the owned window verifier rather than the old trailing-anchor shortcut.
         yield return new object?[] { "structural-ordered-window", "Holmes.{0,25}Watson|Watson.{0,25}Holmes", RegexOptions.None, "Holmes and Watson", "AsciiOrderedLiteralWindow", null, true, false };
@@ -36,7 +31,7 @@ public sealed class EngineRouteCoverageMatrixTests
         yield return new object?[] { "ignorecase-literals-abd", "a[bc]d", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxabdxx", "AsciiLiteralIgnoreCaseLiterals", null, true, true };
         yield return new object?[] { "structural-repeated-segment", "(?:[A-Z][a-z]+\\s*){10,100}", RegexOptions.CultureInvariant, "Alpha Beta Gamma Delta Epsilon Zeta Eta Theta Iota Kappa ", "AsciiStructuralRepeatedSegment", null, false, false };
         yield return new object?[] { "structural-quoted-relation-aws", "(('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\").*?(\\n^.*?){0,4}(('|\")[a-zA-Z0-9+/]{40}('|\"))+|('|\")[a-zA-Z0-9+/]{40}('|\").*?(\\n^.*?){0,3}('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\"))+", RegexOptions.Multiline, "\"AIDAABCDEFGHIJKLMNOP\"\nctx = 1\nctx = 2\n\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n\n\"AIDAABCDEFGHIJKLMNOP\"\nctx = 3\nctx = 4\n\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n", "AsciiStructuralQuotedRelation", null, false, false };
-        // Unbounded class/word loops: BCL fallback with unsupported_loop (owner R03). digit-range stays AsciiSimplePattern but BCL-verifies both ops on hit input (Unicode digit semantics). Cover: Utf8RegexConstructionTests fallback-reason cases.
+        // Unbounded class/word loops: owned scalar execution with unsupported_loop provenance (owner R03). digit-range stays AsciiSimplePattern but uses owned verification for both operations on hit input (Unicode digit semantics). Cover: Utf8RegexConstructionTests fallback-reason cases.
         yield return new object?[] { "char-class-plus", "[a-z]+", RegexOptions.CultureInvariant, "xxabcxx", "FallbackRegex", "unsupported_loop", true, true };
         yield return new object?[] { "negated-class", "[^0-9]+", RegexOptions.CultureInvariant, "xxabcxx", "FallbackRegex", "unsupported_loop", true, true };
         yield return new object?[] { "bounded-repeat", "[A-Za-z]{8,13}", RegexOptions.None, "xxabcdefghxx", "AsciiSimplePattern", null, true, true };
@@ -49,7 +44,7 @@ public sealed class EngineRouteCoverageMatrixTests
         // candidates and verifier invocations are counted with no BCL construction
         // (see the line-anchored discovery battery in Utf8AnchoredLiteralFamilyTests).
         yield return new object?[] { "multiline-anchor", "^abc", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabc", "AsciiSimplePattern", null, false, false };
-        // Assertions and backreferences: BCL fallback construction with specific reasons, except single lookahead-pos which rides the literal family; slice-served assertions run IsMatch/Count verifier-free (owner R03).
+        // Assertions and backreferences: owned scalar execution with specific provenance reasons, except single lookahead-pos which rides the literal family; slice-served assertions run IsMatch/Count verifier-free (owner R03).
         yield return new object?[] { "lookahead-pos", "a(?=b)", RegexOptions.CultureInvariant, "ab", "ExactAsciiLiteral", null, true, true };
         yield return new object?[] { "lookahead-neg", "a(?!b)", RegexOptions.CultureInvariant, "ac", "FallbackRegex", "unsupported_lookaround", true, true };
         yield return new object?[] { "lookbehind-pos", "(?<=a)b", RegexOptions.CultureInvariant, "ab", "FallbackRegex", "unsupported_lookaround", true, true };
@@ -74,7 +69,7 @@ public sealed class EngineRouteCoverageMatrixTests
         // Empty-match and astral edge cases (owner R03).
         yield return new object?[] { "empty-star", "a*", RegexOptions.CultureInvariant, "bbb", "FallbackRegex", "unsupported_loop", true, true };
         yield return new object?[] { "astral-literal", "\U0001F600", RegexOptions.CultureInvariant, "\U0001F600", "ExactUtf8Literal", null, true, true };
-        // Conditionals and balancing: BCL fallback with unsupported_conditional (owner R03).
+        // Conditionals and balancing: owned scalar execution with unsupported_conditional provenance (owner R03).
         yield return new object?[] { "conditional", "(a)?(?(1)ab|cd)", RegexOptions.CultureInvariant, "aab", "FallbackRegex", "unsupported_conditional", true, true };
         yield return new object?[] { "balancing", "BEGIN(?:(?<open>BEGIN)|(?<-open>END)|(?:(?!BEGIN|END)[\\s\\S]))*END(?(open)(?!))", RegexOptions.CultureInvariant, "BEGINEND", "FallbackRegex", "unsupported_conditional", true, true };
         // Canonical word intersections qualify ASCII token execution; Unicode

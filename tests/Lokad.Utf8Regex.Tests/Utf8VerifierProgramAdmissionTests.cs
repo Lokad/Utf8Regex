@@ -212,15 +212,15 @@ internal static class Utf8VerifierTestPlans
 {
     internal static Utf8PreparedRegex WithDirectFamily(Utf8PreparedRegex p, Utf8FallbackDirectFamilyPlan family)
         => Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend,
-            p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram, p.OperationMatchCursorPlans,
+            p.CompiledPatternCategory, p.ExecutionTree, p.ScalarProgram, p.OperationMatchCursorPlans,
             p.StructuralSearchPlan, p.StructuralVerifier,
             p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan, p.StructuralRepeatedSegmentPlan,
             p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan, p.LiteralUtf8, p.FallbackReason, family);
 
     internal static Utf8PreparedRegex WithSearchPlan(Utf8PreparedRegex p, Utf8SearchPlan search)
         => Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend,
-            p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram,
-            Utf8OperationMatchCursorPlans.Create(p.ExecutionProgram, search, p.StructuralLinearProgram, p.SimplePatternPlan,
+            p.CompiledPatternCategory, p.ExecutionTree, p.ScalarProgram,
+            Utf8OperationMatchCursorPlans.Create(search, p.StructuralLinearProgram, p.SimplePatternPlan,
                 search.StructuralSearchPlan, p.StructuralVerifier.AsciiProgram),
             search.StructuralSearchPlan, p.StructuralVerifier,
             p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan, p.StructuralRepeatedSegmentPlan,
@@ -230,8 +230,8 @@ internal static class Utf8VerifierTestPlans
     {
         var p = Utf8FrontEnd.Compile("a", RegexOptions.CultureInvariant);
         return Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend,
-            p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram,
-            Utf8OperationMatchCursorPlans.Create(p.ExecutionProgram, p.SearchPlan, p.StructuralLinearProgram, p.SimplePatternPlan,
+            p.CompiledPatternCategory, p.ExecutionTree, p.ScalarProgram,
+            Utf8OperationMatchCursorPlans.Create(p.SearchPlan, p.StructuralLinearProgram, p.SimplePatternPlan,
                 p.StructuralSearchPlan, structuralVerifier.AsciiProgram),
             p.StructuralSearchPlan, structuralVerifier, p.StructuralIdentifierFamilyPlan,
             p.StructuralTokenWindowPlan, p.StructuralRepeatedSegmentPlan, p.StructuralQuotedRelationPlan,

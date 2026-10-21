@@ -8,31 +8,28 @@ internal static partial class Utf8ExecutionInterpreter
 {
     public static int FindNextSimplePattern(
         ReadOnlySpan<byte> input,
-        Utf8ExecutionProgram? program,
         in Utf8SearchPlan searchPlan,
         in AsciiSimplePatternPlan plan,
         int startIndex,
         out int matchedLength)
     {
-        return FindNextSimplePattern(input, program, searchPlan, plan, startIndex, budget: Utf8ExecutionDeadline.Infinite, out matchedLength);
+        return FindNextSimplePattern(input, searchPlan, plan, startIndex, budget: Utf8ExecutionDeadline.Infinite, out matchedLength);
     }
 
     // PLAN.md D06: single owner for the interpreter-backed simple-pattern Count loop; both compiled runtimes reach it only after their route-specific preconditions.
     internal static int CountSimplePattern(
         ReadOnlySpan<byte> input,
-        Utf8ExecutionProgram? program,
         in Utf8SearchPlan searchPlan,
         in AsciiSimplePatternPlan plan,
         Utf8ExecutionDeadline budget)
     {
-        return CountSimplePatternFrom(input, program, searchPlan, plan, 0, budget);
+        return CountSimplePatternFrom(input, searchPlan, plan, 0, budget);
     }
 
     // FromOffset counting starts the shared loop at the start unit; anchors still see
     // the whole input, so line edges stay exact.
     internal static int CountSimplePatternFrom(
         ReadOnlySpan<byte> input,
-        Utf8ExecutionProgram? program,
         in Utf8SearchPlan searchPlan,
         in AsciiSimplePatternPlan plan,
         int startIndex,
@@ -48,7 +45,6 @@ internal static partial class Utf8ExecutionInterpreter
         {
             var found = FindNextSimplePattern(
                 input,
-                program,
                 searchPlan,
                 plan,
                 index,
@@ -69,7 +65,6 @@ internal static partial class Utf8ExecutionInterpreter
 
     public static int FindNextSimplePattern(
         ReadOnlySpan<byte> input,
-        Utf8ExecutionProgram? program,
         in Utf8SearchPlan searchPlan,
         in AsciiSimplePatternPlan plan,
         int startIndex,
@@ -77,13 +72,12 @@ internal static partial class Utf8ExecutionInterpreter
         out int matchedLength)
     {
         PreparedLiteralSetSearch? literalSearch = null;
-        return FindNextSimplePattern(input, program, searchPlan, plan, startIndex,
+        return FindNextSimplePattern(input, searchPlan, plan, startIndex,
             budget, ref literalSearch, out matchedLength);
     }
 
     private static int FindNextSimplePattern(
         ReadOnlySpan<byte> input,
-        Utf8ExecutionProgram? program,
         in Utf8SearchPlan searchPlan,
         in AsciiSimplePatternPlan plan,
         int startIndex,
@@ -92,7 +86,7 @@ internal static partial class Utf8ExecutionInterpreter
         out int matchedLength)
     {
         matchedLength = 0;
-        if (program is null)
+        if (plan.Branches is not { Length: > 0 })
         {
             return -1;
         }

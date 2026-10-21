@@ -10,7 +10,7 @@ namespace Lokad.Utf8Regex.Tests;
 // resolving at the end pass with backreferences, empty branches lowering to
 // empty concatenations, single-kid form for bare defined closes), plus decline
 // agreement on undefined references, missing branches, and DEFINE/R conditions
-// the fork itself rejects while BCL serves through the fallback.
+// rejected by the owned parser and checked against the BCL oracle.
 public sealed class Utf8OwnedTreeParserConditionalTests
 {
     public static IEnumerable<object?[]> ConditionalAcceptCases()

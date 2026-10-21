@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 namespace Lokad.Utf8Regex.Tests;
 
 // R07 concurrent calls: one shared instance must answer identically under
-// parallel use on every route exercised here (owned literal, BCL-fallback
+// parallel use on every route exercised here (owned literal, scalar
 // loop, and replacement through the instance plan cache).
 public sealed class Utf8ConcurrentSharedInstanceTests
 {

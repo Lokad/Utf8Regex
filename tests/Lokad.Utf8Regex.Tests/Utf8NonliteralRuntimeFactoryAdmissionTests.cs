@@ -87,8 +87,8 @@ public sealed class Utf8NonliteralRuntimeFactoryAdmissionTests
     private static Utf8PreparedRegex WithSearch(Utf8PreparedRegex p, Utf8SearchPlan search,
         Utf8StructuralLinearProgram program) =>
         Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, NativeExecutionKind.FallbackRegex, p.ExecutionBackend,
-            p.CompiledPatternCategory, p.ExecutionTree, p.ExecutionProgram, p.ScalarProgram,
-            Utf8OperationMatchCursorPlans.Create(p.ExecutionProgram, search, program, p.SimplePatternPlan, p.StructuralSearchPlan, p.StructuralVerifier.AsciiProgram),
+            p.CompiledPatternCategory, p.ExecutionTree, p.ScalarProgram,
+            Utf8OperationMatchCursorPlans.Create(search, program, p.SimplePatternPlan, p.StructuralSearchPlan, p.StructuralVerifier.AsciiProgram),
             p.StructuralSearchPlan, p.StructuralVerifier, p.StructuralIdentifierFamilyPlan, p.StructuralTokenWindowPlan,
             p.StructuralRepeatedSegmentPlan, p.StructuralQuotedRelationPlan, p.OrderedLiteralWindowPlan,
             p.LiteralUtf8, "unsupported_loop", p.FallbackDirectFamily);

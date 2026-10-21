@@ -232,8 +232,8 @@ public sealed partial class Utf8Regex
     {
         match = Utf8ValueMatch.NoMatch;
         // Anchored ASCII literal prefixes are byte-exact on every input: astral scalars
-        // never start with ASCII bytes, so non-ASCII input stays direct instead of
-        // declining to the BCL fallback like the other ASCII direct families below.
+        // never start with ASCII bytes, so non-ASCII input stays direct rather than
+        // requiring the general owned scalar route.
         // Folded prefixes compare per byte under invariant folding (Kelvin and Turkic
         // divergences stay fenced upstream); the executor switches on the kind.
         if (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix &&
@@ -336,7 +336,7 @@ public sealed partial class Utf8Regex
     {
         isMatch = false;
         // Same byte-exact contract as the Match arm above: anchored ASCII prefixes
-        // never need the BCL fallback, even on non-ASCII input. Folded prefixes ride
+        // stay direct even on non-ASCII input. Folded prefixes ride
         // the same arm; the executor switches on the kind.
         if (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix)
         {
@@ -777,7 +777,6 @@ public sealed partial class Utf8Regex
     {
         return Utf8ExecutionInterpreter.FindNextSimplePattern(
             input,
-            _preparedRegex.ExecutionProgram,
             _preparedRegex.SearchPlan,
             _preparedRegex.SimplePatternPlan,
             startIndex,

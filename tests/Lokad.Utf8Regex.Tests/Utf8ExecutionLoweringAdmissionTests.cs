@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ExecutionLoweringAdmissionTests
 {
     [Fact]
-    public void CanonicalClassPayloadAndPreparedInstructionsKeepExactAsciiMembership()
+    public void CanonicalClassPayloadAndPublicMatchingKeepExactAsciiMembership()
     {
         foreach (var (pattern, accepted) in new[]
         {
@@ -20,9 +20,7 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
         {
             var sourceAnalysis = Utf8FrontEnd.Analyze(pattern, RegexOptions.CultureInvariant);
             var tree = Utf8ExecutionTreeLowerer.Lower(sourceAnalysis.SemanticRegex);
-            var program = Utf8ExecutionProgramLowerer.Lower(tree);
             Assert.NotNull(tree);
-            Assert.NotNull(program);
             var sourceNode = sourceAnalysis.SemanticRegex.RuntimeTree!.Root;
             while (sourceNode.ScalarClass is null && sourceNode.ChildCount == 1) sourceNode = sourceNode.Child(0);
             var source = sourceNode.ScalarClass;
@@ -32,87 +30,41 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
                 executionNode = executionNode.Children[0];
             Assert.Same(source, executionNode.Payload);
             Assert.Equal(string.Empty, executionNode.Text);
-            var atom = Assert.Single(program.Instructions.Where(static instruction =>
-                instruction.Kind == Utf8ExecutionInstructionKind.Enter && instruction.NodeKind == Utf8ExecutionNodeKind.Set));
-            Assert.True(atom.CharClass.HasValue);
-            Assert.Same(source, atom.Payload);
             for (var value = 0; value < 128; value++)
             {
                 var expected = accepted.Contains((char)value);
-                Assert.Equal(expected, atom.CharClass.Value.Contains((byte)value));
                 var match = new Utf8Regex(pattern, RegexOptions.CultureInvariant).Match([(byte)value]);
                 Assert.Equal(expected, match.Success);
                 if (expected) Assert.Equal(1, match.LengthInBytes);
             }
         }
-        var dot = Utf8ExecutionProgramLowerer.Lower(Utf8ExecutionTreeLowerer.Lower(
-            Utf8FrontEnd.Analyze("(?s:.{1,2})", RegexOptions.CultureInvariant).SemanticRegex));
-        Assert.NotNull(dot);
-        var compact = Assert.Single(dot.Instructions.Where(static instruction =>
-            instruction.Kind == Utf8ExecutionInstructionKind.Enter && instruction.NodeKind == Utf8ExecutionNodeKind.Loop));
-        Assert.True(compact.CharClass.HasValue);
-        Assert.Equal(string.Empty, compact.Text);
         Assert.Equal(2, new Utf8Regex("(?s:.{1,2})", RegexOptions.CultureInvariant).Match("ab"u8).LengthInBytes);
         Assert.Equal(4, new Utf8Regex("(?s:.{1,2})", RegexOptions.CultureInvariant).Match("😀"u8).LengthInBytes);
-        using var scope = Utf8ConstructionScope.Enter();
-        using var data = Utf8ConstructionBuffer<int>.Create(scope.Budget);
-        data.AddRange([0, 0, 0]);
-        var empty = Utf8ScalarClass.Create(data);
-        var emptyProgram = Utf8ExecutionProgramLowerer.Lower(new(new(Utf8ExecutionNodeKind.Set,
-            RegexOptions.None, [], empty, '\0', 0, 1, 1)));
-        Assert.NotNull(emptyProgram);
-        Assert.True(emptyProgram.Instructions[0].CharClass.HasValue);
-        Assert.True(emptyProgram.Instructions[0].CharClass.Value.IsEmpty);
-        var literal = Utf8ExecutionProgramLowerer.Lower(new(new(Utf8ExecutionNodeKind.One,
-            RegexOptions.None, [], string.Empty, 'a', 0, 1, 1)));
-        Assert.NotNull(literal);
-        Assert.False(literal.Instructions[0].CharClass.HasValue);
-        var unproved = Utf8ExecutionProgramLowerer.Lower(Utf8ExecutionTreeLowerer.Lower(
-            Utf8FrontEnd.Analyze("\\p{L}+", RegexOptions.CultureInvariant).SemanticRegex));
-        Assert.NotNull(unproved);
-        var unprovedClass = Assert.Single(unproved.Instructions.Where(static instruction =>
-            instruction.Kind == Utf8ExecutionInstructionKind.Enter && instruction.NodeKind == Utf8ExecutionNodeKind.Loop));
-        Assert.NotNull(unprovedClass.ScalarClass);
-        Assert.Null(unprovedClass.CharClass);
         Assert.False(new Utf8Regex("\\p{L}+", RegexOptions.CultureInvariant).IsMatch("\0"u8));
     }
 
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
-    private sealed record Input(Utf8SemanticRegex Semantic, Utf8ExecutionTree Tree, Utf8ExecutionProgram Program);
+    private sealed record Input(Utf8SemanticRegex Semantic);
 
     private static Input Make(int depth)
     {
         var source = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
-        var node = new Utf8ExecutionNode(Utf8ExecutionNodeKind.One, RegexOptions.None, [], "", 'a', 0, 0, 0);
         for (var index = 0; index < depth; index++)
         {
             var parent = Utf8TreeNode.Create(Utf8TreeNodeKind.Capture, RegexOptions.None, 1, -1);
             parent.WithChild(source);
             source = parent;
-            node = new(Utf8ExecutionNodeKind.Capture, RegexOptions.None, [node], "", '\0', 1, 1, -1);
         }
         var owned = Utf8OwnedRegexTree.Create(source, 2, null, null, null, RegexOptions.None, CultureInfo.InvariantCulture, null, false, false);
         var semantic = new Utf8SemanticRegex("a", RegexOptions.None, "a", RegexOptions.None, owned);
-        var tree = new Utf8ExecutionTree(node);
-        var program = Utf8ExecutionProgramLowerer.Lower(tree);
-        Assert.NotNull(program);
-        return new(semantic, tree, program);
+        return new(semantic);
     }
 
-    private static void Run(int route, Input input)
-    {
-        switch (route)
-        {
-            case 0: Assert.NotNull(Utf8ExecutionTreeLowerer.Lower(input.Semantic)); break;
-            case 1: Assert.NotNull(Utf8ExecutionProgramLowerer.Lower(input.Tree)); break;
-            default: throw new ArgumentOutOfRangeException(nameof(route));
-        }
-    }
+    private static void Run(Input input) => Assert.NotNull(Utf8ExecutionTreeLowerer.Lower(input.Semantic));
 
     [Theory]
-    [InlineData(0, 0)] [InlineData(0, 1)] [InlineData(0, 2)]
-    [InlineData(1, 0)] [InlineData(1, 1)] [InlineData(1, 2)]
-    public void RootAdmissionPrecedesTraversalAndLeavesParentIntact(int route, int denial)
+    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    public void RootAdmissionPrecedesTraversalAndLeavesParentIntact(int denial)
     {
         var input = Make(0);
         using var owner = new Utf8ConstructionScope(ulong.MaxValue,
@@ -120,7 +72,7 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
             denial == 1 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(route, input));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(input));
         Assert.Equal(denial switch
         {
             0 => Utf8ResourceLimitKind.ConstructionBytes,
@@ -135,15 +87,14 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
         Assert.Equal(17, parent.Value);
     }
 
-    [Theory]
-    [InlineData(0)] [InlineData(1)]
-    public void ChildDepthDenialUnwindsAndAllowsRecovery(int route)
+    [Fact]
+    public void ChildDepthDenialUnwindsAndAllowsRecovery()
     {
         var input = Make(32);
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, 8);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(route, input));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(input));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, failure.ResourceKind);
         Assert.Equal(9ul, failure.Requested);
         Assert.Equal(8ul, owner.Budget.PeakDepth);
@@ -151,22 +102,21 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         var work = owner.Budget.WorkSteps;
-        using (var recovery = Utf8ConstructionScope.Enter()) Run(route, Make(0));
+        using (var recovery = Utf8ConstructionScope.Enter()) Run(Make(0));
         Assert.True(owner.Budget.WorkSteps > work);
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
     }
 
-    [Theory]
-    [InlineData(0)] [InlineData(1)]
-    public void GrowingStorageDenialReleasesAllPayloadAndScratchLoans(int route)
+    [Fact]
+    public void GrowingStorageDenialReleasesAllPayloadAndScratchLoans()
     {
         var input = Make(128);
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, 2048, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(route, input));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(input));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.True(failure.Requested > 2048);
         Assert.InRange(owner.Budget.PeakBytes, 113ul, 2048ul);
@@ -177,15 +127,14 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
         Assert.Equal(17, parent.Value);
     }
 
-    [Theory]
-    [InlineData(0)] [InlineData(1)]
-    public void EveryWorkCutoffRestoresParentWithoutRefundingSpentWork(int route)
+    [Fact]
+    public void EveryWorkCutoffRestoresParentWithoutRefundingSpentWork()
     {
         var input = Make(3);
         ulong work;
         using (var measure = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
-            Run(route, input);
+            Run(input);
             work = measure.Budget.WorkSteps;
             Assert.True(measure.Budget.ReservedBytes > 0);
             Assert.Equal(0ul, measure.Budget.Depth);
@@ -197,7 +146,7 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
             var checkpoint = owner.Budget.ReservedBytes;
             Exception? failure;
-            using (var child = Utf8ConstructionScope.Enter()) failure = Record.Exception(() => Run(route, input));
+            using (var child = Utf8ConstructionScope.Enter()) failure = Record.Exception(() => Run(input));
             if (cutoff == work) Assert.Null(failure);
             else
             {
@@ -214,15 +163,14 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
         }
     }
 
-    [Theory]
-    [InlineData(0)] [InlineData(1)]
-    public void EveryByteCutoffAdmitsBeforeAcquisitionAndRestoresParent(int route)
+    [Fact]
+    public void EveryByteCutoffAdmitsBeforeAcquisitionAndRestoresParent()
     {
         var input = Make(3);
         ulong peak;
         using (var measure = Utf8ConstructionScope.Enter())
         {
-            Run(route, input);
+            Run(input);
             peak = measure.Budget.PeakBytes;
         }
         Assert.InRange(peak, 1ul, 10000ul);
@@ -232,7 +180,7 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
             var checkpoint = owner.Budget.ReservedBytes;
             Exception? failure;
-            using (var child = Utf8ConstructionScope.Enter()) failure = Record.Exception(() => Run(route, input));
+            using (var child = Utf8ConstructionScope.Enter()) failure = Record.Exception(() => Run(input));
             if (allowance == peak) Assert.Null(failure);
             if (failure is not null)
             {
@@ -249,47 +197,16 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
         }
     }
 
-    [Theory]
-    [InlineData(0)] [InlineData(1)]
-    public void SuccessfulResultsTransferPayloadLoansWhileScratchDepthCloses(int route)
+    [Fact]
+    public void SuccessfulResultsTransferPayloadLoansWhileScratchDepthCloses()
     {
         var input = Make(3);
         using var owner = Utf8ConstructionScope.Enter();
-        Run(route, input);
+        Run(input);
         Assert.True(owner.Budget.ReservedBytes > 0);
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.True(owner.Budget.ReservedBytes > 0);
-        Assert.Equal(route == 1 ? (ulong)input.Program.Instructions.Count : 0ul, owner.Budget.Reserved);
-    }
-
-    [Fact]
-    public void ProgramCapacityIncludesGrowthOverlapAndFinalInstructionArray()
-    {
-        var input = Make(3);
-        ulong peak;
-        using (var measure = Utf8ConstructionScope.Enter())
-        {
-            Run(1, input);
-            peak = measure.Budget.Peak;
-            Assert.Equal((ulong)input.Program.Instructions.Count, measure.Budget.Reserved);
-        }
-        for (var limit = 1ul; limit <= peak; limit++)
-        {
-            using var owner = new Utf8ConstructionScope(limit);
-            var failure = Record.Exception(() => Run(1, input));
-            if (failure is null) Assert.Equal((ulong)input.Program.Instructions.Count, owner.Budget.Reserved);
-            else
-            {
-                var breach = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
-                Assert.Equal(Utf8ResourceLimitKind.ConstructionInstructionCapacity, breach.ResourceKind);
-                Assert.True(breach.Requested > limit);
-                Assert.Equal(0ul, owner.Budget.Reserved);
-                Assert.Equal(0ul, owner.Budget.ReservedBytes);
-
-            }
-            Assert.True(owner.Budget.Peak <= limit);
-            Assert.Equal(0ul, owner.Budget.Depth);
-        }
+        Assert.Equal(0ul, owner.Budget.Reserved);
     }
 
     [Fact]

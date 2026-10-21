@@ -123,7 +123,7 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
     public static IEnumerable<object?[]> LookaroundClassAnchorDeclineCases()
     {
         // Anchor escapes are BCL-invalid inside a class (UnrecognizedEscape);
-        // the owned parser declines them to the BCL fallback exactly like the oracle.
+        // the owned parser rejects them with the same error as the oracle.
         yield return new object?[] { "[\\A-a]", 512, RegexParseError.UnrecognizedEscape, 3 };
         yield return new object?[] { "[\\B]", 512, RegexParseError.UnrecognizedEscape, 3 };
         yield return new object?[] { "[\\G]", 512, RegexParseError.UnrecognizedEscape, 3 };
@@ -144,7 +144,7 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
     public static IEnumerable<object?[]> LookaroundEscapeDeclineCases()
     {
         // Bare word-character escapes and reversed escaped-upper-bound ranges
-        // are BCL-invalid; they decline to the BCL fallback with the pinned error.
+        // are invalid; owned construction reports the pinned error.
         yield return new object?[] { "\\_", 512, RegexParseError.UnrecognizedEscape, 2 };
         yield return new object?[] { "[\\_]", 512, RegexParseError.UnrecognizedEscape, 3 };
         yield return new object?[] { "\\é", 512, RegexParseError.UnrecognizedEscape, 2 };

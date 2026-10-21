@@ -5,9 +5,8 @@ namespace Lokad.Utf8Regex.Tests;
 
 /// <summary>
 /// R03 from-offset origin semantics: suffix slicing loses absolute-origin anchors
-/// and left context, so those shapes keep full-input BCL verification. Each test asserts
-/// BCL-correct values. MatchFromUtf16Offset keeps BCL semantics on these
-/// shapes meanwhile, and the R03 differential suite covers the shapes that agree.
+/// and left context, so those shapes keep full-input owned scalar verification.
+/// These tests use BCL comparisons where scalar and code-unit results agree.
 /// </summary>
 public sealed class Utf8FromOffsetOriginTests
 {

@@ -246,9 +246,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _sliceInvocation = invocation;
     }
 
-    public Utf8OperationMatch Current
-        => new(CurrentValueMatch, branchId: 0);
-
     /// <summary>Gets the alternate index of the last literal match, or -1 when the last
     /// successful move did not come from a literal search. Singular literals always report 0.</summary>
     internal int LastLiteralFamilyBranchId =>
@@ -1138,8 +1135,7 @@ internal ref partial struct Utf8OperationMatchCursor
         ref readonly var simplePatternPlan = ref _plans.SimplePatternPlan;
         // Anchors see the complete subject, while discovery starts at the
         // caller's floor. No result or floor is published before projection.
-        breach = Utf8ExecutionInterpreter.TryFindNextSimplePattern(_input, _plans.ExecutionProgram,
-            searchPlan, simplePatternPlan, _consumed, ref _sliceInvocation, out var absolute, out var length);
+        breach = Utf8ExecutionInterpreter.TryFindNextSimplePattern(_input, searchPlan, simplePatternPlan, _consumed, ref _sliceInvocation, out var absolute, out var length);
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         if (absolute < 0)
         {

@@ -90,9 +90,8 @@ public sealed class Utf8SliceNonCapturingTests
         Assert.Equal(oracle.Groups[2].Value, detailed.GetGroup(2).GetValueString());
         Assert.Equal("a", detailed.GetGroup(1).GetValueString());
         Assert.Equal("c", detailed.GetGroup(2).GetValueString());
-        // Native-route detailed shaping still rides the BCL fallback by standing
-        // architecture (owned shaping covers groupless and whole-literal shapes);
-        // group-skip numbering itself is BCL-exact on every route.
+        // Detailed shaping preserves the owned capture numbering on native and
+        // scalar routes, including skipped noncapturing groups.
     }
 
     public static IEnumerable<object?[]> CountCases()

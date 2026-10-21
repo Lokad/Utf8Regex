@@ -441,6 +441,13 @@ restores byte/instruction/live-depth loans without refunding spent work or
 invalidating borrowed/retained objects. Growth and final copying admit old/new
 overlap. A speculative optimization cannot reset the parent's work allowance.
 
+Core preparation no longer builds or charges the unused Enter/Exit instruction
+vector formerly derived from its execution tree. Native branch plans execute
+directly; backreference eligibility uses the owned tree's existing feature facts.
+The real scalar and structural VM instructions retain their admission. Numeric
+construction/cache charges can therefore decrease for unchanged patterns; they
+are conservative implementation costs, not stable per-pattern quotas.
+
 Covered producers include scalar IR/lowering, class/subtraction data, capture
 metadata, instruction/analysis vectors, explicit parser/preparation frames,
 construction maps/arenas and sorting, selected native search buffers, dynamic

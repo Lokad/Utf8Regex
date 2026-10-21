@@ -304,12 +304,6 @@ public sealed class Utf8ScalarClassRepresentationTests
         Assert.NotNull(execution);
         Assert.Same(node.ScalarClass, execution.Root.Children[0].Payload);
         Assert.Equal(string.Empty, execution.Root.Children[0].Text);
-        var program = Utf8ExecutionProgramLowerer.Lower(execution);
-        Assert.NotNull(program);
-        var instruction = Assert.Single(program.Instructions.Where(static instruction =>
-            instruction.Kind == Utf8ExecutionInstructionKind.Enter && instruction.NodeKind == Utf8ExecutionNodeKind.Set));
-        Assert.Same(node.ScalarClass, instruction.Payload);
-        Assert.Null(instruction.CharClass);
         foreach (var lazy in new[] { false, true })
         {
             var repeat = Utf8TreeNode.CreateSetRepeat(node, node.Options, 2, 3, lazy);

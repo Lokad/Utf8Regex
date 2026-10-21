@@ -57,7 +57,7 @@ internal static class Utf8NativeReplacementExecutor
         var outputLength = new Utf8ReplacementOutputLength(input.Length);
         while (cursor.MoveNext())
         {
-            var current = cursor.Current;
+            var current = cursor.CurrentValueMatch;
             ledger.Add(new Utf8ReplacementRange(current.IndexInBytes, current.LengthInBytes), cursor.WorkingBufferControl);
             outputLength.ReplaceRange(
                 current.LengthInBytes,
@@ -70,7 +70,7 @@ internal static class Utf8NativeReplacementExecutor
     private static int GetReplacementLength(
         ReadOnlySpan<byte> input,
         Utf8ReplacementPlan plan,
-        Utf8OperationMatch match)
+        Utf8ValueMatch match)
     {
         var length = 0;
         foreach (var instruction in plan.Instructions)

@@ -166,7 +166,7 @@ public ref struct Utf8ValueSplitEnumerator
                 return true;
             }
 
-            var ownedMatch = _matchCursor.Current;
+            var ownedMatch = _matchCursor.CurrentValueMatch;
             _matchCursor.CheckOwnedSliceCursorBoundary();
             Current = new Utf8ValueSplit(
                 _input,
@@ -200,7 +200,7 @@ public ref struct Utf8ValueSplitEnumerator
                 return true;
             }
 
-            var rtlMatch = _matchCursor.Current;
+            var rtlMatch = _matchCursor.CurrentValueMatch;
             _matchCursor.CheckOwnedSliceCursorBoundary();
             Current = new Utf8ValueSplit(
                 _input,
@@ -217,7 +217,7 @@ public ref struct Utf8ValueSplitEnumerator
             return EmitTail();
         }
 
-        var match = _matchCursor.Current;
+        var match = _matchCursor.CurrentValueMatch;
         _matchCursor.CheckOwnedSliceCursorBoundary();
         Current = new Utf8ValueSplit(
             _input,

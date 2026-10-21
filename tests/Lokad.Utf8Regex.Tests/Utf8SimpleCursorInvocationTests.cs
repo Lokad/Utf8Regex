@@ -344,7 +344,7 @@ public sealed class Utf8SimpleCursorInvocationTests
         {
             var previous = invocation.Budget.Steps;
             Assert.Equal(Utf8ExecutionLimitKind.None, Utf8ExecutionInterpreter.TryFindNextSimplePattern(input,
-                prepared.ExecutionProgram, prepared.SearchPlan, prepared.SimplePatternPlan, floor, ref invocation,
+                prepared.SearchPlan, prepared.SimplePatternPlan, floor, ref invocation,
                 out var index, out var length));
             Assert.Equal((expected.Index, expected.Length), (index, length));
             Assert.True(invocation.Budget.Steps > previous);
@@ -352,7 +352,7 @@ public sealed class Utf8SimpleCursorInvocationTests
             floor = index + length;
         }
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8ExecutionInterpreter.TryFindNextSimplePattern(input,
-            prepared.ExecutionProgram, prepared.SearchPlan, prepared.SimplePatternPlan, floor, ref invocation,
+            prepared.SearchPlan, prepared.SimplePatternPlan, floor, ref invocation,
             out var terminalIndex, out var terminalLength));
         Assert.Equal(-1, terminalIndex);
         Assert.Equal(0, terminalLength);

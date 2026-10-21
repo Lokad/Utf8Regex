@@ -165,7 +165,7 @@ public sealed class Utf8OwnedTreeParserGroupTests
     public static IEnumerable<object?[]> GroupInvalidNameDeclineCases()
     {
         // BCL capture-name rule (machine-probed): names with non-word characters
-        // decline to the BCL fallback with the pinned construction error.
+        // fail in the owned parser with the pinned construction error.
         yield return new object?[] { "(?<a b>c)", 512, RegexParseError.CaptureGroupNameInvalid, 4 };
         yield return new object?[] { "(?<,>a)", 512, RegexParseError.CaptureGroupNameInvalid, 3 };
         yield return new object?[] { "(?<a'b>c)", 512, RegexParseError.CaptureGroupNameInvalid, 4 };

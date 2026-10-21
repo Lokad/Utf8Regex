@@ -28,11 +28,10 @@ internal static class Utf8RegexPreparer
             }
 
             // The scalar fallback and its offset/profile adapters do not execute
-            // this native instruction tree. Direct-family kernels retain their
+            // this native execution tree. Direct-family kernels retain their
             // preparation and capture-projection inputs.
             var tree = analyzedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !fallbackDirectFamily.HasValue
                 ? null : Utf8ExecutionTreeLowerer.Lower(analyzedRegex.SemanticRegex);
-            var program = Utf8ExecutionProgramLowerer.Lower(tree);
             var searchPlan = Utf8SearchPlan.Prepare(analyzedRegex.SearchFacts);
             var deterministicGuards = Utf8DeterministicVerifierGuards.Create(tree, searchPlan);
             var structuralSearchPlan = searchPlan.StructuralSearchPlan
@@ -72,7 +71,7 @@ internal static class Utf8RegexPreparer
                 var hasAbsoluteAnchor = (simplePlan.IsStartAnchored && simplePlan.IsAbsoluteStartAnchored) ||
                     (simplePlan.IsEndAnchored && simplePlan.IsAbsoluteEndAnchored);
                 if (compiledPatternCategory == Utf8CompiledPatternCategory.None && structuralLinearProgram.HasValue &&
-                    !(hasLineAnchor && !hasAbsoluteAnchor && !Utf8CompiledSearchAnalysisPolicy.HasBackreferenceInstructions(program)))
+                    !(hasLineAnchor && !hasAbsoluteAnchor && !analyzedRegex.Features.HasBackreferences))
                 {
                     compiledPatternCategory = Utf8CompiledPatternCategory.DeterministicLinear;
                 }
@@ -89,7 +88,7 @@ internal static class Utf8RegexPreparer
                 _ => Utf8ExecutionBackend.NativeSimplePattern,
             };
 
-            var operationPlans = Utf8OperationMatchCursorPlans.Create(program, searchPlan, structuralLinearProgram,
+            var operationPlans = Utf8OperationMatchCursorPlans.Create(searchPlan, structuralLinearProgram,
                 analyzedRegex.SimplePatternPlan, structuralSearchPlan, structuralVerifier.AsciiProgram);
             var result = Utf8PreparedRegex.Create(
                 new Utf8PreparedSemanticRegex(analyzedRegex.SemanticRegex.Pattern, analyzedRegex.SemanticRegex.Options,
@@ -101,7 +100,6 @@ internal static class Utf8RegexPreparer
                 executionBackend,
                 compiledPatternCategory,
                 tree,
-                program,
                 scalarProgram,
                 operationPlans,
                 structuralSearchPlan,

@@ -16,8 +16,7 @@ internal sealed class Utf8OperationMatchCursorPlans
         Utf8StructuralLinearProgram StructuralLinearProgram,
         AsciiSimplePatternPlan SimplePatternPlan,
         Utf8StructuralSearchPlan StructuralSearchPlan,
-        AsciiStructuralVerifierProgram StructuralVerifier,
-        Utf8ExecutionProgram? ExecutionProgram);
+        AsciiStructuralVerifierProgram StructuralVerifier);
 
     private Utf8OperationMatchCursorPlans(ConstructionState state)
     {
@@ -26,11 +25,9 @@ internal sealed class Utf8OperationMatchCursorPlans
         _simplePatternPlan = state.SimplePatternPlan;
         _structuralSearchPlan = state.StructuralSearchPlan;
         _structuralVerifier = state.StructuralVerifier;
-        ExecutionProgram = state.ExecutionProgram;
     }
 
     internal static Utf8OperationMatchCursorPlans Create(
-        Utf8ExecutionProgram? executionProgram,
         Utf8SearchPlan searchPlan,
         Utf8StructuralLinearProgram structuralLinearProgram,
         AsciiSimplePatternPlan simplePatternPlan,
@@ -39,7 +36,7 @@ internal sealed class Utf8OperationMatchCursorPlans
     {
         using var scope = Utf8ConstructionScope.Enter();
         var result = scope.Budget.AllocateObject(new ConstructionState(searchPlan, structuralLinearProgram,
-            simplePatternPlan, structuralSearchPlan, structuralVerifier, executionProgram),
+            simplePatternPlan, structuralSearchPlan, structuralVerifier),
             static state => new Utf8OperationMatchCursorPlans(state));
         scope.Complete();
         return result;
@@ -47,9 +44,7 @@ internal sealed class Utf8OperationMatchCursorPlans
 
     // Shared immutable empty plans are borrowed, not acquired per invocation.
     public static Utf8OperationMatchCursorPlans Empty { get; } = new(new ConstructionState(
-        default, default, default, default, default, null));
-
-    public Utf8ExecutionProgram? ExecutionProgram { get; }
+        default, default, default, default, default));
 
     public ref readonly Utf8SearchPlan SearchPlan => ref _searchPlan;
 

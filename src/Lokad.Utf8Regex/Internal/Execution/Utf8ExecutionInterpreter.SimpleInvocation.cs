@@ -10,7 +10,7 @@ internal static partial class Utf8ExecutionInterpreter
     // neither capture snapshots nor VM state; use the controlled cursor finder
     // with its original invocation, bounded searches and token comparisons.
     internal static Utf8ExecutionLimitKind TryCountSimplePattern(ReadOnlySpan<byte> input,
-        Utf8ExecutionProgram? program, in Utf8SearchPlan search, in AsciiSimplePatternPlan plan,
+        in Utf8SearchPlan search, in AsciiSimplePatternPlan plan,
         ref Utf8SliceInvocation invocation, out int count)
     {
         count = 0;
@@ -18,7 +18,7 @@ internal static partial class Utf8ExecutionInterpreter
         var floor = 0;
         while (floor <= input.Length)
         {
-            var breach = TryFindNextSimplePattern(input, program, search, plan, floor,
+            var breach = TryFindNextSimplePattern(input, search, plan, floor,
                 ref invocation, out var index, out var length);
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             if (index < 0) break;
@@ -32,17 +32,17 @@ internal static partial class Utf8ExecutionInterpreter
     }
 
     internal static Utf8ExecutionLimitKind TryFindNextSimplePattern(ReadOnlySpan<byte> input,
-        Utf8ExecutionProgram? program, in Utf8SearchPlan search, in AsciiSimplePatternPlan plan,
+        in Utf8SearchPlan search, in AsciiSimplePatternPlan plan,
         int floor, ref Utf8SliceInvocation invocation, out int index, out int length)
     {
         index = -1;
         length = 0;
         var breach = invocation.TryChargeInputStep();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
-        if (program is null || (uint)floor > (uint)input.Length) return Utf8ExecutionLimitKind.None;
+        if (plan.Branches is not { Length: > 0 } || (uint)floor > (uint)input.Length) return Utf8ExecutionLimitKind.None;
         if (invocation.IsUnmetered && invocation.CheckpointHook is null)
         {
-            index = FindNextSimplePattern(input, program, search, plan, floor,
+            index = FindNextSimplePattern(input, search, plan, floor,
                 invocation.Budget.Deadline, out length);
             return Utf8ExecutionLimitKind.None;
         }

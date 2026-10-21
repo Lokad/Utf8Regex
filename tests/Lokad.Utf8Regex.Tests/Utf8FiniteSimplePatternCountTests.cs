@@ -90,7 +90,7 @@ public sealed class Utf8FiniteSimplePatternCountTests
         Assert.True(Utf8Validation.Validate(input, ref baseline).IsAscii);
         var prepared = regex.Inspection.PreparedRegex;
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8ExecutionInterpreter.TryCountSimplePattern(input,
-            prepared.ExecutionProgram, prepared.SearchPlan, prepared.SimplePatternPlan, ref baseline, out var baselineCount));
+            prepared.SearchPlan, prepared.SimplePatternPlan, ref baseline, out var baselineCount));
         Assert.Equal(expected, baselineCount);
         for (ulong work = 1; work < baseline.Budget.Steps; work++)
         {
@@ -113,7 +113,7 @@ public sealed class Utf8FiniteSimplePatternCountTests
         var limits = new Utf8ExecutionLimits(1000000, 1024, 1 << 20, 1 << 20);
         var measured = new Utf8SliceInvocation(limits, Regex.InfiniteMatchTimeout, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8ExecutionInterpreter.TryCountSimplePattern(input,
-            prepared.ExecutionProgram, prepared.SearchPlan, prepared.SimplePatternPlan, ref measured, out var count));
+            prepared.SearchPlan, prepared.SimplePatternPlan, ref measured, out var count));
         Assert.Equal(expected, count);
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -130,7 +130,7 @@ public sealed class Utf8FiniteSimplePatternCountTests
             entered = true; if (expire) ticks = 50; else token.Cancel();
         };
         var failure = Record.Exception(() => Utf8ExecutionInterpreter.TryCountSimplePattern(input,
-            prepared.ExecutionProgram, prepared.SearchPlan, prepared.SimplePatternPlan, ref invocation, out _));
+            prepared.SearchPlan, prepared.SimplePatternPlan, ref invocation, out _));
         Assert.True(entered);
         if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
         else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);

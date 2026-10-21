@@ -139,7 +139,6 @@ public sealed partial class Utf8Regex
         {
             return Utf8ExecutionInterpreter.FindNextSimplePattern(
                 input,
-                _preparedRegex.ExecutionProgram,
                 _preparedRegex.SearchPlan,
                 _preparedRegex.SimplePatternPlan,
                 0,
@@ -184,7 +183,7 @@ public sealed partial class Utf8Regex
             }
         }
         // Anchored literal prefixes count directly through the router below: at most one
-        // anchored match, byte-exact on every input, so neither BCL fallback applies.
+        // anchored match, byte-exact on every input, without general scalar discovery.
         // Folded prefixes ride the same router arm, which switches on the kind.
         if (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix)
         {

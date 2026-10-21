@@ -1569,7 +1569,7 @@ internal static class Utf8OwnedTreeParser
                 // BCL capture-name rule (machine-probed on .NET 10): every name
                 // character is a Unicode word character (letters, decimal digits,
                 // connector punctuation, nonspacing marks, ZWJ/ZWNJ). Anything
-                // else declines to the BCL fallback exactly like the oracle.
+                // else fails construction with the owned parser error below.
                 state.Fail(Utf8PatternError.InvalidCaptureName, frame.OpenPosition + 1);
                 context.Fail(state);
                 return false;

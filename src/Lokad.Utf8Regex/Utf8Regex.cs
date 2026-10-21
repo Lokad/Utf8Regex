@@ -1271,7 +1271,7 @@ public sealed partial class Utf8Regex
                     _preparedRegex.SimplePatternPlan is { Branches.Length: > 0, MinLength: > 0 } simple)
                 {
                     var branchBreach = Utf8ExecutionInterpreter.TryCountSimplePattern(input,
-                        _preparedRegex.ExecutionProgram, _preparedRegex.SearchPlan, simple, ref invocation,
+                        _preparedRegex.SearchPlan, simple, ref invocation,
                         out var branchCount);
                     if (branchBreach != Utf8ExecutionLimitKind.None)
                         throw new InvalidOperationException("Native simple count breached the invocation budget.");

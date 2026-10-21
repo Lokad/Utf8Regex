@@ -10,8 +10,8 @@ namespace Lokad.Utf8Regex.Tests;
 // categories pass through, groups and backreferences thread options, tree
 // contributions come from leading constructs only), scoped shapes verified by
 // metadata plus detailed behavior instead of tree equality, decline agreement on
-// reversed ranges and astral escapes, and three folding-compound fork artifacts
-// that vanish at the flip (the fork over-matches; the flip routes fallback BCL-exact).
+// reversed ranges and astral escapes, and folding-compound behavior through
+// the owned engine on inputs where the BCL comparator agrees.
 public sealed class Utf8OwnedTreeParserIgnoreCaseTests
 {
     public static IEnumerable<object?[]> IgnoreCaseAcceptCases()
