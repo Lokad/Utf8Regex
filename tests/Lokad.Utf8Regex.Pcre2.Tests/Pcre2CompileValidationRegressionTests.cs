@@ -47,11 +47,8 @@ public sealed class Pcre2CompileValidationRegressionTests
     }
 
     [Fact]
-    public void FinalAllDeclinedFoundationFailsDuringCompilation()
+    public void UnsupportedGrammarRefusesBeforeProgramPublication()
     {
-        using var construction = Utf8ConstructionScope.Enter();
-        Assert.Throws<NotSupportedException>(() => Pcre2Compiler.Compile(
-            new(@"\u0041", default, default, default, Timeout.InfiniteTimeSpan),
-            Pcre2CompiledProgramOverlay.CreateGenericFoundation));
+        Assert.Throws<NotSupportedException>(() => new Utf8Pcre2Regex(@"\u0041"));
     }
 }

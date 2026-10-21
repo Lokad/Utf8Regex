@@ -86,7 +86,7 @@ public sealed partial class Utf8Pcre2Regex
             compileSettings,
             defaultExecutionLimits,
             validatedTimeout);
-        _program = Pcre2Compiler.Compile(request, CreateFoundationProgram);
+        _program = Pcre2Compiler.Compile(request);
         var isMatchProgram = _program.Operations.IsMatch;
         if (Pcre2GlobalOperationDriver.HasUnmeteredExecution(request) &&
             isMatchProgram is Pcre2FiniteLiteralLanguageDirectProgram or
@@ -127,26 +127,6 @@ public sealed partial class Utf8Pcre2Regex
             HeapLimitInBytes = resourcePolicy.MaxWorkingBytes ?? 0ul,
             ResultLimitInBytes = resourcePolicy.MaxResultBytes ?? 0ul,
         };
-    }
-
-    private static Pcre2CompiledProgram CreateFoundationProgram(Pcre2CompileRequest request)
-    {
-        _ = TryCreateUtf8Regex(request.Pattern, request.Options, request.MatchTimeout, out var utf8Regex);
-
-        IPcre2Utf8ProgramSlot primaryUtf8 = utf8Regex is null
-            ? Pcre2EmptyUtf8ProgramSlot.Instance
-            : new Pcre2Utf8ProgramSlot(utf8Regex);
-        var direct = Pcre2NoDirectProgram.Instance;
-        var operations = new Pcre2OperationPrograms(direct, direct, direct, direct, direct);
-        return new Pcre2CompiledProgram(
-            request,
-            primaryUtf8,
-            operations,
-            default,
-            Pcre2PartialProbeProgram.None,
-            Pcre2LegacySyntaxTree.Instance,
-            ["0"],
-            []);
     }
 
     /// <summary>Compiles a well-formed UTF-8 PCRE2 pattern with default options, settings, limits, and timeout.</summary>
@@ -532,9 +512,7 @@ public sealed partial class Utf8Pcre2Regex
         var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, false);
         if (Pcre2GlobalOperationDriver.TryCreateCursor(_program, subject, start, matchOptions, out var directCursor, budget))
             return new Utf8Pcre2ValueMatchEnumerator(input, directCursor);
-        if (_program.Operations.Enumerate.Kind != Pcre2DirectProgramKind.None)
-            return EnumerateMatchesViaConfiguredBackend(subject, start, matchOptions, invocation);
-        throw CreateUnsupportedPatternException();
+        return EnumerateMatchesViaConfiguredBackend(subject, start, matchOptions, invocation);
     }
 
     private static NotSupportedException CreateUnsupportedPatternException() =>
@@ -1189,51 +1167,6 @@ public sealed partial class Utf8Pcre2Regex
     {
         var subject = Utf8ValidatedInput.Create(input);
         _ = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
-    }
-
-    private static bool TryCreateUtf8Regex(string pattern, Pcre2CompileOptions options, TimeSpan matchTimeout, out Utf8Regex? regex)
-    {
-        try
-        {
-            regex = new Utf8Regex(pattern, ToRegexOptions(options), matchTimeout);
-            return true;
-        }
-        catch (ArgumentException)
-        {
-            regex = null;
-            return false;
-        }
-        catch (NotSupportedException)
-        {
-            regex = null;
-            return false;
-        }
-    }
-
-    private static RegexOptions ToRegexOptions(Pcre2CompileOptions options)
-    {
-        var regexOptions = RegexOptions.None;
-        if ((options & Pcre2CompileOptions.Caseless) != 0)
-        {
-            regexOptions |= RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-        }
-
-        if ((options & Pcre2CompileOptions.Multiline) != 0)
-        {
-            regexOptions |= RegexOptions.Multiline;
-        }
-
-        if ((options & Pcre2CompileOptions.DotAll) != 0)
-        {
-            regexOptions |= RegexOptions.Singleline;
-        }
-
-        if ((options & (Pcre2CompileOptions.Extended | Pcre2CompileOptions.ExtendedMore)) != 0)
-        {
-            regexOptions |= RegexOptions.IgnorePatternWhitespace;
-        }
-
-        return regexOptions;
     }
 
     private bool TryReplaceUsingLiteralDriver(

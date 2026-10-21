@@ -63,6 +63,7 @@ internal static class Pcre2AsciiBoundedIsMatchAnalyzer
         Pcre2CompileRequest request,
         Pcre2BacktrackingProgram fallback)
     {
+        using var construction = Utf8ConstructionScope.Enter();
         if (request.Options != Pcre2CompileOptions.None ||
             request.Settings.Newline != Pcre2NewlineConvention.Default ||
             request.Settings.Bsr != Pcre2BsrConvention.Default ||
@@ -77,11 +78,12 @@ internal static class Pcre2AsciiBoundedIsMatchAnalyzer
             return null;
         }
 
-        return new Pcre2AsciiBoundedIsMatchDirectProgram(
-            alternatives,
-            beginningOfSubject,
-            endOfSubjectOrFinalNewline,
-            fallback);
+        var result = construction.Budget.AllocateObject(
+            (alternatives, beginningOfSubject, endOfSubjectOrFinalNewline, fallback),
+            static state => new Pcre2AsciiBoundedIsMatchDirectProgram(state.alternatives,
+                state.beginningOfSubject, state.endOfSubjectOrFinalNewline, state.fallback));
+        construction.Complete();
+        return result;
     }
 
     internal static bool TryGetMatchBody(
@@ -134,14 +136,32 @@ internal static class Pcre2AsciiBoundedIsMatchAnalyzer
             return false;
         }
 
-        matchBody = first == 0 && last == sequence.Children.Length
-            ? root
-            : new Pcre2SequenceBacktrackingNode(sequence.Children[first..last]);
+        matchBody = root;
+        if (first != 0 || last != sequence.Children.Length)
+        {
+            var budget = Utf8ConstructionScope.CurrentBudget;
+            var children = budget.AllocateArray<IPcre2BacktrackingNode>(last - first, false);
+            budget.ChargeWork((ulong)children.Length);
+            sequence.Children.AsSpan(first, children.Length).CopyTo(children);
+            matchBody = budget.AllocateObject(children, static nodes => new Pcre2SequenceBacktrackingNode(nodes));
+        }
         return true;
     }
 
-    internal static bool TryExpand(
-        IPcre2BacktrackingNode node,
+    internal static bool TryExpand(IPcre2BacktrackingNode node, out AsciiCharClass[][] alternatives)
+    {
+        using var construction = Utf8ConstructionScope.Enter();
+        var depth = Pcre2BacktrackingCompiler.EnterDepth();
+        try
+        {
+            var result = TryExpandCore(node, construction.Budget, out alternatives);
+            if (result) construction.Complete();
+            return result;
+        }
+        finally { depth.LeaveDepth(); }
+    }
+
+    private static bool TryExpandCore(IPcre2BacktrackingNode node, Utf8ConstructionBudget budget,
         out AsciiCharClass[][] alternatives)
     {
         switch (node)
@@ -149,13 +169,16 @@ internal static class Pcre2AsciiBoundedIsMatchAnalyzer
             case Pcre2TokenBacktrackingNode token:
                 if (TryGetAsciiClass(token.Token, out var asciiClass))
                 {
-                    alternatives = [[asciiClass]];
+                    alternatives = budget.AllocateArray<AsciiCharClass[]>(1, false);
+                    alternatives[0] = budget.AllocateArray<AsciiCharClass>(1, false);
+                    alternatives[0][0] = asciiClass;
                     return true;
                 }
 
                 break;
             case Pcre2SequenceBacktrackingNode { Children.Length: > 0 } sequence:
-                alternatives = [[]];
+                alternatives = budget.AllocateArray<AsciiCharClass[]>(1, false);
+                alternatives[0] = [];
                 foreach (var child in sequence.Children)
                 {
                     if (!TryExpand(child, out var childAlternatives) ||
@@ -169,7 +192,7 @@ internal static class Pcre2AsciiBoundedIsMatchAnalyzer
                 return true;
             case Pcre2AlternationBacktrackingNode { Alternatives.Length: > 0 } alternation:
             {
-                var expanded = new List<AsciiCharClass[]>();
+                using var expanded = new Utf8ConstructionBuffer<AsciiCharClass[]>(budget);
                 foreach (var branch in alternation.Alternatives)
                 {
                     if (!TryExpand(branch, out var branchAlternatives) ||
@@ -182,7 +205,7 @@ internal static class Pcre2AsciiBoundedIsMatchAnalyzer
                     expanded.AddRange(branchAlternatives);
                 }
 
-                alternatives = [.. expanded];
+                alternatives = expanded.Take();
                 return true;
             }
             case Pcre2CaptureBacktrackingNode capture:
@@ -192,12 +215,13 @@ internal static class Pcre2AsciiBoundedIsMatchAnalyzer
                 Maximum: < int.MaxValue,
                 Preference: not Pcre2RepeatPreference.Possessive,
             } repeat when repeat.Maximum <= MaximumTokensPerAlternative:
+            {
                 if (!TryExpand(repeat.Body, out var bodyAlternatives))
                 {
                     break;
                 }
 
-                var repeated = new List<AsciiCharClass[]>();
+                using var repeated = new Utf8ConstructionBuffer<AsciiCharClass[]>(budget);
                 var firstCount = repeat.Preference == Pcre2RepeatPreference.Lazy
                     ? repeat.Minimum
                     : repeat.Maximum;
@@ -207,7 +231,8 @@ internal static class Pcre2AsciiBoundedIsMatchAnalyzer
                 var increment = firstCount <= lastCount ? 1 : -1;
                 for (var count = firstCount; ; count += increment)
                 {
-                    AsciiCharClass[][] states = [[]];
+                    var states = budget.AllocateArray<AsciiCharClass[]>(1, false);
+                    states[0] = [];
                     for (var i = 0; i < count; i++)
                     {
                         if (!TryConcatenate(states, bodyAlternatives, out states))
@@ -230,8 +255,9 @@ internal static class Pcre2AsciiBoundedIsMatchAnalyzer
                     }
                 }
 
-                alternatives = [.. repeated];
+                alternatives = repeated.Take();
                 return true;
+            }
         }
 
         alternatives = [];
@@ -249,7 +275,8 @@ internal static class Pcre2AsciiBoundedIsMatchAnalyzer
             return false;
         }
 
-        product = new AsciiCharClass[left.Length * right.Length][];
+        var budget = Utf8ConstructionScope.CurrentBudget;
+        product = budget.AllocateArray<AsciiCharClass[]>(left.Length * right.Length, false);
         var productIndex = 0;
         foreach (var leftAlternative in left)
         {
@@ -261,7 +288,8 @@ internal static class Pcre2AsciiBoundedIsMatchAnalyzer
                     return false;
                 }
 
-                var combined = new AsciiCharClass[leftAlternative.Length + rightAlternative.Length];
+                var combined = budget.AllocateArray<AsciiCharClass>(leftAlternative.Length + rightAlternative.Length, false);
+                budget.ChargeWork((ulong)combined.Length + 1);
                 leftAlternative.CopyTo(combined, 0);
                 rightAlternative.CopyTo(combined, leftAlternative.Length);
                 product[productIndex++] = combined;
