@@ -74,6 +74,10 @@ Option eligibility omits unneeded Core preparation, and final operation selectio
 drops unused original owners. Finite languages retain their derived Core owner.
 Shared slice slots own the same immutable scalar payload and profile fallback
 directly; their ownership does not require the unused Core facade to survive.
+Operation selection precedes one complete program publication. There is no
+injected legacy-foundation factory, dummy syntax tree or no-operation program.
+Optional finite/ASCII expansion admits major state/buffers and bounded work
+through the original construction owner; fixed shape caps alone are insufficient.
 
 ## Invocation and global progress
 

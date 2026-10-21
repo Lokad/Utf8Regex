@@ -98,8 +98,19 @@ Compile-time syntax checks apply to quantifier bounds and option/escape grammar
 in context, outside quoted text, comments, classes and escape operands. Finite
 quantifier bounds are at most 65535 and the lower bound cannot exceed the upper.
 If all compilers decline, construction throws `NotSupportedException` instead of
-returning an expression with no executable operation. Empty intermediate
-foundations remain valid while a live profile compiler supplies its operations.
+returning an expression with no executable operation. Selection starts with the
+owned semantic program and optional eligible Core, then publishes complete
+operation slots once. Legacy/no-operation foundations are removed.
+
+Finite-literal and bounded-ASCII optional expansion shares construction work,
+depth and major capacity admission before acquiring buffers. Coarse state/map
+allowances can count sharing again and remain reserved until eager construction
+finishes; smaller caps can therefore refuse earlier. Literal text/encoding,
+alternative arrays and growth/copy overlap remain covered, with original
+interruption throughout bounded traversal. Capture maps are omitted when no
+backreference consumes them; published capture semantics still use the owned
+matcher. Fixed expansion caps supplement the caller's admission, rather than
+substituting for it. These controls do not bound all allocations or RSS.
 
 Character-class ranges compare decoded Unicode-scalar endpoints. Raw
 `[😀-😃]` and escaped `[\x{1F600}-\x{1F603}]` have the same membership; UTF-16

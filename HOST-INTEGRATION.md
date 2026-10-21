@@ -25,6 +25,11 @@ Cached Core facades use one conservative 512-byte allowance before allocation,
 with their major children admitted separately. The former field-layout mirror is
 removed. Compared with its 208-byte modeled descriptor, this can cause earlier
 construction refusal or cache eviction; it does not change actual object size.
+The prepared-program, scalar-program and dynamic IL builder carriers use coarse
+2,048 / 512 / 512-byte allowances respectively, replacing modeled field mirrors
+of 1,024 / 144 / 144 bytes. Direct construction keeps admission before allocation;
+major children and real array/value layout queries retain separate coverage.
+These larger conservative charges can cause earlier refusal/eviction.
 Development after the frozen RC1 removes the test-only unbounded cache mode.
 Every producer supplies a conservative bounded payload policy. Program and
 verifier wrappers use their existing 128-byte admission floors directly instead
@@ -51,6 +56,19 @@ policy scans; no new grammar parser is introduced. Earlier denial before a later
 syntax error is intentional when the construction allowance is insufficient.
 Selected operations retain only Core expressions they execute; shared slices
 own their immutable program and PCRE2 fallback directly.
+PCRE2 finite-literal and bounded-ASCII optimizers also share construction work,
+depth and major expansion-capacity admission before acquisition. Temporary state
+and payloads may be charged again and held until eager construction completes;
+this deliberately favors an enforceable bound over exact liveness accounting.
+Capture maps are omitted when no reference uses them; actual capture results
+still come from the owned matcher. Compilation selects complete operation slots
+before publishing one program; dummy legacy foundations are removed.
+
+Cache interruption/size probes are closed library implementations and cannot
+mutate their cache while its lock is held. Outside-lock preparation can still
+race or reenter clear/shrink; generation coordination and cancellable waits
+remain. Synthetic diagnostic mutation at every publication checkpoint is no
+longer an internal contract. Public operations and retained aliases are unchanged.
 
 These are existing calls, using each profile's option type. `policy` applies to
 later invocations; `construction`, `constructionTimeout` and `token` apply only

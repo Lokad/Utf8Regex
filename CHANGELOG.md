@@ -2,6 +2,16 @@
 
 ## Unreleased development after 0.4.0-rc.1
 
+- PCRE2 optional finite/ASCII expansion now admits major state and buffers and
+  checks original interruption. Unreferenced capture-map copies and throwaway
+  legacy program foundations are removed; operation publication is complete.
+- Large prepared/scalar/IL carrier mirrors use direct construction with coarse
+  admission. These conservative charges can refuse or evict earlier. Cache
+  generation/cancellation guarantees remain; diagnostic mutation under its lock
+  no longer requires a separate revision/retry protocol.
+- Retired the completed README-to-JSON reverse migration, syntax-only source
+  gates and an unassigned diagnostic route. Historical measurements remain intact.
+
 - Null text patterns now report `ArgumentNullException` across all profiles.
   Existing policy/options/timeout and explicit Compile pre-cancellation ordering
   remain; empty text/default UTF-8 spans still compile empty patterns.

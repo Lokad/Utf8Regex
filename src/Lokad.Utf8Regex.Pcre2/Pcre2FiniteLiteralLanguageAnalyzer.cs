@@ -56,6 +56,7 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
         var alternatives = new List<Pcre2FiniteLiteralState>(states.Count);
         foreach (var state in states)
         {
+            budget.ChargeWork((ulong)state.Value.Length + 1);
             if (distinctValues.Add(state.Value))
             {
                 alternatives.Add(state);
@@ -312,6 +313,7 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
                         when backreference.Options == Pcre2CharacterOptions.None:
                         foreach (var input in inputs)
                         {
+                        budget.ChargeWork((ulong)input.Captures.Count + 1);
                             var slot = backreference.Target.Kind switch
                             {
                                 Pcre2BackreferenceTargetKind.Absolute => backreference.Target.Number,

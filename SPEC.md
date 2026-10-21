@@ -551,7 +551,9 @@ is required. One 16 KiB constructor allowance covers fixed frontend/empty metada
 major dynamic storage retains admission. Oversized keys prepare uncached before
 hashing impossible retained text. Null static patterns fail with the public
 `pattern` parameter. Pending preparation/generation coordination, cancellation,
-reentrant clear/shrink and held program/result validity survive eviction.
+clear/shrink during outside-lock preparation and held program/result validity
+survive eviction. Closed interruption/storage probes do not mutate the cache
+under its lock; diagnostic callback reentrancy at publication is not supported.
 Independent test-owned major graph measurements validate conservative coverage.
 Opaque CLR/JIT metadata, arbitrary host retention and RSS remain outside the bound.
 

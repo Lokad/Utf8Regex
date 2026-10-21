@@ -3907,5 +3907,3 @@ internal interface IPcre2SyntaxTree
 {
     Pcre2SyntaxNodeKind RootKind { get; }
 }
-
-
