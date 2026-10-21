@@ -224,15 +224,6 @@ public sealed class Utf8EmissionConstructionAdmissionTests
         }
     }
 
-    [Fact]
-    public void BuilderTransferStateCoversItsCompleteFieldExtent()
-    {
-        var type = typeof(Utf8DynamicIlBuilder);
-        var state = type.GetNestedType("ConstructionState", BindingFlags.NonPublic)!;
-        Assert.Equal(type.GetFields(BindingFlags.Instance | BindingFlags.NonPublic).Select(f => f.FieldType.FullName).Order(),
-            state.GetFields(BindingFlags.Instance | BindingFlags.NonPublic).Select(f => f.FieldType.FullName).Order());
-    }
-
     private delegate int RefInt(ref int value);
 
     [Theory]

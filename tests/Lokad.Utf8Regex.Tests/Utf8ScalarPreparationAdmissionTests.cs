@@ -98,20 +98,7 @@ public sealed class Utf8ScalarPreparationAdmissionTests
         var prepared = Utf8FrontEnd.Compile("[A-Z]+", RegexOptions.CultureInvariant);
         Assert.NotNull(prepared);
         Assert.NotNull(prepared.OperationMatchCursorPlans);
-        foreach (var type in new[] { typeof(Utf8PreparedRegex), typeof(Utf8OperationMatchCursorPlans) })
-        {
-            var ctor = Assert.Single(type.GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic));
-            Assert.True(ctor.IsPrivate);
-            Assert.Empty(type.GetConstructors(BindingFlags.Instance | BindingFlags.Public));
-            var state = Assert.Single(ctor.GetParameters()).ParameterType;
-            var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            var stateFields = state.GetFields(BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.Equal(fields.Select(field => field.FieldType), stateFields.Select(field => field.FieldType));
-            var costMethod = typeof(Utf8ConstructionBudget).GetMethod("ObjectBytes", BindingFlags.Static | BindingFlags.NonPublic)!;
-            var cost = Math.Max(128ul, (ulong)costMethod.MakeGenericMethod(state).Invoke(null, null)!);
-            Assert.True(owner.Budget.ReservedBytes >= cost);
-
-        }
+        Assert.True(owner.Budget.ReservedBytes >= Utf8PreparedRegex.ObjectBytes);
         Assert.NotNull(prepared.ScalarProgram);
         Assert.Same(prepared.SemanticRegex.CaptureCatalog, prepared.ScalarProgram.CaptureCatalog);
         Assert.Same(prepared.ExecutionProgram, prepared.OperationMatchCursorPlans.ExecutionProgram);

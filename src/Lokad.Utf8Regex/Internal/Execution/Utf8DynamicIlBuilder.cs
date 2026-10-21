@@ -19,13 +19,6 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
     private readonly record struct Fixup(int Offset, int Label, int Width);
     private readonly record struct Instruction(int Pops, int Pushes, int Target, FlowControl Flow);
     private readonly record struct MethodToken(int Token, int Parameters, int Returns, bool Instance);
-    private readonly record struct ConstructionState(Utf8ConstructionScope Scope, Utf8ConstructionBudget Budget,
-        DynamicMethod Method, DynamicILInfo Info, Utf8ConstructionBuffer<byte> Code,
-        Utf8ConstructionBuffer<LabelPoint> Labels, Utf8ConstructionBuffer<Fixup> Fixups,
-        Utf8ConstructionBuffer<Instruction> Instructions, Utf8ConstructionBuffer<Type> Locals,
-        Utf8ConstructionMap<MethodBase, MethodToken> Methods, Utf8ConstructionMap<Type, nint> Types,
-        ulong ScratchBytes,
-        int ParameterCount, bool Returns, bool Completed, bool Disposed);
 
     private readonly Utf8ConstructionScope _scope;
     private readonly Utf8ConstructionBudget _budget;
@@ -45,13 +38,28 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
     private bool _completed;
     private bool _disposed;
 
-    private Utf8DynamicIlBuilder(ConstructionState state)
+    internal static ulong ObjectBytes => 512;
+
+    private Utf8DynamicIlBuilder(
+        Utf8ConstructionScope scope,
+        Utf8ConstructionBudget budget,
+        DynamicMethod method,
+        DynamicILInfo info,
+        Utf8ConstructionBuffer<byte> code,
+        Utf8ConstructionBuffer<LabelPoint> labels,
+        Utf8ConstructionBuffer<Fixup> fixups,
+        Utf8ConstructionBuffer<Instruction> instructions,
+        Utf8ConstructionBuffer<Type> locals,
+        Utf8ConstructionMap<MethodBase, MethodToken> methods,
+        Utf8ConstructionMap<Type, nint> types,
+        int parameterCount,
+        bool returns)
     {
-        _scope = state.Scope; _budget = state.Budget; _method = state.Method; _info = state.Info;
-        _code = state.Code; _labels = state.Labels; _fixups = state.Fixups;
-        _instructions = state.Instructions; _locals = state.Locals;
-        _methods = state.Methods; _types = state.Types; _scratchBytes = state.ScratchBytes; _parameterCount = state.ParameterCount; _returns = state.Returns;
-        _completed = state.Completed; _disposed = state.Disposed;
+        _scope = scope; _budget = budget; _method = method; _info = info;
+        _code = code; _labels = labels; _fixups = fixups;
+        _instructions = instructions; _locals = locals;
+        _methods = methods; _types = types; _parameterCount = parameterCount; _returns = returns;
+
     }
 
     internal static Utf8DynamicIlBuilder Create(string name, Type result, Type owner, Type p0)
@@ -75,6 +83,9 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
         try
         {
             budget.EnterDepth(); entered = true;
+            budget.CheckBytes(ObjectBytes);
+            budget.ChargeWork(2);
+            budget.ReserveBytes(ObjectBytes);
             var copied = budget.AllocateArray<Type>(parameterCount, false);
             try
             {
@@ -87,7 +98,7 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
                 AdmitRuntimeCopy<Type>(budget, copied.Length, false);
                 var method = new DynamicMethod(name, result, copied, owner, skipVisibility: false);
                 var info = method.GetDynamicILInfo();
-                var state = new ConstructionState(scope, budget, method, info,
+                return new Utf8DynamicIlBuilder(scope, budget, method, info,
                     Utf8ConstructionBuffer<byte>.Create(budget, true),
                     Utf8ConstructionBuffer<LabelPoint>.Create(budget),
                     Utf8ConstructionBuffer<Fixup>.Create(budget),
@@ -95,9 +106,7 @@ internal sealed class Utf8DynamicIlBuilder : IDisposable
                     Utf8ConstructionBuffer<Type>.Create(budget),
                     Utf8ConstructionMap<MethodBase, MethodToken>.Create(budget, EqualityComparer<MethodBase>.Default),
                     Utf8ConstructionMap<Type, nint>.Create(budget, EqualityComparer<Type>.Default),
-                    0UL,
-                    copied.Length, result != typeof(void), false, false);
-                return budget.AllocateObject(state, static value => new Utf8DynamicIlBuilder(value));
+                    copied.Length, result != typeof(void));
             }
             finally { budget.ReleaseArray(copied, false); }
         }

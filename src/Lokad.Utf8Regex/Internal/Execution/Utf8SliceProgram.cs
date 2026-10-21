@@ -272,76 +272,76 @@ internal sealed class Utf8SliceAssertion
 
 internal sealed class Utf8SliceProgram
 {
-    private readonly record struct ConstructionState(
-        Utf8SliceInstruction[] Instructions,
-        bool IsNonBacktracking,
-        int NonBacktrackingCaptureOpeningCount,
-        int[] NonBacktrackingEpsilonOrder,
-        Func<int, int>[] BackreferenceLowerings,
-        byte[][] SetMasks,
-        Utf8SliceNode.CategorySetMember[][] CategorySetMembers,
-        int RepeatCount,
-        int GroupCount,
-        Utf8SliceAssertion[] Assertions,
-        bool HasNonFixedLookbehind,
-        bool HasOrderSensitiveLookbehind,
-        bool UsesLiteralClassBracketSyntax,
-        bool HasMixedNamedGroups,
-        Utf8CaptureCatalog? CaptureCatalog,
-        bool UsesCaptureOpeningJournal,
-        bool HasBalancing,
-        bool IgnoreCase,
-        Utf8ScalarCaseBehavior CaseBehavior,
-        bool HasContiguousAnchor,
-        bool HasConditionalTest,
-        bool SawLookaround,
-        bool SawCapturingLookbehind,
-        bool RightToLeft,
-        bool CanMatchEmpty,
-        bool HasUnicodePatternAtoms,
-        bool UsesInterpretedLazyLoopSemantics,
-        int[] GroupNumbers,
-        string[] GroupNames,
-        bool RequiresUnicodeWordBoundary,
-        bool RequiresUnicodeShorthand,
-        bool RequiresUnicodeCategory);
 
-    internal static ulong ObjectBytes => Utf8ConstructionBudget.ObjectBytes<ConstructionState>();
+    // Conservative carrier allowance; major children have separate admission.
+    internal static ulong ObjectBytes => 512;
 
-    private Utf8SliceProgram(ConstructionState state)
+    private Utf8SliceProgram(
+        Utf8SliceInstruction[] instructions,
+        bool isNonBacktracking,
+        int nonBacktrackingCaptureOpeningCount,
+        int[] nonBacktrackingEpsilonOrder,
+        Func<int, int>[] backreferenceLowerings,
+        byte[][] setMasks,
+        Utf8SliceNode.CategorySetMember[][] categorySetMembers,
+        int repeatCount,
+        int groupCount,
+        Utf8SliceAssertion[] assertions,
+        bool hasNonFixedLookbehind,
+        bool hasOrderSensitiveLookbehind,
+        bool usesLiteralClassBracketSyntax,
+        bool hasMixedNamedGroups,
+        Utf8CaptureCatalog? captureCatalog,
+        bool usesCaptureOpeningJournal,
+        bool hasBalancing,
+        bool ignoreCase,
+        Utf8ScalarCaseBehavior caseBehavior,
+        bool hasContiguousAnchor,
+        bool hasConditionalTest,
+        bool sawLookaround,
+        bool sawCapturingLookbehind,
+        bool rightToLeft,
+        bool canMatchEmpty,
+        bool hasUnicodePatternAtoms,
+        bool usesInterpretedLazyLoopSemantics,
+        int[] groupNumbers,
+        string[] groupNames,
+        bool requiresUnicodeWordBoundary,
+        bool requiresUnicodeShorthand,
+        bool requiresUnicodeCategory)
     {
-        Instructions = state.Instructions;
-        IsNonBacktracking = state.IsNonBacktracking;
-        NonBacktrackingCaptureOpeningCount = state.NonBacktrackingCaptureOpeningCount;
-        NonBacktrackingEpsilonOrder = state.NonBacktrackingEpsilonOrder;
-        BackreferenceLowerings = state.BackreferenceLowerings;
-        SetMasks = state.SetMasks;
-        CategorySetMembers = state.CategorySetMembers;
-        RepeatCount = state.RepeatCount;
-        GroupCount = state.GroupCount;
-        Assertions = state.Assertions;
-        HasNonFixedLookbehind = state.HasNonFixedLookbehind;
-        HasOrderSensitiveLookbehind = state.HasOrderSensitiveLookbehind;
-        UsesLiteralClassBracketSyntax = state.UsesLiteralClassBracketSyntax;
-        HasMixedNamedGroups = state.HasMixedNamedGroups;
-        CaptureCatalog = state.CaptureCatalog;
-        UsesCaptureOpeningJournal = state.UsesCaptureOpeningJournal;
-        HasBalancing = state.HasBalancing;
-        IgnoreCase = state.IgnoreCase;
-        CaseBehavior = state.CaseBehavior;
-        HasContiguousAnchor = state.HasContiguousAnchor;
-        HasConditionalTest = state.HasConditionalTest;
-        SawLookaround = state.SawLookaround;
-        SawCapturingLookbehind = state.SawCapturingLookbehind;
-        RightToLeft = state.RightToLeft;
-        CanMatchEmpty = state.CanMatchEmpty;
-        HasUnicodePatternAtoms = state.HasUnicodePatternAtoms;
-        UsesInterpretedLazyLoopSemantics = state.UsesInterpretedLazyLoopSemantics;
-        GroupNumbers = state.GroupNumbers;
-        GroupNames = state.GroupNames;
-        RequiresUnicodeWordBoundary = state.RequiresUnicodeWordBoundary;
-        RequiresUnicodeShorthand = state.RequiresUnicodeShorthand;
-        RequiresUnicodeCategory = state.RequiresUnicodeCategory;
+        Instructions = instructions;
+        IsNonBacktracking = isNonBacktracking;
+        NonBacktrackingCaptureOpeningCount = nonBacktrackingCaptureOpeningCount;
+        NonBacktrackingEpsilonOrder = nonBacktrackingEpsilonOrder;
+        BackreferenceLowerings = backreferenceLowerings;
+        SetMasks = setMasks;
+        CategorySetMembers = categorySetMembers;
+        RepeatCount = repeatCount;
+        GroupCount = groupCount;
+        Assertions = assertions;
+        HasNonFixedLookbehind = hasNonFixedLookbehind;
+        HasOrderSensitiveLookbehind = hasOrderSensitiveLookbehind;
+        UsesLiteralClassBracketSyntax = usesLiteralClassBracketSyntax;
+        HasMixedNamedGroups = hasMixedNamedGroups;
+        CaptureCatalog = captureCatalog;
+        UsesCaptureOpeningJournal = usesCaptureOpeningJournal;
+        HasBalancing = hasBalancing;
+        IgnoreCase = ignoreCase;
+        CaseBehavior = caseBehavior;
+        HasContiguousAnchor = hasContiguousAnchor;
+        HasConditionalTest = hasConditionalTest;
+        SawLookaround = sawLookaround;
+        SawCapturingLookbehind = sawCapturingLookbehind;
+        RightToLeft = rightToLeft;
+        CanMatchEmpty = canMatchEmpty;
+        HasUnicodePatternAtoms = hasUnicodePatternAtoms;
+        UsesInterpretedLazyLoopSemantics = usesInterpretedLazyLoopSemantics;
+        GroupNumbers = groupNumbers;
+        GroupNames = groupNames;
+        RequiresUnicodeWordBoundary = requiresUnicodeWordBoundary;
+        RequiresUnicodeShorthand = requiresUnicodeShorthand;
+        RequiresUnicodeCategory = requiresUnicodeCategory;
     }
 
     internal static Utf8SliceProgram Create(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool isNonBacktracking, int nonBacktrackingCaptureOpeningCount, int[] nonBacktrackingEpsilonOrder, Func<int, int>[] backreferenceLowerings)
@@ -380,7 +380,10 @@ internal sealed class Utf8SliceProgram
             budget.ChargeWork((ulong)groupNumbers.Length);
             for (var group = 0; group < groupNumbers.Length; group++) groupNumbers[group] = group;
         }
-        var result = budget.AllocateObject(new ConstructionState(
+        budget.CheckBytes(ObjectBytes);
+        budget.ChargeWork(2);
+        budget.ReserveBytes(ObjectBytes);
+        var result = new Utf8SliceProgram(
             instructions,
             isNonBacktracking,
             nonBacktrackingCaptureOpeningCount,
@@ -412,8 +415,7 @@ internal sealed class Utf8SliceProgram
             groupNames,
             requiresUnicodeWordBoundary,
             requiresUnicodeShorthand,
-            requiresUnicodeCategory),
-            static state => new Utf8SliceProgram(state));
+            requiresUnicodeCategory);
         construction.Complete(); return result;
     }
 
@@ -424,7 +426,6 @@ internal sealed class Utf8SliceProgram
     internal Func<int, int>[] BackreferenceLowerings { get; }
 
     internal byte[][] SetMasks { get; }
-
 
     internal Utf8SliceNode.CategorySetMember[][] CategorySetMembers { get; }
     internal int RepeatCount { get; }
@@ -546,7 +547,6 @@ internal sealed class Utf8SliceProgram
     // Consumers whose native properties are ASCII-scoped or unsupported
     // decline marked programs.
     internal bool RequiresUnicodeCategory { get; }
-
 
 }
 

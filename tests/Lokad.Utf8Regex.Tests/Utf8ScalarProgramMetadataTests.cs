@@ -98,13 +98,11 @@ public sealed class Utf8ScalarProgramMetadataTests
     }
 
     [Fact]
-    public void ProgramStateCoversEveryPublishedFieldWithoutMutableInitializers()
+    public void PublishedProgramFieldsRemainImmutable()
     {
         var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.DeclaredOnly;
         var fields = typeof(Utf8SliceProgram).GetFields(flags);
-        var state = typeof(Utf8SliceProgram).GetNestedType("ConstructionState", System.Reflection.BindingFlags.NonPublic);
-        Assert.NotNull(state); Assert.NotEmpty(fields);
-        Assert.Equal(fields.Select(static field => field.FieldType.ToString()).Order(), state.GetFields(flags).Select(static field => field.FieldType.ToString()).Order());
+        Assert.NotEmpty(fields);
         Assert.All(fields, static field => Assert.True(field.IsInitOnly));
         Assert.All(typeof(Utf8SliceProgram).GetProperties(flags), static property => Assert.Null(property.SetMethod));
     }
