@@ -2,6 +2,11 @@
 
 ## Unreleased development after 0.4.0-rc.1
 
+- PCRE2 partial-probe preparation now uses bounded semantic recognition instead
+  of serializing whole trees. Literal operands admit storage before acquisition;
+  original construction cancellation, deadlines and work/depth limits apply.
+  Covered construction can refuse earlier; the curated Probe profile is unchanged.
+
 - Fixed PCRE2 boolean DFA false negatives when repeated classes overlap a later
   literal or class (for example, `^\d*1$` on `11`). Overlapping paths now merge
   before state publication. Finite controls retain the original owned fallback.

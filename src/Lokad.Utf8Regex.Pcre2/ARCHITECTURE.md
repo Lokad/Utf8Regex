@@ -110,11 +110,14 @@ remain ordinary owned allocations.
 
 `Probe` is deliberately smaller than normal matching. The compiler recognizes
 the curated partial profile from character/backtracking semantic trees and
-emits a typed `Pcre2PartialProbeProgram`. Exact semantic-shape keys may select
-a specialized partial algorithm, but they are not complete source-pattern
-keys, do not affect normal matching, and fall back to the ordinary non-partial
-runner whenever the request does not ask for partial matching. Unsupported
-partial shapes fail explicitly.
+emits a typed `Pcre2PartialProbeProgram`. Fixed semantic recognizers inspect only
+the portions needed by the existing curated profile; unrelated trees are not
+serialized or traversed. Character literal operands admit exact storage before
+encoding, and bounded token scans retain original construction interruption.
+This preparation now consumes construction work/depth and major-storage allowance
+and can refuse earlier. It does not affect normal matching selection; requests
+without partial matching use the ordinary runner. Unsupported partial shapes
+still fail explicitly.
 
 ## Reuse from `Lokad.Utf8Regex`
 

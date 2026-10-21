@@ -1,6 +1,4 @@
-using System.Buffers;
-using System.Globalization;
-using System.Text;
+using Lokad.Utf8Regex.Internal;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
@@ -71,81 +69,39 @@ internal sealed class Pcre2PartialProbeProgram
 
 }
 
-internal static class Pcre2PartialProbeCompiler
+internal static partial class Pcre2PartialProbeCompiler
 {
     internal static Pcre2PartialProbeProgram Compile(Pcre2CharacterProgram characterProgram, Pcre2CompileRequest request)
     {
-        var tokens = characterProgram.Tokens;
-        if (TryCompileCharacterProgram(tokens, request, out var program))
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        budget.ChargeWork(1);
+        budget.EnterDepth();
+        try
         {
+            if (!TryCompileCharacterProgram(characterProgram.Tokens, request, out var program))
+                return Pcre2PartialProbeProgram.None;
+            construction.Complete();
             return program;
         }
-
-        return Pcre2PartialProbeProgram.None;
+        finally { budget.LeaveDepth(); }
     }
 
     internal static Pcre2PartialProbeProgram Compile(Pcre2BacktrackingSyntaxTree syntaxTree, Pcre2CompileRequest request)
     {
-        if (syntaxTree.Root is Pcre2SequenceBacktrackingNode { Children.Length: 3 } newlineSequence &&
-            newlineSequence.Children[0] is Pcre2TokenBacktrackingNode
-            { Token.Kind: Pcre2CharacterTokenKind.BeginningOfLine or Pcre2CharacterTokenKind.BeginningOfSubject } &&
-            newlineSequence.Children[1] is Pcre2RepeatBacktrackingNode
-            {
-                Body: Pcre2TokenBacktrackingNode { Token.Kind: Pcre2CharacterTokenKind.NewlineSequence },
-                Preference: Pcre2RepeatPreference.Greedy or Pcre2RepeatPreference.Lazy,
-            } newlineRepeat &&
-            (newlineRepeat.Minimum, newlineRepeat.Maximum) is (0, 1) or (2, 3) or (1, int.MaxValue) &&
-            newlineSequence.Children[2] is Pcre2TokenBacktrackingNode
-            { Token.Kind: Pcre2CharacterTokenKind.Literal, Token.Literal.Value: 'x' } terminal &&
-            (terminal.Token.Options & Pcre2CharacterOptions.Caseless) == 0)
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        // The closed recognizers inspect at most a fixed number of nodes and
+        // constant-length texts. No traversal of an unrelated tree is needed.
+        budget.ChargeWork(128);
+        budget.EnterDepth();
+        try
         {
-            return Create(Pcre2PartialProbeProgramKind.AnchoredNewlineSequence,
-                newlineRepeat.Minimum, newlineRepeat.Maximum, true);
+            var program = CompileTree(syntaxTree.Root, request);
+            if (program.Kind != Pcre2PartialProbeProgramKind.None) construction.Complete();
+            return program;
         }
-
-        if (request.Settings.Newline == Pcre2NewlineConvention.Crlf &&
-            syntaxTree.Root is Pcre2RepeatBacktrackingNode
-            {
-                Minimum: 2, Maximum: 3,
-                Body: Pcre2TokenBacktrackingNode { Token.Kind: Pcre2CharacterTokenKind.Any },
-                Preference: Pcre2RepeatPreference.Greedy or Pcre2RepeatPreference.Lazy,
-            } dotRepeat)
-        {
-            return Create(Pcre2PartialProbeProgramKind.CrlfDotQuantifier, 2, 3,
-                dotRepeat.Preference == Pcre2RepeatPreference.Lazy);
-        }
-
-        var shape = Describe(syntaxTree.Root);
-        return shape switch
-        {
-            "S(T(0,0,66);R(0,2147483647,0:T(2,0));)" => Create(Pcre2PartialProbeProgramKind.LiteralDotStar, false, "f"),
-            "S(T(0,4,66);R(0,2147483647,0:T(2,4));)" => Create(Pcre2PartialProbeProgramKind.LiteralDotStar, true, "f"),
-            "S(C(1:T(0,0,61));R(1,2147483647,0:T(0,0,62));)" => Create(Pcre2PartialProbeProgramKind.AbPlus),
-            "A(S(T(0,0,63);T(0,0,61);T(0,0,74););S(T(0,0,68);T(0,0,6F);T(0,0,72);T(0,0,73);T(0,0,65););)" => Create(Pcre2PartialProbeProgramKind.LiteralAlternation, "cat", "horse"),
-            "S(T(0,0,64);T(0,0,6F);T(0,0,67);R(0,1,0:C(1:S(T(0,0,73);T(0,0,62);T(0,0,6F);T(0,0,64);T(0,0,79);)));)" or
-            "A(S(T(0,0,64);T(0,0,6F);T(0,0,67);T(0,0,73);T(0,0,62);T(0,0,6F);T(0,0,64);T(0,0,79););S(T(0,0,64);T(0,0,6F);T(0,0,67););)" => Create(Pcre2PartialProbeProgramKind.OrderedLiteralAlternation, "dogsbody", "dog"),
-            "S(T(0,0,64);T(0,0,6F);T(0,0,67);R(0,1,1:C(1:S(T(0,0,73);T(0,0,62);T(0,0,6F);T(0,0,64);T(0,0,79);)));)" or
-            "A(S(T(0,0,64);T(0,0,6F);T(0,0,67););S(T(0,0,64);T(0,0,6F);T(0,0,67);T(0,0,73);T(0,0,62);T(0,0,6F);T(0,0,64);T(0,0,79););)" => Create(Pcre2PartialProbeProgramKind.OrderedLiteralAlternation, "dog", "dogsbody"),
-            "S(T(0,0,61);T(0,0,62);T(0,0,63);K;T(0,0,31);T(0,0,32);T(0,0,33);)" => Create(Pcre2PartialProbeProgramKind.InspectedPrefixLiteral, true, "abc", "123"),
-            "S(Q(2:S(T(0,0,61);T(0,0,62);T(0,0,63);));T(0,0,31);T(0,0,32);T(0,0,33);)" => Create(Pcre2PartialProbeProgramKind.InspectedPrefixLiteral, false, "abc", "123"),
-            "S(T(0,0,61);T(0,0,62);T(0,0,63);Q(0:S(T(0,0,78);T(0,0,79);T(0,0,7A);));)" => Create(Pcre2PartialProbeProgramKind.InspectedContextLiteral, string.Empty, "abc", "xyz"),
-            "S(Q(2:S(T(0,0,70);T(0,0,71);T(0,0,72);));T(0,0,61);T(0,0,62);T(0,0,63);Q(0:S(T(0,0,78);T(0,0,79);T(0,0,7A);));)" => Create(Pcre2PartialProbeProgramKind.InspectedContextLiteral, "pqr", "abc", "xyz"),
-            "S(T(0,0,61);T(0,0,62);T(0,0,63);Q(0:S(T(0,0,61);T(0,0,62);T(0,0,63);T(0,0,64);T(0,0,65);));Q(0:S(T(0,0,61);T(0,0,62);));)" => Create(Pcre2PartialProbeProgramKind.InspectedContextLiteral, string.Empty, "abc", "abcde"),
-            "S(R(0,2147483647,2:T(0,0,63));Q(2:T(1,0,0:0,98,98,0,.0,99,99,0,.));)" => Create(Pcre2PartialProbeProgramKind.TrailingCWithLookbehind, false),
-            "S(R(1,2147483647,2:T(0,0,63));Q(2:T(1,0,0:0,98,98,0,.0,99,99,0,.));)" => Create(Pcre2PartialProbeProgramKind.TrailingCWithLookbehind, true),
-            "S(Q(1:T(1,0,0:0,97,97,0,.0,98,98,0,.));R(0,2147483647,0:T(2,0));)" => Create(Pcre2PartialProbeProgramKind.NegativeStartClassDotStar),
-            "O(S(R(1,2147483647,0:T(0,0,61));T(0,0,62);))" => Create(Pcre2PartialProbeProgramKind.AtomicAPlusB),
-            "S(C(1:S(T(0,0,61);T(0,0,62);T(0,0,63);));U(0,1,);)" => Create(Pcre2PartialProbeProgramKind.RepeatedLiteral, 2, "abc"),
-            "D(1:Q(0:S(T(0,0,61);T(0,0,62);T(0,0,63);)):R(0,2147483647,0:T(2,0)):T(0,0,5A))" => Create(Pcre2PartialProbeProgramKind.ConditionalAbcDotStarOrZ),
-            "S(R(1,2147483647,2:C(1:S(T(0,0,61);T(0,0,62);T(0,0,63);)));T(0,0,78);)" => Create(Pcre2PartialProbeProgramKind.LiteralPlusTerminal, 'x', "abc"),
-            "S(T(5,0);R(1,2147483647,2:T(0,0,61));T(1,0,0:3,0,0,0,.);)" or
-            "S(T(5,0);R(1,2147483647,2:C(1:T(0,0,61)));T(1,0,0:3,0,0,0,.);)" => Create(Pcre2PartialProbeProgramKind.AnchoredAPlusWord, false),
-            "S(T(5,0);A(S(T(0,0,61);T(0,0,61););S(R(1,2147483647,2:T(0,0,61));T(1,0,0:3,0,0,0,.);););)" => Create(Pcre2PartialProbeProgramKind.AnchoredAaOrAPlusWord),
-            "S(T(5,0);R(0,2147483647,2:T(0,0,61));T(1,0,0:3,0,0,0,.);)" or
-            "S(T(5,0);R(1,2147483647,2:C(1:A(T(0,0,61);E;)));T(1,0,0:3,0,0,0,.);)" => Create(Pcre2PartialProbeProgramKind.AnchoredAPlusWord, true),
-            "S(T(5,0);C(1:A(S(T(0,0,61);T(6,0););S(T(0,0,61);T(0,0,D););));)" when request.Settings.Newline == Pcre2NewlineConvention.Crlf => Create(Pcre2PartialProbeProgramKind.CapturedEndAlternative),
-            _ => Pcre2PartialProbeProgram.None,
-        };
+        finally { budget.LeaveDepth(); }
     }
 
     private static bool TryCompileCharacterProgram(
@@ -157,7 +113,7 @@ internal static class Pcre2PartialProbeCompiler
             tokens[0].Kind is Pcre2CharacterTokenKind.EndOfSubject or Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline)
         {
             program = Create(Pcre2PartialProbeProgramKind.EndAssertion,
-                tokens[0].Kind == Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline);
+                flag: tokens[0].Kind == Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline);
             return true;
         }
 
@@ -165,7 +121,7 @@ internal static class Pcre2PartialProbeCompiler
             tokens[0].Kind is Pcre2CharacterTokenKind.BeginningOfLine or Pcre2CharacterTokenKind.BeginningOfSubject &&
             tokens[1].Kind == Pcre2CharacterTokenKind.NewlineSequence)
         {
-            program = Create(Pcre2PartialProbeProgramKind.AnchoredNewlineSequence, 1, 1, false);
+            program = Create(Pcre2PartialProbeProgramKind.AnchoredNewlineSequence, first: 1, second: 1);
             return true;
         }
 
@@ -173,11 +129,11 @@ internal static class Pcre2PartialProbeCompiler
             tokens.Length == 1 &&
             tokens[0].Kind is Pcre2CharacterTokenKind.Any or Pcre2CharacterTokenKind.AnyNotNewline)
         {
-            program = Create(Pcre2PartialProbeProgramKind.CrlfDotQuantifier, 1, 1, false);
+            program = Create(Pcre2PartialProbeProgramKind.CrlfDotQuantifier, first: 1, second: 1);
             return true;
         }
 
-        if (TryGetBoundedLiteral(tokens, 0, tokens.Length, out var literal, Pcre2CharacterOptions.None) &&
+        if (TryGetLiteral(tokens, 0, tokens.Length, out var literal, Pcre2CharacterOptions.None) &&
             literal.Length > 0)
         {
             program = Create(Pcre2PartialProbeProgramKind.LiteralAlternation, literal);
@@ -205,13 +161,13 @@ internal static class Pcre2PartialProbeCompiler
         if (first < last &&
             tokens[first].Kind == Pcre2CharacterTokenKind.WordBoundary &&
             trailing == Pcre2CharacterTokenKind.WordBoundary &&
-            TryGetBoundedLiteral(tokens, first + 1, last, out literal, Pcre2CharacterOptions.Multiline | Pcre2CharacterOptions.DotAll))
+            TryGetLiteral(tokens, first + 1, last, out literal, Pcre2CharacterOptions.Multiline | Pcre2CharacterOptions.DotAll))
         {
             program = Create(Pcre2PartialProbeProgramKind.WordBoundaryLiteral, literal);
             return true;
         }
 
-        if (TryGetBoundedLiteral(tokens, first, last, out literal,
+        if (TryGetLiteral(tokens, first, last, out literal,
             Pcre2CharacterOptions.Multiline | Pcre2CharacterOptions.DotAll) && literal.Length > 0)
         {
             if (anchored && trailing is not null)
@@ -237,12 +193,15 @@ internal static class Pcre2PartialProbeCompiler
         return false;
     }
 
-    private static bool TryGetBoundedLiteral(Pcre2CharacterToken[] tokens, int first, int last, out byte[] literal,
+    private static bool TryGetLiteral(Pcre2CharacterToken[] tokens, int first, int last, out byte[] literal,
         Pcre2CharacterOptions inertOptions)
     {
-        var builder = new ArrayBufferWriter<byte>();
+        var budget = Utf8ConstructionScope.CurrentBudget;
+        budget.ChargeWork((ulong)(last - first) + 1);
+        var length = 0;
         for (var index = first; index < last; index++)
         {
+            if (((index - first) & 255) == 0) budget.ChargeWork(0);
             var token = tokens[index];
             if (token.Kind != Pcre2CharacterTokenKind.Literal ||
                 (token.Options & ~inertOptions) != Pcre2CharacterOptions.None)
@@ -250,169 +209,42 @@ internal static class Pcre2PartialProbeCompiler
                 literal = [];
                 return false;
             }
-
-            var destination = builder.GetSpan(token.Literal.Utf8SequenceLength);
-            var written = token.Literal.EncodeToUtf8(destination);
-            builder.Advance(written);
+            length = checked(length + token.Literal.Utf8SequenceLength);
         }
-
-        literal = builder.WrittenSpan.ToArray();
+        literal = budget.AllocateArray<byte>(length, false);
+        var written = 0;
+        budget.ChargeWork((ulong)(last - first) + 1);
+        for (var index = first; index < last; index++)
+        {
+            if (((index - first) & 255) == 0) budget.ChargeWork(0);
+            written += tokens[index].Literal.EncodeToUtf8(literal.AsSpan(written));
+        }
         return true;
     }
 
-    private static Pcre2PartialProbeProgram Create(Pcre2PartialProbeProgramKind kind, params string[] operands)
-        => new(kind, operands.Select(Encoding.UTF8.GetBytes).ToArray(), 0, 0, false, '\0');
-
-    private static Pcre2PartialProbeProgram Create(Pcre2PartialProbeProgramKind kind)
-        => new(kind, [], 0, 0, false, '\0');
-
-    private static Pcre2PartialProbeProgram Create(Pcre2PartialProbeProgramKind kind, params byte[][] operands)
-        => new(kind, operands, 0, 0, false, '\0');
-
-    private static Pcre2PartialProbeProgram Create(Pcre2PartialProbeProgramKind kind, bool flag, params string[] operands)
-        => new(kind, operands.Select(Encoding.UTF8.GetBytes).ToArray(), 0, 0, flag, '\0');
-
-    private static Pcre2PartialProbeProgram Create(Pcre2PartialProbeProgramKind kind, int first, string operand)
-        => new(kind, [Encoding.UTF8.GetBytes(operand)], first, 0, false, '\0');
-
-    private static Pcre2PartialProbeProgram Create(Pcre2PartialProbeProgramKind kind, int first, int second, bool flag)
-        => new(kind, [], first, second, flag, '\0');
-
-    private static Pcre2PartialProbeProgram Create(Pcre2PartialProbeProgramKind kind, char terminal, string operand)
-        => new(kind, [Encoding.UTF8.GetBytes(operand)], 0, 0, false, terminal);
-
-    private static string Describe(IPcre2BacktrackingNode root)
+    private static Pcre2PartialProbeProgram Create(Pcre2PartialProbeProgramKind kind,
+        string? operand0 = null, string? operand1 = null, string? operand2 = null,
+        int first = 0, int second = 0, bool flag = false, char terminal = '\0')
     {
-        var builder = new StringBuilder();
-        AppendNode(builder, root);
-        return builder.ToString();
+        var budget = Utf8ConstructionScope.CurrentBudget;
+        var count = operand2 is not null ? 3 : operand1 is not null ? 2 : operand0 is not null ? 1 : 0;
+        var operands = budget.AllocateArray<byte[]>(count, false);
+        if (operand0 is not null) operands[0] = budget.EncodeUtf8(operand0);
+        if (operand1 is not null) operands[1] = budget.EncodeUtf8(operand1);
+        if (operand2 is not null) operands[2] = budget.EncodeUtf8(operand2);
+        return Publish(kind, operands, first, second, flag, terminal);
     }
 
-    private static void AppendNode(StringBuilder builder, IPcre2BacktrackingNode node)
+    private static Pcre2PartialProbeProgram Create(Pcre2PartialProbeProgramKind kind, byte[] operand)
     {
-        switch (node)
-        {
-            case Pcre2EmptyBacktrackingNode:
-                builder.Append('E');
-                break;
-            case Pcre2TokenBacktrackingNode token:
-                AppendToken(builder, token.Token);
-                break;
-            case Pcre2SequenceBacktrackingNode sequence:
-                AppendChildren(builder, 'S', sequence.Children);
-                break;
-            case Pcre2AlternationBacktrackingNode alternation:
-                AppendChildren(builder, 'A', alternation.Alternatives);
-                break;
-            case Pcre2RepeatBacktrackingNode repeat:
-                builder.Append("R(")
-                    .Append(repeat.Minimum)
-                    .Append(',')
-                    .Append(repeat.Maximum)
-                    .Append(',')
-                    .Append((int)repeat.Preference)
-                    .Append(':');
-                AppendNode(builder, repeat.Body);
-                builder.Append(')');
-                break;
-            case Pcre2CaptureBacktrackingNode capture:
-                builder.Append("C(").Append(capture.Slot).Append(':');
-                AppendNode(builder, capture.Body);
-                builder.Append(')');
-                break;
-            case Pcre2BackreferenceBacktrackingNode backreference:
-                AppendTarget(builder, 'B', backreference.Target);
-                break;
-            case Pcre2AssertionBacktrackingNode assertion:
-                builder.Append("Q(").Append((int)assertion.AssertionKind).Append(':');
-                AppendNode(builder, assertion.Body);
-                builder.Append(')');
-                break;
-            case Pcre2SubroutineCallBacktrackingNode subroutine:
-                AppendTarget(builder, 'U', subroutine.Target);
-                break;
-            case Pcre2ConditionalBacktrackingNode conditional:
-                builder.Append("D(").Append((int)conditional.ConditionKind).Append(':');
-                if (conditional.Assertion is not null)
-                {
-                    AppendNode(builder, conditional.Assertion);
-                }
-
-                builder.Append(':');
-                AppendNode(builder, conditional.YesBranch);
-                builder.Append(':');
-                AppendNode(builder, conditional.NoBranch);
-                builder.Append(')');
-                break;
-            case Pcre2AtomicBacktrackingNode atomic:
-                builder.Append("O(");
-                AppendNode(builder, atomic.Body);
-                builder.Append(')');
-                break;
-            case Pcre2ControlVerbBacktrackingNode control:
-                builder.Append("V(").Append((int)control.VerbKind).Append(')');
-                break;
-            case Pcre2MatchBoundaryResetBacktrackingNode:
-                builder.Append('K');
-                break;
-            default:
-                builder.Append('?');
-                break;
-        }
+        var operands = Utf8ConstructionScope.CurrentBudget.AllocateArray<byte[]>(1, false);
+        operands[0] = operand;
+        return Publish(kind, operands, 0, 0, false, '\0');
     }
 
-    private static void AppendChildren(StringBuilder builder, char prefix, IPcre2BacktrackingNode[] children)
-    {
-        builder.Append(prefix).Append('(');
-        foreach (var child in children)
-        {
-            AppendNode(builder, child);
-            builder.Append(';');
-        }
-
-        builder.Append(')');
-    }
-
-    private static void AppendToken(StringBuilder builder, Pcre2CharacterToken token)
-    {
-        builder.Append("T(")
-            .Append((int)token.Kind)
-            .Append(',')
-            .Append((int)token.Options);
-        if (token.Kind == Pcre2CharacterTokenKind.Literal)
-        {
-            builder.Append(',').Append(token.Literal.Value.ToString("X", CultureInfo.InvariantCulture));
-        }
-        else if (token.Kind == Pcre2CharacterTokenKind.CharacterClass)
-        {
-            builder.Append(',').Append(token.CharacterClass.Negated ? '1' : '0').Append(':');
-            foreach (var term in token.CharacterClass.Terms)
-            {
-                builder.Append((int)term.Kind)
-                    .Append(',')
-                    .Append(term.Range.Low)
-                    .Append(',')
-                    .Append(term.Range.High)
-                    .Append(',')
-                    .Append(term.Negated ? '1' : '0')
-                    .Append(',')
-                    .Append(term.Name)
-                    .Append('.');
-            }
-        }
-
-        builder.Append(')');
-    }
-
-    private static void AppendTarget(StringBuilder builder, char prefix, Pcre2BackreferenceTarget target)
-    {
-        builder.Append(prefix)
-            .Append('(')
-            .Append((int)target.Kind)
-            .Append(',')
-            .Append(target.Number)
-            .Append(',')
-            .Append(target.Name)
-            .Append(')');
-    }
+    private static Pcre2PartialProbeProgram Publish(Pcre2PartialProbeProgramKind kind,
+        byte[][] operands, int first, int second, bool flag, char terminal)
+        => Utf8ConstructionScope.CurrentBudget.AllocateObject((kind, operands, first, second, flag, terminal),
+            static state => new Pcre2PartialProbeProgram(state.kind, state.operands,
+                state.first, state.second, state.flag, state.terminal));
 }
