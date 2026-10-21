@@ -9,8 +9,6 @@ internal readonly partial struct Pcre2AsciiDfaVerifierProgram
 {
     private sealed partial class Pcre2DfaCompiler
     {
-        private readonly record struct Pcre2DfaTransitionBucket(Pcre2DfaTransitionKey Key, Utf8ConstructionBuffer<int> Targets, int Ordinal);
-
         private Pcre2AsciiDfaVerifierProgram BuildDfa(Pcre2DfaNfaGraph nfa, bool requiresBeginning, bool requiresEnd)
         {
             using var scope = Utf8ConstructionScope.Enter();
@@ -42,61 +40,81 @@ internal readonly partial struct Pcre2AsciiDfaVerifierProgram
                 for (var next = 0; next < stateSets.Count; next++)
                 {
                     ChargeCompilationStep();
-                    using var bucketMap = Utf8ConstructionMap<Pcre2DfaTransitionKey, int>.Create(_budget, Pcre2DfaTransitionKeyComparer.Instance);
-                    using var buckets = Buffer<Pcre2DfaTransitionBucket>(false);
-                    try
+                    using var classes = Buffer<AsciiCharClass>(false);
+                    using var destinations = Buffer<int>(false);
+                    // Split the ASCII alphabet into disjoint classes. Equality
+                    // buckets alone lose NFA paths where two sets overlap.
+                    foreach (var stateId in stateSets[next].States)
                     {
+                        ChargeCompilationStep();
+                        foreach (var transition in nfa.States[stateId].Transitions)
+                        {
+                            ChargeCompilationStep();
+                            var remainingLow = transition.Key.Set.LowMask;
+                            var remainingHigh = transition.Key.Set.HighMask;
+                            var existingCount = classes.Count;
+                            for (var index = 0; index < existingCount; index++)
+                            {
+                                ChargeCompilationStep();
+                                var previous = classes[index];
+                                var low = previous.LowMask & remainingLow;
+                                var high = previous.HighMask & remainingHigh;
+                                if ((low | high) == 0) continue;
+                                classes[index] = new(low, high);
+                                var restLow = previous.LowMask & ~low;
+                                var restHigh = previous.HighMask & ~high;
+                                if ((restLow | restHigh) != 0) classes.Add(new(restLow, restHigh));
+                                remainingLow &= ~low;
+                                remainingHigh &= ~high;
+                                if ((remainingLow | remainingHigh) == 0) break;
+                            }
+                            if ((remainingLow | remainingHigh) != 0) classes.Add(new(remainingLow, remainingHigh));
+                        }
+                    }
+                    var firstTransition = sets.Count;
+                    offsets.Add(firstTransition);
+                    foreach (var characterClass in classes)
+                    {
+                        ChargeCompilationStep();
+                        destinations.Clear();
                         foreach (var stateId in stateSets[next].States)
                         {
                             ChargeCompilationStep();
                             foreach (var transition in nfa.States[stateId].Transitions)
                             {
                                 ChargeCompilationStep();
-                                if (!bucketMap.TryGetValue(transition.Key, out var bucketIndex))
-                                {
-                                    var bucketTargets = Buffer<int>(false);
-                                    bucketIndex = buckets.Count;
-                                    // Acquire only the descriptor here; the buffer is
-                                    // already retained by the owner if publication fails.
-                                    buckets.Add(new(transition.Key, bucketTargets, bucketIndex));
-                                    _budget.ChargeWork(1); // Closing bucket walk.
-                                    bucketMap.Add(transition.Key, bucketIndex);
-                                }
-                                buckets[bucketIndex].Targets.Add(transition.TargetState);
+                                if (!characterClass.IsDisjoint(transition.Key.Set)) destinations.Add(transition.TargetState);
                             }
                         }
-                        buckets.Sort(static (left, right) =>
+                        var closure = ComputeClosure(destinations.Span, nfa);
+                        var adopted = false;
+                        try
                         {
-                            var order = left.Key.SortKey.CompareTo(right.Key.SortKey);
-                            return order != 0 ? order : left.Ordinal.CompareTo(right.Ordinal);
-                        });
-                        offsets.Add(sets.Count);
-                        counts.Add(buckets.Count);
-                        foreach (var bucket in buckets)
-                        {
-                            ChargeCompilationStep();
-                            var closure = ComputeClosure(bucket.Targets.Span, nfa);
-                            var adopted = false;
-                            try
+                            if (!stateMap.TryGetValue(closure, out var targetIndex))
                             {
-                                if (!stateMap.TryGetValue(closure, out var targetIndex))
-                                {
-                                    targetIndex = stateSets.Count;
-                                    if (targetIndex >= MaxDfaStates) throw new Pcre2DfaCompilationBudgetExceededException();
-                                    stateSets.Add(closure);
-                                    adopted = true;
-                                    _budget.ChargeWork(1); // Closing state-set walk.
-                                    stateMap.Add(closure, targetIndex);
-                                    accepting.Add(closure.Contains(nfa.AcceptState));
-                                }
+                                targetIndex = stateSets.Count;
+                                if (targetIndex >= MaxDfaStates) throw new Pcre2DfaCompilationBudgetExceededException();
+                                stateSets.Add(closure);
+                                adopted = true;
+                                _budget.ChargeWork(1); // Closing state-set walk.
+                                stateMap.Add(closure, targetIndex);
+                                accepting.Add(closure.Contains(nfa.AcceptState));
+                            }
+                            // Equal destinations can share one disjoint edge.
+                            var edge = firstTransition;
+                            while (edge < sets.Count && targets[edge] != targetIndex) { ChargeCompilationStep(); edge++; }
+                            if (edge < sets.Count)
+                                sets[edge] = new(sets[edge].LowMask | characterClass.LowMask, sets[edge].HighMask | characterClass.HighMask);
+                            else
+                            {
                                 if (sets.Count >= MaxDfaTransitions) throw new Pcre2DfaCompilationBudgetExceededException();
-                                sets.Add(bucket.Key.Set);
+                                sets.Add(characterClass);
                                 targets.Add(targetIndex);
                             }
-                            finally { if (!adopted) _budget.ReleaseArray(closure.States, false); }
                         }
+                        finally { if (!adopted) _budget.ReleaseArray(closure.States, false); }
                     }
-                    finally { foreach (var bucket in buckets) bucket.Targets.Dispose(); }
+                    counts.Add(sets.Count - firstTransition);
                 }
                 var program = new Pcre2AsciiDfaVerifierProgram(offsets.Take(), counts.Take(),
                     sets.Take(), targets.Take(), accepting.Take(), requiresBeginning, requiresEnd,
