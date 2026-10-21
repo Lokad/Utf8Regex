@@ -140,7 +140,6 @@ public sealed class CoreCompilationArchitectureTests
         Assert.True(File.Exists(Path.Combine(searchRoot, "PreparedSearcher.cs")));
         Assert.True(File.Exists(Path.Combine(searchRoot, "PreparedWindowSearch.cs")));
         Assert.True(File.Exists(Path.Combine(searchRoot, "Utf8LiteralEquality.cs")));
-        Assert.True(File.Exists(Path.Combine(searchRoot, "Utf8SearchKernel.cs")));
 
         foreach (var searchSourcePath in Directory.EnumerateFiles(searchRoot, "*.cs", SearchOption.AllDirectories))
         {

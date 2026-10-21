@@ -150,67 +150,67 @@ public class Utf8SearchKernelBenchmarks
     [Benchmark(Baseline = true)]
     public int ExactLiteral()
     {
-        return Utf8SearchKernel.IndexOfLiteral(_literalInput.Span, _literal, ignoreCase: false);
+        return AsciiSearch.IndexOfExact(_literalInput.Span, _literal);
     }
 
     [Benchmark]
     public int IgnoreCaseLiteral()
     {
-        return Utf8SearchKernel.IndexOfLiteral(_ignoreCaseInput.Span, _ignoreCaseLiteral, ignoreCase: true);
+        return AsciiSearch.IndexOfIgnoreCase(_ignoreCaseInput.Span, _ignoreCaseLiteral);
     }
 
     [Benchmark]
     public int IgnoreCaseLongLiteral()
     {
-        return Utf8SearchKernel.IndexOfLiteral(_longIgnoreCaseInput.Span, _longIgnoreCaseLiteral, ignoreCase: true);
+        return AsciiSearch.IndexOfIgnoreCase(_longIgnoreCaseInput.Span, _longIgnoreCaseLiteral);
     }
 
     [Benchmark]
     public int ExactLiteralAlternation()
     {
-        return Utf8SearchKernel.IndexOfAnyLiteral(_alternationInput.Span, _alternationSearch);
+        return _alternationSearch.IndexOf(_alternationInput.Span);
     }
 
     [Benchmark]
     public int ExactLiteralAlternationSharedPrefix()
     {
-        return Utf8SearchKernel.IndexOfAnyLiteral(_sharedPrefixAlternationInput.Span, _sharedPrefixAlternationSearch);
+        return _sharedPrefixAlternationSearch.IndexOf(_sharedPrefixAlternationInput.Span);
     }
 
     [Benchmark]
     public int ExactLiteralAlternationSharedFirstByte()
     {
-        return Utf8SearchKernel.IndexOfAnyLiteral(_sharedFirstByteAlternationInput.Span, _sharedFirstByteAlternationSearch);
+        return _sharedFirstByteAlternationSearch.IndexOf(_sharedFirstByteAlternationInput.Span);
     }
 
     [Benchmark]
     public int ExactLiteralAlternationMixedBuckets()
     {
-        return Utf8SearchKernel.IndexOfAnyLiteral(_mixedBucketAlternationInput.Span, _mixedBucketAlternationSearch);
+        return _mixedBucketAlternationSearch.IndexOf(_mixedBucketAlternationInput.Span);
     }
 
     [Benchmark]
     public int ExactLiteralAlternationLargeSet()
     {
-        return Utf8SearchKernel.IndexOfAnyLiteral(_largeAlternationInput.Span, _largeAlternationSearch);
+        return _largeAlternationSearch.IndexOf(_largeAlternationInput.Span);
     }
 
     [Benchmark]
     public int PreparedMultiLiteralAlternation()
     {
-        return Utf8SearchKernel.IndexOfAnyLiteral(_alternationInput.Span, _multiLiteralAlternationSearch);
+        return _multiLiteralAlternationSearch.IndexOf(_alternationInput.Span);
     }
 
     [Benchmark]
     public int PreparedMultiLiteralIgnoreCaseAlternation()
     {
-        return Utf8SearchKernel.IndexOfAnyLiteral(_ignoreCaseInput.Span, _ignoreCaseMultiLiteralSearch);
+        return _ignoreCaseMultiLiteralSearch.IndexOf(_ignoreCaseInput.Span);
     }
 
     [Benchmark]
     public int PreparedMultiLiteralIgnoreCaseAlternationMiss()
     {
-        return Utf8SearchKernel.IndexOfAnyLiteral(_ignoreCaseMissInput.Span, _ignoreCaseMultiLiteralSearch);
+        return _ignoreCaseMultiLiteralSearch.IndexOf(_ignoreCaseMissInput.Span);
     }
 
     [Benchmark]
@@ -230,7 +230,7 @@ public class Utf8SearchKernelBenchmarks
     [Benchmark]
     public int PreparedMultiLiteralLargeSet()
     {
-        return Utf8SearchKernel.IndexOfAnyLiteral(_largeAlternationInput.Span, _largeMultiLiteralAlternationSearch);
+        return _largeMultiLiteralAlternationSearch.IndexOf(_largeAlternationInput.Span);
     }
 
     [Benchmark]

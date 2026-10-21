@@ -1108,8 +1108,8 @@ public sealed class Utf8SearchPlanTests
         var input = Encoding.UTF8.GetBytes("scan:aqqqq;scan:amber;scan:aqqqq;scan:axiom;");
 
         Assert.Equal(PreparedLiteralSetStrategy.Bucketed, search.Strategy);
-        var first = Utf8SearchKernel.IndexOfAnyLiteral(input, search);
-        var last = Utf8SearchKernel.LastIndexOfAnyLiteral(input, search);
+        var first = search.IndexOf(input);
+        var last = search.LastIndexOf(input);
 
         Assert.Equal("amber", Encoding.UTF8.GetString(input.AsSpan(first, 5)));
         Assert.Equal("axiom", Encoding.UTF8.GetString(input.AsSpan(last, 5)));
@@ -1129,8 +1129,8 @@ public sealed class Utf8SearchPlanTests
         var input = Encoding.UTF8.GetBytes("scan:aqqqq;scan:needle;scan:aqqqq;scan:amber;");
 
         Assert.Equal(PreparedLiteralSetStrategy.UniqueAnchorByte, search.Strategy);
-        var first = Utf8SearchKernel.IndexOfAnyLiteral(input, search);
-        var last = Utf8SearchKernel.LastIndexOfAnyLiteral(input, search);
+        var first = search.IndexOf(input);
+        var last = search.LastIndexOf(input);
 
         Assert.Equal("needle", Encoding.UTF8.GetString(input.AsSpan(first, 6)));
         Assert.Equal("amber", Encoding.UTF8.GetString(input.AsSpan(last, 5)));
@@ -1149,7 +1149,7 @@ public sealed class Utf8SearchPlanTests
         var input = Encoding.UTF8.GetBytes("scan:zebra;scan:ebc;scan:fbc;");
 
         Assert.Equal(PreparedLiteralSetStrategy.SingleLiteralBuckets, search.Strategy);
-        Assert.Equal(16, Utf8SearchKernel.IndexOfAnyLiteral(input, search));
+        Assert.Equal(16, search.IndexOf(input));
     }
 
     [Fact]
@@ -1164,7 +1164,7 @@ public sealed class Utf8SearchPlanTests
         var input = Encoding.UTF8.GetBytes("xxeafxx");
 
         Assert.Equal(PreparedLiteralSetStrategy.SingleLiteralBuckets, search.Strategy);
-        Assert.Equal(2, Utf8SearchKernel.IndexOfAnyLiteral(input, search));
+        Assert.Equal(2, search.IndexOf(input));
     }
 
     [Fact]
@@ -1192,12 +1192,12 @@ public sealed class Utf8SearchPlanTests
         var input = Encoding.UTF8.GetBytes("scan:haystack;scan:beacon;scan:needle;");
 
         Assert.Equal(PreparedLiteralSetStrategy.MultiLiteralTrie, search.Strategy);
-        var first = Utf8SearchKernel.IndexOfAnyLiteral(input, search);
-        var last = Utf8SearchKernel.LastIndexOfAnyLiteral(input, search);
+        var first = search.IndexOf(input);
+        var last = search.LastIndexOf(input);
 
         Assert.Equal("beacon", Encoding.UTF8.GetString(input.AsSpan(first, 6)));
         Assert.Equal("needle", Encoding.UTF8.GetString(input.AsSpan(last, 6)));
-        Assert.True(Utf8SearchKernel.TryGetMatchedLiteralLength(input, first, search, out var matchedLength));
+        Assert.True(search.TryGetMatchedLiteralLength(input, first, out var matchedLength));
         Assert.Equal(6, matchedLength);
     }
 }

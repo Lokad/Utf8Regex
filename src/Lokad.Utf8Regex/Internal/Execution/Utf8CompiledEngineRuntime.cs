@@ -139,11 +139,6 @@ internal abstract class Utf8CompiledEngineRuntime
         return false;
     }
 
-    public static Utf8CompiledEngineRuntime Create(Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime, RegexOptions options)
-    {
-        return Create(Utf8CompiledEngineSelector.Select(regexPlan), regexPlan, verifierRuntime, options);
-    }
-
     public static Utf8CompiledEngineRuntime Create(Utf8CompiledEngine compiledEngine, Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime, RegexOptions options)
         => Utf8CompiledRuntimeFactory.Create(compiledEngine, regexPlan, verifierRuntime, options);
 

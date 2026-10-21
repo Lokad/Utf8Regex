@@ -16,7 +16,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _budget = invocation.Budget.Deadline;
         _sliceInvocation = invocation;
         _asciiInput = validation.IsAscii;
-        _totalUtf16Length = validation.Utf16Length;
         _hasAnchoredLiteralInvocation = true;
         if (kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix)
             _mode = EnumeratorMode.AnchoredAsciiLiteralPrefix;

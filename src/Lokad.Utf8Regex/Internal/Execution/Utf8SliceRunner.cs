@@ -43,7 +43,6 @@ internal struct Utf8SliceTrailEntry
 
 internal struct Utf8SliceBalanceEntry
 {
-    internal int Slot;
     internal int Start;
     internal int End;
     internal int Prev;
@@ -938,7 +937,7 @@ internal static partial class Utf8SliceRunner
                         // Balancing stacks mirror every capture so pops can
                         // restore previous tops; the head journal makes the
                         // push vanish on backtrack like any trail write.
-                        if (!stacks.PushBalance(instruction.A, captureStarts[instruction.A], inputIndex, balanceHeads[instruction.A], ref invocation) ||
+                        if (!stacks.PushBalance(captureStarts[instruction.A], inputIndex, balanceHeads[instruction.A], ref invocation) ||
                             !stacks.PushHeadTrail(instruction.A, balanceHeads[instruction.A], stacks.BalanceCount - 1, ref invocation))
                         {
                             return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
@@ -1475,7 +1474,7 @@ internal static partial class Utf8SliceRunner
                                     captureEnds[captureSlot], gapEnd, ref invocation) ||
                                 !stacks.PushTrailEntry(new Utf8SliceTrailEntry {
                                     Slot = captureSlot, OldValue = gapStart, NewValue = gapEnd, IsClosing = true }, ref invocation) ||
-                                !stacks.PushBalance(captureSlot, gapStart, gapEnd, balanceHeads[captureSlot], ref invocation) ||
+                                !stacks.PushBalance(gapStart, gapEnd, balanceHeads[captureSlot], ref invocation) ||
                                 !stacks.PushHeadTrail(captureSlot, balanceHeads[captureSlot], stacks.BalanceCount - 1, ref invocation))
                                 return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                             captureStarts[captureSlot] = gapStart;
@@ -1726,10 +1725,10 @@ internal static partial class Utf8SliceRunner
                 new Utf8SliceCountMutation { RepeatId = repeatId, OldCount = oldCount, OldPosition = oldPosition }, ref invocation, ref _reservedBytes, out Breach);
         }
 
-        internal bool PushBalance(int slot, int start, int end, int prev, ref Utf8SliceInvocation invocation)
+        internal bool PushBalance(int start, int end, int prev, ref Utf8SliceInvocation invocation)
         {
             return Push(ref _balanceTables, ref _balanceCount, BalanceChunkCapacity,
-                new Utf8SliceBalanceEntry { Slot = slot, Start = start, End = end, Prev = prev }, ref invocation, ref _reservedBytes, out Breach);
+                new Utf8SliceBalanceEntry { Start = start, End = end, Prev = prev }, ref invocation, ref _reservedBytes, out Breach);
         }
 
         internal bool PushHeadTrail(int slot, int oldHead, int newHead, ref Utf8SliceInvocation invocation)

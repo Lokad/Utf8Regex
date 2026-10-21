@@ -48,9 +48,6 @@ internal readonly struct PreparedAsciiFindPlan
     public static PreparedAsciiFindPlan CreateLiteralFamily(byte[][] literalsUtf8) =>
         new(PreparedAsciiFindMode.LiteralFamily, default, new PreparedLiteralSetSearch(literalsUtf8), [], 0);
 
-    public static PreparedAsciiFindPlan CreateLiteralFamily(PreparedLiteralSetSearch literalFamilySearch) =>
-        new(PreparedAsciiFindMode.LiteralFamily, default, literalFamilySearch, [], 0);
-
     public static PreparedAsciiFindPlan CreateFixedDistanceLiteral(byte[] literalUtf8, int distance) =>
         new(PreparedAsciiFindMode.FixedDistanceLiteral, new PreparedSubstringSearch(literalUtf8, ignoreCase: false), default, [], distance);
 

@@ -417,7 +417,7 @@ internal static partial class Utf8SearchExecutor
         var searchIndex = startIndex;
         while (searchIndex <= input.Length - literal.Length)
         {
-            var relative = Utf8SearchKernel.IndexOfLiteral(input[searchIndex..], literalSearch.Value);
+            var relative = literalSearch.Value.IndexOf(input[searchIndex..]);
             if (relative < 0)
             {
                 return -1;
@@ -485,7 +485,7 @@ internal static partial class Utf8SearchExecutor
         var searchLength = Math.Min(startIndex, input.Length);
         while (searchLength >= literal.Length)
         {
-            var candidate = Utf8SearchKernel.LastIndexOfLiteral(input[..searchLength], literalSearch.Value);
+            var candidate = literalSearch.Value.LastIndexOf(input[..searchLength]);
             if (candidate < 0)
             {
                 return -1;
@@ -734,7 +734,7 @@ internal static partial class Utf8SearchExecutor
             return -1;
         }
 
-        var relative = Utf8SearchKernel.IndexOfLiteral(input[searchIndex..], literal, ignoreCase: false);
+        var relative = AsciiSearch.IndexOfExact(input[searchIndex..], literal);
         while (relative >= 0)
         {
             var absolute = searchIndex + relative;
@@ -753,7 +753,7 @@ internal static partial class Utf8SearchExecutor
                 break;
             }
 
-            relative = Utf8SearchKernel.IndexOfLiteral(input[searchIndex..], literal, ignoreCase: false);
+            relative = AsciiSearch.IndexOfExact(input[searchIndex..], literal);
         }
 
         return -1;

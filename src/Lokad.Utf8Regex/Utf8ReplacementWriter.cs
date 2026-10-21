@@ -130,14 +130,6 @@ public ref struct Utf8ReplacementWriter
         _buffer.Advance(written);
     }
 
-    internal string ToValidatedString()
-    {
-        if (_owned is { } owned) return owned.ToValidatedString();
-        var bytes = _buffer is null ? ReadOnlySpan<byte>.Empty : _buffer.WrittenSpan;
-        _ = Utf8Validation.Validate(bytes);
-        return Encoding.UTF8.GetString(bytes);
-    }
-
     internal ReadOnlySpan<byte> GetValidatedBytes()
     {
         if (_owned is { } owned) return owned.GetValidatedBytes();

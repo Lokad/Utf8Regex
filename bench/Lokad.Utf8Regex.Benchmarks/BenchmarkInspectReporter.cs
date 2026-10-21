@@ -159,11 +159,11 @@ internal static partial class BenchmarkInspectReporter
                     out _))
             {
                 MeasureUtf8CaseLane("CompositeTrailingSearchOnly", samples, iterations, () =>
-                    Utf8SearchKernel.IndexOfLiteral(context.InputBytes, compositeSearch));
+                    compositeSearch.IndexOf(context.InputBytes));
                 MeasureUtf8CaseLane("ValidationPlusCompositeSearch", samples, iterations, () =>
                 {
                     Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
-                    return Utf8SearchKernel.IndexOfLiteral(context.InputBytes, compositeSearch);
+                    return compositeSearch.IndexOf(context.InputBytes);
                 });
             }
         }
@@ -6429,7 +6429,7 @@ internal static partial class BenchmarkInspectReporter
         int matchByteLength,
         int matchUtf16Length)
     {
-        var matchByteIndex = Utf8SearchKernel.IndexOfLiteral(input, search);
+        var matchByteIndex = search.IndexOf(input);
         if (matchByteIndex < 0)
         {
             return 0;

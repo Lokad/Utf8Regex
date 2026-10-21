@@ -155,10 +155,11 @@ public sealed class Utf8SliceBoundsTests
         Assert.Equal(1824, Utf8SliceRunner.FrameReserveBytes);
         Assert.Equal(2080, Utf8SliceRunner.TrailReserveBytes);
         Assert.Equal(1568, Utf8SliceRunner.JournalReserveBytes);
-        Assert.Equal(2080, Utf8SliceRunner.BalanceReserveBytes);
+        Assert.Equal(1568, Utf8SliceRunner.BalanceReserveBytes);
         Assert.Equal(28, System.Runtime.CompilerServices.Unsafe.SizeOf<Utf8SliceFrame>());
         Assert.Equal(16, System.Runtime.CompilerServices.Unsafe.SizeOf<Utf8SliceTrailEntry>());
         Assert.Equal(12, System.Runtime.CompilerServices.Unsafe.SizeOf<Utf8SliceCountMutation>());
+        Assert.Equal(12, System.Runtime.CompilerServices.Unsafe.SizeOf<Utf8SliceBalanceEntry>());
     }
 
     [Fact]

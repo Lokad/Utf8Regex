@@ -70,7 +70,6 @@ internal ref partial struct Utf8OperationMatchCursor
     private bool _retainBoundaryMap;
     private readonly Utf8ExecutionDeadline _budget;
     private readonly int _literalUtf16Length;
-    private readonly int _totalUtf16Length;
     private readonly Utf8ProjectionPlan _projectionPlan;
     private readonly Utf8SearchOperationPlan _program;
     private ReadOnlySpan<byte> _remaining;
@@ -110,7 +109,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _literalUtf16Length = literal.Length;
         // This nonempty-literal mode projects incrementally and never uses the
         // whole-subject UTF-16 length owned by the empty-literal mode.
-        _totalUtf16Length = 0;
         _projectionPlan = default;
         _program = default;
         _remaining = input;
@@ -171,7 +169,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _literalUtf16Length = executionKind == NativeExecutionKind.ExactUtf8Literal
             ? Utf8Validation.Validate(literal, ref _sliceInvocation).Utf16Length
             : literal.Length;
-        _totalUtf16Length = 0;
         _projectionPlan = default;
         _program = default;
         _remaining = input;
@@ -214,7 +211,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         _literalUtf16Length = 0;
         _asciiInput = asciiInput;
-        _totalUtf16Length = input.Length;
         _projectionPlan = useStructuralLinearProgram ? default : searchPlan.ProjectionPlan;
         _program = useStructuralLinearProgram ? default : searchPlan.EnumerationOperation;
         _remaining = input;
@@ -280,7 +276,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _boundaryMap = map;
         _budget = Utf8ExecutionDeadline.Infinite;
         _literalUtf16Length = 0;
-        _totalUtf16Length = map.Utf16Length;
         _projectionPlan = new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16BoundaryMap);
         _program = default;
         _remaining = default;
@@ -442,7 +437,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _budget = budget;
         _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         _literalUtf16Length = literal.Length;
-        _totalUtf16Length = input.Length;
         _projectionPlan = default;
         _program = default;
         _remaining = input;
@@ -477,7 +471,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _budget = budget;
         _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         _literalUtf16Length = 0;
-        _totalUtf16Length = input.Length;
         _projectionPlan = default;
         _program = default;
         _remaining = input;
@@ -756,7 +749,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _budget = budget;
         _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         _literalUtf16Length = literalUtf16Length;
-        _totalUtf16Length = input.Length;
         _projectionPlan = searchPlan.EnumerationOperation.Projection;
         _program = searchPlan.EnumerationOperation;
         _remaining = input;
@@ -818,7 +810,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _budget = budget;
         _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         _literalUtf16Length = 0;
-        _totalUtf16Length = input.Length;
         var useByteOnlyProjection = inputIsAscii &&
             executionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals;
         _projectionPlan = useByteOnlyProjection
@@ -844,7 +835,6 @@ internal ref partial struct Utf8OperationMatchCursor
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
         : this(input, (Utf8BoundaryMap?)null, budget)
     {
-        _totalUtf16Length = validation.Utf16Length;
     }
 
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8BoundaryMap? boundaryMap, Utf8ExecutionDeadline budget)
@@ -858,7 +848,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _budget = budget;
         _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         _literalUtf16Length = 0;
-        _totalUtf16Length = boundaryMap?.Utf16Length ?? input.Length;
         _projectionPlan = new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16BoundaryMap);
         _program = default;
         _remaining = input;
@@ -886,7 +875,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _budget = budget;
         _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         _literalUtf16Length = 0;
-        _totalUtf16Length = input.Length;
         _projectionPlan = new Utf8ProjectionPlan(Utf8ProjectionKind.ByteOnly);
         _program = default;
         _remaining = input;

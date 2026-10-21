@@ -310,7 +310,7 @@ internal static class Pcre2LiteralRunner
     {
         if (!budget.RequiresCandidateMetering)
         {
-            return Utf8SearchKernel.IndexOfLiteral(input, program.Search);
+            return program.Search.IndexOf(input);
         }
 
         var literalLength = program.LiteralUtf8.Length;
@@ -322,7 +322,7 @@ internal static class Pcre2LiteralRunner
             var searchLength = Math.Min(
                 input.Length - offset,
                 MeteredSearchChunkLength + literalLength - 1);
-            var relative = Utf8SearchKernel.IndexOfLiteral(input.Slice(offset, searchLength), program.Search);
+            var relative = program.Search.IndexOf(input.Slice(offset, searchLength));
             if (relative >= 0)
             {
                 return offset + relative;

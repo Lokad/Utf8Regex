@@ -10,17 +10,6 @@ internal static class Utf8ValidationCore
     private const int DenseThreeByteLeadThreshold = 2;
     private const int SafeThreeByteIdleBlockLimit = 4;
 
-    public static Utf8ValidationResult Validate(ReadOnlySpan<byte> input)
-    {
-        TryValidate(input, computeUtf16Length: true, out var validation, out _);
-        return validation;
-    }
-
-    public static void ThrowIfInvalidOnly(ReadOnlySpan<byte> input)
-    {
-        TryValidate(input, computeUtf16Length: false, out _, out _);
-    }
-
     public static bool TryValidate(
         ReadOnlySpan<byte> input,
         bool computeUtf16Length,

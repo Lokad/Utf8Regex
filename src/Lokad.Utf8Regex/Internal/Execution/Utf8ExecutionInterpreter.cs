@@ -6,16 +6,6 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8ExecutionInterpreter
 {
-    public static int FindNextSimplePattern(
-        ReadOnlySpan<byte> input,
-        in Utf8SearchPlan searchPlan,
-        in AsciiSimplePatternPlan plan,
-        int startIndex,
-        out int matchedLength)
-    {
-        return FindNextSimplePattern(input, searchPlan, plan, startIndex, budget: Utf8ExecutionDeadline.Infinite, out matchedLength);
-    }
-
     // PLAN.md D06: single owner for the interpreter-backed simple-pattern Count loop; both compiled runtimes reach it only after their route-specific preconditions.
     internal static int CountSimplePattern(
         ReadOnlySpan<byte> input,
