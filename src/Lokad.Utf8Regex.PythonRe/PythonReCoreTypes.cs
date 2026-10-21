@@ -8,7 +8,7 @@ public readonly struct PythonReNameEntry
     /// <summary>Gets the group name.</summary>
     public string Name { get; init; }
 
-    /// <summary>Gets the zero-based capture slot number.</summary>
+    /// <summary>Gets the capture group number, starting at one; group zero is the whole match.</summary>
     public int Number { get; init; }
 }
 

@@ -24,7 +24,6 @@ public sealed class Pcre2BacktrackingCompilerTests
         Assert.True(match.Success);
         Assert.Equal(expected, match.GetValueString());
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
-        Assert.Equal(Pcre2SyntaxNodeKind.BacktrackingProgram, regex.DebugCompiledProgram.SyntaxTree.RootKind);
     }
 
     [Theory]

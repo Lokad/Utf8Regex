@@ -8,12 +8,10 @@ internal sealed class Pcre2AsciiLiteralAlternationRepeatDirectProgram : IPcre2Di
 {
     internal Pcre2AsciiLiteralAlternationRepeatDirectProgram(
         Utf8Regex regex,
-        Pcre2BacktrackingProgram fallback,
         byte[][] alternatives,
         byte[] suffix)
     {
         Regex = regex;
-        Fallback = fallback;
         Alternatives = alternatives;
         Suffix = suffix;
         using var scope = Utf8ConstructionScope.Enter();
@@ -42,8 +40,6 @@ internal sealed class Pcre2AsciiLiteralAlternationRepeatDirectProgram : IPcre2Di
     public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Pcre2AsciiLiteralAlternationRepeat;
 
     internal Utf8Regex Regex { get; }
-
-    internal Pcre2BacktrackingProgram Fallback { get; }
 
     internal byte[][] Alternatives { get; }
 
@@ -138,8 +134,7 @@ internal static class Pcre2AsciiLiteralAlternationRepeatAnalyzer
     internal static Pcre2AsciiLiteralAlternationRepeatDirectProgram? TryCompile(
         IPcre2BacktrackingNode root,
         Pcre2CompileRequest request,
-        Utf8Regex regex,
-        Pcre2BacktrackingProgram fallback)
+        Utf8Regex regex)
     {
         if (request.Options != Pcre2CompileOptions.None ||
             root is not Pcre2SequenceBacktrackingNode { Children.Length: >= 2 } sequence ||
@@ -160,7 +155,6 @@ internal static class Pcre2AsciiLiteralAlternationRepeatAnalyzer
         var suffix = sequence.Children[1..].Select(ExtractAsciiLiteralByte).ToArray();
         return new Pcre2AsciiLiteralAlternationRepeatDirectProgram(
             regex,
-            fallback,
             alternatives,
             suffix);
     }

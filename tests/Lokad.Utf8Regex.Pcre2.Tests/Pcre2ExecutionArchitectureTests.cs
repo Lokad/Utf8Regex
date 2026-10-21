@@ -8,12 +8,24 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2ExecutionArchitectureTests
 {
     [Fact]
+    public void DefaultValueEnumeratorStaysEmptyAcrossCopiesAndRepeatedAdvances()
+    {
+        Utf8Pcre2ValueMatchEnumerator cursor = default;
+        var alias = cursor;
+        Assert.False(cursor.Current.Success);
+        Assert.False(cursor.MoveNext());
+        Assert.False(cursor.MoveNext());
+        Assert.False(alias.MoveNext());
+        Assert.False(cursor.Current.Success);
+        Assert.False(alias.Current.Success);
+    }
+
+    [Fact]
     public void EnumeratorLayoutDiagnosticsReportEveryComponent()
     {
         Assert.True(Utf8Pcre2ValueMatchEnumerator.DebugSizeInBytes > 0);
         Assert.True(Utf8Pcre2ValueMatchEnumerator.DebugDirectCursorSizeInBytes > 0);
         Assert.True(Utf8Pcre2ValueMatchEnumerator.DebugSliceCursorSizeInBytes > 0);
-        Assert.True(Utf8Pcre2ValueMatchEnumerator.DebugMaterializedStateSizeInBytes > 0);
         Assert.True(Utf8Pcre2ValueMatchEnumerator.DebugValueDataSizeInBytes > 0);
         Assert.True(Utf8Pcre2ValueMatchEnumerator.DebugGroupDataSizeInBytes > 0);
         Assert.True(Utf8OperationMatchCursor.DebugSizeInBytes > 0);
@@ -68,12 +80,12 @@ public sealed class Pcre2ExecutionArchitectureTests
         var special = new Utf8Pcre2Regex("(?|(abc)|(xyz))").DebugCompiledProgram;
 
         Assert.IsType<Pcre2LiteralDirectProgram>(literal.Operations.IsMatch);
-        Assert.IsType<Pcre2EmptyUtf8ProgramSlot>(literal.PrimaryUtf8);
+        Assert.Null(literal.PrimaryUtf8);
         var direct = Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(delegated.Operations.IsMatch);
-        var primary = Assert.IsType<Pcre2Utf8ProgramSlot>(delegated.PrimaryUtf8);
-        Assert.Same(primary.Regex, direct.Regex);
+        var primary = Assert.IsType<Utf8Regex>(delegated.PrimaryUtf8);
+        Assert.Same(primary, direct.Regex);
         var finite = Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(special.Operations.IsMatch);
-        Assert.Same(finite.Regex, Assert.IsType<Pcre2Utf8ProgramSlot>(special.PrimaryUtf8).Regex);
+        Assert.Same(finite.Regex, Assert.IsType<Utf8Regex>(special.PrimaryUtf8));
         Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiSet, special.CandidateSearch.Kind);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(special.Operations.Match);
     }

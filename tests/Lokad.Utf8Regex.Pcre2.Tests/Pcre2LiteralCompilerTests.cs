@@ -14,7 +14,7 @@ public sealed class Pcre2LiteralCompilerTests
     public void LiteralProgramsKeepCanonicalGroupZeroWithoutRetainingCore(string pattern)
     {
         var program = new Utf8Pcre2Regex(pattern).DebugCompiledProgram;
-        Assert.IsType<Pcre2EmptyUtf8ProgramSlot>(program.PrimaryUtf8);
+        Assert.Null(program.PrimaryUtf8);
         Assert.Equal(new[] { "0" }, program.GroupNames);
         Assert.Empty(program.NameEntries);
         Assert.All(new[] { program.Operations.IsMatch, program.Operations.Count, program.Operations.Match,
@@ -115,7 +115,7 @@ public sealed class Pcre2LiteralCompilerTests
         Assert.True(match.Success);
         Assert.Equal(expected, match.GetValueString());
         Assert.IsType<Pcre2LiteralDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
-        Assert.Equal(Pcre2SyntaxNodeKind.Literal, regex.DebugCompiledProgram.SyntaxTree.RootKind);
+        Assert.IsType<Pcre2LiteralSyntaxTree>(regex.DebugCompiledProgram.SyntaxTree);
     }
 
     [Fact]
@@ -182,7 +182,7 @@ public sealed class Pcre2LiteralCompilerTests
     {
         var regex = new Utf8Pcre2Regex("abc|def");
 
-        Assert.Equal(Pcre2SyntaxNodeKind.BacktrackingProgram, regex.DebugCompiledProgram.SyntaxTree.RootKind);
+        Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
         Assert.True(regex.IsMatch("--def--"u8));
     }
 

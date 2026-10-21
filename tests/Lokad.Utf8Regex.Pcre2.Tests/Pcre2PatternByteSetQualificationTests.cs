@@ -72,7 +72,7 @@ public sealed class Pcre2PatternByteSetQualificationTests
     {
         Func<object>[] create =
         [
-            () => new Pcre2AsciiLiteralAlternationRepeatDirectProgram(null!, null!,
+            () => new Pcre2AsciiLiteralAlternationRepeatDirectProgram(null!,
                 ["ab"u8.ToArray(), "ac"u8.ToArray(), "xy"u8.ToArray()], "!"u8.ToArray()),
             () => new Pcre2AsciiBoundedIsMatchDirectProgram(
                 [[new AsciiCharClass(1ul << 33, 0)], [new AsciiCharClass(1ul << 35, 0)]], false, false, null!),

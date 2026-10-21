@@ -74,18 +74,29 @@ is admitted, temporary and released after encoding runtime UTF-8 bytes. Characte
 token/class/property buffers admit capacity and growth/final-copy overlap before
 allocation, with token instruction admission and bounded work/checkpoints. Marker
 syntax trees retain no unused literal-atom or character-node vectors. Backtracking
-trees remain for real Probe consumers. Core-backed specializations retain their
+trees remain only when the compiled curated Probe profile can consume them;
+programs with no partial descriptor drop that tree after operation selection.
+Lowered option fallbacks remain owned independently. Core-backed specializations retain their
 real owners after profile parsing; Core capture-name copies are not authoritative.
 Option eligibility omits unneeded Core preparation, and final operation selection
 drops unused original owners. Finite languages retain their derived Core owner.
 Shared slice slots own the same immutable scalar payload and profile fallback
 directly; their ownership does not require the unused Core facade to survive.
-Operation selection precedes one complete program publication. There is no
+The optional Core owner is a nullable reference, without empty/populated wrapper
+objects. Operation selection precedes one complete program publication. There is no
 injected legacy-foundation factory, dummy syntax tree or no-operation program.
 Optional finite/ASCII expansion admits major state/buffers and bounded work
 through the original construction owner; fixed shape caps alone are insufficient.
 
 ## Invocation and global progress
+
+Public value enumeration carries only the existing direct or shared-slice cursor
+and the current projection. A default cursor is empty. Obsolete materialized,
+deferred-array and hard-coded example-generator implementations are removed;
+real execution can still report deferred failures. Copies keep independent
+positions and their original shared finite authority and absolute deadline.
+Named-slot copying scans immutable entries directly into the caller's span,
+preserving pattern order, duplicates and truncation without temporary collections.
 
 Capture slots, undo journals, backtracking/call frames, resource counters,
 timeout state, UTF-8 projection state, and global progress are invocation

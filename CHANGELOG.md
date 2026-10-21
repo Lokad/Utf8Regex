@@ -2,6 +2,13 @@
 
 ## Unreleased development after 0.4.0-rc.1
 
+- Removed obsolete PCRE2 value-enumerator modes and example generators. Direct
+  and scalar cursors retain copy, lifetime, interruption and resource semantics.
+  Patterns without a curated partial descriptor no longer retain their parsed
+  backtracking tree; lowered option fallbacks remain. Named-slot span copying
+  avoids temporary arrays, and optional Core ownership needs no wrapper object.
+  Public APIs and conservative construction accounting are unchanged.
+
 - Literal execution now uses its implementation directly, removing two
   forwarding runtime wrappers and one object per applicable construction.
   Split eligibility keeps the existing compiled-kind proof; algorithms, SIMD,

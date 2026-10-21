@@ -10,7 +10,7 @@ public sealed class Pcre2CoreOwnershipTests
         Pcre2CompileOptions options, Pcre2NewlineConvention newline)
     {
         var regex = new Utf8Pcre2Regex(pattern, options, new() { Newline = newline }, default, Timeout.InfiniteTimeSpan);
-        Assert.False(regex.DebugCompiledProgram.PrimaryUtf8.IsPresent);
+        Assert.Null(regex.DebugCompiledProgram.PrimaryUtf8);
         var bytes = System.Text.Encoding.UTF8.GetBytes(subject);
         Assert.True(regex.IsMatch(bytes));
         Assert.Equal(1, regex.Count(bytes));
@@ -22,7 +22,7 @@ public sealed class Pcre2CoreOwnershipTests
     public void FiniteCapturedLanguageKeepsItsLiveDerivedCoreInsteadOfTheOriginal()
     {
         var regex = new Utf8Pcre2Regex("(?<left>a)(b)");
-        var owner = Assert.IsType<Pcre2Utf8ProgramSlot>(regex.DebugCompiledProgram.PrimaryUtf8).Regex;
+        var owner = Assert.IsType<Utf8Regex>(regex.DebugCompiledProgram.PrimaryUtf8);
         Assert.Equal("ab", owner.Pattern);
         Assert.Same(owner, Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(regex.DebugCompiledProgram.Operations.Count).Regex);
         Assert.Equal(2, regex.Count("ab ab"u8));
@@ -36,7 +36,7 @@ public sealed class Pcre2CoreOwnershipTests
     {
         var regex = new Utf8Pcre2Regex(@"([0-9]+)-\1");
         var program = regex.DebugCompiledProgram;
-        Assert.False(program.PrimaryUtf8.IsPresent);
+        Assert.Null(program.PrimaryUtf8);
         var canonical = Assert.IsType<Pcre2SliceDirectProgram>(program.Operations.Match);
         Assert.Same(canonical.SliceProgram, Assert.IsType<Pcre2SliceDirectProgram>(program.Operations.Count).SliceProgram);
         Assert.Equal(2, regex.Count("12-12 7-7"u8));

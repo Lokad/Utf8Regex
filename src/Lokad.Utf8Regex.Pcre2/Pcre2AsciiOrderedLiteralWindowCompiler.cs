@@ -5,11 +5,9 @@ namespace Lokad.Utf8Regex.Pcre2;
 internal sealed class Pcre2AsciiOrderedLiteralWindowDirectProgram : IPcre2DirectProgram
 {
     internal Pcre2AsciiOrderedLiteralWindowDirectProgram(
-        Utf8Regex regex,
-        Pcre2BacktrackingProgram fallback)
+        Utf8Regex regex)
     {
         Regex = regex;
-        Fallback = fallback;
     }
 
     public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Pcre2AsciiOrderedLiteralWindow;
@@ -24,8 +22,7 @@ internal static class Pcre2AsciiOrderedLiteralWindowAnalyzer
     internal static Pcre2AsciiOrderedLiteralWindowDirectProgram? TryCompile(
         IPcre2BacktrackingNode root,
         Pcre2CompileRequest request,
-        Utf8Regex regex,
-        Pcre2BacktrackingProgram fallback)
+        Utf8Regex regex)
     {
         if (request.Options != Pcre2CompileOptions.None ||
             request.Settings.Newline is not (Pcre2NewlineConvention.Default or Pcre2NewlineConvention.Lf) ||
@@ -36,7 +33,7 @@ internal static class Pcre2AsciiOrderedLiteralWindowAnalyzer
             return null;
         }
 
-        return new Pcre2AsciiOrderedLiteralWindowDirectProgram(regex, fallback);
+        return new Pcre2AsciiOrderedLiteralWindowDirectProgram(regex);
     }
 
     internal static bool IsSupportedBranch(IPcre2BacktrackingNode node)

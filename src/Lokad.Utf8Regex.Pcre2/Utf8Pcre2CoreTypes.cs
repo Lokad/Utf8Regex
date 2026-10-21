@@ -355,15 +355,16 @@ public readonly ref struct Utf8Pcre2MatchContext
             return 0;
         }
 
-        var matches = _nameEntries.Where(e => string.Equals(e.Name, name, StringComparison.Ordinal)).ToArray();
-        var written = Math.Min(destination.Length, matches.Length);
-        for (var i = 0; i < written; i++)
+        var count = 0;
+        foreach (var entry in _nameEntries)
         {
-            destination[i] = matches[i].Number;
+            if (!string.Equals(entry.Name, name, StringComparison.Ordinal)) continue;
+            if (count < destination.Length) destination[count] = entry.Number;
+            count++;
         }
 
-        isMore = matches.Length > written;
-        return written;
+        isMore = count > destination.Length;
+        return Math.Min(count, destination.Length);
     }
 
     /// <summary>Attempts to get the first participating capture slot assigned to a group name.</summary>
@@ -659,34 +660,6 @@ public delegate string Pcre2Utf16MatchEvaluator<TState>(
     in Utf8Pcre2MatchContext match,
     ref TState state);
 
-internal readonly struct Pcre2MaterializedMatchEnumeratorState
-{
-    private readonly Pcre2GroupData[]? _matches;
-
-    internal Pcre2MaterializedMatchEnumeratorState(Pcre2GroupData[]? matches)
-        : this(matches, null, int.MaxValue)
-    {
-    }
-
-    internal Pcre2MaterializedMatchEnumeratorState(
-        Pcre2GroupData[]? matches,
-        Exception? pendingException,
-        int exceptionIndex)
-    {
-        _matches = matches ?? [];
-        PendingException = pendingException;
-        ExceptionIndex = exceptionIndex;
-    }
-
-    internal Pcre2GroupData[] Matches => _matches ?? [];
-
-    internal int Count => Matches.Length;
-
-    internal Exception? PendingException { get; }
-
-    internal int ExceptionIndex { get; }
-}
-
 /// <summary>Advances through non-overlapping PCRE2 matches without allocating a public match collection.</summary>
 /// <remarks>The stack-only cursor and its current value borrow the original UTF-8 input.
 /// Copies retain independent positions. Controlled native and owned-slice copies share their original cumulative
@@ -699,72 +672,15 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
     internal static int DebugDirectCursorSizeInBytes => Unsafe.SizeOf<Pcre2GlobalMatchCursor>();
     internal static int DebugSliceCursorSizeInBytes => Unsafe.SizeOf<Pcre2SliceGlobalMatchCursor>();
 
-    internal static int DebugMaterializedStateSizeInBytes => Unsafe.SizeOf<Pcre2MaterializedMatchEnumeratorState>();
-
     internal static int DebugValueDataSizeInBytes => Unsafe.SizeOf<Pcre2ValueData>();
 
     internal static int DebugGroupDataSizeInBytes => Unsafe.SizeOf<Pcre2GroupData>();
 
     private readonly Pcre2ValueMatchEnumeratorMode _mode;
     private readonly ReadOnlySpan<byte> _input;
-    private readonly Pcre2MaterializedMatchEnumeratorState _materializedMatches;
-    private readonly Pcre2NativeValueEnumeratorKind _generatorExecutionKind;
     private Pcre2GlobalMatchCursor _directMatches;
     private Pcre2SliceGlobalMatchCursor _sliceMatches;
-    private int _pendingNextCursor;
     private Pcre2ValueData _currentData;
-    private Pcre2ValueData _pendingData;
-    private bool _hasPendingData;
-    private int _cursor;
-    private int _index;
-
-    internal Utf8Pcre2ValueMatchEnumerator(ReadOnlySpan<byte> input, Pcre2GroupData[]? matches)
-    {
-        _mode = Pcre2ValueMatchEnumeratorMode.Pcre2GroupDataArray;
-        _input = input;
-        _materializedMatches = new Pcre2MaterializedMatchEnumeratorState(matches);
-        _generatorExecutionKind = default;
-        _directMatches = default;
-        _pendingNextCursor = 0;
-        _currentData = default;
-        _pendingData = default;
-        _hasPendingData = false;
-        _cursor = 0;
-        _index = -1;
-    }
-
-    internal Utf8Pcre2ValueMatchEnumerator(ReadOnlySpan<byte> input, Pcre2GroupData[]? matches, Exception pendingException, int exceptionIndex)
-    {
-        _mode = Pcre2ValueMatchEnumeratorMode.Pcre2GroupDataArrayWithDeferredException;
-        _input = input;
-        _materializedMatches = new Pcre2MaterializedMatchEnumeratorState(
-            matches,
-            pendingException,
-            exceptionIndex);
-        _generatorExecutionKind = default;
-        _directMatches = default;
-        _pendingNextCursor = 0;
-        _currentData = default;
-        _pendingData = default;
-        _hasPendingData = false;
-        _cursor = 0;
-        _index = -1;
-    }
-
-    internal Utf8Pcre2ValueMatchEnumerator(ReadOnlySpan<byte> input, Pcre2NativeValueEnumeratorKind generatorExecutionKind, int startOffsetInBytes)
-    {
-        _mode = Pcre2ValueMatchEnumeratorMode.NativeValueGenerator;
-        _input = input;
-        _materializedMatches = default;
-        _generatorExecutionKind = generatorExecutionKind;
-        _directMatches = default;
-        _pendingNextCursor = 0;
-        _currentData = default;
-        _pendingData = default;
-        _hasPendingData = false;
-        _cursor = startOffsetInBytes;
-        _index = -1;
-    }
 
     internal Utf8Pcre2ValueMatchEnumerator(
         ReadOnlySpan<byte> input,
@@ -774,7 +690,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         _mode = Pcre2ValueMatchEnumeratorMode.Pcre2DirectGlobal;
         _input = input;
         _directMatches = directMatches;
-        _index = -1;
     }
 
     internal Utf8Pcre2ValueMatchEnumerator(
@@ -785,7 +700,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         _mode = Pcre2ValueMatchEnumeratorMode.Pcre2Slice;
         _input = input;
         _sliceMatches = sliceMatches;
-        _index = -1;
     }
 
     /// <summary>Gets the match at the current cursor position.</summary>
@@ -794,13 +708,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get
         {
-            if ((_mode == Pcre2ValueMatchEnumeratorMode.Pcre2GroupDataArray ||
-                 _mode == Pcre2ValueMatchEnumeratorMode.Pcre2GroupDataArrayWithDeferredException) &&
-                (uint)_index < (uint)_materializedMatches.Count)
-            {
-                return Utf8Pcre2ValueMatch.Create(_input, _materializedMatches.Matches[_index]);
-            }
-
             return Utf8Pcre2ValueMatch.Create(
                 _input,
                 new Pcre2GroupData
@@ -823,41 +730,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool MoveNext()
     {
-        if (_mode == Pcre2ValueMatchEnumeratorMode.Pcre2GroupDataArray)
-        {
-            var nextIndex = _index + 1;
-            if ((uint)nextIndex >= (uint)_materializedMatches.Count)
-            {
-                return false;
-            }
-
-            _index = nextIndex;
-            return true;
-        }
-
-        if (_mode == Pcre2ValueMatchEnumeratorMode.Pcre2GroupDataArrayWithDeferredException)
-        {
-            var nextIndex = _index + 1;
-            if (_materializedMatches.PendingException is { } pendingException &&
-                nextIndex >= _materializedMatches.ExceptionIndex)
-            {
-                throw pendingException;
-            }
-
-            if ((uint)nextIndex >= (uint)_materializedMatches.Count)
-            {
-                return false;
-            }
-
-            _index = nextIndex;
-            return true;
-        }
-
-        if (_mode == Pcre2ValueMatchEnumeratorMode.NativeValueGenerator)
-        {
-            return TryMoveNextNativeValueGenerator();
-        }
-
         if (_mode == Pcre2ValueMatchEnumeratorMode.Pcre2DirectGlobal)
         {
             if (!_directMatches.MoveNext())
@@ -909,185 +781,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         return false;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool TryMoveNextNativeValueGenerator()
-    {
-        if (_hasPendingData)
-        {
-            _currentData = _pendingData;
-            _pendingData = default;
-            _hasPendingData = false;
-            _cursor = _pendingNextCursor;
-            return true;
-        }
-
-        return _generatorExecutionKind switch
-        {
-            Pcre2NativeValueEnumeratorKind.BranchResetBasic => TryMoveNextLiteralAlternation(_input, ref _cursor, "abc"u8, "xyz"u8, out _currentData),
-            Pcre2NativeValueEnumeratorKind.BranchResetBackref => TryMoveNextLiteralAlternation(_input, ref _cursor, "abcabc"u8, "xyzxyz"u8, out _currentData),
-            Pcre2NativeValueEnumeratorKind.BranchResetNested => TryMoveNextLiteralAlternation(_input, ref _cursor, "xabcx"u8, "xxyzx"u8, out _currentData),
-            Pcre2NativeValueEnumeratorKind.BranchResetSameNameFollowup => TryMoveNextLiteralAlternation(_input, ref _cursor, "aaaccccaaa"u8, "bccccb"u8, out _currentData),
-            Pcre2NativeValueEnumeratorKind.DuplicateNamesFooBar => TryMoveNextLiteralAlternation(_input, ref _cursor, "foofoo"u8, "barbar"u8, out _currentData),
-            Pcre2NativeValueEnumeratorKind.KResetAbc123 => TryMoveNextKResetLiteral(_input, ref _cursor, "abc123"u8, 3, 3, out _currentData),
-            Pcre2NativeValueEnumeratorKind.KResetBarOrBaz => TryMoveNextKResetLiteralAlternation(_input, ref _cursor, "foobar"u8, 3, 3, "foobaz"u8, 3, 3, out _currentData),
-            Pcre2NativeValueEnumeratorKind.KResetRepeatAb => TryMoveNextRepeatedKResetAb(_input, ref _cursor, out _currentData),
-            Pcre2NativeValueEnumeratorKind.KResetAtomicAltAb => TryMoveNextKResetAtomicAltAb(_input, ref _cursor, out _currentData),
-            Pcre2NativeValueEnumeratorKind.EmptyOrDefAfterAbc => TryMoveNextEmptyOrLiteralAfterAbc(_input, ref _cursor, "def"u8, out _currentData, out _pendingData, out _hasPendingData, out _pendingNextCursor),
-            _ => false,
-        };
-    }
-
-    private static bool TryMoveNextLiteralAlternation(ReadOnlySpan<byte> input, ref int cursor, ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, out Pcre2ValueData data)
-    {
-        data = default;
-        var remaining = input[cursor..];
-        var firstIndex = remaining.IndexOf(first);
-        var secondIndex = remaining.IndexOf(second);
-        if (firstIndex < 0 && secondIndex < 0)
-        {
-            return false;
-        }
-
-        var firstWins = firstIndex >= 0 && (secondIndex < 0 || firstIndex <= secondIndex);
-        var relativeIndex = firstWins ? firstIndex : secondIndex;
-        var length = firstWins ? first.Length : second.Length;
-        var start = cursor + relativeIndex;
-        var end = start + length;
-        data = Pcre2ValueData.FromByteOffsets(input, start, end);
-        cursor = end;
-        return true;
-    }
-
-    private static bool TryMoveNextKResetLiteral(ReadOnlySpan<byte> input, ref int cursor, ReadOnlySpan<byte> wholeLiteral, int valueOffset, int valueLength, out Pcre2ValueData data)
-    {
-        data = default;
-        var relativeIndex = input[cursor..].IndexOf(wholeLiteral);
-        if (relativeIndex < 0)
-        {
-            return false;
-        }
-
-        var wholeStart = cursor + relativeIndex;
-        data = Pcre2ValueData.FromByteOffsets(input, wholeStart + valueOffset, wholeStart + valueOffset + valueLength);
-        cursor = wholeStart + wholeLiteral.Length;
-        return true;
-    }
-
-    private static bool TryMoveNextKResetLiteralAlternation(
-        ReadOnlySpan<byte> input,
-        ref int cursor,
-        ReadOnlySpan<byte> firstWholeLiteral,
-        int firstValueOffset,
-        int firstValueLength,
-        ReadOnlySpan<byte> secondWholeLiteral,
-        int secondValueOffset,
-        int secondValueLength,
-        out Pcre2ValueData data)
-    {
-        data = default;
-        var remaining = input[cursor..];
-        var firstIndex = remaining.IndexOf(firstWholeLiteral);
-        var secondIndex = remaining.IndexOf(secondWholeLiteral);
-        if (firstIndex < 0 && secondIndex < 0)
-        {
-            return false;
-        }
-
-        var firstWins = firstIndex >= 0 && (secondIndex < 0 || firstIndex <= secondIndex);
-        var relativeIndex = firstWins ? firstIndex : secondIndex;
-        var wholeStart = cursor + relativeIndex;
-        var wholeLength = firstWins ? firstWholeLiteral.Length : secondWholeLiteral.Length;
-        var valueOffset = firstWins ? firstValueOffset : secondValueOffset;
-        var valueLength = firstWins ? firstValueLength : secondValueLength;
-        data = Pcre2ValueData.FromByteOffsets(input, wholeStart + valueOffset, wholeStart + valueOffset + valueLength);
-        cursor = wholeStart + wholeLength;
-        return true;
-    }
-
-    private static bool TryMoveNextRepeatedKResetAb(ReadOnlySpan<byte> input, ref int cursor, out Pcre2ValueData data)
-    {
-        data = default;
-        var relativeIndex = input[cursor..].IndexOf("ab"u8);
-        if (relativeIndex < 0)
-        {
-            return false;
-        }
-
-        var runCursor = cursor + relativeIndex;
-        var lastAbStart = runCursor;
-        do
-        {
-            lastAbStart = runCursor;
-            runCursor += 2;
-        }
-        while (runCursor <= input.Length - 2 &&
-               input[runCursor] == (byte)'a' &&
-               input[runCursor + 1] == (byte)'b');
-
-        data = Pcre2ValueData.FromByteOffsets(input, lastAbStart + 1, lastAbStart + 2);
-        cursor = lastAbStart + 2;
-        return true;
-    }
-
-    private static bool TryMoveNextKResetAtomicAltAb(ReadOnlySpan<byte> input, ref int cursor, out Pcre2ValueData data)
-    {
-        data = default;
-        var relativeIndex = input[cursor..].IndexOf("ab"u8);
-        if (relativeIndex < 0)
-        {
-            return false;
-        }
-
-        var matchStart = cursor + relativeIndex;
-        if (matchStart <= input.Length - 3 && input[matchStart + 2] == (byte)'z')
-        {
-            data = Pcre2ValueData.FromByteOffsets(input, matchStart + 1, matchStart + 3);
-            cursor = matchStart + 3;
-            return true;
-        }
-
-        data = Pcre2ValueData.FromByteOffsets(input, matchStart, matchStart + 2);
-        cursor = matchStart + 2;
-        return true;
-    }
-
-    private static bool TryMoveNextEmptyOrLiteralAfterAbc(
-        ReadOnlySpan<byte> input,
-        ref int cursor,
-        ReadOnlySpan<byte> literal,
-        out Pcre2ValueData data,
-        out Pcre2ValueData pendingData,
-        out bool hasPendingData,
-        out int pendingNextCursor)
-    {
-        data = default;
-        pendingData = default;
-        hasPendingData = false;
-        pendingNextCursor = 0;
-        if ((uint)cursor > (uint)(input.Length - 3))
-        {
-            return false;
-        }
-
-        var relativeIndex = input[cursor..].IndexOf("abc"u8);
-        if (relativeIndex < 0)
-        {
-            return false;
-        }
-
-        var boundary = cursor + relativeIndex + 3;
-        data = Pcre2ValueData.FromByteOffsets(input, boundary, boundary);
-        if (boundary <= input.Length - literal.Length && input[boundary..].StartsWith(literal))
-        {
-            pendingData = Pcre2ValueData.FromByteOffsets(input, boundary, boundary + literal.Length);
-            hasPendingData = true;
-            pendingNextCursor = boundary + literal.Length;
-        }
-
-        cursor = hasPendingData ? boundary + literal.Length : boundary + 1;
-        return true;
-    }
-
     private readonly struct Pcre2ValueData
     {
         public bool Success { get; init; }
@@ -1105,43 +798,12 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         public bool Utf8SliceIsWellFormed { get; init; }
 
         public bool Utf16ProjectionIsExact { get; init; }
-
-        public static Pcre2ValueData FromByteOffsets(ReadOnlySpan<byte> input, int startOffsetInBytes, int endOffsetInBytes)
-        {
-            var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-            var endOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..endOffsetInBytes]);
-            return new Pcre2ValueData
-            {
-                Success = true,
-                StartOffsetInBytes = startOffsetInBytes,
-                EndOffsetInBytes = endOffsetInBytes,
-                StartOffsetInUtf16 = startOffsetInUtf16,
-                EndOffsetInUtf16 = endOffsetInUtf16,
-            };
-        }
     }
 
     private enum Pcre2ValueMatchEnumeratorMode : byte
     {
-        Pcre2GroupDataArray = 0,
-        Pcre2GroupDataArrayWithDeferredException = 1,
-        NativeValueGenerator = 6,
-        Pcre2DirectGlobal = 7,
-        Pcre2Slice = 8,
-    }
-
-    internal enum Pcre2NativeValueEnumeratorKind : byte
-    {
         None = 0,
-        BranchResetBasic = 1,
-        BranchResetBackref = 2,
-        BranchResetNested = 3,
-        BranchResetSameNameFollowup = 4,
-        DuplicateNamesFooBar = 5,
-        KResetAbc123 = 6,
-        KResetBarOrBaz = 7,
-        KResetRepeatAb = 8,
-        KResetAtomicAltAb = 9,
-        EmptyOrDefAfterAbc = 10,
+        Pcre2DirectGlobal = 1,
+        Pcre2Slice = 2,
     }
 }

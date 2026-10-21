@@ -72,7 +72,7 @@ public sealed class Pcre2CharacterConstructionBoundsTests
     {
         var pattern = character ? string.Concat(Enumerable.Repeat(@"\X", 1000)) : new string('a', 4096);
         var regex = new Utf8Pcre2Regex(pattern);
-        Assert.DoesNotContain(ReachableArrays(regex.DebugCompiledProgram.SyntaxTree), array => array.Length >= 1000);
+        Assert.DoesNotContain(ReachableArrays(Assert.IsAssignableFrom<IPcre2SyntaxTree>(regex.DebugCompiledProgram.SyntaxTree)), array => array.Length >= 1000);
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(new string('a', character ? 1000 : 4096))));
     }
 

@@ -564,7 +564,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"Utf8SmallFamilyB  : {Utf8OperationMatchCursor.DebugSmallLiteralFamilySizeInBytes}");
         Console.WriteLine($"Utf8SearchOpB     : {Utf8OperationMatchCursor.DebugSearchOperationPlanSizeInBytes}");
         Console.WriteLine($"Utf8DfaStateB     : {Utf8OperationMatchCursor.DebugDeterministicScanStateSizeInBytes}");
-        Console.WriteLine($"MaterializedB     : {Utf8Pcre2ValueMatchEnumerator.DebugMaterializedStateSizeInBytes}");
         Console.WriteLine($"ValueDataB        : {Utf8Pcre2ValueMatchEnumerator.DebugValueDataSizeInBytes}");
         Console.WriteLine($"GroupDataB        : {Utf8Pcre2ValueMatchEnumerator.DebugGroupDataSizeInBytes}");
         Console.WriteLine($"LiteralFamilyCurB : {Pcre2LiteralFamilyGlobalMatchCursor.DebugSizeInBytes}");

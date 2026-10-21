@@ -99,35 +99,6 @@ internal static class Pcre2Compiler
     }
 }
 
-internal interface IPcre2Utf8ProgramSlot
-{
-    bool IsPresent { get; }
-}
-
-internal sealed class Pcre2EmptyUtf8ProgramSlot : IPcre2Utf8ProgramSlot
-{
-    internal static Pcre2EmptyUtf8ProgramSlot Instance { get; } = new();
-
-    private Pcre2EmptyUtf8ProgramSlot()
-    {
-    }
-
-    public bool IsPresent => false;
-}
-
-internal sealed class Pcre2Utf8ProgramSlot : IPcre2Utf8ProgramSlot
-{
-    internal Pcre2Utf8ProgramSlot(Utf8Regex regex)
-    {
-        Regex = regex;
-    }
-
-    public bool IsPresent => true;
-
-    internal Utf8Regex Regex { get; }
-
-}
-
 internal interface IPcre2DirectProgram
 {
     Pcre2DirectProgramKind Kind { get; }
@@ -509,11 +480,11 @@ internal sealed class Pcre2CompiledProgram
 {
     internal Pcre2CompiledProgram(
         Pcre2CompileRequest request,
-        IPcre2Utf8ProgramSlot primaryUtf8,
+        Utf8Regex? primaryUtf8,
         Pcre2OperationPrograms operations,
         Pcre2CandidateSearchProgram candidateSearch,
         Pcre2PartialProbeProgram partialProbe,
-        IPcre2SyntaxTree syntaxTree,
+        IPcre2SyntaxTree? syntaxTree,
         string[] groupNames,
         Pcre2NameEntry[] nameEntries)
     {
@@ -529,7 +500,7 @@ internal sealed class Pcre2CompiledProgram
 
     internal Pcre2CompileRequest Request { get; }
 
-    internal IPcre2Utf8ProgramSlot PrimaryUtf8 { get; }
+    internal Utf8Regex? PrimaryUtf8 { get; }
 
     internal Pcre2OperationPrograms Operations { get; }
 
@@ -539,7 +510,9 @@ internal sealed class Pcre2CompiledProgram
 
     internal Pcre2PartialProbeProgram PartialProbe { get; }
 
-    internal IPcre2SyntaxTree SyntaxTree { get; }
+    // Only curated partial probing can consult the original backtracking tree.
+    // Ordinary execution owns lowered programs, including its option fallback.
+    internal IPcre2SyntaxTree? SyntaxTree { get; }
 
     internal string[] GroupNames { get; }
 
@@ -556,7 +529,7 @@ internal static class Pcre2CompiledProgramOverlay
         var direct = new Pcre2LiteralDirectProgram(literalProgram);
         return new Pcre2CompiledProgram(
             request,
-            Pcre2EmptyUtf8ProgramSlot.Instance,
+            null,
             new Pcre2OperationPrograms(direct, direct, direct, direct, direct),
             default,
             Pcre2PartialProbeProgram.None,
@@ -573,7 +546,7 @@ internal static class Pcre2CompiledProgramOverlay
         var direct = new Pcre2CharacterDirectProgram(characterProgram);
         return new Pcre2CompiledProgram(
             request,
-            Pcre2EmptyUtf8ProgramSlot.Instance,
+            null,
             new Pcre2OperationPrograms(direct, direct, direct, direct, direct),
             default,
             Pcre2PartialProbeCompiler.Compile(characterProgram, request),
@@ -629,8 +602,7 @@ internal static class Pcre2CompiledProgramOverlay
             Pcre2AsciiOrderedLiteralWindowAnalyzer.TryCompile(
                 syntaxTree.Root,
                 request,
-                orderedWindowPrimary,
-                backtrackingProgram) is { } orderedWindow)
+                orderedWindowPrimary) is { } orderedWindow)
         {
             operations = operations with
             {
@@ -641,8 +613,7 @@ internal static class Pcre2CompiledProgramOverlay
             Pcre2AsciiLiteralAlternationRepeatAnalyzer.TryCompile(
                 syntaxTree.Root,
                 request,
-                alternationRepeatPrimary,
-                backtrackingProgram) is { } alternationRepeat)
+                alternationRepeatPrimary) is { } alternationRepeat)
         {
             operations = operations with
             {
@@ -778,15 +749,13 @@ internal static class Pcre2CompiledProgramOverlay
             Pcre2ProgramInvariant.GetCoreRegex(operations.Match) ??
             Pcre2ProgramInvariant.GetCoreRegex(operations.Enumerate) ??
             Pcre2ProgramInvariant.GetCoreRegex(operations.Replace);
-        IPcre2Utf8ProgramSlot owner = core is null
-            ? Pcre2EmptyUtf8ProgramSlot.Instance : new Pcre2Utf8ProgramSlot(core);
         return new Pcre2CompiledProgram(
             request,
-            owner,
+            core,
             operations,
             candidateSearch,
             partialProbe,
-            syntaxTree,
+            partialProbe.Kind == Pcre2PartialProbeProgramKind.None ? null : syntaxTree,
             backtrackingProgram.GroupNames,
             backtrackingProgram.NameEntries);
     }
@@ -1017,7 +986,7 @@ internal static class Pcre2ProgramInvariant
             throw new InvalidOperationException("Slice operation slots must share their owned program and PCRE2 fallback.");
 
         if (GetCoreRegex(directProgram) is { } core &&
-            (program.PrimaryUtf8 is not Pcre2Utf8ProgramSlot primary || !ReferenceEquals(primary.Regex, core)))
+            !ReferenceEquals(program.PrimaryUtf8, core))
             throw new InvalidOperationException("A Core-backed operation must retain its live Core owner.");
 
         if (directProgram is Pcre2SameStartLiteralDirectProgram sameStartLiteralProgram &&

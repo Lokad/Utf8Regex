@@ -880,11 +880,10 @@ public sealed partial class Utf8Pcre2Regex
     /// <returns>The number of slot numbers copied; <paramref name="isMore"/> reports whether additional numbers did not fit.</returns>
     public int CopyNumbersForName(string name, Span<int> destination, out bool isMore)
     {
-        var matchingEntries = NameEntries.Where(static e => !string.IsNullOrEmpty(e.Name)).ToArray();
         var count = 0;
-        foreach (var entry in matchingEntries)
+        foreach (var entry in NameEntries)
         {
-            if (!string.Equals(entry.Name, name, StringComparison.Ordinal))
+            if (string.IsNullOrEmpty(entry.Name) || !string.Equals(entry.Name, name, StringComparison.Ordinal))
             {
                 continue;
             }
