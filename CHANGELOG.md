@@ -2,10 +2,7 @@
 
 ## Unreleased development after 0.4.0-rc.1
 
-- PythonRe retains optional Core only for actual iterator, canonical literal
-  counting, native-result or accepted start-hint consumers. Shared eligibility
-  avoids unused preparations without changing captures or canonical string reuse.
-  Removed search forwarding and write-only cursor/balance state. Balancing working
+- Removed search forwarding and write-only cursor/balance state. Balancing working
   charges can decrease with the smaller actual entry stride; metering remains.
   Public documentation now distinguishes local handoffs from tracked evidence.
 

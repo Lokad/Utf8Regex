@@ -11,13 +11,6 @@ public sealed class PythonReTranslationLifetimeTests
     [InlineData(@"\d+", "123")]
     [InlineData(@"\s+", " \t")]
     [InlineData(@"prefix\w+", "prefixalpha")]
-    [InlineData(@"([0-9]+)", "123")]
-    [InlineData(@"(?P<n>[0-9]+)", "123")]
-    [InlineData(@"([a-z]+)", "alpha")]
-    [InlineData(@"(?P<word>[a-z]+)", "alpha")]
-    [InlineData(@"(ab[0-9]{2})", "ab12")]
-    [InlineData(@"[0-9]+", "123")]
-    [InlineData(@"foo(?=bar)bar", "foobar")]
     public void DeclinedCorePreparationIsNotRetained(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
@@ -32,6 +25,27 @@ public sealed class PythonReTranslationLifetimeTests
             Assert.Equal(1, regex.FindAllToStrings(input).Count);
             Assert.Equal("X", regex.ReplaceToString(input, "X"));
         }
+    }
+
+    [Theory]
+    [InlineData(@"([0-9]+)", "123")]
+    [InlineData(@"(?P<n>[0-9]+)", "123")]
+    [InlineData(@"([a-z]+)", "alpha")]
+    [InlineData(@"(?P<word>[a-z]+)", "alpha")]
+    [InlineData(@"(ab[0-9]{2})", "ab12")]
+    [InlineData(@"[0-9]+", "123")]
+    [InlineData(@"foo(?=bar)bar", "foobar")]
+    public void ReviewedEligibilityShapesKeepTheirPublicResults(string pattern, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var regex = new Utf8PythonRegex(pattern);
+        Assert.True(regex.IsMatch(input));
+        Assert.Equal(1, regex.Count(input));
+        Assert.True(regex.Search(input).Success);
+        Assert.True(regex.FullMatch(input).Success);
+        Assert.True(regex.SearchDetailedData(input).Success);
+        Assert.Equal(1, regex.FindAllToStrings(input).Count);
+        Assert.Equal("X", regex.ReplaceToString(input, "X"));
     }
 
     [Theory]

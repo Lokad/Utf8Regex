@@ -21,7 +21,7 @@ public sealed partial class Utf8PythonRegex
     private Utf8PythonMatchData[] FindAllCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         if (((HasFiniteExecutionLimits || cancellationToken.CanBeCanceled) && !HasPreparedExactLiteralFamily) ||
-            !_canUseUtf8IterationFastPath)
+            _canMatchEmpty || CaptureGroupCount > 0 || !_canUseUtf8IterationFastPath)
         {
             FindAllScalar(input, startOffsetInBytes, cancellationToken, out var scalarResult);
             return scalarResult;
@@ -56,7 +56,7 @@ public sealed partial class Utf8PythonRegex
     private Utf8PythonFindAllResult FindAllToStringsCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         if (((HasFiniteExecutionLimits || cancellationToken.CanBeCanceled) && !HasPreparedExactLiteralFamily) ||
-            (!_canUseUtf8IterationFastPath && !CanUseCountedExactLiteralFindAll))
+            _canMatchEmpty || CaptureGroupCount > 0 || !_canUseUtf8IterationFastPath)
         {
             FindAllScalarStrings(input, startOffsetInBytes, cancellationToken, out var scalarResult);
             return scalarResult;
@@ -113,7 +113,7 @@ public sealed partial class Utf8PythonRegex
     private Utf8PythonFindAllUtf8Result FindAllToUtf8Core(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         if (((HasFiniteExecutionLimits || cancellationToken.CanBeCanceled) && !HasPreparedExactLiteralFamily) ||
-            !_canUseUtf8IterationFastPath)
+            _canMatchEmpty || CaptureGroupCount > 0 || !_canUseUtf8IterationFastPath)
         {
             FindAllScalarUtf8(input, startOffsetInBytes, cancellationToken, out var scalarResult);
             return scalarResult;

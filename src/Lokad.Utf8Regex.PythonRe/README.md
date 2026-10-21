@@ -56,12 +56,13 @@ host containers retain separate documented scope. The execution token must be
 passed on each operation. See [HOST-INTEGRATION.md](https://github.com/Lokad/Utf8Regex/blob/master/HOST-INTEGRATION.md)
 and [MIGRATION.md](https://github.com/Lokad/Utf8Regex/blob/master/MIGRATION.md).
 
-Optional Core preparations are retained for native iteration that passes capture,
-nullability and route eligibility, canonical literal FindAll string counting, native
-literal results or accepted scalar cursor start hints. Other operations use the owned
-Python program. A Core preparation may still be built transiently to discover
-eligibility; discarding it reduces retention, not all construction traffic.
-Its covered construction is still admitted under the original owner.
+Optional Core preparations support native iteration, canonical literal FindAll
+string counting, literal values/results and scalar cursor start hints. The current
+grammar-level iteration flag can also retain Core for patterns whose operations
+decline it. Tightening that flag is deferred after a bounded cost experiment;
+backend presence alone does not establish execution. A Core preparation may still
+be built transiently to discover eligibility, under the original construction
+owner. Discarding a root reduces retention, not all construction traffic.
 
 ## Public API
 

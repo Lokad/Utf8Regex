@@ -263,8 +263,6 @@ public sealed class Utf8PythonRegexTests
         var named = new Utf8PythonRegex(@"(?P<word>foo)-(?P=word)");
         var numeric = new Utf8PythonRegex(@"(ab)\1");
 
-        Assert.False(named.DebugUsesUtf8RegexBackend);
-        Assert.False(numeric.DebugUsesUtf8RegexBackend);
         Assert.True(named.Search("xx foo-foo yy"u8).Success);
         Assert.True(numeric.Search("zzababzz"u8).Success);
     }
@@ -275,8 +273,6 @@ public sealed class Utf8PythonRegexTests
         var atomic = new Utf8PythonRegex(@"(?>ab)c");
         var possessive = new Utf8PythonRegex(@"a++b");
 
-        Assert.False(atomic.DebugUsesUtf8RegexBackend);
-        Assert.False(possessive.DebugUsesUtf8RegexBackend);
         Assert.True(atomic.Search("xxabcyy"u8).Success);
         Assert.True(possessive.Search("xxaaabyy"u8).Success);
     }
@@ -531,7 +527,6 @@ public sealed class Utf8PythonRegexTests
         var match = regex.MatchDetailed("foo-foo yy"u8);
         var full = regex.FullMatchDetailed("foo-foo"u8);
 
-        Assert.False(regex.DebugUsesUtf8RegexBackend);
         Assert.True(search.Success);
         Assert.True(match.Success);
         Assert.True(full.Success);
