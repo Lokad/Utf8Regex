@@ -1303,16 +1303,6 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
-    public static int RunMigrateReadmeBenchmarkJson()
-    {
-        var readme = File.ReadAllText(FindRepoFile("README.md"), Encoding.UTF8);
-        var snapshot = ParseReadmeBenchmarkSnapshot(readme);
-        SaveReadmeBenchmarkSnapshot(snapshot);
-        RewriteReadmeFromSnapshot(snapshot);
-        Console.WriteLine($"Wrote {ReadmeBenchmarkSnapshotFileName} from current README rows and regenerated README from JSON.");
-        return 0;
-    }
-
     public static int RunRefreshReadmeCase(string caseId, string? iterationsText, string? samplesText)
     {
         var iterations = ParseIterations(iterationsText);
@@ -1996,90 +1986,6 @@ internal static partial class BenchmarkInspectReporter
         }
 
         File.WriteAllText(readmePath, readme, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-    }
-
-    private static ReadmeBenchmarkSnapshot ParseReadmeBenchmarkSnapshot(string readme)
-    {
-        var snapshot = new ReadmeBenchmarkSnapshot();
-        foreach (var section in ParseReadmeSections(null))
-        {
-            var markerName = GetReadmeMarkerName(section);
-            var beginMarker = $"<!-- BEGIN GENERATED {markerName} BENCHMARKS -->";
-            var endMarker = $"<!-- END GENERATED {markerName} BENCHMARKS -->";
-            var sectionText = GetMarkedSection(readme, beginMarker, endMarker);
-            var sectionSnapshot = new ReadmeBenchmarkSectionJson();
-
-            foreach (var line in sectionText.Split(["\r\n", "\n"], StringSplitOptions.None))
-            {
-                if (!TryParseReadmeSnapshotRow(section, line, out var caseId, out var measurement))
-                {
-                    continue;
-                }
-
-                sectionSnapshot.Cases[caseId] = measurement;
-            }
-
-            snapshot.Sections[GetReadmeSectionToken(section)] = sectionSnapshot;
-        }
-
-        return snapshot;
-    }
-
-    private static bool TryParseReadmeSnapshotRow(ReadmeBenchmarkSection section, string line, out string caseId, out ReadmeCaseMeasurementJson measurement)
-    {
-        caseId = string.Empty;
-        measurement = new ReadmeCaseMeasurementJson();
-
-        if (line.StartsWith("<!--", StringComparison.Ordinal) || !line.StartsWith("| `", StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        var cells = line.Split('|', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-        if (cells.Length < 4)
-        {
-            return false;
-        }
-
-        caseId = cells[0].Trim().Trim('`');
-        if (caseId.Length == 0)
-        {
-            return false;
-        }
-
-        static double ParseMicrosCell(string value)
-        {
-            try
-            {
-                return double.Parse(value.Replace(" us", string.Empty, StringComparison.Ordinal).Replace(",", string.Empty, StringComparison.Ordinal), CultureInfo.InvariantCulture);
-            }
-            catch (FormatException ex)
-            {
-                throw new FormatException($"Could not parse README benchmark cell '{value}'.", ex);
-            }
-        }
-
-        var isCompiled = section is ReadmeBenchmarkSection.DotNetPerformanceCompiled or ReadmeBenchmarkSection.LokadCompiled;
-        var isPublic = cells.Length >= 5;
-
-        if (isPublic)
-        {
-            var utf8 = ParseMicrosCell(cells[2]);
-            var predecoded = ParseMicrosCell(cells[3]);
-            var decode = ParseMicrosCell(cells[4]);
-            measurement = isCompiled
-                ? new ReadmeCaseMeasurementJson { Utf8Compiled = utf8, CompiledRegex = predecoded, DecodeThenCompiledRegex = decode }
-                : new ReadmeCaseMeasurementJson { Utf8Regex = utf8, PredecodedRegex = predecoded, DecodeThenRegex = decode };
-            return true;
-        }
-
-        var primary = ParseMicrosCell(cells[1]);
-        var secondary = ParseMicrosCell(cells[2]);
-        var tertiary = ParseMicrosCell(cells[3]);
-        measurement = isCompiled
-            ? new ReadmeCaseMeasurementJson { Utf8Compiled = primary, CompiledRegex = secondary, DecodeThenCompiledRegex = tertiary }
-            : new ReadmeCaseMeasurementJson { Utf8Regex = primary, PredecodedRegex = secondary, DecodeThenRegex = tertiary };
-        return true;
     }
 
     private static ReadmeBenchmarkSectionJson GetOrAddSnapshotSection(ReadmeBenchmarkSnapshot snapshot, ReadmeBenchmarkSection section)

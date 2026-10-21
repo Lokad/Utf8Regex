@@ -364,8 +364,6 @@ Current intended uses:
   - run the same calibrated six-lane replica measurement in reverse order; use it with the normal command to qualify rows in the 0.98–1.02 tie band without rewriting the snapshot
 - --measure-readme-public-case-reversed
   - reverse the calibrated six-lane measurement for a public/common or industry case in the tie band
-- --migrate-readme-benchmark-json
-  - one-time migration/repair command for rebuilding the JSON snapshot from existing README-era benchmark data
 
 Short-case calibration rule:
 - very short public `IsMatch` / `Match` rows use much higher iteration targets during drilldowns and README refresh

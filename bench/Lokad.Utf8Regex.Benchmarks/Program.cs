@@ -270,11 +270,6 @@ if (args.Length >= 2 && args[0].Equals("--measure-readme-public-case-reversed", 
     return BenchmarkInspectReporter.RunMeasureReadmePublicCaseReversed(args[1], args.Length >= 3 ? args[2] : null, args.Length >= 4 ? args[3] : null);
 }
 
-if (args.Length >= 1 && args[0].Equals("--migrate-readme-benchmark-json", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMigrateReadmeBenchmarkJson();
-}
-
 if (args.Length >= 2 && args[0].Equals("--measure-literal-search-case", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunMeasureLiteralSearchReplicaCase(args[1], args.Length >= 3 ? args[2] : null);
