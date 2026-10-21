@@ -31,6 +31,16 @@ and is not attributed to the engine. The comparison uses unlimited workloads;
 finite controls have separate correctness checks. Historical Status and deferred
 package/finite-overhead qualification remain unchanged.
 
+The [ninth-review receipt](bench/Experiments/NinthReview-20261021/README.md)
+records the PCRE2 DFA overlap correction and removal of unused input machinery.
+One bounded comparison needed its single allowed noise confirmation. With longer
+warmup and sample floors, selected public medians show no regression and allocations
+are unchanged; improving controls prevent an attributed speedup claim. The selected
+1 KiB float IsMatch costs about 2.85 µs unlimited versus 78.05 µs and 343,304 B per
+call with all four finite controls. These different routes disclose a continuing
+operating cost, not a new default or a package-wide overhead qualification.
+Construction medians rose 5–8% while allocations fell. Timing is closed.
+
 ## Frozen scalar.119 package costs
 
 The observations below apply to **Core/PythonRe scalar.119**, producer `ca0c8a6f`.

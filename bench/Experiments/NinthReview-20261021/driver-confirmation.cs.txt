@@ -1,0 +1,94 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Pcre2;
+
+var process=Process.GetCurrentProcess();
+var originalAffinity=process.ProcessorAffinity;
+var available=originalAffinity.ToInt64();
+process.ProcessorAffinity=new IntPtr(available & -available);
+try
+{
+    const string floatPattern=@"^[-+]?\d*\.?\d*$";
+    const string suffixPattern=@"^\d*1$";
+    var floating=new Utf8Pcre2Regex(floatPattern);
+    var suffix=new Utf8Pcre2Regex(suffixPattern);
+    var limits=new Utf8Pcre2ExecutionLimits{MatchLimit=1_000_000,DepthLimit=4096,HeapLimitInBytes=16*1024*1024,ResultLimitInBytes=16*1024*1024};
+    var finite=new Utf8Pcre2Regex(floatPattern,default,default,limits,Timeout.InfiniteTimeSpan);
+    var floatText=new string('2',511)+"."+new string('3',512);
+    var floatBytes=Encoding.UTF8.GetBytes(floatText);
+    var hitText=new string('2',1023)+"1";
+    var hit=Encoding.UTF8.GetBytes(hitText);
+    var miss=new byte[1024];Array.Fill(miss,(byte)'2');
+    var core=new Utf8Regex("needle",RegexOptions.CultureInvariant);
+    var coreInput=Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("needle ",128)));
+    var oracle=new Regex(floatPattern,RegexOptions.CultureInvariant);
+    var strict=new UTF8Encoding(false,true);
+    var lanes=new[]
+    {
+        new Lane("pcre2/float/IsMatch",()=>floating.IsMatch(floatBytes)?1:0,1,floatBytes.Length),
+        new Lane("pcre2/digit-suffix/hit/IsMatch",()=>suffix.IsMatch(hit)?1:0,1,hit.Length),
+        new Lane("pcre2/digit-suffix/miss/IsMatch",()=>suffix.IsMatch(miss)?1:0,0,miss.Length),
+        new Lane("pcre2/float/finite-four/IsMatch",()=>finite.IsMatch(floatBytes)?1:0,1,floatBytes.Length),
+        new Lane("control/core-literal/Count",()=>core.Count(coreInput),128,coreInput.Length),
+        new Lane("control/predecoded-Regex/IsMatch",()=>oracle.IsMatch(floatText)?1:0,1,floatBytes.Length),
+        new Lane("control/decode-then-Regex/IsMatch",()=>oracle.IsMatch(strict.GetString(floatBytes))?1:0,1,floatBytes.Length)
+    };
+    foreach(var lane in lanes)
+    {
+        if(lane.Action()!=lane.Expected)throw new InvalidOperationException("Incorrect baseline/candidate result: "+lane.Id);
+        var warm=Stopwatch.StartNew();
+        long warmCalls=0;
+        var warmFloor=lane.Id=="control/core-literal/Count"?1_000_000:lane.Id.Contains("finite-four")?2000:100_000;
+        do{Run(lane,256);warmCalls+=256;}while(warm.ElapsedMilliseconds<1000 || warmCalls<warmFloor);
+        lane.Iterations=lane.Id.Contains("finite-four")?2000:100_000;
+        for(var attempt=0;attempt<6;attempt++)
+        {
+            var probe=Run(lane,lane.Iterations);
+            if(probe.WallMilliseconds>=35)break;
+            lane.Iterations=(int)Math.Clamp(Math.Ceiling(lane.Iterations*45/Math.Max(.01,probe.WallMilliseconds)),128,2_000_000);
+        }
+    }
+    for(var sample=0;sample<5;sample++)
+        foreach(var index in sample%2==0?Enumerable.Range(0,lanes.Length):Enumerable.Range(0,lanes.Length).Reverse())
+            lanes[index].Samples.Add(Run(lanes[index],lanes[index].Iterations));
+    var construction=new List<object>();
+    foreach(var pattern in new[]{floatPattern,suffixPattern})
+    {
+        for(var warm=0;warm<16;warm++)GC.KeepAlive(new Utf8Pcre2Regex(pattern));
+        var samples=new List<object>();
+        for(var sample=0;sample<5;sample++)
+        {
+            var retained=new Utf8Pcre2Regex[16];
+            var allocated=GC.GetAllocatedBytesForCurrentThread();var start=Stopwatch.GetTimestamp();
+            for(var i=0;i<retained.Length;i++)retained[i]=new Utf8Pcre2Regex(pattern);
+            var ticks=Stopwatch.GetTimestamp()-start;allocated=GC.GetAllocatedBytesForCurrentThread()-allocated;
+            GC.KeepAlive(retained);
+            samples.Add(new{NanosecondsPerConstruction=ticks*1e9/Stopwatch.Frequency/retained.Length,AllocatedBytesPerConstruction=(double)allocated/retained.Length});
+        }
+        construction.Add(new{Pattern=pattern,Samples=samples});
+    }
+    object Identity(Assembly a)=>new{Producer=a.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,Sha256=Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(a.Location)))};
+    Console.WriteLine(JsonSerializer.Serialize(new{AtUtc=DateTime.UtcNow,Runtime=RuntimeInformation.FrameworkDescription,OS=RuntimeInformation.OSDescription,ProcessorCount=Environment.ProcessorCount,Affinity=process.ProcessorAffinity.ToInt64(),Protocol="Single allowed noise confirmation, five alternating samples; warm each lane through the timed loop for >=1s and >=100k calls (Core control 1M, finite-heavy 2k); measured minimum 100k trips (finite-heavy 2k). 35ms calibration floor/45ms target. Identical driver; default tiers retained. Original/candidate results agree. Construction separate, 16 retained instances/sample. No Status/package qualification.",Core=Identity(typeof(Utf8Regex).Assembly),Pcre2=Identity(typeof(Utf8Pcre2Regex).Assembly),FloatRoute=floating.DebugDescribeExecutionPlan(),SuffixRoute=suffix.DebugDescribeExecutionPlan(),FiniteLimits=limits,Lanes=lanes.Select(l=>new{l.Id,l.InputBytes,l.Expected,l.Iterations,l.Samples}),Construction=construction},new JsonSerializerOptions{WriteIndented=true}));
+}
+finally{process.ProcessorAffinity=originalAffinity;}
+
+static Sample Run(Lane lane,int iterations)
+{
+    var allocated=GC.GetAllocatedBytesForCurrentThread();var start=Stopwatch.GetTimestamp();long checksum=0;
+    for(var i=0;i<iterations;i++)checksum+=lane.Action();
+    var ticks=Stopwatch.GetTimestamp()-start;allocated=GC.GetAllocatedBytesForCurrentThread()-allocated;
+    if(checksum!=(long)iterations*lane.Expected)throw new InvalidOperationException("Result changed: "+lane.Id);
+    return new(ticks*1e9/Stopwatch.Frequency/iterations,(double)allocated/iterations,ticks*1000.0/Stopwatch.Frequency,checksum);
+}
+sealed class Lane(string id,Func<int> action,int expected,int inputBytes)
+{
+    internal string Id=id;internal Func<int> Action=action;internal int Expected=expected;internal int InputBytes=inputBytes;internal int Iterations;
+    internal List<Sample> Samples=[];
+}
+sealed record Sample(double NanosecondsPerOperation,double AllocatedBytesPerOperation,double WallMilliseconds,long Checksum);

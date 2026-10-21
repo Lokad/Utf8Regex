@@ -1,0 +1,729 @@
+{
+  "Source": "61429e69b72474ef9289768eb0effe12ed2c7492",
+  "BeforePublicWitnesses": [
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*1$",
+      "Text": "1",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": true,
+      "FiniteWork": true,
+      "Count": 1,
+      "Detailed": true,
+      "AsciiComparator": true
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*1$",
+      "Text": "11",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": true,
+      "Count": 1,
+      "Detailed": true,
+      "AsciiComparator": true
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*1$",
+      "Text": "1.21",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*1$",
+      "Text": "1.211",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*1$",
+      "Text": "1.2",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*1$",
+      "Text": "1.21\n",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*1$",
+      "Text": "1.21x",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*1$",
+      "Text": "1",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": true,
+      "FiniteWork": true,
+      "Count": 1,
+      "Detailed": true,
+      "AsciiComparator": true
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*1$",
+      "Text": "11",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": true,
+      "Count": 1,
+      "Detailed": true,
+      "AsciiComparator": true
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*1$",
+      "Text": "1.21",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": true,
+      "Count": 1,
+      "Detailed": true,
+      "AsciiComparator": true
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*1$",
+      "Text": "1.211",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": true,
+      "Count": 1,
+      "Detailed": true,
+      "AsciiComparator": true
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*1$",
+      "Text": "1.2",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*1$",
+      "Text": "1.21\n",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": true,
+      "Count": 1,
+      "Detailed": true,
+      "AsciiComparator": true
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*1$",
+      "Text": "1.21x",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*2$",
+      "Text": "1",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*2$",
+      "Text": "11",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*2$",
+      "Text": "1.21",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*2$",
+      "Text": "1.211",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*2$",
+      "Text": "1.2",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": true,
+      "FiniteWork": true,
+      "Count": 1,
+      "Detailed": true,
+      "AsciiComparator": true
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*2$",
+      "Text": "1.21\n",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*2$",
+      "Text": "1.21x",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    }
+  ],
+  "AfterPublicWitnesses": [
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*1$",
+      "Text": "1",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": true,
+      "FiniteWork": true,
+      "Count": 1,
+      "Detailed": true,
+      "AsciiComparator": true
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*1$",
+      "Text": "11",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": true,
+      "FiniteWork": true,
+      "Count": 1,
+      "Detailed": true,
+      "AsciiComparator": true
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*1$",
+      "Text": "1.21",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*1$",
+      "Text": "1.211",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*1$",
+      "Text": "1.2",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*1$",
+      "Text": "1.21\n",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*1$",
+      "Text": "1.21x",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*1$",
+      "Text": "1",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": true,
+      "FiniteWork": true,
+      "Count": 1,
+      "Detailed": true,
+      "AsciiComparator": true
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*1$",
+      "Text": "11",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": true,
+      "FiniteWork": true,
+      "Count": 1,
+      "Detailed": true,
+      "AsciiComparator": true
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*1$",
+      "Text": "1.21",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": true,
+      "FiniteWork": true,
+      "Count": 1,
+      "Detailed": true,
+      "AsciiComparator": true
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*1$",
+      "Text": "1.211",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": true,
+      "FiniteWork": true,
+      "Count": 1,
+      "Detailed": true,
+      "AsciiComparator": true
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*1$",
+      "Text": "1.2",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*1$",
+      "Text": "1.21\n",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": true,
+      "FiniteWork": true,
+      "Count": 1,
+      "Detailed": true,
+      "AsciiComparator": true
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*1$",
+      "Text": "1.21x",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*2$",
+      "Text": "1",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*2$",
+      "Text": "11",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*2$",
+      "Text": "1.21",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*2$",
+      "Text": "1.211",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*2$",
+      "Text": "1.2",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": true,
+      "FiniteWork": true,
+      "Count": 1,
+      "Detailed": true,
+      "AsciiComparator": true
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*2$",
+      "Text": "1.21\n",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    },
+    {
+      "Kind": "PublicCorrectness",
+      "Pattern": "^\\d*\\.?\\d*2$",
+      "Text": "1.21x",
+      "Plan": "IsMatch=Pcre2AsciiAnchoredDfaIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Unlimited": false,
+      "FiniteWork": false,
+      "Count": 0,
+      "Detailed": false,
+      "AsciiComparator": false
+    }
+  ],
+  "BeforeCompetingDfaEdges": [
+    {
+      "Kind": "OverlappingDfaTransitions",
+      "Pattern": "^\\d*1$",
+      "State": 0,
+      "InputByte": "1",
+      "Edges": [
+        {
+          "EdgeOrder": 0,
+          "Target": 1,
+          "LowMask": 562949953421312,
+          "HighMask": 0
+        },
+        {
+          "EdgeOrder": 1,
+          "Target": 2,
+          "LowMask": 287948901175001088,
+          "HighMask": 0
+        }
+      ]
+    },
+    {
+      "Kind": "OverlappingDfaTransitions",
+      "Pattern": "^\\d*1$",
+      "State": 2,
+      "InputByte": "1",
+      "Edges": [
+        {
+          "EdgeOrder": 0,
+          "Target": 1,
+          "LowMask": 562949953421312,
+          "HighMask": 0
+        },
+        {
+          "EdgeOrder": 1,
+          "Target": 2,
+          "LowMask": 287948901175001088,
+          "HighMask": 0
+        }
+      ]
+    }
+  ],
+  "AfterCompetingDfaEdges": [],
+  "ProductionDfaKinds": [
+    "RequireBeginning",
+    "MatchAsciiClass",
+    "LoopAsciiClass",
+    "RequireEnd",
+    "Accept"
+  ],
+  "RetiredMechanisms": [
+    "Nested LoopProgram and continuation actions",
+    "Byte/text/alternative-only DFA input kinds and compilation",
+    "Unused anchor kind/option payload and helper",
+    "Ten reviewed forwarding overloads/helpers",
+    "Unused cache Revision staging field",
+    "Completed schema-9 PCRE2 migration CLI"
+  ],
+  "Preserved": "Flat DFA/NFA/state tables, actual captures/option fallback, original cancellation/deadline, useful resource/state bounds, strict scalar/UTF-8 semantics, cursor/result ownership, actual Unsafe.SizeOf. No public signature changes.",
+  "IntentionalInternalContractChanges": "Only real flat DFA inputs remain. Construction work/depth/capacity units change when old frames/storage disappear or correct subset construction adds actual work. Public policies remain useful bounds, not native-equivalent units or a total-heap promise.",
+  "FocusedChecks": [
+    {
+      "Passed": 49,
+      "Note": "Focused stage checks; filters overlap, not a unique total.",
+      "Log": {
+        "Path": "artifacts/ninth-implementation-20261021/tests-flat-dfa-final.log",
+        "Bytes": 22966,
+        "Sha256": "FEDA52501EB68B0B94CF419FDA0C5CE0C4FC2383CBE4EFECA650CCC921512E85"
+      }
+    },
+    {
+      "Passed": 789,
+      "Note": "Focused stage checks; filters overlap, not a unique total.",
+      "Log": {
+        "Path": "artifacts/ninth-implementation-20261021/tests-core-orphans.log",
+        "Bytes": 28805,
+        "Sha256": "F3B601C62991EADB12992A1E64B96C1F541E9995B957CCBC229903EF0A1932B7"
+      }
+    },
+    {
+      "Passed": 968,
+      "Note": "Focused stage checks; filters overlap, not a unique total.",
+      "Log": {
+        "Path": "artifacts/ninth-implementation-20261021/tests-python-orphans.log",
+        "Bytes": 9391,
+        "Sha256": "A25AD3408DE5528FD43D37660FE2B3B11DCE5BDADD42D8DF3068B70D83A9CF22"
+      }
+    },
+    {
+      "Passed": 649,
+      "Note": "Focused stage checks; filters overlap, not a unique total.",
+      "Log": {
+        "Path": "artifacts/ninth-implementation-20261021/tests-pcre-orphans.log",
+        "Bytes": 22963,
+        "Sha256": "96806A5C061125B37C2E4A3033F0A56C3553A85C6BD4324D01BBD8B858195F1D"
+      }
+    },
+    {
+      "Passed": 6430,
+      "Note": "Focused stage checks; filters overlap, not a unique total.",
+      "Log": {
+        "Path": "artifacts/ninth-implementation-20261021/tests-ascii-consolidated.log",
+        "Bytes": 28806,
+        "Sha256": "9D65879F3B2E32B4C687499B4C30BFF847378F74147D6EAA617192BE02A27A46"
+      }
+    }
+  ],
+  "Repairs": [
+    "Initial regression test used a nonexistent cancellation overload; changed to the existing explicit start/options/token API.",
+    "One-off narrowing guard stopped before source writes. Deletion overload guard stopped rather than deleting unrelated callers.",
+    "Windows legacy text encoding caused a helper write failure. Only its own uncommitted edits were restored byte-for-byte from the committed checkpoint; the helper was corrected to explicit UTF-8 and rerun. Final diff and all source suites pass."
+  ],
+  "SourceCI": {
+    "Run": 39584852325,
+    "SourceRevision": "61429e69b72474ef9289768eb0effe12ed2c7492",
+    "Status": "completed",
+    "Conclusion": "success",
+    "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/39584852325",
+    "Platforms": [
+      {
+        "Platform": "windows-latest",
+        "Suites": [
+          {
+            "Assembly": "Lokad.Utf8Regex.DiffTests.dll",
+            "Passed": 1504,
+            "Skipped": 0,
+            "Failed": 0
+          },
+          {
+            "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll",
+            "Passed": 3892,
+            "Skipped": 0,
+            "Failed": 0
+          },
+          {
+            "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+            "Passed": 5951,
+            "Skipped": 0,
+            "Failed": 0
+          },
+          {
+            "Assembly": "Lokad.Utf8Regex.Tests.dll",
+            "Passed": 39594,
+            "Skipped": 0,
+            "Failed": 0
+          }
+        ],
+        "TestLog": {
+          "Path": "artifacts/ninth-implementation-20261021/ci-final/test-log-windows-latest/test.log",
+          "Bytes": 1356,
+          "Sha256": "DBDCF6456B731078784365DD8EA16AC5744149CDC824A88051AD0649AFD780DC"
+        },
+        "BuildLog": {
+          "Path": "artifacts/ninth-implementation-20261021/ci-final/test-log-windows-latest/build.log",
+          "Bytes": 62266,
+          "Sha256": "5DD91AA5DE6FBA30B83BDA2664A21B2B751D1E64A5CC10FE32E1F953B843FA28"
+        }
+      },
+      {
+        "Platform": "ubuntu-latest",
+        "Suites": [
+          {
+            "Assembly": "Lokad.Utf8Regex.DiffTests.dll",
+            "Passed": 1504,
+            "Skipped": 0,
+            "Failed": 0
+          },
+          {
+            "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+            "Passed": 5951,
+            "Skipped": 0,
+            "Failed": 0
+          },
+          {
+            "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll",
+            "Passed": 3892,
+            "Skipped": 0,
+            "Failed": 0
+          },
+          {
+            "Assembly": "Lokad.Utf8Regex.Tests.dll",
+            "Passed": 39594,
+            "Skipped": 0,
+            "Failed": 0
+          }
+        ],
+        "TestLog": {
+          "Path": "artifacts/ninth-implementation-20261021/ci-final/test-log-ubuntu-latest/test.log",
+          "Bytes": 1392,
+          "Sha256": "D1620862DFDEA4F1C3121BDA19FCF385EEF0858B6DADE9624D509E5E90C0635E"
+        },
+        "BuildLog": {
+          "Path": "artifacts/ninth-implementation-20261021/ci-final/test-log-ubuntu-latest/build.log",
+          "Bytes": 66349,
+          "Sha256": "D6F95AF0C34E3AD51F5B30FB8D866B2BB0BE3510A2470EF0DE253BA63664E98F"
+        }
+      }
+    ]
+  },
+  "Verifiers": [
+    {
+      "Result": "Verified README.Parity.json against README.Benchmarks.json.",
+      "Log": {
+        "Path": "artifacts/ninth-implementation-20261021/verify-readme-parity.log",
+        "Bytes": 61,
+        "Sha256": "AF7327FEF829FBB1EDD56CCEC1D8BEDFC4E715096130545D439F2D4234B7D072"
+      }
+    },
+    {
+      "Result": "PythonRe benchmark page is current: D:\\code\\utf8regex\\src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md",
+      "Log": {
+        "Path": "artifacts/ninth-implementation-20261021/verify-python-markdown.log",
+        "Bytes": 98,
+        "Sha256": "6B295B1B6B104D80B40AAA080CE84284CBCA407ED0FB0E7A40C77783F8786E0E"
+      }
+    },
+    {
+      "Result": "PCRE2 benchmark page is current: D:\\code\\utf8regex\\src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md",
+      "Log": {
+        "Path": "artifacts/ninth-implementation-20261021/verify-pcre-markdown.log",
+        "Bytes": 92,
+        "Sha256": "E004206D4A2F8D956F505D8687D1700D6BE70A7B2BBD3E1E7208F43DA3A74925"
+      }
+    }
+  ],
+  "CompiledSourcePreflight": {
+    "Scope": "Untimed existing PE/PDB/source evidence checks only; no measurement or snapshot writes.",
+    "Checkout": "61429e69b724",
+    "Rows": [
+      {
+        "Name": "Full producer and compiled-source preflight",
+        "Accepted": true,
+        "Error": null
+      }
+    ]
+  },
+  "SnapshotsUnchanged": [
+    {
+      "Path": "README.Benchmarks.json",
+      "Sha256": "4DDA92671D84DB9851D3D012F6A79F8D414A573A72D5E7AD9CCC852236F9E7FA",
+      "Bytes": 198121
+    },
+    {
+      "Path": "README.Parity.json",
+      "Sha256": "2A82BD2732CBBCA46A1EA65E967359DF6D677AAAFF017031AD1D7E3BBD715D11",
+      "Bytes": 201280
+    },
+    {
+      "Path": "PCRE2.Benchmarks.json",
+      "Sha256": "B113B963453FC283DE6C8B64BFCFCA72E13A5EF8644FC5A38B8A92176B692F95",
+      "Bytes": 235205
+    },
+    {
+      "Path": "PythonRe.Benchmarks.json",
+      "Sha256": "F0E233C1716AAF3602C785FF4AE3D635BF77DFA8D88E9C4E058C0248A22004CD",
+      "Bytes": 1930451
+    }
+  ],
+  "FrozenArtifacts": "No package/symbol/zip/manifest/handoff was built, rewritten or requalified. Original RC1 evidence remains at ../EighthReview-20261021/rc1-unchanged.json; no new claim about the DFA defect in untested RC1.",
+  "TimingClosed": "One initial comparison and one noise confirmation; no further measurement. Fresh package/cost qualification remains deferred."
+}
