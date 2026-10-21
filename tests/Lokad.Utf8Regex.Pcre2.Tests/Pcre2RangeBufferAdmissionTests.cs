@@ -25,7 +25,7 @@ public sealed class Pcre2RangeBufferAdmissionTests
         try
         {
             for (var i = 0; i < 17; i++) ledger.Add(new(i, 1), cursor.WorkingBufferControl);
-            Assert.Equal(13UL + 32 + 12 * 32, budget.ReservedWorkingBytes);
+            Assert.Equal(13UL + 32 + (ulong)Unsafe.SizeOf<Utf8ReplacementRange>() * 32, budget.ReservedWorkingBytes);
             Assert.Equal(17, ledger.Count);
         }
         finally { ledger.Dispose(cursor.WorkingBufferControl); }
@@ -35,8 +35,8 @@ public sealed class Pcre2RangeBufferAdmissionTests
 
     [Theory]
     // Include the 48-byte decoded template while range storage is live.
-    [InlineData(271UL, false)] [InlineData(272UL, true)]
-    [InlineData(687UL, false)] [InlineData(688UL, true)]
+    [InlineData(207UL, false)] [InlineData(208UL, true)]
+    [InlineData(495UL, false)] [InlineData(496UL, true)]
     public void LiteralDriverAdmitsCompleteRangeArraysAndGrowthOverlap(ulong heap, bool allow)
     {
         var count = heap < 300 ? 1 : 17;
@@ -63,7 +63,7 @@ public sealed class Pcre2RangeBufferAdmissionTests
     [InlineData(0)] [InlineData(16)] [InlineData(2048)]
     public void BorrowedVmAuthorityKeepsParentLoanAndOldRangesOnDenial(int count)
     {
-        static ulong Bytes(int capacity) => capacity == 0 ? 0 : 32UL + ((12UL * (ulong)capacity + 15) & ~15UL);
+        static ulong Bytes(int capacity) => capacity == 0 ? 0 : 32UL + (((ulong)Unsafe.SizeOf<Utf8ReplacementRange>() * (ulong)capacity + 15) & ~15UL);
         var next = count == 0 ? 16 : 2 * count;
         var maximum = 13 + Bytes(count) + Bytes(next) - 1;
         var budget = new Pcre2ResourceBudget(new() { HeapLimitInBytes = maximum }, Regex.InfiniteMatchTimeout, false);
@@ -72,15 +72,15 @@ public sealed class Pcre2RangeBufferAdmissionTests
         var ledger = new Utf8ReplacementRangeLedger();
         try
         {
-            for (var i = 0; i < count; i++) ledger.Add(new(i, 1, i), control);
+            for (var i = 0; i < count; i++) ledger.Add(new(i, 1), control);
             Pcre2MatchException? failure = null;
-            try { ledger.Add(new(count, 1, count), control); }
+            try { ledger.Add(new(count, 1), control); }
             catch (Pcre2MatchException error) { failure = error; }
             Assert.NotNull(failure);
             Assert.Equal(Pcre2ErrorKind.HeapLimit, failure.ErrorKind);
             Assert.Equal(count, ledger.Count);
             Assert.Equal(13 + Bytes(count), budget.ReservedWorkingBytes);
-            for (var i = 0; i < count; i++) Assert.Equal(new(i, 1, i), ledger[i]);
+            for (var i = 0; i < count; i++) Assert.Equal(new(i, 1), ledger[i]);
         }
         finally { ledger.Dispose(control); }
         Assert.Equal(13UL, budget.ReservedWorkingBytes);
