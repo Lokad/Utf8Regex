@@ -90,18 +90,6 @@ public readonly ref struct Utf8Pcre2ValueMatch
     private readonly bool _hasUtf16Projection;
     private readonly bool _success;
 
-    private Utf8Pcre2ValueMatch(ReadOnlySpan<byte> input, int startOffsetInBytes, int endOffsetInBytes, int startOffsetInUtf16, int endOffsetInUtf16)
-    {
-        _input = input;
-        _startOffsetInBytes = startOffsetInBytes;
-        _endOffsetInBytes = endOffsetInBytes;
-        _startOffsetInUtf16 = startOffsetInUtf16;
-        _endOffsetInUtf16 = endOffsetInUtf16;
-        _isUtf8SliceWellFormed = true;
-        _hasUtf16Projection = true;
-        _success = true;
-    }
-
     private Utf8Pcre2ValueMatch(ReadOnlySpan<byte> input, Pcre2GroupData data)
     {
         _input = input;
@@ -208,14 +196,6 @@ public readonly ref struct Utf8Pcre2ValueMatch
 
     internal static Utf8Pcre2ValueMatch Create(ReadOnlySpan<byte> input, Pcre2GroupData data)
         => new(input, data);
-
-    internal static Utf8Pcre2ValueMatch Create(
-        ReadOnlySpan<byte> input,
-        int startOffsetInBytes,
-        int endOffsetInBytes,
-        int startOffsetInUtf16,
-        int endOffsetInUtf16)
-        => new(input, startOffsetInBytes, endOffsetInBytes, startOffsetInUtf16, endOffsetInUtf16);
 }
 
 /// <summary>Stores an owned coordinate and projection snapshot for one PCRE2 match.</summary>

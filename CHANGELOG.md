@@ -2,6 +2,12 @@
 
 ## Unreleased development after 0.4.0-rc.1
 
+- Removed unread structural run-plan/search copies and an always-null window
+  fact, plus unused internal helpers. Actual carrier sizes and their conservative
+  construction/cache charges can decrease; live searches, scalar execution and
+  resource controls remain. Architecture tests no longer pin historical file
+  layouts, and current search/PCRE2 ownership documentation follows live owners.
+
 - Removed search forwarding and write-only cursor/balance state. Balancing working
   charges can decrease with the smaller actual entry stride; metering remains.
   Public documentation now distinguishes local handoffs from tracked evidence.

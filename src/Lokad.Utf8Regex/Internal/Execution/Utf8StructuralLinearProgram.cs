@@ -394,7 +394,6 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
 {
     public Utf8StructuralLinearInstructionProgram(
         Utf8StructuralLinearInstruction[] instructions,
-        PreparedByteSearch search,
         int searchLiteralOffset,
         byte[][] searchLiterals,
         AsciiFixedLiteralCheck[] fixedLiteralChecks,
@@ -406,7 +405,6 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
         bool isAbsoluteEndAnchored)
     {
         Instructions = instructions;
-        Search = search;
         SearchLiteralOffset = searchLiteralOffset;
         SearchLiterals = searchLiterals;
         SearchLiteralsSearch = searchLiterals is { Length: > 1 }
@@ -422,8 +420,6 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
     }
 
     public Utf8StructuralLinearInstruction[] Instructions { get; }
-
-    public PreparedByteSearch Search { get; }
 
     public int SearchLiteralOffset { get; }
 
@@ -454,7 +450,6 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
     {
         return new Utf8StructuralLinearInstructionProgram(
             CreatePair(Utf8StructuralLinearInstruction.CreateRunCharClass(runPlan.CharClass, runPlan.MinLength, runPlan.MaxLength)),
-            runPlan.Search,
             searchLiteralOffset: 0,
             searchLiterals: [],
             fixedLiteralChecks: [],
@@ -488,7 +483,6 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
         instructions[^1] = Utf8StructuralLinearInstruction.CreateAccept();
         var result = new Utf8StructuralLinearInstructionProgram(
             instructions,
-            default,
             simplePatternPlan.SearchLiteralOffset,
             simplePatternPlan.SearchLiterals,
             simplePatternPlan.FixedLiteralChecks,
@@ -508,7 +502,6 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
         using var scope = Utf8ConstructionScope.Enter();
         var result = new Utf8StructuralLinearInstructionProgram(
             CreatePair(Utf8StructuralLinearInstruction.CreateLiteralFamilyRun()),
-            default,
             simplePatternPlan.SearchLiteralOffset,
             simplePatternPlan.SearchLiterals,
             simplePatternPlan.FixedLiteralChecks,
@@ -533,7 +526,6 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
                     repeatedSegmentPlan.TrailingMinCount,
                     repeatedSegmentPlan.SeparatorMinCount,
                     repeatedSegmentPlan.SeparatorCharClass)),
-            default,
             searchLiteralOffset: 0,
             searchLiterals: [],
             fixedLiteralChecks: [],
@@ -549,7 +541,6 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
     {
         return new Utf8StructuralLinearInstructionProgram(
             CreatePair(Utf8StructuralLinearInstruction.CreateTokenWindow()),
-            tokenWindowPlan.LeadingRunPlan.Search,
             searchLiteralOffset: 0,
             searchLiterals: [],
             fixedLiteralChecks: [],
@@ -565,7 +556,6 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
     {
         return new Utf8StructuralLinearInstructionProgram(
             CreatePair(Utf8StructuralLinearInstruction.CreateQuotedRelation()),
-            default,
             searchLiteralOffset: 0,
             searchLiterals: [],
             fixedLiteralChecks: [],
@@ -581,7 +571,6 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
     {
         return new Utf8StructuralLinearInstructionProgram(
             CreatePair(Utf8StructuralLinearInstruction.CreateOrderedLiteralWindow()),
-            default,
             searchLiteralOffset: 0,
             searchLiterals: [],
             fixedLiteralChecks: [],
@@ -611,7 +600,6 @@ internal readonly struct Utf8StructuralLinearProgram
         Utf8StructuralLinearProgramKind kind,
         Utf8StructuralLinearInstructionProgram instructionProgram,
         Utf8AsciiDeterministicProgram deterministicProgram,
-        AsciiSimplePatternRunPlan runPlan,
         AsciiSimplePatternPlan simplePatternPlan,
         bool allowsUtf8ByteSafe,
         AsciiStructuralTokenWindowPlan tokenWindowPlan,
@@ -625,7 +613,6 @@ internal readonly struct Utf8StructuralLinearProgram
         Kind = kind;
         InstructionProgram = instructionProgram;
         DeterministicProgram = deterministicProgram;
-        RunPlan = runPlan;
         SimplePatternPlan = simplePatternPlan;
         AllowsUtf8ByteSafe = allowsUtf8ByteSafe;
         TokenWindowPlan = tokenWindowPlan;
@@ -642,8 +629,6 @@ internal readonly struct Utf8StructuralLinearProgram
     public Utf8StructuralLinearInstructionProgram InstructionProgram { get; }
 
     public Utf8AsciiDeterministicProgram DeterministicProgram { get; }
-
-    public AsciiSimplePatternRunPlan RunPlan { get; }
 
     public AsciiSimplePatternPlan SimplePatternPlan { get; }
 
@@ -668,22 +653,21 @@ internal readonly struct Utf8StructuralLinearProgram
     private static Utf8StructuralLinearProgram ForCharClassRun(
         Utf8StructuralLinearInstructionProgram instructions,
         Utf8AsciiDeterministicProgram deterministic,
-        AsciiSimplePatternRunPlan runPlan,
         bool allowsUtf8ByteSafe) =>
-        new(Utf8StructuralLinearProgramKind.AsciiCharClassRun, instructions, deterministic, runPlan, default,
+        new(Utf8StructuralLinearProgramKind.AsciiCharClassRun, instructions, deterministic, default,
             allowsUtf8ByteSafe, default, default, default, default, default, default, default);
 
     private static Utf8StructuralLinearProgram ForFixedTokenPattern(
         Utf8StructuralLinearInstructionProgram instructions,
         Utf8AsciiDeterministicProgram deterministic,
         AsciiSimplePatternPlan simplePatternPlan) =>
-        new(Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern, instructions, deterministic, default, simplePatternPlan,
+        new(Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern, instructions, deterministic, simplePatternPlan,
             simplePatternPlan.IsUtf8ByteSafe, default, default, default, default, default, default, default);
 
     private static Utf8StructuralLinearProgram ForLiteralFamilyRun(
         Utf8StructuralLinearInstructionProgram instructions,
         AsciiSimplePatternPlan simplePatternPlan) =>
-        new(Utf8StructuralLinearProgramKind.AsciiLiteralFamilyRun, instructions, default, default, simplePatternPlan,
+        new(Utf8StructuralLinearProgramKind.AsciiLiteralFamilyRun, instructions, default, simplePatternPlan,
             simplePatternPlan.IsUtf8ByteSafe, default, default, default, default, default, default, default);
 
     private static Utf8StructuralLinearProgram ForStructuralFamily(
@@ -691,31 +675,31 @@ internal readonly struct Utf8StructuralLinearProgram
         Utf8SearchPlan searchPlan,
         Utf8StructuralSearchPlan structuralSearchPlan,
         Utf8StructuralVerifierPlan verifierPlan) =>
-        new(Utf8StructuralLinearProgramKind.AsciiStructuralFamily, default, default, default, default,
+        new(Utf8StructuralLinearProgramKind.AsciiStructuralFamily, default, default, default,
             false, default, default, default, familyPlan, searchPlan, structuralSearchPlan, verifierPlan);
 
     private static Utf8StructuralLinearProgram ForTokenWindow(
         Utf8StructuralLinearInstructionProgram instructions,
         AsciiStructuralTokenWindowPlan plan) =>
-        new(Utf8StructuralLinearProgramKind.AsciiTokenWindow, instructions, default, default, default,
+        new(Utf8StructuralLinearProgramKind.AsciiTokenWindow, instructions, default, default,
             true, plan, default, default, default, default, default, default);
 
     private static Utf8StructuralLinearProgram ForRepeatedSegment(
         Utf8StructuralLinearInstructionProgram instructions) =>
-        new(Utf8StructuralLinearProgramKind.AsciiRepeatedSegment, instructions, default, default, default,
+        new(Utf8StructuralLinearProgramKind.AsciiRepeatedSegment, instructions, default, default,
             false, default, default, default, default, default, default, default);
 
     private static Utf8StructuralLinearProgram ForQuotedRelation(
         Utf8StructuralLinearInstructionProgram instructions,
         AsciiStructuralQuotedRelationPlan plan) =>
-        new(Utf8StructuralLinearProgramKind.AsciiQuotedRelation, instructions, default, default, default,
+        new(Utf8StructuralLinearProgramKind.AsciiQuotedRelation, instructions, default, default,
             false, default, plan, default, default, default, default, default);
 
     private static Utf8StructuralLinearProgram ForOrderedLiteralWindow(
         Utf8StructuralLinearInstructionProgram instructions,
         AsciiOrderedLiteralWindowPlan plan,
         Utf8SearchPlan searchPlan) =>
-        new(Utf8StructuralLinearProgramKind.AsciiOrderedLiteralWindow, instructions, default, default, default,
+        new(Utf8StructuralLinearProgramKind.AsciiOrderedLiteralWindow, instructions, default, default,
             true, default, default, plan, default, searchPlan, default, default);
 
     public static Utf8StructuralLinearProgram Create(
@@ -735,7 +719,7 @@ internal readonly struct Utf8StructuralLinearProgram
         {
             var instructions = Utf8StructuralLinearInstructionProgram.Create(simplePatternPlan.RunPlan);
             var result = ForCharClassRun(instructions, Utf8AsciiDeterministicProgram.Create(instructions),
-                simplePatternPlan.RunPlan, simplePatternPlan.IsUtf8ByteSafe);
+                simplePatternPlan.IsUtf8ByteSafe);
             scope.Complete();
             return result;
         }

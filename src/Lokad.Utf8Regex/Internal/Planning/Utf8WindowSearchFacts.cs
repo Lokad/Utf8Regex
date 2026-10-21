@@ -31,8 +31,6 @@ internal readonly struct Utf8PreparedSearcherInfo
 
     public int QuotedAsciiLength { get; }
 
-    public bool HasValue => Kind != Utf8PreparedSearcherInfoKind.None;
-
     public static Utf8PreparedSearcherInfo LiteralFamily(byte[][] alternateLiteralsUtf8) =>
         new(Utf8PreparedSearcherInfoKind.LiteralFamily, alternateLiteralsUtf8, default, 0);
 
@@ -45,12 +43,10 @@ internal readonly struct Utf8WindowSearchFacts
     private Utf8WindowSearchFacts(
         Utf8PreparedSearcherInfo leading,
         Utf8PreparedSearcherInfo trailing,
-        int? maxGap,
         int? maxLines)
     {
         Leading = leading;
         Trailing = trailing;
-        MaxGap = maxGap;
         MaxLines = maxLines;
     }
 
@@ -58,15 +54,11 @@ internal readonly struct Utf8WindowSearchFacts
 
     public Utf8PreparedSearcherInfo Trailing { get; }
 
-    public int? MaxGap { get; }
-
     public int? MaxLines { get; }
-
-    public bool HasValue => Leading.HasValue && Trailing.HasValue;
 
     public static Utf8WindowSearchFacts WithinLines(
         Utf8PreparedSearcherInfo leading,
         Utf8PreparedSearcherInfo trailing,
         int maxLines)
-        => new(leading, trailing, null, maxLines);
+        => new(leading, trailing, maxLines);
 }

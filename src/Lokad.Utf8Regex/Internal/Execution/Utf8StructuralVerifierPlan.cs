@@ -21,9 +21,6 @@ internal readonly struct Utf8StructuralVerifierPlan
     public Utf8StructuralVerifierKind Kind { get; }
 
     public AsciiStructuralVerifierProgram AsciiProgram { get; }
-
-    public bool HasValue => Kind != Utf8StructuralVerifierKind.None;
-
 }
 
 internal static class Utf8StructuralVerifierRuntimeFactory

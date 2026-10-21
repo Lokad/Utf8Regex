@@ -60,13 +60,7 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
 
     internal sealed record LiteralNode(int Value, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Literal);
 
-    internal sealed record SetNode(byte[] Mask16, bool Negated, Utf8SliceShorthand[] Members, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Set)
-    {
-        internal bool Matches(byte value)
-        {
-            return (Mask16[value >> 3] & (byte)(1 << (value & 7))) != 0;
-        }
-    }
+    internal sealed record SetNode(byte[] Mask16, bool Negated, Utf8SliceShorthand[] Members, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Set);
 
     internal sealed record ConcatNode(Utf8SliceNode[] Children) : Utf8SliceNode(Utf8SliceNodeKind.Concat);
 

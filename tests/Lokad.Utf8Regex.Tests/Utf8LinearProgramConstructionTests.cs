@@ -11,7 +11,7 @@ public sealed class Utf8LinearProgramConstructionTests
 {
     private static ulong Bytes<T>(int count) => count == 0 ? 0 : 32UL + (((ulong)Unsafe.SizeOf<T>() * (ulong)count + 15) & ~15UL);
     private static Utf8StructuralLinearInstructionProgram Borrow(Utf8StructuralLinearInstruction[] code)
-        => new(code, default, 0, [], [], false, false, false, false, false, false);
+        => new(code, 0, [], [], false, false, false, false, false, false);
     private static AsciiSimplePatternPlan BorrowPlan(AsciiSimplePatternToken[] tokens, byte[][] literals)
         => new([tokens], 0, literals, [], false, false, false, false, true,
             default, default, default, default, default, default, default, default, false, false);

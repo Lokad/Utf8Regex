@@ -169,24 +169,6 @@ internal static class Pcre2BacktrackingRunner
             Pcre2CaptureMaterialization.None,
             ref budget).ToCharacterMatch();
 
-    internal static Pcre2CharacterMatch Match(
-        Pcre2BacktrackingProgram program,
-        Pcre2CandidateSearchProgram candidateSearch,
-        ref Utf8ValidatedInput input,
-        Utf8BytePosition searchStart,
-        Utf8BytePosition firstMatchingPosition,
-        Pcre2MatchOptions matchOptions,
-        ref Pcre2ResourceBudget budget)
-        => MatchCore(
-            program,
-            candidateSearch,
-            ref input,
-            searchStart,
-            firstMatchingPosition,
-            matchOptions,
-            Pcre2CaptureMaterialization.None,
-            ref budget).ToCharacterMatch();
-
     internal static Pcre2InvocationStateStack<Pcre2BacktrackingFrame> CreateFrames(
         scoped ref Pcre2ResourceBudget budget, int depthBase)
     {

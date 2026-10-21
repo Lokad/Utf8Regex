@@ -41,7 +41,7 @@ execution methods.
 The compiled program owns:
 
 - the normalized compile request and immutable group/name metadata;
-- the semantic syntax tree;
+- semantic syntax trees retained only when a curated partial-probe program consumes them;
 - one typed program for each public operation;
 - the candidate-search program; and
 - an optional partial-probe program derived from semantic nodes.

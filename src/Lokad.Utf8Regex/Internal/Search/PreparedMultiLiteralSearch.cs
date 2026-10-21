@@ -30,17 +30,6 @@ internal readonly partial struct PreparedMultiLiteralSearch
 
     public byte[][] Literals { get; }
 
-    public int ShortestLength => Kind switch
-    {
-        PreparedMultiLiteralKind.ExactDirect => ExactSearch.SearchData.ShortestLength,
-        PreparedMultiLiteralKind.ExactTrie => TrieSearch.ShortestLength,
-        PreparedMultiLiteralKind.ExactAutomaton => AutomatonSearch.ShortestLength,
-        PreparedMultiLiteralKind.ExactPacked => PackedSearch.ShortestLength,
-        PreparedMultiLiteralKind.ExactEarliest => EarliestSearch.ShortestLength,
-        PreparedMultiLiteralKind.AsciiIgnoreCase => IgnoreCaseSearch.ShortestLength,
-        _ => int.MaxValue,
-    };
-
     public PreparedLiteralSetSearch ExactSearch { get; }
 
     public PreparedMultiLiteralTrieSearch TrieSearch { get; }

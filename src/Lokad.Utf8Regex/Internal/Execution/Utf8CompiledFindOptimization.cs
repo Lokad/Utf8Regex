@@ -42,6 +42,4 @@ internal readonly struct Utf8CompiledFindOptimization
     public byte[] CommonPrefix { get; }
 
     public AsciiExactLiteralPrefixDiscriminator PrefixDiscriminator { get; }
-
-    public bool HasValue => Kind != Utf8CompiledFindOptimizationKind.None;
 }

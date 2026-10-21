@@ -133,11 +133,6 @@ internal static partial class AsciiSearch
         return IndexOfAnyExact(input, CreateExactLiteralSearchData(literals));
     }
 
-    public static int LastIndexOfAnyExact(ReadOnlySpan<byte> input, byte[][] literals)
-    {
-        return LastIndexOfAnyExact(input, CreateExactLiteralSearchData(literals));
-    }
-
     public static int IndexOfAnyExact(ReadOnlySpan<byte> input, AsciiExactLiteralSearchData searchData)
     {
         return new PreparedLiteralSetSearch(searchData).IndexOf(input);

@@ -10,13 +10,15 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class CoreCompilationArchitectureTests
 {
     [Fact]
-    public void CompilationProducesOneImmutablePreparedRegex()
+    public void CompilationReusesPreparedInstructionStorage()
     {
         var analysis = Utf8FrontEnd.Analyze("ab[0-9]{2}", RegexOptions.CultureInvariant);
         var prepared = Utf8RegexPreparer.Prepare(analysis);
 
         Assert.IsType<Utf8RegexAnalysis>(analysis);
         Assert.IsType<Utf8PreparedRegex>(prepared);
+        // Repeated access borrows the same instruction storage; this is a
+        // reference-stability check, not a complete immutability proof.
         Assert.Same(prepared.StructuralLinearProgram.InstructionProgram.Instructions, prepared.StructuralLinearProgram.InstructionProgram.Instructions);
         Assert.Equal(NativeExecutionKind.AsciiSimplePattern, prepared.ExecutionKind);
     }
@@ -31,13 +33,6 @@ public sealed class CoreCompilationArchitectureTests
         Assert.DoesNotContain("new Regex(", preparedSource, StringComparison.Ordinal);
         Assert.DoesNotContain("Executor.", preparedSource, StringComparison.Ordinal);
         Assert.DoesNotContain("RuntimeFactory", preparedSource, StringComparison.Ordinal);
-
-        Assert.True(File.Exists(Path.Combine(sourceRoot, "Internal", "FrontEnd", "Utf8NativeExecutionAnalyzer.cs")));
-        Assert.True(File.Exists(Path.Combine(sourceRoot, "Internal", "FrontEnd", "Utf8AsciiSimplePatternLowerer.cs")));
-        Assert.True(File.Exists(Path.Combine(sourceRoot, "Internal", "FrontEnd", "Utf8FallbackRegexFamilyAnalyzer.cs")));
-        Assert.True(File.Exists(Path.Combine(sourceRoot, "Internal", "Execution", "Utf8SearchExecutor.cs")));
-        Assert.False(File.Exists(Path.Combine(sourceRoot, "Utf8Regex.Partials.cs")));
-        Assert.False(Directory.Exists(Path.Combine(sourceRoot, "Internal", "FrontEnd", "Runtime")));
 
         foreach (var planningSourcePath in Directory.EnumerateFiles(
                      Path.Combine(sourceRoot, "Internal", "Planning"),
@@ -61,7 +56,6 @@ public sealed class CoreCompilationArchitectureTests
             Assert.DoesNotContain("Utf8FallbackRegexFamilyAnalyzer", executionSource, StringComparison.Ordinal);
         }
     }
-
 
     [Fact]
     public void SpeculativePreparationDeclinesOversizedProductsBeforeAllocation()
@@ -92,54 +86,27 @@ public sealed class CoreCompilationArchitectureTests
     public void ByteOffsetExecutionUsesNeutralInputOwnedInfrastructure()
     {
         var sourceRoot = FindCoreSourceDirectory();
-        var facadeSource = File.ReadAllText(Path.Combine(sourceRoot, "Utf8Regex.cs"));
         var inputSource = File.ReadAllText(Path.Combine(sourceRoot, "Internal", "Input", "Utf8ValidatedInput.cs"));
         var mapSource = File.ReadAllText(Path.Combine(sourceRoot, "Internal", "Input", "Utf8BoundaryMap.cs"));
 
-        Assert.DoesNotContain("Pcre2CountAtByteOffset", facadeSource, StringComparison.Ordinal);
-        Assert.DoesNotContain("Pcre2EnumerateMatchesAtByteOffset", facadeSource, StringComparison.Ordinal);
-        Assert.DoesNotContain("Utf8Utf16BoundaryResolver", facadeSource, StringComparison.Ordinal);
         Assert.DoesNotContain("bool[]", mapSource, StringComparison.Ordinal);
         Assert.Contains("Utf8ProjectionCursor", inputSource, StringComparison.Ordinal);
-        Assert.True(File.Exists(Path.Combine(sourceRoot, "Internal", "Execution", "Utf8PreparedValueMatchEnumerator.cs")));
-        Assert.False(File.Exists(Path.Combine(sourceRoot, "Utf8PreparedValueMatchEnumerator.cs")));
-        Assert.False(File.Exists(Path.Combine(sourceRoot, "Internal", "Input", "Utf8Utf16BoundaryResolver.cs")));
     }
 
     [Fact]
-    public void SearchPreparationUsesOneFactsModelAndOneOperationDisposition()
+    public void SimplePatternLoweringDoesNotDependOnSearchPlans()
     {
         var sourceRoot = FindCoreSourceDirectory();
-        var planningRoot = Path.Combine(sourceRoot, "Internal", "Planning");
         var simpleLowerer = File.ReadAllText(Path.Combine(sourceRoot, "Internal", "FrontEnd", "Utf8AsciiSimplePatternLowerer.cs"));
 
-        Assert.True(File.Exists(Path.Combine(planningRoot, "Utf8SearchFacts.cs")));
-        Assert.True(File.Exists(Path.Combine(planningRoot, "Utf8CandidateSearchPlan.cs")));
-        Assert.True(File.Exists(Path.Combine(planningRoot, "Utf8SearchOperationPlan.cs")));
-        Assert.False(File.Exists(Path.Combine(planningRoot, "Utf8NativeSearchPlan.cs")));
-        Assert.False(File.Exists(Path.Combine(planningRoot, "Utf8SearchEnginePlan.cs")));
-        Assert.False(File.Exists(Path.Combine(planningRoot, "Utf8SearchMetaStrategyPlan.cs")));
-        Assert.False(File.Exists(Path.Combine(planningRoot, "Utf8ExecutablePipelinePlan.cs")));
-        Assert.False(File.Exists(Path.Combine(planningRoot, "Utf8BackendInstructionProgram.cs")));
         Assert.DoesNotContain("Utf8SearchPlan", simpleLowerer, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void ReusableSearchKernelsHaveOneOwnerAndNoFlavorFrontEndDependency()
+    public void ReusableSearchKernelsDoNotDependOnFlavorFrontEnds()
     {
         var sourceRoot = FindCoreSourceDirectory();
         var searchRoot = Path.Combine(sourceRoot, "Internal", "Search");
-        var utilitiesRoot = Path.Combine(sourceRoot, "Internal", "Utilities");
-        var structuralRuntime = File.ReadAllText(
-            Path.Combine(sourceRoot, "Internal", "Execution", "Utf8StructuralLinearProgram.cs"));
-
-        Assert.True(Directory.Exists(searchRoot));
-        Assert.False(
-            Directory.Exists(utilitiesRoot) &&
-            Directory.EnumerateFiles(utilitiesRoot, "*.cs", SearchOption.AllDirectories).Any());
-        Assert.True(File.Exists(Path.Combine(searchRoot, "PreparedSearcher.cs")));
-        Assert.True(File.Exists(Path.Combine(searchRoot, "PreparedWindowSearch.cs")));
-        Assert.True(File.Exists(Path.Combine(searchRoot, "Utf8LiteralEquality.cs")));
 
         foreach (var searchSourcePath in Directory.EnumerateFiles(searchRoot, "*.cs", SearchOption.AllDirectories))
         {
@@ -147,10 +114,6 @@ public sealed class CoreCompilationArchitectureTests
             Assert.DoesNotContain("Internal.FrontEnd", searchSource, StringComparison.Ordinal);
             Assert.DoesNotContain("RegexCharClass", searchSource, StringComparison.Ordinal);
         }
-
-        Assert.Contains("AsciiOrderedLiteralWindowExecutor.FindNext", structuralRuntime, StringComparison.Ordinal);
-        Assert.DoesNotContain("FindNextOrderedLiteralFamilyWindow", structuralRuntime, StringComparison.Ordinal);
-        Assert.DoesNotContain("FindNextPairedOrderedLiteralFamilyWindow", structuralRuntime, StringComparison.Ordinal);
     }
 
     [Fact]

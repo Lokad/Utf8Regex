@@ -1647,11 +1647,6 @@ internal static class Utf8FrontEndSearchAnalyzer
     }
 
 
-    private static bool IsAsciiWordByte(byte value)
-    {
-        return Utf8AsciiBytePredicates.IsWord(value);
-    }
-
     private static bool TryEncodeAlternates(string[] alternatePrefixes, out byte[][] alternateLiterals)
     {
         using var construction = Utf8ConstructionScope.Enter();

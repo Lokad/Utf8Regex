@@ -178,9 +178,6 @@ internal readonly struct AsciiCharClass : IEquatable<AsciiCharClass>
         return new AsciiCharClass(low, high, negated);
     }
 
-    public static AsciiCharClass CombinePositive(AsciiCharClass left, AsciiCharClass right) =>
-        CombinePositive(left, right, false);
-
     public static AsciiCharClass CombinePositive(AsciiCharClass left, AsciiCharClass right, bool negated)
     {
         if (left.Negated || right.Negated)
@@ -355,8 +352,6 @@ internal readonly record struct Utf8InclusiveByteRange
     public byte Low { get; }
 
     public byte High { get; }
-
-    public bool Contains(byte value) => value >= Low && value <= High;
 
     public static Utf8InclusiveByteRange Create(byte low, byte high)
     {

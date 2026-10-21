@@ -88,15 +88,6 @@ internal static partial class AsciiOrderedLiteralWindowExecutor
         ReadOnlySpan<byte> input,
         AsciiOrderedLiteralWindowPlan plan,
         Utf8SearchPlan searchPlan,
-        Utf8ExecutionDeadline budget)
-    {
-        return Count(input, plan, searchPlan, default, budget);
-    }
-
-    public static int Count(
-        ReadOnlySpan<byte> input,
-        AsciiOrderedLiteralWindowPlan plan,
-        Utf8SearchPlan searchPlan,
         PreparedAsciiFindPlan trailingFindPlan,
         Utf8ExecutionDeadline budget)
     {

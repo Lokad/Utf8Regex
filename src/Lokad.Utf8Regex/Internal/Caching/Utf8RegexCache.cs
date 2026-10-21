@@ -48,8 +48,6 @@ internal static class Utf8RegexCache
 
     public static int EntryCount => Cache.Count;
 
-    internal static ulong MetadataBytes => Cache.MetadataBytes;
-    internal static Utf8RetainedStorageScope StorageScope => Cache.StorageScope;
 
     public static int MaxEntries
     {

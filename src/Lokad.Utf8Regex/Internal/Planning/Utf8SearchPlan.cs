@@ -436,7 +436,7 @@ internal readonly struct Utf8SearchPlan
             var leading = CreatePreparedSearcher(info.Leading);
             var trailing = CreatePreparedSearcher(info.Trailing);
             plans[index++] = Utf8StructuralSearchPlan.CreateWindowPlanWithOptionalLineSpan(
-                new PreparedWindowSearch(leading, trailing, info.MaxGap, sameLine: false), info.MaxLines);
+                new PreparedWindowSearch(leading, trailing, maxGap: null, sameLine: false), info.MaxLines);
         }
         return plans;
     }

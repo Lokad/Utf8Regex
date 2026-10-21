@@ -28,7 +28,7 @@ once per compiled regex; scan state is retained by operation cursors.
 | `PreparedWindowSearch` | two selected-owner costs | `O(leading work + trailing work + c)` | Leading and trailing scan states are both retained. A dense leading stream with an absent trailing literal scans the trailing suffix once, not once per leading candidate. |
 | `Utf8LiteralEquality` | `O(1)` | `O(m)` per requested comparison | Bounds checks precede every comparison; no input scan is hidden here. |
 | `AsciiSearch` preparation helpers | `O(L + k * alphabet)` | none | These helpers only construct retained search data. |
-| `Utf8SearchKernel` scalar/vector primitives | `O(1)` | `O(n)` | Each primitive is a single monotone pass over its supplied span. |
+| `AsciiSearch` single-byte and ASCII-set scan primitives | `O(1)` for direct scans; prepared-set costs are listed above | `O(n)` | Each primitive makes one monotone pass over its supplied span. Substring/family searches retain their separate bounds above. |
 | `Utf8AsciiDeterministicFixedWidthCountExecutor` | `O(1)` selection over retained fixed-width checks | `O(n * w)`, therefore `O(n)` for admitted `3 <= w <= 8` | The AVX2 dense-input tier keeps non-overlapping progress in `nextStart`; after four empty literal blocks it transfers once to a monotone scalar suffix instead of restarting the input. |
 
 Compositions may multiply candidate confirmation by the confirmed literal
