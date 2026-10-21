@@ -61,17 +61,6 @@ internal static class Utf8ScalarAsciiProjector
         return true;
     }
 
-    internal static bool TryProjectAsciiIntersection(Utf8ScalarClass? scalarClass, out AsciiCharClass charClass)
-    {
-        if (TryCreateToken(scalarClass, out var token))
-        {
-            charClass = token.Kind == AsciiSimplePatternTokenKind.Dot
-                ? new AsciiCharClass(ulong.MaxValue, ulong.MaxValue) : token.CharClass;
-            return true;
-        }
-        return TryProjectAsciiDefinition(scalarClass, out charClass);
-    }
-
     internal static bool IsPositiveWhitespace(Utf8ScalarClass? scalarClass) => scalarClass is not null &&
         (scalarClass.Data.AsSpan().SequenceEqual([0, 0, 1, 100]) ||
          scalarClass.Data.AsSpan().SequenceEqual([0, 4, 0, 9, 14, 32, 33]));
