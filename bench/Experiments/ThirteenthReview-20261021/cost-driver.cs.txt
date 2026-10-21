@@ -1,0 +1,114 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Internal;
+using Lokad.Utf8Regex.PythonRe;
+using Lokad.Utf8Regex.Pcre2;
+using Lokad.Utf8Regex.Internal.Execution;
+using System.Runtime.CompilerServices;
+
+var process = Process.GetCurrentProcess();
+var affinity = process.ProcessorAffinity;
+process.ProcessorAffinity = new IntPtr(affinity.ToInt64() & -affinity.ToInt64());
+try
+{
+    var text = string.Concat(Enumerable.Repeat("abc 123 ab12 😀 ", 32));
+    var input = Encoding.UTF8.GetBytes(text);
+    const string balancePattern = @"(?<o>a)+(?<-o>b)+(?(o)(?!))";
+    var balanceText = string.Concat(Enumerable.Repeat(new string('a',32)+new string('b',32)+" ",8));
+    var balanceInput = Encoding.UTF8.GetBytes(balanceText);
+    var policy = new Utf8ResourcePolicy { MaxWorkSteps=1_000_000, MaxDepth=2048,
+        MaxWorkingBytes=16*1024*1024, MaxResultBytes=16*1024*1024 };
+    var balance = new Utf8Regex(balancePattern, RegexOptions.CultureInvariant);
+    var finiteBalance = new Utf8Regex(balancePattern, RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan,policy);
+    var captured = new Utf8PythonRegex(@"([0-9]+)");
+    var finiteCaptured = new Utf8PythonRegex(@"([0-9]+)",PythonReCompileOptions.None,Timeout.InfiniteTimeSpan,policy);
+    var classes = new Utf8PythonRegex(@"[0-9]+");
+    var canonical = new Utf8PythonRegex("(?:Шерлок)");
+    var canonicalInput=Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("Шерлок ",64)));
+    var pcre = new Utf8Pcre2Regex("needle");
+    var pcreInput = Encoding.UTF8.GetBytes(new string('x',4096)+"needle😀");
+    var oracle = new Regex("[0-9]+", RegexOptions.CultureInvariant);
+    var strict = new UTF8Encoding(false,true);
+    var lanes = new[]
+    {
+        new Lane("python/captured-class/construct", () => ConstructPython(@"([0-9]+)"),8,0,128),
+        new Lane("python/captured-class/Count", () => captured.Count(input),64,input.Length,1024),
+        new Lane("python/captured-class-finite-four/Count", () => finiteCaptured.Count(input),64,input.Length,1024),
+        new Lane("python/captured-class/FindAllStrings", () => captured.FindAllToStrings(input).Count,64,input.Length,1024),
+        new Lane("python/class/FindAll", () => classes.FindAll(input).Length,64,input.Length,1024),
+        new Lane("python/canonical-literal/FindAllStrings", () => canonical.FindAllToStrings(canonicalInput).Count,64,canonicalInput.Length,1024),
+        new Lane("core/balancing/Count", () => balance.Count(balanceInput),8,balanceInput.Length,1024),
+        new Lane("core/balancing-finite-four/Count", () => finiteBalance.Count(balanceInput),8,balanceInput.Length,1024),
+        new Lane("pcre2/literal/Match", () => pcre.Match(pcreInput).Success?1:0,1,pcreInput.Length,10_000),
+        new Lane("control/predecoded-Regex/Count", () => oracle.Count(text),64,input.Length,10_000),
+        new Lane("control/decode-then-Regex/Count", () => oracle.Count(strict.GetString(input)),64,input.Length,10_000),
+    };
+    foreach (var lane in lanes)
+    {
+        if(lane.Action()!=lane.Expected) throw new InvalidOperationException("Wrong result: "+lane.Id);
+        var warm=Stopwatch.StartNew(); long calls=0;
+        do { Run(lane,64); calls+=64; } while(warm.ElapsedMilliseconds<1500 || calls<lane.MinimumCalls);
+        lane.Iterations=lane.MinimumCalls;
+        for(var attempt=0;attempt<5;attempt++)
+        {
+            var sample=Run(lane,lane.Iterations);
+            if(sample.WallMilliseconds>=35) break;
+            lane.Iterations=(int)Math.Clamp(Math.Ceiling(lane.Iterations*45/Math.Max(.01,sample.WallMilliseconds)),lane.MinimumCalls,4_000_000);
+        }
+    }
+    for(var sample=0;sample<5;sample++)
+        foreach(var index in sample%2==0?Enumerable.Range(0,lanes.Length):Enumerable.Range(0,lanes.Length).Reverse())
+            lanes[index].Samples.Add(Run(lanes[index],lanes[index].Iterations));
+    object Identity(Assembly assembly) => new {
+        Producer=assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
+        Sha256=Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))) };
+    Console.WriteLine(JsonSerializer.Serialize(new {
+        AtUtc=DateTime.UtcNow, Runtime=RuntimeInformation.FrameworkDescription, OS=RuntimeInformation.OSDescription,
+        Affinity=process.ProcessorAffinity.ToInt64(), Core=Identity(typeof(Utf8Regex).Assembly), PythonRe=Identity(typeof(Utf8PythonRegex).Assembly), Pcre2=Identity(typeof(Utf8Pcre2Regex).Assembly),
+        Protocol="Fixed 533d5a39 original (compiled bf042c93); identical driver DLL bytes; default tiers; one CPU; >=1.5s warm per lane plus call floors; calibrated 35ms floor/45ms target; five alternating samples; 60s child cap. Finite-four: 1M work, depth 2048, working/result 16MiB, infinite timeout/no token. One noise confirmation maximum. No Status/package qualification.",
+        Facts = new {
+            BalanceEntryBytes=Unsafe.SizeOf<Utf8SliceBalanceEntry>(),
+            BalanceChunkBytes=Utf8SliceRunner.BalanceReserveBytes,
+            CursorBytes=Unsafe.SizeOf<Utf8OperationMatchCursor>(),
+            CanonicalStringsAreShared=ReferenceEquals(canonical.FindAllToStrings(canonicalInput).ScalarValues[0],canonical.FindAllToStrings(canonicalInput).ScalarValues[1]),
+            PythonRoots=new[]{@"([0-9]+)",@"(?P<n>[0-9]+)",@"([a-z]+)",@"(?P<word>[a-z]+)",@"(ab[0-9]{2})",@"[0-9]+",@"foo(?=bar)bar","needle","foo|bar","needle(?=bar)","(?:Шерлок)",""}
+                .Select(pattern=>{
+                    var regex=new Utf8PythonRegex(pattern);
+                    const BindingFlags fields=BindingFlags.Instance|BindingFlags.NonPublic;
+                    var core=typeof(Utf8PythonRegex).GetField("_utf8Regex",fields)!.GetValue(regex) as Utf8Regex;
+                    var program=(Utf8SliceProgram)typeof(Utf8PythonRegex).GetField("_scalarProgram",fields)!.GetValue(regex)!;
+                    return new {Pattern=pattern, RetainsCore=core is not null,
+                        AcceptsCandidate=PythonReScalarMatchState.CanUseCandidateRegex(program,core),
+                        NativeLiteralResult=core?.CanFindNativeLiteralForResult==true,
+                        CanonicalCount=regex.DebugUsesCountedRepeatedExactStringFindAllFastPath,
+                        LiteralValue=regex.DebugUsesZeroOffsetUtf8SearchValueFastPath};
+                }).ToArray() },
+        Lanes=lanes.Select(l=>new{l.Id,l.InputBytes,l.Expected,l.Iterations,l.Samples}) },new JsonSerializerOptions{WriteIndented=true}));
+}
+finally { process.ProcessorAffinity=affinity; }
+
+static int ConstructPython(string pattern)
+{
+    var regex=new Utf8PythonRegex(pattern);
+    var length=regex.Pattern.Length;GC.KeepAlive(regex);return length;
+}
+static Sample Run(Lane lane,int iterations)
+{
+    var allocated=GC.GetAllocatedBytesForCurrentThread();var start=Stopwatch.GetTimestamp();long checksum=0;
+    for(var i=0;i<iterations;i++) checksum+=lane.Action();
+    var ticks=Stopwatch.GetTimestamp()-start;allocated=GC.GetAllocatedBytesForCurrentThread()-allocated;
+    if(checksum!=(long)iterations*lane.Expected)throw new InvalidOperationException("Result changed: "+lane.Id);
+    return new(ticks*1e9/Stopwatch.Frequency/iterations,(double)allocated/iterations,ticks*1000.0/Stopwatch.Frequency,checksum);
+}
+sealed class Lane(string id,Func<int> action,int expected,int inputBytes,int minimumCalls)
+{
+    internal string Id=id;internal Func<int> Action=action;internal int Expected=expected;internal int InputBytes=inputBytes;
+    internal int Iterations;internal int MinimumCalls=minimumCalls;internal List<Sample> Samples=[];
+}
+sealed record Sample(double NanosecondsPerOperation,double AllocatedBytesPerOperation,double WallMilliseconds,long Checksum);

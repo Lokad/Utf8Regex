@@ -1,0 +1,15 @@
+{
+  "ReviewedDocuments": [
+    "CURRENT-PERFORMANCE.md",
+    "README.md",
+    "RUNTIME-COMPARISON.md",
+    "SCALAR-CLEANUP.md",
+    "src/Lokad.Utf8Regex.Pcre2/QUALIFICATION.md",
+    "src/Lokad.Utf8Regex.Pcre2/README.md",
+    "src/Lokad.Utf8Regex.PythonRe/README.md",
+    "src/Lokad.Utf8Regex/README.md"
+  ],
+  "PreviouslyLocalOnlyLinks": 25,
+  "RemainingUntrackedOrMissingLinkTargets": [],
+  "Scope": "Read-only targeted link check; original raw receipts and snapshots are unchanged. Package README root documents use existing stable repository URLs."
+}

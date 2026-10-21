@@ -1,0 +1,24 @@
+{
+  "PythonProduction": [
+    {
+      "Path": "src/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.cs",
+      "OriginalGitBlob": "c71e4ec461b0ad4a38a40395b54d7f3fdbc40229",
+      "FinalGitBlob": "c71e4ec461b0ad4a38a40395b54d7f3fdbc40229",
+      "Restored": true
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.FindAll.cs",
+      "OriginalGitBlob": "9c58b08da92828683b74d622a0f1525ace76f309",
+      "FinalGitBlob": "9c58b08da92828683b74d622a0f1525ace76f309",
+      "Restored": true
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.Utf8.cs",
+      "OriginalGitBlob": "07f0e8e6e5a8172fdbf8a127ac78934a5d081360",
+      "FinalGitBlob": "07f0e8e6e5a8172fdbf8a127ac78934a5d081360",
+      "Restored": true
+    }
+  ],
+  "CoreAndPcre2UnchangedFromMeasuredCandidate": true,
+  "Scope": "Source identity, not DLL identity or a post-restoration timing qualification."
+}

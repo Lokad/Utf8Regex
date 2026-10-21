@@ -1,0 +1,234 @@
+{
+  "Initial": [
+    {
+      "Id": "python/captured-class/construct",
+      "BeforeNs": 29787.801418439718,
+      "AfterNs": 39524.68007312614,
+      "ChangePercent": 32.68747000797092,
+      "BeforeBytes": 56968,
+      "AfterBytes": 56968,
+      "BeforeSpread": 1.3715708784459657,
+      "AfterSpread": 1.2691506512782456
+    },
+    {
+      "Id": "python/captured-class/Count",
+      "BeforeNs": 6919.50276243094,
+      "AfterNs": 7670.37037037037,
+      "ChangePercent": 10.85146770973524,
+      "BeforeBytes": 3872,
+      "AfterBytes": 3872,
+      "BeforeSpread": 1.2673635719347982,
+      "AfterSpread": 1.7445855534933843
+    },
+    {
+      "Id": "python/captured-class-finite-four/Count",
+      "BeforeNs": 7490.792256385229,
+      "AfterNs": 8981.21338912134,
+      "ChangePercent": 19.896708942444107,
+      "BeforeBytes": 3984,
+      "AfterBytes": 3984,
+      "BeforeSpread": 1.1229030386157417,
+      "AfterSpread": 1.3961246032515353
+    },
+    {
+      "Id": "python/captured-class/FindAllStrings",
+      "BeforeNs": 9635.53701326487,
+      "AfterNs": 11251.398897838068,
+      "ChangePercent": 16.76981658986627,
+      "BeforeBytes": 6456,
+      "AfterBytes": 6456,
+      "BeforeSpread": 1.2035054514793668,
+      "AfterSpread": 1.0384109506128294
+    },
+    {
+      "Id": "python/class/FindAll",
+      "BeforeNs": 14679.22077922078,
+      "AfterNs": 15933.49609375,
+      "ChangePercent": 8.544563321131559,
+      "BeforeBytes": 7976,
+      "AfterBytes": 7976,
+      "BeforeSpread": 1.1367099716429343,
+      "AfterSpread": 1.1168236913856868
+    },
+    {
+      "Id": "python/canonical-literal/FindAllStrings",
+      "BeforeNs": 7672.618379187722,
+      "AfterNs": 8775.29296875,
+      "ChangePercent": 14.371555250986102,
+      "BeforeBytes": 536,
+      "AfterBytes": 536,
+      "BeforeSpread": 1.1175839644365326,
+      "AfterSpread": 1.5589142420437796
+    },
+    {
+      "Id": "core/balancing/Count",
+      "BeforeNs": 20168.593371059014,
+      "AfterNs": 23567.87109375,
+      "ChangePercent": 16.854312346684463,
+      "BeforeBytes": 9976,
+      "AfterBytes": 9464,
+      "BeforeSpread": 1.204251356645153,
+      "AfterSpread": 1.2482313436661596
+    },
+    {
+      "Id": "core/balancing-finite-four/Count",
+      "BeforeNs": 19497.686375321337,
+      "AfterNs": 23477.676120768527,
+      "ChangePercent": 20.41262572817231,
+      "BeforeBytes": 10088,
+      "AfterBytes": 9576,
+      "BeforeSpread": 1.2276172036441395,
+      "AfterSpread": 1.1450509922965766
+    },
+    {
+      "Id": "pcre2/literal/Match",
+      "BeforeNs": 6035.45,
+      "AfterNs": 6829.9,
+      "ChangePercent": 13.163061577844237,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.5010242633576392,
+      "AfterSpread": 1.046586488288714
+    },
+    {
+      "Id": "control/predecoded-Regex/Count",
+      "BeforeNs": 2165.6979124027835,
+      "AfterNs": 2094.1680207281192,
+      "ChangePercent": -3.3028563801543176,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.535281275731045,
+      "AfterSpread": 1.104917561241986
+    },
+    {
+      "Id": "control/decode-then-Regex/Count",
+      "BeforeNs": 2126.407385790842,
+      "AfterNs": 2514.875194076197,
+      "ChangePercent": 18.26873866603309,
+      "BeforeBytes": 1048,
+      "AfterBytes": 1048,
+      "BeforeSpread": 1.5442490438285428,
+      "AfterSpread": 1.1401193194372836
+    }
+  ],
+  "Artifacts": {
+    "before-cost.json": "F3234AB76E01AC01EE704F082EE0852D11F4AC37C866DA595AA9166A325E71C4",
+    "after-cost.json": "C95722536DE52B26A0CAFEFBE48B3CFEE7CC9DCE8D02675D9A89B9ADEEBEE333",
+    "cost-before/Lokad.Utf8Regex.Benchmarks.dll": "B5961053F212BC236C1F82830724032F0F7C6936486508433A9CC9ED16B29B0E",
+    "cost-after/Lokad.Utf8Regex.Benchmarks.dll": "B5961053F212BC236C1F82830724032F0F7C6936486508433A9CC9ED16B29B0E",
+    "confirm-before-cost.json": "1F907CC6E63E296533D564604A2E0257FC54994A1F619EC0A8B9976685B55227",
+    "confirm-after-cost.json": "1569305BC9F9B546D234F4C5DEFF9C100C923AC72D1B034A1A7CF39C9A428646"
+  },
+  "Confirmation": [
+    {
+      "Id": "python/captured-class/construct",
+      "BeforeNs": 29403.065134099616,
+      "AfterNs": 26892.96875,
+      "ChangePercent": -8.536852782700477,
+      "BeforeBytes": 56968,
+      "AfterBytes": 56968,
+      "BeforeSpread": 1.2626408060067955,
+      "AfterSpread": 1.7495568041825666
+    },
+    {
+      "Id": "python/captured-class/Count",
+      "BeforeNs": 6745.661908760146,
+      "AfterNs": 7189.633863741697,
+      "ChangePercent": 6.581592154877991,
+      "BeforeBytes": 3872,
+      "AfterBytes": 3872,
+      "BeforeSpread": 1.0365878602962484,
+      "AfterSpread": 1.1755178698897382
+    },
+    {
+      "Id": "python/captured-class-finite-four/Count",
+      "BeforeNs": 7733.0594490091835,
+      "AfterNs": 8218.970358814353,
+      "ChangePercent": 6.283553269041886,
+      "BeforeBytes": 3984,
+      "AfterBytes": 3984,
+      "BeforeSpread": 1.1024055752973296,
+      "AfterSpread": 1.1829166094968706
+    },
+    {
+      "Id": "python/captured-class/FindAllStrings",
+      "BeforeNs": 9882.914691943128,
+      "AfterNs": 11026.498422712933,
+      "ChangePercent": 11.57132046988214,
+      "BeforeBytes": 6456,
+      "AfterBytes": 6456,
+      "BeforeSpread": 1.0846115643478305,
+      "AfterSpread": 1.1690082395195123
+    },
+    {
+      "Id": "python/class/FindAll",
+      "BeforeNs": 14120.563641994426,
+      "AfterNs": 13757.1477195371,
+      "ChangePercent": -2.573664420707178,
+      "BeforeBytes": 7976,
+      "AfterBytes": 7976,
+      "BeforeSpread": 1.1003196338900958,
+      "AfterSpread": 1.1898071958087357
+    },
+    {
+      "Id": "python/canonical-literal/FindAllStrings",
+      "BeforeNs": 8564.551383747576,
+      "AfterNs": 8268.589218417172,
+      "ChangePercent": -3.455664541776615,
+      "BeforeBytes": 536,
+      "AfterBytes": 536,
+      "BeforeSpread": 1.278066045624833,
+      "AfterSpread": 1.1380216948067814
+    },
+    {
+      "Id": "core/balancing/Count",
+      "BeforeNs": 18402.42498972462,
+      "AfterNs": 19972.03432609793,
+      "ChangePercent": 8.529361414323034,
+      "BeforeBytes": 9976,
+      "AfterBytes": 9464,
+      "BeforeSpread": 1.057682477272676,
+      "AfterSpread": 1.2187183993510884
+    },
+    {
+      "Id": "core/balancing-finite-four/Count",
+      "BeforeNs": 20247.196489517308,
+      "AfterNs": 21359.5703125,
+      "ChangePercent": 5.493964675843421,
+      "BeforeBytes": 10088,
+      "AfterBytes": 9576,
+      "BeforeSpread": 1.0552872816694019,
+      "AfterSpread": 1.2729940887106774
+    },
+    {
+      "Id": "pcre2/literal/Match",
+      "BeforeNs": 6059.87,
+      "AfterNs": 6094.96,
+      "ChangePercent": 0.5790553262693843,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0985453433587686,
+      "AfterSpread": 1.1953133944385705
+    },
+    {
+      "Id": "control/predecoded-Regex/Count",
+      "BeforeNs": 1836.1854899027674,
+      "AfterNs": 1849.0422228495383,
+      "ChangePercent": 0.7001870463235083,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.1187170059657505,
+      "AfterSpread": 1.1748779907827842
+    },
+    {
+      "Id": "control/decode-then-Regex/Count",
+      "BeforeNs": 2183.5627849877237,
+      "AfterNs": 2298.5258225129355,
+      "ChangePercent": 5.264929330889756,
+      "BeforeBytes": 1048,
+      "AfterBytes": 1048,
+      "BeforeSpread": 1.3526325334997955,
+      "AfterSpread": 1.1743336736660976
+    }
+  ]
+}

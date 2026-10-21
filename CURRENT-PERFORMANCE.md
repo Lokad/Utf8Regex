@@ -67,6 +67,18 @@ inconclusive timing: individual public lanes cross 10% in different runs, while
 an unchanged control moves 12.15%. No precise 10% bound or package cost claim is
 established. Avoiding transient declined Core construction remains later work.
 
+The [thirteenth-review receipt](bench/Experiments/ThirteenthReview-20261021/README.md)
+records removal of forwarding/write-only state: balance entries fall 16 → 12 B
+and selected balancing Count allocations fall by 512 B/call. The PythonRe
+eligibility prototype is rejected and deferred: captured-class public FindAll
+medians rise 16.77%/11.57% in its sole pair and confirmation. Original Python
+production code is restored; no further timing or final throughput qualification
+is claimed. Controls and uncertainty remain visible in the receipt.
+
+That review also corrects the twelfth control label: `foo(?=bar)bar` retained Core
+but its candidate plan was declined. `needle(?=bar)` is an actual accepted hint.
+Canonical literal counting and empty FullMatch are separate live consumers.
+
 ## Frozen scalar.119 package costs
 
 The observations below apply to **Core/PythonRe scalar.119**, producer `ca0c8a6f`.

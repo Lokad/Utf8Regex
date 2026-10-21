@@ -1,0 +1,253 @@
+{
+  "FinalSource": "b11afb82f13d2494fe3654bb5713bf81b2a3e89a",
+  "MeasuredPrototype": "2c2e4d9447b16d261e2b35ef672881a94e9d1eef",
+  "Scope": "M1 Python retention prototype deferred; original production files restored. M2-M4 cleanup remains. One local full boundary, focused repair and affected complete Python suites; exact final source all-profile/platform CI. No package qualification or post-restoration cost run.",
+  "Checks": [
+    {
+      "Log": "artifacts\\thirteenth-implementation-20261021\\core-focused.log",
+      "Sha256": "E5711885EE31A1F9CCF2D2FCCBD9AE4A8507DD910A9BB80995FB19991E1031B3",
+      "Suites": [
+        {
+          "Failed": 0,
+          "Passed": 514,
+          "Skipped": 0,
+          "Total": 514,
+          "Assembly": "Lokad.Utf8Regex.Tests.dll"
+        }
+      ],
+      "Scope": "Passing focused or affected-profile check"
+    },
+    {
+      "Log": "artifacts\\thirteenth-implementation-20261021\\python-focused.log",
+      "Sha256": "2EB2DA35C8459A6811E1F55514D3042A4B773D4AA11220F31979DFA4BF933753",
+      "Suites": [
+        {
+          "Failed": 0,
+          "Passed": 186,
+          "Skipped": 0,
+          "Total": 186,
+          "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll"
+        }
+      ],
+      "Scope": "Passing focused or affected-profile check"
+    },
+    {
+      "Log": "artifacts\\thirteenth-implementation-20261021\\pcre-focused.log",
+      "Sha256": "3C72522FE542FC2872A93477523686BEEFF468C97A7270438D4E577BFE032748",
+      "Suites": [
+        {
+          "Failed": 0,
+          "Passed": 422,
+          "Skipped": 0,
+          "Total": 422,
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll"
+        }
+      ],
+      "Scope": "Passing focused or affected-profile check"
+    },
+    {
+      "Log": "artifacts\\thirteenth-implementation-20261021\\source-release.log",
+      "Sha256": "3F4638435EF2F53AC48945319007B19BD4178C3F04E36F5766B2CCB216786673",
+      "Suites": [
+        {
+          "Failed": 0,
+          "Passed": 1504,
+          "Skipped": 0,
+          "Total": 1504,
+          "Assembly": "Lokad.Utf8Regex.DiffTests.dll"
+        },
+        {
+          "Failed": 0,
+          "Passed": 5974,
+          "Skipped": 0,
+          "Total": 5974,
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll"
+        },
+        {
+          "Failed": 4,
+          "Passed": 3906,
+          "Skipped": 0,
+          "Total": 3910,
+          "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll"
+        },
+        {
+          "Failed": 1,
+          "Passed": 39584,
+          "Skipped": 0,
+          "Total": 39585,
+          "Assembly": "Lokad.Utf8Regex.Tests.dll"
+        }
+      ],
+      "Scope": "Pre-repair source boundary; failures diagnosed and repaired before measurement"
+    },
+    {
+      "Log": "artifacts\\thirteenth-implementation-20261021\\python-release-final.log",
+      "Sha256": "A6451553607E56D14D9DEABCA744756C349B42BC46A4E57E1B3549C689030D1F",
+      "Suites": [
+        {
+          "Failed": 0,
+          "Passed": 3910,
+          "Skipped": 0,
+          "Total": 3910,
+          "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll"
+        }
+      ],
+      "Scope": "Passing focused or affected-profile check"
+    },
+    {
+      "Log": "artifacts\\thirteenth-implementation-20261021\\core-final.log",
+      "Sha256": "DFBDC566D8932AA22C15CF9662CDEA451256270972EA8FB9507C51BA475D13BA",
+      "Suites": [
+        {
+          "Failed": 0,
+          "Passed": 488,
+          "Skipped": 0,
+          "Total": 488,
+          "Assembly": "Lokad.Utf8Regex.Tests.dll"
+        }
+      ],
+      "Scope": "Passing focused or affected-profile check"
+    },
+    {
+      "Log": "artifacts\\thirteenth-implementation-20261021\\python-release-restored.log",
+      "Sha256": "E99582FA747C87924B5A46089E336769FCDB548F0FA3C3FA03A69927899939CD",
+      "Suites": [
+        {
+          "Failed": 0,
+          "Passed": 3910,
+          "Skipped": 0,
+          "Total": 3910,
+          "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll"
+        }
+      ],
+      "Scope": "Passing focused or affected-profile check"
+    }
+  ],
+  "PrototypeCI": {
+    "databaseId": 39613417852,
+    "headSha": "2c2e4d9447b16d261e2b35ef672881a94e9d1eef",
+    "status": "completed",
+    "conclusion": "success",
+    "url": "https://github.com/Lokad/Utf8Regex/actions/runs/39613417852",
+    "Jobs": [
+      {
+        "name": "tests (ubuntu-latest)",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/Lokad/Utf8Regex/actions/runs/39613417852/job/119267982148"
+      },
+      {
+        "name": "tests (windows-latest)",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/Lokad/Utf8Regex/actions/runs/39613417852/job/119267982866"
+      }
+    ]
+  },
+  "FinalCI": {
+    "databaseId": 39614774610,
+    "headSha": "b11afb82f13d2494fe3654bb5713bf81b2a3e89a",
+    "status": "completed",
+    "conclusion": "success",
+    "url": "https://github.com/Lokad/Utf8Regex/actions/runs/39614774610",
+    "Evidence": "Completed successful workflow and downloaded terminal Windows/Linux logs. Jobs endpoint roll-up metadata initially lagged completed steps."
+  },
+  "FinalSourcePreflight": {
+    "Scope": "Untimed existing PE/PDB/source evidence checks only; no measurement or snapshot writes.",
+    "Checkout": "b11afb82f13d",
+    "Rows": [
+      {
+        "Name": "Full producer and compiled-source preflight",
+        "Accepted": true,
+        "Error": null
+      }
+    ]
+  },
+  "GeneratedDocuments": [
+    {
+      "Command": "verify-readme-parity-report",
+      "Output": "Verified README.Parity.json against README.Benchmarks.json.",
+      "Sha256": "AF7327FEF829FBB1EDD56CCEC1D8BEDFC4E715096130545D439F2D4234B7D072"
+    },
+    {
+      "Command": "verify-pythonre-benchmark-markdown",
+      "Output": "PythonRe benchmark page is current: D:\\code\\utf8regex\\src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md",
+      "Sha256": "6B295B1B6B104D80B40AAA080CE84284CBCA407ED0FB0E7A40C77783F8786E0E"
+    },
+    {
+      "Command": "verify-pcre2-benchmark-markdown",
+      "Output": "PCRE2 benchmark page is current: D:\\code\\utf8regex\\src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md",
+      "Sha256": "E004206D4A2F8D956F505D8687D1700D6BE70A7B2BBD3E1E7208F43DA3A74925"
+    }
+  ],
+  "FinalCILog": {
+    "Path": "artifacts\\thirteenth-implementation-20261021\\ci-final.log",
+    "Sha256": "2A560049E39875CE269EEBBA64E59E400FA3A4CD8B5D95413F63148F333D6B81",
+    "Suites": [
+      {
+        "Platform": "Windows",
+        "Failed": 0,
+        "Passed": 1504,
+        "Skipped": 0,
+        "Total": 1504,
+        "Assembly": "Lokad.Utf8Regex.DiffTests.dll"
+      },
+      {
+        "Platform": "Windows",
+        "Failed": 0,
+        "Passed": 3910,
+        "Skipped": 0,
+        "Total": 3910,
+        "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll"
+      },
+      {
+        "Platform": "Windows",
+        "Failed": 0,
+        "Passed": 5974,
+        "Skipped": 0,
+        "Total": 5974,
+        "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll"
+      },
+      {
+        "Platform": "Windows",
+        "Failed": 0,
+        "Passed": 39585,
+        "Skipped": 0,
+        "Total": 39585,
+        "Assembly": "Lokad.Utf8Regex.Tests.dll"
+      },
+      {
+        "Platform": "Linux",
+        "Failed": 0,
+        "Passed": 1504,
+        "Skipped": 0,
+        "Total": 1504,
+        "Assembly": "Lokad.Utf8Regex.DiffTests.dll"
+      },
+      {
+        "Platform": "Linux",
+        "Failed": 0,
+        "Passed": 5974,
+        "Skipped": 0,
+        "Total": 5974,
+        "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll"
+      },
+      {
+        "Platform": "Linux",
+        "Failed": 0,
+        "Passed": 3910,
+        "Skipped": 0,
+        "Total": 3910,
+        "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll"
+      },
+      {
+        "Platform": "Linux",
+        "Failed": 0,
+        "Passed": 39585,
+        "Skipped": 0,
+        "Total": 39585,
+        "Assembly": "Lokad.Utf8Regex.Tests.dll"
+      }
+    ]
+  }
+}
