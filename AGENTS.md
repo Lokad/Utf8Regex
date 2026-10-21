@@ -251,8 +251,13 @@ PythonRe benchmark snapshot and diagnostics:
   preserved root TODO handoffs; unknown untracked source/data still blocks writes.
   Snapshot qualification and freshness/verification preflight loaded runner,
   Core and PythonRe producer revisions against relevant source/build files.
+  Their adjacent portable PDBs must match the loaded PE/module and compiled
+  document SHA256 checksums must match checkout source. This also rejects dirty
+  builds whose source was later reverted; revision metadata alone is insufficient.
   Later documentation-only commits are accepted; differing or unresolvable code
-  requires matching Release binaries. Non-persisted diagnostics still report
+  or missing/mismatched symbols requires matching Release binaries. These checks
+  reuse compiler evidence; they do not add a measurement/protocol identity.
+  Non-persisted diagnostics still report
   actual loaded identities and dirty state without claiming source qualification.
 - PythonRe refresh and direct-case commands invoke an official CPython executable to measure the stdlib `re`/`_sre` oracle in a long-lived per-case process. They exclude interpreter startup and pattern compilation, and report predecoded plus strict UTF-8-decode-per-operation timings.
 - Paired PythonRe qualification applies a one-million-call floor only to
