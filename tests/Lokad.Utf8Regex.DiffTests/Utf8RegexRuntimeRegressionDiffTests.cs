@@ -10,8 +10,7 @@ namespace Lokad.Utf8Regex.DiffTests;
 // ValueListBuilder growth (2ec033b0cec) is covered by Utf8BudgetedGrowthTests
 // and symbolic StripEffects memoization (ee4d4df31f6) has no analog (no
 // symbolic engine); both recorded in PLAN.md, not tested here.
-// All shapes below ride BCL fallback today; these rows pin oracle agreement
-// so a future owned route must preserve the exact semantics.
+// These owned-engine cases compare with the BCL oracle on overlapping semantics.
 public sealed class Utf8RegexRuntimeRegressionDiffTests
 {
     [Theory]

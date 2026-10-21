@@ -35,7 +35,7 @@ public sealed class Pcre2SliceTransparentTests
     public static IEnumerable<object?[]> IsMatchCases()
     {
         // expectOwned marks shapes the core slice claims: anything else may
-        // ride a native program or the core BCL fallback with identical behavior.
+        // ride another owned native or scalar program with the same profile behavior.
         yield return new object?[] { "(?:a)+", "xaa", true, true };
         yield return new object?[] { "(?:a|b)+c", "abac", true, true };
         yield return new object?[] { "(a)(?:b)(c)", "abc", true, false };
