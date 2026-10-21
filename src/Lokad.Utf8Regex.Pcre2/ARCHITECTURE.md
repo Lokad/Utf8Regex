@@ -58,8 +58,8 @@ Core delegation requires a successful owned PCRE2 parse and an existing
 common-scalar eligibility proof. There is no unrestricted Core-grammar fallback;
 if every profile compiler declines, construction refuses. PCRE2-only
 constructs stay with the PCRE2 compiler and runtime. There is no shipped BCL
-`Regex` matcher or result dependency. BCL option/timeout metadata and
-`Regex.Escape` do not execute subjects. Semantic and differential fixtures check
+`Regex` matcher or result dependency. BCL option/timeout metadata does not
+execute subjects; finite-language rendering uses admitted owned text. Semantic and differential fixtures check
 the supported delegation boundaries; they do not establish complete PCRE2 parity.
 
 Development after RC1 builds literal and character operation programs directly,

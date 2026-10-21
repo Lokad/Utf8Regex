@@ -172,8 +172,9 @@ public sealed class EngineDependencyInventoryTests
         Assert.Empty(FilesContaining("Group? _group"));
         Assert.Empty(FilesContaining("Capture? _capture"));
 
-        // 6. Regex.Escape is a pure string helper used while building translated patterns.
-        Assert.Equal(new[] { "Pcre2ExecutionArchitecture.cs" }, FilesContaining("Regex.Escape("));
+        // 6. Optional finite-language rendering now uses the admitted owned text
+        // builder; no BCL escaping or matcher is needed to prepare the pattern.
+        Assert.Empty(FilesContaining("Regex.Escape("));
     }
 
     [Fact]
@@ -203,7 +204,7 @@ public sealed class EngineDependencyInventoryTests
             new[] { "Pcre2ExecutionArchitecture.cs", "Utf8Pcre2Regex.cs" },
             NamesIn(pcre2Directory, "ByteOffsetExecution"));
         Assert.Equal(
-            new[] { "Pcre2ExecutionArchitecture.cs", "Utf8Pcre2Regex.cs" },
+            new[] { "Pcre2ExecutionArchitecture.cs", "Pcre2FiniteLiteralLanguageAnalyzer.cs" },
             NamesIn(pcre2Directory, "new Utf8Regex("));
 
         var pythonDirectory = Path.Combine(srcRoot, "Lokad.Utf8Regex.PythonRe");
