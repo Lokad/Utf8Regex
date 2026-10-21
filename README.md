@@ -134,8 +134,10 @@ literal Count, in both ordinary and compiled sections. These recorded source
 results show substantial gaps against predecoded .NET; Russian Count beats the
 decode baseline. They do not qualify other rows or a package. See
 [current measurements and limitations](CURRENT-PERFORMANCE.md).
-Separate immutable [scalar.110 package costs](artifacts/core-python-scalar110-20261019/vm-cost/RESULT.md)
-cover finite limits, live tokens and Python materialization, including noisy lanes.
+Historical scalar.110 package costs cover finite limits, live tokens and Python
+materialization, including noisy lanes. Their local-only receipt is
+`artifacts/core-python-scalar110-20261019/vm-cost/RESULT.md`; it is not included
+in a source checkout. Tracked package-cost evidence is in [CURRENT-PERFORMANCE.md](CURRENT-PERFORMANCE.md).
 Earlier source comparisons retain their scope in [CHANGELOG.md](CHANGELOG.md).
 
 The README CLI now uses an unboxed allocation sink. Older allocation figures can

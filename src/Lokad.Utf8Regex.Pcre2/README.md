@@ -110,7 +110,7 @@ cause earlier construction refusal without changing supported Probe semantics.
 Cold finite-heap replacement preparation borrows
 remaining working capacity as a construction ceiling and retains its additional
 peak through replacement. Warm plans use a separate conservative cache. See
-packaged [HOST-INTEGRATION.md](HOST-INTEGRATION.md) for exact mappings and scopes.
+packaged [HOST-INTEGRATION.md](https://github.com/Lokad/Utf8Regex/blob/master/HOST-INTEGRATION.md) for exact mappings and scopes.
 
 Finite controls can select a materially slower route: the existing email corpus
 Count can exhaust a 50-million-step policy even though unlimited Count succeeds.
@@ -125,7 +125,7 @@ to caller storage before throwing; interruption during TryReplace copying can
 also leave modified destination bytes. DestinationTooSmall leaves destination
 storage unchanged. Host-retained storage requires separate admission.
 
-Read packaged [release notes](CHANGELOG.md) and [migration guide](MIGRATION.md).
+Read [release notes](https://github.com/Lokad/Utf8Regex/blob/master/CHANGELOG.md) and [migration guide](https://github.com/Lokad/Utf8Regex/blob/master/MIGRATION.md).
 Repository [benchmark evidence](https://github.com/Lokad/Utf8Regex/blob/master/src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md)
 retains its recorded source/package/runtime scope; previous candidate timings do
 not automatically qualify RC1.

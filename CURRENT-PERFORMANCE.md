@@ -2,7 +2,7 @@
 
 The staged common release is **Core/PythonRe/PCRE2 0.4.0-rc.1**,
 producer `2e97ac974e6e8c60aac95db1e4808cbda2ff9736`.
-[Release handoff](artifacts/utf8regex-0.4.0-rc.1-20261020/HANDOFF.md) records
+[Frozen release identities](bench/Experiments/ReleaseCandidate-20261020/release.json) record
 its exact immutable bytes, supported scope and Windows/Linux consumer checks.
 It introduces no new release-wide timing claim. Development is **0.4.0-rc.2-dev**;
 source cleanup validation does not qualify new packages or refresh old measurements.
@@ -70,9 +70,9 @@ established. Avoiding transient declined Core construction remains later work.
 ## Frozen scalar.119 package costs
 
 The observations below apply to **Core/PythonRe scalar.119**, producer `ca0c8a6f`.
-[Handoff](artifacts/core-python-scalar119-20261020/HANDOFF.md),
-[actual-byte costs](artifacts/core-python-scalar119-20261020/vm-cost/RESULT.md),
-[frozen fixture/raw observations/identities](bench/Experiments/Scalar119Delivery-20261020/README.md).
+[Frozen fixture, actual-byte costs and identities](bench/Experiments/Scalar119Delivery-20261020/README.md)
+provide the tracked receipt; detailed local handoffs remain under
+`artifacts/core-python-scalar119-20261020/` and are not part of a source checkout.
 Same immutable DLLs qualify on Windows/Linux against original producer handoff
 assertions and Unicode/resource/identity checks. One 106-second quiet-VM observation
 uses .NET 10.0.12 with default tiers, 40 public lanes and 200 samples of at least52.891 ms.

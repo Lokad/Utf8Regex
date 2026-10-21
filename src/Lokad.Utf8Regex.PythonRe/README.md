@@ -53,11 +53,12 @@ token, and eagerly prepare FullMatch. Constructors keep fixed construction
 backstops and lazy FullMatch preparation. Cold FullMatch/replacement preparation,
 cache retention, incidental owners, standalone getters, callback allocations and
 host containers retain separate documented scope. The execution token must be
-passed on each operation. See packaged [HOST-INTEGRATION.md](HOST-INTEGRATION.md)
-and [MIGRATION.md](MIGRATION.md).
+passed on each operation. See [HOST-INTEGRATION.md](https://github.com/Lokad/Utf8Regex/blob/master/HOST-INTEGRATION.md)
+and [MIGRATION.md](https://github.com/Lokad/Utf8Regex/blob/master/MIGRATION.md).
 
-Optional Core preparations are retained for eligible native iteration, native
-literal results or scalar cursor start hints. Other operations use the owned
+Optional Core preparations are retained for native iteration that passes capture,
+nullability and route eligibility, canonical literal FindAll string counting, native
+literal results or accepted scalar cursor start hints. Other operations use the owned
 Python program. A Core preparation may still be built transiently to discover
 eligibility; discarding it reduces retention, not all construction traffic.
 Its covered construction is still admitted under the original owner.
@@ -125,7 +126,7 @@ a new allowance and needs new host admission while earlier results survive.
 Core value-cursor copies have independent positions/shared allowance; PythonRe
 reference aliases share position/disposal. No finalizer-based lease is required.
 
-Read packaged [release notes](CHANGELOG.md). Repository
+Read [release notes](https://github.com/Lokad/Utf8Regex/blob/master/CHANGELOG.md). Repository
 [benchmark results](https://github.com/Lokad/Utf8Regex/blob/master/src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md)
 retain their recorded source/package/runtime identities and qualification status;
 older rows do not automatically qualify this release.

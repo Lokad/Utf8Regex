@@ -14,10 +14,11 @@ valid classes when an escape operand resembles a class/group delimiter.
 **Do not publish these PCRE2 bytes.** Keep their original evidence and identities;
 a corrected release requires a fresh immutable candidate and final qualification.
 
-The [release handoff](../../artifacts/utf8regex-0.4.0-rc.1-20261020/HANDOFF.md),
-[restore instructions](../../artifacts/utf8regex-0.4.0-rc.1-20261020/CONSUMING.md)
-and [final integrity manifest](../../artifacts/utf8regex-0.4.0-rc.1-20261020/final-integrity.json)
-identify every package, symbol, DLL and receipt. The canonical feed remains
+The [tracked release identities](../../bench/Experiments/ReleaseCandidate-20261020/release.json)
+identify the packages, symbols, DLLs and qualification scope. Local-only handoff,
+restore instructions and integrity manifest remain under
+`artifacts/utf8regex-0.4.0-rc.1-20261020/`; they are not in a source checkout.
+The canonical local feed remains
 `artifacts/release-candidates/0.4.0-rc.1/feed/`; preserve its bytes and version.
 
 The same final DLLs passed complete detached Release suites on Windows and Linux:
@@ -65,7 +66,7 @@ it does not reproduce the observed native 10.47 lowercase-sigma anomaly.
 No complete .NET/Python/PCRE2 equivalence is promised.
 
 The release introduces no new throughput or benchmark Status claim.
-[Existing package-cost evidence](../../artifacts/core-python-scalar119-20261020/vm-cost/RESULT.md)
+[Existing package-cost evidence](../../bench/Experiments/Scalar119Delivery-20261020/README.md)
 retains its actual package/runtime scope and uncertainty. In particular, finite
 email Count can exhaust a 50-million-work policy although unlimited Count succeeds;
 the unqualified search experiment was excluded. Native comparison belongs only
@@ -139,9 +140,10 @@ completion from this command.
 ## Historical evidence
 
 Earlier immutable candidates and failures keep their original identities:
-[scalar.94](../../artifacts/pcre2-scalar94-delivery-20261018/HANDOFF.md),
-[scalar.92 property repairs](../../artifacts/pcre2-scalar92-delivery-20261018/HANDOFF.md)
-and [scalar.76 construction input](../../artifacts/pcre2-scalar76-delivery-20261017/HANDOFF.md).
+scalar.94, scalar.92 property repairs and scalar.76 construction input. Their
+local-only handoffs are under `artifacts/pcre2-scalar94-delivery-20261018/`,
+`artifacts/pcre2-scalar92-delivery-20261018/` and
+`artifacts/pcre2-scalar76-delivery-20261017/`; these are not source-checkout files.
 They are historical inputs, not the current dependency graph.
 `verify-pcre2-qualification.ps1 -QualificationId <original-producer-sha>` remains
 available to verify the original archive-manifest format; it does not produce

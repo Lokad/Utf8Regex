@@ -1,6 +1,6 @@
 # .NET 10 / .NET 11 Count comparison
 
-The staged common dependency is [0.4.0-rc.1](artifacts/utf8regex-0.4.0-rc.1-20261020/HANDOFF.md)
+The staged common dependency is [0.4.0-rc.1](bench/Experiments/ReleaseCandidate-20261020/release.json)
 for all three packages. Development is 0.4.0-rc.2-dev. The runtime experiment
 below uses **frozen Core114**; it does not qualify either product's current
 performance or complete runtime/profile behavior. Its comparative-lane gate is
@@ -33,10 +33,11 @@ Frozen observations below retain their original product/runtime scope.
 
 ## Frozen immutable Core114, measured 2026-10-20
 
-The actual qualified [Core/PythonRe114](artifacts/core-python-scalar114-20261020/HANDOFF.md)
+The actual qualified **Core/PythonRe114**
 Core DLL, producer01968d0f, is identical in every cell. [Numeric source](bench/Experiments/Runtime11-Scalar114-20261020/measurement.json),
-[frozen fixture](bench/Experiments/Runtime11-Scalar114-20261020/README.md),
-[full receipt](artifacts/runtime11-scalar114-comparison-20261020/RESULT.md).
+[frozen fixture and protocol](bench/Experiments/Runtime11-Scalar114-20261020/README.md).
+The detailed report `artifacts/runtime11-scalar114-comparison-20261020/RESULT.md`
+is local-only and is not included in a source checkout.
 Older110/59 observations below remain historical and are not reclassified.
 
 SDK10.0.401/net10 runs on10.0.12 and11.0.0-rc.1.26425.128 with identical harness
@@ -47,7 +48,8 @@ Installed preview-runtime evidence is not a runtime-upgrade recommendation.
 
 CPU2/FullOpts/R2R-off, one fixed15-process batch267.51s. All840samples exceed65.453ms
 against a50ms floor. No confirmation, retarget, package qualification, Status or
-old-data rerun. These results are separate from [default-tier actual114 costs](artifacts/core-python-scalar114-20261020/vm-cost/RESULT.md)
+old-data rerun. These results are separate from default-tier actual114 costs
+(local-only `artifacts/core-python-scalar114-20261020/vm-cost/RESULT.md`)
 and do not qualify complete runtime/profile semantic/resource behavior.
 
 Median public Count us/op, ordinary Core, unlimited / finite / finite+live-token.

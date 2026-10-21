@@ -3,7 +3,7 @@
 Historical review through **scalar.112-dev**, 2026-10-19. Later development
 cleanup is recorded in [the first receipt](bench/Experiments/PostRc1Simplification-20261020/README.md)
 and [the second receipt](bench/Experiments/SecondSimplification-20261020/README.md).
-The staged common release is [0.4.0-rc.1](artifacts/utf8regex-0.4.0-rc.1-20261020/HANDOFF.md);
+The staged common release is [0.4.0-rc.1](bench/Experiments/ReleaseCandidate-20261020/release.json);
 source is 0.4.0-rc.2-dev. Coverage/gate statements below describe that historical
 checkpoint; common public construction controls have since landed. Original
 receipts retain their revisions and are not requalified by this page.
