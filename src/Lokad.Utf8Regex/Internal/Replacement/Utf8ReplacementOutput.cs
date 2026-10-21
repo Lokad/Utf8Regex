@@ -2,15 +2,7 @@ using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Internal.Replacement;
 
-internal readonly record struct Utf8ReplacementRange(int Start, int Length, int Tag)
-{
-    internal Utf8ReplacementRange(int start, int length)
-        : this(start, length, -1)
-    {
-    }
-
-    internal bool IsSet => Start >= 0;
-}
+internal readonly record struct Utf8ReplacementRange(int Start, int Length);
 
 internal ref struct Utf8ReplacementRangeLedger
 {

@@ -7,8 +7,8 @@ namespace Lokad.Utf8Regex.Tests;
 [Collection(Utf8RuntimeAllocationCollection.Name)]
 public sealed class Utf8ReplacementRangeAdmissionTests
 {
-    // Independent complete modeled extent for a three-int range array.
-    private static ulong Bytes(int count) => count == 0 ? 0 : 32UL + ((12UL * (ulong)count + 15) & ~15UL);
+    // Complete modeled extent uses the actual production range layout.
+    private static ulong Bytes(int count) => count == 0 ? 0 : 32UL + (((ulong)System.Runtime.CompilerServices.Unsafe.SizeOf<Utf8ReplacementRange>() * (ulong)count + 15) & ~15UL);
 
     [Theory]
     [InlineData(0)] [InlineData(16)] [InlineData(2048)]
@@ -24,17 +24,17 @@ public sealed class Utf8ReplacementRangeAdmissionTests
             var ledger = new Utf8ReplacementRangeLedger();
             try
             {
-                for (var i = 0; i < count; i++) ledger.Add(new(i, 1, i), control);
+                for (var i = 0; i < count; i++) ledger.Add(new(i, 1), control);
                 Assert.Equal(7 + Bytes(count), invocation.Ledger.ReservedBytes);
                 var before = GC.GetAllocatedBytesForCurrentThread();
-                var breach = ledger.TryAdd(new(count, 1, count), control);
+                var breach = ledger.TryAdd(new(count, 1), control);
                 var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
                 Assert.Equal(maximum == peak ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkingBytes, breach);
                 Assert.Equal(maximum == peak ? count + 1 : count, ledger.Count);
                 Assert.Equal(7 + Bytes(maximum == peak ? next : count), invocation.Ledger.ReservedBytes);
                 if (maximum == peak) Assert.Equal(peak, invocation.Budget.PeakWorkingBytes);
                 else Assert.Equal(0, allocated);
-                for (var i = 0; i < count; i++) Assert.Equal(new(i, 1, i), ledger[i]);
+                for (var i = 0; i < count; i++) Assert.Equal(new(i, 1), ledger[i]);
             }
             finally { ledger.Dispose(control); }
             Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
@@ -51,9 +51,9 @@ public sealed class Utf8ReplacementRangeAdmissionTests
         Assert.True(baseline.Ledger.TryReserve(13));
         var baselineControl = new Utf8InvocationBufferControl(ref baseline);
         var baselineLedger = new Utf8ReplacementRangeLedger();
-        for (var i = 0; i < count; i++) baselineLedger.Add(new(i, 1, i), baselineControl);
+        for (var i = 0; i < count; i++) baselineLedger.Add(new(i, 1), baselineControl);
         seedSteps = baseline.Budget.Steps;
-        baselineLedger.Add(new(count, 1, count), baselineControl);
+        baselineLedger.Add(new(count, 1), baselineControl);
         totalSteps = baseline.Budget.Steps;
         baselineLedger.Dispose(baselineControl);
         Assert.Equal(13UL, baseline.Ledger.ReservedBytes);
@@ -67,11 +67,11 @@ public sealed class Utf8ReplacementRangeAdmissionTests
             var ledger = new Utf8ReplacementRangeLedger();
             try
             {
-                for (var i = 0; i < count; i++) ledger.Add(new(i, 1, i), control);
+                for (var i = 0; i < count; i++) ledger.Add(new(i, 1), control);
                 Assert.Equal(cutoff == totalSteps ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps,
-                    ledger.TryAdd(new(count, 1, count), control));
+                    ledger.TryAdd(new(count, 1), control));
                 Assert.Equal(cutoff == totalSteps ? count + 1 : count, ledger.Count);
-                for (var i = 0; i < count; i++) Assert.Equal(new(i, 1, i), ledger[i]);
+                for (var i = 0; i < count; i++) Assert.Equal(new(i, 1), ledger[i]);
                 Assert.Equal(13 + Bytes(cutoff == totalSteps ? count * 2 : count), invocation.Ledger.ReservedBytes);
             }
             finally { ledger.Dispose(control); }
@@ -94,20 +94,20 @@ public sealed class Utf8ReplacementRangeAdmissionTests
         var control = new Utf8InvocationBufferControl(ref invocation);
         try
         {
-            for (var i = 0; i < 4096; i++) ledger.Add(new(i, 1, i), control);
+            for (var i = 0; i < 4096; i++) ledger.Add(new(i, 1), control);
             while ((invocation.Budget.Steps & 63) != 61) Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
             var entered = false;
             invocation.CheckpointHook = _ => { entered = true; if (expire) ticks = 50; else source.Cancel(); };
             // Ref-struct borrowed controls cannot be captured by an assertion lambda.
             Exception? failure = null;
-            try { ledger.Add(new(4096, 1, 4096), control); }
+            try { ledger.Add(new(4096, 1), control); }
             catch (Exception error) { failure = error; }
             if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
             else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
             Assert.True(entered);
             Assert.Equal(4096, ledger.Count);
             Assert.Equal(13 + Bytes(4096), invocation.Ledger.ReservedBytes);
-            for (var i = 0; i < 4096; i++) Assert.Equal(new(i, 1, i), ledger[i]);
+            for (var i = 0; i < 4096; i++) Assert.Equal(new(i, 1), ledger[i]);
         }
         finally { ledger.Dispose(control); }
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);

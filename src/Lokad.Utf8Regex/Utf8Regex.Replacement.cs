@@ -455,8 +455,7 @@ public sealed partial class Utf8Regex
     {
         var plan = RewriteWholeLiteralCapturePlan(replacement.Plan);
         if (replacement.IsLiteral ||
-            !Utf8NativeReplacementExecutor.CanExecute(plan) ||
-            plan.ReferencedCaptureGroups.Length > 0)
+            !Utf8NativeReplacementExecutor.CanExecute(plan))
         {
             replaced = [];
             return false;

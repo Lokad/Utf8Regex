@@ -7,11 +7,6 @@ internal static class Utf8CursorReplaceEngine
     internal static byte[] Replace(
         ReadOnlySpan<byte> input,
         ReadOnlySpan<byte> replacement,
-        ref Utf8OperationMatchCursor cursor) => Replace(input, replacement, ref cursor, out _);
-
-    internal static byte[] Replace(
-        ReadOnlySpan<byte> input,
-        ReadOnlySpan<byte> replacement,
         ref Utf8OperationMatchCursor cursor,
         out int replacementCount)
     {

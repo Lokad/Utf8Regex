@@ -25,17 +25,15 @@ public sealed class Utf8ReplacementCacheChargeTests
     {
         const BindingFlags fields = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
         Assert.Equal(5, typeof(Utf8ReplacementPattern).GetFields(fields).Length);
-        Assert.Equal(2, typeof(Utf8ReplacementPlan).GetFields(fields).Length);
+        Assert.Single(typeof(Utf8ReplacementPlan).GetFields(fields));
         Assert.Equal(5, typeof(Utf8ReplacementToken).GetFields(fields).Length);
-        Assert.Equal(5, typeof(Utf8ReplacementInstruction).GetFields(fields).Length);
+        Assert.Equal(4, typeof(Utf8ReplacementInstruction).GetFields(fields).Length);
         var seen = new Dictionary<object, ulong>(ReferenceEqualityComparer.Instance)
         { [value.Pattern] = 48, [value.Plan] = 48 };
         void Text(string? text) { if (text is { Length: > 0 }) seen.TryAdd(text, TextBytes(text)); }
         void Array<T>(T[]? array) { if (array is { Length: > 0 }) seen.TryAdd(array, ArrayBytes<T>(array.Length)); }
         Text(value.OriginalText); Array(value.LiteralUtf8); Array(value.Pattern.Tokens);
         Array((Utf8ReplacementInstruction[])value.Plan.Instructions);
-        var groups = Assert.IsType<int[]>(typeof(Utf8ReplacementPlan).GetField("_referencedCaptureGroups", fields)!.GetValue(value.Plan));
-        Array(groups);
         foreach (var token in value.Pattern.Tokens) { Text(token.Literal); Text(token.ReferenceText); }
         foreach (var instruction in value.Plan.Instructions) { Text(instruction.LiteralText); Array(instruction.LiteralUtf8); }
         return seen.Values.Aggregate(0UL, static (total, bytes) => total + bytes);

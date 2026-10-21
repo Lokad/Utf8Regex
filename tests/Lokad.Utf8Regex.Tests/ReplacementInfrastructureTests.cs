@@ -123,7 +123,7 @@ public sealed class ReplacementInfrastructureTests
         {
             for (var i = 0; i < 24; i++)
             {
-                ledger.Add(new Utf8ReplacementRange(i, 1, 0), new Utf8InvocationBufferControl(ref invocation));
+                ledger.Add(new Utf8ReplacementRange(i, 1), new Utf8InvocationBufferControl(ref invocation));
             }
 
             throw new InvalidOperationException("injected");

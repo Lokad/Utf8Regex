@@ -34,31 +34,12 @@ internal static class Utf8NativeReplacementExecutor
         }
     }
 
-    public static bool TryReplace(
-        ReadOnlySpan<byte> input,
-        Utf8ReplacementPlan plan,
-        ref Utf8OperationMatchCursor cursor,
-        Span<byte> destination,
-        out int bytesWritten)
-    {
-        var ledger = new Utf8ReplacementRangeLedger();
-        try
-        {
-            var outputLength = BuildRanges(input, plan, ref cursor, ref ledger);
-            return TryEmit(input, plan, outputLength, destination, ref ledger, out bytesWritten, cursor.WorkingBufferControl);
-        }
-        finally
-        {
-            ledger.Dispose(cursor.WorkingBufferControl);
-        }
-    }
-
     private static bool CanExecute(Utf8ReplacementInstruction instruction)
     {
         return instruction.Kind switch
         {
             Utf8ReplacementInstructionKind.Literal => true,
-            Utf8ReplacementInstructionKind.Group => instruction.GroupNumber >= 0,
+            Utf8ReplacementInstructionKind.Group => instruction.GroupNumber == 0,
             Utf8ReplacementInstructionKind.WholeMatch => true,
             Utf8ReplacementInstructionKind.LeftPortion => true,
             Utf8ReplacementInstructionKind.RightPortion => true,
@@ -77,25 +58,13 @@ internal static class Utf8NativeReplacementExecutor
         while (cursor.MoveNext())
         {
             var current = cursor.Current;
-            AddSnapshot(plan, current, ref ledger, cursor.WorkingBufferControl);
+            ledger.Add(new Utf8ReplacementRange(current.IndexInBytes, current.LengthInBytes), cursor.WorkingBufferControl);
             outputLength.ReplaceRange(
                 current.LengthInBytes,
                 GetReplacementLength(input, plan, current));
         }
 
         return outputLength;
-    }
-
-    private static void AddSnapshot(
-        Utf8ReplacementPlan plan,
-        Utf8OperationMatch match,
-        ref Utf8ReplacementRangeLedger ledger, scoped Utf8InvocationBufferControl control)
-    {
-        ledger.Add(new Utf8ReplacementRange(match.IndexInBytes, match.LengthInBytes, match.BranchId), control);
-        foreach (var groupNumber in plan.ReferencedCaptureGroups)
-        {
-            ledger.Add(new Utf8ReplacementRange(-1, 0, groupNumber), control);
-        }
     }
 
     private static int GetReplacementLength(
@@ -140,47 +109,19 @@ internal static class Utf8NativeReplacementExecutor
         finally { control.ReleaseWorking(reservation); }
     }
 
-    private static bool TryEmit(
-        ReadOnlySpan<byte> input,
-        Utf8ReplacementPlan plan,
-        Utf8ReplacementOutputLength outputLength,
-        Span<byte> destination,
-        ref Utf8ReplacementRangeLedger ledger,
-        out int bytesWritten, scoped Utf8InvocationBufferControl control)
-    {
-        if (ledger.Count == 0)
-        {
-            return Utf8ReplacementOutput.TryCopyUnchanged(input, destination, out bytesWritten, control);
-        }
-
-        if (outputLength.Value > destination.Length)
-        {
-            bytesWritten = 0;
-            return false;
-        }
-
-        Emit(input, plan, destination, ledger.WrittenRanges, control);
-        bytesWritten = outputLength.Value;
-        return true;
-    }
-
     private static void Emit(
         ReadOnlySpan<byte> input,
         Utf8ReplacementPlan plan,
         Span<byte> destination,
         ReadOnlySpan<Utf8ReplacementRange> ranges, scoped Utf8InvocationBufferControl control)
     {
-        var stride = plan.ReferencedCaptureGroups.Length + 1;
         var sourcePosition = 0;
         var sink = new Utf8ReplacementOutputSink(destination);
-        for (var offset = 0; offset < ranges.Length; offset += stride)
+        foreach (var match in ranges)
         {
-            var snapshot = new Utf8ReplacementMatchSnapshot(
-                ranges[offset],
-                ranges.Slice(offset + 1, stride - 1));
-            sink.AppendSlice(input, sourcePosition, snapshot.Match.Start - sourcePosition, control);
-            AppendReplacement(ref sink, input, plan, snapshot, control);
-            sourcePosition = snapshot.Match.Start + snapshot.Match.Length;
+            sink.AppendSlice(input, sourcePosition, match.Start - sourcePosition, control);
+            AppendReplacement(ref sink, input, plan, match, control);
+            sourcePosition = match.Start + match.Length;
         }
 
         sink.Append(input[sourcePosition..], control);
@@ -190,7 +131,7 @@ internal static class Utf8NativeReplacementExecutor
         ref Utf8ReplacementOutputSink sink,
         ReadOnlySpan<byte> input,
         Utf8ReplacementPlan plan,
-        Utf8ReplacementMatchSnapshot match, scoped Utf8InvocationBufferControl control)
+        Utf8ReplacementRange match, scoped Utf8InvocationBufferControl control)
     {
         foreach (var instruction in plan.Instructions)
         {
@@ -205,22 +146,15 @@ internal static class Utf8NativeReplacementExecutor
 
                 case Utf8ReplacementInstructionKind.Group when instruction.GroupNumber == 0:
                 case Utf8ReplacementInstructionKind.WholeMatch:
-                    sink.AppendSlice(input, match.Match.Start, match.Match.Length, control);
-                    break;
-
-                case Utf8ReplacementInstructionKind.Group:
-                    if (match.TryGetCapture(instruction.GroupNumber, out var capture))
-                    {
-                        sink.AppendSlice(input, capture.Start, capture.Length, control);
-                    }
+                    sink.AppendSlice(input, match.Start, match.Length, control);
                     break;
 
                 case Utf8ReplacementInstructionKind.LeftPortion:
-                    sink.Append(input[..match.Match.Start], control);
+                    sink.Append(input[..match.Start], control);
                     break;
 
                 case Utf8ReplacementInstructionKind.RightPortion:
-                    sink.Append(input[(match.Match.Start + match.Match.Length)..], control);
+                    sink.Append(input[(match.Start + match.Length)..], control);
                     break;
 
                 case Utf8ReplacementInstructionKind.WholeString:
@@ -233,33 +167,4 @@ internal static class Utf8NativeReplacementExecutor
         }
     }
 
-    private readonly ref struct Utf8ReplacementMatchSnapshot
-    {
-        private readonly ReadOnlySpan<Utf8ReplacementRange> _captures;
-
-        internal Utf8ReplacementMatchSnapshot(
-            Utf8ReplacementRange match,
-            ReadOnlySpan<Utf8ReplacementRange> captures)
-        {
-            Match = match;
-            _captures = captures;
-        }
-
-        internal Utf8ReplacementRange Match { get; }
-
-        internal bool TryGetCapture(int groupNumber, out Utf8ReplacementRange capture)
-        {
-            foreach (var candidate in _captures)
-            {
-                if (candidate.Tag == groupNumber && candidate.IsSet)
-                {
-                    capture = candidate;
-                    return true;
-                }
-            }
-
-            capture = default;
-            return false;
-        }
-    }
 }

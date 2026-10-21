@@ -21,6 +21,12 @@ views and enumerator boxes do not each receive a charge. Cache retention uses
 conservative per-program charges and eviction, which can count shared storage
 again. Exact numeric thresholds may change when real work or storage disappears.
 Actual `Unsafe.SizeOf<T>()` queries remain; they perform no unchecked access.
+Replacement plans retain their real instructions without an unused deduplicated
+capture-reference map/vector. Native replacement admits only group zero; other
+captures use the existing owned expansion. Removing capture placeholders, tags
+and lowered syntax flags can reduce construction/instruction/cache charges and
+the working capacity of range staging. Major range/output arrays, growth overlap
+and cumulative result capacity remain admitted using their actual layout.
 Cached Core facades use one conservative 512-byte allowance before allocation,
 with their major children admitted separately. The former field-layout mirror is
 removed. Compared with its 208-byte modeled descriptor, this can cause earlier

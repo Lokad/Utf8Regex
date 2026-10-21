@@ -2,6 +2,12 @@
 
 ## Unreleased development after 0.4.0-rc.1
 
+- Removed unused native replacement capture snapshots, reference maps/vectors
+  and destination forwarding code. Native templates keep group-zero operations;
+  real captures still expand through the owned scalar/template implementations.
+  Removed metadata and smaller ranges can reduce construction, working and cache
+  charges; output/result admission and public replacement semantics remain.
+
 - PCRE2 partial-probe preparation now uses bounded semantic recognition instead
   of serializing whole trees. Literal operands admit storage before acquisition;
   original construction cancellation, deadlines and work/depth limits apply.

@@ -6,14 +6,12 @@ internal readonly struct Utf8ReplacementInstruction
         Utf8ReplacementInstructionKind kind,
         byte[] literalUtf8,
         string literalText,
-        int groupNumber,
-        bool isBraceEnclosed)
+        int groupNumber)
     {
         Kind = kind;
         LiteralUtf8 = literalUtf8;
         LiteralText = literalText;
         GroupNumber = groupNumber;
-        IsBraceEnclosed = isBraceEnclosed;
     }
 
     public Utf8ReplacementInstructionKind Kind { get; }
@@ -23,8 +21,6 @@ internal readonly struct Utf8ReplacementInstruction
     public string LiteralText { get; }
 
     public int GroupNumber { get; }
-
-    public bool IsBraceEnclosed { get; }
 
     internal static Utf8ReplacementInstruction Literal(Utf8ConstructionSession storage, string literalText)
     {
@@ -64,7 +60,7 @@ internal readonly struct Utf8ReplacementInstruction
             offset += width;
         }
         return new Utf8ReplacementInstruction(Utf8ReplacementInstructionKind.Literal, bytes,
-            valid ? literalText : DecodeLiteral(storage, bytes), -1, false);
+            valid ? literalText : DecodeLiteral(storage, bytes), -1);
     }
 
     private static int LiteralChunkLength(ReadOnlySpan<char> text)
@@ -80,21 +76,21 @@ internal readonly struct Utf8ReplacementInstruction
     private static string DecodeLiteral(Utf8ConstructionSession storage, byte[] bytes)
         => storage.Budget.DecodeUtf8(bytes, Encoding.UTF8);
 
-    public static Utf8ReplacementInstruction Group(int groupNumber, bool isBraceEnclosed) =>
-        new(Utf8ReplacementInstructionKind.Group, [], string.Empty, groupNumber, isBraceEnclosed);
+    public static Utf8ReplacementInstruction Group(int groupNumber) =>
+        new(Utf8ReplacementInstructionKind.Group, [], string.Empty, groupNumber);
 
     public static Utf8ReplacementInstruction WholeMatch() =>
-        new(Utf8ReplacementInstructionKind.WholeMatch, [], string.Empty, -1, isBraceEnclosed: false);
+        new(Utf8ReplacementInstructionKind.WholeMatch, [], string.Empty, -1);
 
     public static Utf8ReplacementInstruction LeftPortion() =>
-        new(Utf8ReplacementInstructionKind.LeftPortion, [], string.Empty, -1, isBraceEnclosed: false);
+        new(Utf8ReplacementInstructionKind.LeftPortion, [], string.Empty, -1);
 
     public static Utf8ReplacementInstruction RightPortion() =>
-        new(Utf8ReplacementInstructionKind.RightPortion, [], string.Empty, -1, isBraceEnclosed: false);
+        new(Utf8ReplacementInstructionKind.RightPortion, [], string.Empty, -1);
 
     public static Utf8ReplacementInstruction LastGroup() =>
-        new(Utf8ReplacementInstructionKind.LastGroup, [], string.Empty, -1, isBraceEnclosed: false);
+        new(Utf8ReplacementInstructionKind.LastGroup, [], string.Empty, -1);
 
     public static Utf8ReplacementInstruction WholeString() =>
-        new(Utf8ReplacementInstructionKind.WholeString, [], string.Empty, -1, isBraceEnclosed: false);
+        new(Utf8ReplacementInstructionKind.WholeString, [], string.Empty, -1);
 }

@@ -42,8 +42,7 @@ internal static class Utf8ReplacementPlanLowerer
             Utf8ReplacementTokenKind.Literal => Utf8ReplacementInstruction.Literal(
                 storage, token.Literal ?? string.Empty),
             Utf8ReplacementTokenKind.Group => Utf8ReplacementInstruction.Group(
-                ResolveGroupNumber(storage, token, validGroupNumbers, validGroupNames),
-                token.IsBraceEnclosed),
+                ResolveGroupNumber(storage, token, validGroupNumbers, validGroupNames)),
             Utf8ReplacementTokenKind.WholeMatch => Utf8ReplacementInstruction.WholeMatch(),
             Utf8ReplacementTokenKind.LeftPortion => Utf8ReplacementInstruction.LeftPortion(),
             Utf8ReplacementTokenKind.RightPortion => Utf8ReplacementInstruction.RightPortion(),

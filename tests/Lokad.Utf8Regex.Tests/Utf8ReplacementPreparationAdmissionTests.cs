@@ -238,8 +238,8 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
         Assert.Single(result.Plan.Instructions);
         Assert.Same(result.Plan.Instructions[0].LiteralUtf8, result.LiteralUtf8);
         Assert.Equal("${missing}$00123", System.Text.Encoding.UTF8.GetString(result.LiteralUtf8));
-        var referenced = Create("$7$1$7$12$0", false).Plan.ReferencedCaptureGroups.ToArray();
-        Assert.Equal(new[] { 7, 1, 12 }, referenced);
+        var regex = new Utf8Regex("(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)(k)(l)");
+        Assert.Equal("gaglabcdefghijkl", System.Text.Encoding.UTF8.GetString(regex.Replace("abcdefghijkl"u8, "$7$1$7$12$0")));
     }
 
     [Theory]

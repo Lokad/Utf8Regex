@@ -19,9 +19,8 @@ internal readonly struct Utf8ReplacementRetainedStorage : IUtf8RetainedStorage<s
             + Utf8ConstructionBudget.ArrayBytes<byte>(value.LiteralUtf8.Length)
             + Utf8ConstructionBudget.ObjectBytes<(Utf8ReplacementToken[], bool, bool, bool, bool)>()
             + Utf8ConstructionBudget.ArrayBytes<Utf8ReplacementToken>(value.Pattern.Tokens.Length)
-            + Utf8ConstructionBudget.ObjectBytes<(IReadOnlyList<Utf8ReplacementInstruction>, int[])>()
-            + Utf8ConstructionBudget.ArrayBytes<Utf8ReplacementInstruction>(value.Plan.Instructions.Count)
-            + Utf8ConstructionBudget.ArrayBytes<int>(value.Plan.ReferencedCaptureGroups.Length))) return false;
+            + Utf8ConstructionBudget.ObjectBytes<IReadOnlyList<Utf8ReplacementInstruction>>()
+            + Utf8ConstructionBudget.ArrayBytes<Utf8ReplacementInstruction>(value.Plan.Instructions.Count))) return false;
         foreach (var token in value.Pattern.Tokens)
             if (!Add(Utf8ConstructionBudget.StringBytes(token.Literal?.Length ?? 0)
                 + Utf8ConstructionBudget.StringBytes(token.ReferenceText?.Length ?? 0))) return false;
