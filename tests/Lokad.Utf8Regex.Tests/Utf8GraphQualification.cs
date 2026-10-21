@@ -66,6 +66,11 @@ internal static class Utf8GraphQualification
     internal static ulong MetadataBytes(Type type)
     {
         if (type == typeof(Utf8Regex)) return Utf8Regex.CachedObjectBytes;
+        // These sizes belong to this physical-graph oracle. Production admits
+        // both objects at acquisition without test-only ObjectBytes properties.
+        if (type == typeof(Utf8ExecutionTree)) return Utf8ConstructionBudget.ObjectBytes<Utf8ExecutionNode>();
+        if (type == typeof(Utf8ExecutionNode)) return Utf8ConstructionBudget.ObjectBytes<
+            (Utf8ExecutionNodeKind, System.Text.RegularExpressions.RegexOptions, IReadOnlyList<Utf8ExecutionNode>, object, char, int, int, int)>();
         if (type.GetProperty("ObjectBytes", Static) is { } modeled) return (ulong)modeled.GetValue(null)!;
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Utf8ConstructionReadOnlyMap<,>)) return 64;
         if (typeof(Utf8StructuralVerifierRuntime).IsAssignableFrom(type)) return Utf8StructuralVerifierRuntime.ObjectBytes;
