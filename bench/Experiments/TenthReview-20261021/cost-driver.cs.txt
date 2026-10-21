@@ -1,0 +1,111 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Pcre2;
+using Lokad.Utf8Regex.PythonRe;
+
+var process=Process.GetCurrentProcess();
+var originalAffinity=process.ProcessorAffinity;
+var available=originalAffinity.ToInt64();
+process.ProcessorAffinity=new IntPtr(available & -available);
+try
+{
+    var core=new Utf8Regex("needle",RegexOptions.CultureInvariant);
+    var coreInput=Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("needle ",128)));
+    const string familyPattern="alpha|beta|gamma";
+    var family=new Utf8Regex(familyPattern,RegexOptions.CultureInvariant);
+    var familyInput=Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("alpha x beta y gamma z ",32)));
+    var replacement=new Utf8Regex("cat|dog",RegexOptions.CultureInvariant);
+    var finite=new Utf8Regex("cat|dog",RegexOptions.CultureInvariant,Timeout.InfiniteTimeSpan,
+        new Utf8ResourcePolicy{MaxWorkSteps=1_000_000,MaxDepth=2048,MaxWorkingBytes=16*1024*1024,MaxResultBytes=16*1024*1024});
+    var text=string.Concat(Enumerable.Repeat("cat dog xyz ",64));
+    var input=Encoding.UTF8.GetBytes(text);
+    var oracle=new Regex("cat|dog",RegexOptions.CultureInvariant);
+    var strict=new UTF8Encoding(false,true);
+    var expected=Encoding.UTF8.GetBytes(oracle.Replace(text,"[$&]")).Length;
+    var python=new Utf8PythonRegex("cat|dog");
+    var probe=new Utf8Pcre2Regex("(a)b+");
+    var probeInput="zzabbbzz"u8.ToArray();
+    var lanes=new[]
+    {
+        new Lane("control/core-literal/Count",()=>core.Count(coreInput),128,coreInput.Length,100_000),
+        new Lane("core/literal/Match",()=>core.Match(coreInput).LengthInBytes,6,coreInput.Length,100_000),
+        new Lane("core/family/Count",()=>family.Count(familyInput),96,familyInput.Length,100_000),
+        new Lane("core/family/EnumerateSplits",()=>Split(family,familyInput),97,familyInput.Length,4096),
+        new Lane("core/native-template/Replace",()=>replacement.Replace(input,"[$&]").Length,expected,input.Length,4096),
+        new Lane("core/finite-four/Replace",()=>finite.Replace(input,"[$&]").Length,expected,input.Length,2048),
+        new Lane("python/FindAllToUtf8",()=>python.FindAllToUtf8(input).ScalarValues.Length,128,input.Length,2048),
+        new Lane("pcre2/curated/Probe",()=>probe.Probe(probeInput,Pcre2PartialMode.Soft).Kind==Utf8Pcre2ProbeKind.FullMatch?1:0,1,probeInput.Length,100_000),
+        new Lane("control/predecoded-Regex/ReplaceToUtf8",()=>Encoding.UTF8.GetBytes(oracle.Replace(text,"[$&]")).Length,expected,input.Length,4096),
+        new Lane("control/decode-then-Regex/ReplaceToUtf8",()=>Encoding.UTF8.GetBytes(oracle.Replace(strict.GetString(input),"[$&]")).Length,expected,input.Length,4096),
+    };
+    foreach(var lane in lanes)
+    {
+        if(lane.Action()!=lane.Expected)throw new InvalidOperationException("Incorrect result: "+lane.Id);
+        var warm=Stopwatch.StartNew();long calls=0;
+        do{Run(lane,256);calls+=256;}while(warm.ElapsedMilliseconds<1500 || calls<lane.MinimumCalls);
+        lane.Iterations=lane.MinimumCalls;
+        for(var attempt=0;attempt<5;attempt++)
+        {
+            var sample=Run(lane,lane.Iterations);
+            if(sample.WallMilliseconds>=35)break;
+            lane.Iterations=(int)Math.Clamp(Math.Ceiling(lane.Iterations*45/Math.Max(.01,sample.WallMilliseconds)),lane.MinimumCalls,4_000_000);
+        }
+    }
+    for(var sample=0;sample<5;sample++)
+        foreach(var index in sample%2==0?Enumerable.Range(0,lanes.Length):Enumerable.Range(0,lanes.Length).Reverse())
+            lanes[index].Samples.Add(Run(lanes[index],lanes[index].Iterations));
+
+    var unrelatedPattern=string.Concat(Enumerable.Repeat("a?",64))+"x";
+    var characterPattern="^"+new string('a',1024)+@"\b";
+    var construction=new List<object>();
+    foreach(var (id,factory) in new (string,Func<object>)[]
+    {
+        ("pcre2/unrelated-optional-tree",()=>new Utf8Pcre2Regex(unrelatedPattern)),
+        ("pcre2/character-operand",()=>new Utf8Pcre2Regex(characterPattern)),
+        ("pcre2/curated",()=>new Utf8Pcre2Regex("(a)b+")),
+        ("core/exact-literal",()=>new Utf8Regex("needle",RegexOptions.CultureInvariant)),
+        ("core/literal-family",()=>new Utf8Regex(familyPattern,RegexOptions.CultureInvariant)),
+        ("core/emitted-family",()=>new Utf8Regex(familyPattern,RegexOptions.CultureInvariant|RegexOptions.Compiled)),
+        ("core/construction-plus-first-captured-Replace",()=>new Utf8Regex("(cat)|(dog)",RegexOptions.CultureInvariant).Replace(input,"<$1$2>"))
+    })
+    {
+        var count=id.Contains("emitted")?4:16;
+        for(var i=0;i<count;i++)GC.KeepAlive(factory());
+        var samples=new List<object>();
+        for(var sample=0;sample<5;sample++)
+        {
+            var retained=new object[count];
+            var allocated=GC.GetAllocatedBytesForCurrentThread();var start=Stopwatch.GetTimestamp();
+            for(var i=0;i<count;i++)retained[i]=factory();
+            var ticks=Stopwatch.GetTimestamp()-start;allocated=GC.GetAllocatedBytesForCurrentThread()-allocated;
+            GC.KeepAlive(retained);
+            samples.Add(new{NanosecondsPerOperation=ticks*1e9/Stopwatch.Frequency/count,AllocatedBytesPerOperation=(double)allocated/count,WallMilliseconds=ticks*1000.0/Stopwatch.Frequency});
+        }
+        construction.Add(new{Id=id,InstancesPerSample=count,Samples=samples});
+    }
+    object Identity(Assembly a)=>new{Producer=a.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,Sha256=Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(a.Location)))};
+    Console.WriteLine(JsonSerializer.Serialize(new{AtUtc=DateTime.UtcNow,Runtime=RuntimeInformation.FrameworkDescription,OS=RuntimeInformation.OSDescription,Affinity=process.ProcessorAffinity.ToInt64(),Protocol="One fixed original baseline and identical driver. Default tiers, one logical CPU. Ten public lanes, each warmed through timed loop >=1.5s and fixed call floor; 35ms sample floor/45ms target, five alternating samples. Separate construction: five retained 16-instance samples (emitted four). Both Regex controls materialize UTF8 output. No Status/package qualification. One noise confirmation allowed only if needed.",Core=Identity(typeof(Utf8Regex).Assembly),Pcre2=Identity(typeof(Utf8Pcre2Regex).Assembly),Python=Identity(typeof(Utf8PythonRegex).Assembly),NativeTemplateKind=replacement.Inspection.ExecutionKind.ToString(),ProbeKind=probe.DebugCompiledProgram.PartialProbe.Kind.ToString(),Lanes=lanes.Select(l=>new{l.Id,l.InputBytes,l.Expected,l.Iterations,l.Samples}),Construction=construction},new JsonSerializerOptions{WriteIndented=true}));
+}
+finally{process.ProcessorAffinity=originalAffinity;}
+
+static int Split(Utf8Regex re,byte[] input){var cursor=re.EnumerateSplits(input);var count=0;while(cursor.MoveNext())count++;return count;}
+static Sample Run(Lane lane,int iterations)
+{
+    var allocated=GC.GetAllocatedBytesForCurrentThread();var start=Stopwatch.GetTimestamp();long checksum=0;
+    for(var i=0;i<iterations;i++)checksum+=lane.Action();
+    var ticks=Stopwatch.GetTimestamp()-start;allocated=GC.GetAllocatedBytesForCurrentThread()-allocated;
+    if(checksum!=(long)iterations*lane.Expected)throw new InvalidOperationException("Result changed: "+lane.Id);
+    return new(ticks*1e9/Stopwatch.Frequency/iterations,(double)allocated/iterations,ticks*1000.0/Stopwatch.Frequency,checksum);
+}
+sealed class Lane(string id,Func<int> action,int expected,int inputBytes,int minimumCalls)
+{
+    internal string Id=id;internal Func<int> Action=action;internal int Expected=expected;internal int InputBytes=inputBytes;internal int Iterations;internal int MinimumCalls=minimumCalls;
+    internal List<Sample> Samples=[];
+}
+sealed record Sample(double NanosecondsPerOperation,double AllocatedBytesPerOperation,double WallMilliseconds,long Checksum);

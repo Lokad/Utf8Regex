@@ -1,0 +1,35 @@
+using System.Reflection;
+using System.Text.Json;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Internal;
+using Lokad.Utf8Regex.Pcre2;
+
+var rows=new List<object>();
+foreach(var count in new[]{64,1024,4096})
+foreach(var character in new[]{false,true})
+{
+    var pattern=character?"^"+new string('a',count)+@"\b":string.Concat(Enumerable.Repeat("a?",count))+"x";
+    var request=new Pcre2CompileRequest(pattern,default,default,default,Timeout.InfiniteTimeSpan);
+    var tokens=character?Pcre2CharacterCompiler.Compile(request)!.Program:null;
+    var tree=character?null:Pcre2BacktrackingCompiler.Compile(request)!.SyntaxTree;
+    foreach(var scenario in new[]{"review-one-byte-one-step","canceled-review-phase","bounded-decline-or-byte-refusal","admitted"})
+    {
+        using var cts=new CancellationTokenSource();if(scenario=="canceled-review-phase")cts.Cancel();
+        using var scope=new Utf8ConstructionScope(ulong.MaxValue,scenario=="admitted"?1_000_000ul:1ul,
+            scenario.Contains("review")?1ul:1_000_000ul,256);
+        scope.Budget.CancellationToken=cts.Token;
+        var checkpoints=0;scope.Budget.CheckpointHook=_=>checkpoints++;
+        var initial=GC.GetAllocatedBytesForCurrentThread();
+        string? failure=null;string? kind=null;string? result=null;var payload=0;
+        try
+        {
+            var program=character?Pcre2PartialProbeCompiler.Compile(tokens!,request):Pcre2PartialProbeCompiler.Compile(tree!,request);
+            result=program.Kind.ToString();payload=program.Operands.Sum(x=>x.Length);
+        }
+        catch(Exception ex){failure=ex.GetType().Name;kind=(ex as Utf8ResourceLimitExceededException)?.ResourceKind.ToString();}
+        rows.Add(new{Tokens=count,Character=character,Scenario=scenario,Allocated=GC.GetAllocatedBytesForCurrentThread()-initial,
+            PayloadBytes=payload,Work=scope.Budget.WorkSteps,PeakBytes=scope.Budget.PeakBytes,PeakDepth=scope.Budget.PeakDepth,
+            Checkpoints=checkpoints,Result=result,Failure=failure,ResourceKind=kind});
+    }
+}
+Console.WriteLine(JsonSerializer.Serialize(new{Core=typeof(Utf8Regex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,Scope="Untimed isolated partial preparation after parsing/lowering. Not whole-Compile memory or latency qualification.",Rows=rows},new JsonSerializerOptions{WriteIndented=true}));

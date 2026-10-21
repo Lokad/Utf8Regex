@@ -41,6 +41,15 @@ call with all four finite controls. These different routes disclose a continuing
 operating cost, not a new default or a package-wide overhead qualification.
 Construction medians rose 5–8% while allocations fell. Timing is closed.
 
+The [tenth-review receipt](bench/Experiments/TenthReview-20261021/README.md)
+records bounded partial preparation and removal of replacement metadata/literal
+wrappers. One local comparison needed its single reversed-order confirmation.
+Confirmation public medians increase at most 3.45%, with unchanged affected
+allocations, but moving controls and spreads up to 3.12x prevent an attributed
+speedup or precise equivalence claim. Selected construction allocations fall;
+construction timing is separate and noisy. Timing is closed, snapshots/Status
+are unchanged, and current-package/host costs remain deferred.
+
 ## Frozen scalar.119 package costs
 
 The observations below apply to **Core/PythonRe scalar.119**, producer `ca0c8a6f`.
