@@ -1,0 +1,217 @@
+{
+  "Scope": "Affected Release project built incrementally; matching binaries reused. Focused counts overlap full suite. Final property-only deletion built before measurements; exact final source CI covers all four Release suites on both platforms. No test disabled.",
+  "Source": "cd9844388e970c48a766bcd1275657eb9603784c",
+  "Checks": [
+    {
+      "Log": "artifacts/eleventh-implementation-20261021/focused-release.log",
+      "Sha256": "14B04AC305AC9BFC5B4B14DE632A1D182ED218A8F2688A3B9F51376813009917",
+      "Failed": 0,
+      "Passed": 150,
+      "Skipped": 0,
+      "Total": 150
+    },
+    {
+      "Log": "artifacts/eleventh-implementation-20261021/full-pcre2-release.log",
+      "Sha256": "6CAB7A2E230662E3B52A33C9B414685FE14D22B2AC3FB8412CFE7AAE2B801656",
+      "Failed": 0,
+      "Passed": 5974,
+      "Skipped": 0,
+      "Total": 5974
+    }
+  ],
+  "CI": {
+    "conclusion": "success",
+    "databaseId": 39598950761,
+    "headSha": "cd9844388e970c48a766bcd1275657eb9603784c",
+    "jobs": [
+      {
+        "completedAt": "2026-10-21T12:28:00Z",
+        "conclusion": "success",
+        "databaseId": 119219449031,
+        "name": "tests (ubuntu-latest)",
+        "startedAt": "2026-10-21T12:24:19Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-21T12:24:21Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-21T12:24:20Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-21T12:24:24Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-21T12:24:21Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-21T12:24:37Z",
+            "conclusion": "success",
+            "name": "Setup .NET",
+            "number": 3,
+            "startedAt": "2026-10-21T12:24:24Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-21T12:27:57Z",
+            "conclusion": "success",
+            "name": "Test Release",
+            "number": 4,
+            "startedAt": "2026-10-21T12:24:37Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-21T12:27:58Z",
+            "conclusion": "success",
+            "name": "Publish test log",
+            "number": 5,
+            "startedAt": "2026-10-21T12:27:57Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-21T12:27:58Z",
+            "conclusion": "success",
+            "name": "Post Setup .NET",
+            "number": 9,
+            "startedAt": "2026-10-21T12:27:58Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-21T12:27:58Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 10,
+            "startedAt": "2026-10-21T12:27:58Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-21T12:27:58Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 11,
+            "startedAt": "2026-10-21T12:27:58Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/Lokad/Utf8Regex/actions/runs/39598950761/job/119219449031"
+      },
+      {
+        "completedAt": "2026-10-21T12:29:30Z",
+        "conclusion": "success",
+        "databaseId": 119219449221,
+        "name": "tests (windows-latest)",
+        "startedAt": "2026-10-21T12:24:20Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-21T12:24:23Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-21T12:24:21Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-21T12:24:31Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-21T12:24:23Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-21T12:25:05Z",
+            "conclusion": "success",
+            "name": "Setup .NET",
+            "number": 3,
+            "startedAt": "2026-10-21T12:24:31Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-21T12:29:25Z",
+            "conclusion": "success",
+            "name": "Test Release",
+            "number": 4,
+            "startedAt": "2026-10-21T12:25:05Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-21T12:29:26Z",
+            "conclusion": "success",
+            "name": "Publish test log",
+            "number": 5,
+            "startedAt": "2026-10-21T12:29:25Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-21T12:29:26Z",
+            "conclusion": "success",
+            "name": "Post Setup .NET",
+            "number": 9,
+            "startedAt": "2026-10-21T12:29:26Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-21T12:29:28Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 10,
+            "startedAt": "2026-10-21T12:29:26Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-21T12:29:28Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 11,
+            "startedAt": "2026-10-21T12:29:28Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/Lokad/Utf8Regex/actions/runs/39598950761/job/119219449221"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/Lokad/Utf8Regex/actions/runs/39598950761"
+  },
+  "CILogSha256": "723E01D767292FF75C3609A571916BFF63B52973AA78D10364234E91CF5A25C8",
+  "SourcePreflight": {
+    "Scope": "Untimed existing PE/PDB/source evidence checks only; no measurement or snapshot writes.",
+    "Checkout": "cd9844388e97",
+    "Rows": [
+      {
+        "Name": "Full producer and compiled-source preflight",
+        "Accepted": true,
+        "Error": null
+      }
+    ]
+  },
+  "Verifiers": [
+    {
+      "Command": "--verify-readme-parity-report",
+      "ExitCode": 0,
+      "Log": "artifacts/eleventh-implementation-20261021/verify-readme-parity-report.log",
+      "Sha256": "AF7327FEF829FBB1EDD56CCEC1D8BEDFC4E715096130545D439F2D4234B7D072",
+      "Output": "Verified README.Parity.json against README.Benchmarks.json."
+    },
+    {
+      "Command": "--verify-pcre2-benchmark-markdown",
+      "ExitCode": 0,
+      "Log": "artifacts/eleventh-implementation-20261021/verify-pcre2-benchmark-markdown.log",
+      "Sha256": "E004206D4A2F8D956F505D8687D1700D6BE70A7B2BBD3E1E7208F43DA3A74925",
+      "Output": "PCRE2 benchmark page is current: D:\\code\\utf8regex\\src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md"
+    },
+    {
+      "Command": "--verify-pythonre-benchmark-markdown",
+      "ExitCode": 0,
+      "Log": "artifacts/eleventh-implementation-20261021/verify-pythonre-benchmark-markdown.log",
+      "Sha256": "6B295B1B6B104D80B40AAA080CE84284CBCA407ED0FB0E7A40C77783F8786E0E",
+      "Output": "PythonRe benchmark page is current: D:\\code\\utf8regex\\src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md"
+    }
+  ],
+  "KnownWarnings": "Existing Core/compiler/xUnit warnings remain; the introduced missed-property nullable warning was corrected before final source CI and cost freeze."
+}

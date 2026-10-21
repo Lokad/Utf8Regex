@@ -1,0 +1,19 @@
+using System.Reflection;
+using System.Text.Json;
+using Lokad.Utf8Regex.Pcre2;
+
+var observations = new List<object>();
+foreach (var size in new[] {16, 4096})
+{
+    var regex = new Utf8Pcre2Regex(string.Concat(Enumerable.Repeat("a?", size)) + "x");
+    var program = regex.DebugCompiledProgram;
+    if (program.SyntaxTree is not null) throw new InvalidOperationException("Unused tree is still retained.");
+    if (!regex.IsMatch("x"u8) || regex.Count("x"u8) != 1) throw new InvalidOperationException("Incorrect public result.");
+    observations.Add(new { OptionalNodes=size, PatternLength=regex.Pattern.Length,
+        PartialKind=program.PartialProbe.Kind.ToString(), RetainsSyntaxTree=program.SyntaxTree is not null,
+        Operations=new[] {program.Operations.IsMatch.Kind,program.Operations.Count.Kind,program.Operations.Match.Kind}.Select(kind=>kind.ToString()),
+        IsMatch=regex.IsMatch("x"u8), Count=regex.Count("x"u8) });
+}
+Console.WriteLine(JsonSerializer.Serialize(new {
+    Producer=typeof(Utf8Pcre2Regex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
+    EnumeratorBytes=Utf8Pcre2ValueMatchEnumerator.DebugSizeInBytes, Cases=observations }, new JsonSerializerOptions {WriteIndented=true}));

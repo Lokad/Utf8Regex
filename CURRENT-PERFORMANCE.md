@@ -50,6 +50,14 @@ speedup or precise equivalence claim. Selected construction allocations fall;
 construction timing is separate and noisy. Timing is closed, snapshots/Status
 are unchanged, and current-package/host costs remain deferred.
 
+The [eleventh-review receipt](bench/Experiments/EleventhReview-20261021/README.md)
+records removal of obsolete PCRE2 cursor modes, unused retained trees and name-copy
+collections. Named-slot getters fall 1,104/1,192 → 0 B/call; the x64 cursor falls
+1,632 → 1,576 bytes. The one comparison and its single reversed-order confirmation
+are inconclusive: controls move substantially and some affected timings rise.
+No precise 10% bound or general throughput change is established. Timing is closed;
+actual-package/host cost acceptance remains deferred, with raw results preserved.
+
 ## Frozen scalar.119 package costs
 
 The observations below apply to **Core/PythonRe scalar.119**, producer `ca0c8a6f`.

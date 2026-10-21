@@ -1,0 +1,85 @@
+{
+  "Scope": "Untimed retained object/reference observations, not RSS or whole-call allocation limits.",
+  "Original": [
+    {
+      "OptionalNodes": 16,
+      "PatternLength": 33,
+      "PartialKind": "None",
+      "SyntaxNodes": 34,
+      "NodeReferenceSlots": 17,
+      "Operations": [
+        "Pcre2Slice",
+        "Pcre2Slice",
+        "Pcre2Slice"
+      ],
+      "IsMatch": true,
+      "Count": 1
+    },
+    {
+      "OptionalNodes": 4096,
+      "PatternLength": 8193,
+      "PartialKind": "None",
+      "SyntaxNodes": 8194,
+      "NodeReferenceSlots": 4097,
+      "Operations": [
+        "Pcre2Slice",
+        "Pcre2Slice",
+        "Pcre2Slice"
+      ],
+      "IsMatch": true,
+      "Count": 1
+    }
+  ],
+  "Candidate": {
+    "Producer": "0.4.0-rc.2-dev+cd9844388e970c48a766bcd1275657eb9603784c",
+    "EnumeratorBytes": 1576,
+    "Cases": [
+      {
+        "OptionalNodes": 16,
+        "PatternLength": 33,
+        "PartialKind": "None",
+        "RetainsSyntaxTree": false,
+        "Operations": [
+          "Pcre2Slice",
+          "Pcre2Slice",
+          "Pcre2Slice"
+        ],
+        "IsMatch": true,
+        "Count": 1
+      },
+      {
+        "OptionalNodes": 4096,
+        "PatternLength": 8193,
+        "PartialKind": "None",
+        "RetainsSyntaxTree": false,
+        "Operations": [
+          "Pcre2Slice",
+          "Pcre2Slice",
+          "Pcre2Slice"
+        ],
+        "IsMatch": true,
+        "Count": 1
+      }
+    ]
+  },
+  "OriginalNameCopy": [
+    {
+      "Names": 2,
+      "DestinationLength": 1,
+      "regexBytesPerCall": 112,
+      "matchBytesPerCall": 200,
+      "Checksum": 200,
+      "More": true,
+      "Number": 1
+    },
+    {
+      "Names": 64,
+      "DestinationLength": 1,
+      "regexBytesPerCall": 1104,
+      "matchBytesPerCall": 1192,
+      "Checksum": 200,
+      "More": true,
+      "Number": 1
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Pcre2;
+
+var process = Process.GetCurrentProcess();
+var affinity = process.ProcessorAffinity;
+process.ProcessorAffinity = new IntPtr(affinity.ToInt64() & -affinity.ToInt64());
+try
+{
+    var text = string.Concat(Enumerable.Repeat("abc 😀 xyz ", 64));
+    var input = Encoding.UTF8.GetBytes(text);
+    var sliceInput = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("12-12 😀 7-7 ", 32)));
+    var literal = new Utf8Pcre2Regex("abc");
+    var family = new Utf8Pcre2Regex("(?|(abc)|(xyz))");
+    var slice = new Utf8Pcre2Regex(@"([0-9]+)-\1");
+    var finite = Utf8Pcre2Regex.Create(@"([0-9]+)-\1", default, default,
+        new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 2048,
+            MaxWorkingBytes = 16*1024*1024, MaxResultBytes = 16*1024*1024 }, Timeout.InfiniteTimeSpan);
+    var reset = new Utf8Pcre2Regex(@"abc\K123");
+    var resetInput = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("abc123 😀 ", 64)));
+    var probe = new Utf8Pcre2Regex("(a)b+");
+    var probeInput = "zzabbbzz"u8.ToArray();
+    var names = new Utf8Pcre2Regex("(?J)" + string.Join('|', Enumerable.Repeat("(?<n>a)", 64)));
+    var namesInput = "a"u8.ToArray();
+    var context = names.MatchDetailed(namesInput);
+    var core = new Utf8Regex("abc");
+    var oracle = new Regex("abc", RegexOptions.CultureInvariant);
+    var strict = new UTF8Encoding(false, true);
+    var expectedLiteral = Enumerate(literal, input);
+    var expectedFamily = Enumerate(family, input);
+    var expectedSlice = Enumerate(slice, sliceInput);
+    var expectedReset = Enumerate(reset, resetInput);
+    if (expectedLiteral != 64*3 || expectedFamily != 128*3 || expectedSlice != 32*8 || expectedReset != 64*3)
+        throw new InvalidOperationException("Unexpected frozen public ranges.");
+    var lanes = new[]
+    {
+        new Lane("pcre2/literal/Enumerate", () => Enumerate(literal,input), expectedLiteral,input.Length,4096),
+        new Lane("pcre2/branch-reset/Enumerate", () => Enumerate(family,input), expectedFamily,input.Length,2048),
+        new Lane("pcre2/slice/Enumerate", () => Enumerate(slice,sliceInput), expectedSlice,sliceInput.Length,2048),
+        new Lane("pcre2/slice-finite-four/Enumerate", () => Enumerate(finite,sliceInput), expectedSlice,sliceInput.Length,1024),
+        new Lane("pcre2/reset/Enumerate", () => Enumerate(reset,resetInput), expectedReset,resetInput.Length,2048),
+        new Lane("pcre2/curated/Probe", () => probe.Probe(probeInput,Pcre2PartialMode.Soft).Kind==Utf8Pcre2ProbeKind.FullMatch?1:0,1,probeInput.Length,100_000),
+        new Lane("pcre2/regex/CopyNumbersForName", () => CopyNames(names),1,0,100_000),
+        new Lane("pcre2/context/CopyNumbersForName", null,1,0,100_000),
+        new Lane("control/core-literal/Count", () => core.Count(input),64,input.Length,100_000),
+        new Lane("control/predecoded-Regex/Count", () => oracle.Count(text),64,input.Length,100_000),
+        new Lane("control/decode-then-Regex/Count", () => oracle.Count(strict.GetString(input)),64,input.Length,100_000),
+    };
+    foreach (var lane in lanes)
+    {
+        if ((lane.Action is { } action ? action() : CopyContext(in context))!=lane.Expected) throw new InvalidOperationException("Wrong result: "+lane.Id);
+        var warm=Stopwatch.StartNew(); long calls=0;
+        do { Run(lane,256,in context); calls+=256; } while(warm.ElapsedMilliseconds<1500 || calls<lane.MinimumCalls);
+        lane.Iterations=lane.MinimumCalls;
+        for(var attempt=0;attempt<5;attempt++)
+        {
+            var sample=Run(lane,lane.Iterations,in context);
+            if(sample.WallMilliseconds>=35) break;
+            lane.Iterations=(int)Math.Clamp(Math.Ceiling(lane.Iterations*45/Math.Max(.01,sample.WallMilliseconds)),lane.MinimumCalls,4_000_000);
+        }
+    }
+    for(var sample=0;sample<5;sample++)
+        foreach(var index in sample%2==0?Enumerable.Range(0,lanes.Length):Enumerable.Range(0,lanes.Length).Reverse())
+            lanes[index].Samples.Add(Run(lanes[index],lanes[index].Iterations,in context));
+    object Identity(Assembly assembly) => new {
+        Producer=assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
+        Sha256=Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))) };
+    Console.WriteLine(JsonSerializer.Serialize(new {
+        AtUtc=DateTime.UtcNow, Runtime=RuntimeInformation.FrameworkDescription, OS=RuntimeInformation.OSDescription,
+        Affinity=process.ProcessorAffinity.ToInt64(), Core=Identity(typeof(Utf8Regex).Assembly), Pcre2=Identity(typeof(Utf8Pcre2Regex).Assembly),
+        Protocol="Fixed original baseline; identical driver DLL bytes; default tiers; one CPU; >=1.5s warm per lane plus call floors; calibrated 35ms floor/45ms target; five alternating samples; 60s child cap. Finite-four: 1M work, depth 2048, working/result 16MiB, infinite timeout/no token. One noise confirmation maximum. No Status/package qualification.",
+        EnumeratorBytes=Utf8Pcre2ValueMatchEnumerator.DebugSizeInBytes,
+        Routes=new { Literal=literal.DebugCompiledProgram.Operations.Enumerate.Kind.ToString(),
+            Family=family.DebugCompiledProgram.Operations.Enumerate.Kind.ToString(), Slice=slice.DebugCompiledProgram.Operations.Enumerate.Kind.ToString(),
+            Probe=probe.DebugCompiledProgram.PartialProbe.Kind.ToString() },
+        Lanes=lanes.Select(l=>new{l.Id,l.InputBytes,l.Expected,l.Iterations,l.Samples}) },new JsonSerializerOptions{WriteIndented=true}));
+}
+finally { process.ProcessorAffinity=affinity; }
+
+static int Enumerate(Utf8Pcre2Regex regex,byte[] input)
+{
+    var cursor=regex.EnumerateMatches(input);var total=0;
+    while(cursor.MoveNext())
+    {
+        var current=cursor.Current;
+        if(!current.Success || !current.IsUtf8SliceWellFormed || !current.HasUtf16Projection) throw new InvalidOperationException("Invalid public range.");
+        total+=current.EndOffsetInBytes-current.StartOffsetInBytes;
+    }
+    return total;
+}
+static int CopyNames(Utf8Pcre2Regex regex)
+{
+    Span<int> destination=stackalloc int[1];
+    var count=regex.CopyNumbersForName("n",destination,out var more);
+    if(!more || destination[0]!=1) throw new InvalidOperationException("Invalid named slots.");
+    return count;
+}
+static int CopyContext(scoped in Utf8Pcre2MatchContext context)
+{
+    Span<int> destination=stackalloc int[1];
+    var count=context.CopyNumbersForName("n",destination,out var more);
+    if(!more || destination[0]!=1) throw new InvalidOperationException("Invalid named slots.");
+    return count;
+}
+static Sample Run(Lane lane,int iterations,scoped in Utf8Pcre2MatchContext context)
+{
+    var allocated=GC.GetAllocatedBytesForCurrentThread();var start=Stopwatch.GetTimestamp();long checksum=0;
+    if(lane.Action is { } action)
+        for(var i=0;i<iterations;i++) checksum+=action();
+    else
+        for(var i=0;i<iterations;i++) checksum+=CopyContext(in context);
+    var ticks=Stopwatch.GetTimestamp()-start;allocated=GC.GetAllocatedBytesForCurrentThread()-allocated;
+    if(checksum!=(long)iterations*lane.Expected)throw new InvalidOperationException("Result changed: "+lane.Id);
+    return new(ticks*1e9/Stopwatch.Frequency/iterations,(double)allocated/iterations,ticks*1000.0/Stopwatch.Frequency,checksum);
+}
+sealed class Lane(string id,Func<int>? action,int expected,int inputBytes,int minimumCalls)
+{
+    internal string Id=id;internal Func<int>? Action=action;internal int Expected=expected;internal int InputBytes=inputBytes;
+    internal int Iterations;internal int MinimumCalls=minimumCalls;internal List<Sample> Samples=[];
+}
+sealed record Sample(double NanosecondsPerOperation,double AllocatedBytesPerOperation,double WallMilliseconds,long Checksum);
