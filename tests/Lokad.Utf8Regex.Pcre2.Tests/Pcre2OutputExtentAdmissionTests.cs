@@ -41,7 +41,7 @@ public sealed class Pcre2OutputExtentAdmissionTests
     }
 
     [Theory]
-    [InlineData(0, 48UL)] [InlineData(1, 272UL)] [InlineData(17, 2160UL)]
+    [InlineData(0, 48UL)] [InlineData(1, 208UL)] [InlineData(17, 2032UL)]
     public void LiteralDriverAdmitsFinalOutputAlongsideLiveRanges(int count, ulong peak)
     {
         var input = count == 0 ? "z"u8.ToArray() : Enumerable.Repeat((byte)'a', count).ToArray();
