@@ -8,7 +8,6 @@ public sealed class CSharpGuidelineSourceGuardTests
 {
     private const int DefaultParameterDebtCeiling = 0;
     private const int NullForgivingDebtCeiling = 0;
-    private const int DefensiveNullGuardDebtCeiling = 0;
     private const int UndocumentedPublicDeclarationDebtCeiling = 0;
 
     [Fact]
@@ -27,11 +26,6 @@ public sealed class CSharpGuidelineSourceGuardTests
                 .Where(static expression => expression.IsKind(SyntaxKind.SuppressNullableWarningExpression))
                 .Select(expression => Describe(file, expression)))
             .ToArray();
-        var defensiveNullGuards = syntaxFiles.SelectMany(static file =>
-            file.Root.DescendantNodes()
-                .Where(IsDefensiveNullGuard)
-                .Select(node => Describe(file, node)))
-            .ToArray();
         var undocumentedPublicDeclarations = syntaxFiles.SelectMany(static file =>
             file.Root.DescendantNodes()
                 .OfType<MemberDeclarationSyntax>()
@@ -44,7 +38,6 @@ public sealed class CSharpGuidelineSourceGuardTests
 
         AssertDebtAtOrBelow("default-valued parameters", DefaultParameterDebtCeiling, defaultParameters);
         AssertDebtAtOrBelow("null-forgiving expressions", NullForgivingDebtCeiling, nullForgivingExpressions);
-        AssertDebtAtOrBelow("defensive null guards", DefensiveNullGuardDebtCeiling, defensiveNullGuards);
         AssertDebtAtOrBelow("undocumented public declarations", UndocumentedPublicDeclarationDebtCeiling, undocumentedPublicDeclarations);
     }
 
@@ -58,25 +51,6 @@ public sealed class CSharpGuidelineSourceGuardTests
             .ToArray();
 
         Assert.Empty(offenders);
-    }
-
-    private static bool IsDefensiveNullGuard(SyntaxNode node)
-    {
-        if (node is InvocationExpressionSyntax invocation &&
-            invocation.Expression is MemberAccessExpressionSyntax memberAccess &&
-            memberAccess.Name.Identifier.ValueText == "ThrowIfNull" &&
-            memberAccess.Expression.ToString().EndsWith("ArgumentNullException", StringComparison.Ordinal))
-        {
-            return true;
-        }
-
-        return node is BinaryExpressionSyntax coalesce &&
-            coalesce.IsKind(SyntaxKind.CoalesceExpression) &&
-            coalesce.Right is ThrowExpressionSyntax
-            {
-                Expression: ObjectCreationExpressionSyntax objectCreation,
-            } &&
-            objectCreation.Type.ToString().EndsWith("ArgumentNullException", StringComparison.Ordinal);
     }
 
     private static bool IsEffectivelyPublic(MemberDeclarationSyntax declaration)

@@ -94,7 +94,7 @@ internal static partial class PythonReBenchmarkReporter
             path => Path.GetFullPath(path).Equals(symbols,
                 OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) && File.Exists(path)
                 ? File.OpenRead(path) : null,
-            out var provider, out _))
+            out var provider, out _) || provider is null)
             throw new InvalidOperationException($"PythonRe qualification requires the matching portable PDB beside {assembly.GetName().Name}. Rebuild matching Release binaries.");
         using (provider)
         {

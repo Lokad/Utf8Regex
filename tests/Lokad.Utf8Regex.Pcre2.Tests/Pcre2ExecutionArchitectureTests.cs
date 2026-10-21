@@ -72,8 +72,8 @@ public sealed class Pcre2ExecutionArchitectureTests
         var direct = Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(delegated.Operations.IsMatch);
         var primary = Assert.IsType<Pcre2Utf8ProgramSlot>(delegated.PrimaryUtf8);
         Assert.Same(primary.Regex, direct.Regex);
-        Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(special.Operations.IsMatch);
-        Assert.IsType<Pcre2EmptyUtf8ProgramSlot>(special.PrimaryUtf8);
+        var finite = Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(special.Operations.IsMatch);
+        Assert.Same(finite.Regex, Assert.IsType<Pcre2Utf8ProgramSlot>(special.PrimaryUtf8).Regex);
         Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiSet, special.CandidateSearch.Kind);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(special.Operations.Match);
     }
