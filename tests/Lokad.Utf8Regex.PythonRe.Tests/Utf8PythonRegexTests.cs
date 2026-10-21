@@ -258,25 +258,25 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
-    public void BackreferencesCanUseUtf8RegexBackend()
+    public void BackreferencesUseOwnedScalarDiscovery()
     {
         var named = new Utf8PythonRegex(@"(?P<word>foo)-(?P=word)");
         var numeric = new Utf8PythonRegex(@"(ab)\1");
 
-        Assert.True(named.DebugUsesUtf8RegexBackend);
-        Assert.True(numeric.DebugUsesUtf8RegexBackend);
+        Assert.False(named.DebugUsesUtf8RegexBackend);
+        Assert.False(numeric.DebugUsesUtf8RegexBackend);
         Assert.True(named.Search("xx foo-foo yy"u8).Success);
         Assert.True(numeric.Search("zzababzz"u8).Success);
     }
 
     [Fact]
-    public void AtomicAndPossessiveFormsCanUseUtf8RegexBackend()
+    public void AtomicAndPossessiveFormsUseOwnedScalarDiscovery()
     {
         var atomic = new Utf8PythonRegex(@"(?>ab)c");
         var possessive = new Utf8PythonRegex(@"a++b");
 
-        Assert.True(atomic.DebugUsesUtf8RegexBackend);
-        Assert.True(possessive.DebugUsesUtf8RegexBackend);
+        Assert.False(atomic.DebugUsesUtf8RegexBackend);
+        Assert.False(possessive.DebugUsesUtf8RegexBackend);
         Assert.True(atomic.Search("xxabcyy"u8).Success);
         Assert.True(possessive.Search("xxaaabyy"u8).Success);
     }
@@ -523,7 +523,7 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
-    public void DetailedApisRemainCorrectWithUtf8RegexBackend()
+    public void DetailedApisRemainCorrectWithOwnedScalarDiscovery()
     {
         var regex = new Utf8PythonRegex(@"(?P<word>foo)-(?P=word)");
 
@@ -531,7 +531,7 @@ public sealed class Utf8PythonRegexTests
         var match = regex.MatchDetailed("foo-foo yy"u8);
         var full = regex.FullMatchDetailed("foo-foo"u8);
 
-        Assert.True(regex.DebugUsesUtf8RegexBackend);
+        Assert.False(regex.DebugUsesUtf8RegexBackend);
         Assert.True(search.Success);
         Assert.True(match.Success);
         Assert.True(full.Success);

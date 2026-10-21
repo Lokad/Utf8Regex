@@ -177,7 +177,7 @@ public sealed partial class Utf8PythonRegex
         var parser = PythonReParser.Create(pattern);
         var parseResult = parser.Parse(options);
         _canMatchEmpty = PythonReTranslator.CanMatchEmpty(parseResult.Root, parseResult);
-        _canUseUtf8IterationFastPath = PythonReTranslator.CanUseUtf8IterationFastPath(parseResult.Root);
+        var iterationSafe = PythonReTranslator.CanUseUtf8IterationFastPath(parseResult.Root);
         _optionalExactCaptureFindAllValue = !_canMatchEmpty &&
             parseResult.CaptureGroupCount == 1 &&
             PythonReTranslator.TryGetOptionalExactCaptureFindAllPlan(
@@ -219,7 +219,7 @@ public sealed partial class Utf8PythonRegex
         _asciiDotAllFullMatchPrefix = asciiDotAllFullMatchPrefix;
         _asciiDotAllFullMatchSuffix = asciiDotAllFullMatchSuffix;
         var isExactLiteral = PythonReTranslator.IsExactLiteral(parseResult.Root);
-        var prepareCore = !_canMatchEmpty || _canUseUtf8IterationFastPath;
+        var prepareCore = !_canMatchEmpty || iterationSafe;
         var translation = PythonReTranslator.Translate(parseResult, prepareCore);
         _scalarProgram = PythonReScalarCompiler.Compile(parseResult, translation);
         // Failed preparation is retryable: a caller's cancellation must not
@@ -233,18 +233,31 @@ public sealed partial class Utf8PythonRegex
         // lookup without retaining the rest of the parse tree.
         _namedGroups = parseResult.NamedGroups;
 
-        // Nullable programs do not use Core start hints or nonempty literal
-        // result lanes. If iteration eligibility also declines Core, every
-        // operation already uses the owned Python program or independent kernels.
+        // Native preparation is optional. Nullable expressions can still have
+        // an empty-literal value route; other roots need an actual consumer.
         if (prepareCore)
         {
             try
             {
                 var core = new Utf8Regex(translation.NativePattern, translation.NativeRegexOptions, MatchTimeout);
+                // Grammar safety alone does not supply an iterator: captured or
+                // nullable profiles use Python discovery, and generic Core scalar
+                // enumeration has no native benefit over that reusable cursor.
+                _canUseUtf8IterationFastPath = iterationSafe && !_canMatchEmpty &&
+                    _scalarProgram.GroupCount == 0 &&
+                    (core.Inspection.ExecutionKind != NativeExecutionKind.FallbackRegex ||
+                        core.Inspection.PreparedRegex.FallbackDirectFamily.HasValue);
+                _canUseZeroOffsetUtf8SearchValueFastPath = isExactLiteral &&
+                    core.Inspection.ExecutionKind is
+                        NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal;
+                _canUseZeroOffsetUtf8ValueFastPath = _canUseZeroOffsetUtf8SearchValueFastPath &&
+                    core.Inspection.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral;
                 // Preparation can discover useful native result lanes or exact
                 // start hints. Discard roots declined by every current consumer;
                 // their transient construction remains conservatively admitted.
-                if (_canUseUtf8IterationFastPath || core.CanFindNativeLiteralForResult ||
+                if (_canUseUtf8IterationFastPath || _canUseZeroOffsetUtf8SearchValueFastPath ||
+                    _repeatedExactFindAllString is not null ||
+                    core.CanFindNativeLiteralForResult ||
                     PythonReScalarMatchState.CanUseCandidateRegex(_scalarProgram, core))
                     _utf8Regex = core;
             }
@@ -254,13 +267,6 @@ public sealed partial class Utf8PythonRegex
             }
         }
 
-        _canUseZeroOffsetUtf8SearchValueFastPath =
-            isExactLiteral &&
-            _utf8Regex?.Inspection.ExecutionKind is
-                NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal;
-        _canUseZeroOffsetUtf8ValueFastPath =
-            _canUseZeroOffsetUtf8SearchValueFastPath &&
-            _utf8Regex?.Inspection.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral;
         ResourcePolicy = resourcePolicy;
         _replacementPlanCache = Utf8BoundedPreparationCache<string, PythonReReplacementPlan>.CreateRetained(ReplacementPlanCacheCapacity, StringComparer.Ordinal);
         construction.Complete();
@@ -327,8 +333,10 @@ public sealed partial class Utf8PythonRegex
 
     internal bool DebugUsesRepeatedExactStringFindAllFastPath => _repeatedExactFindAllString is not null;
 
-    internal bool DebugUsesCountedRepeatedExactStringFindAllFastPath =>
+    private bool CanUseCountedExactLiteralFindAll =>
         _repeatedExactFindAllString is not null && _utf8Regex is not null;
+
+    internal bool DebugUsesCountedRepeatedExactStringFindAllFastPath => CanUseCountedExactLiteralFindAll;
 
     internal bool DebugUsesAsciiLiteralPrefixDigitMatchFastPath =>
         _asciiLiteralPrefixDigitMatchPrefix is not null;

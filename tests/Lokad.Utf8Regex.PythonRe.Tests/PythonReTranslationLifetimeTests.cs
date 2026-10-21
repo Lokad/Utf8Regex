@@ -11,6 +11,13 @@ public sealed class PythonReTranslationLifetimeTests
     [InlineData(@"\d+", "123")]
     [InlineData(@"\s+", " \t")]
     [InlineData(@"prefix\w+", "prefixalpha")]
+    [InlineData(@"([0-9]+)", "123")]
+    [InlineData(@"(?P<n>[0-9]+)", "123")]
+    [InlineData(@"([a-z]+)", "alpha")]
+    [InlineData(@"(?P<word>[a-z]+)", "alpha")]
+    [InlineData(@"(ab[0-9]{2})", "ab12")]
+    [InlineData(@"[0-9]+", "123")]
+    [InlineData(@"foo(?=bar)bar", "foobar")]
     public void DeclinedCorePreparationIsNotRetained(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
@@ -32,7 +39,7 @@ public sealed class PythonReTranslationLifetimeTests
     [InlineData("😀", "😀")]
     [InlineData("foo|bar", "foo")]
     [InlineData(@"(?P<word>needle)", "needle")]
-    public void LiveNativeResultAndCandidatePreparationsRemain(string pattern, string text)
+    public void LiveNativeResultPreparationsRemain(string pattern, string text)
     {
         var regex = new Utf8PythonRegex(pattern);
         var input = Encoding.UTF8.GetBytes(text);
@@ -40,6 +47,30 @@ public sealed class PythonReTranslationLifetimeTests
         Assert.True(regex.FullMatch(input).Success);
         Assert.Equal(1, regex.Count(input));
         Assert.True(regex.SearchDetailedData(input).Success);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RealLookaheadCandidateRemainsWithoutClaimingLiteralResultEligibility(bool finite)
+    {
+        var policy = finite
+            ? new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 1024,
+                MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 }
+            : default;
+        var regex = new Utf8PythonRegex("needle(?=bar)", PythonReCompileOptions.None,
+            Timeout.InfiniteTimeSpan, policy);
+        const BindingFlags fields = BindingFlags.Instance | BindingFlags.NonPublic;
+        var core = Assert.IsType<Utf8Regex>(typeof(Utf8PythonRegex).GetField("_utf8Regex", fields)!.GetValue(regex));
+        var program = Assert.IsType<Lokad.Utf8Regex.Internal.Execution.Utf8SliceProgram>(
+            typeof(Utf8PythonRegex).GetField("_scalarProgram", fields)!.GetValue(regex));
+        Assert.False(core.CanFindNativeLiteralForResult);
+        Assert.True(PythonReScalarMatchState.CanUseCandidateRegex(program, core));
+        Assert.Equal("needle", regex.SearchToString("xxneedlebar"u8));
+        Assert.Equal(1, regex.Count("xxneedlebar"u8));
+        Assert.Equal(["needle"], regex.FindAllToStrings("xxneedlebar"u8).ScalarValues);
+        Assert.False(regex.IsMatch("needlex"u8));
+        Assert.False(regex.FullMatch("needlebar"u8).Success);
     }
 
     [Fact]
