@@ -77,25 +77,14 @@ public sealed class Utf8NumericCacheKeyTests
         cache.Clear(); Assert.Equal(0UL, cache.PayloadBytes);
     }
 
-    [Fact]
-    public void ValueReentrancyCannotPublishAnOldPendingKeyAfterClear()
-    {
-        var cache = Utf8BoundedPreparationCache<string, string>.CreateRetained(2, StringComparer.Ordinal);
-        var storage = new TextStorage(cache);
-        Assert.Equal("retained", cache.GetOrAdd("key", "retained", static (_, value) => value,
-            default(Utf8ConstructionTextNoControl), storage));
-        Assert.Equal(0, cache.Count); Assert.Equal(0UL, cache.PayloadBytes);
-    }
-
-    private readonly struct TextStorage(Utf8BoundedPreparationCache<string, string>? clear = null)
-        : IUtf8RetainedStorage<string, string>
+    private readonly struct TextStorage : IUtf8RetainedStorage<string, string>
     {
         public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
         public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
         public bool TryGetValueCharge<TControl>(string value, ulong maximum, TControl control, out ulong charge)
             where TControl : struct, IUtf8ConstructionTextControl
         {
-            control.Check(); clear?.Clear();
+            control.Check();
             charge = Utf8ConstructionBudget.StringBytes(value.Length);
             return charge <= maximum;
         }

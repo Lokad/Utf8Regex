@@ -16,6 +16,8 @@ internal enum Utf8RetainedStorageScope : byte
     RootsAndBoundedDescendants = 2,
 }
 
+// Cache probes may throw for interruption/admission, but cannot mutate the
+// owner cache. They are closed library implementations, not host callbacks.
 internal interface IUtf8RetainedStorage<TKey, TValue>
 {
     Utf8RetainedStorageScope Scope { get; }

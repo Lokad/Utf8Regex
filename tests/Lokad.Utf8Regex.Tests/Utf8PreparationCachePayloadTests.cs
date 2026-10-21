@@ -106,7 +106,7 @@ public sealed class Utf8PreparationCachePayloadTests
     }
 
     [Fact]
-    public void OriginalFactoryFailureReleasesKeyAndManifest()
+    public void OriginalFactoryFailureReleasesPendingCharge()
     {
         var cache = Create(2, 4096);
         var failure = new InvalidOperationException("original");
@@ -179,41 +179,6 @@ public sealed class Utf8PreparationCachePayloadTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void ClearFromAnyPostFactoryControlCannotResurrectAStage(bool full)
-    {
-        var probeCache = Create(full ? 1 : 2, 4096);
-        if (full) _ = Add(probeCache, "old", new byte[100]);
-        var probe = new ClearProbe(probeCache, int.MaxValue);
-        _ = probeCache.GetOrAdd("new", probe, static (_, state) => { state.Armed = true; return new byte[100]; },
-            new ClearControl(probe), default(ByteStorage));
-        Assert.True(probe.Checks > 0);
-        for (var cutoff = 1; cutoff <= probe.Checks; cutoff++)
-        {
-            var cache = Create(full ? 1 : 2, 4096);
-            if (full) _ = Add(cache, "old", new byte[100]);
-            var state = new ClearProbe(cache, cutoff);
-            Assert.Equal(100, cache.GetOrAdd("new", state,
-                static (_, item) => { item.Armed = true; return new byte[100]; }, new ClearControl(state), default(ByteStorage)).Length);
-            Assert.True(state.Cleared); Assert.Equal(0, cache.Count); Assert.Equal(0ul, cache.PayloadBytes);
-        }
-    }
-
-    private sealed class ClearProbe(Utf8BoundedPreparationCache<string, byte[]> cache, int cutoff)
-    {
-        internal bool Armed;
-        internal int Checks;
-        internal bool Cleared;
-        internal void Check()
-        {
-            if (!Armed) return;
-            if (++Checks == cutoff) { cache.Clear(); Cleared = true; }
-        }
-    }
-    private readonly struct ClearControl(ClearProbe probe) : IUtf8ConstructionTextControl
-    { public void Check() => probe.Check(); }
-
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
     public void EntryChargeBoundaryAdmitsOrDeclinesWithoutTruncatingTheValue(bool exact)
     {
         var charge = Utf8ConstructionBudget.StringBytes(1) + Utf8ConstructionBudget.ArrayBytes<byte>(100);
@@ -237,7 +202,6 @@ public sealed class Utf8PreparationCachePayloadTests
         Assert.Equal(1, cache.Count); Assert.Equal(charge, cache.PayloadBytes);
         Assert.Same(first, second); Assert.Same(shared, Add(cache, "b", new byte[1000]));
         cache.Clear(); Assert.Equal(42, first[99]); Assert.Equal(42, second[99]);
-        Assert.Null(cache.GetType().GetField("_payloadLedger", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance));
     }
 
     [Fact]

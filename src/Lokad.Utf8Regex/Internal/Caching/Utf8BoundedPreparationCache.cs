@@ -24,7 +24,6 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
     private long _generation;
     private readonly ulong _maximumPayloadBytes;
     private ulong _payloadBytes;
-    private long _revision;
     private readonly Utf8RetainedStorageScope _storageScope;
 
     private Utf8BoundedPreparationCache(IEqualityComparer<TKey> comparer, int capacity, ulong maximumMetadataBytes,
@@ -32,7 +31,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
     { _comparer = comparer; _capacity = capacity; _maximumMetadataBytes = maximumMetadataBytes; _maximumPayloadBytes = maximumPayloadBytes; _storageScope = storageScope; }
 
     internal static ulong ObjectBytes => Utf8ConstructionBudget.ObjectBytes<
-        (CacheEntry?, CacheEntry?, IEqualityComparer<TKey>, int, int, ulong, long, ulong, ulong, long, Utf8RetainedStorageScope)>();
+        (CacheEntry?, CacheEntry?, IEqualityComparer<TKey>, int, int, ulong, long, ulong, ulong, Utf8RetainedStorageScope)>();
     internal static ulong EntryBytes => Utf8ConstructionBudget.ObjectBytes<
         (TKey, ValueTuple<TValue>, Exception?, CacheEntry?, int, int, int, ulong)>();
     private ulong BaseMetadataBytes => ObjectBytes;
@@ -84,12 +83,13 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
             {
                 if (value < _capacity) _generation++;
                 _capacity = value;
-                _revision++;
                 while (_count > value && _first is { } first) Remove(first);
             }
         }
     }
 
+    // Controls, storage probes and key comparers are closed non-mutating
+    // implementations. Factories alone execute outside the owner lock.
     internal TValue GetOrAdd<TState, TControl, TStorage>(TKey key, TState state,
         Func<TKey, TState, TValue> factory, TControl control, TStorage storage)
         where TControl : struct, IUtf8ConstructionTextControl
@@ -128,8 +128,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
                 {
                     entry = Acquire(key, default, null, 0, Environment.CurrentManagedThreadId, hash, keyCharge);
                     control.Check();
-                    if (_generation != generation || !CanAdd() || Find(key, hash, control) is not null ||
-                        !PublishCharge(entry, null, keyCharge, false, generation, control))
+                    if (!PublishCharge(entry, null, keyCharge, false, generation, control))
                         entry = null;
                 }
             }
@@ -155,17 +154,6 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
                     var charge = CollectCharge(keyCharge, value, storage, control, out var fits);
                     if (!fits) return Complete(preparation, value);
                     var completed = Acquire(key, new(value), null, 1, 0, hash, charge);
-                    control.Check();
-                    if (_generation != generation) return Complete(preparation, value);
-                    existing = Find(key, hash, control);
-                    if (existing is not null) return Read(existing, control);
-                    victim = null;
-                    if (!CanAdd())
-                    {
-                        victim = _first;
-                        while (victim is not null && victim.Status == 0) { control.Check(); victim = victim.Next; }
-                        if (victim is null) return Complete(preparation, value);
-                    }
                     _ = PublishCharge(completed, null, charge, true, generation, control);
                 }
                 return Complete(preparation, value);
@@ -235,52 +223,45 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
         return false;
     }
 
-    // Plan eviction with scalar totals. No graph union, manifest acquisition or
-    // reference-count rollback. Keep the revision check because a diagnostic
-    // control may reenter Clear/shrink while the owner lock is held.
+    // Closed controls/providers may interrupt, but never mutate this cache under
+    // its lock. The outside-lock factory may reenter or race Clear/shrink; its
+    // captured generation still prevents stale publication. Plan before eviction
+    // so interruption leaves ready values and their aliases intact.
     private bool PublishCharge<TControl>(CacheEntry candidate, CacheEntry? replacing,
         ulong charge, bool mayEvict, long generation, TControl control)
         where TControl : struct, IUtf8ConstructionTextControl
     {
-        if (charge > _maximumPayloadBytes) return false;
-        while (true)
+        control.Check();
+        Utf8ConstructionScope.ChargeWork(1);
+        if (charge > _maximumPayloadBytes || _generation != generation ||
+            replacing is not null && !Contains(replacing)) return false;
+        var bytes = _payloadBytes - (replacing?.PayloadCharge ?? 0);
+        var retained = _count - (replacing is null ? 0 : 1);
+        var victims = 0;
+        for (var entry = _first; entry is not null; entry = entry.Next)
         {
+            if (HasRoomForCharge(bytes, retained, charge)) break;
             control.Check();
             Utf8ConstructionScope.ChargeWork(1);
-            if (_generation != generation || replacing is not null && !Contains(replacing)) return false;
-            var revision = _revision;
-            var bytes = _payloadBytes - (replacing?.PayloadCharge ?? 0);
-            var retained = _count - (replacing is null ? 0 : 1);
-            var victims = 0;
-            for (var entry = _first; entry is not null; entry = entry.Next)
-            {
-                if (HasRoomForCharge(bytes, retained, charge)) break;
-                control.Check();
-                Utf8ConstructionScope.ChargeWork(1);
-                if (_revision != revision) break;
-                if (!mayEvict || ReferenceEquals(entry, replacing) || entry.Status != 1) continue;
-                bytes -= entry.PayloadCharge;
-                retained--;
-                victims++;
-            }
-            control.Check();
-            if (_generation != generation) return false;
-            if (_revision != revision) continue;
-            if (!HasRoomForCharge(bytes, retained, charge)) return false;
-            // No allocation, cancellation callback or fallible arithmetic remains.
-            for (var entry = _first; entry is not null && victims > 0;)
-            {
-                var next = entry.Next;
-                if (!ReferenceEquals(entry, replacing) && entry.Status == 1) { Remove(entry); victims--; }
-                entry = next;
-            }
-            _payloadBytes -= replacing?.PayloadCharge ?? 0;
-            candidate.PayloadCharge = charge;
-            _payloadBytes += charge;
-            if (replacing is null) Append(candidate); else _revision++;
-            return true;
+            if (!mayEvict || ReferenceEquals(entry, replacing) || entry.Status != 1) continue;
+            bytes -= entry.PayloadCharge;
+            retained--;
+            victims++;
         }
-
+        control.Check();
+        if (!HasRoomForCharge(bytes, retained, charge)) return false;
+        // No allocation, callback or fallible arithmetic remains after this point.
+        for (var entry = _first; entry is not null && victims > 0;)
+        {
+            var next = entry.Next;
+            if (!ReferenceEquals(entry, replacing) && entry.Status == 1) { Remove(entry); victims--; }
+            entry = next;
+        }
+        _payloadBytes -= replacing?.PayloadCharge ?? 0;
+        candidate.PayloadCharge = charge;
+        _payloadBytes += charge;
+        if (replacing is null) Append(candidate);
+        return true;
     }
 
     private bool HasRoomForCharge(ulong bytes, int retained, ulong charge) =>
@@ -324,7 +305,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
     private void Append(CacheEntry entry)
     {
         if (_last is null) _first = entry; else _last.Next = entry;
-        _last = entry; _count++; _revision++;
+        _last = entry; _count++;
     }
 
     private void Remove(CacheEntry target)
@@ -336,7 +317,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
             if (previous is null) _first = entry.Next; else previous.Next = entry.Next;
             if (ReferenceEquals(_last, entry)) _last = previous;
             _payloadBytes -= entry.PayloadCharge;
-            entry.Next = null; entry.PayloadCharge = 0; _count--; _revision++;
+            entry.Next = null; entry.PayloadCharge = 0; _count--;
             return;
         }
     }
