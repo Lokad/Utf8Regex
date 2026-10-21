@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Pcre2;
@@ -46,7 +45,7 @@ internal static class Pcre2AsciiAnchoredDfaIsMatchAnalyzer
 
         var steps = new List<Pcre2AsciiDfaStep>
         {
-            Pcre2AsciiDfaStep.RequireBeginning(RegexOptions.None),
+            Pcre2AsciiDfaStep.RequireBeginning(),
         };
         var hasUnboundedRepeat = false;
         if (!TryAppend(matchBody, steps, ref hasUnboundedRepeat) || !hasUnboundedRepeat)
@@ -54,7 +53,7 @@ internal static class Pcre2AsciiAnchoredDfaIsMatchAnalyzer
             return null;
         }
 
-        steps.Add(Pcre2AsciiDfaStep.RequireEnd(RegexOptions.None));
+        steps.Add(Pcre2AsciiDfaStep.RequireEnd());
         steps.Add(Pcre2AsciiDfaStep.Accept());
         var linearProgram = new Pcre2AsciiDfaInput([.. steps]);
         var dfaOutcome = Pcre2AsciiDfaVerifierProgram.Compile(linearProgram);

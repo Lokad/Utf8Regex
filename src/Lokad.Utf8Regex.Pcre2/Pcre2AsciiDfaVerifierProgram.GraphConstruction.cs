@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
@@ -50,8 +49,8 @@ internal readonly partial struct Pcre2AsciiDfaVerifierProgram
                         foreach (var transition in nfa.States[stateId].Transitions)
                         {
                             ChargeCompilationStep();
-                            var remainingLow = transition.Key.Set.LowMask;
-                            var remainingHigh = transition.Key.Set.HighMask;
+                            var remainingLow = transition.Set.LowMask;
+                            var remainingHigh = transition.Set.HighMask;
                             var existingCount = classes.Count;
                             for (var index = 0; index < existingCount; index++)
                             {
@@ -83,7 +82,7 @@ internal readonly partial struct Pcre2AsciiDfaVerifierProgram
                             foreach (var transition in nfa.States[stateId].Transitions)
                             {
                                 ChargeCompilationStep();
-                                if (!characterClass.IsDisjoint(transition.Key.Set)) destinations.Add(transition.TargetState);
+                                if (!characterClass.IsDisjoint(transition.Set)) destinations.Add(transition.TargetState);
                             }
                         }
                         var closure = ComputeClosure(destinations.Span, nfa);
@@ -117,8 +116,7 @@ internal readonly partial struct Pcre2AsciiDfaVerifierProgram
                     counts.Add(sets.Count - firstTransition);
                 }
                 var program = new Pcre2AsciiDfaVerifierProgram(offsets.Take(), counts.Take(),
-                    sets.Take(), targets.Take(), accepting.Take(), requiresBeginning, requiresEnd,
-                    _beginningAnchor, _endAnchor);
+                    sets.Take(), targets.Take(), accepting.Take(), requiresBeginning, requiresEnd);
                 scope.Complete();
                 return program;
             }

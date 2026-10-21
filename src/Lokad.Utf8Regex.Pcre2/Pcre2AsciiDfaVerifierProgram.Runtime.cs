@@ -27,13 +27,12 @@ internal readonly partial struct Pcre2AsciiDfaVerifierProgram
         if (breach != Utf8ExecutionLimitKind.None || !HasValue || (uint)startIndex > (uint)input.Length) return false;
         breach = invocation.Budget.TryNoteDepth(1);
         if (breach != Utf8ExecutionLimitKind.None) return false;
-        if (RequiresBeginning && !Pcre2AsciiDfaAnchor.MatchesBeginning(input, startIndex, _beginningKind,
-            _beginningOptions, invocation.AnchorOriginByte >= 0 ? invocation.AnchorOriginByte : startIndex)) return false;
+        if (RequiresBeginning && startIndex != 0) return false;
 
         var state = 0;
         var index = startIndex;
         var lastAcceptLength = _acceptingStates[state] && (!RequiresEnd ||
-            Pcre2AsciiDfaAnchor.MatchesEnd(input, index, _endKind, _endOptions)) ? 0 : -1;
+            IsAtEnd(input, index)) ? 0 : -1;
         while ((uint)index < (uint)input.Length)
         {
             if (((index - startIndex) & 63) == 0)
@@ -49,7 +48,7 @@ internal readonly partial struct Pcre2AsciiDfaVerifierProgram
             // Preserve the last valid accepting position when a greedy suffix
             // consumes a newline and then fails beyond an earlier line end.
             if (_acceptingStates[state] && (!RequiresEnd ||
-                Pcre2AsciiDfaAnchor.MatchesEnd(input, index, _endKind, _endOptions)))
+                IsAtEnd(input, index)))
                 lastAcceptLength = index - startIndex;
         }
         breach = invocation.TryChargeInputStep();
@@ -57,6 +56,10 @@ internal readonly partial struct Pcre2AsciiDfaVerifierProgram
         matchedLength = lastAcceptLength;
         return true;
     }
+
+    // The sole producer admits default, non-multiline anchors only.
+    private static bool IsAtEnd(ReadOnlySpan<byte> input, int index) =>
+        index == input.Length || index == input.Length - 1 && input[index] == (byte)'\n';
 
     private int FindTransition(int state, byte value, ref Utf8SliceInvocation invocation, out Utf8ExecutionLimitKind breach)
     {

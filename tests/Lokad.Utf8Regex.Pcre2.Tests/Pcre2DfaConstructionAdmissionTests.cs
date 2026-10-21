@@ -6,20 +6,23 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2DfaConstructionAdmissionTests
 {
     private static Pcre2AsciiDfaInput Literal() => new([
-        Pcre2AsciiDfaStep.MatchText("ab"u8.ToArray()),
+        Pcre2AsciiDfaStep.MatchAsciiClass(AsciiCharClass.ForByte((byte)'a')),
+        Pcre2AsciiDfaStep.MatchAsciiClass(AsciiCharClass.ForByte((byte)'b')),
         Pcre2AsciiDfaStep.Accept()]);
 
-    private static Pcre2AsciiDfaInput Alternatives() => new([
-        Pcre2AsciiDfaStep.MatchAnyText(["ab"u8.ToArray(), "cd"u8.ToArray()]),
+    private static Pcre2AsciiDfaInput Ambiguous() => new([
+        Pcre2AsciiDfaStep.LoopAsciiClass(AsciiCharClass.ForByte((byte)'a'), 0, 1),
+        Pcre2AsciiDfaStep.MatchAsciiClass(new(0, (1UL << ('a' - 64)) | (1UL << ('c' - 64)))),
+        Pcre2AsciiDfaStep.MatchAsciiClass(new(0, (1UL << ('b' - 64)) | (1UL << ('d' - 64)))),
         Pcre2AsciiDfaStep.Accept()]);
 
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void SuccessfulGraphsReachTheParentConstructionOwnerAndKeepTheirResults(bool alternatives)
+    public void SuccessfulGraphsReachTheParentConstructionOwnerAndKeepTheirResults(bool ambiguous)
     {
         using var parent = Utf8ConstructionScope.Enter();
-        var input = alternatives ? Alternatives() : Literal();
+        var input = ambiguous ? Ambiguous() : Literal();
         var outcome = Pcre2AsciiDfaVerifierProgram.Compile(input);
         Assert.True(outcome.Succeeded);
         Assert.Equal(Pcre2AsciiDfaCompileFailureKind.None, outcome.FailureKind);
@@ -31,8 +34,8 @@ public sealed class Pcre2DfaConstructionAdmissionTests
         Assert.True(outcome.Program.TryMatch("abx"u8, 0, out var width));
         Assert.Equal(2, width);
         Assert.False(outcome.Program.TryMatch("ax"u8, 0, out _));
-        Assert.Equal(alternatives, outcome.Program.TryMatch("cd"u8, 0, out width));
-        Assert.Equal(alternatives ? 2 : 0, width);
+        Assert.Equal(ambiguous, outcome.Program.TryMatch("cd"u8, 0, out width));
+        Assert.Equal(ambiguous ? 2 : 0, width);
     }
 
     [Theory]
@@ -59,9 +62,9 @@ public sealed class Pcre2DfaConstructionAdmissionTests
     [Fact]
     public void OptimizerStateDeclineReturnsCapacityButKeepsWorkSpent()
     {
-        var input = new Pcre2AsciiDfaInput([
-            Pcre2AsciiDfaStep.MatchText(Enumerable.Repeat((byte)'a', 256).ToArray()),
-            Pcre2AsciiDfaStep.Accept()]);
+        var input = new Pcre2AsciiDfaInput(Enumerable.Repeat(
+            Pcre2AsciiDfaStep.MatchAsciiClass(AsciiCharClass.ForByte((byte)'a')), 256)
+            .Append(Pcre2AsciiDfaStep.Accept()).ToArray());
         using var parent = Utf8ConstructionScope.Enter();
         var outcome = Pcre2AsciiDfaVerifierProgram.Compile(input);
         Assert.False(outcome.Succeeded);
@@ -96,9 +99,9 @@ public sealed class Pcre2DfaConstructionAdmissionTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void FullCompilationUnwindsAtEveryWorkAndDepthCutoff(bool alternatives)
+    public void FullCompilationUnwindsAtEveryWorkAndDepthCutoff(bool ambiguous)
     {
-        var input = alternatives ? Alternatives() : Literal();
+        var input = ambiguous ? Ambiguous() : Literal();
         ulong work, depth, bytes, slots;
         using (var baseline = Utf8ConstructionScope.Enter())
         {
