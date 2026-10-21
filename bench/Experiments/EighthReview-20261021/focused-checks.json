@@ -1,0 +1,194 @@
+{
+  "Scope": "Affected Release project builds and matching SkipBuild reuse; filters overlap. SDK servers kept. No complete local source/platform/package matrices repeated.",
+  "Checks": [
+    {
+      "Focus": "New major-growth, work/depth/parent, original token/deadline and public text/byte finite-control fixtures plus related optimizers",
+      "Log": {
+        "Path": "artifacts/eighth-implementation-20261021/tests-optimizer.log",
+        "Sha256": "A3CE0F7157A8D78CDA48F231DBE9FB36F888A7A65BF5A823520475E5718B837D",
+        "Bytes": 23530
+      },
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+          "Passed": 30,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "192 ms"
+        }
+      ]
+    },
+    {
+      "Focus": "Broader profile routes, slice, capture/options and byte-set behavior",
+      "Log": {
+        "Path": "artifacts/eighth-implementation-20261021/tests-optimizer-public.log",
+        "Sha256": "54637F5D76AA37724F9B99BD1FDC152AB914C8B816B1A9A58DFDC9236A930EB2",
+        "Bytes": 334
+      },
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+          "Passed": 692,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "1 s"
+        }
+      ]
+    },
+    {
+      "Focus": "Final ownership/operation architecture and public grammar refusal",
+      "Log": {
+        "Path": "artifacts/eighth-implementation-20261021/tests-publication.log",
+        "Sha256": "DD945F785DBE344FB2E51DA584A5A7F8ABAF8641BC4CDE440BBB7CAF5DDE5419",
+        "Bytes": 23530
+      },
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+          "Passed": 152,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "334 ms"
+        }
+      ]
+    },
+    {
+      "Focus": "Independent padded carrier bounds and actual admitted/shared prepared payloads after removing constructor-shape assertions",
+      "Log": {
+        "Path": "artifacts/eighth-implementation-20261021/tests-carrier-final.log",
+        "Sha256": "FC4DD589C0160E38DDF2485FC52B6D12D601331B786F0D7D9A9337B65FE7DED2",
+        "Bytes": 25654
+      },
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.Tests.dll",
+          "Passed": 12,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "100 ms"
+        }
+      ]
+    },
+    {
+      "Focus": "Scalar folding, capture/result/cursor ownership and construction/replacement behavior",
+      "Log": {
+        "Path": "artifacts/eighth-implementation-20261021/tests-pythonre.log",
+        "Sha256": "03CB869A1F55529612592DCC88BFB1235CA0CDA0D8903AB25D8BD34C2B3B51E5",
+        "Bytes": 9391
+      },
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll",
+          "Passed": 376,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "1 s"
+        }
+      ]
+    },
+    {
+      "Focus": "Optimizer/caller admission, invocation authority, callback/replacement and scalar slice behavior after Core cleanup",
+      "Log": {
+        "Path": "artifacts/eighth-implementation-20261021/tests-pcre2-final.log",
+        "Sha256": "0308B9814B97CDDB60455788165D82C46EAA1363AA3F96A9DA89C0CFFA003DB8",
+        "Bytes": 23527
+      },
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+          "Passed": 868,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "1 s"
+        }
+      ]
+    },
+    {
+      "Focus": "Strict dependency/member/source inventory, with zero BCL Regex.Escape uses and exact relocated Core constructors",
+      "Log": {
+        "Path": "artifacts/eighth-implementation-20261021/tests-inventory-repair.log",
+        "Sha256": "5E12ACAB3ABBA18E7A1BA4791703F23260A7EEDA7D6AB8AB590E815D8FAF5B07",
+        "Bytes": 25654
+      },
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.Tests.dll",
+          "Passed": 10,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "477 ms"
+        }
+      ]
+    }
+  ],
+  "EarlierFocusedFailures": [
+    {
+      "Log": {
+        "Path": "artifacts/eighth-implementation-20261021/tests-core-cleanup.log",
+        "Sha256": "C62E6905660B8776E73C64AE714170D2FCDE483238081A0802A2CB7EA8C1EAEB",
+        "Bytes": 29809
+      },
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.Tests.dll",
+          "Passed": 105,
+          "Failed": 1,
+          "Skipped": 0,
+          "Duration": "75 ms"
+        }
+      ],
+      "Reason": "Initial independent carrier test overpadded every field to 16 bytes. Corrected to ordinary managed pointer alignment using actual field value sizes; production allowance unchanged."
+    },
+    {
+      "Log": {
+        "Path": "artifacts/eighth-implementation-20261021/tests-core-bounds.log",
+        "Sha256": "94420AB35C657282156B2F323FA031893F0A34D4AF6A55B5AF030C2A3AAC71ED",
+        "Bytes": 27071
+      },
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.Tests.dll",
+          "Passed": 5157,
+          "Failed": 1,
+          "Skipped": 0,
+          "Duration": "18 s"
+        }
+      ],
+      "Reason": "5157 passed; one old test required PreparedRegex to have a one-parameter mirrored constructor. Remove that shape assertion while retaining real capture/program alias assertions. Final focused repair passes."
+    }
+  ],
+  "ReadOnlyGeneratedChecks": [
+    {
+      "Path": "artifacts/eighth-implementation-20261021/verify-readme-parity.log",
+      "Sha256": "AF7327FEF829FBB1EDD56CCEC1D8BEDFC4E715096130545D439F2D4234B7D072",
+      "Bytes": 61
+    },
+    {
+      "Path": "artifacts/eighth-implementation-20261021/verify-pythonre-markdown.log",
+      "Sha256": "6B295B1B6B104D80B40AAA080CE84284CBCA407ED0FB0E7A40C77783F8786E0E",
+      "Bytes": 98
+    },
+    {
+      "Path": "artifacts/eighth-implementation-20261021/verify-pcre2-markdown.log",
+      "Sha256": "E004206D4A2F8D956F505D8687D1700D6BE70A7B2BBD3E1E7208F43DA3A74925",
+      "Bytes": 92
+    }
+  ],
+  "CompiledSourcePreflight": {
+    "Scope": "Untimed existing PE/PDB/source evidence checks only; no measurement or snapshot writes.",
+    "Checkout": "84ebc039cc97",
+    "Rows": [
+      {
+        "Name": "Full producer and compiled-source preflight",
+        "Accepted": true,
+        "Error": null
+      }
+    ]
+  },
+  "FinalBenchmarkBuild": {
+    "Path": "artifacts/eighth-implementation-20261021/build-benchmark-final.log",
+    "Sha256": "CA7EDDF4FADD83E16CE596A7C0C130A01349CA57DD025070699E6100F6EDEC6E",
+    "Bytes": 4708
+  },
+  "Warnings": "Five existing production warnings and existing test analyzer warnings remain. No new compiler warning introduced."
+}

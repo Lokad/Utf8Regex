@@ -1,0 +1,201 @@
+{
+  "Scope": "Untimed allocation/admission probes isolate optimizers after root parsing. A one-byte optimizer allowance is not a one-byte successful public Compile claim. Public 8 MiB modeled calls confirm reachability/results; total allocation is not the policy live-capacity/RSS metric.",
+  "BeforeFinite": [
+    {
+      "Kind": "Identity",
+      "Core": "0.4.0-rc.2-dev+884b156b6a2ad5b0da0781937aff4c2f2b04375a",
+      "Pcre2": "0.4.0-rc.2-dev+884b156b6a2ad5b0da0781937aff4c2f2b04375a"
+    },
+    {
+      "Kind": "DirectFiniteAnalyzer",
+      "Captures": 64,
+      "MaxBytes": 1,
+      "Allocated": 133832,
+      "FirstCheckpointAllocation": 0,
+      "Checkpoints": 0,
+      "PeakCoveredBytes": 0,
+      "Failure": "Utf8ResourceLimitExceededException"
+    },
+    {
+      "Kind": "DirectFiniteAnalyzer",
+      "Captures": 256,
+      "MaxBytes": 1,
+      "Allocated": 1354592,
+      "FirstCheckpointAllocation": 0,
+      "Checkpoints": 0,
+      "PeakCoveredBytes": 0,
+      "Failure": "Utf8ResourceLimitExceededException"
+    },
+    {
+      "Kind": "DirectFiniteAnalyzer",
+      "Captures": 1024,
+      "MaxBytes": 1,
+      "Allocated": 18315720,
+      "FirstCheckpointAllocation": 0,
+      "Checkpoints": 0,
+      "PeakCoveredBytes": 0,
+      "Failure": "Utf8ResourceLimitExceededException"
+    },
+    {
+      "Kind": "PublicCompile",
+      "Captures": 64,
+      "MaxBytes": 8388608,
+      "Allocated": 707312,
+      "Failure": null,
+      "Match": true,
+      "Route": "IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Backtracking, Replace=Pcre2Backtracking"
+    },
+    {
+      "Kind": "PublicCompile",
+      "Captures": 256,
+      "MaxBytes": 8388608,
+      "Allocated": 3089312,
+      "Failure": null,
+      "Match": true,
+      "Route": "IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Backtracking, Replace=Pcre2Backtracking"
+    },
+    {
+      "Kind": "PublicCompile",
+      "Captures": 1024,
+      "MaxBytes": 8388608,
+      "Allocated": 25044936,
+      "Failure": null,
+      "Match": true,
+      "Route": "IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Slice, Replace=Pcre2Slice"
+    }
+  ],
+  "AfterFinite": [
+    {
+      "Kind": "Identity",
+      "Core": "0.4.0-rc.2-dev+84ebc039cc972e53a3b9a5b3cbbd3f0588188114",
+      "Pcre2": "0.4.0-rc.2-dev+84ebc039cc972e53a3b9a5b3cbbd3f0588188114"
+    },
+    {
+      "Kind": "DirectFiniteAnalyzer",
+      "Captures": 64,
+      "MaxBytes": 1,
+      "Allocated": 808,
+      "FirstCheckpointAllocation": 0,
+      "Checkpoints": 0,
+      "PeakCoveredBytes": 0,
+      "Failure": "Utf8ResourceLimitExceededException"
+    },
+    {
+      "Kind": "DirectFiniteAnalyzer",
+      "Captures": 256,
+      "MaxBytes": 1,
+      "Allocated": 808,
+      "FirstCheckpointAllocation": 0,
+      "Checkpoints": 0,
+      "PeakCoveredBytes": 0,
+      "Failure": "Utf8ResourceLimitExceededException"
+    },
+    {
+      "Kind": "DirectFiniteAnalyzer",
+      "Captures": 1024,
+      "MaxBytes": 1,
+      "Allocated": 808,
+      "FirstCheckpointAllocation": 0,
+      "Checkpoints": 0,
+      "PeakCoveredBytes": 0,
+      "Failure": "Utf8ResourceLimitExceededException"
+    },
+    {
+      "Kind": "PublicCompile",
+      "Captures": 64,
+      "MaxBytes": 8388608,
+      "Allocated": 612880,
+      "Failure": null,
+      "Match": true,
+      "Route": "IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Backtracking, Replace=Pcre2Backtracking"
+    },
+    {
+      "Kind": "PublicCompile",
+      "Captures": 256,
+      "MaxBytes": 8388608,
+      "Allocated": 1940384,
+      "Failure": null,
+      "Match": true,
+      "Route": "IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Backtracking, Replace=Pcre2Backtracking"
+    },
+    {
+      "Kind": "PublicCompile",
+      "Captures": 1024,
+      "MaxBytes": 8388608,
+      "Allocated": 8337360,
+      "Failure": null,
+      "Match": true,
+      "Route": "IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Slice, Replace=Pcre2Slice"
+    }
+  ],
+  "BeforeBounded": [
+    {
+      "Kind": "Identity",
+      "Core": "0.4.0-rc.2-dev+884b156b6a2ad5b0da0781937aff4c2f2b04375a",
+      "Pcre2": "0.4.0-rc.2-dev+884b156b6a2ad5b0da0781937aff4c2f2b04375a"
+    },
+    {
+      "Kind": "DirectBoundedAnalyzer",
+      "Repeat": 64,
+      "MaxBytes": 1,
+      "Allocated": 55000,
+      "FirstCheckpointAllocation": 53928,
+      "Checkpoints": 2,
+      "PeakCoveredBytes": 0,
+      "Failure": "Utf8ResourceLimitExceededException"
+    },
+    {
+      "Kind": "DirectBoundedAnalyzer",
+      "Repeat": 128,
+      "MaxBytes": 1,
+      "Allocated": 206808,
+      "FirstCheckpointAllocation": 205736,
+      "Checkpoints": 2,
+      "PeakCoveredBytes": 0,
+      "Failure": "Utf8ResourceLimitExceededException"
+    },
+    {
+      "Kind": "PublicBoundedRoute",
+      "Route": "IsMatch=Pcre2AsciiBoundedIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Match": true
+    }
+  ],
+  "AfterBounded": [
+    {
+      "Kind": "Identity",
+      "Core": "0.4.0-rc.2-dev+84ebc039cc972e53a3b9a5b3cbbd3f0588188114",
+      "Pcre2": "0.4.0-rc.2-dev+84ebc039cc972e53a3b9a5b3cbbd3f0588188114"
+    },
+    {
+      "Kind": "DirectBoundedAnalyzer",
+      "Repeat": 64,
+      "MaxBytes": 1,
+      "Allocated": 1896,
+      "FirstCheckpointAllocation": 224,
+      "Checkpoints": 3,
+      "PeakCoveredBytes": 0,
+      "Failure": "Utf8ResourceLimitExceededException"
+    },
+    {
+      "Kind": "DirectBoundedAnalyzer",
+      "Repeat": 128,
+      "MaxBytes": 1,
+      "Allocated": 1896,
+      "FirstCheckpointAllocation": 224,
+      "Checkpoints": 3,
+      "PeakCoveredBytes": 0,
+      "Failure": "Utf8ResourceLimitExceededException"
+    },
+    {
+      "Kind": "PublicBoundedRoute",
+      "Route": "IsMatch=Pcre2AsciiBoundedIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "Match": true
+    }
+  ],
+  "ProbeSource": {
+    "Path": "artifacts/eighth-implementation-20261021/probe-after/Program.cs",
+    "Sha256": "640F54610C5588561BA3C06032C907DF2CE18C7EA51439FA0B37AE08EFBBDD3F",
+    "Bytes": 4043
+  },
+  "Guarantee": "Shared coarse state/map loans, actual major arrays/text and growth overlap admit before acquisition; traversal and byte preparation poll original authority. Unreferenced captures do not need optimizer maps. Conservative temporary loans may remain until eager completion; earlier refusal is intentional."
+}

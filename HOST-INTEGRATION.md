@@ -30,12 +30,11 @@ The prepared-program, scalar-program and dynamic IL builder carriers use coarse
 of 1,024 / 144 / 144 bytes. Direct construction keeps admission before allocation;
 major children and real array/value layout queries retain separate coverage.
 These larger conservative charges can cause earlier refusal/eviction.
-Development after the frozen RC1 removes the test-only unbounded cache mode.
-Every producer supplies a conservative bounded payload policy. Program and
-verifier wrappers use their existing 128-byte admission floors directly instead
-of mirrored field-transfer descriptors; their major children retain separate
-admission. These three helper changes preserve their previous byte/work charges.
-They do not extend the documented memory scope or change RC1 package bytes.
+Every cache producer supplies a conservative bounded payload policy. Small
+runtime/verifier wrappers retain their 128-byte admission floors; the larger
+carriers use the allowances above. Major children retain separate admission.
+The test-only unbounded cache mode remains removed. These controls do not extend
+the documented memory scope or change RC1 package bytes.
 Development PCRE2 literal compilation also admits its own atom capacities and
 UTF-8 buffer, including growth overlap and bounded interruption checkpoints.
 It retains runtime UTF-8 bytes and releases temporary Rune staging, without

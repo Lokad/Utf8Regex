@@ -1,0 +1,126 @@
+{
+  "Run": 39577333702,
+  "SourceRevision": "2e8d071f6bd35c5554d3c2cc52a13e7f827e980d",
+  "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/39577333702",
+  "Status": "completed",
+  "Conclusion": "success",
+  "Scope": "Complete Windows/Linux Release source boundary, all four suites including scalar/capture/resource/cancellation/lifetime/API/managed-only/member inventories. Closeout documentation/receipts only; no repeated unchanged package qualification.",
+  "Platforms": [
+    {
+      "Platform": "ubuntu-latest",
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.DiffTests.dll",
+          "Passed": 1504,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "3 s"
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+          "Passed": 5962,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "20 s"
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll",
+          "Passed": 3892,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "20 s"
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Tests.dll",
+          "Passed": 39594,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "1 m 13 s"
+        }
+      ],
+      "DuplicateDiscoveryWarnings": 0,
+      "TestLog": {
+        "Path": "artifacts/eighth-implementation-20261021/ci-final/test-log-ubuntu-latest/test.log",
+        "Sha256": "FB84EF7973C0B7B49BACBC9729135EF4ED0A09243AEE713AD8ADA1AB33175BB8",
+        "Bytes": 1392
+      },
+      "BuildLog": {
+        "Path": "artifacts/eighth-implementation-20261021/ci-final/test-log-ubuntu-latest/build.log",
+        "Sha256": "C633B0C4FD976A485D607607B09F846C07CFE76CBF79529A7F3C61B5C8E1CB06",
+        "Bytes": 66982
+      }
+    },
+    {
+      "Platform": "windows-latest",
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.DiffTests.dll",
+          "Passed": 1504,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "3 s"
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll",
+          "Passed": 3892,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "26 s"
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+          "Passed": 5962,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "28 s"
+        },
+        {
+          "Assembly": "Lokad.Utf8Regex.Tests.dll",
+          "Passed": 39594,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "1 m 45 s"
+        }
+      ],
+      "DuplicateDiscoveryWarnings": 0,
+      "TestLog": {
+        "Path": "artifacts/eighth-implementation-20261021/ci-final/test-log-windows-latest/test.log",
+        "Sha256": "238EC8E4638610055184D034247BF09BBE3E3DDD15331EDE059DED9F33D96949",
+        "Bytes": 1356
+      },
+      "BuildLog": {
+        "Path": "artifacts/eighth-implementation-20261021/ci-final/test-log-windows-latest/build.log",
+        "Sha256": "EEF5CE88FF7AC2631F7F669246C66619BF4C9D767010D5BEAEEEC038FA25BCC5",
+        "Bytes": 62859
+      }
+    }
+  ],
+  "RepairedFirstBoundary": {
+    "Run": 39576396276,
+    "SourceRevision": "84ebc039cc972e53a3b9a5b3cbbd3f0588188114",
+    "Conclusion": "failure",
+    "Reason": "Only two stale inventory expectations: a required Regex.Escape use is now absent, and exact Core-constructor file locations changed. Inventory repaired without relaxing the engine boundary; all checks rerun.",
+    "Logs": [
+      {
+        "Path": "artifacts/eighth-implementation-20261021/ci-first/test-log-ubuntu-latest/build.log",
+        "Sha256": "1AD3D8C9DC4FD511B273FC70C62FBD1E8412328FB1BB64539785398F7B80B77D",
+        "Bytes": 66985
+      },
+      {
+        "Path": "artifacts/eighth-implementation-20261021/ci-first/test-log-ubuntu-latest/test.log",
+        "Sha256": "B17407B1A94EF7B8ADEEEB0BDA23754D3F7C3DB075FCD956E0D24B7CB94770EA",
+        "Bytes": 3992
+      },
+      {
+        "Path": "artifacts/eighth-implementation-20261021/ci-first/test-log-windows-latest/build.log",
+        "Sha256": "BB3747D7D358DC5A7A8B5A810F7C87BC07E941F5E2D74C30A9BFA4051C5A1F11",
+        "Bytes": 62858
+      },
+      {
+        "Path": "artifacts/eighth-implementation-20261021/ci-first/test-log-windows-latest/test.log",
+        "Sha256": "6948E178A1F1ADF01B25CF3ED200E5FDEFFCF4B3D1FE6FD0BF122F008524C718",
+        "Bytes": 3624
+      }
+    ]
+  }
+}

@@ -23,6 +23,14 @@ construction observations and their noisy control are reported separately.
 Windows/Linux source CI is green at `884b156b`. This bounded local comparison
 does not refresh historical benchmark Status or resolve earlier delivery costs.
 
+The [eighth-review receipt](bench/Experiments/EighthReview-20261021/README.md)
+records bounded optimizer admission and construction/public observations with
+identical driver bytes. Selected public median increases are at most 1.63%,
+with unchanged allocation. Finite Count's apparent gain has a changing control
+and is not attributed to the engine. The comparison uses unlimited workloads;
+finite controls have separate correctness checks. Historical Status and deferred
+package/finite-overhead qualification remain unchanged.
+
 ## Frozen scalar.119 package costs
 
 The observations below apply to **Core/PythonRe scalar.119**, producer `ca0c8a6f`.

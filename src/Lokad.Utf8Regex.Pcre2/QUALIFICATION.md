@@ -113,6 +113,11 @@ records the grammar boundary, character admission and retained-state cleanup.
 adds lexical admission, live-owner cleanup, a bounded construction/public cost
 comparison and green Windows/Linux source CI at `884b156b`. Source checks **do
 not** replace or relabel RC1's package evidence.
+The [eighth-review source receipt](../../bench/Experiments/EighthReview-20261021/README.md)
+adds pre-acquisition major state/buffer bounds for optional finite/ASCII expansion,
+original interruption and complete program publication without dummy foundations.
+Its bounded local public/construction comparison has its own controls and scope;
+it does not qualify new package bytes or finite-policy throughput.
 No corrected development package has been qualified. The earlier public first-use
 latency concern and inconclusive backreference timing remain open for a future
 delivery; no universal performance equivalence or fresh benchmark Status is claimed.

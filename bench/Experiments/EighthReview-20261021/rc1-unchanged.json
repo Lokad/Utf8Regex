@@ -1,0 +1,51 @@
+{
+  "Scope": "One read-only check of nine original RC1 artifact hashes against SeventhReview. No rebuild, repack, symbols/manifest rewrite, package qualification or publication.",
+  "Result": "Unchanged",
+  "Files": [
+    {
+      "Path": "artifacts/release-candidates/0.4.0-rc.1/candidate.json",
+      "Sha256": "B248D69B37AF83FDA009CCDC6D54989A38B1B3275F64F9897E228C7331C6E343",
+      "Bytes": 11198
+    },
+    {
+      "Path": "artifacts/utf8regex-0.4.0-rc.1-20261020/final-integrity.json",
+      "Sha256": "00F4F0FBA77FC0910B22D167ED5E5DA83C9B225FB4D9099CF39E44C82B1DD6C6",
+      "Bytes": 25650
+    },
+    {
+      "Path": "artifacts/Utf8Regex.0.4.0-rc.1.zip",
+      "Sha256": "C1692F1378E0E4DB3DFC2B2777A0B1B2B72D687C3B5451845F1DD45E74B46405",
+      "Bytes": 28163550
+    },
+    {
+      "Path": "artifacts/release-candidates/0.4.0-rc.1/feed/Lokad.Utf8Regex.0.4.0-rc.1.nupkg",
+      "Sha256": "0F58D0F9373A2CD45EEC4293AC34246BC7215952BCF00AB4376DC69F3558EBC0",
+      "Bytes": 677382
+    },
+    {
+      "Path": "artifacts/release-candidates/0.4.0-rc.1/feed/Lokad.Utf8Regex.0.4.0-rc.1.snupkg",
+      "Sha256": "B171682BE04C7C599A218B128713A70CBB8FFC859E5F6075256A2B9FEFF4320E",
+      "Bytes": 234233
+    },
+    {
+      "Path": "artifacts/release-candidates/0.4.0-rc.1/feed/Lokad.Utf8Regex.PythonRe.0.4.0-rc.1.nupkg",
+      "Sha256": "3D6F71F50348B4AA33C60258F4262084373AA4BD1A4FF11932055650DC396D23",
+      "Bytes": 226738
+    },
+    {
+      "Path": "artifacts/release-candidates/0.4.0-rc.1/feed/Lokad.Utf8Regex.PythonRe.0.4.0-rc.1.snupkg",
+      "Sha256": "710E085D57749F586A74D6DAFD724C003DD5C3FACA954C115ECD8BC1AF5378F0",
+      "Bytes": 35761
+    },
+    {
+      "Path": "artifacts/release-candidates/0.4.0-rc.1/feed/Lokad.Utf8Regex.Pcre2.0.4.0-rc.1.nupkg",
+      "Sha256": "BB7E977A34C09B959B9A7DBF0378151D7693289BF0BA634C592C195427C7F0FD",
+      "Bytes": 306645
+    },
+    {
+      "Path": "artifacts/release-candidates/0.4.0-rc.1/feed/Lokad.Utf8Regex.Pcre2.0.4.0-rc.1.snupkg",
+      "Sha256": "862F639ED0067570F972E76D8ED3E9EC9564456BEBBE495CC28A4A0E396E8F82",
+      "Bytes": 75006
+    }
+  ]
+}

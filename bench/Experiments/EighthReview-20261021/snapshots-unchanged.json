@@ -1,0 +1,25 @@
+{
+  "Scope": "Four snapshot/parity JSON files equal the starting checkout; existing read-only rendered verifiers pass. No timing, Status or evidence rewrite.",
+  "Files": [
+    {
+      "Path": "README.Benchmarks.json",
+      "Sha256": "4DDA92671D84DB9851D3D012F6A79F8D414A573A72D5E7AD9CCC852236F9E7FA",
+      "Bytes": 198121
+    },
+    {
+      "Path": "README.Parity.json",
+      "Sha256": "2A82BD2732CBBCA46A1EA65E967359DF6D677AAAFF017031AD1D7E3BBD715D11",
+      "Bytes": 201280
+    },
+    {
+      "Path": "PCRE2.Benchmarks.json",
+      "Sha256": "B113B963453FC283DE6C8B64BFCFCA72E13A5EF8644FC5A38B8A92176B692F95",
+      "Bytes": 235205
+    },
+    {
+      "Path": "PythonRe.Benchmarks.json",
+      "Sha256": "F0E233C1716AAF3602C785FF4AE3D635BF77DFA8D88E9C4E058C0248A22004CD",
+      "Bytes": 1930451
+    }
+  ]
+}

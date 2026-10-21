@@ -38,8 +38,10 @@ plans, or call front-end analyzers from execution. Architecture tests enforce
 these source-level boundaries in addition to semantic and benchmark coverage.
 
 Construction admits major buffers and bounded expansion before allocation.
-Program/verifier wrappers use conservative metadata allowances, without mirrored
-field-transfer descriptors. Retention caches always use a conservative bounded
+Selected prepared/scalar/IL carriers and small runtime/verifier wrappers use
+conservative metadata allowances instead of mirrored transfer descriptors.
+Remaining smaller construction carriers retain their existing factories; real
+algorithmic state vectors remain separate. Retention caches use a conservative bounded
 payload policy; shared storage can be charged again. These modeled limits do not
 bound total CLR/JIT memory or arbitrary host retention. See
 [HOST-INTEGRATION.md](../../HOST-INTEGRATION.md) for scope and lifetime contracts.
