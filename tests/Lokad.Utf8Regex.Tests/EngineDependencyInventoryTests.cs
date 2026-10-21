@@ -3,10 +3,9 @@ using System.Text.RegularExpressions;
 namespace Lokad.Utf8Regex.Tests;
 
 /// <summary>
-/// R00 inventory: every production <c>new Regex(</c> construction has an identified
-/// purpose and replacement task. Compatibility-type references (RegexOptions,
-/// Regex.InfiniteMatchTimeout, RegexMatchTimeoutException) are not engine uses and
-/// are listed separately from executable construction below.
+/// Production code must remain independent of BCL matcher/result execution and
+/// BCL pattern escaping. Compatibility option/timeout types and constants retain
+/// their explicit metadata role; they do not execute a subject.
 /// </summary>
 public sealed class EngineDependencyInventoryTests
 {
@@ -120,10 +119,9 @@ public sealed class EngineDependencyInventoryTests
     [Fact]
     public void ProductionExecutableEngineUsesStayInAllowlistedFiles()
     {
-        // R00 executable-use inventory: every production BCL engine member access has an
-        // identified purpose and replacement owner. Compatibility-only references (RegexOptions,
-        // Regex.InfiniteMatchTimeout, RegexMatchTimeoutException and the Regex.Escape string
-        // helper) are pinned separately and are not engine execution.
+        // No production BCL matcher, result or escaping execution is permitted.
+        // RegexOptions, timeout constants and RegexMatchTimeoutException retain
+        // their compatibility-only role and are pinned separately.
         var repoRoot = FindRepositoryRoot();
         var srcRoot = Path.Combine(repoRoot, "src");
 
@@ -180,9 +178,8 @@ public sealed class EngineDependencyInventoryTests
     [Fact]
     public void AdapterIndirectCoreRoutesStayInAllowlistedFiles()
     {
-        // R00 indirect-route inventory: adapters reach core execution only through the
-        // reviewed ByteOffsetExecution integration surface (PCRE2) and the _utf8Regex
-        // fast-path backend (PythonRe). Replacement owner: R04 (adapter migration).
+        // Adapters use the reviewed shared Core preparation/execution paths and
+        // their owned profile implementations. Keep their integration boundaries explicit.
         // Core itself names PythonRe only on PYTHONRE-INTEGRATION-POINT lines (the PCRE2
         // half is guarded by Pcre2SourceGuardTests in the PCRE2 test project).
         var repoRoot = FindRepositoryRoot();

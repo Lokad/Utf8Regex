@@ -283,7 +283,7 @@ internal static partial class PythonReTranslator
         var nativePattern = builder.ToText();
         if ((parseResult.Options & PythonReCompileOptions.Verbose) == 0)
         {
-            // Regex.Escape protects spaces for IgnorePatternWhitespace. Outside
+            // Owned scalar escaping protects spaces for IgnorePatternWhitespace. Outside
             // verbose mode a raw space is equivalent and keeps exact literals
             // visible to the UTF-8 planner instead of forcing fallback.
             nativePattern = Utf8ConstructionText.Replace(nativePattern, @"\ ", " ");

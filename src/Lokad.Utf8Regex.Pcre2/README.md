@@ -103,6 +103,10 @@ has a fixed 256-frame construction-depth backstop; smaller public caps tighten i
 These charges can double-count shared storage and cause earlier refusal; they do
 not cover every allocation. An all-declined pattern now fails during construction
 with `NotSupportedException`, rather than returning an unusable expression.
+Curated partial-probe preparation also shares the original construction owner:
+fixed semantic checks replace whole-tree string serialization, and literal
+operand storage and bounded scans are admitted before acquisition. This can
+cause earlier construction refusal without changing supported Probe semantics.
 Cold finite-heap replacement preparation borrows
 remaining working capacity as a construction ceiling and retains its additional
 peak through replacement. Warm plans use a separate conservative cache. See
