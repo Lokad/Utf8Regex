@@ -2,6 +2,15 @@
 
 ## Unreleased development after 0.4.0-rc.1
 
+- Null text patterns now report `ArgumentNullException` across all profiles.
+  Existing policy/options/timeout and explicit Compile pre-cancellation ordering
+  remain; empty text/default UTF-8 spans still compile empty patterns.
+- PCRE2 lexical group storage/depth is admitted before growth, with bounded
+  interruption and fewer irrelevant policy passes. Selected operations discard
+  unused Core preparation while preserving shared slices and live Core fast paths.
+- Cached Core facades use a conservative 512-byte admission instead of a complete
+  field-layout mirror. This may cause earlier construction refusal/cache eviction;
+  major payloads remain separately admitted.
 - PCRE2 no longer accepts unsupported patterns through unrestricted Core grammar.
   Shared Core search remains behind a successful PCRE2 parse and eligibility proof;
   accidental .NET escape/property/balancing extensions are rejected.

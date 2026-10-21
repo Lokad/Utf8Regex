@@ -70,6 +70,10 @@ allocation, with token instruction admission and bounded work/checkpoints. Marke
 syntax trees retain no unused literal-atom or character-node vectors. Backtracking
 trees remain for real Probe consumers. Core-backed specializations retain their
 real owners after profile parsing; Core capture-name copies are not authoritative.
+Option eligibility omits unneeded Core preparation, and final operation selection
+drops unused original owners. Finite languages retain their derived Core owner.
+Shared slice slots own the same immutable scalar payload and profile fallback
+directly; their ownership does not require the unused Core facade to survive.
 
 ## Invocation and global progress
 

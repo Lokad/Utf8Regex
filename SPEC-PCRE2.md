@@ -53,16 +53,22 @@ later match failures retain `Pcre2MatchException`. Strict byte validation and bo
 decode passes checkpoint scalar-aligned blocks of at most 4096 bytes; malformed
 input retains its absolute byte offset. The original work charges are preserved.
 
-Pattern-validation lexical passes admit their full text extent into the shared
-construction-work backstop before scanning. Repeated POSIX-token and control-verb
-searches also admit bounded blocks, so malformed input cannot rescan suffixes
-without consuming the cumulative allowance. Charges are conservative, including
-unused block tails; earlier construction denial is allowed. The existing owner
-supplies internal cancellation/deadline checks at admission points. This does not
-establish prompt checks within every linear pass or complete admission of
-validation stacks and other construction storage. The explicit factory exposes
-covered admission/interruption, not a claim to every allocation, CLR/JIT metadata,
-lazy preparation, caller retention or process memory.
+Pattern validation admits its text traversal before scanning and retains bounded
+original-token/deadline checkpoints. Candidate presence skips irrelevant policy
+passes. Group-scope vectors admit capacity and old/new growth overlap; lookaround
+policy scans combine option state and assertion context in one byte vector.
+Prospective lexical nesting obeys the caller's depth ceiling and the existing
+256-frame PCRE2 backstop before growth. Comments, escaped operands, option flags,
+POSIX tokens and control-verb searches retain bounded scans. Conservative charges
+and earlier construction refusal are intentional. These limits do not cover every
+incidental helper, CLR/JIT metadata, lazy preparation, retention or process memory.
+
+Core preparation is skipped when profile options make every applicable Core route
+ineligible. Final operation selection drops an unused original Core graph. Shared
+slice slots directly own their immutable program and PCRE2 fallback; finite
+literal routes retain the separate derived Core expression they execute. Diagnostic
+translation flags describe live ownership. Captures and public operations retain
+their profile semantics.
 
 Development after frozen RC1 adds backtracking-compiler admission: before parsing,
 reserve a conservative 256 bytes per UTF-16 pattern character for transient AST

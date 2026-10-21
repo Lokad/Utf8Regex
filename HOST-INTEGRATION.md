@@ -21,6 +21,10 @@ views and enumerator boxes do not each receive a charge. Cache retention uses
 conservative per-program charges and eviction, which can count shared storage
 again. Exact numeric thresholds may change when real work or storage disappears.
 Actual `Unsafe.SizeOf<T>()` queries remain; they perform no unchecked access.
+Cached Core facades use one conservative 512-byte allowance before allocation,
+with their major children admitted separately. The former field-layout mirror is
+removed. Compared with its 208-byte modeled descriptor, this can cause earlier
+construction refusal or cache eviction; it does not change actual object size.
 Development after the frozen RC1 removes the test-only unbounded cache mode.
 Every producer supplies a conservative bounded payload policy. Program and
 verifier wrappers use their existing 128-byte admission floors directly instead
@@ -39,9 +43,22 @@ remain excluded. Character programs omit unused Core preparation and syntax-node
 vectors; literal Rune staging is temporary. Other qualified Core-dependent paths
 remain. Invocation semantics and resource scope are unchanged.
 
+PCRE2 lexical guards admit group-scope buffers before growth, including live
+old/new extents. Their prospective group nesting shares the caller's depth
+ceiling and the existing 256-frame PCRE2 backstop. Bounded scans retain the
+original cancellation token/deadline. Candidate-presence checks skip irrelevant
+policy scans; no new grammar parser is introduced. Earlier denial before a later
+syntax error is intentional when the construction allowance is insufficient.
+Selected operations retain only Core expressions they execute; shared slices
+own their immutable program and PCRE2 fallback directly.
+
 These are existing calls, using each profile's option type. `policy` applies to
 later invocations; `construction`, `constructionTimeout` and `token` apply only
 to eager compilation.
+
+Null text patterns report `ArgumentNullException` with parameter `pattern` after
+the existing policy/options/timeout checks. Explicit Compile still observes
+pre-cancellation first. Empty text and default UTF-8 spans are empty patterns.
 
 | Profile | Invocation policy with default construction backstops | Explicit eager construction |
 | --- | --- | --- |

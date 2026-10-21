@@ -57,7 +57,7 @@ surrogate atoms and cannot match a strict UTF-8 emoji; `\U0001F600` is one scala
 The parser shares raw scalar acquisition across ordinary literals and class
 items, reusing the existing escaped-literal/case path. It adds no matching engine,
 IR mode or Unicode table. Original construction/invocation admission, synchronous
-cancellation/deadlines and retained-result validity remain. Construction/invocation controls and retained-result validity remain.
+cancellation/deadlines and retained-result validity remain.
 
 ## Effective global modes
 

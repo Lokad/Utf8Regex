@@ -487,9 +487,10 @@ incomplete or duplicate transitions cannot establish eligibility.
 Explicit PythonRe compilation eagerly prepares its derived FullMatch program,
 including its instruction copy/metadata, even when unused. Constructors retain
 retryable lazy preparation. PCRE2 has separate [construction coverage](SPEC-PCRE2.md):
-literal programs independently admit their atom/UTF-8 buffers; character parsing
-still retains Core preparation and has unfinished independent buffer/checkpoint
-admission. Its redundant Core graph cannot simply be deleted. These partial
+literal programs admit temporary Rune staging and retained UTF-8 buffers;
+character token/class/property buffers independently admit capacity and bounded
+interruption, without redundant Core preparation. Lexical validation also admits
+major scope buffers and bounds group depth before semantic parsing. These partial
 backstops do not claim every parser/helper acquisition, all lazy preparation,
 caller retention, cumulative GC traffic or RSS. Common retained/default policy
 completion remains separate work.
