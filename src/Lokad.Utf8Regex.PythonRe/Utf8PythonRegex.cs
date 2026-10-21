@@ -159,6 +159,7 @@ public sealed partial class Utf8PythonRegex
         // text and byte entries before acquiring decoded pattern storage.
         PythonReCompileValidator.Validate(options);
         MatchTimeout = Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
+        ArgumentNullException.ThrowIfNull(patternSource.Text, "pattern");
         using var construction = Utf8ConstructionScope.Enter();
         var pattern = patternSource.Text;
         if (patternSource.IsUtf8)

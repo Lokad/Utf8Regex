@@ -43,10 +43,11 @@ internal static class Pcre2Compiler
         if (Pcre2BacktrackingCompiler.Compile(request) is Pcre2CompiledBacktrackingOutcome backtracking)
         {
             Pcre2CompiledProgram foundation;
-            if (backtracking.RequiresProfileOptions)
+            if (backtracking.RequiresProfileOptions ||
+                !Pcre2CompiledProgramOverlay.CanPrepareCore(request, backtracking.SyntaxTree.Root))
             {
-                // Inline x/xx, J and reset directives need PCRE2 option semantics. The owned
-                // profile already compiled them; omit incompatible Core preparation.
+                // Profile-only modes and options with no eligible Core consumer
+                // keep their owned program without preparing an unused graph.
                 foundation = Pcre2CompiledProgramOverlay.CreateGenericFoundation(request);
             }
             else
@@ -767,46 +768,14 @@ internal static class Pcre2CompiledProgramOverlay
             backtrackingProgram.NameEntries);
     }
 
-    // R02a slice routing for IsMatch, Count, and first-match Match.
-    // Detailed results, enumeration, and replacement stay on the
-    // replaced backtracking programs until their owned projections
-    // land. Eligibility piggybacks the foundation core instance: its
-    // owned slice program already encodes ASCII-only literals,
-    // numbered captures, ordered alternation, supported repeats, and
-    // case-sensitive options. The explicit option gate additionally
-    // declines whole-pattern search-domain constraints (Anchored,
-    // EndAnchored, FirstLine), greediness inversion (Ungreedy),
-    // capture renumbering (NoAutoCapture), and unreviewed case
-    // folding (Caseless), even though the core parser currently
-    // declines the latter families on its own. Multiline,
-    // DollarEndOnly, and Ucp are inert: no anchor, class, or
-    // boundary construct can appear in a core slice program, so they
-    // cannot change slice-shape semantics. DotAll is folded into the
-    // core program newline rule at construction, so it needs no gate
-    // here. Dots need a newline-convention rule:
-    // only Default (line feed) and Lf exclude exactly newline like the
-    // shared runner, so every other convention declines. Word boundaries
-    // decline unconditionally below: the shared runner applies Unicode word
-    // semantics while the native boundary stays ASCII-scoped (UCP parity is
-    // future work). Shorthand classes decline for the same reason: the
-    // shared runner applies Unicode digits, word chars, and separators
-    // while the native shorthands stay ASCII-scoped. Variable-length
-    // Conditional expression tests decline because native PCRE2 flows assertion
-    // captures (even from negative tests) while the shared runner follows BCL
-    // (failed negatives leak nothing; group tests commit once). Group-test
-    // conditionals keep shared execution (captures flow identically).
-    // lookbehind declines because native PCRE2 rejects it at compile time
-    // while the shared runner would match (fixed-length lookbehind agrees
-    // on case-sensitive ASCII shapes). Mixed named/unnamed shapes decline
-    // because native PCRE2 numbers captures positionally while BCL numbers
-    // unnamed groups first (all-named shapes agree). Case-insensitive programs
-    // decline because native caseless folds UCP-wide (sigma matches final sigma)
-    // while the shared runner applies BCL-invariant per-scalar folding. Category
-    // programs decline because named blocks stay natively unsupported (the
-    // construction vocabulary is explicit None/NotSupported) while general
-    // categories keep their native single-token programs. Extended and ExtendedMore
-    // decline through the core parser, which rejects
-    // IgnorePatternWhitespace.
+    // Shared slice eligibility preserves PCRE2 option, class, capture and
+    // lookbehind semantics. All five operations may own the same slice payload;
+    // nondefault match options retain their owned PCRE2 fallback.
+    internal static bool CanPrepareCore(Pcre2CompileRequest request, IPcre2BacktrackingNode root)
+        => ((request.Options & SliceIncompatibleOptions) == 0 &&
+            request.Settings.Newline is Pcre2NewlineConvention.Default or Pcre2NewlineConvention.Lf) ||
+            Pcre2LiteralFamilyAnalyzer.HasCompatibleSyntax(root, request);
+
     internal static Pcre2CompiledProgram WithSlice(
         Pcre2CompiledProgram program)
     {
@@ -834,7 +803,7 @@ internal static class Pcre2CompiledProgramOverlay
             sliceProgram.HasBalancing ||
             sliceProgram.HasConditionalTest)
         {
-            return program;
+            return CompleteOperations(program, program.Operations);
         }
 
         // Lazy-gap windows keep the faithful backtracking engine: the shared slice
@@ -842,7 +811,7 @@ internal static class Pcre2CompiledProgramOverlay
         if (program.SyntaxTree is Pcre2BacktrackingSyntaxTree backtrackingSyntax &&
             Pcre2AsciiOrderedLiteralWindowAnalyzer.IsLazyGapWindow(backtrackingSyntax.Root))
         {
-            return program;
+            return CompleteOperations(program, program.Operations);
         }
 
         var operations = program.Operations;
@@ -896,15 +865,27 @@ internal static class Pcre2CompiledProgramOverlay
             };
         }
 
-        return new Pcre2CompiledProgram(
-            program.Request,
-            program.PrimaryUtf8,
-            operations,
-            program.CandidateSearch,
-            program.PartialProbe,
-            program.SyntaxTree,
-            program.GroupNames,
-            program.NameEntries);
+        return CompleteOperations(program, operations);
+    }
+
+    private static Pcre2CompiledProgram CompleteOperations(Pcre2CompiledProgram program, Pcre2OperationPrograms operations)
+    {
+        // Only real Core consumers retain the facade. A slice slot owns its
+        // immutable program directly; finite-language slots own their derived
+        // Core expression, rather than the discarded original preparation.
+        var core = Pcre2ProgramInvariant.GetCoreRegex(operations.IsMatch) ??
+            Pcre2ProgramInvariant.GetCoreRegex(operations.Count) ??
+            Pcre2ProgramInvariant.GetCoreRegex(operations.Match) ??
+            Pcre2ProgramInvariant.GetCoreRegex(operations.Enumerate) ??
+            Pcre2ProgramInvariant.GetCoreRegex(operations.Replace);
+        var sameOwner = core is null ? !program.PrimaryUtf8.IsPresent :
+            program.PrimaryUtf8 is Pcre2Utf8ProgramSlot previous && ReferenceEquals(previous.Regex, core);
+        if (sameOwner && operations == program.Operations) return program;
+        IPcre2Utf8ProgramSlot owner = sameOwner ? program.PrimaryUtf8 : core is null
+            ? Pcre2EmptyUtf8ProgramSlot.Instance : new Pcre2Utf8ProgramSlot(core);
+        return new Pcre2CompiledProgram(program.Request, owner, operations,
+            program.CandidateSearch, program.PartialProbe, program.SyntaxTree,
+            program.GroupNames, program.NameEntries);
     }
 
     // Extended and ExtendedMore decline: native extended skips vertical tab while
@@ -1062,48 +1043,26 @@ internal static class Pcre2ProgramInvariant
             ReferenceEquals(fallback, slice.Fallback));
     }
 
+    internal static Utf8Regex? GetCoreRegex(IPcre2DirectProgram program) => program switch
+    {
+        Pcre2AsciiRegularIsMatchDirectProgram regular => regular.Regex,
+        Pcre2AsciiOrderedLiteralWindowDirectProgram window => window.Regex,
+        Pcre2AsciiLiteralAlternationRepeatDirectProgram repeat => repeat.Regex,
+        Pcre2LiteralFamilyDirectProgram family => family.Regex,
+        _ => null,
+    };
+
     private static void ValidateDirectProgram(IPcre2DirectProgram directProgram, Pcre2CompiledProgram program)
     {
-        if (directProgram is Pcre2SliceDirectProgram sliceProgram)
-        {
-            var isOwnedSliceProgram = program.PrimaryUtf8 is Pcre2Utf8ProgramSlot slicePrimary &&
-                ReferenceEquals(
-                    slicePrimary.Regex.Inspection.OwnedSliceProgram,
-                    sliceProgram.SliceProgram);
-            if (!isOwnedSliceProgram)
-            {
-                throw new InvalidOperationException("A direct slice backend must be owned by its compiled PCRE2 program.");
-            }
-        }
+        if (directProgram is Pcre2SliceDirectProgram sliceProgram &&
+            (program.Operations.Match is not Pcre2SliceDirectProgram canonical ||
+             !ReferenceEquals(canonical.SliceProgram, sliceProgram.SliceProgram) ||
+             !ReferenceEquals(canonical.Fallback, sliceProgram.Fallback)))
+            throw new InvalidOperationException("Slice operation slots must share their owned program and PCRE2 fallback.");
 
-        if (directProgram is Pcre2AsciiRegularIsMatchDirectProgram asciiRegularProgram &&
-            (program.PrimaryUtf8 is not Pcre2Utf8ProgramSlot asciiRegularPrimary ||
-             !ReferenceEquals(asciiRegularPrimary.Regex, asciiRegularProgram.Regex)))
-        {
-            throw new InvalidOperationException("An ASCII-regular IsMatch backend must be owned by its compiled PCRE2 program.");
-        }
-
-        if (directProgram is Pcre2AsciiOrderedLiteralWindowDirectProgram orderedWindowProgram &&
-            (program.PrimaryUtf8 is not Pcre2Utf8ProgramSlot orderedWindowPrimary ||
-             !ReferenceEquals(orderedWindowPrimary.Regex, orderedWindowProgram.Regex)))
-        {
-            throw new InvalidOperationException("An ASCII ordered-window backend must be owned by its compiled PCRE2 program.");
-        }
-
-        if (directProgram is Pcre2AsciiLiteralAlternationRepeatDirectProgram alternationRepeatProgram &&
-            (program.PrimaryUtf8 is not Pcre2Utf8ProgramSlot alternationRepeatPrimary ||
-             !ReferenceEquals(alternationRepeatPrimary.Regex, alternationRepeatProgram.Regex)))
-        {
-            throw new InvalidOperationException("An ASCII literal-alternation repeat backend must be owned by its compiled PCRE2 program.");
-        }
-
-        if (directProgram is Pcre2LiteralFamilyDirectProgram literalFamilyProgram &&
-            directProgram is not Pcre2FiniteLiteralLanguageDirectProgram &&
-            (program.PrimaryUtf8 is not Pcre2Utf8ProgramSlot literalFamilyPrimary ||
-             !ReferenceEquals(literalFamilyPrimary.Regex, literalFamilyProgram.Regex)))
-        {
-            throw new InvalidOperationException("A literal-family backend must be owned by its compiled PCRE2 program.");
-        }
+        if (GetCoreRegex(directProgram) is { } core &&
+            (program.PrimaryUtf8 is not Pcre2Utf8ProgramSlot primary || !ReferenceEquals(primary.Regex, core)))
+            throw new InvalidOperationException("A Core-backed operation must retain its live Core owner.");
 
         if (directProgram is Pcre2SameStartLiteralDirectProgram sameStartLiteralProgram &&
             !IsOwnedIsMatchFallback(program, sameStartLiteralProgram.Fallback))
@@ -1504,15 +1463,13 @@ internal static class Pcre2LiteralFamilyAnalyzer
         Pcre2CompileRequest request,
         Utf8SearchPortfolioKind portfolioKind)
     {
-        if (request.Options != Pcre2CompileOptions.None ||
-            root is not Pcre2AlternationBacktrackingNode { Alternatives.Length: >= 2 } alternation ||
-            !IsExactLiteralFamilyPortfolio(portfolioKind))
-        {
-            return false;
-        }
-
-        return alternation.Alternatives.All(IsNonEmptyExactLiteral);
+        return HasCompatibleSyntax(root, request) && IsExactLiteralFamilyPortfolio(portfolioKind);
     }
+
+    internal static bool HasCompatibleSyntax(IPcre2BacktrackingNode root, Pcre2CompileRequest request)
+        => request.Options == Pcre2CompileOptions.None &&
+            root is Pcre2AlternationBacktrackingNode { Alternatives.Length: >= 2 } alternation &&
+            alternation.Alternatives.All(IsNonEmptyExactLiteral);
 
     private static bool IsNonEmptyExactLiteral(IPcre2BacktrackingNode node)
     {

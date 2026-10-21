@@ -95,6 +95,7 @@ public sealed partial class Utf8Regex
 
         Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
         ValidateOptions(options);
+        ArgumentNullException.ThrowIfNull(pattern);
         Pattern = pattern;
         Options = options;
         MatchTimeout = matchTimeout;

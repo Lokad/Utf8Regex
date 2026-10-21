@@ -71,6 +71,7 @@ public sealed partial class Utf8Pcre2Regex
         // and reject invalid arguments before any byte-pattern conversion.
         var validatedTimeout = Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
         Pcre2CompileValidator.ValidateArguments(options, compileSettings);
+        ArgumentNullException.ThrowIfNull(patternSource.Text, "pattern");
         using var construction = Utf8ConstructionScope.Enter();
         var pattern = patternSource.Text;
         if (patternSource.IsUtf8)
@@ -210,12 +211,6 @@ public sealed partial class Utf8Pcre2Regex
 
     /// <summary>Gets the maximum duration of an individual matching operation.</summary>
     public TimeSpan MatchTimeout => _program.Request.MatchTimeout;
-
-    private bool HasPrimaryUtf8Regex => _program.PrimaryUtf8.IsPresent;
-
-    private Utf8Regex PrimaryUtf8Regex => ((Pcre2Utf8ProgramSlot)_program.PrimaryUtf8).Regex;
-
-    private bool UsesUtf8Translation => HasPrimaryUtf8Regex;
 
     private string[] GroupNames => _program.GroupNames;
 

@@ -8,7 +8,7 @@ using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-public sealed class Utf8Pcre2RegexTranslationTests
+public sealed class Pcre2ExecutionRouteTests
 {
     [Fact]
     public void ExactLiteralUsesItsOwnedProgramWithoutCoreTranslation()
@@ -348,7 +348,7 @@ public sealed class Utf8Pcre2RegexTranslationTests
     {
         var regex = new Utf8Pcre2Regex("(a)b+");
 
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
+        Assert.False(regex.DebugUsesUtf8RegexTranslation);
         Assert.Equal("IsMatch=Pcre2LiteralPrefixRepeat, Count=Pcre2LiteralPrefixRepeat, Enumerate=Pcre2LiteralPrefixRepeat, Match=Pcre2Slice, Replace=Pcre2Slice", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("xxabbbzz"u8));
         Assert.Equal(2, regex.Count("ab abb"u8));
@@ -363,7 +363,7 @@ public sealed class Utf8Pcre2RegexTranslationTests
     {
         var regex = new Utf8Pcre2Regex(@"\s[a-zA-Z]{0,12}ing\s");
 
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
+        Assert.False(regex.DebugUsesUtf8RegexTranslation);
         Assert.Equal("IsMatch=Pcre2AsciiBoundedIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
         Assert.Equal(3, regex.Count(" sing  bringing  going  go "u8));
     }
@@ -684,45 +684,45 @@ public sealed class Utf8Pcre2RegexTranslationTests
     {
         var regex = new Utf8Pcre2Regex(@"^\d{1,2}/\d{1,2}/\d{4}$");
 
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
+        Assert.False(regex.DebugUsesUtf8RegexTranslation);
         Assert.Equal("IsMatch=Pcre2AsciiBoundedIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("12/12/2001"u8));
         Assert.False(regex.IsMatch("12-12-2001"u8));
     }
 
     [Fact]
-    public void CreditCardValidatorUsesUtf8RegexTranslation()
+    public void CreditCardValidatorUsesOwnedOperationPrograms()
     {
         var regex = new Utf8Pcre2Regex(@"(\d{4}[- ]){3}\d{3,4}");
 
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
+        Assert.False(regex.DebugUsesUtf8RegexTranslation);
         Assert.Equal("IsMatch=Pcre2AsciiBoundedIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("1234-5678-1234-456"u8));
         Assert.False(regex.IsMatch("1234-5678"u8));
     }
 
     [Fact]
-    public void FloatValidatorUsesUtf8RegexTranslation()
+    public void FloatValidatorUsesOwnedOperationPrograms()
     {
         var regex = new Utf8Pcre2Regex(@"^[-+]?\d*\.?\d*$");
 
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
+        Assert.False(regex.DebugUsesUtf8RegexTranslation);
         Assert.True(regex.IsMatch("-3.14159"u8));
         Assert.False(regex.IsMatch("3.14.159"u8));
     }
 
     [Fact]
-    public void DateSearchUsesUtf8RegexTranslation()
+    public void DateSearchUsesOwnedOperationPrograms()
     {
         var regex = new Utf8Pcre2Regex(@"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b");
 
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
+        Assert.False(regex.DebugUsesUtf8RegexTranslation);
         Assert.True(regex.IsMatch("today is 12/12/2001 indeed"u8));
         Assert.False(regex.IsMatch("today is 12-12-2001 indeed"u8));
     }
 
     [Fact]
-    public void IpSearchUsesUtf8RegexTranslation()
+    public void IpSearchUsesOwnedOperationPrograms()
     {
         var regex = new Utf8Pcre2Regex(@"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])");
 
@@ -732,17 +732,17 @@ public sealed class Utf8Pcre2RegexTranslationTests
     }
 
     [Fact]
-    public void UriSearchUsesUtf8RegexTranslation()
+    public void UriSearchUsesOwnedOperationPrograms()
     {
         var regex = new Utf8Pcre2Regex(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?");
 
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
+        Assert.False(regex.DebugUsesUtf8RegexTranslation);
         Assert.True(regex.IsMatch("http://example.com/path?q=1#frag"u8));
         Assert.False(regex.IsMatch("not a uri"u8));
     }
 
     [Fact]
-    public void TranslatedGroupZeroOnlyPatternUsesUtf8RegexForDetailedMatch()
+    public void GroupZeroOnlyPatternUsesOwnedDetailedMatch()
     {
         var regex = new Utf8Pcre2Regex(@"\w{10,}");
 
@@ -755,7 +755,7 @@ public sealed class Utf8Pcre2RegexTranslationTests
     }
 
     [Fact]
-    public void TranslatedCapturedPatternUsesUtf8RegexForDetailedMatch()
+    public void CapturedPatternUsesOwnedDetailedMatch()
     {
         var regex = new Utf8Pcre2Regex("foo(?<Bar>BAR)?");
 
@@ -778,12 +778,12 @@ public sealed class Utf8Pcre2RegexTranslationTests
     }
 
     [Fact]
-    public void LongWordCountUsesUtf8RegexTranslation()
+    public void LongWordCountUsesOwnedOperationPrograms()
     {
         var regex = new Utf8Pcre2Regex(@"\w{10,}");
         var input = "abcdefghij short klmnopqrst"u8;
 
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
+        Assert.False(regex.DebugUsesUtf8RegexTranslation);
         var direct = Assert.IsType<Pcre2SingleTokenRepeatDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
         Assert.Equal(10, direct.Program.Minimum);
         Assert.Equal(int.MaxValue, direct.Program.Maximum);
@@ -797,36 +797,36 @@ public sealed class Utf8Pcre2RegexTranslationTests
     }
 
     [Fact]
-    public void BoundaryLongWordCountUsesUtf8RegexTranslation()
+    public void BoundaryLongWordCountUsesOwnedOperationPrograms()
     {
         var regex = new Utf8Pcre2Regex(@"\b\w{10,}\b");
 
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
+        Assert.False(regex.DebugUsesUtf8RegexTranslation);
         Assert.Equal(2, regex.Count("abcdefghij short klmnopqrst"u8));
     }
 
     [Fact]
-    public void HolmesWordCountUsesUtf8RegexTranslation()
+    public void HolmesWordCountUsesOwnedOperationPrograms()
     {
         var regex = new Utf8Pcre2Regex(@"\w+\s+Holmes");
 
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
+        Assert.False(regex.DebugUsesUtf8RegexTranslation);
         Assert.Equal(2, regex.Count("Mr Holmes and Sherlock Holmes"u8));
     }
 
     [Fact]
-    public void NonNewlineCountUsesUtf8RegexTranslation()
+    public void NonNewlineCountUsesOwnedOperationPrograms()
     {
         var regex = new Utf8Pcre2Regex(@"[^\n]*");
 
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
+        Assert.False(regex.DebugUsesUtf8RegexTranslation);
         var direct = Assert.IsType<Pcre2SingleTokenRepeatDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
         Assert.Equal((byte)'\n', direct.Program.GreedyExcludedAsciiByte);
         Assert.Equal(4, regex.Count("abc\ndef"u8));
     }
 
     [Fact]
-    public void FtpLineValidatorUsesUtf8RegexTranslation()
+    public void FtpLineValidatorUsesOwnedOperationPrograms()
     {
         var regex = new Utf8Pcre2Regex(@"^([0-9]+)(\-| |$)(.*)$");
 
@@ -836,33 +836,33 @@ public sealed class Utf8Pcre2RegexTranslationTests
     }
 
     [Fact]
-    public void EmailPatternUsesUtf8RegexTranslation()
+    public void EmailPatternUsesOwnedOperationPrograms()
     {
         var regex = new Utf8Pcre2Regex(@"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}");
 
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
+        Assert.False(regex.DebugUsesUtf8RegexTranslation);
         Assert.DoesNotContain("ManagedRegex", regex.DebugDescribeExecutionPlan(), StringComparison.Ordinal);
         Assert.True(regex.IsMatch("user@example.com"u8));
         Assert.False(regex.IsMatch("not-an-email"u8));
     }
 
     [Fact]
-    public void MultilineAnchoredPatternUsesUtf8RegexTranslation()
+    public void MultilineAnchoredPatternUsesOwnedOperationPrograms()
     {
         var regex = new Utf8Pcre2Regex("^ERROR: .+$", Pcre2CompileOptions.Multiline);
 
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
+        Assert.False(regex.DebugUsesUtf8RegexTranslation);
         Assert.DoesNotContain("ManagedRegex", regex.DebugDescribeExecutionPlan(), StringComparison.Ordinal);
         Assert.True(regex.IsMatch("INFO: ok\nERROR: boom"u8));
         Assert.Equal(1, regex.Count("INFO: ok\nERROR: boom"u8));
     }
 
     [Fact]
-    public void BacktrackingShapeUsesUtf8RegexTranslation()
+    public void BacktrackingShapeUsesOwnedOperationPrograms()
     {
         var regex = new Utf8Pcre2Regex(@".*(ss)");
 
-        Assert.True(regex.DebugUsesUtf8RegexTranslation);
+        Assert.False(regex.DebugUsesUtf8RegexTranslation);
         Assert.True(regex.IsMatch("glass"u8));
         var match = regex.MatchDetailed("glass"u8);
         Assert.True(match.Success);

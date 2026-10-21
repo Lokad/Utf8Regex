@@ -8,10 +8,10 @@ public sealed partial class Utf8Pcre2Regex
 
     internal Pcre2CompiledProgram DebugCompiledProgram => _program;
 
-    internal bool DebugUsesUtf8RegexTranslation => UsesUtf8Translation;
+    internal bool DebugUsesUtf8RegexTranslation => _program.PrimaryUtf8.IsPresent;
 
 
-    internal string DebugUtf8RegexExecutionKindName => HasPrimaryUtf8Regex ? PrimaryUtf8Regex.Inspection.ExecutionKind.ToString() : "<none>";
+    internal string DebugUtf8RegexExecutionKindName => _program.PrimaryUtf8 is Pcre2Utf8ProgramSlot primary ? primary.Regex.Inspection.ExecutionKind.ToString() : "<none>";
 
     internal int DebugReplacementCacheEntryCount => _replacementComponent.Count;
 
