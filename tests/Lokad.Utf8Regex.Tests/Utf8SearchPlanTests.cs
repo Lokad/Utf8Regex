@@ -248,7 +248,8 @@ public sealed class Utf8SearchPlanTests
         Assert.NotNull(regex.Inspection.SearchPlan.FallbackSearch.CandidatePlans);
         Assert.Same(regex.Inspection.SearchPlan.FallbackSearch.CandidatePlans, regex.Inspection.SearchPlan.FallbackCandidatePlans);
         Assert.Equal(Utf8CandidateSearchKind.StructuralSearchSet, regex.Inspection.SearchPlan.FallbackCandidateSource.Kind);
-        Assert.True(regex.Inspection.SearchPlan.FallbackCandidateSource.Semantics.RequiresConfirmation);
+        Assert.Equal(1, regex.Count("a😀b"u8));
+        Assert.Equal(6, regex.Match("a😀b"u8).LengthInBytes);
     }
 
     [Fact]
@@ -257,7 +258,6 @@ public sealed class Utf8SearchPlanTests
         var regex = new Utf8Regex("abc", RegexOptions.CultureInvariant);
 
         Assert.Equal(Utf8CandidateSearchKind.PreparedSearcher, regex.Inspection.SearchPlan.NativeCandidateSource.Kind);
-        Assert.Equal(Utf8SearchOverlapPolicy.Overlapping, regex.Inspection.SearchPlan.NativeCandidateSource.Semantics.OverlapPolicy);
         Assert.Equal(regex.Inspection.SearchPlan.PreparedSearcher.Kind, regex.Inspection.SearchPlan.NativeCandidateSource.PreparedSearcher.Kind);
         Assert.Equal(Utf8SearchOperationKind.DirectSearch, regex.Inspection.SearchPlan.CountOperation.Kind);
     }
@@ -329,24 +329,24 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void CompiledSearchAnalysisClassifiesPlanDrivenFamilies()
+    public void CompiledFamiliesUseSelectedRuntimesAndNativeKernels()
     {
-        var literalFamily = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", RegexOptions.CultureInvariant);
-        var fallback = new Utf8Regex("a.*b", RegexOptions.CultureInvariant);
-        var identifierFamily = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", RegexOptions.CultureInvariant);
-        var orderedWindow = new Utf8Regex(@"\bpublic\s+async\b", RegexOptions.CultureInvariant);
+        const RegexOptions options = RegexOptions.CultureInvariant | RegexOptions.Compiled;
+        var literal = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", options);
+        var fallback = new Utf8Regex("a.*b", options);
+        var identifier = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", options);
+        var window = new Utf8Regex(@"\bpublic\s+async\b", options);
 
-        var literalAnalysis = Utf8CompiledSearchAnalyzer.Analyze(literalFamily.Inspection.PreparedRegex, preferCompiled: true);
-        var fallbackAnalysis = Utf8CompiledSearchAnalyzer.Analyze(fallback.Inspection.PreparedRegex, preferCompiled: true);
-        var identifierAnalysis = Utf8CompiledSearchAnalyzer.Analyze(identifierFamily.Inspection.PreparedRegex, preferCompiled: true);
-        var orderedWindowAnalysis = Utf8CompiledSearchAnalyzer.Analyze(orderedWindow.Inspection.PreparedRegex, preferCompiled: true);
-
-        Assert.Equal(Utf8CompiledSearchMode.LiteralFamily, literalAnalysis.Mode);
-        Assert.Equal(Utf8CompiledSearchMode.FallbackRegex, fallbackAnalysis.Mode);
-        Assert.Equal(Utf8CompiledSearchMode.StructuralIdentifierFamily, identifierAnalysis.Mode);
-        Assert.Equal(Utf8CompiledEmittedFamily.UpperWordIdentifier, identifierAnalysis.EmittedFamily);
-        Assert.Equal(Utf8CompiledSearchMode.OrderedLiteralWindow, orderedWindowAnalysis.Mode);
-        Assert.Equal(Utf8CompiledEmittedFamily.OrderedLiteralWindow, orderedWindowAnalysis.EmittedFamily);
+        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, literal.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, fallback.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, identifier.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, window.Inspection.CompiledEngineKind);
+        Assert.True(identifier.Inspection.DebugUsesEmittedKernelMatcher);
+        Assert.True(window.Inspection.DebugUsesEmittedKernelMatcher);
+        Assert.Equal(1, literal.Count("Task"u8));
+        Assert.Equal(1, fallback.Count("axb"u8));
+        Assert.Equal(1, identifier.Count("class Bravo"u8));
+        Assert.Equal(1, window.Count("public async"u8));
     }
 
     [Fact]

@@ -27,7 +27,6 @@ internal readonly struct Utf8SearchOperationPlan
 {
     private Utf8SearchOperationPlan(
         Utf8SearchOperationKind kind,
-        Utf8SearchSemantics semantics,
         Utf8CandidateSearchPlan candidateSource,
         Utf8CandidateSearchPlan prefilterSource,
         Utf8ConfirmationPlan confirmation,
@@ -35,7 +34,6 @@ internal readonly struct Utf8SearchOperationPlan
         Utf8SearchObservabilityKind observabilityKind)
     {
         Kind = kind;
-        Semantics = semantics;
         CandidateSource = candidateSource;
         PrefilterSource = prefilterSource;
         Confirmation = confirmation;
@@ -44,8 +42,6 @@ internal readonly struct Utf8SearchOperationPlan
     }
 
     public Utf8SearchOperationKind Kind { get; }
-
-    public Utf8SearchSemantics Semantics { get; }
 
     public Utf8CandidateSearchPlan CandidateSource { get; }
 
@@ -61,7 +57,6 @@ internal readonly struct Utf8SearchOperationPlan
 
     public static Utf8SearchOperationPlan Create(
         Utf8SearchOperationKind kind,
-        Utf8SearchSemantics semantics,
         Utf8CandidateSearchPlan candidateSource,
         Utf8CandidateSearchPlan prefilterSource,
         Utf8ConfirmationPlan confirmation,
@@ -75,7 +70,6 @@ internal readonly struct Utf8SearchOperationPlan
 
         return new Utf8SearchOperationPlan(
             kind,
-            semantics,
             candidateSource,
             prefilterSource,
             confirmation,
@@ -87,7 +81,6 @@ internal readonly struct Utf8SearchOperationPlan
         => HasValue
             ? new Utf8SearchOperationPlan(
                 Kind,
-                Semantics with { RequiresProjection = projection.HasValue },
                 CandidateSource,
                 PrefilterSource,
                 Confirmation,

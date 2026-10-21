@@ -21,7 +21,6 @@ internal sealed class Utf8ReplacementPlanCache
 
     internal int Count => _plans.Count;
     internal ulong PayloadBytes => _plans.PayloadBytes;
-    internal ulong MaximumPayloadBytes => _plans.MaximumPayloadBytes;
 
     // Reserve the wrapper and the child's enforced metadata/payload maxima.
     // This immutable allowance covers every later lazy publication. It is a

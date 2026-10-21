@@ -1,5 +1,4 @@
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Search;
 namespace Lokad.Utf8Regex.Internal.Planning;
 
 internal readonly struct Utf8FallbackSearchPlan
@@ -14,18 +13,13 @@ internal readonly struct Utf8FallbackSearchPlan
 
     public Utf8PrefilterPlan PrefilterPlan { get; }
 
-    public PreparedSearcher RequiredPrefilterSearcher => PrefilterPlan.PrimarySearcher;
-
-    public PreparedSearcher SecondaryRequiredPrefilterSearcher => PrefilterPlan.SecondarySearcher;
-
     public Utf8StructuralSearchPlan[]? RequiredWindowPrefilterPlans => PrefilterPlan.WindowPlans;
 
     public Utf8StructuralSearchPlan[]? CandidatePlans { get; }
 
     public Utf8CandidateSearchPlan CandidateSource =>
         Utf8CandidateSearchPlan.FromStructuralSearchSet(
-            CandidatePlans,
-            Utf8SearchSemantics.CandidateScan with { RequiresConfirmation = true });
+            CandidatePlans);
 
     public bool HasRequiredPrefilter => PrefilterPlan.HasValue;
 

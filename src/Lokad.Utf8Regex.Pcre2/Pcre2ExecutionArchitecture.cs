@@ -3632,7 +3632,6 @@ internal struct Pcre2ResourceBudget
 
     internal ulong BacktrackingSteps { get; private set; }
 
-    internal uint Depth => _invocation.Budget.PeakDepth;
 
     internal ulong HeapBytes => _invocation.Budget.PeakWorkingBytes;
 

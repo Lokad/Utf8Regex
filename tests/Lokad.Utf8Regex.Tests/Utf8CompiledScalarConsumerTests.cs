@@ -31,16 +31,17 @@ public sealed class Utf8CompiledScalarConsumerTests
     [InlineData((int)Utf8CompiledEngineKind.SimplePatternInterpreter, "a[0-9]{2}", "é😀 a12", false, 1, 7, 3, 4, 3)]
     [InlineData((int)Utf8CompiledEngineKind.SimplePatternInterpreter, "a.b", "é a😀b", false, 1, 3, 6, 2, 4)]
     [InlineData((int)Utf8CompiledEngineKind.StructuralLinearAutomaton, "a.{0,4}b", "xa😀b tail", false, 1, 1, 6, 1, 4)]
-    [InlineData((int)Utf8CompiledEngineKind.StructuralFamily, "\\b(?:record|struct|class)\\s+[A-Z][A-Za-z0-9_]+", "é😀 class Bravo", true, 1, 7, 11, 4, 11)]
+    [InlineData(-1, "\\b(?:record|struct|class)\\s+[A-Z][A-Za-z0-9_]+", "é😀 class Bravo", true, 1, 7, 11, 4, 11)]
     [InlineData((int)Utf8CompiledEngineKind.StructuralLinearAutomaton, "\\b(?:record|struct|class)\\s+[A-Z][A-Za-z0-9_]+", "é😀 class Bravo", true, 1, 7, 11, 4, 11)]
-    [InlineData((int)Utf8CompiledEngineKind.StructuralFamily, "\\b(?:record|struct|class)\\s+[A-Z][A-Za-z0-9_]+", "é😀 class Bravo", false, 1, 7, 11, 4, 11)]
+    [InlineData(-1, "\\b(?:record|struct|class)\\s+[A-Z][A-Za-z0-9_]+", "é😀 class Bravo", false, 1, 7, 11, 4, 11)]
     public void InternalCompiledConsumersKeepScalarByteRangesAndDerivedCoordinates(int kind, string pattern,
         string text, bool rtl, int count, int indexBytes, int lengthBytes, int indexUnits, int lengthUnits)
     {
         var options = RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0);
         var prepared = Prepare(pattern, options);
         var verifier = Utf8VerifierRuntime.Create(prepared);
-        var runtime = Utf8CompiledRuntimeFactory.Create(new((Utf8CompiledEngineKind)kind), prepared, verifier, options);
+        var engine = kind < 0 ? Utf8CompiledEngineSelector.Select(prepared) : new Utf8CompiledEngine((Utf8CompiledEngineKind)kind);
+        var runtime = Utf8CompiledRuntimeFactory.Create(engine, prepared, verifier, options);
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var validation in new[] { Utf8Validation.Validate(input), default })
         {
@@ -74,7 +75,7 @@ public sealed class Utf8CompiledScalarConsumerTests
             Assert.Equal((indexBytes, lengthBytes, indexUnits, lengthUnits),
                 (routedMatch.IndexInBytes, routedMatch.LengthInBytes, routedMatch.IndexInUtf16, routedMatch.LengthInUtf16));
         }
-        if (kind == (int)Utf8CompiledEngineKind.StructuralFamily && rtl)
+        if (kind < 0 && rtl)
         {
             var linear = new Utf8AsciiStructuralFamilyLinearRuntime(prepared);
             Assert.True(linear.IsMatch(input, actualValidation, verifier, Utf8ExecutionDeadline.Infinite));

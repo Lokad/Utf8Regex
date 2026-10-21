@@ -988,8 +988,8 @@ internal static partial class BenchmarkInspectReporter
 
         var effectiveOptions = Utf8RegexSyntax.NormalizeNonSemanticOptions(ordinaryOptions);
         var phasePreparedRegex = Utf8FrontEnd.Compile(benchmarkCase.Pattern, effectiveOptions);
-        var phaseOrdinaryEngine = Utf8CompiledEngineSelector.Select(phasePreparedRegex, preferCompiled: false);
-        var phaseCompiledEngine = Utf8CompiledEngineSelector.Select(phasePreparedRegex, preferCompiled: true);
+        var phaseOrdinaryEngine = Utf8CompiledEngineSelector.Select(phasePreparedRegex);
+        var phaseCompiledEngine = phaseOrdinaryEngine; // Emission is selected by runtime options.
         var phaseOrdinaryVerifier = Utf8VerifierRuntime.Create(phasePreparedRegex);
         var phaseCompiledVerifier = Utf8VerifierRuntime.Create(phasePreparedRegex);
         var phaseRegexComparator = new Regex(benchmarkCase.Pattern, ordinaryOptions, Regex.InfiniteMatchTimeout);

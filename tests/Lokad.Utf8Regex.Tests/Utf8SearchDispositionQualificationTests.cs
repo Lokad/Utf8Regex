@@ -16,7 +16,7 @@ public sealed class Utf8SearchDispositionQualificationTests
     public void CanonicalSearchPlanRetiresRepeatedViewsAndSelectorBorrowsThePlan()
     {
         var fields = typeof(Utf8SearchPlan).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-        Assert.Equal(32, fields.Length);
+        Assert.Equal(29, fields.Length);
         Assert.InRange(Unsafe.SizeOf<Utf8SearchPlan>(), 1, 4096);
         var retired = new[] { "FallbackSearch", "NativeCandidateSource", "FallbackCandidateSource", "ConfirmationPlan",
             "CountOperation", "FirstMatchOperation", "EnumerationOperation" };
@@ -46,8 +46,6 @@ public sealed class Utf8SearchDispositionQualificationTests
             Assert.Equal(w, filter.WindowSource.HasValue); Assert.Equal(c, fallback.CandidateSource.HasValue);
             Assert.Same(w ? windows : null, fallback.RequiredWindowPrefilterPlans);
             Assert.Same(c ? candidates : null, fallback.CandidateSource.StructuralSearchPlans);
-            Assert.Equal(c ? Utf8SearchSemantics.CandidateScan with { RequiresConfirmation = true } : default,
-                fallback.CandidateSource.Semantics);
         }
         Assert.Equal(0ul, zero.Budget.WorkSteps); Assert.Equal(0ul, zero.Budget.ReservedBytes);
         Assert.Equal(0ul, zero.Budget.Depth);
@@ -63,11 +61,9 @@ public sealed class Utf8SearchDispositionQualificationTests
         {
             var plan = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant).SearchPlan;
             using var zero = new Utf8ConstructionScope(0, 0, 0, 0);
-            foreach (var request in new[] { Utf8SearchSemantics.CountMatches, Utf8SearchSemantics.FirstMatch,
-                Utf8SearchSemantics.EnumerateMatches, new(Utf8SearchOverlapPolicy.Overlapping, Utf8SearchExitPolicy.First, true, true) })
+            foreach (var projection in new[] { default(Utf8ProjectionPlan), plan.ProjectionPlan })
             {
-                var projection = request.RequiresProjection ? plan.ProjectionPlan : default;
-                var operation = Utf8SearchStrategySelector.Create(plan, request, plan.ConfirmationPlan, projection);
+                var operation = Utf8SearchStrategySelector.Create(plan, plan.ConfirmationPlan, projection);
                 var native = plan.NativeCandidateSource; var fallback = plan.FallbackCandidateSource;
                 var confirm = native.HasValue ? plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement : fallback.HasValue;
                 var expected = !native.HasValue && !fallback.HasValue ? Utf8SearchOperationKind.None :
@@ -78,7 +74,8 @@ public sealed class Utf8SearchDispositionQualificationTests
                 Assert.Equal(expected, operation.Kind);
                 if (operation.HasValue)
                 {
-                    Assert.Equal(request with { RequiresConfirmation = confirm }, operation.Semantics);
+                    Assert.Equal(projection, operation.Projection);
+                    Assert.Equal(plan.ConfirmationPlan, operation.Confirmation);
                     var selected = native.HasValue ? native : fallback;
                     Assert.Equal(selected.Kind, operation.CandidateSource.Kind);
                     Assert.Same(selected.StructuralSearchPlans, operation.CandidateSource.StructuralSearchPlans);
@@ -88,9 +85,9 @@ public sealed class Utf8SearchDispositionQualificationTests
                     Assert.Same(preferred.StructuralSearchPlans, operation.PrefilterSource.StructuralSearchPlans);
                 }
             }
-            Assert.Equal(plan.CountOperation.Kind, Utf8SearchStrategySelector.Create(plan, Utf8SearchSemantics.CountMatches, plan.ConfirmationPlan, default).Kind);
-            Assert.Equal(plan.FirstMatchOperation.Kind, Utf8SearchStrategySelector.Create(plan, Utf8SearchSemantics.FirstMatch, plan.ConfirmationPlan, default).Kind);
-            Assert.Equal(plan.EnumerationOperation.Kind, Utf8SearchStrategySelector.Create(plan, Utf8SearchSemantics.EnumerateMatches, plan.ConfirmationPlan, plan.ProjectionPlan).Kind);
+            Assert.Equal(plan.CountOperation.Kind, Utf8SearchStrategySelector.Create(plan, plan.ConfirmationPlan, default).Kind);
+            Assert.Equal(plan.FirstMatchOperation.Kind, Utf8SearchStrategySelector.Create(plan, plan.ConfirmationPlan, default).Kind);
+            Assert.Equal(plan.EnumerationOperation.Kind, Utf8SearchStrategySelector.Create(plan, plan.ConfirmationPlan, plan.ProjectionPlan).Kind);
             Assert.Same(plan.FallbackCandidatePlans, plan.FallbackSearch.CandidatePlans);
             Assert.Equal(0ul, zero.Budget.WorkSteps); Assert.Equal(0ul, zero.Budget.Depth); Assert.Equal(0ul, zero.Budget.ReservedBytes);
         }

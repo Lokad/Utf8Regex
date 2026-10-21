@@ -138,11 +138,6 @@ internal static partial class AsciiSearch
         return new PreparedLiteralSetSearch(searchData).IndexOf(input);
     }
 
-    public static int LastIndexOfAnyExact(ReadOnlySpan<byte> input, AsciiExactLiteralSearchData searchData)
-    {
-        return new PreparedLiteralSetSearch(searchData).LastIndexOf(input);
-    }
-
     public static bool TryGetMatchedLiteralLength(ReadOnlySpan<byte> input, int index, AsciiExactLiteralSearchData searchData, out int matchedLength)
     {
         return new PreparedLiteralSetSearch(searchData).TryGetMatchedLiteralLength(input, index, out matchedLength);

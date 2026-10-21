@@ -79,7 +79,7 @@ internal static class Utf8GraphQualification
         if (state is not null) return StateBytes(state);
         return type.Name switch
         {
-            nameof(Utf8StructuralFamilyCompiledEngineRuntime) or nameof(Utf8SimplePatternCompiledEngineRuntime) or nameof(Utf8StructuralLinearAutomatonCompiledEngineRuntime) or nameof(Utf8FallbackRegexCompiledEngineRuntime)
+            nameof(Utf8SimplePatternCompiledEngineRuntime) or nameof(Utf8StructuralLinearAutomatonCompiledEngineRuntime) or nameof(Utf8FallbackRegexCompiledEngineRuntime)
                 => Utf8CompiledRuntimeFactory.FixedRuntimeMetadataBytes,
             nameof(Utf8EmittedWholeMatcher) => Utf8ConstructionBudget.ObjectBytes<Utf8EmittedDelegate<Utf8EmittedWholeMatcher.MatchDelegate>>(),
             nameof(Utf8EmittedDeterministicMatcher) => Utf8ConstructionBudget.ObjectBytes<(Utf8EmittedDelegate<Utf8EmittedDeterministicMatcher.FindNextDelegate>, byte[], AsciiCharClass[], bool)>(),

@@ -44,9 +44,7 @@ internal sealed class Utf8RegexProgram
         {
             var effectiveOptions = Utf8RegexSyntax.NormalizeNonSemanticOptions(options);
             var preparedRegex = Utf8FrontEnd.Compile(pattern, effectiveOptions, options);
-            var compiledEngine = Utf8CompiledEngineSelector.Select(
-                preparedRegex,
-                (options & RegexOptions.Compiled) != 0);
+            var compiledEngine = Utf8CompiledEngineSelector.Select(preparedRegex);
             var verifierRuntime = Utf8VerifierRuntime.Create(preparedRegex);
             var compiledEngineRuntime = Utf8CompiledEngineRuntime.Create(
                 compiledEngine,
@@ -59,14 +57,19 @@ internal sealed class Utf8RegexProgram
             var captureCatalog = preparedRegex.SemanticRegex.CaptureCatalog;
             if (captureCatalog is null)
                 throw new InvalidOperationException("Owned preparation must produce capture metadata.");
-            var directStructuralFamilyKernelMatcher =
-                preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
-                Utf8EmittedKernelMatcher.TryCreate(
-                    preparedRegex.StructuralIdentifierFamilyPlan,
-                    preparedRegex.SearchPlan,
-                    out var structuralFamilyKernelMatcher)
-                        ? structuralFamilyKernelMatcher
-                        : null;
+            Utf8EmittedKernelMatcher? directStructuralFamilyKernelMatcher = null;
+            if (preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily)
+            {
+                // The compiled runtime already attempted preparation, including
+                // a legitimate decline. Borrow its immutable kernel for Count.
+                // Ordinary construction still prepares the direct native route.
+                if ((options & RegexOptions.Compiled) != 0 &&
+                    compiledEngineRuntime is Utf8StructuralLinearAutomatonCompiledEngineRuntime linear)
+                    directStructuralFamilyKernelMatcher = linear.PreparedKernelMatcher;
+                else if (Utf8EmittedKernelMatcher.TryCreate(preparedRegex.StructuralIdentifierFamilyPlan,
+                    preparedRegex.SearchPlan, out var structuralFamilyKernelMatcher))
+                    directStructuralFamilyKernelMatcher = structuralFamilyKernelMatcher;
+            }
 
             budget.CheckBytes(ObjectBytes);
             budget.ChargeWork(2);

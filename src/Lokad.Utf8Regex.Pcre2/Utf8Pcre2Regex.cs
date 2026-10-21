@@ -192,7 +192,6 @@ public sealed partial class Utf8Pcre2Regex
     /// <summary>Gets the maximum duration of an individual matching operation.</summary>
     public TimeSpan MatchTimeout => _program.Request.MatchTimeout;
 
-    private string[] GroupNames => _program.GroupNames;
 
     private Pcre2NameEntry[] NameEntries => _program.NameEntries;
 
@@ -1765,7 +1764,6 @@ public sealed partial class Utf8Pcre2Regex
         }
 
         internal int Count => _plans.Count;
-        internal ulong PayloadBytes => _plans.PayloadBytes;
 
         internal Pcre2ReplacementPreparation GetOrAdd(
             Pcre2ReplacementCacheKey key,

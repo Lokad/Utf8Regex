@@ -14,14 +14,12 @@ internal readonly struct Utf8CandidateSearchPlan
 {
     private Utf8CandidateSearchPlan(
         Utf8CandidateSearchKind kind,
-        Utf8SearchSemantics semantics,
         PreparedSearcher preparedSearcher,
         Utf8StructuralSearchPlan structuralSearchPlan,
         Utf8StructuralSearchPlan[]? structuralSearchPlans,
         Utf8SearchPortfolioKind portfolioKind)
     {
         Kind = kind;
-        Semantics = semantics;
         PreparedSearcher = preparedSearcher;
         StructuralSearchPlan = structuralSearchPlan;
         StructuralSearchPlans = structuralSearchPlans;
@@ -29,8 +27,6 @@ internal readonly struct Utf8CandidateSearchPlan
     }
 
     public Utf8CandidateSearchKind Kind { get; }
-
-    public Utf8SearchSemantics Semantics { get; }
 
     public PreparedSearcher PreparedSearcher { get; }
 
@@ -44,7 +40,6 @@ internal readonly struct Utf8CandidateSearchPlan
 
     public static Utf8CandidateSearchPlan FromPreparedSearcher(
         PreparedSearcher searcher,
-        Utf8SearchSemantics semantics,
         Utf8SearchPortfolioKind portfolioKind)
     {
         if (!searcher.HasValue)
@@ -54,7 +49,6 @@ internal readonly struct Utf8CandidateSearchPlan
 
         return new Utf8CandidateSearchPlan(
             Utf8CandidateSearchKind.PreparedSearcher,
-            semantics,
             searcher,
             default,
             null,
@@ -63,7 +57,6 @@ internal readonly struct Utf8CandidateSearchPlan
 
     public static Utf8CandidateSearchPlan FromStructuralSearch(
         Utf8StructuralSearchPlan plan,
-        Utf8SearchSemantics semantics,
         Utf8SearchPortfolioKind portfolioKind)
     {
         if (!plan.HasValue)
@@ -73,7 +66,6 @@ internal readonly struct Utf8CandidateSearchPlan
 
         return new Utf8CandidateSearchPlan(
             Utf8CandidateSearchKind.StructuralSearch,
-            semantics,
             default,
             plan,
             null,
@@ -81,8 +73,7 @@ internal readonly struct Utf8CandidateSearchPlan
     }
 
     public static Utf8CandidateSearchPlan FromStructuralSearchSet(
-        Utf8StructuralSearchPlan[]? plans,
-        Utf8SearchSemantics semantics)
+        Utf8StructuralSearchPlan[]? plans)
     {
         if (plans is not { Length: > 0 })
         {
@@ -91,7 +82,6 @@ internal readonly struct Utf8CandidateSearchPlan
 
         return new Utf8CandidateSearchPlan(
             Utf8CandidateSearchKind.StructuralSearchSet,
-            semantics,
             default,
             default,
             plans,

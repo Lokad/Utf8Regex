@@ -2,6 +2,14 @@
 
 ## Unreleased development after 0.4.0-rc.1
 
+- Compiled identifier families prepare one immutable native kernel for both
+  runtime and direct Count, instead of duplicate plans/delegates. Engine
+  selection no longer lowers and discards a plan for classification. Removed
+  an unreachable structural runtime, shadow search flags and unused references.
+  Actual emission, scalar results and invocation controls remain; construction
+  charges may decrease with removed acquisitions and smaller carriers. Internal
+  engine labels now report StructuralLinearAutomaton with emitted capability.
+
 - Removed unread structural run-plan/search copies and an always-null window
   fact, plus unused internal helpers. Actual carrier sizes and their conservative
   construction/cache charges can decrease; live searches, scalar execution and

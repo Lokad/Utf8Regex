@@ -64,7 +64,6 @@ internal readonly struct Utf8SearchPlan
             : null;
         PreparedSearcher = CreatePreparedSearcher(kind, LiteralSearch, MultiLiteralSearch);
         PortfolioKind = DeterminePortfolioKind(kind, PreparedSearcher, MultiLiteralSearch);
-        RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteralUtf8;
         RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiteralsUtf8;
         var requiredPrefilterSearcher = CreateRequiredPrefilter(requiredPrefilterLiteralUtf8, requiredPrefilterAlternateLiteralsUtf8);
         var secondaryRequiredPrefilterSearcher = CreateSecondaryRequiredPrefilter(
@@ -72,8 +71,6 @@ internal readonly struct Utf8SearchPlan
             secondaryRequiredPrefilterQuotedAsciiLength);
         FixedDistanceSets = fixedDistanceSets;
         TrailingLiteralUtf8 = trailingLiteralUtf8;
-        OrderedWindowLeadingLiteralsUtf8 = orderedWindowLeadingLiteralsUtf8;
-        OrderedWindowTrailingLiteralUtf8 = orderedWindowTrailingLiteralUtf8;
         var requiredWindowPrefilterPlans =
             CreateRequiredWindowPrefilterPlans(requiredWindowPrefilters) ??
             CreateFallbackRequiredWindowPrefilterPlans(
@@ -177,8 +174,6 @@ internal readonly struct Utf8SearchPlan
 
     public Utf8SearchPortfolioKind PortfolioKind { get; }
 
-    public byte[]? RequiredPrefilterLiteralUtf8 { get; }
-
     public byte[][]? RequiredPrefilterAlternateLiteralsUtf8 { get; }
 
     public Utf8FallbackSearchPlan FallbackSearch => new(PrefilterPlan, _fallbackCandidatePlans);
@@ -186,25 +181,24 @@ internal readonly struct Utf8SearchPlan
     public Utf8PrefilterPlan PrefilterPlan { get; }
 
     public Utf8CandidateSearchPlan NativeCandidateSource => HasPreparedSearcher
-        ? Utf8CandidateSearchPlan.FromPreparedSearcher(PreparedSearcher, Utf8SearchSemantics.CandidateScan, PortfolioKind)
-        : Utf8CandidateSearchPlan.FromStructuralSearch(StructuralSearchPlan, Utf8SearchSemantics.CandidateScan, PortfolioKind);
+        ? Utf8CandidateSearchPlan.FromPreparedSearcher(PreparedSearcher, PortfolioKind)
+        : Utf8CandidateSearchPlan.FromStructuralSearch(StructuralSearchPlan, PortfolioKind);
 
     public Utf8CandidateSearchPlan FallbackCandidateSource =>
-        Utf8CandidateSearchPlan.FromStructuralSearchSet(_fallbackCandidatePlans,
-            Utf8SearchSemantics.CandidateScan with { RequiresConfirmation = true });
+        Utf8CandidateSearchPlan.FromStructuralSearchSet(_fallbackCandidatePlans);
 
     public Utf8ConfirmationPlan ConfirmationPlan => CreateConfirmationPlan();
 
     public Utf8ProjectionPlan ProjectionPlan { get; }
 
     public Utf8SearchOperationPlan CountOperation =>
-        Utf8SearchStrategySelector.Create(this, Utf8SearchSemantics.CountMatches, ConfirmationPlan, default);
+        Utf8SearchStrategySelector.Create(this, ConfirmationPlan, default);
 
     public Utf8SearchOperationPlan FirstMatchOperation =>
-        Utf8SearchStrategySelector.Create(this, Utf8SearchSemantics.FirstMatch, ConfirmationPlan, default);
+        Utf8SearchStrategySelector.Create(this, ConfirmationPlan, default);
 
     public Utf8SearchOperationPlan EnumerationOperation =>
-        Utf8SearchStrategySelector.Create(this, Utf8SearchSemantics.EnumerateMatches, ConfirmationPlan, ProjectionPlan);
+        Utf8SearchStrategySelector.Create(this, ConfirmationPlan, ProjectionPlan);
 
     public PreparedSearcher RequiredPrefilterSearcher => PrefilterPlan.PrimarySearcher;
 
@@ -215,10 +209,6 @@ internal readonly struct Utf8SearchPlan
     public Utf8FixedDistanceSet[]? FixedDistanceSets { get; }
 
     public byte[]? TrailingLiteralUtf8 { get; }
-
-    public byte[][]? OrderedWindowLeadingLiteralsUtf8 { get; }
-
-    public byte[]? OrderedWindowTrailingLiteralUtf8 { get; }
 
     public Utf8StructuralSearchPlan[]? RequiredWindowPrefilterPlans => PrefilterPlan.WindowPlans;
 

@@ -5,7 +5,6 @@ internal static class Utf8SearchStrategySelector
 {
     public static Utf8SearchOperationPlan Create(
         in Utf8SearchPlan plan,
-        Utf8SearchSemantics semantics,
         Utf8ConfirmationPlan confirmation,
         Utf8ProjectionPlan projection)
     {
@@ -28,10 +27,6 @@ internal static class Utf8SearchStrategySelector
                         : Utf8SearchOperationKind.DirectSearch;
             return Utf8SearchOperationPlan.Create(
                 kind,
-                semantics with
-                {
-                    RequiresConfirmation = requiresConfirmation,
-                },
                 nativeSource,
                 prefilterEngine,
                 confirmation,
@@ -49,7 +44,6 @@ internal static class Utf8SearchStrategySelector
                 : Utf8SearchOperationKind.SearchThenConfirm;
             return Utf8SearchOperationPlan.Create(
                 kind,
-                semantics with { RequiresConfirmation = true },
                 fallbackSource,
                 prefilterEngine,
                 confirmation,

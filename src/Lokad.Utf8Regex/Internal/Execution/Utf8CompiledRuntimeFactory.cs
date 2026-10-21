@@ -33,10 +33,6 @@ internal static class Utf8CompiledRuntimeFactory
                 budget.ReserveBytes(FixedRuntimeMetadataBytes);
                 result = compiledEngine.Kind switch
                 {
-                    Utf8CompiledEngineKind.StructuralFamily
-                        => new Utf8StructuralFamilyCompiledEngineRuntime(regexPlan, verifierRuntime),
-                    Utf8CompiledEngineKind.EmittedKernel
-                        => new Utf8StructuralLinearAutomatonCompiledEngineRuntime(regexPlan, verifierRuntime, true),
                     Utf8CompiledEngineKind.StructuralLinearAutomaton
                         => new Utf8StructuralLinearAutomatonCompiledEngineRuntime(regexPlan, verifierRuntime, (options & RegexOptions.Compiled) != 0),
                     Utf8CompiledEngineKind.SimplePatternInterpreter

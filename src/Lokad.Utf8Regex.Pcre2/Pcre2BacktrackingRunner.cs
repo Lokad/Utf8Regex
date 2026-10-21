@@ -136,9 +136,6 @@ internal readonly record struct Pcre2BacktrackingMatch(
     Pcre2BacktrackingCaptureResult CaptureResult,
     string? Mark)
 {
-    internal static Pcre2BacktrackingMatch NoMatch =>
-        new(false, 0, 0, 0, 0, false, default, null);
-
     internal Pcre2CharacterMatch ToCharacterMatch() => Success
         ? new Pcre2CharacterMatch(
             true,

@@ -141,15 +141,13 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
         Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
     }
 
-    [Theory]
-    [InlineData((int)Utf8CompiledEngineKind.FallbackRegex)]
-    [InlineData((int)Utf8CompiledEngineKind.StructuralFamily)]
-    public void NonliteralSelectionDoesNotPrepareTheDiscardedLiteralRuntime(int kind)
+    [Fact]
+    public void NonliteralSelectionDoesNotPrepareTheDiscardedLiteralRuntime()
     {
-        var plan = Plan("aaaaa|bbbbb|ccccc");
+        var plan = Plan("a.*b");
         var verifier = Utf8VerifierRuntime.Create(plan);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, 2, 2);
-        var runtime = Utf8CompiledRuntimeFactory.Create(new Utf8CompiledEngine((Utf8CompiledEngineKind)kind), plan, verifier, RegexOptions.None);
+        var runtime = Utf8CompiledRuntimeFactory.Create(Utf8CompiledEngineSelector.Select(plan), plan, verifier, RegexOptions.None);
         Assert.IsNotType<Utf8LiteralCompiledEngineRuntime>(runtime);
         // Only the selected nonliteral object's conservative metadata is admitted.
         // A discarded literal runtime would exceed both the work and depth gates.

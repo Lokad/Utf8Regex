@@ -2887,7 +2887,8 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex(@"\b(?:LogError|LogWarning|LogInformation)\s*\(", RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var input = "LogWarningx LogInformation ("u8;
 
-        Assert.Equal(Utf8CompiledEngineKind.EmittedKernel, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
+        Assert.True(regex.Inspection.DebugUsesEmittedKernelMatcher);
         Assert.Equal(1, regex.Count(input));
         var match = regex.Match(input);
         Assert.True(match.Success);
@@ -2901,7 +2902,8 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex(@"\bpublic\s+async\b", RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var input = "xpublic async public   asyncz public async"u8;
 
-        Assert.Equal(Utf8CompiledEngineKind.EmittedKernel, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
+        Assert.True(regex.Inspection.DebugUsesEmittedKernelMatcher);
         Assert.Equal(1, regex.Count(input));
         var match = regex.Match(input);
         Assert.True(match.Success);
@@ -2924,7 +2926,8 @@ public sealed class Utf8RegexConstructionTests
         var bytes = Encoding.UTF8.GetBytes(input);
         var expected = Regex.Match(input, pattern, RegexOptions.CultureInvariant);
 
-        Assert.Equal(Utf8CompiledEngineKind.EmittedKernel, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
+        Assert.True(regex.Inspection.DebugUsesEmittedKernelMatcher);
         Assert.Equal(Regex.Count(input, pattern, RegexOptions.CultureInvariant), regex.Count(bytes));
         var match = regex.Match(bytes);
         Assert.True(match.Success);

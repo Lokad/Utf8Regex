@@ -178,19 +178,6 @@ internal readonly struct AsciiCharClass : IEquatable<AsciiCharClass>
         return new AsciiCharClass(low, high, negated);
     }
 
-    public static AsciiCharClass CombinePositive(AsciiCharClass left, AsciiCharClass right, bool negated)
-    {
-        if (left.Negated || right.Negated)
-        {
-            throw new ArgumentException("Only positive ASCII definitions can be combined.");
-        }
-
-        return new AsciiCharClass(
-            left.PositiveLowMask | right.PositiveLowMask,
-            left.PositiveHighMask | right.PositiveHighMask,
-            negated);
-    }
-
     public byte[] GetPositiveMatchBytes()
     {
         return Negated ? [] : GetMatchBytes();
