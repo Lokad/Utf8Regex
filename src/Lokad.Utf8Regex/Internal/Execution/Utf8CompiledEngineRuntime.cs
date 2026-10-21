@@ -149,46 +149,6 @@ internal abstract class Utf8CompiledEngineRuntime
 
 }
 
-internal sealed class Utf8ExactLiteralCompiledEngineRuntime : Utf8CompiledEngineRuntime,
-    IUtf8AsciiWellFormedMatchRuntime,
-    IUtf8WellFormedMatchRuntime,
-    IUtf8UnvalidatedMatchRuntime
-{
-    private readonly Utf8LiteralCompiledEngineRuntime _inner;
-
-    public Utf8ExactLiteralCompiledEngineRuntime(Utf8LiteralCompiledEngineRuntime inner) => _inner = inner;
-
-    internal Utf8LiteralCompiledEngineRuntime Inner => _inner;
-
-    public override Utf8CompiledRuntimeCapabilities Capabilities => _inner.Capabilities;
-    public bool TryMatchAsciiWellFormed(ReadOnlySpan<byte> input, out Utf8ValueMatch match) => _inner.TryMatchAsciiWellFormedOnly(input, out match);
-    public bool TryMatchWellFormed(ReadOnlySpan<byte> input, out Utf8ValueMatch match) => _inner.TryMatchWellFormedOnly(input, out match);
-    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget) => _inner.IsMatch(input, validation, budget);
-    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget) => _inner.Count(input, validation, budget);
-    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget) => _inner.Match(input, validation, budget);
-    public bool ExecuteMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8ValueMatch match) => _inner.TryMatchWithoutValidation(input, budget, out match);
-}
-
-internal sealed class Utf8LiteralFamilyCompiledEngineRuntime : Utf8CompiledEngineRuntime,
-    IUtf8AsciiWellFormedMatchRuntime,
-    IUtf8WellFormedMatchRuntime,
-    IUtf8UnvalidatedMatchRuntime
-{
-    private readonly Utf8LiteralCompiledEngineRuntime _inner;
-
-    public Utf8LiteralFamilyCompiledEngineRuntime(Utf8LiteralCompiledEngineRuntime inner) => _inner = inner;
-
-    internal Utf8LiteralCompiledEngineRuntime Inner => _inner;
-
-    public override Utf8CompiledRuntimeCapabilities Capabilities => _inner.Capabilities;
-    public bool TryMatchAsciiWellFormed(ReadOnlySpan<byte> input, out Utf8ValueMatch match) => _inner.TryMatchAsciiWellFormedOnly(input, out match);
-    public bool TryMatchWellFormed(ReadOnlySpan<byte> input, out Utf8ValueMatch match) => _inner.TryMatchWellFormedOnly(input, out match);
-    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget) => _inner.IsMatch(input, validation, budget);
-    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget) => _inner.Count(input, validation, budget);
-    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget) => _inner.Match(input, validation, budget);
-    public bool ExecuteMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8ValueMatch match) => _inner.TryMatchWithoutValidation(input, budget, out match);
-}
-
 internal sealed class Utf8StructuralFamilyCompiledEngineRuntime : Utf8CompiledEngineRuntime
 {
     private readonly Utf8PreparedRegex _regexPlan;

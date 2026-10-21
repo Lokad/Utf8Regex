@@ -150,7 +150,7 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
         var verifier = Utf8VerifierRuntime.Create(plan);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, 2, 2);
         var runtime = Utf8CompiledRuntimeFactory.Create(new Utf8CompiledEngine((Utf8CompiledEngineKind)kind), plan, verifier, RegexOptions.None);
-        Assert.False(runtime is Utf8LiteralFamilyCompiledEngineRuntime or Utf8ExactLiteralCompiledEngineRuntime);
+        Assert.IsNotType<Utf8LiteralCompiledEngineRuntime>(runtime);
         // Only the selected nonliteral object's conservative metadata is admitted.
         // A discarded literal runtime would exceed both the work and depth gates.
         Assert.Equal(Utf8CompiledRuntimeFactory.FixedRuntimeMetadataBytes, owner.Budget.ReservedBytes);

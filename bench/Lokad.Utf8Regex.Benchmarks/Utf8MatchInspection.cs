@@ -135,13 +135,7 @@ internal static class Utf8MatchInspection
     }
 
     private static Utf8LiteralCompiledEngineRuntime? GetLiteralRuntime(Utf8Regex.Utf8RegexInspection inspection)
-        => inspection.CompiledRuntime switch
-        {
-            Utf8LiteralCompiledEngineRuntime direct => direct,
-            Utf8ExactLiteralCompiledEngineRuntime exact => exact.Inner,
-            Utf8LiteralFamilyCompiledEngineRuntime family => family.Inner,
-            _ => null,
-        };
+        => inspection.CompiledRuntime as Utf8LiteralCompiledEngineRuntime;
 
     // Alternative Count probes belong to benchmark tooling. Production keeps its
     // selected kernels; these probes reuse existing prepared metadata and bodies.

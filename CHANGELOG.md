@@ -2,6 +2,11 @@
 
 ## Unreleased development after 0.4.0-rc.1
 
+- Literal execution now uses its implementation directly, removing two
+  forwarding runtime wrappers and one object per applicable construction.
+  Split eligibility keeps the existing compiled-kind proof; algorithms, SIMD,
+  scalar results and resource controls remain. Metadata admission is smaller.
+
 - Removed unused native replacement capture snapshots, reference maps/vectors
   and destination forwarding code. Native templates keep group-zero operations;
   real captures still expand through the owned scalar/template implementations.

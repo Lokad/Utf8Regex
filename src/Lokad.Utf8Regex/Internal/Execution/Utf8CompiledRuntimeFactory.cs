@@ -23,11 +23,8 @@ internal static class Utf8CompiledRuntimeFactory
             Utf8CompiledEngineRuntime result;
             if (compiledEngine.Kind is Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily)
             {
-                var inner = Utf8LiteralCompiledEngineRuntime.Create(compiledEngine, regexPlan,
+                result = Utf8LiteralCompiledEngineRuntime.Create(compiledEngine, regexPlan,
                     (options & RegexOptions.RightToLeft) != 0);
-                result = compiledEngine.Kind == Utf8CompiledEngineKind.ExactLiteral
-                    ? budget.AllocateObject(inner, static value => new Utf8ExactLiteralCompiledEngineRuntime(value))
-                    : budget.AllocateObject(inner, static value => new Utf8LiteralFamilyCompiledEngineRuntime(value));
             }
             else
             {

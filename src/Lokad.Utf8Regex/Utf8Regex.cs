@@ -3147,13 +3147,14 @@ public sealed partial class Utf8Regex
     {
         if (MatchTimeout != Regex.InfiniteMatchTimeout ||
             _preparedRegex.ExecutionPattern.IndexOf('(') >= 0 ||
-            _compiledEngineRuntime is not Utf8LiteralFamilyCompiledEngineRuntime literalFamilyRuntime)
+            CompiledEngineKind != Utf8CompiledEngineKind.LiteralFamily ||
+            _compiledEngineRuntime is not Utf8LiteralCompiledEngineRuntime literalFamilyRuntime)
         {
             search = default;
             return false;
         }
 
-        return literalFamilyRuntime.Inner.TryGetSmallAsciiLiteralFamilyPrimitive(input, out search);
+        return literalFamilyRuntime.TryGetSmallAsciiLiteralFamilyPrimitive(input, out search);
     }
 
     private bool UsesRightToLeft()

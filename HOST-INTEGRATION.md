@@ -36,9 +36,12 @@ The prepared-program, scalar-program and dynamic IL builder carriers use coarse
 of 1,024 / 144 / 144 bytes. Direct construction keeps admission before allocation;
 major children and real array/value layout queries retain separate coverage.
 These larger conservative charges can cause earlier refusal/eviction.
-Every cache producer supplies a conservative bounded payload policy. Small
-runtime/verifier wrappers retain their 128-byte admission floors; the larger
+Every cache producer supplies a conservative bounded payload policy. Remaining small
+runtime/verifier carriers retain their 128-byte admission floors; the larger
 carriers use the allowances above. Major children retain separate admission.
+Literal runtimes execute directly without separate exact/family forwarding
+wrappers. The existing compiled kind still governs family Split eligibility.
+Removing one wrapper object also removes its conservative construction charge.
 The test-only unbounded cache mode remains removed. These controls do not extend
 the documented memory scope or change RC1 package bytes.
 Development PCRE2 literal compilation also admits its own atom capacities and
