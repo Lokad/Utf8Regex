@@ -58,6 +58,15 @@ are inconclusive: controls move substantially and some affected timings rise.
 No precise 10% bound or general throughput change is established. Timing is closed;
 actual-package/host cost acceptance remains deferred, with raw results preserved.
 
+The [twelfth-review receipt](bench/Experiments/TwelfthReview-20261021/README.md)
+records deletion of Core's unexecuted instruction vector and unused PythonRe
+Core roots. The 64-capture construction witness allocates 82,760 fewer bytes;
+ordinary matching allocations are unchanged in the selected lanes. Its fixed
+original comparison and single reversed-order confirmation are closed with
+inconclusive timing: individual public lanes cross 10% in different runs, while
+an unchanged control moves 12.15%. No precise 10% bound or package cost claim is
+established. Avoiding transient declined Core construction remains later work.
+
 ## Frozen scalar.119 package costs
 
 The observations below apply to **Core/PythonRe scalar.119**, producer `ca0c8a6f`.

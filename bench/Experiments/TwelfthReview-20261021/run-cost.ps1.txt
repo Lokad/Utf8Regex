@@ -1,0 +1,10 @@
+param([switch]$Confirm)
+$ErrorActionPreference='Stop'
+$root=[IO.Path]::GetFullPath('artifacts/twelfth-implementation-20261021')
+$order=if($Confirm){@('after','before')}else{@('before','after')}
+$prefix=if($Confirm){'confirm-'}else{''}
+foreach($lane in $order) {
+    $child=Start-Process -FilePath dotnet -ArgumentList @("$root/cost-$lane/Lokad.Utf8Regex.Benchmarks.dll") -WindowStyle Hidden -PassThru -RedirectStandardOutput "$root/$prefix$lane-cost.json" -RedirectStandardError "$root/$prefix$lane-cost.err"
+    if(-not $child.WaitForExit(60000)) { $child.Kill($true); throw "60-second cost cap: $lane" }
+    if($child.ExitCode -ne 0) { throw "Cost child failed: $lane; see stderr." }
+}

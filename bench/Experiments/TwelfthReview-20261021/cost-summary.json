@@ -1,0 +1,214 @@
+{
+  "Initial": [
+    {
+      "Id": "core/64-captures/construct",
+      "BeforeNs": 190067.1875,
+      "AfterNs": 210214.11764705883,
+      "ChangePercent": 10.599899126228095,
+      "BeforeBytes": 375840,
+      "AfterBytes": 293080,
+      "BeforeSpread": 1.3563498098859315,
+      "AfterSpread": 1.220245211586839
+    },
+    {
+      "Id": "python/class/construct",
+      "BeforeNs": 23095.84824624195,
+      "AfterNs": 23492.357723577235,
+      "ChangePercent": 1.7167998036175414,
+      "BeforeBytes": 36160,
+      "AfterBytes": 36144,
+      "BeforeSpread": 1.1652305468130293,
+      "AfterSpread": 1.6031495927027528
+    },
+    {
+      "Id": "core/simple/Count",
+      "BeforeNs": 20608.41,
+      "AfterNs": 21640.04,
+      "ChangePercent": 5.005868963204829,
+      "BeforeBytes": 1680,
+      "AfterBytes": 1680,
+      "BeforeSpread": 1.0606202862976197,
+      "AfterSpread": 1.177520825673202
+    },
+    {
+      "Id": "core/simple-finite-four/Count",
+      "BeforeNs": 22073.652365236525,
+      "AfterNs": 21253.720050441363,
+      "ChangePercent": -3.7145294363993053,
+      "BeforeBytes": 1792,
+      "AfterBytes": 1792,
+      "BeforeSpread": 1.1157662245818842,
+      "AfterSpread": 1.232454280006147
+    },
+    {
+      "Id": "core/simple/Replace",
+      "BeforeNs": 28847.97625472207,
+      "AfterNs": 30861.350844277673,
+      "ChangePercent": 6.979257649749471,
+      "BeforeBytes": 8816,
+      "AfterBytes": 8816,
+      "BeforeSpread": 1.3096974858370052,
+      "AfterSpread": 1.1678717321175296
+    },
+    {
+      "Id": "core/simple/EnumerateSplits",
+      "BeforeNs": 59076.85546875,
+      "AfterNs": 58725.09765625,
+      "ChangePercent": -0.5954240619426177,
+      "BeforeBytes": 218712,
+      "AfterBytes": 218712,
+      "BeforeSpread": 1.491663852402197,
+      "AfterSpread": 1.262453191088122
+    },
+    {
+      "Id": "python/class/Count",
+      "BeforeNs": 16451.953125,
+      "AfterNs": 17428.42438638163,
+      "ChangePercent": 5.935290806887883,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.5942484203321885,
+      "AfterSpread": 1.3225174825174826
+    },
+    {
+      "Id": "python/captured-class/FindAll",
+      "BeforeNs": 34189.6484375,
+      "AfterNs": 38643.34572490706,
+      "ChangePercent": 13.026449498445691,
+      "BeforeBytes": 7736,
+      "AfterBytes": 7736,
+      "BeforeSpread": 1.4111082147685183,
+      "AfterSpread": 1.3208449791033268
+    },
+    {
+      "Id": "control/predecoded-Regex/Count",
+      "BeforeNs": 3975.13,
+      "AfterNs": 4031.76,
+      "ChangePercent": 1.424607497113306,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.6777163238812478,
+      "AfterSpread": 1.5188034277518074
+    },
+    {
+      "Id": "control/decode-then-Regex/Count",
+      "BeforeNs": 4572.23,
+      "AfterNs": 4608.02,
+      "ChangePercent": 0.7827690208060512,
+      "BeforeBytes": 1688,
+      "AfterBytes": 1688,
+      "BeforeSpread": 1.0292469394668728,
+      "AfterSpread": 1.4383820590595817
+    }
+  ],
+  "Confirmation": [
+    {
+      "Id": "core/64-captures/construct",
+      "BeforeNs": 185259.5041322314,
+      "AfterNs": 168595.33678756477,
+      "ChangePercent": -8.995040455669345,
+      "BeforeBytes": 375840,
+      "AfterBytes": 293080,
+      "BeforeSpread": 1.995847180156786,
+      "AfterSpread": 1.0753660569150774
+    },
+    {
+      "Id": "python/class/construct",
+      "BeforeNs": 20114.45623342175,
+      "AfterNs": 18260.73394495413,
+      "ChangePercent": -9.215870749652765,
+      "BeforeBytes": 36160,
+      "AfterBytes": 36144,
+      "BeforeSpread": 1.724912322065368,
+      "AfterSpread": 1.0382620338619257
+    },
+    {
+      "Id": "core/simple/Count",
+      "BeforeNs": 18624.74,
+      "AfterNs": 19122.27,
+      "ChangePercent": 2.6713393046023715,
+      "BeforeBytes": 1680,
+      "AfterBytes": 1680,
+      "BeforeSpread": 1.3694890679989618,
+      "AfterSpread": 1.075359872677932
+    },
+    {
+      "Id": "core/simple-finite-four/Count",
+      "BeforeNs": 19871.76949941793,
+      "AfterNs": 20538.11059907834,
+      "ChangePercent": 3.353204653868036,
+      "BeforeBytes": 1792,
+      "AfterBytes": 1792,
+      "BeforeSpread": 1.609497510488151,
+      "AfterSpread": 1.1260208185198568
+    },
+    {
+      "Id": "core/simple/Replace",
+      "BeforeNs": 25240.073529411766,
+      "AfterNs": 26965.4296875,
+      "ChangePercent": 6.835781029233967,
+      "BeforeBytes": 8816,
+      "AfterBytes": 8816,
+      "BeforeSpread": 1.5305599971782633,
+      "AfterSpread": 1.1581815563488636
+    },
+    {
+      "Id": "core/simple/EnumerateSplits",
+      "BeforeNs": 44630.17578125,
+      "AfterNs": 49733.3984375,
+      "ChangePercent": 11.4344668532405,
+      "BeforeBytes": 218712,
+      "AfterBytes": 218712,
+      "BeforeSpread": 1.6975930309798624,
+      "AfterSpread": 1.250495630878264
+    },
+    {
+      "Id": "python/class/Count",
+      "BeforeNs": 14691.385630498533,
+      "AfterNs": 15250.491480996068,
+      "ChangePercent": 3.8056713271269693,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.3241812906619996,
+      "AfterSpread": 1.103606157460217
+    },
+    {
+      "Id": "python/captured-class/FindAll",
+      "BeforeNs": 31317.7734375,
+      "AfterNs": 33295.33927347498,
+      "ChangePercent": 6.314516068396592,
+      "BeforeBytes": 7736,
+      "AfterBytes": 7736,
+      "BeforeSpread": 1.5786126176474324,
+      "AfterSpread": 1.1848138312286596
+    },
+    {
+      "Id": "control/predecoded-Regex/Count",
+      "BeforeNs": 3532.65,
+      "AfterNs": 3961.848998459168,
+      "ChangePercent": 12.149491131563206,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.4098748528396574,
+      "AfterSpread": 1.3197594829229409
+    },
+    {
+      "Id": "control/decode-then-Regex/Count",
+      "BeforeNs": 4076.96,
+      "AfterNs": 4277.57,
+      "ChangePercent": 4.920578077783433,
+      "BeforeBytes": 1688,
+      "AfterBytes": 1688,
+      "BeforeSpread": 1.4191589505977689,
+      "AfterSpread": 1.2923676143658227
+    }
+  ],
+  "Artifacts": {
+    "before-cost.json": "15cda86057876fe273f1352fa59a95a2222f8ae76110f41468909d2bd47a997c",
+    "after-cost.json": "d316bf01a481bff51988329c127965c9be718e3aac12506a84f551238f2aadd0",
+    "confirm-before-cost.json": "32a60923d75399582c8659c3bc6742cfd624f24eb179652ee0a624a334d0c30d",
+    "confirm-after-cost.json": "be9f133235e4701ac1f2809983527ff45d2973aba9d2ca078966c06ee8da0429",
+    "cost-before/Lokad.Utf8Regex.Benchmarks.dll": "2394c3ad0629e660bf805d73031ab97459e2799e28eaf67ef027ca0382459fd6",
+    "cost-after/Lokad.Utf8Regex.Benchmarks.dll": "2394c3ad0629e660bf805d73031ab97459e2799e28eaf67ef027ca0382459fd6"
+  }
+}
