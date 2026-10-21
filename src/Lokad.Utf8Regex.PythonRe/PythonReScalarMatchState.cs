@@ -52,17 +52,7 @@ internal struct PythonReScalarMatchState
     {
         this = default;
         _program = program;
-        var candidatePlan = candidateRegex?.Inspection.SearchPlan ?? default;
-        // Exact families can supply a whole match even when they are not
-        // classified as a fallback-start hint. No captures need that VM state.
-        var nativeResult = program.GroupCount == 0 && candidateRegex?.CanFindNativeLiteralForResult == true;
-        if (!program.CanMatchEmpty && !program.HasContiguousAnchor && !program.RightToLeft &&
-            !program.IgnoreCase && (nativeResult ||
-                candidatePlan.CanGuideFallbackStarts && candidatePlan.Distance == 0 &&
-                candidatePlan.Kind is Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals))
-        {
-            _candidateRegex = candidateRegex;
-        }
+        if (CanUseCandidateRegex(program, candidateRegex)) _candidateRegex = candidateRegex;
         _leadingAsciiLow = _leadingAsciiHigh = -1;
         if (_candidateRegex is null && TryGetLeadingAsciiRange(program, out var low, out var high))
         {
@@ -92,6 +82,18 @@ internal struct PythonReScalarMatchState
             Dispose();
             throw;
         }
+    }
+
+    // Shared with preparation so the facade retains only Core hints this cursor
+    // can actually consume. Captured native results still need scalar verification.
+    internal static bool CanUseCandidateRegex(Utf8SliceProgram program, Utf8Regex? candidateRegex)
+    {
+        var candidatePlan = candidateRegex?.Inspection.SearchPlan ?? default;
+        var nativeResult = program.GroupCount == 0 && candidateRegex?.CanFindNativeLiteralForResult == true;
+        return !program.CanMatchEmpty && !program.HasContiguousAnchor && !program.RightToLeft &&
+            !program.IgnoreCase && (nativeResult ||
+                candidatePlan.CanGuideFallbackStarts && candidatePlan.Distance == 0 &&
+                candidatePlan.Kind is Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals);
     }
 
     internal int StartOffsetInBytes { get; private set; }

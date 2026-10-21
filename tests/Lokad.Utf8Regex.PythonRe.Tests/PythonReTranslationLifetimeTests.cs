@@ -5,6 +5,43 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReTranslationLifetimeTests
 {
+    [Theory]
+    [InlineData(@"\w+", "alpha")]
+    [InlineData(@"(?P<word>\w+)", "alpha")]
+    [InlineData(@"\d+", "123")]
+    [InlineData(@"\s+", " \t")]
+    [InlineData(@"prefix\w+", "prefixalpha")]
+    public void DeclinedCorePreparationIsNotRetained(string pattern, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        foreach (var regex in new[] { new Utf8PythonRegex(pattern), new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern)) })
+        {
+            Assert.False(regex.DebugUsesUtf8RegexBackend);
+            Assert.True(regex.IsMatch(input));
+            Assert.Equal(1, regex.Count(input));
+            Assert.True(regex.Search(input).Success);
+            Assert.True(regex.FullMatch(input).Success);
+            Assert.True(regex.SearchDetailedData(input).Success);
+            Assert.Equal(1, regex.FindAllToStrings(input).Count);
+            Assert.Equal("X", regex.ReplaceToString(input, "X"));
+        }
+    }
+
+    [Theory]
+    [InlineData("needle", "needle")]
+    [InlineData("😀", "😀")]
+    [InlineData("foo|bar", "foo")]
+    [InlineData(@"(?P<word>needle)", "needle")]
+    public void LiveNativeResultAndCandidatePreparationsRemain(string pattern, string text)
+    {
+        var regex = new Utf8PythonRegex(pattern);
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.True(regex.DebugUsesUtf8RegexBackend);
+        Assert.True(regex.FullMatch(input).Success);
+        Assert.Equal(1, regex.Count(input));
+        Assert.True(regex.SearchDetailedData(input).Success);
+    }
+
     [Fact]
     public void ScalarOnlyInstancesDoNotRetainUnusedRenderedPatterns()
     {

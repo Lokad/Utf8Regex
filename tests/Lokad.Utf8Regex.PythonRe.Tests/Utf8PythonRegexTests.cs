@@ -233,7 +233,7 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
-    public void VerbosePatternCanUseUtf8RegexBackend()
+    public void VerbosePatternUsesOwnedScalarProgram()
     {
         var regex = new Utf8PythonRegex(
             """
@@ -241,7 +241,7 @@ public sealed class Utf8PythonRegexTests
             foo \s+ bar
             """);
 
-        Assert.True(regex.DebugUsesUtf8RegexBackend);
+        Assert.False(regex.DebugUsesUtf8RegexBackend);
         Assert.True(regex.Search("xxfoo   baryy"u8).Success);
     }
 
@@ -294,12 +294,12 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
-    public void ConditionalAndLookaroundCanUseUtf8RegexBackendWhenTranslatedPatternCompiles()
+    public void ConditionalAndLookaroundKeepOwnedResultsAfterCoreSelection()
     {
         var conditional = new Utf8PythonRegex(@"(foo)?(?(1)bar|baz)");
         var lookahead = new Utf8PythonRegex(@"foo(?=bar)");
 
-        Assert.True(conditional.DebugUsesUtf8RegexBackend);
+        Assert.False(conditional.DebugUsesUtf8RegexBackend);
         Assert.True(lookahead.DebugUsesUtf8RegexBackend);
         Assert.False(conditional.DebugIsScalarFullProgramValueCreated);
         Assert.False(lookahead.DebugIsScalarFullProgramValueCreated);

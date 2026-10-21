@@ -56,6 +56,12 @@ host containers retain separate documented scope. The execution token must be
 passed on each operation. See packaged [HOST-INTEGRATION.md](HOST-INTEGRATION.md)
 and [MIGRATION.md](MIGRATION.md).
 
+Optional Core preparations are retained for eligible native iteration, native
+literal results or scalar cursor start hints. Other operations use the owned
+Python program. A Core preparation may still be built transiently to discover
+eligibility; discarding it reduces retention, not all construction traffic.
+Its covered construction is still admitted under the original owner.
+
 ## Public API
 
 ```csharp

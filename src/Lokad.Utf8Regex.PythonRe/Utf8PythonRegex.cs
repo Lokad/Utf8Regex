@@ -240,7 +240,13 @@ public sealed partial class Utf8PythonRegex
         {
             try
             {
-                _utf8Regex = new Utf8Regex(translation.NativePattern, translation.NativeRegexOptions, MatchTimeout);
+                var core = new Utf8Regex(translation.NativePattern, translation.NativeRegexOptions, MatchTimeout);
+                // Preparation can discover useful native result lanes or exact
+                // start hints. Discard roots declined by every current consumer;
+                // their transient construction remains conservatively admitted.
+                if (_canUseUtf8IterationFastPath || core.CanFindNativeLiteralForResult ||
+                    PythonReScalarMatchState.CanUseCandidateRegex(_scalarProgram, core))
+                    _utf8Regex = core;
             }
             catch (Exception exception) when (IsOptionalUtf8BackendUnavailableException(exception))
             {
