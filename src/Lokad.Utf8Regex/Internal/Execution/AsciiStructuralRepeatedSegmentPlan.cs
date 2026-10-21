@@ -42,8 +42,4 @@ internal readonly struct AsciiStructuralRepeatedSegmentPlan
         RepetitionMaxCount >= RepetitionMinCount &&
         !SeparatorCharClass.IsEmpty;
 
-    public bool MatchesSeparator(byte value)
-    {
-        return SeparatorCharClass.Contains(value);
-    }
 }

@@ -30,31 +30,6 @@ internal static class Utf8ProjectionExecutor
         return Utf8ExecutionLimitKind.None;
     }
 
-
-
-    public static Utf8ValueMatch ProjectLiteralFamilyMatch(
-        Utf8SearchOperationPlan program,
-        ReadOnlySpan<byte> input,
-        int[]? alternateLiteralUtf16Lengths,
-        int consumedBytes,
-        int consumedUtf16,
-        in PreparedSearchMatch match,
-        ref Utf8SliceInvocation invocation,
-        out int nextConsumedBytes,
-        out int nextConsumedUtf16)
-    {
-        return ProjectLiteralFamilyMatch(
-            program.Projection,
-            input,
-            alternateLiteralUtf16Lengths,
-            consumedBytes,
-            consumedUtf16,
-            match,
-            ref invocation,
-            out nextConsumedBytes,
-            out nextConsumedUtf16);
-    }
-
     public static Utf8ValueMatch ProjectLiteralFamilyMatch(
         Utf8ProjectionPlan projectionPlan,
         ReadOnlySpan<byte> input,
@@ -78,31 +53,6 @@ internal static class Utf8ProjectionExecutor
             consumedBytes,
             consumedUtf16,
             match.Index,
-            matchedByteLength,
-            matchedUtf16Length,
-            ref invocation,
-            out nextConsumedBytes,
-            out nextConsumedUtf16);
-    }
-
-    public static Utf8ValueMatch ProjectMatch(
-        Utf8SearchOperationPlan program,
-        ReadOnlySpan<byte> input,
-        int consumedBytes,
-        int consumedUtf16,
-        int matchIndex,
-        int matchedByteLength,
-        int matchedUtf16Length,
-        ref Utf8SliceInvocation invocation,
-        out int nextConsumedBytes,
-        out int nextConsumedUtf16)
-    {
-        return ProjectMatch(
-            program.Projection,
-            input,
-            consumedBytes,
-            consumedUtf16,
-            matchIndex,
             matchedByteLength,
             matchedUtf16Length,
             ref invocation,

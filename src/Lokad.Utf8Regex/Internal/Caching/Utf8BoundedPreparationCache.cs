@@ -60,7 +60,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
         if (maximumMetadataBytes < ObjectBytes) throw new ArgumentOutOfRangeException(nameof(maximumMetadataBytes));
         using var owner = Utf8ConstructionScope.Enter();
         var result = owner.Budget.AllocateObject(
-            (First: (CacheEntry?)null, Last: (CacheEntry?)null, Comparer: comparer, Capacity: capacity, Count: 0, Maximum: maximumMetadataBytes, Generation: 0L, MaximumPayload: maximumPayloadBytes, PayloadBytes: 0UL, Revision: 0L, Scope: storageScope),
+            (First: (CacheEntry?)null, Last: (CacheEntry?)null, Comparer: comparer, Capacity: capacity, Count: 0, Maximum: maximumMetadataBytes, Generation: 0L, MaximumPayload: maximumPayloadBytes, PayloadBytes: 0UL, Scope: storageScope),
             static state => new Utf8BoundedPreparationCache<TKey, TValue>(state.Comparer, state.Capacity, state.Maximum, state.MaximumPayload, state.Scope));
         owner.Complete();
         return result;

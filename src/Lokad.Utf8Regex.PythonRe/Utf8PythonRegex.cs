@@ -317,7 +317,6 @@ public sealed partial class Utf8PythonRegex
 
     internal bool DebugIsScalarFullProgramValueCreated => _lazyScalarFullProgram.IsValueCreated;
 
-
     internal bool DebugUsesOptionalExactCaptureFindAllFastPath => _optionalExactCaptureFindAllValue is not null;
 
     internal bool DebugUsesRepeatedExactStringFindAllFastPath => _repeatedExactFindAllString is not null;
@@ -333,18 +332,6 @@ public sealed partial class Utf8PythonRegex
 
     internal static bool IsOptionalUtf8BackendUnavailableException(Exception exception)
         => exception is ArgumentException or NotSupportedException;
-
-    private static string DecodeUtf8(ReadOnlySpan<byte> input, string parameterName)
-    {
-        try
-        {
-            return s_strictUtf8Encoding.GetString(input);
-        }
-        catch (DecoderFallbackException ex)
-        {
-            throw new ArgumentException("The input must be valid UTF-8.", parameterName, ex);
-        }
-    }
 
     private static int GetUtf16OffsetOfBytePrefix(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {

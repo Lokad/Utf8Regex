@@ -29,8 +29,6 @@ internal readonly struct Utf8IlEmitter
 
     internal void ChargeWork(ulong steps) => _il.Budget.ChargeWork(steps);
 
-    public Utf8IlLocal DeclareLocal(Type type) => _il.DeclareLocal(type);
-
     public Utf8IlLabel DefineLabel() => _il.DefineLabel();
 
     public void MarkLabel(Utf8IlLabel label) => _il.MarkLabel(label);
@@ -38,8 +36,6 @@ internal readonly struct Utf8IlEmitter
     public void Emit(OpCode opcode) => _il.Emit(opcode);
 
     public void Emit(OpCode opcode, Utf8IlLabel label) => _il.Emit(opcode, label);
-
-    public void Emit(OpCode opcode, Utf8IlLocal local) => _il.Emit(opcode, local);
 
     public void Emit(OpCode opcode, MethodInfo method) => _il.Emit(opcode, method);
 
@@ -70,7 +66,6 @@ internal readonly struct Utf8IlEmitter
     public void LoadArgAddress(byte index) => _il.Emit(OpCodes.Ldarga_S, index);
 
     public void LoadLocal(Utf8IlLocal local) => _il.Emit(OpCodes.Ldloc, local);
-
 
     public void StoreLocal(Utf8IlLocal local) => _il.Emit(OpCodes.Stloc, local);
 

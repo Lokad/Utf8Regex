@@ -2254,7 +2254,6 @@ internal static partial class Pcre2Runner
         }
     }
 
-
 }
 
 internal static class Pcre2GlobalOperationDriver
@@ -2506,15 +2505,6 @@ internal static class Pcre2GlobalOperationDriver
         request.DefaultLimits.DepthLimit == 0 &&
         request.DefaultLimits.HeapLimitInBytes == 0 &&
         request.DefaultLimits.ResultLimitInBytes == 0;
-
-    internal static bool TryCreateCursor(
-        Pcre2CompiledProgram compiledProgram,
-        Utf8ValidatedInput input,
-        Utf8BytePosition start,
-        Pcre2MatchOptions matchOptions,
-        out Pcre2GlobalMatchCursor cursor) =>
-        TryCreateCursor(compiledProgram, input, start, matchOptions, out cursor,
-            new Pcre2ResourceBudget(compiledProgram.Request.DefaultLimits, compiledProgram.Request.MatchTimeout, false));
 
     internal static bool TryCreateCursor(
         Pcre2CompiledProgram compiledProgram,

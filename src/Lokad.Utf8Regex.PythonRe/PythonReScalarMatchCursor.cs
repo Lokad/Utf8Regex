@@ -65,6 +65,6 @@ internal ref struct PythonReScalarMatchCursor
     internal byte[] CompleteOutputBytes(scoped ref Utf8SliceOutputWriter writer, bool validateOutput) => _state.CompleteOutputBytes(_input, ref writer, validateOutput);
     internal string CompleteOutputText(scoped ref Utf8SliceOutputWriter writer) => _state.CompleteOutputText(_input, ref writer);
     internal void ReleaseOutput(scoped ref Utf8SliceOutputWriter writer) => _state.ReleaseOutput(ref writer);
-    internal void CopyBytes(ReadOnlySpan<byte> source, Span<byte> destination) => _state.CopyBytes(_input, source, destination);
+
     internal void Dispose() => _state.Dispose();
 }

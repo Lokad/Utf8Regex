@@ -836,15 +836,6 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
-    public static int RunMigratePcre2BenchmarkJson()
-    {
-        var snapshot = LoadPcre2BenchmarkSnapshot();
-        snapshot.SchemaVersion = Pcre2BenchmarkSchemaVersion;
-        SavePcre2BenchmarkSnapshot(snapshot);
-        Console.WriteLine($"Migrated {Pcre2BenchmarkSnapshotFileName} to schema {Pcre2BenchmarkSchemaVersion}.");
-        return 0;
-    }
-
     public static int RunRefreshPcre2BenchmarkCase(string caseId, string? iterationsText, string? samplesText)
     {
         var iterations = ParseIterations(iterationsText);

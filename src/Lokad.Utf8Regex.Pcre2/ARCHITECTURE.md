@@ -46,13 +46,19 @@ The compiled program owns:
 - the candidate-search program; and
 - an optional partial-probe program derived from semantic nodes.
 
-Direct operation programs are closed variants: an absent intermediate operation,
-a PCRE2 literal/character/backtracking program, or a
+Direct operation programs are closed variants: a PCRE2 literal/character/backtracking program, or a
 specialized operation program such as an ASCII search or DFA verifier.
 `Pcre2ProgramInvariant` checks common-program and fallback ownership. The
 specializations retain the owned general route for option combinations they
 cannot execute. Literal, character, and backtracking programs cover the admitted
 syntax; no complete-pattern classifier or legacy match/replacement router remains.
+
+The anchored ASCII boolean optimizer emits flat class and repeated-class steps,
+start/end anchors and acceptance. Its DFA partitions overlapping input classes
+and unions their NFA targets before closure. Nested programs and text alternatives
+are not a second internal input language. Major construction capacity, state and
+work ceilings and original interruption checks remain; capture/option-dependent
+operations retain the owned VM.
 
 Core delegation requires a successful owned PCRE2 parse and an existing
 common-scalar eligibility proof. There is no unrestricted Core-grammar fallback;

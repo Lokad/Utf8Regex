@@ -184,7 +184,6 @@ public sealed partial class Utf8Regex
             return ownedTemplate;
         }
 
-
         if (TryReplaceViaNativePlan(input, validation, replacement, budget, out var nativeResult))
         {
             var text = Encoding.UTF8.GetString(nativeResult);
@@ -261,12 +260,6 @@ public sealed partial class Utf8Regex
             : OperationStatus.DestinationTooSmall;
     }
 
-    private byte[] ReplaceLiteralBytesCore(
-        ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation,
-        ReadOnlySpan<byte> replacementBytes) =>
-        ReplaceLiteralBytesCore(input, validation, replacementBytes, out _, CreateExecutionBudget());
-
     private byte[] ReplaceLiteralBytesCore(ReadOnlySpan<byte> input, Utf8ValidationResult validation,
         ReadOnlySpan<byte> replacementBytes, Utf8ExecutionDeadline deadline) =>
         ReplaceLiteralBytesCore(input, validation, replacementBytes, out _, deadline);
@@ -282,7 +275,6 @@ public sealed partial class Utf8Regex
             var scalarCursor = new Utf8OperationMatchCursor(input, _preparedRegex, scalarAnalysis.BoundaryMap, budget);
             return Utf8CursorReplaceEngine.Replace(input, replacementBytes, ref scalarCursor, out replacementCount);
         }
-
 
         var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
             _preparedRegex,
@@ -329,7 +321,6 @@ public sealed partial class Utf8Regex
 
             return scalarSuccess ? OperationStatus.Done : OperationStatus.DestinationTooSmall;
         }
-
 
         var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
             _preparedRegex,
@@ -478,36 +469,6 @@ public sealed partial class Utf8Regex
             budget);
         replaced = Utf8NativeReplacementExecutor.Replace(input, plan, ref cursor);
         return true;
-    }
-
-    private bool TryReplaceViaNativePlan(
-        ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation,
-        Utf8AnalyzedReplacement replacement,
-        Utf8ExecutionDeadline budget,
-        Span<byte> destination,
-        out int bytesWritten)
-    {
-        var plan = RewriteWholeLiteralCapturePlan(replacement.Plan);
-        if (replacement.IsLiteral ||
-            !Utf8NativeReplacementExecutor.CanExecute(plan) ||
-            plan.ReferencedCaptureGroups.Length > 0)
-        {
-            bytesWritten = 0;
-            return false;
-        }
-
-        var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
-            _preparedRegex,
-            input,
-            validation,
-            budget);
-        return Utf8NativeReplacementExecutor.TryReplace(
-            input,
-            plan,
-            ref cursor,
-            destination,
-            out bytesWritten);
     }
 
     private Utf8ReplacementPlan RewriteWholeLiteralCapturePlan(Utf8ReplacementPlan plan)

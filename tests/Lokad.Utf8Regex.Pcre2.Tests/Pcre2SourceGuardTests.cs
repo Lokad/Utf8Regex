@@ -4,8 +4,8 @@ using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-// Common syntax/documentation/project rules are checked once across src by the
-// Core source guard. This fixture owns PCRE2 isolation and semantic dependencies.
+// This fixture owns PCRE2 isolation and semantic dependencies. Nullable and
+// documentation checks also remain enforced by the shipped project builds.
 public sealed class Pcre2SourceGuardTests
 {
     [Fact]

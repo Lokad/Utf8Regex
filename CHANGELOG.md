@@ -2,6 +2,14 @@
 
 ## Unreleased development after 0.4.0-rc.1
 
+- Fixed PCRE2 boolean DFA false negatives when repeated classes overlap a later
+  literal or class (for example, `^\d*1$` on `11`). Overlapping paths now merge
+  before state publication. Finite controls retain the original owned fallback.
+- Narrowed internal DFA construction to the flat ASCII-class operations emitted
+  by its public caller. Removed synthetic nested/text-alternative input machinery
+  and unused forwarding overloads. Construction work/depth requirements can fall
+  as unused frames disappear; state, major allocation and interruption bounds stay.
+
 - PCRE2 optional finite/ASCII expansion now admits major state and buffers and
   checks original interruption. Unreferenced capture-map copies and throwaway
   legacy program foundations are removed; operation publication is complete.
