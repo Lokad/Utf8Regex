@@ -1,0 +1,156 @@
+{
+  "Scope": "Affected Release project builds/test.ps1, matching SkipBuild reuse and no build-server shutdown. Focused filters overlap and are not a coverage percentage.",
+  "Checks": [
+    {
+      "Focus": "Contextual validation, escapes, names, options and existing lexical fixtures",
+      "Log": {
+        "Path": "artifacts/seventh-implementation-20261021/tests-validation.log",
+        "Sha256": "58A53906B1E6264D4E8B4ACAB9B7D2C370FE99DB786FB720C1805153C8BEBBC7",
+        "Bytes": 26684
+      },
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+          "Passed": 140,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "372 ms"
+        }
+      ]
+    },
+    {
+      "Focus": "New direct/public lexical admission, parent loans, original cancellation/deadline plus related construction checks",
+      "Log": {
+        "Path": "artifacts/seventh-implementation-20261021/tests-lexical.log",
+        "Sha256": "A88023A5E2866F92A44212622F5EC6F053B0EA0B4FBDBFD6BDA9471F437BE7D0",
+        "Bytes": 26684
+      },
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+          "Passed": 83,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "351 ms"
+        }
+      ]
+    },
+    {
+      "Focus": "Core null/precedence, metadata/cache/writer and construction policy checks",
+      "Log": {
+        "Path": "artifacts/seventh-implementation-20261021/tests-core.log",
+        "Sha256": "1090069A2212841EDA78A8DC01E409653AD37C38C9C4B44DA66F7ED06B6EE8B1",
+        "Bytes": 25654
+      },
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.Tests.dll",
+          "Passed": 34,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "185 ms"
+        }
+      ]
+    },
+    {
+      "Focus": "PythonRe null/precedence, compilation and construction limits",
+      "Log": {
+        "Path": "artifacts/seventh-implementation-20261021/tests-pythonre.log",
+        "Sha256": "36EF621B092604B739AEBA1E173C7786848CF12CAB4AB8DAC45D1C3C28B76297",
+        "Bytes": 12549
+      },
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.PythonRe.Tests.dll",
+          "Passed": 37,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "322 ms"
+        }
+      ]
+    },
+    {
+      "Focus": "PCRE2 live owners, public routes, captures/options and nulls; stale preparation-only assertions retargeted",
+      "Log": {
+        "Path": "artifacts/seventh-implementation-20261021/tests-ownership-final.log",
+        "Sha256": "D5AE02905A3B6480BE82DC281E9EF60911C89EFA1A2F654790F98357928283AD",
+        "Bytes": 23527
+      },
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+          "Passed": 714,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "2 s"
+        }
+      ]
+    },
+    {
+      "Focus": "Public null behavior and remaining source guideline checks",
+      "Log": {
+        "Path": "artifacts/seventh-implementation-20261021/tests-ci-repair-core.log",
+        "Sha256": "0D5771AEA207E6A9ADCE76FF3C283F6FD391B9E2CF69DE067F35096E37B6757F",
+        "Bytes": 25651
+      },
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.Tests.dll",
+          "Passed": 20,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "2 s"
+        }
+      ]
+    },
+    {
+      "Focus": "Live finite Core owner identity and operation architecture",
+      "Log": {
+        "Path": "artifacts/seventh-implementation-20261021/tests-ci-repair-pcre2.log",
+        "Sha256": "CE829D717EABAFA3E225639F40A7EE3FBF6CFF0A1B81EAFA7D2EB34132EEDF11",
+        "Bytes": 23530
+      },
+      "Suites": [
+        {
+          "Assembly": "Lokad.Utf8Regex.Pcre2.Tests.dll",
+          "Passed": 49,
+          "Failed": 0,
+          "Skipped": 0,
+          "Duration": "430 ms"
+        }
+      ]
+    }
+  ],
+  "InitialFailures": {
+    "Ownership": "The first ownership run had 15 failures, all obsolete requirements to retain unused original Core graphs. Public outcome assertions remain; final focused run is green.",
+    "Log": {
+      "Path": "artifacts/seventh-implementation-20261021/tests-ownership.log",
+      "Sha256": "382B4C05ADFA12C1F426052016D6A509BA66C68E57E64471C436212A288F8BE0",
+      "Bytes": 38143
+    },
+    "SourceBoundary": "First complete source CI 39566475741 exposed a finite-owner empty expectation and a blanket ArgumentNullException.ThrowIfNull spelling ban. Exact live-owner identity now asserted; only the syntactic null-guard category removed, preserving other source checks and functional public null/error-precedence tests."
+  },
+  "ReadOnlyGeneratedChecks": [
+    {
+      "Path": "artifacts/seventh-implementation-20261021/verify-pythonre-markdown.log",
+      "Sha256": "6B295B1B6B104D80B40AAA080CE84284CBCA407ED0FB0E7A40C77783F8786E0E",
+      "Bytes": 98
+    },
+    {
+      "Path": "artifacts/seventh-implementation-20261021/verify-pcre2-markdown.log",
+      "Sha256": "E004206D4A2F8D956F505D8687D1700D6BE70A7B2BBD3E1E7208F43DA3A74925",
+      "Bytes": 92
+    },
+    {
+      "Path": "artifacts/seventh-implementation-20261021/verify-readme-parity.log",
+      "Sha256": "AF7327FEF829FBB1EDD56CCEC1D8BEDFC4E715096130545D439F2D4234B7D072",
+      "Bytes": 61
+    }
+  ],
+  "FinalBenchmarkBuild": {
+    "Path": "artifacts/seventh-implementation-20261021/build-benchmark-qualified.log",
+    "Sha256": "D8F727B24E1C29615E03F2978CCAEB19CA6158E3EE31B0884D9580794C95F95D",
+    "Bytes": 4708
+  },
+  "Warnings": "Existing compiler/analyzer warnings remain. The nullable warning introduced by portable-PDB provider handling was fixed before final source CI."
+}

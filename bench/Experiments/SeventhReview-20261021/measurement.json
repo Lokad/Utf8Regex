@@ -1,0 +1,1193 @@
+{
+  "Scope": "One bounded sequential local Release before/after comparison and one cache-facade confirmation; timing is finished. Public execution allowance is 10%. Construction/private costs are separate. No package, benchmark snapshot, Status or previous campaign qualification.",
+  "Protocol": "Five samples; 16 retained constructions per sample after 64 warm constructions; public Count 20000 operations after 250 ms per-lane warmup. Identical result checks, literal control, predecoded Regex and strict-decode-then-Regex controls. Default runtime tiering; 45-second cap per child. Frozen original DLLs and same custom driver for both sides.",
+  "Driver": {
+    "Path": "artifacts/seventh-implementation-20261021/cost/Program.cs",
+    "Sha256": "148756FAE928720B392548C053083241153AD935C69CF3E3836FB5D90B64BBDC",
+    "Bytes": 5045,
+    "SourceScope": "Final driver includes the later --confirm-core branch. The main before/after timing body is unchanged; both confirmation hosts use identical driver bytes."
+  },
+  "Project": {
+    "Path": "artifacts/seventh-implementation-20261021/cost/cost.csproj",
+    "Sha256": "E13CA381695ACB6CA65982120769520D43DCB4860109AE6DA5A0CC793A3EB4EA",
+    "Bytes": 569
+  },
+  "ConfirmationProtocol": "One confirmation only, using identical rebuilt driver bytes on both sides, 2000 cached-constructor warm calls and 2000 unchanged public-constructor control warm calls, then five samples of 16 retained constructions. Same before/after product DLLs; no more timing.",
+  "IdentityScope": "Before binaries were frozen before edits: producer 1609aa039e848e87aee4ca324b3ba85e0ee6f8ee, checkout fd58832287ef88938859a013b0cf342c18901eeb. After producer 3dd88cb9e313d9eb1d8d0b552690e30f06fd485a. Final source 884b156b changes tests and a benchmark-only nullable guard; shipped C# is unchanged from measured after source.",
+  "Decision": "Selected changed public Count medians -0.89% and +0.40%, literal control -0.24%, matching allocations unchanged. Initial cached-construction +220% was unstable; sole warmed confirmation +3.58%, unchanged allocation. Unchanged control variation and short construction tails limit precision; no universal equivalence or top-line release claim. Earlier first-use/backreference concerns remain deferred.",
+  "Observations": [
+    {
+      "Lane": "Construction",
+      "Case": "caseless",
+      "BeforeMicroseconds": 246.825,
+      "AfterMicroseconds": 28.35625,
+      "ChangePercent": -88.512,
+      "BeforeAllocatedBytes": 34776,
+      "AfterAllocatedBytes": 6408
+    },
+    {
+      "Lane": "Public",
+      "Case": "caseless/Pcre2Count",
+      "BeforeMicroseconds": 51.947990000000004,
+      "AfterMicroseconds": 51.48533,
+      "ChangePercent": -0.891,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0
+    },
+    {
+      "Lane": "Public",
+      "Case": "caseless/PredecodedCount",
+      "BeforeMicroseconds": 29.37163,
+      "AfterMicroseconds": 34.76878,
+      "ChangePercent": 18.375,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0
+    },
+    {
+      "Lane": "Public",
+      "Case": "caseless/DecodeCount",
+      "BeforeMicroseconds": 31.385054999999998,
+      "AfterMicroseconds": 32.972455,
+      "ChangePercent": 5.058,
+      "BeforeAllocatedBytes": 7192,
+      "AfterAllocatedBytes": 7192
+    },
+    {
+      "Lane": "Construction",
+      "Case": "finite-captured",
+      "BeforeMicroseconds": 567.83125,
+      "AfterMicroseconds": 490.88125,
+      "ChangePercent": -13.552,
+      "BeforeAllocatedBytes": 101168,
+      "AfterAllocatedBytes": 101928
+    },
+    {
+      "Lane": "Public",
+      "Case": "finite-captured/Pcre2Count",
+      "BeforeMicroseconds": 8.197435,
+      "AfterMicroseconds": 8.23017,
+      "ChangePercent": 0.399,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0
+    },
+    {
+      "Lane": "Public",
+      "Case": "finite-captured/PredecodedCount",
+      "BeforeMicroseconds": 35.32694,
+      "AfterMicroseconds": 35.230484999999994,
+      "ChangePercent": -0.273,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0
+    },
+    {
+      "Lane": "Public",
+      "Case": "finite-captured/DecodeCount",
+      "BeforeMicroseconds": 56.528059999999996,
+      "AfterMicroseconds": 36.391725,
+      "ChangePercent": -35.622,
+      "BeforeAllocatedBytes": 3096,
+      "AfterAllocatedBytes": 3096
+    },
+    {
+      "Lane": "Construction",
+      "Case": "non-lf",
+      "BeforeMicroseconds": 305.44375,
+      "AfterMicroseconds": 22.3,
+      "ChangePercent": -92.699,
+      "BeforeAllocatedBytes": 45064,
+      "AfterAllocatedBytes": 6792
+    },
+    {
+      "Lane": "Construction",
+      "Case": "anchored-reference",
+      "BeforeMicroseconds": 330.8625,
+      "AfterMicroseconds": 25.19375,
+      "ChangePercent": -92.385,
+      "BeforeAllocatedBytes": 47552,
+      "AfterAllocatedBytes": 6744
+    },
+    {
+      "Lane": "Construction",
+      "Case": "literal-control",
+      "BeforeMicroseconds": 7.8375,
+      "AfterMicroseconds": 6.8,
+      "ChangePercent": -13.238,
+      "BeforeAllocatedBytes": 2040,
+      "AfterAllocatedBytes": 1984
+    },
+    {
+      "Lane": "Public",
+      "Case": "literal-control/Pcre2Count",
+      "BeforeMicroseconds": 5.461725,
+      "AfterMicroseconds": 5.44845,
+      "ChangePercent": -0.243,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0
+    },
+    {
+      "Lane": "Public",
+      "Case": "literal-control/PredecodedCount",
+      "BeforeMicroseconds": 28.407675,
+      "AfterMicroseconds": 24.086945,
+      "ChangePercent": -15.21,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0
+    },
+    {
+      "Lane": "Public",
+      "Case": "literal-control/DecodeCount",
+      "BeforeMicroseconds": 26.87722,
+      "AfterMicroseconds": 27.117055,
+      "ChangePercent": 0.892,
+      "BeforeAllocatedBytes": 14360,
+      "AfterAllocatedBytes": 14360
+    },
+    {
+      "Lane": "Construction",
+      "Case": "core-cached-facade",
+      "BeforeMicroseconds": 51.1625,
+      "AfterMicroseconds": 163.8875,
+      "ChangePercent": 220.327,
+      "BeforeAllocatedBytes": 41416,
+      "AfterAllocatedBytes": 41416
+    }
+  ],
+  "ConfirmationObservations": [
+    {
+      "Lane": "Construction",
+      "Case": "core-cached-facade",
+      "BeforeMicroseconds": 86.475,
+      "AfterMicroseconds": 89.56875,
+      "ChangePercent": 3.578,
+      "BeforeAllocatedBytes": 41416,
+      "AfterAllocatedBytes": 41416
+    },
+    {
+      "Lane": "Construction",
+      "Case": "core-public-constructor-control",
+      "BeforeMicroseconds": 91.1625,
+      "AfterMicroseconds": 80.7875,
+      "ChangePercent": -11.381,
+      "BeforeAllocatedBytes": 41336,
+      "AfterAllocatedBytes": 41336
+    }
+  ],
+  "Raw": {
+    "Before": [
+      {
+        "Lane": "Identity",
+        "Assembly": "Lokad.Utf8Regex",
+        "Version": "0.4.0-rc.2-dev+1609aa039e848e87aee4ca324b3ba85e0ee6f8ee",
+        "Sha256": "0F0E060577936C766ADEB70838266C80F0D6FE711A740CA26C5077994D0021D2"
+      },
+      {
+        "Lane": "Identity",
+        "Assembly": "Lokad.Utf8Regex.Pcre2",
+        "Version": "0.4.0-rc.2-dev+1609aa039e848e87aee4ca324b3ba85e0ee6f8ee",
+        "Sha256": "C6B4C461D6C1FDB45764A5D6E537E0253EEF82DA79A25477051A8B2EA3529046"
+      },
+      {
+        "Lane": "Environment",
+        "Runtime": ".NET 10.0.13",
+        "OS": "Microsoft Windows NT 10.0.26200.0",
+        "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+        "Configuration": "Release",
+        "Samples": 5,
+        "ConstructionInstances": 16,
+        "PublicIterations": 20000
+      },
+      {
+        "Lane": "Construction",
+        "Case": "caseless",
+        "Samples": [
+          {
+            "Microseconds": 237.89375,
+            "AllocatedBytes": 34776
+          },
+          {
+            "Microseconds": 235.875,
+            "AllocatedBytes": 34776
+          },
+          {
+            "Microseconds": 268.95625,
+            "AllocatedBytes": 34776
+          },
+          {
+            "Microseconds": 300.3125,
+            "AllocatedBytes": 34776
+          },
+          {
+            "Microseconds": 246.825,
+            "AllocatedBytes": 34776
+          }
+        ]
+      },
+      {
+        "Lane": "Route",
+        "Case": "caseless",
+        "Route": "IsMatch=Pcre2SingleTokenRepeat, Count=Pcre2SingleTokenRepeat, Enumerate=Pcre2SingleTokenRepeat, Match=Pcre2SingleTokenRepeat, Replace=Pcre2SingleTokenRepeat",
+        "ExpectedCount": 512
+      },
+      {
+        "Lane": "Public",
+        "Case": "caseless/Pcre2Count",
+        "Samples": [
+          {
+            "Microseconds": 41.489635,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 40.626945,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 51.947990000000004,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 81.501965,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 81.357275,
+            "AllocatedBytes": 0
+          }
+        ]
+      },
+      {
+        "Lane": "Public",
+        "Case": "caseless/PredecodedCount",
+        "Samples": [
+          {
+            "Microseconds": 32.960945,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 29.074325,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 29.37163,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 29.359245,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 29.686115,
+            "AllocatedBytes": 0
+          }
+        ]
+      },
+      {
+        "Lane": "Public",
+        "Case": "caseless/DecodeCount",
+        "Samples": [
+          {
+            "Microseconds": 31.670465000000004,
+            "AllocatedBytes": 7192
+          },
+          {
+            "Microseconds": 31.334429999999998,
+            "AllocatedBytes": 7192
+          },
+          {
+            "Microseconds": 31.221195,
+            "AllocatedBytes": 7192
+          },
+          {
+            "Microseconds": 31.385054999999998,
+            "AllocatedBytes": 7192
+          },
+          {
+            "Microseconds": 31.911145,
+            "AllocatedBytes": 7192
+          }
+        ]
+      },
+      {
+        "Lane": "Construction",
+        "Case": "finite-captured",
+        "Samples": [
+          {
+            "Microseconds": 551.85625,
+            "AllocatedBytes": 101168
+          },
+          {
+            "Microseconds": 567.83125,
+            "AllocatedBytes": 101168
+          },
+          {
+            "Microseconds": 577.56875,
+            "AllocatedBytes": 101168
+          },
+          {
+            "Microseconds": 543.2375,
+            "AllocatedBytes": 101168
+          },
+          {
+            "Microseconds": 623.05625,
+            "AllocatedBytes": 101168
+          }
+        ]
+      },
+      {
+        "Lane": "Route",
+        "Case": "finite-captured",
+        "Route": "IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+        "ExpectedCount": 512
+      },
+      {
+        "Lane": "Public",
+        "Case": "finite-captured/Pcre2Count",
+        "Samples": [
+          {
+            "Microseconds": 11.99368,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 8.20982,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 8.197435,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 8.1778,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 8.17119,
+            "AllocatedBytes": 0
+          }
+        ]
+      },
+      {
+        "Lane": "Public",
+        "Case": "finite-captured/PredecodedCount",
+        "Samples": [
+          {
+            "Microseconds": 35.01024,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 35.262240000000006,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 35.32694,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 53.18331,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 51.199425,
+            "AllocatedBytes": 0
+          }
+        ]
+      },
+      {
+        "Lane": "Public",
+        "Case": "finite-captured/DecodeCount",
+        "Samples": [
+          {
+            "Microseconds": 63.066715,
+            "AllocatedBytes": 3096
+          },
+          {
+            "Microseconds": 37.45639,
+            "AllocatedBytes": 3096
+          },
+          {
+            "Microseconds": 56.528059999999996,
+            "AllocatedBytes": 3096
+          },
+          {
+            "Microseconds": 37.88531,
+            "AllocatedBytes": 3096
+          },
+          {
+            "Microseconds": 71.95009499999999,
+            "AllocatedBytes": 3096
+          }
+        ]
+      },
+      {
+        "Lane": "Construction",
+        "Case": "non-lf",
+        "Samples": [
+          {
+            "Microseconds": 338.55625,
+            "AllocatedBytes": 45064
+          },
+          {
+            "Microseconds": 295.8625,
+            "AllocatedBytes": 45064
+          },
+          {
+            "Microseconds": 305.44375,
+            "AllocatedBytes": 45064
+          },
+          {
+            "Microseconds": 318.51875,
+            "AllocatedBytes": 45064
+          },
+          {
+            "Microseconds": 297.24375,
+            "AllocatedBytes": 45064
+          }
+        ]
+      },
+      {
+        "Lane": "Construction",
+        "Case": "anchored-reference",
+        "Samples": [
+          {
+            "Microseconds": 360.68125,
+            "AllocatedBytes": 47552
+          },
+          {
+            "Microseconds": 334.8125,
+            "AllocatedBytes": 47552
+          },
+          {
+            "Microseconds": 330.8625,
+            "AllocatedBytes": 47552
+          },
+          {
+            "Microseconds": 328.45,
+            "AllocatedBytes": 47552
+          },
+          {
+            "Microseconds": 327.75,
+            "AllocatedBytes": 47552
+          }
+        ]
+      },
+      {
+        "Lane": "Construction",
+        "Case": "literal-control",
+        "Samples": [
+          {
+            "Microseconds": 8.10625,
+            "AllocatedBytes": 2040
+          },
+          {
+            "Microseconds": 7.85,
+            "AllocatedBytes": 2040
+          },
+          {
+            "Microseconds": 7.8375,
+            "AllocatedBytes": 2040
+          },
+          {
+            "Microseconds": 7.79375,
+            "AllocatedBytes": 2040
+          },
+          {
+            "Microseconds": 7.76875,
+            "AllocatedBytes": 2040
+          }
+        ]
+      },
+      {
+        "Lane": "Route",
+        "Case": "literal-control",
+        "Route": "IsMatch=Pcre2Literal, Count=Pcre2Literal, Enumerate=Pcre2Literal, Match=Pcre2Literal, Replace=Pcre2Literal",
+        "ExpectedCount": 512
+      },
+      {
+        "Lane": "Public",
+        "Case": "literal-control/Pcre2Count",
+        "Samples": [
+          {
+            "Microseconds": 49.04182,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 10.114275,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 5.443025,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 5.455355,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 5.461725,
+            "AllocatedBytes": 0
+          }
+        ]
+      },
+      {
+        "Lane": "Public",
+        "Case": "literal-control/PredecodedCount",
+        "Samples": [
+          {
+            "Microseconds": 25.372375,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 36.6728,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 73.09347,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 28.407675,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 24.9871,
+            "AllocatedBytes": 0
+          }
+        ]
+      },
+      {
+        "Lane": "Public",
+        "Case": "literal-control/DecodeCount",
+        "Samples": [
+          {
+            "Microseconds": 26.87722,
+            "AllocatedBytes": 14360
+          },
+          {
+            "Microseconds": 27.016434999999998,
+            "AllocatedBytes": 14360
+          },
+          {
+            "Microseconds": 26.847734999999997,
+            "AllocatedBytes": 14360
+          },
+          {
+            "Microseconds": 26.983265000000003,
+            "AllocatedBytes": 14360
+          },
+          {
+            "Microseconds": 26.630445,
+            "AllocatedBytes": 14360
+          }
+        ]
+      },
+      {
+        "Lane": "Construction",
+        "Case": "core-cached-facade",
+        "Samples": [
+          {
+            "Microseconds": 53.7875,
+            "AllocatedBytes": 41416
+          },
+          {
+            "Microseconds": 50.025,
+            "AllocatedBytes": 41416
+          },
+          {
+            "Microseconds": 51.1625,
+            "AllocatedBytes": 41416
+          },
+          {
+            "Microseconds": 58.20625,
+            "AllocatedBytes": 41416
+          },
+          {
+            "Microseconds": 49.74375,
+            "AllocatedBytes": 41416
+          }
+        ]
+      }
+    ],
+    "After": [
+      {
+        "Lane": "Identity",
+        "Assembly": "Lokad.Utf8Regex",
+        "Version": "0.4.0-rc.2-dev+3dd88cb9e313d9eb1d8d0b552690e30f06fd485a",
+        "Sha256": "999801F9D3B72E434E521B131ED67C19F7FCFEF3606F771448332E8F5AB057B6"
+      },
+      {
+        "Lane": "Identity",
+        "Assembly": "Lokad.Utf8Regex.Pcre2",
+        "Version": "0.4.0-rc.2-dev+3dd88cb9e313d9eb1d8d0b552690e30f06fd485a",
+        "Sha256": "CA2CE8880FAE631229CF1C635122FA60525903E587F1A0F5546F374E02565A9A"
+      },
+      {
+        "Lane": "Environment",
+        "Runtime": ".NET 10.0.13",
+        "OS": "Microsoft Windows NT 10.0.26200.0",
+        "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+        "Configuration": "Release",
+        "Samples": 5,
+        "ConstructionInstances": 16,
+        "PublicIterations": 20000
+      },
+      {
+        "Lane": "Construction",
+        "Case": "caseless",
+        "Samples": [
+          {
+            "Microseconds": 32.475,
+            "AllocatedBytes": 6408
+          },
+          {
+            "Microseconds": 29.625,
+            "AllocatedBytes": 6408
+          },
+          {
+            "Microseconds": 28.35625,
+            "AllocatedBytes": 6408
+          },
+          {
+            "Microseconds": 28.125,
+            "AllocatedBytes": 6408
+          },
+          {
+            "Microseconds": 27.2,
+            "AllocatedBytes": 6408
+          }
+        ]
+      },
+      {
+        "Lane": "Route",
+        "Case": "caseless",
+        "Route": "IsMatch=Pcre2SingleTokenRepeat, Count=Pcre2SingleTokenRepeat, Enumerate=Pcre2SingleTokenRepeat, Match=Pcre2SingleTokenRepeat, Replace=Pcre2SingleTokenRepeat",
+        "ExpectedCount": 512
+      },
+      {
+        "Lane": "Public",
+        "Case": "caseless/Pcre2Count",
+        "Samples": [
+          {
+            "Microseconds": 42.617615,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 41.408885,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 51.48533,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 86.631035,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 89.581245,
+            "AllocatedBytes": 0
+          }
+        ]
+      },
+      {
+        "Lane": "Public",
+        "Case": "caseless/PredecodedCount",
+        "Samples": [
+          {
+            "Microseconds": 34.440205,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 34.80158,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 33.787995,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 34.76878,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 46.5028,
+            "AllocatedBytes": 0
+          }
+        ]
+      },
+      {
+        "Lane": "Public",
+        "Case": "caseless/DecodeCount",
+        "Samples": [
+          {
+            "Microseconds": 32.972455,
+            "AllocatedBytes": 7192
+          },
+          {
+            "Microseconds": 32.90713,
+            "AllocatedBytes": 7192
+          },
+          {
+            "Microseconds": 33.035475,
+            "AllocatedBytes": 7192
+          },
+          {
+            "Microseconds": 33.258309999999994,
+            "AllocatedBytes": 7192
+          },
+          {
+            "Microseconds": 32.484525,
+            "AllocatedBytes": 7192
+          }
+        ]
+      },
+      {
+        "Lane": "Construction",
+        "Case": "finite-captured",
+        "Samples": [
+          {
+            "Microseconds": 496.65625,
+            "AllocatedBytes": 101928
+          },
+          {
+            "Microseconds": 457.3875,
+            "AllocatedBytes": 101928
+          },
+          {
+            "Microseconds": 582.79375,
+            "AllocatedBytes": 101928
+          },
+          {
+            "Microseconds": 463.35625,
+            "AllocatedBytes": 101928
+          },
+          {
+            "Microseconds": 490.88125,
+            "AllocatedBytes": 101928
+          }
+        ]
+      },
+      {
+        "Lane": "Route",
+        "Case": "finite-captured",
+        "Route": "IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+        "ExpectedCount": 512
+      },
+      {
+        "Lane": "Public",
+        "Case": "finite-captured/Pcre2Count",
+        "Samples": [
+          {
+            "Microseconds": 8.648660000000001,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 8.14093,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 8.604055,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 8.147575,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 8.23017,
+            "AllocatedBytes": 0
+          }
+        ]
+      },
+      {
+        "Lane": "Public",
+        "Case": "finite-captured/PredecodedCount",
+        "Samples": [
+          {
+            "Microseconds": 35.03768,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 36.018,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 35.517959999999995,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 35.056245000000004,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 35.230484999999994,
+            "AllocatedBytes": 0
+          }
+        ]
+      },
+      {
+        "Lane": "Public",
+        "Case": "finite-captured/DecodeCount",
+        "Samples": [
+          {
+            "Microseconds": 36.443905,
+            "AllocatedBytes": 3096
+          },
+          {
+            "Microseconds": 36.391725,
+            "AllocatedBytes": 3096
+          },
+          {
+            "Microseconds": 37.288875,
+            "AllocatedBytes": 3096
+          },
+          {
+            "Microseconds": 35.929355,
+            "AllocatedBytes": 3096
+          },
+          {
+            "Microseconds": 36.21991,
+            "AllocatedBytes": 3096
+          }
+        ]
+      },
+      {
+        "Lane": "Construction",
+        "Case": "non-lf",
+        "Samples": [
+          {
+            "Microseconds": 22.13125,
+            "AllocatedBytes": 6792
+          },
+          {
+            "Microseconds": 22.3,
+            "AllocatedBytes": 6792
+          },
+          {
+            "Microseconds": 21.9875,
+            "AllocatedBytes": 6792
+          },
+          {
+            "Microseconds": 23.40625,
+            "AllocatedBytes": 6792
+          },
+          {
+            "Microseconds": 22.95625,
+            "AllocatedBytes": 6792
+          }
+        ]
+      },
+      {
+        "Lane": "Construction",
+        "Case": "anchored-reference",
+        "Samples": [
+          {
+            "Microseconds": 26.08125,
+            "AllocatedBytes": 6744
+          },
+          {
+            "Microseconds": 24.83125,
+            "AllocatedBytes": 6744
+          },
+          {
+            "Microseconds": 25.35,
+            "AllocatedBytes": 6744
+          },
+          {
+            "Microseconds": 25.19375,
+            "AllocatedBytes": 6744
+          },
+          {
+            "Microseconds": 24.86875,
+            "AllocatedBytes": 6744
+          }
+        ]
+      },
+      {
+        "Lane": "Construction",
+        "Case": "literal-control",
+        "Samples": [
+          {
+            "Microseconds": 6.83125,
+            "AllocatedBytes": 1984
+          },
+          {
+            "Microseconds": 6.76875,
+            "AllocatedBytes": 1984
+          },
+          {
+            "Microseconds": 6.7625,
+            "AllocatedBytes": 1984
+          },
+          {
+            "Microseconds": 6.8,
+            "AllocatedBytes": 1984
+          },
+          {
+            "Microseconds": 6.93125,
+            "AllocatedBytes": 1984
+          }
+        ]
+      },
+      {
+        "Lane": "Route",
+        "Case": "literal-control",
+        "Route": "IsMatch=Pcre2Literal, Count=Pcre2Literal, Enumerate=Pcre2Literal, Match=Pcre2Literal, Replace=Pcre2Literal",
+        "ExpectedCount": 512
+      },
+      {
+        "Lane": "Public",
+        "Case": "literal-control/Pcre2Count",
+        "Samples": [
+          {
+            "Microseconds": 11.194144999999999,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 5.446905,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 5.44845,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 5.437195,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 5.591095,
+            "AllocatedBytes": 0
+          }
+        ]
+      },
+      {
+        "Lane": "Public",
+        "Case": "literal-control/PredecodedCount",
+        "Samples": [
+          {
+            "Microseconds": 24.086945,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 24.19298,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 24.106365,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 23.8985,
+            "AllocatedBytes": 0
+          },
+          {
+            "Microseconds": 23.997529999999998,
+            "AllocatedBytes": 0
+          }
+        ]
+      },
+      {
+        "Lane": "Public",
+        "Case": "literal-control/DecodeCount",
+        "Samples": [
+          {
+            "Microseconds": 27.015845000000002,
+            "AllocatedBytes": 14360
+          },
+          {
+            "Microseconds": 27.336975,
+            "AllocatedBytes": 14360
+          },
+          {
+            "Microseconds": 27.117055,
+            "AllocatedBytes": 14360
+          },
+          {
+            "Microseconds": 27.108755,
+            "AllocatedBytes": 14360
+          },
+          {
+            "Microseconds": 28.004375,
+            "AllocatedBytes": 14360
+          }
+        ]
+      },
+      {
+        "Lane": "Construction",
+        "Case": "core-cached-facade",
+        "Samples": [
+          {
+            "Microseconds": 163.88125,
+            "AllocatedBytes": 41416
+          },
+          {
+            "Microseconds": 157.86875,
+            "AllocatedBytes": 41416
+          },
+          {
+            "Microseconds": 192.9125,
+            "AllocatedBytes": 41416
+          },
+          {
+            "Microseconds": 186.38125,
+            "AllocatedBytes": 41416
+          },
+          {
+            "Microseconds": 163.8875,
+            "AllocatedBytes": 41416
+          }
+        ]
+      }
+    ],
+    "ConfirmationBefore": [
+      {
+        "Lane": "Identity",
+        "Assembly": "Lokad.Utf8Regex",
+        "Version": "0.4.0-rc.2-dev+1609aa039e848e87aee4ca324b3ba85e0ee6f8ee",
+        "Sha256": "0F0E060577936C766ADEB70838266C80F0D6FE711A740CA26C5077994D0021D2"
+      },
+      {
+        "Lane": "Identity",
+        "Assembly": "Lokad.Utf8Regex.Pcre2",
+        "Version": "0.4.0-rc.2-dev+1609aa039e848e87aee4ca324b3ba85e0ee6f8ee",
+        "Sha256": "C6B4C461D6C1FDB45764A5D6E537E0253EEF82DA79A25477051A8B2EA3529046"
+      },
+      {
+        "Lane": "Environment",
+        "Runtime": ".NET 10.0.13",
+        "OS": "Microsoft Windows NT 10.0.26200.0",
+        "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+        "Configuration": "Release",
+        "Samples": 5,
+        "ConstructionInstances": 16,
+        "PublicIterations": 20000
+      },
+      {
+        "Lane": "Construction",
+        "Case": "core-cached-facade",
+        "Samples": [
+          {
+            "Microseconds": 95.41875,
+            "AllocatedBytes": 41416
+          },
+          {
+            "Microseconds": 84.90625,
+            "AllocatedBytes": 41416
+          },
+          {
+            "Microseconds": 83.5375,
+            "AllocatedBytes": 41416
+          },
+          {
+            "Microseconds": 86.475,
+            "AllocatedBytes": 41416
+          },
+          {
+            "Microseconds": 109.03125,
+            "AllocatedBytes": 41416
+          }
+        ]
+      },
+      {
+        "Lane": "Construction",
+        "Case": "core-public-constructor-control",
+        "Samples": [
+          {
+            "Microseconds": 91.1625,
+            "AllocatedBytes": 41336
+          },
+          {
+            "Microseconds": 81.2875,
+            "AllocatedBytes": 41336
+          },
+          {
+            "Microseconds": 95.65,
+            "AllocatedBytes": 41336
+          },
+          {
+            "Microseconds": 87.69375,
+            "AllocatedBytes": 41336
+          },
+          {
+            "Microseconds": 105.98125,
+            "AllocatedBytes": 41336
+          }
+        ]
+      }
+    ],
+    "ConfirmationAfter": [
+      {
+        "Lane": "Identity",
+        "Assembly": "Lokad.Utf8Regex",
+        "Version": "0.4.0-rc.2-dev+3dd88cb9e313d9eb1d8d0b552690e30f06fd485a",
+        "Sha256": "999801F9D3B72E434E521B131ED67C19F7FCFEF3606F771448332E8F5AB057B6"
+      },
+      {
+        "Lane": "Identity",
+        "Assembly": "Lokad.Utf8Regex.Pcre2",
+        "Version": "0.4.0-rc.2-dev+3dd88cb9e313d9eb1d8d0b552690e30f06fd485a",
+        "Sha256": "CA2CE8880FAE631229CF1C635122FA60525903E587F1A0F5546F374E02565A9A"
+      },
+      {
+        "Lane": "Environment",
+        "Runtime": ".NET 10.0.13",
+        "OS": "Microsoft Windows NT 10.0.26200.0",
+        "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+        "Configuration": "Release",
+        "Samples": 5,
+        "ConstructionInstances": 16,
+        "PublicIterations": 20000
+      },
+      {
+        "Lane": "Construction",
+        "Case": "core-cached-facade",
+        "Samples": [
+          {
+            "Microseconds": 89.56875,
+            "AllocatedBytes": 41416
+          },
+          {
+            "Microseconds": 81.23125,
+            "AllocatedBytes": 41416
+          },
+          {
+            "Microseconds": 81.5875,
+            "AllocatedBytes": 41416
+          },
+          {
+            "Microseconds": 90.20625,
+            "AllocatedBytes": 41416
+          },
+          {
+            "Microseconds": 137.2875,
+            "AllocatedBytes": 41416
+          }
+        ]
+      },
+      {
+        "Lane": "Construction",
+        "Case": "core-public-constructor-control",
+        "Samples": [
+          {
+            "Microseconds": 92.8625,
+            "AllocatedBytes": 41336
+          },
+          {
+            "Microseconds": 78.81875,
+            "AllocatedBytes": 41336
+          },
+          {
+            "Microseconds": 80.2125,
+            "AllocatedBytes": 41336
+          },
+          {
+            "Microseconds": 80.7875,
+            "AllocatedBytes": 41336
+          },
+          {
+            "Microseconds": 106.4,
+            "AllocatedBytes": 41336
+          }
+        ]
+      }
+    ]
+  }
+}

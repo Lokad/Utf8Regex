@@ -99,13 +99,20 @@ add the following construction behavior:
   Empty intermediate foundations still support actual profile compilers.
 - Lexical policy/name/structure guards share complete escape-operand skipping,
   preserving class and quoted-text boundaries while retaining real policy errors.
+- Lexical scope buffers now admit major capacity/depth through the original
+  construction owner and poll during long scans, before semantic parsing.
+  Completed operation slots discard unused original Core preparation and retain
+  the actual derived Core or immutable slice payload where needed. Public null
+  text patterns report the named argument error after established policy checks.
 
 Strict UTF-8/scalars, captures, synchronous original tokens/deadlines, owned
 results/cursors and useful work/depth/working/result controls remain required.
 [Sixth-review source evidence](../../bench/Experiments/SixthReview-20261020/README.md)
-records green Windows/Linux CI at `1609aa03`, including the grammar boundary,
-character admission and retained-state cleanup. Source checks **do not** replace or
-relabel RC1's package evidence.
+records the grammar boundary, character admission and retained-state cleanup.
+[Seventh-review evidence](../../bench/Experiments/SeventhReview-20261021/README.md)
+adds lexical admission, live-owner cleanup, a bounded construction/public cost
+comparison and green Windows/Linux source CI at `884b156b`. Source checks **do
+not** replace or relabel RC1's package evidence.
 No corrected development package has been qualified. The earlier public first-use
 latency concern and inconclusive backreference timing remain open for a future
 delivery; no universal performance equivalence or fresh benchmark Status is claimed.

@@ -1,0 +1,193 @@
+{
+  "Scope": "Untimed checks of actual assembly/PDB/source evidence only, no measurement identity substitution, snapshot write or performance qualification.",
+  "Contract": "Existing producer Git/build-input check plus loaded/on-disk MVID, compiler PE/PDB association and SHA256 tracked source document checksums. SDK obj-generated documents are covered by project/build inputs, not matched as tracked source. This is not universal build attestation.",
+  "ReviewedDefect": {
+    "Scope": "Untimed metadata/preflight probe only. Copied Core sources, one changed private constant, isolated build/output. No original source/DLL, measurement, qualification, package or snapshot changed.",
+    "SourceConstant": 16384,
+    "ActualLoadedConstant": 17408,
+    "GateOutcome": "Accepted",
+    "GateFailure": null,
+    "RelevantWorktreeStatus": "",
+    "LoadedEnvironment": {
+      "SourceCommit": "fd58832287ef",
+      "PythonReAssembly": "0.4.0-rc.2-dev+1609aa039e848e87aee4ca324b3ba85e0ee6f8ee sha256=453EE11FB54C3D97C86BCD38107EBEE911745C36690653559E6D0B3771136187",
+      "CoreAssembly": "0.4.0-rc.2-dev+fd58832287ef88938859a013b0cf342c18901eeb sha256=4F553892EEC8E5EFE600CD43407D5D8F71BE8190E6E137DDA7B28863021368C9",
+      "HasUntrackedFiles": true,
+      "Runtime": ".NET 10.0.12",
+      "BenchmarkAssembly": "1.0.0+1609aa039e848e87aee4ca324b3ba85e0ee6f8ee sha256=ED877C3E227BD87837A0CC86E2D2D57CD560C836D6F0E5AA86256EA8DEB9C35D",
+      "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+      "TrackedDirty": false,
+      "OperatingSystem": "Microsoft Windows 10.0.26200"
+    }
+  },
+  "Cases": [
+    {
+      "Evidence": {
+        "Path": "artifacts/seventh-implementation-20261021/compiled-documents-final.json",
+        "Sha256": "80810A2734A6C10583BB5630FAD64CE67B45B59953E8A561DD9042CF221C20F9",
+        "Bytes": 715
+      },
+      "Result": {
+        "Scope": "Untimed existing PE/PDB/source evidence checks only; no measurement or snapshot writes.",
+        "Checkout": "884b156b6a2a",
+        "Rows": [
+          {
+            "Name": "Lokad.Utf8Regex.Benchmarks",
+            "Accepted": true,
+            "Error": null
+          },
+          {
+            "Name": "Lokad.Utf8Regex",
+            "Accepted": true,
+            "Error": null
+          },
+          {
+            "Name": "Lokad.Utf8Regex.PythonRe",
+            "Accepted": true,
+            "Error": null
+          },
+          {
+            "Name": "Unbuilt changed source is refused",
+            "Accepted": false,
+            "Error": "PythonRe qualification loaded different compiled source for src/Lokad.Utf8Regex/Utf8Regex.Construction.cs. Rebuild matching Release binaries."
+          }
+        ]
+      }
+    },
+    {
+      "Evidence": {
+        "Path": "artifacts/seventh-implementation-20261021/full-source-preflight-final.json",
+        "Sha256": "0CA460A283DBE7383A918A83FAFE03E7859EA58891E6AAA9AA1BCFD9C39F512B",
+        "Bytes": 280
+      },
+      "Result": {
+        "Scope": "Untimed existing PE/PDB/source evidence checks only; no measurement or snapshot writes.",
+        "Checkout": "884b156b6a2a",
+        "Rows": [
+          {
+            "Name": "Full producer and compiled-source preflight",
+            "Accepted": true,
+            "Error": null
+          }
+        ]
+      }
+    },
+    {
+      "Evidence": {
+        "Path": "artifacts/seventh-implementation-20261021/proof-same-producer.json",
+        "Sha256": "5A9E9A3C49EBFBC03E208C19431710C689332CBBBF0018DC4564D0FBECF77138",
+        "Bytes": 443
+      },
+      "Result": {
+        "Scope": "Untimed existing PE/PDB/source evidence checks only; no measurement or snapshot writes.",
+        "Checkout": "884b156b6a2a",
+        "Rows": [
+          {
+            "Name": "Full producer and compiled-source preflight",
+            "Accepted": false,
+            "Error": "PythonRe qualification cannot associate compiled source /_/artifacts/seventh-implementation-20261021/shadow-core/Utf8Regex.Construction.cs with src/Lokad.Utf8Regex."
+          }
+        ]
+      }
+    },
+    {
+      "Evidence": {
+        "Path": "artifacts/seventh-implementation-20261021/proof-same-producer-identity.json",
+        "Sha256": "FC1FAC2CA6F11DC02E8F52889A2CC40F04ECBFEB4975738296E81F39B30D015C",
+        "Bytes": 411
+      },
+      "Result": {
+        "Scope": "Actual differing-code DLL inspection, no benchmark qualification",
+        "ActualLoadedConstant": 17408,
+        "ExpectedSourceConstant": 16384,
+        "Assembly": "Lokad.Utf8Regex, Version=0.4.0.0, Culture=neutral, PublicKeyToken=null",
+        "InformationalVersion": "0.4.0-rc.2-dev+884b156b6a2ad5b0da0781937aff4c2f2b04375a",
+        "Sha256": "B19D0BC0E2F1E8447E7339ACB9A262BC3B25BEBCFFDBF8E5BC0214C3557F2A9A"
+      }
+    },
+    {
+      "Evidence": {
+        "Path": "artifacts/seventh-implementation-20261021/proof-old-producer.json",
+        "Sha256": "F3823688F766550DC33A798987A14D7D7836BBAB5274B5701484EDB0B1411FCB",
+        "Bytes": 502
+      },
+      "Result": {
+        "Scope": "Untimed existing PE/PDB/source evidence checks only; no measurement or snapshot writes.",
+        "Checkout": "884b156b6a2a",
+        "Rows": [
+          {
+            "Name": "Full producer and compiled-source preflight",
+            "Accepted": false,
+            "Error": "PythonRe qualification loaded stale Core code from 1609aa039e848e87aee4ca324b3ba85e0ee6f8ee. Rebuild matching Release binaries. Changed source: src/Lokad.Utf8Regex/Utf8Regex.Construction.cs\nsrc/Lokad.Utf8Regex/Utf8Regex.cs"
+          }
+        ]
+      }
+    },
+    {
+      "Evidence": {
+        "Path": "artifacts/seventh-implementation-20261021/proof-missing.json",
+        "Sha256": "64AAD173BF96BFFC79071F810C15509B677B269DA5C52B0C27BB184A20F59EBA",
+        "Bytes": 473
+      },
+      "Result": {
+        "Scope": "Untimed existing PE/PDB/source evidence checks only; no measurement or snapshot writes.",
+        "Checkout": "884b156b6a2a",
+        "Rows": [
+          {
+            "Name": "Lokad.Utf8Regex.Benchmarks",
+            "Accepted": true,
+            "Error": null
+          },
+          {
+            "Name": "Lokad.Utf8Regex",
+            "Accepted": false,
+            "Error": "PythonRe qualification requires the matching portable PDB beside Lokad.Utf8Regex. Rebuild matching Release binaries."
+          }
+        ]
+      }
+    },
+    {
+      "Evidence": {
+        "Path": "artifacts/seventh-implementation-20261021/proof-mismatched.json",
+        "Sha256": "64AAD173BF96BFFC79071F810C15509B677B269DA5C52B0C27BB184A20F59EBA",
+        "Bytes": 473
+      },
+      "Result": {
+        "Scope": "Untimed existing PE/PDB/source evidence checks only; no measurement or snapshot writes.",
+        "Checkout": "884b156b6a2a",
+        "Rows": [
+          {
+            "Name": "Lokad.Utf8Regex.Benchmarks",
+            "Accepted": true,
+            "Error": null
+          },
+          {
+            "Name": "Lokad.Utf8Regex",
+            "Accepted": false,
+            "Error": "PythonRe qualification requires the matching portable PDB beside Lokad.Utf8Regex. Rebuild matching Release binaries."
+          }
+        ]
+      }
+    }
+  ],
+  "ExistingProducerAndWorktreeCases": "SixthReview-20261020/loaded-sources.json preserves missing/malformed/unresolvable producer and five handoffs/unknown-source checks; those unchanged mechanisms were not expanded or retimed.",
+  "DocumentationOnlyReuse": {
+    "Scope": "Full loaded-source preflight passes with documentation/receipt changes and unchanged 884b156b binaries. A clean worktree remains separately required for snapshot writes. Final post-commit check uses the same binaries without rebuilding.",
+    "Evidence": {
+      "Path": "artifacts/seventh-implementation-20261021/docs-only-source-preflight.json",
+      "Sha256": "0CA460A283DBE7383A918A83FAFE03E7859EA58891E6AAA9AA1BCFD9C39F512B",
+      "Bytes": 280
+    },
+    "Result": {
+      "Scope": "Untimed existing PE/PDB/source evidence checks only; no measurement or snapshot writes.",
+      "Checkout": "884b156b6a2a",
+      "Rows": [
+        {
+          "Name": "Full producer and compiled-source preflight",
+          "Accepted": true,
+          "Error": null
+        }
+      ]
+    }
+  }
+}

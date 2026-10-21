@@ -16,6 +16,13 @@ records a bounded source comparison separately. Frozen RC1 is unpublished and it
 PCRE2 bytes have known defects; original package and benchmark evidence stays
 historical. This page does not qualify the development engine for release.
 
+The [seventh-review receipt](bench/Experiments/SeventhReview-20261021/README.md)
+records removal of unused PCRE2 preparation and conservative facade admission.
+Selected public Count medians changed −0.89%/+0.40%, with unchanged allocation;
+construction observations and their noisy control are reported separately.
+Windows/Linux source CI is green at `884b156b`. This bounded local comparison
+does not refresh historical benchmark Status or resolve earlier delivery costs.
+
 ## Frozen scalar.119 package costs
 
 The observations below apply to **Core/PythonRe scalar.119**, producer `ca0c8a6f`.
