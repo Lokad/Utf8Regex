@@ -14,7 +14,6 @@ internal sealed class Pcre2AsciiOrderedLiteralWindowDirectProgram : IPcre2Direct
 
     internal Utf8Regex Regex { get; }
 
-    internal Pcre2BacktrackingProgram Fallback { get; }
 }
 
 internal static class Pcre2AsciiOrderedLiteralWindowAnalyzer
