@@ -10,15 +10,23 @@ internal static class Pcre2CaptureNameValidator
     // admit explicit numeric definitions. Names alias ordinary capture slots.
     internal static void Validate(string pattern, Pcre2CompileOptions options, Pcre2NewlineConvention newline)
     {
-        Utf8ConstructionScope.ChargeWork((ulong)pattern.Length);
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        budget.ChargeWork((ulong)pattern.Length);
         byte extended = (options & Pcre2CompileOptions.ExtendedMore) != 0 ? (byte)2 : (options & Pcre2CompileOptions.Extended) != 0 ? (byte)1 : (byte)0;
-        var scopes = new Stack<byte>();
+        using var scopes = new Utf8ConstructionBuffer<byte>(budget);
         var quoted = false;
         var inClass = false;
         var classHasAtom = false;
         var classStart = false;
+        var nextCheckpoint = 0;
         for (var offset = 0; offset < pattern.Length; offset++)
         {
+            if (offset >= nextCheckpoint)
+            {
+                budget.ChargeWork(0);
+                nextCheckpoint = offset + 2048;
+            }
             var character = pattern[offset];
             if (quoted)
             {
@@ -53,7 +61,7 @@ internal static class Pcre2CaptureNameValidator
             var tail = pattern.AsSpan(offset);
             if (tail.StartsWith("(?#", StringComparison.Ordinal))
             {
-                var end = pattern.IndexOf(')', offset + 3);
+                var end = Pcre2PatternCodeScan.FindClosingParenthesis(pattern, offset + 3);
                 if (end < 0) return; // The structural validator owns this error.
                 offset = end;
                 continue;

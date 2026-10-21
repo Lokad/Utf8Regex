@@ -12,15 +12,23 @@ internal static class Pcre2PatternCodeScan
         Pcre2CompileOptions options, Pcre2NewlineConvention newline)
     {
         // Admit the full lexical extent, including skipped quotes/comments.
-        Utf8ConstructionScope.ChargeWork((ulong)pattern.Length);
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        budget.ChargeWork((ulong)pattern.Length);
         var quoted = false;
         var inCharacterClass = false;
         var classHasAtom = false;
         var classStart = false;
         byte extended = (options & Pcre2CompileOptions.ExtendedMore) != 0 ? (byte)2 : (options & Pcre2CompileOptions.Extended) != 0 ? (byte)1 : (byte)0;
-        var scopes = new Stack<byte>();
+        using var scopes = new Utf8ConstructionBuffer<byte>(budget);
+        var nextCheckpoint = 0;
         for (var offset = 0; offset < pattern.Length; offset++)
         {
+            if (offset >= nextCheckpoint)
+            {
+                budget.ChargeWork(0);
+                nextCheckpoint = offset + 2048;
+            }
             var character = pattern[offset];
             if (quoted)
             {
@@ -105,7 +113,7 @@ internal static class Pcre2PatternCodeScan
 
             if (character == '(' && pattern.AsSpan(offset).StartsWith("(?#", StringComparison.Ordinal))
             {
-                var commentEnd = pattern.IndexOf(')', offset + 3);
+                var commentEnd = Pcre2PatternCodeScan.FindClosingParenthesis(pattern, offset + 3);
                 if (commentEnd < 0)
                 {
                     return false;
@@ -189,8 +197,19 @@ internal static class Pcre2PatternCodeScan
     // Mode 0 disables extended syntax, 1 is x, 2 is xx (also ignores horizontal
     // class whitespace). Return true for a global directive, which opens no group. Scoped
     // directives and ordinary groups save the inherited mode for their ')'.
-    internal static bool EnterExtendedGroup(string pattern, ref int offset, ref byte extended, Stack<byte> scopes)
+    internal static bool EnterExtendedGroup(string pattern, ref int offset, ref byte extended, Utf8ConstructionBuffer<byte> scopes)
     {
+        var budget = Utf8ConstructionScope.CurrentBudget;
+        var maximum = Math.Min(budget.MaximumDepth, Pcre2BacktrackingCompiler.MaximumRecursiveDepth);
+        var prospective = budget.Depth + (ulong)scopes.Count + 1;
+        // Global option directives do not open a frame; admission is applied
+        // only once the directive's terminating ':' or ordinary group is known.
+        void AdmitGroup()
+        {
+            budget.ChargeWork(0);
+            if (prospective > maximum)
+                throw new Utf8ResourceLimitExceededException(Utf8ResourceLimitKind.ConstructionDepth, maximum, prospective);
+        }
         if (pattern.AsSpan(offset).StartsWith("(?", StringComparison.Ordinal))
         {
             var end = offset + 2;
@@ -202,8 +221,10 @@ internal static class Pcre2PatternCodeScan
             var reset = end < pattern.Length && pattern[end] == '^';
             if (reset) { next = 0; end++; }
             var start = end;
+            var nextCheckpoint = end;
             for (; end < pattern.Length; end++)
             {
+                if (end >= nextCheckpoint) { budget.ChargeWork(0); nextCheckpoint = end + 2048; }
                 var flag = pattern[end];
                 if (flag == '-')
                 {
@@ -226,12 +247,13 @@ internal static class Pcre2PatternCodeScan
                 if (enabledX) next = enabledMore ? (byte)2 : (byte)1;
                 if (disabledX) next = 0;
                 var global = pattern[end] == ')';
-                if (!global) scopes.Push(extended);
+                if (!global) { AdmitGroup(); scopes.Push(extended); }
                 extended = next;
                 offset = end;
                 return global;
             }
         }
+        AdmitGroup();
         scopes.Push(extended);
         return false;
     }
@@ -255,7 +277,7 @@ internal static class Pcre2PatternCodeScan
     internal static bool TrySkipControlVerbLabel(string pattern, ref int offset)
     {
         if (!pattern.AsSpan(offset).StartsWith("(*", StringComparison.Ordinal)) return false;
-        var end = FindVerbEnd(pattern, offset + 2);
+        var end = FindClosingParenthesis(pattern, offset + 2);
         if (end < 0) return false;
         var content = pattern.AsSpan(offset + 2, end - offset - 2);
         Utf8ConstructionScope.ChargeWork((ulong)content.Length);
@@ -270,7 +292,7 @@ internal static class Pcre2PatternCodeScan
         return true;
     }
 
-    private static int FindVerbEnd(string pattern, int start)
+    internal static int FindClosingParenthesis(string pattern, int start)
     {
         // Unknown or unterminated verbs can revisit suffixes. Bound each search
         // under the original construction owner while keeping SIMD IndexOf.

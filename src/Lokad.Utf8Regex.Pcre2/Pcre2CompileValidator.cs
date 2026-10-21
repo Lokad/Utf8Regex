@@ -9,7 +9,7 @@ internal static class Pcre2CompileValidator
     internal static bool TrySkipParenthesizedComment(string pattern, ref int offset)
     {
         if (!pattern.AsSpan(offset).StartsWith("(?#", StringComparison.Ordinal)) return false;
-        var end = pattern.IndexOf(')', offset + 3);
+        var end = Pcre2PatternCodeScan.FindClosingParenthesis(pattern, offset + 3);
         if (end < 0) throw new Pcre2CompileException("Missing ) after comment.", Pcre2ErrorKind.MissingCommentClosing);
         offset = end + 1;
         return true;
@@ -70,50 +70,71 @@ internal static class Pcre2CompileValidator
     // Pattern-dependent scans stay behind strict decoding/construction admission.
     internal static void ValidatePattern(string pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings)
     {
-        if (Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?C", options, compileSettings.Newline))
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        budget.ChargeWork((ulong)pattern.Length);
+        var hasEscape = false;
+        var hasGroupSyntax = false;
+        // Only candidate presence is tested here. Context and policy/error
+        // priority stay with the existing lexical validators below.
+        for (var offset = 0; offset < pattern.Length; offset += 2048)
+        {
+            budget.ChargeWork(0);
+            var block = pattern.AsSpan(offset, Math.Min(2048, pattern.Length - offset));
+            hasEscape |= block.Contains('\\');
+            hasGroupSyntax |= block.IndexOfAny('?', '*') >= 0;
+        }
+        if (hasGroupSyntax && Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?C", options, compileSettings.Newline))
         {
             throw new Pcre2CompileException("PCRE2 callouts are out of scope for this profile.", Pcre2ErrorKind.CalloutUnsupported);
         }
 
-        if (compileSettings.BackslashC == Pcre2BackslashCPolicy.Forbid && ContainsBackslashC(pattern, false, options, compileSettings.Newline))
+        if (hasEscape && compileSettings.BackslashC == Pcre2BackslashCPolicy.Forbid && ContainsBackslashC(pattern, false, options, compileSettings.Newline))
         {
             throw new Pcre2CompileException(@"Using \C is disabled by this library profile.", Pcre2ErrorKind.BackslashCDisabled);
         }
 
-        if (compileSettings.BackslashC == Pcre2BackslashCPolicy.Allow &&
+        if (hasEscape && compileSettings.BackslashC == Pcre2BackslashCPolicy.Allow &&
             ContainsBackslashC(pattern, true, options, compileSettings.Newline))
         {
             throw new Pcre2CompileException(@"\C is not allowed in UTF lookbehind.", Pcre2ErrorKind.BackslashCInUtfLookbehind);
         }
 
-        if (!compileSettings.AllowLookaroundBackslashK && ContainsLookaroundBackslashK(pattern, options, compileSettings.Newline))
+        if (hasEscape && !compileSettings.AllowLookaroundBackslashK && ContainsLookaroundBackslashK(pattern, options, compileSettings.Newline))
         {
             throw new Pcre2CompileException(@"\K is not allowed in lookarounds (but see PCRE2_EXTRA_ALLOW_LOOKAROUND_BSK)", Pcre2ErrorKind.LookaroundBackslashKDisabled);
         }
 
-        if (ContainsBackslashCInCharacterClass(pattern, options, compileSettings.Newline))
+        if (hasEscape && ContainsBackslashCInCharacterClass(pattern, options, compileSettings.Newline))
         {
             throw new Pcre2CompileException("Escape sequence is invalid in character class.", Pcre2ErrorKind.EscapeInvalidInClass);
         }
 
-        Pcre2CaptureNameValidator.Validate(pattern, options, compileSettings.Newline);
+        if (hasGroupSyntax) Pcre2CaptureNameValidator.Validate(pattern, options, compileSettings.Newline);
         ValidateStructure(pattern, options, compileSettings.Newline);
     }
 
     private static void ValidateStructure(string pattern, Pcre2CompileOptions options, Pcre2NewlineConvention newline)
     {
-        Utf8ConstructionScope.ChargeWork((ulong)pattern.Length);
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        budget.ChargeWork((ulong)pattern.Length);
         var groupDepth = 0;
         var inCharacterClass = false;
         var classHasAtom = false;
         var classStart = false;
         var quoted = false;
         byte extended = (options & Pcre2CompileOptions.ExtendedMore) != 0 ? (byte)2 : (options & Pcre2CompileOptions.Extended) != 0 ? (byte)1 : (byte)0;
-        var extendedScopes = new Stack<byte>();
+        using var extendedScopes = new Utf8ConstructionBuffer<byte>(budget);
         var previousWasZeroWidth = true; // No repeatable item at pattern entry.
+        var nextCheckpoint = 0;
         for (var offset = 0; offset < pattern.Length; offset++)
         {
-            if ((offset & 2047) == 0) Utf8ConstructionScope.ChargeWork(0);
+            if (offset >= nextCheckpoint)
+            {
+                budget.ChargeWork(0);
+                nextCheckpoint = offset + 2048;
+            }
             var character = pattern[offset];
             if (quoted)
             {
@@ -273,6 +294,7 @@ internal static class Pcre2CompileValidator
         var invalid = false;
         for (; cursor < pattern.Length; cursor++)
         {
+            if ((cursor & 2047) == 0) Utf8ConstructionScope.ChargeWork(0);
             var flag = pattern[cursor];
             if (flag is ':' or ')')
             {
@@ -309,7 +331,11 @@ internal static class Pcre2CompileValidator
 
         void SkipSpace()
         {
-            while (cursor < pattern.Length && pattern[cursor] is ' ' or '\t') cursor++;
+            while (cursor < pattern.Length && pattern[cursor] is ' ' or '\t')
+            {
+                if ((cursor & 2047) == 0) Utf8ConstructionScope.ChargeWork(0);
+                cursor++;
+            }
         }
         bool ReadNumber(out int value)
         {
@@ -326,17 +352,24 @@ internal static class Pcre2CompileValidator
 
     private static bool ContainsLookaroundBackslashK(string pattern, Pcre2CompileOptions options, Pcre2NewlineConvention newline)
     {
-        Utf8ConstructionScope.ChargeWork((ulong)pattern.Length);
-        var parentheses = new Stack<bool>();
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        budget.ChargeWork((ulong)pattern.Length);
         var lookaroundDepth = 0;
         var inCharacterClass = false;
         var classHasAtom = false;
         var classStart = false;
         var quoted = false;
         byte extended = (options & Pcre2CompileOptions.ExtendedMore) != 0 ? (byte)2 : (options & Pcre2CompileOptions.Extended) != 0 ? (byte)1 : (byte)0;
-        var extendedScopes = new Stack<byte>();
+        using var extendedScopes = new Utf8ConstructionBuffer<byte>(budget);
+        var nextCheckpoint = 0;
         for (var offset = 0; offset < pattern.Length; offset++)
         {
+            if (offset >= nextCheckpoint)
+            {
+                budget.ChargeWork(0);
+                nextCheckpoint = offset + 2048;
+            }
             var character = pattern[offset];
             if (quoted)
             {
@@ -392,17 +425,17 @@ internal static class Pcre2CompileValidator
 
             if (character != '(')
             {
-                if (character == ')' && extendedScopes.TryPop(out var previous)) extended = previous;
-                if (character == ')' && parentheses.TryPop(out var wasLookaround) && wasLookaround)
+                if (character == ')' && extendedScopes.TryPop(out var previous))
                 {
-                    lookaroundDepth--;
+                    extended = (byte)(previous & 3);
+                    if ((previous & 4) != 0) lookaroundDepth--;
                 }
                 continue;
             }
 
             if (pattern.AsSpan(offset).StartsWith("(?#", StringComparison.Ordinal))
             {
-                var commentEnd = pattern.IndexOf(')', offset + 3);
+                var commentEnd = Pcre2PatternCodeScan.FindClosingParenthesis(pattern, offset + 3);
                 if (commentEnd < 0)
                 {
                     return false;
@@ -419,9 +452,9 @@ internal static class Pcre2CompileValidator
                 pattern.AsSpan(offset).StartsWith("(?<=", StringComparison.Ordinal) ||
                 pattern.AsSpan(offset).StartsWith("(?<!", StringComparison.Ordinal);
             if (Pcre2PatternCodeScan.EnterExtendedGroup(pattern, ref offset, ref extended, extendedScopes)) continue;
-            parentheses.Push(isLookaround);
             if (isLookaround)
             {
+                extendedScopes[extendedScopes.Count - 1] |= 4;
                 lookaroundDepth++;
             }
         }
@@ -431,17 +464,24 @@ internal static class Pcre2CompileValidator
 
     private static bool ContainsBackslashC(string pattern, bool onlyInLookbehind, Pcre2CompileOptions options, Pcre2NewlineConvention newline)
     {
-        Utf8ConstructionScope.ChargeWork((ulong)pattern.Length);
-        var parentheses = new Stack<bool>();
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        budget.ChargeWork((ulong)pattern.Length);
         var lookbehindDepth = 0;
         var inCharacterClass = false;
         var classHasAtom = false;
         var classStart = false;
         var quoted = false;
         byte extended = (options & Pcre2CompileOptions.ExtendedMore) != 0 ? (byte)2 : (options & Pcre2CompileOptions.Extended) != 0 ? (byte)1 : (byte)0;
-        var extendedScopes = new Stack<byte>();
+        using var extendedScopes = new Utf8ConstructionBuffer<byte>(budget);
+        var nextCheckpoint = 0;
         for (var offset = 0; offset < pattern.Length; offset++)
         {
+            if (offset >= nextCheckpoint)
+            {
+                budget.ChargeWork(0);
+                nextCheckpoint = offset + 2048;
+            }
             var character = pattern[offset];
             if (quoted)
             {
@@ -501,13 +541,10 @@ internal static class Pcre2CompileValidator
                 continue;
             }
 
-            if (character == ')' && parentheses.TryPop(out var wasLookbehind))
+            if (character == ')' && extendedScopes.TryPop(out var previous))
             {
-                if (extendedScopes.TryPop(out var previous)) extended = previous;
-                if (wasLookbehind)
-                {
-                    lookbehindDepth--;
-                }
+                extended = (byte)(previous & 3);
+                if ((previous & 4) != 0) lookbehindDepth--;
 
                 continue;
             }
@@ -519,7 +556,7 @@ internal static class Pcre2CompileValidator
 
             if (pattern.AsSpan(offset).StartsWith("(?#", StringComparison.Ordinal))
             {
-                var commentEnd = pattern.IndexOf(')', offset + 3);
+                var commentEnd = Pcre2PatternCodeScan.FindClosingParenthesis(pattern, offset + 3);
                 if (commentEnd < 0)
                 {
                     return false;
@@ -534,9 +571,9 @@ internal static class Pcre2CompileValidator
             var isLookbehind = pattern.AsSpan(offset).StartsWith("(?<=", StringComparison.Ordinal) ||
                 pattern.AsSpan(offset).StartsWith("(?<!", StringComparison.Ordinal);
             if (Pcre2PatternCodeScan.EnterExtendedGroup(pattern, ref offset, ref extended, extendedScopes)) continue;
-            parentheses.Push(isLookbehind);
             if (isLookbehind)
             {
+                extendedScopes[extendedScopes.Count - 1] |= 4;
                 lookbehindDepth++;
             }
         }
@@ -546,15 +583,23 @@ internal static class Pcre2CompileValidator
 
     private static bool ContainsBackslashCInCharacterClass(string pattern, Pcre2CompileOptions options, Pcre2NewlineConvention newline)
     {
-        Utf8ConstructionScope.ChargeWork((ulong)pattern.Length);
+        using var construction = Utf8ConstructionScope.Enter();
+        var budget = construction.Budget;
+        budget.ChargeWork((ulong)pattern.Length);
         var inCharacterClass = false;
         var classHasAtom = false;
         var classStart = false;
         var quoted = false;
         byte extended = (options & Pcre2CompileOptions.ExtendedMore) != 0 ? (byte)2 : (options & Pcre2CompileOptions.Extended) != 0 ? (byte)1 : (byte)0;
-        var extendedScopes = new Stack<byte>();
+        using var extendedScopes = new Utf8ConstructionBuffer<byte>(budget);
+        var nextCheckpoint = 0;
         for (var offset = 0; offset < pattern.Length; offset++)
         {
+            if (offset >= nextCheckpoint)
+            {
+                budget.ChargeWork(0);
+                nextCheckpoint = offset + 2048;
+            }
             var character = pattern[offset];
             if (quoted)
             {
