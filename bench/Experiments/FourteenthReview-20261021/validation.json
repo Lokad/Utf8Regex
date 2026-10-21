@@ -1,0 +1,80 @@
+{
+  "OriginalCheckout": "a3b1972c8cf463ea9f69d83c6b961a5baaf68055",
+  "OriginalProducer": "b11afb82f13d2494fe3654bb5713bf81b2a3e89a",
+  "MeasuredProductionSource": "097c83439aa4a55ba86da665008d9657076c7028",
+  "FinalTestRepair": "06c30382c60d289bfc31faec5ba403fd6f0dfa28",
+  "ProductionSourceUnchangedAfterMeasurement": true,
+  "DriverSha256": "5A5BDA1BA64E348595DB75E341AC6D53F23815E4677A5F48A81A65D34EF636B4",
+  "DriverBytesIdentical": true,
+  "Comparison": "One completed pair plus sole reversed-process-order confirmation. One prior capped harness attempt produced no samples. Timing closed and inconclusive; raw data/spreads preserved. No new Status/package/precise-10%-bound claim.",
+  "LocalReleaseChecks": [
+    {
+      "Scope": "Affected structural/preparation/architecture/window and construction fixtures",
+      "Passed": 891,
+      "Failed": 0,
+      "Skipped": 0,
+      "Build": "Incremental affected Core fixture closure"
+    },
+    {
+      "Scope": "Graph oracle/architecture/linear construction after moving reflective size queries into test oracle",
+      "Passed": 47,
+      "Failed": 0,
+      "Skipped": 0,
+      "Build": "Incremental affected Core fixture closure"
+    },
+    {
+      "Scope": "Complete Core after graph-oracle repair",
+      "Passed": 39585,
+      "Failed": 0,
+      "Skipped": 0,
+      "Duration": "2m05s",
+      "Build": "Matching Release binaries reused"
+    },
+    {
+      "Scope": "README parity, PythonRe/PCRE2 generated benchmark markdown",
+      "Result": "Passed existing verification commands with matching host; no snapshot/status writes"
+    },
+    {
+      "Scope": "Existing read-only producer/PE/PDB/compiled-source reuse preflight at 06c30382",
+      "Result": "Accepted matching 097c8343 binaries"
+    },
+    {
+      "Scope": "Fresh method/field reference heuristics plus source review",
+      "Methods": 41420,
+      "ResolutionErrors": 0,
+      "Note": "Heuristics alone missed reflection; initial CI caught and preserved that oracle consumer in test code."
+    }
+  ],
+  "InitialCI": {
+    "Run": 39619367537,
+    "Source": "097c8343",
+    "Result": "Failed six Core graph-oracle cases on each OS because it reflected on removed ObjectBytes getters. Diff1504/PythonRe3910/PCRE25974 passed on Windows/Linux; no production semantic failure. Original size formulas moved into test oracle; assertions preserved."
+  },
+  "FinalCI": {
+    "Run": 39620833813,
+    "Source": "06c30382",
+    "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/39620833813",
+    "Status": "completed",
+    "Conclusion": "success",
+    "Jobs": [
+      {
+        "Name": "tests (ubuntu-latest)",
+        "Status": "completed",
+        "Conclusion": "success"
+      },
+      {
+        "Name": "tests (windows-latest)",
+        "Status": "completed",
+        "Conclusion": "success"
+      }
+    ],
+    "Scope": "Complete Release solution build/test on Windows and Linux; all four fixture projects. No new packages."
+  },
+  "ImmutableFiles": {
+    "SnapshotCount": 4,
+    "FrozenRC1FileCount": 9,
+    "Result": "All SHA256 and lengths match the prior versioned receipt"
+  },
+  "Packages": "No pack, package qualification or publication; 0.4.0-rc.2-dev source only. Frozen RC1 stays unpublished and immutable.",
+  "Deferred": "Fresh immutable packages/final API/isolated Awk,Lython,PCRE2 consumers/actual-package host-cost acceptance; seven PythonRe excess roots and closed earlier campaigns remain deferred."
+}

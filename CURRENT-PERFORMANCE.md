@@ -79,6 +79,14 @@ That review also corrects the twelfth control label: `foo(?=bar)bar` retained Co
 but its candidate plan was declined. `needle(?=bar)` is an actual accepted hint.
 Canonical literal counting and empty FullMatch are separate live consumers.
 
+The [fourteenth-review receipt](bench/Experiments/FourteenthReview-20261021/README.md)
+records removal of unread structural state and unused helpers. Actual structural
+program storage falls 72 B; selected construction allocations fall 72 B/call,
+while matching allocations stay unchanged. Its pair and sole confirmation are
+inconclusive: public changes reverse alongside moving controls and wide spreads.
+Timing is closed, with no attributed speedup or precise final 10% bound. Fresh
+package/host cost acceptance remains deferred.
+
 ## Frozen scalar.119 package costs
 
 The observations below apply to **Core/PythonRe scalar.119**, producer `ca0c8a6f`.

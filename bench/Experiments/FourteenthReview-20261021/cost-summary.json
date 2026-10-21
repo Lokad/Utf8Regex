@@ -1,0 +1,211 @@
+{
+  "OriginalCore": {
+    "Producer": "0.4.0-rc.2-dev+b11afb82f13d2494fe3654bb5713bf81b2a3e89a",
+    "Sha256": "BC3519ACD2DE25F46EE066F70C06DD1D7E20A8708D401A4D2B5B03482F8964E6"
+  },
+  "CandidateCore": {
+    "Producer": "0.4.0-rc.2-dev+097c83439aa4a55ba86da665008d9657076c7028",
+    "Sha256": "B408438364BCC69C7164243576CA51197B9169829295FCA3074354EE0F361CF0"
+  },
+  "OriginalFacts": {
+    "ProgramBytes": 4088,
+    "InstructionProgramBytes": 184,
+    "WindowFactsBytes": 80,
+    "CursorBytes": 1440,
+    "RunKind": "AsciiCharClassRun",
+    "RunEngine": "StructuralLinearAutomaton",
+    "FixedKind": "AsciiFixedTokenPattern"
+  },
+  "CandidateFacts": {
+    "ProgramBytes": 4016,
+    "InstructionProgramBytes": 168,
+    "WindowFactsBytes": 72,
+    "CursorBytes": 1440,
+    "RunKind": "AsciiCharClassRun",
+    "RunEngine": "StructuralLinearAutomaton",
+    "FixedKind": "AsciiFixedTokenPattern"
+  },
+  "Rows": [
+    {
+      "Id": "core/ascii-run/Count",
+      "BeforeNs": 121961.68478260869,
+      "AfterNs": 103293.34975369458,
+      "ChangePercent": -15.306721174104466,
+      "BeforeBytes": 1680,
+      "AfterBytes": 1680,
+      "BeforeSpread": 1.5456814082100858,
+      "AfterSpread": 1.1360207693884317,
+      "MinimumSampleMs": 38.7499
+    },
+    {
+      "Id": "core/ascii-run-compiled/Count",
+      "BeforeNs": 130026.11607142857,
+      "AfterNs": 105843.88714733542,
+      "ChangePercent": -18.59797835598571,
+      "BeforeBytes": 1680,
+      "AfterBytes": 1680,
+      "BeforeSpread": 1.6773530547387803,
+      "AfterSpread": 1.142401618964249,
+      "MinimumSampleMs": 30.0439
+    },
+    {
+      "Id": "core/ascii-run-finite-four/Count",
+      "BeforeNs": 5123.065680880331,
+      "AfterNs": 4065.259375701774,
+      "ChangePercent": -20.64791613206073,
+      "BeforeBytes": 1792,
+      "AfterBytes": 1792,
+      "BeforeSpread": 1.1625218326829847,
+      "AfterSpread": 1.2138513381860394,
+      "MinimumSampleMs": 48.7563
+    },
+    {
+      "Id": "core/ascii-run/IsMatch-late",
+      "BeforeNs": 272525.5,
+      "AfterNs": 205173.5,
+      "ChangePercent": -24.71401758734504,
+      "BeforeBytes": 1680,
+      "AfterBytes": 1680,
+      "BeforeSpread": 2.2080575664394986,
+      "AfterSpread": 1.3540328671397261,
+      "MinimumSampleMs": 183.5146
+    },
+    {
+      "Id": "core/fixed-token/Count",
+      "BeforeNs": 150060.46511627908,
+      "AfterNs": 118509.9033816425,
+      "ChangePercent": -21.025232535557336,
+      "BeforeBytes": 1680,
+      "AfterBytes": 1680,
+      "BeforeSpread": 3.1792629813280757,
+      "AfterSpread": 1.1260792137237665,
+      "MinimumSampleMs": 44.361
+    },
+    {
+      "Id": "control/predecoded-Regex/Count",
+      "BeforeNs": 10971.73,
+      "AfterNs": 8255.39,
+      "ChangePercent": -24.75762710165125,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 2.2647871883815713,
+      "AfterSpread": 1.170735816089072,
+      "MinimumSampleMs": 76.5762
+    },
+    {
+      "Id": "control/decode-then-Regex/Count",
+      "BeforeNs": 13466.19,
+      "AfterNs": 10488.98,
+      "ChangePercent": -22.108777612672924,
+      "BeforeBytes": 6168,
+      "AfterBytes": 6168,
+      "BeforeSpread": 1.322688380286634,
+      "AfterSpread": 1.1643335329482696,
+      "MinimumSampleMs": 93.1794
+    },
+    {
+      "Id": "construction/ascii-run",
+      "BeforeNs": 40981.90661478599,
+      "AfterNs": 31687.213891081294,
+      "ChangePercent": -22.679990980095678,
+      "BeforeBytes": 94952,
+      "AfterBytes": 94880,
+      "BeforeSpread": 1.3322838833195947,
+      "AfterSpread": 1.2943573266924961,
+      "MinimumSampleMs": 18.8035
+    }
+  ],
+  "ConfirmationUsed": true,
+  "ConfirmationRows": [
+    {
+      "Id": "core/ascii-run/Count",
+      "BeforeNs": 119092.58064516129,
+      "AfterNs": 121905.625,
+      "ChangePercent": 2.3620651593907693,
+      "BeforeBytes": 1680,
+      "AfterBytes": 1680,
+      "BeforeSpread": 1.7881031059794676,
+      "AfterSpread": 1.131984813795521,
+      "MinimumSampleMs": 30.6248
+    },
+    {
+      "Id": "core/ascii-run-compiled/Count",
+      "BeforeNs": 105348.23943661971,
+      "AfterNs": 124610.76233183856,
+      "ChangePercent": 18.284617757478227,
+      "BeforeBytes": 1680,
+      "AfterBytes": 1680,
+      "BeforeSpread": 2.1155453131048993,
+      "AfterSpread": 1.114045099733029,
+      "MinimumSampleMs": 27.3806
+    },
+    {
+      "Id": "core/ascii-run-finite-four/Count",
+      "BeforeNs": 4052.08539839878,
+      "AfterNs": 4751.280266109693,
+      "ChangePercent": 17.25518588495707,
+      "BeforeBytes": 1792,
+      "AfterBytes": 1792,
+      "BeforeSpread": 1.549007324301181,
+      "AfterSpread": 1.1692397480131143,
+      "MinimumSampleMs": 49.1651
+    },
+    {
+      "Id": "core/ascii-run/IsMatch-late",
+      "BeforeNs": 208778.8,
+      "AfterNs": 243638.4,
+      "ChangePercent": 16.69690600769811,
+      "BeforeBytes": 1680,
+      "AfterBytes": 1680,
+      "BeforeSpread": 1.9910370380985591,
+      "AfterSpread": 2.917354666187277,
+      "MinimumSampleMs": 188.4087
+    },
+    {
+      "Id": "core/fixed-token/Count",
+      "BeforeNs": 116936.29629629629,
+      "AfterNs": 132695.7654723127,
+      "ChangePercent": 13.476969662254934,
+      "BeforeBytes": 1680,
+      "AfterBytes": 1680,
+      "BeforeSpread": 2.085533178028281,
+      "AfterSpread": 3.066920728352089,
+      "MinimumSampleMs": 31.8033
+    },
+    {
+      "Id": "control/predecoded-Regex/Count",
+      "BeforeNs": 8596.35,
+      "AfterNs": 9631.55,
+      "ChangePercent": 12.042320287098573,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 2.045711392256436,
+      "AfterSpread": 2.6179632449135357,
+      "MinimumSampleMs": 75.5977
+    },
+    {
+      "Id": "control/decode-then-Regex/Count",
+      "BeforeNs": 10308.84,
+      "AfterNs": 12265.43,
+      "ChangePercent": 18.979730018120367,
+      "BeforeBytes": 6168,
+      "AfterBytes": 6168,
+      "BeforeSpread": 1.9857221651680514,
+      "AfterSpread": 2.313642037331067,
+      "MinimumSampleMs": 93.6539
+    },
+    {
+      "Id": "construction/ascii-run",
+      "BeforeNs": 39806.13718411553,
+      "AfterNs": 42294.76190476191,
+      "ChangePercent": 6.251861890380694,
+      "BeforeBytes": 94952,
+      "AfterBytes": 94880,
+      "BeforeSpread": 2.1503210121323706,
+      "AfterSpread": 5.994924199132743,
+      "MinimumSampleMs": 5.9498
+    }
+  ],
+  "Decision": "Timing closed and inconclusive after the sole reversed-order confirmation: initial controls -24.76%/-22.11%, confirmation +12.04%/+18.98%; public lanes change sign and spreads are wide. No attributed speedup, repeated demonstrated above-gate public regression, or precise final 10% bound. Mechanical dead-state deletion retained; actual-package/host cost acceptance remains deferred.",
+  "AbortedPreparation": "An initial harness attempt hit its 60-second cap before producing samples. Subject/call floors were reduced and cold results/routes preflighted before the completed pair; the exact slow lane in the aborted attempt was not diagnosed. No initial measurements were discarded or relabeled."
+}
