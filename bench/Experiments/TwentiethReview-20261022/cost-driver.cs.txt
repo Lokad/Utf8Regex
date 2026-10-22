@@ -1,0 +1,68 @@
+using System.Buffers;
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+
+public static class Lanes
+{
+    public static string Producer() => typeof(Utf8Regex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
+    public static (string, Func<long>, long)[] Create()
+    {
+        var literal = new Utf8Regex("needle");
+        var literalSubject = "xxneedlezz"u8.ToArray();
+        var scalar = new Utf8Regex(".");
+        var scalarSubject = "😀"u8.ToArray();
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+        var finite = new Utf8Regex("([😀-🙏])\\1", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, policy);
+        var finiteSubject = "x😀😀y"u8.ToArray();
+        var enumerationSubject = "x😀y"u8.ToArray();
+        var replacementRegex = new Utf8Regex("a");
+        var noHit = "zz"u8.ToArray();
+        var largeTemplate = Encoding.UTF8.GetBytes(new string('X', 4096));
+        var independent = new byte[32];
+        var hit = "a-b-a"u8.ToArray();
+        var shortTemplate = "XY"u8.ToArray();
+        var alias = new byte[32];
+        var unicodeRegex = new Utf8Regex("x");
+        var unicodeSubject = "x😀x"u8.ToArray();
+        var control = new Utf8Regex("z");
+        var controlSubject = Encoding.UTF8.GetBytes(new string('a', 128 * 1024));
+        return [
+            ("Match/literal", () => Coordinates(literal.Match(literalSubject)), 16),
+            ("Match/scalar", () => Coordinates(scalar.Match(scalarSubject)), 6),
+            ("Match/finite-captured-reference", () => Coordinates(finite.Match(finiteSubject)), 14),
+            ("Enumerate/scalars", () => { long sum = 0; foreach (var match in scalar.EnumerateMatches(enumerationSubject)) sum += Coordinates(match); return sum; }, 20),
+            ("TryReplace/no-hit-4KiB-template", () => Replace(replacementRegex, noHit, largeTemplate, independent), 124),
+            ("TryReplace/hits", () => Replace(replacementRegex, hit, shortTemplate, independent), 95),
+            ("TryReplace/alias-template", () => { shortTemplate.CopyTo(alias, 1); return Replace(replacementRegex, hit, alias.AsSpan(1, 2), alias); }, 95),
+            ("ReplaceUtf8/unicode", () => { var bytes = unicodeRegex.Replace(unicodeSubject, shortTemplate); return bytes.Length + bytes[0]; }, 96),
+            ("Control/Count-miss-128KiB", () => control.Count(controlSubject), 0)
+        ];
+    }
+    private static long Coordinates(Utf8ValueMatch value) => value.Success
+        ? value.IndexInBytes + value.LengthInBytes + value.IndexInUtf16 + value.LengthInUtf16 : -1;
+    private static long Replace(Utf8Regex regex, byte[] input, ReadOnlySpan<byte> template, byte[] destination)
+    {
+        var status = regex.TryReplace(input, template, destination, out var written);
+        return status == OperationStatus.Done ? written + destination[0] : -1;
+    }
+    public static long[] Allocations()
+    {
+        var regex = new Utf8Regex("a");
+        var subject = "zz"u8.ToArray();
+        var destination = new byte[8];
+        var result = new long[3];
+        var sizes = new[] { 0, 4096, 1 << 20 };
+        for (var i = 0; i < sizes.Length; i++)
+        {
+            var template = Encoding.UTF8.GetBytes(new string('X', sizes[i]));
+            for (var j = 0; j < 16; j++) regex.TryReplace(subject, template, destination, out _);
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            var status = regex.TryReplace(subject, template, destination, out var written);
+            result[i] = GC.GetAllocatedBytesForCurrentThread() - before;
+            if (status != OperationStatus.Done || written != 2 || !destination.AsSpan(0, 2).SequenceEqual(subject)) throw new Exception("Allocation witness mismatch");
+        }
+        return result;
+    }
+}

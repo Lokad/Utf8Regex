@@ -1,0 +1,113 @@
+{
+  "Scope": "Focused same-process public comparison; default-value bug not timed; no cumulative/package qualification",
+  "SourceBaseline": "009edf3a67f63b01eafe25028e04ddbea179db60",
+  "SourceAfter": "5ee10614350d139ee7cef3891fc7178b4beb4e6c",
+  "WallSeconds": 23.4673445,
+  "MinimumObservedSampleMs": 30.7816,
+  "ConfirmationRuns": 0,
+  "AllocationWitnessBytes": [
+    [
+      0,
+      4120,
+      1048600
+    ],
+    [
+      0,
+      0,
+      0
+    ]
+  ],
+  "Rows": [
+    {
+      "Name": "Match/literal",
+      "BeforeNs": 161.51446041051616,
+      "AfterNs": 148.1838255675253,
+      "ChangePercent": -8.253524055436777,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.3092943029045265,
+      "AfterSpread": 1.1861804011602464
+    },
+    {
+      "Name": "Match/scalar",
+      "BeforeNs": 229.1101938761336,
+      "AfterNs": 227.143033198162,
+      "ChangePercent": -0.8586089709457179,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 2.016854761134334,
+      "AfterSpread": 2.5932030763390816
+    },
+    {
+      "Name": "Match/finite-captured-reference",
+      "BeforeNs": 875.7148122795008,
+      "AfterNs": 830.7876049063913,
+      "ChangePercent": -5.130346859859925,
+      "BeforeBytes": 2304,
+      "AfterBytes": 2304,
+      "BeforeSpread": 3.2538886867479273,
+      "AfterSpread": 1.1309407097730702
+    },
+    {
+      "Name": "Enumerate/scalars",
+      "BeforeNs": 2013.939922836671,
+      "AfterNs": 1998.2788525683789,
+      "ChangePercent": -0.7776334383516881,
+      "BeforeBytes": 192,
+      "AfterBytes": 192,
+      "BeforeSpread": 1.671807636000389,
+      "AfterSpread": 5.1694275786224555
+    },
+    {
+      "Name": "TryReplace/no-hit-4KiB-template",
+      "BeforeNs": 1208.18761235496,
+      "AfterNs": 705.1742553710938,
+      "ChangePercent": -41.63371249961825,
+      "BeforeBytes": 4120,
+      "AfterBytes": 0,
+      "BeforeSpread": 2.035884526008461,
+      "AfterSpread": 2.993206772163564
+    },
+    {
+      "Name": "TryReplace/hits",
+      "BeforeNs": 764.6073558648111,
+      "AfterNs": 719.4725456512057,
+      "ChangePercent": -5.903004969466396,
+      "BeforeBytes": 32,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.647328788893945,
+      "AfterSpread": 1.2873380256601155
+    },
+    {
+      "Name": "TryReplace/alias-template",
+      "BeforeNs": 750.9638505114725,
+      "AfterNs": 721.3998824451411,
+      "ChangePercent": -3.9368030892826256,
+      "BeforeBytes": 32,
+      "AfterBytes": 32,
+      "BeforeSpread": 1.0998669027950412,
+      "AfterSpread": 1.0978625501663193
+    },
+    {
+      "Name": "ReplaceUtf8/unicode",
+      "BeforeNs": 839.7239965591083,
+      "AfterNs": 802.6895420273667,
+      "ChangePercent": -4.410312755559653,
+      "BeforeBytes": 64,
+      "AfterBytes": 32,
+      "BeforeSpread": 1.120061198320518,
+      "AfterSpread": 1.2863896968733342
+    },
+    {
+      "Name": "Control/Count-miss-128KiB",
+      "BeforeNs": 6942.092765553269,
+      "AfterNs": 6874.544567338972,
+      "ChangePercent": -0.9730235606973059,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.5550880097494797,
+      "AfterSpread": 1.1199026521539168
+    }
+  ],
+  "Interpretation": "All selected public medians decreased, control -0.97%; allocation reduction confirmed. Outliers/spreads up to 5.17x preclude precise equivalence or attributed throughput gains. Accept bounded simplifications; stop timing. Cumulative actual-package gate remains open."
+}

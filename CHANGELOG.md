@@ -2,116 +2,52 @@
 
 ## Unreleased development after 0.4.0-rc.1
 
-- PCRE2 analysis now reports conservative positive byte bounds for character and
-  single-token-repeat programs. Compilation shares global name-slot metadata
-  across assertion lowerers and the immutable name table with the compiled root;
-  removed acquisitions can lower construction charges. Public name copies remain
-  isolated. Removed inert internal arguments/forwarders and an obsolete cache
-  test alias; matching algorithms, resource controls and result lifetimes remain.
+These changes are development source, currently 0.4.0-rc.2-dev. Frozen RC1
+artifacts remain unchanged and unpublished; they must not be released. A fresh
+candidate and final downstream/package/cost qualification are still required.
 
-- Fixed PCRE2 Analyze().UsesBranchReset, which incorrectly returned false even
-  for supported branch-reset groups. Analysis now records parsed syntax,
-  including nested groups and groups without captures. Removed obsolete group-name
-  tables and their compiler plumbing; actual capture slots, name entries and
-  conservative construction admission remain. Clarified IsFullyNative as owned
-  managed execution. Removed an unused PythonRe constructor forwarding overload.
+- Zero-initialized Core value matches now report no match, consistently with
+  explicit NoMatch. Successful empty matches remain distinct. The result stays
+  16 bytes and preserves byte and derived UTF-16 coordinates.
+- Native UTF-8 literal replacement borrows the synchronous template instead of
+  copying it unconditionally. TryReplace retains a copy when the template
+  overlaps the destination; input overlap, capacity failures, strict validation,
+  cancellation and finite resource behavior retain their contracts.
+- Null text patterns now throw ArgumentNullException across all profiles.
+  Existing option/policy/timeout and explicit Compile pre-cancellation ordering
+  remain. Empty text and default UTF-8 spans still compile empty patterns.
+- Fixed PCRE2 boolean DFA false negatives for overlapping repeated classes and
+  later literals/classes, such as ^\d*1$ on 11. Finite controls retain owned
+  execution. Unsupported PCRE2 patterns no longer enter unrestricted Core grammar;
+  invalid bounds/options/escapes are rejected in context, complete escape operands
+  are consumed consistently, and construction fails if every compiler declines.
+- PCRE2 analysis now reports parsed branch-reset usage and conservative positive
+  byte bounds for character and single-token-repeat programs. IsFullyNative
+  describes owned managed execution. The documented profile remains partial;
+  these fixes do not promise full .NET, Python or PCRE2 equivalence.
+- Construction admits major buffers, instructions/state expansion and lexical
+  storage before acquisition, with bounded interruption/depth checks. PCRE2's
+  backtracking recursive-depth backstop is 256 frames; smaller caller limits
+  tighten it. Cached Core facades use a conservative 512-byte charge. Coarse
+  metadata charges may double-count shared storage and refuse/evict earlier;
+  removing unused storage/work can also lower thresholds. These are modeled
+  capacities, not total managed-heap/process limits or stable numeric charges.
+- Removed unused plans, forwarding executors, retained construction metadata and
+  diagnostic-only shipping code. Shared native preparation and name storage avoid
+  duplicate acquisition. Scalar semantics, captures, cursor copies/owned snapshots,
+  cancellation, deadlines and useful invocation limits remain. See
+  [host contracts](HOST-INTEGRATION.md) and the
+  [PCRE2 specification](SPEC-PCRE2.md) for scope and exclusions.
+- Package preparation now builds only selected library roots. Each profile
+  inventories its actual consumed assembly, including detached package tests;
+  Core qualification no longer needs adapter DLLs or the benchmark executable.
+  Exact dependency pins, provenance, isolated consumers and immutable bytes remain
+  required. Combined source CI still covers all profiles.
 
-- Removed a test-only fallback-plan view and unused private constructor/timeout
-  forwarding overloads. Public timeout, construction and invocation resource
-  behavior are unchanged. Match-enumerator documentation now distinguishes the
-  borrowed subject from independent coordinate results.
-
-- Compiled identifier families prepare one immutable native kernel for both
-  runtime and direct Count, instead of duplicate plans/delegates. Engine
-  selection no longer lowers and discards a plan for classification. Removed
-  an unreachable structural runtime, shadow search flags and unused references.
-  Actual emission, scalar results and invocation controls remain; construction
-  charges may decrease with removed acquisitions and smaller carriers. Internal
-  engine labels now report StructuralLinearAutomaton with emitted capability.
-
-- Removed unread structural run-plan/search copies and an always-null window
-  fact, plus unused internal helpers. Actual carrier sizes and their conservative
-  construction/cache charges can decrease; live searches, scalar execution and
-  resource controls remain. Architecture tests no longer pin historical file
-  layouts, and current search/PCRE2 ownership documentation follows live owners.
-
-- Removed search forwarding and write-only cursor/balance state. Balancing working
-  charges can decrease with the smaller actual entry stride; metering remains.
-  Public documentation now distinguishes local handoffs from tracked evidence.
-
-- Removed obsolete PCRE2 value-enumerator modes and example generators. Direct
-  and scalar cursors retain copy, lifetime, interruption and resource semantics.
-  Patterns without a curated partial descriptor no longer retain their parsed
-  backtracking tree; lowered option fallbacks remain. Named-slot span copying
-  avoids temporary arrays, and optional Core ownership needs no wrapper object.
-  Public APIs and conservative construction accounting are unchanged.
-
-- Literal execution now uses its implementation directly, removing two
-  forwarding runtime wrappers and one object per applicable construction.
-  Split eligibility keeps the existing compiled-kind proof; algorithms, SIMD,
-  scalar results and resource controls remain. Metadata admission is smaller.
-
-- Removed unused native replacement capture snapshots, reference maps/vectors
-  and destination forwarding code. Native templates keep group-zero operations;
-  real captures still expand through the owned scalar/template implementations.
-  Removed metadata and smaller ranges can reduce construction, working and cache
-  charges; output/result admission and public replacement semantics remain.
-
-- PCRE2 partial-probe preparation now uses bounded semantic recognition instead
-  of serializing whole trees. Literal operands admit storage before acquisition;
-  original construction cancellation, deadlines and work/depth limits apply.
-  Covered construction can refuse earlier; the curated Probe profile is unchanged.
-
-- Fixed PCRE2 boolean DFA false negatives when repeated classes overlap a later
-  literal or class (for example, `^\d*1$` on `11`). Overlapping paths now merge
-  before state publication. Finite controls retain the original owned fallback.
-- Narrowed internal DFA construction to the flat ASCII-class operations emitted
-  by its public caller. Removed synthetic nested/text-alternative input machinery
-  and unused forwarding overloads. Construction work/depth requirements can fall
-  as unused frames disappear; state, major allocation and interruption bounds stay.
-
-- PCRE2 optional finite/ASCII expansion now admits major state and buffers and
-  checks original interruption. Unreferenced capture-map copies and throwaway
-  legacy program foundations are removed; operation publication is complete.
-- Large prepared/scalar/IL carrier mirrors use direct construction with coarse
-  admission. These conservative charges can refuse or evict earlier. Cache
-  generation/cancellation guarantees remain; diagnostic mutation under its lock
-  no longer requires a separate revision/retry protocol.
-- Retired the completed README-to-JSON reverse migration, syntax-only source
-  gates and an unassigned diagnostic route. Historical measurements remain intact.
-
-- Null text patterns now report `ArgumentNullException` across all profiles.
-  Existing policy/options/timeout and explicit Compile pre-cancellation ordering
-  remain; empty text/default UTF-8 spans still compile empty patterns.
-- PCRE2 lexical group storage/depth is admitted before growth, with bounded
-  interruption and fewer irrelevant policy passes. Selected operations discard
-  unused Core preparation while preserving shared slices and live Core fast paths.
-- Cached Core facades use a conservative 512-byte admission instead of a complete
-  field-layout mirror. This may cause earlier construction refusal/cache eviction;
-  major payloads remain separately admitted.
-- PCRE2 no longer accepts unsupported patterns through unrestricted Core grammar.
-  Shared Core search remains behind a successful PCRE2 parse and eligibility proof;
-  accidental .NET escape/property/balancing extensions are rejected.
-- PCRE2 character compilation now admits major token/class/property storage,
-  instruction expansion and bounded interruption. It removes unused Core
-  preparation, syntax-node vectors, token offsets and retained literal atoms.
-  Covered construction thresholds can change as storage/work disappears.
-- PCRE2 lexical guards consume complete escape operands consistently, so control
-  escapes cannot turn literal class contents into apparent callouts or names.
-- PythonRe no longer retains construction-only translation state. Scalar-only
-  patterns skip unused native rendering while preserving reference/lookbehind
-  validation. Factory argument simplification preserves conservative admission.
-- PCRE2 rejects invalid quantifier bounds, option flags and unknown escapes in
-  context, rather than recognizing only particular error examples. If every
-  compiler declines, construction fails instead of returning an unusable program.
-- PCRE2 backtracking construction now admits major metadata/instruction buffers
-  and checks work, interruption and recursive depth. Its fixed recursive-depth
-  backstop is 256 frames; smaller caller limits tighten it. Conservative metadata
-  charges can count shared storage twice and cause earlier construction refusal.
-  See [SPEC-PCRE2.md](SPEC-PCRE2.md) for the modeled scope and remaining exclusions.
-- Benchmark-only UTF-8 lead-byte sampling moves out of the shipped Core library.
-
-These changes are development source; the frozen 0.4.0-rc.1 artifacts are unchanged.
+[Performance acceptance and historical evidence](CURRENT-PERFORMANCE.md) separate
+source checks from package qualification and measured operating cost. Detailed
+cleanup receipts remain under [bench/Experiments](bench/Experiments), with earlier
+release-note prose preserved in repository history.
 
 ## 0.4.0-rc.1
 

@@ -1,109 +1,32 @@
 # Performance evidence and frozen measurements
 
-The staged common release is **Core/PythonRe/PCRE2 0.4.0-rc.1**,
-producer `2e97ac974e6e8c60aac95db1e4808cbda2ff9736`.
-[Frozen release identities](bench/Experiments/ReleaseCandidate-20261020/release.json) record
-its exact immutable bytes, supported scope and Windows/Linux consumer checks.
-It introduces no new release-wide timing claim. Development is **0.4.0-rc.2-dev**;
-source cleanup validation does not qualify new packages or refresh old measurements.
+Development is **0.4.0-rc.2-dev**. Current source is not a newly qualified package
+and has no new release-wide timing claim. The unpublished common **0.4.0-rc.1**
+[release identities](bench/Experiments/ReleaseCandidate-20261020/release.json)
+remain immutable; those PCRE2 bytes have known defects and must not be published.
 
-The [second cleanup observation](bench/Experiments/SecondSimplification-20261020/README.md)
-has a separate, bounded local construction/public-operation scope. The completed
-checked-access campaign and historical benchmark decisions remain closed.
+The next release needs one fresh immutable common-version candidate, final
+package/downstream checks and representative actual-package/host costs, including
+finite controls. The cumulative public-operation allowance is at most 10%
+slowdown against a fixed correctness-equivalent baseline. Per-change timings,
+private attribution and source test counts do not establish that acceptance.
 
-The [sixth-review cleanup receipt](bench/Experiments/SixthReview-20261020/README.md)
-records a bounded source comparison separately. Frozen RC1 is unpublished and its
-PCRE2 bytes have known defects; original package and benchmark evidence stays
-historical. This page does not qualify the development engine for release.
+The completed checked-access campaign stays closed. Source cleanup preserves
+scalar matching, strict UTF-8 validation, captures and interruption/resource
+contracts; it does not refresh historical benchmark Status. Relevant receipts:
 
-The [seventh-review receipt](bench/Experiments/SeventhReview-20261021/README.md)
-records removal of unused PCRE2 preparation and conservative facade admission.
-Selected public Count medians changed −0.89%/+0.40%, with unchanged allocation;
-construction observations and their noisy control are reported separately.
-Windows/Linux source CI is green at `884b156b`. This bounded local comparison
-does not refresh historical benchmark Status or resolve earlier delivery costs.
+| Evidence | Scope and remaining limits |
+| --- | --- |
+| [Twentieth cleanup](bench/Experiments/TwentiethReview-20261022/README.md) | Default-result correction, selected-profile qualification and native template borrowing; focused public costs and allocation witnesses are separate from release qualification. |
+| [Nineteenth comparison](bench/Experiments/NineteenthReview-20261022/README.md) | Package/member guards delivered. Fixed-baseline comparison and sole confirmation were inconclusive; PCRE2 Count prototype restored. No cumulative 10% qualification. |
+| [Fifteenth cleanup](bench/Experiments/FifteenthReview-20261021/README.md) | Selected public medians -5.09% to +6.10%, unchanged matching allocations; compiled identifier construction allocates 61,696 fewer bytes. Bounded source evidence only. |
+| [Ninth PCRE2 correction](bench/Experiments/NinthReview-20261021/README.md) | Historical 1 KiB float IsMatch: about 2.85 us unlimited versus 78.05 us and 343,304 B with all four finite controls. Different routes; no universal accounting-overhead claim. |
+| [Rejected sixteenth prototype](bench/Experiments/SixteenthReview-20261022/README.md) | Window/preparation/value-layout changes restored after inconclusive costs. Prototype savings are not delivered. |
 
-The [eighth-review receipt](bench/Experiments/EighthReview-20261021/README.md)
-records bounded optimizer admission and construction/public observations with
-identical driver bytes. Selected public median increases are at most 1.63%,
-with unchanged allocation. Finite Count's apparent gain has a changing control
-and is not attributed to the engine. The comparison uses unlimited workloads;
-finite controls have separate correctness checks. Historical Status and deferred
-package/finite-overhead qualification remain unchanged.
-
-The [ninth-review receipt](bench/Experiments/NinthReview-20261021/README.md)
-records the PCRE2 DFA overlap correction and removal of unused input machinery.
-One bounded comparison needed its single allowed noise confirmation. With longer
-warmup and sample floors, selected public medians show no regression and allocations
-are unchanged; improving controls prevent an attributed speedup claim. The selected
-1 KiB float IsMatch costs about 2.85 µs unlimited versus 78.05 µs and 343,304 B per
-call with all four finite controls. These different routes disclose a continuing
-operating cost, not a new default or a package-wide overhead qualification.
-Construction medians rose 5–8% while allocations fell. Timing is closed.
-
-The [tenth-review receipt](bench/Experiments/TenthReview-20261021/README.md)
-records bounded partial preparation and removal of replacement metadata/literal
-wrappers. One local comparison needed its single reversed-order confirmation.
-Confirmation public medians increase at most 3.45%, with unchanged affected
-allocations, but moving controls and spreads up to 3.12x prevent an attributed
-speedup or precise equivalence claim. Selected construction allocations fall;
-construction timing is separate and noisy. Timing is closed, snapshots/Status
-are unchanged, and current-package/host costs remain deferred.
-
-The [eleventh-review receipt](bench/Experiments/EleventhReview-20261021/README.md)
-records removal of obsolete PCRE2 cursor modes, unused retained trees and name-copy
-collections. Named-slot getters fall 1,104/1,192 → 0 B/call; the x64 cursor falls
-1,632 → 1,576 bytes. The one comparison and its single reversed-order confirmation
-are inconclusive: controls move substantially and some affected timings rise.
-No precise 10% bound or general throughput change is established. Timing is closed;
-actual-package/host cost acceptance remains deferred, with raw results preserved.
-
-The [twelfth-review receipt](bench/Experiments/TwelfthReview-20261021/README.md)
-records deletion of Core's unexecuted instruction vector and unused PythonRe
-Core roots. The 64-capture construction witness allocates 82,760 fewer bytes;
-ordinary matching allocations are unchanged in the selected lanes. Its fixed
-original comparison and single reversed-order confirmation are closed with
-inconclusive timing: individual public lanes cross 10% in different runs, while
-an unchanged control moves 12.15%. No precise 10% bound or package cost claim is
-established. Avoiding transient declined Core construction remains later work.
-
-The [thirteenth-review receipt](bench/Experiments/ThirteenthReview-20261021/README.md)
-records removal of forwarding/write-only state: balance entries fall 16 → 12 B
-and selected balancing Count allocations fall by 512 B/call. The PythonRe
-eligibility prototype is rejected and deferred: captured-class public FindAll
-medians rise 16.77%/11.57% in its sole pair and confirmation. Original Python
-production code is restored; no further timing or final throughput qualification
-is claimed. Controls and uncertainty remain visible in the receipt.
-
-That review also corrects the twelfth control label: `foo(?=bar)bar` retained Core
-but its candidate plan was declined. `needle(?=bar)` is an actual accepted hint.
-Canonical literal counting and empty FullMatch are separate live consumers.
-
-The [fourteenth-review receipt](bench/Experiments/FourteenthReview-20261021/README.md)
-records removal of unread structural state and unused helpers. Actual structural
-program storage falls 72 B; selected construction allocations fall 72 B/call,
-while matching allocations stay unchanged. Its pair and sole confirmation are
-inconclusive: public changes reverse alongside moving controls and wide spreads.
-Timing is closed, with no attributed speedup or precise final 10% bound. Fresh
-package/host cost acceptance remains deferred.
-
-The [fifteenth-review receipt](bench/Experiments/FifteenthReview-20261021/README.md)
-records removal of duplicate emitted-kernel preparation and unused metadata.
-One bounded Linux comparison has selected public median changes from -5.09% to
-+6.10%, within the allowance, with unchanged matching allocations and unchanged
-control medians moving about -2%. Selected compiled identifier construction
-allocates 61,696 fewer managed bytes (35.22%); its short timing samples remain
-separate from public throughput. VM background activity and remaining outliers
-are disclosed. Timing is closed; this does not qualify a fresh package.
-
-The [sixteenth-review receipt](bench/Experiments/SixteenthReview-20261022/README.md)
-records a rejected bundled prototype: dormant window emission and duplicate
-operation payloads were removed, but both bounded public comparisons failed to
-qualify the 10% allowance. Moving controls and wide spreads prevent clean
-attribution. Those execution/preparation/layout changes are restored; only
-verified unused-overload/view and documentation cleanup remains. Prototype layout
-and construction savings are not delivered. Timing is closed, with no new final
-performance or package qualification claim.
+Other cleanup observations and their uncertainty remain in the versioned
+[experiment receipts](bench/Experiments) and
+[earlier page](https://github.com/Lokad/Utf8Regex/blob/63f891ec5cdeceb34e95b8f445f8b01f12246433/CURRENT-PERFORMANCE.md).
+No historical evidence is promoted to current-engine performance or rerun here.
 
 ## Frozen scalar.119 package costs
 

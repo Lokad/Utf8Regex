@@ -1,0 +1,47 @@
+{
+  "Scope": "Public API correctness and exact allocation witness only; no elapsed-time measurement or product rebuild.",
+  "Producer": "0.4.0-rc.2-dev\u002B009edf3a67f63b01eafe25028e04ddbea179db60",
+  "Defaults": {
+    "DefaultSuccess": true,
+    "DefaultAligned": true,
+    "DefaultTryRange": true,
+    "Start": 0,
+    "Length": 0,
+    "NewSuccess": true,
+    "ArrayElementSuccess": true,
+    "CanonicalNoMatchSuccess": false,
+    "RealMissSuccess": false,
+    "RealEmptyHitSuccess": true,
+    "PythonDefaultSuccess": false,
+    "Pcre2DefaultSuccess": false,
+    "ValueSize": 16
+  },
+  "DefaultCursor": {
+    "BeforeSuccess": true,
+    "Moved": false,
+    "AfterSuccess": true
+  },
+  "NoHitTryReplace": [
+    {
+      "TemplateBytes": 0,
+      "AllocatedBytes": 0,
+      "Status": "Done",
+      "written": 2,
+      "Output": "zz"
+    },
+    {
+      "TemplateBytes": 4096,
+      "AllocatedBytes": 4120,
+      "Status": "Done",
+      "written": 2,
+      "Output": "zz"
+    },
+    {
+      "TemplateBytes": 1048576,
+      "AllocatedBytes": 1048600,
+      "Status": "Done",
+      "written": 2,
+      "Output": "zz"
+    }
+  ]
+}

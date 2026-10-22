@@ -1,0 +1,62 @@
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+$repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
+. (Join-Path $repositoryRoot 'test-packaged-common.ps1')
+$ast = [Management.Automation.Language.Parser]::ParseFile(
+    (Join-Path $repositoryRoot 'qualify-package-candidate.ps1'), [ref]$null, [ref]$null)
+$selection = $ast.Find({ param($node)
+    $node -is [Management.Automation.Language.AssignmentStatementAst] -and
+    $node.Left.Extent.Text -eq '$buildProjects'
+}, $true)
+$buildEnd = $ast.Find({ param($node)
+    $node -is [Management.Automation.Language.IfStatementAst] -and
+    $node.Clauses[0].Item1.Extent.Text -eq '-not $SkipBuild'
+}, $true)
+if (!$selection -or !$buildEnd) { throw 'Missing actual selected-build statements.' }
+$source = Get-Content (Join-Path $repositoryRoot 'qualify-package-candidate.ps1') -Raw
+$buildCode = $source.Substring($selection.Extent.StartOffset, $buildEnd.Extent.EndOffset - $selection.Extent.StartOffset)
+$buildRecords = [Collections.Generic.List[object]]::new()
+function Invoke-CandidateStep([string] $Name, [scriptblock] $Action) { & $Action }
+function Invoke-DotNet([string[]] $Arguments) { $script:commands.Add($Arguments) }
+$Configuration = 'Release'
+foreach ($selected in @('Core', 'Core,PythonRe', 'Core,Pcre2', 'Core,PythonRe,Pcre2')) {
+    $packages = @('Lokad.Utf8Regex') + @($selected.Split(',') | Where-Object { $_ -ne 'Core' } | ForEach-Object { "Lokad.Utf8Regex.$_" })
+    foreach ($SkipBuild in @($false, $true)) {
+        $script:commands = [Collections.Generic.List[object]]::new()
+        . ([scriptblock]::Create($buildCode))
+        $expected = @(if (!$SkipBuild) { if ($packages.Count -eq 1) { 'Lokad.Utf8Regex' } else { $packages | Select-Object -Skip 1 } })
+        if ($commands.Count -ne $expected.Count) { throw "Wrong build count for $selected/$SkipBuild" }
+        for ($i = 0; $i -lt $commands.Count; $i++) {
+            if ($commands[$i][0] -ne 'build' -or $commands[$i][1] -ne (Join-Path $repositoryRoot "src/$($expected[$i])/$($expected[$i]).csproj")) {
+                throw 'Unexpected build root.'
+            }
+        }
+        $buildRecords.Add([ordered]@{ Profiles = $selected; SkipBuild = $SkipBuild; Commands = @($commands.ToArray()) })
+    }
+}
+$consumerRecords = @(foreach ($profile in @('Core', 'PythonRe', 'Pcre2')) {
+    $project = if ($profile -eq 'Core') { 'Lokad.Utf8Regex.Tests' } else { "Lokad.Utf8Regex.$profile.Tests" }
+    $root = (New-Item -ItemType Directory -Path (Join-Path $PSScriptRoot "linked-consumers/$profile")).FullName
+    $testRoot = (New-Item -ItemType Directory -Path (Join-Path $root 'tests')).FullName
+    $script:commands = [Collections.Generic.List[object]]::new()
+    # Exercise the actual detached-source/csproj rewrite without restoring,
+    # packing or executing suites. Only external dotnet commands are recorded.
+    Invoke-IsolatedConsumerTests -RepositoryRoot $repositoryRoot -QualificationRoot $root `
+        -PackageDirectory (Join-Path $PSScriptRoot 'unused-feed') -TestDirectory $testRoot `
+        -PackageCache (Join-Path $root 'unused-cache') -Configuration Release `
+        -SourceTestProjectName $project -PackageIds @('Lokad.Utf8Regex') -Version '0.4.0-rc.2-dev'
+    [xml]$rewritten = Get-Content (Join-Path $testRoot "$project.csproj")
+    if ($rewritten.SelectNodes('//ProjectReference').Count) { throw 'Detached sibling reference remains.' }
+    $links = @($rewritten.SelectNodes('//Compile[@Include and @Link]'))
+    foreach ($link in $links) {
+        $path = [IO.Path]::GetFullPath((Join-Path $testRoot $link.GetAttribute('Include')))
+        if (!$path.StartsWith($root + [IO.Path]::DirectorySeparatorChar) -or !(Test-Path -LiteralPath $path)) { throw 'Bad detached link.' }
+    }
+    if (@($links | Where-Object { $_.GetAttribute('Link') -eq 'Common\AssemblyDependencyInventory.cs' }).Count -ne 1) {
+        throw 'Shared dependency inventory was not copied.'
+    }
+    [ordered]@{ Profile = $profile; LinkedSources = $links.Count; ExternalCommandsRecorded = $commands.Count }
+})
+[ordered]@{ Scope = 'Actual script build statements and detached-source rewriting; dotnet recorded, no package qualification.'; Result = 'PASS'; Builds = $buildRecords.ToArray(); Consumers = $consumerRecords } |
+    ConvertTo-Json -Depth 10 | Set-Content (Join-Path $PSScriptRoot 'profile-workflow.json')
+Write-Output 'Selected build roots (8 cases) and detached linked sources (3 profiles): PASS'

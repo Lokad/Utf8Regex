@@ -1,0 +1,122 @@
+{
+  "Scope": "Actual script build statements and detached-source rewriting; dotnet recorded, no package qualification.",
+  "Result": "PASS",
+  "Builds": [
+    {
+      "Profiles": "Core",
+      "SkipBuild": false,
+      "Commands": [
+        [
+          "build",
+          "D:\\code\\utf8regex\\src\\Lokad.Utf8Regex\\Lokad.Utf8Regex.csproj",
+          "-c",
+          "Release",
+          "--tl:off",
+          "--nologo",
+          "-v",
+          "minimal",
+          "-p:GeneratePackageOnBuild=false"
+        ]
+      ]
+    },
+    {
+      "Profiles": "Core",
+      "SkipBuild": true,
+      "Commands": []
+    },
+    {
+      "Profiles": "Core,PythonRe",
+      "SkipBuild": false,
+      "Commands": [
+        [
+          "build",
+          "D:\\code\\utf8regex\\src\\Lokad.Utf8Regex.PythonRe\\Lokad.Utf8Regex.PythonRe.csproj",
+          "-c",
+          "Release",
+          "--tl:off",
+          "--nologo",
+          "-v",
+          "minimal",
+          "-p:GeneratePackageOnBuild=false"
+        ]
+      ]
+    },
+    {
+      "Profiles": "Core,PythonRe",
+      "SkipBuild": true,
+      "Commands": []
+    },
+    {
+      "Profiles": "Core,Pcre2",
+      "SkipBuild": false,
+      "Commands": [
+        [
+          "build",
+          "D:\\code\\utf8regex\\src\\Lokad.Utf8Regex.Pcre2\\Lokad.Utf8Regex.Pcre2.csproj",
+          "-c",
+          "Release",
+          "--tl:off",
+          "--nologo",
+          "-v",
+          "minimal",
+          "-p:GeneratePackageOnBuild=false"
+        ]
+      ]
+    },
+    {
+      "Profiles": "Core,Pcre2",
+      "SkipBuild": true,
+      "Commands": []
+    },
+    {
+      "Profiles": "Core,PythonRe,Pcre2",
+      "SkipBuild": false,
+      "Commands": [
+        [
+          "build",
+          "D:\\code\\utf8regex\\src\\Lokad.Utf8Regex.PythonRe\\Lokad.Utf8Regex.PythonRe.csproj",
+          "-c",
+          "Release",
+          "--tl:off",
+          "--nologo",
+          "-v",
+          "minimal",
+          "-p:GeneratePackageOnBuild=false"
+        ],
+        [
+          "build",
+          "D:\\code\\utf8regex\\src\\Lokad.Utf8Regex.Pcre2\\Lokad.Utf8Regex.Pcre2.csproj",
+          "-c",
+          "Release",
+          "--tl:off",
+          "--nologo",
+          "-v",
+          "minimal",
+          "-p:GeneratePackageOnBuild=false"
+        ]
+      ]
+    },
+    {
+      "Profiles": "Core,PythonRe,Pcre2",
+      "SkipBuild": true,
+      "Commands": []
+    }
+  ],
+  "Consumers": [
+    {
+      "Profile": "Core",
+      "LinkedSources": 3,
+      "ExternalCommandsRecorded": 2
+    },
+    {
+      "Profile": "PythonRe",
+      "LinkedSources": 7,
+      "ExternalCommandsRecorded": 2
+    },
+    {
+      "Profile": "Pcre2",
+      "LinkedSources": 1,
+      "ExternalCommandsRecorded": 2
+    }
+  ]
+}

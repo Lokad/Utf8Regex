@@ -351,7 +351,11 @@ strictly. `Compile` exposes separate eager construction controls. Options use
 Overloads without an explicit timeout use `DefaultMatchTimeout`, initially
 `Regex.InfiniteMatchTimeout`.
 
-`Utf8ValueMatch` is storable coordinate data. Detailed/evaluator contexts provide
+`Utf8ValueMatch` is storable coordinate data. Its zero-initialized value represents
+no match, like `NoMatch`; a successful empty match remains distinct. Unsuccessful
+values have zero UTF-16 coordinates, `TryGetByteRange` returns false with zero
+outputs, and byte-coordinate properties throw when no byte range is available.
+Detailed/evaluator contexts provide
 groups and capture history; captures follow the documented ordering. Borrowed
 ref-struct match/group/capture/split views require valid original subject storage
 and cannot outlive their frame. Successful byte accessors address complete scalar
