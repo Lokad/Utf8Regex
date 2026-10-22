@@ -1048,14 +1048,21 @@ public sealed partial class Utf8Pcre2Regex
     public Utf8Pcre2Analysis Analyze()
     {
         var backtracking = (_program.Operations.Match as Pcre2BacktrackingDirectProgram)?.Program;
-        var sliceFallback = (_program.Operations.Match as Pcre2SliceDirectProgram)?.Fallback;
         var literal = (_program.Operations.Match as Pcre2LiteralDirectProgram)?.Program;
         return new Utf8Pcre2Analysis
         {
             // R05: every selectable program kind is owned; no BCL-direct kind remains.
             IsFullyNative = true,
             IsExactLiteral = literal is not null,
-            MinRequiredLengthInBytes = literal?.LiteralUtf8.Length ?? backtracking?.AnalyzedMinimumByteLength ?? sliceFallback?.AnalyzedMinimumByteLength ?? 0,
+            MinRequiredLengthInBytes = _program.Operations.Match switch
+            {
+                Pcre2LiteralDirectProgram program => program.Program.LiteralUtf8.Length,
+                Pcre2CharacterDirectProgram program => program.Program.MinimumByteLength,
+                Pcre2SingleTokenRepeatDirectProgram program => program.Program.Fallback.AnalyzedMinimumByteLength,
+                Pcre2BacktrackingDirectProgram program => program.Program.AnalyzedMinimumByteLength,
+                Pcre2SliceDirectProgram program => program.Fallback.AnalyzedMinimumByteLength,
+                _ => 0,
+            },
             HasDuplicateNames = NameEntries.GroupBy(static entry => entry.Name, StringComparer.Ordinal).Any(static group => group.Count() > 1),
             UsesBranchReset = _program.UsesBranchReset,
             UsesBacktrackingControlVerbs = backtracking?.UsesBacktrackingControlVerbs ?? false,

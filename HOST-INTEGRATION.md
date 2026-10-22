@@ -21,6 +21,11 @@ views and enumerator boxes do not each receive a charge. Cache retention uses
 conservative per-program charges and eviction, which can count shared storage
 again. Exact numeric thresholds may change when real work or storage disappears.
 Actual `Unsafe.SizeOf<T>()` queries remain; they perform no unchecked access.
+PCRE2 compilation admits its global name-slot lookup once and shares it with
+nested assertion lowerers. The compiled root and VM share the internal immutable
+name-entry table; public entry-copy APIs remain isolated. Removing repeated lookup
+acquisitions and the redundant table clone can lower construction charges and
+allocations; major buffers, recursion and interruption checks remain bounded.
 Replacement plans retain their real instructions without an unused deduplicated
 capture-reference map/vector. Native replacement admits only group zero; other
 captures use the existing owned expansion. Removing capture placeholders, tags

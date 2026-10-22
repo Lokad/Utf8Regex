@@ -495,7 +495,9 @@ internal sealed class Pcre2CompiledProgram
         PartialProbe = partialProbe;
         SyntaxTree = syntaxTree;
         UsesBranchReset = usesBranchReset;
-        NameEntries = [.. nameEntries];
+        // All producers transfer their internal immutable table. Public views
+        // expose entries by copying, so the VM and compiled root can share it.
+        NameEntries = nameEntries;
     }
 
     internal Pcre2CompileRequest Request { get; }
@@ -2546,7 +2548,7 @@ internal static class Pcre2GlobalOperationDriver
         if (compiledProgram.Operations.Enumerate is Pcre2LiteralFamilyDirectProgram literalFamilyProgram)
         {
             cursor = matchOptions == Pcre2MatchOptions.None && budget.IsUnmetered
-                ? Pcre2GlobalMatchCursor.CreateLiteralFamily(literalFamilyProgram, input, start, compiledProgram.Request, budget)
+                ? Pcre2GlobalMatchCursor.CreateLiteralFamily(literalFamilyProgram, input, start, budget)
                 : Pcre2GlobalMatchCursor.CreateBacktracking(
                     literalFamilyProgram.Fallback,
                     compiledProgram.CandidateSearchPlan,
@@ -2660,9 +2662,8 @@ internal ref struct Pcre2GlobalMatchCursor
         Pcre2LiteralFamilyDirectProgram program,
         Utf8ValidatedInput input,
         Utf8BytePosition start,
-        Pcre2CompileRequest request,
         Pcre2ResourceBudget budget) =>
-        new(new Pcre2LiteralFamilyGlobalMatchCursor(program, input, start, request, budget));
+        new(new Pcre2LiteralFamilyGlobalMatchCursor(program, input, start, budget));
 
     internal static Pcre2GlobalMatchCursor CreateCharacter(
         Pcre2CharacterProgram program,
@@ -3253,7 +3254,6 @@ internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
         Pcre2LiteralFamilyDirectProgram program,
         Utf8ValidatedInput input,
         Utf8BytePosition start,
-        Pcre2CompileRequest request,
         Pcre2ResourceBudget budget)
     {
         _enumerator = program.Regex.ByteOffsetExecution.EnumeratePreparedMatches(input, start);

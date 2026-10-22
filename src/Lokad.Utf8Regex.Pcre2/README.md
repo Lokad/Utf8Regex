@@ -19,6 +19,9 @@ Unicode and opted-in `\C`. Normal operations include `IsMatch`, `Match`,
 groups and groups without captures. `IsFullyNative` means all supported operations
 use the owned managed engines without delegation to another regex implementation;
 it does not identify machine code or a particular fast path.
+`MinRequiredLengthInBytes` is a conservative byte lower bound across the selected
+backends. A scalar token can contribute one byte even when its accepted scalars
+require more; zero can mean that no positive bound was established.
 
 Subjects are strictly validated UTF-8 throughout. Normal character matching and
 empty-match progression use scalars and primary byte coordinates. Explicit `\C`

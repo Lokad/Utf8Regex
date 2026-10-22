@@ -33,6 +33,8 @@ internal sealed class Pcre2CharacterProgram
 
     internal Pcre2CharacterToken[] Tokens { get; }
 
+    internal int MinimumByteLength => Tokens.Count(static token => Pcre2BacktrackingAnalysis.ConsumesInput(token.Kind));
+
     internal Pcre2CompileRequest Request { get; }
 
     internal byte? LeadingAsciiByte { get; }
@@ -419,7 +421,7 @@ internal sealed class Pcre2CharacterParser : IDisposable
 
             if (ch == '[')
             {
-                if (!TryParseClass(start, out var characterClass))
+                if (!TryParseClass(out var characterClass))
                 {
                     return Fail(out tokens);
                 }
@@ -482,7 +484,7 @@ internal sealed class Pcre2CharacterParser : IDisposable
         var ch = _pattern[_offset];
         if (ch == '[')
         {
-            if (!TryParseClass(start, out var characterClass))
+            if (!TryParseClass(out var characterClass))
             {
                 token = default;
                 patternLength = 0;
@@ -763,7 +765,7 @@ internal sealed class Pcre2CharacterParser : IDisposable
         }
     }
 
-    private bool TryParseClass(int start, out Pcre2CharacterClass characterClass)
+    private bool TryParseClass(out Pcre2CharacterClass characterClass)
     {
         _offset++;
         var quoted = false;

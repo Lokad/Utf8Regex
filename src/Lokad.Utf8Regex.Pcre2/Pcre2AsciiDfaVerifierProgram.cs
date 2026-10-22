@@ -196,7 +196,6 @@ internal readonly partial struct Pcre2AsciiDfaVerifierProgram
                             }
 
                             stateIndex = AppendDeterministicTransition(
-                                step,
                                 projectedMatchSet,
                                 stateIndex,
                                 accepting,
@@ -217,7 +216,6 @@ internal readonly partial struct Pcre2AsciiDfaVerifierProgram
                             for (var i = 0; i < step.Min; i++)
                             {
                                 stateIndex = AppendDeterministicTransition(
-                                    step,
                                     projectedLoopSet,
                                     stateIndex,
                                     accepting,
@@ -401,7 +399,6 @@ internal readonly partial struct Pcre2AsciiDfaVerifierProgram
         private bool IsOpenEndedLoop(int max) => max < 0 || max == int.MaxValue;
 
         private int AppendDeterministicTransition(
-            Pcre2AsciiDfaStep step,
             AsciiCharClass transitionSet,
             int stateIndex,
             Utf8ConstructionBuffer<bool> accepting,

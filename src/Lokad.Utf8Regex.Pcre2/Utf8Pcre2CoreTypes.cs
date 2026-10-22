@@ -600,7 +600,8 @@ public readonly struct Utf8Pcre2Analysis
     /// <summary>Gets whether the expression is one exact literal.</summary>
     public bool IsExactLiteral { get; init; }
 
-    /// <summary>Gets the minimum number of subject bytes required for a match.</summary>
+    /// <summary>Gets a conservative lower bound on the subject bytes required for a match.</summary>
+    /// <remarks>The bound need not be attainable: a scalar token may contribute one byte even when its accepted scalars require more. Zero can mean that no positive bound was established.</remarks>
     public int MinRequiredLengthInBytes { get; init; }
 
     /// <summary>Gets whether multiple named groups share a name.</summary>

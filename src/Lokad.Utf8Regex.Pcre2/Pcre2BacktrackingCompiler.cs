@@ -63,10 +63,21 @@ internal static class Pcre2BacktrackingCompiler
         }
 
         var nameEntries = parser.NameEntries;
+        // Names and numeric slots are global to the parsed expression. Admit
+        // their lookup once; nested assertion lowerers only borrow it.
+        construction.Budget.ChargeWork((ulong)nameEntries.Length);
+        construction.Budget.ReserveBytes(checked((ulong)nameEntries.Length * 256));
+        var nameSlots = nameEntries
+            .GroupBy(static entry => entry.Name, StringComparer.Ordinal)
+            .ToDictionary(
+                static group => group.Key,
+                static group => group.Select(static entry => entry.Number).ToArray(),
+                StringComparer.Ordinal);
         var lowerer = new Pcre2BacktrackingLowerer(
             parser.CaptureCount,
             nameEntries,
             parser.CaptureDefinitions,
+            nameSlots,
             request);
         var program = lowerer.Lower(root);
         construction.Complete();
@@ -465,7 +476,7 @@ internal static class Pcre2BacktrackingAnalysis
         Pcre2CharacterTokenKind.NewlineSequence or
         Pcre2CharacterTokenKind.ExtendedGraphemeCluster;
 
-    private static bool ConsumesInput(Pcre2CharacterTokenKind kind) =>
+    internal static bool ConsumesInput(Pcre2CharacterTokenKind kind) =>
         ConsumesScalar(kind) || kind == Pcre2CharacterTokenKind.CodeUnit;
 
     private static bool CanConsume(IPcre2BacktrackingNode node)

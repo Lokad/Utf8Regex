@@ -17,7 +17,7 @@ public sealed class Pcre2RangeBufferAdmissionTests
         var compiled = new Utf8Pcre2Regex(@"(?>a\Kbz|ab)").DebugCompiledProgram;
         var program = Assert.IsAssignableFrom<Pcre2LiteralFamilyDirectProgram>(compiled.Operations.Enumerate);
         var cursor = new Pcre2LiteralFamilyGlobalMatchCursor(program,
-            Utf8ValidatedInput.Create("abz ab"u8), new Utf8BytePosition(0), compiled.Request,
+            Utf8ValidatedInput.Create("abz ab"u8), new Utf8BytePosition(0),
             new Pcre2ResourceBudget(compiled.Request.DefaultLimits, compiled.Request.MatchTimeout, false));
         ref var budget = ref FamilyBudget(ref cursor);
         budget.ReserveWorking(13);
