@@ -1,0 +1,86 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Pcre2;
+
+const string identifierPattern = @"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+";
+var text = string.Concat(Enumerable.Repeat("record Bravo struct Delta class Echo public async FOOBAR abXcd needle ASCII!\n",8));
+var bytes = Encoding.UTF8.GetBytes(text);
+var unicodeBytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("éa😀 ",8)));
+var policy = new Utf8ResourcePolicy { MaxWorkSteps=1_000_000, MaxDepth=2048, MaxWorkingBytes=16*1024*1024, MaxResultBytes=16*1024*1024 };
+var ordinary = new Utf8Regex(identifierPattern, RegexOptions.CultureInvariant);
+var compiled = new Utf8Regex(identifierPattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
+var finite = new Utf8Regex(identifierPattern, RegexOptions.CultureInvariant | RegexOptions.Compiled, Timeout.InfiniteTimeSpan, policy);
+var window = new Utf8Regex(@"\bpublic\s+async\b",RegexOptions.CultureInvariant | RegexOptions.Compiled);
+var foldedSimple = new Utf8Regex("ab.cd",RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+var folded = new Utf8Regex("foobar",RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+var foldedRtl = new Utf8Regex("foobar",RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.RightToLeft);
+var boundary = new Utf8Regex(@"\bneedle\b",RegexOptions.CultureInvariant);
+var literal = new Utf8Regex("needle",RegexOptions.CultureInvariant | RegexOptions.Compiled);
+var unicode = new Utf8Pcre2Regex(@"(?P<g>(?:é|a)+😀)");
+var unicodeFinite = Utf8Pcre2Regex.Create(@"(?P<g>(?:é|a)+😀)",Pcre2CompileOptions.None,default,policy,Timeout.InfiniteTimeSpan);
+var oracle = new Regex(identifierPattern,RegexOptions.CultureInvariant);
+var strict = new UTF8Encoding(false,true);
+var lanes = new[] {
+    new Lane("public/core-ASCII-identifier-ordinary-Count", () => ordinary.Count(bytes), 24, 256),
+    new Lane("public/core-ASCII-identifier-compiled-Count", () => compiled.Count(bytes), 24, 256),
+    new Lane("public/core-ASCII-identifier-ordinary-Match", () => ordinary.Match(bytes).LengthInBytes, 12, 1024),
+    new Lane("public/core-ASCII-identifier-finite-four-Count", () => finite.Count(bytes), 24, 4),
+    new Lane("public/core-ASCII-window-compiled-IsMatch", () => window.IsMatch(bytes) ? 1 : 0, 1, 1024),
+    new Lane("public/core-ASCII-window-compiled-Match", () => window.Match(bytes).LengthInBytes, 12, 1024),
+    new Lane("public/core-ASCII-folded-simple-Count", () => foldedSimple.Count(bytes), 8, 256),
+    new Lane("public/core-ASCII-folded-literal-Match", () => folded.Match(bytes).LengthInBytes, 6, 1024),
+    new Lane("public/core-ASCII-folded-literal-RTL-Match", () => foldedRtl.Match(bytes).LengthInBytes, 6, 1024),
+    new Lane("public/core-ASCII-boundary-literal-Match", () => boundary.Match(bytes).LengthInBytes, 6, 1024),
+    new Lane("public/pcre2-Unicode-backtracking-Count", () => unicode.Count(unicodeBytes), 8, 32),
+    new Lane("public/pcre2-Unicode-backtracking-finite-four-Count", () => unicodeFinite.Count(unicodeBytes), 8, 4),
+    new Lane("public/pcre2-Unicode-backtracking-Enumerate", () => Enumerate(unicode,unicodeBytes), 172, 32),
+    new Lane("public/pcre2-Unicode-backtracking-finite-four-Enumerate", () => Enumerate(unicodeFinite,unicodeBytes), 172, 4),
+    new Lane("control/unchanged-literal-Count", () => literal.Count(bytes), 8, 1024),
+    new Lane("control/predecoded-Regex-Count", () => oracle.Count(text), 24, 1024),
+    new Lane("control/decode-then-Regex-Count", () => oracle.Count(strict.GetString(bytes)), 24, 1024)
+};
+if (args.Contains("--preflight")) {
+    Console.WriteLine(JsonSerializer.Serialize(lanes.Select(l => new {l.Id,l.Expected,Sample=Run(l,1)}),new JsonSerializerOptions {WriteIndented=true}));
+    return;
+}
+foreach (var lane in lanes) {
+    Run(lane,1);
+    var warm = Stopwatch.StartNew();
+    do { Run(lane,lane.Minimum); } while(warm.ElapsedMilliseconds<750);
+    lane.Iterations=lane.Minimum;
+    for(var attempt=0;attempt<4;attempt++) {
+        var sample=Run(lane,lane.Iterations);
+        if(sample.Milliseconds>=35)break;
+        lane.Iterations=(int)Math.Clamp(Math.Ceiling(lane.Iterations*45/Math.Max(.01,sample.Milliseconds)),lane.Minimum,2_000_000);
+    }
+}
+for(var sample=0;sample<5;sample++)
+    foreach(var lane in sample%2==0 ? lanes : lanes.Reverse()) lane.Samples.Add(Run(lane,lane.Iterations));
+Console.WriteLine(JsonSerializer.Serialize(new {
+    Scope="One bounded fixed-original public ASCII native-route and PCRE2 Unicode Count/enumeration comparison, including finite controls; unchanged controls. No package or isolated-kernel qualification.",
+    Runtime=RuntimeInformation.FrameworkDescription,OS=RuntimeInformation.OSDescription,
+    Producers=new[]{typeof(Utf8Regex).Assembly,typeof(Utf8Pcre2Regex).Assembly}.Select(a=>new {
+        Name=a.GetName().Name,Version=a.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
+        Sha256=Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(a.Location)))}),
+    Lanes=lanes.Select(l=>new{l.Id,l.Expected,l.Iterations,l.Samples})
+},new JsonSerializerOptions{WriteIndented=true}));
+
+static int Enumerate(Utf8Pcre2Regex regex,byte[] input) {var cursor=regex.EnumerateMatches(input);var sum=0;while(cursor.MoveNext())sum+=cursor.Current.EndOffsetInUtf16;return sum;}
+static Sample Run(Lane lane,int iterations) {
+    var allocated=GC.GetAllocatedBytesForCurrentThread();var start=Stopwatch.GetTimestamp();long checksum=0;
+    for(var iteration=0;iteration<iterations;iteration++)checksum+=lane.Body();
+    var elapsed=Stopwatch.GetElapsedTime(start).TotalMilliseconds;allocated=GC.GetAllocatedBytesForCurrentThread()-allocated;
+    if(checksum!=(long)lane.Expected*iterations)throw new Exception("Result mismatch: "+lane.Id);
+    return new Sample(elapsed,elapsed*1_000_000/iterations,(double)allocated/iterations,checksum);
+}
+sealed class Lane(string id,Func<int> body,int expected,int minimum) {
+    internal string Id{get;}=id;internal Func<int> Body{get;}=body;internal int Expected{get;}=expected;
+    internal int Minimum{get;}=minimum;internal int Iterations{get;set;}internal List<Sample> Samples{get;}=[];
+}
+sealed record Sample(double Milliseconds,double NanosecondsPerOperation,double AllocatedBytesPerOperation,long Checksum);

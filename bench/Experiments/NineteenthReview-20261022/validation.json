@@ -1,0 +1,63 @@
+{
+  "Date": "2026-10-22",
+  "FinalSourceRevision": "009edf3a67f63b01eafe25028e04ddbea179db60",
+  "AcceptedValidationRevision": "368dedbe",
+  "RejectedRuntimeTrial": "d56c2b69",
+  "RestoredProductionSource": "2c73f6b49efd537789528741a2c4a731a437e3ee",
+  "LocalRelease": {
+    "EngineInventory": 12,
+    "CoreFull": 39586,
+    "CoreFullSeconds": 83,
+    "TrialPcre2Focused": 66,
+    "TrialPcre2Full": 6009,
+    "TrialPcre2FullSeconds": 10,
+    "RestoredPcre2Focused": 62,
+    "Failures": 0,
+    "Skips": 0
+  },
+  "PackageHelper": {
+    "CoreProvenance": 9,
+    "CoreShape": 3,
+    "Pcre2Provenance": 9,
+    "Pcre2Shape": 6,
+    "PythonReManifestControl": "pass",
+    "Repacked": false,
+    "FullPackageQualification": false
+  },
+  "FinalProducerAndCompiledSourcePreflight": "pass",
+  "GeneratedReadmeParity": "pass",
+  "GeneratedPcre2Page": "pass",
+  "GeneratedPythonRePage": "pass",
+  "SourceTests": "Affected project builds and matching-binary reuse; final CI solution boundary covers all four fixture projects.",
+  "Ci": {
+    "Run": 39772541886,
+    "Revision": "009edf3a67f63b01eafe25028e04ddbea179db60",
+    "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/39772541886",
+    "Status": "completed",
+    "Conclusion": "success",
+    "Jobs": [
+      {
+        "name": "tests (ubuntu-latest)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "name": "tests (windows-latest)",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "CostGate": "INCONCLUSIVE; one Linux original/trial pair and the sole Windows confirmation. No causal slowdown/speedup or <=10% cumulative qualification established. No more timing. Runtime trial restored.",
+  "RestoredCountProjection": "Eight projections for eight matches, unlimited and four finite policies; same public counts.",
+  "DriverSources": {
+    "LinuxSha256": "6ECEC221F0E818BEE9DDAD13FA1C2F35642654CF00A1A6AE5AFE72252D26BD8E",
+    "LinuxMatchesOriginalPortablePdb": true,
+    "WindowsSha256": "6510A1C3EC739F02970C3E3E7F8449CDDB6E2CC2AFB3A632C1FDB933F4541BBC"
+  },
+  "ImmutableSnapshots": 4,
+  "ImmutableRc1Files": 9,
+  "OriginalTodos": 5,
+  "PlansIgnored": true,
+  "NewQualifiedPackage": false
+}

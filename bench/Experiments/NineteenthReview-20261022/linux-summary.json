@@ -1,0 +1,172 @@
+[
+  {
+    "Id": "public/core-ASCII-identifier-ordinary-Count",
+    "BeforeNs": 236900.390625,
+    "AfterNs": 245855.859375,
+    "ChangePercent": 3.7802676164329307,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "BeforeSpreadPercent": 13.712085610876143,
+    "AfterSpreadPercent": 52.47103946513375
+  },
+  {
+    "Id": "public/core-ASCII-identifier-compiled-Count",
+    "BeforeNs": 236748.4375,
+    "AfterNs": 245374.609375,
+    "ChangePercent": 3.6436024524977073,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "BeforeSpreadPercent": 124.09120308344168,
+    "AfterSpreadPercent": 61.18036993818444
+  },
+  {
+    "Id": "public/core-ASCII-identifier-ordinary-Match",
+    "BeforeNs": 3874.3209514021437,
+    "AfterNs": 4787.241818954526,
+    "ChangePercent": 23.563377402225537,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "BeforeSpreadPercent": 17.31544641503713,
+    "AfterSpreadPercent": 51.551705464481856
+  },
+  {
+    "Id": "public/core-ASCII-identifier-finite-four-Count",
+    "BeforeNs": 242094.95798319328,
+    "AfterNs": 270863.44086021505,
+    "ChangePercent": 11.8831400359106,
+    "BeforeBytes": 3664,
+    "AfterBytes": 3664,
+    "BeforeSpreadPercent": 62.641577546139615,
+    "AfterSpreadPercent": 58.203753031921
+  },
+  {
+    "Id": "public/core-ASCII-window-compiled-IsMatch",
+    "BeforeNs": 1831.0889966618379,
+    "AfterNs": 2247.463190471725,
+    "ChangePercent": 22.73915656578991,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpreadPercent": 46.834088923438884,
+    "AfterSpreadPercent": 57.03207912749446
+  },
+  {
+    "Id": "public/core-ASCII-window-compiled-Match",
+    "BeforeNs": 1173.521980798383,
+    "AfterNs": 1915.1724658085277,
+    "ChangePercent": 63.198687126897866,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpreadPercent": 62.8553492757039,
+    "AfterSpreadPercent": 56.197007268512245
+  },
+  {
+    "Id": "public/core-ASCII-folded-simple-Count",
+    "BeforeNs": 33201.40532544379,
+    "AfterNs": 48014.50924608819,
+    "ChangePercent": 44.6158943437627,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpreadPercent": 45.80013054626707,
+    "AfterSpreadPercent": 34.94735469956332
+  },
+  {
+    "Id": "public/core-ASCII-folded-literal-Match",
+    "BeforeNs": 924.1323153063598,
+    "AfterNs": 1595.5041489901012,
+    "ChangePercent": 72.6488861566511,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpreadPercent": 72.19062615147652,
+    "AfterSpreadPercent": 52.51655994608506
+  },
+  {
+    "Id": "public/core-ASCII-folded-literal-RTL-Match",
+    "BeforeNs": 903.9627265106081,
+    "AfterNs": 1574.6163486979528,
+    "ChangePercent": 74.19040658635767,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpreadPercent": 48.24704392645038,
+    "AfterSpreadPercent": 52.313899314780166
+  },
+  {
+    "Id": "public/core-ASCII-boundary-literal-Match",
+    "BeforeNs": 997.0842666254731,
+    "AfterNs": 1667.5237475017404,
+    "ChangePercent": 67.24000200557765,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpreadPercent": 16.145012297383673,
+    "AfterSpreadPercent": 83.4010490664117
+  },
+  {
+    "Id": "public/pcre2-Unicode-backtracking-Count",
+    "BeforeNs": 39379.41437444543,
+    "AfterNs": 12504.635761589405,
+    "ChangePercent": -68.24575489445554,
+    "BeforeBytes": 1.3132209405501332,
+    "AfterBytes": 1.2251655629139073,
+    "BeforeSpreadPercent": 31.25036615097587,
+    "AfterSpreadPercent": 478.75556085160474
+  },
+  {
+    "Id": "public/pcre2-Unicode-backtracking-finite-four-Count",
+    "BeforeNs": 42143.85447394297,
+    "AfterNs": 15568.8972667295,
+    "ChangePercent": -63.05772820007349,
+    "BeforeBytes": 1590.5447394296953,
+    "AfterBytes": 1590.6050895381716,
+    "BeforeSpreadPercent": 37.74285294316652,
+    "AfterSpreadPercent": 594.8004068141369
+  },
+  {
+    "Id": "public/pcre2-Unicode-backtracking-Enumerate",
+    "BeforeNs": 57393.82716049383,
+    "AfterNs": 26044.977168949772,
+    "ChangePercent": -54.62059517982895,
+    "BeforeBytes": 3.654320987654321,
+    "AfterBytes": 3.3789954337899544,
+    "BeforeSpreadPercent": 58.948138269268014,
+    "AfterSpreadPercent": 808.2567038053245
+  },
+  {
+    "Id": "public/pcre2-Unicode-backtracking-finite-four-Enumerate",
+    "BeforeNs": 67956.50887573964,
+    "AfterNs": 35747.57505773672,
+    "ChangePercent": -47.39639270889835,
+    "BeforeBytes": 11947.621301775149,
+    "AfterBytes": 11948.581986143186,
+    "BeforeSpreadPercent": 59.199888546886505,
+    "AfterSpreadPercent": 408.70551144475957
+  },
+  {
+    "Id": "control/unchanged-literal-Count",
+    "BeforeNs": 960.725836209329,
+    "AfterNs": 1607.8487530168945,
+    "ChangePercent": 67.35770939198164,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpreadPercent": 48.50638024834168,
+    "AfterSpreadPercent": 193.50130794433582
+  },
+  {
+    "Id": "control/predecoded-Regex-Count",
+    "BeforeNs": 7492.335466929263,
+    "AfterNs": 11045.487364620938,
+    "ChangePercent": 47.42382283034552,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpreadPercent": 78.94100431974907,
+    "AfterSpreadPercent": 183.66758181897418
+  },
+  {
+    "Id": "control/decode-then-Regex-Count",
+    "BeforeNs": 7746.078921078921,
+    "AfterNs": 11542.325344212137,
+    "ChangePercent": 49.008620513828326,
+    "BeforeBytes": 1256,
+    "AfterBytes": 1256,
+    "BeforeSpreadPercent": 68.75703281928598,
+    "AfterSpreadPercent": 125.58859263513665
+  }
+]

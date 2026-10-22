@@ -1,5 +1,13 @@
 # PCRE2 analysis/metadata and residual plumbing cleanup
 
+**Qualification correction, 2026-10-22:** the mixed-subject Core timings below
+remain factual, but do not establish coverage of all changed native ASCII paths.
+The original identifier pattern also has overlapping prefixes, so ASCII input
+alone does not move it to native execution. The folded-boundary pattern selects
+scalar execution. See [the nineteenth receipt](../NineteenthReview-20261022/README.md)
+for route evidence and the inconclusive bounded follow-up. Raw measurements here
+are unchanged; complete affected-route performance qualification remains open.
+
 2026-10-22. Original checkout `347b909e`, matching Release producer `844dcbad`.
 PCRE2 source `50c1d440`; complete source `2c73f6b4`, development
 `0.4.0-rc.2-dev`. No package created/published; frozen RC1 remains unchanged.

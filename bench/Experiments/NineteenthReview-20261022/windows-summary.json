@@ -1,0 +1,192 @@
+[
+  {
+    "Id": "public/core-ASCII-native-identifier-Count",
+    "BeforeNs": 12275.768100454181,
+    "AfterNs": 13280.933007865473,
+    "ChangePercent": 8.188203778255666,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpreadPercent": 80.14329179380259,
+    "AfterSpreadPercent": 86.89724466373134
+  },
+  {
+    "Id": "public/core-ASCII-native-identifier-Match",
+    "BeforeNs": 8999.613220815752,
+    "AfterNs": 9529.213483146068,
+    "ChangePercent": 5.884700256955155,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpreadPercent": 97.31059703300267,
+    "AfterSpreadPercent": 180.78666715457265
+  },
+  {
+    "Id": "public/core-ASCII-overlap-identifier-ordinary-Count",
+    "BeforeNs": 122483.01369863014,
+    "AfterNs": 138035.38011695907,
+    "ChangePercent": 12.69757001292897,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "BeforeSpreadPercent": 30.879987831692628,
+    "AfterSpreadPercent": 101.06252952353513
+  },
+  {
+    "Id": "public/core-ASCII-overlap-identifier-compiled-Count",
+    "BeforeNs": 113190.88397790055,
+    "AfterNs": 155779.03225806452,
+    "ChangePercent": 37.62506907223986,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "BeforeSpreadPercent": 63.06610600096156,
+    "AfterSpreadPercent": 27.304149453492503
+  },
+  {
+    "Id": "public/core-ASCII-overlap-identifier-ordinary-Match",
+    "BeforeNs": 1612.3530238440999,
+    "AfterNs": 2491.387581880247,
+    "ChangePercent": 54.518740315343116,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "BeforeSpreadPercent": 49.620993117153645,
+    "AfterSpreadPercent": 39.67501291468163
+  },
+  {
+    "Id": "public/core-ASCII-overlap-identifier-finite-four-Count",
+    "BeforeNs": 114348.90710382514,
+    "AfterNs": 129709.91253644315,
+    "ChangePercent": 13.433451898819392,
+    "BeforeBytes": 3664,
+    "AfterBytes": 3664,
+    "BeforeSpreadPercent": 92.37880420628073,
+    "AfterSpreadPercent": 175.39587102864658
+  },
+  {
+    "Id": "public/core-ASCII-window-compiled-IsMatch",
+    "BeforeNs": 816.8187281006144,
+    "AfterNs": 872.2739893642054,
+    "ChangePercent": 6.789176025939514,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpreadPercent": 41.38434821532188,
+    "AfterSpreadPercent": 65.21274672982662
+  },
+  {
+    "Id": "public/core-ASCII-window-compiled-Match",
+    "BeforeNs": 692.2689711359404,
+    "AfterNs": 579.990293530818,
+    "ChangePercent": -16.2189383442804,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpreadPercent": 48.65311303426796,
+    "AfterSpreadPercent": 62.46242244302158
+  },
+  {
+    "Id": "public/core-ASCII-folded-simple-Count",
+    "BeforeNs": 21148.634686346864,
+    "AfterNs": 31057.908728400533,
+    "ChangePercent": 46.85538423173434,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpreadPercent": 51.83833279825798,
+    "AfterSpreadPercent": 43.900299153895205
+  },
+  {
+    "Id": "public/core-ASCII-folded-literal-Match",
+    "BeforeNs": 447.53515199802496,
+    "AfterNs": 226.82869216031077,
+    "ChangePercent": -49.31600542490754,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpreadPercent": 23.895218799835515,
+    "AfterSpreadPercent": 228.38331944830136
+  },
+  {
+    "Id": "public/core-ASCII-folded-literal-RTL-Match",
+    "BeforeNs": 410.09596727673187,
+    "AfterNs": 228.18330197447463,
+    "ChangePercent": -44.35855990251739,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpreadPercent": 29.04738034710465,
+    "AfterSpreadPercent": 384.14391233725917
+  },
+  {
+    "Id": "public/core-ASCII-boundary-literal-Match",
+    "BeforeNs": 683.7248383001873,
+    "AfterNs": 666.6399163444469,
+    "ChangePercent": -2.4988008331268796,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpreadPercent": 270.4047260774159,
+    "AfterSpreadPercent": 90.02659331920374
+  },
+  {
+    "Id": "public/pcre2-Unicode-backtracking-Count",
+    "BeforeNs": 3178.3675289919715,
+    "AfterNs": 3186.9832893579596,
+    "ChangePercent": 0.2710750184614641,
+    "BeforeBytes": 0.6601248884924175,
+    "AfterBytes": 0.6508355321020228,
+    "BeforeSpreadPercent": 1009.2844412635596,
+    "AfterSpreadPercent": 1171.006733635059
+  },
+  {
+    "Id": "public/pcre2-Unicode-backtracking-finite-four-Count",
+    "BeforeNs": 3535.707502374169,
+    "AfterNs": 4391.425908667288,
+    "ChangePercent": 24.202183176026825,
+    "BeforeBytes": 1591.2972459639127,
+    "AfterBytes": 1591.3103448275863,
+    "BeforeSpreadPercent": 2357.187558754801,
+    "AfterSpreadPercent": 763.6226655348047
+  },
+  {
+    "Id": "public/pcre2-Unicode-backtracking-Enumerate",
+    "BeforeNs": 6190.684039087948,
+    "AfterNs": 9657.076411960134,
+    "ChangePercent": 55.99368908161686,
+    "BeforeBytes": 0.9641693811074918,
+    "AfterBytes": 0.9833887043189369,
+    "BeforeSpreadPercent": 660.9879297462826,
+    "AfterSpreadPercent": 390.61229263996586
+  },
+  {
+    "Id": "public/pcre2-Unicode-backtracking-finite-four-Enumerate",
+    "BeforeNs": 7010.364145658264,
+    "AfterNs": 22823.12,
+    "ChangePercent": 225.56254605026567,
+    "BeforeBytes": 11950.618113912231,
+    "AfterBytes": 11950.816,
+    "BeforeSpreadPercent": 282.1592679905702,
+    "AfterSpreadPercent": 95.13230443515172
+  },
+  {
+    "Id": "control/unchanged-literal-Count",
+    "BeforeNs": 394.62664818206656,
+    "AfterNs": 590.0931647394249,
+    "ChangePercent": 49.53201144874968,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpreadPercent": 393.0072261227672,
+    "AfterSpreadPercent": 113.19845459427711
+  },
+  {
+    "Id": "control/predecoded-Regex-Count",
+    "BeforeNs": 5288.945604144446,
+    "AfterNs": 7128.668665424196,
+    "ChangePercent": 34.78430672151613,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpreadPercent": 202.5658754269137,
+    "AfterSpreadPercent": 149.10468781436523
+  },
+  {
+    "Id": "control/decode-then-Regex-Count",
+    "BeforeNs": 5481.691542288557,
+    "AfterNs": 6207.576147576147,
+    "ChangePercent": 13.241981962825665,
+    "BeforeBytes": 1256,
+    "AfterBytes": 1256,
+    "BeforeSpreadPercent": 122.01230691038462,
+    "AfterSpreadPercent": 121.436420255621
+  }
+]
