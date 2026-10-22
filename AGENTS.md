@@ -28,6 +28,9 @@ relevant configuration/platform/package checks are due. Normal runs do not stop
 build servers or test hosts; Windows file-lock retries recover repository hosts.
 Test and benchmark script builds disable incidental NuGet packing; explicit
 package qualification keeps its separate build/provenance/pack steps.
+Windows lock recovery selects test hosts by executable paths inside this checkout;
+command-line mentions alone do not establish ownership. Unknown or outside paths
+are left running even if that prevents automatic recovery.
 Ordinary builds reuse SDK build/compiler servers. Repository test-host recovery
 is limited to an observed file-lock failure; do not disable shared compilation
 or server reuse on every invocation.

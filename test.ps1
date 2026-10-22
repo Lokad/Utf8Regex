@@ -25,14 +25,17 @@ function Stop-StaleProcess([System.Diagnostics.Process]$process, [string]$descri
 }
 
 function Stop-StaleProcesses {
-    # Only test hosts launched from this repository are eligible: their command
-    # line references this repository's test output. VBCSCompiler is deliberately
+    # Only test hosts whose executable is under this checkout are eligible.
+    # Command-line mentions and sibling path prefixes do not establish ownership.
+    # Unknown executable paths fail closed. VBCSCompiler is deliberately
     # excluded on Windows: it is a shared SDK-wide compiler server without
     # repository identity. Ordinary builds reuse the SDK's build/compiler servers.
     # Recovery is attempted only after an observed file-lock failure.
     if ($IsWindows) {
+        $repoPrefix = [IO.Path]::GetFullPath($repoRoot).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
         Get-CimInstance Win32_Process -Filter "Name = 'testhost.exe'" -ErrorAction SilentlyContinue |
-            Where-Object { $_.CommandLine -and $_.CommandLine -like ("*" + [WildcardPattern]::Escape($repoRoot) + "*") } |
+            Where-Object { $_.ExecutablePath -and
+                ([IO.Path]::GetFullPath($_.ExecutablePath)).StartsWith($repoPrefix, [StringComparison]::OrdinalIgnoreCase) } |
             ForEach-Object { Stop-StaleProcess -process (Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue) -description "test host" }
         return
     }
