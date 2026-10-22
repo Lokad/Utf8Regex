@@ -1,0 +1,93 @@
+{
+  "Date": "2026-10-22",
+  "OriginalCheckout": "347b909e2218855872181f066f5276b7ee693ff1",
+  "OriginalProducer": "844dcbad711bfde15540e30e4ca42f991851db33",
+  "Pcre2Commit": "50c1d440",
+  "SourceCommit": "2c73f6b49efd537789528741a2c4a731a437e3ee",
+  "Version": "0.4.0-rc.2-dev",
+  "LocalReleaseTests": [
+    {
+      "Scope": "Focused PCRE2 minimum/name/capture/admission",
+      "Passed": 97,
+      "Failed": 0,
+      "Skipped": 0
+    },
+    {
+      "Scope": "Full PCRE2, reused matching binaries",
+      "Passed": 6005,
+      "Failed": 0,
+      "Skipped": 0,
+      "Seconds": 9
+    },
+    {
+      "Scope": "Full PythonRe",
+      "Passed": 3910,
+      "Failed": 0,
+      "Skipped": 0,
+      "Seconds": 10
+    },
+    {
+      "Scope": "Full Core",
+      "Passed": 39584,
+      "Failed": 0,
+      "Skipped": 0,
+      "Seconds": 94
+    }
+  ],
+  "SourceCI": {
+    "Run": 39760949835,
+    "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/39760949835",
+    "Conclusion": "success",
+    "Jobs": [
+      {
+        "Name": "tests (windows-latest)",
+        "Conclusion": "success"
+      },
+      {
+        "Name": "tests (ubuntu-latest)",
+        "Conclusion": "success"
+      }
+    ],
+    "Scope": "Release solution build and all four fixture projects on Windows/Linux"
+  },
+  "CompiledSourcePreflight": "Accepted final producer/PE/PDB/source",
+  "GeneratedChecks": [
+    "README parity current",
+    "PythonRe page current",
+    "PCRE2 page current"
+  ],
+  "Cost": {
+    "PairCount": 1,
+    "ConfirmationCount": 0,
+    "IdenticalDriver": true,
+    "FixedOriginalBaseline": true,
+    "MaximumMatchingMedianIncreasePercent": 4.29,
+    "ConstructionBytesSaved": 3072,
+    "DiagnosticAnalyze": {
+      "BeforeMedianNs": 140.9,
+      "AfterMedianNs": 209.3,
+      "IncreasePercent": 48.53,
+      "CorrectnessEquivalent": false,
+      "Decision": "Correctness repair retained; added diagnostic cost disclosed; no uniform 10% public-operation claim"
+    },
+    "Caveat": "Wide raw spreads, no statistical upper bound or attributed speedup; not package/host qualification"
+  },
+  "ImmutableFiles": {
+    "Verified": 13,
+    "Snapshots": 4,
+    "FrozenRc1Files": 9,
+    "Result": "Hashes and lengths unchanged"
+  },
+  "AccountingContract": "Global PCRE2 name lookup admitted once, borrowed by nested lowerers; removed acquisitions may reduce charges. Major buffers/instructions/state/depth and interruption remain bounded.",
+  "AnalysisContract": "Conservative byte lower bound; scalar token may contribute one even for multibyte accepted scalars; zero can mean no positive bound established.",
+  "ScopeGuards": [
+    "No new package created/published",
+    "No snapshots rewritten",
+    "No rejected Core layout/window or checked-access campaign reopened",
+    "No routine server shutdown",
+    "No matching algorithm or result-lifetime change",
+    "Actual Unsafe.SizeOf retained",
+    "PLAN/history remain ignored",
+    "Five original TODO files untouched"
+  ]
+}

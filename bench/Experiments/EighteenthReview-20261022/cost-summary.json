@@ -1,0 +1,159 @@
+{
+  "Protocol": "One fixed-original pair, identical driver bytes, Linux .NET 10.0.12 CPU7 default tiering, 750ms lane warmup and bounded 35-45ms calibration, five alternating lane-order samples, 60s child cap. All result checksums agree except intentional diagnostic minimum change.",
+  "OriginalProducers": [
+    {
+      "Name": "Lokad.Utf8Regex",
+      "Version": "0.4.0-rc.2-dev+844dcbad711bfde15540e30e4ca42f991851db33",
+      "Sha256": "E596C0141EC56DDDA3BF96AE85431D102EEF0B45306592C26B956214BCD3B6E9"
+    },
+    {
+      "Name": "Lokad.Utf8Regex.Pcre2",
+      "Version": "0.4.0-rc.2-dev+844dcbad711bfde15540e30e4ca42f991851db33",
+      "Sha256": "3401B90BF087073D4CC7BAE0F3DBAD3C84A49A87D0B9428C2E3CB057953A6B37"
+    }
+  ],
+  "CandidateProducers": [
+    {
+      "Name": "Lokad.Utf8Regex",
+      "Version": "0.4.0-rc.2-dev+2c73f6b49efd537789528741a2c4a731a437e3ee",
+      "Sha256": "2CEDCF23EDE43B406FF7576BA2FEA710F37A246CAD78BF555E903F619F8AD308"
+    },
+    {
+      "Name": "Lokad.Utf8Regex.Pcre2",
+      "Version": "0.4.0-rc.2-dev+2c73f6b49efd537789528741a2c4a731a437e3ee",
+      "Sha256": "2726D49693F82B003BD50AD681983B177562383724C50B2A72C8D366BA907054"
+    }
+  ],
+  "Rows": [
+    {
+      "Id": "construction/pcre2-named-nested-assertions",
+      "BeforeMedianNs": 620077.0833333334,
+      "AfterMedianNs": 604036.7346938775,
+      "ChangePercent": -2.5868313909019447,
+      "BeforeSpreadPercent": 83.32566179608045,
+      "AfterSpreadPercent": 23.703282000689256,
+      "BeforeAllocatedBytes": 86256,
+      "AfterAllocatedBytes": 83184
+    },
+    {
+      "Id": "public/pcre2-Analyze-character",
+      "BeforeMedianNs": 140.9244422049871,
+      "AfterMedianNs": 209.31885308582213,
+      "ChangePercent": 48.53268163470841,
+      "BeforeSpreadPercent": 30.479751316545865,
+      "AfterSpreadPercent": 87.54780282945828,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0
+    },
+    {
+      "Id": "public/pcre2-Count-named-assertions",
+      "BeforeMedianNs": 23487.644151565073,
+      "AfterMedianNs": 23881.87702265372,
+      "ChangePercent": 1.6784691923322548,
+      "BeforeSpreadPercent": 5.202356737041445,
+      "AfterSpreadPercent": 48.86509926146759,
+      "BeforeAllocatedBytes": 4080,
+      "AfterAllocatedBytes": 4080
+    },
+    {
+      "Id": "public/core-identifier-ordinary-Count",
+      "BeforeMedianNs": 45174.609375,
+      "AfterMedianNs": 46263.671875,
+      "ChangePercent": 2.410784542616762,
+      "BeforeSpreadPercent": 1.4924727835568583,
+      "AfterSpreadPercent": 49.966648372525015,
+      "BeforeAllocatedBytes": 3552,
+      "AfterAllocatedBytes": 3552
+    },
+    {
+      "Id": "public/core-identifier-compiled-Count",
+      "BeforeMedianNs": 45135.546875,
+      "AfterMedianNs": 45993.75,
+      "ChangePercent": 1.901390776047851,
+      "BeforeSpreadPercent": 1.555211299298121,
+      "AfterSpreadPercent": 57.9256692485392,
+      "BeforeAllocatedBytes": 3552,
+      "AfterAllocatedBytes": 3552
+    },
+    {
+      "Id": "public/core-identifier-finite-four-Count",
+      "BeforeMedianNs": 48224.76190476191,
+      "AfterMedianNs": 48778.92156862745,
+      "ChangePercent": 1.1491185067122434,
+      "BeforeSpreadPercent": 1.1582668457224088,
+      "AfterSpreadPercent": 40.40237566451276,
+      "BeforeAllocatedBytes": 3664,
+      "AfterAllocatedBytes": 3664
+    },
+    {
+      "Id": "public/core-window-compiled-Count",
+      "BeforeMedianNs": 4362.8524046434495,
+      "AfterMedianNs": 4511.061700944969,
+      "ChangePercent": 3.39707334916437,
+      "BeforeSpreadPercent": 21.17099994931833,
+      "AfterSpreadPercent": 69.28185918130964,
+      "BeforeAllocatedBytes": 1680,
+      "AfterAllocatedBytes": 1680
+    },
+    {
+      "Id": "public/core-window-compiled-IsMatch",
+      "BeforeMedianNs": 3519.864,
+      "AfterMedianNs": 3670.902,
+      "ChangePercent": 4.291018062061491,
+      "BeforeSpreadPercent": 22.656216262901076,
+      "AfterSpreadPercent": 62.55615104952408,
+      "BeforeAllocatedBytes": 1680,
+      "AfterAllocatedBytes": 1680
+    },
+    {
+      "Id": "public/core-folded-boundary-Count",
+      "BeforeMedianNs": 49734.40621531632,
+      "AfterMedianNs": 49862.31884057971,
+      "ChangePercent": 0.25719141937599055,
+      "BeforeSpreadPercent": 3.970703425744299,
+      "AfterSpreadPercent": 73.49367824444121,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0
+    },
+    {
+      "Id": "public/core-literal-compiled-Enumerate",
+      "BeforeMedianNs": 7918.199436222692,
+      "AfterMedianNs": 7127.230793701288,
+      "ChangePercent": -9.98924880450761,
+      "BeforeSpreadPercent": 21.687133013080814,
+      "AfterSpreadPercent": 20.881789108860065,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0
+    },
+    {
+      "Id": "control/unchanged-literal-Count",
+      "BeforeMedianNs": 1270.5603038936372,
+      "AfterMedianNs": 1266.2250048534265,
+      "ChangePercent": -0.3412115919980474,
+      "BeforeSpreadPercent": 12.45461566860774,
+      "AfterSpreadPercent": 13.162100937932403,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0
+    },
+    {
+      "Id": "control/predecoded-Regex-Count",
+      "BeforeMedianNs": 7459.156257365072,
+      "AfterMedianNs": 7612.541308658295,
+      "ChangePercent": 2.0563324590736842,
+      "BeforeSpreadPercent": 25.00979487633178,
+      "AfterSpreadPercent": 28.6170723078025,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0
+    },
+    {
+      "Id": "control/decode-then-Regex-Count",
+      "BeforeMedianNs": 7911.619718309859,
+      "AfterMedianNs": 7980.466421181834,
+      "ChangePercent": 0.870197321449151,
+      "BeforeSpreadPercent": 18.869776136009616,
+      "AfterSpreadPercent": 26.408511049687355,
+      "BeforeAllocatedBytes": 1144,
+      "AfterAllocatedBytes": 1144
+    }
+  ]
+}

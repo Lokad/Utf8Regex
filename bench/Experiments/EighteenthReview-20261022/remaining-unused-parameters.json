@@ -1,0 +1,16 @@
+{
+  "Scope": "Syntax-only unused parameter heuristic; delegates/interface contracts and reflection require source review.",
+  "Files": 416,
+  "Methods": 2866,
+  "Rows": [
+    {
+      "File": "src/Lokad.Utf8Regex/Internal/Execution/Utf8CompiledEngineRuntime.cs",
+      "Line": 83,
+      "Method": "GetGlobalMatchKernel",
+      "Unused": [
+        "validation",
+        "budget"
+      ]
+    }
+  ]
+}

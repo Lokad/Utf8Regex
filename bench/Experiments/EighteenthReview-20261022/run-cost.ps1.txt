@@ -1,0 +1,9 @@
+# Compile the temporary driver once in Release against frozen 844dcbad products.
+# Stage identical driver/deps/runtimeconfig in both directories; cost-before
+# retains original Core/PCRE2, cost-after uses complete candidate 2c73f6b4.
+# Sequential CPU7/default-tier runs; no old files/services or packages changed.
+$ErrorActionPreference = 'Stop'
+$benchKey = Join-Path $env:USERPROFILE '.ssh/id_utf8regex-bench.pem'
+ssh -i $benchKey -o BatchMode=yes -o ConnectTimeout=8 vermorel@20.13.128.207 'cd /dev/shm/utf8regex-eighteenth-20261022 && ulimit -c 0 && export TMPDIR=$PWD/tmp DOTNET_EnableDiagnostics=0 && taskset -c 7 timeout 60 dotnet cost-before/cost-driver.dll > before-cost.json 2> before-cost.err && taskset -c 7 timeout 60 dotnet cost-after/cost-driver.dll --fixed > after-cost.json 2> after-cost.err'
+if ($LASTEXITCODE -ne 0) { throw 'Bounded comparison failed.' }
+# Completed once. No confirmation or additional timing is active.
