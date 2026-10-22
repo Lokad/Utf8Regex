@@ -65,13 +65,13 @@ public sealed class Utf8CompiledScalarConsumerTests
         if (prepared.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow && !rtl)
         {
             Assert.True(Utf8StructuralLinearCompiledRouter.TryIsMatch(prepared, verifier, false, null, null,
-                default, input, actualValidation, Utf8ExecutionDeadline.Infinite, out var found));
+                input, actualValidation, Utf8ExecutionDeadline.Infinite, out var found));
             Assert.True(found);
             Assert.True(Utf8StructuralLinearCompiledRouter.TryCount(prepared, verifier, false, null, null,
                 default, input, actualValidation, Utf8ExecutionDeadline.Infinite, out var routedCount));
             Assert.Equal(count, routedCount);
             Assert.True(Utf8StructuralLinearCompiledRouter.TryMatch(prepared, verifier, false, null, null,
-                default, input, actualValidation, Utf8ExecutionDeadline.Infinite, out var routedMatch));
+                input, actualValidation, Utf8ExecutionDeadline.Infinite, out var routedMatch));
             Assert.Equal((indexBytes, lengthBytes, indexUnits, lengthUnits),
                 (routedMatch.IndexInBytes, routedMatch.LengthInBytes, routedMatch.IndexInUtf16, routedMatch.LengthInUtf16));
         }

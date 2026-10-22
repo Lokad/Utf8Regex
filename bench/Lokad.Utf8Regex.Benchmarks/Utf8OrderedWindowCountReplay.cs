@@ -389,7 +389,7 @@ internal static class Utf8OrderedWindowCountReplay
         var startIndex = 0;
         while (startIndex <= input.Length)
         {
-            var matchIndex = FindNextPairedLiteralFamily(input, plan, familySearch, default, startIndex, budget, out var matchedLength);
+            var matchIndex = FindNextPairedLiteralFamily(input, plan, familySearch, startIndex, budget, out var matchedLength);
             if (matchIndex < 0)
             {
                 return count;

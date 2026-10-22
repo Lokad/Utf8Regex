@@ -796,7 +796,7 @@ internal sealed partial class PythonReParser
                 's' => PythonReCompileOptions.DotAll,
                 'x' => PythonReCompileOptions.Verbose,
                 'a' => PythonReCompileOptions.Ascii,
-                'L' => throw CreateInlineFlagException('L', context),
+                'L' => throw CreateInlineFlagException(context),
                 'u' => PythonReCompileOptions.Unicode,
                 _ => PythonReCompileOptions.None,
             };
@@ -809,7 +809,7 @@ internal sealed partial class PythonReParser
             if (context == FlagParseContext.Removed &&
                 next is PythonReCompileOptions.Ascii or PythonReCompileOptions.Unicode)
             {
-                throw CreateInlineFlagException(Current, context);
+                throw CreateInlineFlagException(context);
             }
 
             if (next is PythonReCompileOptions.Ascii or PythonReCompileOptions.Unicode)
@@ -838,7 +838,7 @@ internal sealed partial class PythonReParser
         return options;
     }
 
-    private PythonRePatternException CreateInlineFlagException(char flag, FlagParseContext context)
+    private PythonRePatternException CreateInlineFlagException(FlagParseContext context)
     {
         return context switch
         {

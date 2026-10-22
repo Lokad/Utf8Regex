@@ -184,7 +184,6 @@ public sealed class Utf8RegexConstructionTests
             Utf8AsciiStructuralIdentifierFamilyExecutor.CountUpperWordIdentifier(
                 bytes,
                 regex.Inspection.StructuralIdentifierFamilyPlan,
-                regex.Inspection.SearchPlan,
                 budget: Utf8ExecutionDeadline.Infinite));
     }
 

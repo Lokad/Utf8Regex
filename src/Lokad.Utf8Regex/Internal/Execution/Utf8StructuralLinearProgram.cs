@@ -2447,7 +2447,7 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
         {
             var statefulCount = 0;
             var state = CreateScanState(0);
-            while (TryFindNextStateful(input, verifierRuntime, ref state, budget, out _, out _))
+            while (TryFindNextStateful(input, ref state, budget, out _, out _))
             {
                 statefulCount++;
             }
@@ -2488,7 +2488,6 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
 
     internal bool TryFindNextStateful(
         ReadOnlySpan<byte> input,
-        Utf8VerifierRuntime verifierRuntime,
         ref Utf8AsciiStructuralFamilyScanState state,
         Utf8ExecutionDeadline budget,
         out int matchIndex,

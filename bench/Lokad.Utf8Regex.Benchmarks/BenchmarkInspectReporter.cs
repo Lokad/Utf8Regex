@@ -4337,9 +4337,9 @@ internal static partial class BenchmarkInspectReporter
         {
             Measure("StatefulCandidates", iterations, () => ExecuteStructuralFamilyStatefulCandidateCount(program.StructuralSearchPlan, input));
             Measure("StatefulCandidateSum", iterations, () => ExecuteStructuralFamilyStatefulCandidateIndexSum(program.StructuralSearchPlan, input));
-            Measure("StatefulCount", iterations, () => ExecuteStructuralFamilyStatefulCount(structuralFamilyRuntime, verifierRuntime, input));
-            Measure("StatefulFindNextCount", iterations, () => ExecuteStructuralFamilyStatefulFindNextCount(structuralFamilyRuntime, verifierRuntime, input));
-            Measure("StatefulFindNextSum", iterations, () => ExecuteStructuralFamilyStatefulFindNextIndexSum(structuralFamilyRuntime, verifierRuntime, input));
+            Measure("StatefulCount", iterations, () => ExecuteStructuralFamilyStatefulCount(structuralFamilyRuntime, input));
+            Measure("StatefulFindNextCount", iterations, () => ExecuteStructuralFamilyStatefulFindNextCount(structuralFamilyRuntime, input));
+            Measure("StatefulFindNextSum", iterations, () => ExecuteStructuralFamilyStatefulFindNextIndexSum(structuralFamilyRuntime, input));
         }
         Measure("PublicCount", iterations, () => regex.Count(input));
         Measure("PublicMoveNext", iterations, () => ExecutePublicEnumeratorMoveNextCount(regex, input));
@@ -4389,9 +4389,9 @@ internal static partial class BenchmarkInspectReporter
         {
             Measure("StatefulCandidates", iterations, () => ExecuteStructuralFamilyStatefulCandidateCount(program.StructuralSearchPlan, context.InputBytes));
             Measure("StatefulCandidateSum", iterations, () => ExecuteStructuralFamilyStatefulCandidateIndexSum(program.StructuralSearchPlan, context.InputBytes));
-            Measure("StatefulCount", iterations, () => ExecuteStructuralFamilyStatefulCount(structuralFamilyRuntime, verifierRuntime, context.InputBytes));
-            Measure("StatefulFindNextCount", iterations, () => ExecuteStructuralFamilyStatefulFindNextCount(structuralFamilyRuntime, verifierRuntime, context.InputBytes));
-            Measure("StatefulFindNextSum", iterations, () => ExecuteStructuralFamilyStatefulFindNextIndexSum(structuralFamilyRuntime, verifierRuntime, context.InputBytes));
+            Measure("StatefulCount", iterations, () => ExecuteStructuralFamilyStatefulCount(structuralFamilyRuntime, context.InputBytes));
+            Measure("StatefulFindNextCount", iterations, () => ExecuteStructuralFamilyStatefulFindNextCount(structuralFamilyRuntime, context.InputBytes));
+            Measure("StatefulFindNextSum", iterations, () => ExecuteStructuralFamilyStatefulFindNextIndexSum(structuralFamilyRuntime, context.InputBytes));
         }
         Measure("PublicCount", iterations, () => context.Utf8Regex.Count(context.InputBytes));
         Measure("PublicMoveNext", iterations, () => ExecutePublicEnumeratorMoveNextCount(context.Utf8Regex, context.InputBytes));
@@ -8455,12 +8455,11 @@ internal static partial class BenchmarkInspectReporter
 
     private static int ExecuteStructuralFamilyStatefulFindNextCount(
         Utf8AsciiStructuralFamilyLinearRuntime linearRuntime,
-        Utf8VerifierRuntime verifierRuntime,
         byte[] input)
     {
         var count = 0;
         var state = linearRuntime.CreateScanState(0);
-        while (linearRuntime.TryFindNextStateful(input, verifierRuntime, ref state, budget: Utf8ExecutionDeadline.Infinite, out _, out _))
+        while (linearRuntime.TryFindNextStateful(input, ref state, budget: Utf8ExecutionDeadline.Infinite, out _, out _))
         {
             count++;
         }
@@ -8470,12 +8469,11 @@ internal static partial class BenchmarkInspectReporter
 
     private static int ExecuteStructuralFamilyStatefulCount(
         Utf8AsciiStructuralFamilyLinearRuntime linearRuntime,
-        Utf8VerifierRuntime verifierRuntime,
         byte[] input)
     {
         var count = 0;
         var state = linearRuntime.CreateScanState(0);
-        while (linearRuntime.TryFindNextStateful(input, verifierRuntime, ref state, budget: Utf8ExecutionDeadline.Infinite, out _, out _))
+        while (linearRuntime.TryFindNextStateful(input, ref state, budget: Utf8ExecutionDeadline.Infinite, out _, out _))
         {
             count++;
         }
@@ -8485,12 +8483,11 @@ internal static partial class BenchmarkInspectReporter
 
     private static int ExecuteStructuralFamilyStatefulFindNextIndexSum(
         Utf8AsciiStructuralFamilyLinearRuntime linearRuntime,
-        Utf8VerifierRuntime verifierRuntime,
         byte[] input)
     {
         var sum = 0;
         var state = linearRuntime.CreateScanState(0);
-        while (linearRuntime.TryFindNextStateful(input, verifierRuntime, ref state, budget: Utf8ExecutionDeadline.Infinite, out var matchIndex, out _))
+        while (linearRuntime.TryFindNextStateful(input, ref state, budget: Utf8ExecutionDeadline.Infinite, out var matchIndex, out _))
         {
             sum += matchIndex;
         }

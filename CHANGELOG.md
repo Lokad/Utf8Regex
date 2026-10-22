@@ -2,6 +2,13 @@
 
 ## Unreleased development after 0.4.0-rc.1
 
+- PCRE2 analysis now reports conservative positive byte bounds for character and
+  single-token-repeat programs. Compilation shares global name-slot metadata
+  across assertion lowerers and the immutable name table with the compiled root;
+  removed acquisitions can lower construction charges. Public name copies remain
+  isolated. Removed inert internal arguments/forwarders and an obsolete cache
+  test alias; matching algorithms, resource controls and result lifetimes remain.
+
 - Fixed PCRE2 Analyze().UsesBranchReset, which incorrectly returned false even
   for supported branch-reset groups. Analysis now records parsed syntax,
   including nested groups and groups without captures. Removed obsolete group-name

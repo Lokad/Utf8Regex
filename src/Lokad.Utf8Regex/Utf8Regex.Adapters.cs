@@ -409,13 +409,13 @@ public sealed partial class Utf8Regex
         if (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals)
         {
             var baseInUtf16 = input.Project(start);
-            return CreateMatchEnumeratorViaCompiledEngine(remaining, default, literal, budget)
+            return CreateMatchEnumeratorViaCompiledEngine(remaining, default, budget)
                 .WithBaseOffsets(start.Value, baseInUtf16.Value);
         }
 
         var validation = input.GetSuffixValidation(start);
         var utf16Start = input.Project(start);
-        return CreateMatchEnumeratorViaCompiledEngine(remaining, validation, literal, budget)
+        return CreateMatchEnumeratorViaCompiledEngine(remaining, validation, budget)
             .WithBaseOffsets(start.Value, utf16Start.Value);
     }
 

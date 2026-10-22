@@ -68,7 +68,7 @@ public sealed class Utf8UpperWordAnchorAdmissionTests
         {
             if (!Utf8AsciiStructuralIdentifierFamilyExecutor.CanUseUpperWordIdentifierKernel(family, Utf8ExecutionDeadline.Infinite) ||
                 !Utf8AsciiStructuralIdentifierFamilyExecutor.TryGetUpperWordIdentifierKernelSpec(family, Utf8ExecutionDeadline.Infinite, out _, out _)) return false;
-            var count = Utf8AsciiStructuralIdentifierFamilyExecutor.CountUpperWordIdentifier(input, family, default, Utf8ExecutionDeadline.Infinite);
+            var count = Utf8AsciiStructuralIdentifierFamilyExecutor.CountUpperWordIdentifier(input, family, Utf8ExecutionDeadline.Infinite);
             var index = Utf8AsciiStructuralIdentifierFamilyExecutor.FindNextUpperWordIdentifierDirect(input, family, 0, Utf8ExecutionDeadline.Infinite, out var length);
             return count == 3 && index == 0 && length == 10;
         }
@@ -153,7 +153,7 @@ public sealed class Utf8UpperWordAnchorAdmissionTests
             {
                 case 0: Utf8AsciiStructuralIdentifierFamilyExecutor.TryGetUpperWordIdentifierKernelSpec(family, deadline, out _, out _); break;
                 case 1: Utf8AsciiStructuralIdentifierFamilyExecutor.CanUseUpperWordIdentifierKernel(family, deadline); break;
-                case 2: Utf8AsciiStructuralIdentifierFamilyExecutor.CountUpperWordIdentifier([], family, default, deadline); break;
+                case 2: Utf8AsciiStructuralIdentifierFamilyExecutor.CountUpperWordIdentifier([], family, deadline); break;
                 default: Utf8AsciiStructuralIdentifierFamilyExecutor.FindNextUpperWordIdentifierDirect([], family, 0, deadline, out _); break;
             }
         });

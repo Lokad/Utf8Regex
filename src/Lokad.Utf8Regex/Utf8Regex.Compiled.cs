@@ -270,7 +270,7 @@ public sealed partial class Utf8Regex
         };
     }
 
-    private Utf8ValueMatchEnumerator CreateMatchEnumeratorViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, byte[]? literal, Utf8ExecutionDeadline budget)
+    private Utf8ValueMatchEnumerator CreateMatchEnumeratorViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         // Qualified simple kernels keep their native cursor. Remaining anchored
         // or mixed-subject shapes transfer to the cached scalar program.

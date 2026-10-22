@@ -67,7 +67,6 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
     }
 
     internal int Count { get { lock (this) return _count; } }
-    internal int QueueLengthForTests => Count;
     internal ulong MetadataBytes { get { lock (this) return BaseMetadataBytes + (ulong)_count * EntryBytes; } }
     internal ulong MaximumMetadataBytes => _maximumMetadataBytes;
     internal ulong PayloadBytes { get { lock (this) return _payloadBytes; } }

@@ -27,7 +27,6 @@ public sealed class Utf8PreparationCacheOwnershipTests
         finally { release.Set(); }
         Assert.Same(value, await worker);
         Assert.Equal(0, cache.Count);
-        Assert.Equal(0, cache.QueueLengthForTests);
     }
 
     [Fact]

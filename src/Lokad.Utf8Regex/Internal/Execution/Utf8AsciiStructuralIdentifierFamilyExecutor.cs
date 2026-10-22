@@ -38,10 +38,9 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
 
         if (CanUseUpperWordIdentifierKernel(familyPlan, budget))
         {
-            return FindNextUpperWordIdentifier(
+            return FindNextUpperWordIdentifierDirect(
                 input,
                 familyPlan,
-                searchPlan,
                 startIndex,
                 budget,
                 out matchedLength);
@@ -84,7 +83,7 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
 
                 Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
                 Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
-                if (TryMatchAt(input, candidate.StartIndex, prefixLength, familyPlan, verifierRuntime, budget, out matchedLength))
+                if (AsciiStructuralIdentifierFamilyMatcher.TryMatch(input, candidate.StartIndex, prefixLength, familyPlan, out matchedLength))
                 {
                     Utf8SearchDiagnosticsSession.Current?.CountVerifierMatch();
                     return candidate.StartIndex;
@@ -106,7 +105,7 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
 
             Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
             Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
-            if (TryMatchAt(input, candidate, prefixLength, familyPlan, verifierRuntime, budget, out matchedLength))
+            if (AsciiStructuralIdentifierFamilyMatcher.TryMatch(input, candidate, prefixLength, familyPlan, out matchedLength))
             {
                 Utf8SearchDiagnosticsSession.Current?.CountVerifierMatch();
                 return candidate;
@@ -164,7 +163,7 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
         {
             if (CanUseUpperWordIdentifierKernel(familyPlan, budget))
             {
-                return CountUpperWordIdentifier(input, familyPlan, searchPlan, budget);
+                return CountUpperWordIdentifier(input, familyPlan, budget);
             }
 
             return CountStateful(input, familyPlan, searchPlan, searchData.Value, structuralSearchPlan, budget);
@@ -242,7 +241,7 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
     {
         if (CanUseUpperWordIdentifierKernel(familyPlan, budget))
         {
-            return CountUpperWordIdentifier(input, familyPlan, searchPlan, budget);
+            return CountUpperWordIdentifier(input, familyPlan, budget);
         }
 
         if (CanUseSuffixOnlyCountKernel(familyPlan))
@@ -535,22 +534,9 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
         return count;
     }
 
-    private static int FindNextUpperWordIdentifier(
-        ReadOnlySpan<byte> input,
-        in AsciiStructuralIdentifierFamilyPlan familyPlan,
-        Utf8SearchPlan searchPlan,
-        int startIndex,
-        Utf8ExecutionDeadline budget,
-        out int matchedLength)
-    {
-        matchedLength = 0;
-        return FindNextUpperWordIdentifierDirect(input, familyPlan, startIndex, budget, out matchedLength);
-    }
-
     internal static int CountUpperWordIdentifier(
         ReadOnlySpan<byte> input,
         in AsciiStructuralIdentifierFamilyPlan familyPlan,
-        Utf8SearchPlan searchPlan,
         Utf8ExecutionDeadline budget)
     {
         if (!TryGetUpperWordIdentifierKernelSpec(familyPlan, budget, out var anchorOffset, out var anchorClass))
@@ -1510,11 +1496,6 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
                 AsciiStructuralIdentifierFamilyMatcher.IsAsciiWordByte(input[matchIndex - 1]),
             _ => AsciiStructuralIdentifierFamilyMatcher.MatchesBoundaryRequirement(requirement, input, matchIndex),
         };
-    }
-
-    private static bool TryMatchAt(ReadOnlySpan<byte> input, int matchIndex, int prefixLength, in AsciiStructuralIdentifierFamilyPlan familyPlan, Utf8StructuralVerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget, out int matchedLength)
-    {
-        return AsciiStructuralIdentifierFamilyMatcher.TryMatch(input, matchIndex, prefixLength, familyPlan, out matchedLength);
     }
 
     private static bool TryMatchTrailingLiteralIdentifierAt(

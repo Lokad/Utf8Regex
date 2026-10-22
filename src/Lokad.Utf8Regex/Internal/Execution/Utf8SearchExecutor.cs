@@ -30,8 +30,7 @@ internal static partial class Utf8SearchExecutor
         var literal = plan.LiteralUtf8;
         return plan.Kind switch
         {
-            Utf8SearchKind.ExactAsciiLiteral when literal is not null => FindFilteredLiteralStart(plan, input, 0, ignoreCase: false),
-            Utf8SearchKind.AsciiFoldedByteLiteral when literal is not null => FindFilteredLiteralStart(plan, input, 0, ignoreCase: true),
+            Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.AsciiFoldedByteLiteral when literal is not null => FindFilteredLiteralStart(plan, input, 0),
             Utf8SearchKind.ExactAsciiLiterals when plan.HasPreparedSearcher => plan.PreparedSearcher.FindFirst(input),
             Utf8SearchKind.AsciiFoldedByteLiterals when plan.HasPreparedSearcher => plan.HasBoundaryRequirements
                 ? FindAnyIgnoreCaseLiteralWithBoundaries(plan, input, 0)
@@ -58,8 +57,7 @@ internal static partial class Utf8SearchExecutor
 
         return plan.Kind switch
         {
-            Utf8SearchKind.ExactAsciiLiteral => FindFilteredLiteralStart(plan, input, startIndex, ignoreCase: false),
-            Utf8SearchKind.AsciiFoldedByteLiteral => FindFilteredLiteralStart(plan, input, startIndex, ignoreCase: true),
+            Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.AsciiFoldedByteLiteral => FindFilteredLiteralStart(plan, input, startIndex),
             Utf8SearchKind.FixedDistanceAsciiLiteral => FindFixedDistanceLiteral(plan, input, startIndex),
             Utf8SearchKind.FixedDistanceAsciiChar => FindFixedDistanceChar(plan, input, startIndex),
             Utf8SearchKind.FixedDistanceAsciiSets => FindFixedDistanceSets(plan, input, startIndex),
@@ -75,8 +73,7 @@ internal static partial class Utf8SearchExecutor
         var literal = plan.LiteralUtf8;
         return plan.Kind switch
         {
-            Utf8SearchKind.ExactAsciiLiteral when literal is not null => FindFilteredLastLiteralStart(plan, input, input.Length, ignoreCase: false),
-            Utf8SearchKind.AsciiFoldedByteLiteral when literal is not null => FindFilteredLastLiteralStart(plan, input, input.Length, ignoreCase: true),
+            Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.AsciiFoldedByteLiteral when literal is not null => FindFilteredLastLiteralStart(plan, input, input.Length),
             Utf8SearchKind.ExactAsciiLiterals when plan.HasPreparedSearcher => plan.PreparedSearcher.FindLast(input),
             Utf8SearchKind.AsciiFoldedByteLiterals when plan.HasPreparedSearcher => plan.HasBoundaryRequirements
                 ? FindLastAnyIgnoreCaseLiteralWithBoundaries(plan, input, input.Length)
@@ -122,7 +119,7 @@ internal static partial class Utf8SearchExecutor
         return relative < 0 ? -1 : startIndex + relative;
     }
 
-    private static int FindFilteredLiteralStart(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, bool ignoreCase)
+    private static int FindFilteredLiteralStart(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)
     {
         var literal = plan.LiteralUtf8;
         var literalSearch = plan.LiteralSearch;
@@ -133,12 +130,12 @@ internal static partial class Utf8SearchExecutor
 
         if (CanUseDirectLiteralBoundarySearch(in plan))
         {
-            return FindLiteralWithBoundaries(in plan, input, startIndex, ignoreCase);
+            return FindLiteralWithBoundaries(in plan, input, startIndex);
         }
 
         if (CanUseDirectLiteralTrailingSearch(in plan))
         {
-            return FindLiteralWithTrailingRequirement(in plan, input, startIndex, ignoreCase);
+            return FindLiteralWithTrailingRequirement(in plan, input, startIndex);
         }
 
         if (plan.HasStructuralCandidates &&
@@ -161,8 +158,8 @@ internal static partial class Utf8SearchExecutor
         }
 
         return plan.HasBoundaryRequirements
-            ? FindLiteralWithBoundaries(plan, input, startIndex, ignoreCase)
-            : FindLiteralWithTrailingRequirement(plan, input, startIndex, ignoreCase);
+            ? FindLiteralWithBoundaries(plan, input, startIndex)
+            : FindLiteralWithTrailingRequirement(plan, input, startIndex);
     }
 
     private static bool CanUseDirectLiteralBoundarySearch(in Utf8SearchPlan plan)
@@ -183,7 +180,7 @@ internal static partial class Utf8SearchExecutor
             plan.MaxPossibleLength is null;
     }
 
-    private static int FindFilteredLastLiteralStart(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, bool ignoreCase)
+    private static int FindFilteredLastLiteralStart(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)
     {
         var literal = plan.LiteralUtf8;
         var literalSearch = plan.LiteralSearch;
@@ -206,8 +203,8 @@ internal static partial class Utf8SearchExecutor
         }
 
         return plan.HasBoundaryRequirements
-            ? FindLastLiteralWithBoundaries(plan, input, startIndex, ignoreCase)
-            : FindLastLiteralWithTrailingRequirement(plan, input, startIndex, ignoreCase);
+            ? FindLastLiteralWithBoundaries(plan, input, startIndex)
+            : FindLastLiteralWithTrailingRequirement(plan, input, startIndex);
     }
 
     private static bool TryFindNextPreparedMatch(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, out PreparedSearchMatch match)
@@ -405,7 +402,7 @@ internal static partial class Utf8SearchExecutor
         return true;
     }
 
-    private static int FindLiteralWithBoundaries(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, bool ignoreCase)
+    private static int FindLiteralWithBoundaries(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)
     {
         var literal = plan.LiteralUtf8;
         var literalSearch = plan.LiteralSearch;
@@ -436,7 +433,7 @@ internal static partial class Utf8SearchExecutor
         return -1;
     }
 
-    private static int FindLiteralWithTrailingRequirement(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, bool ignoreCase)
+    private static int FindLiteralWithTrailingRequirement(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)
     {
         var literal = plan.LiteralUtf8;
         var literalSearch = plan.LiteralSearch;
@@ -473,7 +470,7 @@ internal static partial class Utf8SearchExecutor
         return -1;
     }
 
-    private static int FindLastLiteralWithBoundaries(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, bool ignoreCase)
+    private static int FindLastLiteralWithBoundaries(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)
     {
         var literal = plan.LiteralUtf8;
         var literalSearch = plan.LiteralSearch;
@@ -503,7 +500,7 @@ internal static partial class Utf8SearchExecutor
         return -1;
     }
 
-    private static int FindLastLiteralWithTrailingRequirement(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, bool ignoreCase)
+    private static int FindLastLiteralWithTrailingRequirement(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex)
     {
         var literal = plan.LiteralUtf8;
         var literalSearch = plan.LiteralSearch;

@@ -52,7 +52,6 @@ internal static class Utf8StructuralLinearCompiledRouter
         bool emitEnabled,
         Utf8EmittedDeterministicMatcher? emittedDeterministicMatcher,
         Utf8EmittedKernelMatcher? emittedKernelMatcher,
-        PreparedAsciiFindPlan orderedWindowTrailingFindPlan,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
         Utf8ExecutionDeadline budget,
@@ -77,7 +76,6 @@ internal static class Utf8StructuralLinearCompiledRouter
                 input,
                 regexPlan.StructuralLinearProgram.OrderedLiteralWindowPlan,
                 regexPlan.SearchPlan,
-                orderedWindowTrailingFindPlan,
                 0,
                 budget,
                 out _) >= 0;
@@ -213,7 +211,6 @@ internal static class Utf8StructuralLinearCompiledRouter
         bool emitEnabled,
         Utf8EmittedDeterministicMatcher? emittedDeterministicMatcher,
         Utf8EmittedKernelMatcher? emittedKernelMatcher,
-        PreparedAsciiFindPlan orderedWindowTrailingFindPlan,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
         Utf8ExecutionDeadline budget,
@@ -238,7 +235,6 @@ internal static class Utf8StructuralLinearCompiledRouter
                 input,
                 regexPlan.StructuralLinearProgram.OrderedLiteralWindowPlan,
                 regexPlan.SearchPlan,
-                orderedWindowTrailingFindPlan,
                 0,
                 budget,
                 out var matchedLength);
