@@ -31,7 +31,6 @@ public sealed class Pcre2CharacterCompilerTests
         Assert.Equal(expectedStartOffsetInUtf16, match.StartOffsetInUtf16);
         Assert.Equal(expectedEndOffsetInUtf16, match.EndOffsetInUtf16);
         Assert.IsType<Pcre2CharacterDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
-        Assert.IsType<Pcre2CharacterSyntaxTree>(regex.DebugCompiledProgram.SyntaxTree);
     }
 
     [Theory]

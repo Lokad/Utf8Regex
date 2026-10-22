@@ -14,13 +14,6 @@ internal enum Pcre2LiteralAnchor : byte
     RequestedStart = 2,
 }
 
-internal sealed class Pcre2LiteralSyntaxTree : IPcre2SyntaxTree
-{
-    internal static Pcre2LiteralSyntaxTree Instance { get; } = new();
-    private Pcre2LiteralSyntaxTree() { }
-    public Pcre2SyntaxNodeKind RootKind => Pcre2SyntaxNodeKind.Literal;
-}
-
 internal sealed class Pcre2LiteralProgram
 {
     private const int DirectCountThresholdBytes = 1024;
@@ -75,19 +68,6 @@ internal readonly record struct Pcre2LiteralMatch(
             startOffsetInBytes + lengthInBytes);
 }
 
-internal sealed class Pcre2CompiledLiteralOutcome
-{
-    internal Pcre2CompiledLiteralOutcome(Pcre2LiteralSyntaxTree syntaxTree, Pcre2LiteralProgram program)
-    {
-        SyntaxTree = syntaxTree;
-        Program = program;
-    }
-
-    internal Pcre2LiteralSyntaxTree SyntaxTree { get; }
-
-    internal Pcre2LiteralProgram Program { get; }
-}
-
 internal static class Pcre2LiteralCompiler
 {
     private const Pcre2CompileOptions UnsupportedOptions =
@@ -96,7 +76,7 @@ internal static class Pcre2LiteralCompiler
         Pcre2CompileOptions.ExtendedMore |
         Pcre2CompileOptions.FirstLine;
 
-    internal static Pcre2CompiledLiteralOutcome? Compile(Pcre2CompileRequest request)
+    internal static Pcre2LiteralProgram? Compile(Pcre2CompileRequest request)
     {
         if ((request.Options & UnsupportedOptions) != 0) return null;
         using var scope = Utf8ConstructionScope.Enter();
@@ -134,7 +114,7 @@ internal static class Pcre2LiteralCompiler
                     static state => new Pcre2LiteralProgram(state.literalUtf8, state.startAnchor,
                         state.endAnchored, state.hasExplicitEndAssertion));
                 scope.Complete();
-                return new Pcre2CompiledLiteralOutcome(Pcre2LiteralSyntaxTree.Instance, program);
+                return program;
             }
             finally { budget.ReleaseArray(atoms, true); }
         }

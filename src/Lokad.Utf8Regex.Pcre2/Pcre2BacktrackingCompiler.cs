@@ -10,18 +10,18 @@ namespace Lokad.Utf8Regex.Pcre2;
 internal sealed class Pcre2CompiledBacktrackingOutcome
 {
     internal Pcre2CompiledBacktrackingOutcome(
-        Pcre2BacktrackingSyntaxTree syntaxTree,
+        IPcre2BacktrackingNode root,
         Pcre2BacktrackingProgram program,
         bool requiresProfileOptions,
         bool usesBranchReset)
     {
-        SyntaxTree = syntaxTree;
+        Root = root;
         Program = program;
         RequiresProfileOptions = requiresProfileOptions;
         UsesBranchReset = usesBranchReset;
     }
 
-    internal Pcre2BacktrackingSyntaxTree SyntaxTree { get; }
+    internal IPcre2BacktrackingNode Root { get; }
 
     internal Pcre2BacktrackingProgram Program { get; }
 
@@ -82,7 +82,7 @@ internal static class Pcre2BacktrackingCompiler
         var program = lowerer.Lower(root);
         construction.Complete();
         return new Pcre2CompiledBacktrackingOutcome(
-            new Pcre2BacktrackingSyntaxTree(root),
+            root,
             program,
             parser.RequiresProfileOptions,
             parser.UsesBranchReset);

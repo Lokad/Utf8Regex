@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -68,27 +67,12 @@ public sealed class Pcre2CharacterConstructionBoundsTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void SyntaxMetadataDoesNotRetainLinearConstructionVectors(bool character)
+    public void LiteralAndCharacterProgramsDoNotRetainBacktrackingRoots(bool character)
     {
         var pattern = character ? string.Concat(Enumerable.Repeat(@"\X", 1000)) : new string('a', 4096);
         var regex = new Utf8Pcre2Regex(pattern);
-        Assert.DoesNotContain(ReachableArrays(Assert.IsAssignableFrom<IPcre2SyntaxTree>(regex.DebugCompiledProgram.SyntaxTree)), array => array.Length >= 1000);
+        Assert.Null(regex.DebugCompiledProgram.ProbeRoot);
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(new string('a', character ? 1000 : 4096))));
-    }
-
-    private static IEnumerable<Array> ReachableArrays(object root)
-    {
-        var seen = new HashSet<object>(ReferenceEqualityComparer.Instance);
-        var pending = new Stack<object>();
-        pending.Push(root);
-        while (pending.TryPop(out var item))
-        {
-            if (!seen.Add(item)) continue;
-            if (item is Array array) { yield return array; continue; }
-            if (item.GetType().Assembly != typeof(Utf8Pcre2Regex).Assembly) continue;
-            foreach (var field in item.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public))
-                if (field.GetValue(item) is { } child) pending.Push(child);
-        }
     }
 
     private static Utf8Pcre2Regex Compile(string pattern, Utf8ConstructionPolicy policy, bool bytes)

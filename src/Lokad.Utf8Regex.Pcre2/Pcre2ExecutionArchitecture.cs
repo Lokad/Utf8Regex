@@ -24,16 +24,16 @@ internal static class Pcre2Compiler
     internal static Pcre2CompiledProgram Compile(Pcre2CompileRequest request)
     {
         Pcre2CompileValidator.ValidatePattern(request.Pattern, request.Options, request.Settings);
-        if (Pcre2LiteralCompiler.Compile(request) is Pcre2CompiledLiteralOutcome literal)
+        if (Pcre2LiteralCompiler.Compile(request) is { } literal)
         {
-            var literalProgram = Pcre2CompiledProgramOverlay.CreateLiteral(request, literal.SyntaxTree, literal.Program);
+            var literalProgram = Pcre2CompiledProgramOverlay.CreateLiteral(request, literal);
             Pcre2ProgramInvariant.Validate(literalProgram);
             return literalProgram;
         }
 
-        if (Pcre2CharacterCompiler.Compile(request) is Pcre2CompiledCharacterOutcome character)
+        if (Pcre2CharacterCompiler.Compile(request) is { } character)
         {
-            var foundation = Pcre2CompiledProgramOverlay.CreateCharacter(request, character.SyntaxTree, character.Program);
+            var foundation = Pcre2CompiledProgramOverlay.CreateCharacter(request, character);
             Pcre2ProgramInvariant.Validate(foundation);
             return foundation;
         }
@@ -42,10 +42,10 @@ internal static class Pcre2Compiler
         {
             Utf8Regex? core = null;
             if (!backtracking.RequiresProfileOptions &&
-                Pcre2CompiledProgramOverlay.CanPrepareCore(request, backtracking.SyntaxTree.Root))
+                Pcre2CompiledProgramOverlay.CanPrepareCore(request, backtracking.Root))
                 _ = TryCreateUtf8Regex(request.Pattern, request.Options, request.MatchTimeout, out core);
             var foundation = Pcre2CompiledProgramOverlay.CreateBacktracking(
-                request, backtracking.SyntaxTree, backtracking.Program, core, backtracking.UsesBranchReset);
+                request, backtracking.Root, backtracking.Program, core, backtracking.UsesBranchReset);
             Pcre2ProgramInvariant.Validate(foundation);
             return foundation;
         }
@@ -484,7 +484,7 @@ internal sealed class Pcre2CompiledProgram
         Pcre2OperationPrograms operations,
         Pcre2CandidateSearchProgram candidateSearch,
         Pcre2PartialProbeProgram partialProbe,
-        IPcre2SyntaxTree? syntaxTree,
+        IPcre2BacktrackingNode? probeRoot,
         bool usesBranchReset,
         Pcre2NameEntry[] nameEntries)
     {
@@ -493,7 +493,7 @@ internal sealed class Pcre2CompiledProgram
         Operations = operations;
         CandidateSearchPlan = new Pcre2CandidateSearchPlan(candidateSearch);
         PartialProbe = partialProbe;
-        SyntaxTree = syntaxTree;
+        ProbeRoot = probeRoot;
         UsesBranchReset = usesBranchReset;
         // All producers transfer their internal immutable table. Public views
         // expose entries by copying, so the VM and compiled root can share it.
@@ -514,7 +514,7 @@ internal sealed class Pcre2CompiledProgram
 
     // Only curated partial probing can consult the original backtracking tree.
     // Ordinary execution owns lowered programs, including its option fallback.
-    internal IPcre2SyntaxTree? SyntaxTree { get; }
+    internal IPcre2BacktrackingNode? ProbeRoot { get; }
 
     // Grammar metadata survives lowering even when captures are absent or
     // Match selects a specialized operation instead of the backtracking VM.
@@ -527,7 +527,6 @@ internal static class Pcre2CompiledProgramOverlay
 {
     internal static Pcre2CompiledProgram CreateLiteral(
         Pcre2CompileRequest request,
-        Pcre2LiteralSyntaxTree syntaxTree,
         Pcre2LiteralProgram literalProgram)
     {
         var direct = new Pcre2LiteralDirectProgram(literalProgram);
@@ -537,14 +536,13 @@ internal static class Pcre2CompiledProgramOverlay
             new Pcre2OperationPrograms(direct, direct, direct, direct, direct),
             default,
             Pcre2PartialProbeProgram.None,
-            syntaxTree,
+            null,
             false,
             []);
     }
 
     internal static Pcre2CompiledProgram CreateCharacter(
         Pcre2CompileRequest request,
-        Pcre2CharacterSyntaxTree syntaxTree,
         Pcre2CharacterProgram characterProgram)
     {
         var direct = new Pcre2CharacterDirectProgram(characterProgram);
@@ -554,14 +552,14 @@ internal static class Pcre2CompiledProgramOverlay
             new Pcre2OperationPrograms(direct, direct, direct, direct, direct),
             default,
             Pcre2PartialProbeCompiler.Compile(characterProgram, request),
-            syntaxTree,
+            null,
             false,
             []);
     }
 
     internal static Pcre2CompiledProgram CreateBacktracking(
         Pcre2CompileRequest request,
-        Pcre2BacktrackingSyntaxTree syntaxTree,
+        IPcre2BacktrackingNode root,
         Pcre2BacktrackingProgram backtrackingProgram,
         Utf8Regex? preparedCore,
         bool usesBranchReset)
@@ -569,7 +567,7 @@ internal static class Pcre2CompiledProgramOverlay
         var direct = new Pcre2BacktrackingDirectProgram(backtrackingProgram);
         var operations = new Pcre2OperationPrograms(direct, direct, direct, direct, direct);
         if (Pcre2MultilinePrefixAnalyzer.TryCompile(
-                syntaxTree.Root,
+                root,
                 request,
                 backtrackingProgram) is { } multilinePrefix)
         {
@@ -581,7 +579,7 @@ internal static class Pcre2CompiledProgramOverlay
             };
         }
         else if (Pcre2SameStartLiteralAnalyzer.TryCompile(
-                     syntaxTree.Root,
+                     root,
                      request,
                      backtrackingProgram) is { } sameStartLiteral)
         {
@@ -592,7 +590,7 @@ internal static class Pcre2CompiledProgramOverlay
             };
         }
         else if (Pcre2LiteralPrefixRepeatAnalyzer.TryCompile(
-                     syntaxTree.Root,
+                     root,
                      request,
                      backtrackingProgram) is { } literalPrefixRepeat)
         {
@@ -605,7 +603,7 @@ internal static class Pcre2CompiledProgramOverlay
         }
         else if (preparedCore is { } orderedWindowPrimary &&
             Pcre2AsciiOrderedLiteralWindowAnalyzer.TryCompile(
-                syntaxTree.Root,
+                root,
                 request,
                 orderedWindowPrimary) is { } orderedWindow)
         {
@@ -616,7 +614,7 @@ internal static class Pcre2CompiledProgramOverlay
         }
         else if (preparedCore is { } alternationRepeatPrimary &&
             Pcre2AsciiLiteralAlternationRepeatAnalyzer.TryCompile(
-                syntaxTree.Root,
+                root,
                 request,
                 alternationRepeatPrimary) is { } alternationRepeat)
         {
@@ -627,7 +625,7 @@ internal static class Pcre2CompiledProgramOverlay
         }
         else if (preparedCore is { } primary &&
             Pcre2LiteralFamilyAnalyzer.CanReuseCoreExecution(
-                syntaxTree.Root,
+                root,
                 request,
                 primary.ByteOffsetExecution.SearchPortfolioKind))
         {
@@ -640,7 +638,7 @@ internal static class Pcre2CompiledProgramOverlay
             };
         }
         else if (Pcre2FiniteLiteralLanguageAnalyzer.TryCompile(
-                     syntaxTree.Root,
+                     root,
                      request) is { } finiteLiteralCompilation)
         {
             var literalFamily = new Pcre2FiniteLiteralLanguageDirectProgram(
@@ -656,7 +654,7 @@ internal static class Pcre2CompiledProgramOverlay
             };
         }
         else if (Pcre2SingleTokenRepeatAnalyzer.TryCompile(
-                     syntaxTree.Root,
+                     root,
                      backtrackingProgram) is { } singleTokenRepeatProgram)
         {
             var singleTokenRepeat = new Pcre2SingleTokenRepeatDirectProgram(singleTokenRepeatProgram);
@@ -670,7 +668,7 @@ internal static class Pcre2CompiledProgramOverlay
 
         if (operations.IsMatch is Pcre2BacktrackingDirectProgram &&
             Pcre2PalindromeIsMatchAnalyzer.TryCompile(
-                syntaxTree.Root,
+                root,
                 request,
                 backtrackingProgram) is { } palindrome)
         {
@@ -682,7 +680,7 @@ internal static class Pcre2CompiledProgramOverlay
 
         if (operations.IsMatch is Pcre2BacktrackingDirectProgram &&
             Pcre2LeadingDotStarLiteralIsMatchAnalyzer.TryCompile(
-                syntaxTree.Root,
+                root,
                 request,
                 backtrackingProgram) is { } leadingDotStarLiteral)
         {
@@ -694,7 +692,7 @@ internal static class Pcre2CompiledProgramOverlay
 
         if (operations.IsMatch is Pcre2BacktrackingDirectProgram &&
             Pcre2SeparatedRunsIsMatchAnalyzer.TryCompile(
-                syntaxTree.Root,
+                root,
                 request,
                 backtrackingProgram) is { } separatedRuns)
         {
@@ -706,7 +704,7 @@ internal static class Pcre2CompiledProgramOverlay
 
         if (operations.IsMatch is Pcre2BacktrackingDirectProgram &&
             Pcre2AsciiBoundedIsMatchAnalyzer.TryCompile(
-                syntaxTree.Root,
+                root,
                 request,
                 backtrackingProgram) is { } asciiBounded)
         {
@@ -719,12 +717,12 @@ internal static class Pcre2CompiledProgramOverlay
         if (operations.IsMatch is Pcre2BacktrackingDirectProgram &&
             preparedCore is { } asciiRegularPrimary &&
             Pcre2AsciiRegularIsMatchAnalyzer.CanReuseCoreExecution(
-                syntaxTree.Root,
+                root,
                 request,
                 asciiRegularPrimary))
         {
             var supportsPreparedOffsets =
-                Pcre2BacktrackingAnalysis.RestrictsSearchToInitialCandidate(syntaxTree.Root);
+                Pcre2BacktrackingAnalysis.RestrictsSearchToInitialCandidate(root);
             operations = operations with
             {
                 IsMatch = new Pcre2AsciiRegularIsMatchDirectProgram(
@@ -736,7 +734,7 @@ internal static class Pcre2CompiledProgramOverlay
 
         if (operations.IsMatch is Pcre2BacktrackingDirectProgram &&
             Pcre2AsciiAnchoredDfaIsMatchAnalyzer.TryCompile(
-                syntaxTree.Root,
+                root,
                 request,
                 backtrackingProgram) is { } asciiAnchoredDfa)
         {
@@ -746,9 +744,9 @@ internal static class Pcre2CompiledProgramOverlay
             };
         }
 
-        var candidateSearch = Pcre2CandidateSearchAnalyzer.Compile(syntaxTree.Root, request);
-        var partialProbe = Pcre2PartialProbeCompiler.Compile(syntaxTree, request);
-        operations = WithSlice(request, syntaxTree.Root, backtrackingProgram, preparedCore, operations);
+        var candidateSearch = Pcre2CandidateSearchAnalyzer.Compile(root, request);
+        var partialProbe = Pcre2PartialProbeCompiler.Compile(root, request);
+        operations = WithSlice(request, root, backtrackingProgram, preparedCore, operations);
         var core = Pcre2ProgramInvariant.GetCoreRegex(operations.IsMatch) ??
             Pcre2ProgramInvariant.GetCoreRegex(operations.Count) ??
             Pcre2ProgramInvariant.GetCoreRegex(operations.Match) ??
@@ -760,7 +758,7 @@ internal static class Pcre2CompiledProgramOverlay
             operations,
             candidateSearch,
             partialProbe,
-            partialProbe.Kind == Pcre2PartialProbeProgramKind.None ? null : syntaxTree,
+            partialProbe.Kind == Pcre2PartialProbeProgramKind.None ? null : root,
             usesBranchReset,
             backtrackingProgram.NameEntries);
     }
@@ -3856,15 +3854,3 @@ internal readonly record struct Pcre2ExecutionDiagnostics(
     ulong WorkspaceCaptureMutationRents,
     ulong WorkspaceControlRents,
     ulong WorkspacePoolGrowths);
-
-internal enum Pcre2SyntaxNodeKind : byte
-{
-    Literal = 1,
-    CharacterProgram = 2,
-    BacktrackingProgram = 3,
-}
-
-internal interface IPcre2SyntaxTree
-{
-    Pcre2SyntaxNodeKind RootKind { get; }
-}

@@ -118,7 +118,7 @@ public sealed partial class Utf8Pcre2Regex
         // the requested start is not a new beginning of subject or line.
         Pcre2CharacterToken? first = compiled.Operations.Match is Pcre2CharacterDirectProgram character && character.Program.Tokens.Length > 0
             ? character.Program.Tokens[0]
-            : compiled.SyntaxTree is Pcre2BacktrackingSyntaxTree { Root: Pcre2SequenceBacktrackingNode { Children.Length: > 0 } sequence } &&
+            : compiled.ProbeRoot is Pcre2SequenceBacktrackingNode { Children.Length: > 0 } sequence &&
               sequence.Children[0] is Pcre2TokenBacktrackingNode token ? token.Token : null;
         if (first is not { Kind: Pcre2CharacterTokenKind.BeginningOfLine or Pcre2CharacterTokenKind.BeginningOfSubject or Pcre2CharacterTokenKind.FirstMatchingPosition } assertion)
             return true;
@@ -621,7 +621,7 @@ public sealed partial class Utf8Pcre2Regex
             return NoMatch();
         }
 
-        var sequence = ((Pcre2SequenceBacktrackingNode)((Pcre2BacktrackingSyntaxTree)compiled.SyntaxTree!).Root).Children;
+        var sequence = ((Pcre2SequenceBacktrackingNode)compiled.ProbeRoot!).Children;
         if (compiled.PartialProbe.Kind == Pcre2PartialProbeProgramKind.AnchoredAaOrAPlusWord)
         {
             // The first alternative is complete without inspecting a word
@@ -662,7 +662,7 @@ public sealed partial class Utf8Pcre2Regex
     private Utf8Pcre2ProbeResult ProbeViaCapturedEndAlternative(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
         int startOffsetInBytes, Pcre2CompiledProgram compiled)
     {
-        var sequence = (Pcre2SequenceBacktrackingNode)((Pcre2BacktrackingSyntaxTree)compiled.SyntaxTree!).Root;
+        var sequence = (Pcre2SequenceBacktrackingNode)compiled.ProbeRoot!;
         var branches = ((Pcre2AlternationBacktrackingNode)((Pcre2CaptureBacktrackingNode)sequence.Children[1]).Body).Alternatives;
         var first = ((Pcre2SequenceBacktrackingNode)branches[0]).Children;
         var prefix = ((Pcre2TokenBacktrackingNode)first[0]).Token;
@@ -698,7 +698,7 @@ public sealed partial class Utf8Pcre2Regex
         var dot = compiled.Operations.Match is Pcre2CharacterDirectProgram character
             ? character.Program.Tokens[0]
             : ((Pcre2TokenBacktrackingNode)((Pcre2RepeatBacktrackingNode)
-                ((Pcre2BacktrackingSyntaxTree)compiled.SyntaxTree!).Root).Body).Token;
+                compiled.ProbeRoot!).Body).Token;
         var excludesNewline = dot.Kind == Pcre2CharacterTokenKind.AnyNotNewline ||
             (dot.Options & Pcre2CharacterOptions.DotAll) == 0;
         var candidate = startOffsetInBytes;

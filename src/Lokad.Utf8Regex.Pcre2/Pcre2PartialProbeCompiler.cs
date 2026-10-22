@@ -87,7 +87,7 @@ internal static partial class Pcre2PartialProbeCompiler
         finally { budget.LeaveDepth(); }
     }
 
-    internal static Pcre2PartialProbeProgram Compile(Pcre2BacktrackingSyntaxTree syntaxTree, Pcre2CompileRequest request)
+    internal static Pcre2PartialProbeProgram Compile(IPcre2BacktrackingNode root, Pcre2CompileRequest request)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
@@ -97,7 +97,7 @@ internal static partial class Pcre2PartialProbeCompiler
         budget.EnterDepth();
         try
         {
-            var program = CompileTree(syntaxTree.Root, request);
+            var program = CompileTree(root, request);
             if (program.Kind != Pcre2PartialProbeProgramKind.None) construction.Complete();
             return program;
         }

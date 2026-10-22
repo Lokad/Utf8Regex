@@ -8,13 +8,6 @@ using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
-internal sealed class Pcre2CharacterSyntaxTree : IPcre2SyntaxTree
-{
-    internal static Pcre2CharacterSyntaxTree Instance { get; } = new();
-    private Pcre2CharacterSyntaxTree() { }
-    public Pcre2SyntaxNodeKind RootKind => Pcre2SyntaxNodeKind.CharacterProgram;
-}
-
 internal sealed class Pcre2CharacterProgram
 {
     internal Pcre2CharacterProgram(
@@ -70,19 +63,6 @@ internal sealed class Pcre2CharacterProgram
         category = UnicodeCategory.MathSymbol;
         return true;
     }
-}
-
-internal sealed class Pcre2CompiledCharacterOutcome
-{
-    internal Pcre2CompiledCharacterOutcome(Pcre2CharacterSyntaxTree syntaxTree, Pcre2CharacterProgram program)
-    {
-        SyntaxTree = syntaxTree;
-        Program = program;
-    }
-
-    internal Pcre2CharacterSyntaxTree SyntaxTree { get; }
-
-    internal Pcre2CharacterProgram Program { get; }
 }
 
 [Flags]
@@ -314,17 +294,15 @@ internal sealed class Pcre2CharacterClass
 
 internal static class Pcre2CharacterCompiler
 {
-    internal static Pcre2CompiledCharacterOutcome? Compile(Pcre2CompileRequest request)
+    internal static Pcre2CharacterProgram? Compile(Pcre2CompileRequest request)
     {
         using var construction = Utf8ConstructionScope.Enter();
         construction.Budget.ChargeWork((ulong)request.Pattern.Length + 1);
         using var parser = new Pcre2CharacterParser(request);
         if (!parser.TryParse(out var tokens)) return null;
-        var result = new Pcre2CompiledCharacterOutcome(
-            Pcre2CharacterSyntaxTree.Instance,
-            new Pcre2CharacterProgram(tokens, request, GetLeadingAsciiByte(tokens),
-                tokens is [{ Kind: Pcre2CharacterTokenKind.ExtendedGraphemeCluster }, ..],
-                tokens.Any(static token => token.Kind == Pcre2CharacterTokenKind.CodeUnit)));
+        var result = new Pcre2CharacterProgram(tokens, request, GetLeadingAsciiByte(tokens),
+            tokens is [{ Kind: Pcre2CharacterTokenKind.ExtendedGraphemeCluster }, ..],
+            tokens.Any(static token => token.Kind == Pcre2CharacterTokenKind.CodeUnit));
         construction.Complete();
         return result;
     }

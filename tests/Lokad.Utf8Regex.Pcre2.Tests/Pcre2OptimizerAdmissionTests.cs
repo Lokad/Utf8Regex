@@ -107,7 +107,7 @@ public sealed class Pcre2OptimizerAdmissionTests
 
     private static void Optimize(bool bounded, Pcre2CompileRequest request, Pcre2CompiledBacktrackingOutcome parsed)
     {
-        if (bounded) _ = Pcre2AsciiBoundedIsMatchAnalyzer.TryCompile(parsed.SyntaxTree.Root, request, parsed.Program);
-        else _ = Pcre2FiniteLiteralLanguageAnalyzer.TryCompile(parsed.SyntaxTree.Root, request);
+        if (bounded) _ = Pcre2AsciiBoundedIsMatchAnalyzer.TryCompile(parsed.Root, request, parsed.Program);
+        else _ = Pcre2FiniteLiteralLanguageAnalyzer.TryCompile(parsed.Root, request);
     }
 }

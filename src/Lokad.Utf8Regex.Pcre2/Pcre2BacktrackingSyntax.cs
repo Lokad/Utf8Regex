@@ -6,19 +6,7 @@ using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
-// PLAN.md D09: backtracking syntax tree, node model, and program model, split from the compiler collection along the syntax ownership boundary.
-internal sealed class Pcre2BacktrackingSyntaxTree : IPcre2SyntaxTree
-{
-    internal Pcre2BacktrackingSyntaxTree(IPcre2BacktrackingNode root)
-    {
-        Root = root;
-    }
-
-    public Pcre2SyntaxNodeKind RootKind => Pcre2SyntaxNodeKind.BacktrackingProgram;
-
-    internal IPcre2BacktrackingNode Root { get; }
-}
-
+// Backtracking nodes and lowered program data.
 internal interface IPcre2BacktrackingNode
 {
     Pcre2BacktrackingNodeKind Kind { get; }

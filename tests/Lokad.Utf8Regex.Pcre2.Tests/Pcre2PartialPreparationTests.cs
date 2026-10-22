@@ -13,8 +13,8 @@ public sealed class Pcre2PartialPreparationTests
     public void PartialPreparationUsesRemainingParentBytesAndWork(bool character, bool work)
     {
         var request = Request(character ? "^" + new string('a', 4096) + @"\b" : "(a)b+");
-        var tree = character ? null : Pcre2BacktrackingCompiler.Compile(request)!.SyntaxTree;
-        var tokens = character ? Pcre2CharacterCompiler.Compile(request)!.Program : null;
+        var tree = character ? null : Pcre2BacktrackingCompiler.Compile(request)!.Root;
+        var tokens = character ? Pcre2CharacterCompiler.Compile(request)! : null;
         using var parent = new Utf8ConstructionScope(ulong.MaxValue, work ? 1_000_000ul : 64ul, work ? 16ul : ulong.MaxValue, 256);
         var held = parent.Budget.AllocateArray<byte>(8, false);
         var before = parent.Budget.ReservedBytes;
@@ -36,8 +36,8 @@ public sealed class Pcre2PartialPreparationTests
     public void OriginalInterruptionIsObservedInsideBothProducers(bool character, bool timeout)
     {
         var request = Request(character ? "^" + new string('a', 4096) + @"\b" : "(a)b+");
-        var tree = character ? null : Pcre2BacktrackingCompiler.Compile(request)!.SyntaxTree;
-        var tokens = character ? Pcre2CharacterCompiler.Compile(request)!.Program : null;
+        var tree = character ? null : Pcre2BacktrackingCompiler.Compile(request)!.Root;
+        var tokens = character ? Pcre2CharacterCompiler.Compile(request)! : null;
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cancellation = new CancellationTokenSource();
@@ -66,7 +66,7 @@ public sealed class Pcre2PartialPreparationTests
     public void DecliningAnUnrelatedLargeTreeDoesNotSerializeIt()
     {
         var request = Request(string.Concat(Enumerable.Repeat("a?", 4096)) + "x");
-        var tree = Pcre2BacktrackingCompiler.Compile(request)!.SyntaxTree;
+        var tree = Pcre2BacktrackingCompiler.Compile(request)!.Root;
         using var parent = new Utf8ConstructionScope(ulong.MaxValue, 1, 1024, 1);
         var before = GC.GetAllocatedBytesForCurrentThread();
         var result = Pcre2PartialProbeCompiler.Compile(tree, request);
@@ -82,7 +82,7 @@ public sealed class Pcre2PartialPreparationTests
     public void LiteralOperandIsOwnedAndAdmittedBeforePublication()
     {
         var request = Request("^" + new string('a', 4096) + @"\b");
-        var tokens = Pcre2CharacterCompiler.Compile(request)!.Program;
+        var tokens = Pcre2CharacterCompiler.Compile(request)!;
         using var parent = new Utf8ConstructionScope(ulong.MaxValue, 1_000_000, ulong.MaxValue, 256);
         var result = Pcre2PartialProbeCompiler.Compile(tokens, request);
         Assert.Equal(Pcre2PartialProbeProgramKind.AnchoredExactLiteral, result.Kind);

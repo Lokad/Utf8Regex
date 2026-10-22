@@ -120,7 +120,6 @@ public sealed class Pcre2LiteralCompilerTests
         Assert.True(match.Success);
         Assert.Equal(expected, match.GetValueString());
         Assert.IsType<Pcre2LiteralDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
-        Assert.IsType<Pcre2LiteralSyntaxTree>(regex.DebugCompiledProgram.SyntaxTree);
     }
 
     [Fact]
