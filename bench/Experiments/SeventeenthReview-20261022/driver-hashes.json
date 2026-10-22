@@ -1,0 +1,62 @@
+[
+  {
+    "Variant": "cost-before",
+    "File": "cost-driver.deps.json",
+    "Sha256": "B68012262C9B533895D9C7688FF80C23FD5738EFC78A99CE3D7970DAB72D84EE",
+    "Bytes": 1227
+  },
+  {
+    "Variant": "cost-before",
+    "File": "cost-driver.dll",
+    "Sha256": "2AAC0D0CBAFA0D4EC48CBC1EA066EAC44060332174E88320AC0F62CEB75D21FD",
+    "Bytes": 18944
+  },
+  {
+    "Variant": "cost-before",
+    "File": "cost-driver.runtimeconfig.json",
+    "Sha256": "C230A317A54DD960BCBEB5F347F52E18DC665A26F7EFDA2159FCED9A5AC7E097",
+    "Bytes": 342
+  },
+  {
+    "Variant": "cost-before",
+    "File": "Lokad.Utf8Regex.dll",
+    "Sha256": "2CBE1EC46E0219E646A8D87C53B5436652ACD44C5B31F0C7F4393509D59BA3F5",
+    "Bytes": 1458176
+  },
+  {
+    "Variant": "cost-before",
+    "File": "Lokad.Utf8Regex.Pcre2.dll",
+    "Sha256": "5F7E669E23DFE3D12C29EFA64C8F2338FC8D683D800453F35AB4460F159AA36E",
+    "Bytes": 398848
+  },
+  {
+    "Variant": "cost-after",
+    "File": "cost-driver.deps.json",
+    "Sha256": "B68012262C9B533895D9C7688FF80C23FD5738EFC78A99CE3D7970DAB72D84EE",
+    "Bytes": 1227
+  },
+  {
+    "Variant": "cost-after",
+    "File": "cost-driver.dll",
+    "Sha256": "2AAC0D0CBAFA0D4EC48CBC1EA066EAC44060332174E88320AC0F62CEB75D21FD",
+    "Bytes": 18944
+  },
+  {
+    "Variant": "cost-after",
+    "File": "cost-driver.runtimeconfig.json",
+    "Sha256": "C230A317A54DD960BCBEB5F347F52E18DC665A26F7EFDA2159FCED9A5AC7E097",
+    "Bytes": 342
+  },
+  {
+    "Variant": "cost-after",
+    "File": "Lokad.Utf8Regex.dll",
+    "Sha256": "2CBE1EC46E0219E646A8D87C53B5436652ACD44C5B31F0C7F4393509D59BA3F5",
+    "Bytes": 1458176
+  },
+  {
+    "Variant": "cost-after",
+    "File": "Lokad.Utf8Regex.Pcre2.dll",
+    "Sha256": "3401B90BF087073D4CC7BAE0F3DBAD3C84A49A87D0B9428C2E3CB057953A6B37",
+    "Bytes": 398336
+  }
+]

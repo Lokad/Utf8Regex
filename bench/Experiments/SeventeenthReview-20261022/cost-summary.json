@@ -1,0 +1,87 @@
+{
+  "Protocol": "One fixed-original pair, default tiering, five warm alternating lane-order samples; VM Linux .NET 10.0.12 CPU4, 60s cap per child. Identical driver and frozen Core; only PCRE2 DLL changed. Construction/Analyze are separate from matching controls.",
+  "BeforeProducer": "0.4.0-rc.2-dev+d011e9b65bff4a009d0f34600ec35a1a5d7bf503",
+  "AfterProducer": "0.4.0-rc.2-dev+844dcbad711bfde15540e30e4ca42f991851db33",
+  "Rows": [
+    {
+      "Id": "construction/literal",
+      "BeforeMedianNs": 7372.0787072661315,
+      "AfterMedianNs": 6830.154682984871,
+      "ChangePercent": -7.3510341628220015,
+      "BeforeSpreadPercent": 8.767919503517547,
+      "AfterSpreadPercent": 13.493422395213754,
+      "BeforeAllocatedBytes": 1976,
+      "AfterAllocatedBytes": 1912
+    },
+    {
+      "Id": "construction/named-branch-reset",
+      "BeforeMedianNs": 687159.1397849462,
+      "AfterMedianNs": 697946.875,
+      "ChangePercent": 1.569903475114942,
+      "BeforeSpreadPercent": 10.705601056555116,
+      "AfterSpreadPercent": 14.40161545246549,
+      "BeforeAllocatedBytes": 92640,
+      "AfterAllocatedBytes": 92544
+    },
+    {
+      "Id": "construction/sixteen-captures",
+      "BeforeMedianNs": 1550193.75,
+      "AfterMedianNs": 1579535.9375,
+      "ChangePercent": 1.8928077538694854,
+      "BeforeSpreadPercent": 66.80737488459104,
+      "AfterSpreadPercent": 14.3415342520499,
+      "BeforeAllocatedBytes": 209968,
+      "AfterAllocatedBytes": 209632
+    },
+    {
+      "Id": "public/Analyze-branch-reset",
+      "BeforeMedianNs": 661.7700000000001,
+      "AfterMedianNs": 717.945,
+      "ChangePercent": 8.488598757876598,
+      "BeforeSpreadPercent": 66.99744624265227,
+      "AfterSpreadPercent": 13.639206345890008,
+      "BeforeAllocatedBytes": 328,
+      "AfterAllocatedBytes": 328
+    },
+    {
+      "Id": "public/Count-branch-reset",
+      "BeforeMedianNs": 57786.46517739816,
+      "AfterMedianNs": 61200.490797546016,
+      "ChangePercent": 5.908002176058291,
+      "BeforeSpreadPercent": 16.84165046446317,
+      "AfterSpreadPercent": 29.67396708795791,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0
+    },
+    {
+      "Id": "control/unchanged-Core-Count",
+      "BeforeMedianNs": 12381.314776428782,
+      "AfterMedianNs": 12782.049876678542,
+      "ChangePercent": 3.236611842004611,
+      "BeforeSpreadPercent": 61.3691861368947,
+      "AfterSpreadPercent": 18.172579472875125,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0
+    },
+    {
+      "Id": "control/predecoded-Regex-Count",
+      "BeforeMedianNs": 14506.675567423232,
+      "AfterMedianNs": 14699.038759689922,
+      "ChangePercent": 1.326032221322082,
+      "BeforeSpreadPercent": 122.15015415765495,
+      "AfterSpreadPercent": 38.10658926175629,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0
+    },
+    {
+      "Id": "control/decode-then-Regex-Count",
+      "BeforeMedianNs": 19282.809133993967,
+      "AfterMedianNs": 18461.05006105006,
+      "ChangePercent": -4.261614929824797,
+      "BeforeSpreadPercent": 89.61332040379487,
+      "AfterSpreadPercent": 31.431166609345922,
+      "BeforeAllocatedBytes": 4632,
+      "AfterAllocatedBytes": 4632
+    }
+  ]
+}

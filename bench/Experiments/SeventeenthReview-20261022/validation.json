@@ -1,0 +1,78 @@
+{
+  "Date": "2026-10-22",
+  "OriginalCheckout": "f949629b16d0a1b61d03a44dca015b69a37d05ab",
+  "OriginalProducer": "d011e9b65bff4a009d0f34600ec35a1a5d7bf503",
+  "SourceCommit": "844dcbad711bfde15540e30e4ca42f991851db33",
+  "Version": "0.4.0-rc.2-dev",
+  "LocalReleaseTests": [
+    {
+      "Scope": "Focused PCRE2 branch-reset/escape/literal/construction",
+      "Passed": 81,
+      "Failed": 0,
+      "Skipped": 0
+    },
+    {
+      "Scope": "Full PCRE2, matching binaries reused",
+      "Passed": 5987,
+      "Failed": 0,
+      "Skipped": 0,
+      "Seconds": 9
+    },
+    {
+      "Scope": "Full PythonRe",
+      "Passed": 3910,
+      "Failed": 0,
+      "Skipped": 0,
+      "Seconds": 11
+    }
+  ],
+  "SourceCI": {
+    "Run": 39753228284,
+    "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/39753228284",
+    "Conclusion": "success",
+    "Jobs": [
+      {
+        "Name": "tests (ubuntu-latest)",
+        "Conclusion": "success"
+      },
+      {
+        "Name": "tests (windows-latest)",
+        "Conclusion": "success"
+      }
+    ],
+    "Scope": "Release solution build and all four fixture projects on Windows and Linux"
+  },
+  "CompiledSourcePreflight": "Accepted final producer/PE/PDB/source; see compiled-documents.json",
+  "GeneratedChecks": [
+    "README parity current",
+    "PythonRe benchmark markdown current",
+    "PCRE2 benchmark markdown current"
+  ],
+  "Performance": {
+    "PairCount": 1,
+    "ConfirmationCount": 0,
+    "FixedOriginalBaseline": true,
+    "IdenticalDriverAndCore": true,
+    "OnlyPcre2DllChanged": true,
+    "PublicMedianDeltaPercent": {
+      "Count": 5.91,
+      "Analyze": 8.49
+    },
+    "Caveat": "Wide raw spreads; no precise speedup or statistical upper-bound claim; not package/host qualification"
+  },
+  "ImmutableFiles": {
+    "Verified": 13,
+    "Snapshots": 4,
+    "FrozenRc1Files": 9,
+    "Result": "Hashes and lengths unchanged"
+  },
+  "ScopeGuards": [
+    "No new package created or published",
+    "No snapshots rewritten",
+    "No deferred Core/PythonRe/checked-access campaign reopened",
+    "No build-server shutdown",
+    "No lifetime or resource-policy change",
+    "PLAN.md and PLAN.HISTORY.md remain ignored",
+    "Five original untracked TODO files untouched"
+  ]
+}

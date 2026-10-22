@@ -1,0 +1,89 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Pcre2;
+
+const string resetPattern = @"(?|(?<x>a)|(?<x>b))\k<x>";
+const string capturesPattern = "(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)(k)(l)(m)(n)(o)(p)";
+var reset = new Utf8Pcre2Regex(resetPattern);
+var literal = new Utf8Regex("needle");
+var oracle = new Regex("needle");
+var strict = new UTF8Encoding(false, true);
+var text = string.Concat(Enumerable.Repeat("aa bb needle é😀!\n", 128));
+var bytes = Encoding.UTF8.GetBytes(text);
+if (reset.Analyze().UsesBranchReset != args.Contains("--fixed"))
+    throw new Exception("Unexpected branch-reset diagnostic for supplied product.");
+var witness = reset.MatchDetailed("bb"u8);
+if (!witness.Success || witness.CaptureSlotCount != 2 || witness.GetGroup(1).GetValueString() != "b")
+    throw new Exception("Capture witness failed.");
+var lanes = new[] {
+    new Lane("construction/literal", () => Construct("needle"), 1, 64),
+    new Lane("construction/named-branch-reset", () => Construct(resetPattern), 2, 64),
+    new Lane("construction/sixteen-captures", () => Construct(capturesPattern), 1, 64),
+    new Lane("public/Analyze-branch-reset", () => reset.Analyze().MinRequiredLengthInBytes, 2, 100_000),
+    new Lane("public/Count-branch-reset", () => reset.Count(bytes), 256, 64),
+    new Lane("control/unchanged-Core-Count", () => literal.Count(bytes), 128, 1024),
+    new Lane("control/predecoded-Regex-Count", () => oracle.Count(text), 128, 1024),
+    new Lane("control/decode-then-Regex-Count", () => oracle.Count(strict.GetString(bytes)), 128, 1024)
+};
+foreach (var lane in lanes)
+{
+    Run(lane, 1);
+    var warm = Stopwatch.StartNew();
+    long calls = 0;
+    do { Run(lane, lane.Minimum); calls += lane.Minimum; }
+    while (warm.ElapsedMilliseconds < 750 || calls < lane.Minimum);
+    lane.Iterations = lane.Minimum;
+    for (var attempt = 0; attempt < 4; attempt++)
+    {
+        var sample = Run(lane, lane.Iterations);
+        if (sample.Milliseconds >= 35) break;
+        lane.Iterations = (int)Math.Clamp(Math.Ceiling(lane.Iterations * 45 / Math.Max(.01, sample.Milliseconds)), lane.Minimum, 2_000_000);
+    }
+}
+for (var sample = 0; sample < 5; sample++)
+    foreach (var lane in sample % 2 == 0 ? lanes : lanes.Reverse())
+        lane.Samples.Add(Run(lane, lane.Iterations));
+Console.WriteLine(JsonSerializer.Serialize(new {
+    Scope = "One bounded public PCRE2 construction/diagnostic comparison; unchanged matching controls; no package or kernel qualification.",
+    Runtime = RuntimeInformation.FrameworkDescription, OS = RuntimeInformation.OSDescription,
+    Producer = typeof(Utf8Pcre2Regex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
+    ProductHashes = new[] { typeof(Utf8Regex).Assembly.Location, typeof(Utf8Pcre2Regex).Assembly.Location }
+        .Select(path => new { File = Path.GetFileName(path), Sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))) }),
+    BranchResetFlag = reset.Analyze().UsesBranchReset,
+    Lanes = lanes.Select(l => new { l.Id, l.Expected, l.Iterations, l.Samples })
+}, new JsonSerializerOptions { WriteIndented = true }));
+
+static int Construct(string pattern)
+{
+    var regex = new Utf8Pcre2Regex(pattern);
+    var count = regex.NameEntryCount;
+    GC.KeepAlive(regex);
+    return count + 1;
+}
+static Sample Run(Lane lane, int iterations)
+{
+    var allocated = GC.GetAllocatedBytesForCurrentThread();
+    var start = Stopwatch.GetTimestamp();
+    long checksum = 0;
+    for (var iteration = 0; iteration < iterations; iteration++) checksum += lane.Body();
+    var elapsed = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+    allocated = GC.GetAllocatedBytesForCurrentThread() - allocated;
+    if (checksum != (long)lane.Expected * iterations) throw new Exception("Result mismatch: " + lane.Id);
+    return new Sample(elapsed, elapsed * 1_000_000 / iterations, (double)allocated / iterations, checksum);
+}
+sealed class Lane(string id, Func<int> body, int expected, int minimum)
+{
+    internal string Id { get; } = id;
+    internal Func<int> Body { get; } = body;
+    internal int Expected { get; } = expected;
+    internal int Minimum { get; } = minimum;
+    internal int Iterations { get; set; }
+    internal List<Sample> Samples { get; } = [];
+}
+sealed record Sample(double Milliseconds, double NanosecondsPerOperation, double AllocatedBytesPerOperation, long Checksum);
