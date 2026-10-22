@@ -1,0 +1,17 @@
+{
+  "Producer": "3e6bab79871e31aef4ed5326cb082dad49ee5451",
+  "Configuration": "Release",
+  "Checks": [
+    { "Name": "New public alias regression before fix", "Failed": 4, "Passed": 29, "ExpectedFailure": true },
+    { "Name": "Alias and preparation isolation after M1", "Passed": 48 },
+    { "Name": "Focused replacement, preparation, lazy errors and isolation after M2", "Passed": 130 },
+    { "Name": "Final full PCRE2 project", "Passed": 6040, "DurationSeconds": 9 },
+    { "Name": "Core public API and shipped-member dependency inventory", "Passed": 13 },
+    { "Name": "Matching benchmark/library dependency closure and friend tooling", "Passed": true },
+    { "Name": "Generated README parity, PythonRe and PCRE2 benchmark pages", "Passed": true },
+    { "Name": "Existing full producer/PE/PDB/compiled-source preflight", "Passed": true },
+    { "Name": "Original public alias witness", "Cases": 48, "Incorrect": 0, "MalformedUtf8": 0, "ControlsPassed": 10 },
+    { "Name": "Four snapshots, nine RC1 files, five original TODOs", "Unchanged": 18 }
+  ],
+  "Workflow": "Affected projects built incrementally; matching binaries reused. No full local solution or package matrix, incidental NuGet packing, normal build-server shutdown or VM campaign. One cost comparison and sole noise confirmation, both closed. CI recorded separately."
+}

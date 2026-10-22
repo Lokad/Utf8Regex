@@ -1,0 +1,58 @@
+using System.Buffers;
+using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Pcre2;
+
+var strict = new UTF8Encoding(false,true);
+var policy = new Utf8ResourcePolicy {MaxWorkSteps=10_000_000,MaxDepth=1024,MaxWorkingBytes=16_777_216,MaxResultBytes=16_777_216};
+var rows=new List<object>();
+using var live = new CancellationTokenSource();
+foreach(var subject in new[]{"ab","a😀z"})
+foreach(var replacement in new[]{"XYZ","$0$0"})
+foreach(var displacement in new[]{0,1,-1})
+foreach(var finite in new[]{false,true})
+foreach(var liveToken in new[]{false,true})
+{
+    var original=Encoding.UTF8.GetBytes(subject);
+    var template=Encoding.UTF8.GetBytes(replacement);
+    var inputStart=displacement<0?1:0;
+    var outputStart=displacement>0?1:0;
+    var storage=new byte[64]; original.CopyTo(storage,inputStart);
+    var regex=finite?Utf8Pcre2Regex.Create("a",default,default,policy,Timeout.InfiniteTimeSpan):new Utf8Pcre2Regex("a");
+    var expected=regex.Replace(original,replacement);
+    var status=regex.TryReplace(storage.AsSpan(inputStart,original.Length),template,storage.AsSpan(outputStart),out var written,
+        0,default,default,liveToken?live.Token:default);
+    var actual=storage.AsSpan(outputStart,written).ToArray();
+    var valid=true;try{_=strict.GetString(actual);}catch(DecoderFallbackException){valid=false;}
+    var coreStorage=new byte[64]; original.CopyTo(coreStorage,inputStart);
+    var core=new Utf8Regex("a");
+    var coreStatus=core.TryReplace(coreStorage.AsSpan(inputStart,original.Length),template,coreStorage.AsSpan(outputStart),out var coreWritten);
+    rows.Add(new{subject,replacement,displacement,finite,liveToken,status=status.ToString(),written,
+        expected=Convert.ToHexString(expected),actual=Convert.ToHexString(actual),matches=expected.AsSpan().SequenceEqual(actual),validUtf8=valid,
+        coreControlMatches=coreStatus==OperationStatus.Done&&expected.AsSpan().SequenceEqual(coreStorage.AsSpan(outputStart,coreWritten))});
+}
+var controls=new List<object>();
+foreach(var subject in new[]{"ab","a😀z"})
+{
+    var input=Encoding.UTF8.GetBytes(subject);
+    var regex=new Utf8Pcre2Regex("a");
+    foreach(var replacement in new[]{"XYZ","$0$0"})
+    {
+        var template=Encoding.UTF8.GetBytes(replacement);
+        var expected=regex.Replace(input,replacement);
+        var independent=new byte[64];
+        var status=regex.TryReplace(input,template,independent,out var written);
+        controls.Add(new{kind="Disjoint destination",subject,replacement,correct=status==OperationStatus.Done&&expected.AsSpan().SequenceEqual(independent.AsSpan(0,written))});
+        var templateStorage=new byte[64];template.CopyTo(templateStorage,0);
+        status=regex.TryReplace(input,templateStorage.AsSpan(0,template.Length),templateStorage,out written);
+        controls.Add(new{kind="Template aliases destination, independent subject",subject,replacement,correct=status==OperationStatus.Done&&expected.AsSpan().SequenceEqual(templateStorage.AsSpan(0,written))});
+    }
+    var storage=new byte[64];input.CopyTo(storage,0);
+    var original=storage.ToArray();
+    var shortage=regex.TryReplace(storage.AsSpan(0,input.Length),"XYZ"u8,storage.AsSpan(0,2),out var shortageWritten);
+    controls.Add(new{kind="Short overlapping destination remains unchanged",subject,replacement="XYZ",correct=shortage==OperationStatus.DestinationTooSmall&&shortageWritten==0&&storage.AsSpan().SequenceEqual(original)});
+}
+Console.WriteLine(JsonSerializer.Serialize(new{producer=typeof(Utf8Pcre2Regex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
+    cases=rows.Count,rows,controls},new JsonSerializerOptions{WriteIndented=true}));

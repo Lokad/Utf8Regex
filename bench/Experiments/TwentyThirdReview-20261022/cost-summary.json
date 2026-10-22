@@ -1,0 +1,54 @@
+{
+  "Scope": "Bounded source public-operation comparison only; no final-package or cumulative qualification",
+  "BeforeProducer": "07780283fba3d24ec4d7e791641dd76420c80457",
+  "AfterProducer": "3e6bab79871e31aef4ed5326cb082dad49ee5451",
+  "InitialSeconds": 40.4732119,
+  "ConfirmationSeconds": 47.2612503,
+  "MinimumInitialSampleMs": 16.6252,
+  "MinimumConfirmationSampleMs": 29.6036,
+  "Decision": "Closed after sole reversed-first confirmation. Retain correctness/reuse fixes; all affected confirmation medians within +10%, but wide spreads, drifting control and below-floor samples prevent precise equivalence or release-wide/cumulative acceptance. No third run.",
+  "Rows": [
+    {
+      "Name": "Pcre2/disjoint-simple-destination",
+      "InitialPercent": -2.4493442746000738,
+      "ConfirmationPercent": 9.022132407078098,
+      "BeforeBytes": 32,
+      "AfterBytes": 32
+    },
+    {
+      "Name": "Pcre2/disjoint-simple-four-finite-limits",
+      "InitialPercent": 5.8938998799528575,
+      "ConfirmationPercent": 5.303678726220751,
+      "BeforeBytes": 296,
+      "AfterBytes": 296
+    },
+    {
+      "Name": "Pcre2/warm-captured-bytes",
+      "InitialPercent": -7.753750742729981,
+      "ConfirmationPercent": -9.153311042972378,
+      "BeforeBytes": 408,
+      "AfterBytes": 408
+    },
+    {
+      "Name": "Pcre2/warm-captured-utf8-destination",
+      "InitialPercent": 10.589576252961441,
+      "ConfirmationPercent": -11.39312372255581,
+      "BeforeBytes": 440,
+      "AfterBytes": 440
+    },
+    {
+      "Name": "Pcre2/uncacheable-1MiB-template",
+      "InitialPercent": -48.79603485048658,
+      "ConfirmationPercent": -46.118090614468876,
+      "BeforeBytes": 23072816,
+      "AfterBytes": 12585128
+    },
+    {
+      "Name": "Control/Core-Count-miss-128KiB",
+      "InitialPercent": -5.681223649849143,
+      "ConfirmationPercent": -5.598193494735626,
+      "BeforeBytes": 0,
+      "AfterBytes": 0
+    }
+  ]
+}

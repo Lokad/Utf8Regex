@@ -1,0 +1,57 @@
+using System.Buffers;
+using System.Reflection;
+using System.Text;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Pcre2;
+
+public static class Lanes
+{
+    private static byte[]? s_last;
+    public static string Producer() => string.Join("; ", new[] { typeof(Utf8Regex), typeof(Utf8Pcre2Regex) }
+        .Select(type => type.Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion));
+    public static long[] Allocations() => [];
+    public static (string, Func<long>, long)[] Create()
+    {
+        var literal = new Utf8Pcre2Regex("a");
+        var finite = Utf8Pcre2Regex.Create("a", default, default,
+            new Utf8ResourcePolicy { MaxWorkSteps = 50_000_000, MaxDepth = 1024,
+                MaxWorkingBytes = 64 << 20, MaxResultBytes = 128 << 20 }, Timeout.InfiniteTimeSpan);
+        var captures = new Utf8Pcre2Regex("(a)");
+        var large = new Utf8Pcre2Regex("(a)");
+        var template = "$1" + new string('x', 1 << 20);
+        var subject = "xa😀za😀z"u8.ToArray();
+        var destination = new byte[64];
+        var single = "a"u8.ToArray();
+        var control = new Utf8Regex("z");
+        var controlInput = Encoding.UTF8.GetBytes(new string('x', 128 * 1024));
+        long Direct(Utf8Pcre2Regex regex, byte[] replacement)
+        {
+            if (regex.TryReplace(subject, replacement, destination, out var written) != OperationStatus.Done)
+                throw new Exception("Destination failure");
+            return written + destination[0] + destination[written - 1];
+        }
+        byte[] Expand(Utf8Pcre2Regex regex) => regex.Replace(subject, "$1$1");
+        foreach (var regex in new[] { literal, finite })
+        {
+            _ = Direct(regex, "XYZ"u8.ToArray());
+            if (!destination.AsSpan(0,17).SequenceEqual("xXYZ😀zXYZ😀z"u8)) throw new Exception("Literal mismatch");
+        }
+        if (!Expand(captures).AsSpan().SequenceEqual("xaa😀zaa😀z"u8)) throw new Exception("Capture mismatch");
+        _ = Direct(captures, "$1$1"u8.ToArray());
+        if (!destination.AsSpan(0,15).SequenceEqual("xaa😀zaa😀z"u8)) throw new Exception("Destination capture mismatch");
+        var bigOutput = large.Replace(single, template);
+        if (bigOutput.Length != (1 << 20) + 1 || bigOutput[0] != 'a' || bigOutput[^1] != 'x' ||
+            bigOutput.AsSpan(1).IndexOfAnyExcept((byte)'x') >= 0) throw new Exception("Large output mismatch");
+        var literalTemplate = "XYZ"u8.ToArray();
+        var captureTemplate = "$1$1"u8.ToArray();
+        return [
+            ("Pcre2/disjoint-simple-destination", () => Direct(literal, literalTemplate), 259),
+            ("Pcre2/disjoint-simple-four-finite-limits", () => Direct(finite, literalTemplate), 259),
+            ("Pcre2/warm-captured-bytes", () => Check(Expand(captures)), 257),
+            ("Pcre2/warm-captured-utf8-destination", () => Direct(captures, captureTemplate), 257),
+            ("Pcre2/uncacheable-1MiB-template", () => Check(large.Replace(single, template)), 1048794),
+            ("Control/Core-Count-miss-128KiB", () => control.Count(controlInput), 0)
+        ];
+    }
+    private static long Check(byte[] output) { s_last = output; return output.Length + output[0] + output[^1]; }
+}

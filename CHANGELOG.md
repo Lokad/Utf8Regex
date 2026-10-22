@@ -6,6 +6,14 @@ These changes are development source, currently 0.4.0-rc.2-dev. Frozen RC1
 artifacts remain unchanged and unpublished; they must not be released. A fresh
 candidate and final downstream/package/cost qualification are still required.
 
+- Fixed PCRE2 `TryReplace` corrupting unread subject bytes when successful
+  replacement output overlaps the input. Matched overlaps now stage admitted
+  output before copying; short destinations stay unchanged. Staging consumes
+  working and cumulative result capacity under the original invocation.
+- PCRE2 replacement now reuses the complete preparation when its simple-template
+  optimization declines, including templates too large for the bounded cache.
+  This removes repeated compilation within one call; lazy template errors,
+  captures and invocation limits remain.
 - Internalized `Utf8CountDiagnostics` and `Utf8IsMatchDiagnostics`. Their producers
   were already internal; public matching/resource APIs are unchanged. This removes
   the two record types from the public API and breaks code that constructed them.

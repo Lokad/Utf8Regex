@@ -1,0 +1,42 @@
+{
+  "scope": "Untimed construction-work/capacity diagnostic, not execution-time or exact allocation accounting",
+  "producer": "0.4.0-rc.2-dev\u002B3e6bab79871e31aef4ed5326cb082dad49ee5451",
+  "rows": [
+    {
+      "literalBytes": 8192,
+      "operation": "One private preparation",
+      "constructionWork": 114789,
+      "constructionReservedBytes": 17568,
+      "constructionPeakBytes": 83568,
+      "cachedEntries": 1,
+      "route": "IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Backtracking, Replace=Pcre2Backtracking"
+    },
+    {
+      "literalBytes": 8192,
+      "operation": "Public Replace",
+      "constructionWork": 114789,
+      "constructionReservedBytes": 17568,
+      "constructionPeakBytes": 83568,
+      "cachedEntries": 1,
+      "route": "IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Backtracking, Replace=Pcre2Backtracking"
+    },
+    {
+      "literalBytes": 1048576,
+      "operation": "One private preparation",
+      "constructionWork": 14680164,
+      "constructionReservedBytes": 2098336,
+      "constructionPeakBytes": 10487408,
+      "cachedEntries": 0,
+      "route": "IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Backtracking, Replace=Pcre2Backtracking"
+    },
+    {
+      "literalBytes": 1048576,
+      "operation": "Public Replace",
+      "constructionWork": 14680164,
+      "constructionReservedBytes": 2098336,
+      "constructionPeakBytes": 10487408,
+      "cachedEntries": 0,
+      "route": "IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Backtracking, Replace=Pcre2Backtracking"
+    }
+  ]
+}

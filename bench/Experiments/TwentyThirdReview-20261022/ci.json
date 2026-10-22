@@ -1,0 +1,29 @@
+{
+  "Producer": "3e6bab79871e31aef4ed5326cb082dad49ee5451",
+  "Run": 39814095402,
+  "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/39814095402",
+  "ReportedRunStatus": "in_progress",
+  "ReportedRunConclusion": null,
+  "ChecksApiAlsoReportsInProgress": true,
+  "Jobs": [
+    {
+      "Name": "tests (windows-latest)",
+      "Id": 119947867295,
+      "ReportedStatus": "in_progress",
+      "ReportedConclusion": null,
+      "AllEightStepsCompletedSuccessfully": true,
+      "TestReleaseCompletedAt": "2026-10-22T16:31:32Z",
+      "CompleteJobCompletedAt": "2026-10-22T16:31:36Z"
+    },
+    {
+      "Name": "tests (ubuntu-latest)",
+      "Id": 119947867840,
+      "ReportedStatus": "in_progress",
+      "ReportedConclusion": null,
+      "AllEightStepsCompletedSuccessfully": true,
+      "TestReleaseCompletedAt": "2026-10-22T16:30:19Z",
+      "CompleteJobCompletedAt": "2026-10-22T16:30:21Z"
+    }
+  ],
+  "Scope": "Existing complete Release solution build and all four fixture projects on both platforms. All steps, including log upload and Complete job, succeeded. GitHub run/job/check aggregation still pending at closeout; do not claim the aggregate is green. No rerun or tight polling. No package qualification."
+}

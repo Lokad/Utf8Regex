@@ -1,0 +1,35 @@
+using System.Reflection;
+using System.Text.Json;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Pcre2;
+
+const BindingFlags Instance=BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic;
+const BindingFlags Static=BindingFlags.Static|BindingFlags.Public|BindingFlags.NonPublic;
+var scopeType=typeof(Utf8Regex).Assembly.GetType("Lokad.Utf8Regex.Internal.Utf8ConstructionScope")!;
+var enter=scopeType.GetMethod("Enter",Static,Type.EmptyTypes)!;
+var budgetProperty=scopeType.GetProperty("Budget",Instance)!;
+var prepare=typeof(Utf8Pcre2Regex).GetMethod("GetReplacementPreparation",Instance)!;
+var cacheCount=typeof(Utf8Pcre2Regex).GetProperty("DebugReplacementCacheEntryCount",Instance)!;
+var describe=typeof(Utf8Pcre2Regex).GetMethod("DebugDescribeExecutionPlan",Instance)!;
+var rows=new List<object>();
+foreach(var literalBytes in new[]{8192,1048576})
+foreach(var operation in new[]{"One private preparation","Public Replace"})
+{
+    var regex=new Utf8Pcre2Regex("(a)");
+    var template="$1"+new string('x',literalBytes);
+    object? retained=null;
+    using var scope=(IDisposable)enter.Invoke(null,null)!;
+    var budget=budgetProperty.GetValue(scope)!;
+    ulong Read(string name)=>(ulong)budget.GetType().GetProperty(name,Instance)!.GetValue(budget)!;
+    if(operation=="One private preparation") retained=prepare.Invoke(regex,[template,Pcre2SubstitutionOptions.None]);
+    else
+    {
+        var output=regex.Replace("a"u8,template);
+        if(output.Length!=literalBytes+1||output[0]!=(byte)'a'||output[^1]!=(byte)'x')throw new Exception("Public output mismatch");
+        retained=output;
+    }
+    rows.Add(new{literalBytes,operation,constructionWork=Read("WorkSteps"),constructionReservedBytes=Read("ReservedBytes"),constructionPeakBytes=Read("PeakBytes"),
+        cachedEntries=(int)cacheCount.GetValue(regex)!,route=(string)describe.Invoke(regex,null)!});
+    GC.KeepAlive(retained);
+}
+Console.WriteLine(JsonSerializer.Serialize(new{scope="Untimed construction-work/capacity diagnostic, not execution-time or exact allocation accounting",producer=typeof(Utf8Pcre2Regex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,rows},new JsonSerializerOptions{WriteIndented=true}));

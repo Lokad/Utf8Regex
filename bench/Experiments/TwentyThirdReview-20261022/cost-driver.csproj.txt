@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><GeneratePackageOnBuild>false</GeneratePackageOnBuild></PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Lokad.Utf8Regex"><HintPath>../before/Lokad.Utf8Regex.dll</HintPath></Reference>
+    <Reference Include="Lokad.Utf8Regex.Pcre2"><HintPath>../before/Lokad.Utf8Regex.Pcre2.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>
