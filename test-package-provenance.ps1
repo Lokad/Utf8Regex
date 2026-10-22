@@ -123,10 +123,74 @@ $results = @(foreach ($case in $cases) {
     }
     [ordered]@{ Name = $case.Name; Passed = $true; Rejection = $observedError }
 })
+
+# Shape checks reuse these real-payload copies and the same production helper.
+# XML comments and attribute order must not stand in for the dependency graph.
+$inputZip = [IO.Compression.ZipFile]::OpenRead($PackagePath)
+try {
+    $reader = [IO.StreamReader]::new($inputZip.GetEntry($nuspecName).Open())
+    try { [xml] $inputManifest = $reader.ReadToEnd() }
+    finally { $reader.Dispose() }
+}
+finally { $inputZip.Dispose() }
+$metadataPath = "/*[local-name()='package']/*[local-name()='metadata']"
+$inputVersion = $inputManifest.SelectSingleNode("$metadataPath/*[local-name()='version']").InnerText
+$requiredDependency = if ($ExpectedAssembly -eq 'Lokad.Utf8Regex.dll') { '' } else { 'Lokad.Utf8Regex' }
+$shapeCases = @(
+    @{ Name = 'shape-valid'; Error = $null; Edit = {} },
+    @{ Name = 'shape-extra-dependency'; Error = if ($requiredDependency) { 'only the exact' } else { 'must not declare' }; Edit = {
+        $group = $xml.SelectSingleNode("//*[local-name()='group']")
+        $extra = $xml.CreateElement('dependency', $group.NamespaceURI)
+        $extra.SetAttribute('id', 'PCRE.NET')
+        $extra.SetAttribute('version', '[1.5.0]')
+        [void] $group.AppendChild($extra)
+    } },
+    @{ Name = 'shape-wrong-framework'; Error = 'dependency target groups'; Edit = {
+        $xml.SelectSingleNode("//*[local-name()='group']").SetAttribute('targetFramework', 'net9.0')
+    } }
+)
+if ($requiredDependency) {
+    $shapeCases += @(
+        @{ Name = 'shape-reordered-valid'; Error = $null; Edit = {
+            $dep = $xml.SelectSingleNode("//*[local-name()='dependency']")
+            $id = $dep.GetAttribute('id')
+            $dep.RemoveAttribute('id')
+            $dep.SetAttribute('id', $id)
+        } },
+        @{ Name = 'shape-comment-spoofed-pin'; Error = 'only the exact'; Edit = {
+            $dep = $xml.SelectSingleNode("//*[local-name()='dependency']")
+            [void] $dep.ParentNode.AppendChild($xml.CreateComment($dep.OuterXml))
+            $dep.SetAttribute('version', '[0.0.0]')
+        } },
+        @{ Name = 'shape-ungrouped'; Error = 'only the exact'; Edit = {
+            $dep = $xml.SelectSingleNode("//*[local-name()='dependency']")
+            $dependencies = $dep.ParentNode.ParentNode
+            [void] $dependencies.AppendChild($dep)
+        } }
+    )
+}
+$shapeResults = @(foreach ($case in $shapeCases) {
+    $directory = New-Item -ItemType Directory -Path (Join-Path $outputRoot $case.Name)
+    $fixturePackage = Join-Path $directory.FullName ([IO.Path]::GetFileName($PackagePath))
+    Copy-Item -LiteralPath $PackagePath -Destination $fixturePackage
+    Edit-FixtureEntry $fixturePackage $nuspecName { param($bytes)
+        [xml] $xml = [Text.Encoding]::UTF8.GetString($bytes).TrimStart([char] 0xfeff)
+        & $case.Edit
+        ,([Text.Encoding]::UTF8.GetBytes($xml.OuterXml))
+    }
+    $observedError = $null
+    try { Assert-PackageShape $fixturePackage $ExpectedAssembly $requiredDependency $inputVersion }
+    catch { $observedError = $_.Exception.Message }
+    if (($null -eq $case.Error -and $null -ne $observedError) -or
+        ($null -ne $case.Error -and ($null -eq $observedError -or !$observedError.Contains($case.Error, [StringComparison]::Ordinal)))) {
+        throw "Fixture $($case.Name) expected '$($case.Error)', observed '$observedError'."
+    }
+    [ordered]@{ Name = $case.Name; Passed = $true; Rejection = $observedError }
+})
 if ($good.PackageSha256 -ne (Get-FileHash -LiteralPath $PackagePath -Algorithm SHA256).Hash -or
     $good.SymbolPackageSha256 -ne (Get-FileHash -LiteralPath $symbolPackagePath -Algorithm SHA256).Hash) {
     throw "Input qualification packages changed during fixture checks."
 }
-[ordered]@{ SourceRevision = $SourceRevision; Input = $good; Cases = $results } |
+[ordered]@{ SourceRevision = $SourceRevision; Input = $good; Cases = $results; ShapeCases = $shapeResults } |
     ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $outputRoot "results.json") -Encoding utf8
-Write-Host "Passed $($results.Count) real-payload provenance checks; evidence: $outputRoot"
+Write-Host "Passed $($results.Count) provenance and $($shapeResults.Count) shape checks; evidence: $outputRoot"

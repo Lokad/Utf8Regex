@@ -1,4 +1,8 @@
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Text.RegularExpressions;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -63,26 +67,6 @@ public sealed class EngineDependencyInventoryTests
             type.IsGenericType && type.GetGenericArguments().Any(RetainsEngine);
     }
 
-    [Fact]
-    public void ProductionRegexConstructionInventoryIsEmpty()
-    {
-        var repoRoot = FindRepositoryRoot();
-        var srcRoot = Path.Combine(repoRoot, "src");
-        var hits = Directory.EnumerateFiles(srcRoot, "*.cs", SearchOption.AllDirectories)
-            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) && !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
-            .SelectMany(static path => File.ReadLines(path).Select((line, index) => (Path: path, Line: line, Number: index + 1)))
-            .Where(static item => item.Line.Contains("new Regex(", StringComparison.Ordinal))
-            .Select(static item => $"{GetRelativePath(item.Path)}:{item.Number}: {item.Line.Trim()}")
-            .Order(StringComparer.Ordinal)
-            .ToArray();
-
-        // R05: every shipped profile prepares and executes owned programs.
-        Assert.Empty(hits);
-        Assert.DoesNotContain(hits, static hit => hit.Contains("Lokad.Utf8Regex.PythonRe", StringComparison.Ordinal));
-        Assert.DoesNotContain(hits, static hit => hit.Contains("Utf8Pcre2Regex.cs", StringComparison.Ordinal));
-        Assert.DoesNotContain(hits, static hit => hit.Contains("Utf8Regex.cs", StringComparison.Ordinal));
-        Assert.DoesNotContain(hits, static hit => hit.Contains("Utf8RegexSyntax.cs", StringComparison.Ordinal));
-    }
 
     [Fact]
     public void OwnedOptionValidationMatchesBclScope()
@@ -116,103 +100,13 @@ public sealed class EngineDependencyInventoryTests
         }
     }
 
-    [Fact]
-    public void ProductionExecutableEngineUsesStayInAllowlistedFiles()
-    {
-        // No production BCL matcher, result or escaping execution is permitted.
-        // RegexOptions, timeout constants and RegexMatchTimeoutException retain
-        // their compatibility-only role and are pinned separately.
-        var repoRoot = FindRepositoryRoot();
-        var srcRoot = Path.Combine(repoRoot, "src");
-
-        // Read this test's source set once; all token inventories below borrow it.
-        var sources = Directory.EnumerateFiles(srcRoot, "*.cs", SearchOption.AllDirectories)
-            .Where(static path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase) &&
-                !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
-            .Select(static path => (Path: path, Text: File.ReadAllText(path)))
-            .ToArray();
-
-        string[] FilesContaining(string token) => sources
-            .Where(source => source.Text.Contains(token, StringComparison.Ordinal))
-            .Select(static source => Path.GetFileName(source.Path))
-            .Order(StringComparer.Ordinal)
-            .ToArray();
-
-        string[] FilesContainingAny(params string[] tokens) => sources
-            .Where(source => tokens.Any(token => source.Text.Contains(token, StringComparison.Ordinal)))
-            .Select(static source => Path.GetFileName(source.Path))
-            .Order(StringComparer.Ordinal)
-            .ToArray();
-
-        // 1. Core fallback execution (union of the three receiver spellings below).
-        //    Public execution now uses qualified native paths or the scalar program.
-        //    The linear compiled router left this set in R05 once its RightToLeft
-        //    predicates read cached fallback options instead of constructing the engine.
-        //    Compiled/simple/structural consumers and the general cursor factory
-        //    borrow the admitted scalar program, including mixed input and RTL.
-        //    Metadata queries borrow the owned capture catalog directly.
-        var fallbackFiles = FilesContainingAny("FallbackCandidateVerifier.FallbackRegex", "FallbackRegex.", "fallbackRegex.Count(");
-        Assert.Empty(fallbackFiles);
-
-        // 2. BCL enumerator structs are retired across all shipped profiles.
-        Assert.Empty(FilesContaining("Regex.ValueSplitEnumerator"));
-        Assert.Empty(FilesContaining("Regex.ValueMatchEnumerator"));
-
-        // 3. PythonRe managed execution has been removed; no descriptor may return.
-        var managedHits = FilesContaining("_managedRegex");
-        Assert.Empty(managedHits);
-
-        // 4. Evaluators use the cached scalar program and owned capture histories.
-        Assert.Empty(FilesContaining(".NextMatch()"));
-
-        // 5. Result contexts borrow owned ranges and capture histories.
-        Assert.Empty(FilesContaining("Match? _match"));
-        Assert.Empty(FilesContaining("Group? _group"));
-        Assert.Empty(FilesContaining("Capture? _capture"));
-
-        // 6. Optional finite-language rendering now uses the admitted owned text
-        // builder; no BCL escaping or matcher is needed to prepare the pattern.
-        Assert.Empty(FilesContaining("Regex.Escape("));
-    }
 
     [Fact]
-    public void AdapterIndirectCoreRoutesStayInAllowlistedFiles()
+    public void CorePythonReIntegrationPointsAreMarked()
     {
-        // Adapters use the reviewed shared Core preparation/execution paths and
-        // their owned profile implementations. Keep their integration boundaries explicit.
-        // Core itself names PythonRe only on PYTHONRE-INTEGRATION-POINT lines (the PCRE2
-        // half is guarded by Pcre2SourceGuardTests in the PCRE2 test project).
-        var repoRoot = FindRepositoryRoot();
-        var srcRoot = Path.Combine(repoRoot, "src");
-
-        string[] NamesIn(string directory, params string[] tokens)
-        {
-            return Directory.EnumerateFiles(directory, "*.cs", SearchOption.AllDirectories)
-            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) && !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
-                .Where(path => File.ReadLines(path).Any(line => tokens.Any(token => line.Contains(token, StringComparison.Ordinal))))
-                .Select(path => Path.GetFileName(path))
-                .Order(StringComparer.Ordinal)
-                .ToArray();
-        }
-
-        var pcre2Directory = Path.Combine(srcRoot, "Lokad.Utf8Regex.Pcre2");
-        // Raw benchmark replay no longer contributes a shipped adapter route.
-        Assert.Equal(
-            new[] { "Pcre2ExecutionArchitecture.cs", "Utf8Pcre2Regex.cs" },
-            NamesIn(pcre2Directory, "ByteOffsetExecution"));
-        Assert.Equal(
-            new[] { "Pcre2ExecutionArchitecture.cs", "Pcre2FiniteLiteralLanguageAnalyzer.cs" },
-            NamesIn(pcre2Directory, "new Utf8Regex("));
-
-        var pythonDirectory = Path.Combine(srcRoot, "Lokad.Utf8Regex.PythonRe");
-        // FindAll shaping delegates its shared-invocation count/range backend
-        // to Utf8.cs; the public entry-point file has no core execution calls.
-        // Cursor.cs and ScalarOperations.cs borrow the existing native prefix
-        // plan; the Python scalar VM remains their matching/capture verifier.
-        Assert.Equal(
-            new[] { "Utf8PythonRegex.Cursor.cs", "Utf8PythonRegex.ScalarOperations.cs", "Utf8PythonRegex.Utf8.cs", "Utf8PythonRegex.Value.cs", "Utf8PythonRegex.cs" },
-            NamesIn(pythonDirectory, "_utf8Regex", "new Utf8Regex("));
-
+        // Keep the removable profile boundary, without pinning filenames of
+        // legitimate adapter consumers. PCRE2 has its own isolation guard.
+        var srcRoot = Path.Combine(FindRepositoryRoot(), "src");
         var coreDirectory = Path.Combine(srcRoot, "Lokad.Utf8Regex");
         var unmarked = Directory.EnumerateFiles(coreDirectory, "*.cs", SearchOption.AllDirectories)
             .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) && !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
@@ -224,48 +118,95 @@ public sealed class EngineDependencyInventoryTests
         Assert.Empty(unmarked);
     }
 
+
     [Fact]
-    public void ShippedProjectsDeclareNoExternalEngineDependencies()
+    public void ConsumedAndShippedAssembliesReferenceNoExternalMatchers()
     {
-        // R05: shipped packages must not gain NuGet engine dependencies. Adapters
-        // reference only the core project; the framework supplies the rest.
-        var repoRoot = FindRepositoryRoot();
-        foreach (var project in new[] { "Lokad.Utf8Regex", "Lokad.Utf8Regex.Pcre2", "Lokad.Utf8Regex.PythonRe" })
+        var configuration = typeof(EngineDependencyInventoryTests).Assembly
+            .GetCustomAttributes(typeof(System.Reflection.AssemblyConfigurationAttribute), false)
+            .Cast<System.Reflection.AssemblyConfigurationAttribute>().Single().Configuration;
+        // Always inspect the Core actually consumed by this fixture, including
+        // detached package runs. Adapter DLLs are built before the inventory.
+        var paths = new[] { typeof(Utf8Regex).Assembly.Location }.Concat(
+            new[] { "Lokad.Utf8Regex.Pcre2", "Lokad.Utf8Regex.PythonRe" }.Select(project =>
+                Path.Combine(FindRepositoryRoot(), "src", project, "bin", configuration, "net10.0", project + ".dll")));
+        foreach (var path in paths)
         {
-            var csproj = File.ReadAllText(Path.Combine(repoRoot, "src", project, project + ".csproj"));
-            Assert.DoesNotContain("PackageReference", csproj, StringComparison.Ordinal);
-            Assert.DoesNotContain("PCRE.NET", csproj, StringComparison.OrdinalIgnoreCase);
+            using var stream = File.OpenRead(path);
+            using var pe = new PEReader(stream);
+            var metadata = pe.GetMetadataReader();
+            foreach (var handle in metadata.AssemblyReferences)
+            {
+                var name = metadata.GetString(metadata.GetAssemblyReference(handle).Name);
+                Assert.True(name.StartsWith("System.", StringComparison.Ordinal) ||
+                    name is "netstandard" or "mscorlib" or "Lokad.Utf8Regex", $"{path} -> {name}");
+            }
+            Assert.Empty(FindBclMatcherReferences(metadata));
         }
     }
 
-    [Fact]
-    public void ShippedAssembliesReferenceNoExternalEngines()
+    [Theory]
+    [InlineData("System.Text.RegularExpressions.Regex.IsMatch(\"a\", \"a\")", false)]
+    [InlineData("System.Text.RegularExpressions.Regex.Escape(\"a\")", false)]
+    [InlineData("new System.Text.RegularExpressions.Regex(\"a\")", false)]
+    [InlineData("typeof(System.Text.RegularExpressions.Match)", false)]
+    [InlineData("System.Text.RegularExpressions.Regex.InfiniteMatchTimeout", true)]
+    [InlineData("System.Text.RegularExpressions.RegexOptions.IgnoreCase", true)]
+    [InlineData("new System.Text.RegularExpressions.RegexMatchTimeoutException()", true)]
+    public void TypedMemberPolicyDistinguishesMatchingFromCompatibility(string expression, bool allowed)
     {
-        // R05: the built packages may reference the framework, shared .NET
-        // contracts, and (for adapters) the core library only. Any other
-        // reference, native or managed, fails here for explicit review.
-        var configuration = System.Reflection.CustomAttributeExtensions.GetCustomAttribute<System.Reflection.AssemblyConfigurationAttribute>(typeof(EngineDependencyInventoryTests).Assembly)?.Configuration ?? "Debug";
-        var offenders = new System.Collections.Generic.List<string>();
-        foreach (var project in new[] { "Lokad.Utf8Regex", "Lokad.Utf8Regex.Pcre2", "Lokad.Utf8Regex.PythonRe" })
-        {
-            var dll = Path.Combine(FindRepositoryRoot(), "src", project, "bin", configuration, "net10.0", project + ".dll");
-            Assert.True(File.Exists(dll), "Missing built assembly: " + dll);
-            var references = System.Reflection.Assembly.LoadFrom(dll).GetReferencedAssemblies();
-            foreach (var reference in references)
-            {
-                var name = reference.Name ?? string.Empty;
-                var allowed = name.StartsWith("System.", StringComparison.Ordinal) ||
-                    name.Equals("netstandard", StringComparison.Ordinal) ||
-                    name.Equals("mscorlib", StringComparison.Ordinal) ||
-                    name.Equals("Lokad.Utf8Regex", StringComparison.Ordinal);
-                if (!allowed)
-                {
-                    offenders.Add(project + " -> " + reference.FullName);
-                }
-            }
-        }
+        // Compile the fully qualified static-call witness which the former
+        // source-spelling/owner checks missed. Nothing from this PE is executed.
+        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!).Split(Path.PathSeparator)
+            .Select(path => MetadataReference.CreateFromFile(path));
+        var compilation = CSharpCompilation.Create("MemberPolicyFixture",
+            [CSharpSyntaxTree.ParseText("internal static class Fixture { internal static object Probe() => " + expression + "; }")],
+            references, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        using var stream = new MemoryStream();
+        var emitted = compilation.Emit(stream);
+        Assert.True(emitted.Success, string.Join(Environment.NewLine, emitted.Diagnostics));
+        stream.Position = 0;
+        using var pe = new PEReader(stream);
+        Assert.Equal(allowed, FindBclMatcherReferences(pe.GetMetadataReader()).Length == 0);
+    }
 
-        Assert.Empty(offenders);
+    private static string[] FindBclMatcherReferences(MetadataReader metadata)
+    {
+        var offenders = new List<string>();
+        foreach (var handle in metadata.TypeReferences)
+        {
+            var (ns, name) = ReadType(handle);
+            if (IsBclRegexNamespace(ns) && !(ns == "System.Text.RegularExpressions" &&
+                name is "Regex" or "RegexOptions" or "RegexMatchTimeoutException"))
+                offenders.Add(ns + "." + name);
+        }
+        foreach (var handle in metadata.MemberReferences)
+        {
+            var member = metadata.GetMemberReference(handle);
+            if (member.Parent.Kind != HandleKind.TypeReference) continue;
+            var (ns, type) = ReadType((TypeReferenceHandle)member.Parent);
+            var name = metadata.GetString(member.Name);
+            if (IsBclRegexNamespace(ns) && !(ns == "System.Text.RegularExpressions" &&
+                (type == "Regex" && name == "InfiniteMatchTimeout" && member.GetKind() == MemberReferenceKind.Field ||
+                 type == "RegexMatchTimeoutException" && name == ".ctor")))
+                offenders.Add(ns + "." + type + "." + name);
+        }
+        return offenders.ToArray();
+
+        (string Namespace, string Name) ReadType(TypeReferenceHandle handle)
+        {
+            var type = metadata.GetTypeReference(handle);
+            var ns = metadata.GetString(type.Namespace);
+            var name = metadata.GetString(type.Name);
+            if (type.ResolutionScope.Kind == HandleKind.TypeReference)
+            {
+                var parent = ReadType((TypeReferenceHandle)type.ResolutionScope);
+                return (parent.Namespace, parent.Name + "+" + name);
+            }
+            return (ns, name);
+        }
+        static bool IsBclRegexNamespace(string ns) => ns == "System.Text.RegularExpressions" ||
+            ns.StartsWith("System.Text.RegularExpressions.", StringComparison.Ordinal);
     }
 
     [Fact]
@@ -304,119 +245,7 @@ public sealed class EngineDependencyInventoryTests
         Assert.Empty(offenders);
     }
 
-    [Fact]
-    public void ProductionSourceReachesBclRegexInternalsOnlyThroughTheOwnedFrontEnd()
-    {
-        // R05 (parser flip 2026-09-26): BCL regex implementation types (parser, nodes,
-        // char classes, writers/compilers/interpreters, persisted assemblies)
-        // are reachable only through the owned front-end layer, whose Utf8-prefixed
-        // type names share substrings with the BCL vocabulary. Everywhere else they
-        // must be qualified through a FrontEnd alias or live in a file with a
-        // FrontEnd using. Own IL emission (Utf8Emit*) is the owned engine and is
-        // out of scope here. The vendored fork itself is gone; VendoredParserForkIsAbsent
-        // pins its absence.
-        var repoRoot = FindRepositoryRoot();
-        var srcRoot = Path.Combine(repoRoot, "src");
-        var tokens = new[]
-        {
-            "RegexCharClass",
-            "RegexParser",
-            "RegexNode",
-            "RegexWriter",
-            "RegexCompiler",
-            "RegexInterpreter",
-            "RegexPrefix",
-            "RegexTree",
-            "RegexRunner",
-            "RegexCode",
-            "RegexBoyerMoore",
-            "CompileToAssembly",
-            "Assembly.Load",
-            "Activator.CreateInstance",
-        };
-        var offenders = new System.Collections.Generic.List<string>();
-        foreach (var path in Directory.EnumerateFiles(srcRoot, "*.cs", SearchOption.AllDirectories))
-        {
-            if (path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) ||
-                path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal) ||
-                path.Contains($"{Path.DirectorySeparatorChar}Internal{Path.DirectorySeparatorChar}FrontEnd{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
-            {
-                continue;
-            }
 
-            var text = File.ReadAllText(path);
-            var hasFrontEndUsing = text.Contains("Internal.FrontEnd", StringComparison.Ordinal);
-            var number = 0;
-            foreach (var line in File.ReadLines(path))
-            {
-                number++;
-                foreach (var token in tokens)
-                {
-                    if (!line.Contains(token, StringComparison.Ordinal))
-                    {
-                        continue;
-                    }
-
-                    var trimmed = line.Trim();
-                    var isComment = trimmed.StartsWith("//", StringComparison.Ordinal);
-                    if (line.Contains("FrontEnd", StringComparison.Ordinal) || (hasFrontEndUsing && !isComment))
-                    {
-                        break;
-                    }
-
-                    offenders.Add($"{GetRelativePath(path)}:{number}: {trimmed}");
-                    break;
-                }
-            }
-        }
-
-        Assert.Empty(offenders);
-    }
-
-    [Fact]
-    public void EmittedCodeReachesNoBclRegexEngine()
-    {
-        // R05 IL/generated-code check: the DynamicMethod emitters (Utf8Emit*.cs)
-        // may only call owned helpers, owned search state, and ReadOnlySpan<byte>
-        // primitives. No emitted site may construct, reference, or run the BCL
-        // regex engine; audited call targets are the emitters own private methods
-        // plus span primitives. Own Utf8 names and plan types are out of scope here.
-        var repoRoot = FindRepositoryRoot();
-        var tokens = new[]
-        {
-            "new Regex(",
-            "typeof(Regex",
-            "RegexRunner",
-            "RegexCompiler",
-            "RegexInterpreter",
-            "RegexWriter",
-            "CompileToAssembly",
-        };
-        var offenders = new System.Collections.Generic.List<string>();
-        foreach (var path in Directory.EnumerateFiles(Path.Combine(repoRoot, "src", "Lokad.Utf8Regex"), "Utf8Emit*.cs", SearchOption.AllDirectories))
-        {
-            if (path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) || path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            var number = 0;
-            foreach (var line in File.ReadLines(path))
-            {
-                number++;
-                foreach (var token in tokens)
-                {
-                    if (line.Contains(token, StringComparison.Ordinal))
-                    {
-                        offenders.Add($"{GetRelativePath(path)}:{number}: {line.Trim()}");
-                        break;
-                    }
-                }
-            }
-        }
-
-        Assert.Empty(offenders);
-    }
     private static string GetRelativePath(string path)
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

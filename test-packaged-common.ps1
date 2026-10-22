@@ -266,23 +266,36 @@ function Assert-PackageShape {
             throw "$PackagePath contains an unexpected implementation assembly set: $($implementationAssemblies -join ', ')."
         }
 
-        if ($RequiredDependency.Length -ne 0) {
-            $nuspecEntry = $archive.Entries | Where-Object FullName -Like "*.nuspec" | Select-Object -First 1
-            if ($null -eq $nuspecEntry) {
-                throw "$PackagePath does not contain a nuspec."
-            }
-            $reader = [System.IO.StreamReader]::new($nuspecEntry.Open())
-            try {
-                $nuspec = $reader.ReadToEnd()
-            }
-            finally {
-                $reader.Dispose()
-            }
+        $nuspecEntries = @($archive.Entries | Where-Object FullName -Like "*.nuspec")
+        if ($nuspecEntries.Count -ne 1) {
+            throw "$PackagePath must contain exactly one nuspec."
+        }
+        $reader = [System.IO.StreamReader]::new($nuspecEntries[0].Open())
+        try { [xml] $nuspec = $reader.ReadToEnd() }
+        finally { $reader.Dispose() }
+        $metadata = $nuspec.SelectSingleNode("/*[local-name()='package']/*[local-name()='metadata']")
+        if ($null -eq $metadata) { throw "$PackagePath has no package metadata." }
+        $id = $metadata.SelectSingleNode("*[local-name()='id']")
+        if ($null -eq $id -or $id.InnerText -cne ($ExpectedAssembly -replace '\.dll$', '')) {
+            throw "$PackagePath has an unexpected package identity."
+        }
 
-            $requiredDeclaration = "id=`"$RequiredDependency`" version=`"[$RequiredVersion]`""
-            if (!$nuspec.Contains($requiredDeclaration, [StringComparison]::Ordinal)) {
-                throw "$PackagePath does not declare the exact $RequiredDependency [$RequiredVersion] dependency."
-            }
+        # Inspect the actual graph, including groups we would otherwise overlook.
+        # Core has no package dependencies; an adapter has only its exact Core pin.
+        $dependencies = @($metadata.SelectNodes("*[local-name()='dependencies']/*[local-name()='dependency'] | *[local-name()='dependencies']/*[local-name()='group']/*[local-name()='dependency']"))
+        $groups = @($metadata.SelectNodes("*[local-name()='dependencies']/*[local-name()='group']"))
+        if (@($groups | Where-Object { $_.GetAttribute('targetFramework') -cne 'net10.0' }).Count -ne 0 -or
+            $groups.Count -gt 1) {
+            throw "$PackagePath has unexpected dependency target groups."
+        }
+        if ([string]::IsNullOrEmpty($RequiredDependency)) {
+            if ($dependencies.Count -ne 0) { throw "$PackagePath must not declare package dependencies." }
+        }
+        elseif ($groups.Count -ne 1 -or $dependencies.Count -ne 1 -or
+            $dependencies[0].ParentNode -ne $groups[0] -or
+            $dependencies[0].GetAttribute('id') -cne $RequiredDependency -or
+            $dependencies[0].GetAttribute('version') -cne "[$RequiredVersion]") {
+            throw "$PackagePath must declare only the exact $RequiredDependency [$RequiredVersion] dependency in net10.0."
         }
     }
     finally {
