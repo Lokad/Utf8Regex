@@ -1,0 +1,7 @@
+{
+  "Scope": "Untimed static size delegates only; no operation timing or constructor loop.",
+  "Source": "d011e9b6",
+  "CursorBytes": 1440,
+  "OperationBytes": 896,
+  "SearchPlanBytes": 2720
+}

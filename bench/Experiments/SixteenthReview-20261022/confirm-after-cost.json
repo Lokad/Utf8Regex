@@ -1,0 +1,515 @@
+{
+  "AtUtc": "2026-10-22T08:12:09.154529Z",
+  "Runtime": ".NET 10.0.12",
+  "OS": "Ubuntu 24.04.4 LTS",
+  "Core": {
+    "Producer": "0.4.0-rc.2-dev\u002B36ae0e01e44b525a0fe7dffb4f59089cd04a430d",
+    "Sha256": "A6AAC7C47D0FCA5760C3EB7007BC39D59A9E2DFEF4E8DCC3847E146FB82C88AB"
+  },
+  "Protocol": "Fixed 1a4018eb checkout/08cb2ed6 producer; identical driver bytes; external taskset single CPU0; default tiers; \u003E=750ms bounded warm and fixed call floors; 35ms calibration floor/45ms target; five alternating samples; 60s child cap. One reversed-order confirmation at most. Same input finite-four controls: work1M/depth2048/working\u002Bresult16MiB/infinite timeout/no token. Construction separately fixed16 instances/expression. No Status/package qualification.",
+  "Facts": {
+    "CandidateBytes": 424,
+    "OperationBytes": 4,
+    "SearchPlanBytes": 2720,
+    "CursorBytes": 544,
+    "SharedKernel": true,
+    "CompiledEngine": "StructuralLinearAutomaton",
+    "UsesEmitted": true,
+    "WindowUsesEmitted": false,
+    "FamilyEmitted": true
+  },
+  "Lanes": [
+    {
+      "Id": "core/window-compiled/Count",
+      "InputBytes": 464,
+      "Expected": 8,
+      "Iterations": 1726,
+      "Samples": [
+        {
+          "NanosecondsPerOperation": 8143.153534183082,
+          "AllocatedBytesPerOperation": 1680,
+          "WallMilliseconds": 14.055083,
+          "Checksum": 13808
+        },
+        {
+          "NanosecondsPerOperation": 8241.957705677867,
+          "AllocatedBytesPerOperation": 1680,
+          "WallMilliseconds": 14.225619,
+          "Checksum": 13808
+        },
+        {
+          "NanosecondsPerOperation": 7999.396871378911,
+          "AllocatedBytesPerOperation": 1680,
+          "WallMilliseconds": 13.806959,
+          "Checksum": 13808
+        },
+        {
+          "NanosecondsPerOperation": 8085.131517960603,
+          "AllocatedBytesPerOperation": 1680,
+          "WallMilliseconds": 13.954937,
+          "Checksum": 13808
+        },
+        {
+          "NanosecondsPerOperation": 8083.465816917729,
+          "AllocatedBytesPerOperation": 1680,
+          "WallMilliseconds": 13.952062,
+          "Checksum": 13808
+        }
+      ]
+    },
+    {
+      "Id": "core/window-compiled/Match",
+      "InputBytes": 464,
+      "Expected": 12,
+      "Iterations": 1409,
+      "Samples": [
+        {
+          "NanosecondsPerOperation": 7140.100070972321,
+          "AllocatedBytesPerOperation": 1680,
+          "WallMilliseconds": 10.060401,
+          "Checksum": 16908
+        },
+        {
+          "NanosecondsPerOperation": 7075.599716110717,
+          "AllocatedBytesPerOperation": 1680,
+          "WallMilliseconds": 9.96952,
+          "Checksum": 16908
+        },
+        {
+          "NanosecondsPerOperation": 7314.126330731015,
+          "AllocatedBytesPerOperation": 1680,
+          "WallMilliseconds": 10.305604,
+          "Checksum": 16908
+        },
+        {
+          "NanosecondsPerOperation": 7055.324343506033,
+          "AllocatedBytesPerOperation": 1680,
+          "WallMilliseconds": 9.940952,
+          "Checksum": 16908
+        },
+        {
+          "NanosecondsPerOperation": 7074.262597586941,
+          "AllocatedBytesPerOperation": 1680,
+          "WallMilliseconds": 9.967636,
+          "Checksum": 16908
+        }
+      ]
+    },
+    {
+      "Id": "core/bounded-window-compiled/Count",
+      "InputBytes": 408,
+      "Expected": 8,
+      "Iterations": 6097,
+      "Samples": [
+        {
+          "NanosecondsPerOperation": 7654.289322617681,
+          "AllocatedBytesPerOperation": 0,
+          "WallMilliseconds": 46.668202,
+          "Checksum": 48776
+        },
+        {
+          "NanosecondsPerOperation": 7758.8779727734955,
+          "AllocatedBytesPerOperation": 0,
+          "WallMilliseconds": 47.305879,
+          "Checksum": 48776
+        },
+        {
+          "NanosecondsPerOperation": 7664.652452025586,
+          "AllocatedBytesPerOperation": 0,
+          "WallMilliseconds": 46.731386,
+          "Checksum": 48776
+        },
+        {
+          "NanosecondsPerOperation": 7692.631130063966,
+          "AllocatedBytesPerOperation": 0,
+          "WallMilliseconds": 46.901972,
+          "Checksum": 48776
+        },
+        {
+          "NanosecondsPerOperation": 7619.421518779728,
+          "AllocatedBytesPerOperation": 0,
+          "WallMilliseconds": 46.455613,
+          "Checksum": 48776
+        }
+      ]
+    },
+    {
+      "Id": "core/literal-family-compiled/Count",
+      "InputBytes": 176,
+      "Expected": 12,
+      "Iterations": 563,
+      "Samples": [
+        {
+          "NanosecondsPerOperation": 15979.250444049734,
+          "AllocatedBytesPerOperation": 1872,
+          "WallMilliseconds": 8.996318,
+          "Checksum": 6756
+        },
+        {
+          "NanosecondsPerOperation": 15562.783303730017,
+          "AllocatedBytesPerOperation": 1872,
+          "WallMilliseconds": 8.761847,
+          "Checksum": 6756
+        },
+        {
+          "NanosecondsPerOperation": 15856.2486678508,
+          "AllocatedBytesPerOperation": 1872,
+          "WallMilliseconds": 8.927068,
+          "Checksum": 6756
+        },
+        {
+          "NanosecondsPerOperation": 15492.454706927176,
+          "AllocatedBytesPerOperation": 1872,
+          "WallMilliseconds": 8.722252,
+          "Checksum": 6756
+        },
+        {
+          "NanosecondsPerOperation": 15889.479573712255,
+          "AllocatedBytesPerOperation": 1872,
+          "WallMilliseconds": 8.945777,
+          "Checksum": 6756
+        }
+      ]
+    },
+    {
+      "Id": "core/literal-family-compiled-finite-four/Count",
+      "InputBytes": 176,
+      "Expected": 12,
+      "Iterations": 508,
+      "Samples": [
+        {
+          "NanosecondsPerOperation": 17043.84251968504,
+          "AllocatedBytesPerOperation": 1984,
+          "WallMilliseconds": 8.658272,
+          "Checksum": 6096
+        },
+        {
+          "NanosecondsPerOperation": 17803.720472440946,
+          "AllocatedBytesPerOperation": 1984,
+          "WallMilliseconds": 9.04429,
+          "Checksum": 6096
+        },
+        {
+          "NanosecondsPerOperation": 17673.11220472441,
+          "AllocatedBytesPerOperation": 1984,
+          "WallMilliseconds": 8.977941,
+          "Checksum": 6096
+        },
+        {
+          "NanosecondsPerOperation": 17554.529527559054,
+          "AllocatedBytesPerOperation": 1984,
+          "WallMilliseconds": 8.917701,
+          "Checksum": 6096
+        },
+        {
+          "NanosecondsPerOperation": 17241.681102362203,
+          "AllocatedBytesPerOperation": 1984,
+          "WallMilliseconds": 8.758774,
+          "Checksum": 6096
+        }
+      ]
+    },
+    {
+      "Id": "core/literal-family-compiled/Match",
+      "InputBytes": 176,
+      "Expected": 4,
+      "Iterations": 12039,
+      "Samples": [
+        {
+          "NanosecondsPerOperation": 1418.1944513663925,
+          "AllocatedBytesPerOperation": 1872,
+          "WallMilliseconds": 17.073643,
+          "Checksum": 48156
+        },
+        {
+          "NanosecondsPerOperation": 1365.7365229670238,
+          "AllocatedBytesPerOperation": 1872,
+          "WallMilliseconds": 16.442102,
+          "Checksum": 48156
+        },
+        {
+          "NanosecondsPerOperation": 1380.0022427111887,
+          "AllocatedBytesPerOperation": 1872,
+          "WallMilliseconds": 16.613847,
+          "Checksum": 48156
+        },
+        {
+          "NanosecondsPerOperation": 1377.9995016197358,
+          "AllocatedBytesPerOperation": 1872,
+          "WallMilliseconds": 16.589736,
+          "Checksum": 48156
+        },
+        {
+          "NanosecondsPerOperation": 1474.9290638757373,
+          "AllocatedBytesPerOperation": 1872,
+          "WallMilliseconds": 17.756671,
+          "Checksum": 48156
+        }
+      ]
+    },
+    {
+      "Id": "core/literal-family-compiled/EnumerateMatches",
+      "InputBytes": 176,
+      "Expected": 12,
+      "Iterations": 461,
+      "Samples": [
+        {
+          "NanosecondsPerOperation": 36615.22993492408,
+          "AllocatedBytesPerOperation": 25200,
+          "WallMilliseconds": 16.879621,
+          "Checksum": 5532
+        },
+        {
+          "NanosecondsPerOperation": 37820.19305856833,
+          "AllocatedBytesPerOperation": 25200,
+          "WallMilliseconds": 17.435109,
+          "Checksum": 5532
+        },
+        {
+          "NanosecondsPerOperation": 36258.82646420824,
+          "AllocatedBytesPerOperation": 25200,
+          "WallMilliseconds": 16.715319,
+          "Checksum": 5532
+        },
+        {
+          "NanosecondsPerOperation": 36820.33188720173,
+          "AllocatedBytesPerOperation": 25200,
+          "WallMilliseconds": 16.974173,
+          "Checksum": 5532
+        },
+        {
+          "NanosecondsPerOperation": 36663.33839479393,
+          "AllocatedBytesPerOperation": 25200,
+          "WallMilliseconds": 16.901799,
+          "Checksum": 5532
+        }
+      ]
+    },
+    {
+      "Id": "core/identifier-compiled/Count",
+      "InputBytes": 464,
+      "Expected": 24,
+      "Iterations": 184,
+      "Samples": [
+        {
+          "NanosecondsPerOperation": 52883.891304347824,
+          "AllocatedBytesPerOperation": 3552,
+          "WallMilliseconds": 9.730636,
+          "Checksum": 4416
+        },
+        {
+          "NanosecondsPerOperation": 52866.342391304344,
+          "AllocatedBytesPerOperation": 3552,
+          "WallMilliseconds": 9.727407,
+          "Checksum": 4416
+        },
+        {
+          "NanosecondsPerOperation": 51052.989130434784,
+          "AllocatedBytesPerOperation": 3552,
+          "WallMilliseconds": 9.39375,
+          "Checksum": 4416
+        },
+        {
+          "NanosecondsPerOperation": 50607.510869565216,
+          "AllocatedBytesPerOperation": 3552,
+          "WallMilliseconds": 9.311782,
+          "Checksum": 4416
+        },
+        {
+          "NanosecondsPerOperation": 50769.809782608696,
+          "AllocatedBytesPerOperation": 3552,
+          "WallMilliseconds": 9.341645,
+          "Checksum": 4416
+        }
+      ]
+    },
+    {
+      "Id": "core/identifier-compiled/IsMatch-late",
+      "InputBytes": 4115,
+      "Expected": 1,
+      "Iterations": 1024,
+      "Samples": [
+        {
+          "NanosecondsPerOperation": 394872.919921875,
+          "AllocatedBytesPerOperation": 3552,
+          "WallMilliseconds": 404.34987,
+          "Checksum": 1024
+        },
+        {
+          "NanosecondsPerOperation": 391797.7529296875,
+          "AllocatedBytesPerOperation": 3552,
+          "WallMilliseconds": 401.200899,
+          "Checksum": 1024
+        },
+        {
+          "NanosecondsPerOperation": 395347.6279296875,
+          "AllocatedBytesPerOperation": 3552,
+          "WallMilliseconds": 404.835971,
+          "Checksum": 1024
+        },
+        {
+          "NanosecondsPerOperation": 395152.607421875,
+          "AllocatedBytesPerOperation": 3552,
+          "WallMilliseconds": 404.63627,
+          "Checksum": 1024
+        },
+        {
+          "NanosecondsPerOperation": 470953.5244140625,
+          "AllocatedBytesPerOperation": 3552,
+          "WallMilliseconds": 482.256409,
+          "Checksum": 1024
+        }
+      ]
+    },
+    {
+      "Id": "control/predecoded-Regex/Count",
+      "InputBytes": 464,
+      "Expected": 24,
+      "Iterations": 10000,
+      "Samples": [
+        {
+          "NanosecondsPerOperation": 11230.3887,
+          "AllocatedBytesPerOperation": 0,
+          "WallMilliseconds": 112.303887,
+          "Checksum": 240000
+        },
+        {
+          "NanosecondsPerOperation": 9953.0744,
+          "AllocatedBytesPerOperation": 0,
+          "WallMilliseconds": 99.530744,
+          "Checksum": 240000
+        },
+        {
+          "NanosecondsPerOperation": 11190.2788,
+          "AllocatedBytesPerOperation": 0,
+          "WallMilliseconds": 111.902788,
+          "Checksum": 240000
+        },
+        {
+          "NanosecondsPerOperation": 11114.5141,
+          "AllocatedBytesPerOperation": 0,
+          "WallMilliseconds": 111.145141,
+          "Checksum": 240000
+        },
+        {
+          "NanosecondsPerOperation": 18802.7713,
+          "AllocatedBytesPerOperation": 0,
+          "WallMilliseconds": 188.027713,
+          "Checksum": 240000
+        }
+      ]
+    },
+    {
+      "Id": "control/decode-then-Regex/Count",
+      "InputBytes": 464,
+      "Expected": 24,
+      "Iterations": 10000,
+      "Samples": [
+        {
+          "NanosecondsPerOperation": 11974.6361,
+          "AllocatedBytesPerOperation": 904,
+          "WallMilliseconds": 119.746361,
+          "Checksum": 240000
+        },
+        {
+          "NanosecondsPerOperation": 11848.3731,
+          "AllocatedBytesPerOperation": 904,
+          "WallMilliseconds": 118.483731,
+          "Checksum": 240000
+        },
+        {
+          "NanosecondsPerOperation": 11975.2332,
+          "AllocatedBytesPerOperation": 904,
+          "WallMilliseconds": 119.752332,
+          "Checksum": 240000
+        },
+        {
+          "NanosecondsPerOperation": 11925.8887,
+          "AllocatedBytesPerOperation": 904,
+          "WallMilliseconds": 119.258887,
+          "Checksum": 240000
+        },
+        {
+          "NanosecondsPerOperation": 19853.2536,
+          "AllocatedBytesPerOperation": 904,
+          "WallMilliseconds": 198.532536,
+          "Checksum": 240000
+        }
+      ]
+    }
+  ],
+  "Construction": [
+    {
+      "Pattern": "\\bpublic\\s\u002Basync\\b",
+      "TotalInstances": 16,
+      "Samples": [
+        {
+          "NanosecondsPerOperation": 842822.3333333334,
+          "AllocatedBytesPerOperation": 57336,
+          "WallMilliseconds": 2.528467,
+          "Checksum": 54
+        },
+        {
+          "NanosecondsPerOperation": 641852.3333333334,
+          "AllocatedBytesPerOperation": 57336,
+          "WallMilliseconds": 1.925557,
+          "Checksum": 54
+        },
+        {
+          "NanosecondsPerOperation": 645973,
+          "AllocatedBytesPerOperation": 57336,
+          "WallMilliseconds": 1.937919,
+          "Checksum": 54
+        },
+        {
+          "NanosecondsPerOperation": 597901.6666666666,
+          "AllocatedBytesPerOperation": 57336,
+          "WallMilliseconds": 1.793705,
+          "Checksum": 54
+        },
+        {
+          "NanosecondsPerOperation": 585006.3333333334,
+          "AllocatedBytesPerOperation": 57336,
+          "WallMilliseconds": 1.755019,
+          "Checksum": 54
+        }
+      ]
+    },
+    {
+      "Pattern": "\\b(?:Task|ValueTask|IAsyncEnumerable)\\b",
+      "TotalInstances": 16,
+      "Samples": [
+        {
+          "NanosecondsPerOperation": 1349010,
+          "AllocatedBytesPerOperation": 143584,
+          "WallMilliseconds": 4.04703,
+          "Checksum": 117
+        },
+        {
+          "NanosecondsPerOperation": 1371455.3333333333,
+          "AllocatedBytesPerOperation": 143584,
+          "WallMilliseconds": 4.114366,
+          "Checksum": 117
+        },
+        {
+          "NanosecondsPerOperation": 1361929.6666666667,
+          "AllocatedBytesPerOperation": 143584,
+          "WallMilliseconds": 4.085789,
+          "Checksum": 117
+        },
+        {
+          "NanosecondsPerOperation": 1336874,
+          "AllocatedBytesPerOperation": 143584,
+          "WallMilliseconds": 4.010622,
+          "Checksum": 117
+        },
+        {
+          "NanosecondsPerOperation": 1396509.6666666667,
+          "AllocatedBytesPerOperation": 143584,
+          "WallMilliseconds": 4.189529,
+          "Checksum": 117
+        }
+      ]
+    }
+  ]
+}

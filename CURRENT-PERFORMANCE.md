@@ -96,6 +96,15 @@ allocates 61,696 fewer managed bytes (35.22%); its short timing samples remain
 separate from public throughput. VM background activity and remaining outliers
 are disclosed. Timing is closed; this does not qualify a fresh package.
 
+The [sixteenth-review receipt](bench/Experiments/SixteenthReview-20261022/README.md)
+records a rejected bundled prototype: dormant window emission and duplicate
+operation payloads were removed, but both bounded public comparisons failed to
+qualify the 10% allowance. Moving controls and wide spreads prevent clean
+attribution. Those execution/preparation/layout changes are restored; only
+verified unused-overload/view and documentation cleanup remains. Prototype layout
+and construction savings are not delivered. Timing is closed, with no new final
+performance or package qualification claim.
+
 ## Frozen scalar.119 package costs
 
 The observations below apply to **Core/PythonRe scalar.119**, producer `ca0c8a6f`.

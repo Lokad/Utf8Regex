@@ -1,0 +1,92 @@
+{
+  "OriginalCheckout": "1a4018ebff84879d522cb1895ca5a564f43391d1",
+  "OriginalProducer": "08cb2ed65a7ea413d6596a0e2c8b5478fc1ae2a5",
+  "RejectedPrototype": "36ae0e01e44b525a0fe7dffb4f59089cd04a430d",
+  "FinalSource": "d011e9b65bff4a009d0f34600ec35a1a5d7bf503",
+  "FinalAssemblies": [
+    {
+      "Name": "Lokad.Utf8Regex.dll",
+      "Sha256": "2CBE1EC46E0219E646A8D87C53B5436652ACD44C5B31F0C7F4393509D59BA3F5"
+    },
+    {
+      "Name": "Lokad.Utf8Regex.PythonRe.dll",
+      "Sha256": "AF93DE0F8EF85B725579152138EE062A169C54AD89105954CD5EB9FFB5A483E8"
+    },
+    {
+      "Name": "Lokad.Utf8Regex.Pcre2.dll",
+      "Sha256": "5F7E669E23DFE3D12C29EFA64C8F2338FC8D683D800453F35AB4460F159AA36E"
+    }
+  ],
+  "Decision": "One bounded pair plus sole unchanged-protocol reversed confirmation did not qualify the prototype. M1/M2 and transitive live-layout edits restored/deferred; verified unused-overload/view/docs cleanup retained. No final timing or package-cost claim.",
+  "LocalReleaseChecks": [
+    {
+      "Source": "36ae0e01",
+      "Scope": "Affected Core",
+      "Passed": 873
+    },
+    {
+      "Source": "36ae0e01",
+      "Scope": "Full Core",
+      "Passed": 39582,
+      "Failed": 0,
+      "Skipped": 0,
+      "Duration": "1m36s"
+    },
+    {
+      "Source": "36ae0e01",
+      "Scope": "Affected PythonRe",
+      "Passed": 1002,
+      "Failed": 0,
+      "Skipped": 0
+    },
+    {
+      "Source": "d011e9b6",
+      "Scope": "Final full Core",
+      "Passed": 39584,
+      "Failed": 0,
+      "Skipped": 0,
+      "Duration": "1m17s"
+    }
+  ],
+  "Restoration": "Key kernel/preparation/operation/candidate/strategy source matches original with normalized line endings; public execution layouts restored. The unmeasured final DLL is not represented as the timed prototype.",
+  "ExistingChecks": [
+    "Generated README parity and PythonRe/PCRE2 markdown current at prototype; output/snapshot hashes unchanged afterward",
+    "Final read-only producer/PE/PDB/compiled-source reuse accepts matching d011e9b6 binaries"
+  ],
+  "PrototypeCI": {
+    "Run": 39745270379,
+    "Conclusion": "success",
+    "Source": "36ae0e01e44b525a0fe7dffb4f59089cd04a430d"
+  },
+  "FinalCI": {
+    "Run": 39746403628,
+    "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/39746403628",
+    "Source": "d011e9b65bff4a009d0f34600ec35a1a5d7bf503",
+    "Status": "completed",
+    "Conclusion": "success",
+    "Jobs": [
+      {
+        "Name": "tests (windows-latest)",
+        "Conclusion": "success"
+      },
+      {
+        "Name": "tests (ubuntu-latest)",
+        "Conclusion": "success"
+      }
+    ],
+    "Scope": "Complete existing Release solution build/test, four fixture projects on Windows/Linux; no package qualification."
+  },
+  "ImmutableFiles": {
+    "Snapshots": 4,
+    "FrozenRC1Files": 9,
+    "Unchanged": true
+  },
+  "Workflow": "Second source build/CI required by rollback; no repeated package qualification or new framework. Plans ignored, five original TODOs untouched.",
+  "FinalUntimedLayouts": {
+    "Scope": "Untimed static size delegates only; no operation timing or constructor loop.",
+    "Source": "d011e9b6",
+    "CursorBytes": 1440,
+    "OperationBytes": 896,
+    "SearchPlanBytes": 2720
+  }
+}

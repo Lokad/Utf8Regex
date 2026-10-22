@@ -1,0 +1,505 @@
+{
+  "Decision": "Prototype36ae0e01 is not qualified. Public medians exceed10% in both pair and sole unchanged-protocol reversed confirmation. Control movement and spreads prevent clean attribution; neither run demonstrates the required bound. M1/M2 and their transitive live-layout edits are reverted/deferred; no further timing. Final d011e9b6 retains only verified unused private overload/view removal and docs; no final performance/package qualification claim.",
+  "OriginalCheckout": "1a4018ebff84879d522cb1895ca5a564f43391d1",
+  "OriginalCore": {
+    "Producer": "0.4.0-rc.2-dev+08cb2ed65a7ea413d6596a0e2c8b5478fc1ae2a5",
+    "Sha256": "B885256981400243BB7BB08DF86291524564B4B6896B17BC5B6FE33AB16688FD"
+  },
+  "RejectedPrototypeCore": {
+    "Producer": "0.4.0-rc.2-dev+36ae0e01e44b525a0fe7dffb4f59089cd04a430d",
+    "Sha256": "A6AAC7C47D0FCA5760C3EB7007BC39D59A9E2DFEF4E8DCC3847E146FB82C88AB"
+  },
+  "MeasuredFacts": {
+    "Before": {
+      "CandidateBytes": 440,
+      "OperationBytes": 896,
+      "SearchPlanBytes": 2720,
+      "CursorBytes": 1440,
+      "SharedKernel": true,
+      "CompiledEngine": "StructuralLinearAutomaton",
+      "UsesEmitted": true,
+      "WindowUsesEmitted": true,
+      "FamilyEmitted": true
+    },
+    "RejectedPrototype": {
+      "CandidateBytes": 424,
+      "OperationBytes": 4,
+      "SearchPlanBytes": 2720,
+      "CursorBytes": 544,
+      "SharedKernel": true,
+      "CompiledEngine": "StructuralLinearAutomaton",
+      "UsesEmitted": true,
+      "WindowUsesEmitted": false,
+      "FamilyEmitted": true
+    }
+  },
+  "DriverSha256": "EA6D2A03DE4156184C1A44B42EEAE5D034A9740E1ABCEAB5C86801E524B9E602",
+  "IdenticalDriverBytes": true,
+  "Pairs": [
+    {
+      "Name": "Initial",
+      "ProcessOrder": [
+        "before",
+        "after"
+      ],
+      "Rows": [
+        {
+          "Id": "core/window-compiled/Count",
+          "InputBytes": 464,
+          "Before": {
+            "MedianNs": 4794.11801242236,
+            "MedianAllocatedBytes": 1680,
+            "MaxMinRatio": 1.8763849302940572,
+            "MinimumSampleMs": 5.191236
+          },
+          "After": {
+            "MedianNs": 11762.019848771266,
+            "MedianAllocatedBytes": 1680,
+            "MaxMinRatio": 1.9456885666800146,
+            "MinimumSampleMs": 9.981379
+          },
+          "ChangePercent": 145.34272661402804
+        },
+        {
+          "Id": "core/window-compiled/Match",
+          "InputBytes": 464,
+          "Before": {
+            "MedianNs": 3848.6971830985917,
+            "MedianAllocatedBytes": 1680,
+            "MaxMinRatio": 1.7801178870588408,
+            "MinimumSampleMs": 5.45098
+          },
+          "After": {
+            "MedianNs": 6370.221396731055,
+            "MedianAllocatedBytes": 1680,
+            "MaxMinRatio": 1.7307437551514575,
+            "MinimumSampleMs": 6.981034
+          },
+          "ChangePercent": 65.51630574381487
+        },
+        {
+          "Id": "core/bounded-window-compiled/Count",
+          "InputBytes": 408,
+          "Before": {
+            "MedianNs": 4613.770050125313,
+            "MedianAllocatedBytes": 0,
+            "MaxMinRatio": 1.6564019820543432,
+            "MinimumSampleMs": 29.396974
+          },
+          "After": {
+            "MedianNs": 7684.0915920254265,
+            "MedianAllocatedBytes": 0,
+            "MaxMinRatio": 1.7689903791160138,
+            "MinimumSampleMs": 47.64531
+          },
+          "ChangePercent": 66.54691301350664
+        },
+        {
+          "Id": "core/literal-family-compiled/Count",
+          "InputBytes": 176,
+          "Before": {
+            "MedianNs": 9366.809076682317,
+            "MedianAllocatedBytes": 1872,
+            "MaxMinRatio": 1.7916095516609696,
+            "MinimumSampleMs": 5.872654
+          },
+          "After": {
+            "MedianNs": 16506.055679287307,
+            "MedianAllocatedBytes": 1872,
+            "MaxMinRatio": 1.6278871012291445,
+            "MinimumSampleMs": 12.794754
+          },
+          "ChangePercent": 76.21855579801868
+        },
+        {
+          "Id": "core/literal-family-compiled-finite-four/Count",
+          "InputBytes": 176,
+          "Before": {
+            "MedianNs": 10097.278719397364,
+            "MedianAllocatedBytes": 1984,
+            "MaxMinRatio": 1.803383341027803,
+            "MinimumSampleMs": 5.24186
+          },
+          "After": {
+            "MedianNs": 17237.736353077817,
+            "MedianAllocatedBytes": 1984,
+            "MaxMinRatio": 1.6714485427709647,
+            "MinimumSampleMs": 12.93997
+          },
+          "ChangePercent": 70.71665378477951
+        },
+        {
+          "Id": "core/literal-family-compiled/Match",
+          "InputBytes": 176,
+          "Before": {
+            "MedianNs": 755.864815491414,
+            "MedianAllocatedBytes": 1872,
+            "MaxMinRatio": 1.5822736107976676,
+            "MinimumSampleMs": 8.24178
+          },
+          "After": {
+            "MedianNs": 1316.4373900809005,
+            "MedianAllocatedBytes": 1872,
+            "MaxMinRatio": 1.795629182889728,
+            "MinimumSampleMs": 20.413071
+          },
+          "ChangePercent": 74.1630729596851
+        },
+        {
+          "Id": "core/literal-family-compiled/EnumerateMatches",
+          "InputBytes": 176,
+          "Before": {
+            "MedianNs": 21035.038543897215,
+            "MedianAllocatedBytes": 25200,
+            "MaxMinRatio": 1.6512303434260465,
+            "MinimumSampleMs": 9.778408
+          },
+          "After": {
+            "MedianNs": 31811.776847977686,
+            "MedianAllocatedBytes": 25200,
+            "MaxMinRatio": 2.8219802704693024,
+            "MinimumSampleMs": 16.030285
+          },
+          "ChangePercent": 51.232320214630974
+        },
+        {
+          "Id": "core/identifier-compiled/Count",
+          "InputBytes": 464,
+          "Before": {
+            "MedianNs": 29482.24043715847,
+            "MedianAllocatedBytes": 3552,
+            "MaxMinRatio": 1.8103399009020282,
+            "MinimumSampleMs": 5.329877
+          },
+          "After": {
+            "MedianNs": 53148.133105802044,
+            "MedianAllocatedBytes": 3552,
+            "MaxMinRatio": 2.788144012725861,
+            "MinimumSampleMs": 10.619006
+          },
+          "ChangePercent": 80.27169006740695
+        },
+        {
+          "Id": "core/identifier-compiled/IsMatch-late",
+          "InputBytes": 4115,
+          "Before": {
+            "MedianNs": 252823.7548828125,
+            "MedianAllocatedBytes": 3552,
+            "MaxMinRatio": 1.9113248938317486,
+            "MinimumSampleMs": 258.371261
+          },
+          "After": {
+            "MedianNs": 319766.75,
+            "MedianAllocatedBytes": 3552,
+            "MaxMinRatio": 1.633976366226117,
+            "MinimumSampleMs": 263.868565
+          },
+          "ChangePercent": 26.478127084306834
+        },
+        {
+          "Id": "control/predecoded-Regex/Count",
+          "InputBytes": 464,
+          "Before": {
+            "MedianNs": 7213.4514,
+            "MedianAllocatedBytes": 0,
+            "MaxMinRatio": 3.1651059994364843,
+            "MinimumSampleMs": 71.880901
+          },
+          "After": {
+            "MedianNs": 7069.196,
+            "MedianAllocatedBytes": 0,
+            "MaxMinRatio": 2.1667776524640425,
+            "MinimumSampleMs": 70.542059
+          },
+          "ChangePercent": -1.9998110751810128
+        },
+        {
+          "Id": "control/decode-then-Regex/Count",
+          "InputBytes": 464,
+          "Before": {
+            "MedianNs": 7660.8168,
+            "MedianAllocatedBytes": 904,
+            "MaxMinRatio": 2.6931897220521845,
+            "MinimumSampleMs": 76.447012
+          },
+          "After": {
+            "MedianNs": 7472.4076,
+            "MedianAllocatedBytes": 904,
+            "MaxMinRatio": 2.291192000994536,
+            "MinimumSampleMs": 74.615676
+          },
+          "ChangePercent": -2.4593878814593295
+        }
+      ],
+      "Construction": [
+        {
+          "Pattern": "\\bpublic\\s+async\\b",
+          "TotalInstancesPerSide": 16,
+          "Before": {
+            "MedianNs": 1133139.3333333333,
+            "MedianAllocatedBytes": 92248,
+            "MaxMinRatio": 1.2735369343596497,
+            "MinimumSampleMs": 3.124313
+          },
+          "After": {
+            "MedianNs": 546531,
+            "MedianAllocatedBytes": 57336,
+            "MaxMinRatio": 1.3304269656351864,
+            "MinimumSampleMs": 1.505086
+          },
+          "TimeChangePercent": -51.768420359014385
+        },
+        {
+          "Pattern": "\\b(?:Task|ValueTask|IAsyncEnumerable)\\b",
+          "TotalInstancesPerSide": 16,
+          "Before": {
+            "MedianNs": 1428383.6666666667,
+            "MedianAllocatedBytes": 147152,
+            "MaxMinRatio": 1.0748909650370273,
+            "MinimumSampleMs": 4.123448
+          },
+          "After": {
+            "MedianNs": 1122249,
+            "MedianAllocatedBytes": 143584,
+            "MaxMinRatio": 1.0394952198806306,
+            "MinimumSampleMs": 3.291968
+          },
+          "TimeChangePercent": -21.43224357788093
+        }
+      ]
+    },
+    {
+      "Name": "Confirmation",
+      "ProcessOrder": [
+        "after",
+        "before"
+      ],
+      "Rows": [
+        {
+          "Id": "core/window-compiled/Count",
+          "InputBytes": 464,
+          "Before": {
+            "MedianNs": 4695.495718363463,
+            "MedianAllocatedBytes": 1680,
+            "MaxMinRatio": 1.7379051166885533,
+            "MinimumSampleMs": 4.870572
+          },
+          "After": {
+            "MedianNs": 8085.131517960603,
+            "MedianAllocatedBytes": 1680,
+            "MaxMinRatio": 1.0303223903250527,
+            "MinimumSampleMs": 13.806959
+          },
+          "ChangePercent": 72.18909361030235
+        },
+        {
+          "Id": "core/window-compiled/Match",
+          "InputBytes": 464,
+          "Before": {
+            "MedianNs": 3858.654069767442,
+            "MedianAllocatedBytes": 1680,
+            "MaxMinRatio": 1.612998279453734,
+            "MinimumSampleMs": 5.272744
+          },
+          "After": {
+            "MedianNs": 7075.599716110717,
+            "MedianAllocatedBytes": 1680,
+            "MaxMinRatio": 1.0366817986848744,
+            "MinimumSampleMs": 9.940952
+          },
+          "ChangePercent": 83.3696306582144
+        },
+        {
+          "Id": "core/bounded-window-compiled/Count",
+          "InputBytes": 408,
+          "Before": {
+            "MedianNs": 4617.498686723973,
+            "MedianAllocatedBytes": 0,
+            "MaxMinRatio": 1.6440141812872093,
+            "MinimumSampleMs": 38.558418
+          },
+          "After": {
+            "MedianNs": 7664.652452025586,
+            "MedianAllocatedBytes": 0,
+            "MaxMinRatio": 1.0183027613907494,
+            "MinimumSampleMs": 46.455613
+          },
+          "ChangePercent": 65.99143761670479
+        },
+        {
+          "Id": "core/literal-family-compiled/Count",
+          "InputBytes": 176,
+          "Before": {
+            "MedianNs": 9269.183146067417,
+            "MedianAllocatedBytes": 1872,
+            "MaxMinRatio": 1.7722475090843002,
+            "MinimumSampleMs": 8.17069
+          },
+          "After": {
+            "MedianNs": 15856.2486678508,
+            "MedianAllocatedBytes": 1872,
+            "MaxMinRatio": 1.0314214723445276,
+            "MinimumSampleMs": 8.722252
+          },
+          "ChangePercent": 71.06414252455504
+        },
+        {
+          "Id": "core/literal-family-compiled-finite-four/Count",
+          "InputBytes": 176,
+          "Before": {
+            "MedianNs": 9883.525328330206,
+            "MedianAllocatedBytes": 1984,
+            "MaxMinRatio": 1.7371185462221856,
+            "MinimumSampleMs": 5.24867
+          },
+          "After": {
+            "MedianNs": 17554.529527559054,
+            "MedianAllocatedBytes": 1984,
+            "MaxMinRatio": 1.044583722941483,
+            "MinimumSampleMs": 8.658272
+          },
+          "ChangePercent": 77.61404908065171
+        },
+        {
+          "Id": "core/literal-family-compiled/Match",
+          "InputBytes": 176,
+          "Before": {
+            "MedianNs": 787.1212719731385,
+            "MedianAllocatedBytes": 1872,
+            "MaxMinRatio": 2.0993126788537677,
+            "MinimumSampleMs": 7.6529
+          },
+          "After": {
+            "MedianNs": 1380.0022427111887,
+            "MedianAllocatedBytes": 1872,
+            "MaxMinRatio": 1.0799513955089197,
+            "MinimumSampleMs": 16.442102
+          },
+          "ChangePercent": 75.32269700345273
+        },
+        {
+          "Id": "core/literal-family-compiled/EnumerateMatches",
+          "InputBytes": 176,
+          "Before": {
+            "MedianNs": 21014.835920177382,
+            "MedianAllocatedBytes": 25200,
+            "MaxMinRatio": 1.6602660757326204,
+            "MinimumSampleMs": 9.394393
+          },
+          "After": {
+            "MedianNs": 36663.33839479393,
+            "MedianAllocatedBytes": 25200,
+            "MaxMinRatio": 1.043061696878175,
+            "MinimumSampleMs": 16.715319
+          },
+          "ChangePercent": 74.46407163993914
+        },
+        {
+          "Id": "core/identifier-compiled/Count",
+          "InputBytes": 464,
+          "Before": {
+            "MedianNs": 29829.364640883978,
+            "MedianAllocatedBytes": 3552,
+            "MaxMinRatio": 2.3295038106320383,
+            "MinimumSampleMs": 5.364202
+          },
+          "After": {
+            "MedianNs": 51052.989130434784,
+            "MedianAllocatedBytes": 3552,
+            "MaxMinRatio": 1.0449810788096199,
+            "MinimumSampleMs": 9.311782
+          },
+          "ChangePercent": 71.15010576008653
+        },
+        {
+          "Id": "core/identifier-compiled/IsMatch-late",
+          "InputBytes": 4115,
+          "Before": {
+            "MedianNs": 254364.3486328125,
+            "MedianAllocatedBytes": 3552,
+            "MaxMinRatio": 1.9031330023978463,
+            "MinimumSampleMs": 260.027921
+          },
+          "After": {
+            "MedianNs": 395152.607421875,
+            "MedianAllocatedBytes": 3552,
+            "MaxMinRatio": 1.2020322242597965,
+            "MinimumSampleMs": 401.200899
+          },
+          "ChangePercent": 55.349053256003764
+        },
+        {
+          "Id": "control/predecoded-Regex/Count",
+          "InputBytes": 464,
+          "Before": {
+            "MedianNs": 8087.6306,
+            "MedianAllocatedBytes": 0,
+            "MaxMinRatio": 1.962750662159932,
+            "MinimumSampleMs": 80.608547
+          },
+          "After": {
+            "MedianNs": 11190.2788,
+            "MedianAllocatedBytes": 0,
+            "MaxMinRatio": 1.8891420423824021,
+            "MinimumSampleMs": 99.530744
+          },
+          "ChangePercent": 38.36288220186515
+        },
+        {
+          "Id": "control/decode-then-Regex/Count",
+          "InputBytes": 464,
+          "Before": {
+            "MedianNs": 8443.8835,
+            "MedianAllocatedBytes": 904,
+            "MaxMinRatio": 1.5454623911019603,
+            "MinimumSampleMs": 84.134664
+          },
+          "After": {
+            "MedianNs": 11974.6361,
+            "MedianAllocatedBytes": 904,
+            "MaxMinRatio": 1.6756100970520584,
+            "MinimumSampleMs": 118.483731
+          },
+          "ChangePercent": 41.814321573716654
+        }
+      ],
+      "Construction": [
+        {
+          "Pattern": "\\bpublic\\s+async\\b",
+          "TotalInstancesPerSide": 16,
+          "Before": {
+            "MedianNs": 692188,
+            "MedianAllocatedBytes": 92248,
+            "MaxMinRatio": 1.304008755518417,
+            "MinimumSampleMs": 2.028435
+          },
+          "After": {
+            "MedianNs": 641852.3333333334,
+            "MedianAllocatedBytes": 57336,
+            "MaxMinRatio": 1.4407063399313624,
+            "MinimumSampleMs": 1.755019
+          },
+          "TimeChangePercent": -7.2719646492956596
+        },
+        {
+          "Pattern": "\\b(?:Task|ValueTask|IAsyncEnumerable)\\b",
+          "TotalInstancesPerSide": 16,
+          "Before": {
+            "MedianNs": 881950.6666666666,
+            "MedianAllocatedBytes": 147152,
+            "MaxMinRatio": 1.0602009147337472,
+            "MinimumSampleMs": 2.57124
+          },
+          "After": {
+            "MedianNs": 1361929.6666666667,
+            "MedianAllocatedBytes": 143584,
+            "MaxMinRatio": 1.0446082926787916,
+            "MinimumSampleMs": 4.010622
+          },
+          "TimeChangePercent": 54.42243179134738
+        }
+      ]
+    }
+  ],
+  "Scope": "Linux/.NET10.0.12 CPU0/default tiers; busy logging services/full root disk; isolated RAM directory. Same-size finite/unlimited family Count, unchanged BCL controls. No attribution to a specific change or to VM alone. Final matching allocations/time were not remeasured after rollback."
+}
