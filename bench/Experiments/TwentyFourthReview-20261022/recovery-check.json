@@ -1,0 +1,149 @@
+{
+  "Scope": "Production AST function with mocked discovery/process/stop calls; no real process actions",
+  "Results": [
+    {
+      "Version": "Before",
+      "Mismatches": 6,
+      "Rows": [
+        {
+          "Case": "Own executable",
+          "Expected": true,
+          "Selected": true,
+          "Correct": true
+        },
+        {
+          "Case": "Own executable without command line",
+          "Expected": true,
+          "Selected": false,
+          "Correct": false
+        },
+        {
+          "Case": "Case-insensitive own path",
+          "Expected": true,
+          "Selected": true,
+          "Correct": true
+        },
+        {
+          "Case": "Normalized separators",
+          "Expected": true,
+          "Selected": true,
+          "Correct": true
+        },
+        {
+          "Case": "Normalized own traversal",
+          "Expected": true,
+          "Selected": true,
+          "Correct": true
+        },
+        {
+          "Case": "Sibling copy",
+          "Expected": false,
+          "Selected": true,
+          "Correct": false
+        },
+        {
+          "Case": "Sibling old",
+          "Expected": false,
+          "Selected": true,
+          "Correct": false
+        },
+        {
+          "Case": "Outside host mentioning this checkout",
+          "Expected": false,
+          "Selected": true,
+          "Correct": false
+        },
+        {
+          "Case": "Unknown executable with own command line",
+          "Expected": false,
+          "Selected": true,
+          "Correct": false
+        },
+        {
+          "Case": "Traversal leaves checkout",
+          "Expected": false,
+          "Selected": true,
+          "Correct": false
+        },
+        {
+          "Case": "Unrelated checkout",
+          "Expected": false,
+          "Selected": false,
+          "Correct": true
+        }
+      ]
+    },
+    {
+      "Version": "After",
+      "Mismatches": 0,
+      "Rows": [
+        {
+          "Case": "Own executable",
+          "Expected": true,
+          "Selected": true,
+          "Correct": true
+        },
+        {
+          "Case": "Own executable without command line",
+          "Expected": true,
+          "Selected": true,
+          "Correct": true
+        },
+        {
+          "Case": "Case-insensitive own path",
+          "Expected": true,
+          "Selected": true,
+          "Correct": true
+        },
+        {
+          "Case": "Normalized separators",
+          "Expected": true,
+          "Selected": true,
+          "Correct": true
+        },
+        {
+          "Case": "Normalized own traversal",
+          "Expected": true,
+          "Selected": true,
+          "Correct": true
+        },
+        {
+          "Case": "Sibling copy",
+          "Expected": false,
+          "Selected": false,
+          "Correct": true
+        },
+        {
+          "Case": "Sibling old",
+          "Expected": false,
+          "Selected": false,
+          "Correct": true
+        },
+        {
+          "Case": "Outside host mentioning this checkout",
+          "Expected": false,
+          "Selected": false,
+          "Correct": true
+        },
+        {
+          "Case": "Unknown executable with own command line",
+          "Expected": false,
+          "Selected": false,
+          "Correct": true
+        },
+        {
+          "Case": "Traversal leaves checkout",
+          "Expected": false,
+          "Selected": false,
+          "Correct": true
+        },
+        {
+          "Case": "Unrelated checkout",
+          "Expected": false,
+          "Selected": false,
+          "Correct": true
+        }
+      ]
+    }
+  ]
+}

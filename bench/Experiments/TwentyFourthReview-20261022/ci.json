@@ -1,0 +1,23 @@
+{
+  "Producer": "4627fda41ca741e32a403614e1ffc0b08bfd5ce3",
+  "Run": 39819948662,
+  "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/39819948662",
+  "AllConfiguredJobsSuccessful": true,
+  "Jobs": [
+    {
+      "Name": "tests (ubuntu-latest)",
+      "Id": 119968272726,
+      "Status": "completed",
+      "Conclusion": "success",
+      "CompletedAt": "2026-10-22T17:11:39Z"
+    },
+    {
+      "Name": "tests (windows-latest)",
+      "Id": 119968272947,
+      "Status": "completed",
+      "Conclusion": "success",
+      "CompletedAt": "2026-10-22T17:12:40Z"
+    }
+  ],
+  "Scope": "Existing complete Release solution build and all four fixture projects on both configured platforms. Both jobs completed successfully. No package qualification or new qualification workflow. Documentation/evidence follow-up skips CI for unchanged shipping code."
+}

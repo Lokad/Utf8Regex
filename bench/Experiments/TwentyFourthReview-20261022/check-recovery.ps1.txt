@@ -1,0 +1,47 @@
+param([string]$Before = "$PSScriptRoot/before-test.ps1.txt", [string]$After = "$PSScriptRoot/../../test.ps1")
+$ErrorActionPreference = 'Stop'
+if (-not $IsWindows) { throw 'This witness exercises Windows-only lock recovery.' }
+$repoRoot = [IO.Path]::GetFullPath("$PSScriptRoot/../..").TrimEnd([IO.Path]::DirectorySeparatorChar)
+$leaf = '\tests\Example\bin\Release\net10.0\testhost.exe'
+$fixtures = @(
+    @{ Name='Own executable'; ExecutablePath=$repoRoot+$leaf; CommandLine='"'+$repoRoot+$leaf+'"'; Expected=$true },
+    @{ Name='Own executable without command line'; ExecutablePath=$repoRoot+$leaf; CommandLine=$null; Expected=$true },
+    @{ Name='Case-insensitive own path'; ExecutablePath=($repoRoot+$leaf).ToUpperInvariant(); CommandLine='"'+$repoRoot+$leaf+'"'; Expected=$true },
+    @{ Name='Normalized separators'; ExecutablePath=($repoRoot+$leaf).Replace('\','/'); CommandLine='"'+$repoRoot+$leaf+'"'; Expected=$true },
+    @{ Name='Normalized own traversal'; ExecutablePath=$repoRoot+'\tests\scratch\..\Example\testhost.exe'; CommandLine='"'+$repoRoot+$leaf+'"'; Expected=$true },
+    @{ Name='Sibling copy'; ExecutablePath=$repoRoot+'-copy'+$leaf; CommandLine='"'+$repoRoot+'-copy'+$leaf+'"'; Expected=$false },
+    @{ Name='Sibling old'; ExecutablePath=$repoRoot+'-old'+$leaf; CommandLine='"'+$repoRoot+'-old'+$leaf+'"'; Expected=$false },
+    @{ Name='Outside host mentioning this checkout'; ExecutablePath='D:\code\other'+$leaf; CommandLine='D:\code\other\testhost.exe --log "'+$repoRoot+'\logs"'; Expected=$false },
+    @{ Name='Unknown executable with own command line'; ExecutablePath=$null; CommandLine='"'+$repoRoot+$leaf+'"'; Expected=$false },
+    @{ Name='Traversal leaves checkout'; ExecutablePath=$repoRoot+'\..\utf8regex-copy'+$leaf; CommandLine='"'+$repoRoot+'\..\utf8regex-copy'+$leaf+'"'; Expected=$false },
+    @{ Name='Unrelated checkout'; ExecutablePath='D:\code\other'+$leaf; CommandLine='"D:\code\other'+$leaf+'"'; Expected=$false }
+)
+for ($i=0; $i -lt $fixtures.Count; $i++) { $fixtures[$i].ProcessId = $i+1 }
+
+# Only the production recovery function is evaluated. These local mocks cannot
+# discover or stop a live process. Shared compiler servers must stay excluded.
+function Get-CimInstance {
+    [CmdletBinding()] param($ClassName, $Filter)
+    if ($ClassName -ne 'Win32_Process' -or $Filter -ne "Name = 'testhost.exe'") { throw 'Unexpected discovery query.' }
+    $fixtures | ForEach-Object { [pscustomobject]$_ }
+}
+function Get-Process { [CmdletBinding()] param([int]$Id); [pscustomobject]@{Id=$Id} }
+function Stop-StaleProcess { param($process,$description); $script:selected.Add($process.Id) }
+
+$results = foreach ($version in @(@{Name='Before';Path=$Before}, @{Name='After';Path=$After})) {
+    $parseErrors=$null; $tokens=$null
+    $tree=[Management.Automation.Language.Parser]::ParseFile([IO.Path]::GetFullPath($version.Path),[ref]$tokens,[ref]$parseErrors)
+    if ($parseErrors.Count) { throw $parseErrors[0] }
+    $definition=$tree.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Stop-StaleProcesses'},$true)
+    if ($null -eq $definition) { throw 'Recovery function missing.' }
+    Invoke-Expression $definition.Extent.Text
+    $script:selected=[Collections.Generic.List[int]]::new()
+    Stop-StaleProcesses
+    $rows=@($fixtures | ForEach-Object { [pscustomobject]@{Case=$_.Name;Expected=$_.Expected;Selected=$selected.Contains($_.ProcessId);Correct=($_.Expected -eq $selected.Contains($_.ProcessId))} })
+    [pscustomobject]@{Version=$version.Name;Mismatches=@($rows|Where-Object {!$_.Correct}).Count;Rows=$rows}
+}
+if ($results[0].Mismatches -eq 0 -or $results[1].Mismatches -ne 0) {
+    $results | ForEach-Object { Write-Host $_.Version; $_.Rows | Where-Object {!$_.Correct} | Format-Table | Out-Host }
+    throw 'Regression witness did not distinguish the fix.'
+}
+[pscustomobject]@{Scope='Production AST function with mocked discovery/process/stop calls; no real process actions';Results=@($results)}|ConvertTo-Json -Depth 6

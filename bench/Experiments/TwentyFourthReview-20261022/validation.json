@@ -1,0 +1,25 @@
+{
+  "Producer": "4627fda41ca741e32a403614e1ffc0b08bfd5ce3",
+  "Configuration": "Release",
+  "Checks": [
+    { "Name": "Actual recovery function with mocked discovery/process/stop operations", "Cases": 11, "BeforeMismatches": 6, "AfterMismatches": 0, "RealProcessActions": 0 },
+    { "Name": "Existing testhost.exe under this checkout's PythonRe test output", "Present": true },
+    { "Name": "Focused PythonRe cursor/projection/authority/publication/output checks", "Passed": 460 },
+    { "Name": "Full affected PythonRe project, including API/dependency guards", "Passed": 3910, "DurationSeconds": 18 },
+    { "Name": "Core public API and shared shipped-member inventory", "Passed": 13 },
+    { "Name": "Friend benchmark/library dependency closure", "Passed": true },
+    { "Name": "Generated README parity/PythonRe/PCRE2 pages", "Passed": true },
+    { "Name": "Existing full producer/PE/PDB/compiled-source preflight", "Passed": true },
+    { "Name": "Immutable snapshots, frozen RC1 files and original TODOs", "Unchanged": 18 }
+  ],
+  "Changes": {
+    "RemovedShippedConstructors": 4,
+    "RemovedShippedLines": 24,
+    "MigratedTestConstructions": 34,
+    "PublicApiChanged": false,
+    "MatchingAlgorithmsChanged": false,
+    "InvocationPolicyChanged": false,
+    "RecoveryOwnershipRestrictedToExecutablePath": true
+  },
+  "Workflow": "Affected incremental builds and matching binaries reused; one final friend/library closure. No full local solution/configuration/package matrix, normal build-server shutdown, real recovery termination, timing benchmark or VM action. Windows/Linux source CI is separate evidence."
+}
