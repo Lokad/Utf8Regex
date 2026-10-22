@@ -1057,8 +1057,7 @@ public sealed partial class Utf8Pcre2Regex
             IsExactLiteral = literal is not null,
             MinRequiredLengthInBytes = literal?.LiteralUtf8.Length ?? backtracking?.AnalyzedMinimumByteLength ?? sliceFallback?.AnalyzedMinimumByteLength ?? 0,
             HasDuplicateNames = NameEntries.GroupBy(static entry => entry.Name, StringComparer.Ordinal).Any(static group => group.Count() > 1),
-            UsesBranchReset = backtracking?.GroupNames.Length > 1 &&
-                backtracking.CaptureSlotCount < backtracking.GroupNames.Length,
+            UsesBranchReset = _program.UsesBranchReset,
             UsesBacktrackingControlVerbs = backtracking?.UsesBacktrackingControlVerbs ?? false,
             UsesRecursion = backtracking is not null && UsesSubroutines(backtracking),
             MayProduceNonUtf8Slices = GenericProgramUsesCodeUnit,

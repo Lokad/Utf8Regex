@@ -347,7 +347,6 @@ internal sealed class Pcre2BacktrackingProgram
         Pcre2BacktrackingCondition[] conditions,
         int[] subroutineTargets,
         string[] markNames,
-        string[] groupNames,
         Pcre2NameEntry[] nameEntries,
         int minimumByteLength,
         int analyzedMinimumByteLength,
@@ -377,7 +376,6 @@ internal sealed class Pcre2BacktrackingProgram
         Conditions = conditions;
         SubroutineTargets = subroutineTargets;
         MarkNames = markNames;
-        GroupNames = groupNames;
         NameEntries = nameEntries;
         MinimumByteLength = minimumByteLength;
         AnalyzedMinimumByteLength = analyzedMinimumByteLength;
@@ -423,8 +421,6 @@ internal sealed class Pcre2BacktrackingProgram
     internal int[] SubroutineTargets { get; }
 
     internal string[] MarkNames { get; }
-
-    internal string[] GroupNames { get; }
 
     internal Pcre2NameEntry[] NameEntries { get; }
 

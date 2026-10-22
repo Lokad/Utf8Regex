@@ -593,7 +593,8 @@ public readonly ref struct Utf8Pcre2PartialMatchContext
 /// <summary>Describes the compiled execution and result-shaping characteristics of a managed PCRE2 expression.</summary>
 public readonly struct Utf8Pcre2Analysis
 {
-    /// <summary>Gets whether every supported operation avoids the semantic managed-regex fallback.</summary>
+    /// <summary>Gets whether all supported operations execute in the owned managed engines without delegating matching to another regex implementation.</summary>
+    /// <remarks>This describes engine ownership; it does not identify native machine code or a particular fast path.</remarks>
     public bool IsFullyNative { get; init; }
 
     /// <summary>Gets whether the expression is one exact literal.</summary>

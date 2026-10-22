@@ -7,6 +7,33 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2BranchResetCompilerTests
 {
     [Theory]
+    [InlineData("(?|(a)|(b))", "b", true, 2)]
+    [InlineData("(?|(a)(b)|(c))", "c", true, 3)]
+    [InlineData("(?|(?<x>a)|(?<x>b))\\k<x>", "bb", true, 2)]
+    [InlineData("(?|a|b)", "a", true, 1)]
+    [InlineData("(?|)", "", true, 1)]
+    [InlineData("(?=(?|(a)|(b)))a", "a", true, 2)]
+    [InlineData("(?|(?|(a)|(b))|(c))\\1", "cc", true, 2)]
+    [InlineData("(a)|(b)", "b", false, 3)]
+    [InlineData(@"\(\?\|a\)", "(?|a)", false, 1)]
+    [InlineData(@"\Q(?|a)\E", "(?|a)", false, 1)]
+    [InlineData("[?|()]", "|", false, 1)]
+    [InlineData("(?# (?| )a", "a", false, 1)]
+    [InlineData("(?x)a # (?| ignored\n", "a", false, 1)]
+    public void AnalysisUsesParsedBranchResetSyntax(
+        string pattern, string input, bool usesBranchReset, int captureSlotCount)
+    {
+        var bytes = Encoding.UTF8.GetBytes(input);
+        foreach (var regex in new[] { new Utf8Pcre2Regex(pattern), new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern)) })
+        {
+            Assert.Equal(usesBranchReset, regex.Analyze().UsesBranchReset);
+            var match = regex.MatchDetailed(bytes);
+            Assert.True(match.Success);
+            Assert.Equal(captureSlotCount, match.CaptureSlotCount);
+        }
+    }
+
+    [Theory]
     [InlineData("(?|(abc)|(xyz))\\1", "abcabc", "abc")]
     [InlineData("(?|(abc)|(xyz))\\1", "xyzxyz", "xyz")]
     [InlineData("(?|(?|(a)|(b))|(c))\\1", "cc", "c")]

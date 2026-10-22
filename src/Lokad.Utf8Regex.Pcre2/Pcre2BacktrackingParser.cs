@@ -37,28 +37,11 @@ internal sealed class Pcre2BacktrackingParser
 
     internal bool RequiresProfileOptions { get; private set; }
 
+    internal bool UsesBranchReset { get; private set; }
+
     internal Pcre2NameEntry[] NameEntries => [.. _nameEntries];
 
     internal IReadOnlyDictionary<int, Pcre2CaptureBacktrackingNode> CaptureDefinitions => _captureDefinitions;
-
-    internal string[] GroupNames
-    {
-        get
-        {
-            var names = new string[_captureCount + 1];
-            for (var slot = 0; slot < names.Length; slot++)
-            {
-                names[slot] = slot.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            }
-
-            foreach (var entry in _nameEntries)
-            {
-                names[entry.Number] = entry.Name;
-            }
-
-            return names;
-        }
-    }
 
     internal bool TryParse(out IPcre2BacktrackingNode root)
     {
@@ -1218,6 +1201,7 @@ internal sealed class Pcre2BacktrackingParser
 
     private bool TryParseBranchReset(out IPcre2BacktrackingNode node)
     {
+        UsesBranchReset = true;
         _sawControlFlow = true;
         _offset += 3;
         var captureBase = _captureCount;

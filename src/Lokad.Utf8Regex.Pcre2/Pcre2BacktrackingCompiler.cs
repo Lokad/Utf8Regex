@@ -12,11 +12,13 @@ internal sealed class Pcre2CompiledBacktrackingOutcome
     internal Pcre2CompiledBacktrackingOutcome(
         Pcre2BacktrackingSyntaxTree syntaxTree,
         Pcre2BacktrackingProgram program,
-        bool requiresProfileOptions)
+        bool requiresProfileOptions,
+        bool usesBranchReset)
     {
         SyntaxTree = syntaxTree;
         Program = program;
         RequiresProfileOptions = requiresProfileOptions;
+        UsesBranchReset = usesBranchReset;
     }
 
     internal Pcre2BacktrackingSyntaxTree SyntaxTree { get; }
@@ -24,6 +26,8 @@ internal sealed class Pcre2CompiledBacktrackingOutcome
     internal Pcre2BacktrackingProgram Program { get; }
 
     internal bool RequiresProfileOptions { get; }
+
+    internal bool UsesBranchReset { get; }
 }
 
 internal static class Pcre2BacktrackingCompiler
@@ -59,19 +63,18 @@ internal static class Pcre2BacktrackingCompiler
         }
 
         var nameEntries = parser.NameEntries;
-        var groupNames = parser.GroupNames;
         var lowerer = new Pcre2BacktrackingLowerer(
             parser.CaptureCount,
             nameEntries,
             parser.CaptureDefinitions,
-            request,
-            groupNames);
+            request);
         var program = lowerer.Lower(root);
         construction.Complete();
         return new Pcre2CompiledBacktrackingOutcome(
             new Pcre2BacktrackingSyntaxTree(root),
             program,
-            parser.RequiresProfileOptions);
+            parser.RequiresProfileOptions,
+            parser.UsesBranchReset);
     }
 }
 

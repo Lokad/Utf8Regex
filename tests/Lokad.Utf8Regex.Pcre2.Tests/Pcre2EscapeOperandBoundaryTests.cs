@@ -20,7 +20,24 @@ public sealed class Pcre2EscapeOperandBoundaryTests
             Assert.Equal(expected.Count(input), regex.Count(input));
             Assert.True(regex.IsMatch(input));
             Assert.Equal(expected.Match(input).GetValueString(), regex.Match(input).GetValueString());
-            Assert.Equal(expected.DebugCompiledProgram.GroupNames, regex.DebugCompiledProgram.GroupNames);
+            var expectedMatch = expected.MatchDetailed(input);
+            var actualMatch = regex.MatchDetailed(input);
+            Assert.Equal(expectedMatch.CaptureSlotCount, actualMatch.CaptureSlotCount);
+            for (var slot = 0; slot < expectedMatch.CaptureSlotCount; slot++)
+            {
+                var expectedGroup = expectedMatch.GetGroup(slot);
+                var actualGroup = actualMatch.GetGroup(slot);
+                Assert.Equal(expectedGroup.Success, actualGroup.Success);
+                if (expectedGroup.Success)
+                    Assert.Equal(expectedGroup.GetValueString(), actualGroup.GetValueString());
+            }
+            var expectedNames = new Pcre2NameEntry[expected.NameEntryCount];
+            var actualNames = new Pcre2NameEntry[regex.NameEntryCount];
+            Assert.Equal(expected.CopyNameEntries(expectedNames, out var expectedMore),
+                regex.CopyNameEntries(actualNames, out var actualMore));
+            Assert.False(expectedMore);
+            Assert.False(actualMore);
+            Assert.Equal(expectedNames, actualNames);
             Assert.False(regex.IsMatch("😀"u8));
         }
     }

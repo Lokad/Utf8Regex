@@ -13,10 +13,15 @@ public sealed class Pcre2LiteralCompilerTests
     [InlineData("😀")]
     public void LiteralProgramsKeepCanonicalGroupZeroWithoutRetainingCore(string pattern)
     {
-        var program = new Utf8Pcre2Regex(pattern).DebugCompiledProgram;
+        var regex = new Utf8Pcre2Regex(pattern);
+        var program = regex.DebugCompiledProgram;
         Assert.Null(program.PrimaryUtf8);
-        Assert.Equal(new[] { "0" }, program.GroupNames);
-        Assert.Empty(program.NameEntries);
+        var match = regex.MatchDetailed(Encoding.UTF8.GetBytes(pattern));
+        Assert.True(match.Success);
+        Assert.Equal(1, match.CaptureSlotCount);
+        Assert.Equal(pattern, match.GetGroup(0).GetValueString());
+        Assert.Equal(0, regex.NameEntryCount);
+        Assert.Equal(0, match.NameEntryCount);
         Assert.All(new[] { program.Operations.IsMatch, program.Operations.Count, program.Operations.Match,
             program.Operations.Enumerate, program.Operations.Replace },
             operation => Assert.Same(program.Operations.Match, operation));

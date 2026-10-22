@@ -2,6 +2,13 @@
 
 ## Unreleased development after 0.4.0-rc.1
 
+- Fixed PCRE2 Analyze().UsesBranchReset, which incorrectly returned false even
+  for supported branch-reset groups. Analysis now records parsed syntax,
+  including nested groups and groups without captures. Removed obsolete group-name
+  tables and their compiler plumbing; actual capture slots, name entries and
+  conservative construction admission remain. Clarified IsFullyNative as owned
+  managed execution. Removed an unused PythonRe constructor forwarding overload.
+
 - Removed a test-only fallback-plan view and unused private constructor/timeout
   forwarding overloads. Public timeout, construction and invocation resource
   behavior are unchanged. Match-enumerator documentation now distinguishes the

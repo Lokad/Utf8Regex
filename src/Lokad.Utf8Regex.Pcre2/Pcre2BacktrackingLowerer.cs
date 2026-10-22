@@ -21,7 +21,6 @@ internal sealed class Pcre2BacktrackingLowerer
     private readonly IReadOnlyDictionary<int, Pcre2CaptureBacktrackingNode> _captureDefinitions;
     private readonly Dictionary<string, int[]> _nameSlots;
     private readonly Pcre2CompileRequest _request;
-    private readonly string[] _groupNames;
     private int _repeatCount;
     private bool _requiresCaptureState;
     private bool _hasCaptureWrites;
@@ -37,8 +36,7 @@ internal sealed class Pcre2BacktrackingLowerer
         int captureCount,
         Pcre2NameEntry[] nameEntries,
         IReadOnlyDictionary<int, Pcre2CaptureBacktrackingNode> captureDefinitions,
-        Pcre2CompileRequest request,
-        string[] groupNames)
+        Pcre2CompileRequest request)
     {
         // Every nested assertion lowerer builds its own name-slot lookup. Admit
         // that repeated major metadata before LINQ acquires its tables/arrays.
@@ -55,7 +53,6 @@ internal sealed class Pcre2BacktrackingLowerer
                 static group => group.Select(static entry => entry.Number).ToArray(),
                 StringComparer.Ordinal);
         _request = request;
-        _groupNames = groupNames;
     }
 
     internal Pcre2BacktrackingProgram Lower(IPcre2BacktrackingNode root)
@@ -97,7 +94,6 @@ internal sealed class Pcre2BacktrackingLowerer
             _conditions.Take(),
             subroutineTargets,
             _markNames.Take(),
-            _groupNames,
             _nameEntries,
             Pcre2BacktrackingAnalysis.GetMinimumByteLength(root),
             Pcre2BacktrackingAnalysis.GetMinimumByteLength(root, _captureDefinitions, _nameSlots),
@@ -295,8 +291,7 @@ internal sealed class Pcre2BacktrackingLowerer
                         _captureCount,
                         _nameEntries,
                         _captureDefinitions,
-                        _request,
-                        _groupNames);
+                        _request);
                     var assertionProgramId = _assertionPrograms.Count;
                     var assertionProgram = assertionLowerer.Lower(assertion.Body);
                     _assertionPrograms.Add(assertionProgram);
@@ -482,8 +477,7 @@ internal sealed class Pcre2BacktrackingLowerer
                 _captureCount,
                 _nameEntries,
                 _captureDefinitions,
-                _request,
-                _groupNames);
+                _request);
             var assertionProgramId = _assertionPrograms.Count;
             var assertionProgram = assertionLowerer.Lower(assertion.Body);
             _assertionPrograms.Add(assertionProgram);

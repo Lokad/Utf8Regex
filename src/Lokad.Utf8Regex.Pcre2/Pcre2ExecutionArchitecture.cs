@@ -45,7 +45,7 @@ internal static class Pcre2Compiler
                 Pcre2CompiledProgramOverlay.CanPrepareCore(request, backtracking.SyntaxTree.Root))
                 _ = TryCreateUtf8Regex(request.Pattern, request.Options, request.MatchTimeout, out core);
             var foundation = Pcre2CompiledProgramOverlay.CreateBacktracking(
-                request, backtracking.SyntaxTree, backtracking.Program, core);
+                request, backtracking.SyntaxTree, backtracking.Program, core, backtracking.UsesBranchReset);
             Pcre2ProgramInvariant.Validate(foundation);
             return foundation;
         }
@@ -485,7 +485,7 @@ internal sealed class Pcre2CompiledProgram
         Pcre2CandidateSearchProgram candidateSearch,
         Pcre2PartialProbeProgram partialProbe,
         IPcre2SyntaxTree? syntaxTree,
-        string[] groupNames,
+        bool usesBranchReset,
         Pcre2NameEntry[] nameEntries)
     {
         Request = request;
@@ -494,7 +494,7 @@ internal sealed class Pcre2CompiledProgram
         CandidateSearchPlan = new Pcre2CandidateSearchPlan(candidateSearch);
         PartialProbe = partialProbe;
         SyntaxTree = syntaxTree;
-        GroupNames = [.. groupNames];
+        UsesBranchReset = usesBranchReset;
         NameEntries = [.. nameEntries];
     }
 
@@ -514,7 +514,9 @@ internal sealed class Pcre2CompiledProgram
     // Ordinary execution owns lowered programs, including its option fallback.
     internal IPcre2SyntaxTree? SyntaxTree { get; }
 
-    internal string[] GroupNames { get; }
+    // Grammar metadata survives lowering even when captures are absent or
+    // Match selects a specialized operation instead of the backtracking VM.
+    internal bool UsesBranchReset { get; }
 
     internal Pcre2NameEntry[] NameEntries { get; }
 }
@@ -534,7 +536,7 @@ internal static class Pcre2CompiledProgramOverlay
             default,
             Pcre2PartialProbeProgram.None,
             syntaxTree,
-            ["0"],
+            false,
             []);
     }
 
@@ -551,7 +553,7 @@ internal static class Pcre2CompiledProgramOverlay
             default,
             Pcre2PartialProbeCompiler.Compile(characterProgram, request),
             syntaxTree,
-            ["0"],
+            false,
             []);
     }
 
@@ -559,7 +561,8 @@ internal static class Pcre2CompiledProgramOverlay
         Pcre2CompileRequest request,
         Pcre2BacktrackingSyntaxTree syntaxTree,
         Pcre2BacktrackingProgram backtrackingProgram,
-        Utf8Regex? preparedCore)
+        Utf8Regex? preparedCore,
+        bool usesBranchReset)
     {
         var direct = new Pcre2BacktrackingDirectProgram(backtrackingProgram);
         var operations = new Pcre2OperationPrograms(direct, direct, direct, direct, direct);
@@ -756,7 +759,7 @@ internal static class Pcre2CompiledProgramOverlay
             candidateSearch,
             partialProbe,
             partialProbe.Kind == Pcre2PartialProbeProgramKind.None ? null : syntaxTree,
-            backtrackingProgram.GroupNames,
+            usesBranchReset,
             backtrackingProgram.NameEntries);
     }
 
