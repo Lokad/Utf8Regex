@@ -125,6 +125,11 @@ remaining working capacity as a construction ceiling and retains its additional
 peak through replacement. Warm plans use a separate conservative cache. See
 packaged [HOST-INTEGRATION.md](https://github.com/Lokad/Utf8Regex/blob/master/HOST-INTEGRATION.md) for exact mappings and scopes.
 
+A declined simple-template optimization lends its complete prepared outcome to
+the executor for that call, including templates too large for the cache. Work
+and preparation capacity reflect one compilation; numeric implementation costs
+are not a stable per-template quota or an exact managed-heap measurement.
+
 Finite controls can select a materially slower route: the existing email corpus
 Count can exhaust a 50-million-step policy even though unlimited Count succeeds.
 This is a disclosed operating-cost limitation; an experimental candidate-search
