@@ -800,6 +800,7 @@ public sealed partial class Utf8Pcre2Regex
         => TryReplace(input, replacementPatternUtf8, destination, out bytesWritten, 0, substitutionOptions, Pcre2MatchOptions.None);
 
     /// <summary>Attempts to write a replacement result using explicit start, substitution, and per-match options.</summary>
+    /// <remarks>Input and replacement may overlap the destination. Matched overlapping input uses admitted temporary output; a short destination is unchanged.</remarks>
     /// <returns><see cref="OperationStatus.Done"/> on success, or <see cref="OperationStatus.DestinationTooSmall"/> when the complete result does not fit.</returns>
     public OperationStatus TryReplace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, Span<byte> destination, out int bytesWritten, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions)
         => TryReplaceCore(input, replacementPatternUtf8, destination, out bytesWritten, startOffsetInBytes, substitutionOptions, matchOptions, default);
@@ -847,6 +848,7 @@ public sealed partial class Utf8Pcre2Regex
     }
 
     /// <summary>Attempts to write a replacement result, observing cancellation during validation, preparation, discovery and copying.</summary>
+    /// <remarks>Input and replacement may overlap the destination. Matched overlapping input uses admitted temporary output; a short destination is unchanged.</remarks>
     /// <param name="input">The well-formed UTF-8 subject to match against.</param>
     /// <param name="replacementPatternUtf8">The PCRE2 replacement template encoded as well-formed UTF-8.</param>
     /// <param name="destination">The destination buffer for the UTF-8 replacement result.</param>
@@ -1297,7 +1299,21 @@ public sealed partial class Utf8Pcre2Regex
                 return true;
             }
 
-            EmitLiteralDriverReplacement(input, plan, replacementOnly, destination, ledger.WrittenRanges, cursor.WorkingBufferControl);
+            if (input.Overlaps(destination))
+            {
+                // Memmove of each fragment cannot protect input read by later fragments.
+                // Keep staged output admitted through the final bounded copy.
+                ulong reservation = 0;
+                try
+                {
+                    var output = Utf8InvocationOutput.AllocateBytes(outputLength.Value, cursor.WorkingBufferControl, out reservation);
+                    EmitLiteralDriverReplacement(input, plan, replacementOnly, output, ledger.WrittenRanges, cursor.WorkingBufferControl);
+                    Utf8InvocationOutput.Copy(output, destination, cursor.WorkingBufferControl);
+                }
+                finally { cursor.WorkingBufferControl.ReleaseWorking(reservation); }
+            }
+            else
+                EmitLiteralDriverReplacement(input, plan, replacementOnly, destination, ledger.WrittenRanges, cursor.WorkingBufferControl);
             bytesWritten = outputLength.Value;
             status = OperationStatus.Done;
             return true;

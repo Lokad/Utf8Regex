@@ -138,6 +138,12 @@ to caller storage before throwing; interruption during TryReplace copying can
 also leave modified destination bytes. DestinationTooSmall leaves destination
 storage unchanged. Host-retained storage requires separate admission.
 
+`TryReplace` supports input and template buffers overlapping the destination.
+Matched overlapping input stages output before copying to caller storage, so
+later gaps and captures retain their original bytes. That temporary capacity
+requires working and cumulative result admission under the same invocation.
+Disjoint simple-template output and no-match copies retain their direct paths.
+
 Read [release notes](https://github.com/Lokad/Utf8Regex/blob/master/CHANGELOG.md) and [migration guide](https://github.com/Lokad/Utf8Regex/blob/master/MIGRATION.md).
 Repository [benchmark evidence](https://github.com/Lokad/Utf8Regex/blob/master/src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md)
 retains its recorded source/package/runtime scope; previous candidate timings do

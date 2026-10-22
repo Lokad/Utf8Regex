@@ -88,6 +88,92 @@ public sealed class Pcre2TryReplaceInvocationTests
         Assert.All(storage, value => Assert.Equal((byte)'x', value));
     }
 
+    public static IEnumerable<object[]> AliasingRoutes()
+    {
+        yield return ["a", "a😀z", "XYZ", "XYZ😀z"];
+        yield return ["[a]", "a😀z", "$0$0", "aa😀z"];
+        yield return ["a+", "aaa😀z", "Q", "Q😀z"];
+        yield return ["(?<x>a)", "a😀z", "${x}${x}", "aa😀z"];
+        yield return ["(?<x>a)b", "ab😀z", "${x}${x}", "aa😀z"];
+        yield return ["a", "a😀z", "", "😀z"];
+        yield return ["a", "a😀za😀z", "$0$0", "aa😀zaa😀z"];
+    }
+
+    [Theory] [MemberData(nameof(AliasingRoutes))]
+    public void MatchedOverlapsPreserveUnreadScalarBytes(string pattern, string text, string template, string expected)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var replacement = Encoding.UTF8.GetBytes(template);
+        var output = Encoding.UTF8.GetBytes(expected);
+        foreach (var finite in new[] { false, true })
+        foreach (var liveToken in new[] { false, true })
+        foreach (var shift in new[] { -1, 0, 1 })
+        {
+            using var source = new CancellationTokenSource();
+            var regex = finite ? Policy(pattern, 1000000) : new Utf8Pcre2Regex(pattern);
+            var storage = new byte[128];
+            input.CopyTo(storage.AsSpan(16));
+            Assert.Equal(OperationStatus.Done, regex.TryReplace(storage.AsSpan(16, input.Length), replacement,
+                storage.AsSpan(16 + shift, output.Length), out var written, 0,
+                Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, liveToken ? source.Token : default));
+            Assert.Equal(output.Length, written);
+            Assert.Equal(output, storage.AsSpan(16 + shift, written).ToArray());
+            Utf8Validation.Validate(storage.AsSpan(16 + shift, written));
+        }
+    }
+
+    [Theory] [InlineData(false)] [InlineData(true)]
+    public void OverlappingShortDestinationIsUnchanged(bool reportLength)
+    {
+        foreach (var size in new[] { 0, 7 })
+        {
+            var storage = new byte[64]; "a😀z"u8.CopyTo(storage);
+            var before = storage.ToArray();
+            Assert.Equal(OperationStatus.DestinationTooSmall, Policy("a", 100000).TryReplace(
+                storage.AsSpan(0, 6), "XYZ"u8, storage.AsSpan(0, size), out var written, 0,
+                reportLength ? Pcre2SubstitutionOptions.SubstituteOverflowLength : Pcre2SubstitutionOptions.None,
+                Pcre2MatchOptions.None));
+            Assert.Equal(reportLength ? 8 : 0, written);
+            Assert.Equal(before, storage);
+        }
+    }
+
+    [Fact]
+    public void InputTemplateAndDestinationCanShareStorage()
+    {
+        var storage = new byte[64]; "a😀z"u8.CopyTo(storage.AsSpan(16));
+        Assert.Equal(OperationStatus.Done, Policy("a", 100000).TryReplace(storage.AsSpan(16, 6),
+            storage.AsSpan(17, 4), storage.AsSpan(15, 9), out var written));
+        Assert.Equal(9, written);
+        Assert.Equal("😀😀z"u8.ToArray(), storage.AsSpan(15, written).ToArray());
+    }
+
+    [Fact]
+    public void OverlappingReplacementOnlyOmitsOriginalGaps()
+    {
+        var storage = new byte[64]; "za😀a"u8.CopyTo(storage);
+        Assert.Equal(OperationStatus.Done, Policy("a", 100000).TryReplace(storage.AsSpan(0, 7), "$0$0"u8,
+            storage.AsSpan(1, 4), out var written, Pcre2SubstitutionOptions.SubstituteReplacementOnly));
+        Assert.Equal(4, written);
+        Assert.Equal("aaaa"u8.ToArray(), storage.AsSpan(1, written).ToArray());
+    }
+
+    [Fact]
+    public void OverlappingStagingRequiresAdmissionBeforeWriting()
+    {
+        var regex = new Utf8Pcre2Regex("a", Pcre2CompileOptions.None, default,
+            new() { MatchLimit = 100000, DepthLimit = 256, HeapLimitInBytes = 4096,
+                ResultLimitInBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
+        var input = Encoding.UTF8.GetBytes("a" + new string('x', 8191));
+        var independent = new byte[input.Length];
+        Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "Q"u8, independent, out _));
+        var before = input.ToArray();
+        Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() =>
+            regex.TryReplace(input, "Q"u8, input, out _)).ErrorKind);
+        Assert.Equal(before, input);
+        Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "Q"u8, independent, out _));
+    }
+
     [Theory] [MemberData(nameof(Routes))]
     public void WorkingAndResultDenialLeaveCallerStorageAndFreshSuccess(string pattern, string text, string template, string expected)
     {
