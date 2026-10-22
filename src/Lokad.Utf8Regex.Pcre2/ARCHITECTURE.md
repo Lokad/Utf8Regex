@@ -72,10 +72,10 @@ Development after RC1 builds literal and character operation programs directly,
 with canonical group-zero metadata and no unused Core owner. Literal Rune staging
 is admitted, temporary and released after encoding runtime UTF-8 bytes. Character
 token/class/property buffers admit capacity and growth/final-copy overlap before
-allocation, with token instruction admission and bounded work/checkpoints. Marker
-syntax trees retain no unused literal-atom or character-node vectors. Backtracking
-trees remain only when the compiled curated Probe profile can consume them;
-programs with no partial descriptor drop that tree after operation selection.
+allocation, with token instruction admission and bounded work/checkpoints.
+Literal and character programs have no marker syntax trees. A typed optional
+ProbeRoot retains backtracking syntax only when the curated partial-probe program
+consumes it; other programs drop that root after operation selection.
 Lowered option fallbacks remain owned independently. Core-backed specializations retain their
 real owners after profile parsing; Core capture-name copies are not authoritative.
 Option eligibility omits unneeded Core preparation, and final operation selection

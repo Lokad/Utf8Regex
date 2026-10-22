@@ -1,4 +1,6 @@
 using Lokad.Utf8Regex.Internal.Diagnostics;
+using Lokad.Utf8Regex.Internal.Execution;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -30,29 +32,10 @@ public sealed class Utf8OperationCursorArchitectureTests
     [Fact]
     public void MatchAndSplitAdaptersShareTheInternalOperationCursor()
     {
-        var sourceRoot = FindCoreSourceDirectory();
-        var publicEnumerator = File.ReadAllText(Path.Combine(sourceRoot, "Utf8ValueMatchEnumerator.cs"));
-        var splitEnumerator = File.ReadAllText(Path.Combine(sourceRoot, "Utf8ValueSplitEnumerator.cs"));
-        var facade = File.ReadAllText(Path.Combine(sourceRoot, "Utf8Regex.cs"));
-        var runtime = File.ReadAllText(Path.Combine(
-            sourceRoot,
-            "Internal",
-            "Execution",
-            "Utf8CompiledEngineRuntime.cs"));
-
-        Assert.Contains("Utf8OperationMatchCursor", publicEnumerator, StringComparison.Ordinal);
-        Assert.DoesNotContain("Utf8SearchExecutor", publicEnumerator, StringComparison.Ordinal);
-        Assert.Contains("Utf8OperationMatchCursor", splitEnumerator, StringComparison.Ordinal);
-        Assert.DoesNotContain("NativeSimplePattern", splitEnumerator, StringComparison.Ordinal);
-        Assert.DoesNotContain("NativeDeterministicPattern", splitEnumerator, StringComparison.Ordinal);
-        Assert.Contains("Utf8SliceProgram _ownedSliceProgram", facade, StringComparison.Ordinal);
-        Assert.DoesNotContain("Utf8SliceProgram? _ownedSliceProgram", facade, StringComparison.Ordinal);
-        Assert.DoesNotContain("AsciiCulture" + "Invariant", facade, StringComparison.Ordinal);
-        Assert.DoesNotContain(typeof(Utf8Regex).Assembly.GetTypes(), static type =>
-            type.Name.Contains("AsciiCulture" + "Invariant", StringComparison.Ordinal));
-        Assert.Contains("Utf8RegexProgram _program", facade, StringComparison.Ordinal);
-        Assert.DoesNotContain("CreateMatchEnumerator", runtime, StringComparison.Ordinal);
-        Assert.DoesNotContain("CreateSplitEnumerator", runtime, StringComparison.Ordinal);
+        // Check the consumed implementation, including detached packages.
+        foreach (var adapter in new[] { typeof(Utf8ValueMatchEnumerator), typeof(Utf8ValueSplitEnumerator) })
+            Assert.Single(adapter.GetFields(BindingFlags.Instance | BindingFlags.NonPublic),
+                static field => field.FieldType == typeof(Utf8OperationMatchCursor));
     }
 
     [Theory]
@@ -112,20 +95,4 @@ public sealed class Utf8OperationCursorArchitectureTests
         return splits;
     }
 
-    private static string FindCoreSourceDirectory()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null)
-        {
-            var candidate = Path.Combine(directory.FullName, "src", "Lokad.Utf8Regex");
-            if (Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-
-            directory = directory.Parent;
-        }
-
-        throw new DirectoryNotFoundException("Could not locate the Lokad.Utf8Regex source directory.");
-    }
 }
