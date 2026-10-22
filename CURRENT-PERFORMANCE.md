@@ -17,6 +17,7 @@ contracts; it does not refresh historical benchmark Status. Relevant receipts:
 
 | Evidence | Scope and remaining limits |
 | --- | --- |
+| [Twenty-first cleanup](bench/Experiments/TwentyFirstReview-20261022/README.md) | One callback writer and typed PCRE2 probing roots. Confirmation callback/probe medians -4.47% to +6.35%; noisy controls/spreads remain. Construction costs are separate; no cumulative/package qualification. |
 | [Twentieth cleanup](bench/Experiments/TwentiethReview-20261022/README.md) | Default-result correction, selected-profile qualification and native template borrowing; focused public costs and allocation witnesses are separate from release qualification. |
 | [Nineteenth comparison](bench/Experiments/NineteenthReview-20261022/README.md) | Package/member guards delivered. Fixed-baseline comparison and sole confirmation were inconclusive; PCRE2 Count prototype restored. No cumulative 10% qualification. |
 | [Fifteenth cleanup](bench/Experiments/FifteenthReview-20261021/README.md) | Selected public medians -5.09% to +6.10%, unchanged matching allocations; compiled identifier construction allocates 61,696 fewer bytes. Bounded source evidence only. |

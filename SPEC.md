@@ -93,6 +93,11 @@ Retain the .NET-style replacement language (`$1`, `${name}`, `$&`, `$```, `$'`, 
 
 Encode each replacement literal and each string evaluator return independently as UTF-8. A valid UTF-16 surrogate pair within that fragment denotes one scalar; an unpaired surrogate becomes U+FFFD, as with `Utf8ReplacementWriter.Append(ReadOnlySpan<char>)`. Fragments cannot join surrogate halves across substitutions, matches or original-subject gaps. This string-boundary encoding rule does not relax strict validation of UTF-8 subjects, replacement-pattern bytes or completed byte-evaluator output.
 
+`Utf8ReplacementWriter` is valid during a replacement callback. Initialized
+copies share output; a reset/default writer joins the active invocation when
+appended. Appending outside a replacement callback throws `InvalidOperationException`,
+including empty fragments. `AppendAsciiByte` validates its ASCII argument first.
+
 ### 3.3 Culture and casing
 
 `IgnoreCase` compares complete scalars using qualified Unicode case-equivalence rules; pin the Unicode data and culture behavior as those owned paths migrate. `CultureInvariant` selects invariant behavior. Culture-sensitive options retain the construction culture and include it in cache identity, including scoped inline folds. BCL behavior can qualify overlapping cases but cannot supply the production engine or justify folding surrogate halves. Supplementary casing and Turkish-I need direct scalar fixtures.

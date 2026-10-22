@@ -1,0 +1,48 @@
+{
+  "Scope": "Untimed public callback and loaded-assembly shape witnesses only; no product/test build or performance qualification.",
+  "CoreProducer": "0.4.0-rc.2-dev\u002B5ee10614350d139ee7cef3891fc7178b4beb4e6c",
+  "WriterSize": 16,
+  "WriterFields": [
+    {
+      "Name": "_buffer",
+      "Type": "System.Buffers.ArrayBufferWriter\u00601[System.Byte]"
+    },
+    {
+      "Name": "_owned",
+      "Type": "Lokad.Utf8Regex.Internal.Execution.Utf8SliceByteOutputBuffer"
+    }
+  ],
+  "StandaloneAppendCurrentlyAccepted": true,
+  "CoreResetResult": "reset!",
+  "Pcre2ResetResult": "reset!",
+  "SyntaxMarkers": [
+    {
+      "Pattern": "abc",
+      "Marker": "Pcre2LiteralSyntaxTree",
+      "InstanceFields": 0,
+      "PublicMatchSucceeds": true
+    },
+    {
+      "Pattern": ".",
+      "Marker": "Pcre2CharacterSyntaxTree",
+      "InstanceFields": 0,
+      "PublicMatchSucceeds": true
+    }
+  ],
+  "Outcomes": [
+    {
+      "Type": "Pcre2CompiledLiteralOutcome",
+      "Fields": [
+        "\u003CSyntaxTree\u003Ek__BackingField",
+        "\u003CProgram\u003Ek__BackingField"
+      ]
+    },
+    {
+      "Type": "Pcre2CompiledCharacterOutcome",
+      "Fields": [
+        "\u003CSyntaxTree\u003Ek__BackingField",
+        "\u003CProgram\u003Ek__BackingField"
+      ]
+    }
+  ]
+}

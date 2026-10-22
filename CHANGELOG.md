@@ -6,6 +6,13 @@ These changes are development source, currently 0.4.0-rc.2-dev. Frozen RC1
 artifacts remain unchanged and unpublished; they must not be released. A fresh
 candidate and final downstream/package/cost qualification are still required.
 
+- Callback writers now use one owned output backend. Appending outside a
+  replacement callback throws InvalidOperationException, including empty
+  fragments; invalid ASCII arguments still reject first. Default/reset joining,
+  aliases, nested callbacks, UTF-8 validation and finite controls remain.
+- Removed PCRE2's empty syntax markers and tag-bearing compiler outcomes. Curated
+  partial probing retains its typed backtracking root directly; captures,
+  branch-reset metadata, operation selection and construction admission remain.
 - Zero-initialized Core value matches now report no match, consistently with
   explicit NoMatch. Successful empty matches remain distinct. The result stays
   16 bytes and preserves byte and derived UTF-16 coordinates.

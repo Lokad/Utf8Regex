@@ -1,0 +1,152 @@
+{
+  "Scope": "One public before/after pair plus sole reversed-order longer-warmup confirmation. Matching and construction costs are separate; no package/cumulative qualification.",
+  "BeforeProducer": "5ee10614350d139ee7cef3891fc7178b4beb4e6c",
+  "AfterProducer": "66180b1c68c4c27af0d1371e57b290d033936011",
+  "InitialWallSeconds": 34.1920488,
+  "ConfirmationWallSeconds": 88.9643138,
+  "ConfirmationMinimumSampleMs": 16.0597,
+  "WriterSizes": [
+    [
+      16
+    ],
+    [
+      8
+    ]
+  ],
+  "Rows": [
+    {
+      "Name": "Callback/Core-mixed-appends",
+      "BeforeNs": 2300.7473386921574,
+      "AfterNs": 2391.9871794871797,
+      "ChangePercent": 3.9656610380732538,
+      "BeforeBytes": 11504,
+      "AfterBytes": 11504,
+      "BeforeSpread": 3.9049216165162037,
+      "AfterSpread": 2.4546969917704815
+    },
+    {
+      "Name": "Callback/Core-finite",
+      "BeforeNs": 3154.120455945779,
+      "AfterNs": 3324.4517453798767,
+      "ChangePercent": 5.400278518628188,
+      "BeforeBytes": 11616,
+      "AfterBytes": 11616,
+      "BeforeSpread": 1.1763649899417625,
+      "AfterSpread": 1.5271038387529936
+    },
+    {
+      "Name": "Callback/Core-RTL",
+      "BeforeNs": 3769.3358821863494,
+      "AfterNs": 3600.8050158681012,
+      "ChangePercent": -4.4711023794593245,
+      "BeforeBytes": 13464,
+      "AfterBytes": 13464,
+      "BeforeSpread": 2.6341067869419352,
+      "AfterSpread": 1.76414824558895
+    },
+    {
+      "Name": "Callback/Core-reset-alias",
+      "BeforeNs": 2445.5205032832805,
+      "AfterNs": 2600.726704075062,
+      "ChangePercent": 6.3465507888159856,
+      "BeforeBytes": 11784,
+      "AfterBytes": 11784,
+      "BeforeSpread": 1.5064994703814336,
+      "AfterSpread": 1.5247103480237458
+    },
+    {
+      "Name": "Callback/Pcre2-mixed-appends",
+      "BeforeNs": 3872.396780057128,
+      "AfterNs": 4063.9877665448985,
+      "ChangePercent": 4.947607318404601,
+      "BeforeBytes": 19104,
+      "AfterBytes": 19104,
+      "BeforeSpread": 1.8672659188533527,
+      "AfterSpread": 1.8959516748809622
+    },
+    {
+      "Name": "Callback/Pcre2-finite",
+      "BeforeNs": 4691.6748046875,
+      "AfterNs": 4665.963752422204,
+      "ChangePercent": -0.5480143730253295,
+      "BeforeBytes": 19104,
+      "AfterBytes": 19104,
+      "BeforeSpread": 2.341011666524738,
+      "AfterSpread": 2.276840808571694
+    },
+    {
+      "Name": "Callback/Pcre2-reset-alias",
+      "BeforeNs": 3939.155773873949,
+      "AfterNs": 4098.234563520227,
+      "ChangePercent": 4.038398042071667,
+      "BeforeBytes": 19384,
+      "AfterBytes": 19384,
+      "BeforeSpread": 1.7005155840596673,
+      "AfterSpread": 1.6558268709582205
+    },
+    {
+      "Name": "Probe/Pcre2-retained-root",
+      "BeforeNs": 140.97653906156245,
+      "AfterNs": 143.14266288661116,
+      "ChangePercent": 1.5365136919007538,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.2356507335116984,
+      "AfterSpread": 1.4124535555377353
+    },
+    {
+      "Name": "Construction/Pcre2-literal",
+      "BeforeNs": 534.1009134291266,
+      "AfterNs": 506.39893152786226,
+      "ChangePercent": -5.186656904105879,
+      "BeforeBytes": 1728,
+      "AfterBytes": 1696,
+      "BeforeSpread": 1.6210238640229242,
+      "AfterSpread": 1.3518291270134128
+    },
+    {
+      "Name": "Construction/Pcre2-character",
+      "BeforeNs": 38499.60396039604,
+      "AfterNs": 41279.40503432494,
+      "ChangePercent": 7.220336803434235,
+      "BeforeBytes": 35992,
+      "AfterBytes": 35968,
+      "BeforeSpread": 2.686885072860706,
+      "AfterSpread": 2.1667901641998295
+    },
+    {
+      "Name": "Construction/Pcre2-backtracking",
+      "BeforeNs": 63950.77319587629,
+      "AfterNs": 61428.318584070796,
+      "ChangePercent": -3.9443692167402067,
+      "BeforeBytes": 51184,
+      "AfterBytes": 51160,
+      "BeforeSpread": 1.3246975838919997,
+      "AfterSpread": 1.3606827079197048
+    },
+    {
+      "Name": "Control/Core-Count-miss-128KiB",
+      "BeforeNs": 8489.959016393443,
+      "AfterNs": 8211.166007905138,
+      "ChangePercent": -3.2837968705146547,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 4.041004358147441,
+      "AfterSpread": 1.3982326836677887
+    },
+    {
+      "Name": "Control/Pcre2-literal-Match",
+      "BeforeNs": 115.70774121378929,
+      "AfterNs": 125.36954191113165,
+      "ChangePercent": 8.350176570719302,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 2.6493407024198796,
+      "AfterSpread": 2.143480548211299
+    }
+  ],
+  "LabelCorrection": "Construction/Pcre2-character uses .{2}, which is repeat/backtracking compilation; no direct-character construction timing claim.",
+  "Decision": "Accept bounded changes: confirmation selected callback/probe medians -4.47% to +6.35%; controls -3.28%/+8.35%, wide spreads prevent precise equivalence/causal speedup or a cumulative bound. Stop timing. Callback allocations unchanged; literal construction -32 B, repeated-dot and captured construction -24 B in confirmation.",
+  "DriverSha256": "37F30DC29E877F33B0C9CC8B1799C670728C4408DC7D66F0294D984D1E9C621C",
+  "DriverSourceSha256": "44D594794B6FD220C9951A70653DD6E8A314A7FA9E2740FB66E3E5BDFD9A889C"
+}

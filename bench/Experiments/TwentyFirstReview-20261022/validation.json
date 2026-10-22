@@ -1,0 +1,50 @@
+{
+  "Date": "2026-10-22",
+  "FinalSourceRevision": "66180b1c68c4c27af0d1371e57b290d033936011",
+  "WriterRevision": "3b101d5e",
+  "LocalRelease": {
+    "FocusedCoreWriter": 131,
+    "FocusedPcre2": 217,
+    "FocusedPartialProbeBranchReset": 1759,
+    "CoreFull": 39604,
+    "CoreFullSeconds": 102,
+    "Pcre2Full": 6007,
+    "Pcre2FullSeconds": 15,
+    "Failures": 0,
+    "Skips": 0
+  },
+  "Ci": {
+    "conclusion": "success",
+    "headSha": "66180b1c68c4c27af0d1371e57b290d033936011",
+    "jobs": [
+      {
+        "conclusion": "success",
+        "name": "tests (ubuntu-latest)",
+        "status": "completed",
+        "url": "https://github.com/Lokad/Utf8Regex/actions/runs/39788061003/job/119856361868"
+      },
+      {
+        "conclusion": "success",
+        "name": "tests (windows-latest)",
+        "status": "completed",
+        "url": "https://github.com/Lokad/Utf8Regex/actions/runs/39788061003/job/119856362282"
+      }
+    ],
+    "status": "completed"
+  },
+  "CiRun": 39788061003,
+  "CiUrl": "https://github.com/Lokad/Utf8Regex/actions/runs/39788061003",
+  "FinalProducerPePdbCompiledSourcePreflight": "pass",
+  "GeneratedReadmeParity": "pass",
+  "GeneratedPcre2Page": "pass",
+  "GeneratedPythonRePage": "pass",
+  "ImmutableSnapshots": 4,
+  "ImmutableRc1Files": 9,
+  "OriginalTodos": 5,
+  "PlansIgnored": true,
+  "NewQualifiedPackage": false,
+  "CumulativePerformanceQualification": false,
+  "ConfirmationMinimumSampleMs": 16.0597,
+  "ModifiedDocumentLocalLinks": "pass",
+  "ShippedSourceNetLinesRemoved": 116
+}

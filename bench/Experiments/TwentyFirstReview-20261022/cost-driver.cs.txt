@@ -1,0 +1,76 @@
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Pcre2;
+
+public static class Lanes
+{
+    private static byte[]? s_lastResult;
+    public static string Producer() => string.Join("; ", new[] { typeof(Utf8Regex), typeof(Utf8Pcre2Regex) }
+        .Select(type => type.Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion));
+    public static (string, Func<long>, long)[] Create()
+    {
+        var pattern = "(a)(?=a|$)";
+        var core = new Utf8Regex(pattern);
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 50_000_000, MaxDepth = 1024, MaxWorkingBytes = 64 << 20, MaxResultBytes = 128 << 20 };
+        var coreFinite = new Utf8Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, policy);
+        var coreRtl = new Utf8Regex(pattern, RegexOptions.RightToLeft);
+        var pcre = new Utf8Pcre2Regex(pattern);
+        var pcreFinite = Utf8Pcre2Regex.Create(pattern, default, default, policy, Timeout.InfiniteTimeSpan);
+        var hits = "aa"u8.ToArray();
+        var reset = "xaa"u8.ToArray();
+        var probe = new Utf8Pcre2Regex(@"^(?:aa|a++\w)");
+        var partial = "a"u8.ToArray();
+        var control = new Utf8Regex("z");
+        var controlSubject = Encoding.UTF8.GetBytes(new string('a', 128 * 1024));
+        var pcreControl = new Utf8Pcre2Regex("abc");
+        var pcreSubject = "xxabczz"u8.ToArray();
+        var expected = Encoding.UTF8.GetBytes("[aé😀][aé😀]");
+        foreach (var output in new[] { core.Replace(hits, 0, CoreAppend), coreFinite.Replace(hits, 0, CoreAppend),
+            coreRtl.Replace(hits, 0, CoreAppend), pcre.Replace(hits, 0, PcreAppend), pcreFinite.Replace(hits, 0, PcreAppend) })
+            if (!output.AsSpan().SequenceEqual(expected)) throw new Exception("Public callback bytes differ");
+        if (!core.Replace(reset, 0, CoreReset).AsSpan().SequenceEqual("reset!"u8) ||
+            !pcre.Replace(reset, 0, PcreReset).AsSpan().SequenceEqual("reset!"u8)) throw new Exception("Reset bytes differ");
+        return [
+            ("Callback/Core-mixed-appends", () => Check(core.Replace(hits, 0, CoreAppend)), 109),
+            ("Callback/Core-finite", () => Check(coreFinite.Replace(hits, 0, CoreAppend)), 109),
+            ("Callback/Core-RTL", () => Check(coreRtl.Replace(hits, 0, CoreAppend)), 109),
+            ("Callback/Core-reset-alias", () => Check(core.Replace(reset, 0, CoreReset)), 120),
+            ("Callback/Pcre2-mixed-appends", () => Check(pcre.Replace(hits, 0, PcreAppend)), 109),
+            ("Callback/Pcre2-finite", () => Check(pcreFinite.Replace(hits, 0, PcreAppend)), 109),
+            ("Callback/Pcre2-reset-alias", () => Check(pcre.Replace(reset, 0, PcreReset)), 120),
+            ("Probe/Pcre2-retained-root", () => probe.Probe(partial, Pcre2PartialMode.Soft).Kind == Utf8Pcre2ProbeKind.PartialMatch ? 1 : -1, 1),
+            ("Construction/Pcre2-literal", () => new Utf8Pcre2Regex("abc").Pattern.Length, 3),
+            ("Construction/Pcre2-character", () => new Utf8Pcre2Regex(".{2}").Pattern.Length, 4),
+            ("Construction/Pcre2-backtracking", () => new Utf8Pcre2Regex("(a)b+").Pattern.Length, 5),
+            ("Control/Core-Count-miss-128KiB", () => control.Count(controlSubject), 0),
+            ("Control/Pcre2-literal-Match", () => { var match = pcreControl.Match(pcreSubject); return match.Success ? match.StartOffsetInBytes + match.EndOffsetInBytes : -1; }, 7)
+        ];
+    }
+    // Keep result traversal after the API returns, identical for both versions.
+    private static long Check(byte[] bytes) { s_lastResult = bytes; return bytes.Length + bytes[0]; }
+    private static void Append(ref Utf8ReplacementWriter writer)
+    {
+        writer.Append("[a"u8);
+        writer.Append("é".AsSpan());
+        writer.Append(new Rune(0x1F600));
+        writer.AppendAsciiByte((byte)']');
+    }
+    private static void Reset(ref Utf8ReplacementWriter writer)
+    {
+        var discarded = writer;
+        discarded.Append("discarded"u8);
+        writer = default;
+        writer.Append("reset"u8);
+        discarded.Append("also discarded"u8);
+        var returned = writer;
+        returned.AppendAsciiByte((byte)'!');
+    }
+    private static void CoreAppend(in Utf8MatchContext match, ref Utf8ReplacementWriter writer, ref int state) => Append(ref writer);
+    private static void CoreReset(in Utf8MatchContext match, ref Utf8ReplacementWriter writer, ref int state) => Reset(ref writer);
+    private static void PcreAppend(in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref int state) => Append(ref writer);
+    private static void PcreReset(in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref int state) => Reset(ref writer);
+    public static long[] Allocations() => [Unsafe.SizeOf<Utf8ReplacementWriter>()];
+}

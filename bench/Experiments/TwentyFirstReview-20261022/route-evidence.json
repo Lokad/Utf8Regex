@@ -1,0 +1,31 @@
+{
+  "Scope": "Untimed loaded-production operation and root inventory",
+  "Rows": [
+    {
+      "Pattern": "abc",
+      "MatchProgram": "Pcre2LiteralDirectProgram",
+      "ProbeRootRetained": false
+    },
+    {
+      "Pattern": ".",
+      "MatchProgram": "Pcre2CharacterDirectProgram",
+      "ProbeRootRetained": false
+    },
+    {
+      "Pattern": ".{2}",
+      "MatchProgram": "Pcre2SingleTokenRepeatDirectProgram",
+      "ProbeRootRetained": false
+    },
+    {
+      "Pattern": "(a)b+",
+      "MatchProgram": "Pcre2SliceDirectProgram",
+      "ProbeRootRetained": true
+    },
+    {
+      "Pattern": "^(?:aa|a++\\w)",
+      "MatchProgram": "Pcre2BacktrackingDirectProgram",
+      "ProbeRootRetained": true
+    }
+  ],
+  "ConstructionLabelCorrection": "The .{2} row is repeat/backtracking construction, not the direct character compiler. No direct-character construction timing is claimed."
+}

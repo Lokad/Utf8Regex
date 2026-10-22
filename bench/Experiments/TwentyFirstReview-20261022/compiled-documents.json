@@ -1,0 +1,11 @@
+{
+  "Scope": "Untimed existing PE/PDB/source evidence checks only; no measurement or snapshot writes.",
+  "Checkout": "66180b1c68c4",
+  "Rows": [
+    {
+      "Name": "Full producer and compiled-source preflight",
+      "Accepted": true,
+      "Error": null
+    }
+  ]
+}

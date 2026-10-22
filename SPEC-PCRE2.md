@@ -507,8 +507,11 @@ allowance is removed. Growth/final
 overlap and the unchanged-subject result after no match are admitted before allocation
 and copied in bounded blocks with the original token/absolute deadline. Callback
 buffer controls, writer resets and final byte/text shaping use that same allowance;
-nested operations restore the outer scope. `MatchLimit` and working heap cover these
-stages cumulatively, so cases that fitted former separate matching/writing allowances
+nested operations restore the outer scope. The shared Core writer lifetime applies:
+append outside a replacement callback throws `InvalidOperationException`, including
+empty fragments; `AppendAsciiByte` rejects non-ASCII arguments first.
+`MatchLimit` and working heap cover these stages cumulatively, so cases that
+fitted former separate matching/writing allowances
 can fail earlier. The first resource denial retains its PCRE2 kind. Publication releases
 temporary working charges while returned arrays, capture views and aliases remain
 valid. Fixed slice `ReplaceToString` validates, counts and decodes directly from its

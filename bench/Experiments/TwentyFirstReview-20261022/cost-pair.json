@@ -1,0 +1,2057 @@
+{
+  "Scope": "One bounded same-process alternating before/after public comparison; no package or cumulative performance qualification.",
+  "Runtime": ".NET 10.0.13",
+  "OS": "Microsoft Windows 10.0.26200",
+  "Affinity": 1048576,
+  "Versions": [
+    "0.4.0-rc.2-dev\u002B5ee10614350d139ee7cef3891fc7178b4beb4e6c; 0.4.0-rc.2-dev\u002B5ee10614350d139ee7cef3891fc7178b4beb4e6c",
+    "0.4.0-rc.2-dev\u002B66180b1c68c4c27af0d1371e57b290d033936011; 0.4.0-rc.2-dev\u002B66180b1c68c4c27af0d1371e57b290d033936011"
+  ],
+  "CoreHashes": [
+    "D6D737EBED988F3B33F7551CCBE5B09C322705BE8BE3F065D4B597B13354CCD0",
+    "9DE2925FA70F6310EC3FC3E2961B3CDC02516DC1DAC45A9AB8A146F66C2EF254"
+  ],
+  "SampleCount": 9,
+  "WarmupMillisecondsPerVersionPerLane": 750,
+  "MinimumCalibrationMilliseconds": 40,
+  "WriterSizes": [
+    [
+      16
+    ],
+    [
+      8
+    ]
+  ],
+  "WallSeconds": 34.1920488,
+  "Rows": [
+    {
+      "Name": "Callback/Core-mixed-appends",
+      "BeforeNs": 2331.4987024221455,
+      "AfterNs": 7332.601351351352,
+      "ChangePercent": 214.5016269463785,
+      "BeforeBytes": 11504,
+      "AfterBytes": 11504,
+      "BeforeSpread": 3.978885989336862,
+      "AfterSpread": 1.468556222227801,
+      "Samples": [
+        {
+          "Sample": 0,
+          "Version": 0,
+          "Count": 9248,
+          "Nanoseconds": 2532.3096885813147,
+          "Bytes": 11504,
+          "Checksum": 1008032
+        },
+        {
+          "Sample": 0,
+          "Version": 1,
+          "Count": 2368,
+          "Nanoseconds": 7155.996621621622,
+          "Bytes": 11504,
+          "Checksum": 258112
+        },
+        {
+          "Sample": 1,
+          "Version": 1,
+          "Count": 2368,
+          "Nanoseconds": 7332.601351351352,
+          "Bytes": 11504,
+          "Checksum": 258112
+        },
+        {
+          "Sample": 1,
+          "Version": 0,
+          "Count": 9248,
+          "Nanoseconds": 2519.669117647059,
+          "Bytes": 11504,
+          "Checksum": 1008032
+        },
+        {
+          "Sample": 2,
+          "Version": 0,
+          "Count": 9248,
+          "Nanoseconds": 2331.4987024221455,
+          "Bytes": 11504,
+          "Checksum": 1008032
+        },
+        {
+          "Sample": 2,
+          "Version": 1,
+          "Count": 2368,
+          "Nanoseconds": 8162.8800675675675,
+          "Bytes": 11504,
+          "Checksum": 258112
+        },
+        {
+          "Sample": 3,
+          "Version": 1,
+          "Count": 2368,
+          "Nanoseconds": 7147.846283783784,
+          "Bytes": 11504,
+          "Checksum": 258112
+        },
+        {
+          "Sample": 3,
+          "Version": 0,
+          "Count": 9248,
+          "Nanoseconds": 1789.9005190311418,
+          "Bytes": 11504,
+          "Checksum": 1008032
+        },
+        {
+          "Sample": 4,
+          "Version": 0,
+          "Count": 9248,
+          "Nanoseconds": 1745.7828719723184,
+          "Bytes": 11504,
+          "Checksum": 1008032
+        },
+        {
+          "Sample": 4,
+          "Version": 1,
+          "Count": 2368,
+          "Nanoseconds": 7548.986486486487,
+          "Bytes": 11504,
+          "Checksum": 258112
+        },
+        {
+          "Sample": 5,
+          "Version": 1,
+          "Count": 2368,
+          "Nanoseconds": 8479.476351351352,
+          "Bytes": 11504,
+          "Checksum": 258112
+        },
+        {
+          "Sample": 5,
+          "Version": 0,
+          "Count": 9248,
+          "Nanoseconds": 1954.768598615917,
+          "Bytes": 11504,
+          "Checksum": 1008032
+        },
+        {
+          "Sample": 6,
+          "Version": 0,
+          "Count": 9248,
+          "Nanoseconds": 1732.0285467128028,
+          "Bytes": 11504,
+          "Checksum": 1008032
+        },
+        {
+          "Sample": 6,
+          "Version": 1,
+          "Count": 2368,
+          "Nanoseconds": 6728.5472972972975,
+          "Bytes": 11504,
+          "Checksum": 258112
+        },
+        {
+          "Sample": 7,
+          "Version": 1,
+          "Count": 2368,
+          "Nanoseconds": 7178.885135135135,
+          "Bytes": 11504,
+          "Checksum": 258112
+        },
+        {
+          "Sample": 7,
+          "Version": 0,
+          "Count": 9248,
+          "Nanoseconds": 6891.544117647059,
+          "Bytes": 11504,
+          "Checksum": 1008032
+        },
+        {
+          "Sample": 8,
+          "Version": 0,
+          "Count": 9248,
+          "Nanoseconds": 3566.7387543252594,
+          "Bytes": 11504,
+          "Checksum": 1008032
+        },
+        {
+          "Sample": 8,
+          "Version": 1,
+          "Count": 2368,
+          "Nanoseconds": 9881.25,
+          "Bytes": 11504,
+          "Checksum": 258112
+        }
+      ]
+    },
+    {
+      "Name": "Callback/Core-finite",
+      "BeforeNs": 2853.9387014383656,
+      "AfterNs": 3231.622151433472,
+      "ChangePercent": 13.233761811518807,
+      "BeforeBytes": 11616,
+      "AfterBytes": 11616,
+      "BeforeSpread": 1.4298821316214607,
+      "AfterSpread": 1.4761152825900998,
+      "Samples": [
+        {
+          "Sample": 0,
+          "Version": 0,
+          "Count": 14878,
+          "Nanoseconds": 2832.1078101895414,
+          "Bytes": 11616,
+          "Checksum": 1621702
+        },
+        {
+          "Sample": 0,
+          "Version": 1,
+          "Count": 16324,
+          "Nanoseconds": 3231.622151433472,
+          "Bytes": 11616,
+          "Checksum": 1779316
+        },
+        {
+          "Sample": 1,
+          "Version": 1,
+          "Count": 16324,
+          "Nanoseconds": 3112.741975006126,
+          "Bytes": 11616,
+          "Checksum": 1779316
+        },
+        {
+          "Sample": 1,
+          "Version": 0,
+          "Count": 14878,
+          "Nanoseconds": 2770.621051216561,
+          "Bytes": 11616,
+          "Checksum": 1621702
+        },
+        {
+          "Sample": 2,
+          "Version": 0,
+          "Count": 14878,
+          "Nanoseconds": 3049.1060626428284,
+          "Bytes": 11616,
+          "Checksum": 1621702
+        },
+        {
+          "Sample": 2,
+          "Version": 1,
+          "Count": 16324,
+          "Nanoseconds": 3960.052683165891,
+          "Bytes": 11616,
+          "Checksum": 1779316
+        },
+        {
+          "Sample": 3,
+          "Version": 1,
+          "Count": 16324,
+          "Nanoseconds": 3099.228130360206,
+          "Bytes": 11616,
+          "Checksum": 1779316
+        },
+        {
+          "Sample": 3,
+          "Version": 0,
+          "Count": 14878,
+          "Nanoseconds": 2853.9387014383656,
+          "Bytes": 11616,
+          "Checksum": 1621702
+        },
+        {
+          "Sample": 4,
+          "Version": 0,
+          "Count": 14878,
+          "Nanoseconds": 3617.0116951203117,
+          "Bytes": 11616,
+          "Checksum": 1621702
+        },
+        {
+          "Sample": 4,
+          "Version": 1,
+          "Count": 16324,
+          "Nanoseconds": 4186.112472433228,
+          "Bytes": 11616,
+          "Checksum": 1779316
+        },
+        {
+          "Sample": 5,
+          "Version": 1,
+          "Count": 16324,
+          "Nanoseconds": 3245.754716981132,
+          "Bytes": 11616,
+          "Checksum": 1779316
+        },
+        {
+          "Sample": 5,
+          "Version": 0,
+          "Count": 14878,
+          "Nanoseconds": 2529.5873101223283,
+          "Bytes": 11616,
+          "Checksum": 1621702
+        },
+        {
+          "Sample": 6,
+          "Version": 0,
+          "Count": 14878,
+          "Nanoseconds": 3229.815835461756,
+          "Bytes": 11616,
+          "Checksum": 1621702
+        },
+        {
+          "Sample": 6,
+          "Version": 1,
+          "Count": 16324,
+          "Nanoseconds": 2835.898064199951,
+          "Bytes": 11616,
+          "Checksum": 1779316
+        },
+        {
+          "Sample": 7,
+          "Version": 1,
+          "Count": 16324,
+          "Nanoseconds": 3589.585885812301,
+          "Bytes": 11616,
+          "Checksum": 1779316
+        },
+        {
+          "Sample": 7,
+          "Version": 0,
+          "Count": 14878,
+          "Nanoseconds": 3220.621051216561,
+          "Bytes": 11616,
+          "Checksum": 1621702
+        },
+        {
+          "Sample": 8,
+          "Version": 0,
+          "Count": 14878,
+          "Nanoseconds": 2843.6281758300847,
+          "Bytes": 11616,
+          "Checksum": 1621702
+        },
+        {
+          "Sample": 8,
+          "Version": 1,
+          "Count": 16324,
+          "Nanoseconds": 3151.807155109042,
+          "Bytes": 11616,
+          "Checksum": 1779316
+        }
+      ]
+    },
+    {
+      "Name": "Callback/Core-RTL",
+      "BeforeNs": 3260.345604808415,
+      "AfterNs": 3469.6518987341774,
+      "ChangePercent": 6.4197578814060074,
+      "BeforeBytes": 13464,
+      "AfterBytes": 13464,
+      "BeforeSpread": 1.5323714410025677,
+      "AfterSpread": 1.638402099970423,
+      "Samples": [
+        {
+          "Sample": 0,
+          "Version": 0,
+          "Count": 13310,
+          "Nanoseconds": 3099.2862509391434,
+          "Bytes": 13464,
+          "Checksum": 1450790
+        },
+        {
+          "Sample": 0,
+          "Version": 1,
+          "Count": 12640,
+          "Nanoseconds": 3501.1867088607596,
+          "Bytes": 13464,
+          "Checksum": 1377760
+        },
+        {
+          "Sample": 1,
+          "Version": 1,
+          "Count": 12640,
+          "Nanoseconds": 3839.0822784810125,
+          "Bytes": 13464,
+          "Checksum": 1377760
+        },
+        {
+          "Sample": 1,
+          "Version": 0,
+          "Count": 13310,
+          "Nanoseconds": 4577.7610818933135,
+          "Bytes": 13464,
+          "Checksum": 1450790
+        },
+        {
+          "Sample": 2,
+          "Version": 0,
+          "Count": 13310,
+          "Nanoseconds": 3353.0353117956424,
+          "Bytes": 13464,
+          "Checksum": 1450790
+        },
+        {
+          "Sample": 2,
+          "Version": 1,
+          "Count": 12640,
+          "Nanoseconds": 3469.6518987341774,
+          "Bytes": 13464,
+          "Checksum": 1377760
+        },
+        {
+          "Sample": 3,
+          "Version": 1,
+          "Count": 12640,
+          "Nanoseconds": 3501.26582278481,
+          "Bytes": 13464,
+          "Checksum": 1377760
+        },
+        {
+          "Sample": 3,
+          "Version": 0,
+          "Count": 13310,
+          "Nanoseconds": 3250.112697220135,
+          "Bytes": 13464,
+          "Checksum": 1450790
+        },
+        {
+          "Sample": 4,
+          "Version": 0,
+          "Count": 13310,
+          "Nanoseconds": 3978.970698722765,
+          "Bytes": 13464,
+          "Checksum": 1450790
+        },
+        {
+          "Sample": 4,
+          "Version": 1,
+          "Count": 12640,
+          "Nanoseconds": 3123.125,
+          "Bytes": 13464,
+          "Checksum": 1377760
+        },
+        {
+          "Sample": 5,
+          "Version": 1,
+          "Count": 12640,
+          "Nanoseconds": 3040.5775316455697,
+          "Bytes": 13464,
+          "Checksum": 1377760
+        },
+        {
+          "Sample": 5,
+          "Version": 0,
+          "Count": 13310,
+          "Nanoseconds": 3019.331329827198,
+          "Bytes": 13464,
+          "Checksum": 1450790
+        },
+        {
+          "Sample": 6,
+          "Version": 0,
+          "Count": 13310,
+          "Nanoseconds": 3677.8587528174303,
+          "Bytes": 13464,
+          "Checksum": 1450790
+        },
+        {
+          "Sample": 6,
+          "Version": 1,
+          "Count": 12640,
+          "Nanoseconds": 3446.384493670886,
+          "Bytes": 13464,
+          "Checksum": 1377760
+        },
+        {
+          "Sample": 7,
+          "Version": 1,
+          "Count": 12640,
+          "Nanoseconds": 4908.362341772152,
+          "Bytes": 13464,
+          "Checksum": 1377760
+        },
+        {
+          "Sample": 7,
+          "Version": 0,
+          "Count": 13310,
+          "Nanoseconds": 3260.345604808415,
+          "Bytes": 13464,
+          "Checksum": 1450790
+        },
+        {
+          "Sample": 8,
+          "Version": 0,
+          "Count": 13310,
+          "Nanoseconds": 2987.3703981968447,
+          "Bytes": 13464,
+          "Checksum": 1450790
+        },
+        {
+          "Sample": 8,
+          "Version": 1,
+          "Count": 12640,
+          "Nanoseconds": 2995.8227848101264,
+          "Bytes": 13464,
+          "Checksum": 1377760
+        }
+      ]
+    },
+    {
+      "Name": "Callback/Core-reset-alias",
+      "BeforeNs": 2672.2730543847024,
+      "AfterNs": 2686.5375725512354,
+      "ChangePercent": 0.533797178515405,
+      "BeforeBytes": 11784,
+      "AfterBytes": 11784,
+      "BeforeSpread": 2.0379911216797666,
+      "AfterSpread": 2.822687789963872,
+      "Samples": [
+        {
+          "Sample": 0,
+          "Version": 0,
+          "Count": 19454,
+          "Nanoseconds": 2109.787190295055,
+          "Bytes": 11784,
+          "Checksum": 2334480
+        },
+        {
+          "Sample": 0,
+          "Version": 1,
+          "Count": 19469,
+          "Nanoseconds": 2591.211669834095,
+          "Bytes": 11784,
+          "Checksum": 2336280
+        },
+        {
+          "Sample": 1,
+          "Version": 1,
+          "Count": 19469,
+          "Nanoseconds": 2796.594586265345,
+          "Bytes": 11784,
+          "Checksum": 2336280
+        },
+        {
+          "Sample": 1,
+          "Version": 0,
+          "Count": 19454,
+          "Nanoseconds": 2353.0944792844657,
+          "Bytes": 11784,
+          "Checksum": 2334480
+        },
+        {
+          "Sample": 2,
+          "Version": 0,
+          "Count": 19454,
+          "Nanoseconds": 2959.0367019636064,
+          "Bytes": 11784,
+          "Checksum": 2334480
+        },
+        {
+          "Sample": 2,
+          "Version": 1,
+          "Count": 19469,
+          "Nanoseconds": 2527.7209923468076,
+          "Bytes": 11784,
+          "Checksum": 2336280
+        },
+        {
+          "Sample": 3,
+          "Version": 1,
+          "Count": 19469,
+          "Nanoseconds": 2686.5375725512354,
+          "Bytes": 11784,
+          "Checksum": 2336280
+        },
+        {
+          "Sample": 3,
+          "Version": 0,
+          "Count": 19454,
+          "Nanoseconds": 2672.2730543847024,
+          "Bytes": 11784,
+          "Checksum": 2334480
+        },
+        {
+          "Sample": 4,
+          "Version": 0,
+          "Count": 19454,
+          "Nanoseconds": 4299.727562455022,
+          "Bytes": 11784,
+          "Checksum": 2334480
+        },
+        {
+          "Sample": 4,
+          "Version": 1,
+          "Count": 19469,
+          "Nanoseconds": 5846.946427654219,
+          "Bytes": 11784,
+          "Checksum": 2336280
+        },
+        {
+          "Sample": 5,
+          "Version": 1,
+          "Count": 19469,
+          "Nanoseconds": 2693.271354460938,
+          "Bytes": 11784,
+          "Checksum": 2336280
+        },
+        {
+          "Sample": 5,
+          "Version": 0,
+          "Count": 19454,
+          "Nanoseconds": 3868.3098591549297,
+          "Bytes": 11784,
+          "Checksum": 2334480
+        },
+        {
+          "Sample": 6,
+          "Version": 0,
+          "Count": 19454,
+          "Nanoseconds": 2385.4785648195743,
+          "Bytes": 11784,
+          "Checksum": 2334480
+        },
+        {
+          "Sample": 6,
+          "Version": 1,
+          "Count": 19469,
+          "Nanoseconds": 3049.057475987467,
+          "Bytes": 11784,
+          "Checksum": 2336280
+        },
+        {
+          "Sample": 7,
+          "Version": 1,
+          "Count": 19469,
+          "Nanoseconds": 2071.4109610149467,
+          "Bytes": 11784,
+          "Checksum": 2336280
+        },
+        {
+          "Sample": 7,
+          "Version": 0,
+          "Count": 19454,
+          "Nanoseconds": 2261.2933072889896,
+          "Bytes": 11784,
+          "Checksum": 2334480
+        },
+        {
+          "Sample": 8,
+          "Version": 0,
+          "Count": 19454,
+          "Nanoseconds": 3711.2470443096536,
+          "Bytes": 11784,
+          "Checksum": 2334480
+        },
+        {
+          "Sample": 8,
+          "Version": 1,
+          "Count": 19469,
+          "Nanoseconds": 2309.7231496224767,
+          "Bytes": 11784,
+          "Checksum": 2336280
+        }
+      ]
+    },
+    {
+      "Name": "Callback/Pcre2-mixed-appends",
+      "BeforeNs": 3548.7692591001164,
+      "AfterNs": 3992.6947829659043,
+      "ChangePercent": 12.509281146623685,
+      "BeforeBytes": 19104,
+      "AfterBytes": 19104,
+      "BeforeSpread": 2.898603023876422,
+      "AfterSpread": 2.1855160765178527,
+      "Samples": [
+        {
+          "Sample": 0,
+          "Version": 0,
+          "Count": 16291,
+          "Nanoseconds": 8574.249585660795,
+          "Bytes": 19104,
+          "Checksum": 1775719
+        },
+        {
+          "Sample": 0,
+          "Version": 1,
+          "Count": 14606,
+          "Nanoseconds": 4030.021908804601,
+          "Bytes": 19104,
+          "Checksum": 1592054
+        },
+        {
+          "Sample": 1,
+          "Version": 1,
+          "Count": 14606,
+          "Nanoseconds": 3484.383130220457,
+          "Bytes": 19104,
+          "Checksum": 1592054
+        },
+        {
+          "Sample": 1,
+          "Version": 0,
+          "Count": 16291,
+          "Nanoseconds": 3548.7692591001164,
+          "Bytes": 19104,
+          "Checksum": 1775719
+        },
+        {
+          "Sample": 2,
+          "Version": 0,
+          "Count": 16291,
+          "Nanoseconds": 4929.500951445583,
+          "Bytes": 19104,
+          "Checksum": 1775719
+        },
+        {
+          "Sample": 2,
+          "Version": 1,
+          "Count": 14606,
+          "Nanoseconds": 4570.293030261536,
+          "Bytes": 19104,
+          "Checksum": 1592054
+        },
+        {
+          "Sample": 3,
+          "Version": 1,
+          "Count": 14606,
+          "Nanoseconds": 4313.727235382719,
+          "Bytes": 19104,
+          "Checksum": 1592054
+        },
+        {
+          "Sample": 3,
+          "Version": 0,
+          "Count": 16291,
+          "Nanoseconds": 4140.310600945308,
+          "Bytes": 19104,
+          "Checksum": 1775719
+        },
+        {
+          "Sample": 4,
+          "Version": 0,
+          "Count": 16291,
+          "Nanoseconds": 3139.709041802222,
+          "Bytes": 19104,
+          "Checksum": 1775719
+        },
+        {
+          "Sample": 4,
+          "Version": 1,
+          "Count": 14606,
+          "Nanoseconds": 3137.3818978501986,
+          "Bytes": 19104,
+          "Checksum": 1592054
+        },
+        {
+          "Sample": 5,
+          "Version": 1,
+          "Count": 14606,
+          "Nanoseconds": 3992.6947829659043,
+          "Bytes": 19104,
+          "Checksum": 1592054
+        },
+        {
+          "Sample": 5,
+          "Version": 0,
+          "Count": 16291,
+          "Nanoseconds": 3524.3263151433307,
+          "Bytes": 19104,
+          "Checksum": 1775719
+        },
+        {
+          "Sample": 6,
+          "Version": 0,
+          "Count": 16291,
+          "Nanoseconds": 3200.9637223006566,
+          "Bytes": 19104,
+          "Checksum": 1775719
+        },
+        {
+          "Sample": 6,
+          "Version": 1,
+          "Count": 14606,
+          "Nanoseconds": 6856.798575927701,
+          "Bytes": 19104,
+          "Checksum": 1592054
+        },
+        {
+          "Sample": 7,
+          "Version": 1,
+          "Count": 14606,
+          "Nanoseconds": 3315.74695330686,
+          "Bytes": 19104,
+          "Checksum": 1592054
+        },
+        {
+          "Sample": 7,
+          "Version": 0,
+          "Count": 16291,
+          "Nanoseconds": 2958.0627340249216,
+          "Bytes": 19104,
+          "Checksum": 1775719
+        },
+        {
+          "Sample": 8,
+          "Version": 0,
+          "Count": 16291,
+          "Nanoseconds": 4542.7229758762505,
+          "Bytes": 19104,
+          "Checksum": 1775719
+        },
+        {
+          "Sample": 8,
+          "Version": 1,
+          "Count": 14606,
+          "Nanoseconds": 3937.600985896207,
+          "Bytes": 19104,
+          "Checksum": 1592054
+        }
+      ]
+    },
+    {
+      "Name": "Callback/Pcre2-finite",
+      "BeforeNs": 4351.6463817341255,
+      "AfterNs": 4433.8844428810135,
+      "ChangePercent": 1.8898148868915277,
+      "BeforeBytes": 19104,
+      "AfterBytes": 19104,
+      "BeforeSpread": 1.6621115333165313,
+      "AfterSpread": 2.320534009301581,
+      "Samples": [
+        {
+          "Sample": 0,
+          "Version": 0,
+          "Count": 10599,
+          "Nanoseconds": 6471.053873006887,
+          "Bytes": 19104,
+          "Checksum": 1155291
+        },
+        {
+          "Sample": 0,
+          "Version": 1,
+          "Count": 11371,
+          "Nanoseconds": 4196.482279482895,
+          "Bytes": 19104,
+          "Checksum": 1239439
+        },
+        {
+          "Sample": 1,
+          "Version": 1,
+          "Count": 11371,
+          "Nanoseconds": 4278.084601178436,
+          "Bytes": 19104,
+          "Checksum": 1239439
+        },
+        {
+          "Sample": 1,
+          "Version": 0,
+          "Count": 10599,
+          "Nanoseconds": 4087.451646381734,
+          "Bytes": 19104,
+          "Checksum": 1155291
+        },
+        {
+          "Sample": 2,
+          "Version": 0,
+          "Count": 10599,
+          "Nanoseconds": 4405.25521275592,
+          "Bytes": 19104,
+          "Checksum": 1155291
+        },
+        {
+          "Sample": 2,
+          "Version": 1,
+          "Count": 11371,
+          "Nanoseconds": 9692.999736170961,
+          "Bytes": 19104,
+          "Checksum": 1239439
+        },
+        {
+          "Sample": 3,
+          "Version": 1,
+          "Count": 11371,
+          "Nanoseconds": 4433.8844428810135,
+          "Bytes": 19104,
+          "Checksum": 1239439
+        },
+        {
+          "Sample": 3,
+          "Version": 0,
+          "Count": 10599,
+          "Nanoseconds": 4351.6463817341255,
+          "Bytes": 19104,
+          "Checksum": 1155291
+        },
+        {
+          "Sample": 4,
+          "Version": 0,
+          "Count": 10599,
+          "Nanoseconds": 3972.393622039815,
+          "Bytes": 19104,
+          "Checksum": 1155291
+        },
+        {
+          "Sample": 4,
+          "Version": 1,
+          "Count": 11371,
+          "Nanoseconds": 5135.1332336645855,
+          "Bytes": 19104,
+          "Checksum": 1239439
+        },
+        {
+          "Sample": 5,
+          "Version": 1,
+          "Count": 11371,
+          "Nanoseconds": 6088.28599067804,
+          "Bytes": 19104,
+          "Checksum": 1239439
+        },
+        {
+          "Sample": 5,
+          "Version": 0,
+          "Count": 10599,
+          "Nanoseconds": 4824.370223606001,
+          "Bytes": 19104,
+          "Checksum": 1155291
+        },
+        {
+          "Sample": 6,
+          "Version": 0,
+          "Count": 10599,
+          "Nanoseconds": 4767.515803377677,
+          "Bytes": 19104,
+          "Checksum": 1155291
+        },
+        {
+          "Sample": 6,
+          "Version": 1,
+          "Count": 11371,
+          "Nanoseconds": 4930.656934306569,
+          "Bytes": 19104,
+          "Checksum": 1239439
+        },
+        {
+          "Sample": 7,
+          "Version": 1,
+          "Count": 11371,
+          "Nanoseconds": 4177.055667927183,
+          "Bytes": 19104,
+          "Checksum": 1239439
+        },
+        {
+          "Sample": 7,
+          "Version": 0,
+          "Count": 10599,
+          "Nanoseconds": 3893.272950278328,
+          "Bytes": 19104,
+          "Checksum": 1155291
+        },
+        {
+          "Sample": 8,
+          "Version": 0,
+          "Count": 10599,
+          "Nanoseconds": 4289.385791112369,
+          "Bytes": 19104,
+          "Checksum": 1155291
+        },
+        {
+          "Sample": 8,
+          "Version": 1,
+          "Count": 11371,
+          "Nanoseconds": 4345.211502946091,
+          "Bytes": 19104,
+          "Checksum": 1239439
+        }
+      ]
+    },
+    {
+      "Name": "Callback/Pcre2-reset-alias",
+      "BeforeNs": 6886.777999080741,
+      "AfterNs": 7736.88489968321,
+      "ChangePercent": 12.344043915978453,
+      "BeforeBytes": 19384,
+      "AfterBytes": 19384,
+      "BeforeSpread": 5.0241101216016695,
+      "AfterSpread": 3.0930001051561566,
+      "Samples": [
+        {
+          "Sample": 0,
+          "Version": 0,
+          "Count": 13054,
+          "Nanoseconds": 15562.387007813697,
+          "Bytes": 19384,
+          "Checksum": 1566480
+        },
+        {
+          "Sample": 0,
+          "Version": 1,
+          "Count": 9470,
+          "Nanoseconds": 7736.88489968321,
+          "Bytes": 19384,
+          "Checksum": 1136400
+        },
+        {
+          "Sample": 1,
+          "Version": 1,
+          "Count": 9470,
+          "Nanoseconds": 8043.706441393875,
+          "Bytes": 19384,
+          "Checksum": 1136400
+        },
+        {
+          "Sample": 1,
+          "Version": 0,
+          "Count": 13054,
+          "Nanoseconds": 5050.9269189520455,
+          "Bytes": 19384,
+          "Checksum": 1566480
+        },
+        {
+          "Sample": 2,
+          "Version": 0,
+          "Count": 13054,
+          "Nanoseconds": 3097.5409836065573,
+          "Bytes": 19384,
+          "Checksum": 1566480
+        },
+        {
+          "Sample": 2,
+          "Version": 1,
+          "Count": 9470,
+          "Nanoseconds": 3012.5659978880676,
+          "Bytes": 19384,
+          "Checksum": 1136400
+        },
+        {
+          "Sample": 3,
+          "Version": 1,
+          "Count": 9470,
+          "Nanoseconds": 3209.049630411827,
+          "Bytes": 19384,
+          "Checksum": 1136400
+        },
+        {
+          "Sample": 3,
+          "Version": 0,
+          "Count": 13054,
+          "Nanoseconds": 5404.5503294009495,
+          "Bytes": 19384,
+          "Checksum": 1566480
+        },
+        {
+          "Sample": 4,
+          "Version": 0,
+          "Count": 13054,
+          "Nanoseconds": 4815.275011490731,
+          "Bytes": 19384,
+          "Checksum": 1566480
+        },
+        {
+          "Sample": 4,
+          "Version": 1,
+          "Count": 9470,
+          "Nanoseconds": 7561.605068637804,
+          "Bytes": 19384,
+          "Checksum": 1136400
+        },
+        {
+          "Sample": 5,
+          "Version": 1,
+          "Count": 9470,
+          "Nanoseconds": 9317.866948257655,
+          "Bytes": 19384,
+          "Checksum": 1136400
+        },
+        {
+          "Sample": 5,
+          "Version": 0,
+          "Count": 13054,
+          "Nanoseconds": 6886.777999080741,
+          "Bytes": 19384,
+          "Checksum": 1566480
+        },
+        {
+          "Sample": 6,
+          "Version": 0,
+          "Count": 13054,
+          "Nanoseconds": 10112.10356978704,
+          "Bytes": 19384,
+          "Checksum": 1566480
+        },
+        {
+          "Sample": 6,
+          "Version": 1,
+          "Count": 9470,
+          "Nanoseconds": 8857.486800422386,
+          "Bytes": 19384,
+          "Checksum": 1136400
+        },
+        {
+          "Sample": 7,
+          "Version": 1,
+          "Count": 9470,
+          "Nanoseconds": 8154.582893347413,
+          "Bytes": 19384,
+          "Checksum": 1136400
+        },
+        {
+          "Sample": 7,
+          "Version": 0,
+          "Count": 13054,
+          "Nanoseconds": 11686.11919718094,
+          "Bytes": 19384,
+          "Checksum": 1566480
+        },
+        {
+          "Sample": 8,
+          "Version": 0,
+          "Count": 13054,
+          "Nanoseconds": 9743.634135130995,
+          "Bytes": 19384,
+          "Checksum": 1566480
+        },
+        {
+          "Sample": 8,
+          "Version": 1,
+          "Count": 9470,
+          "Nanoseconds": 7129.355860612461,
+          "Bytes": 19384,
+          "Checksum": 1136400
+        }
+      ]
+    },
+    {
+      "Name": "Probe/Pcre2-retained-root",
+      "BeforeNs": 317.2009076627684,
+      "AfterNs": 331.5877032828372,
+      "ChangePercent": 4.535546800945522,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.7200310279309485,
+      "AfterSpread": 1.6879189953404399,
+      "Samples": [
+        {
+          "Sample": 0,
+          "Version": 0,
+          "Count": 143225,
+          "Nanoseconds": 335.1363239657881,
+          "Bytes": 0,
+          "Checksum": 143225
+        },
+        {
+          "Sample": 0,
+          "Version": 1,
+          "Count": 141859,
+          "Nanoseconds": 333.41134506799006,
+          "Bytes": 0,
+          "Checksum": 141859
+        },
+        {
+          "Sample": 1,
+          "Version": 1,
+          "Count": 141859,
+          "Nanoseconds": 331.8259680386863,
+          "Bytes": 0,
+          "Checksum": 141859
+        },
+        {
+          "Sample": 1,
+          "Version": 0,
+          "Count": 143225,
+          "Nanoseconds": 315.89596788270205,
+          "Bytes": 0,
+          "Checksum": 143225
+        },
+        {
+          "Sample": 2,
+          "Version": 0,
+          "Count": 143225,
+          "Nanoseconds": 369.16529935416304,
+          "Bytes": 0,
+          "Checksum": 143225
+        },
+        {
+          "Sample": 2,
+          "Version": 1,
+          "Count": 141859,
+          "Nanoseconds": 332.19746367872324,
+          "Bytes": 0,
+          "Checksum": 141859
+        },
+        {
+          "Sample": 3,
+          "Version": 1,
+          "Count": 141859,
+          "Nanoseconds": 290.54836140110956,
+          "Bytes": 0,
+          "Checksum": 141859
+        },
+        {
+          "Sample": 3,
+          "Version": 0,
+          "Count": 143225,
+          "Nanoseconds": 240.32536219235467,
+          "Bytes": 0,
+          "Checksum": 143225
+        },
+        {
+          "Sample": 4,
+          "Version": 0,
+          "Count": 143225,
+          "Nanoseconds": 267.21941001920055,
+          "Bytes": 0,
+          "Checksum": 143225
+        },
+        {
+          "Sample": 4,
+          "Version": 1,
+          "Count": 141859,
+          "Nanoseconds": 303.85876116425464,
+          "Bytes": 0,
+          "Checksum": 141859
+        },
+        {
+          "Sample": 5,
+          "Version": 1,
+          "Count": 141859,
+          "Nanoseconds": 289.7475662453563,
+          "Bytes": 0,
+          "Checksum": 141859
+        },
+        {
+          "Sample": 5,
+          "Version": 0,
+          "Count": 143225,
+          "Nanoseconds": 413.3670797695933,
+          "Bytes": 0,
+          "Checksum": 143225
+        },
+        {
+          "Sample": 6,
+          "Version": 0,
+          "Count": 143225,
+          "Nanoseconds": 300.020247861756,
+          "Bytes": 0,
+          "Checksum": 143225
+        },
+        {
+          "Sample": 6,
+          "Version": 1,
+          "Count": 141859,
+          "Nanoseconds": 358.5228994987981,
+          "Bytes": 0,
+          "Checksum": 141859
+        },
+        {
+          "Sample": 7,
+          "Version": 1,
+          "Count": 141859,
+          "Nanoseconds": 331.5877032828372,
+          "Bytes": 0,
+          "Checksum": 141859
+        },
+        {
+          "Sample": 7,
+          "Version": 0,
+          "Count": 143225,
+          "Nanoseconds": 383.2368650724385,
+          "Bytes": 0,
+          "Checksum": 143225
+        },
+        {
+          "Sample": 8,
+          "Version": 0,
+          "Count": 143225,
+          "Nanoseconds": 317.2009076627684,
+          "Bytes": 0,
+          "Checksum": 143225
+        },
+        {
+          "Sample": 8,
+          "Version": 1,
+          "Count": 141859,
+          "Nanoseconds": 212.4052756610437,
+          "Bytes": 0,
+          "Checksum": 141859
+        }
+      ]
+    },
+    {
+      "Name": "Construction/Pcre2-literal",
+      "BeforeNs": 554.3654940206665,
+      "AfterNs": 519.5297482837528,
+      "ChangePercent": -6.283895031824427,
+      "BeforeBytes": 1728,
+      "AfterBytes": 1696,
+      "BeforeSpread": 1.3513655948851,
+      "AfterSpread": 1.2605617085578493,
+      "Samples": [
+        {
+          "Sample": 0,
+          "Version": 0,
+          "Count": 34452,
+          "Nanoseconds": 636.3781493091838,
+          "Bytes": 1728,
+          "Checksum": 103356
+        },
+        {
+          "Sample": 0,
+          "Version": 1,
+          "Count": 87400,
+          "Nanoseconds": 544.7379862700229,
+          "Bytes": 1696,
+          "Checksum": 262200
+        },
+        {
+          "Sample": 1,
+          "Version": 1,
+          "Count": 87400,
+          "Nanoseconds": 565.0446224256293,
+          "Bytes": 1696,
+          "Checksum": 262200
+        },
+        {
+          "Sample": 1,
+          "Version": 0,
+          "Count": 34452,
+          "Nanoseconds": 622.4747474747475,
+          "Bytes": 1728,
+          "Checksum": 103356
+        },
+        {
+          "Sample": 2,
+          "Version": 0,
+          "Count": 34452,
+          "Nanoseconds": 677.2988505747127,
+          "Bytes": 1728,
+          "Checksum": 103356
+        },
+        {
+          "Sample": 2,
+          "Version": 1,
+          "Count": 87400,
+          "Nanoseconds": 550.0823798627002,
+          "Bytes": 1696,
+          "Checksum": 262200
+        },
+        {
+          "Sample": 3,
+          "Version": 1,
+          "Count": 87400,
+          "Nanoseconds": 519.5297482837528,
+          "Bytes": 1696,
+          "Checksum": 262200
+        },
+        {
+          "Sample": 3,
+          "Version": 0,
+          "Count": 34452,
+          "Nanoseconds": 555.4394519911762,
+          "Bytes": 1728,
+          "Checksum": 103356
+        },
+        {
+          "Sample": 4,
+          "Version": 0,
+          "Count": 34452,
+          "Nanoseconds": 540.0441193544642,
+          "Bytes": 1728,
+          "Checksum": 103356
+        },
+        {
+          "Sample": 4,
+          "Version": 1,
+          "Count": 87400,
+          "Nanoseconds": 550.4679633867277,
+          "Bytes": 1696,
+          "Checksum": 262200
+        },
+        {
+          "Sample": 5,
+          "Version": 1,
+          "Count": 87400,
+          "Nanoseconds": 516.1258581235697,
+          "Bytes": 1696,
+          "Checksum": 262200
+        },
+        {
+          "Sample": 5,
+          "Version": 0,
+          "Count": 34452,
+          "Nanoseconds": 516.6434459537908,
+          "Bytes": 1728,
+          "Checksum": 103356
+        },
+        {
+          "Sample": 6,
+          "Version": 0,
+          "Count": 34452,
+          "Nanoseconds": 554.3654940206665,
+          "Bytes": 1728,
+          "Checksum": 103356
+        },
+        {
+          "Sample": 6,
+          "Version": 1,
+          "Count": 87400,
+          "Nanoseconds": 518.3478260869565,
+          "Bytes": 1696,
+          "Checksum": 262200
+        },
+        {
+          "Sample": 7,
+          "Version": 1,
+          "Count": 87400,
+          "Nanoseconds": 448.2482837528604,
+          "Bytes": 1696,
+          "Checksum": 262200
+        },
+        {
+          "Sample": 7,
+          "Version": 0,
+          "Count": 34452,
+          "Nanoseconds": 529.1071635899223,
+          "Bytes": 1728,
+          "Checksum": 103356
+        },
+        {
+          "Sample": 8,
+          "Version": 0,
+          "Count": 34452,
+          "Nanoseconds": 501.1958667131081,
+          "Bytes": 1728,
+          "Checksum": 103356
+        },
+        {
+          "Sample": 8,
+          "Version": 1,
+          "Count": 87400,
+          "Nanoseconds": 491.8009153318078,
+          "Bytes": 1696,
+          "Checksum": 262200
+        }
+      ]
+    },
+    {
+      "Name": "Construction/Pcre2-character",
+      "BeforeNs": 145763.46153846153,
+      "AfterNs": 295156.2874251497,
+      "ChangePercent": 102.48989994469153,
+      "BeforeBytes": 36096,
+      "AfterBytes": 36072,
+      "BeforeSpread": 2.7237675254403575,
+      "AfterSpread": 1.906973732931403,
+      "Samples": [
+        {
+          "Sample": 0,
+          "Version": 0,
+          "Count": 208,
+          "Nanoseconds": 176434.61538461538,
+          "Bytes": 36096,
+          "Checksum": 832
+        },
+        {
+          "Sample": 0,
+          "Version": 1,
+          "Count": 167,
+          "Nanoseconds": 263598.2035928144,
+          "Bytes": 36072,
+          "Checksum": 668
+        },
+        {
+          "Sample": 1,
+          "Version": 1,
+          "Count": 167,
+          "Nanoseconds": 265475.44910179643,
+          "Bytes": 36072,
+          "Checksum": 668
+        },
+        {
+          "Sample": 1,
+          "Version": 0,
+          "Count": 208,
+          "Nanoseconds": 145763.46153846153,
+          "Bytes": 36096,
+          "Checksum": 832
+        },
+        {
+          "Sample": 2,
+          "Version": 0,
+          "Count": 208,
+          "Nanoseconds": 163152.40384615384,
+          "Bytes": 36096,
+          "Checksum": 832
+        },
+        {
+          "Sample": 2,
+          "Version": 1,
+          "Count": 167,
+          "Nanoseconds": 308137.7245508982,
+          "Bytes": 36072,
+          "Checksum": 668
+        },
+        {
+          "Sample": 3,
+          "Version": 1,
+          "Count": 167,
+          "Nanoseconds": 502674.8502994012,
+          "Bytes": 36072,
+          "Checksum": 668
+        },
+        {
+          "Sample": 3,
+          "Version": 0,
+          "Count": 208,
+          "Nanoseconds": 146886.0576923077,
+          "Bytes": 36096,
+          "Checksum": 832
+        },
+        {
+          "Sample": 4,
+          "Version": 0,
+          "Count": 208,
+          "Nanoseconds": 261613.9423076923,
+          "Bytes": 36096,
+          "Checksum": 832
+        },
+        {
+          "Sample": 4,
+          "Version": 1,
+          "Count": 167,
+          "Nanoseconds": 291971.85628742515,
+          "Bytes": 36072,
+          "Checksum": 668
+        },
+        {
+          "Sample": 5,
+          "Version": 1,
+          "Count": 167,
+          "Nanoseconds": 278452.6946107784,
+          "Bytes": 36072,
+          "Checksum": 668
+        },
+        {
+          "Sample": 5,
+          "Version": 0,
+          "Count": 208,
+          "Nanoseconds": 126781.73076923077,
+          "Bytes": 36096,
+          "Checksum": 832
+        },
+        {
+          "Sample": 6,
+          "Version": 0,
+          "Count": 208,
+          "Nanoseconds": 124161.05769230769,
+          "Bytes": 36096,
+          "Checksum": 832
+        },
+        {
+          "Sample": 6,
+          "Version": 1,
+          "Count": 167,
+          "Nanoseconds": 331050.2994011976,
+          "Bytes": 36072,
+          "Checksum": 668
+        },
+        {
+          "Sample": 7,
+          "Version": 1,
+          "Count": 167,
+          "Nanoseconds": 295156.2874251497,
+          "Bytes": 36072,
+          "Checksum": 668
+        },
+        {
+          "Sample": 7,
+          "Version": 0,
+          "Count": 208,
+          "Nanoseconds": 96048.55769230769,
+          "Bytes": 36032,
+          "Checksum": 832
+        },
+        {
+          "Sample": 8,
+          "Version": 0,
+          "Count": 208,
+          "Nanoseconds": 121426.44230769231,
+          "Bytes": 36032,
+          "Checksum": 832
+        },
+        {
+          "Sample": 8,
+          "Version": 1,
+          "Count": 167,
+          "Nanoseconds": 423744.3113772455,
+          "Bytes": 36072,
+          "Checksum": 668
+        }
+      ]
+    },
+    {
+      "Name": "Construction/Pcre2-backtracking",
+      "BeforeNs": 215428.1690140845,
+      "AfterNs": 228953.33333333334,
+      "ChangePercent": 6.278271027019033,
+      "BeforeBytes": 51224,
+      "AfterBytes": 51232,
+      "BeforeSpread": 1.148016859133655,
+      "AfterSpread": 1.4007500801182573,
+      "Samples": [
+        {
+          "Sample": 0,
+          "Version": 0,
+          "Count": 213,
+          "Nanoseconds": 214210.79812206572,
+          "Bytes": 51224,
+          "Checksum": 1065
+        },
+        {
+          "Sample": 0,
+          "Version": 1,
+          "Count": 180,
+          "Nanoseconds": 250976.11111111112,
+          "Bytes": 51232,
+          "Checksum": 900
+        },
+        {
+          "Sample": 1,
+          "Version": 1,
+          "Count": 180,
+          "Nanoseconds": 269537.77777777775,
+          "Bytes": 51232,
+          "Checksum": 900
+        },
+        {
+          "Sample": 1,
+          "Version": 0,
+          "Count": 213,
+          "Nanoseconds": 195429.57746478874,
+          "Bytes": 51224,
+          "Checksum": 1065
+        },
+        {
+          "Sample": 2,
+          "Version": 0,
+          "Count": 213,
+          "Nanoseconds": 220001.4084507042,
+          "Bytes": 51224,
+          "Checksum": 1065
+        },
+        {
+          "Sample": 2,
+          "Version": 1,
+          "Count": 180,
+          "Nanoseconds": 221003.33333333334,
+          "Bytes": 51232,
+          "Checksum": 900
+        },
+        {
+          "Sample": 3,
+          "Version": 1,
+          "Count": 180,
+          "Nanoseconds": 241798.88888888888,
+          "Bytes": 51232,
+          "Checksum": 900
+        },
+        {
+          "Sample": 3,
+          "Version": 0,
+          "Count": 213,
+          "Nanoseconds": 215428.1690140845,
+          "Bytes": 51224,
+          "Checksum": 1065
+        },
+        {
+          "Sample": 4,
+          "Version": 0,
+          "Count": 213,
+          "Nanoseconds": 207441.78403755868,
+          "Bytes": 51224,
+          "Checksum": 1065
+        },
+        {
+          "Sample": 4,
+          "Version": 1,
+          "Count": 180,
+          "Nanoseconds": 263672.22222222225,
+          "Bytes": 51232,
+          "Checksum": 900
+        },
+        {
+          "Sample": 5,
+          "Version": 1,
+          "Count": 180,
+          "Nanoseconds": 228953.33333333334,
+          "Bytes": 51232,
+          "Checksum": 900
+        },
+        {
+          "Sample": 5,
+          "Version": 0,
+          "Count": 213,
+          "Nanoseconds": 219639.4366197183,
+          "Bytes": 51224,
+          "Checksum": 1065
+        },
+        {
+          "Sample": 6,
+          "Version": 0,
+          "Count": 213,
+          "Nanoseconds": 192704.22535211267,
+          "Bytes": 51224,
+          "Checksum": 1065
+        },
+        {
+          "Sample": 6,
+          "Version": 1,
+          "Count": 180,
+          "Nanoseconds": 215762.22222222222,
+          "Bytes": 51232,
+          "Checksum": 900
+        },
+        {
+          "Sample": 7,
+          "Version": 1,
+          "Count": 180,
+          "Nanoseconds": 199450.55555555556,
+          "Bytes": 51232,
+          "Checksum": 900
+        },
+        {
+          "Sample": 7,
+          "Version": 0,
+          "Count": 213,
+          "Nanoseconds": 221227.69953051643,
+          "Bytes": 51224,
+          "Checksum": 1065
+        },
+        {
+          "Sample": 8,
+          "Version": 0,
+          "Count": 213,
+          "Nanoseconds": 218721.12676056338,
+          "Bytes": 51224,
+          "Checksum": 1065
+        },
+        {
+          "Sample": 8,
+          "Version": 1,
+          "Count": 180,
+          "Nanoseconds": 192423.88888888888,
+          "Bytes": 51232,
+          "Checksum": 900
+        }
+      ]
+    },
+    {
+      "Name": "Control/Core-Count-miss-128KiB",
+      "BeforeNs": 7729.51197053407,
+      "AfterNs": 7326.747544771808,
+      "ChangePercent": -5.210735519883459,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 4.013636393436174,
+      "AfterSpread": 3.7800793010973823,
+      "Samples": [
+        {
+          "Sample": 0,
+          "Version": 0,
+          "Count": 2172,
+          "Nanoseconds": 28186.5561694291,
+          "Bytes": 0,
+          "Checksum": 0
+        },
+        {
+          "Sample": 0,
+          "Version": 1,
+          "Count": 1731,
+          "Nanoseconds": 26546.158290005777,
+          "Bytes": 0,
+          "Checksum": 0
+        },
+        {
+          "Sample": 1,
+          "Version": 1,
+          "Count": 1731,
+          "Nanoseconds": 14448.41132293472,
+          "Bytes": 0,
+          "Checksum": 0
+        },
+        {
+          "Sample": 1,
+          "Version": 0,
+          "Count": 2172,
+          "Nanoseconds": 12913.259668508288,
+          "Bytes": 0,
+          "Checksum": 0
+        },
+        {
+          "Sample": 2,
+          "Version": 0,
+          "Count": 2172,
+          "Nanoseconds": 8176.565377532228,
+          "Bytes": 0,
+          "Checksum": 0
+        },
+        {
+          "Sample": 2,
+          "Version": 1,
+          "Count": 1731,
+          "Nanoseconds": 7742.461005199307,
+          "Bytes": 0,
+          "Checksum": 0
+        },
+        {
+          "Sample": 3,
+          "Version": 1,
+          "Count": 1731,
+          "Nanoseconds": 7743.67417677643,
+          "Bytes": 0,
+          "Checksum": 0
+        },
+        {
+          "Sample": 3,
+          "Version": 0,
+          "Count": 2172,
+          "Nanoseconds": 7729.51197053407,
+          "Bytes": 0,
+          "Checksum": 0
+        },
+        {
+          "Sample": 4,
+          "Version": 0,
+          "Count": 2172,
+          "Nanoseconds": 7970.165745856353,
+          "Bytes": 0,
+          "Checksum": 0
+        },
+        {
+          "Sample": 4,
+          "Version": 1,
+          "Count": 1731,
+          "Nanoseconds": 7072.963604852686,
+          "Bytes": 0,
+          "Checksum": 0
+        },
+        {
+          "Sample": 5,
+          "Version": 1,
+          "Count": 1731,
+          "Nanoseconds": 7062.796071634893,
+          "Bytes": 0,
+          "Checksum": 0
+        },
+        {
+          "Sample": 5,
+          "Version": 0,
+          "Count": 2172,
+          "Nanoseconds": 7152.946593001841,
+          "Bytes": 0,
+          "Checksum": 0
+        },
+        {
+          "Sample": 6,
+          "Version": 0,
+          "Count": 2172,
+          "Nanoseconds": 7074.6777163904235,
+          "Bytes": 0,
+          "Checksum": 0
+        },
+        {
+          "Sample": 6,
+          "Version": 1,
+          "Count": 1731,
+          "Nanoseconds": 7326.747544771808,
+          "Bytes": 0,
+          "Checksum": 0
+        },
+        {
+          "Sample": 7,
+          "Version": 1,
+          "Count": 1731,
+          "Nanoseconds": 7258.116695551705,
+          "Bytes": 0,
+          "Checksum": 0
+        },
+        {
+          "Sample": 7,
+          "Version": 0,
+          "Count": 2172,
+          "Nanoseconds": 7034.300184162063,
+          "Bytes": 0,
+          "Checksum": 0
+        },
+        {
+          "Sample": 8,
+          "Version": 0,
+          "Count": 2172,
+          "Nanoseconds": 7022.697974217312,
+          "Bytes": 0,
+          "Checksum": 0
+        },
+        {
+          "Sample": 8,
+          "Version": 1,
+          "Count": 1731,
+          "Nanoseconds": 7022.645869439631,
+          "Bytes": 0,
+          "Checksum": 0
+        }
+      ]
+    },
+    {
+      "Name": "Control/Pcre2-literal-Match",
+      "BeforeNs": 105.17092009045255,
+      "AfterNs": 108.05341251738271,
+      "ChangePercent": 2.7407694298491103,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.1408094683626395,
+      "AfterSpread": 1.0668946543465634,
+      "Samples": [
+        {
+          "Sample": 0,
+          "Version": 0,
+          "Count": 408612,
+          "Nanoseconds": 101.26330112674125,
+          "Bytes": 0,
+          "Checksum": 2860284
+        },
+        {
+          "Sample": 0,
+          "Version": 1,
+          "Count": 435778,
+          "Nanoseconds": 107.4941828178568,
+          "Bytes": 0,
+          "Checksum": 3050446
+        },
+        {
+          "Sample": 1,
+          "Version": 1,
+          "Count": 435778,
+          "Nanoseconds": 111.25114163633776,
+          "Bytes": 0,
+          "Checksum": 3050446
+        },
+        {
+          "Sample": 1,
+          "Version": 0,
+          "Count": 408612,
+          "Nanoseconds": 109.17422885279923,
+          "Bytes": 0,
+          "Checksum": 2860284
+        },
+        {
+          "Sample": 2,
+          "Version": 0,
+          "Count": 408612,
+          "Nanoseconds": 113.6537840298376,
+          "Bytes": 0,
+          "Checksum": 2860284
+        },
+        {
+          "Sample": 2,
+          "Version": 1,
+          "Count": 435778,
+          "Nanoseconds": 111.68071816383572,
+          "Bytes": 0,
+          "Checksum": 3050446
+        },
+        {
+          "Sample": 3,
+          "Version": 1,
+          "Count": 435778,
+          "Nanoseconds": 104.71960493645847,
+          "Bytes": 0,
+          "Checksum": 3050446
+        },
+        {
+          "Sample": 3,
+          "Version": 0,
+          "Count": 408612,
+          "Nanoseconds": 107.20022906816246,
+          "Bytes": 0,
+          "Checksum": 2860284
+        },
+        {
+          "Sample": 4,
+          "Version": 0,
+          "Count": 408612,
+          "Nanoseconds": 99.62556165751373,
+          "Bytes": 0,
+          "Checksum": 2860284
+        },
+        {
+          "Sample": 4,
+          "Version": 1,
+          "Count": 435778,
+          "Nanoseconds": 104.67829950112213,
+          "Bytes": 0,
+          "Checksum": 3050446
+        },
+        {
+          "Sample": 5,
+          "Version": 1,
+          "Count": 435778,
+          "Nanoseconds": 108.31478413320544,
+          "Bytes": 0,
+          "Checksum": 3050446
+        },
+        {
+          "Sample": 5,
+          "Version": 0,
+          "Count": 408612,
+          "Nanoseconds": 108.35780642761348,
+          "Bytes": 0,
+          "Checksum": 2860284
+        },
+        {
+          "Sample": 6,
+          "Version": 0,
+          "Count": 408612,
+          "Nanoseconds": 100.29049562910537,
+          "Bytes": 0,
+          "Checksum": 2860284
+        },
+        {
+          "Sample": 6,
+          "Version": 1,
+          "Count": 435778,
+          "Nanoseconds": 109.7214636810486,
+          "Bytes": 0,
+          "Checksum": 3050446
+        },
+        {
+          "Sample": 7,
+          "Version": 1,
+          "Count": 435778,
+          "Nanoseconds": 105.76050190693427,
+          "Bytes": 0,
+          "Checksum": 3050446
+        },
+        {
+          "Sample": 7,
+          "Version": 0,
+          "Count": 408612,
+          "Nanoseconds": 105.17092009045255,
+          "Bytes": 0,
+          "Checksum": 2860284
+        },
+        {
+          "Sample": 8,
+          "Version": 0,
+          "Count": 408612,
+          "Nanoseconds": 102.27061368731216,
+          "Bytes": 0,
+          "Checksum": 2860284
+        },
+        {
+          "Sample": 8,
+          "Version": 1,
+          "Count": 435778,
+          "Nanoseconds": 108.05341251738271,
+          "Bytes": 0,
+          "Checksum": 3050446
+        }
+      ]
+    }
+  ],
+  "Sink": 360519168
+}

@@ -2,9 +2,10 @@
 
 This is the development **0.4.0-rc.2-dev** host contract for Core, PythonRe and
 the managed PCRE2 adapter. Frozen RC1 remains unpublished; its PCRE2 bytes have
-known defects and require replacement before release. Both adapters require exactly the same Core version. The controls
-below are enforceable within their documented modeled scope, not a total
-managed-heap/RSS or application-containment guarantee. Defaults remain unlimited.
+known defects and require replacement before release. Both adapters require
+exactly the same Core version. These controls bound their documented modeled
+scope, not total managed heap/RSS or application containment. Defaults remain
+unlimited for invocation controls.
 
 ## Select the public controls
 
@@ -13,75 +14,6 @@ managed-heap/RSS or application-containment guarantee. Defaults remain unlimited
 `Utf8ConstructionPolicy` has positive nullable `MaxWorkSteps`, `MaxDepth`,
 `MaxInstructionCapacity` and `MaxBytes`. Its null values keep the fixed
 construction backstops; they do **not** mean unlimited construction.
-
-Construction charges are conservative and versioned. Major buffers, growth
-overlap and instruction/state expansion require admission before allocation.
-Coarse traversal/probe checkpoints bound interruption; individual helper objects,
-views and enumerator boxes do not each receive a charge. Cache retention uses
-conservative per-program charges and eviction, which can count shared storage
-again. Exact numeric thresholds may change when real work or storage disappears.
-Actual `Unsafe.SizeOf<T>()` queries remain; they perform no unchecked access.
-PCRE2 compilation admits its global name-slot lookup once and shares it with
-nested assertion lowerers. The compiled root and VM share the internal immutable
-name-entry table; public entry-copy APIs remain isolated. Removing repeated lookup
-acquisitions and the redundant table clone can lower construction charges and
-allocations; major buffers, recursion and interruption checks remain bounded.
-Replacement plans retain their real instructions without an unused deduplicated
-capture-reference map/vector. Native replacement admits only group zero; other
-captures use the existing owned expansion. Removing capture placeholders, tags
-and lowered syntax flags can reduce construction/instruction/cache charges and
-the working capacity of range staging. Major range/output arrays, growth overlap
-and cumulative result capacity remain admitted using their actual layout.
-Cached Core facades use one conservative 512-byte allowance before allocation,
-with their major children admitted separately. The former field-layout mirror is
-removed. Compared with its 208-byte modeled descriptor, this can cause earlier
-construction refusal or cache eviction; it does not change actual object size.
-The prepared-program, scalar-program and dynamic IL builder carriers use coarse
-2,048 / 512 / 512-byte allowances respectively, replacing modeled field mirrors
-of 1,024 / 144 / 144 bytes. Direct construction keeps admission before allocation;
-major children and real array/value layout queries retain separate coverage.
-These larger conservative charges can cause earlier refusal/eviction.
-Every cache producer supplies a conservative bounded payload policy. Remaining small
-runtime/verifier carriers retain their 128-byte admission floors; the larger
-carriers use the allowances above. Major children retain separate admission.
-Literal runtimes execute directly without separate exact/family forwarding
-wrappers. The existing compiled kind still governs family Split eligibility.
-Removing one wrapper object also removes its conservative construction charge.
-The test-only unbounded cache mode remains removed. These controls do not extend
-the documented memory scope or change RC1 package bytes.
-Development PCRE2 literal compilation also admits its own atom capacities and
-UTF-8 buffer, including growth overlap and bounded interruption checkpoints.
-It retains runtime UTF-8 bytes and releases temporary Rune staging, without
-compiling an unused Core expression. Construction instruction capacity covers
-the atom vector; numeric requirements can change as the redundant Core work and
-copies disappear. Character token/class/property buffers now use the same owner,
-with token capacity admitted as instructions and bytes. Growth/final-copy overlap
-and bounded work/interruption remain covered; incidental helper objects and RSS
-remain excluded. Character programs omit unused Core preparation and syntax-node
-vectors; literal Rune staging is temporary. Other qualified Core-dependent paths
-remain. Invocation semantics and resource scope are unchanged.
-
-PCRE2 lexical guards admit group-scope buffers before growth, including live
-old/new extents. Their prospective group nesting shares the caller's depth
-ceiling and the existing 256-frame PCRE2 backstop. Bounded scans retain the
-original cancellation token/deadline. Candidate-presence checks skip irrelevant
-policy scans; no new grammar parser is introduced. Earlier denial before a later
-syntax error is intentional when the construction allowance is insufficient.
-Selected operations retain only Core expressions they execute; shared slices
-own their immutable program and PCRE2 fallback directly.
-PCRE2 finite-literal and bounded-ASCII optimizers also share construction work,
-depth and major expansion-capacity admission before acquisition. Temporary state
-and payloads may be charged again and held until eager construction completes;
-this deliberately favors an enforceable bound over exact liveness accounting.
-Capture maps are omitted when no reference uses them; actual capture results
-still come from the owned matcher. Compilation selects complete operation slots
-before publishing one program; dummy legacy foundations are removed.
-
-Cache interruption/size probes are closed library implementations and cannot
-mutate their cache while its lock is held. Outside-lock preparation can still
-race or reenter clear/shrink; generation coordination and cancellable waits
-remain. Synthetic diagnostic mutation at every publication checkpoint is no
-longer an internal contract. Public operations and retained aliases are unchanged.
 
 These are existing calls, using each profile's option type. `policy` applies to
 later invocations; `construction`, `constructionTimeout` and `token` apply only
@@ -148,6 +80,44 @@ The exact surfaces are pinned by the [Core](https://github.com/Lokad/Utf8Regex/b
 [SPEC-PCRE2.md](https://github.com/Lokad/Utf8Regex/blob/master/SPEC-PCRE2.md) define each covered scope. The composition recipe
 below is qualified for Core/PythonRe; it does not infer an equivalent PCRE2 host
 envelope or complete construction, lazy/default or retained-storage coverage.
+
+## Construction and retention scope
+
+Construction admits major buffers, growth overlap and instruction/state expansion
+before allocation. Bounded traversal/probe checkpoints observe the original token
+and deadline. Incidental helper objects, enumerable views and enumerator boxes
+are not individually charged. PCRE2 lexical nesting and recursive backtracking
+construction share the fixed 256-frame backstop, tightened by smaller caller
+limits; insufficient admission can deny before a later syntax error.
+
+Charges are conservative and versioned. Shared metadata, temporary optimizer
+state and payloads can be charged again and held through eager construction.
+Cache producers bound metadata and retained payloads using per-program charges
+and eviction. Major children remain separately admitted. Numeric thresholds can
+fall when real storage/work disappears or rise with conservative allowances;
+they are not portable heap measurements. Eviction preserves held programs and
+results. Outside-lock preparation retains generation coordination and
+cancellable waits through clear/shrink races.
+
+PCRE2 literal/character compilation admits atom/token/class/property storage and
+UTF-8 buffers, including growth/final-copy overlap. Temporary Rune staging is
+released; token/atom capacities also receive instruction admission. Backtracking
+metadata/instruction buffers have their own admission. Selected operations keep
+Core programs they execute, and curated partial probing retains the real parsed
+root it consumes. Immutable internal name metadata can be shared; public copies
+remain independent. These guarantees do not cover all helper objects or RSS.
+
+## Callback writer lifetime
+
+Core and PCRE2 byte evaluators receive `Utf8ReplacementWriter`, valid during the
+callback. Copies share initialized output; resetting to default clears prior
+output and joins the active invocation on append. Default writers used outside
+a replacement callback throw `InvalidOperationException` on append, including
+empty fragments. `AppendAsciiByte` rejects non-ASCII arguments first. Nested
+operations restore the outer scope. Output growth, resets and final shaping
+retain the original invocation's interruption and capacity controls.
+Fixed output controls and major buffers require admission before acquisition;
+arbitrary callback allocations retain their separate host scope.
 
 ## Compose the Core/PythonRe invocation envelope
 
