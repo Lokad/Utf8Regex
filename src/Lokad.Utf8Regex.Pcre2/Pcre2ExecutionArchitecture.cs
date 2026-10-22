@@ -2385,7 +2385,7 @@ internal static class Pcre2GlobalOperationDriver
                 try
                 {
                     result = 0;
-                    while (cursor.MoveNext(ref frames, ref repeatMutations, ref workspace)) result = checked(result + 1);
+                    while (cursor.AdvanceForCount(ref frames, ref repeatMutations, ref workspace)) result = checked(result + 1);
                     return true;
                 }
                 finally { cursor.ReleaseBacktrackingStorage(ref frames, ref repeatMutations, ref workspace); }
@@ -2746,14 +2746,14 @@ internal ref struct Pcre2GlobalMatchCursor
         return moved;
     }
 
-    internal bool MoveNext(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
+    internal bool AdvanceForCount(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
         scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
         scoped ref Pcre2BacktrackingWorkspace workspace)
     {
         if (_kind != Pcre2GlobalCursorKind.Direct) return MoveNext();
         var control = WorkingBufferControl;
         Pcre2SliceDriver.CheckInvocation(ref control.WorkingInvocation);
-        var moved = _direct.MoveNext(ref frames, ref repeatMutations, ref workspace);
+        var moved = _direct.AdvanceForCount(ref frames, ref repeatMutations, ref workspace);
         Pcre2SliceDriver.CheckInvocation(ref control.WorkingInvocation);
         return moved;
     }
@@ -3025,6 +3025,41 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
         scoped ref Pcre2BacktrackingWorkspace workspace)
     {
+        if (!TryFindNextMatch(ref frames, ref repeatMutations, ref workspace, out var match)) return false;
+        if (_kind == Pcre2DirectGlobalCursorKind.Backtracking) _budget.RecordResultProjection();
+        Current = Pcre2GlobalCursorProjection.Project(
+            match.StartOffsetInBytes, match.EndOffsetInBytes, ref _input, ref _projection, ref _budget);
+        AdvanceAfterMatch(match);
+        return true;
+    }
+
+    internal bool AdvanceForCount(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
+        scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
+        scoped ref Pcre2BacktrackingWorkspace workspace)
+    {
+        // Count shares discovery/retry and storage ownership with enumeration,
+        // but does not construct result coordinates which it never returns.
+        if (!TryFindNextMatch(ref frames, ref repeatMutations, ref workspace, out var match)) return false;
+        AdvanceAfterMatch(match);
+        return true;
+    }
+
+    private void AdvanceAfterMatch(Pcre2DirectGlobalMatch match)
+    {
+        _restartPosition = new Utf8BytePosition(match.ConsumedEndOffsetInBytes);
+        var isBacktracking = _kind == Pcre2DirectGlobalCursorKind.Backtracking;
+        if (isBacktracking) _firstMatchingPosition = _restartPosition;
+        var isEmptyForRetry = isBacktracking
+            ? match.ConsumedStartOffsetInBytes == match.ConsumedEndOffsetInBytes
+            : match.StartOffsetInBytes == match.EndOffsetInBytes;
+        _retryState = isEmptyForRetry ? Pcre2GlobalRetryState.EmptyAtSamePosition : Pcre2GlobalRetryState.Search;
+    }
+
+    private bool TryFindNextMatch(scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
+        scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
+        scoped ref Pcre2BacktrackingWorkspace workspace, out Pcre2DirectGlobalMatch match)
+    {
+        match = default;
         while (_retryState != Pcre2GlobalRetryState.Finished)
         {
             var retryingEmptyAtSamePosition = _retryState == Pcre2GlobalRetryState.EmptyAtSamePosition;
@@ -3032,7 +3067,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
                 ? _matchOptions | Pcre2MatchOptions.Anchored | Pcre2MatchOptions.NotEmptyAtStart
                 : _matchOptions;
 
-            Pcre2DirectGlobalMatch match;
             try
             {
                 switch (_kind)
@@ -3181,28 +3215,6 @@ internal ref struct Pcre2DirectGlobalMatchCursor
                     throw new NotSupportedException("SPEC-PCRE2 rejects non-monotone iterative matches.");
                 }
 
-                if (isBacktracking)
-                {
-                    _budget.RecordResultProjection();
-                }
-
-                Current = Pcre2GlobalCursorProjection.Project(
-                    match.StartOffsetInBytes,
-                    match.EndOffsetInBytes,
-                    ref _input,
-                    ref _projection, ref _budget);
-                _restartPosition = new Utf8BytePosition(match.ConsumedEndOffsetInBytes);
-                if (isBacktracking)
-                {
-                    _firstMatchingPosition = _restartPosition;
-                }
-
-                var isEmptyForRetry = isBacktracking
-                    ? match.ConsumedStartOffsetInBytes == match.ConsumedEndOffsetInBytes
-                    : match.StartOffsetInBytes == match.EndOffsetInBytes;
-                _retryState = isEmptyForRetry
-                    ? Pcre2GlobalRetryState.EmptyAtSamePosition
-                    : Pcre2GlobalRetryState.Search;
                 return true;
             }
 

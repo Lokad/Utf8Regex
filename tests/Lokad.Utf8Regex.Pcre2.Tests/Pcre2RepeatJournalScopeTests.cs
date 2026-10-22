@@ -36,6 +36,8 @@ public sealed class Pcre2RepeatJournalScopeTests
     [InlineData("(?i)(?<pair>ab)(?&pair)", "abab xx abab", 2)]
     [InlineData("(?i)(a*)", "😀a", 3)]
     [InlineData("(?i)(|a)", "😀a", 4)]
+    [InlineData(@"(?i)\G(a)\Ké", "aéaé", 2)]
+    [InlineData(@"(?i)(a)(*SKIP)(*F)|(?<g>é)", "aéé", 2)]
     public void RepeatedAttemptsAndNestedContextsKeepIndependentRollback(string pattern, string text, int expected)
     {
         var regex = Create(pattern);
@@ -85,7 +87,7 @@ public sealed class Pcre2RepeatJournalScopeTests
     {
         var regex = Create("(?i)(a+)(b)");
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
-        var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaab ", 100)));
+        var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀aaab ", 100)));
         Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(bytes, ref invocation, out var input));
         var budget = new Pcre2ResourceBudget(regex.DebugCompiledProgram.Request.DefaultLimits, invocation, true);
         Assert.True(Pcre2GlobalOperationDriver.TryCreateCursor(regex.DebugCompiledProgram, input,
@@ -96,12 +98,43 @@ public sealed class Pcre2RepeatJournalScopeTests
         try
         {
             var count = 0;
-            while (cursor.MoveNext(ref frames, ref repeats, ref workspace)) count++;
+            while (cursor.AdvanceForCount(ref frames, ref repeats, ref workspace)) count++;
             Assert.Equal(100, count);
+            Assert.Equal(0UL, budget.Diagnostics.ResultProjections);
             Assert.Equal(1UL, budget.Diagnostics.WorkspaceRepeatMutationRents);
             Assert.Equal(1UL, budget.Diagnostics.WorkspaceFixedRents);
         }
         finally { cursor.ReleaseBacktrackingStorage(ref frames, ref repeats, ref workspace); }
+        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void CountAndEagerEnumerationKeepUnicodeRangesAndIndependentResults(bool finite)
+    {
+        const string pattern = @"(?P<g>(?:é|a)+😀)";
+        var regex = finite ? Create(pattern) : new Utf8Pcre2Regex(pattern);
+        Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
+        var bytes = "éa😀 éa😀"u8.ToArray();
+        Assert.Equal(2, regex.Count(bytes));
+        var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
+        Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(bytes, ref invocation, out var input));
+        var budget = new Pcre2ResourceBudget(regex.DebugCompiledProgram.Request.DefaultLimits, invocation, true);
+        Assert.True(Pcre2GlobalOperationDriver.TryCreateCursor(regex.DebugCompiledProgram, input,
+            new Utf8BytePosition(0), Pcre2MatchOptions.None, out var cursor, budget));
+        Assert.True(cursor.MoveNext());
+        var retained = cursor.Current;
+        // Projection remains eager in MoveNext, even if Current is never read again.
+        Assert.Equal(1UL, budget.Diagnostics.ResultProjections);
+        Assert.Equal(0, retained.StartOffsetInUtf16);
+        Assert.Equal(4, retained.EndOffsetInUtf16);
+        Assert.True(cursor.MoveNext());
+        Assert.Equal(2UL, budget.Diagnostics.ResultProjections);
+        Assert.Equal(8, cursor.Current.StartOffsetInBytes);
+        Assert.Equal(5, cursor.Current.StartOffsetInUtf16);
+        Assert.Equal(9, cursor.Current.EndOffsetInUtf16);
+        Assert.Equal(7, retained.EndOffsetInBytes);
+        Assert.False(cursor.MoveNext());
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
 
