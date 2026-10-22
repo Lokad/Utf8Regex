@@ -26,12 +26,6 @@ public sealed class Utf8PythonMatchCursor : IDisposable
 
     internal Utf8PythonMatchCursor(ReadOnlyMemory<byte> input, Utf8SliceProgram program,
         PythonReNameEntry[] names, int startOffsetInBytes, TimeSpan timeout,
-        string pattern, Utf8SliceInvocation invocation)
-        : this(input, program, names, startOffsetInBytes, timeout, pattern, invocation, default)
-    { }
-
-    internal Utf8PythonMatchCursor(ReadOnlyMemory<byte> input, Utf8SliceProgram program,
-        PythonReNameEntry[] names, int startOffsetInBytes, TimeSpan timeout,
         string pattern, Utf8SliceInvocation invocation, Utf8Regex? candidateRegex)
     {
         _input = input;

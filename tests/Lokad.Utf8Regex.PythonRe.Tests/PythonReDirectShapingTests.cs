@@ -96,7 +96,8 @@ public sealed class PythonReDirectShapingTests
         Assert.NotNull(program);
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀é", 256)));
         var cursor = new PythonReScalarMatchCursor(input, program, 0,
-            Regex.InfiniteMatchTimeout, "(.)", CancellationToken.None, new(1000000, 0, 0, 1000000));
+            Regex.InfiniteMatchTimeout,
+            null, "(.)", new(new(1000000, 0, 0, 1000000), Regex.InfiniteMatchTimeout, CancellationToken.None));
         try
         {
             var count = 0;

@@ -21,7 +21,8 @@ public sealed class PythonReSubstitutionOutputTests
         var plan = PythonReReplacementParser.Parse(@"<\1>", 1, new Dictionary<string, int>());
         var input = "😀"u8.ToArray();
         var cursor = new PythonReScalarMatchCursor(input, program, 0,
-            Regex.InfiniteMatchTimeout, "(.)", CancellationToken.None, new(0, 0, 1UL << 20));
+            Regex.InfiniteMatchTimeout,
+            null, "(.)", new(new(0, 0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None));
         var writer = cursor.CreateOutputWriter();
         try
         {
@@ -46,7 +47,7 @@ public sealed class PythonReSubstitutionOutputTests
         var program = core.Inspection.AvailableOwnedSliceProgram;
         Assert.NotNull(program);
         var cursor = new PythonReScalarMatchCursor([], program, 0, Regex.InfiniteMatchTimeout,
-            "(.)", CancellationToken.None, new(0, 0, 13 + 96 + 2 * Bytes(8193) - (allow ? 0UL : 1UL)));
+            null, "(.)", new(new(0, 0, 13 + 96 + 2 * Bytes(8193) - (allow ? 0UL : 1UL)), Regex.InfiniteMatchTimeout, CancellationToken.None));
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
         var writer = cursor.CreateOutputWriter();
         var payload = Enumerable.Repeat((byte)'x', 8193).ToArray();
@@ -88,7 +89,8 @@ public sealed class PythonReSubstitutionOutputTests
         ulong completionWork;
         {
             var measured = new PythonReScalarMatchCursor([], program, 0,
-                Regex.InfiniteMatchTimeout, "(.)", CancellationToken.None, new(100000, 0, 1UL << 20));
+                Regex.InfiniteMatchTimeout,
+                null, "(.)", new(new(100000, 0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None));
             var writer = measured.CreateOutputWriter();
             measured.AppendBytes(ref writer, payload);
             seed = measured.WorkingInvocation.Budget.Steps;
@@ -99,7 +101,8 @@ public sealed class PythonReSubstitutionOutputTests
         for (ulong cutoff = 0; cutoff <= completionWork; cutoff++)
         {
             var cursor = new PythonReScalarMatchCursor([], program, 0,
-                Regex.InfiniteMatchTimeout, "(.)", CancellationToken.None, new(seed + cutoff, 0, 1UL << 20));
+                Regex.InfiniteMatchTimeout,
+                null, "(.)", new(new(seed + cutoff, 0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None));
             Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
             var writer = cursor.CreateOutputWriter();
             try
@@ -133,7 +136,8 @@ public sealed class PythonReSubstitutionOutputTests
         Assert.NotNull(program);
         var text = string.Concat(Enumerable.Repeat("😀", 5000));
         var cursor = new PythonReScalarMatchCursor([], program, 0,
-            Regex.InfiniteMatchTimeout, "(.)", CancellationToken.None, new(0, 0, 1UL << 20));
+            Regex.InfiniteMatchTimeout,
+            null, "(.)", new(new(0, 0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None));
         var writer = cursor.CreateOutputWriter();
         string result;
         try
@@ -163,7 +167,8 @@ public sealed class PythonReSubstitutionOutputTests
         Assert.NotNull(program);
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
         var cursor = new PythonReScalarMatchCursor([], program, 0,
-            timeout, "(.)", token.Token, new(0, 0, 1UL << 20));
+            timeout,
+            null, "(.)", new(new(0, 0, 1UL << 20), timeout, token.Token));
         var writer = cursor.CreateOutputWriter();
         try
         {

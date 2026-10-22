@@ -263,6 +263,6 @@ public sealed class PythonRePersistentCursorTests
         var program = core.Inspection.AvailableOwnedSliceProgram;
         Assert.NotNull(program);
         return new Utf8PythonMatchCursor(input, program, [], 0,
-            timeout ?? Regex.InfiniteMatchTimeout, pattern, invocation);
+            timeout ?? Regex.InfiniteMatchTimeout, pattern, invocation, null);
     }
 }

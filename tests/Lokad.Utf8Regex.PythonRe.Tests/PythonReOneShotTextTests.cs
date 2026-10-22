@@ -64,7 +64,7 @@ public sealed class PythonReOneShotTextTests
         var input = Encoding.UTF8.GetBytes(text);
         var extent = TextBytes(text.Length);
         var cursor = new PythonReScalarMatchCursor(input, program, 0, Regex.InfiniteMatchTimeout,
-            "(.)", CancellationToken.None, new(0, 0, 13 + 96 + extent - (allow ? 0UL : 1UL)));
+            null, "(.)", new(new(0, 0, 13 + 96 + extent - (allow ? 0UL : 1UL)), Regex.InfiniteMatchTimeout, CancellationToken.None));
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
         var priorPeak = cursor.WorkingInvocation.Budget.PeakWorkingBytes;
         string? result = null;
@@ -191,7 +191,7 @@ public sealed class PythonReOneShotTextTests
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀", 150000)));
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
         var cursor = new PythonReScalarMatchCursor(input, program, 0, timeout,
-            "(.+)", token.Token, new(0, 0, 1UL << 26));
+            null, "(.+)", new(new(0, 0, 1UL << 26), timeout, token.Token));
         try
         {
             Assert.True(cursor.MoveNext());

@@ -29,8 +29,8 @@ public sealed class PythonRePrefixDiscoveryTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.Multiline);
         var input = Encoding.UTF8.GetBytes(subject);
         var plain = new PythonReScalarMatchCursor(input, Field<Utf8SliceProgram>(regex, "_scalarProgram"),
-            0, Regex.InfiniteMatchTimeout, pattern,
-            default, Utf8ExecutionLimits.Unlimited);
+            0, Regex.InfiniteMatchTimeout,
+            null, pattern, new(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default));
         var expected = new List<Utf8PythonDetailedMatchData>();
         try { while (plain.MoveNext()) expected.Add(plain.SnapshotDetailed(Field<PythonReNameEntry[]>(regex, "_nameEntries"))); }
         finally { plain.Dispose(); }
@@ -75,7 +75,8 @@ public sealed class PythonRePrefixDiscoveryTests
                 while (true)
                 {
                     var plain = new PythonReScalarMatchCursor(input, program, start,
-                        Regex.InfiniteMatchTimeout, pattern, default, Utf8ExecutionLimits.Unlimited);
+                        Regex.InfiniteMatchTimeout,
+                        null, pattern, new(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default));
                     var expected = new List<Utf8PythonDetailedMatchData>();
                     try { while (plain.MoveNext()) expected.Add(plain.SnapshotDetailed(names)); }
                     finally { plain.Dispose(); }
@@ -117,7 +118,7 @@ public sealed class PythonRePrefixDiscoveryTests
         var candidate = Field<global::Lokad.Utf8Regex.Utf8Regex>(regex, "_utf8Regex");
         var input = Encoding.UTF8.GetBytes(new string('x', 4097) + "abcd xx cd");
         var plain = new PythonReScalarMatchCursor(input, program, 0, Regex.InfiniteMatchTimeout,
-            "(ab|cd)+", default, new(ulong.MaxValue, 0, 1048576));
+            null, "(ab|cd)+", new(new(ulong.MaxValue, 0, 1048576), Regex.InfiniteMatchTimeout, default));
         ulong originalWork;
         try { var count = 0; while (plain.MoveNext()) count++; Assert.Equal(2, count); originalWork = plain.WorkingInvocation.Budget.Steps; }
         finally { plain.Dispose(); }

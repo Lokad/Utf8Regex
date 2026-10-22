@@ -154,11 +154,12 @@ public sealed class PythonReLeadingAsciiRangeTests
     {
         var program = Compile(Pattern);
         var input = Encoding.UTF8.GetBytes(new string('9', 8192) + "alpha");
-        var probe = new PythonReScalarMatchCursor(input, program, 0, Timeout.InfiniteTimeSpan, Pattern, default, Limits);
+        var probe = new PythonReScalarMatchCursor(input, program, 0, Timeout.InfiniteTimeSpan,
+            null, Pattern, new(Limits, Timeout.InfiniteTimeSpan, default));
         var constructionWork = probe.WorkingInvocation.Budget.Steps;
         probe.Dispose();
-        var cursor = new PythonReScalarMatchCursor(input, program, 0, Timeout.InfiniteTimeSpan, Pattern, default,
-            new(constructionWork + 1, 32, 1 << 20, 1 << 20));
+        var cursor = new PythonReScalarMatchCursor(input, program, 0, Timeout.InfiniteTimeSpan,
+            null, Pattern, new(new(constructionWork + 1, 32, 1 << 20, 1 << 20), Timeout.InfiniteTimeSpan, default));
         Exception? error = null;
         try { cursor.MoveNext(); } catch (Exception failure) { error = failure; }
         finally { cursor.Dispose(); }
@@ -177,7 +178,8 @@ public sealed class PythonReLeadingAsciiRangeTests
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
         var pattern = disjoint ? "(?P<word>[A-Za-z_]+)" : Pattern;
         var cursor = new PythonReScalarMatchCursor(Encoding.UTF8.GetBytes(new string('9', 200000) + "alpha"),
-            Compile(pattern), 0, timeout, pattern, cancellation.Token, Limits);
+            Compile(pattern), 0, timeout,
+            null, pattern, new(Limits, timeout, cancellation.Token));
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
         cursor.WorkingInvocation.ShareStorageForCursor();
         var observer = cursor.WorkingInvocation;

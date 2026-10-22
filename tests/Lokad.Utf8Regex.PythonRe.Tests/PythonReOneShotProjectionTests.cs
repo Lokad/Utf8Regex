@@ -67,7 +67,8 @@ public sealed class PythonReOneShotProjectionTests
         var program = core.Inspection.AvailableOwnedSliceProgram;
         Assert.NotNull(program);
         var cursor = new PythonReScalarMatchCursor("é😀z"u8, program, 0,
-            Regex.InfiniteMatchTimeout, "(?<=é)(.)", CancellationToken.None, new(0, 0, 1UL << 20));
+            Regex.InfiniteMatchTimeout,
+            null, "(?<=é)(.)", new(new(0, 0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None));
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
         PythonReGroupData value;
         try
@@ -119,7 +120,7 @@ public sealed class PythonReOneShotProjectionTests
             ArrayBytes<Utf8SliceTrailEntry[]>(Utf8SliceRunner.ChunkTableCapacity);
         var total = 13 + 96 + 96 + scratch + groupExtent + extent;
         var cursor = new PythonReScalarMatchCursor("😀é"u8, program, 0, Regex.InfiniteMatchTimeout,
-            "(.)", CancellationToken.None, new(0, 0, total - (allow ? 0UL : 1UL)));
+            null, "(.)", new(new(0, 0, total - (allow ? 0UL : 1UL)), Regex.InfiniteMatchTimeout, CancellationToken.None));
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
         Utf8PythonMatchContext result = default;
         try
@@ -173,7 +174,7 @@ public sealed class PythonReOneShotProjectionTests
         var extent = ArrayBytes<PythonReNameEntry>(names.Length);
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
         var cursor = new PythonReScalarMatchCursor("😀"u8, program, 0, timeout,
-            "(.)", token.Token, new(0, 0, 1UL << 24));
+            null, "(.)", new(new(0, 0, 1UL << 24), timeout, token.Token));
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
         try
         {

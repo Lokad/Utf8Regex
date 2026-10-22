@@ -57,7 +57,8 @@ public sealed class PythonReDetailedPublicationContractTests
         var program = core.Inspection.AvailableOwnedSliceProgram;
         var input = "😀é"u8.ToArray();
         var measured = new PythonReScalarMatchCursor(input, program, 0,
-            Regex.InfiniteMatchTimeout, "(😀)(é?)", default, new(0, 0, 0, 1048576));
+            Regex.InfiniteMatchTimeout,
+            null, "(😀)(é?)", new(new(0, 0, 0, 1048576), Regex.InfiniteMatchTimeout, default));
         ulong work, extent;
         try
         {
@@ -71,7 +72,8 @@ public sealed class PythonReDetailedPublicationContractTests
             var detailedWork = work - beforeWork;
             var detailedWorking = measured.ReservedBytes - beforeBytes;
             var standalone = new PythonReScalarMatchCursor(input, program, 0,
-                Regex.InfiniteMatchTimeout, "(😀)(é?)", default, new(0, 0, 0, 1048576));
+                Regex.InfiniteMatchTimeout,
+                null, "(😀)(é?)", new(new(0, 0, 0, 1048576), Regex.InfiniteMatchTimeout, default));
             try
             {
                 Assert.True(standalone.MoveNext()); standalone.EnsureMap();
@@ -102,7 +104,7 @@ public sealed class PythonReDetailedPublicationContractTests
             try
             {
                 cursor = new(input, program, 0, Regex.InfiniteMatchTimeout,
-                    "(😀)(é?)", default, new(cap, 0, 0, 1048576));
+                    null, "(😀)(é?)", new(new(cap, 0, 0, 1048576), Regex.InfiniteMatchTimeout, default));
                 constructed = true;
                 Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
                 reserved = true;
@@ -140,7 +142,8 @@ public sealed class PythonReDetailedPublicationContractTests
         var input = Encoding.UTF8.GetBytes(new string('é', 150000));
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
         var cursor = new PythonReScalarMatchCursor(input, core.Inspection.AvailableOwnedSliceProgram,
-            0, timeout, "(.+)", token.Token, new(0, 0, 64UL << 20, 1048576));
+            0, timeout,
+            null, "(.+)", new(new(0, 0, 64UL << 20, 1048576), timeout, token.Token));
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
         try
         {
