@@ -37,12 +37,16 @@ public sealed class Utf8ReplacementAliasingTests
         }
     }
 
-    [Fact]
-    public void Utf8TemplatePreservesOverlappingDestination()
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    [InlineData(RegexOptions.RightToLeft)]
+    [InlineData(RegexOptions.NonBacktracking)]
+    public void Utf8TemplatePreservesOverlappingDestination(RegexOptions options)
     {
         var storage = new byte[64];
         "XY"u8.CopyTo(storage.AsSpan(1));
-        var regex = new Utf8Regex("a", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("a", RegexOptions.CultureInvariant | options);
 
         var status = regex.TryReplace("a-b-a"u8, storage.AsSpan(1, 2), storage, out var written);
 

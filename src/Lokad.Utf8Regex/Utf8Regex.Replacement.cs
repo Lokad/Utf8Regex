@@ -81,20 +81,6 @@ public sealed partial class Utf8Regex
         return false;
     }
 
-    private static bool TryGetDirectLiteralReplacementBytes(
-        ReadOnlySpan<byte> replacementUtf8,
-        out byte[] replacementBytes)
-    {
-        if (replacementUtf8.IndexOf((byte)'$') >= 0)
-        {
-            replacementBytes = [];
-            return false;
-        }
-
-        replacementBytes = replacementUtf8.ToArray();
-        return true;
-    }
-
     private bool TryGetExactLiteralReplacementBytes(
         Utf8AnalyzedReplacement replacement,
         out byte[] replacementBytes)

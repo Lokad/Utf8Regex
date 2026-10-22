@@ -2803,9 +2803,9 @@ public sealed partial class Utf8Regex
             ? default
             : Utf8Validation.Validate(input);
 
-        if (TryGetDirectLiteralReplacementBytes(replacementPatternUtf8, out var directReplacementBytes))
+        if (replacementPatternUtf8.IndexOf((byte)'$') < 0)
         {
-            return ReplaceLiteralBytesCore(input, validation, directReplacementBytes, deadline);
+            return ReplaceLiteralBytesCore(input, validation, replacementPatternUtf8, deadline);
         }
 
         var replacementPattern = GetParsedReplacement(replacementPatternUtf8, control);
@@ -2976,9 +2976,14 @@ public sealed partial class Utf8Regex
 
         if (!input.Overlaps(destination) && GetOwnedSliceProgram(input, cancellationToken) is null && !input.IsEmpty &&
             !(_ownedSliceProgram is { CanMatchEmpty: true } && _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral) &&
-            TryGetDirectLiteralReplacementBytes(replacementPatternUtf8, out var directReplacementBytes))
+            replacementPatternUtf8.IndexOf((byte)'$') < 0)
         {
             var validation = Utf8Validation.Validate(input);
+            // The worker consumes the template synchronously. Own it only when
+            // writing the destination could overwrite bytes still needed later.
+            ReadOnlySpan<byte> directReplacementBytes = replacementPatternUtf8.Overlaps(destination)
+                ? replacementPatternUtf8.ToArray()
+                : replacementPatternUtf8;
             return TryReplaceLiteralBytesCore(input, validation, directReplacementBytes, destination, out bytesWritten, deadline);
         }
 
