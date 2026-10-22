@@ -1,6 +1,6 @@
 namespace Lokad.Utf8Regex;
 
-/// <summary>Represents match coordinates without retaining the matched UTF-8 input.</summary>
+/// <summary>Represents match coordinates without retaining the matched UTF-8 input. The default value represents no match.</summary>
 public readonly struct Utf8ValueMatch
 {
     private readonly long _utf16Range;
@@ -31,15 +31,15 @@ public readonly struct Utf8ValueMatch
         int indexInBytes,
         int lengthInBytes)
     {
-        _utf16Range = success ? PackRange(indexInUtf16, lengthInUtf16) : -1;
-        _byteRange = success && isByteAligned ? PackRange(indexInBytes, lengthInBytes) : -1;
+        _utf16Range = success ? PackRange(indexInUtf16, lengthInUtf16) : 0;
+        _byteRange = success && isByteAligned ? PackRange(indexInBytes, lengthInBytes) : 0;
     }
 
     /// <summary>Gets whether this value represents a successful match.</summary>
-    public bool Success => _utf16Range >= 0;
+    public bool Success => _utf16Range < 0;
 
     /// <summary>Gets whether a successful match has UTF-8 scalar-aligned byte coordinates.</summary>
-    public bool IsByteAligned => _byteRange >= 0;
+    public bool IsByteAligned => _byteRange < 0;
 
     /// <summary>Gets the match start as a zero-based UTF-16 code-unit offset, or zero after no match.</summary>
     public int IndexInUtf16 => Success ? UnpackStart(_utf16Range) : 0;
@@ -78,20 +78,22 @@ public readonly struct Utf8ValueMatch
     }
 
     /// <summary>Gets the canonical unsuccessful match value.</summary>
-    public static Utf8ValueMatch NoMatch => new(false, true, 0, 0, 0, 0);
+    public static Utf8ValueMatch NoMatch => default;
 
     private static long PackRange(int start, int length)
     {
-        return ((long)(uint)start << 32) | (uint)length;
+        // Legal nonnegative coordinates produce a negative word, including an
+        // empty match at zero. Reserve zero for the zero-initialized no-match value.
+        return ~(((long)(uint)start << 32) | (uint)length);
     }
 
     private static int UnpackStart(long range)
     {
-        return (int)(range >> 32);
+        return (int)(~range >> 32);
     }
 
     private static int UnpackLength(long range)
     {
-        return (int)range;
+        return (int)~range;
     }
 }
