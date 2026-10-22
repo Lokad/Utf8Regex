@@ -1,0 +1,82 @@
+using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Pcre2;
+
+const BindingFlags Instance = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+const BindingFlags Static = BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+var rows = new List<object>();
+foreach (var followerUsesToken in new[] { false, true })
+{
+    var regex = new Utf8Pcre2Regex("(a)");
+    var template = string.Concat(Enumerable.Repeat("$1", 128));
+    var input = "a"u8.ToArray();
+    using var ownerCancellation = new CancellationTokenSource();
+    using var followerCancellation = new CancellationTokenSource();
+    using var paused = new ManualResetEventSlim();
+    using var release = new ManualResetEventSlim();
+    using var followerEntered = new ManualResetEventSlim();
+    Exception? ownerFailure = null, followerFailure = null;
+    string? followerOutput = null;
+    var ownerPausedInPendingPreparation = false;
+    var followerObservedWaiting = false;
+    var component = typeof(Utf8Pcre2Regex).GetField("_replacementComponent", Instance)!.GetValue(regex)!;
+    var cache = component.GetType().GetField("_plans", Instance)!.GetValue(component)!;
+    var firstField = cache.GetType().GetField("_first", Instance)!;
+    var scopeType = typeof(Utf8Regex).Assembly.GetType("Lokad.Utf8Regex.Internal.Utf8ConstructionScope")!;
+    var enterScope = scopeType.GetMethod("Enter", Static, Type.EmptyTypes)!;
+    var budgetProperty = scopeType.GetProperty("Budget", Instance)!;
+    var stopped = 0;
+    var owner = new Thread(() =>
+    {
+        using var scope = (IDisposable)enterScope.Invoke(null, null)!;
+        var budget = budgetProperty.GetValue(scope)!;
+        var hookProperty = budget.GetType().GetProperty("CheckpointHook", Instance)!;
+        hookProperty.SetValue(budget, (Action<ulong>)(_ =>
+        {
+            var entry = firstField.GetValue(cache);
+            if (entry is null || (int)entry.GetType().GetField("Status", Instance)!.GetValue(entry)! != 0 ||
+                (int)entry.GetType().GetField("OwnerThread", Instance)!.GetValue(entry)! != Environment.CurrentManagedThreadId ||
+                Interlocked.CompareExchange(ref stopped, 1, 0) != 0) return;
+            ownerPausedInPendingPreparation = true;
+            paused.Set();
+            if (!release.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException("Owner release timed out.");
+        }));
+        try { _ = regex.Replace(input, template, 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, ownerCancellation.Token); }
+        catch (Exception error) { ownerFailure = error; }
+        finally { hookProperty.SetValue(budget, null); }
+    }) { IsBackground = true };
+    var follower = new Thread(() =>
+    {
+        followerEntered.Set();
+        try { followerOutput = Encoding.UTF8.GetString(regex.Replace(input, template, 0, Pcre2SubstitutionOptions.None,
+            Pcre2MatchOptions.None, followerUsesToken ? followerCancellation.Token : default)); }
+        catch (Exception error) { followerFailure = error; }
+    }) { IsBackground = true };
+    owner.Start();
+    try
+    {
+        if (!paused.Wait(TimeSpan.FromSeconds(5))) throw new TimeoutException("Owner did not pause at a pending preparation.");
+        follower.Start();
+        if (!followerEntered.Wait(TimeSpan.FromSeconds(5))) throw new TimeoutException("Follower did not enter.");
+        followerObservedWaiting = SpinWait.SpinUntil(() => (follower.ThreadState & ThreadState.WaitSleepJoin) != 0,
+            TimeSpan.FromSeconds(5));
+        if (!followerObservedWaiting) throw new TimeoutException("Follower was not observed waiting behind the owner.");
+        ownerCancellation.Cancel();
+    }
+    finally { release.Set(); }
+    if (!owner.Join(TimeSpan.FromSeconds(5)) || !follower.Join(TimeSpan.FromSeconds(5))) throw new TimeoutException("Calls did not complete.");
+    var retryOutput = Encoding.UTF8.GetString(regex.Replace(input, template));
+    rows.Add(new {
+        followerUsesToken, ownerPausedInPendingPreparation, followerObservedWaiting,
+        ownerFailure = ownerFailure?.GetType().FullName,
+        ownerFailureHasOriginalToken = ownerFailure is OperationCanceledException o && o.CancellationToken == ownerCancellation.Token,
+        followerFailure = followerFailure?.GetType().FullName,
+        followerFailureHasForeignToken = followerFailure is OperationCanceledException f && f.CancellationToken == ownerCancellation.Token,
+        followerOwnTokenIsCancelled = followerCancellation.IsCancellationRequested,
+        sharedFailureInstance = ReferenceEquals(ownerFailure, followerFailure), followerOutput,
+        retryOutputLength = retryOutput.Length, retryOutputCorrect = retryOutput == new string('a',128)
+    });
+}
+Console.WriteLine(JsonSerializer.Serialize(new {producer=typeof(Utf8Pcre2Regex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion, rows},new JsonSerializerOptions{WriteIndented=true}));

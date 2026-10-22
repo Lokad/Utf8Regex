@@ -1,0 +1,28 @@
+{
+  "Files": [
+    {
+      "Path": "cost-driver/bin/Release/net10.0/cost-driver.dll",
+      "Sha256": "D50C6FA88ECFB1B35FFBE79CF432DF0BA94701E64686FD70A8D631D1B7E6FBF4"
+    },
+    {
+      "Path": "cost-host/bin/Release/net10.0/cost-host.dll",
+      "Sha256": "2B0C84A23A260DFB513DCA0DA70186B059C9EC866FAF88B10C2A7BE6143BF86D"
+    },
+    {
+      "Path": "cost-driver/Lanes.cs",
+      "Sha256": "24FF82E4DCC277A7CBFB7C92F4DB1C02ECA6E3F2BD0FFBF65EA32CE1F3FDFC29"
+    },
+    {
+      "Path": "cost-host/Program.cs",
+      "Sha256": "4FE413906A58E5D2415208ACEE3DE3B817A9F4FA1D147EDBBF9065B65DF601BC"
+    }
+  ],
+  "UnchangedBetweenRuns": true,
+  "Note": "Identical host/driver/product bytes for nine-pair measurement and sole 17-pair reversed-first confirmation. Preflight corrected generated numeric reference spelling before timing.",
+  "TieredCompilation": null,
+  "TieredPGO": null,
+  "TCQuickJitForLoops": null,
+  "MeasuredRuntime": ".NET 10.0.13",
+  "Platform": "Windows",
+  "LogicalCpu": 20
+}

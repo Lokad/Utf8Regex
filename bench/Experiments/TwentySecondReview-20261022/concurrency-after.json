@@ -1,0 +1,33 @@
+{
+  "producer": "0.4.0-rc.2-dev\u002B07780283fba3d24ec4d7e791641dd76420c80457",
+  "rows": [
+    {
+      "followerUsesToken": false,
+      "ownerPausedInPendingPreparation": true,
+      "followerObservedWaiting": true,
+      "ownerFailure": "System.OperationCanceledException",
+      "ownerFailureHasOriginalToken": true,
+      "followerFailure": null,
+      "followerFailureHasForeignToken": false,
+      "followerOwnTokenIsCancelled": false,
+      "sharedFailureInstance": false,
+      "followerOutput": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "retryOutputLength": 128,
+      "retryOutputCorrect": true
+    },
+    {
+      "followerUsesToken": true,
+      "ownerPausedInPendingPreparation": true,
+      "followerObservedWaiting": true,
+      "ownerFailure": "System.OperationCanceledException",
+      "ownerFailureHasOriginalToken": true,
+      "followerFailure": null,
+      "followerFailureHasForeignToken": false,
+      "followerOwnTokenIsCancelled": false,
+      "sharedFailureInstance": false,
+      "followerOutput": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "retryOutputLength": 128,
+      "retryOutputCorrect": true
+    }
+  ]
+}

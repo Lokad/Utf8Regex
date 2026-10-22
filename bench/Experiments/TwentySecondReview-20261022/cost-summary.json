@@ -1,0 +1,20 @@
+[
+  {
+    "File": "cost-pair.json",
+    "Samples": 9,
+    "MinimumMs": 19.5948,
+    "MaximumMs": 100.1977,
+    "WallSeconds": 36.9152626,
+    "AffectedWorst": 8.692806558863397,
+    "ControlChange": 30.12355901157797
+  },
+  {
+    "File": "cost-confirmation.json",
+    "Samples": 17,
+    "MinimumMs": 28.062200000000004,
+    "MaximumMs": 145.7132,
+    "WallSeconds": 42.0998425,
+    "AffectedWorst": 1.1718066710499908,
+    "ControlChange": -0.4041305533276196
+  }
+]

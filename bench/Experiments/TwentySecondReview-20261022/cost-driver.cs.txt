@@ -1,0 +1,52 @@
+using System.Buffers;
+using System.Reflection;
+using System.Text;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Pcre2;
+
+public static class Lanes
+{
+    private static byte[]? s_lastBytes;
+    private static string? s_lastText;
+    public static string Producer() => string.Join("; ", new[] { typeof(Utf8Regex), typeof(Utf8Pcre2Regex) }
+        .Select(type => type.Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion));
+    public static (string, Func<long>, long)[] Create()
+    {
+        var ordinary = new Utf8Pcre2Regex("(a)");
+        var finite = Utf8Pcre2Regex.Create("(a)", default, default,
+            new Utf8ResourcePolicy { MaxWorkSteps = 50_000_000, MaxDepth = 1024,
+                MaxWorkingBytes = 64 << 20, MaxResultBytes = 128 << 20 }, Timeout.InfiniteTimeSpan);
+        var unicode = new Utf8Pcre2Regex("(é)(😀)");
+        var churn = new Utf8Pcre2Regex("(a)");
+        var ascii = "aaa"u8.ToArray();
+        var unicodeSubject = "é😀xé😀"u8.ToArray();
+        var template = "$1$1"u8.ToArray();
+        var destination = new byte[32];
+        var templates = Enumerable.Range(0,64).Select(index => "${1}" + index.ToString("D2")).ToArray();
+        var single = "a"u8.ToArray();
+        var nextTemplate = 0;
+        var control = new Utf8Regex("z");
+        var controlSubject = Encoding.UTF8.GetBytes(new string('x', 128 * 1024));
+        if (!ordinary.Replace(ascii, "$1$1").AsSpan().SequenceEqual("aaaaaa"u8) ||
+            !finite.Replace(ascii, "$1$1").AsSpan().SequenceEqual("aaaaaa"u8) ||
+            unicode.ReplaceToString(unicodeSubject, "$2$1") != "😀éx😀é" ||
+            ordinary.TryReplace(ascii, template, destination, out var written) != OperationStatus.Done ||
+            !destination.AsSpan(0,written).SequenceEqual("aaaaaa"u8)) throw new Exception("Public output mismatch");
+        foreach (var text in templates)
+            if (Encoding.UTF8.GetString(churn.Replace(single,text)) != "a" + text[4..]) throw new Exception("Cold template output mismatch");
+        return [
+            ("Pcre2/warm-template-bytes", () => Check(ordinary.Replace(ascii, "$1$1")), 103),
+            ("Pcre2/warm-template-four-finite-limits", () => Check(finite.Replace(ascii, "$1$1")), 103),
+            ("Pcre2/unicode-captured-text", () => Check(unicode.ReplaceToString(unicodeSubject, "$2$1")), 55364),
+            ("Pcre2/utf8-template-destination", () => {
+                if (ordinary.TryReplace(ascii,template,destination,out var count) != OperationStatus.Done) throw new Exception("Destination failure");
+                return count + destination[0]; }, 103),
+            ("Pcre2/cold-template-churn", () => Check(churn.Replace(single,templates[nextTemplate++ & 63])), 100),
+            ("Control/Core-Count-miss-128KiB", () => control.Count(controlSubject), 0)
+        ];
+    }
+    private static long Check(byte[] output) { s_lastBytes=output; return output.Length+output[0]; }
+    private static long Check(string output) { s_lastText=output; return output.Length+output[0]; }
+    public static long[] Allocations() => [typeof(Utf8Regex).Assembly.GetExportedTypes()
+        .Count(type => type.Name is "Utf8CountDiagnostics" or "Utf8IsMatchDiagnostics")];
+}

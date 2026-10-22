@@ -1,0 +1,48 @@
+{
+  "SourceProducer": "07780283fba3d24ec4d7e791641dd76420c80457",
+  "Configuration": "Release",
+  "OriginalPublicWitness": {
+    "Before": "Both uncancelled followers receive the exact preparer OperationCanceledException and foreign token",
+    "After": "Both followers return 128 a characters; owner keeps its original token"
+  },
+  "PreFixTargetedRun": {
+    "RawLog": "PowerShell Host output escaped the first redirection; no complete raw red log was retained. Original frozen public witness remains archived.",
+    "Scope": "New regression tests before the source fix",
+    "ObservedFailed": 10,
+    "ObservedPassed": 4
+  },
+  "CoreFocused": {
+    "Scope": "API snapshot, consumed typed-member inventory, cursor behavior/ownership, preparation cache and replacement authority",
+    "Passed": 74,
+    "Log": "artifacts/twenty-second-implementation-20261022/core-focused.log"
+  },
+  "PythonReFocused": {
+    "Scope": "API/dependency inventory, lazy FullMatch authority and replacement cache",
+    "Passed": 22,
+    "Log": "artifacts/twenty-second-implementation-20261022/pythonre-focused.log"
+  },
+  "Pcre2Focused": {
+    "Scope": "Preparation isolation, entry/template/destination authority and cache",
+    "Passed": 153,
+    "Log": "artifacts/twenty-second-implementation-20261022/pcre2-focused.log"
+  },
+  "Pcre2Full": {
+    "Log": "artifacts/twenty-second-implementation-20261022/pcre2-release.log",
+    "Failed": 0,
+    "Seconds": 9,
+    "Passed": 6019,
+    "Skipped": 0
+  },
+  "FriendToolingBuild": "One final benchmark/library closure passes at the final clean source",
+  "GeneratedChecks": [
+    "README parity",
+    "PythonRe benchmark page",
+    "PCRE2 benchmark page"
+  ],
+  "CompiledSourcePreflight": "Full producer/PE/PDB/compiled-document check passes",
+  "Performance": "One paired comparison plus sole confirmation; timing closed; no causal speedup or cumulative/package qualification",
+  "PreparationFailureScope": "Cancellation, deadline and invocation limits recovered under the waiter authority; fixed construction errors and genuine template errors retain their existing failure vocabulary",
+  "CiRun": 39796746585,
+  "CiState": "Completed successfully at 07780283 on Windows/Linux across all four fixture projects",
+  "Packages": "No packages repacked, qualified or published"
+}

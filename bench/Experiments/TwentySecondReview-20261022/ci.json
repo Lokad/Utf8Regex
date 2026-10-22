@@ -1,0 +1,16 @@
+{
+  "SourceProducer": "07780283fba3d24ec4d7e791641dd76420c80457",
+  "RunId": 39796746585,
+  "Status": "completed",
+  "Conclusion": "success",
+  "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/39796746585",
+  "Workflow": ".github/workflows/ci.yml",
+  "Platforms": [
+    "windows-latest",
+    "ubuntu-latest"
+  ],
+  "Scope": "Combined Release source build and all four fixture projects on both platforms; no package or cumulative cost qualification",
+  "CreatedAtUtc": "2026-10-22T14:33:53Z",
+  "UpdatedAtUtc": "2026-10-22T14:43:43Z",
+  "QueryPolicy": "Sparse status requests; initial short-SHA query returned no run, corrected with full SHA. No tight polling, rerun, cancellation or additional workflow."
+}
