@@ -20,30 +20,6 @@ struct Utf8ConstructionPolicy
   method Boolean Equals(Utf8ConstructionPolicy other)
   method Int32 GetHashCode()
   method String ToString()
-struct Utf8CountDiagnostics
-  ctor Utf8CountDiagnostics(Int32 Result, String ExecutionKind, String SearchKind, String FallbackVerifierMode, Boolean RequiresCandidateEndCoverage, Boolean RequiresTrailingAnchorCoverage, String ExecutionRoute, Int32 SearchCandidates, Int32 FixedCheckRejects, Int32 VerifierInvocations, Int32 VerifierMatches, Int32 PrefilterWindows, Int32 PrefilterSkippedWindows, Int32 PrefilterPromotedWindows, Int32 PrefilterSkippedBytes, Int32 PrefilterPromotedBytes, Int32 EngineDemotions)
-  property Boolean RequiresCandidateEndCoverage { get; set; }
-  property Boolean RequiresTrailingAnchorCoverage { get; set; }
-  property Int32 EngineDemotions { get; set; }
-  property Int32 FixedCheckRejects { get; set; }
-  property Int32 PrefilterPromotedBytes { get; set; }
-  property Int32 PrefilterPromotedWindows { get; set; }
-  property Int32 PrefilterSkippedBytes { get; set; }
-  property Int32 PrefilterSkippedWindows { get; set; }
-  property Int32 PrefilterWindows { get; set; }
-  property Int32 Result { get; set; }
-  property Int32 SearchCandidates { get; set; }
-  property Int32 VerifierInvocations { get; set; }
-  property Int32 VerifierMatches { get; set; }
-  property String ExecutionKind { get; set; }
-  property String ExecutionRoute { get; set; }
-  property String FallbackVerifierMode { get; set; }
-  property String SearchKind { get; set; }
-  method Boolean Equals(Object obj)
-  method Boolean Equals(Utf8CountDiagnostics other)
-  method Int32 GetHashCode()
-  method String ToString()
-  method Void Deconstruct(out Int32 Result, out String ExecutionKind, out String SearchKind, out String FallbackVerifierMode, out Boolean RequiresCandidateEndCoverage, out Boolean RequiresTrailingAnchorCoverage, out String ExecutionRoute, out Int32 SearchCandidates, out Int32 FixedCheckRejects, out Int32 VerifierInvocations, out Int32 VerifierMatches, out Int32 PrefilterWindows, out Int32 PrefilterSkippedWindows, out Int32 PrefilterPromotedWindows, out Int32 PrefilterSkippedBytes, out Int32 PrefilterPromotedBytes, out Int32 EngineDemotions)
 struct Utf8GroupContext
   property Boolean IsByteAligned { get; }
   property Boolean Success { get; }
@@ -57,29 +33,6 @@ struct Utf8GroupContext
   method ReadOnlySpan<Byte> GetValueBytes()
   method String GetValueString()
   method Utf8CaptureContext GetCapture(Int32 index)
-struct Utf8IsMatchDiagnostics
-  ctor Utf8IsMatchDiagnostics(Boolean Result, String ExecutionKind, String SearchKind, String FallbackVerifierMode, Boolean RequiresCandidateEndCoverage, Boolean RequiresTrailingAnchorCoverage, Int32 SearchCandidates, Int32 FixedCheckRejects, Int32 VerifierInvocations, Int32 VerifierMatches, Int32 PrefilterWindows, Int32 PrefilterSkippedWindows, Int32 PrefilterPromotedWindows, Int32 PrefilterSkippedBytes, Int32 PrefilterPromotedBytes, Int32 EngineDemotions)
-  property Boolean RequiresCandidateEndCoverage { get; set; }
-  property Boolean RequiresTrailingAnchorCoverage { get; set; }
-  property Boolean Result { get; set; }
-  property Int32 EngineDemotions { get; set; }
-  property Int32 FixedCheckRejects { get; set; }
-  property Int32 PrefilterPromotedBytes { get; set; }
-  property Int32 PrefilterPromotedWindows { get; set; }
-  property Int32 PrefilterSkippedBytes { get; set; }
-  property Int32 PrefilterSkippedWindows { get; set; }
-  property Int32 PrefilterWindows { get; set; }
-  property Int32 SearchCandidates { get; set; }
-  property Int32 VerifierInvocations { get; set; }
-  property Int32 VerifierMatches { get; set; }
-  property String ExecutionKind { get; set; }
-  property String FallbackVerifierMode { get; set; }
-  property String SearchKind { get; set; }
-  method Boolean Equals(Object obj)
-  method Boolean Equals(Utf8IsMatchDiagnostics other)
-  method Int32 GetHashCode()
-  method String ToString()
-  method Void Deconstruct(out Boolean Result, out String ExecutionKind, out String SearchKind, out String FallbackVerifierMode, out Boolean RequiresCandidateEndCoverage, out Boolean RequiresTrailingAnchorCoverage, out Int32 SearchCandidates, out Int32 FixedCheckRejects, out Int32 VerifierInvocations, out Int32 VerifierMatches, out Int32 PrefilterWindows, out Int32 PrefilterSkippedWindows, out Int32 PrefilterPromotedWindows, out Int32 PrefilterSkippedBytes, out Int32 PrefilterPromotedBytes, out Int32 EngineDemotions)
 struct Utf8MatchContext
   property Boolean IsByteAligned { get; }
   property Boolean Success { get; }

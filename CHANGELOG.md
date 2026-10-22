@@ -6,6 +6,9 @@ These changes are development source, currently 0.4.0-rc.2-dev. Frozen RC1
 artifacts remain unchanged and unpublished; they must not be released. A fresh
 candidate and final downstream/package/cost qualification are still required.
 
+- Internalized `Utf8CountDiagnostics` and `Utf8IsMatchDiagnostics`. Their producers
+  were already internal; public matching/resource APIs are unchanged. This removes
+  the two record types from the public API and breaks code that constructed them.
 - Fixed PCRE2 cold replacement contention: a cancelled preparer no longer makes
   an unrelated waiter throw with the preparer's token. Waiters retain their own
   deadlines and resource limits, with at most one independent preparation after

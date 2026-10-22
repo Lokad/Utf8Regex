@@ -6,6 +6,11 @@ require exactly the same Core version (currently `[0.4.0-rc.2-dev]` in developme
 incompatible exact Core pins cannot be combined by overriding dependencies.
 All packages target .NET 10. Development has no freshly qualified package candidate; frozen RC1 is unpublished and its PCRE2 bytes must not be published.
 
+The development API removes the formerly public `Utf8CountDiagnostics` and
+`Utf8IsMatchDiagnostics` records. Their only producers were internal benchmark/
+test operations; they are now internal too. Code that constructed these records
+must remove that dependency. Public matching and resource-control APIs remain.
+
 ## Match scalars and use byte coordinates
 
 ```csharp

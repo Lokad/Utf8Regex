@@ -1,7 +1,7 @@
 namespace Lokad.Utf8Regex;
 
 /// <summary>Reports the result, selected execution route, and search counters for a diagnostic match probe.</summary>
-public readonly record struct Utf8IsMatchDiagnostics(
+internal readonly record struct Utf8IsMatchDiagnostics(
     bool Result,
     string ExecutionKind,
     string SearchKind,
