@@ -34,13 +34,6 @@ internal struct PythonReScalarMatchState
     private int _position;
 
     internal PythonReScalarMatchState(ReadOnlySpan<byte> input, Utf8SliceProgram program,
-        int startOffsetInBytes, TimeSpan timeout,
-        string pattern, CancellationToken cancellationToken, Utf8ExecutionLimits limits)
-        : this(input, program, startOffsetInBytes, timeout, pattern,
-            new Utf8SliceInvocation(limits, timeout, cancellationToken))
-    { }
-
-    internal PythonReScalarMatchState(ReadOnlySpan<byte> input, Utf8SliceProgram program,
         int startOffsetInBytes, TimeSpan timeout, string pattern,
         Utf8SliceInvocation invocation)
         : this(input, program, startOffsetInBytes, timeout, pattern, invocation, default)

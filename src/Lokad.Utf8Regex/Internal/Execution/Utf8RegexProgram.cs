@@ -34,8 +34,7 @@ internal sealed class Utf8RegexProgram
 
     public static Utf8RegexProgram Compile(
         string pattern,
-        RegexOptions options,
-        TimeSpan matchTimeout)
+        RegexOptions options)
     {
         using var scope = Utf8ConstructionScope.Enter();
         var budget = scope.Budget;

@@ -60,7 +60,7 @@ before that check. This needs their DLLs, not their test suites or the solution.
 Benchmark work must be run in `Release`, not `Debug`, otherwise the performance numbers are misleading. Use commands such as:
 
 ```powershell
-dotnet run --project .\bench\Lokad.Utf8Regex.Benchmarks\Lokad.Utf8Regex.Benchmarks.csproj -c Release -- --filter *
+./bench.ps1 -Configuration Release -Job Short -Filter "*Literal*"
 ```
 
 ## Prefer the benchmark script
@@ -388,8 +388,8 @@ Command-surface rule:
 - prefer --measure-case-deep unless you are explicitly working on UTF-8 validation, token-finder, or line-family execution models
 
 Custom CLI invocation rule:
-- some custom benchmark CLI commands do not route reliably through `dotnet run`
-- for custom drilldowns, prefer invoking the built DLL directly:
+- use `./bench.ps1 -CommandArgs ...` for custom drilldowns; it launches the built DLL directly
+- the equivalent commands below require an already-built matching Release host:
 
 `powershell
 dotnet .\bench\Lokad.Utf8Regex.Benchmarks\bin\Release\net10.0\Lokad.Utf8Regex.Benchmarks.dll --measure-case-deep common/match-word 20

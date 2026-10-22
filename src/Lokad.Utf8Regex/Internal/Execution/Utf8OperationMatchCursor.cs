@@ -249,16 +249,6 @@ internal ref partial struct Utf8OperationMatchCursor
             ? _lastLiteralFamilyBranchId
             : -1;
 
-    public Utf8OperationMatchCursor(
-        Utf8SliceProgram program,
-        ReadOnlySpan<byte> input,
-        Utf8BoundaryMap map,
-        TimeSpan timeout,
-        CancellationToken token)
-        : this(program, input, map, new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, timeout, token))
-    {
-    }
-
     internal Utf8OperationMatchCursor(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         Utf8BoundaryMap map, Utf8SliceInvocation invocation)
         : this(program, input, map, invocation, program.RightToLeft ? input.Length : 0)

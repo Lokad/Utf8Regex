@@ -89,7 +89,6 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
 
     internal sealed record BackrefNode(int Slot, bool FoldCase, bool AllowUnmatched) : Utf8SliceNode(Utf8SliceNodeKind.Backref)
     {
-        internal BackrefNode(int slot, bool foldCase) : this(slot, foldCase, false) { }
 
         // An owned profile may supply a bounded simple-scalar lowercase table.
         internal Func<int, int>? LowerScalar { get; init; }

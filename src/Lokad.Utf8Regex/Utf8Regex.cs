@@ -104,7 +104,7 @@ public sealed partial class Utf8Regex
         construction.Budget.ChargeWork(1);
         construction.Budget.ReserveBytes(ProgramFixedMetadataBytes);
 
-        _program = Utf8RegexProgram.Compile(pattern, options, matchTimeout);
+        _program = Utf8RegexProgram.Compile(pattern, options);
         var preparedRegex = _program.PreparedRegex;
         _prioritizedBooleanFamilyKind = SelectPrioritizedBooleanFamily(preparedRegex, options);
         _prioritizePlainAsciiLiteralCount = CanPrioritizePlainAsciiLiteralCount(pattern, preparedRegex, options);

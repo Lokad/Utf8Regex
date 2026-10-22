@@ -43,7 +43,7 @@ internal static class Utf8StructuralLinearCompiledRouter
         return budget.IsInfinite &&
             emitEnabled &&
             emittedKernelMatcher is not null &&
-            regexPlan.ExecutionKind is NativeExecutionKind.AsciiStructuralIdentifierFamily or NativeExecutionKind.AsciiOrderedLiteralWindow;
+            regexPlan.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily;
     }
 
     public static bool TryIsMatch(

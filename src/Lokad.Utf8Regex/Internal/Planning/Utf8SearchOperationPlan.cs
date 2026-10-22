@@ -18,34 +18,25 @@ internal enum Utf8SearchObservabilityKind : byte
 }
 
 /// <summary>
-/// Complete immutable disposition for one regex operation. Candidate discovery,
-/// optional prefiltering, confirmation, projection, and observability are selected
-/// from canonical prepared sources. Runtime owners can retain this view when
-/// they execute it repeatedly; the search plan need not store duplicate copies.
+/// Immutable execution choices for one regex operation. Search payloads remain
+/// in the canonical search plan; only confirmation, projection and observability
+/// needed by runtime consumers are carried here.
 /// </summary>
 internal readonly struct Utf8SearchOperationPlan
 {
     private Utf8SearchOperationPlan(
         Utf8SearchOperationKind kind,
-        Utf8CandidateSearchPlan candidateSource,
-        Utf8CandidateSearchPlan prefilterSource,
         Utf8ConfirmationPlan confirmation,
         Utf8ProjectionPlan projection,
         Utf8SearchObservabilityKind observabilityKind)
     {
         Kind = kind;
-        CandidateSource = candidateSource;
-        PrefilterSource = prefilterSource;
         Confirmation = confirmation;
         Projection = projection;
         ObservabilityKind = observabilityKind;
     }
 
     public Utf8SearchOperationKind Kind { get; }
-
-    public Utf8CandidateSearchPlan CandidateSource { get; }
-
-    public Utf8CandidateSearchPlan PrefilterSource { get; }
 
     public Utf8ConfirmationPlan Confirmation { get; }
 
@@ -57,8 +48,6 @@ internal readonly struct Utf8SearchOperationPlan
 
     public static Utf8SearchOperationPlan Create(
         Utf8SearchOperationKind kind,
-        Utf8CandidateSearchPlan candidateSource,
-        Utf8CandidateSearchPlan prefilterSource,
         Utf8ConfirmationPlan confirmation,
         Utf8ProjectionPlan projection,
         Utf8SearchObservabilityKind observabilityKind)
@@ -70,8 +59,6 @@ internal readonly struct Utf8SearchOperationPlan
 
         return new Utf8SearchOperationPlan(
             kind,
-            candidateSource,
-            prefilterSource,
             confirmation,
             projection,
             observabilityKind);
@@ -81,8 +68,6 @@ internal readonly struct Utf8SearchOperationPlan
         => HasValue
             ? new Utf8SearchOperationPlan(
                 Kind,
-                CandidateSource,
-                PrefilterSource,
                 Confirmation,
                 projection,
                 ObservabilityKind)

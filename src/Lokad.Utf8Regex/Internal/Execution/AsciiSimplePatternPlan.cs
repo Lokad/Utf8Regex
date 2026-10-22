@@ -307,11 +307,6 @@ internal readonly struct AsciiSimplePatternAnchoredHeadTailRunPlan
 
 internal readonly struct AsciiSimplePatternAnchoredValidatorPlan
 {
-    public AsciiSimplePatternAnchoredValidatorPlan(AsciiSimplePatternAnchoredValidatorSegment[] segments)
-        : this(segments, false)
-    {
-    }
-
     public AsciiSimplePatternAnchoredValidatorPlan(AsciiSimplePatternAnchoredValidatorSegment[] segments, bool ignoreCase)
     {
         Segments = segments;

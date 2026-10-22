@@ -12,8 +12,6 @@ internal static class Utf8EmittedKernelLowerer
         {
             NativeExecutionKind.AsciiStructuralIdentifierFamily
                 => TryLower(regexPlan.StructuralIdentifierFamilyPlan, regexPlan.SearchPlan, out kernelPlan),
-            NativeExecutionKind.AsciiOrderedLiteralWindow
-                => TryLower(regexPlan.StructuralLinearProgram.OrderedLiteralWindowPlan, out kernelPlan),
             _ => ReturnDefault(out kernelPlan),
         };
     }
@@ -66,45 +64,6 @@ internal static class Utf8EmittedKernelLowerer
         finally { budget.LeaveDepth(); }
     }
 
-    public static bool TryLower(
-        AsciiOrderedLiteralWindowPlan plan,
-        out Utf8EmittedKernelPlan kernelPlan)
-    {
-        using var scope = Utf8ConstructionScope.Enter();
-        var budget = scope.Budget;
-        budget.EnterDepth();
-        try
-        {
-            budget.ChargeWork(1);
-            if (!plan.IsLiteralFamily &&
-                !plan.YieldLeadingLiteralOnly &&
-                plan.GapLeadingSeparatorMinCount > 0 &&
-                plan.LeadingLiteralLeadingBoundary is Utf8BoundaryRequirement.None or Utf8BoundaryRequirement.Boundary &&
-                plan.LeadingLiteralTrailingBoundary is Utf8BoundaryRequirement.None or Utf8BoundaryRequirement.Boundary &&
-                plan.TrailingLiteralLeadingBoundary is Utf8BoundaryRequirement.None or Utf8BoundaryRequirement.Boundary &&
-                plan.TrailingLiteralTrailingBoundary is Utf8BoundaryRequirement.None or Utf8BoundaryRequirement.Boundary)
-            {
-                kernelPlan = Utf8EmittedKernelPlan.CreateOrderedAsciiWhitespaceLiteralWindow(
-                    new Utf8CompiledFindOptimization(plan.TrailingLiteralUtf8, default),
-                    CreatePrefix(budget, plan.LeadingLiteralUtf8),
-                    plan.GapLeadingSeparatorMinCount,
-                    plan.MaxGap,
-                    plan.GapSameLine,
-                    plan.LeadingLiteralLeadingBoundary,
-                    plan.LeadingLiteralTrailingBoundary,
-                    plan.TrailingLiteralLeadingBoundary,
-                    plan.TrailingLiteralTrailingBoundary,
-                    CreateBlocks(budget, [Utf8EmittedKernelBlockKind.FindTrailingLiteral, Utf8EmittedKernelBlockKind.ConsumeReverseAsciiWhitespace, Utf8EmittedKernelBlockKind.MatchLeadingLiteralBeforeSeparator, Utf8EmittedKernelBlockKind.AcceptAndAdvance]));
-                scope.Complete();
-                return true;
-            }
-
-            kernelPlan = default;
-            return false;
-        }
-        finally { budget.LeaveDepth(); }
-    }
-
     private static Utf8EmittedKernelBlock[] CreateBlocks(Utf8ConstructionBudget budget, ReadOnlySpan<Utf8EmittedKernelBlockKind> kinds)
     {
         var blocks = budget.AllocateArray<Utf8EmittedKernelBlock>(kinds.Length, false);
@@ -114,13 +73,6 @@ internal static class Utf8EmittedKernelLowerer
             blocks[index] = new(kinds[index]);
         }
         return blocks;
-    }
-
-    private static byte[][] CreatePrefix(Utf8ConstructionBudget budget, byte[] prefix)
-    {
-        var prefixes = budget.AllocateArray<byte[]>(1, false);
-        budget.ChargeWork(1); prefixes[0] = prefix;
-        return prefixes;
     }
 
     private static bool ReturnDefault(out Utf8EmittedKernelPlan kernelPlan)

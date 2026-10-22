@@ -2,6 +2,14 @@
 
 ## Unreleased development after 0.4.0-rc.1
 
+- Removed generated ordered-window kernels that public dispatch never executed;
+  actual direct/scalar window paths and live identifier emission remain.
+  Operation dispositions no longer copy unused search payloads. Smaller actual
+  carriers and removed acquisitions can lower modeled construction/cache/working
+  requirements; public semantics, interruption and resource scope are unchanged.
+  Removed unused private overloads and corrected match-enumerator docs: the
+  cursor borrows input, while its coordinate-only result does not retain it.
+
 - Compiled identifier families prepare one immutable native kernel for both
   runtime and direct Count, instead of duplicate plans/delegates. Engine
   selection no longer lowers and discards a plan for classification. Removed

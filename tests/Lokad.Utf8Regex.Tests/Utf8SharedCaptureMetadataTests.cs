@@ -35,7 +35,7 @@ public sealed class Utf8SharedCaptureMetadataTests
         string pattern, string subject, string replacement, bool compiled)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var program = Utf8RegexProgram.Compile(pattern, options, Regex.InfiniteMatchTimeout);
+        var program = Utf8RegexProgram.Compile(pattern, options);
         var catalog = program.PreparedRegex.SemanticRegex.CaptureCatalog!;
         Assert.NotNull(catalog); Assert.Same(catalog, program.CaptureCatalog);
         // Program metadata borrows the canonical catalog directly. Public array
