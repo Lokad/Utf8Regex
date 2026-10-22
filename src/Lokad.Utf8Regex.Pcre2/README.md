@@ -93,6 +93,11 @@ or `ResultLimit`; no silently truncated success is returned. Terminal cursor
 advances also check interruption. The original deadline includes host waits.
 Caller callback execution cannot be forcibly interrupted.
 
+Concurrent cold replacements can share template preparation. A waiting call
+observes its own cancellation, deadline and resource allowance; another
+preparer's interruption can cause one independent preparation under the waiter's
+controls, rather than transferring that preparer's failure to the waiter.
+
 Major covered arrays, output controls and growth overlap require admission before
 allocation. Result/staging capacity is cumulatively charged without refunds;
 scalar value/boolean/count and inline partial results need no owned payload.

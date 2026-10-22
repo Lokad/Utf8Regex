@@ -1744,8 +1744,23 @@ public sealed partial class Utf8Pcre2Regex
     {
         using var control = Pcre2ReplacementPreparationControl.JoinOrEnter(_program.Request.MatchTimeout);
         Pcre2ReplacementPreparationControl.CheckText(replacement.Length);
-        var result = _replacementComponent.GetOrAdd(new Pcre2ReplacementCacheKey(replacement, options), static key =>
-            Pcre2ReplacementPreparationControl.Prepare(key.Replacement, key.Options, false));
+        Pcre2ReplacementPreparation result;
+        try
+        {
+            result = _replacementComponent.GetOrAdd(new Pcre2ReplacementCacheKey(replacement, options), static key =>
+                Pcre2ReplacementPreparationControl.Prepare(key.Replacement, key.Options, false));
+        }
+        catch (Exception failure) when (failure is OperationCanceledException ||
+            failure is Pcre2MatchException { ErrorKind: Pcre2ErrorKind.Timeout or Pcre2ErrorKind.MatchLimit or
+                Pcre2ErrorKind.DepthLimit or Pcre2ErrorKind.HeapLimit or Pcre2ErrorKind.ResultLimit })
+        {
+            // Pending entries share their preparer's failure. Our token, deadline
+            // and sticky limits remain authoritative: Check rethrows our own
+            // failure, otherwise prepare once independently under our allowance.
+            // A failed independent preparation is never retried or published.
+            Pcre2ReplacementPreparationControl.Check();
+            result = Pcre2ReplacementPreparationControl.Prepare(replacement, options, false);
+        }
         Pcre2ReplacementPreparationControl.Check();
         return result;
     }

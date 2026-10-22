@@ -536,7 +536,12 @@ byte ceiling from the existing construction budget and holds a conservative
 additional-peak reservation through replacement. Existing parent loans, historical
 peaks and tighter construction backstops are preserved. Warm reuse borrows immutable
 cached plans under their separate bounded cache policy, so cold and warm working
-requirements can differ. These capacity charges are conservative, not process RSS
+requirements can differ. Pending preparations may share success, but a waiter's
+own token, absolute deadline and resource allowance remain authoritative. After
+another preparer's invocation failure it may prepare once independently, without
+publishing that retry or resetting its allowance. Genuine template failures remain
+failures; failed preparations do not remain cached.
+These capacity charges are conservative, not process RSS
 or arbitrary caller retention. Complete construction coverage, safe defaults,
 live-retention policies and broader profile coverage remain separate completion gates.
 
