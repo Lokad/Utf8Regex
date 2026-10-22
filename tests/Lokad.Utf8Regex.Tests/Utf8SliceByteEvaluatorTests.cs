@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
@@ -127,7 +126,7 @@ public sealed class Utf8SliceByteEvaluatorTests
     }
 
     [Fact]
-    public void ResetAndCopiesPreserveTheLegacyWriterContractAndReclaimDiscardedBuffers()
+    public void ResetAndCopiesPreserveOutputAndReclaimDiscardedBuffers()
     {
         static void Expand(in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state)
         {
@@ -142,19 +141,6 @@ public sealed class Utf8SliceByteEvaluatorTests
         var regex = new Utf8Regex("(a)(?=a|$)", RegexOptions.CultureInvariant);
         var input = "xaa"u8.ToArray();
         var result = regex.Replace(input, 0, Expand);
-        var legacy = new Utf8ReplacementWriter(new ArrayBufferWriter<byte>());
-        var oracle = new Regex("(a)(?=a|$)", RegexOptions.CultureInvariant);
-        var end = 0;
-        var state = 0;
-        foreach (Match match in oracle.Matches("xaa"))
-        {
-            legacy.Append(input.AsSpan(end, match.Index - end));
-            var context = new Utf8Regex("(a)").MatchDetailed("a"u8);
-            Expand(in context, ref legacy, ref state);
-            end = match.Index + match.Length;
-        }
-        legacy.Append(input.AsSpan(end));
-        Assert.Equal(legacy.GetValidatedBytes().ToArray(), result);
         Assert.Equal("reset!"u8.ToArray(), result);
         AssertOwned(regex);
 
