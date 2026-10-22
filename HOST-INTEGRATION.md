@@ -21,11 +21,6 @@ views and enumerator boxes do not each receive a charge. Cache retention uses
 conservative per-program charges and eviction, which can count shared storage
 again. Exact numeric thresholds may change when real work or storage disappears.
 Actual `Unsafe.SizeOf<T>()` queries remain; they perform no unchecked access.
-PCRE2 backtracking `Count` advances the same byte matches and global retry state
-as enumeration without projecting unused UTF-16 result coordinates. This can
-lower work charges; matching, validation, cancellation/deadline checkpoints and
-scratch admission remain metered. Public cursor `MoveNext` still projects eagerly,
-so reading `Current` introduces no new projection failure or lifetime requirement.
 PCRE2 compilation admits its global name-slot lookup once and shares it with
 nested assertion lowerers. The compiled root and VM share the internal immutable
 name-entry table; public entry-copy APIs remain isolated. Removing repeated lookup
