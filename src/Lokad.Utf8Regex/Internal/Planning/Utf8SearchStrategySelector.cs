@@ -8,9 +8,13 @@ internal static class Utf8SearchStrategySelector
         Utf8ConfirmationPlan confirmation,
         Utf8ProjectionPlan projection)
     {
+        var prefilterEngine = plan.PrefilterPlan.PrimarySource;
+        if (!prefilterEngine.HasValue) prefilterEngine = plan.PrefilterPlan.SecondarySource;
+        if (!prefilterEngine.HasValue) prefilterEngine = plan.PrefilterPlan.WindowSource;
+        var nativeSource = plan.NativeCandidateSource;
         var requiresConfirmation = plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement;
 
-        if (plan.HasPreparedSearcher || plan.HasStructuralCandidates)
+        if (nativeSource.HasValue)
         {
             var kind = plan.HasRequiredPrefilter
                 ? requiresConfirmation
@@ -23,6 +27,8 @@ internal static class Utf8SearchStrategySelector
                         : Utf8SearchOperationKind.DirectSearch;
             return Utf8SearchOperationPlan.Create(
                 kind,
+                nativeSource,
+                prefilterEngine,
                 confirmation,
                 projection,
                 kind == Utf8SearchOperationKind.HybridSearch
@@ -30,13 +36,16 @@ internal static class Utf8SearchStrategySelector
                     : Utf8SearchObservabilityKind.CandidateCounts);
         }
 
-        if (plan.HasFallbackCandidates)
+        var fallbackSource = plan.FallbackCandidateSource;
+        if (fallbackSource.HasValue)
         {
             var kind = plan.HasRequiredPrefilter
                 ? Utf8SearchOperationKind.PrefilterThenConfirm
                 : Utf8SearchOperationKind.SearchThenConfirm;
             return Utf8SearchOperationPlan.Create(
                 kind,
+                fallbackSource,
+                prefilterEngine,
                 confirmation,
                 projection,
                 Utf8SearchObservabilityKind.CandidateCounts);

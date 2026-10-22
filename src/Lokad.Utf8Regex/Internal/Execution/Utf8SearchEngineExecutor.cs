@@ -10,6 +10,7 @@ internal static class Utf8SearchEngineExecutor
         return engine.Kind switch
         {
             Utf8CandidateSearchKind.PreparedSearcher => engine.PreparedSearcher.HasValue && engine.PreparedSearcher.FindFirst(input) >= 0,
+            Utf8CandidateSearchKind.StructuralSearch => TryFindFirst(engine.StructuralSearchPlan, input),
             Utf8CandidateSearchKind.StructuralSearchSet => TryFindFirst(engine.StructuralSearchPlans, input),
             _ => false,
         };

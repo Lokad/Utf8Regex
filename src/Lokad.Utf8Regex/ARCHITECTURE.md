@@ -35,13 +35,9 @@ and result ownership are separate from this shared implementation. There is no
 separate structural-family runtime or emitted-kernel engine kind; actual emitted
 capabilities are reported by the selected runtime.
 
-Search dispositions retain only operation kind, confirmation, projection and
-observability. Search payloads stay in the canonical plan; engine selection reads
-that plan directly. Prefilter execution retains its real prepared/set variants.
-Count, first-match and enumeration control actual exit/advancement in execution.
-Ordered-window operations use their direct native executor or owned scalar route;
-there is no separately generated window kernel. Identifier and deterministic
-emission keep their live consumers.
+Search dispositions derive from canonical candidate sources, confirmation and
+projection. Count, first-match and enumeration control their actual exit and
+advancement behavior in execution; duplicate descriptive flags are not stored.
 
 Speculative lowering is semantics-neutral and bounded. Every Cartesian
 literal expansion and finite-repeat expansion reserves checked work and output

@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Planning;
@@ -22,11 +23,13 @@ internal readonly struct Utf8PrefilterPlan
 
     public Utf8CandidateSearchPlan PrimarySource =>
         Utf8CandidateSearchPlan.FromPreparedSearcher(
-            PrimarySearcher);
+            PrimarySearcher,
+            Utf8SearchPortfolioKind.None);
 
     public Utf8CandidateSearchPlan SecondarySource =>
         Utf8CandidateSearchPlan.FromPreparedSearcher(
-            SecondarySearcher);
+            SecondarySearcher,
+            Utf8SearchPortfolioKind.None);
 
     public Utf8CandidateSearchPlan WindowSource =>
         Utf8CandidateSearchPlan.FromStructuralSearchSet(

@@ -41,7 +41,8 @@ internal static class Utf8CompiledEngineSelector
 {
     public static Utf8CompiledEngine Select(Utf8PreparedRegex regexPlan)
     {
-        if (IsLiteral(regexPlan))
+        var count = regexPlan.SearchPlan.CountOperation;
+        if (IsLiteral(regexPlan, count))
         {
             if (regexPlan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase)
                 return new(Utf8CompiledEngineKind.ExactLiteral);
@@ -70,7 +71,7 @@ internal static class Utf8CompiledEngineSelector
                 : Utf8CompiledEngineKind.FallbackRegex);
     }
 
-    private static bool IsLiteral(Utf8PreparedRegex plan)
+    private static bool IsLiteral(Utf8PreparedRegex plan, Utf8SearchOperationPlan count)
     {
         var single = plan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase;
         // Empty literals have no search candidate; the scalar cursor owns progress.
@@ -79,12 +80,12 @@ internal static class Utf8CompiledEngineSelector
             !plan.SearchPlan.HasTrailingLiteralRequirement)
             return true;
         if (plan.CompiledPatternCategory != Utf8CompiledPatternCategory.Literal ||
-            !plan.SearchPlan.HasPreparedSearcher)
+            count.CandidateSource.Kind != Utf8CandidateSearchKind.PreparedSearcher)
             return false;
         return single
-            ? plan.SearchPlan.PortfolioKind is Utf8SearchPortfolioKind.ExactLiteral or Utf8SearchPortfolioKind.IgnoreCaseLiteral
+            ? count.CandidateSource.PortfolioKind is Utf8SearchPortfolioKind.ExactLiteral or Utf8SearchPortfolioKind.IgnoreCaseLiteral
             : (plan.ExecutionKind is NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) &&
-                (plan.SearchPlan.PortfolioKind is Utf8SearchPortfolioKind.ExactDirectFamily or Utf8SearchPortfolioKind.ExactTrieFamily or
+                (count.CandidateSource.PortfolioKind is Utf8SearchPortfolioKind.ExactDirectFamily or Utf8SearchPortfolioKind.ExactTrieFamily or
                     Utf8SearchPortfolioKind.ExactAutomatonFamily or Utf8SearchPortfolioKind.ExactPackedFamily or
                     Utf8SearchPortfolioKind.ExactEarliestFamily or Utf8SearchPortfolioKind.AsciiIgnoreCaseFamily);
     }

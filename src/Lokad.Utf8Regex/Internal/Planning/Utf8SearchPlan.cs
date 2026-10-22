@@ -178,6 +178,13 @@ internal readonly struct Utf8SearchPlan
 
     public Utf8PrefilterPlan PrefilterPlan { get; }
 
+    public Utf8CandidateSearchPlan NativeCandidateSource => HasPreparedSearcher
+        ? Utf8CandidateSearchPlan.FromPreparedSearcher(PreparedSearcher, PortfolioKind)
+        : Utf8CandidateSearchPlan.FromStructuralSearch(StructuralSearchPlan, PortfolioKind);
+
+    public Utf8CandidateSearchPlan FallbackCandidateSource =>
+        Utf8CandidateSearchPlan.FromStructuralSearchSet(_fallbackCandidatePlans);
+
     public Utf8ConfirmationPlan ConfirmationPlan => CreateConfirmationPlan();
 
     public Utf8ProjectionPlan ProjectionPlan { get; }
@@ -255,7 +262,7 @@ internal readonly struct Utf8SearchPlan
 
     private Utf8ConfirmationPlan CreateConfirmationPlan()
     {
-        if (!HasPreparedSearcher && HasFallbackCandidates)
+        if (!HasPreparedSearcher && FallbackCandidateSource.HasValue)
         {
             return new Utf8ConfirmationPlan(Utf8ConfirmationKind.ScalarVerifier);
         }
