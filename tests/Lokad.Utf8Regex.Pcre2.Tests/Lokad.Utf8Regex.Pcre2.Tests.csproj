@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Lokad.Utf8Regex\Lokad.Utf8Regex.csproj" />
+    <Compile Include="..\Common\AssemblyDependencyInventory.cs" Link="Common\AssemblyDependencyInventory.cs" />
     <ProjectReference Include="..\..\src\Lokad.Utf8Regex.Pcre2\Lokad.Utf8Regex.Pcre2.csproj" />
   </ItemGroup>
 

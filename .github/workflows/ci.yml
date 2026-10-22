@@ -29,7 +29,7 @@ jobs:
       - name: Test Release
         shell: pwsh
         run: |
-          # Complete the build before any inventory test inspects adapter DLLs.
+          # Combined source boundary: build once, then reuse all profile binaries.
           try { dotnet build Lokad.Utf8Regex.slnx -c Release --tl:off --nologo -v minimal -p:GeneratePackageOnBuild=false 2>&1 | Tee-Object -FilePath build.log } catch { exit 1 }
           if ($LASTEXITCODE -ne 0) { exit 1 }
           try { dotnet test Lokad.Utf8Regex.slnx -c Release --no-build --no-restore --tl:off --nologo -v minimal 2>&1 | Tee-Object -FilePath test.log } catch { exit 1 }

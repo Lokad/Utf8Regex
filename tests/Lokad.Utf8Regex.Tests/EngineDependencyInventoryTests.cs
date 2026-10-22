@@ -1,6 +1,7 @@
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Tests.Common;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
@@ -120,29 +121,11 @@ public sealed class EngineDependencyInventoryTests
 
 
     [Fact]
-    public void ConsumedAndShippedAssembliesReferenceNoExternalMatchers()
+    public void ConsumedCoreReferencesNoExternalMatchers()
     {
-        var configuration = typeof(EngineDependencyInventoryTests).Assembly
-            .GetCustomAttributes(typeof(System.Reflection.AssemblyConfigurationAttribute), false)
-            .Cast<System.Reflection.AssemblyConfigurationAttribute>().Single().Configuration;
-        // Always inspect the Core actually consumed by this fixture, including
-        // detached package runs. Adapter DLLs are built before the inventory.
-        var paths = new[] { typeof(Utf8Regex).Assembly.Location }.Concat(
-            new[] { "Lokad.Utf8Regex.Pcre2", "Lokad.Utf8Regex.PythonRe" }.Select(project =>
-                Path.Combine(FindRepositoryRoot(), "src", project, "bin", configuration, "net10.0", project + ".dll")));
-        foreach (var path in paths)
-        {
-            using var stream = File.OpenRead(path);
-            using var pe = new PEReader(stream);
-            var metadata = pe.GetMetadataReader();
-            foreach (var handle in metadata.AssemblyReferences)
-            {
-                var name = metadata.GetString(metadata.GetAssemblyReference(handle).Name);
-                Assert.True(name.StartsWith("System.", StringComparison.Ordinal) ||
-                    name is "netstandard" or "mscorlib" or "Lokad.Utf8Regex", $"{path} -> {name}");
-            }
-            Assert.Empty(FindBclMatcherReferences(metadata));
-        }
+        // Inspect what this fixture consumes, also in detached package runs.
+        // Each adapter's own fixture owns that adapter's inventory.
+        AssemblyDependencyInventory.AssertNoExternalMatchers(typeof(Utf8Regex).Assembly.Location);
     }
 
     [Theory]
@@ -167,46 +150,7 @@ public sealed class EngineDependencyInventoryTests
         Assert.True(emitted.Success, string.Join(Environment.NewLine, emitted.Diagnostics));
         stream.Position = 0;
         using var pe = new PEReader(stream);
-        Assert.Equal(allowed, FindBclMatcherReferences(pe.GetMetadataReader()).Length == 0);
-    }
-
-    private static string[] FindBclMatcherReferences(MetadataReader metadata)
-    {
-        var offenders = new List<string>();
-        foreach (var handle in metadata.TypeReferences)
-        {
-            var (ns, name) = ReadType(handle);
-            if (IsBclRegexNamespace(ns) && !(ns == "System.Text.RegularExpressions" &&
-                name is "Regex" or "RegexOptions" or "RegexMatchTimeoutException"))
-                offenders.Add(ns + "." + name);
-        }
-        foreach (var handle in metadata.MemberReferences)
-        {
-            var member = metadata.GetMemberReference(handle);
-            if (member.Parent.Kind != HandleKind.TypeReference) continue;
-            var (ns, type) = ReadType((TypeReferenceHandle)member.Parent);
-            var name = metadata.GetString(member.Name);
-            if (IsBclRegexNamespace(ns) && !(ns == "System.Text.RegularExpressions" &&
-                (type == "Regex" && name == "InfiniteMatchTimeout" && member.GetKind() == MemberReferenceKind.Field ||
-                 type == "RegexMatchTimeoutException" && name == ".ctor")))
-                offenders.Add(ns + "." + type + "." + name);
-        }
-        return offenders.ToArray();
-
-        (string Namespace, string Name) ReadType(TypeReferenceHandle handle)
-        {
-            var type = metadata.GetTypeReference(handle);
-            var ns = metadata.GetString(type.Namespace);
-            var name = metadata.GetString(type.Name);
-            if (type.ResolutionScope.Kind == HandleKind.TypeReference)
-            {
-                var parent = ReadType((TypeReferenceHandle)type.ResolutionScope);
-                return (parent.Namespace, parent.Name + "+" + name);
-            }
-            return (ns, name);
-        }
-        static bool IsBclRegexNamespace(string ns) => ns == "System.Text.RegularExpressions" ||
-            ns.StartsWith("System.Text.RegularExpressions.", StringComparison.Ordinal);
+        Assert.Equal(allowed, AssemblyDependencyInventory.FindBclMatcherReferences(pe.GetMetadataReader()).Length == 0);
     }
 
     [Fact]

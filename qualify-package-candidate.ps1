@@ -73,15 +73,19 @@ try {
     $toolchain = & dotnet --info
     if ($LASTEXITCODE -ne 0) { throw "Could not inspect the candidate toolchain." }
     $toolchain | Set-Content -LiteralPath (Join-Path $attemptRoot "dotnet-info.txt") -Encoding utf8
-    # Core inventory needs all three matching library DLLs; this existing closure
-    # also supplies the semantic-oracle host without building the fixture projects.
+    # Build only selected library roots. Adapter builds include Core; no benchmark
+    # host or unselected adapter is needed by the detached fixtures.
+    $buildProjects = @($packages | Where-Object { $_ -ne "Lokad.Utf8Regex" })
+    if ($buildProjects.Count -eq 0) { $buildProjects = @("Lokad.Utf8Regex") }
     if (-not $SkipBuild) {
-        Invoke-CandidateStep "build-once" {
-            Invoke-DotNet @(
-                "build", (Join-Path $repositoryRoot "bench/Lokad.Utf8Regex.Benchmarks/Lokad.Utf8Regex.Benchmarks.csproj"),
-                "-c", $Configuration, "--tl:off", "--nologo", "-v", "minimal",
-                "-p:GeneratePackageOnBuild=false"
-            )
+        foreach ($buildProject in $buildProjects) {
+            Invoke-CandidateStep "build/$buildProject" {
+                Invoke-DotNet @(
+                    "build", (Join-Path $repositoryRoot "src/$buildProject/$buildProject.csproj"),
+                    "-c", $Configuration, "--tl:off", "--nologo", "-v", "minimal",
+                    "-p:GeneratePackageOnBuild=false"
+                )
+            }
         }
     }
     foreach ($packageId in $packages) {
@@ -223,7 +227,7 @@ $patterns
         Configuration = $Configuration; TargetFramework = "net10.0"
         StartedAtUtc = $startedAt.ToString("O"); CompletedAtUtc = [DateTime]::UtcNow.ToString("O")
         QualificationScope = "Selected Core/adapter candidate; complete detached fixture suites, exact provenance and restore identities. Other platforms, broader profiles, downstream adoption, performance and publication are separate acceptance steps."
-        Published = $false; BuildCount = $(if ($SkipBuild) { 0 } else { 1 }); PackCountPerPackage = 1
+        Published = $false; BuildCount = $(if ($SkipBuild) { 0 } else { $buildProjects.Count }); PackCountPerPackage = 1
         Packages = $packageRecords; Consumers = $consumerRecords.ToArray(); Steps = $steps.ToArray()
         ProvenanceRelativePath = "package-provenance.json"
         ProvenanceSha256 = (Get-FileHash -LiteralPath (Join-Path $attemptRoot "package-provenance.json") -Algorithm SHA256).Hash

@@ -357,7 +357,7 @@ function Invoke-IsolatedConsumerTests {
     $testProjectPath = Join-Path $TestDirectory ($SourceTestProjectName + ".csproj")
     [xml] $testProject = Get-Content -LiteralPath $testProjectPath
     # Keep linked fixture helpers inside the detached qualification tree.
-    # PythonRe links four benchmark catalog/provenance sources this way.
+    # Includes benchmark catalog/provenance and shared assembly-inventory sources.
     $linkedRoot = [IO.Path]::GetFullPath((Join-Path $QualificationRoot "linked-source"))
     $linkedPrefix = $linkedRoot.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
     $repositoryPrefix = [IO.Path]::GetFullPath($RepositoryRoot).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar

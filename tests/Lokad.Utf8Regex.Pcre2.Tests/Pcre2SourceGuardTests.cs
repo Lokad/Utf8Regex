@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Lokad.Utf8Regex.Pcre2;
+using Lokad.Utf8Regex.Tests.Common;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
@@ -8,6 +9,12 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 // documentation checks also remain enforced by the shipped project builds.
 public sealed class Pcre2SourceGuardTests
 {
+    [Fact]
+    public void ConsumedPcre2ReferencesNoExternalMatchers()
+    {
+        AssemblyDependencyInventory.AssertNoExternalMatchers(typeof(Utf8Pcre2Regex).Assembly.Location);
+    }
+
     [Fact]
     public void Pcre2TypeNamesCarryPcre2Ownership()
     {

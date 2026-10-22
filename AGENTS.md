@@ -39,8 +39,8 @@ or server reuse on every invocation.
 
 Use `./qualify-package-candidate.ps1` at a package delivery boundary. It always
 includes Core; select `-Profiles Core,PythonRe,Pcre2` for all three packages
-(the default is Core/PythonRe). It builds the existing benchmark/library closure
-once, packs each selected package once, then runs detached fixture suites with
+(the default is Core/PythonRe). It builds only selected library roots (adapters
+include Core), packs each selected package once, then runs detached fixture suites with
 exact source/feed/cache/lock/DLL/symbol checks. `-SkipBuild` requires matching
 configuration/revision binaries; provenance rejects stale assemblies. Clean
 tracked source and a new common version are required. Successful candidates live
@@ -51,9 +51,9 @@ receipts retain their original paths. Platform, public downstream and performanc
 acceptance remain separate milestone checks. Do not repeat source/package
 qualification for unchanged code or immutable bytes.
 
-The complete Core suite includes a shipped-assembly inventory check. In a fresh
-checkout, build the PythonRe and PCRE2 library projects in the tested configuration
-before that check. This needs their DLLs, not their test suites or the solution.
+Each profile fixture inventories the assembly it actually consumes, including
+detached package runs. Core-only tests and qualification require neither adapter
+DLLs nor the benchmark executable. Combined CI still tests all profiles.
 
 ## Run Benchmarks In Release
 
