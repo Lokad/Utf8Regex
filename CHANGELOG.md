@@ -6,6 +6,8 @@ These changes are development source, currently 0.4.0-rc.2-dev. Frozen RC1
 artifacts remain unchanged and unpublished; they must not be released. A fresh
 candidate and final downstream/package/cost qualification are still required.
 
+- Removed `bench-summary.ps1`, whose CaseId-only grouping could mix benchmark
+  jobs. Use the maintained paired CLI reports and JSON-backed benchmark pages.
 - Fixed PCRE2 CRLF-aware wildcard search reporting the LF of a failed CRLF
   candidate. Explicit LF starts, explicit newline alternatives, class filtering,
   DotAll, scalar validation and finite controls retain their contracts.
