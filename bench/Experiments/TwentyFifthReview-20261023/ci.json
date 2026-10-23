@@ -1,0 +1,24 @@
+{
+  "SourceRevision": "6af80c63bf37a7f4db00589ab24f4cefa3d4427f",
+  "RunId": 39932196127,
+  "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/39932196127",
+  "Status": "completed",
+  "Conclusion": "success",
+  "Scope": "Existing full solution Release build and all four source fixture projects; no final-package qualification claim",
+  "Jobs": [
+    {
+      "Platform": "ubuntu",
+      "Id": 120342950330,
+      "Status": "completed",
+      "Conclusion": "success",
+      "CompletedAt": "2026-10-23T09:33:30Z"
+    },
+    {
+      "Platform": "windows",
+      "Id": 120342950469,
+      "Status": "completed",
+      "Conclusion": "success",
+      "CompletedAt": "2026-10-23T09:34:01Z"
+    }
+  ]
+}

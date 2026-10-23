@@ -1,0 +1,16 @@
+$ErrorActionPreference='Stop'
+. "$PSScriptRoot/../../test-packaged-common.ps1"
+# Run after check-provenance.ps1 in a fresh scratch directory.
+$repo=Join-Path $PSScriptRoot 'provenance-fixture/repo'
+$target=Join-Path $repo 'Directory.Build.targets'
+if(Test-Path -LiteralPath $target){throw 'Fresh fixture input expected'}
+'<Project><PropertyGroup><AssemblyTitle>UNTRACKED_BUILD_INPUT</AssemblyTitle></PropertyGroup></Project>'|
+    Set-Content -LiteralPath $target
+$revision=(& git -C $repo rev-parse HEAD).Trim()
+$title=& dotnet msbuild (Join-Path $repo 'src/Probe/Probe.csproj') --nologo -p:Configuration=Release -getProperty:AssemblyTitle
+if($LASTEXITCODE -ne 0){throw 'Build evaluation failed'}
+$source=Read-PackageQualificationSource $repo $revision $true
+[pscustomobject]@{Scope='Isolated fixture evaluation only; no additional compilation';RootInput='Directory.Build.targets';
+    GitStatus=@(& git -C $repo status --porcelain);EvaluatedAssemblyTitle=$title;
+    ProvenanceReportsCleanSource=$source.CleanSource;ProvenanceUntrackedSources=$source.UntrackedSources}|
+    ConvertTo-Json -Depth 4|Set-Content (Join-Path $PSScriptRoot 'untracked-build-input-witness.json')

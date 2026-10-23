@@ -1,0 +1,17 @@
+[
+  {
+    "Case": "Unresolvable document",
+    "Rejected": true,
+    "Error": "Unresolvable compiled source document: Z:/outside/Proof.cs"
+  },
+  {
+    "Case": "Unknown generated code",
+    "Rejected": true,
+    "Error": "Lokad.Utf8Regex.0.0.0-review.nupkg compiled source differs from the checkout: src/Probe/obj/Release/net10.0/Injected.g.cs. Rebuild matching binaries."
+  },
+  {
+    "Case": "No source documents",
+    "Rejected": true,
+    "Error": "Lokad.Utf8Regex.0.0.0-review.nupkg contains no compiled source evidence."
+  }
+]

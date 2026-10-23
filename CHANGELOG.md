@@ -6,6 +6,12 @@ These changes are development source, currently 0.4.0-rc.2-dev. Frozen RC1
 artifacts remain unchanged and unpublished; they must not be released. A fresh
 candidate and final downstream/package/cost qualification are still required.
 
+- PCRE2 extended-grapheme scans (`\X`) now charge bounded scan blocks and observe
+  the original cancellation token and deadline inside large clusters. Finite work
+  limits can deny earlier; segmentation and result semantics are unchanged.
+- New package provenance checks observed assembly configuration and compiled PDB
+  source checksums, and rejects relevant untracked build inputs. Historical
+  package evidence retains its original scope and immutable bytes.
 - Fixed PCRE2 `TryReplace` corrupting unread subject bytes when successful
   replacement output overlaps the input. Matched overlaps now stage admitted
   output before copying; short destinations stay unchanged. Staging consumes

@@ -1,0 +1,26 @@
+[
+  {
+    "Case": "clean-release-control",
+    "Configuration": "Release",
+    "Accepted": true,
+    "Error": null
+  },
+  {
+    "Case": "dirty-release-then-reverted",
+    "Configuration": "Release",
+    "Accepted": false,
+    "Error": "Lokad.Utf8Regex.0.0.0-review.nupkg compiled source differs from the checkout: src/Probe/Proof.cs. Rebuild matching binaries."
+  },
+  {
+    "Case": "clean-debug-declared-release",
+    "Configuration": "Release",
+    "Accepted": false,
+    "Error": "Lokad.Utf8Regex.0.0.0-review.nupkg compiled configuration does not match Release."
+  },
+  {
+    "Case": "clean-debug-declared-release",
+    "Configuration": "Debug",
+    "Accepted": true,
+    "Error": null
+  }
+]

@@ -1,0 +1,10 @@
+{
+  "Scope": "Isolated fixture evaluation only; no additional compilation",
+  "RootInput": "Directory.Build.targets",
+  "GitStatus": [
+    "?? Directory.Build.targets"
+  ],
+  "EvaluatedAssemblyTitle": "UNTRACKED_BUILD_INPUT",
+  "ProvenanceReportsCleanSource": true,
+  "ProvenanceUntrackedSources": []
+}

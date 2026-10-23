@@ -1,0 +1,21 @@
+{
+  "Configuration": "Release",
+  "SourceRevision": "6af80c63bf37a7f4db00589ab24f4cefa3d4427f",
+  "SourceCommits": ["1f03f5b1", "6af80c63"],
+  "Checks": [
+    {"Name": "Pcre2GraphemeInvocationTests", "Passed": 37, "Scope": "Affected project incremental build; original-token cancellation, deadlines, finite work and scalar/grapheme boundaries across public routes"},
+    {"Name": "Full affected PCRE2 project", "Passed": 6077, "DurationSeconds": 12, "Scope": "Matching Release binaries reused with test.ps1 -SkipBuild"},
+    {"Name": "Core public API and shipped dependency inventory", "Passed": 13, "Scope": "Affected Core fixture project only"},
+    {"Name": "Package source/config fixture controls", "Accepted": ["Clean Release requested Release", "Clean Debug requested Debug"], "Rejected": ["Dirty compiled source then reverted checkout", "Debug requested Release"]},
+    {"Name": "Source input and document negatives", "Rejected": ["Ignored untracked root Directory.Build.targets", "Unresolvable document", "Unknown generated code", "No compiled source documents"]},
+    {"Name": "Existing package identity/shape checks", "ProvenancePassed": 9, "ShapePassed": 3, "Scope": "test-package-provenance.ps1 on copies of immutable RC1 bytes; historical identity-only contract preserved"},
+    {"Name": "Real Core/PythonRe/PCRE2 PDB source layouts", "Documents": [329, 41, 55], "Accepted": true, "Scope": "Before binaries at matching source; synthetic wrappers only"},
+    {"Name": "Final PCRE2 compiled source/config", "Documents": 55, "Accepted": true},
+    {"Name": "Benchmark friend build and generated README/PythonRe/PCRE2 checks", "Accepted": true, "Scope": "One incremental matching host build, then SkipBuild reuse"},
+    {"Name": "Existing full producer and PE/PDB/source preflight", "Accepted": true, "Evidence": "compiled-documents.json"},
+    {"Name": "Existing Windows/Linux source CI", "Accepted": true, "Evidence": "ci.json"},
+    {"Name": "Immutable snapshots/RC1/TODOs", "Unchanged": 18, "Evidence": "immutable-files.json"}
+  ],
+  "Performance": "One bounded comparison and sole reversed-first confirmation closed inconclusive; unchanged allocations, final-package finite-control and cumulative performance acceptance remain open",
+  "Excluded": ["New engine package candidate", "Local complete platform/package matrix", "New qualification framework", "Third timing run", "Routine server shutdown", "VM campaign"]
+}

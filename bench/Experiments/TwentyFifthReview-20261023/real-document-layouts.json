@@ -1,0 +1,20 @@
+[
+  {
+    "Assembly": "Lokad.Utf8Regex",
+    "Configuration": "Release",
+    "Documents": 329,
+    "Accepted": true
+  },
+  {
+    "Assembly": "Lokad.Utf8Regex.PythonRe",
+    "Configuration": "Release",
+    "Documents": 41,
+    "Accepted": true
+  },
+  {
+    "Assembly": "Lokad.Utf8Regex.Pcre2",
+    "Configuration": "Release",
+    "Documents": 55,
+    "Accepted": true
+  }
+]

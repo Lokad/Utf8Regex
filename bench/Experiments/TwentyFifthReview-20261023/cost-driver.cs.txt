@@ -1,0 +1,36 @@
+using System.Reflection;
+using System.Text;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Pcre2;
+
+public static class Lanes
+{
+    public static string Producer() => string.Join("; ", new[] { typeof(Utf8Regex), typeof(Utf8Pcre2Regex) }
+        .Select(type => type.Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion));
+    public static long[] Allocations() => [];
+    public static (string, Func<long>, long)[] Create()
+    {
+        var longInput = Encoding.UTF8.GetBytes("a" + new string('\u0301', 8192));
+        var shortInput = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("a😀b ", 32)));
+        var unlimited = new Utf8Pcre2Regex(@"\X");
+        Utf8Pcre2Regex Finite(string pattern) => Utf8Pcre2Regex.Create(pattern, default, default,
+            new Utf8ResourcePolicy {MaxWorkSteps=1_000_000,MaxDepth=1024,MaxWorkingBytes=16<<20,MaxResultBytes=16<<20},Timeout.InfiniteTimeSpan);
+        var finite = Finite(@"\X");
+        var backtracking = Finite(@"(?=a)\X");
+        var separated = new Utf8Pcre2Regex(@"[a-z]+:[a-z][a-z]");
+        var separatedInput = "ab:cd"u8.ToArray();
+        var control = new Utf8Regex("z");
+        var controlInput = Encoding.UTF8.GetBytes(new string('x', 1<<20));
+        if(!unlimited.IsMatch(longInput)||!finite.IsMatch(longInput)||!backtracking.IsMatch(longInput)||
+            unlimited.Count(shortInput)!=128||finite.Count(shortInput)!=128||!separated.IsMatch(separatedInput)) throw new Exception("Public preflight mismatch");
+        return [
+            ("Pcre2/long-grapheme-IsMatch-unlimited", () => unlimited.IsMatch(longInput)?1:0, 1),
+            ("Pcre2/long-grapheme-IsMatch-four-finite", () => finite.IsMatch(longInput)?1:0, 1),
+            ("Pcre2/short-graphemes-Count-unlimited", () => unlimited.Count(shortInput), 128),
+            ("Pcre2/short-graphemes-Count-four-finite", () => finite.Count(shortInput), 128),
+            ("Pcre2/backtracking-grapheme-four-finite", () => backtracking.IsMatch(longInput)?1:0, 1),
+            ("Pcre2/separated-runs-IsMatch", () => separated.IsMatch(separatedInput)?1:0, 1),
+            ("Control/Core-Count-miss-1MiB", () => control.Count(controlInput), 0)
+        ];
+    }
+}

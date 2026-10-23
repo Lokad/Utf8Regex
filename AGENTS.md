@@ -45,8 +45,8 @@ includes Core; select `-Profiles Core,PythonRe,Pcre2` for all three packages
 (the default is Core/PythonRe). It builds only selected library roots (adapters
 include Core), packs each selected package once, then runs detached fixture suites with
 exact source/feed/cache/lock/DLL/symbol checks. `-SkipBuild` requires matching
-configuration/revision binaries; provenance rejects stale assemblies. Clean
-qualification also compares PDB source checksums and the assembly's observed
+configuration/revision binaries; provenance rejects stale assemblies. New
+evidence compares PDB source checksums and the assembly's observed
 configuration; relevant untracked source/build inputs block new evidence. Clean
 tracked source and a new common version are required. Successful candidates live
 under `artifacts/package-candidates/<version>` and cannot be overwritten.

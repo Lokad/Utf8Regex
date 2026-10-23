@@ -1,0 +1,52 @@
+{
+  "Scope": "Isolated synthetic provenance fixture only; no Utf8Regex engine build, candidate qualification or immutable artifact changes",
+  "FixtureRevision": "746fae95b3808dd977d628857efa4de175201df3",
+  "FixtureSourceClean": true,
+  "Results": [
+    {
+      "Case": "clean-release-control",
+      "DeclaredConfiguration": "Release",
+      "ActualConfiguration": "Release",
+      "CurrentSourceMarker": 1,
+      "CompiledMarker": 1,
+      "CompiledSourceMatchesCurrent": true,
+      "Document": {
+        "Name": "D:\\code\\utf8regex\\artifacts\\twenty-fifth-review-20261023\\provenance-fixture\\repo\\src\\Probe\\Proof.cs",
+        "CompiledSha256": "37EEE802956965B9E6AAF20407F99373B12AA5EDEAC881EF22513808453736B7",
+        "CurrentSha256": "37EEE802956965B9E6AAF20407F99373B12AA5EDEAC881EF22513808453736B7"
+      },
+      "ProvenanceAccepted": true,
+      "Error": null
+    },
+    {
+      "Case": "dirty-release-then-reverted",
+      "DeclaredConfiguration": "Release",
+      "ActualConfiguration": "Release",
+      "CurrentSourceMarker": 1,
+      "CompiledMarker": 2,
+      "CompiledSourceMatchesCurrent": false,
+      "Document": {
+        "Name": "D:\\code\\utf8regex\\artifacts\\twenty-fifth-review-20261023\\provenance-fixture\\repo\\src\\Probe\\Proof.cs",
+        "CompiledSha256": "F2497AE4B7645833A0F431C46F3555918A9AFA41967AA80B9AFE529BF6B3AD36",
+        "CurrentSha256": "37EEE802956965B9E6AAF20407F99373B12AA5EDEAC881EF22513808453736B7"
+      },
+      "ProvenanceAccepted": true,
+      "Error": null
+    },
+    {
+      "Case": "clean-debug-declared-release",
+      "DeclaredConfiguration": "Release",
+      "ActualConfiguration": "Debug",
+      "CurrentSourceMarker": 1,
+      "CompiledMarker": 1,
+      "CompiledSourceMatchesCurrent": true,
+      "Document": {
+        "Name": "D:\\code\\utf8regex\\artifacts\\twenty-fifth-review-20261023\\provenance-fixture\\repo\\src\\Probe\\Proof.cs",
+        "CompiledSha256": "37EEE802956965B9E6AAF20407F99373B12AA5EDEAC881EF22513808453736B7",
+        "CurrentSha256": "37EEE802956965B9E6AAF20407F99373B12AA5EDEAC881EF22513808453736B7"
+      },
+      "ProvenanceAccepted": true,
+      "Error": null
+    }
+  ]
+}

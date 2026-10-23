@@ -1,0 +1,76 @@
+{
+  "Scope": "Existing identity/shape fixtures on copies of frozen RC1; compiled-source/config gates are qualified separately",
+  "SourceRevision": "2e97ac974e6e8c60aac95db1e4808cbda2ff9736",
+  "Input": {
+    "Package": "Lokad.Utf8Regex.0.4.0-rc.1.nupkg",
+    "PackageSha256": "0F58D0F9373A2CD45EEC4293AC34246BC7215952BCF00AB4376DC69F3558EBC0",
+    "AssemblySha256": "B3755586A36C76B1F7C315A14CD3F9F1B8B57FC08D95E39A64DE73E809D548DB",
+    "SymbolPackage": "Lokad.Utf8Regex.0.4.0-rc.1.snupkg",
+    "SymbolPackageSha256": "B171682BE04C7C599A218B128713A70CBB8FFC859E5F6075256A2B9FEFF4320E",
+    "PdbSha256": "3174678439A85CAD8C54862AF5357054B2E454F2EAEFD98005F12286DEEC15B6"
+  },
+  "Cases": [
+    {
+      "Name": "valid",
+      "Passed": true,
+      "Rejection": null
+    },
+    {
+      "Name": "wrong-nuspec",
+      "Passed": true,
+      "Rejection": "Lokad.Utf8Regex.0.4.0-rc.1.nupkg NuSpec revision does not match 2e97ac974e6e8c60aac95db1e4808cbda2ff9736."
+    },
+    {
+      "Name": "stale-assembly",
+      "Passed": true,
+      "Rejection": "Lokad.Utf8Regex.0.4.0-rc.1.nupkg assembly revision 0000000000000000000000000000000000000000 does not match 2e97ac974e6e8c60aac95db1e4808cbda2ff9736; rebuild before packing."
+    },
+    {
+      "Name": "missing-symbol-package",
+      "Passed": true,
+      "Rejection": "Lokad.Utf8Regex.0.4.0-rc.1.nupkg is missing its symbol package or portable PDB."
+    },
+    {
+      "Name": "missing-pdb",
+      "Passed": true,
+      "Rejection": "Lokad.Utf8Regex.0.4.0-rc.1.nupkg is missing its symbol package or portable PDB."
+    },
+    {
+      "Name": "wrong-pdb-identity",
+      "Passed": true,
+      "Rejection": "Lokad.Utf8Regex.0.4.0-rc.1.nupkg portable PDB identity does not match its assembly."
+    },
+    {
+      "Name": "missing-sourcelink",
+      "Passed": true,
+      "Rejection": "Lokad.Utf8Regex.0.4.0-rc.1.nupkg is missing a unique module SourceLink document map."
+    },
+    {
+      "Name": "stale-sourcelink",
+      "Passed": true,
+      "Rejection": "Lokad.Utf8Regex.0.4.0-rc.1.nupkg SourceLink revision does not match 2e97ac974e6e8c60aac95db1e4808cbda2ff9736: https://raw.githubusercontent.com/Lokad/Utf8Regex/0000000000000000000000000000000000000000/*"
+    },
+    {
+      "Name": "wrong-sourcelink-repository",
+      "Passed": true,
+      "Rejection": "Lokad.Utf8Regex.0.4.0-rc.1.nupkg SourceLink revision does not match 2e97ac974e6e8c60aac95db1e4808cbda2ff9736: https://raw.githubusercontent.com/Other/Utf8RegeX/2e97ac974e6e8c60aac95db1e4808cbda2ff9736/*"
+    }
+  ],
+  "ShapeCases": [
+    {
+      "Name": "shape-valid",
+      "Passed": true,
+      "Rejection": null
+    },
+    {
+      "Name": "shape-extra-dependency",
+      "Passed": true,
+      "Rejection": "D:\\code\\utf8regex\\artifacts\\twenty-fifth-implementation-20261023\\identity-negatives\\shape-extra-dependency\\Lokad.Utf8Regex.0.4.0-rc.1.nupkg must not declare package dependencies."
+    },
+    {
+      "Name": "shape-wrong-framework",
+      "Passed": true,
+      "Rejection": "D:\\code\\utf8regex\\artifacts\\twenty-fifth-implementation-20261023\\identity-negatives\\shape-wrong-framework\\Lokad.Utf8Regex.0.4.0-rc.1.nupkg has unexpected dependency target groups."
+    }
+  ]
+}

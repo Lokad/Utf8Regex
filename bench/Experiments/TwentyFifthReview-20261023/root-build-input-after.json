@@ -1,0 +1,5 @@
+{
+  "Case": "Ignored root MSBuild input",
+  "Rejected": true,
+  "Error": "Archival provenance requires clean tracked files and no untracked package sources."
+}

@@ -1,0 +1,117 @@
+$ErrorActionPreference='Stop'
+Set-StrictMode -Version Latest
+. "$PSScriptRoot/../../test-packaged-common.ps1"
+$fixtureRoot=Join-Path $PSScriptRoot 'provenance-fixture'
+if (Test-Path -LiteralPath $fixtureRoot) { throw 'The diagnostic requires a fresh fixture directory.' }
+$repo=Join-Path $fixtureRoot 'repo'
+$src=Join-Path $repo 'src/Probe'
+[void](New-Item -ItemType Directory -Path $src)
+'**/bin/','**/obj/' | Set-Content (Join-Path $repo '.gitignore')
+$project=Join-Path $src 'Probe.csproj'
+@'
+<Project Sdk="Microsoft.NET.Sdk">
+<PropertyGroup>
+<TargetFramework>net10.0</TargetFramework><AssemblyName>Lokad.Utf8Regex</AssemblyName>
+<DebugType>portable</DebugType><GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+<GenerateDocumentationFile>true</GenerateDocumentationFile>
+<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+</PropertyGroup>
+</Project>
+'@ | Set-Content $project
+$proof=Join-Path $src 'Proof.cs'
+"namespace ReviewFixture;`n/// <summary>Provenance test fixture only.</summary>`npublic static class Proof { /// <summary>Known marker.</summary>`npublic const int Marker = 1; }" | Set-Content $proof
+$cleanBytes=[IO.File]::ReadAllBytes($proof)
+& git -C $repo init -q
+& git -C $repo config user.name 'Utf8Regex provenance review fixture'
+& git -C $repo config user.email 'review@example.invalid'
+& git -C $repo config core.autocrlf false
+& git -C $repo add .
+& git -C $repo -c commit.gpgsign=false commit -qm 'Clean diagnostic fixture'
+if($LASTEXITCODE -ne 0){throw 'Fixture commit failed'}
+$revision=(& git -C $repo rev-parse HEAD).Trim()
+$generated=Join-Path $repo 'obj'
+[void](New-Item -ItemType Directory -Path $generated)
+$sourceLink=Join-Path $generated 'source-link.json'
+@{documents=@{($repo.Replace('\','/')+'/*')="https://raw.githubusercontent.com/Lokad/Utf8Regex/$revision/*"}}|
+    ConvertTo-Json -Depth 4|Set-Content $sourceLink
+
+function Build-Fixture([string]$Configuration) {
+    & dotnet build $project -c $Configuration --tl:off --nologo -v minimal `
+        "-p:InformationalVersion=0.0.0-review+$revision" "-p:SourceLink=$sourceLink" `
+        *> (Join-Path $fixtureRoot "build-$Configuration.log")
+    if($LASTEXITCODE -ne 0){throw "Fixture $Configuration build failed"}
+}
+function Read-Fixture([string]$directory) {
+    $assemblyStream=[IO.File]::OpenRead((Join-Path $directory 'Lokad.Utf8Regex.dll'))
+    $pe=[Reflection.PortableExecutable.PEReader]::new($assemblyStream)
+    try {
+        $metadata=[Reflection.Metadata.PEReaderExtensions]::GetMetadataReader($pe)
+        $configuration=$null; $marker=$null
+        foreach($handle in $metadata.GetAssemblyDefinition().GetCustomAttributes()) {
+            $attribute=$metadata.GetCustomAttribute($handle)
+            if($attribute.Constructor.Kind -ne [Reflection.Metadata.HandleKind]::MemberReference){continue}
+            $row=[Reflection.Metadata.Ecma335.MetadataTokens]::GetRowNumber($attribute.Constructor)
+            $member=$metadata.GetMemberReference([Reflection.Metadata.Ecma335.MetadataTokens]::MemberReferenceHandle($row))
+            if($member.Parent.Kind -ne [Reflection.Metadata.HandleKind]::TypeReference){continue}
+            $typeRow=[Reflection.Metadata.Ecma335.MetadataTokens]::GetRowNumber($member.Parent)
+            $type=$metadata.GetTypeReference([Reflection.Metadata.Ecma335.MetadataTokens]::TypeReferenceHandle($typeRow))
+            if($metadata.GetString($type.Name) -eq 'AssemblyConfigurationAttribute') {
+                $blob=$metadata.GetBlobReader($attribute.Value); [void]$blob.ReadUInt16();$configuration=$blob.ReadSerializedString()
+            }
+        }
+        foreach($handle in $metadata.FieldDefinitions) {
+            $field=$metadata.GetFieldDefinition($handle)
+            if($metadata.GetString($field.Name) -eq 'Marker') {
+                $constant=$metadata.GetConstant($field.GetDefaultValue());$blob=$metadata.GetBlobReader($constant.Value);$marker=$blob.ReadInt32()
+            }
+        }
+    } finally { $pe.Dispose();$assemblyStream.Dispose() }
+    $pdbStream=[IO.File]::OpenRead((Join-Path $directory 'Lokad.Utf8Regex.pdb'))
+    $provider=[Reflection.Metadata.MetadataReaderProvider]::FromPortablePdbStream($pdbStream)
+    try {
+        $pdb=$provider.GetMetadataReader()
+        $documents=@(foreach($handle in $pdb.Documents) {
+            $document=$pdb.GetDocument($handle);$name=$pdb.GetString($document.Name)
+            if($name.EndsWith('Proof.cs',[StringComparison]::OrdinalIgnoreCase)) {
+                [pscustomobject]@{Name=$name;CompiledSha256=[Convert]::ToHexString($pdb.GetBlobBytes($document.Hash));CurrentSha256=(Get-FileHash -LiteralPath $proof -Algorithm SHA256).Hash}
+            }
+        })
+    } finally { $provider.Dispose();$pdbStream.Dispose() }
+    if($documents.Count -ne 1){throw 'Expected one fixture source document'}
+    [pscustomobject]@{ActualConfiguration=$configuration;CompiledMarker=$marker;Document=$documents[0];CompiledSourceMatchesCurrent=($documents[0].CompiledSha256 -eq $documents[0].CurrentSha256)}
+}
+function Check-Package([string]$Name,[string]$BuiltConfiguration) {
+    $caseRoot=Join-Path $fixtureRoot $Name;[void](New-Item -ItemType Directory -Path $caseRoot)
+    $directory=Join-Path $src "bin/$BuiltConfiguration/net10.0"
+    $packagePath=Join-Path $caseRoot 'Lokad.Utf8Regex.0.0.0-review.nupkg'
+    $zip=[IO.Compression.ZipFile]::Open($packagePath,[IO.Compression.ZipArchiveMode]::Create)
+    try {
+        foreach($extension in @('dll','xml')) {
+            [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip,(Join-Path $directory "Lokad.Utf8Regex.$extension"),"lib/net10.0/Lokad.Utf8Regex.$extension")
+        }
+        $entry=$zip.CreateEntry('Lokad.Utf8Regex.nuspec');$writer=[IO.StreamWriter]::new($entry.Open())
+        try { $writer.Write("<package><metadata><id>Lokad.Utf8Regex</id><version>0.0.0-review</version><authors>Fixture</authors><description>Isolated diagnostic; not a release candidate.</description><repository type='git' url='https://github.com/Lokad/Utf8Regex.git' commit='$revision'/></metadata></package>") } finally {$writer.Dispose()}
+    } finally {$zip.Dispose()}
+    $zip=[IO.Compression.ZipFile]::Open([IO.Path]::ChangeExtension($packagePath,'.snupkg'),[IO.Compression.ZipArchiveMode]::Create)
+    try {[void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip,(Join-Path $directory 'Lokad.Utf8Regex.pdb'),'lib/net10.0/Lokad.Utf8Regex.pdb')} finally {$zip.Dispose()}
+    Assert-PackageShape $packagePath 'Lokad.Utf8Regex.dll' '' '0.0.0-review'
+    $accepted=$true;$errorText=$null
+    try {
+        [void](Write-PackageProvenanceEvidence -RepositoryRoot $repo -QualificationRoot $caseRoot -SourceRevision $revision -Configuration Release -PackagePaths @($packagePath) -ExpectedAssemblies @('Lokad.Utf8Regex.dll') -RequireCleanSource $true)
+    } catch {$accepted=$false;$errorText=$_.Exception.Message}
+    $compiled=Read-Fixture $directory
+    [pscustomobject]@{Case=$Name;DeclaredConfiguration='Release';ActualConfiguration=$compiled.ActualConfiguration;CurrentSourceMarker=1;CompiledMarker=$compiled.CompiledMarker;CompiledSourceMatchesCurrent=$compiled.CompiledSourceMatchesCurrent;Document=$compiled.Document;ProvenanceAccepted=$accepted;Error=$errorText}
+}
+
+Build-Fixture Release
+$results=@(Check-Package 'clean-release-control' Release)
+[IO.File]::WriteAllText($proof,([Text.Encoding]::UTF8.GetString($cleanBytes).Replace('Marker = 1','Marker = 2')))
+Build-Fixture Release
+[IO.File]::WriteAllBytes($proof,$cleanBytes)
+$results+=Check-Package 'dirty-release-then-reverted' Release
+Build-Fixture Debug
+$results+=Check-Package 'clean-debug-declared-release' Debug
+$source=Read-PackageQualificationSource $repo $revision $true
+[pscustomobject]@{Scope='Isolated synthetic provenance fixture only; no Utf8Regex engine build, candidate qualification or immutable artifact changes';FixtureRevision=$revision;FixtureSourceClean=$source.CleanSource;Results=$results}|
+    ConvertTo-Json -Depth 8|Set-Content (Join-Path $PSScriptRoot 'provenance-witness.json')
+$results|Select-Object Case,DeclaredConfiguration,ActualConfiguration,CompiledMarker,CompiledSourceMatchesCurrent,ProvenanceAccepted|Format-Table -AutoSize

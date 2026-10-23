@@ -1,0 +1,59 @@
+{
+  "Scope": "Public source before/after only; no package/cumulative qualification",
+  "InitialSeconds": 43.518663,
+  "ConfirmationSeconds": 48.7660782,
+  "MinimumInitialSampleMs": 16.3505,
+  "MinimumConfirmationSampleMs": 27.8219,
+  "Decision": "Closed after the single reversed-first confirmation. Timing inconclusive: first finite short-cluster Count +73.23%, confirmation -8.73%; broad spreads and sub-floor samples prevent causal equivalence or a <=10% release claim. Preserve mandatory controls, no third run. Final-package operating-cost gate remains open.",
+  "Rows": [
+    {
+      "Name": "Pcre2/long-grapheme-IsMatch-unlimited",
+      "InitialPercent": 12.384106621430501,
+      "ConfirmationPercent": 7.932736407141783,
+      "BeforeBytes": 0,
+      "AfterBytes": 0
+    },
+    {
+      "Name": "Pcre2/long-grapheme-IsMatch-four-finite",
+      "InitialPercent": 0.67658689370238,
+      "ConfirmationPercent": 2.8028497422176946,
+      "BeforeBytes": 112,
+      "AfterBytes": 112
+    },
+    {
+      "Name": "Pcre2/short-graphemes-Count-unlimited",
+      "InitialPercent": 14.368596016408386,
+      "ConfirmationPercent": 5.221648697321779,
+      "BeforeBytes": 0,
+      "AfterBytes": 0
+    },
+    {
+      "Name": "Pcre2/short-graphemes-Count-four-finite",
+      "InitialPercent": 73.23044904346074,
+      "ConfirmationPercent": -8.733210045276884,
+      "BeforeBytes": 112,
+      "AfterBytes": 112
+    },
+    {
+      "Name": "Pcre2/backtracking-grapheme-four-finite",
+      "InitialPercent": -4.956938841366276,
+      "ConfirmationPercent": 5.062706371669168,
+      "BeforeBytes": 112,
+      "AfterBytes": 112
+    },
+    {
+      "Name": "Pcre2/separated-runs-IsMatch",
+      "InitialPercent": -1.5815123302438172,
+      "ConfirmationPercent": 6.631477582433232,
+      "BeforeBytes": 1680,
+      "AfterBytes": 1680
+    },
+    {
+      "Name": "Control/Core-Count-miss-1MiB",
+      "InitialPercent": 3.291022690235401,
+      "ConfirmationPercent": 3.901919819931532,
+      "BeforeBytes": 0,
+      "AfterBytes": 0
+    }
+  ]
+}
