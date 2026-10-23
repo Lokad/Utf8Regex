@@ -1698,7 +1698,7 @@ internal static class Pcre2CharacterRunner
         }
 
         next = nextPosition.Value;
-        if (Pcre2CharacterSemantics.IsSkippedCrLfCandidate(request, input.Bytes, next, candidate)) next++;
+        if (Pcre2CharacterSemantics.IsSkippedCrLfCandidate(request.SkipsCrLfContinuation, input.Bytes, next, candidate)) next++;
         return true;
     }
 
@@ -1826,8 +1826,8 @@ internal static class Pcre2GraphemeClusterSemantics
 
 internal static class Pcre2CharacterSemantics
 {
-    internal static bool IsSkippedCrLfCandidate(Pcre2CompileRequest request, ReadOnlySpan<byte> input,
-        int candidate, int searchStart) => request.SkipsCrLfContinuation &&
+    internal static bool IsSkippedCrLfCandidate(bool skipsCrLfContinuation, ReadOnlySpan<byte> input,
+        int candidate, int searchStart) => skipsCrLfContinuation &&
         candidate > searchStart && candidate > 0 && candidate < input.Length &&
         input[candidate - 1] == (byte)'\r' && input[candidate] == (byte)'\n';
 

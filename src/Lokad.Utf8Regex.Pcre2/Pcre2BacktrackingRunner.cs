@@ -271,6 +271,7 @@ internal static class Pcre2BacktrackingRunner
         var maximumCandidate = program.MinimumByteLength > bytes.Length
             ? -1
             : bytes.Length - program.MinimumByteLength;
+        var skipsCrLfContinuation = program.Request.SkipsCrLfContinuation;
         while (candidate <= maximumCandidate)
         {
             if (useCandidateSearch)
@@ -292,7 +293,7 @@ internal static class Pcre2BacktrackingRunner
                 }
             }
 
-            if (Pcre2CharacterSemantics.IsSkippedCrLfCandidate(program.Request, bytes, candidate, start.Value))
+            if (Pcre2CharacterSemantics.IsSkippedCrLfCandidate(skipsCrLfContinuation, bytes, candidate, start.Value))
             {
                 if (useCandidateSearch) continue;
                 if (++candidate > maximumCandidate) break;
