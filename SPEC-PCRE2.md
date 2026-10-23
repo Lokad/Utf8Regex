@@ -448,6 +448,15 @@ cluster cannot postpone interruption until the whole cluster has been consumed.
 These matching scans consume additional modeled work independently of validation;
 finite policies may deny earlier than versions that charged only the candidate.
 
+The managed grapheme rules use pinned Unicode 16.0 Grapheme_Cluster_Break,
+Extended_Pictographic and Indic_Conjunct_Break data, rather than general-category
+approximations. This corrects spacing-mark and emoji boundaries and prevents
+Latin letters from being treated as Indic consonants. The existing Unicode
+Indic-conjunct rule is retained: a consonant/linker/consonant sequence can be one
+cluster even where native PCRE2 10.47 splits it. This scoped Unicode behavior is
+intentional; native PCRE2 is not an oracle for that difference. Result boundaries
+can change for subjects previously classified by the approximate predicates.
+
 `MatchLimit` enforcement depends on the selected managed route; work units are not
 interchangeable with native PCRE2 or another managed engine. A breach raises
 `Pcre2MatchException` with the `MatchLimit` kind. Owned slice global cursors use a

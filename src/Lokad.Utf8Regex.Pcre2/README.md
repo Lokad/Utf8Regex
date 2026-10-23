@@ -109,7 +109,12 @@ remain active even when they have a measurable execution cost.
 
 Controlled `\X` scans and grapheme-aware advancement poll the original token and
 deadline in bounded scalar blocks and charge that scan work. Large clusters can
-therefore exhaust a finite work allowance earlier; segmentation is unchanged.
+therefore exhaust a finite work allowance earlier.
+
+Grapheme boundaries now use owned Unicode 16.0 break, pictographic and Indic
+properties. Earlier category/range approximations could join unrelated letters
+or split spacing marks. The existing Unicode Indic-conjunct rule remains, including
+its documented difference from native PCRE2 10.47; see SPEC-PCRE2.md.
 
 Explicit `Compile` factories provide separate construction work/depth/instruction/
 byte limits, timeout and token. Development after frozen RC1 admits backtracking
