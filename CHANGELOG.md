@@ -6,6 +6,9 @@ These changes are development source, currently 0.4.0-rc.2-dev. Frozen RC1
 artifacts remain unchanged and unpublished; they must not be released. A fresh
 candidate and final downstream/package/cost qualification are still required.
 
+- PythonRe native FindAll collection now keeps nonzero starts in byte coordinates,
+  avoiding a discarded whole-subject UTF-16 boundary map. Complete UTF-8 validation,
+  scalar alignment, returned coordinates and invocation controls remain.
 - Removed `bench-summary.ps1`, whose CaseId-only grouping could mix benchmark
   jobs. Use the maintained paired CLI reports and JSON-backed benchmark pages.
 - Fixed PCRE2 CRLF-aware wildcard search reporting the LF of a failed CRLF

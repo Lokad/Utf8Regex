@@ -339,11 +339,6 @@ public sealed partial class Utf8PythonRegex
     internal static bool IsOptionalUtf8BackendUnavailableException(Exception exception)
         => exception is ArgumentException or NotSupportedException;
 
-    private static int GetUtf16OffsetOfBytePrefix(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        return s_strictUtf8Encoding.GetCharCount(input[..startOffsetInBytes]);
-    }
-
     private void ValidateStartOffset(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         if ((uint)startOffsetInBytes > (uint)input.Length)

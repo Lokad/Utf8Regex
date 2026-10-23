@@ -135,10 +135,9 @@ public sealed partial class Utf8PythonRegex
         try
         {
             Utf8ValueMatchEnumerator enumerator;
-            if (!HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan)
-                enumerator = startOffsetInBytes == 0
-                    ? _utf8Regex.EnumerateMatches(input)
-                    : _utf8Regex.EnumerateMatchesFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
+            if (startOffsetInBytes == 0 && !HasFiniteExecutionLimits &&
+                !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan)
+                enumerator = _utf8Regex.EnumerateMatches(input);
             else
             {
                 var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
