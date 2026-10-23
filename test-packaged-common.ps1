@@ -37,6 +37,7 @@ function Read-PackageProvenance {
             $pe = [System.Reflection.PortableExecutable.PEReader]::new($assemblyStream)
             try {
                 $metadata = [System.Reflection.Metadata.PEReaderExtensions]::GetMetadataReader($pe)
+                $configurations = [Collections.Generic.List[string]]::new()
                 $versions = @(foreach ($handle in $metadata.GetAssemblyDefinition().GetCustomAttributes()) {
                     $attribute = $metadata.GetCustomAttribute($handle)
                     if ($attribute.Constructor.Kind -ne [System.Reflection.Metadata.HandleKind]::MemberReference) { continue }
@@ -45,11 +46,14 @@ function Read-PackageProvenance {
                     if ($member.Parent.Kind -ne [System.Reflection.Metadata.HandleKind]::TypeReference) { continue }
                     $typeRow = [System.Reflection.Metadata.Ecma335.MetadataTokens]::GetRowNumber($member.Parent)
                     $type = $metadata.GetTypeReference([System.Reflection.Metadata.Ecma335.MetadataTokens]::TypeReferenceHandle($typeRow))
+                    $name = $metadata.GetString($type.Name)
                     if ($metadata.GetString($type.Namespace) -eq "System.Reflection" -and
-                        $metadata.GetString($type.Name) -eq "AssemblyInformationalVersionAttribute") {
+                        $name -in @("AssemblyInformationalVersionAttribute", "AssemblyConfigurationAttribute")) {
                         $blob = $metadata.GetBlobReader($attribute.Value)
                         if ($blob.ReadUInt16() -ne 1) { throw "$PackagePath has an invalid version attribute." }
-                        $blob.ReadSerializedString()
+                        $value = $blob.ReadSerializedString()
+                        if ($name -eq "AssemblyConfigurationAttribute") { $configurations.Add($value) }
+                        else { $value }
                     }
                 })
                 if ($versions.Count -ne 1) { throw "$PackagePath must have exactly one informational version." }
@@ -79,6 +83,7 @@ function Read-PackageProvenance {
     $pdbGuid = $null
     $pdbStamp = $null
     $sourceLinkRecords = @()
+    $documents = @()
     if ($symbolPackagePresent) {
         $symbolPackageHash = (Get-FileHash -LiteralPath $symbolPackagePath -Algorithm SHA256).Hash
         $symbols = [System.IO.Compression.ZipFile]::OpenRead($symbolPackagePath)
@@ -118,6 +123,12 @@ function Read-PackageProvenance {
                                 }
                             }
                         })
+                        $documents = @(foreach ($handle in $pdb.Documents) {
+                            $document = $pdb.GetDocument($handle)
+                            [ordered]@{ Name = $pdb.GetString($document.Name)
+                                Algorithm = $pdb.GetGuid($document.HashAlgorithm).ToString()
+                                Hash = [Convert]::ToHexString($pdb.GetBlobBytes($document.Hash)) }
+                        })
                     }
                     finally { $provider.Dispose() }
                 }
@@ -134,6 +145,7 @@ function Read-PackageProvenance {
         Assembly = $ExpectedAssembly
         AssemblySha256 = $assemblyHash
         InformationalVersion = $informationalVersion
+        Configurations = $configurations.ToArray()
         AssemblyRevision = $assemblyRevision
         CodeViewEntries = $codeViewEntries
         SymbolPackage = [System.IO.Path]::GetFileName($symbolPackagePath)
@@ -144,6 +156,7 @@ function Read-PackageProvenance {
         PdbGuid = $pdbGuid
         PdbStamp = $pdbStamp
         SourceLinkRecords = $sourceLinkRecords
+        Documents = $documents
     }
 }
 
@@ -176,6 +189,49 @@ function Assert-PackageProvenance {
     }
 }
 
+function Assert-PackageCompiledSource {
+    param([object] $Provenance, [string] $RepositoryRoot, [string] $Configuration)
+
+    if ($Provenance.Configurations.Count -ne 1 -or $Provenance.Configurations[0] -cne $Configuration) {
+        throw "$($Provenance.Package) compiled configuration does not match $Configuration."
+    }
+    $root = [IO.Path]::GetFullPath($RepositoryRoot).TrimEnd([IO.Path]::DirectorySeparatorChar)
+    $prefix = $root + [IO.Path]::DirectorySeparatorChar
+    $comparison = if ($IsWindows) { [StringComparison]::OrdinalIgnoreCase } else { [StringComparison]::Ordinal }
+    $tracked = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+    $paths = @(& git -C $root ls-files --cached)
+    if ($LASTEXITCODE -ne 0) { throw 'Could not inspect tracked compiled-source inputs.' }
+    foreach ($path in $paths) { [void] $tracked.Add($path.Replace('\', '/')) }
+    $checked = 0
+    foreach ($document in $Provenance.Documents) {
+        $name = $document.Name.Replace('\', '/')
+        $relative = $null
+        foreach ($mapping in $Provenance.SourceLinkRecords[0].Mappings) {
+            $mappedPrefix = $mapping.Document.Replace('\', '/').TrimEnd('*')
+            if ($name.StartsWith($mappedPrefix, $comparison)) { $relative = $name.Substring($mappedPrefix.Length); break }
+        }
+        if ($null -eq $relative) {
+            # SDK-generated documents can be absent from SourceLink's tracked map.
+            $path = if ($name.StartsWith('/_/', [StringComparison]::Ordinal)) {
+                [IO.Path]::GetFullPath((Join-Path $root $name.Substring(3)))
+            } else { [IO.Path]::GetFullPath($name) }
+        } else { $path = [IO.Path]::GetFullPath((Join-Path $root $relative)) }
+        if (!$path.StartsWith($prefix, $comparison)) { throw "Unresolvable compiled source document: $name" }
+        $relative = [IO.Path]::GetRelativePath($root, $path).Replace('\', '/')
+        # Match the existing compiler-evidence policy: only the SDK's known
+        # generated attributes/usings are exempt, never arbitrary obj code.
+        $generated = '/obj/' + [Regex]::Escape($Configuration) + '/net10\.0/(?:[^/]+\.AssemblyInfo\.cs|[^/]+\.GlobalUsings\.g\.cs|\.NETCoreApp,Version=v10\.0\.AssemblyAttributes\.cs)$'
+        if ($relative -match $generated) { continue }
+        if (!$tracked.Contains($relative) -or $document.Algorithm -ne '8829d00f-11b8-4213-878b-770e8597ac16' -or
+            !(Test-Path -LiteralPath $path -PathType Leaf) -or
+            (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -cne $document.Hash) {
+            throw "$($Provenance.Package) compiled source differs from the checkout: $relative. Rebuild matching binaries."
+        }
+        $checked++
+    }
+    if ($checked -eq 0) { throw "$($Provenance.Package) contains no compiled source evidence." }
+}
+
 function Read-PackageQualificationSource {
     param([string] $RepositoryRoot, [string] $SourceRevision, [bool] $RequireCleanSource)
 
@@ -185,8 +241,18 @@ function Read-PackageQualificationSource {
     }
     $trackedChanges = @(& git -C $RepositoryRoot status --porcelain --untracked-files=no)
     if ($LASTEXITCODE -ne 0) { throw "Could not inspect package source state." }
-    $untrackedSources = @(& git -C $RepositoryRoot ls-files --others --exclude-standard -- src)
+    $untrackedSources = @(& git -C $RepositoryRoot ls-files --others --exclude-standard -- src `
+        '*.props' '*.targets' '*.rsp' '*.csproj' '*.slnx' '*.cs' '*.json' '*.config' '*.editorconfig')
     if ($LASTEXITCODE -ne 0) { throw "Could not inspect untracked package sources." }
+    # Root build inputs can affect every project even when a user/global ignore
+    # rule hides them. Do not interpret such files before establishing ownership.
+    $trackedInputs = @(& git -C $RepositoryRoot ls-files --cached)
+    if ($LASTEXITCODE -ne 0) { throw 'Could not inspect tracked build inputs.' }
+    foreach ($file in Get-ChildItem -LiteralPath $RepositoryRoot -File) {
+        if ($file.Name -match '\.(props|targets|rsp|csproj|slnx|cs|json|config)$|^\.editorconfig$' -and
+            $file.Name -cnotin $trackedInputs) { $untrackedSources += $file.Name }
+    }
+    $untrackedSources = @($untrackedSources | Sort-Object -Unique)
     $cleanSource = $trackedChanges.Count -eq 0 -and $untrackedSources.Count -eq 0
     if ($RequireCleanSource -and !$cleanSource) { throw "Archival provenance requires clean tracked files and no untracked package sources." }
     return [pscustomobject]@{ CleanSource = $cleanSource; TrackedChanges = $trackedChanges; UntrackedSources = $untrackedSources }
@@ -210,6 +276,7 @@ function Write-PackageProvenanceEvidence {
     $records = @(for ($index = 0; $index -lt $PackagePaths.Count; $index++) {
         $record = Read-PackageProvenance $PackagePaths[$index] $ExpectedAssemblies[$index]
         Assert-PackageProvenance $record $SourceRevision
+        Assert-PackageCompiledSource $record $RepositoryRoot $Configuration
         $record
     })
     $report = [ordered]@{

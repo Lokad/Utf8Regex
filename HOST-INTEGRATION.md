@@ -215,6 +215,12 @@ exact qualified Core version. Previous immutable packages retain their original
 evidence. Producer qualification of handoff assertions does not establish actual
 external adoption or completion of consumer host-ownership integration.
 
+New package provenance compares the compiled assembly configuration and tracked
+portable-PDB source checksums with the requested configuration and checkout.
+Unknown source/build inputs, including root MSBuild files, block new qualification.
+Only known SDK-generated attributes/usings are exempt from source comparison.
+These checks do not attest every compiler/JIT option or requalify historical bytes.
+
 The source witnesses are `Utf8ExecutionBudget.TryChargeResultBytes`,
 `Utf8InvocationResultLedger.ReleaseSince` and `Utf8PythonMatchCursor.MoveNext`.
 `PythonReFiniteResultPolicyTests.CursorTrafficSurvivesPublicationAndAliasesShareFailureCleanup`
