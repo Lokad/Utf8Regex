@@ -41,7 +41,7 @@ public sealed class Utf8SharedCaptureMetadataTests
         // Program metadata borrows the canonical catalog directly. Public array
         // copies, sparse lookups, captures and replacement below share its data.
         Assert.Same(catalog, program.PreparedRegex.ScalarProgram?.CaptureCatalog);
-        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(program.VerifierRuntime);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(Assert.IsType<Utf8VerifierRuntime>(program.VerifierRuntime));
 
         // These expressions capture whole scalars, so BCL metadata and returned
         // text overlap the UTF-8 contract, including supplementary literals.

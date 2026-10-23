@@ -17,16 +17,6 @@ namespace Lokad.Utf8Regex;
 /// <summary>Compiled execution engines for <see cref="Utf8Regex"/>.</summary>
 public sealed partial class Utf8Regex
 {
-    private bool IsMatchViaCompiledExactLiteralEngine(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
-    {
-        return _compiledEngineRuntime.IsMatch(input, default, budget);
-    }
-
-    private bool IsMatchViaCompiledLiteralFamilyEngine(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
-    {
-        return _compiledEngineRuntime.IsMatch(input, default, budget);
-    }
-
     private bool CanUseFusedCompiledUtf8LiteralCount()
     {
         if (_compiledEngine.Kind != Utf8CompiledEngineKind.ExactLiteral ||
@@ -148,8 +138,8 @@ public sealed partial class Utf8Regex
 
         return _compiledEngine.Kind switch
         {
-            Utf8CompiledEngineKind.ExactLiteral => IsMatchViaCompiledExactLiteralEngine(input, budget),
-            Utf8CompiledEngineKind.LiteralFamily => IsMatchViaCompiledLiteralFamilyEngine(input, budget),
+            Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily =>
+                _compiledEngineRuntime.IsMatch(input, default, budget),
             _ => _compiledEngineRuntime.IsMatch(input, validation, budget),
         };
     }
@@ -228,16 +218,6 @@ public sealed partial class Utf8Regex
         };
     }
 
-    private Utf8ValueMatch MatchViaCompiledExactLiteralEngine(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
-    {
-        return _compiledEngineRuntime.Match(input, default, budget);
-    }
-
-    private Utf8ValueMatch MatchViaCompiledLiteralFamilyEngine(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
-    {
-        return _compiledEngineRuntime.Match(input, default, budget);
-    }
-
     internal Utf8ValueMatch MatchViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if ((ShouldUseFallbackForAnchoredSimplePattern() && !CanServeLineAnchoredOwned(input)) || ShouldUseFallbackForNonAsciiSimplePattern(validation))
@@ -264,8 +244,8 @@ public sealed partial class Utf8Regex
 
         return _compiledEngine.Kind switch
         {
-            Utf8CompiledEngineKind.ExactLiteral => MatchViaCompiledExactLiteralEngine(input, budget),
-            Utf8CompiledEngineKind.LiteralFamily => MatchViaCompiledLiteralFamilyEngine(input, budget),
+            Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily =>
+                _compiledEngineRuntime.Match(input, default, budget),
             _ => _compiledEngineRuntime.Match(input, validation, budget),
         };
     }

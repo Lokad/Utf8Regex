@@ -8,8 +8,7 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 // once. The VM consumes this tree and its capture catalog without reparsing.
 // Syntax failures return owned diagnostics. Class payloads use full scalar
 // endpoints and integer extents, with admitted storage and no 16-bit length cap.
-// Parsing lives in static locals over an explicit state record, so the debt
-// ceiling sees a single entry point.
+// Static local parsing routines share an explicit state record.
 internal static class Utf8OwnedTreeParser
 {
     private const int Infinite = 2147483647;

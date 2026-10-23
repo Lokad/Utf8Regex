@@ -5,8 +5,8 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// The former source-length fence no longer selects a BCL engine. The
-// instruction-count cap remains explicit construction-ownership debt.
+// Source length does not select an engine. Instruction expansion retains
+// explicit construction admission.
 public sealed class Utf8SliceAdmissionTests
 {
     private const int HistoricalPatternLengthLimit = 65536;

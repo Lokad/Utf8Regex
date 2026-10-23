@@ -9,7 +9,7 @@ namespace Lokad.Utf8Regex.Tests;
 // preserves nonoverlapping and adjacent literal hits. Derived coordinates
 // remain comparable with BCL on the overlapping subjects below. Slice-served
 // shapes, including empty literals, use the owned scalar program instead.
-// Unserved boundary shapes retain the BCL enumerator as migration debt.
+// Other admitted boundary shapes use the owned scalar enumerator.
 public sealed class Utf8RtlEnumerationTests
 {
     public static System.Collections.Generic.IEnumerable<object?[]> RtlLiteralEnumerationOwnedCases()

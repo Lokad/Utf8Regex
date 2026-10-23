@@ -1492,7 +1492,6 @@ public sealed partial class Utf8Regex
         // simple-pattern plan is UTF-8 byte-safe (PLAN.md C01): a miss must not
         // shortcut Unicode verification. Those inputs fall through to full
         // validation and the compiled engine, which selects the semantic fallback.
-        // This stays inline: single-caller private helpers count as source debt.
         var requiresUnicodeVerification =
             _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
             !_preparedRegex.SimplePatternPlan.IsUtf8ByteSafe &&
@@ -2362,7 +2361,7 @@ public sealed partial class Utf8Regex
 
         // Folded anchored prefixes enumerate the same single anchored hit with
         // per-byte invariant folding. Kelvin and Turkic divergences fall through to
-        // the BCL-backed routes below; all other inputs stay direct.
+        // scalar execution below; all other inputs stay direct.
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix &&
             _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } foldedPrefixLiteral)
         {
@@ -2599,7 +2598,6 @@ public sealed partial class Utf8Regex
             : validation.Utf16Length;
         // R05: anchored ASCII literal families split through the anchor-enforcing
         // owned cursors (at most one match at a fixed position), like enumeration.
-        // Inlined to hold the single-caller helper ceiling.
         var isAnchoredDirectSplitFamily = _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } &&
             (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix or Utf8FallbackDirectFamilyKind.AnchoredFoldedAsciiLiteralPrefix ||
             Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) ||

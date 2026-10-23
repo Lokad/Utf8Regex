@@ -9,8 +9,6 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 // (?flags) runs fold into the options and are consumed, stopping at the first
 // colon group, unknown letter, bare (?) or unterminated group. Dashes only select
 // clearing (no re-enable): a second dash is just another clearing marker.
-// Parsing lives in static locals over the outer entry point, so the debt ceiling
-// sees a single entry point.
 internal static class Utf8OwnedOptionPrelude
 {
     public static CultureInfo GetTargetCulture(RegexOptions options)

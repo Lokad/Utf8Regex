@@ -63,8 +63,8 @@ public sealed class EngineRouteCoverageMatrixTests
         yield return new object?[] { "whitespace-mode", "a b c", RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "abc", "FallbackRegex", "unsupported_pattern", true, true };
         yield return new object?[] { "singleline-dot", "a.*b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nb", "FallbackRegex", "unsupported_loop", true, true };
         yield return new object?[] { "ecmascript", "abc", RegexOptions.ECMAScript, "xxabcxx", "FallbackRegex", "unsupported_options", true, true };
-        // NonBacktracking literals have owned construction admission and native
-        // operations; general symbolic-loop execution remains migration debt.
+        // NonBacktracking literals retain native operations; general regular
+        // loops use the admitted ordered scalar NFA.
         yield return new object?[] { "nonbacktracking", "abc", RegexOptions.NonBacktracking | RegexOptions.CultureInvariant, "xxabcxx", "ExactAsciiLiteral", null, true, true };
         // Empty-match and astral edge cases (owner R03).
         yield return new object?[] { "empty-star", "a*", RegexOptions.CultureInvariant, "bbb", "FallbackRegex", "unsupported_loop", true, true };

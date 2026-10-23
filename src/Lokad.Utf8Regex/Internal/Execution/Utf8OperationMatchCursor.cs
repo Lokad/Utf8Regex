@@ -413,9 +413,7 @@ internal ref partial struct Utf8OperationMatchCursor
     }
 
     // Anchored ASCII literal prefix enumeration: at most one match at offset 0,
-    // byte-exact on every input. The constructor below is public (not a counted
-    // private helper) and the move-next logic stays inline here to hold the
-    // single-caller debt ceiling.
+    // byte-exact on every input.
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, byte[] literal, Utf8ExecutionDeadline budget)
     {
         _plans = Utf8OperationMatchCursorPlans.Empty;
@@ -480,9 +478,7 @@ internal ref partial struct Utf8OperationMatchCursor
     }
 
     // Anchored ASCII literal suffix enumeration: at most one match at the input
-    // end (or right before a single trailing line feed for the lax kind). The
-    // kind-based constructor below is public (not a counted private helper) and
-    // the move-next logic stays inline here to hold the single-caller debt ceiling.
+    // end (or right before a single trailing line feed for the lax kind).
     public Utf8OperationMatchCursor(
         ReadOnlySpan<byte> input,
         byte[] literal,
@@ -1141,8 +1137,7 @@ internal ref partial struct Utf8OperationMatchCursor
     // scalar verifier and projects through the boundary map. Construction sites qualify
     // up front (astral-free non-ASCII with scalar-verifiable tokens), so matches here
     // are always scalar-aligned; a projection miss throws instead of hiding later
-    // matches. The move-next logic stays inline here to hold the single-caller debt
-    // ceiling.
+    // matches.
     private bool MoveNextScalarSimplePattern()
     {
         ref readonly var simplePatternPlan = ref _plans.SimplePatternPlan;

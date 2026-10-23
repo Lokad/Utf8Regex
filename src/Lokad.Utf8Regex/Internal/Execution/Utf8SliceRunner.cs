@@ -214,9 +214,7 @@ internal static partial class Utf8SliceRunner
     // Width of the scalar ending at rightEdge (validated input): ASCII is
     // one byte, longer scalars measure back from their lead. Mid-scalar
     // edges and out-of-range positions fail closed so mirrored right-to-left
-    // attempts cannot report unaligned starts. Shared by every mirrored
-    // consuming arm (six callers, so the single-caller debt ceiling does
-    // not apply).
+    // attempts cannot report unaligned starts. Shared by the mirrored consuming arms.
     private static bool TryGetScalarWidthEndingAt(ReadOnlySpan<byte> input, int rightEdge, out int width)
     {
         width = 0;

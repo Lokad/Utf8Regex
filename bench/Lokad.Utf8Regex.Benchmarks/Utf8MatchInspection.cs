@@ -40,7 +40,7 @@ internal static class Utf8MatchInspection
                 Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or Utf8FallbackDirectFamilyKind.Utf8UriToken
                 ? $"FallbackDirect/{regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind}"
                 : regex.Inspection.CompiledEngineKind is Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily
-                    ? $"{regex.Inspection.CompiledEngineKind}/{regex.Inspection.CompiledRuntime.GetType().Name}" : "Unsupported";
+                    ? $"{regex.Inspection.CompiledEngineKind}/{regex.Inspection.DebugCompiledEngineRuntimeType}" : "Unsupported";
 
     public static bool DebugTryMatchCompiledAsciiLiteralFamilyRaw(
         this Utf8Regex.Utf8RegexInspection inspection, ReadOnlySpan<byte> input, out int index, out int matchedByteLength)
