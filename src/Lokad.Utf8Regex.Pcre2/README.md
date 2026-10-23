@@ -107,6 +107,10 @@ compiled/cache retention, standalone getters and callback allocations have
 separate scope. Basic bounded state, backtracking and interruption metering
 remain active even when they have a measurable execution cost.
 
+Controlled `\X` scans and grapheme-aware advancement poll the original token and
+deadline in bounded scalar blocks and charge that scan work. Large clusters can
+therefore exhaust a finite work allowance earlier; segmentation is unchanged.
+
 Explicit `Compile` factories provide separate construction work/depth/instruction/
 byte limits, timeout and token. Development after frozen RC1 admits backtracking
 metadata conservatively at 256 bytes per UTF-16 pattern character, plus separate

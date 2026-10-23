@@ -1646,6 +1646,7 @@ internal static class Pcre2SingleTokenRepeatRunner
                     candidate,
                     firstMatchingPosition.Value,
                     matchOptions,
+                    ref budget,
                     out var end))
             {
                 return Pcre2CharacterMatch.Create(candidate, end);
@@ -1674,6 +1675,7 @@ internal static class Pcre2SingleTokenRepeatRunner
         int candidate,
         int firstMatchingPosition,
         Pcre2MatchOptions matchOptions,
+        ref Pcre2ResourceBudget budget,
         out int end)
     {
         var emptyDisallowed = (matchOptions & Pcre2MatchOptions.NotEmpty) != 0 ||
@@ -1708,6 +1710,7 @@ internal static class Pcre2SingleTokenRepeatRunner
                    index,
                    firstMatchingPosition,
                    matchOptions,
+                   ref budget,
                    out var nextIndex))
         {
             index = nextIndex;

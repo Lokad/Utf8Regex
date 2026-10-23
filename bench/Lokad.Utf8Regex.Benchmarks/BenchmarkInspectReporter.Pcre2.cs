@@ -262,6 +262,7 @@ internal static partial class BenchmarkInspectReporter
             0,
             new PreparedMultiLiteralScanState(0, 0, 0));
         ulong checks = 0;
+        var budget = new Pcre2ResourceBudget(default, Timeout.InfiniteTimeSpan, false);
         while (candidateSearch.Searcher.TryFindNextOverlappingMatch(input, ref state, out var hit))
         {
             var runStart = hit.Index;
@@ -278,6 +279,7 @@ internal static partial class BenchmarkInspectReporter
                             previous,
                             0,
                             Pcre2MatchOptions.None,
+                            ref budget,
                             out var next) ||
                         next != runStart)
                     {

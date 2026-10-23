@@ -442,6 +442,12 @@ cutoffs are not preserved as artificial denials.
 
 Every execution operation has an explicit `CancellationToken` twin. An already-canceled token throws `OperationCanceledException` at entry; validation, matching and required result processing retain the original token and absolute deadline at bounded synchronous checkpoints. Lazy `EnumerateMatches` observes the token at creation and during advances. Evaluator-driven replacement additionally observes the token before every callback on all paths, so canceling from inside the callback aborts deterministically.
 
+Extended-grapheme (`\X`) matching and grapheme-aware candidate advancement admit
+bounded scalar scan blocks under that same authority. A large combining/ZWJ
+cluster cannot postpone interruption until the whole cluster has been consumed.
+These matching scans consume additional modeled work independently of validation;
+finite policies may deny earlier than versions that charged only the candidate.
+
 `MatchLimit` enforcement depends on the selected managed route; work units are not
 interchangeable with native PCRE2 or another managed engine. A breach raises
 `Pcre2MatchException` with the `MatchLimit` kind. Owned slice global cursors use a

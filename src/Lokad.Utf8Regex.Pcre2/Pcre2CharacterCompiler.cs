@@ -1423,7 +1423,7 @@ internal static class Pcre2CharacterRunner
         while (candidate <= bytes.Length)
         {
             budget.ChargeCandidate();
-            if (TryMatchAt(program, bytes, candidate, start.Value, matchOptions, out var end) &&
+            if (TryMatchAt(program, bytes, candidate, start.Value, matchOptions, ref budget, out var end) &&
                 ((program.Request.Options & Pcre2CompileOptions.EndAnchored) == 0 || end == bytes.Length) &&
                 ((matchOptions & Pcre2MatchOptions.EndAnchored) == 0 || end == bytes.Length) &&
                 ((matchOptions & Pcre2MatchOptions.NotEmpty) == 0 || end != candidate) &&
@@ -1437,6 +1437,7 @@ internal static class Pcre2CharacterRunner
                     ref input,
                     candidate,
                     !budget.RequiresCandidateMetering,
+                    ref budget,
                     out candidate))
             {
                 break;
@@ -1452,6 +1453,7 @@ internal static class Pcre2CharacterRunner
         int candidate,
         int firstMatchingPosition,
         Pcre2MatchOptions matchOptions,
+        ref Pcre2ResourceBudget budget,
         out int end)
     {
         var index = candidate;
@@ -1464,6 +1466,7 @@ internal static class Pcre2CharacterRunner
                     index,
                     firstMatchingPosition,
                     matchOptions,
+                    ref budget,
                     out index))
             {
                 end = 0;
@@ -1482,6 +1485,7 @@ internal static class Pcre2CharacterRunner
         int index,
         int firstMatchingPosition,
         Pcre2MatchOptions matchOptions,
+        ref Pcre2ResourceBudget budget,
         out int nextIndex)
     {
         nextIndex = index;
@@ -1541,7 +1545,7 @@ internal static class Pcre2CharacterRunner
                 return true;
 
             case Pcre2CharacterTokenKind.ExtendedGraphemeCluster:
-                if (!Pcre2GraphemeClusterSemantics.TryGetWidth(input, index, out var graphemeWidth))
+                if (!Pcre2GraphemeClusterSemantics.TryGetWidth(input, index, ref budget, out var graphemeWidth))
                 {
                     return false;
                 }
@@ -1594,11 +1598,12 @@ internal static class Pcre2CharacterRunner
         ref Utf8ValidatedInput input,
         int candidate,
         bool allowAcceleration,
+        ref Pcre2ResourceBudget budget,
         out int next)
     {
         if (program.LeadingExtendedGraphemeCluster &&
             (program.Request.Options & Pcre2CompileOptions.FirstLine) == 0 &&
-            Pcre2GraphemeClusterSemantics.TryGetWidth(input.Bytes, candidate, out var width))
+            Pcre2GraphemeClusterSemantics.TryGetWidth(input.Bytes, candidate, ref budget, out var width))
         {
             next = candidate + width;
             return true;
@@ -1676,8 +1681,10 @@ internal static class Pcre2CharacterRunner
 
 internal static class Pcre2GraphemeClusterSemantics
 {
-    internal static bool TryGetWidth(ReadOnlySpan<byte> input, int offset, out int width)
+    internal static bool TryGetWidth(ReadOnlySpan<byte> input, int offset, ref Pcre2ResourceBudget budget, out int width)
     {
+        var controlled = !budget.IsUnmetered;
+        if (controlled) budget.ChargeWorkspaceStep();
         if (!TryDecode(input, offset, out var previous, out var previousWidth))
         {
             width = 0;
@@ -1691,8 +1698,16 @@ internal static class Pcre2GraphemeClusterSemantics
         var indicConsonantSeen = IsIndicConsonant(previous);
         var indicLinkerSeen = false;
 
+        // One atom can span an arbitrarily long cluster. Validation's earlier
+        // charge does not make this matching pass interruptible.
+        var remaining = 256;
         while (TryDecode(input, end, out var next, out var nextWidth))
         {
+            if (controlled && --remaining == 0)
+            {
+                budget.ChargeWorkspaceStep();
+                remaining = 256;
+            }
             var join = previous.Value == '\r' && next.Value == '\n' ||
                 !IsControl(previous) && !IsControl(next) &&
                 (IsHangulContinuation(previous, next) ||

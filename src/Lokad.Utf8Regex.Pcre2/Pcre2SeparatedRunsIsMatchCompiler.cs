@@ -187,6 +187,7 @@ internal static class Pcre2SeparatedRunsIsMatchRunner
         int startOffsetInBytes)
     {
         var scanOffset = startOffsetInBytes;
+        var budget = new Pcre2ResourceBudget(default, Timeout.InfiniteTimeSpan, false);
         while (scanOffset <= input.Length - program.Separator.Length)
         {
             var relativeSeparator = input[scanOffset..].IndexOf(program.Separator);
@@ -211,6 +212,7 @@ internal static class Pcre2SeparatedRunsIsMatchRunner
                     leadingStart,
                     startOffsetInBytes,
                     Pcre2MatchOptions.None,
+                    ref budget,
                     out var leadingEnd) &&
                 leadingEnd == separatorStart &&
                 Pcre2CharacterRunner.TryMatchToken(
@@ -220,6 +222,7 @@ internal static class Pcre2SeparatedRunsIsMatchRunner
                     trailingStart,
                     startOffsetInBytes,
                     Pcre2MatchOptions.None,
+                    ref budget,
                     out var secondTrailingStart) &&
                 Pcre2CharacterRunner.TryMatchToken(
                     program.SecondTrailingToken,
@@ -228,6 +231,7 @@ internal static class Pcre2SeparatedRunsIsMatchRunner
                     secondTrailingStart,
                     startOffsetInBytes,
                     Pcre2MatchOptions.None,
+                    ref budget,
                     out _))
             {
                 return true;

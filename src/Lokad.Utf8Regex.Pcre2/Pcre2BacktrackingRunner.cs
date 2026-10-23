@@ -284,6 +284,7 @@ internal static class Pcre2BacktrackingRunner
                         ref nextWindowCandidate,
                         ref lastWindowCandidate,
                         ref windowCandidateEnd,
+                        ref budget,
                         out candidate) ||
                     candidate > maximumCandidate)
                 {
@@ -345,7 +346,7 @@ internal static class Pcre2BacktrackingRunner
 
             if (program.LeadingExtendedGraphemeCluster &&
                 (program.Request.Options & Pcre2CompileOptions.FirstLine) == 0 &&
-                Pcre2GraphemeClusterSemantics.TryGetWidth(bytes, candidate, out var graphemeWidth))
+                Pcre2GraphemeClusterSemantics.TryGetWidth(bytes, candidate, ref budget, out var graphemeWidth))
             {
                 candidate += graphemeWidth;
             }
@@ -367,6 +368,7 @@ internal static class Pcre2BacktrackingRunner
         ref int nextWindowCandidate,
         ref int lastWindowCandidate,
         ref int windowCandidateEnd,
+        ref Pcre2ResourceBudget budget,
         out int candidate)
     {
         if (candidateSearch.Kind == Pcre2CandidateSearchKind.LeadingAsciiWordBoundaryRun)
@@ -426,6 +428,7 @@ internal static class Pcre2BacktrackingRunner
                            previous,
                            lowerBound,
                            Pcre2MatchOptions.None,
+                           ref budget,
                            out var next) &&
                        next == runStart)
                 {
@@ -732,6 +735,7 @@ internal static class Pcre2BacktrackingRunner
                                 inputIndex,
                                 firstMatchingPosition,
                                 matchOptions,
+                                ref budget,
                                 out inputIndex))
                         {
                             instructionIndex++;
@@ -890,6 +894,7 @@ internal static class Pcre2BacktrackingRunner
                                     inputIndex,
                                     firstMatchingPosition,
                                     matchOptions,
+                                    ref budget,
                                     out var possessiveEnd))
                             {
                                 break;
@@ -969,6 +974,7 @@ internal static class Pcre2BacktrackingRunner
                                     inputIndex,
                                     firstMatchingPosition,
                                     matchOptions,
+                                    ref budget,
                                     out var collapsibleEnd))
                             {
                                 break;
