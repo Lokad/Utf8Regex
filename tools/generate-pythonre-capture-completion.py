@@ -157,5 +157,6 @@ if args.write:
     target.write_text(json.dumps({"oracle": sys.version, "cases": rows},
         ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
 else:
-    assert json.loads(target.read_text(encoding='utf-8'))['cases'] == rows
+    if json.loads(target.read_text(encoding='utf-8'))['cases'] != rows:
+        raise SystemExit('Capture completion fixtures differ; explicit semantic review is required.')
 print(f'CPython {sys.version.split()[0]}: {len(rows)} complete capture fixtures verified.')

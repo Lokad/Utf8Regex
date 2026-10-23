@@ -24,8 +24,10 @@ py = root / 'src/Lokad.Utf8Regex.PythonRe'
 
 # Data, independently sampled from the installed CPython regex oracle. No
 # interpreter, copied compiler, or runtime engine is a shipped dependency.
-assert sys.version_info[:3] == (3, 13, 2)
-assert unicodedata.unidata_version == '15.1.0'
+if sys.version_info[:3] != (3, 13, 2):
+    raise SystemExit(f'CPython 3.13.2 is required; found {sys.version.split()[0]}.')
+if unicodedata.unidata_version != '15.1.0':
+    raise SystemExit(f'Unicode 15.1.0 is required; found {unicodedata.unidata_version}.')
 pairs = [(c, _sre.unicode_tolower(c)) for c in range(0x110000)
          if not 0xD800 <= c <= 0xDFFF and _sre.unicode_tolower(c) != c]
 inverse = defaultdict(set)
