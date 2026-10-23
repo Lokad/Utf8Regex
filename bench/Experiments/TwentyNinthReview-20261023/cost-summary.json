@@ -1,0 +1,110 @@
+{
+  "BaselineRevision": "9579aab0699c47838b1d85015f14a7750c6ae8d7",
+  "CandidateRevision": "28b31f70aa8536081d96706e4784543b34e4a3b7",
+  "Sdk": "10.0.401",
+  "Runtime": ".NET 10.0.13",
+  "Scope": "Source-built Windows public-operation and constructor comparison only; not package, Linux or cumulative fixed-baseline acceptance",
+  "ConstructorTimingScope": "Fixed four-instance batches; one warm batch and three alternating paired samples. Constructor timing is descriptive; allocated bytes exclude CLR/JIT/native storage.",
+  "Constructors": [
+    {
+      "Name": "Finite-compiled-simple",
+      "BeforeBytes": 62080,
+      "AfterBytes": 51560,
+      "SavedBytes": 10520,
+      "ReductionPercent": 16.94587628865979,
+      "BeforeMedianNs": 675425,
+      "AfterMedianNs": 351950
+    },
+    {
+      "Name": "Finite-compiled-date",
+      "BeforeBytes": 86000,
+      "AfterBytes": 69720,
+      "SavedBytes": 16280,
+      "ReductionPercent": 18.930232558139537,
+      "BeforeMedianNs": 960525,
+      "AfterMedianNs": 477950
+    },
+    {
+      "Name": "Finite-compiled-structural-family",
+      "BeforeBytes": 113472,
+      "AfterBytes": 53312,
+      "SavedBytes": 60160,
+      "ReductionPercent": 53.01748448956572,
+      "BeforeMedianNs": 741950,
+      "AfterMedianNs": 424025
+    },
+    {
+      "Name": "Control-unlimited-compiled-date",
+      "BeforeBytes": 86000,
+      "AfterBytes": 86000,
+      "SavedBytes": 0,
+      "ReductionPercent": 0,
+      "BeforeMedianNs": 917050,
+      "AfterMedianNs": 893625
+    }
+  ],
+  "PublicRows": [
+    {
+      "Name": "Finite-compiled-simple-IsMatch",
+      "BeforeNs": 377.34038288062544,
+      "AfterNs": 388.09687516963106,
+      "ChangePercent": 2.8506072440193986,
+      "BeforeBytes": 1792,
+      "AfterBytes": 1792,
+      "BeforeSpread": 1.2807466727356347,
+      "AfterSpread": 1.1665359090124097
+    },
+    {
+      "Name": "Finite-compiled-date-Count",
+      "BeforeNs": 267.1670536091178,
+      "AfterNs": 277.9999375175732,
+      "ChangePercent": 4.054722976548075,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.0906357872181711,
+      "AfterSpread": 1.3085501685308079
+    },
+    {
+      "Name": "Finite-compiled-structural-family-Count",
+      "BeforeNs": 44209.8,
+      "AfterNs": 43772.39685658153,
+      "ChangePercent": -0.9893805070786854,
+      "BeforeBytes": 3664,
+      "AfterBytes": 3664,
+      "BeforeSpread": 1.2247797543016004,
+      "AfterSpread": 1.1227139409436169
+    },
+    {
+      "Name": "Finite-compiled-scalar-captured-MatchDetailed",
+      "BeforeNs": 1976.1435275157605,
+      "AfterNs": 1950.1412233180533,
+      "ChangePercent": -1.315810508480375,
+      "BeforeBytes": 6408,
+      "AfterBytes": 6408,
+      "BeforeSpread": 5.461227178371512,
+      "AfterSpread": 1.114381398524856
+    },
+    {
+      "Name": "Control-unlimited-compiled-date-Count",
+      "BeforeNs": 247.90773463690883,
+      "AfterNs": 249.68663287903854,
+      "ChangePercent": 0.7175646394151913,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 2.0620820826770485,
+      "AfterSpread": 2.551041529290008
+    },
+    {
+      "Name": "Control-unlimited-compiled-literal-Count",
+      "BeforeNs": 1383.6665608801438,
+      "AfterNs": 1390.981927158191,
+      "ChangePercent": 0.5286943028668611,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.6792395551703916,
+      "AfterSpread": 1.6573296936114732
+    }
+  ],
+  "Decision": "Promote: affected median public costs range -1.32% to +4.05%, controls +0.53%/+0.72%, allocations unchanged. Keep noisy raw samples. No confirmation or additional campaign.",
+  "WallSeconds": 37.3378634
+}

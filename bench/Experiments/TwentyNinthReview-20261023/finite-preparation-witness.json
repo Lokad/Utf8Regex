@@ -1,0 +1,134 @@
+{
+  "Scope": "Current construction allocation and retained emitted-root witness; no throughput or changed implementation",
+  "Producer": "0.4.0-rc.2-dev\u002B3a77e699a9e501603dc89e7d23fe131c784fe43f",
+  "Rows": [
+    {
+      "Pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "Finite": false,
+      "Compiled": false,
+      "Runtime": "Utf8SimplePatternCompiledEngineRuntime",
+      "ConstructorAllocatedBytes": 76576,
+      "EmittedRoots": [],
+      "PublicOperationsAgree": true
+    },
+    {
+      "Pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "Finite": false,
+      "Compiled": true,
+      "Runtime": "Utf8SimplePatternCompiledEngineRuntime",
+      "ConstructorAllocatedBytes": 86000,
+      "EmittedRoots": [
+        {
+          "Field": "_emittedWholeMatcher",
+          "Type": "Utf8EmittedWholeMatcher"
+        }
+      ],
+      "PublicOperationsAgree": true
+    },
+    {
+      "Pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "Finite": true,
+      "Compiled": false,
+      "Runtime": "Utf8SimplePatternCompiledEngineRuntime",
+      "ConstructorAllocatedBytes": 70384,
+      "EmittedRoots": [],
+      "PublicOperationsAgree": true
+    },
+    {
+      "Pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "Finite": true,
+      "Compiled": true,
+      "Runtime": "Utf8SimplePatternCompiledEngineRuntime",
+      "ConstructorAllocatedBytes": 86000,
+      "EmittedRoots": [
+        {
+          "Field": "_emittedWholeMatcher",
+          "Type": "Utf8EmittedWholeMatcher"
+        }
+      ],
+      "PublicOperationsAgree": true
+    },
+    {
+      "Pattern": "^ab[0-9]{2}$",
+      "Finite": false,
+      "Compiled": false,
+      "Runtime": "Utf8SimplePatternCompiledEngineRuntime",
+      "ConstructorAllocatedBytes": 52224,
+      "EmittedRoots": [],
+      "PublicOperationsAgree": true
+    },
+    {
+      "Pattern": "^ab[0-9]{2}$",
+      "Finite": false,
+      "Compiled": true,
+      "Runtime": "Utf8SimplePatternCompiledEngineRuntime",
+      "ConstructorAllocatedBytes": 62080,
+      "EmittedRoots": [
+        {
+          "Field": "_emittedWholeMatcher",
+          "Type": "Utf8EmittedWholeMatcher"
+        }
+      ],
+      "PublicOperationsAgree": true
+    },
+    {
+      "Pattern": "^ab[0-9]{2}$",
+      "Finite": true,
+      "Compiled": false,
+      "Runtime": "Utf8SimplePatternCompiledEngineRuntime",
+      "ConstructorAllocatedBytes": 52224,
+      "EmittedRoots": [],
+      "PublicOperationsAgree": true
+    },
+    {
+      "Pattern": "^ab[0-9]{2}$",
+      "Finite": true,
+      "Compiled": true,
+      "Runtime": "Utf8SimplePatternCompiledEngineRuntime",
+      "ConstructorAllocatedBytes": 62080,
+      "EmittedRoots": [
+        {
+          "Field": "_emittedWholeMatcher",
+          "Type": "Utf8EmittedWholeMatcher"
+        }
+      ],
+      "PublicOperationsAgree": true
+    },
+    {
+      "Pattern": "(?:cat|dog)[0-9]\u002B",
+      "Finite": false,
+      "Compiled": false,
+      "Runtime": "Utf8FallbackRegexCompiledEngineRuntime",
+      "ConstructorAllocatedBytes": 59440,
+      "EmittedRoots": [],
+      "PublicOperationsAgree": true
+    },
+    {
+      "Pattern": "(?:cat|dog)[0-9]\u002B",
+      "Finite": false,
+      "Compiled": true,
+      "Runtime": "Utf8FallbackRegexCompiledEngineRuntime",
+      "ConstructorAllocatedBytes": 59440,
+      "EmittedRoots": [],
+      "PublicOperationsAgree": true
+    },
+    {
+      "Pattern": "(?:cat|dog)[0-9]\u002B",
+      "Finite": true,
+      "Compiled": false,
+      "Runtime": "Utf8FallbackRegexCompiledEngineRuntime",
+      "ConstructorAllocatedBytes": 59440,
+      "EmittedRoots": [],
+      "PublicOperationsAgree": true
+    },
+    {
+      "Pattern": "(?:cat|dog)[0-9]\u002B",
+      "Finite": true,
+      "Compiled": true,
+      "Runtime": "Utf8FallbackRegexCompiledEngineRuntime",
+      "ConstructorAllocatedBytes": 59440,
+      "EmittedRoots": [],
+      "PublicOperationsAgree": true
+    }
+  ]
+}

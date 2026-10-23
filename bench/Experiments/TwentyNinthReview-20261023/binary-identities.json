@@ -1,0 +1,33 @@
+{
+  "Sdk": "10.0.401",
+  "Runtime": ".NET 10.0.13",
+  "BaselineRevision": "9579aab0699c47838b1d85015f14a7750c6ae8d7",
+  "CandidateRevision": "28b31f70aa8536081d96706e4784543b34e4a3b7",
+  "BaselineNote": "Rebuilt under stable SDK401 before any C# edit. global.json SDK selection was changed deliberately; baseline C# matches 9579aab0.",
+  "Files": [
+    {
+      "Version": "before",
+      "File": "Lokad.Utf8Regex.dll",
+      "Sha256": "C3A5CDD86AB0C83A4A29B25F76F9BDC9C5844172D07E7E3BBA7B764493EC3E5D",
+      "Bytes": 1456640
+    },
+    {
+      "Version": "before",
+      "File": "Lokad.Utf8Regex.pdb",
+      "Sha256": "1D5207FAB88D1C35D91C834F7DD5152636FCA312C59A9AA0E8CE46C8CF5131F2",
+      "Bytes": 504664
+    },
+    {
+      "Version": "after",
+      "File": "Lokad.Utf8Regex.dll",
+      "Sha256": "E9D6F6BF6E4F70FC3A8B512B6D8E20C1A4827C4507C0998AC051E9D27500DA7C",
+      "Bytes": 1456640
+    },
+    {
+      "Version": "after",
+      "File": "Lokad.Utf8Regex.pdb",
+      "Sha256": "5DB534678BC3A862B1E0EE67A8BE771F319EF5D35E58A10BB40ADF493D7EA30D",
+      "Bytes": 504512
+    }
+  ]
+}

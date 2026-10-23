@@ -1,0 +1,52 @@
+using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+
+var rows=new List<object>();
+foreach(var item in new[]{("^[0-9]{4}-[0-9]{2}-[0-9]{2}$","2026-10-23"),("^ab[0-9]{2}$","ab12")})
+foreach(var finite in new[]{false,true})
+{
+    var regex=new Utf8Regex(item.Item1,RegexOptions.CultureInvariant|RegexOptions.Compiled,Timeout.InfiniteTimeSpan,
+        finite?new Utf8ResourcePolicy{MaxWorkSteps=1_000_000,MaxDepth=1024,MaxWorkingBytes=16<<20,MaxResultBytes=16<<20}:default);
+    var program=typeof(Utf8Regex).GetField("_program",BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(regex)!;
+    var runtime=program.GetType().GetProperty("CompiledEngineRuntime")!.GetValue(program)!;
+    var emitted=runtime.GetType().GetField("_emittedWholeMatcher",BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(runtime)!;
+    var slot=emitted.GetType().GetField("_match",BindingFlags.Instance|BindingFlags.NonPublic)!;
+    var receipt=slot.GetValue(emitted)!;
+    var callbackType=slot.FieldType.GetProperty("Callback")!.PropertyType;
+    var replacement=Delegate.CreateDelegate(callbackType,typeof(Poison).GetMethod(nameof(Poison.Invoke))!);
+    var bytes=slot.FieldType.GetProperty("ManagedArrayBytes")!.GetValue(receipt)!;
+    slot.SetValue(emitted,Activator.CreateInstance(slot.FieldType,replacement,bytes));
+    if(((Delegate)slot.FieldType.GetProperty("Callback")!.GetValue(slot.GetValue(emitted))!).Method!=replacement.Method) throw new Exception("Canary was not installed");
+    var input=Encoding.UTF8.GetBytes(item.Item2);
+    var outcomes=new List<object>();
+    var callsBefore=Poison.Calls;
+    foreach(var operation in new[]{"IsMatch","Count","Match","MatchDetailed","EnumerateMatches","ReplaceToString","TryReplace"})
+    {
+        try
+        {
+            bool correct=operation switch
+            {
+                "IsMatch"=>regex.IsMatch(input),
+                "Count"=>regex.Count(input)==1,
+                "Match"=>regex.Match(input).Success,
+                "MatchDetailed"=>regex.MatchDetailed(input).GetValueString()==item.Item2,
+                "EnumerateMatches"=>Enumerate(regex,input),
+                "ReplaceToString"=>regex.ReplaceToString(input,"X")=="X",
+                _=>TryReplace(regex,input),
+            };
+            if(!correct) throw new Exception("Public result mismatch");
+            outcomes.Add(new{Operation=operation,CanaryCalled=false,Correct=true});
+        }
+        catch(PoisonException){outcomes.Add(new{Operation=operation,CanaryCalled=true,Correct=false});}
+    }
+    if(finite&&Poison.Calls!=callsBefore) throw new Exception("Finite operation reached emitted matcher");
+    rows.Add(new{Pattern=item.Item1,Finite=finite,CanaryInstalled=true,CanaryCalls=Poison.Calls-callsBefore,Outcomes=outcomes});
+}
+Console.WriteLine(JsonSerializer.Serialize(rows,new JsonSerializerOptions{WriteIndented=true}));
+static bool Enumerate(Utf8Regex regex,byte[] input){var e=regex.EnumerateMatches(input);return e.MoveNext()&&!e.MoveNext();}
+static bool TryReplace(Utf8Regex regex,byte[] input){var dest=new byte[16];return regex.TryReplace(input,"X",dest,out var n)==System.Buffers.OperationStatus.Done&&n==1&&dest[0]=='X';}
+public static class Poison{public static int Calls; public static int Invoke(ReadOnlySpan<byte> input){Calls++;throw new PoisonException();}}
+public sealed class PoisonException:Exception{}

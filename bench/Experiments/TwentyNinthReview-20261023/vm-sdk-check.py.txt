@@ -1,0 +1,5 @@
+import json,subprocess,tempfile
+from pathlib import Path
+with tempfile.TemporaryDirectory(prefix='utf8regex-sdk-policy-',dir='/dev/shm') as directory:
+    Path(directory,'global.json').write_text(json.dumps({'sdk':{'version':'10.0.401','rollForward':'disable','allowPrerelease':False,'paths':['.dotnet','$host$']}}))
+    subprocess.run([str(Path.home()/'.dotnet/dotnet'),'--version'],cwd=directory,check=True)

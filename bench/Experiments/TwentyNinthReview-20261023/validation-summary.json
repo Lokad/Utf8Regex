@@ -1,0 +1,32 @@
+{
+  "Configuration": "Release",
+  "FullCoreScope": "After M1/M3 production edits; final source subsequently fixes nullable assertion/diagnostic formatting and two benchmark-only construction callers. Final full Windows/Linux coverage is source CI.",
+  "FocusedSourceRevision": "28b31f70aa8536081d96706e4784543b34e4a3b7",
+  "Results": [
+    {
+      "Check": "Core full (after reflection-assertion updates)",
+      "Result": "Passed!  - Failed:     0, Passed: 39633, Skipped:     0, Total: 39633, Duration: 1 m 1 s - Lokad.Utf8Regex.Tests.dll (net10.0)"
+    },
+    {
+      "Check": "Core final source focused",
+      "Result": "Passed!  - Failed:     0, Passed:   142, Skipped:     0, Total:   142, Duration: 1 s - Lokad.Utf8Regex.Tests.dll (net10.0)"
+    },
+    {
+      "Check": "PythonRe focused",
+      "Result": "Passed!  - Failed:     0, Passed:   115, Skipped:     0, Total:   115, Duration: 2 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)"
+    },
+    {
+      "Check": "PCRE2 focused",
+      "Result": "Passed!  - Failed:     0, Passed:    65, Skipped:     0, Total:    65, Duration: 317 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)"
+    }
+  ],
+  "GeneratedChecks": [
+    "bench-source-closure.log: matching Release benchmark/library build and README parity verifier pass",
+    "python-page.log: matching SkipBuild generated page verifier pass",
+    "pcre2-page.log: matching SkipBuild generated page verifier pass"
+  ],
+  "KnownFailuresResolved": [
+    "First full Core run: 44 old reflection assertions against removed private verifier property; replaced by direct program-owner assertions",
+    "First benchmark/source CI build: two required preparation arguments missing in benchmark construction phase calls; fixed at 28b31f70"
+  ]
+}

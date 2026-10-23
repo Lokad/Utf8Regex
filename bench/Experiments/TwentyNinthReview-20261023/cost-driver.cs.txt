@@ -1,0 +1,44 @@
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+
+public static class Lanes
+{
+    private const RegexOptions Options = RegexOptions.CultureInvariant | RegexOptions.Compiled;
+    private const string Date = "^[0-9]{4}-[0-9]{2}-[0-9]{2}$";
+    private const string Structure = @"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+";
+    private static readonly Utf8ResourcePolicy Finite = new() {
+        MaxWorkSteps = 10_000_000, MaxDepth = 2048, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 };
+    private static Utf8Regex Create(string pattern) => new(pattern, Options, Regex.InfiniteMatchTimeout, Finite);
+    public static string Producer() => typeof(Utf8Regex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
+    public static long[] Allocations() => [];
+    public static (string, Func<object>)[] Constructors() => [
+        ("Finite-compiled-simple", () => Create("^ab[0-9]{2}$")),
+        ("Finite-compiled-date", () => Create(Date)),
+        ("Finite-compiled-structural-family", () => Create(Structure)),
+        ("Control-unlimited-compiled-date", () => new Utf8Regex(Date, Options))
+    ];
+    public static (string, Func<long>, long)[] Create()
+    {
+        var simple = Create("^ab[0-9]{2}$");
+        var date = Create(Date);
+        var structure = Create(Structure);
+        var captures = Create("(?<x>😀)+\\k<x>");
+        var control = new Utf8Regex(Date, Options);
+        var literalControl = new Utf8Regex("abc", Options);
+        var input = "2026-10-23"u8.ToArray();
+        var simpleInput = "ab12"u8.ToArray();
+        var structuralInput = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é😀 class Bravo struct Delta ", 32)));
+        var captureInput = Encoding.UTF8.GetBytes("é😀😀😀");
+        var literalInput = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("abc xyz ", 128)));
+        return [
+            ("Finite-compiled-simple-IsMatch", () => simple.IsMatch(simpleInput) ? 1 : 0, 1),
+            ("Finite-compiled-date-Count", () => date.Count(input), 1),
+            ("Finite-compiled-structural-family-Count", () => structure.Count(structuralInput), 64),
+            ("Finite-compiled-scalar-captured-MatchDetailed", () => captures.MatchDetailed(captureInput).LengthInBytes, 12),
+            ("Control-unlimited-compiled-date-Count", () => control.Count(input), 1),
+            ("Control-unlimited-compiled-literal-Count", () => literalControl.Count(literalInput), 128)
+        ];
+    }
+}

@@ -1,0 +1,22 @@
+{
+  "Forwarders": [
+    {
+      "Methods": [
+        "IsMatchViaCompiledExactLiteralEngine",
+        "IsMatchViaCompiledLiteralFamilyEngine"
+      ],
+      "IdenticalBodies": true,
+      "Body": "return _compiledEngineRuntime.IsMatch(input, default, budget);"
+    },
+    {
+      "Methods": [
+        "MatchViaCompiledExactLiteralEngine",
+        "MatchViaCompiledLiteralFamilyEngine"
+      ],
+      "IdenticalBodies": true,
+      "Body": "return _compiledEngineRuntime.Match(input, default, budget);"
+    }
+  ],
+  "OrphanManifest": "tests/Lokad.Utf8Regex.Pcre2.Tests/CSharpDebt.Shipped.txt",
+  "GateRetirementReceipt": "bench/Experiments/PostRc1Simplification-20261020/README.md:15"
+}

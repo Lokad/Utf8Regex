@@ -1,0 +1,174 @@
+[
+  {
+    "Pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+    "Finite": false,
+    "CanaryInstalled": true,
+    "CanaryCalls": 1,
+    "Outcomes": [
+      {
+        "Operation": "IsMatch",
+        "CanaryCalled": true,
+        "Correct": false
+      },
+      {
+        "Operation": "Count",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "Match",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "MatchDetailed",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "EnumerateMatches",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "ReplaceToString",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "TryReplace",
+        "CanaryCalled": false,
+        "Correct": true
+      }
+    ]
+  },
+  {
+    "Pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+    "Finite": true,
+    "CanaryInstalled": true,
+    "CanaryCalls": 0,
+    "Outcomes": [
+      {
+        "Operation": "IsMatch",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "Count",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "Match",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "MatchDetailed",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "EnumerateMatches",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "ReplaceToString",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "TryReplace",
+        "CanaryCalled": false,
+        "Correct": true
+      }
+    ]
+  },
+  {
+    "Pattern": "^ab[0-9]{2}$",
+    "Finite": false,
+    "CanaryInstalled": true,
+    "CanaryCalls": 0,
+    "Outcomes": [
+      {
+        "Operation": "IsMatch",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "Count",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "Match",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "MatchDetailed",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "EnumerateMatches",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "ReplaceToString",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "TryReplace",
+        "CanaryCalled": false,
+        "Correct": true
+      }
+    ]
+  },
+  {
+    "Pattern": "^ab[0-9]{2}$",
+    "Finite": true,
+    "CanaryInstalled": true,
+    "CanaryCalls": 0,
+    "Outcomes": [
+      {
+        "Operation": "IsMatch",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "Count",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "Match",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "MatchDetailed",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "EnumerateMatches",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "ReplaceToString",
+        "CanaryCalled": false,
+        "Correct": true
+      },
+      {
+        "Operation": "TryReplace",
+        "CanaryCalled": false,
+        "Correct": true
+      }
+    ]
+  }
+]
