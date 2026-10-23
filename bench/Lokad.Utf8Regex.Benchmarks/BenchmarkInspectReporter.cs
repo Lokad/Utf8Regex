@@ -1022,11 +1022,11 @@ internal static partial class BenchmarkInspectReporter
         MeasureFixedConstruction("Utf8OrdinaryProgram", samples, instanceCount,
             () => Utf8RegexProgram.Compile(
                 benchmarkCase.Pattern,
-                ordinaryOptions));
+                ordinaryOptions, prepareRuntime: true));
         MeasureFixedConstruction("Utf8CompiledProgram", samples, instanceCount,
             () => Utf8RegexProgram.Compile(
                 benchmarkCase.Pattern,
-                compiledOptions));
+                compiledOptions, prepareRuntime: true));
         // Construction-only start-anchor controls have no prior match position.
         // Use the absolute anchor; NonBacktracking does not support \G.
         MeasureFixedConstruction("RegexOrdinaryAnchored", samples, instanceCount,
