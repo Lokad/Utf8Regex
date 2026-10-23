@@ -1,0 +1,40 @@
+using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.PythonRe;
+
+using var cancellation=new CancellationTokenSource();
+var rows=new List<object>();
+foreach(var prefix in new[]{new string('a',65536),"é"+new string('a',65535),new string('é',32768)})
+foreach(var pattern in new[]{"foo","foo|bar"})
+{
+    var bytes=Encoding.UTF8.GetBytes(prefix+" foo bar");
+    var start=Encoding.UTF8.GetByteCount(prefix);
+    var policy=new Utf8ResourcePolicy{MaxWorkSteps=10_000_000,MaxDepth=1024,MaxWorkingBytes=16<<20,MaxResultBytes=16<<20};
+    var expressions=new[]{new Utf8PythonRegex(pattern),new Utf8PythonRegex(pattern),new Utf8PythonRegex(pattern,default,Timeout.InfiniteTimeSpan,policy)};
+    foreach(var mode in Enumerable.Range(0,3))
+    {
+        var regex=expressions[mode];
+        Utf8PythonFindAllUtf8Result Run() => mode==1 ? regex.FindAllToUtf8(bytes,start,cancellation.Token) : regex.FindAllToUtf8(bytes,start);
+        var actual=Run();
+        var values=actual.ScalarValues.Select(Encoding.UTF8.GetString).ToArray();
+        var expected=pattern=="foo"?new[]{"foo"}:new[]{"foo","bar"};
+        if(!expected.SequenceEqual(values)) throw new Exception("Value mismatch");
+        var ranges=mode==1 ? regex.FindAll(bytes,start,cancellation.Token) : regex.FindAll(bytes,start);
+        if(ranges[0].StartOffsetInBytes!=start+1 || ranges[0].StartOffsetInUtf16!=prefix.Length+1) throw new Exception("Offset mismatch");
+        for(var warm=0;warm<16;warm++) _=Run();
+        var allocated=GC.GetAllocatedBytesForCurrentThread();
+        long checksum=0;
+        for(var i=0;i<32;i++)
+        {
+            var result=Run();
+            foreach(var item in result.ScalarValues) checksum+=item.Length+item[0];
+        }
+        var total=GC.GetAllocatedBytesForCurrentThread()-allocated;
+        if(checksum!=(pattern=="foo"?105:206)*32L) throw new Exception("Checksum mismatch");
+        var backend=typeof(Utf8PythonRegex).GetProperty("DebugUtf8ExecutionKind",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(regex);
+        rows.Add(new{Pattern=pattern,PrefixUtf16Length=prefix.Length,PrefixBytes=start,InputBytes=bytes.Length,Mode=new[]{"Unlimited","UnlimitedLiveToken","FourFinite"}[mode],Backend=backend,Values=values,BytesPerPublicFindAllToUtf8=total/32.0,FirstByte=ranges[0].StartOffsetInBytes,FirstUtf16=ranges[0].StartOffsetInUtf16});
+    }
+}
+Console.WriteLine(JsonSerializer.Serialize(new{Scope="Current public operation allocation witness only; no throughput measurements or before/after change",Rows=rows},new JsonSerializerOptions{WriteIndented=true}));

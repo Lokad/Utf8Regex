@@ -1,0 +1,266 @@
+{
+  "Scope": "Current public operation allocation witness only; no throughput measurements or before/after change",
+  "Rows": [
+    {
+      "Pattern": "foo",
+      "PrefixUtf16Length": 65536,
+      "PrefixBytes": 65536,
+      "InputBytes": 65544,
+      "Mode": "Unlimited",
+      "Backend": "ExactAsciiLiteral",
+      "Values": [
+        "foo"
+      ],
+      "BytesPerPublicFindAllToUtf8": 176,
+      "FirstByte": 65537,
+      "FirstUtf16": 65537
+    },
+    {
+      "Pattern": "foo",
+      "PrefixUtf16Length": 65536,
+      "PrefixBytes": 65536,
+      "InputBytes": 65544,
+      "Mode": "UnlimitedLiveToken",
+      "Backend": "ExactAsciiLiteral",
+      "Values": [
+        "foo"
+      ],
+      "BytesPerPublicFindAllToUtf8": 176,
+      "FirstByte": 65537,
+      "FirstUtf16": 65537
+    },
+    {
+      "Pattern": "foo",
+      "PrefixUtf16Length": 65536,
+      "PrefixBytes": 65536,
+      "InputBytes": 65544,
+      "Mode": "FourFinite",
+      "Backend": "ExactAsciiLiteral",
+      "Values": [
+        "foo"
+      ],
+      "BytesPerPublicFindAllToUtf8": 328,
+      "FirstByte": 65537,
+      "FirstUtf16": 65537
+    },
+    {
+      "Pattern": "foo|bar",
+      "PrefixUtf16Length": 65536,
+      "PrefixBytes": 65536,
+      "InputBytes": 65544,
+      "Mode": "Unlimited",
+      "Backend": "ExactUtf8Literals",
+      "Values": [
+        "foo",
+        "bar"
+      ],
+      "BytesPerPublicFindAllToUtf8": 216,
+      "FirstByte": 65537,
+      "FirstUtf16": 65537
+    },
+    {
+      "Pattern": "foo|bar",
+      "PrefixUtf16Length": 65536,
+      "PrefixBytes": 65536,
+      "InputBytes": 65544,
+      "Mode": "UnlimitedLiveToken",
+      "Backend": "ExactUtf8Literals",
+      "Values": [
+        "foo",
+        "bar"
+      ],
+      "BytesPerPublicFindAllToUtf8": 216,
+      "FirstByte": 65537,
+      "FirstUtf16": 65537
+    },
+    {
+      "Pattern": "foo|bar",
+      "PrefixUtf16Length": 65536,
+      "PrefixBytes": 65536,
+      "InputBytes": 65544,
+      "Mode": "FourFinite",
+      "Backend": "ExactUtf8Literals",
+      "Values": [
+        "foo",
+        "bar"
+      ],
+      "BytesPerPublicFindAllToUtf8": 496,
+      "FirstByte": 65537,
+      "FirstUtf16": 65537
+    },
+    {
+      "Pattern": "foo",
+      "PrefixUtf16Length": 65536,
+      "PrefixBytes": 65537,
+      "InputBytes": 65545,
+      "Mode": "Unlimited",
+      "Backend": "ExactAsciiLiteral",
+      "Values": [
+        "foo"
+      ],
+      "BytesPerPublicFindAllToUtf8": 176,
+      "FirstByte": 65538,
+      "FirstUtf16": 65537
+    },
+    {
+      "Pattern": "foo",
+      "PrefixUtf16Length": 65536,
+      "PrefixBytes": 65537,
+      "InputBytes": 65545,
+      "Mode": "UnlimitedLiveToken",
+      "Backend": "ExactAsciiLiteral",
+      "Values": [
+        "foo"
+      ],
+      "BytesPerPublicFindAllToUtf8": 176,
+      "FirstByte": 65538,
+      "FirstUtf16": 65537
+    },
+    {
+      "Pattern": "foo",
+      "PrefixUtf16Length": 65536,
+      "PrefixBytes": 65537,
+      "InputBytes": 65545,
+      "Mode": "FourFinite",
+      "Backend": "ExactAsciiLiteral",
+      "Values": [
+        "foo"
+      ],
+      "BytesPerPublicFindAllToUtf8": 328,
+      "FirstByte": 65538,
+      "FirstUtf16": 65537
+    },
+    {
+      "Pattern": "foo|bar",
+      "PrefixUtf16Length": 65536,
+      "PrefixBytes": 65537,
+      "InputBytes": 65545,
+      "Mode": "Unlimited",
+      "Backend": "ExactUtf8Literals",
+      "Values": [
+        "foo",
+        "bar"
+      ],
+      "BytesPerPublicFindAllToUtf8": 216,
+      "FirstByte": 65538,
+      "FirstUtf16": 65537
+    },
+    {
+      "Pattern": "foo|bar",
+      "PrefixUtf16Length": 65536,
+      "PrefixBytes": 65537,
+      "InputBytes": 65545,
+      "Mode": "UnlimitedLiveToken",
+      "Backend": "ExactUtf8Literals",
+      "Values": [
+        "foo",
+        "bar"
+      ],
+      "BytesPerPublicFindAllToUtf8": 216,
+      "FirstByte": 65538,
+      "FirstUtf16": 65537
+    },
+    {
+      "Pattern": "foo|bar",
+      "PrefixUtf16Length": 65536,
+      "PrefixBytes": 65537,
+      "InputBytes": 65545,
+      "Mode": "FourFinite",
+      "Backend": "ExactUtf8Literals",
+      "Values": [
+        "foo",
+        "bar"
+      ],
+      "BytesPerPublicFindAllToUtf8": 496,
+      "FirstByte": 65538,
+      "FirstUtf16": 65537
+    },
+    {
+      "Pattern": "foo",
+      "PrefixUtf16Length": 32768,
+      "PrefixBytes": 65536,
+      "InputBytes": 65544,
+      "Mode": "Unlimited",
+      "Backend": "ExactAsciiLiteral",
+      "Values": [
+        "foo"
+      ],
+      "BytesPerPublicFindAllToUtf8": 176,
+      "FirstByte": 65537,
+      "FirstUtf16": 32769
+    },
+    {
+      "Pattern": "foo",
+      "PrefixUtf16Length": 32768,
+      "PrefixBytes": 65536,
+      "InputBytes": 65544,
+      "Mode": "UnlimitedLiveToken",
+      "Backend": "ExactAsciiLiteral",
+      "Values": [
+        "foo"
+      ],
+      "BytesPerPublicFindAllToUtf8": 176,
+      "FirstByte": 65537,
+      "FirstUtf16": 32769
+    },
+    {
+      "Pattern": "foo",
+      "PrefixUtf16Length": 32768,
+      "PrefixBytes": 65536,
+      "InputBytes": 65544,
+      "Mode": "FourFinite",
+      "Backend": "ExactAsciiLiteral",
+      "Values": [
+        "foo"
+      ],
+      "BytesPerPublicFindAllToUtf8": 328,
+      "FirstByte": 65537,
+      "FirstUtf16": 32769
+    },
+    {
+      "Pattern": "foo|bar",
+      "PrefixUtf16Length": 32768,
+      "PrefixBytes": 65536,
+      "InputBytes": 65544,
+      "Mode": "Unlimited",
+      "Backend": "ExactUtf8Literals",
+      "Values": [
+        "foo",
+        "bar"
+      ],
+      "BytesPerPublicFindAllToUtf8": 216,
+      "FirstByte": 65537,
+      "FirstUtf16": 32769
+    },
+    {
+      "Pattern": "foo|bar",
+      "PrefixUtf16Length": 32768,
+      "PrefixBytes": 65536,
+      "InputBytes": 65544,
+      "Mode": "UnlimitedLiveToken",
+      "Backend": "ExactUtf8Literals",
+      "Values": [
+        "foo",
+        "bar"
+      ],
+      "BytesPerPublicFindAllToUtf8": 216,
+      "FirstByte": 65537,
+      "FirstUtf16": 32769
+    },
+    {
+      "Pattern": "foo|bar",
+      "PrefixUtf16Length": 32768,
+      "PrefixBytes": 65536,
+      "InputBytes": 65544,
+      "Mode": "FourFinite",
+      "Backend": "ExactUtf8Literals",
+      "Values": [
+        "foo",
+        "bar"
+      ],
+      "BytesPerPublicFindAllToUtf8": 496,
+      "FirstByte": 65537,
+      "FirstUtf16": 32769
+    }
+  ]
+}

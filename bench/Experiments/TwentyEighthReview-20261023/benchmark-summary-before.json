@@ -1,0 +1,20 @@
+{
+  "Scope": "Synthetic report parsing only; no benchmark measurements",
+  "ExpectedJobRatios": {
+    "A": 0.1,
+    "B": 0.1
+  },
+  "ReportedCrossJobRatio": 100.0,
+  "Output": [
+    "Report: D:\\code\\utf8regex\\artifacts\\twenty-eighth-review-20261023\\multiple-jobs.csv",
+    "",
+    "Worst Utf8Regex vs DecodeThenRegex cases",
+    "same-case | Utf8Regex=100 ns | DecodeThenRegex=1 ns | Ratio=100.00x | Alloc=0 B vs 0 B",
+    "",
+    "Worst Utf8Regex vs PredecodedRegex cases",
+    "same-case | Utf8Regex=100 ns | PredecodedRegex=1 ns | Ratio=100.00x | Alloc=0 B vs 0 B",
+    "",
+    "Full per-case summary",
+    "same-case | Utf8Regex=100 ns | DecodeThenRegex=1 ns | PredecodedRegex=1 ns | Utf8/Decode=100.00x | Utf8/Predecoded=100.00x"
+  ]
+}

@@ -1,0 +1,74 @@
+[
+  {
+    "Phase": "before",
+    "File": "Lokad.Utf8Regex.dll",
+    "Sha256": "1D31761BB21C55D8CE683C2A43B02ED321AD61F3877E4BE3233478A97B2ADCC2",
+    "Bytes": 1456640
+  },
+  {
+    "Phase": "before",
+    "File": "Lokad.Utf8Regex.Pcre2.dll",
+    "Sha256": "7164BF940BF14064EE7E714BCDA83704D5D197F630B2E0AF3A08F5134176C25F",
+    "Bytes": 404480
+  },
+  {
+    "Phase": "before",
+    "File": "Lokad.Utf8Regex.Pcre2.pdb",
+    "Sha256": "DE40F9D382D51B896909662358F859700A30D546821805BC3E1CF3D45089A412",
+    "Bytes": 154340
+  },
+  {
+    "Phase": "before",
+    "File": "Lokad.Utf8Regex.pdb",
+    "Sha256": "53986B9065C3DF76BAB7ABFDCAD96D8933DCE03CFE53971AC19A65668A754CA8",
+    "Bytes": 504664
+  },
+  {
+    "Phase": "before",
+    "File": "Lokad.Utf8Regex.PythonRe.dll",
+    "Sha256": "2EA66B38B16D1E9242DA0D60249FCC71C8221222E26077870EA9D3DD7B672056",
+    "Bytes": 231424
+  },
+  {
+    "Phase": "before",
+    "File": "Lokad.Utf8Regex.PythonRe.pdb",
+    "Sha256": "2C69D35AE964C90626FD232CA2CF935A5C88382EB12F56B552FF385472B72C01",
+    "Bytes": 64284
+  },
+  {
+    "Phase": "after",
+    "File": "Lokad.Utf8Regex.dll",
+    "Sha256": "4185707205721AA8D7F6283FDF9C428100CAA903C29A68309BED30DC75CBEA44",
+    "Bytes": 1456640
+  },
+  {
+    "Phase": "after",
+    "File": "Lokad.Utf8Regex.Pcre2.dll",
+    "Sha256": "B581C2FC0FC728743D2943F34BBA18352437445D41EB787EF42CE9552B1B8AFB",
+    "Bytes": 404480
+  },
+  {
+    "Phase": "after",
+    "File": "Lokad.Utf8Regex.Pcre2.pdb",
+    "Sha256": "D7F8F653BD191638944DCE698437B22928A3FE29D94C5F8C300012DD8F57D86A",
+    "Bytes": 154340
+  },
+  {
+    "Phase": "after",
+    "File": "Lokad.Utf8Regex.pdb",
+    "Sha256": "63787A658521EEA0E2626DCBE5949D315BAED01B270313DD141F8F88C971573E",
+    "Bytes": 504664
+  },
+  {
+    "Phase": "after",
+    "File": "Lokad.Utf8Regex.PythonRe.dll",
+    "Sha256": "42954D7EDD9EB35A472C166E1C628A592883822B8675662F0D4C54F56C2457E2",
+    "Bytes": 231424
+  },
+  {
+    "Phase": "after",
+    "File": "Lokad.Utf8Regex.PythonRe.pdb",
+    "Sha256": "7A0C369D1FCD16E9DA93B1C83981E84A7F7C815ADBCCC75A40BAC03B7FA660D8",
+    "Bytes": 64256
+  }
+]

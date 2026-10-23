@@ -1,0 +1,45 @@
+using System.Reflection;
+using System.Text;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.PythonRe;
+
+public static class Lanes
+{
+    public static string Producer() => string.Join("; ",new[]{typeof(Utf8Regex),typeof(Utf8PythonRegex)}
+        .Select(type=>type.Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion));
+    public static long[] Allocations() => [];
+    public static (string,Func<long>,long)[] Create()
+    {
+        var prefix="é"+new string('a',65535);
+        var input=Encoding.UTF8.GetBytes(prefix+" foo bar");
+        var start=Encoding.UTF8.GetByteCount(prefix);
+        var ascii=Encoding.UTF8.GetBytes(new string('a',65536)+" foo bar");
+        var literal=new Utf8PythonRegex("foo");
+        var family=new Utf8PythonRegex("foo|bar");
+        var finite=new Utf8PythonRegex("foo|bar",default,Timeout.InfiniteTimeSpan,
+            new Utf8ResourcePolicy{MaxWorkSteps=10_000_000,MaxDepth=1024,MaxWorkingBytes=16<<20,MaxResultBytes=16<<20});
+        var control=" foo bar"u8.ToArray();
+        var expectedRanges=new[]{1,5}.Sum(position=>(long)(start+position)*2+3+(prefix.Length+position)*2+3+3);
+        return [
+            ("PythonRe/FindAllToUtf8-literal-Unicode-prefix-byte-offset",()=>Bytes(literal.FindAllToUtf8(input,start)),105),
+            ("PythonRe/FindAll-family-Unicode-prefix-byte-offset",()=>Ranges(family.FindAll(input,start)),expectedRanges),
+            ("PythonRe/FindAllToStrings-family-Unicode-prefix-byte-offset",()=>Strings(family.FindAllToStrings(input,start)),206),
+            ("PythonRe/FindAllToUtf8-family-ASCII-prefix-byte-offset",()=>Bytes(family.FindAllToUtf8(ascii,65536)),206),
+            ("Control/PythonRe-family-Unicode-offset-four-finite",()=>Bytes(finite.FindAllToUtf8(input,start)),206),
+            ("Control/PythonRe-family-zero-offset",()=>Bytes(family.FindAllToUtf8(control)),206)
+        ];
+    }
+    private static long Bytes(Utf8PythonFindAllUtf8Result result)
+    {
+        long sum=0; foreach(var value in result.ScalarValues) sum+=value.Length+value[0]; return sum;
+    }
+    private static long Strings(Utf8PythonFindAllResult result)
+    {
+        long sum=0; foreach(var value in result.ScalarValues) sum+=value.Length+value[0]; return sum;
+    }
+    private static long Ranges(Utf8PythonMatchData[] result)
+    {
+        long sum=0; foreach(var value in result) sum+=value.StartOffsetInBytes+value.EndOffsetInBytes+
+            value.StartOffsetInUtf16+value.EndOffsetInUtf16+value.ValueText.Length; return sum;
+    }
+}

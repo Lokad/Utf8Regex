@@ -1,0 +1,23 @@
+[
+  {
+    "Profile": "Lokad.Utf8Regex.Tests",
+    "Assembly": "D:\\code\\utf8regex\\artifacts\\twenty-eighth-implementation-20261023\\snapshot-writer\\bin\\Release\\net10.0\\Lokad.Utf8Regex.dll",
+    "Sha256": "A6349647BA37C19D9A25F1AD93F9492978C426563CFA3BAC2FCEE9C077D583BE",
+    "Producer": "0.4.0-rc.2-dev\u002B0476e5f3ef4e99adcf3bb8cf62e7699eef24eaa5",
+    "Lines": 177
+  },
+  {
+    "Profile": "Lokad.Utf8Regex.PythonRe.Tests",
+    "Assembly": "D:\\code\\utf8regex\\artifacts\\twenty-eighth-implementation-20261023\\snapshot-writer\\bin\\Release\\net10.0\\Lokad.Utf8Regex.PythonRe.dll",
+    "Sha256": "03CFD2343437DE142679504D767745829ADEE93171349F59F16ECC450FF04B67",
+    "Producer": "0.4.0-rc.2-dev\u002B0476e5f3ef4e99adcf3bb8cf62e7699eef24eaa5",
+    "Lines": 212
+  },
+  {
+    "Profile": "Lokad.Utf8Regex.Pcre2.Tests",
+    "Assembly": "D:\\code\\utf8regex\\artifacts\\twenty-eighth-implementation-20261023\\snapshot-writer\\bin\\Release\\net10.0\\Lokad.Utf8Regex.Pcre2.dll",
+    "Sha256": "62EAF8DA74C9F1F51BEE7D4418812B37EE85F3B20FFA9021F3BE2B3E81053A8F",
+    "Producer": "0.4.0-rc.2-dev\u002B0476e5f3ef4e99adcf3bb8cf62e7699eef24eaa5",
+    "Lines": 193
+  }
+]

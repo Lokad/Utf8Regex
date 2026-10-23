@@ -1,0 +1,7 @@
+Method,Job,CaseId,Mean,Allocated
+Utf8Regex,A,same-case,100 ns,0 B
+DecodeThenRegex,B,same-case,1 ns,0 B
+PredecodedRegex,B,same-case,1 ns,0 B
+DecodeThenRegex,A,same-case,1000 ns,0 B
+PredecodedRegex,A,same-case,1000 ns,0 B
+Utf8Regex,B,same-case,0.1 ns,0 B

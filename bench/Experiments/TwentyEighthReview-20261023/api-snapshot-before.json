@@ -1,0 +1,30 @@
+{
+  "ActualChanges": [
+    "enum Enabled: 1 -\u003E 64",
+    "const DefaultLimit: 100 -\u003E 200",
+    "optional Run(limit): 100 -\u003E 200",
+    "Capacity setter: private -\u003E public",
+    "Surface: sealed IDisposable -\u003E unsealed without IDisposable",
+    "ValueView: readonly ref struct -\u003E ordinary struct"
+  ],
+  "Rows": [
+    {
+      "Profile": "Lokad.Utf8Regex.Tests",
+      "IdenticalSnapshot": true,
+      "Before": "enum ProbeContract.PolicyFlag { None, Enabled }\nclass ProbeContract.Surface\n  field Int32 DefaultLimit\n  ctor Surface()\n  property Int32 Capacity { get; set; }\n  method Void Dispose()\n  method Void Run(Int32 limit)\nstruct ProbeContract.ValueView\n  property Int32 Value { get; }",
+      "After": "enum ProbeContract.PolicyFlag { None, Enabled }\nclass ProbeContract.Surface\n  field Int32 DefaultLimit\n  ctor Surface()\n  property Int32 Capacity { get; set; }\n  method Void Dispose()\n  method Void Run(Int32 limit)\nstruct ProbeContract.ValueView\n  property Int32 Value { get; }"
+    },
+    {
+      "Profile": "Lokad.Utf8Regex.PythonRe.Tests",
+      "IdenticalSnapshot": true,
+      "Before": "enum ProbeContract.PolicyFlag { None, Enabled }\nclass ProbeContract.Surface\n  field Int32 DefaultLimit\n  ctor Surface()\n  property Int32 Capacity { get; set; }\n  method Void Dispose()\n  method Void Run(Int32 limit)\nstruct ProbeContract.ValueView\n  property Int32 Value { get; }",
+      "After": "enum ProbeContract.PolicyFlag { None, Enabled }\nclass ProbeContract.Surface\n  field Int32 DefaultLimit\n  ctor Surface()\n  property Int32 Capacity { get; set; }\n  method Void Dispose()\n  method Void Run(Int32 limit)\nstruct ProbeContract.ValueView\n  property Int32 Value { get; }"
+    },
+    {
+      "Profile": "Lokad.Utf8Regex.Pcre2.Tests",
+      "IdenticalSnapshot": true,
+      "Before": "enum ProbeContract.PolicyFlag { None, Enabled }\nclass ProbeContract.Surface\n  field Int32 DefaultLimit\n  ctor Surface()\n  property Int32 Capacity { get; set; }\n  method Void Dispose()\n  method Void Run(Int32 limit)\nstruct ProbeContract.ValueView\n  property Int32 Value { get; }",
+      "After": "enum ProbeContract.PolicyFlag { None, Enabled }\nclass ProbeContract.Surface\n  field Int32 DefaultLimit\n  ctor Surface()\n  property Int32 Capacity { get; set; }\n  method Void Dispose()\n  method Void Run(Int32 limit)\nstruct ProbeContract.ValueView\n  property Int32 Value { get; }"
+    }
+  ]
+}
