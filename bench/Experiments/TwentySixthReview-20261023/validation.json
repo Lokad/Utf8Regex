@@ -1,0 +1,22 @@
+{
+  "Configuration": "Release",
+  "SourceRevision": "3dea7deca390d6d6afb7c53b3f6c72d0fc49e303",
+  "SourceCommits": ["86933ad5", "df07d337", "29386831", "3dea7dec"],
+  "Checks": [
+    {"Name": "Focused PCRE2 grapheme/repeat/original authority checks", "Passed": 87},
+    {"Name": "Pinned grapheme properties", "Compared": 1114112, "Mismatches": 0, "Scope": "Initial focused build; three Unicode 16 input files and arithmetic Hangul"},
+    {"Name": "Core focused value/cursor/family/API/dependency checks", "Passed": 128},
+    {"Name": "Full affected Core source suite", "Passed": 39617, "DurationSeconds": 70},
+    {"Name": "Full affected PCRE2 source suite", "Passed": 6092, "DurationSeconds": 7},
+    {"Name": "Valid capture and scalar-data tools, normal and optimized", "Accepted": 4},
+    {"Name": "Corrupt copied capture fixtures, normal and optimized", "Rejected": 2},
+    {"Name": "Synthetic CPython/Unicode mismatch, optimized write", "Rejected": 2},
+    {"Name": "Benchmark friend closure and generated pages", "Accepted": true, "Scope": "One incremental Release host build, then SkipBuild reuse"},
+    {"Name": "Existing Windows/Linux source CI", "Accepted": true, "Evidence": "ci.json"},
+    {"Name": "Immutable snapshots/RC1/TODOs", "Unchanged": 18, "Evidence": "immutable-files.json"},
+    {"Name": "Generated Python data and original capture corpus", "Unchanged": 4, "Evidence": "preserved-python-data.json"}
+  ],
+  "Performance": "One bounded comparison and sole reversed-first confirmation closed; affected medians within +10%, unchanged allocations, precision limited by drift/outliers/short samples",
+  "Deferred": ["Fresh immutable final product packages", "Isolated downstream consumers on final packages", "Actual-package finite-control costs", "Cumulative fixed-baseline performance acceptance"],
+  "Excluded": ["Third timing run", "Repeated complete local matrix", "New qualification framework", "Routine server shutdown", "VM campaign"]
+}

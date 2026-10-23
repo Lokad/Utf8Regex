@@ -1,0 +1,38 @@
+using System.Reflection;
+using System.Text;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Pcre2;
+
+public static class Lanes
+{
+    public static string Producer() => string.Join("; ",new[]{typeof(Utf8Regex),typeof(Utf8Pcre2Regex)}
+        .Select(type=>type.Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion));
+    public static long[] Allocations() => [];
+    public static (string,Func<long>,long)[] Create()
+    {
+        var policy=new Utf8ResourcePolicy{MaxWorkSteps=1_000_000,MaxDepth=1024,MaxWorkingBytes=16<<20,MaxResultBytes=16<<20};
+        var literal=new Utf8Regex("ab");
+        var literalInput="xxabyy"u8.ToArray();
+        var captured=new Utf8Regex("(😀)",default,Timeout.InfiniteTimeSpan,policy);
+        var capturedInput="x😀y"u8.ToArray();
+        var longInput=Encoding.UTF8.GetBytes("a"+new string('\u0301',8192));
+        var shortInput=Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("a😀b ",32)));
+        var unlimited=new Utf8Pcre2Regex(@"\X");
+        var finite=Utf8Pcre2Regex.Create(@"\X",default,default,policy,Timeout.InfiniteTimeSpan);
+        var control=new Utf8Regex("z");
+        var controlInput=Encoding.UTF8.GetBytes(new string('x',1<<20));
+        return [
+            ("Core/Match-literal-unlimited",()=>MatchChecksum(literal,literalInput),4),
+            ("Core/Match-supplementary-four-finite",()=>MatchChecksum(captured,capturedInput),5),
+            ("Pcre2/Count-short-graphemes-unlimited",()=>unlimited.Count(shortInput),128),
+            ("Pcre2/IsMatch-long-cluster-unlimited",()=>unlimited.IsMatch(longInput)?1:0,1),
+            ("Pcre2/IsMatch-long-cluster-four-finite",()=>finite.IsMatch(longInput)?1:0,1),
+            ("Control/Core-Count-miss-1MiB",()=>control.Count(controlInput),0)
+        ];
+    }
+    private static long MatchChecksum(Utf8Regex regex,byte[] input)
+    {
+        var match=regex.Match(input);
+        return match.Success?match.IndexInBytes+match.LengthInBytes:-1;
+    }
+}

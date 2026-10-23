@@ -1,0 +1,20 @@
+[
+  {
+    "Success": false,
+    "IsByteAligned": true,
+    "IndexInUtf16": 0,
+    "LengthInUtf16": 0
+  },
+  {
+    "Success": true,
+    "IsByteAligned": false,
+    "IndexInUtf16": 0,
+    "LengthInUtf16": 1
+  },
+  {
+    "Success": true,
+    "IsByteAligned": true,
+    "IndexInUtf16": 0,
+    "LengthInUtf16": -1
+  }
+]

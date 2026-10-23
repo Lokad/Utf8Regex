@@ -1,0 +1,21 @@
+{
+  "Unchanged": true,
+  "Files": [
+    {
+      "Path": "src/Lokad.Utf8Regex.PythonRe/PythonReScalarCaseData.cs",
+      "Sha256": "D13C1A1B267BCCFF35F3ECE45929BD4F49534774DC1B465E75D317572426545E"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.PythonRe/PythonReIdentifierData.cs",
+      "Sha256": "63582F3728730A5B54CEDD240399F38868CBB3BBE966BBCB484B0D3B837D1899"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.PythonRe/PythonReScalarClassData.cs",
+      "Sha256": "A8133A330D8D361CAC645FC88EE219A92F9FE7AF999B527A197CBEBB51F17E08"
+    },
+    {
+      "Path": "tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/capture-completion.json",
+      "Sha256": "27F353BFF53794D014C16471C0C4A99FC2A72FC27CEE08FC20AF732F9B2E7912"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "Producer": "3dea7deca390d6d6afb7c53b3f6c72d0fc49e303",
+  "Files": [
+    {
+      "Path": "Lokad.Utf8Regex.dll",
+      "Sha256": "685739C977FE95EF9E43A9F7C0F2F9E0505745EA3D5013EF4DE46F167853E024"
+    },
+    {
+      "Path": "Lokad.Utf8Regex.Pcre2.dll",
+      "Sha256": "2C54DB3990B95CD1D6565E7E6EC88B358D71A973294E3BB63FCD77408048AC6D"
+    },
+    {
+      "Path": "Lokad.Utf8Regex.Pcre2.pdb",
+      "Sha256": "7A35B3E83D58E9DA29350D8811C9C4273804D5F206552C3D62E30149F9D6FC4A"
+    },
+    {
+      "Path": "Lokad.Utf8Regex.pdb",
+      "Sha256": "BA9868C0AB6C2E4FBD8959262E0FE89DCEBBA5C757D732D1A82B87FB3C9FD4C5"
+    },
+    {
+      "Path": "Lokad.Utf8Regex.PythonRe.dll",
+      "Sha256": "E6AA6A6C677BEBCB32932901263BA23D9A71F4BD6E2A34899BB05BE05431993D"
+    },
+    {
+      "Path": "Lokad.Utf8Regex.PythonRe.pdb",
+      "Sha256": "138FCC8CDDAD4FC1A31621784E4D897FF3940A5E7D16A3FF74DAC26BE8AFFAFC"
+    }
+  ]
+}

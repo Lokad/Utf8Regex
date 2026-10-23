@@ -1,0 +1,21 @@
+{
+  "SourceRevision": "3dea7deca390d6d6afb7c53b3f6c72d0fc49e303",
+  "RunId": 39939033774,
+  "Url": "https://github.com/Lokad/Utf8Regex/actions/runs/39939033774",
+  "Status": "completed",
+  "Conclusion": "success",
+  "Jobs": [
+    {
+      "name": "tests (windows-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "completedAt": "2026-10-23T10:30:58Z"
+    },
+    {
+      "name": "tests (ubuntu-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "completedAt": "2026-10-23T10:29:04Z"
+    }
+  ]
+}

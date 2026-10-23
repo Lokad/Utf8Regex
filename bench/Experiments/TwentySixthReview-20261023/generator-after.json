@@ -1,0 +1,42 @@
+{
+  "Valid": [
+    {
+      "Tool": "generate-pythonre-capture-completion.py",
+      "Optimized": false,
+      "Accepted": true,
+      "Output": "CPython 3.13.2: 121 complete capture fixtures verified."
+    },
+    {
+      "Tool": "generate-pythonre-capture-completion.py",
+      "Optimized": true,
+      "Accepted": true,
+      "Output": "CPython 3.13.2: 121 complete capture fixtures verified."
+    },
+    {
+      "Tool": "generate-pythonre-scalar-case-data.py",
+      "Optimized": false,
+      "Accepted": true,
+      "Output": "Pinned CPython 3.13.2 / Unicode 15.1.0 PythonReScalarCaseData.cs verified.\nPinned CPython 3.13.2 / Unicode 15.1.0 PythonReIdentifierData.cs verified.\nPinned CPython 3.13.2 / Unicode 15.1.0 PythonReScalarClassData.cs verified."
+    },
+    {
+      "Tool": "generate-pythonre-scalar-case-data.py",
+      "Optimized": true,
+      "Accepted": true,
+      "Output": "Pinned CPython 3.13.2 / Unicode 15.1.0 PythonReScalarCaseData.cs verified.\nPinned CPython 3.13.2 / Unicode 15.1.0 PythonReIdentifierData.cs verified.\nPinned CPython 3.13.2 / Unicode 15.1.0 PythonReScalarClassData.cs verified."
+    }
+  ],
+  "CorruptCaptureFixture": [
+    {
+      "Optimized": false,
+      "ExitCode": 1,
+      "Rejected": true,
+      "Output": "Capture completion fixtures differ; explicit semantic review is required."
+    },
+    {
+      "Optimized": true,
+      "ExitCode": 1,
+      "Rejected": true,
+      "Output": "Capture completion fixtures differ; explicit semantic review is required."
+    }
+  ]
+}

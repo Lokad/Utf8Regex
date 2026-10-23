@@ -1,0 +1,21 @@
+import json,runpy,sys,unicodedata
+from pathlib import Path
+
+script=Path('tools/generate-pythonre-scalar-case-data.py')
+original_version=sys.version_info
+original_unicode=unicodedata.unidata_version
+rows=[]
+for kind in ('CPython','Unicode'):
+    sys.version_info=(3,14,0) if kind=='CPython' else original_version
+    unicodedata.unidata_version='99.0.0' if kind=='Unicode' else original_unicode
+    sys.argv=[str(script),'--write']
+    try:
+        runpy.run_path(str(script),run_name='__main__')
+    except SystemExit as error:
+        if not error.code: raise RuntimeError('Wrong version accepted')
+        rows.append({'Case':kind,'Rejected':True,'Error':str(error.code)})
+    else: raise RuntimeError('Wrong version accepted')
+    finally:
+        sys.version_info=original_version
+        unicodedata.unidata_version=original_unicode
+print(json.dumps({'Optimized':sys.flags.optimize,'Cases':rows},indent=2))

@@ -1,0 +1,7 @@
+{
+  "Scope": "Copied checker and copied fixture only; original repository data unchanged",
+  "Mutation": "First successful single-case capture outcome flipped",
+  "NormalExitCode": 1,
+  "OptimizedExitCode": 0,
+  "OptimizedOutput": "CPython 3.13.2: 121 complete capture fixtures verified."
+}

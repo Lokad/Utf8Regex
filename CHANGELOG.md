@@ -6,9 +6,16 @@ These changes are development source, currently 0.4.0-rc.2-dev. Frozen RC1
 artifacts remain unchanged and unpublished; they must not be released. A fresh
 candidate and final downstream/package/cost qualification are still required.
 
+- PCRE2 `\X` now uses pinned Unicode 16 grapheme, pictographic and Indic properties,
+  correcting unrelated-letter joins, spacing-mark splits and repeated-ZWJ
+  boundaries. The existing Unicode Indic-conjunct rule remains supported,
+  including its documented difference from native PCRE2 10.47.
+- Public `Utf8ValueMatch` constructors reject negative active coordinates with
+  `ArgumentOutOfRangeException`. Unsuccessful and inactive byte coordinates
+  remain ignored; the packed representation and valid results are unchanged.
 - PCRE2 extended-grapheme scans (`\X`) now charge bounded scan blocks and observe
   the original cancellation token and deadline inside large clusters. Finite work
-  limits can deny earlier; segmentation and result semantics are unchanged.
+  limits can deny earlier.
 - New package provenance checks observed assembly configuration and compiled PDB
   source checksums, and rejects relevant untracked build inputs. Historical
   package evidence retains its original scope and immutable bytes.

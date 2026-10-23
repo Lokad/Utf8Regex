@@ -1,0 +1,87 @@
+from pathlib import Path
+import hashlib,json
+
+root=Path.cwd()
+base=root/'external/pcre2/maint/Unicode.tables'
+names={'Control':1,'CR':2,'LF':3,'Extend':4,'ZWJ':5,'Regional_Indicator':6,'Prepend':7,'SpacingMark':8,'L':9,'V':10,'T':11,'LV':12,'LVT':13}
+data=bytearray(0x110000)
+files=['GraphemeBreakProperty.txt','emoji-data.txt','DerivedCoreProperties.txt']
+identities=[]
+for filename in files:
+    source=base/filename
+    identities.append({'File':filename,'Sha256':hashlib.sha256(source.read_bytes()).hexdigest()})
+    for line in source.read_text(encoding='utf-8-sig').splitlines():
+        fields=[p.strip() for p in line.split('#')[0].split(';')]
+        if len(fields)<2: continue
+        if filename==files[0]:
+            if fields[1] in ('LV','LVT'): continue # Existing exact Hangul arithmetic.
+            tag=names[fields[1]]
+        elif filename==files[1]:
+            if fields[1]!='Extended_Pictographic': continue
+            tag=16
+        else:
+            if fields[1]!='InCB': continue
+            tag={'Consonant':32,'Linker':64,'Extend':128}[fields[2]]
+        ends=fields[0].split('..')
+        start,end=int(ends[0],16),int(ends[-1],16)+1
+        for scalar in range(start,end): data[scalar]|=tag
+ranges=[]
+start=0
+for scalar in range(1,len(data)+1):
+    if scalar==len(data) or data[scalar]!=data[start]:
+        if data[start]: ranges.append((start,scalar,data[start]))
+        start=scalar
+source='''namespace Lokad.Utf8Regex.Pcre2;
+
+internal enum Pcre2GraphemeBreak : byte
+{
+    Other, Control, CR, LF, Extend, ZWJ, RegionalIndicator, Prepend, SpacingMark,
+    L, V, T, LV, LVT,
+}
+
+// Owned Unicode 16.0 property ranges. Copyright Unicode, Inc.; see UNICODE-LICENSE.txt.
+// Derived from the three pinned Unicode files listed below, not PCRE2 matcher code.
+'''
+for entry in identities: source+=f"// {entry['File']} SHA256 {entry['Sha256']}\n"
+source+='''internal static class Pcre2GraphemeData
+{
+    internal const int ExtendedPictographic = 16;
+    internal const int IndicConsonant = 32;
+    internal const int IndicLinker = 64;
+    internal const int IndicExtend = 128;
+
+    internal static byte GetProperties(int scalar)
+    {
+        if (scalar < 128)
+            return scalar == '\\r' ? (byte)Pcre2GraphemeBreak.CR : scalar == '\\n' ? (byte)Pcre2GraphemeBreak.LF
+                : scalar < 32 || scalar == 127 ? (byte)Pcre2GraphemeBreak.Control : (byte)0;
+        if (scalar is >= 0xAC00 and <= 0xD7A3)
+            return (byte)((scalar - 0xAC00) % 28 == 0 ? Pcre2GraphemeBreak.LV : Pcre2GraphemeBreak.LVT);
+
+        var ranges = Ranges;
+        var low = 0;
+        var high = ranges.Length / 2;
+        while (low < high)
+        {
+            var middle = low + (high - low) / 2;
+            if ((uint)scalar < ranges[2 * middle]) high = middle;
+            else if ((uint)scalar >= ranges[2 * middle + 1] >> 8) low = middle + 1;
+            else return (byte)ranges[2 * middle + 1];
+        }
+        return 0;
+    }
+
+    // Sorted disjoint pairs: start, (exclusive end << 8) | property bits.
+    // Low four bits hold Grapheme_Cluster_Break; upper bits hold EP and InCB.
+    private static ReadOnlySpan<uint> Ranges =>
+    [
+'''
+for i in range(0,len(ranges),4):
+    source+='        '+', '.join(f'0x{a:X}, 0x{(b<<8)|tag:X}' for a,b,tag in ranges[i:i+4])+',\n'
+source+='    ];\n}\n'
+(root/'src/Lokad.Utf8Regex.Pcre2/Pcre2GraphemeData.cs').write_text(source,encoding='utf-8')
+data[0xAC00:0xD7A4]=bytes(12 if (cp-0xAC00)%28==0 else 13 for cp in range(0xAC00,0xD7A4))
+scratch=root/'artifacts/twenty-sixth-implementation-20261023'
+(scratch/'expected-grapheme-properties.bin').write_bytes(data)
+(scratch/'grapheme-data-inputs.json').write_text(json.dumps({'Unicode':'16.0.0','Ranges':len(ranges),'Inputs':identities},indent=2)+'\n')
+print(f'{len(ranges)} disjoint ranges, {len(source)} source bytes')

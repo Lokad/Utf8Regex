@@ -1,0 +1,76 @@
+{
+  "Source": "0.4.0-rc.2-dev\u002B5a06a5c2a8fc20565d4aec78e54963f608e51a95",
+  "PcreSource": "0.4.0-rc.2-dev\u002B5a06a5c2a8fc20565d4aec78e54963f608e51a95",
+  "Native": "10.47 2025-10-21",
+  "Unicode": "16.0.0",
+  "Rows": [
+    {
+      "Scalars": "U\u002B0061 U\u002B094D U\u002B0062",
+      "Managed": 2,
+      "Native": 2,
+      "ManagedRanges": [
+        "0/4",
+        "4/5"
+      ]
+    },
+    {
+      "Scalars": "U\u002B0915 U\u002B094D U\u002B0061",
+      "Managed": 2,
+      "Native": 2,
+      "ManagedRanges": [
+        "0/6",
+        "6/7"
+      ]
+    },
+    {
+      "Scalars": "U\u002B1F600 U\u002B200D U\u002B1F1E6",
+      "Managed": 2,
+      "Native": 2,
+      "ManagedRanges": [
+        "0/7",
+        "7/11"
+      ]
+    },
+    {
+      "Scalars": "U\u002B1F1E6 U\u002B200D U\u002B1F600",
+      "Managed": 2,
+      "Native": 3,
+      "ManagedRanges": [
+        "0/7",
+        "7/11"
+      ]
+    },
+    {
+      "Scalars": "U\u002B0061 U\u002B0E33",
+      "Managed": 1,
+      "Native": 1,
+      "ManagedRanges": [
+        "0/4"
+      ]
+    },
+    {
+      "Scalars": "U\u002B0061 U\u002B0301",
+      "Managed": 1,
+      "Native": 1,
+      "ManagedRanges": [
+        "0/3"
+      ]
+    },
+    {
+      "Scalars": "U\u002B0600 U\u002B0061",
+      "Managed": 1,
+      "Native": 1,
+      "ManagedRanges": [
+        "0/3"
+      ]
+    },
+    {
+      "Scalars": "U\u002B0915 U\u002B094D U\u002B0915",
+      "Managed": 1,
+      "Native": 2,
+      "ManagedRanges": [
+        "0/9"
+      ]
+    }
+  ]
+}

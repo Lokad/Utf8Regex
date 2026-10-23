@@ -456,6 +456,9 @@ Indic-conjunct rule is retained: a consonant/linker/consonant sequence can be on
 cluster even where native PCRE2 10.47 splits it. This scoped Unicode behavior is
 intentional; native PCRE2 is not an oracle for that difference. Result boundaries
 can change for subjects previously classified by the approximate predicates.
+The Unicode no-break rule before ZWJ also applies after a regional indicator;
+native PCRE2 10.47 instead breaks there. The managed profile keeps that Unicode
+rule rather than reproducing the native table's special regional-indicator row.
 
 `MatchLimit` enforcement depends on the selected managed route; work units are not
 interchangeable with native PCRE2 or another managed engine. A breach raises

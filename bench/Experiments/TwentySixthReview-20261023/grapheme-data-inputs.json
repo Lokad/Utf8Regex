@@ -1,0 +1,18 @@
+{
+  "Unicode": "16.0.0",
+  "Ranges": 683,
+  "Inputs": [
+    {
+      "File": "GraphemeBreakProperty.txt",
+      "Sha256": "48f30c4c0ece047f5b2db0e7f1625c83552e4f2119dd10f1bfecb5aaf424c5d2"
+    },
+    {
+      "File": "emoji-data.txt",
+      "Sha256": "9118ebba370a29a5dc1dcadc2553ef315ddf1b23281cb68c7cc40c9eb2d427a3"
+    },
+    {
+      "File": "DerivedCoreProperties.txt",
+      "Sha256": "830b2bf04bc9ca099e05ffafa51633be17d06bb8bdf162f1dc0084f5f7dff172"
+    }
+  ]
+}

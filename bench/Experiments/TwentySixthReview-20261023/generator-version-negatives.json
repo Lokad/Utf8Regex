@@ -1,0 +1,15 @@
+{
+  "Optimized": 1,
+  "Cases": [
+    {
+      "Case": "CPython",
+      "Rejected": true,
+      "Error": "CPython 3.13.2 is required; found 3.13.2."
+    },
+    {
+      "Case": "Unicode",
+      "Rejected": true,
+      "Error": "Unicode 15.1.0 is required; found 99.0.0."
+    }
+  ]
+}

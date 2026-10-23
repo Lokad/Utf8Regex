@@ -1,0 +1,53 @@
+{
+  "Scope": "Before/after public source operations only; baseline is correctness-equivalent for these selected subjects",
+  "Decision": "Closed after the sole reversed-first confirmation. Every affected median in both observations is within +10%, with unchanged allocations. Broad spreads, some short samples and control movement limit causal precision; no final-package/cumulative claim and no third run.",
+  "InitialSeconds": 36.5164808,
+  "ConfirmationSeconds": 40.2933477,
+  "MinimumInitialSampleMs": 33.545,
+  "MinimumConfirmationSampleMs": 33.9959,
+  "MaximumSpread": 3.258857685779755,
+  "Rows": [
+    {
+      "Name": "Core/Match-literal-unlimited",
+      "InitialPercent": 2.454657416795114,
+      "ConfirmationPercent": -3.3256488136391926,
+      "BeforeBytes": 0,
+      "AfterBytes": 0
+    },
+    {
+      "Name": "Core/Match-supplementary-four-finite",
+      "InitialPercent": -0.8161396286495926,
+      "ConfirmationPercent": 1.3870040377178317,
+      "BeforeBytes": 112,
+      "AfterBytes": 112
+    },
+    {
+      "Name": "Pcre2/Count-short-graphemes-unlimited",
+      "InitialPercent": 7.705557420874953,
+      "ConfirmationPercent": 4.319680590069308,
+      "BeforeBytes": 0,
+      "AfterBytes": 0
+    },
+    {
+      "Name": "Pcre2/IsMatch-long-cluster-unlimited",
+      "InitialPercent": -26.227851545720814,
+      "ConfirmationPercent": -25.11747940337652,
+      "BeforeBytes": 0,
+      "AfterBytes": 0
+    },
+    {
+      "Name": "Pcre2/IsMatch-long-cluster-four-finite",
+      "InitialPercent": -26.717178604405934,
+      "ConfirmationPercent": -26.178217822688598,
+      "BeforeBytes": 112,
+      "AfterBytes": 112
+    },
+    {
+      "Name": "Control/Core-Count-miss-1MiB",
+      "InitialPercent": 6.073238970146311,
+      "ConfirmationPercent": 7.174301200303246,
+      "BeforeBytes": 0,
+      "AfterBytes": 0
+    }
+  ]
+}
