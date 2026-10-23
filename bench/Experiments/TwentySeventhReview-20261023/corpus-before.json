@@ -1,0 +1,26 @@
+[
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupname-backref.aaaaaa",
+    "Status": "OutOfScopeBySpec",
+    "ActualSuccess": true,
+    "ExpectedRangesValuesGroupsAndNamesAgree": true
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupname-backref.bb",
+    "Status": "OutOfScopeBySpec",
+    "ActualSuccess": true,
+    "ExpectedRangesValuesGroupsAndNamesAgree": true
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupnames-followed-by-dupname.aaaccccaaa",
+    "Status": "OutOfScopeBySpec",
+    "ActualSuccess": true,
+    "ExpectedRangesValuesGroupsAndNamesAgree": true
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupnames-followed-by-dupname.bccccb",
+    "Status": "OutOfScopeBySpec",
+    "ActualSuccess": true,
+    "ExpectedRangesValuesGroupsAndNamesAgree": true
+  }
+]

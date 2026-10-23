@@ -1,0 +1,318 @@
+{
+  "NativeVersion": "10.47 2025-10-21",
+  "Rows": [
+    {
+      "Pattern": ".",
+      "Expected": [
+        "x"
+      ],
+      "Native": [
+        "x"
+      ],
+      "Managed": [
+        "x"
+      ],
+      "Agrees": true
+    },
+    {
+      "Pattern": "\\N",
+      "Expected": [
+        "x"
+      ],
+      "Native": [
+        "x"
+      ],
+      "Managed": [
+        "x"
+      ],
+      "Agrees": true
+    },
+    {
+      "Pattern": "(.)",
+      "Expected": [
+        "x"
+      ],
+      "Native": [
+        "x"
+      ],
+      "Managed": [
+        "x"
+      ],
+      "Agrees": true
+    },
+    {
+      "Pattern": ".\u002B",
+      "Expected": [
+        "x"
+      ],
+      "Native": [
+        "x"
+      ],
+      "Managed": [
+        "x"
+      ],
+      "Agrees": true
+    },
+    {
+      "Pattern": ".*x",
+      "Expected": [
+        "x"
+      ],
+      "Native": [
+        "x"
+      ],
+      "Managed": [
+        "x"
+      ],
+      "Agrees": true
+    },
+    {
+      "Pattern": "(?=.)\\N",
+      "Expected": [
+        "x"
+      ],
+      "Native": [
+        "x"
+      ],
+      "Managed": [
+        "x"
+      ],
+      "Agrees": true
+    },
+    {
+      "Pattern": "[^\\r]",
+      "Expected": [
+        "x"
+      ],
+      "Native": [
+        "x"
+      ],
+      "Managed": [
+        "x"
+      ],
+      "Agrees": true
+    },
+    {
+      "Pattern": "([^\\r])",
+      "Expected": [
+        "x"
+      ],
+      "Native": [
+        "x"
+      ],
+      "Managed": [
+        "x"
+      ],
+      "Agrees": true
+    },
+    {
+      "Pattern": ".(?#\\n)",
+      "Expected": [
+        "x"
+      ],
+      "Native": [
+        "x"
+      ],
+      "Managed": [
+        "x"
+      ],
+      "Agrees": true
+    },
+    {
+      "Pattern": ".x",
+      "Expected": [],
+      "Native": [],
+      "Managed": [],
+      "Agrees": true
+    },
+    {
+      "Pattern": ".|\\n",
+      "Expected": [
+        "\n",
+        "x"
+      ],
+      "Native": [
+        "\n",
+        "x"
+      ],
+      "Managed": [
+        "\n",
+        "x"
+      ],
+      "Agrees": true
+    },
+    {
+      "Pattern": ".|[\\n]",
+      "Expected": [
+        "\n",
+        "x"
+      ],
+      "Native": [
+        "\n",
+        "x"
+      ],
+      "Managed": [
+        "\n",
+        "x"
+      ],
+      "Agrees": true
+    },
+    {
+      "Pattern": ".|\\x0A",
+      "Expected": [
+        "\n",
+        "x"
+      ],
+      "Native": [
+        "\n",
+        "x"
+      ],
+      "Managed": [
+        "\n",
+        "x"
+      ],
+      "Agrees": true
+    },
+    {
+      "Pattern": ".|\\x{A}",
+      "Expected": [
+        "\n",
+        "x"
+      ],
+      "Native": [
+        "\n",
+        "x"
+      ],
+      "Managed": [
+        "\n",
+        "x"
+      ],
+      "Agrees": true
+    },
+    {
+      "Pattern": ".|\\012",
+      "Expected": [
+        "\n",
+        "x"
+      ],
+      "Native": [
+        "\n",
+        "x"
+      ],
+      "Managed": [
+        "\n",
+        "x"
+      ],
+      "Agrees": true
+    },
+    {
+      "Pattern": "[^\\x0C-\\x0E]",
+      "Expected": [
+        "\n",
+        "x"
+      ],
+      "Native": [
+        "\n",
+        "x"
+      ],
+      "Managed": [
+        "\n",
+        "x"
+      ],
+      "Agrees": true
+    },
+    {
+      "Pattern": "([^\\x0C-\\x0E])",
+      "Expected": [
+        "\n",
+        "x"
+      ],
+      "Native": [
+        "\n",
+        "x"
+      ],
+      "Managed": [
+        "\n",
+        "x"
+      ],
+      "Agrees": true
+    },
+    {
+      "Pattern": ".\\n{0}",
+      "Expected": [
+        "\n",
+        "x"
+      ],
+      "Native": [
+        "\n",
+        "x"
+      ],
+      "Managed": [
+        "\n",
+        "x"
+      ],
+      "Agrees": true
+    },
+    {
+      "Pattern": ".(?(DEFINE)(?\u003Cunused\u003E\\n))",
+      "Expected": [
+        "\n",
+        "x"
+      ],
+      "Native": [
+        "\n",
+        "x"
+      ],
+      "Managed": [
+        "\n",
+        "x"
+      ],
+      "Agrees": true
+    },
+    {
+      "Pattern": "\\D",
+      "Expected": [
+        "\r",
+        "\n",
+        "x"
+      ],
+      "Native": [
+        "\r",
+        "\n",
+        "x"
+      ],
+      "Managed": [
+        "\r",
+        "\n",
+        "x"
+      ],
+      "Agrees": true
+    },
+    {
+      "Pattern": "\\B[^\\x0C-\\x0E]",
+      "Expected": [
+        "\n"
+      ],
+      "Native": [
+        "\n"
+      ],
+      "Managed": [],
+      "Agrees": false
+    },
+    {
+      "Pattern": "[^\\x0C-\\x0E]|y",
+      "Expected": [
+        "\n",
+        "x"
+      ],
+      "Native": [
+        "\n",
+        "x"
+      ],
+      "Managed": [
+        "x"
+      ],
+      "Agrees": false
+    }
+  ]
+}

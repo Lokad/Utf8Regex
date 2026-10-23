@@ -1,0 +1,110 @@
+[
+  {
+    "Phase": "before",
+    "File": "Lokad.Utf8Regex.dll",
+    "Sha256": "685739C977FE95EF9E43A9F7C0F2F9E0505745EA3D5013EF4DE46F167853E024",
+    "Bytes": 1456640
+  },
+  {
+    "Phase": "before",
+    "File": "Lokad.Utf8Regex.Pcre2.dll",
+    "Sha256": "2C54DB3990B95CD1D6565E7E6EC88B358D71A973294E3BB63FCD77408048AC6D",
+    "Bytes": 401920
+  },
+  {
+    "Phase": "before",
+    "File": "Lokad.Utf8Regex.Pcre2.pdb",
+    "Sha256": "7A35B3E83D58E9DA29350D8811C9C4273804D5F206552C3D62E30149F9D6FC4A",
+    "Bytes": 153372
+  },
+  {
+    "Phase": "before",
+    "File": "Lokad.Utf8Regex.pdb",
+    "Sha256": "BA9868C0AB6C2E4FBD8959262E0FE89DCEBBA5C757D732D1A82B87FB3C9FD4C5",
+    "Bytes": 504660
+  },
+  {
+    "Phase": "before",
+    "File": "Lokad.Utf8Regex.PythonRe.dll",
+    "Sha256": "E6AA6A6C677BEBCB32932901263BA23D9A71F4BD6E2A34899BB05BE05431993D",
+    "Bytes": 231424
+  },
+  {
+    "Phase": "before",
+    "File": "Lokad.Utf8Regex.PythonRe.pdb",
+    "Sha256": "138FCC8CDDAD4FC1A31621784E4D897FF3940A5E7D16A3FF74DAC26BE8AFFAFC",
+    "Bytes": 64280
+  },
+  {
+    "Phase": "after-initial",
+    "File": "Lokad.Utf8Regex.dll",
+    "Sha256": "C17EEC3AB2D1AAB682D3982466FD9C4304E8D1EC3B14F38FF3200149AF6C2E7C",
+    "Bytes": 1456640
+  },
+  {
+    "Phase": "after-initial",
+    "File": "Lokad.Utf8Regex.Pcre2.dll",
+    "Sha256": "1390E403E1311BAEA0EA3395E43EDA99D7A7C6CF39D0CCA604D5739D5846DF4C",
+    "Bytes": 403968
+  },
+  {
+    "Phase": "after-initial",
+    "File": "Lokad.Utf8Regex.Pcre2.pdb",
+    "Sha256": "F97A2BEDE87DA8C51BF12A5A26715375442572B635CC262F104682C9E487548F",
+    "Bytes": 154176
+  },
+  {
+    "Phase": "after-initial",
+    "File": "Lokad.Utf8Regex.pdb",
+    "Sha256": "BD251054C59C8597DDDFAA5073CA95ABB54752C2A623838F66904DED9D9CF3D4",
+    "Bytes": 504664
+  },
+  {
+    "Phase": "after-initial",
+    "File": "Lokad.Utf8Regex.PythonRe.dll",
+    "Sha256": "CE0B2BBBAC658279AF871D3218F0D21282343DC598AB101A794234FE1A2C3375",
+    "Bytes": 231424
+  },
+  {
+    "Phase": "after-initial",
+    "File": "Lokad.Utf8Regex.PythonRe.pdb",
+    "Sha256": "908F9821565C173B2CACC8824784DAD485D94160A37690C3214D75184FBDEB55",
+    "Bytes": 64284
+  },
+  {
+    "Phase": "after",
+    "File": "Lokad.Utf8Regex.dll",
+    "Sha256": "1D31761BB21C55D8CE683C2A43B02ED321AD61F3877E4BE3233478A97B2ADCC2",
+    "Bytes": 1456640
+  },
+  {
+    "Phase": "after",
+    "File": "Lokad.Utf8Regex.Pcre2.dll",
+    "Sha256": "233556200429F303A082218F612EE1BA679E6A2C070E49E73F81A65DB72AA477",
+    "Bytes": 403968
+  },
+  {
+    "Phase": "after",
+    "File": "Lokad.Utf8Regex.Pcre2.pdb",
+    "Sha256": "CCE72F04ADB8A4E208D324F35E26405381FDFE331E693F98CB45C9FFB2BA38CE",
+    "Bytes": 154208
+  },
+  {
+    "Phase": "after",
+    "File": "Lokad.Utf8Regex.pdb",
+    "Sha256": "53986B9065C3DF76BAB7ABFDCAD96D8933DCE03CFE53971AC19A65668A754CA8",
+    "Bytes": 504664
+  },
+  {
+    "Phase": "after",
+    "File": "Lokad.Utf8Regex.PythonRe.dll",
+    "Sha256": "2EA66B38B16D1E9242DA0D60249FCC71C8221222E26077870EA9D3DD7B672056",
+    "Bytes": 231424
+  },
+  {
+    "Phase": "after",
+    "File": "Lokad.Utf8Regex.PythonRe.pdb",
+    "Sha256": "2C69D35AE964C90626FD232CA2CF935A5C88382EB12F56B552FF385472B72C01",
+    "Bytes": 64284
+  }
+]

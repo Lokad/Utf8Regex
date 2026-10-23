@@ -1,0 +1,33 @@
+using System.Reflection;
+using System.Text;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Pcre2;
+
+public static class Lanes
+{
+    public static string Producer() => string.Join("; ",new[]{typeof(Utf8Regex),typeof(Utf8Pcre2Regex)}
+        .Select(type=>type.Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion));
+    public static long[] Allocations() => [];
+    public static (string,Func<long>,long)[] Create()
+    {
+        var policy=new Utf8ResourcePolicy{MaxWorkSteps=10_000_000,MaxDepth=1024,MaxWorkingBytes=16<<20,MaxResultBytes=16<<20};
+        var settings=new Utf8Pcre2CompileSettings { Newline=Pcre2NewlineConvention.Crlf };
+        var wildcard=new Utf8Pcre2Regex(".x",default,settings,default,Timeout.InfiniteTimeSpan);
+        var captured=Utf8Pcre2Regex.Create("(.)x",default,settings,policy,Timeout.InfiniteTimeSpan);
+        var miss=Encoding.UTF8.GetBytes(new string('a',32768));
+        var asciiClass=new Utf8Pcre2Regex("[a-z]");
+        var mixed=Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("ab0123_ ",1024)));
+        var words=Utf8Pcre2Regex.Create(@"\w+",default,settings,policy,Timeout.InfiniteTimeSpan);
+        var lines=Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("abc\r\n",512)));
+        var control=new Utf8Regex("z");
+        var controlInput=Encoding.UTF8.GetBytes(new string('x',1<<20));
+        return [
+            ("Pcre2/IsMatch-Crlf-character-miss-32KiB-unlimited",()=>wildcard.IsMatch(miss)?1:0,0),
+            ("Pcre2/IsMatch-Crlf-captured-miss-32KiB-four-finite",()=>captured.IsMatch(miss)?1:0,0),
+            ("Pcre2/Count-Lf-class-8KiB-unlimited",()=>asciiClass.Count(mixed),2048),
+            ("Pcre2/Count-Crlf-words-four-finite",()=>words.Count(lines),512),
+            ("Pcre2/Construct-Crlf-capture-plus-IsMatch",()=>new Utf8Pcre2Regex("(.)",default,settings,default,Timeout.InfiniteTimeSpan).IsMatch("a"u8)?1:0,1),
+            ("Control/Core-Count-miss-1MiB",()=>control.Count(controlInput),0)
+        ];
+    }
+}

@@ -1,0 +1,267 @@
+{
+  "Source": "0.4.0-rc.2-dev\u002B3dea7deca390d6d6afb7c53b3f6c72d0fc49e303",
+  "NativeVersion": "10.47 2025-10-21",
+  "Rows": [
+    {
+      "Pattern": ".",
+      "Newline": "Crlf",
+      "Input": "\r\n",
+      "Managed": [
+        "1/1"
+      ],
+      "Native": [],
+      "Equal": false
+    },
+    {
+      "Pattern": ".",
+      "Newline": "Crlf",
+      "Input": "\r\nx",
+      "Managed": [
+        "1/1",
+        "2/1"
+      ],
+      "Native": [
+        "2/1"
+      ],
+      "Equal": false
+    },
+    {
+      "Pattern": ".",
+      "Newline": "AnyCrlf",
+      "Input": "\r\n",
+      "Managed": [],
+      "Native": [],
+      "Equal": true
+    },
+    {
+      "Pattern": ".",
+      "Newline": "AnyCrlf",
+      "Input": "\r\nx",
+      "Managed": [
+        "2/1"
+      ],
+      "Native": [
+        "2/1"
+      ],
+      "Equal": true
+    },
+    {
+      "Pattern": "\\N",
+      "Newline": "Crlf",
+      "Input": "\r\n",
+      "Managed": [
+        "1/1"
+      ],
+      "Native": [],
+      "Equal": false
+    },
+    {
+      "Pattern": "\\N",
+      "Newline": "Crlf",
+      "Input": "\r\nx",
+      "Managed": [
+        "1/1",
+        "2/1"
+      ],
+      "Native": [
+        "2/1"
+      ],
+      "Equal": false
+    },
+    {
+      "Pattern": "\\N",
+      "Newline": "AnyCrlf",
+      "Input": "\r\n",
+      "Managed": [],
+      "Native": [],
+      "Equal": true
+    },
+    {
+      "Pattern": "\\N",
+      "Newline": "AnyCrlf",
+      "Input": "\r\nx",
+      "Managed": [
+        "2/1"
+      ],
+      "Native": [
+        "2/1"
+      ],
+      "Equal": true
+    },
+    {
+      "Pattern": "(.)",
+      "Newline": "Crlf",
+      "Input": "\r\n",
+      "Managed": [
+        "1/1"
+      ],
+      "Native": [],
+      "Equal": false
+    },
+    {
+      "Pattern": "(.)",
+      "Newline": "Crlf",
+      "Input": "\r\nx",
+      "Managed": [
+        "1/1",
+        "2/1"
+      ],
+      "Native": [
+        "2/1"
+      ],
+      "Equal": false
+    },
+    {
+      "Pattern": "(.)",
+      "Newline": "AnyCrlf",
+      "Input": "\r\n",
+      "Managed": [],
+      "Native": [],
+      "Equal": true
+    },
+    {
+      "Pattern": "(.)",
+      "Newline": "AnyCrlf",
+      "Input": "\r\nx",
+      "Managed": [
+        "2/1"
+      ],
+      "Native": [
+        "2/1"
+      ],
+      "Equal": true
+    },
+    {
+      "Pattern": ".x",
+      "Newline": "Crlf",
+      "Input": "\r\n",
+      "Managed": [],
+      "Native": [],
+      "Equal": true
+    },
+    {
+      "Pattern": ".x",
+      "Newline": "Crlf",
+      "Input": "\r\nx",
+      "Managed": [
+        "1/2"
+      ],
+      "Native": [],
+      "Equal": false
+    },
+    {
+      "Pattern": ".x",
+      "Newline": "AnyCrlf",
+      "Input": "\r\n",
+      "Managed": [],
+      "Native": [],
+      "Equal": true
+    },
+    {
+      "Pattern": ".x",
+      "Newline": "AnyCrlf",
+      "Input": "\r\nx",
+      "Managed": [],
+      "Native": [],
+      "Equal": true
+    }
+  ],
+  "OffsetControls": [
+    {
+      "Pattern": ".",
+      "Start": 0,
+      "Anchored": false,
+      "Managed": "1/1",
+      "Native": "2/1",
+      "Equal": false
+    },
+    {
+      "Pattern": ".",
+      "Start": 0,
+      "Anchored": true,
+      "Managed": null,
+      "Native": null,
+      "Equal": true
+    },
+    {
+      "Pattern": ".",
+      "Start": 1,
+      "Anchored": false,
+      "Managed": "1/1",
+      "Native": "1/1",
+      "Equal": true
+    },
+    {
+      "Pattern": ".",
+      "Start": 1,
+      "Anchored": true,
+      "Managed": "1/1",
+      "Native": "1/1",
+      "Equal": true
+    },
+    {
+      "Pattern": "\\N",
+      "Start": 0,
+      "Anchored": false,
+      "Managed": "1/1",
+      "Native": "2/1",
+      "Equal": false
+    },
+    {
+      "Pattern": "\\N",
+      "Start": 0,
+      "Anchored": true,
+      "Managed": null,
+      "Native": null,
+      "Equal": true
+    },
+    {
+      "Pattern": "\\N",
+      "Start": 1,
+      "Anchored": false,
+      "Managed": "1/1",
+      "Native": "1/1",
+      "Equal": true
+    },
+    {
+      "Pattern": "\\N",
+      "Start": 1,
+      "Anchored": true,
+      "Managed": "1/1",
+      "Native": "1/1",
+      "Equal": true
+    },
+    {
+      "Pattern": ".|\\n",
+      "Start": 0,
+      "Anchored": false,
+      "Managed": "1/1",
+      "Native": "1/1",
+      "Equal": true
+    },
+    {
+      "Pattern": ".|\\n",
+      "Start": 0,
+      "Anchored": true,
+      "Managed": null,
+      "Native": null,
+      "Equal": true
+    },
+    {
+      "Pattern": ".|\\n",
+      "Start": 1,
+      "Anchored": false,
+      "Managed": "1/1",
+      "Native": "1/1",
+      "Equal": true
+    },
+    {
+      "Pattern": ".|\\n",
+      "Start": 1,
+      "Anchored": true,
+      "Managed": "1/1",
+      "Native": "1/1",
+      "Equal": true
+    }
+  ]
+}

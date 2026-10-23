@@ -1,0 +1,42 @@
+{
+  "Scope": "Production AST, mocked discovery/stopping only; no processes started or stopped",
+  "Rows": [
+    {
+      "Case": "Actual worker within output root",
+      "ExpectedSelection": true,
+      "ActualSelection": true,
+      "CommandLine": "dotnet \"D:\\code\\utf8regex\\bench\\Lokad.Utf8Regex.Benchmarks\\bin\\Release\\net10.0/worker/Lokad.Utf8Regex.Benchmarks-1.dll\""
+    },
+    {
+      "Case": "Sibling directory sharing root prefix",
+      "ExpectedSelection": false,
+      "ActualSelection": true,
+      "CommandLine": "dotnet \"D:\\code\\utf8regex\\bench\\Lokad.Utf8Regex.Benchmarks\\bin\\Release\\net10.0-other/Lokad.Utf8Regex.Benchmarks-2.dll\""
+    },
+    {
+      "Case": "Outside worker mentioning root as output argument",
+      "ExpectedSelection": false,
+      "ActualSelection": true,
+      "CommandLine": "dotnet \"C:/other/Lokad.Utf8Regex.Benchmarks-3.dll\" --output \"D:\\code\\utf8regex\\bench\\Lokad.Utf8Regex.Benchmarks\\bin\\Release\\net10.0\""
+    },
+    {
+      "Case": "Other app mentioning worker as data argument",
+      "ExpectedSelection": false,
+      "ActualSelection": true,
+      "CommandLine": "dotnet \"C:/other/app.dll\" --input \"D:\\code\\utf8regex\\bench\\Lokad.Utf8Regex.Benchmarks\\bin\\Release\\net10.0/worker/Lokad.Utf8Regex.Benchmarks-4.dll\""
+    },
+    {
+      "Case": "Outside worker without root mention",
+      "ExpectedSelection": false,
+      "ActualSelection": false,
+      "CommandLine": "dotnet \"C:/other/Lokad.Utf8Regex.Benchmarks-5.dll\""
+    },
+    {
+      "Case": "Unrelated app without root mention",
+      "ExpectedSelection": false,
+      "ActualSelection": false,
+      "CommandLine": "dotnet \"C:/other/app.dll\""
+    }
+  ],
+  "Mismatches": 3
+}

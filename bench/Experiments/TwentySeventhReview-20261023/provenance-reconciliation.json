@@ -1,0 +1,9 @@
+{
+  "PromotedIds": [
+    "pcre2.testinput1.branch-reset-dupname-backref.aaaaaa",
+    "pcre2.testinput1.branch-reset-dupname-backref.bb",
+    "pcre2.testinput1.branch-reset-dupnames-followed-by-dupname.aaaccccaaa",
+    "pcre2.testinput1.branch-reset-dupnames-followed-by-dupname.bccccb"
+  ],
+  "OnlyStatusChanged": true
+}

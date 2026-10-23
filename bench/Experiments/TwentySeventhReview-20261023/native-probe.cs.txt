@@ -1,0 +1,23 @@
+using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using Lokad.Utf8Regex.Pcre2;
+using PCRE;
+
+var test=Assembly.LoadFrom(Path.GetFullPath("tests/Lokad.Utf8Regex.Pcre2.Tests/bin/Release/net10.0/Lokad.Utf8Regex.Pcre2.Tests.dll"));
+var cases=(IEnumerable<object[]>)test.GetType("Lokad.Utf8Regex.Pcre2.Tests.Pcre2CrlfCandidateTests")!.GetMethod("Cases")!.Invoke(null,null)!;
+var rows=new List<object>();
+foreach(var item in cases)
+{
+    var pattern=(string)item[0]; var expected=(string[])item[1];
+    var bytes="\r\nx"u8.ToArray();
+    var native=new PcreRegexUtf8(pattern,new PcreRegexSettings{Options=PcreOptions.Utf,NewLine=PcreNewLine.CrLf});
+    using var buffer=native.CreateMatchBuffer();
+    var actual=new List<string>();
+    foreach(var match in buffer.Matches(bytes)) actual.Add(Encoding.UTF8.GetString(bytes.AsSpan(match.Index,match.Length)));
+    rows.Add(new{Pattern=pattern,Expected=expected,Native=actual,Managed=GetManaged(pattern,bytes),Agrees=expected.SequenceEqual(actual) && expected.SequenceEqual(GetManaged(pattern,bytes))});
+}
+Console.WriteLine(JsonSerializer.Serialize(new{NativeVersion=PcreBuildInfo.Version,Rows=rows},new JsonSerializerOptions{WriteIndented=true}));
+if(rows.Any(row=>!(bool)row.GetType().GetProperty("Agrees")!.GetValue(row)!)) Environment.ExitCode=1;
+
+static string[] GetManaged(string pattern, byte[] bytes) { var regex=new Utf8Pcre2Regex(pattern,default,new(){Newline=Pcre2NewlineConvention.Crlf},default,Timeout.InfiniteTimeSpan); var result=new List<string>(); var cursor=regex.EnumerateMatches(bytes); while(cursor.MoveNext()) result.Add(cursor.Current.GetValueString()); return result.ToArray(); }
