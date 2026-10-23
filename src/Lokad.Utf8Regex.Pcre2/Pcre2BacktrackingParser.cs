@@ -38,10 +38,19 @@ internal sealed class Pcre2BacktrackingParser
     internal bool RequiresProfileOptions { get; private set; }
 
     internal bool UsesBranchReset { get; private set; }
+    internal bool HasExplicitCrOrLf { get; private set; }
 
     internal Pcre2NameEntry[] NameEntries => [.. _nameEntries];
 
     internal IReadOnlyDictionary<int, Pcre2CaptureBacktrackingNode> CaptureDefinitions => _captureDefinitions;
+
+    private Pcre2TokenBacktrackingNode CreateTokenNode(Pcre2CharacterToken token)
+    {
+        if (!HasExplicitCrOrLf && _request.Settings.Newline is
+            Pcre2NewlineConvention.Crlf or Pcre2NewlineConvention.Any or Pcre2NewlineConvention.AnyCrlf)
+            HasExplicitCrOrLf = Pcre2CharacterCompiler.HasExplicitCrOrLf(token);
+        return new Pcre2TokenBacktrackingNode(token);
+    }
 
     internal bool TryParse(out IPcre2BacktrackingNode root)
     {
@@ -360,7 +369,7 @@ internal sealed class Pcre2BacktrackingParser
             }
 
             _offset += patternLength;
-            node = new Pcre2TokenBacktrackingNode(token);
+            node = CreateTokenNode(token);
             return true;
 
         }
@@ -452,7 +461,7 @@ internal sealed class Pcre2BacktrackingParser
                 }
 
                 var patternLength = octalCursor - _offset;
-                node = new Pcre2TokenBacktrackingNode(Pcre2CharacterToken.CreateLiteral(
+                node = CreateTokenNode(Pcre2CharacterToken.CreateLiteral(
                     new Rune(octal),
                     _options));
                 _offset = octalCursor;
@@ -509,7 +518,7 @@ internal sealed class Pcre2BacktrackingParser
             }
 
             _offset += length;
-            result.Add(new Pcre2TokenBacktrackingNode(Pcre2CharacterToken.CreateLiteral(
+            result.Add(CreateTokenNode(Pcre2CharacterToken.CreateLiteral(
                 literal,
                 _options)));
         }

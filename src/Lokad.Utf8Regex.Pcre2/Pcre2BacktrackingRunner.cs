@@ -292,6 +292,11 @@ internal static class Pcre2BacktrackingRunner
                 }
             }
 
+            if (Pcre2CharacterSemantics.IsSkippedCrLfCandidate(program.Request, bytes, candidate, start.Value))
+            {
+                if (useCandidateSearch) continue;
+                if (++candidate > maximumCandidate) break;
+            }
             budget.ChargeCandidate();
             if (TryMatchAt(
                     program,

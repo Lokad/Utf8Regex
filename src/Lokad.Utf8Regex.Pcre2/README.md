@@ -29,6 +29,12 @@ is a separately opted-in byte atom: it can report a slice splitting a scalar.
 `\K` in an opted-in lookaround can report non-slice ranges. Check the reported
 slice-validity properties before decoding or slicing these special results.
 
+With CRLF-aware newline settings, unanchored wildcard search skips the LF after
+a failed CR candidate: `.` does not find a match in `\r\n`. Explicitly starting
+at LF still permits it. Explicit newline atoms/alternatives, leading class
+filtering and DotAll retain their own rules; CRLF is not a blanket ban on
+matching either byte. This also applies to the supported wildcard partial probes.
+
 `Probe` offers curated soft/hard partial-match support and rejects unsupported
 partial shapes explicitly. DFA matching, invalid-UTF subject mode, callouts,
 split, full capture history and substitution forms outside the selected profile

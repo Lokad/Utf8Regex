@@ -300,6 +300,9 @@ internal static class Pcre2CharacterCompiler
         construction.Budget.ChargeWork((ulong)request.Pattern.Length + 1);
         using var parser = new Pcre2CharacterParser(request);
         if (!parser.TryParse(out var tokens)) return null;
+        if (request.UsesCrLfNewlines)
+            request = request with { SkipsCrLfContinuation = !tokens.Any(HasExplicitCrOrLf) &&
+                !(tokens.Length > 0 && HasCrRejectingLeadingClass(tokens[0])) };
         var result = new Pcre2CharacterProgram(tokens, request, GetLeadingAsciiByte(tokens),
             tokens is [{ Kind: Pcre2CharacterTokenKind.ExtendedGraphemeCluster }, ..],
             tokens.Any(static token => token.Kind == Pcre2CharacterTokenKind.CodeUnit));
@@ -334,6 +337,33 @@ internal static class Pcre2CharacterCompiler
 
         return (byte)tokens[0].Literal.Value;
     }
+
+    // Preserve the syntax fact even for zero repeats and unused definitions.
+    // Native PCRE2 lowers a negated singleton to NOT rather than a class; it
+    // does not set HASCRORLF there. Predicates such as \s do not set it either.
+    internal static bool HasExplicitCrOrLf(Pcre2CharacterToken token)
+    {
+        Utf8ConstructionScope.ChargeWork(1);
+        if (token.Kind == Pcre2CharacterTokenKind.Literal) return token.Literal.Value is '\r' or '\n';
+        if (token.Kind != Pcre2CharacterTokenKind.CharacterClass || IsNegatedSingleton(token.CharacterClass)) return false;
+        foreach (var term in token.CharacterClass.Terms)
+        {
+            Utf8ConstructionScope.ChargeWork(1);
+            if (term.Kind == Pcre2CharacterClassTermKind.Range &&
+                (term.Range.Low is '\r' or '\n' || term.Range.High is '\r' or '\n')) return true;
+        }
+        return false;
+    }
+
+    // A native leading-class bitmap can discover LF without ever attempting CR.
+    // This is a progression fact, not a second managed candidate-search engine.
+    internal static bool HasCrRejectingLeadingClass(Pcre2CharacterToken token) =>
+        token.Kind == Pcre2CharacterTokenKind.CharacterClass &&
+        !IsNegatedSingleton(token.CharacterClass) && !token.CharacterClass.AsciiSet.Contains((byte)'\r');
+
+    private static bool IsNegatedSingleton(Pcre2CharacterClass characterClass) =>
+        characterClass.Negated && characterClass.Terms is
+            [{ Kind: Pcre2CharacterClassTermKind.Range, Range: { Low: var low, High: var high } }] && low == high;
 }
 
 internal sealed class Pcre2CharacterParser : IDisposable
@@ -1396,11 +1426,16 @@ internal static class Pcre2CharacterRunner
         var ucp = (program.Request.Options & Pcre2CompileOptions.Ucp) != 0;
         var count = 0;
         var index = start.Value;
+        var skipCrLf = program.Request.SkipsCrLfContinuation;
         while (TryDecode(input, index, out var scalar, out var width))
         {
             if (token.CharacterClass.Matches(scalar, ucp, token.Options))
             {
                 count++;
+            }
+            else if (skipCrLf && scalar.Value == '\r' && index + width < input.Length && input[index + width] == (byte)'\n')
+            {
+                index++;
             }
 
             index += width;
@@ -1663,6 +1698,7 @@ internal static class Pcre2CharacterRunner
         }
 
         next = nextPosition.Value;
+        if (Pcre2CharacterSemantics.IsSkippedCrLfCandidate(request, input.Bytes, next, candidate)) next++;
         return true;
     }
 
@@ -1790,6 +1826,11 @@ internal static class Pcre2GraphemeClusterSemantics
 
 internal static class Pcre2CharacterSemantics
 {
+    internal static bool IsSkippedCrLfCandidate(Pcre2CompileRequest request, ReadOnlySpan<byte> input,
+        int candidate, int searchStart) => request.SkipsCrLfContinuation &&
+        candidate > searchStart && candidate > 0 && candidate < input.Length &&
+        input[candidate - 1] == (byte)'\r' && input[candidate] == (byte)'\n';
+
     // PCRE2-INTEGRATION-POINT: reuse Core's pinned Unicode16 BMP lower fibers,
     // then include the additional default simple-fold partners from PCRE2's
     // Unicode16 CaseFolding C/S data. No culture policy or pattern expansion.

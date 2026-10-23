@@ -23,13 +23,15 @@ internal sealed class Pcre2LiteralProgram
         byte[] literalUtf8,
         Pcre2LiteralAnchor startAnchor,
         bool endAnchored,
-        bool hasExplicitEndAssertion)
+        bool hasExplicitEndAssertion,
+        bool hasExplicitCrOrLf)
     {
         _literalUtf8 = literalUtf8; // The compiler transfers its admitted UTF-8 buffer.
         Search = new PreparedSubstringSearch(_literalUtf8, ignoreCase: false);
         StartAnchor = startAnchor;
         EndAnchored = endAnchored;
         HasExplicitEndAssertion = hasExplicitEndAssertion;
+        HasExplicitCrOrLf = hasExplicitCrOrLf;
     }
 
     internal ReadOnlySpan<byte> LiteralUtf8 => _literalUtf8;
@@ -41,6 +43,7 @@ internal sealed class Pcre2LiteralProgram
     internal bool EndAnchored { get; }
 
     internal bool HasExplicitEndAssertion { get; }
+    internal bool HasExplicitCrOrLf { get; }
 
     internal bool CanCountDirectly(int inputLength) =>
         inputLength >= DirectCountThresholdBytes &&
@@ -96,11 +99,13 @@ internal static class Pcre2LiteralCompiler
                 var hasExplicitEndAssertion = endAnchored;
                 endAnchored |= (request.Options & Pcre2CompileOptions.EndAnchored) != 0;
                 var byteCount = 0;
+                var hasExplicitCrOrLf = false;
                 budget.ChargeWork((ulong)atoms.Length);
                 for (var index = 0; index < atoms.Length; index++)
                 {
                     if ((index & 1023) == 0) budget.ChargeWork(0);
                     byteCount = checked(byteCount + atoms[index].Utf8SequenceLength);
+                    hasExplicitCrOrLf |= atoms[index].Value is '\r' or '\n';
                 }
                 var literalUtf8 = budget.AllocateArray<byte>(byteCount, false);
                 budget.ChargeWork((ulong)byteCount);
@@ -110,9 +115,9 @@ internal static class Pcre2LiteralCompiler
                     if ((index & 1023) == 0) budget.ChargeWork(0);
                     written += atoms[index].EncodeToUtf8(literalUtf8.AsSpan(written));
                 }
-                var program = budget.AllocateObject((literalUtf8, startAnchor, endAnchored, hasExplicitEndAssertion),
+                var program = budget.AllocateObject((literalUtf8, startAnchor, endAnchored, hasExplicitEndAssertion, hasExplicitCrOrLf),
                     static state => new Pcre2LiteralProgram(state.literalUtf8, state.startAnchor,
-                        state.endAnchored, state.hasExplicitEndAssertion));
+                        state.endAnchored, state.hasExplicitEndAssertion, state.hasExplicitCrOrLf));
                 scope.Complete();
                 return program;
             }

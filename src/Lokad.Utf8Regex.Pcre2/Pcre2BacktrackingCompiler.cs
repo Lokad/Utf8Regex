@@ -62,6 +62,8 @@ internal static class Pcre2BacktrackingCompiler
             return null;
         }
 
+        request = request with { SkipsCrLfContinuation = request.UsesCrLfNewlines &&
+            !parser.HasExplicitCrOrLf && !Pcre2BacktrackingAnalysis.HasCrRejectingLeadingClass(root) };
         var nameEntries = parser.NameEntries;
         // Names and numeric slots are global to the parsed expression. Admit
         // their lookup once; nested assertion lowerers only borrow it.
@@ -91,6 +93,31 @@ internal static class Pcre2BacktrackingCompiler
 
 internal static class Pcre2BacktrackingAnalysis
 {
+    internal static bool HasCrRejectingLeadingClass(IPcre2BacktrackingNode node)
+    {
+        Utf8ConstructionScope.ChargeWork(1);
+        switch (node)
+        {
+            case Pcre2TokenBacktrackingNode token:
+                return Pcre2CharacterCompiler.HasCrRejectingLeadingClass(token.Token);
+            case Pcre2SequenceBacktrackingNode sequence:
+                foreach (var child in sequence.Children)
+                {
+                    if (HasCrRejectingLeadingClass(child)) return true;
+                    if (CanConsume(child)) break;
+                }
+                return false;
+            case Pcre2CaptureBacktrackingNode capture:
+                return HasCrRejectingLeadingClass(capture.Body);
+            case Pcre2AtomicBacktrackingNode atomic:
+                return HasCrRejectingLeadingClass(atomic.Body);
+            case Pcre2RepeatBacktrackingNode { Minimum: > 0 } repeat:
+                return HasCrRejectingLeadingClass(repeat.Body);
+            default:
+                return false;
+        }
+    }
+
     // This is deliberately narrower than general anchoring analysis. It proves
     // only that every successful path reaches a subject-start or first-match
     // position assertion before any input can be consumed. A failed attempt at

@@ -17,7 +17,15 @@ internal readonly record struct Pcre2CompileRequest(
     Pcre2CompileOptions Options,
     Utf8Pcre2CompileSettings Settings,
     Utf8Pcre2ExecutionLimits DefaultLimits,
-    TimeSpan MatchTimeout);
+    TimeSpan MatchTimeout)
+{
+    // Derived during compilation, including explicit newline atoms and leading
+    // class filtering. Explicit caller starts at LF remain admissible.
+    internal bool SkipsCrLfContinuation { get; init; }
+
+    internal bool UsesCrLfNewlines => Settings.Newline is Pcre2NewlineConvention.Crlf or
+        Pcre2NewlineConvention.Any or Pcre2NewlineConvention.AnyCrlf;
+}
 
 internal static class Pcre2Compiler
 {
@@ -529,6 +537,7 @@ internal static class Pcre2CompiledProgramOverlay
         Pcre2CompileRequest request,
         Pcre2LiteralProgram literalProgram)
     {
+        request = request with { SkipsCrLfContinuation = request.UsesCrLfNewlines && !literalProgram.HasExplicitCrOrLf };
         var direct = new Pcre2LiteralDirectProgram(literalProgram);
         return new Pcre2CompiledProgram(
             request,
@@ -545,6 +554,7 @@ internal static class Pcre2CompiledProgramOverlay
         Pcre2CompileRequest request,
         Pcre2CharacterProgram characterProgram)
     {
+        request = characterProgram.Request;
         var direct = new Pcre2CharacterDirectProgram(characterProgram);
         return new Pcre2CompiledProgram(
             request,
@@ -564,6 +574,7 @@ internal static class Pcre2CompiledProgramOverlay
         Utf8Regex? preparedCore,
         bool usesBranchReset)
     {
+        request = backtrackingProgram.Request;
         var direct = new Pcre2BacktrackingDirectProgram(backtrackingProgram);
         var operations = new Pcre2OperationPrograms(direct, direct, direct, direct, direct);
         if (Pcre2MultilinePrefixAnalyzer.TryCompile(

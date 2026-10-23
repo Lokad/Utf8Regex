@@ -134,7 +134,8 @@ public sealed class Pcre2CharacterCompilerTests
         var lineSeparator = Encoding.UTF8.GetBytes("\u2028");
 
         Assert.False(crlfDot.IsMatch("\r\n"u8, 0, Pcre2MatchOptions.Anchored));
-        Assert.Equal(1, crlfDot.Match("\r\n"u8).StartOffsetInBytes);
+        Assert.False(crlfDot.Match("\r\n"u8).Success);
+        Assert.Equal(1, crlfDot.Match("\r\n"u8, 1).StartOffsetInBytes);
         Assert.False(anyCrlfDot.IsMatch("\r\n"u8));
         Assert.True(unicodeBsr.IsMatch(lineSeparator));
         Assert.False(crlfBsr.IsMatch(lineSeparator));

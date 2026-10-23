@@ -6,6 +6,13 @@ These changes are development source, currently 0.4.0-rc.2-dev. Frozen RC1
 artifacts remain unchanged and unpublished; they must not be released. A fresh
 candidate and final downstream/package/cost qualification are still required.
 
+- Fixed PCRE2 CRLF-aware wildcard search reporting the LF of a failed CRLF
+  candidate. Explicit LF starts, explicit newline alternatives, class filtering,
+  DotAll, scalar validation and finite controls retain their contracts.
+- Benchmark launches no longer discover or terminate processes globally.
+  Wall-time cancellation still terminates the child tree owned by that launch.
+- Reconciled four already-proved PCRE2 duplicate-name corpus cases and removed
+  repeated fixed-count ledgers; semantic execution and provenance checks remain.
 - PCRE2 `\X` now uses pinned Unicode 16 grapheme, pictographic and Indic properties,
   correcting unrelated-letter joins, spacing-mark splits and repeated-ZWJ
   boundaries. The existing Unicode Indic-conjunct rule remains supported,
