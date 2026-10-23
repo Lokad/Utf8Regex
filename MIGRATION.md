@@ -36,6 +36,10 @@ UTF-16 index to a byte-offset API. The PCRE2 profile separately documents its
 opted-in `\C` byte atom and reported non-slice `\K` results; do not decode such
 reported ranges without checking their slice-validity flags.
 
+Manually constructed successful `Utf8ValueMatch` values now reject negative
+active coordinates with `ArgumentOutOfRangeException`. Unsuccessful values still
+ignore coordinates; values without byte alignment ignore byte coordinates.
+
 ## Validate the entire UTF-8 subject
 
 Malformed, overlong, surrogate-encoding and truncated UTF-8 is rejected. Even a

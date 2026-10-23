@@ -25,6 +25,49 @@ public sealed class Utf8ValueMatchTests
     }
 
     [Theory]
+    [InlineData(-1, 1, 0, 1, "indexInUtf16")]
+    [InlineData(0, -1, 0, 1, "lengthInUtf16")]
+    [InlineData(0, 1, -1, 1, "indexInBytes")]
+    [InlineData(0, 1, 0, -1, "lengthInBytes")]
+    [InlineData(int.MinValue, 1, 0, 1, "indexInUtf16")]
+    [InlineData(0, int.MinValue, 0, 1, "lengthInUtf16")]
+    [InlineData(0, 1, int.MinValue, 1, "indexInBytes")]
+    [InlineData(0, 1, 0, int.MinValue, "lengthInBytes")]
+    public void SuccessfulValuesRejectNegativeActiveCoordinates(int utf16Start, int utf16Length,
+        int byteStart, int byteLength, string parameter)
+    {
+        var failure = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new Utf8ValueMatch(true, true, utf16Start, utf16Length, byteStart, byteLength));
+        Assert.Equal(parameter, failure.ParamName);
+    }
+
+    [Theory]
+    [InlineData(-1, 0, "indexInUtf16")]
+    [InlineData(0, -1, "lengthInUtf16")]
+    [InlineData(int.MinValue, 0, "indexInUtf16")]
+    [InlineData(0, int.MinValue, "lengthInUtf16")]
+    public void FourArgumentValuesValidateActiveUtf16Coordinates(int start, int length, string parameter)
+    {
+        foreach (var aligned in new[] { false, true })
+            Assert.Equal(parameter, Assert.Throws<ArgumentOutOfRangeException>(() =>
+                new Utf8ValueMatch(true, aligned, start, length)).ParamName);
+    }
+
+    [Fact]
+    public void InactiveCoordinatesRemainIgnored()
+    {
+        var missing = new Utf8ValueMatch(false, true, -1, -1, -1, -1);
+        Assert.Equal(Utf8ValueMatch.NoMatch, missing);
+        Assert.Equal(Utf8ValueMatch.NoMatch, new Utf8ValueMatch(false, false, -1, -1));
+        var unaligned = new Utf8ValueMatch(true, false, 7, 3, -1, -1);
+        Assert.True(unaligned.Success);
+        Assert.False(unaligned.IsByteAligned);
+        Assert.Equal(7, unaligned.IndexInUtf16);
+        Assert.Equal(3, unaligned.LengthInUtf16);
+        Assert.False(unaligned.TryGetByteRange(out _, out _));
+    }
+
+    [Theory]
     [InlineData(0, 0)]
     [InlineData(0, int.MaxValue)]
     [InlineData(int.MaxValue, 0)]

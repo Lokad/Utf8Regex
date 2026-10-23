@@ -7,6 +7,7 @@ public readonly struct Utf8ValueMatch
     private readonly long _byteRange;
 
     /// <summary>Creates a match without a contiguous UTF-8 byte range.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">A UTF-16 coordinate is negative for a successful match.</exception>
     public Utf8ValueMatch(
         bool success,
         bool isByteAligned,
@@ -23,6 +24,7 @@ public readonly struct Utf8ValueMatch
     /// <param name="lengthInUtf16">The length in UTF-16 code units.</param>
     /// <param name="indexInBytes">The zero-based offset in the original UTF-8 input.</param>
     /// <param name="lengthInBytes">The length in bytes.</param>
+    /// <exception cref="ArgumentOutOfRangeException">A coordinate is negative for a successful match. Byte coordinates are checked only when <paramref name="isByteAligned"/> is true.</exception>
     public Utf8ValueMatch(
         bool success,
         bool isByteAligned,
@@ -31,6 +33,16 @@ public readonly struct Utf8ValueMatch
         int indexInBytes,
         int lengthInBytes)
     {
+        if (success)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(indexInUtf16);
+            ArgumentOutOfRangeException.ThrowIfNegative(lengthInUtf16);
+            if (isByteAligned)
+            {
+                ArgumentOutOfRangeException.ThrowIfNegative(indexInBytes);
+                ArgumentOutOfRangeException.ThrowIfNegative(lengthInBytes);
+            }
+        }
         _utf16Range = success ? PackRange(indexInUtf16, lengthInUtf16) : 0;
         _byteRange = success && isByteAligned ? PackRange(indexInBytes, lengthInBytes) : 0;
     }
