@@ -1,48 +1,48 @@
-enum PythonRe.PythonReCompileOptions { None, IgnoreCase, Locale, Multiline, DotAll, Verbose, Ascii, Unicode }
-struct PythonRe.PythonReNameEntry
-  property Int32 Number { get; set; }
-  property String Name { get; set; }
-class PythonRe.PythonRePatternException
+[Flags] enum PythonRe.PythonReCompileOptions : Int32 { Ascii = 32, DotAll = 8, IgnoreCase = 1, Locale = 2, Multiline = 4, None = 0, Unicode = 64, Verbose = 16 }
+readonly struct PythonRe.PythonReNameEntry
+  property Int32 Number { get; init; }
+  property String Name { get; init; }
+sealed class PythonRe.PythonRePatternException : Exception, Runtime.Serialization.ISerializable
   ctor PythonRePatternException(String message)
   ctor PythonRePatternException(String message, Int32 position)
   property Int32 Position { get; }
-struct PythonRe.Utf8PythonDetailedMatchData
+readonly struct PythonRe.Utf8PythonDetailedMatchData
   property Boolean Success { get; }
   property Int32 CaptureSlotCount { get; }
   property Int32 NameEntryCount { get; }
-  property Nullable<Int32> LastIndex { get; set; }
-  property PythonRe.PythonReNameEntry[] NameEntries { get; set; }
+  property Nullable<Int32> LastIndex { get; init; }
+  property PythonRe.PythonReNameEntry[] NameEntries { get; init; }
   property PythonRe.Utf8PythonGroupMatchData Value { get; }
-  property PythonRe.Utf8PythonGroupMatchData[] Groups { get; set; }
+  property PythonRe.Utf8PythonGroupMatchData[] Groups { get; init; }
   property String LastGroup { get; }
   method Boolean TryGetFirstSetGroup(String name, out PythonRe.Utf8PythonGroupMatchData group)
   method Boolean TryGetGroup(Int32 number, out PythonRe.Utf8PythonGroupMatchData group)
-struct PythonRe.Utf8PythonFindAllResult
+readonly struct PythonRe.Utf8PythonFindAllResult
   property Int32 Count { get; }
-  property PythonRe.Utf8PythonFindAllShape Shape { get; set; }
-  property String[] ScalarValues { get; set; }
-  property String[][] TupleValues { get; set; }
-enum PythonRe.Utf8PythonFindAllShape { FullMatch, SingleGroup, GroupTuple }
-struct PythonRe.Utf8PythonFindAllUtf8Result
-  property Byte[][] ScalarValues { get; set; }
-  property Byte[][][] TupleValues { get; set; }
+  property PythonRe.Utf8PythonFindAllShape Shape { get; init; }
+  property String[] ScalarValues { get; init; }
+  property String[][] TupleValues { get; init; }
+enum PythonRe.Utf8PythonFindAllShape : Int32 { FullMatch = 0, GroupTuple = 2, SingleGroup = 1 }
+readonly struct PythonRe.Utf8PythonFindAllUtf8Result
+  property Byte[][] ScalarValues { get; init; }
+  property Byte[][][] TupleValues { get; init; }
   property Int32 Count { get; }
-  property PythonRe.Utf8PythonFindAllShape Shape { get; set; }
-struct PythonRe.Utf8PythonGroupContext
+  property PythonRe.Utf8PythonFindAllShape Shape { get; init; }
+readonly ref struct PythonRe.Utf8PythonGroupContext
   property Boolean Success { get; }
   property Int32 Number { get; }
   property PythonRe.Utf8PythonValueMatch Value { get; }
   method String GetValueString()
-struct PythonRe.Utf8PythonGroupMatchData
-  property Boolean HasContiguousByteRange { get; set; }
-  property Boolean Success { get; set; }
-  property Int32 EndOffsetInBytes { get; set; }
-  property Int32 EndOffsetInUtf16 { get; set; }
-  property Int32 Number { get; set; }
-  property Int32 StartOffsetInBytes { get; set; }
-  property Int32 StartOffsetInUtf16 { get; set; }
-  property String ValueText { get; set; }
-struct PythonRe.Utf8PythonMatchContext
+readonly struct PythonRe.Utf8PythonGroupMatchData
+  property Boolean HasContiguousByteRange { get; init; }
+  property Boolean Success { get; init; }
+  property Int32 EndOffsetInBytes { get; init; }
+  property Int32 EndOffsetInUtf16 { get; init; }
+  property Int32 Number { get; init; }
+  property Int32 StartOffsetInBytes { get; init; }
+  property Int32 StartOffsetInUtf16 { get; init; }
+  property String ValueText { get; init; }
+readonly ref struct PythonRe.Utf8PythonMatchContext
   property Boolean Success { get; }
   property Int32 CaptureSlotCount { get; }
   property Int32 NameEntryCount { get; }
@@ -56,19 +56,19 @@ struct PythonRe.Utf8PythonMatchContext
   method PythonRe.PythonReNameEntry[] GetNameEntries()
   method PythonRe.Utf8PythonGroupContext GetGroup(Int32 number)
   method String GetValueString()
-class PythonRe.Utf8PythonMatchCursor
+sealed class PythonRe.Utf8PythonMatchCursor : IDisposable
   property PythonRe.Utf8PythonDetailedMatchData Current { get; }
   method Boolean MoveNext()
   method Void Dispose()
-struct PythonRe.Utf8PythonMatchData
-  property Boolean Success { get; set; }
-  property Int32 EndOffsetInBytes { get; set; }
-  property Int32 EndOffsetInUtf16 { get; set; }
-  property Int32 StartOffsetInBytes { get; set; }
-  property Int32 StartOffsetInUtf16 { get; set; }
-  property String ValueText { get; set; }
+readonly struct PythonRe.Utf8PythonMatchData
+  property Boolean Success { get; init; }
+  property Int32 EndOffsetInBytes { get; init; }
+  property Int32 EndOffsetInUtf16 { get; init; }
+  property Int32 StartOffsetInBytes { get; init; }
+  property Int32 StartOffsetInUtf16 { get; init; }
+  property String ValueText { get; init; }
 delegate String PythonRe.Utf8PythonMatchEvaluator<TState>(TState state, PythonRe.Utf8PythonDetailedMatchData match)
-class PythonRe.Utf8PythonRegex
+sealed class PythonRe.Utf8PythonRegex
   ctor Utf8PythonRegex(ReadOnlySpan<Byte> patternUtf8)
   ctor Utf8PythonRegex(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options)
   ctor Utf8PythonRegex(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout)
@@ -79,9 +79,9 @@ class PythonRe.Utf8PythonRegex
   ctor Utf8PythonRegex(String pattern, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
   property PythonRe.PythonReCompileOptions Options { get; }
   property String Pattern { get; }
-  property TimeSpan DefaultMatchTimeout { get; set; }
   property TimeSpan MatchTimeout { get; }
   property Utf8ResourcePolicy ResourcePolicy { get; }
+  property static TimeSpan DefaultMatchTimeout { get; set; }
   method Boolean IsMatch(ReadOnlySpan<Byte> input)
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken)
@@ -190,18 +190,18 @@ class PythonRe.Utf8PythonRegex
   method String[] SplitToStrings(ReadOnlySpan<Byte> input, Int32 maxSplit, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken)
   method static PythonRe.Utf8PythonRegex Compile(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken)
   method static PythonRe.Utf8PythonRegex Compile(String pattern, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken)
-struct PythonRe.Utf8PythonSplitItem
-  property Boolean IsCapture { get; set; }
-  property Int32 CaptureGroupNumber { get; set; }
-  property String ValueText { get; set; }
-struct PythonRe.Utf8PythonSubnResult
-  property Int32 ReplacementCount { get; set; }
-  property String ResultText { get; set; }
-struct PythonRe.Utf8PythonSubnUtf8Result
-  property Byte[] ResultBytes { get; set; }
-  property Int32 ReplacementCount { get; set; }
+readonly struct PythonRe.Utf8PythonSplitItem
+  property Boolean IsCapture { get; init; }
+  property Int32 CaptureGroupNumber { get; init; }
+  property String ValueText { get; init; }
+readonly struct PythonRe.Utf8PythonSubnResult
+  property Int32 ReplacementCount { get; init; }
+  property String ResultText { get; init; }
+readonly struct PythonRe.Utf8PythonSubnUtf8Result
+  property Byte[] ResultBytes { get; init; }
+  property Int32 ReplacementCount { get; init; }
 delegate Byte[] PythonRe.Utf8PythonUtf8MatchEvaluator<TState>(TState state, PythonRe.Utf8PythonDetailedMatchData match)
-struct PythonRe.Utf8PythonValueMatch
+readonly ref struct PythonRe.Utf8PythonValueMatch
   property Boolean HasContiguousByteRange { get; }
   property Boolean Success { get; }
   property Int32 EndOffsetInBytes { get; }

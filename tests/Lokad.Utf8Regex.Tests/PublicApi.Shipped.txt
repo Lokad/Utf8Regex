@@ -1,5 +1,5 @@
-delegate String Utf16MatchEvaluator<TState>(ref Utf8MatchContext match, ref TState state)
-struct Utf8CaptureContext
+delegate String Utf16MatchEvaluator<TState>(in Utf8MatchContext match, ref TState state)
+readonly ref struct Utf8CaptureContext
   property Boolean IsByteAligned { get; }
   property Boolean Success { get; }
   property Int32 IndexInBytes { get; }
@@ -10,17 +10,19 @@ struct Utf8CaptureContext
   method Boolean TryGetValueBytes(out ReadOnlySpan<Byte> valueBytes)
   method ReadOnlySpan<Byte> GetValueBytes()
   method String GetValueString()
-struct Utf8ConstructionPolicy
-  property Nullable<UInt32> MaxDepth { get; set; }
-  property Nullable<UInt64> MaxBytes { get; set; }
-  property Nullable<UInt64> MaxInstructionCapacity { get; set; }
-  property Nullable<UInt64> MaxWorkSteps { get; set; }
-  property Utf8ConstructionPolicy Default { get; }
-  method Boolean Equals(Object obj)
+readonly struct Utf8ConstructionPolicy : IEquatable<Utf8ConstructionPolicy>
+  property Nullable<UInt32> MaxDepth { get; init; }
+  property Nullable<UInt64> MaxBytes { get; init; }
+  property Nullable<UInt64> MaxInstructionCapacity { get; init; }
+  property Nullable<UInt64> MaxWorkSteps { get; init; }
+  property static Utf8ConstructionPolicy Default { get; }
   method Boolean Equals(Utf8ConstructionPolicy other)
-  method Int32 GetHashCode()
-  method String ToString()
-struct Utf8GroupContext
+  method static Boolean op_Equality(Utf8ConstructionPolicy left, Utf8ConstructionPolicy right)
+  method static Boolean op_Inequality(Utf8ConstructionPolicy left, Utf8ConstructionPolicy right)
+  method virtual Boolean Equals(Object obj)
+  method virtual Int32 GetHashCode()
+  method virtual String ToString()
+readonly ref struct Utf8GroupContext
   property Boolean IsByteAligned { get; }
   property Boolean Success { get; }
   property Int32 CaptureCount { get; }
@@ -33,7 +35,7 @@ struct Utf8GroupContext
   method ReadOnlySpan<Byte> GetValueBytes()
   method String GetValueString()
   method Utf8CaptureContext GetCapture(Int32 index)
-struct Utf8MatchContext
+readonly ref struct Utf8MatchContext
   property Boolean IsByteAligned { get; }
   property Boolean Success { get; }
   property Int32 GroupCount { get; }
@@ -48,17 +50,17 @@ struct Utf8MatchContext
   method String GetValueString()
   method Utf8GroupContext GetGroup(Int32 number)
   method Utf8GroupContext GetGroup(String name)
-delegate Void Utf8MatchEvaluator<TState>(ref Utf8MatchContext match, ref Utf8ReplacementWriter writer, ref TState state)
-class Utf8Regex
+delegate Void Utf8MatchEvaluator<TState>(in Utf8MatchContext match, ref Utf8ReplacementWriter writer, ref TState state)
+sealed class Utf8Regex
   ctor Utf8Regex(String pattern)
   ctor Utf8Regex(String pattern, Text.RegularExpressions.RegexOptions options)
   ctor Utf8Regex(String pattern, Text.RegularExpressions.RegexOptions options, TimeSpan matchTimeout)
   ctor Utf8Regex(String pattern, Text.RegularExpressions.RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
   property String Pattern { get; }
   property Text.RegularExpressions.RegexOptions Options { get; }
-  property TimeSpan DefaultMatchTimeout { get; set; }
   property TimeSpan MatchTimeout { get; }
   property Utf8ResourcePolicy ResourcePolicy { get; }
+  property static TimeSpan DefaultMatchTimeout { get; set; }
   method Boolean IsMatch(ReadOnlySpan<Byte> input)
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken)
   method Boolean IsMatchFromUtf16Offset(ReadOnlySpan<Byte> input, Int32 utf16Offset)
@@ -124,27 +126,29 @@ class Utf8Regex
   method static Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<Byte> input, String pattern, Int32 count)
   method static Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<Byte> input, String pattern, Int32 count, Text.RegularExpressions.RegexOptions options)
   method static Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<Byte> input, String pattern, Int32 count, Text.RegularExpressions.RegexOptions options, TimeSpan matchTimeout)
-struct Utf8ReplacementWriter
+ref struct Utf8ReplacementWriter
   method Void Append(ReadOnlySpan<Byte> utf8)
   method Void Append(ReadOnlySpan<Char> utf16)
   method Void Append(Text.Rune value)
   method Void AppendAsciiByte(Byte value)
-class Utf8ResourceLimitExceededException
+sealed class Utf8ResourceLimitExceededException : InvalidOperationException, Runtime.Serialization.ISerializable
   property UInt64 Limit { get; }
   property UInt64 Requested { get; }
   property Utf8ResourceLimitKind ResourceKind { get; }
-enum Utf8ResourceLimitKind { ConstructionInstructionCapacity, ConstructionBytes, ConstructionWorkSteps, ConstructionDepth, ExecutionWorkSteps, ExecutionResultBytes, ExecutionDepth, ExecutionWorkingBytes }
-struct Utf8ResourcePolicy
-  property Nullable<UInt32> MaxDepth { get; set; }
-  property Nullable<UInt64> MaxResultBytes { get; set; }
-  property Nullable<UInt64> MaxWorkSteps { get; set; }
-  property Nullable<UInt64> MaxWorkingBytes { get; set; }
-  property Utf8ResourcePolicy Unlimited { get; }
-  method Boolean Equals(Object obj)
+enum Utf8ResourceLimitKind : Int32 { ConstructionBytes = 1, ConstructionDepth = 3, ConstructionInstructionCapacity = 0, ConstructionWorkSteps = 2, ExecutionDepth = 6, ExecutionResultBytes = 5, ExecutionWorkSteps = 4, ExecutionWorkingBytes = 7 }
+readonly struct Utf8ResourcePolicy : IEquatable<Utf8ResourcePolicy>
+  property Nullable<UInt32> MaxDepth { get; init; }
+  property Nullable<UInt64> MaxResultBytes { get; init; }
+  property Nullable<UInt64> MaxWorkSteps { get; init; }
+  property Nullable<UInt64> MaxWorkingBytes { get; init; }
+  property static Utf8ResourcePolicy Unlimited { get; }
   method Boolean Equals(Utf8ResourcePolicy other)
-  method Int32 GetHashCode()
-  method String ToString()
-struct Utf8ValueMatch
+  method static Boolean op_Equality(Utf8ResourcePolicy left, Utf8ResourcePolicy right)
+  method static Boolean op_Inequality(Utf8ResourcePolicy left, Utf8ResourcePolicy right)
+  method virtual Boolean Equals(Object obj)
+  method virtual Int32 GetHashCode()
+  method virtual String ToString()
+readonly struct Utf8ValueMatch
   ctor Utf8ValueMatch(Boolean success, Boolean isByteAligned, Int32 indexInUtf16, Int32 lengthInUtf16)
   ctor Utf8ValueMatch(Boolean success, Boolean isByteAligned, Int32 indexInUtf16, Int32 lengthInUtf16, Int32 indexInBytes, Int32 lengthInBytes)
   property Boolean IsByteAligned { get; }
@@ -153,13 +157,13 @@ struct Utf8ValueMatch
   property Int32 IndexInUtf16 { get; }
   property Int32 LengthInBytes { get; }
   property Int32 LengthInUtf16 { get; }
-  property Utf8ValueMatch NoMatch { get; }
+  property static Utf8ValueMatch NoMatch { get; }
   method Boolean TryGetByteRange(out Int32 indexInBytes, out Int32 lengthInBytes)
-struct Utf8ValueMatchEnumerator
+ref struct Utf8ValueMatchEnumerator
   property Utf8ValueMatch Current { get; }
   method Boolean MoveNext()
   method Utf8ValueMatchEnumerator GetEnumerator()
-struct Utf8ValueSplit
+readonly ref struct Utf8ValueSplit
   property Boolean IsByteAligned { get; }
   property Int32 IndexInBytes { get; }
   property Int32 IndexInUtf16 { get; }
@@ -167,7 +171,7 @@ struct Utf8ValueSplit
   property Int32 LengthInUtf16 { get; }
   method ReadOnlySpan<Byte> GetValueBytes()
   method String GetValueString()
-struct Utf8ValueSplitEnumerator
-  property Utf8ValueSplit Current { get; set; }
+ref struct Utf8ValueSplitEnumerator
+  property Utf8ValueSplit Current { get; }
   method Boolean MoveNext()
   method Utf8ValueSplitEnumerator GetEnumerator()

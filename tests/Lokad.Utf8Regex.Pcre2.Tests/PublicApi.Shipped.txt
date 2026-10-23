@@ -1,49 +1,49 @@
-enum Pcre2BackslashCPolicy { Forbid, Allow }
-enum Pcre2BsrConvention { Default, AnyCrlf, Unicode }
-class Pcre2CompileException
+enum Pcre2BackslashCPolicy : Int32 { Allow = 1, Forbid = 0 }
+enum Pcre2BsrConvention : Int32 { AnyCrlf = 1, Default = 0, Unicode = 2 }
+class Pcre2CompileException : Exception, Runtime.Serialization.ISerializable
   ctor Pcre2CompileException(String message, Pcre2ErrorKind errorKind)
   property Pcre2ErrorKind ErrorKind { get; }
-enum Pcre2CompileOptions { None, Caseless, Multiline, DotAll, Extended, ExtendedMore, Anchored, EndAnchored, DollarEndOnly, Ungreedy, NoAutoCapture, Ucp, FirstLine }
-enum Pcre2ErrorKind { UnrecognizedEscape, InvalidAfterParensQuery, QuantifierNumbersOutOfOrder, QuantifierTooBig, MissingCharacterClassTerminator, EscapeInvalidInClass, ClassRangeOrder, QuantifierInvalid, MissingClosingParenthesis, MissingCommentClosing, BackslashCDisabled, BackslashCInUtfLookbehind, LookaroundBackslashKDisabled, DisallowedLookaroundBackslashK, CalloutUnsupported, PartialMatch, PartialSubs, BadReplacementEscape, InvalidReplacementReference, MalformedReplacementPattern, MissingClosingReplacementBrace, UnknownReplacementGroup, UnsetReplacementGroup, Timeout, MatchLimit, DepthLimit, HeapLimit, ResultLimit, BadOption }
-delegate Void Pcre2MatchEvaluator<TState>(ref Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref TState state)
-class Pcre2MatchException
+[Flags] enum Pcre2CompileOptions : Int32 { Anchored = 32, Caseless = 1, DollarEndOnly = 128, DotAll = 4, EndAnchored = 64, Extended = 8, ExtendedMore = 16, FirstLine = 2048, Multiline = 2, NoAutoCapture = 512, None = 0, Ucp = 1024, Ungreedy = 256 }
+enum Pcre2ErrorKind : Int32 { BackslashCDisabled = 10, BackslashCInUtfLookbehind = 11, BadOption = 28, BadReplacementEscape = 17, CalloutUnsupported = 14, ClassRangeOrder = 6, DepthLimit = 25, DisallowedLookaroundBackslashK = 13, EscapeInvalidInClass = 5, HeapLimit = 26, InvalidAfterParensQuery = 1, InvalidReplacementReference = 18, LookaroundBackslashKDisabled = 12, MalformedReplacementPattern = 19, MatchLimit = 24, MissingCharacterClassTerminator = 4, MissingClosingParenthesis = 8, MissingClosingReplacementBrace = 20, MissingCommentClosing = 9, PartialMatch = 15, PartialSubs = 16, QuantifierInvalid = 7, QuantifierNumbersOutOfOrder = 2, QuantifierTooBig = 3, ResultLimit = 27, Timeout = 23, UnknownReplacementGroup = 21, UnrecognizedEscape = 0, UnsetReplacementGroup = 22 }
+delegate Void Pcre2MatchEvaluator<TState>(in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref TState state)
+class Pcre2MatchException : Exception, Runtime.Serialization.ISerializable
   ctor Pcre2MatchException(String message, Pcre2ErrorKind errorKind)
   property Pcre2ErrorKind ErrorKind { get; }
-enum Pcre2MatchOptions { None, Anchored, EndAnchored, NotBol, NotEol, NotEmpty, NotEmptyAtStart }
-struct Pcre2NameEntry
-  property Int32 Number { get; set; }
-  property String Name { get; set; }
-enum Pcre2NewlineConvention { Default, Cr, Lf, Crlf, Any, AnyCrlf, Nul }
-enum Pcre2PartialMode { None, Soft, Hard }
-class Pcre2SubstitutionException
+[Flags] enum Pcre2MatchOptions : Int32 { Anchored = 1, EndAnchored = 2, None = 0, NotBol = 4, NotEmpty = 16, NotEmptyAtStart = 32, NotEol = 8 }
+readonly struct Pcre2NameEntry
+  property Int32 Number { get; init; }
+  property String Name { get; init; }
+enum Pcre2NewlineConvention : Int32 { Any = 4, AnyCrlf = 5, Cr = 1, Crlf = 3, Default = 0, Lf = 2, Nul = 6 }
+enum Pcre2PartialMode : Int32 { Hard = 2, None = 0, Soft = 1 }
+class Pcre2SubstitutionException : Exception, Runtime.Serialization.ISerializable
   ctor Pcre2SubstitutionException(String message, Pcre2ErrorKind errorKind)
   property Pcre2ErrorKind ErrorKind { get; }
-enum Pcre2SubstitutionOptions { None, Extended, UnsetEmpty, UnknownUnset, SubstituteMatched, SubstituteLiteral, SubstituteOverflowLength, SubstituteReplacementOnly }
-delegate String Pcre2Utf16MatchEvaluator<TState>(ref Utf8Pcre2MatchContext match, ref TState state)
-struct Utf8Pcre2Analysis
-  property Boolean HasDuplicateNames { get; set; }
-  property Boolean IsExactLiteral { get; set; }
-  property Boolean IsFullyNative { get; set; }
-  property Boolean MayFailIterativeExecutionAtRuntime { get; set; }
-  property Boolean MayProduceNonUtf8Slices { get; set; }
-  property Boolean MayReportNonMonotoneMatchOffsets { get; set; }
-  property Boolean RejectsNonMonotoneIterativeMatches { get; set; }
-  property Boolean UsesBacktrackingControlVerbs { get; set; }
-  property Boolean UsesBranchReset { get; set; }
-  property Boolean UsesRecursion { get; set; }
-  property Int32 MinRequiredLengthInBytes { get; set; }
-struct Utf8Pcre2CompileSettings
-  property Boolean AllowDuplicateNames { get; set; }
-  property Boolean AllowLookaroundBackslashK { get; set; }
-  property Pcre2BackslashCPolicy BackslashC { get; set; }
-  property Pcre2BsrConvention Bsr { get; set; }
-  property Pcre2NewlineConvention Newline { get; set; }
-struct Utf8Pcre2ExecutionLimits
-  property UInt32 DepthLimit { get; set; }
-  property UInt32 MatchLimit { get; set; }
-  property UInt64 HeapLimitInBytes { get; set; }
-  property UInt64 ResultLimitInBytes { get; set; }
-struct Utf8Pcre2GroupContext
+[Flags] enum Pcre2SubstitutionOptions : Int32 { Extended = 1, None = 0, SubstituteLiteral = 16, SubstituteMatched = 8, SubstituteOverflowLength = 32, SubstituteReplacementOnly = 64, UnknownUnset = 4, UnsetEmpty = 2 }
+delegate String Pcre2Utf16MatchEvaluator<TState>(in Utf8Pcre2MatchContext match, ref TState state)
+readonly struct Utf8Pcre2Analysis
+  property Boolean HasDuplicateNames { get; init; }
+  property Boolean IsExactLiteral { get; init; }
+  property Boolean IsFullyNative { get; init; }
+  property Boolean MayFailIterativeExecutionAtRuntime { get; init; }
+  property Boolean MayProduceNonUtf8Slices { get; init; }
+  property Boolean MayReportNonMonotoneMatchOffsets { get; init; }
+  property Boolean RejectsNonMonotoneIterativeMatches { get; init; }
+  property Boolean UsesBacktrackingControlVerbs { get; init; }
+  property Boolean UsesBranchReset { get; init; }
+  property Boolean UsesRecursion { get; init; }
+  property Int32 MinRequiredLengthInBytes { get; init; }
+readonly struct Utf8Pcre2CompileSettings
+  property Boolean AllowDuplicateNames { get; init; }
+  property Boolean AllowLookaroundBackslashK { get; init; }
+  property Pcre2BackslashCPolicy BackslashC { get; init; }
+  property Pcre2BsrConvention Bsr { get; init; }
+  property Pcre2NewlineConvention Newline { get; init; }
+readonly struct Utf8Pcre2ExecutionLimits
+  property UInt32 DepthLimit { get; init; }
+  property UInt32 MatchLimit { get; init; }
+  property UInt64 HeapLimitInBytes { get; init; }
+  property UInt64 ResultLimitInBytes { get; init; }
+readonly ref struct Utf8Pcre2GroupContext
   property Boolean HasContiguousByteRange { get; }
   property Boolean HasUtf16Projection { get; }
   property Boolean IsUtf8SliceWellFormed { get; }
@@ -55,7 +55,7 @@ struct Utf8Pcre2GroupContext
   property Int32 StartOffsetInUtf16 { get; }
   method ReadOnlySpan<Byte> GetValueBytes()
   method String GetValueString()
-struct Utf8Pcre2MatchContext
+readonly ref struct Utf8Pcre2MatchContext
   property Boolean Success { get; }
   property Int32 CaptureSlotCount { get; }
   property Int32 NameEntryCount { get; }
@@ -67,28 +67,28 @@ struct Utf8Pcre2MatchContext
   method Int32 CopyNumbersForName(String name, Span<Int32> destination, out Boolean isMore)
   method String GetValueString()
   method Utf8Pcre2GroupContext GetGroup(Int32 number)
-struct Utf8Pcre2MatchData
-  property Boolean HasContiguousByteRange { get; set; }
-  property Boolean HasUtf16Projection { get; set; }
-  property Boolean IsUtf8SliceWellFormed { get; set; }
-  property Boolean Success { get; set; }
-  property Int32 EndOffsetInBytes { get; set; }
-  property Int32 EndOffsetInUtf16 { get; set; }
-  property Int32 StartOffsetInBytes { get; set; }
-  property Int32 StartOffsetInUtf16 { get; set; }
-struct Utf8Pcre2PartialMatchContext
+readonly struct Utf8Pcre2MatchData
+  property Boolean HasContiguousByteRange { get; init; }
+  property Boolean HasUtf16Projection { get; init; }
+  property Boolean IsUtf8SliceWellFormed { get; init; }
+  property Boolean Success { get; init; }
+  property Int32 EndOffsetInBytes { get; init; }
+  property Int32 EndOffsetInUtf16 { get; init; }
+  property Int32 StartOffsetInBytes { get; init; }
+  property Int32 StartOffsetInUtf16 { get; init; }
+readonly ref struct Utf8Pcre2PartialMatchContext
   property String Mark { get; }
   property Utf8Pcre2ValueMatch Value { get; }
   method ReadOnlySpan<Byte> GetValueBytes()
   method String GetValueString()
-enum Utf8Pcre2ProbeKind { NoMatch, FullMatch, PartialMatch }
-struct Utf8Pcre2ProbeResult
+enum Utf8Pcre2ProbeKind : Int32 { FullMatch = 1, NoMatch = 0, PartialMatch = 2 }
+readonly ref struct Utf8Pcre2ProbeResult
   property String Mark { get; }
   property Utf8Pcre2ProbeKind Kind { get; }
   property Utf8Pcre2ValueMatch Value { get; }
   method Utf8Pcre2MatchContext GetMatch()
   method Utf8Pcre2PartialMatchContext GetPartial()
-class Utf8Pcre2Regex
+sealed class Utf8Pcre2Regex
   ctor Utf8Pcre2Regex(ReadOnlySpan<Byte> patternUtf8)
   ctor Utf8Pcre2Regex(ReadOnlySpan<Byte> patternUtf8, Pcre2CompileOptions options)
   ctor Utf8Pcre2Regex(ReadOnlySpan<Byte> patternUtf8, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout)
@@ -98,10 +98,10 @@ class Utf8Pcre2Regex
   property Int32 NameEntryCount { get; }
   property Pcre2CompileOptions Options { get; }
   property String Pattern { get; }
-  property TimeSpan DefaultMatchTimeout { get; set; }
   property TimeSpan MatchTimeout { get; }
   property Utf8Pcre2CompileSettings CompileSettings { get; }
   property Utf8Pcre2ExecutionLimits DefaultExecutionLimits { get; }
+  property static TimeSpan DefaultMatchTimeout { get; set; }
   method Boolean IsMatch(ReadOnlySpan<Byte> input)
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions)
@@ -177,7 +177,7 @@ class Utf8Pcre2Regex
   method static Utf8Pcre2ValueMatch Match(ReadOnlySpan<Byte> input, String pattern, Pcre2CompileOptions options)
   method static Utf8Pcre2ValueMatch Match(ReadOnlySpan<Byte> input, String pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, Int32 startOffsetInBytes)
   method static Utf8Pcre2ValueMatch Match(ReadOnlySpan<Byte> input, String pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken)
-struct Utf8Pcre2ValueMatch
+readonly ref struct Utf8Pcre2ValueMatch
   property Boolean HasContiguousByteRange { get; }
   property Boolean HasUtf16Projection { get; }
   property Boolean IsUtf8SliceWellFormed { get; }
@@ -188,6 +188,6 @@ struct Utf8Pcre2ValueMatch
   property Int32 StartOffsetInUtf16 { get; }
   method ReadOnlySpan<Byte> GetValueBytes()
   method String GetValueString()
-struct Utf8Pcre2ValueMatchEnumerator
+ref struct Utf8Pcre2ValueMatchEnumerator
   property Utf8Pcre2ValueMatch Current { get; }
   method Boolean MoveNext()
