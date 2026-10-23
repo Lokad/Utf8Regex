@@ -20,22 +20,6 @@ $repoRoot = $PSScriptRoot
 Set-Location $repoRoot
 $benchmarkArtifactsRoot = Join-Path $repoRoot "bench" "Lokad.Utf8Regex.Benchmarks" "bin" $Configuration "net10.0"
 
-# Stale benchmark hosts lock BenchmarkDotNet artifacts on Windows. Get-CimInstance is
-# Windows-only; on other platforms file locks do not block artifact cleanup, so skip the kill.
-if (-not $CommandArgs -and $IsWindows) {
-    Get-CimInstance Win32_Process -Filter "Name = 'dotnet.exe'" |
-        Where-Object { $_.CommandLine -like '*Lokad.Utf8Regex.Benchmarks-*.dll*' -and
-            $_.CommandLine -like ("*" + [WildcardPattern]::Escape($benchmarkArtifactsRoot) + "*") } |
-        ForEach-Object {
-            try {
-                Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop
-            }
-            catch {
-                Write-Warning "Unable to stop stale benchmark process $($_.ProcessId): $($_.Exception.Message)"
-            }
-        }
-}
-
 if (-not $CommandArgs) {
     Get-ChildItem -LiteralPath $benchmarkArtifactsRoot -Directory -Filter 'Lokad.Utf8Regex.Benchmarks-*' -ErrorAction SilentlyContinue |
         ForEach-Object {
