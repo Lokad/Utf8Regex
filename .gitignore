@@ -10,6 +10,9 @@
 /PLAN.md
 /PLAN.HISTORY.md
 
+# Optional repository-local SDK, selected by global.json before the host SDKs.
+/.dotnet/
+
 # User-specific files
 *.rsuser
 *.suo

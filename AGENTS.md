@@ -10,6 +10,15 @@
 
 ## Turn off the .NET “terminal logger”
 
+Normal builds use stable SDK **10.0.401**, selected exactly by `global.json`.
+Install it in the host SDK directory or the ignored repository-local `.dotnet`
+directory; the SDK resolver searches `.dotnet` then the running host's SDKs.
+CI installs the same version from `global.json`. Runtime selection is separate.
+Explicit SDK/runtime comparator experiments can still invoke their selected SDK
+DLL/runtime directly; keep that choice local to the experiment. Do not restore
+major/prerelease roll-forward for normal builds or refresh historical evidence
+merely to change its toolchain label.
+
 Use `--tl:off` avoids dynamic output and progress rendering.
 
 ```powershell
