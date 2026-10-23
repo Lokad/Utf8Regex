@@ -61,11 +61,16 @@ Do not use status as a vague parking lot. The status should answer whether the c
 
 ## Qualified inventory
 
-The 2026-08-14 profile contains 636 operation rows: 598 active, 24 out of
-scope by specification, and 14 explicit compatibility-backlog rows. Active
-coverage comprises 16 compile, 117 match, 97 detailed-match, 40 count, 37
-enumeration, 119 probe, and 172 replacement rows. The local backlog ledgers
-must contain exactly one reasoned disposition for every non-active row.
+The current checked-in corpus and its executable expectations define source
+coverage. Four previously excluded duplicate-name detailed-match cases are now
+active: their whole-match ranges, capture slots and name tables pass the existing
+special-match suite. Case IDs, expectations and upstream provenance are retained.
+Every remaining non-active row has exactly one reasoned backlog disposition.
+
+The earlier 2026-08-14 inventory (636 rows, 598 active) is historical; it does
+not describe the current corpus or qualify a new package. Maintain execution
+coverage, unique IDs and coherent exclusions rather than fixed count summaries
+or a required minimum backlog. Frozen release receipts retain their original scope.
 
 The bootstrap source guards directly reject whole-pattern classifiers and
 pattern-specific match/replacement methods. Historical constant-zero closure

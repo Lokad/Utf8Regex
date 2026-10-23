@@ -44,7 +44,7 @@
         }
       ]
     },
-    "Status": "OutOfScopeBySpec",
+    "Status": "Active",
     "Source": "pcre2:testdata/testinput1:lines-5872-5873"
   },
   {
@@ -92,7 +92,7 @@
         }
       ]
     },
-    "Status": "OutOfScopeBySpec",
+    "Status": "Active",
     "Source": "pcre2:testdata/testinput1:lines-5872-5874"
   },
   {
@@ -151,7 +151,7 @@
         }
       ]
     },
-    "Status": "OutOfScopeBySpec",
+    "Status": "Active",
     "Source": "pcre2:testdata/testinput1:lines-5876-5877"
   },
   {
@@ -210,7 +210,7 @@
         }
       ]
     },
-    "Status": "OutOfScopeBySpec",
+    "Status": "Active",
     "Source": "pcre2:testdata/testinput1:lines-5876-5878"
   },
   {

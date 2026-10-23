@@ -200,7 +200,7 @@
     "Source": "pcre2:testdata/testinput1:lines-5872-5873",
     "SourceFile": "testdata/testinput1",
     "Operation": "MatchDetailed",
-    "Status": "OutOfScopeBySpec"
+    "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.branch-reset-dupname-backref.allowdup.detailed.aaaaaa",
@@ -235,7 +235,7 @@
     "Source": "pcre2:testdata/testinput1:lines-5872-5874",
     "SourceFile": "testdata/testinput1",
     "Operation": "MatchDetailed",
-    "Status": "OutOfScopeBySpec"
+    "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.branch-reset-dupname-backref.match.aaaaaa",
@@ -256,14 +256,14 @@
     "Source": "pcre2:testdata/testinput1:lines-5876-5877",
     "SourceFile": "testdata/testinput1",
     "Operation": "MatchDetailed",
-    "Status": "OutOfScopeBySpec"
+    "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.branch-reset-dupnames-followed-by-dupname.bccccb",
     "Source": "pcre2:testdata/testinput1:lines-5876-5878",
     "SourceFile": "testdata/testinput1",
     "Operation": "MatchDetailed",
-    "Status": "OutOfScopeBySpec"
+    "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.branch-reset-dupnames-followed-by-dupname.match.aaaccccaaa",

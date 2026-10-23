@@ -27,17 +27,4 @@ public sealed class Pcre2CorpusCoverageComparisonTests
         }
     }
 
-    [Fact]
-    public void LocalBacklogSummaryMatchesExpectation()
-    {
-        var backlog = Pcre2CorpusBacklogLoader.LoadAll();
-
-        Assert.Equal(39, backlog.Count);
-        Assert.Equal(14, backlog.Count(static entry => entry.Status == Pcre2CorpusCaseStatus.UnsupportedYet));
-        Assert.Equal(25, backlog.Count(static entry => entry.Status == Pcre2CorpusCaseStatus.OutOfScopeBySpec));
-        Assert.Equal(16, backlog.Count(static entry => entry.Operation == Pcre2CorpusOperationKind.Replace));
-        Assert.Equal(5, backlog.Count(static entry => entry.Operation == Pcre2CorpusOperationKind.MatchDetailed));
-        Assert.Equal(1, backlog.Count(static entry => entry.Operation == Pcre2CorpusOperationKind.EnumerateMatches));
-        Assert.Equal(5, backlog.Count(static entry => entry.Operation == Pcre2CorpusOperationKind.Compile));
-    }
 }

@@ -72,7 +72,6 @@ public sealed class Pcre2CorpusInventoryTests
 
         Assert.True(cases.Count >= 218, $"Expected at least 218 corpus cases, found {cases.Count}.");
         Assert.True(cases.Count(static c => c.Status == Pcre2CorpusCaseStatus.Active) >= 190, "Expected a large active corpus.");
-        Assert.True(cases.Count(static c => c.Status == Pcre2CorpusCaseStatus.OutOfScopeBySpec) >= 20, "Expected an explicit remaining out-of-scope backlog.");
         Assert.True(cases.Count(static c => c.Operation == Pcre2CorpusOperationKind.Replace) >= 70, "Expected broad replacement coverage.");
         Assert.True(cases.Count(static c => c.Operation == Pcre2CorpusOperationKind.MatchDetailed) >= 65, "Expected broad detailed-match coverage.");
         Assert.True(cases.Count(static c => c.Operation == Pcre2CorpusOperationKind.Match) >= 27, "Expected broad simple-match coverage.");

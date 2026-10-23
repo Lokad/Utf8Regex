@@ -7,34 +7,6 @@
     "Reason": "SpecRejectsNonMonotoneIterativeMatch"
   },
   {
-    "Id": "pcre2.testinput1.branch-reset-dupname-backref.aaaaaa",
-    "Operation": "MatchDetailed",
-    "Status": "OutOfScopeBySpec",
-    "Source": "pcre2:testdata/testinput1:lines-5872-5873",
-    "Reason": "SpecRejectsDuplicateNameDetailedProjection"
-  },
-  {
-    "Id": "pcre2.testinput1.branch-reset-dupname-backref.bb",
-    "Operation": "MatchDetailed",
-    "Status": "OutOfScopeBySpec",
-    "Source": "pcre2:testdata/testinput1:lines-5872-5874",
-    "Reason": "SpecRejectsDuplicateNameDetailedProjection"
-  },
-  {
-    "Id": "pcre2.testinput1.branch-reset-dupnames-followed-by-dupname.aaaccccaaa",
-    "Operation": "MatchDetailed",
-    "Status": "OutOfScopeBySpec",
-    "Source": "pcre2:testdata/testinput1:lines-5876-5877",
-    "Reason": "SpecRejectsDuplicateNameDetailedProjection"
-  },
-  {
-    "Id": "pcre2.testinput1.branch-reset-dupnames-followed-by-dupname.bccccb",
-    "Operation": "MatchDetailed",
-    "Status": "OutOfScopeBySpec",
-    "Source": "pcre2:testdata/testinput1:lines-5876-5878",
-    "Reason": "SpecRejectsDuplicateNameDetailedProjection"
-  },
-  {
     "Id": "pcre2.testinput1.mailbox-rfc2822.addr-spec",
     "Operation": "Match",
     "Status": "UnsupportedYet",
