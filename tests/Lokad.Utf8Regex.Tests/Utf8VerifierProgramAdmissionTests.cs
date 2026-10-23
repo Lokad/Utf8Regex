@@ -18,7 +18,7 @@ public sealed class Utf8VerifierProgramAdmissionTests
         if (kind < 4)
             return Utf8StructuralVerifierRuntimeFactory.Create(prepared);
         if (kind < 8) return Utf8VerifierRuntime.Create(prepared);
-        return Utf8RegexProgram.Compile("a", RegexOptions.CultureInvariant);
+        return Utf8RegexProgram.Compile("a", RegexOptions.CultureInvariant, prepareRuntime: true);
     }
 
     [Theory]

@@ -203,8 +203,7 @@ public sealed class Utf8AsciiClassSearchAdmissionTests
     public void ScalarPublicOperationsPreserveAsciiClassesAcrossSupplementarySubjectsWithoutBcl(bool compiled)
     {
         var regex = new Utf8Regex("[ABCD]{2,4}", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
-        var runtime = Assert.IsType<Utf8VerifierRuntime>(typeof(Utf8Regex).GetProperty("_verifierRuntime", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex));
-        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(runtime);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(regex);
         var subject = Encoding.UTF8.GetBytes("😀ABCD中ABC😀A");
         Assert.True(regex.IsMatch(subject)); Assert.Equal(2, regex.Count(subject));
         var match = regex.Match(subject); Assert.Equal(4, match.IndexInBytes); Assert.Equal(4, match.LengthInBytes);

@@ -183,23 +183,14 @@ public sealed class Utf8NativeLiteralInvocationTests
         var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10));
         var oracle = new Regex(pattern, options, TimeSpan.FromSeconds(10));
         Assert.Equal(Utf8ExecutionBackend.NativeLiteral, Prepared(regex).ExecutionBackend);
-        // Owned graph admission validates construction without creating BCL.
-        // Poison lazy accessors too, so every operation proves that independence.
+        // Owned graph admission and verifier preparation borrow the scalar tree.
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        ForbidFallbackExecution(regex);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(regex);
         if (pattern.Length == 0)
             Utf8ScalarCountTests.AssertEmptyScalarOperations(regex, false);
         else
             Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, oracle,
                 ["", "target target", "a ab aba", "aaa a", "é中\U0001f600 target 中"]);
-    }
-
-    private static void ForbidFallbackExecution(Utf8Regex regex)
-    {
-        var field = typeof(Utf8Regex).GetProperty("_verifierRuntime", BindingFlags.NonPublic | BindingFlags.Instance);
-        Assert.NotNull(field);
-        var runtime = Assert.IsType<Utf8VerifierRuntime>(field.GetValue(regex));
-        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(runtime);
     }
 
     [Theory]
@@ -239,7 +230,7 @@ public sealed class Utf8NativeLiteralInvocationTests
     {
         using var source = new CancellationTokenSource();
         var regex = new Utf8Regex(pattern, options);
-        if ((options & RegexOptions.NonBacktracking) != 0) ForbidFallbackExecution(regex);
+        if ((options & RegexOptions.NonBacktracking) != 0) Utf8OwnedVerifierAssertions.RetainsPreparedOwner(regex);
         foreach (var text in new[] { "éÉ", "éa a", "abcd ABCD", "KkK", "\U0001f600\U0001f600", "target target" })
         {
             var input = Encoding.UTF8.GetBytes(text);

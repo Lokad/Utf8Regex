@@ -104,7 +104,7 @@ public sealed partial class Utf8Regex
         construction.Budget.ChargeWork(1);
         construction.Budget.ReserveBytes(ProgramFixedMetadataBytes);
 
-        _program = Utf8RegexProgram.Compile(pattern, options);
+        _program = Utf8RegexProgram.Compile(pattern, options, prepareRuntime: !HasFiniteExecutionLimits);
         var preparedRegex = _program.PreparedRegex;
         _prioritizedBooleanFamilyKind = SelectPrioritizedBooleanFamily(preparedRegex, options);
         _prioritizePlainAsciiLiteralCount = CanPrioritizePlainAsciiLiteralCount(pattern, preparedRegex, options);
@@ -306,9 +306,8 @@ public sealed partial class Utf8Regex
 
     private Utf8CompiledEngine _compiledEngine => _program.CompiledEngine;
 
-    private Utf8VerifierRuntime _verifierRuntime => _program.VerifierRuntime;
-
-    private Utf8CompiledEngineRuntime _compiledEngineRuntime => _program.CompiledEngineRuntime;
+    private Utf8CompiledEngineRuntime _compiledEngineRuntime => _program.CompiledEngineRuntime ??
+        throw new InvalidOperationException("A fixed-budget expression has no unmetered runtime.");
 
     private Utf8EmittedKernelMatcher? _directStructuralFamilyKernelMatcher =>
         _program.DirectStructuralFamilyKernelMatcher;
@@ -371,7 +370,7 @@ public sealed partial class Utf8Regex
 
     private Utf8StructuralLinearProgramKind StructuralLinearProgramKind => _preparedRegex.StructuralLinearProgram.Kind;
 
-    private Utf8StructuralVerifierPlan StructuralVerifierPlan => _verifierRuntime.StructuralVerifierPlan;
+    private Utf8StructuralVerifierPlan StructuralVerifierPlan => _preparedRegex.StructuralVerifier;
 
     private AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan => _preparedRegex.StructuralIdentifierFamilyPlan;
 
@@ -3153,7 +3152,7 @@ public sealed partial class Utf8Regex
         if (MatchTimeout != Regex.InfiniteMatchTimeout ||
             _preparedRegex.ExecutionPattern.IndexOf('(') >= 0 ||
             CompiledEngineKind != Utf8CompiledEngineKind.LiteralFamily ||
-            _compiledEngineRuntime is not Utf8LiteralCompiledEngineRuntime literalFamilyRuntime)
+            _program.CompiledEngineRuntime is not Utf8LiteralCompiledEngineRuntime literalFamilyRuntime)
         {
             search = default;
             return false;

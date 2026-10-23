@@ -24,10 +24,19 @@ public sealed class Utf8SharedCompiledKernelTests
                 ? new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, finite)
                 : new Utf8Regex(pattern, options);
             var program = (Utf8RegexProgram)typeof(Utf8Regex).GetField("_program", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
-            var runtime = Assert.IsType<Utf8StructuralLinearAutomatonCompiledEngineRuntime>(program.CompiledEngineRuntime);
-            Assert.NotNull(program.DirectStructuralFamilyKernelMatcher);
-            if (compiled) Assert.Same(program.DirectStructuralFamilyKernelMatcher, runtime.PreparedKernelMatcher);
-            else Assert.Null(runtime.PreparedKernelMatcher);
+            if (limits is not null)
+            {
+                Assert.Null(program.VerifierRuntime);
+                Assert.Null(program.CompiledEngineRuntime);
+                Assert.Null(program.DirectStructuralFamilyKernelMatcher);
+            }
+            else
+            {
+                var runtime = Assert.IsType<Utf8StructuralLinearAutomatonCompiledEngineRuntime>(program.CompiledEngineRuntime);
+                Assert.NotNull(program.DirectStructuralFamilyKernelMatcher);
+                if (compiled) Assert.Same(program.DirectStructuralFamilyKernelMatcher, runtime.PreparedKernelMatcher);
+                else Assert.Null(runtime.PreparedKernelMatcher);
+            }
 
             var input = Encoding.UTF8.GetBytes("é😀 " + value);
             Assert.True(regex.IsMatch(input));

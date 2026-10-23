@@ -21,7 +21,8 @@ public sealed partial class Utf8Regex
 
         public NativeExecutionKind ExecutionKind => _owner.ExecutionKind;
 
-        public bool DebugUsesOwnedSliceProgram => _owner._preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex;
+        public bool DebugUsesOwnedSliceProgram => _owner.HasFiniteExecutionLimits ||
+            _owner._preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex;
 
         internal Utf8SliceProgram? OwnedSliceProgram => DebugUsesOwnedSliceProgram ? _owner._ownedSliceProgram : null;
 
@@ -41,13 +42,13 @@ public sealed partial class Utf8Regex
 
         // Friend tooling borrows the existing runtime; no replay or extra owner
         // is retained in the shipped matcher.
-        internal Utf8CompiledEngineRuntime CompiledRuntime => _owner._compiledEngineRuntime;
+        internal Utf8CompiledEngineRuntime? CompiledRuntime => _owner._program.CompiledEngineRuntime;
 
         public Utf8CompiledExecutionBackend CompiledExecutionBackend => _owner.CompiledExecutionBackend;
 
-        public string DebugCompiledEngineRuntimeType => _owner._compiledEngineRuntime.GetType().Name;
+        public string DebugCompiledEngineRuntimeType => CompiledRuntime?.GetType().Name ?? "None";
 
-        public bool DebugUsesEmittedKernelMatcher => _owner._compiledEngineRuntime.UsesEmittedKernelMatcher;
+        public bool DebugUsesEmittedKernelMatcher => CompiledRuntime?.UsesEmittedKernelMatcher ?? false;
 
         public string DebugFallbackDirectFamilyKind => _owner._preparedRegex.FallbackDirectFamily.Kind.ToString();
 
@@ -87,16 +88,16 @@ public sealed partial class Utf8Regex
         public bool DebugCanUseFusedCompiledUtf8LiteralFamilyCount =>
             _owner.CanUseFusedCompiledUtf8LiteralFamilyCount();
 
-        public bool DebugSupportsWellFormedOnlyMatch => _owner._compiledEngineRuntime.SupportsWellFormedOnlyMatch;
+        public bool DebugSupportsWellFormedOnlyMatch => CompiledRuntime?.SupportsWellFormedOnlyMatch ?? false;
 
         public bool DebugWellFormedOnlyMatchMissIsDefinitive =>
-            _owner._compiledEngineRuntime.WellFormedOnlyMatchMissIsDefinitive;
+            CompiledRuntime?.WellFormedOnlyMatchMissIsDefinitive ?? false;
 
         public bool DebugSupportsThrowIfInvalidOnlyCount =>
-            _owner._compiledEngineRuntime.SupportsThrowIfInvalidOnlyCount;
+            CompiledRuntime?.SupportsThrowIfInvalidOnlyCount ?? false;
 
         public bool DebugUsesEmittedWholeMatcher =>
-            _owner._compiledEngineRuntime.UsesEmittedWholeMatcher;
+            CompiledRuntime?.UsesEmittedWholeMatcher ?? false;
 
         public bool DebugCanGuideFallbackVerification => _owner.CanGuideFallbackVerification();
 

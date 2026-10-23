@@ -425,9 +425,7 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
             (Pattern: @"\.", Flags: RegexOptions.None, Subject: "😀.中.😀", Replaced: "😀X中X😀") })
         {
             var regex = new Utf8Regex(row.Pattern, RegexOptions.CultureInvariant | row.Flags | (compiled ? RegexOptions.Compiled : RegexOptions.None));
-            var property = typeof(Utf8Regex).GetProperty("_verifierRuntime", BindingFlags.NonPublic | BindingFlags.Instance); Assert.NotNull(property);
-            var runtime = Assert.IsType<Utf8VerifierRuntime>(property.GetValue(regex));
-            Utf8OwnedVerifierAssertions.RetainsPreparedOwner(runtime);
+            Utf8OwnedVerifierAssertions.RetainsPreparedOwner(regex);
             var input = Encoding.UTF8.GetBytes(row.Subject); Assert.True(regex.IsMatch(input)); Assert.Equal(2, regex.Count(input));
             var match = regex.Match(input); Assert.Equal(4, match.IndexInBytes); Assert.Equal(row.Pattern == @"\." ? 1 : 2, match.LengthInBytes);
             Assert.Equal(match.IndexInBytes, regex.MatchDetailed(input).IndexInBytes);

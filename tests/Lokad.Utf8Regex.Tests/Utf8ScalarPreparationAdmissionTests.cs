@@ -52,7 +52,7 @@ public sealed class Utf8ScalarPreparationAdmissionTests
     public void CompiledHintKeepsItsCaptureWritingLazyLoopRouting(bool compiled)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
-        var program = Utf8RegexProgram.Compile("(?<x>a){0,2}?b", options);
+        var program = Utf8RegexProgram.Compile("(?<x>a){0,2}?b", options, prepareRuntime: true);
         Assert.NotNull(program.PreparedRegex.ScalarProgram);
         Assert.Equal(compiled, program.PreparedRegex.ScalarProgram.UsesInterpretedLazyLoopSemantics);
         var regex = new Utf8Regex("(?<x>a){0,2}?b", options);

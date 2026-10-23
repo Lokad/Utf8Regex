@@ -9,7 +9,7 @@ internal sealed class Utf8RegexProgram
     internal static ulong ObjectBytes => 128;
 
     private Utf8RegexProgram(Utf8PreparedRegex preparedRegex, Utf8CompiledEngine compiledEngine,
-        Utf8VerifierRuntime verifierRuntime, Utf8CompiledEngineRuntime compiledEngineRuntime,
+        Utf8VerifierRuntime? verifierRuntime, Utf8CompiledEngineRuntime? compiledEngineRuntime,
         Utf8EmittedKernelMatcher? directStructuralFamilyKernelMatcher, Utf8CaptureCatalog captureCatalog)
     {
         PreparedRegex = preparedRegex;
@@ -24,9 +24,9 @@ internal sealed class Utf8RegexProgram
 
     public Utf8CompiledEngine CompiledEngine { get; }
 
-    public Utf8VerifierRuntime VerifierRuntime { get; }
+    public Utf8VerifierRuntime? VerifierRuntime { get; }
 
-    public Utf8CompiledEngineRuntime CompiledEngineRuntime { get; }
+    public Utf8CompiledEngineRuntime? CompiledEngineRuntime { get; }
 
     public Utf8EmittedKernelMatcher? DirectStructuralFamilyKernelMatcher { get; }
 
@@ -34,7 +34,8 @@ internal sealed class Utf8RegexProgram
 
     public static Utf8RegexProgram Compile(
         string pattern,
-        RegexOptions options)
+        RegexOptions options,
+        bool prepareRuntime)
     {
         using var scope = Utf8ConstructionScope.Enter();
         var budget = scope.Budget;
@@ -44,12 +45,12 @@ internal sealed class Utf8RegexProgram
             var effectiveOptions = Utf8RegexSyntax.NormalizeNonSemanticOptions(options);
             var preparedRegex = Utf8FrontEnd.Compile(pattern, effectiveOptions, options);
             var compiledEngine = Utf8CompiledEngineSelector.Select(preparedRegex);
-            var verifierRuntime = Utf8VerifierRuntime.Create(preparedRegex);
-            var compiledEngineRuntime = Utf8CompiledEngineRuntime.Create(
-                compiledEngine,
-                preparedRegex,
-                verifierRuntime,
-                options);
+            // Fixed numeric policies select metered execution for the entire
+            // instance lifetime. Keep its scalar/search payloads, but acquire no
+            // unreachable verifier, unmetered runtime or emitted delegates.
+            var verifierRuntime = prepareRuntime ? Utf8VerifierRuntime.Create(preparedRegex) : null;
+            var compiledEngineRuntime = verifierRuntime is null ? null :
+                Utf8CompiledEngineRuntime.Create(compiledEngine, preparedRegex, verifierRuntime, options);
             // Successful owned parsing always finishes capture numbering before
             // publishing the tree. Borrow that catalog for every public route;
             // absent metadata would indicate broken internal preparation.
@@ -57,7 +58,7 @@ internal sealed class Utf8RegexProgram
             if (captureCatalog is null)
                 throw new InvalidOperationException("Owned preparation must produce capture metadata.");
             Utf8EmittedKernelMatcher? directStructuralFamilyKernelMatcher = null;
-            if (preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily)
+            if (prepareRuntime && preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily)
             {
                 // The compiled runtime already attempted preparation, including
                 // a legitimate decline. Borrow its immutable kernel for Count.

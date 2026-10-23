@@ -6,6 +6,13 @@ namespace Lokad.Utf8Regex.Tests;
 
 internal static class Utf8OwnedVerifierAssertions
 {
+    internal static void RetainsPreparedOwner(Utf8Regex regex)
+    {
+        var program = Assert.IsType<Utf8RegexProgram>(typeof(Utf8Regex)
+            .GetField("_program", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex));
+        RetainsPreparedOwner(Assert.IsType<Utf8VerifierRuntime>(program.VerifierRuntime));
+    }
+
     private static readonly FieldInfo StructuralOwner = typeof(Utf8StructuralVerifierRuntime)
         .GetField("_regexPlan", BindingFlags.Instance | BindingFlags.NonPublic)!;
 

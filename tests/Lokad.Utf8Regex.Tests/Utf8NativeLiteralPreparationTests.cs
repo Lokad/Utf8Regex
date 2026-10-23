@@ -268,10 +268,7 @@ public sealed class Utf8NativeLiteralPreparationTests
         foreach (var pattern in new[] { "([^a])", "([^a])(?=!)", "([aA-[a]])" })
         {
             var regex = new Utf8Regex(pattern, options);
-            var property = typeof(Utf8Regex).GetProperty("_verifierRuntime", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(property);
-            var runtime = Assert.IsType<Utf8VerifierRuntime>(property.GetValue(regex));
-            Utf8OwnedVerifierAssertions.RetainsPreparedOwner(runtime);
+            Utf8OwnedVerifierAssertions.RetainsPreparedOwner(regex);
             var subtracted = pattern == "([aA-[a]])";
             // Folding [aA] before subtracting folded [a] yields an empty class.
             var input = Encoding.UTF8.GetBytes(subtracted ? "Aa" : "A😀!");

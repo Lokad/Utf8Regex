@@ -6,6 +6,11 @@ These changes are development source, currently 0.4.0-rc.2-dev. Frozen RC1
 artifacts remain unchanged and unpublished; they must not be released. A fresh
 candidate and final downstream/package/cost qualification are still required.
 
+- Core instances with fixed finite numeric limits no longer prepare unreachable
+  unmetered runtimes or emitted delegates. Scalar/native metered execution and
+  public Options remain; lower construction charges may admit patterns previously
+  denied by construction budgets. Unlimited instances retain their fast paths.
+
 - PythonRe native FindAll collection now keeps nonzero starts in byte coordinates,
   avoiding a discarded whole-subject UTF-16 boundary map. Complete UTF-8 validation,
   scalar alignment, returned coordinates and invocation controls remain.

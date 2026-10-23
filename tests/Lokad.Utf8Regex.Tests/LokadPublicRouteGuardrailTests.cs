@@ -71,10 +71,7 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
-        var runtimeProperty = typeof(Utf8Regex).GetProperty("_verifierRuntime", BindingFlags.NonPublic | BindingFlags.Instance);
-        Assert.NotNull(runtimeProperty);
-        var runtime = Assert.IsType<Utf8VerifierRuntime>(runtimeProperty.GetValue(regex));
-        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(runtime);
+        Utf8OwnedVerifierAssertions.RetainsPreparedOwner(regex);
         var input = Encoding.UTF8.GetBytes("!éé Holmes!𐐀 Holmes!");
         Assert.True(regex.IsMatch(input));
         Assert.Equal(2, regex.Count(input));

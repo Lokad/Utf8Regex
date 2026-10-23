@@ -340,9 +340,7 @@ public sealed class Utf8NativeStructuralPreparationTests
         })
         {
             var regex = new Utf8Regex(row.Pattern, options);
-            var property = typeof(Utf8Regex).GetProperty("_verifierRuntime", BindingFlags.NonPublic | BindingFlags.Instance); Assert.NotNull(property);
-            var runtime = Assert.IsType<Utf8VerifierRuntime>(property.GetValue(regex));
-            Utf8OwnedVerifierAssertions.RetainsPreparedOwner(runtime);
+            Utf8OwnedVerifierAssertions.RetainsPreparedOwner(regex);
             var input = Encoding.UTF8.GetBytes("😀" + row.First + "中" + row.Second + "😀");
             Assert.True(regex.IsMatch(input)); Assert.Equal(2, regex.Count(input));
             var rtl = (options & RegexOptions.RightToLeft) != 0; var match = regex.Match(input);

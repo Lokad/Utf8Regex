@@ -279,9 +279,7 @@ public sealed class Utf8StructuralPlanAdmissionTests
             @"(?:call[\s\S]{0,3}Result|invoke[\s\S]{0,3}Other)", @"call(?=[ \t]+Result)" })
         {
             var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
-            var property = typeof(Utf8Regex).GetProperty("_verifierRuntime", BindingFlags.NonPublic | BindingFlags.Instance)!;
-            var runtime = Assert.IsType<Utf8VerifierRuntime>(property.GetValue(regex));
-            Utf8OwnedVerifierAssertions.RetainsPreparedOwner(runtime);
+            Utf8OwnedVerifierAssertions.RetainsPreparedOwner(regex);
             var subject = pattern.Contains("[A-Z]") ? "😀call Name(中invoke Name("
                 : pattern.Contains("?=") ? "😀call Result中call Result" : "😀call xResult中call xResult";
             var bytes = Encoding.UTF8.GetBytes(subject); Assert.True(regex.IsMatch(bytes)); Assert.Equal(2, regex.Count(bytes));

@@ -36,6 +36,14 @@ factory eagerly prepares the derived FullMatch program too; its constructors
 defer that preparation. Replacement preparation and unmodeled CLR/JIT metadata
 retain their separate scope. Pass the invocation token to each later operation.
 
+Core instances with any fixed finite numeric invocation limit omit the unmetered
+verifier/runtime and emitted delegates that their public routes cannot use.
+Their admitted scalar program and native search payloads remain; Options retains
+Compiled when requested. Construction charges can therefore be lower, allowing
+some previously denied patterns. Construction backstops and interruption still
+apply before acquiring the retained preparation. A per-call token or a match
+timeout alone does not remove preparation from an otherwise unlimited instance.
+
 Development after frozen RC1 covers PCRE2 backtracking parsing/lowering with the
 same construction owner. Its recursive frames have a fixed 256-frame backstop,
 tightened by smaller caller limits. A conservative 256-byte charge per UTF-16
