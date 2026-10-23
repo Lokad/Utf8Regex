@@ -1050,7 +1050,7 @@ internal ref partial struct Utf8OperationMatchCursor
         _current = Utf8ValueMatch.NoMatch;
         var pendingState = _multiLiteralScanState;
         ref readonly var searchPlan = ref _plans.SearchPlan;
-        var breach = Utf8SearchStrategyExecutor.TryFindNextLiteralFamilyMatch(searchPlan, _program,
+        var breach = Utf8BackendInstructionExecutor.TryFindNextLiteralFamilyMatch(searchPlan, _program,
             _input, ref pendingState, ref _sliceInvocation, out var match, out var discovered);
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         if (!discovered)
