@@ -10,8 +10,9 @@ public sealed class Pcre2CrlfCandidateTests
         foreach (var pattern in new[] { ".", @"\N", "(.)", ".+", ".*x", @"(?=.)\N", @"[^\r]", @"([^\r])", @".(?#\n)" })
             yield return [pattern, new[] { "x" }];
         yield return [".x", Array.Empty<string>()];
-        foreach (var pattern in new[] { @".|\n", @".|[\n]", @".|\x0A", @".|\x{A}", @".|\012", @"[^\x0C-\x0E]", @"([^\x0C-\x0E])", @".\n{0}", @".(?(DEFINE)(?<unused>\n))" })
+        foreach (var pattern in new[] { @".|\n", @".|[\n]", @".|\x0A", @".|\x{A}", @".|\012", @"[^\x0C-\x0E]", @"([^\x0C-\x0E])", @"[^\x0C-\x0E]|y", @".\n{0}", @".(?(DEFINE)(?<unused>\n))" })
             yield return [pattern, new[] { "\n", "x" }];
+        yield return [@"\B[^\x0C-\x0E]", new[] { "\n" }];
         yield return [@"\D", new[] { "\r", "\n", "x" }];
     }
 

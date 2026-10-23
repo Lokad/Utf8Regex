@@ -63,7 +63,7 @@ internal static class Pcre2BacktrackingCompiler
         }
 
         request = request with { SkipsCrLfContinuation = request.UsesCrLfNewlines &&
-            !parser.HasExplicitCrOrLf && !Pcre2BacktrackingAnalysis.HasCrRejectingLeadingClass(root) };
+            !parser.HasExplicitCrOrLf && !Pcre2BacktrackingAnalysis.LeadingFilterRejectsCr(root) };
         var nameEntries = parser.NameEntries;
         // Names and numeric slots are global to the parsed expression. Admit
         // their lookup once; nested assertion lowerers only borrow it.
@@ -93,26 +93,28 @@ internal static class Pcre2BacktrackingCompiler
 
 internal static class Pcre2BacktrackingAnalysis
 {
-    internal static bool HasCrRejectingLeadingClass(IPcre2BacktrackingNode node)
+    internal static bool LeadingFilterRejectsCr(IPcre2BacktrackingNode node)
     {
         Utf8ConstructionScope.ChargeWork(1);
         switch (node)
         {
             case Pcre2TokenBacktrackingNode token:
-                return Pcre2CharacterCompiler.HasCrRejectingLeadingClass(token.Token);
+                return Pcre2CharacterCompiler.LeadingFilterRejectsCr(token.Token);
             case Pcre2SequenceBacktrackingNode sequence:
                 foreach (var child in sequence.Children)
                 {
-                    if (HasCrRejectingLeadingClass(child)) return true;
+                    if (LeadingFilterRejectsCr(child)) return true;
                     if (CanConsume(child)) break;
                 }
                 return false;
             case Pcre2CaptureBacktrackingNode capture:
-                return HasCrRejectingLeadingClass(capture.Body);
+                return LeadingFilterRejectsCr(capture.Body);
             case Pcre2AtomicBacktrackingNode atomic:
-                return HasCrRejectingLeadingClass(atomic.Body);
+                return LeadingFilterRejectsCr(atomic.Body);
             case Pcre2RepeatBacktrackingNode { Minimum: > 0 } repeat:
-                return HasCrRejectingLeadingClass(repeat.Body);
+                return LeadingFilterRejectsCr(repeat.Body);
+            case Pcre2AlternationBacktrackingNode alternation:
+                return alternation.Alternatives.All(LeadingFilterRejectsCr);
             default:
                 return false;
         }

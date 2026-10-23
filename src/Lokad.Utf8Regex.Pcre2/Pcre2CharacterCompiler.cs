@@ -302,7 +302,7 @@ internal static class Pcre2CharacterCompiler
         if (!parser.TryParse(out var tokens)) return null;
         if (request.UsesCrLfNewlines)
             request = request with { SkipsCrLfContinuation = !tokens.Any(HasExplicitCrOrLf) &&
-                !(tokens.Length > 0 && HasCrRejectingLeadingClass(tokens[0])) };
+                !LeadingFilterRejectsCr(tokens) };
         var result = new Pcre2CharacterProgram(tokens, request, GetLeadingAsciiByte(tokens),
             tokens is [{ Kind: Pcre2CharacterTokenKind.ExtendedGraphemeCluster }, ..],
             tokens.Any(static token => token.Kind == Pcre2CharacterTokenKind.CodeUnit));
@@ -357,9 +357,23 @@ internal static class Pcre2CharacterCompiler
 
     // A native leading-class bitmap can discover LF without ever attempting CR.
     // This is a progression fact, not a second managed candidate-search engine.
-    internal static bool HasCrRejectingLeadingClass(Pcre2CharacterToken token) =>
-        token.Kind == Pcre2CharacterTokenKind.CharacterClass &&
-        !IsNegatedSingleton(token.CharacterClass) && !token.CharacterClass.AsciiSet.Contains((byte)'\r');
+    internal static bool LeadingFilterRejectsCr(Pcre2CharacterToken token) => token.Kind switch
+    {
+        Pcre2CharacterTokenKind.Literal => token.Literal.Value != '\r',
+        Pcre2CharacterTokenKind.CharacterClass => !IsNegatedSingleton(token.CharacterClass) &&
+            !token.CharacterClass.AsciiSet.Contains((byte)'\r'),
+        _ => false,
+    };
+
+    private static bool LeadingFilterRejectsCr(ReadOnlySpan<Pcre2CharacterToken> tokens)
+    {
+        foreach (var token in tokens)
+        {
+            Utf8ConstructionScope.ChargeWork(1);
+            if (Pcre2BacktrackingAnalysis.ConsumesInput(token.Kind)) return LeadingFilterRejectsCr(token);
+        }
+        return false;
+    }
 
     private static bool IsNegatedSingleton(Pcre2CharacterClass characterClass) =>
         characterClass.Negated && characterClass.Terms is
