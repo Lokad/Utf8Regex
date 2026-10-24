@@ -1,0 +1,13 @@
+{
+  "Name": "One successful in-process Dry benchmark; smoke only",
+  "ExpectedExit": 0,
+  "ActualExit": 0,
+  "Passed": true,
+  "Arguments": [
+    "--job",
+    "Dry",
+    "--filter",
+    "*Utf8ExecutionDeadlineBenchmarks.PollInfinite*",
+    "--inProcess"
+  ]
+}

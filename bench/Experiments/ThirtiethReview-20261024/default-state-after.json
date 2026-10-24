@@ -1,0 +1,90 @@
+{
+  "Producer": "0.4.0-rc.2-dev\u002B56042eb1f4bfff5900caf29f304d64f3210d739a",
+  "Results": [
+    {
+      "Name": "Default-MatchContext-Success",
+      "Value": "False",
+      "Exception": null
+    },
+    {
+      "Name": "Default-MatchContext-IndexInBytes",
+      "Value": "0",
+      "Exception": null
+    },
+    {
+      "Name": "Default-MatchContext-LengthInBytes",
+      "Value": "0",
+      "Exception": null
+    },
+    {
+      "Name": "Default-MatchContext-TryGetByteRange",
+      "Value": "True",
+      "Exception": null
+    },
+    {
+      "Name": "Default-MatchContext-TryGetValueBytes",
+      "Value": "True",
+      "Exception": null
+    },
+    {
+      "Name": "Default-CaptureContext-Success",
+      "Value": "False",
+      "Exception": null
+    },
+    {
+      "Name": "Default-CaptureContext-IndexInBytes",
+      "Value": "0",
+      "Exception": null
+    },
+    {
+      "Name": "Default-CaptureContext-LengthInBytes",
+      "Value": "0",
+      "Exception": null
+    },
+    {
+      "Name": "Default-CaptureContext-GetValueBytes",
+      "Value": "0",
+      "Exception": null
+    },
+    {
+      "Name": "Default-CaptureContext-TryGetByteRange",
+      "Value": "True",
+      "Exception": null
+    },
+    {
+      "Name": "Default-GroupContext-GetValueBytes",
+      "Value": "0",
+      "Exception": null
+    },
+    {
+      "Name": "Default-ValueSplit-GetValueBytes",
+      "Value": null,
+      "Exception": "System.InvalidOperationException"
+    },
+    {
+      "Name": "Core-NoHit-ASCII-IndexInBytes",
+      "Value": "0",
+      "Exception": null
+    },
+    {
+      "Name": "Core-NoHit-Unicode-IndexInBytes",
+      "Value": "0",
+      "Exception": null
+    },
+    {
+      "Name": "Core-Supplementary-Capture-GetValueBytes",
+      "Value": "4",
+      "Exception": null
+    },
+    {
+      "Name": "Default-PythonRe-ValueMatch-GetValueBytes",
+      "Value": "0",
+      "Exception": null
+    },
+    {
+      "Name": "Default-Pcre2-ValueMatch-GetValueBytes",
+      "Value": "0",
+      "Exception": null
+    }
+  ]
+}

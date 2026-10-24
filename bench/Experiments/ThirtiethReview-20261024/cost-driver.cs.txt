@@ -1,0 +1,48 @@
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+
+public static class Lanes
+{
+    public static string Producer() => typeof(Utf8Regex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
+    public static (string, Func<long>, long)[] Create()
+    {
+        var literal = new Utf8Regex("z");
+        var family = new Utf8Regex("(?<left>z)|(?<right>w)");
+        var finite = new Utf8Regex("z", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
+            new Utf8ResourcePolicy { MaxWorkSteps = 100_000_000 });
+        var countControl = new Utf8Regex("abc", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var unicode = Encoding.UTF8.GetBytes(new string('é', 65536));
+        var familyHit = Encoding.UTF8.GetBytes(new string('é', 65536) + "😀w");
+        var asciiHit = "zabc"u8.ToArray();
+        var countInput = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("abc xyz ", 128)));
+        return [
+            ("Native/MatchDetailed-literal-Unicode-miss-128KiB", () => Miss(literal, unicode), 1),
+            ("Native/MatchDetailed-captured-family-Unicode-miss-128KiB", () => Miss(family, unicode), 1),
+            ("Hit-control/MatchDetailed-ASCII-literal-short", () => Hit(literal, asciiHit), 3),
+            ("Hit-control/MatchDetailed-captured-family-Unicode", () => FamilyHit(family, familyHit), familyHit.Length + 1),
+            ("Unchanged-control/compiled-literal-Count", () => countControl.Count(countInput), 128),
+            ("Unchanged-control/finite-work-detailed-Unicode-miss", () => Miss(finite, unicode), 1)
+        ];
+    }
+    private static long Miss(Utf8Regex regex, byte[] input)
+    {
+        var result = regex.MatchDetailed(input);
+        if (result.Success || !result.TryGetByteRange(out var start, out var length) || start != 0 || length != 0)
+            throw new Exception("Detailed miss range changed");
+        return result.GroupCount;
+    }
+    private static long Hit(Utf8Regex regex, byte[] input)
+    {
+        var result = regex.MatchDetailed(input);
+        if (!result.Success) throw new Exception("Detailed literal hit changed");
+        return result.GroupCount + result.IndexInBytes + result.LengthInBytes + 1;
+    }
+    private static long FamilyHit(Utf8Regex regex, byte[] input)
+    {
+        var result = regex.MatchDetailed(input);
+        if (!result.Success || result.GetGroup("left").Success) throw new Exception("Captured family hit changed");
+        return result.IndexInBytes + result.LengthInBytes + result.GetGroup("right").CaptureCount;
+    }
+}

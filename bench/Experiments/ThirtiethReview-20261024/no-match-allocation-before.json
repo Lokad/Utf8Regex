@@ -1,0 +1,62 @@
+{
+  "Scope": "Bounded public allocation witness only; no timing claim. Constructors and subjects are outside the measured loops.",
+  "Producer": "0.4.0-rc.2-dev\u002B28b31f70aa8536081d96706e4784543b34e4a3b7",
+  "Rows": [
+    {
+      "Name": "Unlimited",
+      "Utf16Characters": 1024,
+      "NonAscii": false,
+      "InputBytes": 1024,
+      "BytesPerCall": 0
+    },
+    {
+      "Name": "Finite-work",
+      "Utf16Characters": 1024,
+      "NonAscii": false,
+      "InputBytes": 1024,
+      "BytesPerCall": 112
+    },
+    {
+      "Name": "Unlimited",
+      "Utf16Characters": 1024,
+      "NonAscii": true,
+      "InputBytes": 2048,
+      "BytesPerCall": 4288
+    },
+    {
+      "Name": "Finite-work",
+      "Utf16Characters": 1024,
+      "NonAscii": true,
+      "InputBytes": 2048,
+      "BytesPerCall": 112
+    },
+    {
+      "Name": "Unlimited",
+      "Utf16Characters": 65536,
+      "NonAscii": false,
+      "InputBytes": 65536,
+      "BytesPerCall": 0
+    },
+    {
+      "Name": "Finite-work",
+      "Utf16Characters": 65536,
+      "NonAscii": false,
+      "InputBytes": 65536,
+      "BytesPerCall": 112
+    },
+    {
+      "Name": "Unlimited",
+      "Utf16Characters": 65536,
+      "NonAscii": true,
+      "InputBytes": 131072,
+      "BytesPerCall": 270400
+    },
+    {
+      "Name": "Finite-work",
+      "Utf16Characters": 65536,
+      "NonAscii": true,
+      "InputBytes": 131072,
+      "BytesPerCall": 112
+    }
+  ]
+}

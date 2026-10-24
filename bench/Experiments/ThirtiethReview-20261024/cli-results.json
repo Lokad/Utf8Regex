@@ -1,0 +1,81 @@
+[
+  {
+    "Name": "invalid-job",
+    "Arguments": [
+      "--job",
+      "utf8regex-invalid-job",
+      "--filter",
+      "*Utf8RegexReviewNoSuchBenchmark*"
+    ],
+    "ExpectedExit": 2,
+    "ActualExit": 2,
+    "Passed": true,
+    "Log": "cli-invalid-job.log"
+  },
+  {
+    "Name": "empty-filter",
+    "Arguments": [
+      "--job",
+      "Dry",
+      "--filter",
+      "*Utf8RegexReviewNoSuchBenchmark*"
+    ],
+    "ExpectedExit": 1,
+    "ActualExit": 1,
+    "Passed": true,
+    "Log": "cli-empty-filter.log"
+  },
+  {
+    "Name": "unknown-custom",
+    "Arguments": [
+      "--utf8regex-review-invalid-command"
+    ],
+    "ExpectedExit": 2,
+    "ActualExit": 2,
+    "Passed": true,
+    "Log": "cli-unknown-custom.log"
+  },
+  {
+    "Name": "help",
+    "Arguments": [
+      "--help"
+    ],
+    "ExpectedExit": 0,
+    "ActualExit": 0,
+    "Passed": true,
+    "Log": "cli-help.log"
+  },
+  {
+    "Name": "info",
+    "Arguments": [
+      "--info"
+    ],
+    "ExpectedExit": 0,
+    "ActualExit": 0,
+    "Passed": true,
+    "Log": "cli-info.log"
+  },
+  {
+    "Name": "list",
+    "Arguments": [
+      "--list",
+      "flat",
+      "--filter",
+      "*Utf8ExecutionDeadlineBenchmarks.PollInfinite*"
+    ],
+    "ExpectedExit": 0,
+    "ActualExit": 0,
+    "Passed": true,
+    "Log": "cli-list.log"
+  },
+  {
+    "Name": "version",
+    "Arguments": [
+      "--version"
+    ],
+    "ExpectedExit": 0,
+    "ActualExit": 0,
+    "Passed": true,
+    "Log": "cli-version.log"
+  }
+]

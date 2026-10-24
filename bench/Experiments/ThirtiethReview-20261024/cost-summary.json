@@ -1,0 +1,76 @@
+{
+  "Scope": "One bounded source-built Windows public-operation before/after comparison. Not package, Linux or cumulative fixed-baseline qualification.",
+  "Sdk": "10.0.401",
+  "Runtime": ".NET 10.0.13",
+  "Versions": [
+    "0.4.0-rc.2-dev+28b31f70aa8536081d96706e4784543b34e4a3b7",
+    "0.4.0-rc.2-dev+56042eb1f4bfff5900caf29f304d64f3210d739a"
+  ],
+  "SampleCount": 9,
+  "WarmupMilliseconds": 2500,
+  "MinimumCalibrationMilliseconds": 40,
+  "WallSeconds": 36.8271243,
+  "Rows": [
+    {
+      "Name": "Native/MatchDetailed-literal-Unicode-miss-128KiB",
+      "BeforeNs": 365793.5483870968,
+      "AfterNs": 113387.96068796069,
+      "ChangePercent": -69.0021977730539,
+      "BeforeBytes": 270400,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0650843332375342,
+      "AfterSpread": 2.1146537994544046
+    },
+    {
+      "Name": "Native/MatchDetailed-captured-family-Unicode-miss-128KiB",
+      "BeforeNs": 402357.7981651376,
+      "AfterNs": 160669.88847583643,
+      "ChangePercent": -60.06790741759316,
+      "BeforeBytes": 270400,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.3347533443249522,
+      "AfterSpread": 1.5332800208290713
+    },
+    {
+      "Name": "Hit-control/MatchDetailed-ASCII-literal-short",
+      "BeforeNs": 355.05613597380324,
+      "AfterNs": 271.3805588662257,
+      "ChangePercent": -23.566858485090727,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.4809010443655237,
+      "AfterSpread": 2.0211916633048563
+    },
+    {
+      "Name": "Hit-control/MatchDetailed-captured-family-Unicode",
+      "BeforeNs": 506073.62637362635,
+      "AfterNs": 517677.9069767442,
+      "ChangePercent": 2.2930024404296034,
+      "BeforeBytes": 270488,
+      "AfterBytes": 270488,
+      "BeforeSpread": 1.071988251104195,
+      "AfterSpread": 1.0434597828159495
+    },
+    {
+      "Name": "Unchanged-control/compiled-literal-Count",
+      "BeforeNs": 1378.1389136242208,
+      "AfterNs": 1435.4589701460147,
+      "ChangePercent": 4.159236485896334,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.2553566844025503,
+      "AfterSpread": 1.0544467266750366
+    },
+    {
+      "Name": "Unchanged-control/finite-work-detailed-Unicode-miss",
+      "BeforeNs": 4349590,
+      "AfterNs": 4326940,
+      "ChangePercent": -0.5207387362946903,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.413032163798537,
+      "AfterSpread": 1.7287497775790015
+    }
+  ],
+  "Decision": "Accept: both native miss allocations fall from270400B to0B and median execution falls60-69%. Hit/control allocations unchanged; largest median hit/control increase4.16% within10% allowance. No confirmation used; raw noisy samples retained."
+}

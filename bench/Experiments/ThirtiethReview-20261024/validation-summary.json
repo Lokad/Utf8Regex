@@ -1,0 +1,28 @@
+{
+  "SourceRevision": "56042eb1f4bfff5900caf29f304d64f3210d739a",
+  "Configuration": "Release",
+  "Results": [
+    {
+      "Check": "Core full",
+      "Result": "Passed!  - Failed:     0, Passed: 39643, Skipped:     0, Total: 39643, Duration: 57 s - Lokad.Utf8Regex.Tests.dll (net10.0)"
+    },
+    {
+      "Check": "Core final focus",
+      "Result": "Passed!  - Failed:     0, Passed:    29, Skipped:     0, Total:    29, Duration: 889 ms - Lokad.Utf8Regex.Tests.dll (net10.0)"
+    },
+    {
+      "Check": "PythonRe focus",
+      "Result": "Passed!  - Failed:     0, Passed:    88, Skipped:     0, Total:    88, Duration: 2 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)"
+    },
+    {
+      "Check": "PCRE2 focus",
+      "Result": "Passed!  - Failed:     0, Passed:    49, Skipped:     0, Total:    49, Duration: 428 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)"
+    }
+  ],
+  "GeneratedChecks": [
+    "Matching benchmark/library build and README parity verifier pass",
+    "Matching generated PythonRe/PCRE2 page verifiers pass"
+  ],
+  "CliScope": "Precommit matching C# host; final committed source independently built and covered by Windows/Linux CI. Real generation failure and in-process successful Dry smoke recorded separately. No throughput claim from Dry.",
+  "KnownToolingLimitation": "Ordinary out-of-process BDN discovery sees archived duplicate benchmark projects; archives preserved and issue deferred."
+}

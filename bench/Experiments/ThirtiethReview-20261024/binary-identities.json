@@ -1,0 +1,26 @@
+[
+  {
+    "Version": "before",
+    "File": "Lokad.Utf8Regex.dll",
+    "Sha256": "E9D6F6BF6E4F70FC3A8B512B6D8E20C1A4827C4507C0998AC051E9D27500DA7C",
+    "Bytes": 1456640
+  },
+  {
+    "Version": "before",
+    "File": "Lokad.Utf8Regex.pdb",
+    "Sha256": "5DB534678BC3A862B1E0EE67A8BE771F319EF5D35E58A10BB40ADF493D7EA30D",
+    "Bytes": 504512
+  },
+  {
+    "Version": "after",
+    "File": "Lokad.Utf8Regex.dll",
+    "Sha256": "673542F19D6C810B2F3878D94889320966D81457C3938ABECAF404CFF7B10CEB",
+    "Bytes": 1456128
+  },
+  {
+    "Version": "after",
+    "File": "Lokad.Utf8Regex.pdb",
+    "Sha256": "F530C0477B590E8ADD210F413EF37E5EE5903ECF5E0B34CB6CF0BDB361F2458D",
+    "Bytes": 504472
+  }
+]

@@ -1,0 +1,90 @@
+{
+  "Producer": "0.4.0-rc.2-dev\u002B28b31f70aa8536081d96706e4784543b34e4a3b7",
+  "Results": [
+    {
+      "Name": "Default-MatchContext-Success",
+      "Value": "False",
+      "Exception": null
+    },
+    {
+      "Name": "Default-MatchContext-IndexInBytes",
+      "Value": null,
+      "Exception": "System.NullReferenceException"
+    },
+    {
+      "Name": "Default-MatchContext-LengthInBytes",
+      "Value": null,
+      "Exception": "System.NullReferenceException"
+    },
+    {
+      "Name": "Default-MatchContext-TryGetByteRange",
+      "Value": null,
+      "Exception": "System.NullReferenceException"
+    },
+    {
+      "Name": "Default-MatchContext-TryGetValueBytes",
+      "Value": null,
+      "Exception": "System.NullReferenceException"
+    },
+    {
+      "Name": "Default-CaptureContext-Success",
+      "Value": "False",
+      "Exception": null
+    },
+    {
+      "Name": "Default-CaptureContext-IndexInBytes",
+      "Value": null,
+      "Exception": "System.NullReferenceException"
+    },
+    {
+      "Name": "Default-CaptureContext-LengthInBytes",
+      "Value": null,
+      "Exception": "System.NullReferenceException"
+    },
+    {
+      "Name": "Default-CaptureContext-GetValueBytes",
+      "Value": null,
+      "Exception": "System.NullReferenceException"
+    },
+    {
+      "Name": "Default-CaptureContext-TryGetByteRange",
+      "Value": null,
+      "Exception": "System.NullReferenceException"
+    },
+    {
+      "Name": "Default-GroupContext-GetValueBytes",
+      "Value": "0",
+      "Exception": null
+    },
+    {
+      "Name": "Default-ValueSplit-GetValueBytes",
+      "Value": null,
+      "Exception": "System.InvalidOperationException"
+    },
+    {
+      "Name": "Core-NoHit-ASCII-IndexInBytes",
+      "Value": "0",
+      "Exception": null
+    },
+    {
+      "Name": "Core-NoHit-Unicode-IndexInBytes",
+      "Value": "0",
+      "Exception": null
+    },
+    {
+      "Name": "Core-Supplementary-Capture-GetValueBytes",
+      "Value": "4",
+      "Exception": null
+    },
+    {
+      "Name": "Default-PythonRe-ValueMatch-GetValueBytes",
+      "Value": "0",
+      "Exception": null
+    },
+    {
+      "Name": "Default-Pcre2-ValueMatch-GetValueBytes",
+      "Value": "0",
+      "Exception": null
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "Name": "BDN real worker-generation failure: archived duplicate project files",
+  "ExpectedExit": 1,
+  "ActualExit": 1,
+  "Passed": true,
+  "Arguments": [
+    "--job",
+    "Dry",
+    "--filter",
+    "*Utf8ExecutionDeadlineBenchmarks.PollInfinite*",
+    "--buildTimeout",
+    "1"
+  ],
+  "Cause": "The requested one-second build timeout was not reached; project discovery failed first. Existing archives are preserved."
+}
