@@ -76,6 +76,10 @@ No additional command or qualification framework was introduced.
   the shell instead of appearing as a successful run. No automatic fallback mode
   or toolchain wrapper was added.
 
+The generation-failure and in-process-smoke transcripts are saved as adjacent
+cli-generation-failure.txt and cli-inprocess-success-smoke.txt (display whitespace
+normalized; original logs remain in ignored artifacts).
+
 CLI checks used matching precommit C# binaries. Final source builds and CI are
 recorded separately; these observations do not claim package provenance.
 All18 protected files (four snapshots, nine frozen RC1 files, five TODOs) retain

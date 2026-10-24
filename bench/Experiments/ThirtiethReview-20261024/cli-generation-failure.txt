@@ -1,0 +1,71 @@
+// Validating benchmarks:
+// ***** BenchmarkRunner: Start   *****
+// ***** Found 1 benchmark(s) in total *****
+// ***** Building 1 exe(s) in Parallel: Start   *****
+// ***** Done, took 00:00:16 (16.02 sec)   *****
+// Found 1 benchmarks:
+//   Utf8ExecutionDeadlineBenchmarks.PollInfinite: Dry(IterationCount=1, LaunchCount=1, RunStrategy=ColdStart, UnrollFactor=1, WarmupCount=1)
+
+Setup power plan (GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c FriendlyName: High performance)
+// Generate Exception: System.NotSupportedException: Found more than one matching project file for Lokad.Utf8Regex.Benchmarks in D:\code\utf8regex and its subfolders: 'D:\code\utf8regex\bench\Lokad.Utf8Regex.Benchmarks\Lokad.Utf8Regex.Benchmarks.csproj','D:\code\utf8regex\artifacts\offset-281\bench\Lokad.Utf8Regex.Benchmarks\Lokad.Utf8Regex.Benchmarks.csproj','D:\code\utf8regex\artifacts\pcre2-repeat-journal-20261017\debug-before-source\bench\Lokad.Utf8Regex.Benchmarks\Lokad.Utf8Regex.Benchmarks.csproj','D:\code\utf8regex\artifacts\python-current-capture-20261017\source\bench\Lokad.Utf8Regex.Benchmarks\Lokad.Utf8Regex.Benchmarks.csproj','D:\code\utf8regex\artifacts\pythonre-current-qualification-20261017\producer-source\bench\Lokad.Utf8Regex.Benchmarks\Lokad.Utf8Regex.Benchmarks.csproj','D:\code\utf8regex\artifacts\pythonre-limited-split-current-20261017\producer-source\bench\Lokad.Utf8Regex.Benchmarks\Lokad.Utf8Regex.Benchmarks.csproj','D:\code\utf8regex\artifacts\r05-dfa-graph-admission-20261010\final-source\bench\Lokad.Utf8Regex.Benchmarks\Lokad.Utf8Regex.Benchmarks.csproj','D:\code\utf8regex\artifacts\r05-dfa-graph-admission-20261010\qualified-source\bench\Lokad.Utf8Regex.Benchmarks\Lokad.Utf8Regex.Benchmarks.csproj','D:\code\utf8regex\artifacts\r06-pcre2-slice-template-authority-20261011\python-package-source\bench\Lokad.Utf8Regex.Benchmarks\Lokad.Utf8Regex.Benchmarks.csproj','D:\code\utf8regex\artifacts\r06-pcre2-slice-template-authority-20261011\python-package-source-qualified\bench\Lokad.Utf8Regex.Benchmarks\Lokad.Utf8Regex.Benchmarks.csproj','D:\code\utf8regex\artifacts\folded-literal-count-routing-20261016\publication-frozen\repo\bench\Lokad.Utf8Regex.Benchmarks\Lokad.Utf8Regex.Benchmarks.csproj','D:\code\utf8regex\artifacts\publication-preflight-scalar60-20261016\frozen\repo\bench\Lokad.Utf8Regex.Benchmarks\Lokad.Utf8Regex.Benchmarks.csproj'. Benchmark project names needs to be unique.
+   at BenchmarkDotNet.Toolchains.CsProj.CsProjGenerator.GetProjectFilePath(Type benchmarkTarget, ILogger logger)
+   at BenchmarkDotNet.Toolchains.CsProj.CsProjGenerator.GenerateProject(BuildPartition buildPartition, ArtifactsPaths artifactsPaths, ILogger logger)
+   at BenchmarkDotNet.Toolchains.GeneratorBase.GenerateProject(BuildPartition buildPartition, ILogger logger, String rootArtifactsFolderPath)
+
+// BenchmarkDotNet has failed to build the auto-generated boilerplate code.
+// It can be found in D:\code\utf8regex\bench\Lokad.Utf8Regex.Benchmarks\bin\Release\net10.0\Lokad.Utf8Regex.Benchmarks-Dry-1
+// Please follow the troubleshooting guide: https://benchmarkdotnet.org/articles/guides/troubleshooting.html
+
+// ** Remained 0 (0.0%) benchmark(s) to run. Estimated finish 2026-10-24 14:53 (0h 0m from now) **
+Successfully reverted power plan (GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c FriendlyName: High performance)
+// ***** BenchmarkRunner: Finish  *****
+
+// * Export *
+  bench\Lokad.Utf8Regex.Benchmarks\bin\Release\net10.0\BenchmarkDotNet.Artifacts\runs\20261024-125310629-0995ebdb00424390af9e54e3ff8a103f\results\Lokad.Utf8Regex.Benchmarks.Utf8ExecutionDeadlineBenchmarks-report.csv
+  bench\Lokad.Utf8Regex.Benchmarks\bin\Release\net10.0\BenchmarkDotNet.Artifacts\runs\20261024-125310629-0995ebdb00424390af9e54e3ff8a103f\results\Lokad.Utf8Regex.Benchmarks.Utf8ExecutionDeadlineBenchmarks-report-github.md
+  bench\Lokad.Utf8Regex.Benchmarks\bin\Release\net10.0\BenchmarkDotNet.Artifacts\runs\20261024-125310629-0995ebdb00424390af9e54e3ff8a103f\results\Lokad.Utf8Regex.Benchmarks.Utf8ExecutionDeadlineBenchmarks-report.html
+
+// * Detailed results *
+Utf8ExecutionDeadlineBenchmarks.PollInfinite: Dry(IterationCount=1, LaunchCount=1, RunStrategy=ColdStart, UnrollFactor=1, WarmupCount=1)
+Runtime = ; GC =
+There are not any results runs
+
+// * Summary *
+
+BenchmarkDotNet v0.15.8, Windows 11 (10.0.26200.9711/25H2/2025Update/HudsonValley2)
+Intel Core i7-14700KF 3.40GHz, 1 CPU, 28 logical and 20 physical cores
+.NET SDK 10.0.401
+  [Host] : .NET 10.0.13 (10.0.13, 10.0.1326.50504), X64 RyuJIT x86-64-v3
+
+Job=Dry  IterationCount=1  LaunchCount=1
+RunStrategy=ColdStart  UnrollFactor=1  WarmupCount=1
+
+| Method       | Mean | Error | Ratio | RatioSD | Alloc Ratio |
+|------------- |-----:|------:|------:|--------:|------------:|
+| PollInfinite |   NA |    NA |     ? |       ? |           ? |
+
+Benchmarks with issues:
+  Utf8ExecutionDeadlineBenchmarks.PollInfinite: Dry(IterationCount=1, LaunchCount=1, RunStrategy=ColdStart, UnrollFactor=1, WarmupCount=1)
+
+// * Warnings *
+BaselineCustomAnalyzer
+  Summary -> A question mark '?' symbol indicates that it was not possible to compute the (Ratio, RatioSD, Alloc Ratio) column(s) because the baseline or benchmark could not be found, or the baseline value is too close to zero.
+
+// * Legends *
+  Mean        : Arithmetic mean of all measurements
+  Error       : Half of 99.9% confidence interval
+  Ratio       : Mean of the ratio distribution ([Current]/[Baseline])
+  RatioSD     : Standard deviation of the ratio distribution ([Current]/[Baseline])
+  Alloc Ratio : Allocated memory ratio distribution ([Current]/[Baseline])
+  1 ns        : 1 Nanosecond (0.000000001 sec)
+
+// * Diagnostic Output - MemoryDiagnoser *
+
+
+// ***** BenchmarkRunner: End *****
+Benchmark validation, build or execution failed.
+Run time: 00:00:00 (0.18 sec), executed benchmarks: 0
+
+Global total time: 00:00:16 (16.51 sec), executed benchmarks: 0
+// * Artifacts cleanup *
+Artifacts cleanup is finished
