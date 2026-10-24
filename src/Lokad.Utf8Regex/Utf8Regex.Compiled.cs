@@ -144,16 +144,6 @@ public sealed partial class Utf8Regex
         };
     }
 
-    private int CountViaCompiledExactLiteralEngine(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
-    {
-        return _compiledEngineRuntime.Count(input, default, budget);
-    }
-
-    private int CountViaCompiledLiteralFamilyEngine(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
-    {
-        return _compiledEngineRuntime.Count(input, default, budget);
-    }
-
     internal int CountViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         // Ordered-window kernels count byte gaps. Mixed subjects require the
@@ -212,8 +202,8 @@ public sealed partial class Utf8Regex
 
         return _compiledEngine.Kind switch
         {
-            Utf8CompiledEngineKind.ExactLiteral => CountViaCompiledExactLiteralEngine(input, budget),
-            Utf8CompiledEngineKind.LiteralFamily => CountViaCompiledLiteralFamilyEngine(input, budget),
+            Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily =>
+                _compiledEngineRuntime.Count(input, default, budget),
             _ => _compiledEngineRuntime.Count(input, validation, budget),
         };
     }

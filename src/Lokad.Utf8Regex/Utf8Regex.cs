@@ -554,7 +554,7 @@ public sealed partial class Utf8Regex
                 throw new InvalidOperationException("Owned slice execution breached the invocation budget.");
             invocation.Budget.ThrowIfCancellationRequested();
             if (!outcome.Found)
-                return Utf8MatchContext.Unsuccessful(input, Utf8BoundaryMap.Create([]), _program.CaptureCatalog);
+                return Utf8MatchContext.Unsuccessful(input, _program.CaptureCatalog);
             // The current context stores derived UTF-16 capture coordinates.
             // Its admitted map is result interoperability, never discovery state.
             var map = admittedMap ?? Utf8BoundaryMap.Create(input, validation, ref invocation, out mapReservation);
@@ -1762,7 +1762,7 @@ public sealed partial class Utf8Regex
                 return new Utf8MatchContext(input, analysis.BoundaryMap, _program.CaptureCatalog, 0, anchoredDetailedLength);
             }
 
-            return Utf8MatchContext.Unsuccessful(input, analysis.BoundaryMap, _program.CaptureCatalog);
+            return Utf8MatchContext.Unsuccessful(input, _program.CaptureCatalog);
         }
 
         // Anchored suffixes shape the same way from the direct hit, which already
@@ -1778,7 +1778,7 @@ public sealed partial class Utf8Regex
                 return new Utf8MatchContext(input, analysis.BoundaryMap, _program.CaptureCatalog, suffixDetailed.IndexInUtf16, suffixDetailed.LengthInUtf16);
             }
 
-            return Utf8MatchContext.Unsuccessful(input, analysis.BoundaryMap, _program.CaptureCatalog);
+            return Utf8MatchContext.Unsuccessful(input, _program.CaptureCatalog);
         }
 
         if (TryGetOwnedDetailedGroupCount(out var ownedGroupCount))
@@ -1797,7 +1797,7 @@ public sealed partial class Utf8Regex
 
             if (!first.Success)
             {
-                return Utf8MatchContext.Unsuccessful(input, analysis.BoundaryMap, _program.CaptureCatalog);
+                return Utf8MatchContext.Unsuccessful(input, _program.CaptureCatalog);
             }
 
             return ownedGroupCount > 1
@@ -1824,7 +1824,7 @@ public sealed partial class Utf8Regex
 
             if (!groupedFirst.Success)
             {
-                return Utf8MatchContext.Unsuccessful(input, analysis.BoundaryMap, _program.CaptureCatalog);
+                return Utf8MatchContext.Unsuccessful(input, _program.CaptureCatalog);
             }
 
             if (TryShapeGroupedLiteralDetailedMatch(input, analysis.BoundaryMap, groupedFirst, out var groupedDetailed))
@@ -1851,7 +1851,7 @@ public sealed partial class Utf8Regex
 
             if (!alternationFirst.Success)
             {
-                return Utf8MatchContext.Unsuccessful(input, analysis.BoundaryMap, _program.CaptureCatalog);
+                return Utf8MatchContext.Unsuccessful(input, _program.CaptureCatalog);
             }
 
             if (TryShapeAlternationBranchDetailedMatch(input, analysis.BoundaryMap, alternationFirst, out var alternationDetailed))
@@ -1862,7 +1862,7 @@ public sealed partial class Utf8Regex
 
 
         if (_literalFamilyCaptureMap is { } branchMap &&
-            TryMatchDetailedBranchedLiteralFamily(input, analysis.BoundaryMap, branchMap, 0, out var branched))
+            TryMatchDetailedBranchedLiteralFamily(input, ref analysis, branchMap, 0, out var branched))
         {
             return branched;
         }
@@ -1884,7 +1884,7 @@ public sealed partial class Utf8Regex
 
             if (!grouplessFirst.Success)
             {
-                return Utf8MatchContext.Unsuccessful(input, analysis.BoundaryMap, _program.CaptureCatalog);
+                return Utf8MatchContext.Unsuccessful(input, _program.CaptureCatalog);
             }
 
             return new Utf8MatchContext(input, analysis.BoundaryMap, _program.CaptureCatalog, grouplessFirst.IndexInUtf16, grouplessFirst.LengthInUtf16);
@@ -1956,7 +1956,7 @@ public sealed partial class Utf8Regex
                 TryMatchControlledAnchoredOffset(input, validation, startByte, utf16Offset, ref invocation, out var anchored))
                 return anchored.Success
                     ? new Utf8MatchContext(input, map, _program.CaptureCatalog, anchored.IndexInUtf16, anchored.LengthInUtf16)
-                    : Utf8MatchContext.Unsuccessful(input, map, _program.CaptureCatalog);
+                    : Utf8MatchContext.Unsuccessful(input, _program.CaptureCatalog);
             // Anchored prefixes anchor to offset 0: a nonzero start is a definitive miss,
             // while offset 0 reuses the byte-exact prefix compare without BCL construction.
             if (!controlled && !HasFiniteExecutionLimits && !UsesRightToLeft() && _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
@@ -1970,7 +1970,7 @@ public sealed partial class Utf8Regex
                     return new Utf8MatchContext(input, map, _program.CaptureCatalog, 0, anchoredOffsetLength);
                 }
 
-                return Utf8MatchContext.Unsuccessful(input, map, _program.CaptureCatalog);
+                return Utf8MatchContext.Unsuccessful(input, _program.CaptureCatalog);
             }
 
             if (!controlled && !HasFiniteExecutionLimits && !UsesRightToLeft() && Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
@@ -1985,7 +1985,7 @@ public sealed partial class Utf8Regex
                     return new Utf8MatchContext(input, map, _program.CaptureCatalog, suffixOffsetDetailed.IndexInUtf16, suffixOffsetDetailed.LengthInUtf16);
                 }
 
-                return Utf8MatchContext.Unsuccessful(input, map, _program.CaptureCatalog);
+                return Utf8MatchContext.Unsuccessful(input, _program.CaptureCatalog);
             }
 
             return OwnedSliceMatchDetailedFromByte(input, _ownedSliceProgram,
@@ -2245,7 +2245,7 @@ public sealed partial class Utf8Regex
     // Returns true when native branch discovery owns the result; false selects scalar discovery.
     private bool TryMatchDetailedBranchedLiteralFamily(
         ReadOnlySpan<byte> input,
-        Utf8BoundaryMap boundaryMap,
+        scoped ref Utf8ValidatedInput analysis,
         Utf8LiteralFamilyCaptureMap map,
         int startInUtf16,
         out Utf8MatchContext detailed)
@@ -2281,7 +2281,7 @@ public sealed partial class Utf8Regex
                     return false;
                 }
 
-                detailed = CreateBranchedDetailedMatch(input, boundaryMap, map, branch, candidate.IndexInUtf16, candidate.LengthInUtf16);
+                detailed = CreateBranchedDetailedMatch(input, analysis.BoundaryMap, map, branch, candidate.IndexInUtf16, candidate.LengthInUtf16);
                 return true;
             }
         }
@@ -2290,7 +2290,7 @@ public sealed partial class Utf8Regex
             throw CreateMatchTimeoutException(input);
         }
 
-        detailed = Utf8MatchContext.Unsuccessful(input, boundaryMap, _program.CaptureCatalog);
+        detailed = Utf8MatchContext.Unsuccessful(input, _program.CaptureCatalog);
         return true;
     }
 

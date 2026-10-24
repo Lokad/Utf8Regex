@@ -30,10 +30,11 @@ public readonly ref struct Utf8MatchContext
     {
     }
 
-    internal static Utf8MatchContext Unsuccessful(ReadOnlySpan<byte> input, Utf8BoundaryMap boundaryMap, Utf8CaptureCatalog captureCatalog)
+    internal static Utf8MatchContext Unsuccessful(ReadOnlySpan<byte> input, Utf8CaptureCatalog captureCatalog)
     {
         // An unsuccessful detailed result retains group zero as an unsuccessful view.
-        return new Utf8MatchContext(input, boundaryMap, captureCatalog, hasValue: false, indexInUtf16: 0, lengthInUtf16: 0, groupCount: 1);
+        // No coordinate projection is observable for an unsuccessful range.
+        return new Utf8MatchContext(input, default, captureCatalog, hasValue: false, indexInUtf16: 0, lengthInUtf16: 0, groupCount: 1);
     }
 
     private Utf8MatchContext(ReadOnlySpan<byte> input, Utf8BoundaryMap boundaryMap, Utf8CaptureCatalog captureCatalog, bool hasValue, int indexInUtf16, int lengthInUtf16, int groupCount)
