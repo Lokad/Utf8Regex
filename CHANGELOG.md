@@ -6,6 +6,10 @@ These changes are development source, currently 0.4.0-rc.2-dev. Frozen RC1
 artifacts remain unchanged and unpublished; they must not be released. A fresh
 candidate and final downstream/package/cost qualification are still required.
 
+- Default Core match/capture views now return zero byte coordinates and empty
+  values instead of dereferencing an uninitialized coordinate map. Actual misses
+  retain unsuccessful group zero; successful capture projection is unchanged.
+
 - Core instances with fixed finite numeric limits no longer prepare unreachable
   unmetered runtimes or emitted delegates. Scalar/native metered execution and
   public Options remain; lower construction charges may admit patterns previously

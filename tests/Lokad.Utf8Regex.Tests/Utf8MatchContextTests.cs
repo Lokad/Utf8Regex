@@ -6,6 +6,39 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8MatchContextTests
 {
     [Fact]
+    public void DefaultMatchViewExposesAnEmptyUnsuccessfulRange()
+    {
+        var match = default(Utf8MatchContext);
+        Assert.False(match.Success);
+        Assert.Equal(0, match.GroupCount);
+        Assert.True(match.IsByteAligned);
+        Assert.Equal((0, 0, 0, 0), (match.IndexInBytes, match.LengthInBytes, match.IndexInUtf16, match.LengthInUtf16));
+        Assert.True(match.TryGetByteRange(out var index, out var length));
+        Assert.Equal((0, 0), (index, length));
+        Assert.True(match.TryGetValueBytes(out var bytes));
+        Assert.True(bytes.IsEmpty);
+        Assert.Equal(string.Empty, match.GetValueString());
+        Assert.False(match.TryGetGroup(0, out var group));
+        Assert.False(group.Success);
+        Assert.True(group.GetValueBytes().IsEmpty);
+    }
+
+    [Fact]
+    public void DefaultCaptureViewExposesAnEmptyAbsentRange()
+    {
+        var capture = default(Utf8CaptureContext);
+        Assert.False(capture.Success);
+        Assert.True(capture.IsByteAligned);
+        Assert.Equal((0, 0, 0, 0), (capture.IndexInBytes, capture.LengthInBytes, capture.IndexInUtf16, capture.LengthInUtf16));
+        Assert.True(capture.TryGetByteRange(out var index, out var length));
+        Assert.Equal((0, 0), (index, length));
+        Assert.True(capture.TryGetValueBytes(out var bytes));
+        Assert.True(bytes.IsEmpty);
+        Assert.True(capture.GetValueBytes().IsEmpty);
+        Assert.Equal(string.Empty, capture.GetValueString());
+    }
+
+    [Fact]
     public void MatchDetailedExposesGroupAndCaptureHistoryOutsideReplace()
     {
         var regex = new Utf8Regex("(a)+", RegexOptions.CultureInvariant);

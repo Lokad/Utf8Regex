@@ -4,7 +4,8 @@ using Lokad.Utf8Regex.Internal.Input;
 namespace Lokad.Utf8Regex;
 
 /// <summary>Provides a stack-only match view over original UTF-8 input, with derived UTF-16 coordinates.</summary>
-/// <remarks>The view and any spans obtained from it must not outlive the input supplied to the matching operation.</remarks>
+/// <remarks>The view and any spans obtained from it must not outlive the input supplied to the matching operation.
+/// The default view is unsuccessful, with zero coordinates and an empty value.</remarks>
 public readonly ref struct Utf8MatchContext
 {
     private readonly ReadOnlySpan<byte> _input;
@@ -110,13 +111,13 @@ public readonly ref struct Utf8MatchContext
 
     /// <summary>Gets the match start as a zero-based byte offset in the original UTF-8 input.</summary>
     /// <exception cref="InvalidOperationException">The match splits a UTF-8 scalar.</exception>
-    public int IndexInBytes => IsByteAligned
+    public int IndexInBytes => !_ownedHasValue ? 0 : IsByteAligned
         ? ResolveBoundary(IndexInUtf16).ByteOffset
         : throw new InvalidOperationException("The match is not aligned to valid UTF-8 byte boundaries.");
 
     /// <summary>Gets the match length in bytes in the original UTF-8 input.</summary>
     /// <exception cref="InvalidOperationException">The match splits a UTF-8 scalar.</exception>
-    public int LengthInBytes => IsByteAligned
+    public int LengthInBytes => !_ownedHasValue ? 0 : IsByteAligned
         ? ResolveBoundary(IndexInUtf16 + LengthInUtf16).ByteOffset - IndexInBytes
         : throw new InvalidOperationException("The match is not aligned to valid UTF-8 byte boundaries.");
 
@@ -126,6 +127,12 @@ public readonly ref struct Utf8MatchContext
     /// <returns><see langword="true"/> when both match boundaries are UTF-8 scalar boundaries.</returns>
     public bool TryGetByteRange(out int indexInBytes, out int lengthInBytes)
     {
+        if (!_ownedHasValue)
+        {
+            indexInBytes = lengthInBytes = 0;
+            return true;
+        }
+
         if (!IsByteAligned)
         {
             indexInBytes = 0;
@@ -138,7 +145,8 @@ public readonly ref struct Utf8MatchContext
         return true;
     }
 
-    /// <summary>Gets the number of numbered groups, including group zero, or zero when no match is available.</summary>
+    /// <summary>Gets the number of available numbered groups, including group zero.</summary>
+    /// <remarks>A default view has zero groups. An unsuccessful matching result retains one unsuccessful group zero.</remarks>
     public int GroupCount => _ownedGroupCount;
 
     /// <summary>Gets a numbered group from the match.</summary>
