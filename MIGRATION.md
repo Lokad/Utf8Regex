@@ -90,6 +90,11 @@ See [HOST-INTEGRATION.md](HOST-INTEGRATION.md) for mappings and host admission.
 
 ## Keep subjects and retained results alive correctly
 
+Default Core match/capture views expose zero coordinates and empty values.
+The default match view has no groups; an unsuccessful result returned by a
+matching operation retains unsuccessful group zero. Detailed misses do not
+materialize a coordinate map solely for that empty range.
+
 Borrowed views/cursors need unchanged subject bytes and a live memory owner.
 PythonRe's `CreateMatchCursor(ReadOnlyMemory<byte>, ...)` has one position and
 lifetime across reference aliases: use `using` when stopping early. EOF, failure

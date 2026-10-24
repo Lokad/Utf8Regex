@@ -95,6 +95,9 @@ Important benchmark rule:
 - Child stdout and stderr stream through PowerShell's output stream, preserving
   ordinary redirection and the original exit code. The outer wall-time cap also
   terminates descendants; a cap returns exit code 124.
+- BenchmarkDotNet parse errors return 2; failed validation/build/execution or an
+  execution filter selecting no benchmarks returns 1. Successful measurements
+  and informational help/list/info requests return 0. Dry remains smoke evidence.
 - Custom benchmark commands have a default 120-second outer wall-time cap. Use
   `-MaxWallTimeSeconds` to choose a smaller bounded investigation window, and
   use `-MaxWallTimeSeconds 0` only for a preflighted milestone refresh.

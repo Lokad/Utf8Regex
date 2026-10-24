@@ -9,6 +9,12 @@ candidate and final downstream/package/cost qualification are still required.
 - Default Core match/capture views now return zero byte coordinates and empty
   values instead of dereferencing an uninitialized coordinate map. Actual misses
   retain unsuccessful group zero; successful capture projection is unchanged.
+- Core detailed misses no longer build a subject-wide coordinate map just to
+  represent an unsuccessful result. Full UTF-8 validation remains; native
+  captured-family projection requests its map only after finding a match.
+- BenchmarkDotNet parse failures, failed runs and empty execution filters now
+  return a nonzero exit code. Help/list/info and successful measurements still
+  return zero; the launcher uses BDN's parser/results instead of an option whitelist.
 
 - Core instances with fixed finite numeric limits no longer prepare unreachable
   unmetered runtimes or emitted delegates. Scalar/native metered execution and

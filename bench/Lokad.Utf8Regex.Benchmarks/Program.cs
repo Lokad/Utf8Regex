@@ -1,5 +1,8 @@
 using BenchmarkDotNet.Configs;
+using BenchmarkDotNet.ConsoleArguments;
+using BenchmarkDotNet.ConsoleArguments.ListBenchmarks;
 using BenchmarkDotNet.Jobs;
+using BenchmarkDotNet.Loggers;
 using BenchmarkDotNet.Running;
 using BenchmarkDotNet.Toolchains.InProcess.NoEmit;
 using Lokad.Utf8Regex.Benchmarks;
@@ -451,18 +454,6 @@ if (args.Length >= 1 && args[0].Equals("--engine-portfolio-report", StringCompar
     return EnginePortfolioReporter.Run();
 }
 
-// PLAN.md E03: a leading '--xxx' that is neither a custom benchmark command nor a
-// BenchmarkDotNet global option is almost certainly a mistyped custom command
-// (previously BenchmarkDotNet printed 'unknown option' yet the process exited 0,
-// so a misspelled release verification step could appear successful).
-if (args.Length > 0 && IsUnrecognizedBenchmarkCommand(args[0]))
-{
-    Console.Error.WriteLine("Unknown benchmark command '" + args[0] + "'.");
-    Console.Error.WriteLine("Custom benchmark commands are documented in AGENTS.md (use ./bench.ps1 -CommandArgs \"--command\",...).");
-    Console.Error.WriteLine("BenchmarkDotNet runs use BenchmarkDotNet options such as --filter, --job, --profiler, --memory, or --join.");
-    return 2;
-}
-
 var artifactsPath = Path.Combine(
     AppContext.BaseDirectory,
     "BenchmarkDotNet.Artifacts",
@@ -478,32 +469,26 @@ if (BenchmarkProgramRouter.ShouldUseInProcessForPcre2SpecialBenchmarks(args))
     effectiveArgs = StripJobArguments(args);
 }
 
-BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(effectiveArgs, config);
-return 0;
-
-static bool IsUnrecognizedBenchmarkCommand(string argument)
+var summaries = BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(effectiveArgs, config).ToArray();
+if (summaries.Length == 0)
 {
-    if (!argument.StartsWith("--", StringComparison.Ordinal))
-    {
-        return false;
-    }
-
-    // BenchmarkDotNet global console options (bench.ps1 emits --filter/--job/--join/--memory/--profiler;
-    // the rest cover direct-invocation passthrough). Compared case-insensitively like the
-    // BenchmarkDotNet parser. Anything else starting with '--' fails loudly below.
-    return argument.ToLowerInvariant() switch
-    {
-        "--filter" or "--job" or "--join" or "--memory" or "--profiler"
-            or "--help" or "--info" or "--list" or "--exporters" or "--runtimes"
-            or "--artifacts" or "--keepfiles" or "--stoponfirsterror" or "--allstats"
-            or "--out" or "--statisticaltest" or "--maxiterationcount" or "--miniterationcount"
-            or "--invocationcount" or "--unrollfactor" or "--warmupcount"
-            or "--maxwarmupiterationcount" or "--minwarmupiterationcount"
-            or "--runonceperiteration" or "--memoryrandomization" or "--environmentvariables"
-            or "--affinity" or "--powerplanmode" => false,
-        _ => true,
-    };
+    // BDN returns no summaries for both errors and informational requests.
+    // Consult its parser only on that path; it already printed diagnostics.
+    var (parsed, _, options) = ConfigParser.Parse(effectiveArgs, NullLogger.Instance, config);
+    if (parsed && (options.PrintInformation || options.ListBenchmarkCaseMode != ListBenchmarkCaseMode.Disabled))
+        return 0;
+    if (!parsed && effectiveArgs.Any(argument =>
+        argument.Equals("--help", StringComparison.OrdinalIgnoreCase) ||
+        argument.Equals("--version", StringComparison.OrdinalIgnoreCase)))
+        return 0;
+    Console.Error.WriteLine("No benchmark measurements were produced.");
+    return parsed ? 1 : 2;
 }
+
+var succeeded = summaries.All(summary => !summary.HasCriticalValidationErrors &&
+    summary.Reports.Length > 0 && summary.Reports.All(report => report.Success && report.ResultStatistics is not null));
+if (!succeeded) Console.Error.WriteLine("Benchmark validation, build or execution failed.");
+return succeeded ? 0 : 1;
 
 static string[] StripJobArguments(string[] arguments)
 {
