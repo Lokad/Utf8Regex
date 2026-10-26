@@ -160,12 +160,15 @@ public sealed class Pcre2BacktrackingControlCompilerTests
     {
         var regex = new Utf8Pcre2Regex("(*MARK:A)a|b");
         var match = regex.MatchDetailed("c"u8);
-        var probe = regex.Probe("c"u8, Pcre2PartialMode.Soft);
+        var probe = regex.Probe("c"u8, Pcre2PartialMode.None);
 
         Assert.False(match.Success);
         Assert.Equal("A", match.Mark);
         Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, probe.Kind);
         Assert.Equal("A", probe.Mark);
+        // An ordinary marked miss cannot establish a partial-mode answer.
+        Assert.Throws<NotSupportedException>(() =>
+        { _ = regex.Probe("c"u8, Pcre2PartialMode.Soft); });
     }
 
     [Fact]
