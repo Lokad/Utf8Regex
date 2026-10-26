@@ -6,6 +6,17 @@ These changes are development source, currently 0.4.0-rc.2-dev. Frozen RC1
 artifacts remain unchanged and unpublished; they must not be released. A fresh
 candidate and final downstream/package/cost qualification are still required.
 
+- Replacement-writer byte/char span parameters now declare scoped borrowing,
+  allowing Core/PCRE2 callbacks to append stack buffers without allocating arrays
+  to satisfy escape analysis. Existing copying/encoding bodies and resource,
+  cancellation, alias/reset and output-validation behavior remain. The existing
+  public API snapshot now records this lifetime annotation.
+- PCRE2 rejects unsupported generic Hard partial decisions and ordinary marked
+  misses in partial mode instead of returning incorrect FullMatch/NoMatch results.
+  Generic Soft full matches retain captures/MARK; None-mode matching and
+  literal/curated partial drivers remain. This does not add general partial
+  execution or change the scope of its original invocation controls.
+
 - PCRE2 slice enumeration and `MatchMany` retain incremental UTF-16 projection,
   removing repeated subject-prefix scans while preserving byte/scalar results,
   published snapshots and cumulative interruption/resource controls. Removed work

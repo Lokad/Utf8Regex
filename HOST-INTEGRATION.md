@@ -142,6 +142,11 @@ retain the original invocation's interruption and capacity controls.
 Fixed output controls and major buffers require admission before acquisition;
 arbitrary callback allocations retain their separate host scope.
 
+The byte and char span `Append` parameters are `scoped`: callbacks can pass local
+stack buffers and sliced formatting output directly. Append copies or encodes
+the data before returning, so callers can immediately reuse that storage. Writer
+lifetime, completed-output UTF-8 validation and invocation admission are unchanged.
+
 ## Compose the Core/PythonRe invocation envelope
 
 Core and PythonRe provide invocation limits. A host

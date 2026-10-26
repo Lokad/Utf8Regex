@@ -35,8 +35,10 @@ at LF still permits it. Explicit newline atoms/alternatives, leading class
 filtering and DotAll retain their own rules; CRLF is not a blanket ban on
 matching either byte. This also applies to the supported wildcard partial probes.
 
-`Probe` offers curated soft/hard partial-match support and rejects unsupported
-partial shapes explicitly. DFA matching, invalid-UTF subject mode, callouts,
+`Probe` offers literal/curated soft/hard partial-match support. Outside those
+drivers, generic Soft full matches keep their captures/MARK; unsupported Hard
+decisions and ordinary marked misses throw `NotSupportedException`. Ordinary
+`Probe(None)` and its MARK results remain available. DFA matching, invalid-UTF subject mode, callouts,
 split, full capture history and substitution forms outside the selected profile
 are excluded. Operation/option combinations have explicit admission boundaries;
 similarity to .NET syntax does not establish PCRE2 support. See the

@@ -323,6 +323,17 @@ By-name metadata is **name-table-first**. `CopyNameEntries(...)` and `CopyNumber
 
 Normal matching APIs (`IsMatch`, `Count`, `Match`, `MatchDetailed`, `EnumerateMatches`, `Replace`, `MatchMany`) do **not** expose partial-match behavior. Partial matching is available only through `Probe(...)`. A partial probe result exposes only substring 0 plus `Mark`; it does not expose numbered or named capture groups. This matches PCRE2’s documented partial-match contract, where partial is a distinct outcome and the rest of the ovector is undefined. ([PCRE][4])
 
+`Probe(None)` retains ordinary detailed matching. Soft/Hard modes use the literal
+or curated partial drivers. Outside those drivers, ordinary matching may prove a
+generic **Soft FullMatch**, preserving its captures and MARK, but cannot establish
+Hard partial priority or infer NoMatch from an ordinary failure's MARK. Those
+unsupported decisions throw `NotSupportedException`, even if ordinary matching
+would return a full match or a marked miss. For example, Hard probing of
+`(?<x>a+)` on `aaa` is rejected rather than incorrectly reporting FullMatch;
+Soft probing of `(*MARK:tag)(?<x>a+)b` on `aaa` is rejected rather than NoMatch.
+This restriction does not add general partial execution. Validation, the original
+token/deadline and resource controls retain their existing scope.
+
 `MatchMany` fills at most the destination length, returns the number written and
 reports remaining matches through `isMore`; it is not a continuation protocol.
 Only the returned prefix is valid. Input and result storage must be disjoint;
@@ -375,7 +386,7 @@ Failure contracts must be explicit:
 
 * invalid pattern text, invalid compile-option combinations, unsupported constructs under the selected library profile, or invalid compile settings cause construction to throw a dedicated PCRE2 compile exception
 * match-time resource exhaustion (`MatchLimit`, `DepthLimit`, `HeapLimitInBytes`) throws a dedicated PCRE2 match exception that preserves the modeled PCRE2 failure kind
-* managed timeout expiration throws the same timeout exception family already used by the library’s `.NET`-semantic surface
+* invocation timeout expiration throws `Pcre2MatchException` with `Pcre2ErrorKind.Timeout`; explicit eager construction instead throws `RegexMatchTimeoutException` for its separate construction deadline
 * invalid replacement syntax or replacement-time substitution errors throw a dedicated PCRE2 substitution exception
 * `Probe(...)` reports only `NoMatch`, `FullMatch`, or `PartialMatch`; resource exhaustion and other operational failures are not folded into `Utf8Pcre2ProbeKind` and instead throw
 
@@ -384,7 +395,7 @@ Supported-profile boundary for completion is also explicit:
 * public APIs must either execute successfully, throw a documented dedicated PCRE2 exception, or throw `NotSupportedException` for an intentional `SPEC-PCRE2` rejection
 * raw public `NotImplementedException` is prohibited; implementation backlog must be classified as a supported operation, a dedicated profile error, or an intentional `NotSupportedException` rejection
 * non-monotone iterative `\K` cases are rejected for left-to-right global APIs (`Count`, `EnumerateMatches`, `MatchMany`, all replacement modes), even when single-match APIs remain supported
-* `Probe(...)` is intentionally a smaller surface than `Match(...)`; patterns outside the curated partial-probe profile must fail explicitly rather than silently approximating managed `.NET` behavior
+* `Probe(...)` is intentionally a smaller surface than `Match(...)`; outside literal/curated partial drivers, only proven generic Soft full matches are returned. Unsupported partial decisions fail explicitly; None-mode ordinary matching remains supported
 * every accepted corpus pattern has an explicit operation-capability disposition; replacement rejects only the documented profile cases and never falls through to an unrelated backend or grammar
 * the executable corpus plus `Utf8Pcre2CompletionLedgerTests` are the closure mechanism for this boundary; newly supported or newly rejected cases must be reflected there so the ledger remains a deliberate snapshot instead of drifting implicitly
 * performance work must prefer reuse of existing managed `Lokad.Utf8Regex` infrastructure where semantics allow it; do not introduce a second regex engine architecture under the PCRE2 profile
