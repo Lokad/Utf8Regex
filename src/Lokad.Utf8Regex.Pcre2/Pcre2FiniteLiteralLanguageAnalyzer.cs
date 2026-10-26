@@ -74,7 +74,7 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
             foreach (var character in value) pattern.AppendEscaped(character);
         }
         if (alternatives.Count > 1) pattern.Append(')');
-        var regex = new Utf8Regex(pattern.ToText(), RegexOptions.CultureInvariant, request.MatchTimeout);
+        var regex = new Utf8Regex(pattern.ToText(), RegexOptions.CultureInvariant, request.MatchTimeout, request.CoreResourcePolicy);
         Pcre2FiniteLiteralBoundaryProjection? boundaryProjection = null;
         if (alternatives.Any(static state => state.ReportedStartCharacterIndex != 0))
         {

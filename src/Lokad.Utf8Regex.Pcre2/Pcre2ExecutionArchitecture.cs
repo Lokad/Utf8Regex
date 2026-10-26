@@ -25,6 +25,16 @@ internal readonly record struct Pcre2CompileRequest(
 
     internal bool UsesCrLfNewlines => Settings.Newline is Pcre2NewlineConvention.Crlf or
         Pcre2NewlineConvention.Any or Pcre2NewlineConvention.AnyCrlf;
+
+    // Core preparation uses the same fixed numeric policy. Execution still
+    // borrows the PCRE2 invocation and retains its route-specific units/errors.
+    internal Utf8ResourcePolicy CoreResourcePolicy => new()
+    {
+        MaxWorkSteps = DefaultLimits.MatchLimit == 0 ? null : DefaultLimits.MatchLimit,
+        MaxDepth = DefaultLimits.DepthLimit == 0 ? null : DefaultLimits.DepthLimit,
+        MaxWorkingBytes = DefaultLimits.HeapLimitInBytes == 0 ? null : DefaultLimits.HeapLimitInBytes,
+        MaxResultBytes = DefaultLimits.ResultLimitInBytes == 0 ? null : DefaultLimits.ResultLimitInBytes,
+    };
 }
 
 internal static class Pcre2Compiler
@@ -51,7 +61,7 @@ internal static class Pcre2Compiler
             Utf8Regex? core = null;
             if (!backtracking.RequiresProfileOptions &&
                 Pcre2CompiledProgramOverlay.CanPrepareCore(request, backtracking.Root))
-                _ = TryCreateUtf8Regex(request.Pattern, request.Options, request.MatchTimeout, out core);
+                _ = TryCreateUtf8Regex(request, out core);
             var foundation = Pcre2CompiledProgramOverlay.CreateBacktracking(
                 request, backtracking.Root, backtracking.Program, core, backtracking.UsesBranchReset);
             Pcre2ProgramInvariant.Validate(foundation);
@@ -61,11 +71,11 @@ internal static class Pcre2Compiler
         throw new NotSupportedException("The pattern is not supported by the managed PCRE2 grammar.");
     }
 
-    private static bool TryCreateUtf8Regex(string pattern, Pcre2CompileOptions options, TimeSpan matchTimeout, out Utf8Regex? regex)
+    private static bool TryCreateUtf8Regex(Pcre2CompileRequest request, out Utf8Regex? regex)
     {
         try
         {
-            regex = new Utf8Regex(pattern, ToRegexOptions(options), matchTimeout);
+            regex = new Utf8Regex(request.Pattern, ToRegexOptions(request.Options), request.MatchTimeout, request.CoreResourcePolicy);
             return true;
         }
         catch (ArgumentException)
@@ -786,8 +796,12 @@ internal static class Pcre2CompiledProgramOverlay
         IPcre2BacktrackingNode root, Pcre2BacktrackingProgram fallback,
         Utf8Regex? preparedCore, Pcre2OperationPrograms operations)
     {
-        if (preparedCore?.Inspection.OwnedSliceProgram is not { } sliceProgram ||
-            (request.Options & SliceIncompatibleOptions) != 0 ||
+        // Preserve the existing fallback-only slice selection independently of
+        // Core's numeric policy, which also makes native scalar payloads visible.
+        if (preparedCore is null || preparedCore.Inspection.ExecutionKind != NativeExecutionKind.FallbackRegex)
+            return operations;
+        var sliceProgram = preparedCore.Inspection.AvailableOwnedSliceProgram;
+        if ((request.Options & SliceIncompatibleOptions) != 0 ||
             (request.Settings.Newline is not Pcre2NewlineConvention.Default &&
              request.Settings.Newline is not Pcre2NewlineConvention.Lf) ||
             sliceProgram.RequiresUnicodeWordBoundary ||

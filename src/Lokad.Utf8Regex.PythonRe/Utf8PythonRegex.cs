@@ -173,6 +173,7 @@ public sealed partial class Utf8PythonRegex
 
         Pattern = pattern;
         Options = options;
+        ResourcePolicy = resourcePolicy;
 
         var parser = PythonReParser.Create(pattern);
         var parseResult = parser.Parse(options);
@@ -194,7 +195,7 @@ public sealed partial class Utf8PythonRegex
                 out var exactFindAllString)
                 ? exactFindAllString
                 : null;
-        _asciiLiteralPrefixDigitMatchPrefix = MatchTimeout == Timeout.InfiniteTimeSpan &&
+        _asciiLiteralPrefixDigitMatchPrefix = !HasFiniteExecutionLimits && MatchTimeout == Timeout.InfiniteTimeSpan &&
             parseResult.CaptureGroupCount == 0 &&
             PythonReTranslator.TryGetAsciiLiteralPrefixDigitRepeat(
                 parseResult.Root,
@@ -204,7 +205,7 @@ public sealed partial class Utf8PythonRegex
                 : null;
         byte[]? asciiDotAllFullMatchPrefix = null;
         byte[]? asciiDotAllFullMatchSuffix = null;
-        if (MatchTimeout == Timeout.InfiniteTimeSpan &&
+        if (!HasFiniteExecutionLimits && MatchTimeout == Timeout.InfiniteTimeSpan &&
             parseResult.CaptureGroupCount == 0 &&
             PythonReTranslator.TryGetAsciiDotAllFullMatchPlan(
                 parseResult.Root,
@@ -240,7 +241,7 @@ public sealed partial class Utf8PythonRegex
         {
             try
             {
-                var core = new Utf8Regex(translation.NativePattern, translation.NativeRegexOptions, MatchTimeout);
+                var core = new Utf8Regex(translation.NativePattern, translation.NativeRegexOptions, MatchTimeout, resourcePolicy);
                 // Preparation can discover useful native result lanes or exact
                 // start hints. Discard roots declined by every current consumer;
                 // their transient construction remains conservatively admitted.
@@ -261,7 +262,6 @@ public sealed partial class Utf8PythonRegex
         _canUseZeroOffsetUtf8ValueFastPath =
             _canUseZeroOffsetUtf8SearchValueFastPath &&
             _utf8Regex?.Inspection.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral;
-        ResourcePolicy = resourcePolicy;
         _replacementPlanCache = Utf8BoundedPreparationCache<string, PythonReReplacementPlan>.CreateRetained(ReplacementPlanCacheCapacity, StringComparer.Ordinal);
         construction.Complete();
     }
