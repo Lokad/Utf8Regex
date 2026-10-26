@@ -1,0 +1,36 @@
+using System.Text;
+
+namespace Lokad.Utf8Regex.Pcre2.Tests;
+
+public sealed class Pcre2ReplacementStreamingOutputTests
+{
+    public static IEnumerable<object[]> Cases()
+    {
+        foreach (var finite in new[] { false, true })
+        foreach (var text in new[] { false, true })
+        {
+            yield return ["a", new string('a', 1024), "$0", new string('a', 1024), 0, finite, text];
+            yield return ["a", "aXa", "<<$0>>", "<<a>>X<<a>>", 0, finite, text];
+            yield return ["é", "😀éaé", "[$0]", "😀[é]a[é]", 0, finite, text];
+            yield return ["[a-z]", "a😀b", "é$0", "éa😀éb", 0, finite, text];
+            yield return ["[ab]+", "ab!ba", "$0x", "abx!bax", 0, finite, text];
+            yield return ["", "é😀", "_$0", "_é_😀_", 0, finite, text];
+            yield return ["a", "aéa", "$0_", "aéa_", 1, finite, text];
+            yield return ["a", "é😀", "${missing}", "é😀", 0, finite, text];
+        }
+    }
+
+    [Theory] [MemberData(nameof(Cases))]
+    public void AllocatingReplacementPreservesNativeValuesAndProgress(string pattern, string input,
+        string replacement, string expected, int start, bool finite, bool text)
+    {
+        var regex = finite ? Utf8Pcre2Regex.Create(pattern, default, default,
+            new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 128,
+                MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 }, Timeout.InfiniteTimeSpan)
+            : new Utf8Pcre2Regex(pattern);
+        var bytes = Encoding.UTF8.GetBytes(input);
+        var actual = text ? regex.ReplaceToString(bytes, replacement, start, default)
+            : Encoding.UTF8.GetString(regex.Replace(bytes, replacement, start));
+        Assert.Equal(expected, actual);
+    }
+}

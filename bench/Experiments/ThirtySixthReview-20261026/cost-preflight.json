@@ -1,0 +1,53 @@
+{
+  "Versions": [
+    "0.4.0-rc.2-dev\u002B7650e7a556709669a4cf549c58508403620c4104",
+    "0.4.0-rc.2-dev\u002B01d04a5f41ca46371a6425e81fcf90747ad38a2c"
+  ],
+  "Lanes": [
+    {
+      "Name": "unlimited/short-bytes",
+      "Expected": 197
+    },
+    {
+      "Name": "unlimited/dense-bytes",
+      "Expected": 1218
+    },
+    {
+      "Name": "unlimited/unicode-text",
+      "Expected": 891
+    },
+    {
+      "Name": "finite/short-bytes",
+      "Expected": 197
+    },
+    {
+      "Name": "finite/dense-bytes",
+      "Expected": 1218
+    },
+    {
+      "Name": "finite/unicode-text",
+      "Expected": 891
+    },
+    {
+      "Name": "unlimited/sparse-bytes",
+      "Expected": 16692
+    },
+    {
+      "Name": "finite/runtime-flags-streaming",
+      "Expected": 1218
+    },
+    {
+      "Name": "unlimited/backtracking-ledger",
+      "Expected": 641
+    },
+    {
+      "Name": "finite/destination-ledger",
+      "Expected": 1218
+    },
+    {
+      "Name": "Unchanged-control/Core-compiled-literal-Count",
+      "Expected": 2
+    }
+  ],
+  "Preflight": "All selected public outputs agree with independent expected checksums"
+}

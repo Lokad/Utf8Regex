@@ -1,0 +1,42 @@
+{
+  "ImplementationSource": "01d04a5f41ca46371a6425e81fcf90747ad38a2c",
+  "CompletePcre2": {
+    "Passed": 6181,
+    "Failed": 0,
+    "Seconds": 9,
+    "Skipped": 0
+  },
+  "AdditionalFinalFocused": {
+    "Passed": 55,
+    "Failed": 0,
+    "IncludesEightAddedScalarFragmentCases": true,
+    "Skipped": 0
+  },
+  "CoreApiAndFormatter": 12,
+  "CoreMemberInventory": 12,
+  "PythonApi": 1,
+  "PythonMemberInventory": 1,
+  "InitialReplacementFocus": 219,
+  "StreamingPrototypeFocus": 285,
+  "RejectedPrototypeComplete": {
+    "NoBudgetsRaised": true,
+    "Passed": 6208,
+    "Failed": 5,
+    "Skipped": 0,
+    "AllOriginalFixturesRetained": true
+  },
+  "FinalCacheVariants": 1,
+  "PriorCacheVariants": 4,
+  "ConstructorBytesBefore": 1632,
+  "ConstructorBytesAfter": 1528,
+  "ProtectedOriginals": 18,
+  "PerformanceQualification": "Inconclusive overall; no settled <=10% or release claim",
+  "NewPackages": 0,
+  "SnapshotRefreshes": 0,
+  "FinalSourceCi": {
+    "Run": 40359868301,
+    "Windows": "success",
+    "Source": "39a7012f47f79138a0e73382c23deb85bdc3c256",
+    "Linux": "success"
+  }
+}

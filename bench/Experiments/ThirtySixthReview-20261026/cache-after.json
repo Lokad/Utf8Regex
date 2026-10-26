@@ -1,0 +1,107 @@
+{
+  "Rows": [
+    {
+      "Options": "None",
+      "Result": "a",
+      "CacheEntriesAfterPublicCall": 1,
+      "CacheEntriesAfterReflection": 1,
+      "ProgramSha256": "E34213BE10E3BD4305A056CE9F0852CA504D07880EF443D5B5922311C34BF0B0"
+    },
+    {
+      "Options": "UnsetEmpty",
+      "Result": "a",
+      "CacheEntriesAfterPublicCall": 1,
+      "CacheEntriesAfterReflection": 1,
+      "ProgramSha256": "E34213BE10E3BD4305A056CE9F0852CA504D07880EF443D5B5922311C34BF0B0"
+    },
+    {
+      "Options": "UnknownUnset",
+      "Result": "a",
+      "CacheEntriesAfterPublicCall": 1,
+      "CacheEntriesAfterReflection": 1,
+      "ProgramSha256": "E34213BE10E3BD4305A056CE9F0852CA504D07880EF443D5B5922311C34BF0B0"
+    },
+    {
+      "Options": "UnsetEmpty, UnknownUnset",
+      "Result": "a",
+      "CacheEntriesAfterPublicCall": 1,
+      "CacheEntriesAfterReflection": 1,
+      "ProgramSha256": "E34213BE10E3BD4305A056CE9F0852CA504D07880EF443D5B5922311C34BF0B0"
+    }
+  ],
+  "DistinctInstructionArrays": 1,
+  "LiteralRows": [
+    {
+      "Finite": false,
+      "Options": "None",
+      "AllocatedBytes": 13384,
+      "Correct": true,
+      "Simple": true,
+      "Prepared": false,
+      "CacheEntries": 1
+    },
+    {
+      "Finite": false,
+      "Options": "UnsetEmpty",
+      "AllocatedBytes": 2264,
+      "Correct": true,
+      "Simple": true,
+      "Prepared": false,
+      "CacheEntries": 1
+    },
+    {
+      "Finite": false,
+      "Options": "UnknownUnset",
+      "AllocatedBytes": 2264,
+      "Correct": true,
+      "Simple": true,
+      "Prepared": false,
+      "CacheEntries": 1
+    },
+    {
+      "Finite": false,
+      "Options": "UnsetEmpty, UnknownUnset",
+      "AllocatedBytes": 2264,
+      "Correct": true,
+      "Simple": true,
+      "Prepared": false,
+      "CacheEntries": 1
+    },
+    {
+      "Finite": true,
+      "Options": "None",
+      "AllocatedBytes": 17584,
+      "Correct": true,
+      "Simple": true,
+      "Prepared": false,
+      "CacheEntries": 1
+    },
+    {
+      "Finite": true,
+      "Options": "UnsetEmpty",
+      "AllocatedBytes": 2264,
+      "Correct": true,
+      "Simple": true,
+      "Prepared": false,
+      "CacheEntries": 1
+    },
+    {
+      "Finite": true,
+      "Options": "UnknownUnset",
+      "AllocatedBytes": 2264,
+      "Correct": true,
+      "Simple": true,
+      "Prepared": false,
+      "CacheEntries": 1
+    },
+    {
+      "Finite": true,
+      "Options": "UnsetEmpty, UnknownUnset",
+      "AllocatedBytes": 2264,
+      "Correct": true,
+      "Simple": true,
+      "Prepared": false,
+      "CacheEntries": 1
+    }
+  ]
+}
