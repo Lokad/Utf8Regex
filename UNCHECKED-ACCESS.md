@@ -14,7 +14,7 @@ a source checkout. RC1 is unpublished
 and has separate known PCRE2 grammar/construction defects: do not publish those
 PCRE2 bytes. Its inventory evidence does not qualify a corrected release.
 
-Development is **0.4.0-rc.2-dev**. Source/member inventory checks continue to
+Development is **0.4.0-rc.2**. Source/member inventory checks continue to
 enforce the managed boundary. A later source cleanup does not inherit RC1 package
 qualification, reopen the checked-access campaign or refresh old performance
 results. No new conversion or safe/unsafe execution mode is planned here.

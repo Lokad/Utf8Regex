@@ -2,11 +2,11 @@
 
 Upgrade `Lokad.Utf8Regex`, `Lokad.Utf8Regex.PythonRe` and
 `Lokad.Utf8Regex.Pcre2` together when using more than one package. Both adapters
-require exactly the same Core version (currently `[0.4.0-rc.2-dev]` in development). Previous private scalar candidates with
+require exactly the same Core version (currently `[0.4.0-rc.2]`). Previous private scalar candidates with
 incompatible exact Core pins cannot be combined by overriding dependencies.
-All packages target .NET 10. Development has no freshly qualified package candidate; frozen RC1 is unpublished and its PCRE2 bytes must not be published.
+All packages target .NET 10. Frozen RC1 is superseded and unpublished; do not publish those bytes. Package qualification and publication status are recorded in the release handoff.
 
-The development API removes the formerly public `Utf8CountDiagnostics` and
+The 0.4 API removes the formerly public `Utf8CountDiagnostics` and
 `Utf8IsMatchDiagnostics` records. Their only producers were internal benchmark/
 test operations; they are now internal too. Code that constructed these records
 must remove that dependency. Public matching and resource-control APIs remain.

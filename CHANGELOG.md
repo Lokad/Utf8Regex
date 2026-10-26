@@ -1,164 +1,66 @@
 # Release notes
 
-## Unreleased development after 0.4.0-rc.1
+## 0.4.0-rc.2
 
-These changes are development source, currently 0.4.0-rc.2-dev. Frozen RC1
-artifacts remain unchanged and unpublished; they must not be released. A fresh
-candidate and final downstream/package/cost qualification are still required.
+Common prerelease for **Lokad.Utf8Regex**, **Lokad.Utf8Regex.PythonRe** and
+**Lokad.Utf8Regex.Pcre2**, targeting .NET 10. Both adapters require exactly
+Core **[0.4.0-rc.2]**. Upgrade them together. Frozen, unpublished RC1 artifacts
+are superseded and must not be published.
 
-- Replacement-writer byte/char span parameters now declare scoped borrowing,
-  allowing Core/PCRE2 callbacks to append stack buffers without allocating arrays
-  to satisfy escape analysis. Existing copying/encoding bodies and resource,
-  cancellation, alias/reset and output-validation behavior remain. The existing
-  public API snapshot now records this lifetime annotation.
-- PCRE2 rejects unsupported generic Hard partial decisions and ordinary marked
-  misses in partial mode instead of returning incorrect FullMatch/NoMatch results.
-  Generic Soft full matches retain captures/MARK; None-mode matching and
-  literal/curated partial drivers remain. This does not add general partial
-  execution or change the scope of its original invocation controls.
+This is a breaking migration from UTF-16 matching to **Unicode scalars over
+strict UTF-8**, with byte offsets and lengths as the primary coordinates.
+Dot matches an emoji once across its four bytes. Classes, repetition, captures,
+references, assertions, RTL and empty-match progression respect scalar boundaries.
+Malformed UTF-8 anywhere in a subject is rejected, including after an early match.
+UTF-16 coordinates and string helpers remain derived interoperability APIs.
 
-- PCRE2 slice enumeration and `MatchMany` retain incremental UTF-16 projection,
-  removing repeated subject-prefix scans while preserving byte/scalar results,
-  published snapshots and cumulative interruption/resource controls. Removed work
-  can reduce modeled execution charges; no subject-wide map is added.
-- PCRE2 `MatchMany` now explicitly documents disjoint input/result storage as
-  a caller precondition. Overlap remains unsupported and unchecked; the optional
-  runtime guard was deferred after inconclusive bounded cost evidence.
-- Corrected Core's specification to stop promising absent `MatchMany`, `Analyze`
-  and `CopyRequiredLiterals` APIs. The first two remain PCRE2 profile extensions.
+- **Owned managed execution:** Core provides .NET-style grammar and a supported
+  NonBacktracking subset; PythonRe provides the documented Python str profile;
+  PCRE2 provides a selected managed PCRE2 profile. No BCL matcher/result execution
+  or native PCRE2 implementation is shipped. Complete profile equivalence,
+  NativeAOT and trimming are not promised.
+- **Usable invocation controls:** original synchronous cancellation and one
+  absolute deadline cover validation, matching, required shaping and cursor
+  advances. Positive finite work/depth/working/result policies admit modeled
+  major capacities before allocation. Defaults and static cached calls remain
+  unlimited. Construction has separate Compile controls and fixed expansion
+  backstops. These controls do not bound total heap/RSS, arbitrary callbacks,
+  standalone getters, separate preparation or host-retained storage.
+- **Explicit lifetimes:** owned snapshots survive advance/failure/disposal;
+  borrowed subjects must remain alive and unchanged. PythonRe memory-cursor
+  aliases share one disposable lifetime; Core value-cursor copies share the
+  allowance/deadline. Callback writers accept scoped stack spans and are valid
+  only within their callback. Null evaluators reject even on misses.
+- **Core corrections:** default match/capture values have empty coordinates;
+  successful value matches reject negative active coordinates. Detailed misses
+  avoid unnecessary coordinate maps. Hosts that disable dynamic code use
+  non-emitted execution, including with Compiled.
+- **PythonRe corrections:** Unicode capture names cannot collide with generated
+  names; opening-order numbering and backreferences remain distinct. Native
+  collection avoids discarded coordinate maps. Fixed finite policies omit
+  optional preparation those instances cannot execute.
+- **PCRE2 corrections:** grammar admission, overlapping repeated-class discovery,
+  CRLF wildcard starts, branch-reset analysis and Unicode 16 grapheme boundaries
+  are corrected. Long graphemes observe interruption and work limits. TryReplace
+  stages overlapping output under admission. Replacement-cache syntax sharing
+  preserves per-call unset/unknown behavior and independent cancellation.
+  Generic unsupported Hard partial decisions and marked partial misses reject
+  explicitly; full partial-profile completion remains out of scope.
+- **Simpler internals:** superseded UTF-16/fallback engines, unchecked reads,
+  forwarding owners and diagnostic-only shipping code are removed. Actual
+  Unsafe.SizeOf queries remain. Construction/cache charges are conservative
+  modeled capacities; thresholds may change and shared storage may count twice.
+  PCRE2 MatchMany requires disjoint input/result storage; overlap is unchecked.
 
-- Fixed PythonRe's optional Core capture-name collisions: Unicode names such as
-  `α` could be rewritten to a real user's `g1` name, merging distinct captures
-  and changing the generated backreference language. Native text now uses unique
-  ordinal names; owned scalar metadata retains original Python names. Removed
-  the alias map, sorting and ASCII-name checker. Public scalar results remain
-  unchanged; captured literals can regain complete native discovery.
-- PythonRe/PCRE2 fixed finite policies now reach optional Core construction,
-  omitting unreachable unmetered runtimes/emitted delegates. PythonRe also skips
-  native prefix buffers disabled for that instance's lifetime. Live search/scalar
-  preparation and unrestricted native paths remain. PCRE2 operation selection is
-  independent of Core's policy-sensitive inspection. Lower construction work and
-  major storage can admit patterns previously denied; public limit scopes remain.
+Read [MIGRATION.md](MIGRATION.md) and [HOST-INTEGRATION.md](HOST-INTEGRATION.md)
+before upgrading. Each package README and profile specification describes its
+limits. [CURRENT-PERFORMANCE.md](CURRENT-PERFORMANCE.md) separates measured
+evidence from release acceptance; this version does not refresh historical
+benchmark Status or claim universal throughput gains.
 
-- Null replacement evaluator delegates now throw `ArgumentNullException` with
-  parameter `evaluator` before discovery/output allocation across all profiles,
-  on both hits and misses. An already-cancelled explicit token still wins.
-  Valid callback results and output/resource behavior are unchanged.
-- Removed test-only standalone replacement preparation and duplicate reference
-  resolution. Tests now exercise production preparation; eliminated change-only
-  comparisons can reduce charged construction work. Major-buffer admission and
-  interruption remain; the live decoded replacement interpreter is retained.
-
-- Core skips optional IL emission when the host disables dynamic code, including
-  ordinary constructors that previously failed for eligible literal families
-  and structural patterns. Existing non-emitted execution preserves Options and
-  results. This does not establish NativeAOT or trimming support.
-
-- Default Core match/capture views now return zero byte coordinates and empty
-  values instead of dereferencing an uninitialized coordinate map. Actual misses
-  retain unsuccessful group zero; successful capture projection is unchanged.
-- Core detailed misses no longer build a subject-wide coordinate map just to
-  represent an unsuccessful result. Full UTF-8 validation remains; native
-  captured-family projection requests its map only after finding a match.
-- BenchmarkDotNet parse failures, failed runs and empty execution filters now
-  return a nonzero exit code. Help/list/info and successful measurements still
-  return zero, including help/version through response files; the launcher uses
-  BDN's parser/results instead of an option whitelist or duplicate tokenizer.
-
-- Core instances with fixed finite numeric limits no longer prepare unreachable
-  unmetered runtimes or emitted delegates. Scalar/native metered execution and
-  public Options remain; lower construction charges may admit patterns previously
-  denied by construction budgets. Unlimited instances retain their fast paths.
-
-- PythonRe native FindAll collection now keeps nonzero starts in byte coordinates,
-  avoiding a discarded whole-subject UTF-16 boundary map. Complete UTF-8 validation,
-  scalar alignment, returned coordinates and invocation controls remain.
-- Removed `bench-summary.ps1`, whose CaseId-only grouping could mix benchmark
-  jobs. Use the maintained paired CLI reports and JSON-backed benchmark pages.
-- Fixed PCRE2 CRLF-aware wildcard search reporting the LF of a failed CRLF
-  candidate. Explicit LF starts, explicit newline alternatives, class filtering,
-  DotAll, scalar validation and finite controls retain their contracts.
-- Benchmark launches no longer discover or terminate processes globally.
-  Wall-time cancellation still terminates the child tree owned by that launch.
-- Reconciled four already-proved PCRE2 duplicate-name corpus cases and removed
-  repeated fixed-count ledgers; semantic execution and provenance checks remain.
-- PCRE2 `\X` now uses pinned Unicode 16 grapheme, pictographic and Indic properties,
-  correcting unrelated-letter joins, spacing-mark splits and repeated-ZWJ
-  boundaries. The existing Unicode Indic-conjunct rule remains supported,
-  including its documented difference from native PCRE2 10.47.
-- Public `Utf8ValueMatch` constructors reject negative active coordinates with
-  `ArgumentOutOfRangeException`. Unsuccessful and inactive byte coordinates
-  remain ignored; the packed representation and valid results are unchanged.
-- PCRE2 extended-grapheme scans (`\X`) now charge bounded scan blocks and observe
-  the original cancellation token and deadline inside large clusters. Finite work
-  limits can deny earlier.
-- New package provenance checks observed assembly configuration and compiled PDB
-  source checksums, and rejects relevant untracked build inputs. Historical
-  package evidence retains its original scope and immutable bytes.
-- Fixed PCRE2 `TryReplace` corrupting unread subject bytes when successful
-  replacement output overlaps the input. Matched overlaps now stage admitted
-  output before copying; short destinations stay unchanged. Staging consumes
-  working and cumulative result capacity under the original invocation.
-- PCRE2 replacement now reuses the complete preparation when its simple-template
-  optimization declines, including templates too large for the bounded cache.
-  This removes repeated compilation within one call; lazy template errors,
-  captures and invocation limits remain.
-- Internalized `Utf8CountDiagnostics` and `Utf8IsMatchDiagnostics`. Their producers
-  were already internal; public matching/resource APIs are unchanged. This removes
-  the two record types from the public API and breaks code that constructed them.
-- Fixed PCRE2 cold replacement contention: a cancelled preparer no longer makes
-  an unrelated waiter throw with the preparer's token. Waiters retain their own
-  deadlines and resource limits, with at most one independent preparation after
-  another invocation fails. Successful cache sharing and template errors remain.
-- Callback writers now use one owned output backend. Appending outside a
-  replacement callback throws InvalidOperationException, including empty
-  fragments; invalid ASCII arguments still reject first. Default/reset joining,
-  aliases, nested callbacks, UTF-8 validation and finite controls remain.
-- Removed PCRE2's empty syntax markers and tag-bearing compiler outcomes. Curated
-  partial probing retains its typed backtracking root directly; captures,
-  branch-reset metadata, operation selection and construction admission remain.
-- Zero-initialized Core value matches now report no match, consistently with
-  explicit NoMatch. Successful empty matches remain distinct. The result stays
-  16 bytes and preserves byte and derived UTF-16 coordinates.
-- Native UTF-8 literal replacement borrows the synchronous template instead of
-  copying it unconditionally. TryReplace retains a copy when the template
-  overlaps the destination; input overlap, capacity failures, strict validation,
-  cancellation and finite resource behavior retain their contracts.
-- Null text patterns now throw ArgumentNullException across all profiles.
-  Existing option/policy/timeout and explicit Compile pre-cancellation ordering
-  remain. Empty text and default UTF-8 spans still compile empty patterns.
-- Fixed PCRE2 boolean DFA false negatives for overlapping repeated classes and
-  later literals/classes, such as ^\d*1$ on 11. Finite controls retain owned
-  execution. Unsupported PCRE2 patterns no longer enter unrestricted Core grammar;
-  invalid bounds/options/escapes are rejected in context, complete escape operands
-  are consumed consistently, and construction fails if every compiler declines.
-- PCRE2 analysis now reports parsed branch-reset usage and conservative positive
-  byte bounds for character and single-token-repeat programs. IsFullyNative
-  describes owned managed execution. The documented profile remains partial;
-  these fixes do not promise full .NET, Python or PCRE2 equivalence.
-- Construction admits major buffers, instructions/state expansion and lexical
-  storage before acquisition, with bounded interruption/depth checks. PCRE2's
-  backtracking recursive-depth backstop is 256 frames; smaller caller limits
-  tighten it. Cached Core facades use a conservative 512-byte charge. Coarse
-  metadata charges may double-count shared storage and refuse/evict earlier;
-  removing unused storage/work can also lower thresholds. These are modeled
-  capacities, not total managed-heap/process limits or stable numeric charges.
-- Removed unused plans, forwarding executors, retained construction metadata and
-  diagnostic-only shipping code. Shared native preparation and name storage avoid
-  duplicate acquisition. Scalar semantics, captures, cursor copies/owned snapshots,
-  cancellation, deadlines and useful invocation limits remain. See
-  [host contracts](HOST-INTEGRATION.md) and the
-  [PCRE2 specification](SPEC-PCRE2.md) for scope and exclusions.
-- Package preparation now builds only selected library roots. Each profile
-  inventories its actual consumed assembly, including detached package tests;
-  Core qualification no longer needs adapter DLLs or the benchmark executable.
-  Exact dependency pins, provenance, isolated consumers and immutable bytes remain
-  required. Combined source CI still covers all profiles.
-
-[Performance acceptance and historical evidence](CURRENT-PERFORMANCE.md) separate
-source checks from package qualification and measured operating cost. Detailed
-cleanup receipts remain under [bench/Experiments](bench/Experiments), with earlier
-release-note prose preserved in repository history.
+Detailed development notes remain in
+[repository history](https://github.com/Lokad/Utf8Regex/blob/ee917133/CHANGELOG.md)
+and [experiment receipts](bench/Experiments).
 
 ## 0.4.0-rc.1
 

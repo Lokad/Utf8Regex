@@ -1,7 +1,7 @@
 # .NET 10 / .NET 11 Count comparison
 
 The staged common dependency is [0.4.0-rc.1](bench/Experiments/ReleaseCandidate-20261020/release.json)
-for all three packages. Development is 0.4.0-rc.2-dev. The runtime experiment
+for all three packages. Development is 0.4.0-rc.2. The runtime experiment
 below uses **frozen Core114**; it does not qualify either product's current
 performance or complete runtime/profile behavior. Its comparative-lane gate is
 closed. [Performance evidence and package costs](CURRENT-PERFORMANCE.md) have

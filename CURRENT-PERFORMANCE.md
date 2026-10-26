@@ -1,6 +1,6 @@
 # Performance evidence and frozen measurements
 
-Development is **0.4.0-rc.2-dev**. Current source is not a newly qualified package
+Development is **0.4.0-rc.2**. Current source is not a newly qualified package
 and has no new release-wide timing claim. The unpublished common **0.4.0-rc.1**
 [release identities](bench/Experiments/ReleaseCandidate-20261020/release.json)
 remain immutable; those PCRE2 bytes have known defects and must not be published.

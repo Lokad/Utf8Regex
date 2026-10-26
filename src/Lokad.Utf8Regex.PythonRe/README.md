@@ -1,9 +1,9 @@
 # Lokad.Utf8Regex.PythonRe
 
-Development source; a fresh package candidate has not been qualified. The frozen **0.4.0-rc.1** artifacts are unpublished and have known PCRE2 defects; **do not publish those PCRE2 bytes**. A corrected release needs a new immutable candidate.
+This is the common **0.4.0-rc.2** prerelease line. The frozen, unpublished RC1 artifacts are superseded and must not be published. See the release handoff for package qualification and publication status.
 
-**0.4.0-rc.2-dev**, .NET 10. A managed Python `re`-style adapter over strict UTF-8
-Unicode scalars, requiring exactly `Lokad.Utf8Regex [0.4.0-rc.2-dev]`. It can coexist
+**0.4.0-rc.2**, .NET 10. A managed Python `re`-style adapter over strict UTF-8
+Unicode scalars, requiring exactly `Lokad.Utf8Regex [0.4.0-rc.2]`. It can coexist
 with the PCRE2 adapter at the same version. No Python runtime or BCL regex matcher
 is a shipped implementation dependency.
 

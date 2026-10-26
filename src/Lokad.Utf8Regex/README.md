@@ -4,9 +4,9 @@ Optional IL preparation is skipped when the host disables dynamic code,
 including with `Compiled`; non-emitted execution preserves results. NativeAOT
 publishing and trimming have not been qualified.
 
-Development source; a fresh package candidate has not been qualified. The frozen **0.4.0-rc.1** artifacts are unpublished and have known PCRE2 defects; **do not publish those PCRE2 bytes**. A corrected release needs a new immutable candidate.
+This is the common **0.4.0-rc.2** prerelease line. The frozen, unpublished RC1 artifacts are superseded and must not be published. See the release handoff for package qualification and publication status.
 
-**0.4.0-rc.2-dev**, .NET 10. Regular expressions over strict UTF-8
+**0.4.0-rc.2**, .NET 10. Regular expressions over strict UTF-8
 `ReadOnlySpan<byte>` / `Span<byte>`, matching Unicode scalars with primary byte
 coordinates. Dot matches 😀 once across four bytes. UTF-16 coordinates and
 string APIs are derived interoperability conveniences.
@@ -43,7 +43,7 @@ valid after advance/failure/disposal. Copied value cursors retain independent
 positions while sharing allowance/deadline. A host must separately account for
 retained results and its own storage.
 
-Optional `Lokad.Utf8Regex.PythonRe` and `Lokad.Utf8Regex.Pcre2` **0.4.0-rc.2-dev**
+Optional `Lokad.Utf8Regex.PythonRe` and `Lokad.Utf8Regex.Pcre2` **0.4.0-rc.2**
 require exactly this Core version. Both are managed profile adapters with explicit
 compatibility boundaries; no native PCRE2 binary is shipped.
 

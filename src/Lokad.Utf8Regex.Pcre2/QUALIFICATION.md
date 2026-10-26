@@ -75,7 +75,7 @@ consumer adoption.
 
 ## Development after RC1
 
-Source has advanced to **0.4.0-rc.2-dev**. Superseded helpers, shipped benchmark
+Source has advanced to **0.4.0-rc.2**. Superseded helpers, shipped benchmark
 replay, test-only cache/collector machinery, construction field-transfer mirrors
 and duplicate package orchestration have been removed. Subsequent corrections
 add the following construction behavior:
