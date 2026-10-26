@@ -11,11 +11,26 @@ public sealed class Pcre2ReplacementPreparationIdentityTests
         foreach (var finite in new[] { false, true }) yield return [route, finite];
     }
 
-    private static Utf8Pcre2Regex Create(bool finite) => finite
-        ? Utf8Pcre2Regex.Create("(a)?b", default, default,
+    private static Utf8Pcre2Regex Create(bool finite, string pattern = "(a)?b") => finite
+        ? Utf8Pcre2Regex.Create(pattern, default, default,
             new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 128,
                 MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 }, Timeout.InfiniteTimeSpan)
-        : new Utf8Pcre2Regex("(a)?b");
+        : new Utf8Pcre2Regex(pattern);
+
+    [Theory] [MemberData(nameof(Routes))]
+    public void ExecutionFlagsPreserveScalarTemplateFragments(string route, bool finite)
+    {
+        var regex = Create(finite, "a");
+        var cases = new (string Template, string Expected)[] {
+            ("$0", "😀aé"), ("$$", "😀$é"), ("x$0y", "😀xayé"),
+            (@"\n$0", "😀\\naé"), ("\ud800$0\udc00", "😀�a�é"),
+            ("\ud800$$\udc00", "😀�$�é"), ("\ud800\udc00", "😀𐀀é"), ("é😀", "😀é😀é") };
+        foreach (var item in cases)
+        foreach (var options in new[] { Pcre2SubstitutionOptions.None, Pcre2SubstitutionOptions.UnsetEmpty,
+            Pcre2SubstitutionOptions.UnknownUnset, Pcre2SubstitutionOptions.UnsetEmpty | Pcre2SubstitutionOptions.UnknownUnset })
+            Assert.Equal(item.Expected, Run(regex, route, "😀aé", item.Template, options));
+        Assert.Equal(cases.Length, regex.DebugReplacementCacheEntryCount);
+    }
 
     [Theory] [MemberData(nameof(Routes))]
     public void ExecutionFlagsSharePreparationAcrossPublicRoutes(string route, bool finite)
