@@ -127,9 +127,9 @@ sealed class Utf8Regex
   method static Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<Byte> input, String pattern, Int32 count, Text.RegularExpressions.RegexOptions options)
   method static Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<Byte> input, String pattern, Int32 count, Text.RegularExpressions.RegexOptions options, TimeSpan matchTimeout)
 ref struct Utf8ReplacementWriter
-  method Void Append(ReadOnlySpan<Byte> utf8)
-  method Void Append(ReadOnlySpan<Char> utf16)
   method Void Append(Text.Rune value)
+  method Void Append(scoped ReadOnlySpan<Byte> utf8)
+  method Void Append(scoped ReadOnlySpan<Char> utf16)
   method Void AppendAsciiByte(Byte value)
 sealed class Utf8ResourceLimitExceededException : InvalidOperationException, Runtime.Serialization.ISerializable
   property UInt64 Limit { get; }

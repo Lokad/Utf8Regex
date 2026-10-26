@@ -17,7 +17,11 @@ public sealed class PublicApiSnapshotFormatterTests
             public void Run(int limit = 123) { }
             public void Dispose() { }
         }
-        public readonly ref struct ValueView { public int Value => 0; }
+        public readonly ref struct ValueView
+        {
+            public int Value => 0;
+            public void Append(scoped System.ReadOnlySpan<byte> input) { }
+        }
         """;
 
     private static readonly MetadataReference[] References = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
@@ -34,6 +38,7 @@ public sealed class PublicApiSnapshotFormatterTests
     [InlineData("sealed class", "class", "class ReviewFixture.Surface : IDisposable")]
     [InlineData("readonly ref struct", "ref struct", "ref struct ReviewFixture.ValueView")]
     [InlineData("readonly ref struct", "readonly struct", "readonly struct ReviewFixture.ValueView")]
+    [InlineData("scoped System.ReadOnlySpan<byte>", "System.ReadOnlySpan<byte>", "Append(ReadOnlySpan<Byte> input)")]
     public void MaterialContractChangesCannotKeepTheSameSnapshot(string oldText, string newText, string expected)
     {
         var actual = PublicApiSnapshot.FormatAssembly(Compile(Contract.Replace(oldText, newText, StringComparison.Ordinal)));

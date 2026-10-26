@@ -51,17 +51,17 @@ public ref struct Utf8ReplacementWriter
     }
 
     /// <summary>Appends bytes intended to be well-formed UTF-8.</summary>
-    /// <remarks>The consumer checks well-formedness after assembling the completed output.</remarks>
+    /// <remarks>Copies the span before returning, including stack-allocated input. The consumer checks well-formedness after assembling the completed output.</remarks>
     /// <exception cref="InvalidOperationException">No replacement callback is active.</exception>
-    public void Append(ReadOnlySpan<byte> utf8)
+    public void Append(scoped ReadOnlySpan<byte> utf8)
     {
         GetOwnedBuffer().Append(utf8);
     }
 
     /// <summary>Encodes and appends UTF-16 text as UTF-8.</summary>
-    /// <remarks>Each append encodes its fragment independently, replacing lone surrogate halves.</remarks>
+    /// <remarks>Encodes the span before returning, including stack-allocated input. Each append encodes its fragment independently, replacing lone surrogate halves.</remarks>
     /// <exception cref="InvalidOperationException">No replacement callback is active.</exception>
-    public void Append(ReadOnlySpan<char> utf16)
+    public void Append(scoped ReadOnlySpan<char> utf16)
     {
         GetOwnedBuffer().Append(utf16);
     }

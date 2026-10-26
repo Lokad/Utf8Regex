@@ -102,6 +102,7 @@ internal static class PublicApiSnapshot
         var type = parameter.ParameterType;
         var modifier = parameter.IsOut ? "out " : type.IsByRef ? parameter.IsIn ? "in " : "ref " :
             parameter.IsDefined(typeof(ParamArrayAttribute), false) ? "params " : "";
+        if (parameter.IsDefined(typeof(ScopedRefAttribute), false)) modifier = "scoped " + modifier;
         var value = parameter.HasDefaultValue ? parameter.RawDefaultValue : Missing.Value;
         var optional = !parameter.IsOptional ? "" : " = " +
             (value is null && type.IsValueType && Nullable.GetUnderlyingType(type) is null ? "default" : FormatConstant(value));

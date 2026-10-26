@@ -26,6 +26,10 @@ promise UTF-16 parity. CultureInvariant is the primary supported mode. Whole
 subjects must be valid UTF-8, including suffixes after an early match. Core uses
 ordered alternatives, not POSIX leftmost-longest matching.
 
+Replacement callbacks can pass local stack buffers and formatting slices to
+`Utf8ReplacementWriter.Append`. Its scoped byte/char span inputs are copied or
+encoded before returning; the writer remains valid only during the callback.
+
 Instances support finite `Utf8ResourcePolicy` work, depth, working-capacity and
 result-capacity limits. **Defaults and static cached calls are unlimited.**
 Original cancellation and absolute deadlines cover validation, matching, required
