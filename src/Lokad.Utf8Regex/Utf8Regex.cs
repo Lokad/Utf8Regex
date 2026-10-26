@@ -2845,6 +2845,7 @@ public sealed partial class Utf8Regex
 
     private byte[] ReplaceEvaluatorCore<TState>(ReadOnlySpan<byte> input, TState state, Utf8MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(evaluator);
         try { return OwnedSliceReplaceEvaluator(input, _ownedSliceProgram, state, evaluator, cancellationToken); }
         catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
     }
@@ -2902,6 +2903,7 @@ public sealed partial class Utf8Regex
 
     private string ReplaceToStringEvaluatorCore<TState>(ReadOnlySpan<byte> input, TState state, Utf16MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(evaluator);
         try
         {
             return OwnedSliceReplace(input, _ownedSliceProgram, new Utf8SliceEvaluatorExpansion<TState>(evaluator, _program.CaptureCatalog),

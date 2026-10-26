@@ -81,6 +81,10 @@ syntax. The API also exposes UTF-8 replacement patterns, callback replacement,
 `TryReplace`, `ReplaceToString`, detailed numeric-slot/name-table results, and
 explicit compile and execution settings.
 
+Replacement evaluator delegates must be non-null, even on misses; otherwise
+`ArgumentNullException` names `evaluator`. An already-cancelled explicit token
+still takes precedence. Return-value rules for valid callbacks are unchanged.
+
 ## Resource controls and ownership
 
 Use `Utf8Pcre2Regex.Create(pattern, options, settings, policy, matchTimeout)` for

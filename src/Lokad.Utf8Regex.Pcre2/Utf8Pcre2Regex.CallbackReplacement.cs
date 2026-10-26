@@ -9,17 +9,22 @@ public sealed partial class Utf8Pcre2Regex
 {
     private interface IPcre2CallbackExpansion<TState>
     {
+        void Validate();
         void Append(in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref TState state);
     }
 
     private readonly struct Pcre2ByteCallback<TState>(Pcre2MatchEvaluator<TState> evaluator) : IPcre2CallbackExpansion<TState>
     {
+        public void Validate() => ArgumentNullException.ThrowIfNull(evaluator);
+
         public void Append(in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref TState state)
             => evaluator(in match, ref writer, ref state);
     }
 
     private readonly struct Pcre2StringCallback<TState>(Pcre2Utf16MatchEvaluator<TState> evaluator) : IPcre2CallbackExpansion<TState>
     {
+        public void Validate() => ArgumentNullException.ThrowIfNull(evaluator);
+
         public void Append(in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref TState state)
             => writer.Append(evaluator(in match, ref state).AsSpan());
     }
@@ -75,6 +80,7 @@ public sealed partial class Utf8Pcre2Regex
         where TExpansion : struct, IPcre2CallbackExpansion<TState>
     {
         token.ThrowIfCancellationRequested();
+        expansion.Validate();
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, token);
         invocation.ShareStorageForCursor();
         Utf8SliceByteOutputScope? scope = null;

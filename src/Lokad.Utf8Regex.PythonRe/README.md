@@ -41,6 +41,10 @@ Result/staging charges do not refund and may conservatively count storage again.
 Denials use `Utf8ResourceLimitExceededException` with the corresponding
 `Execution*` resource kind. This is not a total heap/RSS or caller-retention bound.
 
+Replacement evaluator delegates must be non-null, even on misses; otherwise
+`ArgumentNullException` names `evaluator`. An already-cancelled explicit token
+still takes precedence. Return-value rules for valid callbacks are unchanged.
+
 Strict full-subject validation, original synchronous cancellation and one absolute
 deadline apply through required shaping and persistent cursor advances, including
 waits between moves. Caller callbacks cannot be preempted; copying/encoding their

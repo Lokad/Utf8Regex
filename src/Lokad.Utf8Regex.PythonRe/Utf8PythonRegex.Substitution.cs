@@ -393,6 +393,7 @@ public sealed partial class Utf8PythonRegex
         int startOffsetInBytes,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(evaluator);
         SubstituteScalar(input, (Value: state, Evaluator: evaluator, Names: _nameEntries),
                 static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonMatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
                     cursor.AppendText(ref writer, s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names))),
@@ -448,6 +449,7 @@ public sealed partial class Utf8PythonRegex
         int startOffsetInBytes,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(evaluator);
         SubstituteScalar(input, (Value: state, Evaluator: evaluator, Names: _nameEntries),
                 static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonMatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
                     cursor.AppendText(ref writer, s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names))),
@@ -542,6 +544,7 @@ public sealed partial class Utf8PythonRegex
         int startOffsetInBytes,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(evaluator);
         SubstituteScalar(input, (Value: state, Evaluator: evaluator, Names: _nameEntries),
                 static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonUtf8MatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
                     cursor.AppendBytes(ref writer, s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names))),
