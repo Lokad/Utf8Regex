@@ -6259,9 +6259,6 @@ internal static partial class BenchmarkInspectReporter
         }
     }
 
-    private static double MeasureMicroseconds(int samples, int iterations, Func<int> action)
-        => MeasureMedianCore(samples, iterations, action).Elapsed.TotalMicroseconds / iterations;
-
     private static void EnsureEquivalentReplaceResults(Utf8RegexBenchmarkContext context)
     {
         var expected = context.Utf8Regex.Replace(context.InputBytes, context.ReplacementUtf8);
