@@ -32,7 +32,7 @@ public sealed partial class Utf8Regex
             var map = PrepareOffsetInput(input, utf16Offset, ref invocation,
                 out var validation, out var startByte, out reservation);
             Utf8OperationMatchCursor cursor;
-            if (CanUseNativeOffsetCursor(validation, ref invocation, out var anchored))
+            if (!HasFiniteExecutionLimits && CanUseNativeOffsetCursor(validation, ref invocation, out var anchored))
             {
                 map = default;
                 invocation.Ledger.Release(reservation);
@@ -62,7 +62,10 @@ public sealed partial class Utf8Regex
         ref Utf8SliceInvocation invocation, out bool anchored)
     {
         var program = _ownedSliceProgram;
-        var eligible = !HasFiniteExecutionLimits && !UsesRightToLeft() &&
+        // Borrowed adapter invocations keep native eligibility even when their
+        // Core preparation carries finite policy. Public Core offset selectors
+        // apply their own lifetime-policy guard at the call boundary.
+        var eligible = !UsesRightToLeft() &&
             (Options & RegexOptions.NonBacktracking) == 0 && !_requiresKelvinSignFallback &&
             !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
             !program.HasContiguousAnchor;
@@ -83,7 +86,7 @@ public sealed partial class Utf8Regex
         int startByte, int utf16Offset, scoped ref Utf8SliceInvocation invocation, out Utf8ValueMatch match)
     {
         match = Utf8ValueMatch.NoMatch;
-        if (!CanUseNativeOffsetCursor(validation, ref invocation, out var anchored) || !anchored)
+        if (HasFiniteExecutionLimits || !CanUseNativeOffsetCursor(validation, ref invocation, out var anchored) || !anchored)
             return false;
         var literal = _fallbackDirectFamily.LiteralUtf8
             ?? throw new InvalidOperationException("An anchored plan needs its literal.");
