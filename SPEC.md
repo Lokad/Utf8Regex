@@ -93,6 +93,11 @@ Retain the .NET-style replacement language (`$1`, `${name}`, `$&`, `$```, `$'`, 
 
 Encode each replacement literal and each string evaluator return independently as UTF-8. A valid UTF-16 surrogate pair within that fragment denotes one scalar; an unpaired surrogate becomes U+FFFD, as with `Utf8ReplacementWriter.Append(ReadOnlySpan<char>)`. Fragments cannot join surrogate halves across substitutions, matches or original-subject gaps. This string-boundary encoding rule does not relax strict validation of UTF-8 subjects, replacement-pattern bytes or completed byte-evaluator output.
 
+Replacement evaluator delegates must be non-null: all profiles throw
+`ArgumentNullException` for `evaluator` before discovery/output allocation,
+including on misses. An already-cancelled explicit token takes precedence.
+This does not change the profile's rules for values returned by a valid callback.
+
 `Utf8ReplacementWriter` is valid during a replacement callback. Initialized
 copies share output; a reset/default writer joins the active invocation when
 appended. Appending outside a replacement callback throws `InvalidOperationException`,
@@ -353,6 +358,9 @@ Core exposes `IsMatch`, `Count`, `Match`, `MatchDetailed`, `EnumerateMatches`,
 strings are parser interoperability input; UTF-8 pattern entry points validate
 strictly. `Compile` exposes separate eager construction controls. Options use
 `RegexOptions`; `Compiled` changes strategy without changing language/results.
+Optional IL preparation declines when `RuntimeFeature.IsDynamicCodeSupported`
+is false and uses existing non-emitted execution. NativeAOT publishing/trimming
+support is not established by this host-capability behavior.
 Overloads without an explicit timeout use `DefaultMatchTimeout`, initially
 `Regex.InfiniteMatchTimeout`.
 

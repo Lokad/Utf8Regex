@@ -474,13 +474,22 @@ if (summaries.Length == 0)
 {
     // BDN returns no summaries for both errors and informational requests.
     // Consult its parser only on that path; it already printed diagnostics.
-    var (parsed, _, options) = ConfigParser.Parse(effectiveArgs, NullLogger.Instance, config);
+    var parserLog = new AccumulationLogger();
+    var (parsed, _, options) = ConfigParser.Parse(effectiveArgs, parserLog, config);
     if (parsed && (options.PrintInformation || options.ListBenchmarkCaseMode != ListBenchmarkCaseMode.Disabled))
         return 0;
-    if (!parsed && effectiveArgs.Any(argument =>
-        argument.Equals("--help", StringComparison.OrdinalIgnoreCase) ||
-        argument.Equals("--version", StringComparison.OrdinalIgnoreCase)))
-        return 0;
+    if (!parsed)
+    {
+        // BDN discards the parser's help/version result. Compare its own
+        // informational transcripts, which also cover expanded response files,
+        // without duplicating its tokenizer or classifying raw @file arguments.
+        foreach (var request in new[] { "--help", "--version" })
+        {
+            var informationalLog = new AccumulationLogger();
+            ConfigParser.Parse([request], informationalLog, config);
+            if (parserLog.GetLog() == informationalLog.GetLog()) return 0;
+        }
+    }
     Console.Error.WriteLine("No benchmark measurements were produced.");
     return parsed ? 1 : 2;
 }

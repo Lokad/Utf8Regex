@@ -6,6 +6,20 @@ These changes are development source, currently 0.4.0-rc.2-dev. Frozen RC1
 artifacts remain unchanged and unpublished; they must not be released. A fresh
 candidate and final downstream/package/cost qualification are still required.
 
+- Null replacement evaluator delegates now throw `ArgumentNullException` with
+  parameter `evaluator` before discovery/output allocation across all profiles,
+  on both hits and misses. An already-cancelled explicit token still wins.
+  Valid callback results and output/resource behavior are unchanged.
+- Removed test-only standalone replacement preparation and duplicate reference
+  resolution. Tests now exercise production preparation; eliminated change-only
+  comparisons can reduce charged construction work. Major-buffer admission and
+  interruption remain; the live decoded replacement interpreter is retained.
+
+- Core skips optional IL emission when the host disables dynamic code, including
+  ordinary constructors that previously failed for eligible literal families
+  and structural patterns. Existing non-emitted execution preserves Options and
+  results. This does not establish NativeAOT or trimming support.
+
 - Default Core match/capture views now return zero byte coordinates and empty
   values instead of dereferencing an uninitialized coordinate map. Actual misses
   retain unsuccessful group zero; successful capture projection is unchanged.
@@ -14,7 +28,8 @@ candidate and final downstream/package/cost qualification are still required.
   captured-family projection requests its map only after finding a match.
 - BenchmarkDotNet parse failures, failed runs and empty execution filters now
   return a nonzero exit code. Help/list/info and successful measurements still
-  return zero; the launcher uses BDN's parser/results instead of an option whitelist.
+  return zero, including help/version through response files; the launcher uses
+  BDN's parser/results instead of an option whitelist or duplicate tokenizer.
 
 - Core instances with fixed finite numeric limits no longer prepare unreachable
   unmetered runtimes or emitted delegates. Scalar/native metered execution and

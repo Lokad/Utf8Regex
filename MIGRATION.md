@@ -11,6 +11,15 @@ The development API removes the formerly public `Utf8CountDiagnostics` and
 test operations; they are now internal too. Code that constructed these records
 must remove that dependency. Public matching and resource-control APIs remain.
 
+Replacement evaluator delegates must be non-null across all profiles, including
+when there are no matches. Null delegates now throw `ArgumentNullException`
+(`evaluator`); an already-cancelled explicit token still takes precedence.
+This does not change the rules for values returned by a valid callback.
+
+Core now declines optional IL preparation when the host disables dynamic code,
+including with `Compiled`, and uses existing non-emitted execution. This fixes
+pattern-dependent construction failures; it does not qualify NativeAOT/trimming.
+
 ## Match scalars and use byte coordinates
 
 ```csharp
