@@ -10,9 +10,9 @@ candidate and final downstream/package/cost qualification are still required.
   removing repeated subject-prefix scans while preserving byte/scalar results,
   published snapshots and cumulative interruption/resource controls. Removed work
   can reduce modeled execution charges; no subject-wide map is added.
-- PCRE2 `MatchMany` now rejects input/result storage overlap before writes with
-  `ArgumentException` naming `destination`. This makes the unchanged-subject
-  obligation explicit; pre-cancellation and empty-destination probing remain.
+- PCRE2 `MatchMany` now explicitly documents disjoint input/result storage as
+  a caller precondition. Overlap remains unsupported and unchecked; the optional
+  runtime guard was deferred after inconclusive bounded cost evidence.
 - Corrected Core's specification to stop promising absent `MatchMany`, `Analyze`
   and `CopyRequiredLiterals` APIs. The first two remain PCRE2 profile extensions.
 

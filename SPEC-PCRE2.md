@@ -326,10 +326,10 @@ Normal matching APIs (`IsMatch`, `Count`, `Match`, `MatchDetailed`, `EnumerateMa
 `MatchMany` fills at most the destination length, returns the number written and
 reports remaining matches through `isMore`; it is not a continuation protocol.
 Only the returned prefix is valid. Input and result storage must be disjoint;
-overlap throws `ArgumentException` naming `destination` before any writes,
-including on a miss. Whole-input validation and start-offset checks still precede
-this argument check; an already-cancelled explicit token takes precedence.
-An empty destination still probes for a match without writing. `Analyze` returns
+overlap is unsupported because writing results can change the subject before
+later matches are discovered. This is a caller precondition, not a runtime check
+or an exception guarantee. An empty destination still probes without writing;
+an already-cancelled explicit token takes precedence. `Analyze` returns
 advisory native eligibility, length and literal facts; it does not change matching
 or expose an internal execution plan. These are PCRE2 profile APIs, not Core APIs.
 

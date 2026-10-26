@@ -164,9 +164,9 @@ Keep borrowed subjects unchanged and their owners alive. Copied value cursors
 retain independent positions but share allowance/deadline. Owned detailed results
 remain valid after cursor advance/failure. `MatchMany` may have written a prefix
 to caller storage before throwing. Its input and result storage must be disjoint;
-overlap throws `ArgumentException` naming `destination` before writes, including
-on a miss. Empty destinations retain their match-existence probe. An already
-cancelled explicit token still wins. Interruption during TryReplace copying can
+overlap is unsupported and is not checked, since writes can corrupt the subject
+before later discovery. Empty destinations retain their match-existence probe.
+An already cancelled explicit token still wins. Interruption during TryReplace copying can
 also leave modified destination bytes. DestinationTooSmall leaves destination
 storage unchanged. Host-retained storage requires separate admission.
 

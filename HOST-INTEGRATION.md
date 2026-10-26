@@ -87,8 +87,8 @@ selected explicitly. Match timeout is independent of these budgets. Program/cach
 retention uses separate conservative accounting; eviction must preserve held
 programs and results. Shared storage can be counted again and cause earlier denial.
 
-PCRE2 `MatchMany` requires disjoint subject and result storage, rejecting overlap
-with `ArgumentException`/`destination` before writes. The explicit-token entry
+PCRE2 `MatchMany` requires disjoint subject and result storage. This is a caller
+precondition; overlap is unsupported and is not checked. The explicit-token entry
 still observes pre-cancellation first. Valid disjoint calls retain partial-output
 rules, and empty destinations still probe for a match. `TryReplace` has a separate
 contract that supports overlap by staging where needed. PCRE2 slice enumeration
