@@ -19,7 +19,7 @@ public sealed partial class Utf8Pcre2Regex
     private static TimeSpan s_defaultMatchTimeout = Timeout.InfiniteTimeSpan;
     private readonly Pcre2CompiledProgram _program;
     private readonly IPcre2DirectProgram? _unmeteredIsMatchProgram;
-    private readonly Pcre2ReplacementComponent _replacementComponent;
+    private readonly Utf8BoundedPreparationCache<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation> _replacementCache;
 
     /// <summary>Compiles a PCRE2 pattern with default options, settings, limits, and timeout.</summary>
     public Utf8Pcre2Regex(string pattern)
@@ -100,7 +100,8 @@ public sealed partial class Utf8Pcre2Regex
         {
             _unmeteredIsMatchProgram = isMatchProgram;
         }
-        _replacementComponent = Pcre2ReplacementComponent.Create();
+        _replacementCache = Utf8BoundedPreparationCache<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation>.CreateRetained(
+            16, EqualityComparer<Pcre2ReplacementCacheKey>.Default);
         construction.Complete();
     }
 
@@ -1389,7 +1390,9 @@ public sealed partial class Utf8Pcre2Regex
         // A declined simple optimization still produces a complete prepared plan.
         // Carry it into the executor even when this template cannot be cached.
         preparation ??= GetReplacementPreparation(replacement, templateOptions);
-        if (preparation.Value.Simple is not { } simplePlan)
+        // Execution-only flags still retain their established streaming route.
+        // Sharing syntax preparation must not opt those calls into the range ledger.
+        if (templateOptions != Pcre2SubstitutionOptions.None || preparation.Value.Simple is not { } simplePlan)
         {
             plan = default;
             return false;
@@ -1775,13 +1778,17 @@ public sealed partial class Utf8Pcre2Regex
 
     private Pcre2ReplacementPreparation GetReplacementPreparation(string replacement, Pcre2SubstitutionOptions options)
     {
+        // Only Extended changes template grammar. Execution flags remain with
+        // the caller, including its separate literal-driver eligibility above.
+        options &= Pcre2SubstitutionOptions.Extended;
         using var control = Pcre2ReplacementPreparationControl.JoinOrEnter(_program.Request.MatchTimeout);
         Pcre2ReplacementPreparationControl.CheckText(replacement.Length);
         Pcre2ReplacementPreparation result;
         try
         {
-            result = _replacementComponent.GetOrAdd(new Pcre2ReplacementCacheKey(replacement, options), static key =>
-                Pcre2ReplacementPreparationControl.Prepare(key.Replacement, key.Options, false));
+            result = _replacementCache.GetOrAdd(new Pcre2ReplacementCacheKey(replacement, options), 0,
+                static (key, _) => Pcre2ReplacementPreparationControl.Prepare(key.Replacement, key.Options, false),
+                default(Pcre2ReplacementTextControl), default(Pcre2ReplacementRetainedStorage));
         }
         catch (Exception failure) when (failure is OperationCanceledException ||
             failure is Pcre2MatchException { ErrorKind: Pcre2ErrorKind.Timeout or Pcre2ErrorKind.MatchLimit or
@@ -1799,31 +1806,6 @@ public sealed partial class Utf8Pcre2Regex
     }
 
     private readonly record struct Pcre2ReplacementCacheKey(string Replacement, Pcre2SubstitutionOptions Options);
-
-    private sealed class Pcre2ReplacementComponent
-    {
-        private const int Capacity = 16;
-        private readonly Utf8BoundedPreparationCache<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation> _plans;
-
-        private Pcre2ReplacementComponent(Utf8BoundedPreparationCache<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation> plans)
-            => _plans = plans;
-
-        internal static Pcre2ReplacementComponent Create()
-        {
-            using var owner = Utf8ConstructionScope.Enter();
-            var plans = Utf8BoundedPreparationCache<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation>.CreateRetained(Capacity, EqualityComparer<Pcre2ReplacementCacheKey>.Default);
-            var result = owner.Budget.AllocateObject(plans, static value => new Pcre2ReplacementComponent(value));
-            owner.Complete();
-            return result;
-        }
-
-        internal int Count => _plans.Count;
-
-        internal Pcre2ReplacementPreparation GetOrAdd(
-            Pcre2ReplacementCacheKey key,
-            Func<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation> factory)
-            => _plans.GetOrAdd(key, factory, static (item, prepare) => prepare(item), default(Pcre2ReplacementTextControl), default(Pcre2ReplacementRetainedStorage));
-    }
 
     private readonly struct Pcre2ReplacementRetainedStorage : IUtf8RetainedStorage<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation>
     {

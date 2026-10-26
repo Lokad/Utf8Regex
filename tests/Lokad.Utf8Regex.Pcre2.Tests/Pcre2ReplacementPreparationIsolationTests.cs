@@ -83,8 +83,7 @@ public sealed class Pcre2ReplacementPreparationIsolationTests
         string? followerOutput = null;
         long ownerTicks = 0, followerTicks = 0;
         const BindingFlags fields = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
-        var component = typeof(Utf8Pcre2Regex).GetField("_replacementComponent", fields)!.GetValue(regex)!;
-        var cache = component.GetType().GetField("_plans", fields)!.GetValue(component)!;
+        var cache = typeof(Utf8Pcre2Regex).GetField("_replacementCache", fields)!.GetValue(regex)!;
         var first = cache.GetType().GetField("_first", fields)!;
         var stopped = false;
         var owner = new Thread(() =>
