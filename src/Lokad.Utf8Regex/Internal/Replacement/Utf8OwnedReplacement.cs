@@ -53,7 +53,6 @@ internal readonly struct Utf8ReplacementToken
     // Undefined numeric references remain literal, including their leading zeros.
     public string? ReferenceText { get; }
 
-    public string? GroupName => Kind == Utf8ReplacementTokenKind.Group && GroupNumber < 0 ? Literal : null;
 }
 
 
@@ -252,35 +251,18 @@ internal sealed class Utf8ReplacementPattern
         return false;
     }
 
-    public Utf8ReplacementPattern ResolveGroupReferences(ReadOnlySpan<int> validGroupNumbers, ReadOnlySpan<string> validGroupNames)
-    {
-        using var owner = Utf8ConstructionScope.Enter();
-        using var storage = Utf8ConstructionSession.Create(owner.Budget);
-        var resolved = ResolveTokens(storage, validGroupNumbers, validGroupNames, out var changed);
-        if (!changed) return this;
-        var result = Create(storage, storage.Copy(resolved, true));
-        storage.Complete(); owner.Complete();
-        return result;
-    }
-
     // Resolve once into scratch storage. The analyzer lowers these tokens directly,
     // keeping the original pattern flags without acquiring a second pattern holder.
     internal Utf8ConstructionBuffer<Utf8ReplacementToken> ResolveTokens(Utf8ConstructionSession storage,
-        ReadOnlySpan<int> validGroupNumbers, ReadOnlySpan<string> validGroupNames, out bool changed)
+        ReadOnlySpan<int> validGroupNumbers, ReadOnlySpan<string> validGroupNames)
     {
         var resolved = storage.Buffer<Utf8ReplacementToken>();
         Utf8ReplacementToken? pending = null;
         Utf8ConstructionText? merged = null;
-        changed = false;
         foreach (var token in Tokens)
         {
             storage.Budget.ChargeWork(1);
             var normalized = NormalizeGroupReference(storage, token, validGroupNumbers, validGroupNames);
-            if (!ReferenceEquals(normalized.Literal, token.Literal))
-                storage.Budget.ChargeWork((ulong)Math.Min(normalized.Literal?.Length ?? 0, token.Literal?.Length ?? 0));
-            changed |= normalized.Kind != token.Kind || normalized.GroupNumber != token.GroupNumber ||
-                !string.Equals(normalized.Literal, token.Literal, StringComparison.Ordinal) ||
-                normalized.IsBraceEnclosed != token.IsBraceEnclosed;
             if (normalized.Kind == Utf8ReplacementTokenKind.Literal)
             {
                 if (pending is { } previous)
@@ -299,7 +281,6 @@ internal sealed class Utf8ReplacementPattern
             }
         }
         FlushPending(storage, resolved, ref pending, ref merged);
-        changed |= resolved.Count != Tokens.Length;
         return resolved;
 
     }
@@ -343,39 +324,4 @@ internal sealed class Utf8ReplacementPattern
         return new Utf8ReplacementToken(Utf8ReplacementTokenKind.Literal, name, -1, true);
     }
 
-    public bool TryGetLiteralText([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? literalText)
-    {
-        using var owner = Utf8ConstructionScope.Enter();
-        using var storage = Utf8ConstructionSession.Create(owner.Budget);
-        var result = TryGetLiteralText(storage, Tokens, out literalText);
-        if (result) { storage.Complete(); owner.Complete(); }
-        return result;
-    }
-
-    private static bool TryGetLiteralText(Utf8ConstructionSession storage, ReadOnlySpan<Utf8ReplacementToken> tokens,
-        [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? literalText)
-    {
-        literalText = null;
-        foreach (var token in tokens)
-        {
-            storage.Budget.ChargeWork(1);
-            if (token.Kind != Utf8ReplacementTokenKind.Literal) return false;
-        }
-        if (tokens.Length == 0) { literalText = string.Empty; return true; }
-        if (tokens.Length == 1) { literalText = tokens[0].Literal ?? string.Empty; return true; }
-        var builder = storage.Text();
-        foreach (var token in tokens) builder.Append(token.Literal ?? string.Empty);
-        literalText = builder.ToText(); return true;
-    }
-
-    public bool TryGetLiteralText(ReadOnlySpan<int> validGroupNumbers, ReadOnlySpan<string> validGroupNames,
-        [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? literalText)
-    {
-        using var owner = Utf8ConstructionScope.Enter();
-        using var storage = Utf8ConstructionSession.Create(owner.Budget);
-        var resolved = ResolveTokens(storage, validGroupNumbers, validGroupNames, out _);
-        var result = TryGetLiteralText(storage, resolved.Span, out literalText);
-        if (result) { storage.Complete(); owner.Complete(); }
-        return result;
-    }
 }

@@ -19,8 +19,8 @@ internal static class Utf8FrontEndReplacementAnalyzer
         using var owner = Utf8ConstructionScope.Enter();
         using var storage = Utf8ConstructionSession.Create(owner.Budget);
         var pattern = Utf8ReplacementPattern.Parse(storage, replacement, validGroupNumbers, ecma);
-        var resolved = pattern.ResolveTokens(storage, validGroupNumbers, validGroupNames, out _);
-        var plan = Utf8ReplacementPlanLowerer.Lower(storage, resolved.Span, [], []);
+        var resolved = pattern.ResolveTokens(storage, validGroupNumbers, validGroupNames);
+        var plan = Utf8ReplacementPlanLowerer.Lower(storage, resolved.Span);
         // Resolution merges adjacent literals. Reuse the admitted encoded fragment
         // instead of resolving, materializing and encoding the template a second time.
         var literal = plan.Instructions.Count == 0 ||

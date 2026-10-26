@@ -250,8 +250,7 @@ public sealed class Utf8SliceSparseGroupTests
         var context = regex.MatchDetailed(Encoding.UTF8.GetBytes(text));
         foreach (var template in new[] { "$+", "$12|$5|$2147483647", "$00|$01|$" + "{012}" })
         {
-            var parsed = Utf8ReplacementPattern.Parse(template).ResolveGroupReferences(oracle.GetGroupNumbers(), oracle.GetGroupNames());
-            var plan = Utf8ReplacementPlanLowerer.Lower(parsed);
+            var plan = Utf8FrontEndReplacementAnalyzer.Analyze(template, oracle.GetGroupNumbers(), oracle.GetGroupNames()).Plan;
             Assert.Equal(match.Result(template), regex.ReplaceToString(Encoding.UTF8.GetBytes(text), template));
             Assert.Equal(match.Result(template), Utf8ReplacementPlanInterpreter.ApplyOwned(plan, text, in context));
         }

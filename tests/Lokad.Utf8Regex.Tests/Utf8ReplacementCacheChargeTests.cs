@@ -14,11 +14,7 @@ public sealed class Utf8ReplacementCacheChargeTests
     private static ulong TextBytes(string? text) => string.IsNullOrEmpty(text) ? 0 : 32UL + ((2 * ((ulong)text.Length + 1) + 15) & ~15UL);
     private static Utf8AnalyzedReplacement Prepare(string template)
     {
-        var pattern = Utf8ReplacementPattern.Parse(template, [0, 1], false);
-        var plan = Utf8ReplacementPlanLowerer.Lower(pattern, [0, 1], ["0", "word"]);
-        return !pattern.ContainsSubstitutions && plan.Instructions.Count == 1
-            ? Utf8AnalyzedReplacement.Literal(template, pattern, plan, plan.Instructions[0].LiteralUtf8)
-            : Utf8AnalyzedReplacement.Structured(template, pattern, plan);
+        return Utf8FrontEndReplacementAnalyzer.Analyze(template, [0, 1], ["0", "word"]);
     }
 
     private static ulong PhysicalBytes(Utf8AnalyzedReplacement value)

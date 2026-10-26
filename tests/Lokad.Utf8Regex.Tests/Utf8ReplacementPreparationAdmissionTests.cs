@@ -244,10 +244,9 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
 
     [Theory]
     [InlineData("parse")]
-    [InlineData("resolve-changed")]
-    [InlineData("resolve-borrowed")]
-    [InlineData("literal-extract")]
-    [InlineData("lower-named")]
+    [InlineData("named")]
+    [InlineData("unknown-literal")]
+    [InlineData("numeric")]
     [InlineData("literal-text")]
     [InlineData("rewrite-simple")]
     [InlineData("rewrite-tree")]
@@ -335,17 +334,12 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
 
     private static Func<object> Stage(string stage)
     {
-        var pattern = Utf8ReplacementPattern.Parse(stage == "resolve-borrowed" ? "a$1z" : "a${x}$0012z");
         switch (stage)
         {
             case "parse": return () => Utf8ReplacementPattern.Parse("é$$${missing}$0012");
-            case "resolve-changed": return () => pattern.ResolveGroupReferences([0, 1, 7], ["zero", "one", "x"]);
-            case "resolve-borrowed": return () => pattern.ResolveGroupReferences([0, 1], ["zero", "one"]);
-            case "literal-extract": return () =>
-            {
-                Assert.True(pattern.TryGetLiteralText([], [], out var value)); return value;
-            };
-            case "lower-named": return () => Utf8ReplacementPlanLowerer.Lower(pattern, [0, 1, 7], ["zero", "one", "x"]);
+            case "named": return () => Utf8FrontEndReplacementAnalyzer.Analyze("a${x}$0012z", [0, 1, 7], ["zero", "one", "x"]);
+            case "unknown-literal": return () => Utf8FrontEndReplacementAnalyzer.Analyze("a${x}$0012z");
+            case "numeric": return () => Utf8FrontEndReplacementAnalyzer.Analyze("a$1z", [0, 1], ["zero", "one"]);
             case "literal-text": return () => Utf8FrontEndReplacementAnalyzer.Analyze("é\ud83d$literal\ude00");
             default:
                 var regex = new Utf8Regex(stage == "rewrite-simple" ? "(abc)" : stage == "rewrite-tree" ? "((?:ab|cd))" : "(a+)b");

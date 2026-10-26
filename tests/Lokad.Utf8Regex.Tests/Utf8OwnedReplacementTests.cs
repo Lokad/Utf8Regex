@@ -461,9 +461,10 @@ public sealed class Utf8OwnedReplacementTests
     public void OwnedReplacementParseMatchesPinnedFacts(string template, string expectedTokens, bool expectedLiteralOk, string expectedLiteral)
     {
         var owned = Utf8ReplacementPattern.Parse(template);
-        Assert.Equal(expectedTokens, DumpOwnedTokens(owned));
-        Assert.Equal(expectedLiteralOk, owned.TryGetLiteralText(out var ownedLiteral));
-        Assert.Equal(expectedLiteral, ownedLiteral ?? string.Empty);
+        Assert.Equal(expectedTokens, DumpOwnedTokens(owned.Tokens));
+        var literal = owned.Tokens.All(token => token.Kind == Utf8ReplacementTokenKind.Literal);
+        Assert.Equal(expectedLiteralOk, literal);
+        Assert.Equal(expectedLiteral, literal ? string.Concat(owned.Tokens.Select(token => token.Literal)) : string.Empty);
     }
 
     [Theory]
@@ -473,18 +474,21 @@ public sealed class Utf8OwnedReplacementTests
         var numbers = GroupNumbers[context];
         var names = GroupNames[context];
         var owned = Utf8ReplacementPattern.Parse(template);
-        var ownedResolved = owned.ResolveGroupReferences(numbers, names);
-        Assert.Equal(expectedTokens, DumpOwnedTokens(ownedResolved));
-        Assert.Equal(expectedLiteralOk, owned.TryGetLiteralText(numbers, names, out var ownedLiteral));
-        Assert.Equal(expectedLiteral, ownedLiteral ?? string.Empty);
+        using var owner = Utf8ConstructionScope.Enter();
+        using var storage = Utf8ConstructionSession.Create(owner.Budget);
+        var resolved = owned.ResolveTokens(storage, numbers, names);
+        Assert.Equal(expectedTokens, DumpOwnedTokens(resolved.Span));
+        var analyzed = Utf8FrontEndReplacementAnalyzer.Analyze(template, numbers, names);
+        Assert.Equal(expectedLiteralOk, analyzed.IsLiteral);
+        Assert.Equal(expectedLiteral, analyzed.IsLiteral ? Encoding.UTF8.GetString(analyzed.LiteralUtf8) : string.Empty);
     }
 
 
-    private static string DumpOwnedTokens(Utf8ReplacementPattern pattern)
+    private static string DumpOwnedTokens(ReadOnlySpan<Utf8ReplacementToken> tokens)
     {
         var builder = new StringBuilder("[");
         var first = true;
-        foreach (var token in pattern.Tokens)
+        foreach (var token in tokens)
         {
             if (!first)
             {
