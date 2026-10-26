@@ -16,9 +16,16 @@ provenance and Status. They identify their own dates and exclusions; historical
 rows do not qualify today's engine. Do not maintain another manually copied
 qualification summary or priority queue in this file.
 
-The staged common release is **0.4.0-rc.1** for Core/PythonRe/PCRE2. Its
-[handoff](../../artifacts/utf8regex-0.4.0-rc.1-20261020/HANDOFF.md) and
-[qualification scope](../../src/Lokad.Utf8Regex.Pcre2/QUALIFICATION.md) identify
-immutable package evidence. Source is now **0.4.0-rc.2-dev**; its bounded
-[cleanup observation](../Experiments/SecondSimplification-20261020/README.md)
-is separate. No new full-profile throughput or benchmark Status claim follows.
+The frozen common **0.4.0-rc.1** candidate is unpublished and has known PCRE2
+defects: **do not publish those PCRE2 bytes**. Its
+[tracked receipt](../Experiments/ReleaseCandidate-20261020/README.md),
+[identities](../Experiments/ReleaseCandidate-20261020/release.json) and
+[qualification scope](../../src/Lokad.Utf8Regex.Pcre2/QUALIFICATION.md) retain
+their original scope. Detailed local-only handoffs are absent from a source
+checkout. Source remains **0.4.0-rc.2-dev**; see
+[current performance evidence](../../CURRENT-PERFORMANCE.md) for later work and
+its limitations. No new throughput or benchmark Status claim follows.
+
+The legacy `--emit-pcre2-perf-ledger` and `--emit-pcre2-managed-perf-ledger`
+producers are retired. Use the snapshot/generated page and retained per-case
+inspection or measurement commands; historical tables are preserved above.

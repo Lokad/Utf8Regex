@@ -6259,40 +6259,6 @@ internal static partial class BenchmarkInspectReporter
         }
     }
 
-    private static bool TryParseMicrosecondsLine(string line, string label, out double value)
-    {
-        value = 0;
-        if (!line.StartsWith(label, StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        var marker = " us/op";
-        var markerIndex = line.IndexOf(marker, StringComparison.Ordinal);
-        if (markerIndex < 0)
-        {
-            return false;
-        }
-
-        var pipeIndex = line.LastIndexOf('|', markerIndex);
-        if (pipeIndex < 0)
-        {
-            return false;
-        }
-
-        var numberText = line[(pipeIndex + 1)..markerIndex].Trim();
-        return double.TryParse(numberText, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
-    }
-
-    private static string ExtractValueAfterColon(string line)
-    {
-        var colonIndex = line.IndexOf(':');
-        return colonIndex < 0 ? string.Empty : line[(colonIndex + 1)..].Trim();
-    }
-
-    private static string FormatLedgerValue(double? microseconds)
-        => microseconds is null ? "-" : microseconds.Value.ToString("F3", CultureInfo.InvariantCulture);
-
     private static double MeasureMicroseconds(int samples, int iterations, Func<int> action)
         => MeasureMedianCore(samples, iterations, action).Elapsed.TotalMicroseconds / iterations;
 

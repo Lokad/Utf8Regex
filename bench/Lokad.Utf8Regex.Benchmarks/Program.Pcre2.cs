@@ -126,18 +126,6 @@ internal static partial class BenchmarkProgramRouter
             return true;
         }
 
-        if (args.Length >= 1 && args[0].Equals("--emit-pcre2-perf-ledger", StringComparison.Ordinal))
-        {
-            exitCode = BenchmarkInspectReporter.RunEmitUtf8Pcre2PerfLedger(args.Length >= 2 ? args[1] : null);
-            return true;
-        }
-
-        if (args.Length >= 1 && args[0].Equals("--emit-pcre2-managed-perf-ledger", StringComparison.Ordinal))
-        {
-            exitCode = BenchmarkInspectReporter.RunEmitUtf8Pcre2ManagedPerfLedger(args.Length >= 2 ? args[1] : null);
-            return true;
-        }
-
         if (args.Length >= 1 && args[0].Equals("--emit-pcre2-benchmark-json", StringComparison.Ordinal))
         {
             exitCode = BenchmarkInspectReporter.RunEmitPcre2BenchmarkJson();

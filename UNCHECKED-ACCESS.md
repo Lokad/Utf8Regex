@@ -6,9 +6,11 @@ staging helpers, native imports or shipped BCL matcher/result execution remain
 in those qualified bytes. Lython accepts SizeOf. Actual size queries perform no
 unchecked memory access and must remain rather than manual size estimates.
 
-The [RC1 handoff](artifacts/utf8regex-0.4.0-rc.1-20261020/HANDOFF.md) and
-[original identities](artifacts/utf8regex-0.4.0-rc.1-20261020/final-integrity.json)
-identify the immutable Windows/Linux-qualified inventory. RC1 is unpublished
+The [tracked RC1 receipt](bench/Experiments/ReleaseCandidate-20261020/README.md) and
+[original identities](bench/Experiments/ReleaseCandidate-20261020/release.json)
+identify the immutable Windows/Linux-qualified inventory. The detailed local-only
+handoff remains under `artifacts/utf8regex-0.4.0-rc.1-20261020/` and is absent from
+a source checkout. RC1 is unpublished
 and has separate known PCRE2 grammar/construction defects: do not publish those
 PCRE2 bytes. Its inventory evidence does not qualify a corrected release.
 
