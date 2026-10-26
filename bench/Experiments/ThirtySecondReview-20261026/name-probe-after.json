@@ -1,0 +1,197 @@
+{
+  "Producer": "0.4.0-rc.2-dev\u002B4d89398a4ba2bdee7fdae8b890d6bc672a8f6aac",
+  "Results": [
+    {
+      "Pattern": "(?P\u003C\u03B1\u003Ea)(?P\u003Cg1\u003Eb)(?P=\u03B1)",
+      "Finite": false,
+      "GoodIsMatch": true,
+      "BadIsMatch": false,
+      "GoodCount": 1,
+      "CorePattern": "(?\u003Cg1\u003Ea)(?\u003Cg2\u003Eb)\\k\u003Cg1\u003E",
+      "CoreNames": [
+        "0",
+        "g1",
+        "g2"
+      ],
+      "CoreGoodIsMatch": true,
+      "CoreBadIsMatch": false,
+      "Error": null
+    },
+    {
+      "Pattern": "(?P\u003C\u03B1\u003Ea)(?P\u003Cg1\u003Eb)(?P=\u03B1)",
+      "Finite": true,
+      "GoodIsMatch": true,
+      "BadIsMatch": false,
+      "GoodCount": 1,
+      "CorePattern": "(?\u003Cg1\u003Ea)(?\u003Cg2\u003Eb)\\k\u003Cg1\u003E",
+      "CoreNames": [
+        "0",
+        "g1",
+        "g2"
+      ],
+      "CoreGoodIsMatch": true,
+      "CoreBadIsMatch": false,
+      "Error": null
+    },
+    {
+      "Pattern": "(?P\u003Cg2\u003Ea)(?P\u003C\u03B1\u003Eb)(?P=g2)",
+      "Finite": false,
+      "GoodIsMatch": true,
+      "BadIsMatch": false,
+      "GoodCount": 1,
+      "CorePattern": "(?\u003Cg1\u003Ea)(?\u003Cg2\u003Eb)\\k\u003Cg1\u003E",
+      "CoreNames": [
+        "0",
+        "g1",
+        "g2"
+      ],
+      "CoreGoodIsMatch": true,
+      "CoreBadIsMatch": false,
+      "Error": null
+    },
+    {
+      "Pattern": "(?P\u003Cg2\u003Ea)(?P\u003C\u03B1\u003Eb)(?P=g2)",
+      "Finite": true,
+      "GoodIsMatch": true,
+      "BadIsMatch": false,
+      "GoodCount": 1,
+      "CorePattern": "(?\u003Cg1\u003Ea)(?\u003Cg2\u003Eb)\\k\u003Cg1\u003E",
+      "CoreNames": [
+        "0",
+        "g1",
+        "g2"
+      ],
+      "CoreGoodIsMatch": true,
+      "CoreBadIsMatch": false,
+      "Error": null
+    },
+    {
+      "Pattern": "(?P\u003C\u03B1\u003Efoo)(?P\u003Cg1\u003Ebar)(?P=\u03B1)",
+      "Finite": false,
+      "GoodIsMatch": true,
+      "BadIsMatch": false,
+      "GoodCount": 1,
+      "CorePattern": "(?\u003Cg1\u003Efoo)(?\u003Cg2\u003Ebar)\\k\u003Cg1\u003E",
+      "CoreNames": [
+        "0",
+        "g1",
+        "g2"
+      ],
+      "CoreGoodIsMatch": true,
+      "CoreBadIsMatch": false,
+      "Error": null
+    },
+    {
+      "Pattern": "(?P\u003C\u03B1\u003Efoo)(?P\u003Cg1\u003Ebar)(?P=\u03B1)",
+      "Finite": true,
+      "GoodIsMatch": true,
+      "BadIsMatch": false,
+      "GoodCount": 1,
+      "CorePattern": "(?\u003Cg1\u003Efoo)(?\u003Cg2\u003Ebar)\\k\u003Cg1\u003E",
+      "CoreNames": [
+        "0",
+        "g1",
+        "g2"
+      ],
+      "CoreGoodIsMatch": true,
+      "CoreBadIsMatch": false,
+      "Error": null
+    },
+    {
+      "Pattern": "(?P\u003C\u03B1\u003Ea)?(?P\u003Cg1\u003Eb)(?P=\u03B1)",
+      "Finite": false,
+      "GoodIsMatch": true,
+      "BadIsMatch": false,
+      "GoodCount": 1,
+      "CorePattern": "(?\u003Cg1\u003Ea)?(?\u003Cg2\u003Eb)\\k\u003Cg1\u003E",
+      "CoreNames": [
+        "0",
+        "g1",
+        "g2"
+      ],
+      "CoreGoodIsMatch": true,
+      "CoreBadIsMatch": false,
+      "Error": null
+    },
+    {
+      "Pattern": "(?P\u003C\u03B1\u003Ea)?(?P\u003Cg1\u003Eb)(?P=\u03B1)",
+      "Finite": true,
+      "GoodIsMatch": true,
+      "BadIsMatch": false,
+      "GoodCount": 1,
+      "CorePattern": "(?\u003Cg1\u003Ea)?(?\u003Cg2\u003Eb)\\k\u003Cg1\u003E",
+      "CoreNames": [
+        "0",
+        "g1",
+        "g2"
+      ],
+      "CoreGoodIsMatch": true,
+      "CoreBadIsMatch": false,
+      "Error": null
+    },
+    {
+      "Pattern": "(?P\u003C\u03B1\u003Ea)(?P\u003Cg1\u003Eb)",
+      "Finite": false,
+      "GoodIsMatch": true,
+      "BadIsMatch": false,
+      "GoodCount": 1,
+      "CorePattern": "(?\u003Cg1\u003Ea)(?\u003Cg2\u003Eb)",
+      "CoreNames": [
+        "0",
+        "g1",
+        "g2"
+      ],
+      "CoreGoodIsMatch": true,
+      "CoreBadIsMatch": false,
+      "Error": null
+    },
+    {
+      "Pattern": "(?P\u003C\u03B1\u003Ea)(?P\u003Cg1\u003Eb)",
+      "Finite": true,
+      "GoodIsMatch": true,
+      "BadIsMatch": false,
+      "GoodCount": 1,
+      "CorePattern": "(?\u003Cg1\u003Ea)(?\u003Cg2\u003Eb)",
+      "CoreNames": [
+        "0",
+        "g1",
+        "g2"
+      ],
+      "CoreGoodIsMatch": true,
+      "CoreBadIsMatch": false,
+      "Error": null
+    },
+    {
+      "Pattern": "(?P\u003C\u03B1\u003Ea)|(?P\u003Cg1\u003Eb)",
+      "Finite": false,
+      "GoodIsMatch": true,
+      "BadIsMatch": false,
+      "GoodCount": 1,
+      "CorePattern": "(?\u003Cg1\u003Ea)|(?\u003Cg2\u003Eb)",
+      "CoreNames": [
+        "0",
+        "g1",
+        "g2"
+      ],
+      "CoreGoodIsMatch": true,
+      "CoreBadIsMatch": false,
+      "Error": null
+    },
+    {
+      "Pattern": "(?P\u003C\u03B1\u003Ea)|(?P\u003Cg1\u003Eb)",
+      "Finite": true,
+      "GoodIsMatch": true,
+      "BadIsMatch": false,
+      "GoodCount": 1,
+      "CorePattern": "(?\u003Cg1\u003Ea)|(?\u003Cg2\u003Eb)",
+      "CoreNames": [
+        "0",
+        "g1",
+        "g2"
+      ],
+      "CoreGoodIsMatch": true,
+      "CoreBadIsMatch": false,
+      "Error": null
+    }
+  ]
+}

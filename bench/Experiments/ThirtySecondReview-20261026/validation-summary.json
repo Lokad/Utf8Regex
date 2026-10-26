@@ -1,0 +1,19 @@
+{
+  "PerformanceConfirmationSeconds": 21.62,
+  "BaselineProductSource": "9ea498ad11fcdca901c2ce54369070488d0e57c0",
+  "Pcre2Seconds": 9,
+  "PerformanceInitialSeconds": 62.26,
+  "GeneratedPageVerifiersPass": 3,
+  "CoreSeconds": 4,
+  "NoPackageOrSnapshotRefresh": true,
+  "Pcre2CompletePass": 6138,
+  "AdditionalCPythonAliasControls": 8,
+  "CoreFocusedPass": 2034,
+  "ProtectedFilesUnchanged": 18,
+  "StructuredCPythonSemanticCases": 91,
+  "PythonReCompletePass": 3937,
+  "CIResult": "success",
+  "Source": "4d89398a4ba2bdee7fdae8b890d6bc672a8f6aac",
+  "CI": "https://github.com/Lokad/Utf8Regex/actions/runs/40304946205",
+  "PythonReSeconds": 12
+}

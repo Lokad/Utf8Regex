@@ -1,0 +1,250 @@
+{
+  "Producer": "0.4.0-rc.2-dev\u002B9ea498ad11fcdca901c2ce54369070488d0e57c0",
+  "Results": [
+    {
+      "Profile": "PythonRe",
+      "Pattern": "abc",
+      "ProfileFinite": true,
+      "Count": 1,
+      "Core": {
+        "Pattern": "abc",
+        "FixedFinitePolicy": false,
+        "HasVerifier": true,
+        "Runtime": "Utf8LiteralCompiledEngineRuntime",
+        "HasEmittedLiteralCounter": false,
+        "HasDirectStructuralKernel": false
+      }
+    },
+    {
+      "Profile": "Pcre2",
+      "Pattern": "abc",
+      "Operation": "IsMatch",
+      "Selected": "Pcre2LiteralDirectProgram",
+      "Count": 1,
+      "Core": null
+    },
+    {
+      "Profile": "Pcre2",
+      "Pattern": "abc",
+      "Operation": "Count",
+      "Selected": "Pcre2LiteralDirectProgram",
+      "Count": 1,
+      "Core": null
+    },
+    {
+      "Profile": "Pcre2",
+      "Pattern": "abc",
+      "Operation": "Match",
+      "Selected": "Pcre2LiteralDirectProgram",
+      "Count": 1,
+      "Core": null
+    },
+    {
+      "Profile": "Pcre2",
+      "Pattern": "abc",
+      "Operation": "Enumerate",
+      "Selected": "Pcre2LiteralDirectProgram",
+      "Count": 1,
+      "Core": null
+    },
+    {
+      "Profile": "Pcre2",
+      "Pattern": "abc",
+      "Operation": "Replace",
+      "Selected": "Pcre2LiteralDirectProgram",
+      "Count": 1,
+      "Core": null
+    },
+    {
+      "Profile": "PythonRe",
+      "Pattern": "abc|xyz",
+      "ProfileFinite": true,
+      "Count": 2,
+      "Core": {
+        "Pattern": "abc|xyz",
+        "FixedFinitePolicy": false,
+        "HasVerifier": true,
+        "Runtime": "Utf8LiteralCompiledEngineRuntime",
+        "HasEmittedLiteralCounter": true,
+        "HasDirectStructuralKernel": false
+      }
+    },
+    {
+      "Profile": "Pcre2",
+      "Pattern": "abc|xyz",
+      "Operation": "IsMatch",
+      "Selected": "Pcre2LiteralFamilyDirectProgram",
+      "Count": 2,
+      "Core": {
+        "Pattern": "abc|xyz",
+        "FixedFinitePolicy": false,
+        "HasVerifier": true,
+        "Runtime": "Utf8LiteralCompiledEngineRuntime",
+        "HasEmittedLiteralCounter": true,
+        "HasDirectStructuralKernel": false
+      }
+    },
+    {
+      "Profile": "Pcre2",
+      "Pattern": "abc|xyz",
+      "Operation": "Count",
+      "Selected": "Pcre2LiteralFamilyDirectProgram",
+      "Count": 2,
+      "Core": {
+        "Pattern": "abc|xyz",
+        "FixedFinitePolicy": false,
+        "HasVerifier": true,
+        "Runtime": "Utf8LiteralCompiledEngineRuntime",
+        "HasEmittedLiteralCounter": true,
+        "HasDirectStructuralKernel": false
+      }
+    },
+    {
+      "Profile": "Pcre2",
+      "Pattern": "abc|xyz",
+      "Operation": "Match",
+      "Selected": "Pcre2BacktrackingDirectProgram",
+      "Count": 2,
+      "Core": null
+    },
+    {
+      "Profile": "Pcre2",
+      "Pattern": "abc|xyz",
+      "Operation": "Enumerate",
+      "Selected": "Pcre2LiteralFamilyDirectProgram",
+      "Count": 2,
+      "Core": {
+        "Pattern": "abc|xyz",
+        "FixedFinitePolicy": false,
+        "HasVerifier": true,
+        "Runtime": "Utf8LiteralCompiledEngineRuntime",
+        "HasEmittedLiteralCounter": true,
+        "HasDirectStructuralKernel": false
+      }
+    },
+    {
+      "Profile": "Pcre2",
+      "Pattern": "abc|xyz",
+      "Operation": "Replace",
+      "Selected": "Pcre2BacktrackingDirectProgram",
+      "Count": 2,
+      "Core": null
+    },
+    {
+      "Profile": "PythonRe",
+      "Pattern": "\\b(?:record|struct|class)\\s\u002B[A-Z][A-Za-z0-9_]\u002B",
+      "ProfileFinite": true,
+      "Count": 1,
+      "Core": {
+        "Pattern": "(?:(?\u003C![\\p{L}\\p{N}_])(?=[\\p{L}\\p{N}_])|(?\u003C=[\\p{L}\\p{N}_])(?![\\p{L}\\p{N}_]))(?:record|struct|class)[\\s\\x1c-\\x1f]\u002B[A-Z](?:[0-9A-Z_a-z])\u002B",
+        "FixedFinitePolicy": false,
+        "HasVerifier": true,
+        "Runtime": "Utf8FallbackRegexCompiledEngineRuntime",
+        "HasEmittedLiteralCounter": false,
+        "HasDirectStructuralKernel": false
+      }
+    },
+    {
+      "Profile": "Pcre2",
+      "Pattern": "\\b(?:record|struct|class)\\s\u002B[A-Z][A-Za-z0-9_]\u002B",
+      "Operation": "IsMatch",
+      "Selected": "Pcre2BacktrackingDirectProgram",
+      "Count": 1,
+      "Core": null
+    },
+    {
+      "Profile": "Pcre2",
+      "Pattern": "\\b(?:record|struct|class)\\s\u002B[A-Z][A-Za-z0-9_]\u002B",
+      "Operation": "Count",
+      "Selected": "Pcre2BacktrackingDirectProgram",
+      "Count": 1,
+      "Core": null
+    },
+    {
+      "Profile": "Pcre2",
+      "Pattern": "\\b(?:record|struct|class)\\s\u002B[A-Z][A-Za-z0-9_]\u002B",
+      "Operation": "Match",
+      "Selected": "Pcre2BacktrackingDirectProgram",
+      "Count": 1,
+      "Core": null
+    },
+    {
+      "Profile": "Pcre2",
+      "Pattern": "\\b(?:record|struct|class)\\s\u002B[A-Z][A-Za-z0-9_]\u002B",
+      "Operation": "Enumerate",
+      "Selected": "Pcre2BacktrackingDirectProgram",
+      "Count": 1,
+      "Core": null
+    },
+    {
+      "Profile": "Pcre2",
+      "Pattern": "\\b(?:record|struct|class)\\s\u002B[A-Z][A-Za-z0-9_]\u002B",
+      "Operation": "Replace",
+      "Selected": "Pcre2BacktrackingDirectProgram",
+      "Count": 1,
+      "Core": null
+    }
+  ],
+  "CoreConstructorAllocationControls": [
+    {
+      "Pattern": "abc|xyz",
+      "FixedFinitePolicy": false,
+      "Instances": 8,
+      "Bytes": [
+        78248,
+        78248,
+        78248,
+        78248,
+        78248,
+        78248,
+        78248,
+        78248
+      ]
+    },
+    {
+      "Pattern": "abc|xyz",
+      "FixedFinitePolicy": true,
+      "Instances": 8,
+      "Bytes": [
+        34024,
+        34024,
+        34024,
+        34024,
+        34024,
+        34024,
+        34024,
+        34024
+      ]
+    },
+    {
+      "Pattern": "\\b(?:record|struct|class)\\s\u002B[A-Z][A-Za-z0-9_]\u002B",
+      "FixedFinitePolicy": false,
+      "Instances": 8,
+      "Bytes": [
+        113312,
+        113312,
+        113312,
+        113312,
+        113312,
+        113312,
+        113312,
+        113312
+      ]
+    },
+    {
+      "Pattern": "\\b(?:record|struct|class)\\s\u002B[A-Z][A-Za-z0-9_]\u002B",
+      "FixedFinitePolicy": true,
+      "Instances": 8,
+      "Bytes": [
+        53312,
+        53312,
+        53312,
+        53312,
+        53312,
+        53312,
+        53312,
+        53312
+      ]
+    }
+  ]
+}

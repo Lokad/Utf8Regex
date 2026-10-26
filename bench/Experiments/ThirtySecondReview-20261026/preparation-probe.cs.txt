@@ -1,0 +1,51 @@
+using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.PythonRe;
+using Lokad.Utf8Regex.Pcre2;
+
+const BindingFlags All = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 2048, MaxWorkingBytes = 16_777_216, MaxResultBytes = 16_777_216 };
+var rows = new List<object>();
+foreach (var pattern in new[] { "abc", "abc|xyz", @"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+" })
+{
+    var python = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy);
+    var core = (Utf8Regex?)Field(python, "_utf8Regex");
+    rows.Add(new { Profile = "PythonRe", Pattern = pattern, ProfileFinite = python.ResourcePolicy.MaxWorkSteps.HasValue,
+        Count = python.Count("abc xyz class Bravo"u8), Core = Describe(core) });
+    var pcre = Utf8Pcre2Regex.Create(pattern, Pcre2CompileOptions.None, default, policy, Timeout.InfiniteTimeSpan);
+    var program = Field(pcre, "_program")!;
+    var operations = Property(program, "Operations")!;
+    foreach(var operation in new[] { "IsMatch", "Count", "Match", "Enumerate", "Replace" })
+    {
+        var selected = Property(operations, operation)!;
+        rows.Add(new { Profile = "Pcre2", Pattern = pattern, Operation = operation, Selected = selected.GetType().Name,
+            Count = pcre.Count("abc xyz class Bravo"u8), Core = Describe(Property(selected, "Regex") as Utf8Regex) });
+    }
+}
+Console.WriteLine(JsonSerializer.Serialize(new { Producer=typeof(Utf8Regex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
+    Results=rows },new JsonSerializerOptions{WriteIndented=true}));
+object? Describe(Utf8Regex? core)
+{
+    if(core is null)return null;
+    var program=Field(core,"_program")!;
+    var runtime=Property(program,"CompiledEngineRuntime");
+    return new { core.Pattern, FixedFinitePolicy = core.ResourcePolicy.MaxWorkSteps.HasValue || core.ResourcePolicy.MaxDepth.HasValue || core.ResourcePolicy.MaxWorkingBytes.HasValue || core.ResourcePolicy.MaxResultBytes.HasValue,
+        HasVerifier=Property(program,"VerifierRuntime") is not null, Runtime=runtime?.GetType().Name,
+        HasEmittedLiteralCounter=runtime is not null && Field(runtime,"_emittedLiteralFamilyCounter") is not null,
+        HasDirectStructuralKernel=Property(program,"DirectStructuralFamilyKernelMatcher") is not null };
+}
+object? Field(object obj,string name)
+{
+    for(var type=obj.GetType();type is not null;type=type.BaseType)
+        if(type.GetField(name,All|BindingFlags.DeclaredOnly) is {} field)return field.GetValue(obj);
+    return null;
+}
+object? Property(object obj,string name)
+{
+    for(var type=obj.GetType();type is not null;type=type.BaseType)
+        if(type.GetProperty(name,All|BindingFlags.DeclaredOnly) is {} property)return property.GetValue(obj);
+    return null;
+}

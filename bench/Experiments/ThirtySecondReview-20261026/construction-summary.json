@@ -1,0 +1,66 @@
+[
+  {
+    "Name": "PythonRe/finite-family",
+    "Instances": 16,
+    "MedianRemainingBytes": 94848,
+    "MedianRemainingNs": 598800,
+    "Version": "0.4.0-rc.2-dev+9ea498ad11fcdca901c2ce54369070488d0e57c0",
+    "FirstNs": 956900
+  },
+  {
+    "Name": "Pcre2/finite-family",
+    "Instances": 16,
+    "MedianRemainingBytes": 88232,
+    "MedianRemainingNs": 602300,
+    "Version": "0.4.0-rc.2-dev+9ea498ad11fcdca901c2ce54369070488d0e57c0",
+    "FirstNs": 620100
+  },
+  {
+    "Name": "Pcre2/finite-derived-language",
+    "Instances": 16,
+    "MedianRemainingBytes": 94760,
+    "MedianRemainingNs": 525700,
+    "Version": "0.4.0-rc.2-dev+9ea498ad11fcdca901c2ce54369070488d0e57c0",
+    "FirstNs": 1032700
+  },
+  {
+    "Name": "PythonRe/colliding-captured-literal",
+    "Instances": 16,
+    "MedianRemainingBytes": 63496,
+    "MedianRemainingNs": 386600,
+    "Version": "0.4.0-rc.2-dev+9ea498ad11fcdca901c2ce54369070488d0e57c0",
+    "FirstNs": 583200
+  },
+  {
+    "Name": "PythonRe/finite-family",
+    "Instances": 16,
+    "MedianRemainingBytes": 50480,
+    "MedianRemainingNs": 290300,
+    "Version": "0.4.0-rc.2-dev+4d89398a4ba2bdee7fdae8b890d6bc672a8f6aac",
+    "FirstNs": 538500
+  },
+  {
+    "Name": "Pcre2/finite-family",
+    "Instances": 16,
+    "MedianRemainingBytes": 44008,
+    "MedianRemainingNs": 239200,
+    "Version": "0.4.0-rc.2-dev+4d89398a4ba2bdee7fdae8b890d6bc672a8f6aac",
+    "FirstNs": 925000
+  },
+  {
+    "Name": "Pcre2/finite-derived-language",
+    "Instances": 16,
+    "MedianRemainingBytes": 86696,
+    "MedianRemainingNs": 517500,
+    "Version": "0.4.0-rc.2-dev+4d89398a4ba2bdee7fdae8b890d6bc672a8f6aac",
+    "FirstNs": 1096900
+  },
+  {
+    "Name": "PythonRe/colliding-captured-literal",
+    "Instances": 16,
+    "MedianRemainingBytes": 65336,
+    "MedianRemainingNs": 397000,
+    "Version": "0.4.0-rc.2-dev+4d89398a4ba2bdee7fdae8b890d6bc672a8f6aac",
+    "FirstNs": 609600
+  }
+]

@@ -1,0 +1,33 @@
+using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.PythonRe;
+
+var cases = new[] {
+    (Pattern: @"(?P<α>a)(?P<g1>b)(?P=α)", Good: "aba", Bad: "abb"),
+    (Pattern: @"(?P<g2>a)(?P<α>b)(?P=g2)", Good: "aba", Bad: "abb"),
+    (Pattern: @"(?P<α>foo)(?P<g1>bar)(?P=α)", Good: "foobarfoo", Bad: "foobarbar"),
+    (Pattern: @"(?P<α>a)?(?P<g1>b)(?P=α)", Good: "aba", Bad: "abb"),
+    (Pattern: @"(?P<α>a)(?P<g1>b)", Good: "ab", Bad: "ac"),
+    (Pattern: @"(?P<α>a)|(?P<g1>b)", Good: "a", Bad: "c"),
+};
+var rows = new List<object>();
+foreach (var shape in cases)
+foreach (var finite in new[] { false, true })
+{
+    try {
+        var regex = new Utf8PythonRegex(shape.Pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
+            finite ? new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000 } : default);
+        var core = (Utf8Regex?)typeof(Utf8PythonRegex).GetField("_utf8Regex", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(regex);
+        rows.Add(new { shape.Pattern, Finite = finite, GoodIsMatch = regex.IsMatch(Encoding.UTF8.GetBytes(shape.Good)),
+            BadIsMatch = regex.IsMatch(Encoding.UTF8.GetBytes(shape.Bad)), GoodCount = regex.Count(Encoding.UTF8.GetBytes(shape.Good)),
+            CorePattern = core?.Pattern, CoreNames = core?.GetGroupNames(),
+            CoreGoodIsMatch = core?.IsMatch(Encoding.UTF8.GetBytes(shape.Good)), CoreBadIsMatch = core?.IsMatch(Encoding.UTF8.GetBytes(shape.Bad)),
+            Error = (string?)null });
+    } catch (Exception error) { rows.Add(new { shape.Pattern, Finite = finite, Error = error.ToString() }); }
+}
+Console.WriteLine(JsonSerializer.Serialize(new {
+    Producer = typeof(Utf8Regex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
+    Results = rows
+}, new JsonSerializerOptions { WriteIndented = true }));

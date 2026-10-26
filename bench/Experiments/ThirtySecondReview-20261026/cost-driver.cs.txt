@@ -1,0 +1,81 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.PythonRe;
+using Lokad.Utf8Regex.Pcre2;
+
+public static class Lanes
+{
+    private static Utf8ResourcePolicy Policy => new() { MaxWorkSteps=50_000_000, MaxDepth=4096,
+        MaxWorkingBytes=16_777_216, MaxResultBytes=16_777_216 };
+    public static string Producer() => typeof(Utf8Regex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
+    public static (string, Func<long>, long)[] Create()
+    {
+        var bulk=Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é😀 abc xyz ",64)));
+        var pairs=Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é😀 ab ",64)));
+        var late=Encoding.UTF8.GetBytes(new string('é',4096)+"ab");
+        var pythonFamily=new Utf8PythonRegex("abc|xyz",PythonReCompileOptions.None,Timeout.InfiniteTimeSpan,Policy);
+        var pcreFamily=Utf8Pcre2Regex.Create("abc|xyz",Pcre2CompileOptions.None,default,Policy,Timeout.InfiniteTimeSpan);
+        var pcreDerived=Utf8Pcre2Regex.Create("(?<left>a)(b)",Pcre2CompileOptions.None,default,Policy,Timeout.InfiniteTimeSpan);
+        var captured=new Utf8PythonRegex("(?P<α>a)(?P<g1>b)");
+        var finiteCaptured=new Utf8PythonRegex(captured.Pattern,PythonReCompileOptions.None,Timeout.InfiniteTimeSpan,Policy);
+        var reference=new Utf8PythonRegex("(?P<α>a)(?P<g1>b)(?P=α)");
+        var digits=new Utf8PythonRegex("prefix[0-9]+",PythonReCompileOptions.None,Timeout.InfiniteTimeSpan,Policy);
+        var dotall=new Utf8PythonRegex("pre.*post",PythonReCompileOptions.DotAll,Timeout.InfiniteTimeSpan,Policy);
+        var control=new Utf8Regex("abc",RegexOptions.CultureInvariant|RegexOptions.Compiled);
+        return [
+            ("PythonRe/finite-family-Count",()=>pythonFamily.Count(bulk),128),
+            ("PythonRe/finite-family-FindAllToUtf8",()=>Bulk(pythonFamily,bulk),512),
+            ("Pcre2/finite-family-Count",()=>pcreFamily.Count(bulk),128),
+            ("Pcre2/finite-derived-language-Count",()=>pcreDerived.Count(pairs),64),
+            ("PythonRe/colliding-captured-literal-IsMatch-8KiB",()=>captured.IsMatch(late)?1:0,1),
+            ("PythonRe/finite-captured-literal-IsMatch-8KiB",()=>finiteCaptured.IsMatch(late)?1:0,1),
+            ("PythonRe/colliding-reference-detailed",()=>Detail(reference),4),
+            ("PythonRe/finite-prefix-Match",()=>digits.Match("prefix123"u8).EndOffsetInBytes,9),
+            ("PythonRe/finite-dotall-FullMatch",()=>dotall.FullMatch("pre😀post"u8).EndOffsetInBytes,11),
+            ("Unchanged-control/Core-compiled-literal-Count",()=>control.Count(bulk),64),
+        ];
+    }
+    private static long Detail(Utf8PythonRegex regex)
+    {
+        var match=regex.SearchDetailedData("xxaba"u8);
+        if(!match.Success||match.LastGroup!="g1"||match.Groups[1].ValueText!="a"||match.Groups[2].ValueText!="b")
+            throw new Exception("Capture identity changed");
+        return match.Groups.Length+match.Groups[1].ValueText.Length;
+    }
+    private static long Bulk(Utf8PythonRegex regex,byte[] input)
+    {
+        var result=regex.FindAllToUtf8(input);
+        long sum=result.Count;
+        foreach(var bytes in result.ScalarValues) sum+=bytes.Length;
+        return sum;
+    }
+    public static object[] Construction()
+    {
+        var cases=new (string Name,Func<object> Create)[]{
+            ("PythonRe/finite-family",()=>new Utf8PythonRegex("abc|xyz",PythonReCompileOptions.None,Timeout.InfiniteTimeSpan,Policy)),
+            ("Pcre2/finite-family",()=>Utf8Pcre2Regex.Create("abc|xyz",Pcre2CompileOptions.None,default,Policy,Timeout.InfiniteTimeSpan)),
+            ("Pcre2/finite-derived-language",()=>Utf8Pcre2Regex.Create("(?<left>a)(b)",Pcre2CompileOptions.None,default,Policy,Timeout.InfiniteTimeSpan)),
+            ("PythonRe/colliding-captured-literal",()=>new Utf8PythonRegex("(?P<α>a)(?P<g1>b)")),
+        };
+        var result=new List<object>();
+        foreach(var shape in cases)
+        {
+            var observations=new List<object>();
+            for(var i=0;i<16;i++)
+            {
+                var bytes=GC.GetAllocatedBytesForCurrentThread();
+                var start=Stopwatch.GetTimestamp();
+                var regex=shape.Create();
+                var elapsed=Stopwatch.GetTimestamp()-start;
+                var allocated=GC.GetAllocatedBytesForCurrentThread()-bytes;
+                observations.Add(new{Instance=i,Nanoseconds=elapsed*(1e9/Stopwatch.Frequency),Bytes=allocated});
+                GC.KeepAlive(regex);
+            }
+            result.Add(new{Name=shape.Name,Observations=observations});
+        }
+        return result.ToArray();
+    }
+}

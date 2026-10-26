@@ -1,0 +1,100 @@
+{
+  "Python": "3.13.2 (tags/v3.13.2:4f8bb39, Feb  4 2025, 15:23:48) [MSC v.1942 64 bit (AMD64)]",
+  "Results": [
+    {
+      "Pattern": "(?P<\u03b1>a)(?P<g1>b)(?P=\u03b1)",
+      "Hit": "aba",
+      "Miss": "abb",
+      "Groups": [
+        "a",
+        "b"
+      ],
+      "LastIndex": 2,
+      "LastGroup": "g1",
+      "Replacement": "a|b"
+    },
+    {
+      "Pattern": "(?P<g2>a)(?P<\u03b1>b)(?P=g2)",
+      "Hit": "aba",
+      "Miss": "abb",
+      "Groups": [
+        "a",
+        "b"
+      ],
+      "LastIndex": 2,
+      "LastGroup": "\u03b1",
+      "Replacement": "a|b"
+    },
+    {
+      "Pattern": "(?P<\u00e9>a)(?P<g1>b)(?P=\u00e9)",
+      "Hit": "aba",
+      "Miss": "abb",
+      "Groups": [
+        "a",
+        "b"
+      ],
+      "LastIndex": 2,
+      "LastGroup": "g1",
+      "Replacement": "a|b"
+    },
+    {
+      "Pattern": "(?P<\ud801\udc00>a)(?P<g1>b)(?P=\ud801\udc00)",
+      "Hit": "aba",
+      "Miss": "abb",
+      "Groups": [
+        "a",
+        "b"
+      ],
+      "LastIndex": 2,
+      "LastGroup": "g1",
+      "Replacement": "a|b"
+    },
+    {
+      "Pattern": "(?P<\u03b1>a)(?P<g1>b)\\1",
+      "Hit": "aba",
+      "Miss": "abb",
+      "Groups": [
+        "a",
+        "b"
+      ],
+      "LastIndex": 2,
+      "LastGroup": "g1",
+      "Replacement": "a|b"
+    },
+    {
+      "Pattern": "(?P<\u03b1>a)+(?P<g1>b)(?P=\u03b1)",
+      "Hit": "aaba",
+      "Miss": "aabb",
+      "Groups": [
+        "a",
+        "b"
+      ],
+      "LastIndex": 2,
+      "LastGroup": "g1",
+      "Replacement": "a|b"
+    },
+    {
+      "Pattern": "(?P<\u03b1>a)?(?P<g1>b)(?(\u03b1)a|c)",
+      "Hit": "aba",
+      "Miss": "abb",
+      "Groups": [
+        "a",
+        "b"
+      ],
+      "LastIndex": 2,
+      "LastGroup": "g1",
+      "Replacement": "a|b"
+    },
+    {
+      "Pattern": "(?P<\u03b1>a)(b)(?P<g1>c)(?P=\u03b1)\\2",
+      "Hit": "abcab",
+      "Groups": [
+        "a",
+        "b",
+        "c"
+      ],
+      "LastIndex": 3,
+      "LastGroup": "g1"
+    }
+  ]
+}
