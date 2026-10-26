@@ -26,6 +26,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
 {
     private readonly Utf8SliceProgram _program;
     private Utf8ValidatedInput _input;
+    private Utf8ProjectionCursor _projection;
     private readonly Pcre2CompileRequest _request;
     private Utf8SliceInvocation _invocation;
     private int _position;
@@ -53,6 +54,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
     {
         _program = program;
         _input = input;
+        _projection = input.CreateProjectionCursor();
         _request = request;
         _invocation = invocation;
         _position = start.Value;
@@ -130,12 +132,11 @@ internal ref struct Pcre2SliceGlobalMatchCursor
 
     internal Pcre2GroupData ProjectCurrent()
     {
-        if (_invocation.IsUnmetered)
-            return Pcre2GroupData.FromByteOffsets(_input.Bytes, 0,
-                Current.StartOffsetInBytes, Current.EndOffsetInBytes);
-        var projection = _input.CreateProjectionCursor();
+        // The public enumerator projects once per successful move and retains
+        // that snapshot for Current. Slice global matches have forward ranges,
+        // so keep the projection position across matches and copied cursors.
         return Pcre2GlobalCursorProjection.Project(Current.StartOffsetInBytes,
-            Current.EndOffsetInBytes, ref _input, ref projection,
+            Current.EndOffsetInBytes, ref _input, ref _projection,
             new Pcre2CaptureProjectionBudget(ref _invocation));
     }
 
