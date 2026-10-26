@@ -1,0 +1,22 @@
+[
+  {
+    "Phase": "before",
+    "CapSeconds": 1,
+    "DirectWrapperSeconds": 4.4855227,
+    "ExitCode": 0,
+    "ScriptSha256": "6A7DAACA6FEDB0C316774BFB284577978391EBC63A7F23C8E7B143752DC0BD94",
+    "OrphanCleanedByControl": false,
+    "Output": "parent-start\r\nparent-exiting\r\nchild-start\r\nchild-done\r\n",
+    "Error": ""
+  },
+  {
+    "Phase": "after",
+    "CapSeconds": 1,
+    "DirectWrapperSeconds": 2.4386835,
+    "ExitCode": 124,
+    "ScriptSha256": "76A89372E60943774119B9A0B189B962C41031C11452289B30FC4CF528892356",
+    "OrphanCleanedByControl": true,
+    "Output": "parent-start\r\nparent-exiting\r\nchild-start\r\n",
+    "Error": "Write-Error: Benchmark exceeded the 1 second wall-time cap. Pass -MaxWallTimeSeconds 0 only for a preflighted milestone refresh.\r\n"
+  }
+]

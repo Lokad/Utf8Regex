@@ -1,0 +1,11 @@
+{
+  "Source": "2c7457031616eeb8466459268beba64b61467c5b",
+  "BenchmarkVersion": "1.0.0+2c7457031616eeb8466459268beba64b61467c5b",
+  "BenchmarkSha256": "946499A39F8EB80A470BDC557F17AD299819F5E5482F0EA6108DA25AAF010FE4",
+  "LibrarySourceDiff": [],
+  "DeletedLedgerCodeLines": 228,
+  "InitialCliSource": "04dbfa47",
+  "InitialCliControls": 6,
+  "FinalBuildAndInspectionPassed": true,
+  "WrapperFaultControls": 7
+}

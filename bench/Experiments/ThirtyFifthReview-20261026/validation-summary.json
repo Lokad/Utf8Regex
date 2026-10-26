@@ -1,0 +1,20 @@
+{
+  "FinalSource": "2c7457031616eeb8466459268beba64b61467c5b",
+  "SourceCiRun": 40341296362,
+  "Windows": "success",
+  "Linux": "success",
+  "DisabledDynamicCodeSteps": 2,
+  "LibraryAndTestSourceChanges": [],
+  "UnchangedLibraryProducts": 10,
+  "UnchangedProtectedOriginals": 18,
+  "WrapperFaultControls": 7,
+  "InitialCliControls": 6,
+  "FinalHostBuildAndInspection": true,
+  "NonExperimentMarkdownFiles": 27,
+  "LocalLinksMissingFromGit": 0,
+  "DeletedLedgerCodeLines": 228,
+  "NewPackages": 0,
+  "SnapshotRefreshes": 0,
+  "MatchingPerformanceMeasurements": 0,
+  "PlansIgnored": true
+}

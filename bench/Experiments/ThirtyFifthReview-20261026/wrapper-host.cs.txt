@@ -1,0 +1,39 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Text;
+using System.Text.Json;
+
+Console.OutputEncoding = Encoding.UTF8;
+var mode = args.Single();
+if (mode == "--child")
+{
+    Console.WriteLine("child-start");
+    Thread.Sleep(4000);
+    Console.WriteLine("child-done");
+    return 0;
+}
+if (mode is "--normal" or "--fail")
+{
+    Console.Write("stdout:é😀\nlast-out");
+    Console.Error.Write("stderr:π\nlast-error");
+    return mode == "--fail" ? 7 : 0;
+}
+if (mode == "--pressure")
+{
+    var line = new string('x', 4096);
+    var output = Task.Run(() => { for (var i = 0; i < 64; i++) Console.WriteLine("out:" + line); });
+    var error = Task.Run(() => { for (var i = 0; i < 64; i++) Console.Error.WriteLine("err:" + line); });
+    Task.WaitAll(output, error);
+    return 0;
+}
+
+var start = new ProcessStartInfo("dotnet") { UseShellExecute = false };
+start.ArgumentList.Add(Assembly.GetExecutingAssembly().Location);
+start.ArgumentList.Add("--child");
+using var child = Process.Start(start)!;
+File.WriteAllText(Environment.GetEnvironmentVariable("UTF8REGEX_WRAPPER_WITNESS_CHILD_FILE")!,
+    JsonSerializer.Serialize(new { Pid = child.Id, StartUtcTicks = child.StartTime.ToUniversalTime().Ticks }));
+Console.WriteLine("parent-start");
+if (mode == "--live-parent") child.WaitForExit();
+Console.WriteLine("parent-exiting");
+return mode == "--orphan-fail" ? 7 : 0;

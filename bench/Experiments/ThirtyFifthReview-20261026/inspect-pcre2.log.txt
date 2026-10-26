@@ -1,0 +1,97 @@
+CaseId            : simple/foo-dense
+Pattern           : foo
+Options           : CultureInvariant
+CompileSettings   : Lokad.Utf8Regex.Pcre2.Utf8Pcre2CompileSettings
+Replacement       : bar
+InputBytes        : 18
+SupportsOps       : All
+SupportsBackends  : All
+ExecutionKind     : Pcre2Literal
+UsesTranslation   : False
+Utf8ExecKind      : <none>
+ExecutionPlan     : IsMatch=Pcre2Literal, Count=Pcre2Literal, Enumerate=Pcre2Literal, Match=Pcre2Literal, Replace=Pcre2Literal
+ValueEnumeratorB  : 1624
+GlobalCursorB     : 1232
+DirectCursorB     : 456
+ResourceBudgetB   : 168
+DiagnosticsB      : 216
+CandidateSearchB  : 440
+SliceCursorB      : 344
+Utf8OperationCurB : 1440
+Utf8SimplePlanB   : 536
+Utf8StructPlanB   : 3992
+Utf8SearchPlanB   : 2720
+Utf8SmallFamilyB  : 128
+Utf8SearchOpB     : 896
+Utf8DfaStateB     : 8
+ValueDataB        : 24
+GroupDataB        : 28
+LiteralFamilyCurB : 768
+DetailedCursorB   : 384
+CandidateSearch   : None
+AutoPossessRepeats: 0
+HasUtf8Regex      : True
+HasRegex          : True
+IsMatchResult     : True
+IsMatchCandidates : 0
+IsMatchVmSteps    : 0
+IsMatchVmTokens   : 0
+IsMatchLiteralTok : 0
+IsMatchClassTok   : 0
+IsMatchBoundaryTok: 0
+IsMatchOtherTok   : 0
+IsMatchVmBranches : 0
+IsMatchVmRepeats  : 0
+IsMatchRepeatEnter: 0
+IsMatchTokenScans : 0
+IsMatchScanChars  : 0
+IsMatchRepeatEnd  : 0
+IsMatchRepeatExit : 0
+IsMatchVmCaptures : 0
+IsMatchAssertions : 0
+IsMatchControls   : 0
+IsMatchAccepts    : 0
+IsMatchWorkspace  : 0
+IsMatchWorkFixed  : 0
+IsMatchWorkInitial: 0
+IsMatchWorkFrames : 0
+IsMatchWorkRepeats: 0
+IsMatchWorkCapture: 0
+IsMatchWorkControl: 0
+IsMatchWorkGrowths: 0
+IsMatchAllocBytes : 8
+IsMatchElapsedUs  : 320.100
+CountResult       : 3
+Utf8CountResult   : 3
+RegexCountResult  : 3
+CandidateAttempts : 0
+CandidateRawHits  : 0
+CandidateRunChecks: 0
+VmSteps           : 0
+VmTokens          : 0
+VmLiteralTokens   : 0
+VmClassTokens     : 0
+VmBoundaryTokens  : 0
+VmOtherTokens     : 0
+VmBranches        : 0
+VmRepeats         : 0
+VmRepeatEnter     : 0
+VmRepeatEnd       : 0
+VmRepeatExit      : 0
+VmCaptures        : 0
+VmAssertions      : 0
+VmControls        : 0
+VmAccepts         : 0
+ResultProjections : 0
+WorkspaceRents    : 0
+WorkspaceFixed    : 0
+WorkspaceInitial  : 0
+WorkspaceFrames   : 0
+WorkspaceRepeats  : 0
+WorkspaceCaptures : 0
+WorkspaceControls : 0
+WorkspaceGrowths  : 0
+ManagedAllocBytes : 8
+ThroughputBytes/s : 56639
+CandidatePassEq   : 0.000
+VmStepPassEq      : 0.000

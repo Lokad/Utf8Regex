@@ -1,0 +1,7 @@
+  Lokad.Utf8Regex.Benchmarks -> D:\code\utf8regex\bench\Lokad.Utf8Regex.Benchmarks\bin\Release\net10.0\Lokad.Utf8Regex.Benchmarks.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:05.71

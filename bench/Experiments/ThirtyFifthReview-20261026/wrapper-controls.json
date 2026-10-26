@@ -1,0 +1,65 @@
+[
+  {
+    "Mode": "--normal",
+    "CapSeconds": 3,
+    "ExitCode": 0,
+    "WallSeconds": 0.2998612,
+    "OutputCharacters": 44,
+    "OrphanCleanedByControl": false,
+    "Passed": true
+  },
+  {
+    "Mode": "--fail",
+    "CapSeconds": 3,
+    "ExitCode": 7,
+    "WallSeconds": 0.2961991,
+    "OutputCharacters": 44,
+    "OrphanCleanedByControl": false,
+    "Passed": true
+  },
+  {
+    "Mode": "--pressure",
+    "CapSeconds": 3,
+    "ExitCode": 0,
+    "WallSeconds": 0.3285646,
+    "OutputCharacters": 525056,
+    "OrphanCleanedByControl": false,
+    "Passed": true
+  },
+  {
+    "Mode": "--live-parent",
+    "CapSeconds": 1,
+    "ExitCode": 124,
+    "WallSeconds": 1.4824028,
+    "OutputCharacters": 27,
+    "OrphanCleanedByControl": false,
+    "Passed": true
+  },
+  {
+    "Mode": "--orphan",
+    "CapSeconds": 1,
+    "ExitCode": 124,
+    "WallSeconds": 2.4728111,
+    "OutputCharacters": 43,
+    "OrphanCleanedByControl": true,
+    "Passed": true
+  },
+  {
+    "Mode": "--orphan-fail",
+    "CapSeconds": 1,
+    "ExitCode": 124,
+    "WallSeconds": 2.3968507,
+    "OutputCharacters": 43,
+    "OrphanCleanedByControl": true,
+    "Passed": true
+  },
+  {
+    "Mode": "--orphan",
+    "CapSeconds": 0,
+    "ExitCode": 0,
+    "WallSeconds": 4.3242879,
+    "OutputCharacters": 55,
+    "OrphanCleanedByControl": false,
+    "Passed": true
+  }
+]

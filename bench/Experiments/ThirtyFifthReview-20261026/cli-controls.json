@@ -1,0 +1,57 @@
+[
+  {
+    "Evidence": "inspect-pcre2.log.txt",
+    "ExitCode": 0,
+    "Passed": true,
+    "Arguments": [
+      "--inspect-pcre2-case",
+      "simple/foo-dense"
+    ],
+    "Name": "inspect-pcre2"
+  },
+  {
+    "Evidence": "verify-pcre2-markdown.log.txt",
+    "ExitCode": 0,
+    "Passed": true,
+    "Arguments": [
+      "--verify-pcre2-benchmark-markdown"
+    ],
+    "Name": "verify-pcre2-markdown"
+  },
+  {
+    "Evidence": "verify-pythonre-markdown.log.txt",
+    "ExitCode": 0,
+    "Passed": true,
+    "Arguments": [
+      "--verify-pythonre-benchmark-markdown"
+    ],
+    "Name": "verify-pythonre-markdown"
+  },
+  {
+    "Evidence": "verify-core-parity.log.txt",
+    "ExitCode": 0,
+    "Passed": true,
+    "Arguments": [
+      "--verify-readme-parity-report"
+    ],
+    "Name": "verify-core-parity"
+  },
+  {
+    "Evidence": "retired-pcre2-ledger.txt",
+    "ExitCode": 2,
+    "Passed": true,
+    "Arguments": [
+      "--emit-pcre2-perf-ledger"
+    ],
+    "Name": "retired-pcre2-ledger"
+  },
+  {
+    "Evidence": "retired-managed-ledger.txt",
+    "ExitCode": 2,
+    "Passed": true,
+    "Arguments": [
+      "--emit-pcre2-managed-perf-ledger"
+    ],
+    "Name": "retired-managed-ledger"
+  }
+]

@@ -1,0 +1,6 @@
+Lokad.Utf8Regex.Benchmarks 1.0.0+04dbfa47826b19bec85a67a4502686d3e854043a
+Copyright (C) 2026 Lokad.Utf8Regex.Benchmarks
+
+ERROR(S):
+  Option 'emit-pcre2-perf-ledger' is unknown.
+USAGE:

@@ -1,0 +1,74 @@
+$ErrorActionPreference = 'Stop'
+$root = $PSScriptRoot
+$shellPath = (Get-Process -Id $PID).Path
+$records = @()
+$cases = @(
+    @{ Mode = '--normal'; Cap = 3; Expected = 0 },
+    @{ Mode = '--fail'; Cap = 3; Expected = 7 },
+    @{ Mode = '--pressure'; Cap = 3; Expected = 0 },
+    @{ Mode = '--live-parent'; Cap = 1; Expected = 124 },
+    @{ Mode = '--orphan'; Cap = 1; Expected = 124 },
+    @{ Mode = '--orphan-fail'; Cap = 1; Expected = 124 },
+    @{ Mode = '--orphan'; Cap = 0; Expected = 0 }
+)
+foreach ($case in $cases) {
+    $childRecord = Join-Path $root ('child-' + $case.Mode.TrimStart('-') + '-' + $case.Cap + '.json')
+    $info = [Diagnostics.ProcessStartInfo]::new($shellPath)
+    $info.UseShellExecute = $false
+    $info.RedirectStandardOutput = $true
+    $info.RedirectStandardError = $true
+    $info.Environment['UTF8REGEX_WRAPPER_WITNESS_CHILD_FILE'] = $childRecord
+    foreach ($argument in @('-NoProfile', '-File', (Join-Path $root 'bench.ps1'), '-Configuration',
+        'Release', '-SkipBuild', '-CommandArgs', $case.Mode, '-MaxWallTimeSeconds', [string]$case.Cap)) {
+        $info.ArgumentList.Add($argument)
+    }
+    $timer = [Diagnostics.Stopwatch]::StartNew()
+    $process = [Diagnostics.Process]::Start($info)
+    $outTask = $process.StandardOutput.ReadToEndAsync()
+    $errTask = $process.StandardError.ReadToEndAsync()
+    try {
+        if (-not $process.WaitForExit(15000)) { $process.Kill($true); throw "Control stalled: $($case.Mode)" }
+        # Measure direct wrapper exit before draining the harness's own pipes:
+        # an orphan can inherit those handles too. Clean our exact test child
+        # before awaiting EOF; the wrapper intentionally cannot reap that orphan.
+        $timer.Stop()
+        $childWasRunning = $false
+        if (Test-Path -LiteralPath $childRecord) {
+            $identity = Get-Content -Raw -LiteralPath $childRecord | ConvertFrom-Json
+            $child = Get-Process -Id $identity.Pid -ErrorAction SilentlyContinue
+            try {
+                if ($null -ne $child -and -not $child.HasExited) {
+                    if ($child.StartTime.ToUniversalTime().Ticks -ne $identity.StartUtcTicks) { throw 'Child PID identity changed.' }
+                    $childWasRunning = $true
+                    $child.Kill($true)
+                    if (-not $child.WaitForExit(2000)) { throw 'Owned child cleanup stalled.' }
+                }
+            }
+            finally { if ($null -ne $child) { $child.Dispose() } }
+        }
+        $output = $outTask.GetAwaiter().GetResult()
+        $errorText = $errTask.GetAwaiter().GetResult()
+        if ($process.ExitCode -ne $case.Expected) { throw "Unexpected exit $($process.ExitCode): $($case.Mode): $errorText" }
+        if ($case.Expected -eq 124 -and $timer.Elapsed.TotalSeconds -gt 4) { throw "Timeout control exceeded launch/grace tolerance: $($case.Mode)" }
+        if ($case.Mode -in @('--normal', '--fail')) {
+            foreach ($expectedLine in @('stdout:é😀','last-out','stderr:π','last-error')) {
+                if (-not $output.Contains($expectedLine)) { throw "Lost output: $expectedLine" }
+            }
+        }
+        if ($case.Mode -eq '--pressure') {
+            $lines = @($output -split '\r?\n' | Where-Object { $_.Length -gt 0 })
+            if ($lines.Count -ne 128 -or @($lines | Where-Object { $_.Length -ne 4100 }).Count -ne 0) {
+                throw 'Pipe-pressure output was truncated.'
+            }
+        }
+        if ($case.Cap -eq 0 -and (-not $output.Contains('child-done') -or $timer.Elapsed.TotalSeconds -lt 4)) {
+            throw 'Explicit disabled timeout failed to drain child output.'
+        }
+        if ($case.Mode -eq '--live-parent' -and $childWasRunning) { throw 'Live-parent timeout left its child running.' }
+        $records += [pscustomobject]@{ Mode=$case.Mode; CapSeconds=$case.Cap; ExitCode=$process.ExitCode;
+            WallSeconds=$timer.Elapsed.TotalSeconds; OutputCharacters=$output.Length;
+            OrphanCleanedByControl=$childWasRunning; Passed=$true }
+    }
+    finally { $process.Dispose() }
+}
+$records | ConvertTo-Json -Depth 4 | Tee-Object -FilePath (Join-Path $root 'wrapper-controls.json')

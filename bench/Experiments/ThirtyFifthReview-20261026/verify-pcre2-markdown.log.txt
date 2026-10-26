@@ -1,0 +1,1 @@
+PCRE2 benchmark page is current: D:\code\utf8regex\src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md

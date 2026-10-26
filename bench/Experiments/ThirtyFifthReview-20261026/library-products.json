@@ -1,0 +1,42 @@
+[
+  {
+    "Path": "src\\Lokad.Utf8Regex\\bin\\Release\\net10.0\\Lokad.Utf8Regex.dll",
+    "Sha256": "4A3A4D1DC6CDD54FD16081F633DCE3F957089E78ECFE3FD484A5F08B0F3D6BEB"
+  },
+  {
+    "Path": "src\\Lokad.Utf8Regex\\bin\\Release\\net10.0\\Lokad.Utf8Regex.pdb",
+    "Sha256": "2FE9638BD45DCCC1F1835D0805E64C98CE426E5EEE7E72AD3526D816B9DF7470"
+  },
+  {
+    "Path": "src\\Lokad.Utf8Regex.PythonRe\\bin\\Release\\net10.0\\Lokad.Utf8Regex.dll",
+    "Sha256": "4A3A4D1DC6CDD54FD16081F633DCE3F957089E78ECFE3FD484A5F08B0F3D6BEB"
+  },
+  {
+    "Path": "src\\Lokad.Utf8Regex.PythonRe\\bin\\Release\\net10.0\\Lokad.Utf8Regex.pdb",
+    "Sha256": "2FE9638BD45DCCC1F1835D0805E64C98CE426E5EEE7E72AD3526D816B9DF7470"
+  },
+  {
+    "Path": "src\\Lokad.Utf8Regex.PythonRe\\bin\\Release\\net10.0\\Lokad.Utf8Regex.PythonRe.dll",
+    "Sha256": "0AF3B9B3A2F9B661420C62B5D7D85B4A0995A385AA4D7E0A5F5E3F44EF06E7D2"
+  },
+  {
+    "Path": "src\\Lokad.Utf8Regex.PythonRe\\bin\\Release\\net10.0\\Lokad.Utf8Regex.PythonRe.pdb",
+    "Sha256": "12AA7DCAD76AC85DC8C1D72A5BC352E2861747829574C2B38E824180E0BA4722"
+  },
+  {
+    "Path": "src\\Lokad.Utf8Regex.Pcre2\\bin\\Release\\net10.0\\Lokad.Utf8Regex.dll",
+    "Sha256": "4A3A4D1DC6CDD54FD16081F633DCE3F957089E78ECFE3FD484A5F08B0F3D6BEB"
+  },
+  {
+    "Path": "src\\Lokad.Utf8Regex.Pcre2\\bin\\Release\\net10.0\\Lokad.Utf8Regex.Pcre2.dll",
+    "Sha256": "3CEE07873A051470E8DD8A6388331F7FA55914BBB2F66977A8E4DE2CA7435B16"
+  },
+  {
+    "Path": "src\\Lokad.Utf8Regex.Pcre2\\bin\\Release\\net10.0\\Lokad.Utf8Regex.Pcre2.pdb",
+    "Sha256": "D9A79577E0FD375F996500DAB1835327FD41E9B04A0F9AF807EF6E494B9CBCCE"
+  },
+  {
+    "Path": "src\\Lokad.Utf8Regex.Pcre2\\bin\\Release\\net10.0\\Lokad.Utf8Regex.pdb",
+    "Sha256": "2FE9638BD45DCCC1F1835D0805E64C98CE426E5EEE7E72AD3526D816B9DF7470"
+  }
+]
