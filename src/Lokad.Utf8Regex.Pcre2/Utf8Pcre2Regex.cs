@@ -1,6 +1,7 @@
 using System.Buffers;
 using Lokad.Utf8Regex.Internal;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Caching;
@@ -931,11 +932,15 @@ public sealed partial class Utf8Pcre2Regex
     }
 
     /// <summary>Copies successive non-overlapping match snapshots into a caller-provided destination.</summary>
+    /// <remarks>Input and destination storage must not overlap.</remarks>
+    /// <exception cref="ArgumentException">The destination overlaps the input.</exception>
     /// <returns>The number of matches copied; <paramref name="isMore"/> reports whether another match is available.</returns>
     public int MatchMany(ReadOnlySpan<byte> input, Span<Utf8Pcre2MatchData> destination, out bool isMore)
         => MatchMany(input, destination, out isMore, 0, Pcre2MatchOptions.None);
 
     /// <summary>Copies successive match snapshots using explicit start and per-match options.</summary>
+    /// <remarks>Input and destination storage must not overlap.</remarks>
+    /// <exception cref="ArgumentException">The destination overlaps the input.</exception>
     /// <returns>The number of matches copied; <paramref name="isMore"/> reports whether another match is available.</returns>
     public int MatchMany(ReadOnlySpan<byte> input, Span<Utf8Pcre2MatchData> destination, out bool isMore, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
         => MatchManyCore(input, destination, out isMore, startOffsetInBytes, matchOptions, default);
@@ -949,6 +954,17 @@ public sealed partial class Utf8Pcre2Regex
         {
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
+            // A byte span cannot exceed Int32.MaxValue even when the typed
+            // destination can. Check bounded chunks without imposing that
+            // byte-length ceiling on valid disjoint caller storage.
+            for (var offset = 0; !input.IsEmpty && offset < destination.Length;)
+            {
+                var count = Math.Min(destination.Length - offset,
+                    int.MaxValue / Unsafe.SizeOf<Utf8Pcre2MatchData>());
+                if (input.Overlaps(MemoryMarshal.AsBytes(destination.Slice(offset, count))))
+                    throw new ArgumentException("The destination must not overlap the input.", nameof(destination));
+                offset += count;
+            }
             if (Pcre2GlobalOperationDriver.TryCreateCursor(
                     _program,
                     subject,
@@ -1034,6 +1050,7 @@ public sealed partial class Utf8Pcre2Regex
     }
 
     /// <summary>Copies successive match snapshots using explicit start and per-match options, observing cancellation during validation, discovery and copying.</summary>
+    /// <remarks>Input and destination storage must not overlap.</remarks>
     /// <param name="input">The well-formed UTF-8 subject to match against.</param>
     /// <param name="destination">The destination for match snapshots.</param>
     /// <param name="isMore">When this method returns, whether additional matches remain.</param>
@@ -1041,6 +1058,7 @@ public sealed partial class Utf8Pcre2Regex
     /// <param name="matchOptions">The per-operation match options.</param>
     /// <param name="cancellationToken">The original token retained through validation, discovery and destination writes.</param>
     /// <exception cref="OperationCanceledException">Cancellation was requested; an already-written destination prefix remains valid.</exception>
+    /// <exception cref="ArgumentException">The destination overlaps the input.</exception>
     public int MatchMany(ReadOnlySpan<byte> input, Span<Utf8Pcre2MatchData> destination, out bool isMore, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
