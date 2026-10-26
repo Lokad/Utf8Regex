@@ -60,6 +60,12 @@ host containers retain separate documented scope. The execution token must be
 passed on each operation. See [HOST-INTEGRATION.md](https://github.com/Lokad/Utf8Regex/blob/master/HOST-INTEGRATION.md)
 and [MIGRATION.md](https://github.com/Lokad/Utf8Regex/blob/master/MIGRATION.md).
 
+Named captures remain distinct when Unicode identifiers and names such as `g1`
+are mixed. Public names and Python opening-order numbering remain unchanged.
+Fixed finite policies omit optional unmetered Core runtime/emission storage and
+native prefix buffers those instances cannot execute. Useful search/scalar
+preparation remains; lower construction charges can admit earlier-denied patterns.
+
 Optional Core preparations support native iteration, canonical literal FindAll
 string counting, literal values/results and scalar cursor start hints. The current
 grammar-level iteration flag can also retain Core for patterns whose operations

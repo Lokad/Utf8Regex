@@ -126,6 +126,11 @@ properties. Earlier category/range approximations could join unrelated letters
 or split spacing marks. The existing Unicode Indic-conjunct rule remains, including
 its documented difference from native PCRE2 10.47; see SPEC-PCRE2.md.
 
+Fixed finite settings also reach optional Core preparation, omitting unmetered
+runtime/emission storage while preserving live search/scalar payloads and PCRE2
+operation selection. Construction charges can fall; invocation units and scope
+remain unchanged.
+
 Explicit `Compile` factories provide separate construction work/depth/instruction/
 byte limits, timeout and token. Development after frozen RC1 admits backtracking
 metadata conservatively at 256 bytes per UTF-16 pattern character, plus separate

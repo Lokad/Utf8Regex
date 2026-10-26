@@ -6,6 +6,19 @@ These changes are development source, currently 0.4.0-rc.2-dev. Frozen RC1
 artifacts remain unchanged and unpublished; they must not be released. A fresh
 candidate and final downstream/package/cost qualification are still required.
 
+- Fixed PythonRe's optional Core capture-name collisions: Unicode names such as
+  `α` could be rewritten to a real user's `g1` name, merging distinct captures
+  and changing the generated backreference language. Native text now uses unique
+  ordinal names; owned scalar metadata retains original Python names. Removed
+  the alias map, sorting and ASCII-name checker. Public scalar results remain
+  unchanged; captured literals can regain complete native discovery.
+- PythonRe/PCRE2 fixed finite policies now reach optional Core construction,
+  omitting unreachable unmetered runtimes/emitted delegates. PythonRe also skips
+  native prefix buffers disabled for that instance's lifetime. Live search/scalar
+  preparation and unrestricted native paths remain. PCRE2 operation selection is
+  independent of Core's policy-sensitive inspection. Lower construction work and
+  major storage can admit patterns previously denied; public limit scopes remain.
+
 - Null replacement evaluator delegates now throw `ArgumentNullException` with
   parameter `evaluator` before discovery/output allocation across all profiles,
   on both hits and misses. An already-cancelled explicit token still wins.

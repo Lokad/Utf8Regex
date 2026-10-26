@@ -44,6 +44,13 @@ some previously denied patterns. Construction backstops and interruption still
 apply before acquiring the retained preparation. A per-call token or a match
 timeout alone does not remove preparation from an otherwise unlimited instance.
 
+PythonRe and PCRE2 carry their fixed numeric policies into optional Core
+preparation too, omitting unmetered verifier/runtime/emission storage those
+instances cannot execute. PythonRe also skips lifetime-disabled native prefix
+buffers. Covered search/scalar payloads and the adapter's original invocation
+remain; PCRE2 keeps its existing operation-selection boundaries and error/limit
+units. Construction charges can fall as this real preparation disappears.
+
 Development after frozen RC1 covers PCRE2 backtracking parsing/lowering with the
 same construction owner. Its recursive frames have a fixed 256-frame backstop,
 tightened by smaller caller limits. A conservative 256-byte charge per UTF-16
