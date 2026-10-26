@@ -1,0 +1,2923 @@
+{
+  "managedProducer": "0.4.0-rc.2-dev\u002B7650e7a556709669a4cf549c58508403620c4104",
+  "nativeProducer": "1.5.0\u002Be5e5deaa30d50dd3a7ac68ec7fd9e9556551a84f",
+  "nativeVersion": "10.47 2025-10-21",
+  "observations": [
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "aaa",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "aaa",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "aaa",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "aaab",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "aaab",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "aaab",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "a",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "a",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "a",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "abc",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "abc",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "abc",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "b",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "b",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "b",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "aaa",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "aaa",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "aaa",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "aaab",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "aaab",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "aaab",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "a",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "a",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "a",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "abc",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "abc",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "abc",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "b",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "b",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "b",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)",
+      "text": "",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "aaa",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "aaa",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "aaa",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "aaab",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "aaab",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "aaab",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "a",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "a",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "a",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "abc",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "abc",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "abc",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "b",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "b",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "b",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "aaa",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "aaa",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "aaa",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "aaab",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "aaab",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "aaab",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "a",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "a",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "a",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "abc",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "abc",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "abc",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "b",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "b",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "b",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a\u002B)",
+      "text": "",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "aaa",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "aaa",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "aaa",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "aaab",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "aaab",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "aaab",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "a",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "a",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "a",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "abc",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "abc",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "abc",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "b",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "b",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "b",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "aaa",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "aaa",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "aaa",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "aaab",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "aaab",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "aaab",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "a",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "a",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "a",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "abc",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "abc",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "abc",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "b",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "b",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "b",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "a\u002B",
+      "text": "",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "aaa",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "aaa",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "aaa",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "aaab",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "aaab",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "aaab",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "a",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "a",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "a",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "abc",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "abc",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "abc",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "b",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "b",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "b",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "aaa",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "aaa",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "aaa",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "aaab",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "aaab",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "aaab",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "a",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "a",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "a",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "abc",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "abc",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "abc",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "b",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "b",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "b",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea\u002B)b|a",
+      "text": "",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "aaa",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "aaa",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "aaa",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "aaab",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "aaab",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "aaab",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "a",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "a",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "a",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "abc",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "abc",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "abc",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "b",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "b",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "b",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "aaa",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "aaa",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "aaa",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "aaab",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "aaab",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "aaab",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "a",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "a",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "a",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "abc",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "abc",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "abc",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "b",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "b",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "b",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(a*b)|a",
+      "text": "",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "aaa",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "aaa",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "aaa",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "aaab",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "aaab",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "aaab",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "a",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "a",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "a",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "abc",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "abc",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "abc",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "b",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "b",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "b",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "aaa",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "aaa",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "aaa",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "aaab",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "aaab",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "aaab",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "a",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "a",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "a",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "abc",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "abc",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "abc",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "b",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "b",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "b",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(abc)?abc",
+      "text": "",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "abc",
+      "text": "aaa",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "aaa",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "PartialMatch",
+      "nativeKind": "PartialMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "aaa",
+      "finite": false,
+      "mode": "Hard",
+      "managedKind": "PartialMatch",
+      "nativeKind": "PartialMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "aaab",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "aaab",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "PartialMatch",
+      "nativeKind": "PartialMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "aaab",
+      "finite": false,
+      "mode": "Hard",
+      "managedKind": "PartialMatch",
+      "nativeKind": "PartialMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "a",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "a",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "PartialMatch",
+      "nativeKind": "PartialMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "a",
+      "finite": false,
+      "mode": "Hard",
+      "managedKind": "PartialMatch",
+      "nativeKind": "PartialMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "abc",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "abc",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "abc",
+      "finite": false,
+      "mode": "Hard",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "b",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "b",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "b",
+      "finite": false,
+      "mode": "Hard",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "",
+      "finite": false,
+      "mode": "Hard",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "aaa",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "aaa",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "PartialMatch",
+      "nativeKind": "PartialMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "aaa",
+      "finite": true,
+      "mode": "Hard",
+      "managedKind": "PartialMatch",
+      "nativeKind": "PartialMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "aaab",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "aaab",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "PartialMatch",
+      "nativeKind": "PartialMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "aaab",
+      "finite": true,
+      "mode": "Hard",
+      "managedKind": "PartialMatch",
+      "nativeKind": "PartialMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "a",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "a",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "PartialMatch",
+      "nativeKind": "PartialMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "a",
+      "finite": true,
+      "mode": "Hard",
+      "managedKind": "PartialMatch",
+      "nativeKind": "PartialMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "abc",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "abc",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "abc",
+      "finite": true,
+      "mode": "Hard",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "b",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "b",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "b",
+      "finite": true,
+      "mode": "Hard",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "abc",
+      "text": "",
+      "finite": true,
+      "mode": "Hard",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "aaa",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "aaa",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "aaa",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "aaab",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "aaab",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "aaab",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "a",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "a",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "a",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "abc",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "abc",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "abc",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "b",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "b",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "b",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "aaa",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "aaa",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "aaa",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "aaab",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "aaab",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "aaab",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "a",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "a",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "a",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "abc",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "abc",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "abc",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "b",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "b",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "b",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)(?\u003Cx\u003Ea\u002B)b",
+      "text": "",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "aaa",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "aaa",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "aaa",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "aaab",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "aaab",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "aaab",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "a",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "a",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "a",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "abc",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "abc",
+      "finite": false,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "abc",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "b",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "b",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "b",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "",
+      "finite": false,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "",
+      "finite": false,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "",
+      "finite": false,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "aaa",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "aaa",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "aaa",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "aaab",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "aaab",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "aaab",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "a",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "a",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "a",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "PartialMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "abc",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "abc",
+      "finite": true,
+      "mode": "Soft",
+      "managedKind": "FullMatch",
+      "nativeKind": "FullMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "abc",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "FullMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "b",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "b",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "b",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "",
+      "finite": true,
+      "mode": "None",
+      "managedKind": "NoMatch",
+      "nativeKind": "NoMatch",
+      "agrees": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "",
+      "finite": true,
+      "mode": "Soft",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    },
+    {
+      "pattern": "(*MARK:tag)a\u002Bb",
+      "text": "",
+      "finite": true,
+      "mode": "Hard",
+      "failure": "NotSupportedException",
+      "nativeKind": "NoMatch",
+      "explicitRejection": true
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+using System.Text;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Pcre2;
+
+#if PCREBYTE || PCRECHAR
+var regex = new Utf8Pcre2Regex("a");
+#else
+var regex = new Utf8Regex("a");
+#endif
+var result = regex.Replace("a"u8, 0,
+#if PCREBYTE || PCRECHAR
+    static (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref int state) =>
+#else
+    static (in Utf8MatchContext match, ref Utf8ReplacementWriter writer, ref int state) =>
+#endif
+    {
+#if CORECHAR || PCRECHAR
+        Span<char> buffer = stackalloc char[] { 'o', 'k' };
+#else
+        Span<byte> buffer = stackalloc byte[] { (byte)'o', (byte)'k' };
+#endif
+        writer.Append(buffer);
+    });
+if (!result.AsSpan().SequenceEqual("ok"u8)) throw new Exception("Unexpected output");
+Console.WriteLine(Encoding.UTF8.GetString(result));

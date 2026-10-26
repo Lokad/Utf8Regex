@@ -1,0 +1,46 @@
+{
+  "FinalSource": "7650e7a556709669a4cf549c58508403620c4104",
+  "Baseline": "575eeea631da8b9d9a1829b075a0cd55aea8a040",
+  "CoreComplete": {
+    "Skipped": 0,
+    "Failed": 0,
+    "Seconds": 96,
+    "Source": "22bc3695",
+    "Passed": 39655
+  },
+  "Pcre2Complete": {
+    "Skipped": 0,
+    "Failed": 0,
+    "Seconds": 9,
+    "Passed": 6165
+  },
+  "PythonReApiInventory": {
+    "Passed": 2
+  },
+  "ExternalStackSpanConsumers": 4,
+  "IdenticalWriterIlOverloads": 2,
+  "NativeSemantics": {
+    "Cases": 324,
+    "BeforeIncorrect": 26,
+    "AfterIncorrect": 0,
+    "BeforeExplicitRejections": 96,
+    "AfterExplicitRejections": 148,
+    "IncorrectOutcomesNowRejected": 26,
+    "FormerlyCorrectOrdinaryOutcomesNowRejectedWithoutPartialProof": 26
+  },
+  "SourceCi": {
+    "Windows": "success",
+    "DisabledDynamicCode": "success",
+    "RunId": 40330818731,
+    "Linux": "success"
+  },
+  "PublicCost": {
+    "ConfirmationSeconds": 30.65,
+    "InitialSeconds": 50.2,
+    "Conclusion": "Inconclusive: disturbed unchanged control; no third run or equivalence claim"
+  },
+  "ProtectedOriginals": 18,
+  "BaselineProductsVerified": 6,
+  "PackagesRefreshed": false,
+  "PlanAndHistoryIgnored": true
+}

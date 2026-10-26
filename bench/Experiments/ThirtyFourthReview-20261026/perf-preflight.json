@@ -1,0 +1,41 @@
+{
+  "Versions": [
+    "0.4.0-rc.2-dev\u002B575eeea631da8b9d9a1829b075a0cd55aea8a040",
+    "0.4.0-rc.2-dev\u002B7650e7a556709669a4cf549c58508403620c4104"
+  ],
+  "Lanes": [
+    {
+      "Name": "Pcre2/generic-Soft-full-captures",
+      "Expected": 14
+    },
+    {
+      "Name": "Pcre2/finite-generic-Soft-full-captures",
+      "Expected": 14
+    },
+    {
+      "Name": "Pcre2/generic-Soft-full-MARK",
+      "Expected": 17
+    },
+    {
+      "Name": "Pcre2/curated-Soft-full-captures",
+      "Expected": 13
+    },
+    {
+      "Name": "Pcre2/finite-curated-Hard-partial",
+      "Expected": 10
+    },
+    {
+      "Name": "Pcre2/literal-Hard-partial",
+      "Expected": 4
+    },
+    {
+      "Name": "Pcre2/None-marked-miss",
+      "Expected": 3
+    },
+    {
+      "Name": "Unchanged-control/Core-compiled-literal-Count",
+      "Expected": 2
+    }
+  ],
+  "Preflight": "All 16 preserved public outputs agree with independent expected checksums"
+}

@@ -1,0 +1,52 @@
+using System.Reflection;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Pcre2;
+
+public static class Lanes
+{
+    public static string Producer() => typeof(Utf8Pcre2Regex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
+    public static (string, Func<long>, long)[] Create()
+    {
+        var policy=new Utf8ResourcePolicy{MaxWorkSteps=50_000_000,MaxDepth=1024,MaxWorkingBytes=64*1024*1024,MaxResultBytes=128*1024*1024};
+        var generic=new Utf8Pcre2Regex("(?<x>a+)");
+        var finiteGeneric=Utf8Pcre2Regex.Create("(?<x>a+)",Pcre2CompileOptions.None,default,policy,Timeout.InfiniteTimeSpan);
+        var marked=new Utf8Pcre2Regex("(*MARK:tag)(?<x>a+)");
+        var miss=new Utf8Pcre2Regex("(*MARK:tag)(?<x>a+)b");
+        var curated=new Utf8Pcre2Regex("(a)b+");
+        var finiteCurated=Utf8Pcre2Regex.Create("(a)b+",Pcre2CompileOptions.None,default,policy,Timeout.InfiniteTimeSpan);
+        var literal=new Utf8Pcre2Regex("abc");
+        var control=new Utf8Regex("abc",RegexOptions.CultureInvariant|RegexOptions.Compiled);
+        return
+        [
+            ("Pcre2/generic-Soft-full-captures",()=>Full(generic,"éaaa"u8),14),
+            ("Pcre2/finite-generic-Soft-full-captures",()=>Full(finiteGeneric,"éaaa"u8),14),
+            ("Pcre2/generic-Soft-full-MARK",()=>Full(marked,"éaaa"u8),17),
+            ("Pcre2/curated-Soft-full-captures",()=>Full(curated,"éabbb"u8),13),
+            ("Pcre2/finite-curated-Hard-partial",()=>Partial(finiteCurated,"éabbb"u8),10),
+            ("Pcre2/literal-Hard-partial",()=>Partial(literal,"ab"u8),4),
+            ("Pcre2/None-marked-miss",()=>None(miss),3),
+            ("Unchanged-control/Core-compiled-literal-Count",()=>control.Count("abc xabc"u8),2),
+        ];
+    }
+    private static long Full(Utf8Pcre2Regex regex,ReadOnlySpan<byte> input)
+    {
+        var probe=regex.Probe(input,Pcre2PartialMode.Soft);
+        if(probe.Kind!=Utf8Pcre2ProbeKind.FullMatch) throw new Exception("Expected full result");
+        var match=probe.GetMatch();
+        return match.CaptureSlotCount+match.Value.StartOffsetInBytes+match.Value.EndOffsetInBytes+
+            match.GetGroup(1).EndOffsetInBytes+(probe.Mark?.Length??0);
+    }
+    private static long Partial(Utf8Pcre2Regex regex,ReadOnlySpan<byte> input)
+    {
+        var probe=regex.Probe(input,Pcre2PartialMode.Hard);
+        if(probe.Kind!=Utf8Pcre2ProbeKind.PartialMatch) throw new Exception("Expected partial result");
+        return (int)probe.Kind+probe.Value.StartOffsetInBytes+probe.Value.EndOffsetInBytes;
+    }
+    private static long None(Utf8Pcre2Regex regex)
+    {
+        var probe=regex.Probe("aaa"u8,Pcre2PartialMode.None);
+        if(probe.Kind!=Utf8Pcre2ProbeKind.NoMatch||probe.Mark!="tag") throw new Exception("Expected marked miss");
+        return probe.Mark.Length;
+    }
+}

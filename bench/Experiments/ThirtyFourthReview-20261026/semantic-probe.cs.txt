@@ -1,0 +1,159 @@
+using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Pcre2;
+
+if (args.FirstOrDefault() == "writer-il")
+{
+    var writerRows = new List<object>();
+    foreach(var element in new[]{typeof(byte),typeof(char)})
+    {
+        var methods = new[]{"before","after"}.Select(phase=>
+        {
+            var assembly=Assembly.Load(File.ReadAllBytes(Path.GetFullPath($"artifacts/thirty-fourth-implementation-20261026/{phase}/Lokad.Utf8Regex.dll")));
+            return assembly.GetType("Lokad.Utf8Regex.Utf8ReplacementWriter")!.GetMethod("Append",new[]{typeof(ReadOnlySpan<>).MakeGenericType(element)})!;
+        }).ToArray();
+        var bodies=methods.Select(method=>method.GetMethodBody()!).ToArray();
+        var il=bodies.Select(body=>Convert.ToHexString(body.GetILAsByteArray()!)).ToArray();
+        writerRows.Add(new{element=element.Name,beforeIl=il[0],afterIl=il[1],identicalIl=il[0]==il[1],
+            identicalMaxStack=bodies[0].MaxStackSize==bodies[1].MaxStackSize,
+            identicalLocals=bodies[0].InitLocals==bodies[1].InitLocals&&bodies[0].LocalVariables.Count==bodies[1].LocalVariables.Count,
+            beforeAttributes=methods[0].GetParameters()[0].GetCustomAttributesData().Select(attribute=>attribute.AttributeType.Name).ToArray(),
+            afterAttributes=methods[1].GetParameters()[0].GetCustomAttributesData().Select(attribute=>attribute.AttributeType.Name).ToArray()});
+    }
+    Console.WriteLine(JsonSerializer.Serialize(writerRows,new JsonSerializerOptions{WriteIndented=true}));
+    return;
+}
+
+if (args.FirstOrDefault() == "partial")
+{
+    var observations = new List<object>();
+    foreach(var pattern in new[]{"(?<x>a+)", "(a+)", "a+", "(?<x>a+)b|a", "(a*b)|a", "(abc)?abc", "abc", "(*MARK:tag)(?<x>a+)b", "(*MARK:tag)a+b"})
+    foreach(var finite in new[]{false,true})
+    foreach(var text in new[]{"aaa","aaab","a","abc","b",""})
+    {
+        var regex=finite?Utf8Pcre2Regex.Create(pattern,Pcre2CompileOptions.None,default,
+            new(){MaxWorkSteps=1_000_000,MaxDepth=1024,MaxWorkingBytes=1_048_576,MaxResultBytes=1_048_576},Timeout.InfiniteTimeSpan)
+            :new Utf8Pcre2Regex(pattern);
+        var native=new PCRE.PcreRegex(pattern);
+        var input=Encoding.UTF8.GetBytes(text);
+        foreach(var mode in new[]{Pcre2PartialMode.None,Pcre2PartialMode.Soft,Pcre2PartialMode.Hard})
+        {
+            var nativeMode=mode switch {Pcre2PartialMode.Soft=>PCRE.PcreMatchOptions.PartialSoft,Pcre2PartialMode.Hard=>PCRE.PcreMatchOptions.PartialHard,_=>PCRE.PcreMatchOptions.None};
+            var expected=native.Match(text,nativeMode);
+            var nativeKind=expected.IsPartialMatch?"PartialMatch":expected.Success?"FullMatch":"NoMatch";
+            try
+            {
+                var result=regex.Probe(input,mode);
+                observations.Add(new{pattern,text,finite,mode=mode.ToString(),managedKind=result.Kind.ToString(),nativeKind,
+                    agrees=result.Kind.ToString()==nativeKind});
+            }
+            catch(Exception error)
+            {
+                observations.Add(new{pattern,text,finite,mode=mode.ToString(),failure=error.GetType().Name,nativeKind,
+                    explicitRejection=error is NotSupportedException});
+            }
+        }
+    }
+    Console.WriteLine(JsonSerializer.Serialize(new{managedProducer=typeof(Utf8Pcre2Regex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
+        nativeProducer=typeof(PCRE.PcreRegex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
+        nativeVersion=PCRE.PcreBuildInfo.Version,observations},new JsonSerializerOptions{WriteIndented=true}));
+    return;
+}
+
+if (args.FirstOrDefault() == "snapshot")
+{
+    var tests = Assembly.LoadFrom(Path.GetFullPath("tests/Lokad.Utf8Regex.Tests/bin/Release/net10.0/Lokad.Utf8Regex.Tests.dll"));
+    var format = tests.GetType("Lokad.Utf8Regex.Tests.Common.PublicApiSnapshot")!
+        .GetMethod("FormatAssembly", BindingFlags.NonPublic|BindingFlags.Static)!;
+    var variants = new[] { "unscoped", "scoped" }.Select(name =>
+    {
+        var assembly = Assembly.Load(File.ReadAllBytes(Path.GetFullPath($"artifacts/thirty-fourth-review-20261026/{name}.dll")));
+        var parameter = assembly.GetType("ReviewFixture.BufferSink")!.GetMethod("Append")!.GetParameters()[0];
+        return new { name, attributes=parameter.GetCustomAttributesData().Select(a=>a.AttributeType.FullName).ToArray(),
+            snapshot=(string)format.Invoke(null, new object[] {assembly})! };
+    }).ToArray();
+    Console.WriteLine(JsonSerializer.Serialize(new {variants, snapshotsEqual=variants[0].snapshot==variants[1].snapshot},
+        new JsonSerializerOptions {WriteIndented=true}));
+    return;
+}
+if (args.FirstOrDefault() == "options")
+{
+    var observations = new List<object>();
+    foreach (var pattern in new[] { "abc", "f.*", "(?<x>a+)" })
+    {
+        var regex = new Utf8Pcre2Regex(pattern);
+        var text = pattern switch { "abc"=>"abc", "f.*"=>"foo", _=>"aaa" };
+        var input=Encoding.UTF8.GetBytes(text);
+        try { observations.Add(new {pattern, operation="IsMatch", unknownMatchOption=regex.IsMatch(input,0,(Pcre2MatchOptions)(1<<20)).ToString()}); }
+        catch(Exception error) {observations.Add(new {pattern, operation="IsMatch",failure=error.GetType().Name});}
+        try { observations.Add(new {pattern, operation="Replace",unknownSubstitutionOption=Encoding.UTF8.GetString(regex.Replace(input,"X",0,(Pcre2SubstitutionOptions)(1<<20),Pcre2MatchOptions.None))}); }
+        catch(Exception error) {observations.Add(new {pattern, operation="Replace",failure=error.GetType().Name});}
+        foreach(var mode in new[]{3, -1})
+        {
+            try {var probe=regex.Probe(input,(Pcre2PartialMode)mode); observations.Add(new {pattern,operation="Probe",mode,kind=probe.Kind.ToString()});}
+            catch(Exception error) {observations.Add(new {pattern,operation="Probe",mode,failure=error.GetType().Name});}
+        }
+    }
+    Console.WriteLine(JsonSerializer.Serialize(new {observations}, new JsonSerializerOptions {WriteIndented=true}));
+    return;
+}
+
+if (args.FirstOrDefault() == "dotall")
+{
+    var observations = new List<object>();
+    foreach (var pattern in new[] { ".", ".{2,3}", ".{2,3}?", "(?s).", @"\N" })
+    foreach (var dotall in new[] { false, true })
+    foreach (var text in new[] { "\r\n", "\r\nx", "a\r\nb", "é\r\n😀" })
+    {
+        var regex = new Utf8Pcre2Regex(pattern, dotall ? Pcre2CompileOptions.DotAll : Pcre2CompileOptions.None,
+            new() { Newline=Pcre2NewlineConvention.Crlf }, default(Utf8Pcre2ExecutionLimits), Timeout.InfiniteTimeSpan);
+        var input = Encoding.UTF8.GetBytes(text);
+        var match = regex.MatchDetailed(input);
+        var success = match.Success;
+        var start = success ? match.Value.StartOffsetInBytes : -1;
+        var end = success ? match.Value.EndOffsetInBytes : -1;
+        var probe = regex.Probe(input, Pcre2PartialMode.None);
+        var full = probe.Kind == Utf8Pcre2ProbeKind.FullMatch;
+        var probeStart = full ? probe.Value.StartOffsetInBytes : -1;
+        var probeEnd = full ? probe.Value.EndOffsetInBytes : -1;
+        observations.Add(new {pattern,dotall,text,success,start,end,probeKind=probe.Kind.ToString(),probeStart,probeEnd,
+            agrees=success==full&&start==probeStart&&end==probeEnd});
+    }
+    Console.WriteLine(JsonSerializer.Serialize(new {observations}, new JsonSerializerOptions {WriteIndented=true}));
+    return;
+}
+
+var rows = new List<object>();
+foreach (var pattern in new[] { "(?>a+b)", "(?:abc){3}", "(?:abc)+d", "(?(?=abc).*|Z)", "dog(sbody)?", "abc.*", "abc" })
+{
+    var hit = pattern switch
+    {
+        "(?>a+b)" => "aab", "(?:abc){3}" => "abcabcabc", "(?:abc)+d" => "abcabcd",
+        "(?(?=abc).*|Z)" => "Z", "dog(sbody)?" => "dogsbody", _ => "abc",
+    };
+    foreach (var prefix in new[] { "", "x", "é😀" })
+    foreach (var finite in new[] { false, true })
+    {
+        var policy = finite ? new Utf8ResourcePolicy { MaxWorkSteps=1_000_000, MaxDepth=1024,
+            MaxWorkingBytes=1_048_576, MaxResultBytes=1_048_576 } : Utf8ResourcePolicy.Unlimited;
+        var regex = Utf8Pcre2Regex.Create(pattern, Pcre2CompileOptions.None, default, policy, Timeout.InfiniteTimeSpan);
+        var input = Encoding.UTF8.GetBytes(prefix+hit);
+        var match = regex.MatchDetailed(input);
+        var matchSuccess = match.Success;
+        var matchStart = matchSuccess ? match.Value.StartOffsetInBytes : -1;
+        var matchEnd = matchSuccess ? match.Value.EndOffsetInBytes : -1;
+        var program = typeof(Utf8Pcre2Regex).GetProperty("DebugCompiledProgram", BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(regex)!;
+        var partial = program.GetType().GetProperty("PartialProbe", BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic)!.GetValue(program)!;
+        var kind = partial.GetType().GetProperty("Kind", BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic)!.GetValue(partial)!.ToString();
+        var probe = regex.Probe(input, Pcre2PartialMode.None);
+        var probeSuccess = probe.Kind == Utf8Pcre2ProbeKind.FullMatch;
+        var probeStart = probeSuccess ? probe.Value.StartOffsetInBytes : -1;
+        var probeEnd = probeSuccess ? probe.Value.EndOffsetInBytes : -1;
+        rows.Add(new {pattern, prefix, finite, kind, matchSuccess, matchStart, matchEnd,
+            probeKind=probe.Kind.ToString(), probeStart, probeEnd,
+            agrees=matchSuccess==probeSuccess&&matchStart==probeStart&&matchEnd==probeEnd});
+    }
+}
+Console.WriteLine(JsonSerializer.Serialize(new {producer=typeof(Utf8Pcre2Regex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion, rows}, new JsonSerializerOptions {WriteIndented=true}));

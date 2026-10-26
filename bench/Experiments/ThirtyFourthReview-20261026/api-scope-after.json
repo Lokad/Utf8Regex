@@ -1,0 +1,17 @@
+{
+  "variants": [
+    {
+      "name": "unscoped",
+      "attributes": [],
+      "snapshot": "ref struct ReviewFixture.BufferSink\n  method Void Append(ReadOnlySpan\u003CByte\u003E value)"
+    },
+    {
+      "name": "scoped",
+      "attributes": [
+        "System.Runtime.CompilerServices.ScopedRefAttribute"
+      ],
+      "snapshot": "ref struct ReviewFixture.BufferSink\n  method Void Append(scoped ReadOnlySpan\u003CByte\u003E value)"
+    }
+  ],
+  "snapshotsEqual": false
+}

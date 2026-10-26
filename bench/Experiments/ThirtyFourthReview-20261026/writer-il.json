@@ -1,0 +1,26 @@
+[
+  {
+    "element": "Byte",
+    "beforeIl": "0228B3010006036F931000062A",
+    "afterIl": "0228B3010006036F931000062A",
+    "identicalIl": true,
+    "identicalMaxStack": true,
+    "identicalLocals": true,
+    "beforeAttributes": [],
+    "afterAttributes": [
+      "ScopedRefAttribute"
+    ]
+  },
+  {
+    "element": "Char",
+    "beforeIl": "0228B3010006036F941000062A",
+    "afterIl": "0228B3010006036F941000062A",
+    "identicalIl": true,
+    "identicalMaxStack": true,
+    "identicalLocals": true,
+    "beforeAttributes": [],
+    "afterAttributes": [
+      "ScopedRefAttribute"
+    ]
+  }
+]

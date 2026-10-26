@@ -1,0 +1,9 @@
+{
+  "Cases": 324,
+  "BeforeIncorrect": 26,
+  "AfterIncorrect": 0,
+  "BeforeExplicitRejections": 96,
+  "AfterExplicitRejections": 148,
+  "IncorrectOutcomesNowRejected": 26,
+  "FormerlyCorrectOrdinaryOutcomesNowRejectedWithoutPartialProof": 26
+}

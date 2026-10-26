@@ -117,6 +117,11 @@ owned snapshot or justify refunding a host reservation while that snapshot lives
 The Core/PythonRe W+R recipe in the host guide covers only the stated modeled
 payloads, not complete application containment.
 
+Core/PCRE2 replacement callbacks can now append local byte/char stack buffers
+and formatting slices directly to `Utf8ReplacementWriter`. The span parameters
+declare scoped borrowing and copy or encode before returning; no array staging
+is needed solely for escape analysis. The writer still belongs to its callback.
+
 ## Select the intended profile
 
 - Core: documented .NET-style grammar with scalar semantics, owned capture
@@ -131,6 +136,13 @@ payloads, not complete application containment.
   full capture history and unspecified substitution forms are excluded.
   Final-sigma uppercasing intentionally yields uppercase sigma rather than
   copying an observed native replacement anomaly.
+
+PCRE2 partial probing now rejects unsupported Hard decisions and generic marked
+misses with `NotSupportedException`. An ordinary full match cannot establish
+Hard partial priority, and a MARK does not rule out a viable partial prefix.
+Proven generic Soft full matches, literal/curated partial drivers and ordinary
+`Probe(None)` remain. Use None when ordinary matching is intended; a partial-mode
+rejection must not be interpreted as NoMatch.
 
 Use the profile README/specification and qualified public fixtures for exact
 coverage. None of these descriptions promises full flavor equivalence. Published
