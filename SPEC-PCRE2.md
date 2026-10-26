@@ -323,6 +323,16 @@ By-name metadata is **name-table-first**. `CopyNameEntries(...)` and `CopyNumber
 
 Normal matching APIs (`IsMatch`, `Count`, `Match`, `MatchDetailed`, `EnumerateMatches`, `Replace`, `MatchMany`) do **not** expose partial-match behavior. Partial matching is available only through `Probe(...)`. A partial probe result exposes only substring 0 plus `Mark`; it does not expose numbered or named capture groups. This matches PCRE2’s documented partial-match contract, where partial is a distinct outcome and the rest of the ovector is undefined. ([PCRE][4])
 
+`MatchMany` fills at most the destination length, returns the number written and
+reports remaining matches through `isMore`; it is not a continuation protocol.
+Only the returned prefix is valid. Input and result storage must be disjoint;
+overlap throws `ArgumentException` naming `destination` before any writes,
+including on a miss. Whole-input validation and start-offset checks still precede
+this argument check; an already-cancelled explicit token takes precedence.
+An empty destination still probes for a match without writing. `Analyze` returns
+advisory native eligibility, length and literal facts; it does not change matching
+or expose an internal execution plan. These are PCRE2 profile APIs, not Core APIs.
+
 PCRE2 10.47 rejects soft/hard partial matching combined with compile-time or
 match-time `EndAnchored`. `Probe` reports this invalid combination as
 `Pcre2MatchException` with `Pcre2ErrorKind.BadOption`, before driver selection;
@@ -544,6 +554,12 @@ projection advances in at most 2,048-byte scalar-aligned windows. A refused proj
 preserves the previous published value and first resource denial; native candidate/
 backtracking diagnostics retain their meaning. UTF-16 coordinates remain derived
 interoperability data, with byte/scalar matching and restart positions unchanged.
+Slice global enumeration and `MatchMany` retain the existing incremental
+projection cursor across results instead of rescanning from byte zero. Public
+`Current` reads its published coordinate snapshot. Cursor copies keep independent
+projection positions and the same shared allowance/deadline. Removed prefix scans
+can lower versioned work charges; required projection and its interruption remain
+covered. No additional subject-wide map or retained workspace is acquired.
 These modeled charges do not bound caller retention or RSS. Native/core-grammar
 discovery and required capture/output shaping share their original invocation,
 including cumulative result capacity. Specialized partial probes use the same

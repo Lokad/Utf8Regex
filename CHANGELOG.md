@@ -6,6 +6,16 @@ These changes are development source, currently 0.4.0-rc.2-dev. Frozen RC1
 artifacts remain unchanged and unpublished; they must not be released. A fresh
 candidate and final downstream/package/cost qualification are still required.
 
+- PCRE2 slice enumeration and `MatchMany` retain incremental UTF-16 projection,
+  removing repeated subject-prefix scans while preserving byte/scalar results,
+  published snapshots and cumulative interruption/resource controls. Removed work
+  can reduce modeled execution charges; no subject-wide map is added.
+- PCRE2 `MatchMany` now rejects input/result storage overlap before writes with
+  `ArgumentException` naming `destination`. This makes the unchanged-subject
+  obligation explicit; pre-cancellation and empty-destination probing remain.
+- Corrected Core's specification to stop promising absent `MatchMany`, `Analyze`
+  and `CopyRequiredLiterals` APIs. The first two remain PCRE2 profile extensions.
+
 - Fixed PythonRe's optional Core capture-name collisions: Unicode names such as
   `α` could be rewritten to a real user's `g1` name, merging distinct captures
   and changing the generated backreference language. Native text now uses unique

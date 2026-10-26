@@ -354,7 +354,7 @@ signature catalog or require exhaustive .NET overload symmetry. See the
 [package README](src/Lokad.Utf8Regex/README.md) for examples.
 
 Core exposes `IsMatch`, `Count`, `Match`, `MatchDetailed`, `EnumerateMatches`,
-`EnumerateSplits`, `MatchMany`, replacement APIs and capture metadata. Pattern
+`EnumerateSplits`, replacement APIs and capture metadata. Pattern
 strings are parser interoperability input; UTF-8 pattern entry points validate
 strictly. `Compile` exposes separate eager construction controls. Options use
 `RegexOptions`; `Compiled` changes strategy without changing language/results.
@@ -397,14 +397,9 @@ parameter. Ordinary native methods use byte coordinates. Validation, offset
 resolution and execution share the original invocation and absolute deadline.
 Raw shortcuts cannot bypass finite limits, timeout or a live token.
 
-### 4.3 Intentional API extensions beyond baseline .NET Regex
-
-`MatchMany` writes at most the destination length, returns the number written and
-sets `isMore` if additional matches exist. It does not imply a continuation
-protocol. `Analyze` exposes advisory native eligibility, minimum byte length,
-exact-literal and required-literal facts; it does not redefine matching or dump
-internal plans. `CopyRequiredLiterals` exposes stable prefilter facts;
-`FixedOffsetInBytes == -1` denotes a required literal without a fixed byte offset.
+Optional profiles define their own extensions in their respective contracts.
+For example, [PCRE2](SPEC-PCRE2.md) exposes `MatchMany` and `Analyze`; these are
+not Core APIs. No public `CopyRequiredLiterals` API is currently exposed.
 
 ## 5. Architecture
 

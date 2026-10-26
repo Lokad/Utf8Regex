@@ -87,6 +87,14 @@ selected explicitly. Match timeout is independent of these budgets. Program/cach
 retention uses separate conservative accounting; eviction must preserve held
 programs and results. Shared storage can be counted again and cause earlier denial.
 
+PCRE2 `MatchMany` requires disjoint subject and result storage, rejecting overlap
+with `ArgumentException`/`destination` before writes. The explicit-token entry
+still observes pre-cancellation first. Valid disjoint calls retain partial-output
+rules, and empty destinations still probe for a match. `TryReplace` has a separate
+contract that supports overlap by staging where needed. PCRE2 slice enumeration
+keeps incremental UTF-16 projection across results without a subject-wide map;
+removed prefix scans can reduce versioned work charges under the same invocation.
+
 The exact surfaces are pinned by the [Core](https://github.com/Lokad/Utf8Regex/blob/master/tests/Lokad.Utf8Regex.Tests/PublicApi.Shipped.txt),
 [PythonRe](https://github.com/Lokad/Utf8Regex/blob/master/tests/Lokad.Utf8Regex.PythonRe.Tests/PublicApi.Shipped.txt) and
 [PCRE2](https://github.com/Lokad/Utf8Regex/blob/master/tests/Lokad.Utf8Regex.Pcre2.Tests/PublicApi.Shipped.txt) API snapshots.

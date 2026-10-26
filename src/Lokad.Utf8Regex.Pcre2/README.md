@@ -163,9 +163,17 @@ there is no universal finite default or new release-wide performance claim.
 Keep borrowed subjects unchanged and their owners alive. Copied value cursors
 retain independent positions but share allowance/deadline. Owned detailed results
 remain valid after cursor advance/failure. `MatchMany` may have written a prefix
-to caller storage before throwing; interruption during TryReplace copying can
+to caller storage before throwing. Its input and result storage must be disjoint;
+overlap throws `ArgumentException` naming `destination` before writes, including
+on a miss. Empty destinations retain their match-existence probe. An already
+cancelled explicit token still wins. Interruption during TryReplace copying can
 also leave modified destination bytes. DestinationTooSmall leaves destination
 storage unchanged. Host-retained storage requires separate admission.
+
+Slice enumeration and `MatchMany` project derived UTF-16 coordinates incrementally
+across results, preserving published snapshots and independent copied positions.
+Removed prefix scans can lower modeled work requirements; validation, projection
+and cumulative resource/interruption controls retain their scope.
 
 `TryReplace` supports input and template buffers overlapping the destination.
 Matched overlapping input stages output before copying to caller storage, so
