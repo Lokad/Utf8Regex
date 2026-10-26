@@ -1,0 +1,61 @@
+{
+  "Versions": [
+    "0.4.0-rc.2-dev\u002B4d89398a4ba2bdee7fdae8b890d6bc672a8f6aac",
+    "0.4.0-rc.2-dev\u002Beec34354725b31288bc302fc6bb5a8cfca0554ae"
+  ],
+  "Lanes": [
+    {
+      "Name": "Pcre2/slice-Unicode-dense-enumeration",
+      "Expected": 62922752
+    },
+    {
+      "Name": "Pcre2/finite-slice-Unicode-dense-enumeration",
+      "Expected": 62922752
+    },
+    {
+      "Name": "Pcre2/slice-Unicode-dense-MatchMany",
+      "Expected": 62922752
+    },
+    {
+      "Name": "Pcre2/finite-slice-Unicode-dense-MatchMany",
+      "Expected": 62922752
+    },
+    {
+      "Name": "Pcre2/slice-ASCII-dense-enumeration",
+      "Expected": 58726400
+    },
+    {
+      "Name": "Pcre2/finite-slice-ASCII-dense-MatchMany",
+      "Expected": 58726400
+    },
+    {
+      "Name": "Pcre2/slice-Unicode-sparse-enumeration",
+      "Expected": 24581
+    },
+    {
+      "Name": "Pcre2/finite-slice-Unicode-sparse-enumeration",
+      "Expected": 24581
+    },
+    {
+      "Name": "Pcre2/native-short-MatchMany",
+      "Expected": 3
+    },
+    {
+      "Name": "Pcre2/native-short-enumeration",
+      "Expected": 3
+    },
+    {
+      "Name": "Pcre2/finite-native-short-MatchMany",
+      "Expected": 3
+    },
+    {
+      "Name": "Pcre2/native-dense-MatchMany",
+      "Expected": 16320
+    },
+    {
+      "Name": "Unchanged-control/Core-compiled-literal-Count",
+      "Expected": 2048
+    }
+  ],
+  "Preflight": "All 26 public outputs agree with independent expected checksums"
+}

@@ -1,0 +1,174 @@
+{
+  "rows": [
+    {
+      "pattern": "(\u00E9)(\uD83D\uDE00)",
+      "finite": false,
+      "plan": "IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Slice, Replace=Pcre2Slice",
+      "inputBytes": 96,
+      "matches": 16,
+      "firstStarts": [
+        0,
+        6,
+        12
+      ],
+      "lastStart": 90,
+      "lastUtf16Start": 45,
+      "sourceDerivedRescanBytesForSelectedSliceRoute": null,
+      "rescanBytesAreSourceDerived": true,
+      "outputsAgree": true
+    },
+    {
+      "pattern": "(\u00E9)(\uD83D\uDE00)",
+      "finite": true,
+      "plan": "IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Slice, Replace=Pcre2Slice",
+      "inputBytes": 96,
+      "matches": 16,
+      "firstStarts": [
+        0,
+        6,
+        12
+      ],
+      "lastStart": 90,
+      "lastUtf16Start": 45,
+      "sourceDerivedRescanBytesForSelectedSliceRoute": null,
+      "rescanBytesAreSourceDerived": true,
+      "outputsAgree": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea)\\k\u003Cx\u003E",
+      "finite": false,
+      "plan": "IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Slice, Replace=Pcre2Slice",
+      "inputBytes": 128,
+      "matches": 16,
+      "firstStarts": [
+        2,
+        10,
+        18
+      ],
+      "lastStart": 122,
+      "lastUtf16Start": 106,
+      "sourceDerivedRescanBytesForSelectedSliceRoute": null,
+      "rescanBytesAreSourceDerived": true,
+      "outputsAgree": true
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea)\\k\u003Cx\u003E",
+      "finite": true,
+      "plan": "IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Slice, Replace=Pcre2Slice",
+      "inputBytes": 128,
+      "matches": 16,
+      "firstStarts": [
+        2,
+        10,
+        18
+      ],
+      "lastStart": 122,
+      "lastUtf16Start": 106,
+      "sourceDerivedRescanBytesForSelectedSliceRoute": null,
+      "rescanBytesAreSourceDerived": true,
+      "outputsAgree": true
+    },
+    {
+      "pattern": "a{1,2}",
+      "finite": false,
+      "plan": "IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "inputBytes": 128,
+      "matches": 16,
+      "firstStarts": [
+        2,
+        10,
+        18
+      ],
+      "lastStart": 122,
+      "lastUtf16Start": 106,
+      "sourceDerivedRescanBytesForSelectedSliceRoute": null,
+      "rescanBytesAreSourceDerived": true,
+      "outputsAgree": true
+    },
+    {
+      "pattern": "a{1,2}",
+      "finite": true,
+      "plan": "IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+      "inputBytes": 128,
+      "matches": 16,
+      "firstStarts": [
+        2,
+        10,
+        18
+      ],
+      "lastStart": 122,
+      "lastUtf16Start": 106,
+      "sourceDerivedRescanBytesForSelectedSliceRoute": null,
+      "rescanBytesAreSourceDerived": true,
+      "outputsAgree": true
+    },
+    {
+      "pattern": "(?:ab|cd)\u002B",
+      "finite": false,
+      "plan": "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
+      "inputBytes": 128,
+      "matches": 16,
+      "firstStarts": [
+        3,
+        11,
+        19
+      ],
+      "lastStart": 123,
+      "lastUtf16Start": 107,
+      "sourceDerivedRescanBytesForSelectedSliceRoute": 2080,
+      "rescanBytesAreSourceDerived": true,
+      "outputsAgree": true
+    },
+    {
+      "pattern": "(?:ab|cd)\u002B",
+      "finite": true,
+      "plan": "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
+      "inputBytes": 128,
+      "matches": 16,
+      "firstStarts": [
+        3,
+        11,
+        19
+      ],
+      "lastStart": 123,
+      "lastUtf16Start": 107,
+      "sourceDerivedRescanBytesForSelectedSliceRoute": 1072,
+      "rescanBytesAreSourceDerived": true,
+      "outputsAgree": true
+    },
+    {
+      "pattern": "a\u002B?",
+      "finite": false,
+      "plan": "IsMatch=Pcre2SingleTokenRepeat, Count=Pcre2SingleTokenRepeat, Enumerate=Pcre2SingleTokenRepeat, Match=Pcre2SingleTokenRepeat, Replace=Pcre2SingleTokenRepeat",
+      "inputBytes": 128,
+      "matches": 32,
+      "firstStarts": [
+        2,
+        3,
+        10
+      ],
+      "lastStart": 123,
+      "lastUtf16Start": 107,
+      "sourceDerivedRescanBytesForSelectedSliceRoute": null,
+      "rescanBytesAreSourceDerived": true,
+      "outputsAgree": true
+    },
+    {
+      "pattern": "a\u002B?",
+      "finite": true,
+      "plan": "IsMatch=Pcre2SingleTokenRepeat, Count=Pcre2SingleTokenRepeat, Enumerate=Pcre2SingleTokenRepeat, Match=Pcre2SingleTokenRepeat, Replace=Pcre2SingleTokenRepeat",
+      "inputBytes": 128,
+      "matches": 32,
+      "firstStarts": [
+        2,
+        3,
+        10
+      ],
+      "lastStart": 123,
+      "lastUtf16Start": 107,
+      "sourceDerivedRescanBytesForSelectedSliceRoute": null,
+      "rescanBytesAreSourceDerived": true,
+      "outputsAgree": true
+    }
+  ]
+}

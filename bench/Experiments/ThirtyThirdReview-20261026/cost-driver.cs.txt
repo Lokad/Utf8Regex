@@ -1,0 +1,73 @@
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Pcre2;
+
+public static class Lanes
+{
+    public static string Producer() => typeof(Utf8Pcre2Regex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
+    public static (string, Func<long>, long)[] Create()
+    {
+        const int n = 2048;
+        var unicode = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("éaabcd ", n)));
+        var ascii = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("xaabcd ", n)));
+        var sparse = Encoding.UTF8.GetBytes(new string('é', 4096) + "ab");
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 50_000_000, MaxDepth = 1024,
+            MaxWorkingBytes = 64 * 1024 * 1024, MaxResultBytes = 128 * 1024 * 1024 };
+        var plain = new Utf8Pcre2Regex("(?:ab|cd)+");
+        var finite = Utf8Pcre2Regex.Create("(?:ab|cd)+", Pcre2CompileOptions.None, default, policy, Timeout.InfiniteTimeSpan);
+        var literal = new Utf8Pcre2Regex("a");
+        var finiteLiteral = Utf8Pcre2Regex.Create("a", Pcre2CompileOptions.None, default, policy, Timeout.InfiniteTimeSpan);
+        var control = new Utf8Regex("ab", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var unicodeDestination = new Utf8Pcre2MatchData[n];
+        var finiteUnicodeDestination = new Utf8Pcre2MatchData[n];
+        var asciiDestination = new Utf8Pcre2MatchData[n];
+        var one = new Utf8Pcre2MatchData[1];
+        var finiteOne = new Utf8Pcre2MatchData[1];
+        var nativeInput = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("a ", 64)));
+        var nativeDestination = new Utf8Pcre2MatchData[64];
+        long unicodeExpected = 19L * n + 15L * n * (n - 1);
+        long asciiExpected = 17L * n + 14L * n * (n - 1);
+        return
+        [
+            ("Pcre2/slice-Unicode-dense-enumeration", () => Enumerate(plain, unicode), unicodeExpected),
+            ("Pcre2/finite-slice-Unicode-dense-enumeration", () => Enumerate(finite, unicode), unicodeExpected),
+            ("Pcre2/slice-Unicode-dense-MatchMany", () => Many(plain, unicode, unicodeDestination), unicodeExpected),
+            ("Pcre2/finite-slice-Unicode-dense-MatchMany", () => Many(finite, unicode, finiteUnicodeDestination), unicodeExpected),
+            ("Pcre2/slice-ASCII-dense-enumeration", () => Enumerate(plain, ascii), asciiExpected),
+            ("Pcre2/finite-slice-ASCII-dense-MatchMany", () => Many(finite, ascii, asciiDestination), asciiExpected),
+            ("Pcre2/slice-Unicode-sparse-enumeration", () => Enumerate(plain, sparse), 24581),
+            ("Pcre2/finite-slice-Unicode-sparse-enumeration", () => Enumerate(finite, sparse), 24581),
+            ("Pcre2/native-short-MatchMany", () => Many(literal, "a"u8, one), 3),
+            ("Pcre2/native-short-enumeration", () => Enumerate(literal, "a"u8), 3),
+            ("Pcre2/finite-native-short-MatchMany", () => Many(finiteLiteral, "a"u8, finiteOne), 3),
+            ("Pcre2/native-dense-MatchMany", () => Many(literal, nativeInput, nativeDestination), 192 + 4L * 64 * 63),
+            ("Unchanged-control/Core-compiled-literal-Count", () => control.Count(unicode), n),
+        ];
+    }
+    private static long Enumerate(Utf8Pcre2Regex regex, ReadOnlySpan<byte> input)
+    {
+        long sum = 0;
+        var cursor = regex.EnumerateMatches(input);
+        while (cursor.MoveNext())
+        {
+            var match = cursor.Current;
+            if (!match.Success || !match.HasUtf16Projection) throw new Exception("Invalid result");
+            sum += 1L + match.StartOffsetInBytes + match.EndOffsetInBytes + match.StartOffsetInUtf16 + match.EndOffsetInUtf16;
+        }
+        return sum;
+    }
+    private static long Many(Utf8Pcre2Regex regex, ReadOnlySpan<byte> input, Utf8Pcre2MatchData[] destination)
+    {
+        var written = regex.MatchMany(input, destination, out var more);
+        if (more || written != destination.Length) throw new Exception("Unexpected count or continuation");
+        long sum = 0;
+        foreach (var match in destination)
+        {
+            if (!match.Success || !match.HasUtf16Projection) throw new Exception("Invalid result");
+            sum += 1L + match.StartOffsetInBytes + match.EndOffsetInBytes + match.StartOffsetInUtf16 + match.EndOffsetInUtf16;
+        }
+        return sum;
+    }
+}

@@ -1,0 +1,106 @@
+{
+  "coreVersion": "0.4.0-rc.2-dev\u002B4d89398a4ba2bdee7fdae8b890d6bc672a8f6aac",
+  "matchDataSize": 24,
+  "coreMatchManyOverloads": 0,
+  "coreAnalyzeOverloads": 0,
+  "coreCopyRequiredLiteralsOverloads": 0,
+  "pcre2MatchManyOverloads": 3,
+  "rows": [
+    {
+      "pattern": "a",
+      "subjectLength": 128,
+      "destinationLength": 5,
+      "distinctWritten": 5,
+      "distinctMore": true,
+      "distinctStarts": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "aliasWritten": 5,
+      "aliasMore": true,
+      "aliasStarts": [
+        0,
+        24,
+        48,
+        72,
+        96
+      ],
+      "changedSourceBytes": 118
+    },
+    {
+      "pattern": "[a]",
+      "subjectLength": 128,
+      "destinationLength": 5,
+      "distinctWritten": 5,
+      "distinctMore": true,
+      "distinctStarts": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "aliasWritten": 5,
+      "aliasMore": true,
+      "aliasStarts": [
+        0,
+        24,
+        48,
+        72,
+        96
+      ],
+      "changedSourceBytes": 118
+    },
+    {
+      "pattern": "(?\u003Cx\u003Ea)",
+      "subjectLength": 128,
+      "destinationLength": 5,
+      "distinctWritten": 5,
+      "distinctMore": true,
+      "distinctStarts": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "aliasWritten": 5,
+      "aliasMore": true,
+      "aliasStarts": [
+        0,
+        24,
+        48,
+        72,
+        96
+      ],
+      "changedSourceBytes": 118
+    },
+    {
+      "pattern": "a|b",
+      "subjectLength": 128,
+      "destinationLength": 5,
+      "distinctWritten": 5,
+      "distinctMore": true,
+      "distinctStarts": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "aliasWritten": 5,
+      "aliasMore": true,
+      "aliasStarts": [
+        0,
+        24,
+        48,
+        72,
+        96
+      ],
+      "changedSourceBytes": 118
+    }
+  ]
+}

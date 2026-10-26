@@ -1,0 +1,139 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Text;
+using System.Reflection;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Pcre2;
+
+if (args.FirstOrDefault() == "projection")
+{
+    ProjectionWitness();
+    return;
+}
+if (args.FirstOrDefault() == "projection-scale")
+{
+    ProjectionScaleWitness();
+    return;
+}
+
+var rows = new List<object>();
+foreach (var pattern in new[] { "a", "[a]", "(?<x>a)", "a|b" })
+{
+    var regex = new Utf8Pcre2Regex(pattern);
+    var backing = Enumerable.Repeat((byte)'a', 128).ToArray();
+    var aliased = MemoryMarshal.Cast<byte, Utf8Pcre2MatchData>(backing.AsSpan());
+    var distinct = new Utf8Pcre2MatchData[aliased.Length];
+    var distinctWritten = regex.MatchMany(backing, distinct, out var distinctMore);
+    var aliasWritten = regex.MatchMany(backing, aliased, out var aliasMore);
+    rows.Add(new
+    {
+        pattern, subjectLength = backing.Length, destinationLength = aliased.Length,
+        distinctWritten, distinctMore,
+        distinctStarts = distinct.Take(distinctWritten).Select(m => m.StartOffsetInBytes).ToArray(),
+        aliasWritten, aliasMore,
+        aliasStarts = aliased[..aliasWritten].ToArray().Select(m => m.StartOffsetInBytes).ToArray(),
+        changedSourceBytes = backing.Count(b => b != (byte)'a'),
+    });
+}
+Console.WriteLine(JsonSerializer.Serialize(new
+{
+    coreVersion = typeof(Utf8Regex).Assembly.GetCustomAttributesData()
+        .First(a => a.AttributeType.Name == "AssemblyInformationalVersionAttribute").ConstructorArguments[0].Value,
+    matchDataSize = Unsafe.SizeOf<Utf8Pcre2MatchData>(),
+    coreMatchManyOverloads = typeof(Utf8Regex).GetMethods().Count(m => m.Name == "MatchMany"),
+    coreAnalyzeOverloads = typeof(Utf8Regex).GetMethods().Count(m => m.Name == "Analyze"),
+    coreCopyRequiredLiteralsOverloads = typeof(Utf8Regex).GetMethods().Count(m => m.Name == "CopyRequiredLiterals"),
+    pcre2MatchManyOverloads = typeof(Utf8Pcre2Regex).GetMethods().Count(m => m.Name == "MatchMany"),
+    rows,
+}, new JsonSerializerOptions { WriteIndented = true }));
+
+static void ProjectionWitness()
+{
+    var planMethod = typeof(Utf8Pcre2Regex).GetMethod("DebugDescribeExecutionPlan", BindingFlags.Instance | BindingFlags.NonPublic)!;
+    var rows = new List<object>();
+    foreach (var pattern in new[] { "(é)(😀)", @"(?<x>a)\k<x>", "a{1,2}", "(?:ab|cd)+", "a+?" })
+    {
+        var unit = pattern == "(é)(😀)" ? "é😀" : "éaabcd ";
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(unit, 16)));
+        foreach (var finite in new[] { false, true })
+        {
+            var policy = finite ? new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 10_000_000, MaxDepth = 1024,
+                MaxWorkingBytes = 64 * 1024 * 1024, MaxResultBytes = 128 * 1024 * 1024,
+            } : Utf8ResourcePolicy.Unlimited;
+            var regex = Utf8Pcre2Regex.Create(pattern, Pcre2CompileOptions.None, default, policy, Timeout.InfiniteTimeSpan);
+            var cursor = regex.EnumerateMatches(input);
+            var starts = new List<int>();
+            var utf16Starts = new List<int>();
+            long bytesRescannedBySliceProjectCurrent = 0;
+            while (cursor.MoveNext())
+            {
+                var m = cursor.Current;
+                starts.Add(m.StartOffsetInBytes);
+                utf16Starts.Add(m.StartOffsetInUtf16);
+                bytesRescannedBySliceProjectCurrent += finite
+                    ? m.EndOffsetInBytes
+                    : (long)m.StartOffsetInBytes + m.EndOffsetInBytes;
+            }
+            var output = new Utf8Pcre2MatchData[starts.Count];
+            var written = regex.MatchMany(input, output, out var more);
+            if (written != starts.Count || more || !starts.SequenceEqual(output.Select(m => m.StartOffsetInBytes)))
+                throw new InvalidOperationException("MatchMany and enumeration disagree.");
+            var plan = (string)planMethod.Invoke(regex, null)!;
+            rows.Add(new
+            {
+                pattern, finite, plan, inputBytes = input.Length,
+                matches = starts.Count, firstStarts = starts.Take(3), lastStart = starts.LastOrDefault(),
+                lastUtf16Start = utf16Starts.LastOrDefault(),
+                sourceDerivedRescanBytesForSelectedSliceRoute = plan.Contains("Enumerate=Pcre2Slice,") ? (long?)bytesRescannedBySliceProjectCurrent : null,
+                rescanBytesAreSourceDerived = true, outputsAgree = true,
+            });
+        }
+    }
+    Console.WriteLine(JsonSerializer.Serialize(new { rows }, new JsonSerializerOptions { WriteIndented = true }));
+}
+
+static void ProjectionScaleWitness()
+{
+    var rows = new List<object>();
+    var planMethod = typeof(Utf8Pcre2Regex).GetMethod("DebugDescribeExecutionPlan", BindingFlags.Instance | BindingFlags.NonPublic)!;
+    foreach (var finite in new[] { false, true })
+    {
+        var policy = finite ? new Utf8ResourcePolicy
+        {
+            MaxWorkSteps = 10_000_000, MaxDepth = 1024,
+            MaxWorkingBytes = 64 * 1024 * 1024, MaxResultBytes = 128 * 1024 * 1024,
+        } : Utf8ResourcePolicy.Unlimited;
+        var regex = Utf8Pcre2Regex.Create("(?:ab|cd)+", Pcre2CompileOptions.None, default, policy, Timeout.InfiniteTimeSpan);
+        var plan = (string)planMethod.Invoke(regex, null)!;
+        if (!plan.Contains("Enumerate=Pcre2Slice,")) throw new Exception("Unexpected route.");
+        foreach (var n in new[] { 16, 128, 512, 1024, 2048 })
+        {
+            var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("éaabcd ", n)));
+            var cursor = regex.EnumerateMatches(input);
+            var matches = 0;
+            long modeledPrefixBytes = 0;
+            while (cursor.MoveNext())
+            {
+                var m = cursor.Current;
+                if (m.StartOffsetInBytes != 3 + matches * 8 || m.EndOffsetInBytes != 7 + matches * 8 ||
+                    m.StartOffsetInUtf16 != 2 + matches * 7 || m.EndOffsetInUtf16 != 6 + matches * 7)
+                    throw new Exception("Unexpected coordinates.");
+                modeledPrefixBytes += finite ? m.EndOffsetInBytes : (long)m.StartOffsetInBytes + m.EndOffsetInBytes;
+                matches++;
+            }
+            if (matches != n) throw new Exception("Unexpected match count.");
+            var output = new Utf8Pcre2MatchData[n];
+            if (regex.MatchMany(input, output, out var more) != n || more) throw new Exception("MatchMany differs.");
+            rows.Add(new
+            {
+                finite, plan, inputBytes = input.Length, matches,
+                sourceDerivedPrefixBytes = modeledPrefixBytes,
+                sourceDerivedNotTimed = true, outputsCorrect = true,
+            });
+        }
+    }
+    Console.WriteLine(JsonSerializer.Serialize(new { rows }, new JsonSerializerOptions { WriteIndented = true }));
+}

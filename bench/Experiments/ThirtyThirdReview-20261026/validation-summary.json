@@ -1,0 +1,40 @@
+{
+  "FinalSource": "575eeea631da8b9d9a1829b075a0cd55aea8a040",
+  "MeasuredCandidate": "eec34354725b31288bc302fc6bb5a8cfca0554ae",
+  "Baseline": "4d89398a4ba2bdee7fdae8b890d6bc672a8f6aac",
+  "Configuration": "Release",
+  "CandidatePcre2Complete": {
+    "Passed": 6161,
+    "Skipped": 0,
+    "Failed": 0,
+    "Seconds": 17
+  },
+  "FinalPcre2Focused": {
+    "Passed": 180,
+    "Skipped": 0,
+    "Failed": 0
+  },
+  "CandidateCoreApiInventory": {
+    "Passed": 13
+  },
+  "CandidatePythonReApiInventory": {
+    "Passed": 2
+  },
+  "PublicComparisonSeconds": 80.5152427,
+  "NoisyConfirmationSeconds": 31.4872321,
+  "AdditionalTimingAfterConfirmation": false,
+  "Guard": "removed; explicit caller disjointness precondition remains",
+  "ExactFinalByteCostsQualified": false,
+  "PackagesRefreshed": false,
+  "ProtectedOriginals": 18,
+  "PlanAndHistoryIgnored": true,
+  "FinalSourceCi": {
+    "RunId": 40314312634,
+    "Linux": "success",
+    "DisabledDynamicCode": [
+      "success",
+      "success"
+    ],
+    "Windows": "success"
+  }
+}

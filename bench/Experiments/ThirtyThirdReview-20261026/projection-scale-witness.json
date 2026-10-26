@@ -1,0 +1,94 @@
+{
+  "rows": [
+    {
+      "finite": false,
+      "plan": "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
+      "inputBytes": 128,
+      "matches": 16,
+      "sourceDerivedPrefixBytes": 2080,
+      "sourceDerivedNotTimed": true,
+      "outputsCorrect": true
+    },
+    {
+      "finite": false,
+      "plan": "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
+      "inputBytes": 1024,
+      "matches": 128,
+      "sourceDerivedPrefixBytes": 131328,
+      "sourceDerivedNotTimed": true,
+      "outputsCorrect": true
+    },
+    {
+      "finite": false,
+      "plan": "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
+      "inputBytes": 4096,
+      "matches": 512,
+      "sourceDerivedPrefixBytes": 2098176,
+      "sourceDerivedNotTimed": true,
+      "outputsCorrect": true
+    },
+    {
+      "finite": false,
+      "plan": "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
+      "inputBytes": 8192,
+      "matches": 1024,
+      "sourceDerivedPrefixBytes": 8390656,
+      "sourceDerivedNotTimed": true,
+      "outputsCorrect": true
+    },
+    {
+      "finite": false,
+      "plan": "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
+      "inputBytes": 16384,
+      "matches": 2048,
+      "sourceDerivedPrefixBytes": 33558528,
+      "sourceDerivedNotTimed": true,
+      "outputsCorrect": true
+    },
+    {
+      "finite": true,
+      "plan": "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
+      "inputBytes": 128,
+      "matches": 16,
+      "sourceDerivedPrefixBytes": 1072,
+      "sourceDerivedNotTimed": true,
+      "outputsCorrect": true
+    },
+    {
+      "finite": true,
+      "plan": "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
+      "inputBytes": 1024,
+      "matches": 128,
+      "sourceDerivedPrefixBytes": 65920,
+      "sourceDerivedNotTimed": true,
+      "outputsCorrect": true
+    },
+    {
+      "finite": true,
+      "plan": "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
+      "inputBytes": 4096,
+      "matches": 512,
+      "sourceDerivedPrefixBytes": 1050112,
+      "sourceDerivedNotTimed": true,
+      "outputsCorrect": true
+    },
+    {
+      "finite": true,
+      "plan": "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
+      "inputBytes": 8192,
+      "matches": 1024,
+      "sourceDerivedPrefixBytes": 4197376,
+      "sourceDerivedNotTimed": true,
+      "outputsCorrect": true
+    },
+    {
+      "finite": true,
+      "plan": "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
+      "inputBytes": 16384,
+      "matches": 2048,
+      "sourceDerivedPrefixBytes": 16783360,
+      "sourceDerivedNotTimed": true,
+      "outputsCorrect": true
+    }
+  ]
+}
