@@ -1,0 +1,827 @@
+{
+  "PackageVersion": "0.4.0-rc.2",
+  "SourceRevision": "d1a14f407ae4e34230430260fc58111c960c1e63",
+  "CandidateManifestSha256": "4F4A2B965D0DF524CE7FC93454D61A5D84F7A3DB25C16BA625CD46508A954B8A",
+  "ProvenanceSha256": "C3262940DC90917683B68EC185A93E17FD365A12367A8F2EFE4BDCF46D1A7955",
+  "Packages": [
+    {
+      "Id": "Lokad.Utf8Regex",
+      "Version": "0.4.0-rc.2",
+      "RelativePath": "feed/Lokad.Utf8Regex.0.4.0-rc.2.nupkg",
+      "PackageSha256": "418C99602420E566C98336D647A28F369BE0AAC8EADC0482B73B211A8D13B99E",
+      "PackageSha512Base64": "IfuvO1906qGCm8Ve2d/tI8V52jtIcUqWT2+RUg+ZJacycONig3EaPQXMr2/owCPSgqeDflq0uuOEPoTCPHaThw==",
+      "AssemblySha256": "8ACD291198FFE0A153FC322A183AA20B8DE7B8DBEAA4DD998BD85822DC53FD1C",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.0.4.0-rc.2.snupkg",
+      "SymbolSha256": "114FBA5A4FD46A965F960926127FB5ED350FB9F884940ACAF91125296A7311C5",
+      "PdbSha256": "12D6AA6A57D6892642EC701E1A254F0E5720FC887A514B7110C89A9FFA05DDD8"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "Version": "0.4.0-rc.2",
+      "RelativePath": "feed/Lokad.Utf8Regex.PythonRe.0.4.0-rc.2.nupkg",
+      "PackageSha256": "67E3EDA2761AF73B99967D480A31CF1D89BBB653C33C64A1D556379FEFBB5899",
+      "PackageSha512Base64": "KKiNVeYtUWv4rS6nYARaI50fRG2MHcxFYcMqGGo/V/Z7HHOUQaqGkcqaNUO+MUfszd6lylPA8TOckxEGAvsEFQ==",
+      "AssemblySha256": "74448A8C167C478E39C6DBFBBEAE745B483AF9DF35BCFEABF5C675861933B811",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.PythonRe.0.4.0-rc.2.snupkg",
+      "SymbolSha256": "806A6B86A0B10E49F10722CB5B4E50496B4C1027C330A278A868846575CA7DEC",
+      "PdbSha256": "2D4374643D5A4AC7C0D979C051607237AF798F98A9C923A3D2B86B777AAEF23E"
+    },
+    {
+      "Id": "Lokad.Utf8Regex.Pcre2",
+      "Version": "0.4.0-rc.2",
+      "RelativePath": "feed/Lokad.Utf8Regex.Pcre2.0.4.0-rc.2.nupkg",
+      "PackageSha256": "E7B0CAFC6DD655B545C151C1ACEDC0A1752E90575676AF558024E9AC39546B9D",
+      "PackageSha512Base64": "WUNi5PhlnxZRhrFTrzu+df0Q+1zusGayIC5k5QKOlOkghiK8TWeq+b3SYQiRIrDACewcILTSgRHd8/obA2Yy1A==",
+      "AssemblySha256": "B8816EF7FEED678358E04BD7860B6089C60BB9720913D07F7BD3D2753A315B63",
+      "SymbolRelativePath": "feed/Lokad.Utf8Regex.Pcre2.0.4.0-rc.2.snupkg",
+      "SymbolSha256": "5802151D1A6FFE71518750D1FE6BA974D2A7E32D81C1825E618DBF256D1B63FC",
+      "PdbSha256": "36BA2CCF7CEE985AD83CCED8B2F4BAADFE8B8994C9589DECDC2A64C30FEB3888"
+    }
+  ],
+  "Windows": [
+    {
+      "TestProject": "Lokad.Utf8Regex.Tests",
+      "Total": 39655,
+      "Passed": 39655,
+      "Failed": 0,
+      "ResultsSha256": "706B8E8A47F7654D7A48FAFA92B875AB7DAE01B02E81AE01C2516DAEDC365FA9",
+      "LockSha256": "C21ADE59B62E5E47E9CD6322D4694B5E84DA048135D07C507673A36117F8C772"
+    },
+    {
+      "TestProject": "Lokad.Utf8Regex.DiffTests",
+      "Total": 1504,
+      "Passed": 1504,
+      "Failed": 0,
+      "ResultsSha256": "D3988CD5D693DF6CDDA88776D48F64059A82D65635AE88D823D065693EA9C66E",
+      "LockSha256": "C21ADE59B62E5E47E9CD6322D4694B5E84DA048135D07C507673A36117F8C772"
+    },
+    {
+      "TestProject": "Lokad.Utf8Regex.PythonRe.Tests",
+      "Total": 3937,
+      "Passed": 3937,
+      "Failed": 0,
+      "ResultsSha256": "7DA616C75DB652686E20A86DDA10728E274DCB02DACDD4C3AAB02F7BA9B84F91",
+      "LockSha256": "9FFAAA1FC11E6E1D40CB35D0CC1B4B2BD75F16E71B9FA84B1D9C20D56B868614"
+    },
+    {
+      "TestProject": "Lokad.Utf8Regex.Pcre2.Tests",
+      "Total": 6189,
+      "Passed": 6189,
+      "Failed": 0,
+      "ResultsSha256": "950F8567F40DE04BA618A794F423EFE9FE0CEE32C5DCA5C8BAF85CEDEA44BB79",
+      "LockSha256": "6075703408E76236AA5B89EED349C643B3EC9774E523B85D414102BE4BFD61E0"
+    }
+  ],
+  "Linux": [
+    {
+      "TestProject": "Lokad.Utf8Regex.Tests",
+      "Passed": 39655,
+      "Total": 39655,
+      "Failed": 0,
+      "Payloads": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "PackageSha256": "418C99602420E566C98336D647A28F369BE0AAC8EADC0482B73B211A8D13B99E",
+          "AssemblySha256": "8ACD291198FFE0A153FC322A183AA20B8DE7B8DBEAA4DD998BD85822DC53FD1C",
+          "ExactLock": true,
+          "Feed": "/run/utf8regex-release-rc2-20261026/src/artifacts/package-candidates/0.4.0-rc.2/feed"
+        }
+      ]
+    },
+    {
+      "TestProject": "Lokad.Utf8Regex.DiffTests",
+      "Passed": 1504,
+      "Total": 1504,
+      "Failed": 0,
+      "Payloads": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "PackageSha256": "418C99602420E566C98336D647A28F369BE0AAC8EADC0482B73B211A8D13B99E",
+          "AssemblySha256": "8ACD291198FFE0A153FC322A183AA20B8DE7B8DBEAA4DD998BD85822DC53FD1C",
+          "ExactLock": true,
+          "Feed": "/run/utf8regex-release-rc2-20261026/src/artifacts/package-candidates/0.4.0-rc.2/feed"
+        }
+      ]
+    },
+    {
+      "TestProject": "Lokad.Utf8Regex.PythonRe.Tests",
+      "Passed": 3937,
+      "Total": 3937,
+      "Failed": 0,
+      "Payloads": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "PackageSha256": "418C99602420E566C98336D647A28F369BE0AAC8EADC0482B73B211A8D13B99E",
+          "AssemblySha256": "8ACD291198FFE0A153FC322A183AA20B8DE7B8DBEAA4DD998BD85822DC53FD1C",
+          "ExactLock": true,
+          "Feed": "/run/utf8regex-release-rc2-20261026/src/artifacts/package-candidates/0.4.0-rc.2/feed"
+        },
+        {
+          "Id": "Lokad.Utf8Regex.PythonRe",
+          "PackageSha256": "67E3EDA2761AF73B99967D480A31CF1D89BBB653C33C64A1D556379FEFBB5899",
+          "AssemblySha256": "74448A8C167C478E39C6DBFBBEAE745B483AF9DF35BCFEABF5C675861933B811",
+          "ExactLock": true,
+          "Feed": "/run/utf8regex-release-rc2-20261026/src/artifacts/package-candidates/0.4.0-rc.2/feed"
+        }
+      ]
+    },
+    {
+      "TestProject": "Lokad.Utf8Regex.Pcre2.Tests",
+      "Passed": 6189,
+      "Total": 6189,
+      "Failed": 0,
+      "Payloads": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "PackageSha256": "418C99602420E566C98336D647A28F369BE0AAC8EADC0482B73B211A8D13B99E",
+          "AssemblySha256": "8ACD291198FFE0A153FC322A183AA20B8DE7B8DBEAA4DD998BD85822DC53FD1C",
+          "ExactLock": true,
+          "Feed": "/run/utf8regex-release-rc2-20261026/src/artifacts/package-candidates/0.4.0-rc.2/feed"
+        },
+        {
+          "Id": "Lokad.Utf8Regex.Pcre2",
+          "PackageSha256": "E7B0CAFC6DD655B545C151C1ACEDC0A1752E90575676AF558024E9AC39546B9D",
+          "AssemblySha256": "B8816EF7FEED678358E04BD7860B6089C60BB9720913D07F7BD3D2753A315B63",
+          "ExactLock": true,
+          "Feed": "/run/utf8regex-release-rc2-20261026/src/artifacts/package-candidates/0.4.0-rc.2/feed"
+        }
+      ]
+    }
+  ],
+  "WindowsPublic": [
+    {
+      "Platform": "windows",
+      "Name": "core-python",
+      "ProgramSha256": "874E2E3A8DDBF3F7B6FEF39B4A7161EA221E3FCAC94453D61A31C2F0FFA7BC84",
+      "ProjectReferences": 0,
+      "LockSha256": "843AEF6FAE4B4BAAD5EB83DE95C4717285CEEA49EFB96346665980EAFCCAE32B",
+      "Payloads": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "Version": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+          "PackageSha256": "418C99602420E566C98336D647A28F369BE0AAC8EADC0482B73B211A8D13B99E",
+          "DllSha256": "8ACD291198FFE0A153FC322A183AA20B8DE7B8DBEAA4DD998BD85822DC53FD1C",
+          "Feed": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.4.0-rc.2\\feed",
+          "ExactLock": true
+        },
+        {
+          "Id": "Lokad.Utf8Regex.PythonRe",
+          "Version": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+          "PackageSha256": "67E3EDA2761AF73B99967D480A31CF1D89BBB653C33C64A1D556379FEFBB5899",
+          "DllSha256": "74448A8C167C478E39C6DBFBBEAE745B483AF9DF35BCFEABF5C675861933B811",
+          "Feed": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.4.0-rc.2\\feed",
+          "ExactLock": true
+        }
+      ],
+      "ConsumerRoot": "D:\\code\\utf8regex\\artifacts\\utf8regex-0.4.0-rc.2-20261026\\windows-public\\core-python"
+    },
+    {
+      "Platform": "windows",
+      "Name": "pcre2",
+      "ProgramSha256": "686AF9A4A2AA6EBE73C97EBE1ED9F94B6DCECC0C47028D731DEFC9A3FE4CD922",
+      "ProjectReferences": 0,
+      "LockSha256": "932FCBA523263DE199DA39ED6079B003AA8EBF3FD126B30F9D6A7CB4B70FF0AE",
+      "Payloads": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "Version": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+          "PackageSha256": "418C99602420E566C98336D647A28F369BE0AAC8EADC0482B73B211A8D13B99E",
+          "DllSha256": "8ACD291198FFE0A153FC322A183AA20B8DE7B8DBEAA4DD998BD85822DC53FD1C",
+          "Feed": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.4.0-rc.2\\feed",
+          "ExactLock": true
+        },
+        {
+          "Id": "Lokad.Utf8Regex.Pcre2",
+          "Version": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+          "PackageSha256": "E7B0CAFC6DD655B545C151C1ACEDC0A1752E90575676AF558024E9AC39546B9D",
+          "DllSha256": "B8816EF7FEED678358E04BD7860B6089C60BB9720913D07F7BD3D2753A315B63",
+          "Feed": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.4.0-rc.2\\feed",
+          "ExactLock": true
+        }
+      ],
+      "ConsumerRoot": "D:\\code\\utf8regex\\artifacts\\utf8regex-0.4.0-rc.2-20261026\\windows-public\\pcre2"
+    },
+    {
+      "Platform": "windows",
+      "Name": "combined",
+      "ProgramSha256": "C3D58888BAAC637E5C30D7E77D8609CE169064B36B87858FA66CE8476FCCE1E7",
+      "ProjectReferences": 0,
+      "LockSha256": "47F83BCA2C65ADC93D199774E09EA8056E6F241EE7A39382594E5EA5AC01AAA1",
+      "Payloads": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "Version": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+          "PackageSha256": "418C99602420E566C98336D647A28F369BE0AAC8EADC0482B73B211A8D13B99E",
+          "DllSha256": "8ACD291198FFE0A153FC322A183AA20B8DE7B8DBEAA4DD998BD85822DC53FD1C",
+          "Feed": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.4.0-rc.2\\feed",
+          "ExactLock": true
+        },
+        {
+          "Id": "Lokad.Utf8Regex.PythonRe",
+          "Version": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+          "PackageSha256": "67E3EDA2761AF73B99967D480A31CF1D89BBB653C33C64A1D556379FEFBB5899",
+          "DllSha256": "74448A8C167C478E39C6DBFBBEAE745B483AF9DF35BCFEABF5C675861933B811",
+          "Feed": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.4.0-rc.2\\feed",
+          "ExactLock": true
+        },
+        {
+          "Id": "Lokad.Utf8Regex.Pcre2",
+          "Version": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+          "PackageSha256": "E7B0CAFC6DD655B545C151C1ACEDC0A1752E90575676AF558024E9AC39546B9D",
+          "DllSha256": "B8816EF7FEED678358E04BD7860B6089C60BB9720913D07F7BD3D2753A315B63",
+          "Feed": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.4.0-rc.2\\feed",
+          "ExactLock": true
+        }
+      ],
+      "ConsumerRoot": "D:\\code\\utf8regex\\artifacts\\utf8regex-0.4.0-rc.2-20261026\\windows-public\\combined"
+    }
+  ],
+  "LinuxPublic": [
+    {
+      "Platform": "linux",
+      "Name": "core-python",
+      "ProgramSha256": "874E2E3A8DDBF3F7B6FEF39B4A7161EA221E3FCAC94453D61A31C2F0FFA7BC84",
+      "ProjectReferences": 0,
+      "LockSha256": "122D20F0C3CF3820944A04731795C237559FF6411E57223ADA8332D3C0F0AE27",
+      "Payloads": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "Version": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+          "PackageSha256": "418C99602420E566C98336D647A28F369BE0AAC8EADC0482B73B211A8D13B99E",
+          "DllSha256": "8ACD291198FFE0A153FC322A183AA20B8DE7B8DBEAA4DD998BD85822DC53FD1C",
+          "Feed": "/run/utf8regex-release-rc2-20261026/src/artifacts/package-candidates/0.4.0-rc.2/feed",
+          "ExactLock": true
+        },
+        {
+          "Id": "Lokad.Utf8Regex.PythonRe",
+          "Version": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+          "PackageSha256": "67E3EDA2761AF73B99967D480A31CF1D89BBB653C33C64A1D556379FEFBB5899",
+          "DllSha256": "74448A8C167C478E39C6DBFBBEAE745B483AF9DF35BCFEABF5C675861933B811",
+          "Feed": "/run/utf8regex-release-rc2-20261026/src/artifacts/package-candidates/0.4.0-rc.2/feed",
+          "ExactLock": true
+        }
+      ],
+      "ConsumerRoot": "/run/utf8regex-release-rc2-20261026/public/core-python"
+    },
+    {
+      "Platform": "linux",
+      "Name": "pcre2",
+      "ProgramSha256": "686AF9A4A2AA6EBE73C97EBE1ED9F94B6DCECC0C47028D731DEFC9A3FE4CD922",
+      "ProjectReferences": 0,
+      "LockSha256": "0C4BB511E9B2DA6227BD62016D6528E24C90C40374A65186684AB61FA2FA04F7",
+      "Payloads": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "Version": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+          "PackageSha256": "418C99602420E566C98336D647A28F369BE0AAC8EADC0482B73B211A8D13B99E",
+          "DllSha256": "8ACD291198FFE0A153FC322A183AA20B8DE7B8DBEAA4DD998BD85822DC53FD1C",
+          "Feed": "/run/utf8regex-release-rc2-20261026/src/artifacts/package-candidates/0.4.0-rc.2/feed",
+          "ExactLock": true
+        },
+        {
+          "Id": "Lokad.Utf8Regex.Pcre2",
+          "Version": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+          "PackageSha256": "E7B0CAFC6DD655B545C151C1ACEDC0A1752E90575676AF558024E9AC39546B9D",
+          "DllSha256": "B8816EF7FEED678358E04BD7860B6089C60BB9720913D07F7BD3D2753A315B63",
+          "Feed": "/run/utf8regex-release-rc2-20261026/src/artifacts/package-candidates/0.4.0-rc.2/feed",
+          "ExactLock": true
+        }
+      ],
+      "ConsumerRoot": "/run/utf8regex-release-rc2-20261026/public/pcre2"
+    },
+    {
+      "Platform": "linux",
+      "Name": "combined",
+      "ProgramSha256": "C3D58888BAAC637E5C30D7E77D8609CE169064B36B87858FA66CE8476FCCE1E7",
+      "ProjectReferences": 0,
+      "LockSha256": "AA950B162EBE50FEDDE92421A9967097A9A3A5B110F210DCE154D8A4CCEB8B41",
+      "Payloads": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "Version": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+          "PackageSha256": "418C99602420E566C98336D647A28F369BE0AAC8EADC0482B73B211A8D13B99E",
+          "DllSha256": "8ACD291198FFE0A153FC322A183AA20B8DE7B8DBEAA4DD998BD85822DC53FD1C",
+          "Feed": "/run/utf8regex-release-rc2-20261026/src/artifacts/package-candidates/0.4.0-rc.2/feed",
+          "ExactLock": true
+        },
+        {
+          "Id": "Lokad.Utf8Regex.PythonRe",
+          "Version": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+          "PackageSha256": "67E3EDA2761AF73B99967D480A31CF1D89BBB653C33C64A1D556379FEFBB5899",
+          "DllSha256": "74448A8C167C478E39C6DBFBBEAE745B483AF9DF35BCFEABF5C675861933B811",
+          "Feed": "/run/utf8regex-release-rc2-20261026/src/artifacts/package-candidates/0.4.0-rc.2/feed",
+          "ExactLock": true
+        },
+        {
+          "Id": "Lokad.Utf8Regex.Pcre2",
+          "Version": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+          "PackageSha256": "E7B0CAFC6DD655B545C151C1ACEDC0A1752E90575676AF558024E9AC39546B9D",
+          "DllSha256": "B8816EF7FEED678358E04BD7860B6089C60BB9720913D07F7BD3D2753A315B63",
+          "Feed": "/run/utf8regex-release-rc2-20261026/src/artifacts/package-candidates/0.4.0-rc.2/feed",
+          "ExactLock": true
+        }
+      ],
+      "ConsumerRoot": "/run/utf8regex-release-rc2-20261026/public/combined"
+    }
+  ],
+  "PackagedDocumentation": [
+    {
+      "Package": "Lokad.Utf8Regex",
+      "Entry": "CHANGELOG.md",
+      "Source": "CHANGELOG.md",
+      "Sha256": "5F340BB4B9845C3D0945CF601BF417B3D70995C4311D053E34184BB5E200DF03"
+    },
+    {
+      "Package": "Lokad.Utf8Regex",
+      "Entry": "MIGRATION.md",
+      "Source": "MIGRATION.md",
+      "Sha256": "E749A557D50F9B65BB20FC0192CCA701B7CFBCBC16F76236920EE4B57AE6F7A1"
+    },
+    {
+      "Package": "Lokad.Utf8Regex",
+      "Entry": "HOST-INTEGRATION.md",
+      "Source": "HOST-INTEGRATION.md",
+      "Sha256": "8813514B4965DB9EF277CFAEA43B0AC30DEB6AD221BC68C5AB0D99F3852836B4"
+    },
+    {
+      "Package": "Lokad.Utf8Regex",
+      "Entry": "README.md",
+      "Source": "src/Lokad.Utf8Regex/README.md",
+      "Sha256": "106D04FAE5D0E33589BEE5F99791A38301E2CDCC3491E419ADABE18D06C15017"
+    },
+    {
+      "Package": "Lokad.Utf8Regex.PythonRe",
+      "Entry": "CHANGELOG.md",
+      "Source": "CHANGELOG.md",
+      "Sha256": "5F340BB4B9845C3D0945CF601BF417B3D70995C4311D053E34184BB5E200DF03"
+    },
+    {
+      "Package": "Lokad.Utf8Regex.PythonRe",
+      "Entry": "MIGRATION.md",
+      "Source": "MIGRATION.md",
+      "Sha256": "E749A557D50F9B65BB20FC0192CCA701B7CFBCBC16F76236920EE4B57AE6F7A1"
+    },
+    {
+      "Package": "Lokad.Utf8Regex.PythonRe",
+      "Entry": "HOST-INTEGRATION.md",
+      "Source": "HOST-INTEGRATION.md",
+      "Sha256": "8813514B4965DB9EF277CFAEA43B0AC30DEB6AD221BC68C5AB0D99F3852836B4"
+    },
+    {
+      "Package": "Lokad.Utf8Regex.PythonRe",
+      "Entry": "README.md",
+      "Source": "src/Lokad.Utf8Regex.PythonRe/README.md",
+      "Sha256": "19C97C3E2D8F32B340EEE2B5C5D2E82D40371AB6E3496E0081AF098967A9FC90"
+    },
+    {
+      "Package": "Lokad.Utf8Regex.Pcre2",
+      "Entry": "CHANGELOG.md",
+      "Source": "CHANGELOG.md",
+      "Sha256": "5F340BB4B9845C3D0945CF601BF417B3D70995C4311D053E34184BB5E200DF03"
+    },
+    {
+      "Package": "Lokad.Utf8Regex.Pcre2",
+      "Entry": "MIGRATION.md",
+      "Source": "MIGRATION.md",
+      "Sha256": "E749A557D50F9B65BB20FC0192CCA701B7CFBCBC16F76236920EE4B57AE6F7A1"
+    },
+    {
+      "Package": "Lokad.Utf8Regex.Pcre2",
+      "Entry": "HOST-INTEGRATION.md",
+      "Source": "HOST-INTEGRATION.md",
+      "Sha256": "8813514B4965DB9EF277CFAEA43B0AC30DEB6AD221BC68C5AB0D99F3852836B4"
+    },
+    {
+      "Package": "Lokad.Utf8Regex.Pcre2",
+      "Entry": "README.md",
+      "Source": "src/Lokad.Utf8Regex.Pcre2/README.md",
+      "Sha256": "2014DCF9859ACED924B594C4AD7344CE0441EA4B112960CDA0C7DCDA442C66EB"
+    }
+  ],
+  "OperatingCost": {
+    "Scope": "Bounded representative final-package versus fixed 844dcbad cumulative public costs; no universal throughput claim.",
+    "Decision": "Accepted within the predeclared bounded comparison/sole-confirmation protocol; no repeatable regression above10%. Initial finite Python Count boundary exceedance remains visible.",
+    "Runtime": ".NET 10.0.12",
+    "OS": "Ubuntu 24.04.4 LTS",
+    "AffinityMask": "0x40",
+    "InitialWallSeconds": 109.1377379,
+    "ConfirmationWallSeconds": 23.5679341,
+    "Initial": [
+      {
+        "Name": "core/identifier-Count/unlimited",
+        "BeforeNs": 786.0828555306795,
+        "AfterNs": 825.3328528681944,
+        "ChangePercent": 4.993111993393828,
+        "BeforeBytes": 0,
+        "AfterBytes": 0,
+        "BeforeSpread": 1.0133608818449544,
+        "AfterSpread": 1.0205856528939643
+      },
+      {
+        "Name": "core/identifier-Count/finite",
+        "BeforeNs": 9052.824275362318,
+        "AfterNs": 9091.843451776649,
+        "ChangePercent": 0.4310166112527325,
+        "BeforeBytes": 112,
+        "AfterBytes": 112,
+        "BeforeSpread": 1.0191055369665232,
+        "AfterSpread": 1.0101038869824661
+      },
+      {
+        "Name": "core/identifier-Count/finite-token",
+        "BeforeNs": 9035.47342897555,
+        "AfterNs": 9260.644467425025,
+        "ChangePercent": 2.4920779217542766,
+        "BeforeBytes": 112,
+        "AfterBytes": 112,
+        "BeforeSpread": 1.014026583191322,
+        "AfterSpread": 1.0154998690173507
+      },
+      {
+        "Name": "core/identifier-Count/finite-deadline",
+        "BeforeNs": 18382.493442622952,
+        "AfterNs": 18320.42792976725,
+        "ChangePercent": -0.3376338093057152,
+        "BeforeBytes": 160,
+        "AfterBytes": 160,
+        "BeforeSpread": 1.0062026041533083,
+        "AfterSpread": 1.088051975623661
+      },
+      {
+        "Name": "core/scalar-NonBacktracking-Count/finite",
+        "BeforeNs": 24527.17127371274,
+        "AfterNs": 24470.42561307902,
+        "ChangePercent": -0.23135835763716806,
+        "BeforeBytes": 4832,
+        "AfterBytes": 4832,
+        "BeforeSpread": 1.0124025908991,
+        "AfterSpread": 1.0101699492549492
+      },
+      {
+        "Name": "python/captured-Count/unlimited",
+        "BeforeNs": 46659.220145379026,
+        "AfterNs": 37891.85244519393,
+        "ChangePercent": -18.790214823282657,
+        "BeforeBytes": 0,
+        "AfterBytes": 0,
+        "BeforeSpread": 1.0152635192303567,
+        "AfterSpread": 1.007898946721383
+      },
+      {
+        "Name": "python/captured-FindAllToUtf8/unlimited",
+        "BeforeNs": 431997.41346153844,
+        "AfterNs": 410090.2181818182,
+        "ChangePercent": -5.071140381184403,
+        "BeforeBytes": 129280,
+        "AfterBytes": 129280,
+        "BeforeSpread": 1.0223648292598893,
+        "AfterSpread": 1.0412100469000802
+      },
+      {
+        "Name": "python/captured-Count/finite",
+        "BeforeNs": 18582.492650146996,
+        "AfterNs": 20511.65737779808,
+        "ChangePercent": 10.381625134859519,
+        "BeforeBytes": 112,
+        "AfterBytes": 112,
+        "BeforeSpread": 1.0255552405406327,
+        "AfterSpread": 1.0268394632457178
+      },
+      {
+        "Name": "python/captured-FindAllToUtf8/finite",
+        "BeforeNs": 411789.2844036697,
+        "AfterNs": 393731.6725663717,
+        "ChangePercent": -4.385158264486666,
+        "BeforeBytes": 133480,
+        "AfterBytes": 133480,
+        "BeforeSpread": 1.0237967802928114,
+        "AfterSpread": 1.0257742302963313
+      },
+      {
+        "Name": "pcre2/Unicode-backtracking-Count/unlimited",
+        "BeforeNs": 6221.928858688116,
+        "AfterNs": 6163.321576191788,
+        "ChangePercent": -0.9419471650578326,
+        "BeforeBytes": 0,
+        "AfterBytes": 0,
+        "BeforeSpread": 1.013698071520297,
+        "AfterSpread": 1.0121716041337
+      },
+      {
+        "Name": "pcre2/Unicode-backtracking-Enumerate/unlimited",
+        "BeforeNs": 8896.134325396826,
+        "AfterNs": 8801.267425878657,
+        "ChangePercent": -1.0663833980939508,
+        "BeforeBytes": 0,
+        "AfterBytes": 0,
+        "BeforeSpread": 1.0204919585075038,
+        "AfterSpread": 1.0109634162856942
+      },
+      {
+        "Name": "pcre2/dense-replacement/unlimited",
+        "BeforeNs": 102822.95394736843,
+        "AfterNs": 104541.14084507042,
+        "ChangePercent": 1.6710149161649923,
+        "BeforeBytes": 13384,
+        "AfterBytes": 13384,
+        "BeforeSpread": 1.0165047123489486,
+        "AfterSpread": 1.0215759675504492
+      },
+      {
+        "Name": "pcre2/Unicode-backtracking-Count/finite",
+        "BeforeNs": 6724.959703703704,
+        "AfterNs": 6685.582688875669,
+        "ChangePercent": -0.5855353275402986,
+        "BeforeBytes": 1592,
+        "AfterBytes": 1592,
+        "BeforeSpread": 1.0269700346567856,
+        "AfterSpread": 1.0214566935229201
+      },
+      {
+        "Name": "pcre2/Unicode-backtracking-Enumerate/finite",
+        "BeforeNs": 10523.02734375,
+        "AfterNs": 10339.4951171875,
+        "ChangePercent": -1.7441010135881285,
+        "BeforeBytes": 11952,
+        "AfterBytes": 11952,
+        "BeforeSpread": 1.0115005070475378,
+        "AfterSpread": 1.0089866538468364
+      },
+      {
+        "Name": "pcre2/dense-replacement/finite",
+        "BeforeNs": 164252.45387453874,
+        "AfterNs": 171346.83141762452,
+        "ChangePercent": 4.319191205815831,
+        "BeforeBytes": 17584,
+        "AfterBytes": 17584,
+        "BeforeSpread": 1.0424538309374027,
+        "AfterSpread": 1.0155237171072955
+      },
+      {
+        "Name": "pcre2/short-replacement/unlimited",
+        "BeforeNs": 945.9854965533234,
+        "AfterNs": 924.0217040980764,
+        "ChangePercent": -2.3217895554711543,
+        "BeforeBytes": 32,
+        "AfterBytes": 32,
+        "BeforeSpread": 1.036178560763764,
+        "AfterSpread": 1.0087760506865628
+      },
+      {
+        "Name": "control/Core-compiled-literal-Count",
+        "BeforeNs": 227.46312430794336,
+        "AfterNs": 226.69035338486128,
+        "ChangePercent": -0.33973459453404686,
+        "BeforeBytes": 0,
+        "AfterBytes": 0,
+        "BeforeSpread": 1.0178739133435684,
+        "AfterSpread": 1.016715675463608
+      },
+      {
+        "Name": "control/predecoded-Regex-Count",
+        "BeforeNs": 2375.343994166059,
+        "AfterNs": 2396.7112975211057,
+        "ChangePercent": 0.8995456408640523,
+        "BeforeBytes": 0,
+        "AfterBytes": 0,
+        "BeforeSpread": 1.0139570723149498,
+        "AfterSpread": 1.0316225088045041
+      },
+      {
+        "Name": "control/strict-decode-then-Regex-Count",
+        "BeforeNs": 2542.812809846715,
+        "AfterNs": 2552.3751901301334,
+        "ChangePercent": 0.37605521910182294,
+        "BeforeBytes": 1048,
+        "AfterBytes": 1048,
+        "BeforeSpread": 1.0200014187330315,
+        "AfterSpread": 1.0188347888267635
+      }
+    ],
+    "SoleConfirmation": [
+      {
+        "Name": "python/captured-Count/finite",
+        "BeforeNs": 12039.38424437299,
+        "AfterNs": 12046.850698174007,
+        "ChangePercent": 0.062016907588158254,
+        "BeforeBytes": 112,
+        "AfterBytes": 112,
+        "BeforeSpread": 1.014097322868712,
+        "AfterSpread": 1.0153407888358705
+      },
+      {
+        "Name": "control/Core-compiled-literal-Count",
+        "BeforeNs": 194.4009510775414,
+        "AfterNs": 197.2620856421201,
+        "ChangePercent": 1.4717698389435707,
+        "BeforeBytes": 0,
+        "AfterBytes": 0,
+        "BeforeSpread": 1.0318408326707162,
+        "AfterSpread": 1.0451188294492242
+      },
+      {
+        "Name": "control/predecoded-Regex-Count",
+        "BeforeNs": 2398.1301613917417,
+        "AfterNs": 2387.6099712868704,
+        "ChangePercent": -0.4386830320655344,
+        "BeforeBytes": 0,
+        "AfterBytes": 0,
+        "BeforeSpread": 1.0280375820937124,
+        "AfterSpread": 1.0311893071363112
+      },
+      {
+        "Name": "control/strict-decode-then-Regex-Count",
+        "BeforeNs": 2567.0495588403805,
+        "AfterNs": 2520.4838615707295,
+        "ChangePercent": -1.8139773386644853,
+        "BeforeBytes": 1048,
+        "AfterBytes": 1048,
+        "BeforeSpread": 1.050235968333015,
+        "AfterSpread": 1.0316159997054815
+      }
+    ],
+    "Limitations": [
+      "Finite Python Count initial+10.38%, sole reversed-first confirmation+0.06%; absolute time changed18.6/20.5us to12.0/12.0us across runs. Do not pool/select favorable samples or infer a stable absolute cost.",
+      "Scope is the declared public workloads; construction, universal equivalence and all profile/host workloads are not timed.",
+      "Finite overhead ratios include policy-dependent routes and are not pure accounting microcosts.",
+      "Historical Status/snapshots remain unchanged; there was no third run."
+    ]
+  },
+  "SourceCI": {
+    "conclusion": "success",
+    "databaseId": 40364734526,
+    "headSha": "d1a14f407ae4e34230430260fc58111c960c1e63",
+    "jobs": [
+      {
+        "completedAt": "2026-10-26T17:05:36Z",
+        "conclusion": "success",
+        "databaseId": 121719241870,
+        "name": "tests (ubuntu-latest)",
+        "startedAt": "2026-10-26T17:01:43Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-26T17:01:45Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-26T17:01:44Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-26T17:01:48Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-26T17:01:45Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-26T17:01:49Z",
+            "conclusion": "success",
+            "name": "Setup .NET",
+            "number": 3,
+            "startedAt": "2026-10-26T17:01:48Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-26T17:05:22Z",
+            "conclusion": "success",
+            "name": "Test Release",
+            "number": 4,
+            "startedAt": "2026-10-26T17:01:49Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-26T17:05:31Z",
+            "conclusion": "success",
+            "name": "Test disabled dynamic code",
+            "number": 5,
+            "startedAt": "2026-10-26T17:05:22Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-26T17:05:32Z",
+            "conclusion": "success",
+            "name": "Publish test log",
+            "number": 6,
+            "startedAt": "2026-10-26T17:05:31Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-26T17:05:33Z",
+            "conclusion": "success",
+            "name": "Post Setup .NET",
+            "number": 11,
+            "startedAt": "2026-10-26T17:05:32Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-26T17:05:33Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 12,
+            "startedAt": "2026-10-26T17:05:33Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-26T17:05:33Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 13,
+            "startedAt": "2026-10-26T17:05:33Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/Lokad/Utf8Regex/actions/runs/40364734526/job/121719241870"
+      },
+      {
+        "completedAt": "2026-10-26T17:06:24Z",
+        "conclusion": "success",
+        "databaseId": 121719242255,
+        "name": "tests (windows-latest)",
+        "startedAt": "2026-10-26T17:01:43Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-26T17:01:46Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-26T17:01:44Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-26T17:01:53Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-26T17:01:46Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-26T17:02:32Z",
+            "conclusion": "success",
+            "name": "Setup .NET",
+            "number": 3,
+            "startedAt": "2026-10-26T17:01:53Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-26T17:06:08Z",
+            "conclusion": "success",
+            "name": "Test Release",
+            "number": 4,
+            "startedAt": "2026-10-26T17:02:32Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-26T17:06:18Z",
+            "conclusion": "success",
+            "name": "Test disabled dynamic code",
+            "number": 5,
+            "startedAt": "2026-10-26T17:06:08Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-26T17:06:20Z",
+            "conclusion": "success",
+            "name": "Publish test log",
+            "number": 6,
+            "startedAt": "2026-10-26T17:06:18Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-26T17:06:20Z",
+            "conclusion": "success",
+            "name": "Post Setup .NET",
+            "number": 11,
+            "startedAt": "2026-10-26T17:06:20Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-26T17:06:22Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 12,
+            "startedAt": "2026-10-26T17:06:20Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-26T17:06:22Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 13,
+            "startedAt": "2026-10-26T17:06:22Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/Lokad/Utf8Regex/actions/runs/40364734526/job/121719242255"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/Lokad/Utf8Regex/actions/runs/40364734526"
+  },
+  "ProtectedOriginals": 18,
+  "Published": false
+}

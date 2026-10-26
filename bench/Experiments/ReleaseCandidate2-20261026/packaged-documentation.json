@@ -1,0 +1,74 @@
+[
+  {
+    "Package": "Lokad.Utf8Regex",
+    "Entry": "CHANGELOG.md",
+    "Source": "CHANGELOG.md",
+    "Sha256": "5F340BB4B9845C3D0945CF601BF417B3D70995C4311D053E34184BB5E200DF03"
+  },
+  {
+    "Package": "Lokad.Utf8Regex",
+    "Entry": "MIGRATION.md",
+    "Source": "MIGRATION.md",
+    "Sha256": "E749A557D50F9B65BB20FC0192CCA701B7CFBCBC16F76236920EE4B57AE6F7A1"
+  },
+  {
+    "Package": "Lokad.Utf8Regex",
+    "Entry": "HOST-INTEGRATION.md",
+    "Source": "HOST-INTEGRATION.md",
+    "Sha256": "8813514B4965DB9EF277CFAEA43B0AC30DEB6AD221BC68C5AB0D99F3852836B4"
+  },
+  {
+    "Package": "Lokad.Utf8Regex",
+    "Entry": "README.md",
+    "Source": "src/Lokad.Utf8Regex/README.md",
+    "Sha256": "106D04FAE5D0E33589BEE5F99791A38301E2CDCC3491E419ADABE18D06C15017"
+  },
+  {
+    "Package": "Lokad.Utf8Regex.PythonRe",
+    "Entry": "CHANGELOG.md",
+    "Source": "CHANGELOG.md",
+    "Sha256": "5F340BB4B9845C3D0945CF601BF417B3D70995C4311D053E34184BB5E200DF03"
+  },
+  {
+    "Package": "Lokad.Utf8Regex.PythonRe",
+    "Entry": "MIGRATION.md",
+    "Source": "MIGRATION.md",
+    "Sha256": "E749A557D50F9B65BB20FC0192CCA701B7CFBCBC16F76236920EE4B57AE6F7A1"
+  },
+  {
+    "Package": "Lokad.Utf8Regex.PythonRe",
+    "Entry": "HOST-INTEGRATION.md",
+    "Source": "HOST-INTEGRATION.md",
+    "Sha256": "8813514B4965DB9EF277CFAEA43B0AC30DEB6AD221BC68C5AB0D99F3852836B4"
+  },
+  {
+    "Package": "Lokad.Utf8Regex.PythonRe",
+    "Entry": "README.md",
+    "Source": "src/Lokad.Utf8Regex.PythonRe/README.md",
+    "Sha256": "19C97C3E2D8F32B340EEE2B5C5D2E82D40371AB6E3496E0081AF098967A9FC90"
+  },
+  {
+    "Package": "Lokad.Utf8Regex.Pcre2",
+    "Entry": "CHANGELOG.md",
+    "Source": "CHANGELOG.md",
+    "Sha256": "5F340BB4B9845C3D0945CF601BF417B3D70995C4311D053E34184BB5E200DF03"
+  },
+  {
+    "Package": "Lokad.Utf8Regex.Pcre2",
+    "Entry": "MIGRATION.md",
+    "Source": "MIGRATION.md",
+    "Sha256": "E749A557D50F9B65BB20FC0192CCA701B7CFBCBC16F76236920EE4B57AE6F7A1"
+  },
+  {
+    "Package": "Lokad.Utf8Regex.Pcre2",
+    "Entry": "HOST-INTEGRATION.md",
+    "Source": "HOST-INTEGRATION.md",
+    "Sha256": "8813514B4965DB9EF277CFAEA43B0AC30DEB6AD221BC68C5AB0D99F3852836B4"
+  },
+  {
+    "Package": "Lokad.Utf8Regex.Pcre2",
+    "Entry": "README.md",
+    "Source": "src/Lokad.Utf8Regex.Pcre2/README.md",
+    "Sha256": "2014DCF9859ACED924B594C4AD7344CE0441EA4B112960CDA0C7DCDA442C66EB"
+  }
+]

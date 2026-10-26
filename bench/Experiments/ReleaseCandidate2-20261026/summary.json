@@ -1,0 +1,249 @@
+{
+  "Scope": "Bounded representative final-package versus fixed 844dcbad cumulative public costs; no universal throughput claim.",
+  "Decision": "Accepted within the predeclared bounded comparison/sole-confirmation protocol; no repeatable regression above10%. Initial finite Python Count boundary exceedance remains visible.",
+  "Runtime": ".NET 10.0.12",
+  "OS": "Ubuntu 24.04.4 LTS",
+  "AffinityMask": "0x40",
+  "InitialWallSeconds": 109.1377379,
+  "ConfirmationWallSeconds": 23.5679341,
+  "Initial": [
+    {
+      "Name": "core/identifier-Count/unlimited",
+      "BeforeNs": 786.0828555306795,
+      "AfterNs": 825.3328528681944,
+      "ChangePercent": 4.993111993393828,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0133608818449544,
+      "AfterSpread": 1.0205856528939643
+    },
+    {
+      "Name": "core/identifier-Count/finite",
+      "BeforeNs": 9052.824275362318,
+      "AfterNs": 9091.843451776649,
+      "ChangePercent": 0.4310166112527325,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.0191055369665232,
+      "AfterSpread": 1.0101038869824661
+    },
+    {
+      "Name": "core/identifier-Count/finite-token",
+      "BeforeNs": 9035.47342897555,
+      "AfterNs": 9260.644467425025,
+      "ChangePercent": 2.4920779217542766,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.014026583191322,
+      "AfterSpread": 1.0154998690173507
+    },
+    {
+      "Name": "core/identifier-Count/finite-deadline",
+      "BeforeNs": 18382.493442622952,
+      "AfterNs": 18320.42792976725,
+      "ChangePercent": -0.3376338093057152,
+      "BeforeBytes": 160,
+      "AfterBytes": 160,
+      "BeforeSpread": 1.0062026041533083,
+      "AfterSpread": 1.088051975623661
+    },
+    {
+      "Name": "core/scalar-NonBacktracking-Count/finite",
+      "BeforeNs": 24527.17127371274,
+      "AfterNs": 24470.42561307902,
+      "ChangePercent": -0.23135835763716806,
+      "BeforeBytes": 4832,
+      "AfterBytes": 4832,
+      "BeforeSpread": 1.0124025908991,
+      "AfterSpread": 1.0101699492549492
+    },
+    {
+      "Name": "python/captured-Count/unlimited",
+      "BeforeNs": 46659.220145379026,
+      "AfterNs": 37891.85244519393,
+      "ChangePercent": -18.790214823282657,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0152635192303567,
+      "AfterSpread": 1.007898946721383
+    },
+    {
+      "Name": "python/captured-FindAllToUtf8/unlimited",
+      "BeforeNs": 431997.41346153844,
+      "AfterNs": 410090.2181818182,
+      "ChangePercent": -5.071140381184403,
+      "BeforeBytes": 129280,
+      "AfterBytes": 129280,
+      "BeforeSpread": 1.0223648292598893,
+      "AfterSpread": 1.0412100469000802
+    },
+    {
+      "Name": "python/captured-Count/finite",
+      "BeforeNs": 18582.492650146996,
+      "AfterNs": 20511.65737779808,
+      "ChangePercent": 10.381625134859519,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.0255552405406327,
+      "AfterSpread": 1.0268394632457178
+    },
+    {
+      "Name": "python/captured-FindAllToUtf8/finite",
+      "BeforeNs": 411789.2844036697,
+      "AfterNs": 393731.6725663717,
+      "ChangePercent": -4.385158264486666,
+      "BeforeBytes": 133480,
+      "AfterBytes": 133480,
+      "BeforeSpread": 1.0237967802928114,
+      "AfterSpread": 1.0257742302963313
+    },
+    {
+      "Name": "pcre2/Unicode-backtracking-Count/unlimited",
+      "BeforeNs": 6221.928858688116,
+      "AfterNs": 6163.321576191788,
+      "ChangePercent": -0.9419471650578326,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.013698071520297,
+      "AfterSpread": 1.0121716041337
+    },
+    {
+      "Name": "pcre2/Unicode-backtracking-Enumerate/unlimited",
+      "BeforeNs": 8896.134325396826,
+      "AfterNs": 8801.267425878657,
+      "ChangePercent": -1.0663833980939508,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0204919585075038,
+      "AfterSpread": 1.0109634162856942
+    },
+    {
+      "Name": "pcre2/dense-replacement/unlimited",
+      "BeforeNs": 102822.95394736843,
+      "AfterNs": 104541.14084507042,
+      "ChangePercent": 1.6710149161649923,
+      "BeforeBytes": 13384,
+      "AfterBytes": 13384,
+      "BeforeSpread": 1.0165047123489486,
+      "AfterSpread": 1.0215759675504492
+    },
+    {
+      "Name": "pcre2/Unicode-backtracking-Count/finite",
+      "BeforeNs": 6724.959703703704,
+      "AfterNs": 6685.582688875669,
+      "ChangePercent": -0.5855353275402986,
+      "BeforeBytes": 1592,
+      "AfterBytes": 1592,
+      "BeforeSpread": 1.0269700346567856,
+      "AfterSpread": 1.0214566935229201
+    },
+    {
+      "Name": "pcre2/Unicode-backtracking-Enumerate/finite",
+      "BeforeNs": 10523.02734375,
+      "AfterNs": 10339.4951171875,
+      "ChangePercent": -1.7441010135881285,
+      "BeforeBytes": 11952,
+      "AfterBytes": 11952,
+      "BeforeSpread": 1.0115005070475378,
+      "AfterSpread": 1.0089866538468364
+    },
+    {
+      "Name": "pcre2/dense-replacement/finite",
+      "BeforeNs": 164252.45387453874,
+      "AfterNs": 171346.83141762452,
+      "ChangePercent": 4.319191205815831,
+      "BeforeBytes": 17584,
+      "AfterBytes": 17584,
+      "BeforeSpread": 1.0424538309374027,
+      "AfterSpread": 1.0155237171072955
+    },
+    {
+      "Name": "pcre2/short-replacement/unlimited",
+      "BeforeNs": 945.9854965533234,
+      "AfterNs": 924.0217040980764,
+      "ChangePercent": -2.3217895554711543,
+      "BeforeBytes": 32,
+      "AfterBytes": 32,
+      "BeforeSpread": 1.036178560763764,
+      "AfterSpread": 1.0087760506865628
+    },
+    {
+      "Name": "control/Core-compiled-literal-Count",
+      "BeforeNs": 227.46312430794336,
+      "AfterNs": 226.69035338486128,
+      "ChangePercent": -0.33973459453404686,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0178739133435684,
+      "AfterSpread": 1.016715675463608
+    },
+    {
+      "Name": "control/predecoded-Regex-Count",
+      "BeforeNs": 2375.343994166059,
+      "AfterNs": 2396.7112975211057,
+      "ChangePercent": 0.8995456408640523,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0139570723149498,
+      "AfterSpread": 1.0316225088045041
+    },
+    {
+      "Name": "control/strict-decode-then-Regex-Count",
+      "BeforeNs": 2542.812809846715,
+      "AfterNs": 2552.3751901301334,
+      "ChangePercent": 0.37605521910182294,
+      "BeforeBytes": 1048,
+      "AfterBytes": 1048,
+      "BeforeSpread": 1.0200014187330315,
+      "AfterSpread": 1.0188347888267635
+    }
+  ],
+  "SoleConfirmation": [
+    {
+      "Name": "python/captured-Count/finite",
+      "BeforeNs": 12039.38424437299,
+      "AfterNs": 12046.850698174007,
+      "ChangePercent": 0.062016907588158254,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.014097322868712,
+      "AfterSpread": 1.0153407888358705
+    },
+    {
+      "Name": "control/Core-compiled-literal-Count",
+      "BeforeNs": 194.4009510775414,
+      "AfterNs": 197.2620856421201,
+      "ChangePercent": 1.4717698389435707,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0318408326707162,
+      "AfterSpread": 1.0451188294492242
+    },
+    {
+      "Name": "control/predecoded-Regex-Count",
+      "BeforeNs": 2398.1301613917417,
+      "AfterNs": 2387.6099712868704,
+      "ChangePercent": -0.4386830320655344,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0280375820937124,
+      "AfterSpread": 1.0311893071363112
+    },
+    {
+      "Name": "control/strict-decode-then-Regex-Count",
+      "BeforeNs": 2567.0495588403805,
+      "AfterNs": 2520.4838615707295,
+      "ChangePercent": -1.8139773386644853,
+      "BeforeBytes": 1048,
+      "AfterBytes": 1048,
+      "BeforeSpread": 1.050235968333015,
+      "AfterSpread": 1.0316159997054815
+    }
+  ],
+  "Limitations": [
+    "Finite Python Count initial+10.38%, sole reversed-first confirmation+0.06%; absolute time changed18.6/20.5us to12.0/12.0us across runs. Do not pool/select favorable samples or infer a stable absolute cost.",
+    "Scope is the declared public workloads; construction, universal equivalence and all profile/host workloads are not timed.",
+    "Finite overhead ratios include policy-dependent routes and are not pure accounting microcosts.",
+    "Historical Status/snapshots remain unchanged; there was no third run."
+  ]
+}

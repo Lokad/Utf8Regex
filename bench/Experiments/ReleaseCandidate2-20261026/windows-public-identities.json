@@ -1,0 +1,88 @@
+[
+  {
+    "Platform": "windows",
+    "Name": "core-python",
+    "ProgramSha256": "874E2E3A8DDBF3F7B6FEF39B4A7161EA221E3FCAC94453D61A31C2F0FFA7BC84",
+    "ProjectReferences": 0,
+    "LockSha256": "843AEF6FAE4B4BAAD5EB83DE95C4717285CEEA49EFB96346665980EAFCCAE32B",
+    "Payloads": [
+      {
+        "Id": "Lokad.Utf8Regex",
+        "Version": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+        "PackageSha256": "418C99602420E566C98336D647A28F369BE0AAC8EADC0482B73B211A8D13B99E",
+        "DllSha256": "8ACD291198FFE0A153FC322A183AA20B8DE7B8DBEAA4DD998BD85822DC53FD1C",
+        "Feed": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.4.0-rc.2\\feed",
+        "ExactLock": true
+      },
+      {
+        "Id": "Lokad.Utf8Regex.PythonRe",
+        "Version": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+        "PackageSha256": "67E3EDA2761AF73B99967D480A31CF1D89BBB653C33C64A1D556379FEFBB5899",
+        "DllSha256": "74448A8C167C478E39C6DBFBBEAE745B483AF9DF35BCFEABF5C675861933B811",
+        "Feed": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.4.0-rc.2\\feed",
+        "ExactLock": true
+      }
+    ],
+    "ConsumerRoot": "D:\\code\\utf8regex\\artifacts\\utf8regex-0.4.0-rc.2-20261026\\windows-public\\core-python"
+  },
+  {
+    "Platform": "windows",
+    "Name": "pcre2",
+    "ProgramSha256": "686AF9A4A2AA6EBE73C97EBE1ED9F94B6DCECC0C47028D731DEFC9A3FE4CD922",
+    "ProjectReferences": 0,
+    "LockSha256": "932FCBA523263DE199DA39ED6079B003AA8EBF3FD126B30F9D6A7CB4B70FF0AE",
+    "Payloads": [
+      {
+        "Id": "Lokad.Utf8Regex",
+        "Version": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+        "PackageSha256": "418C99602420E566C98336D647A28F369BE0AAC8EADC0482B73B211A8D13B99E",
+        "DllSha256": "8ACD291198FFE0A153FC322A183AA20B8DE7B8DBEAA4DD998BD85822DC53FD1C",
+        "Feed": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.4.0-rc.2\\feed",
+        "ExactLock": true
+      },
+      {
+        "Id": "Lokad.Utf8Regex.Pcre2",
+        "Version": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+        "PackageSha256": "E7B0CAFC6DD655B545C151C1ACEDC0A1752E90575676AF558024E9AC39546B9D",
+        "DllSha256": "B8816EF7FEED678358E04BD7860B6089C60BB9720913D07F7BD3D2753A315B63",
+        "Feed": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.4.0-rc.2\\feed",
+        "ExactLock": true
+      }
+    ],
+    "ConsumerRoot": "D:\\code\\utf8regex\\artifacts\\utf8regex-0.4.0-rc.2-20261026\\windows-public\\pcre2"
+  },
+  {
+    "Platform": "windows",
+    "Name": "combined",
+    "ProgramSha256": "C3D58888BAAC637E5C30D7E77D8609CE169064B36B87858FA66CE8476FCCE1E7",
+    "ProjectReferences": 0,
+    "LockSha256": "47F83BCA2C65ADC93D199774E09EA8056E6F241EE7A39382594E5EA5AC01AAA1",
+    "Payloads": [
+      {
+        "Id": "Lokad.Utf8Regex",
+        "Version": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+        "PackageSha256": "418C99602420E566C98336D647A28F369BE0AAC8EADC0482B73B211A8D13B99E",
+        "DllSha256": "8ACD291198FFE0A153FC322A183AA20B8DE7B8DBEAA4DD998BD85822DC53FD1C",
+        "Feed": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.4.0-rc.2\\feed",
+        "ExactLock": true
+      },
+      {
+        "Id": "Lokad.Utf8Regex.PythonRe",
+        "Version": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+        "PackageSha256": "67E3EDA2761AF73B99967D480A31CF1D89BBB653C33C64A1D556379FEFBB5899",
+        "DllSha256": "74448A8C167C478E39C6DBFBBEAE745B483AF9DF35BCFEABF5C675861933B811",
+        "Feed": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.4.0-rc.2\\feed",
+        "ExactLock": true
+      },
+      {
+        "Id": "Lokad.Utf8Regex.Pcre2",
+        "Version": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+        "PackageSha256": "E7B0CAFC6DD655B545C151C1ACEDC0A1752E90575676AF558024E9AC39546B9D",
+        "DllSha256": "B8816EF7FEED678358E04BD7860B6089C60BB9720913D07F7BD3D2753A315B63",
+        "Feed": "D:\\code\\utf8regex\\artifacts\\package-candidates\\0.4.0-rc.2\\feed",
+        "ExactLock": true
+      }
+    ],
+    "ConsumerRoot": "D:\\code\\utf8regex\\artifacts\\utf8regex-0.4.0-rc.2-20261026\\windows-public\\combined"
+  }
+]

@@ -1,0 +1,85 @@
+{
+  "Versions": [
+    "[{\u0022Name\u0022:\u0022Lokad.Utf8Regex\u0022,\u0022Version\u0022:\u00220.4.0-rc.2-dev\\u002B844dcbad711bfde15540e30e4ca42f991851db33\u0022,\u0022Sha256\u0022:\u0022E596C0141EC56DDDA3BF96AE85431D102EEF0B45306592C26B956214BCD3B6E9\u0022},{\u0022Name\u0022:\u0022Lokad.Utf8Regex.PythonRe\u0022,\u0022Version\u0022:\u00220.4.0-rc.2-dev\\u002B844dcbad711bfde15540e30e4ca42f991851db33\u0022,\u0022Sha256\u0022:\u0022ACDF7F5C5B016A92ECCC6F805941A21C8340FB0D2207035204678AC320E829EC\u0022},{\u0022Name\u0022:\u0022Lokad.Utf8Regex.Pcre2\u0022,\u0022Version\u0022:\u00220.4.0-rc.2-dev\\u002B844dcbad711bfde15540e30e4ca42f991851db33\u0022,\u0022Sha256\u0022:\u00223401B90BF087073D4CC7BAE0F3DBAD3C84A49A87D0B9428C2E3CB057953A6B37\u0022}]",
+    "[{\u0022Name\u0022:\u0022Lokad.Utf8Regex\u0022,\u0022Version\u0022:\u00220.4.0-rc.2\\u002Bd1a14f407ae4e34230430260fc58111c960c1e63\u0022,\u0022Sha256\u0022:\u00228ACD291198FFE0A153FC322A183AA20B8DE7B8DBEAA4DD998BD85822DC53FD1C\u0022},{\u0022Name\u0022:\u0022Lokad.Utf8Regex.PythonRe\u0022,\u0022Version\u0022:\u00220.4.0-rc.2\\u002Bd1a14f407ae4e34230430260fc58111c960c1e63\u0022,\u0022Sha256\u0022:\u002274448A8C167C478E39C6DBFBBEAE745B483AF9DF35BCFEABF5C675861933B811\u0022},{\u0022Name\u0022:\u0022Lokad.Utf8Regex.Pcre2\u0022,\u0022Version\u0022:\u00220.4.0-rc.2\\u002Bd1a14f407ae4e34230430260fc58111c960c1e63\u0022,\u0022Sha256\u0022:\u0022B8816EF7FEED678358E04BD7860B6089C60BB9720913D07F7BD3D2753A315B63\u0022}]"
+  ],
+  "Lanes": [
+    {
+      "Name": "core/identifier-Count/unlimited",
+      "Expected": 16
+    },
+    {
+      "Name": "core/identifier-Count/finite",
+      "Expected": 16
+    },
+    {
+      "Name": "core/identifier-Count/finite-token",
+      "Expected": 16
+    },
+    {
+      "Name": "core/identifier-Count/finite-deadline",
+      "Expected": 16
+    },
+    {
+      "Name": "core/scalar-NonBacktracking-Count/finite",
+      "Expected": 384
+    },
+    {
+      "Name": "python/captured-Count/unlimited",
+      "Expected": 1024
+    },
+    {
+      "Name": "python/captured-FindAllToUtf8/unlimited",
+      "Expected": 1024
+    },
+    {
+      "Name": "python/captured-Count/finite",
+      "Expected": 1024
+    },
+    {
+      "Name": "python/captured-FindAllToUtf8/finite",
+      "Expected": 1024
+    },
+    {
+      "Name": "pcre2/Unicode-backtracking-Count/unlimited",
+      "Expected": 8
+    },
+    {
+      "Name": "pcre2/Unicode-backtracking-Enumerate/unlimited",
+      "Expected": 452
+    },
+    {
+      "Name": "pcre2/dense-replacement/unlimited",
+      "Expected": 1218
+    },
+    {
+      "Name": "pcre2/Unicode-backtracking-Count/finite",
+      "Expected": 8
+    },
+    {
+      "Name": "pcre2/Unicode-backtracking-Enumerate/finite",
+      "Expected": 452
+    },
+    {
+      "Name": "pcre2/dense-replacement/finite",
+      "Expected": 1218
+    },
+    {
+      "Name": "pcre2/short-replacement/unlimited",
+      "Expected": 197
+    },
+    {
+      "Name": "control/Core-compiled-literal-Count",
+      "Expected": 8
+    },
+    {
+      "Name": "control/predecoded-Regex-Count",
+      "Expected": 16
+    },
+    {
+      "Name": "control/strict-decode-then-Regex-Count",
+      "Expected": 16
+    }
+  ],
+  "Preflight": "All selected public outputs agree with independent expected checksums"
+}

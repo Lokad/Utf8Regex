@@ -1,8 +1,25 @@
 # Managed PCRE2 qualification
 
-## Frozen common release candidate: publication blocked
+## Current common RC2 candidate
 
-The current staged release is **0.4.0-rc.1** for Core, PythonRe and PCRE2,
+**0.4.0-rc.2**, producer d1a14f407ae4e34230430260fc58111c960c1e63, is
+qualified and unpublished. Both adapters require exactly Core [0.4.0-rc.2].
+The [fresh release receipt](../../bench/Experiments/ReleaseCandidate2-20261026/README.md)
+records complete detached Windows/Linux suites, original public consumers,
+API/member/PDB/source/dependency identities, green source CI and bounded actual-
+package/cumulative costs. PCRE2 has 6,189 passing cases per platform, with no
+final failures/skips. The initial staging correction and cost uncertainty remain
+disclosed. Historical RC1 qualification below does not establish this result.
+
+The selected managed profile and its documented exclusions remain the contract.
+Generic partial decisions outside supported drivers, full grammar completion,
+NativeAOT/trimming and complete native PCRE2 equivalence remain unqualified.
+Defaults are unlimited; modeled controls do not contain an entire host process.
+No package publication, external consumer pin changes or old snapshot refresh.
+
+## Historical RC1: superseded, publication blocked
+
+The superseded frozen release is **0.4.0-rc.1** for Core, PythonRe and PCRE2,
 producer `2e97ac974e6e8c60aac95db1e4808cbda2ff9736`. Both adapters depend on
 exact Core `[0.4.0-rc.1]`; all three restore into one dependency graph. This
 supersedes the separate Core/PCRE2 scalar.94 designation and **has not been
@@ -73,7 +90,7 @@ the unqualified search experiment was excluded. Native comparison belongs only
 to private benchmark tooling. Producer consumer checks do not establish external
 consumer adoption.
 
-## Development after RC1
+## Corrections since RC1
 
 Source has advanced to **0.4.0-rc.2**. Superseded helpers, shipped benchmark
 replay, test-only cache/collector machinery, construction field-transfer mirrors

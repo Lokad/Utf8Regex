@@ -1,11 +1,11 @@
 # .NET 10 / .NET 11 Count comparison
 
-The staged common dependency is [0.4.0-rc.1](bench/Experiments/ReleaseCandidate-20261020/release.json)
-for all three packages. Development is 0.4.0-rc.2. The runtime experiment
-below uses **frozen Core114**; it does not qualify either product's current
-performance or complete runtime/profile behavior. Its comparative-lane gate is
-closed. [Performance evidence and package costs](CURRENT-PERFORMANCE.md) have
-separate identities. No old runtime batch is rerun for documentation cleanup.
+The common candidate is [0.4.0-rc.2](bench/Experiments/ReleaseCandidate2-20261026/README.md)
+for all three packages, qualified and unpublished. The runtime experiment below
+uses **frozen Core114**; it does not qualify current runtime/profile behavior.
+Its comparative-lane gate is closed. [Current package operating costs](CURRENT-PERFORMANCE.md)
+have their own identities and bounded scope. No historical runtime batch was rerun.
+Frozen RC1 remains superseded and unpublished.
 
 ## Preserved implementation decisions
 

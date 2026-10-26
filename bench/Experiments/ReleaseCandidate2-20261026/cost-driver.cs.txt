@@ -1,0 +1,87 @@
+using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.PythonRe;
+using Lokad.Utf8Regex.Pcre2;
+
+public static class Lanes
+{
+    private static object? _retained;
+    private static readonly CancellationTokenSource Tokens = new();
+    private static readonly Utf8ResourcePolicy Policy = new() { MaxWorkSteps=50_000_000, MaxDepth=1024,
+        MaxWorkingBytes=64*1024*1024, MaxResultBytes=128*1024*1024 };
+    public static string Producer() => JsonSerializer.Serialize(new[]{typeof(Utf8Regex).Assembly,typeof(Utf8PythonRegex).Assembly,typeof(Utf8Pcre2Regex).Assembly}
+        .Select(a=>new{Name=a.GetName().Name,Version=a.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
+            Sha256=Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(a.Location)))}));
+    public static object Construction() => new { Scope="Construction is outside this operating-cost measurement" };
+    public static (string,Func<long>,long)[] Create()
+    {
+        var rows=new List<(string,Func<long>,long)>();
+        var identifierText=string.Concat(Enumerable.Repeat("record Bravo class Echo public async FOOBAR abXcd needle ASCII!\n",8));
+        var identifierInput=Encoding.UTF8.GetBytes(identifierText);
+        const string identifier=@"\b(?:record|class|interface)\s+[A-Z][A-Za-z0-9_]+";
+        foreach(var mode in new[]{"unlimited","finite","finite-token","finite-deadline"})
+        {
+            var token=mode=="finite-token"?Tokens.Token:default;
+            var regex=new Utf8Regex(identifier,RegexOptions.CultureInvariant|RegexOptions.Compiled,
+                mode=="finite-deadline"?TimeSpan.FromSeconds(10):Timeout.InfiniteTimeSpan,mode=="unlimited"?default:Policy);
+            if(regex.Count(identifierInput,token)!=16)throw new Exception("Identifier results");
+            var match=regex.Match(identifierInput,token);
+            if(match.IndexInBytes!=0||match.LengthInBytes!=12)throw new Exception("Identifier coordinates");
+            rows.Add(("core/identifier-Count/"+mode,()=>regex.Count(identifierInput,token),16));
+        }
+        var scalarInput=Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é😀 ",128)));
+        var scalar=new Utf8Regex(".",RegexOptions.CultureInvariant|RegexOptions.NonBacktracking,Timeout.InfiniteTimeSpan,Policy);
+        if(scalar.Count(scalarInput)!=384)throw new Exception("Scalar NB result");
+        rows.Add(("core/scalar-NonBacktracking-Count/finite",()=>scalar.Count(scalarInput),384));
+        var tupleInput=Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("ab ",1024)));
+        foreach(var finite in new[]{false,true})
+        {
+            var suffix=finite?"finite":"unlimited";
+            var regex=new Utf8PythonRegex("(a)(b)",PythonReCompileOptions.None,Timeout.InfiniteTimeSpan,finite?Policy:default);
+            rows.Add(("python/captured-Count/"+suffix,()=>regex.Count(tupleInput),1024));
+            var tuples=regex.FindAllToUtf8(tupleInput);
+            if(tuples.Count!=1024||tuples.TupleValues.Length!=1024)throw new Exception("Tuple count");
+            foreach(var row in tuples.TupleValues)
+                if(row.Length!=2||!row[0].AsSpan().SequenceEqual("a"u8)||!row[1].AsSpan().SequenceEqual("b"u8))throw new Exception("Tuple values");
+            rows.Add(("python/captured-FindAllToUtf8/"+suffix,()=>Tuples(regex,tupleInput),1024));
+        }
+        var unicodeInput=Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("éa😀 ",8)));
+        foreach(var finite in new[]{false,true})
+        {
+            var suffix=finite?"finite":"unlimited";
+            var regex=finite?Utf8Pcre2Regex.Create(@"(?P<g>(?:é|a)+😀)",default,default,Policy,Timeout.InfiniteTimeSpan)
+                :new Utf8Pcre2Regex(@"(?P<g>(?:é|a)+😀)");
+            var cursor=regex.EnumerateMatches(unicodeInput);var n=0;
+            while(cursor.MoveNext()){
+                var m=cursor.Current;
+                if(m.StartOffsetInBytes!=n*8||m.EndOffsetInBytes!=n*8+7||m.StartOffsetInUtf16!=n*5||m.EndOffsetInUtf16!=n*5+4)throw new Exception("Scalar enumeration ranges");
+                n++;
+            }
+            if(n!=8||regex.Count(unicodeInput)!=8)throw new Exception("Scalar Count");
+            rows.Add(("pcre2/Unicode-backtracking-Count/"+suffix,()=>regex.Count(unicodeInput),8));
+            rows.Add(("pcre2/Unicode-backtracking-Enumerate/"+suffix,()=>Enumerate(regex,unicodeInput),452));
+            var replace=finite?Utf8Pcre2Regex.Create("a",default,default,Policy,Timeout.InfiniteTimeSpan):new Utf8Pcre2Regex("a");
+            var dense=Encoding.UTF8.GetBytes(new string('a',1024));
+            if(!replace.Replace(dense,"$0").AsSpan().SequenceEqual(dense))throw new Exception("Dense replacement output");
+            rows.Add(("pcre2/dense-replacement/"+suffix,()=>Replace(replace,dense),1218));
+        }
+        var shortRegex=new Utf8Pcre2Regex("a");var shortInput="aba"u8.ToArray();
+        if(!shortRegex.Replace(shortInput,"$0").AsSpan().SequenceEqual(shortInput))throw new Exception("Short replacement");
+        rows.Add(("pcre2/short-replacement/unlimited",()=>Replace(shortRegex,shortInput),197));
+        var literal=new Utf8Regex("needle",RegexOptions.CultureInvariant|RegexOptions.Compiled);
+        rows.Add(("control/Core-compiled-literal-Count",()=>literal.Count(identifierInput),8));
+        var oracle=new Regex(identifier,RegexOptions.CultureInvariant);
+        var strict=new UTF8Encoding(false,true);
+        if(oracle.Count(identifierText)!=16)throw new Exception("Comparator count");
+        rows.Add(("control/predecoded-Regex-Count",()=>oracle.Count(identifierText),16));
+        rows.Add(("control/strict-decode-then-Regex-Count",()=>oracle.Count(strict.GetString(identifierInput)),16));
+        return rows.ToArray();
+    }
+    private static long Tuples(Utf8PythonRegex regex,byte[] input){var result=regex.FindAllToUtf8(input);_retained=result;return result.Count;}
+    private static long Replace(Utf8Pcre2Regex regex,byte[] input){var result=regex.Replace(input,"$0");_retained=result;return result.Length+result[0]+result[^1];}
+    private static long Enumerate(Utf8Pcre2Regex regex,byte[] input){var cursor=regex.EnumerateMatches(input);long sum=0;while(cursor.MoveNext())sum+=cursor.Current.EndOffsetInBytes+cursor.Current.EndOffsetInUtf16;return sum;}
+}

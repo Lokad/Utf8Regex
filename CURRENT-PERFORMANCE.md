@@ -1,15 +1,24 @@
 # Performance evidence and frozen measurements
 
-Development is **0.4.0-rc.2**. Current source is not a newly qualified package
-and has no new release-wide timing claim. The unpublished common **0.4.0-rc.1**
-[release identities](bench/Experiments/ReleaseCandidate-20261020/release.json)
-remain immutable; those PCRE2 bytes have known defects and must not be published.
+**0.4.0-rc.2** is the fresh immutable common Core/PythonRe/PCRE2 candidate.
+Its [release receipt](bench/Experiments/ReleaseCandidate2-20261026/README.md)
+records exact package/DLL/source identities and Windows/Linux detached/public
+consumer qualification. It is unpublished. Frozen RC1 is superseded and must
+not be published.
 
-The next release needs one fresh immutable common-version candidate, final
-package/downstream checks and representative actual-package/host costs, including
-finite controls. The cumulative public-operation allowance is at most 10%
-slowdown against a fixed correctness-equivalent baseline. Per-change timings,
-private attribution and source test counts do not establish that acceptance.
+[Final-package operating costs](bench/Experiments/ReleaseCandidate2-20261026/RESULT.md)
+compare fixed correctness-equivalent baseline 844dcbad with all current package DLLs on
+the quiet VM/.NET 10.0.12. One 109.138 s comparison plus sole 23.568 s confirmation:
+fifteen public rows initially -18.79% to +4.99%; finite Python Count initially
++10.38% confirms at +0.06%. Absolute Count times differ between runs; both raw
+observations remain. No repeatable regression above 10% remains under the declared
+bounded protocol. This accepts the representative cumulative gate, not universal
+performance equivalence. Allocations are unchanged on these lanes.
+
+Finite policies have real public costs and can select different routes; see the
+receipt's unlimited/four-finite/token/deadline observations and unchanged
+decode/predecoded controls. No historical snapshot or benchmark Status is refreshed.
+Earlier cleanup-only evidence below retains its original scope and uncertainty.
 
 The completed checked-access campaign stays closed. Source cleanup preserves
 scalar matching, strict UTF-8 validation, captures and interruption/resource

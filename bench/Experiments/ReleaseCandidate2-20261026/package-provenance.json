@@ -1,0 +1,2255 @@
+{
+  "SchemaVersion": 1,
+  "SourceRevision": "d1a14f407ae4e34230430260fc58111c960c1e63",
+  "Configuration": "Release",
+  "CleanSource": true,
+  "TrackedChanges": [],
+  "UntrackedSources": [],
+  "Packages": [
+    {
+      "Package": "Lokad.Utf8Regex.0.4.0-rc.2.nupkg",
+      "PackageSha256": "418C99602420E566C98336D647A28F369BE0AAC8EADC0482B73B211A8D13B99E",
+      "NuSpecRevision": "d1a14f407ae4e34230430260fc58111c960c1e63",
+      "Assembly": "Lokad.Utf8Regex.dll",
+      "AssemblySha256": "8ACD291198FFE0A153FC322A183AA20B8DE7B8DBEAA4DD998BD85822DC53FD1C",
+      "InformationalVersion": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+      "Configurations": [
+        "Release"
+      ],
+      "AssemblyRevision": "d1a14f407ae4e34230430260fc58111c960c1e63",
+      "CodeViewEntries": [
+        {
+          "Guid": "dcd1a8c0-432b-4e1f-991a-18f805e185a9",
+          "Stamp": 4080471718,
+          "Age": 1
+        }
+      ],
+      "SymbolPackage": "Lokad.Utf8Regex.0.4.0-rc.2.snupkg",
+      "SymbolPackagePresent": true,
+      "SymbolPackageSha256": "114FBA5A4FD46A965F960926127FB5ED350FB9F884940ACAF91125296A7311C5",
+      "PdbPresent": true,
+      "PdbSha256": "12D6AA6A57D6892642EC701E1A254F0E5720FC887A514B7110C89A9FFA05DDD8",
+      "PdbGuid": "dcd1a8c0-432b-4e1f-991a-18f805e185a9",
+      "PdbStamp": 4080471718,
+      "SourceLinkRecords": [
+        {
+          "IsModuleRecord": true,
+          "Mappings": [
+            {
+              "Document": "/_/*",
+              "Url": "https://raw.githubusercontent.com/Lokad/Utf8Regex/d1a14f407ae4e34230430260fc58111c960c1e63/*",
+              "Revision": "d1a14f407ae4e34230430260fc58111c960c1e63"
+            }
+          ]
+        }
+      ],
+      "Documents": [
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/GlobalUsings.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "AFAD95CA8D0E42AEED18FD6C4B61E5B6A5E743FFB2BB4BC0CC434D8FA3F0303A"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Caching/Utf8BoundedPreparationCache.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "07AB5A066B69A8DE9A0A76842745088582237A793F6FD81A66812E56D82BCFD4"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Caching/Utf8RegexCache.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "5613A8E4C4D7938923FC46013F04CD09C44EF649CC7BC2EE187A574EDAA6168F"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Caching/Utf8RegexCacheKey.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "21274E4E676FE0148C771E68CCDBA8A3CE0AFDCE6B2CC748C1DB5AF80A7B3991"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Caching/Utf8RegexRootAndLazyStorage.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "7DBB8505455EDEC088F96C038729C0DE438026FFC417E2FB6B4CEC28D847803E"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Caching/Utf8RetainedPayload.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "6E1AB66992B53D275FAF94E509E736F9312DC9BB3264961A6E3C53CE87E905AF"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Construction/Utf8ConstructionBudget.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "1BE3BC9713348F41E7E2E56BC1982406AC9195F0655371937D668E42AF6E789C"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Construction/Utf8ConstructionBuffer.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "2B4D2BEA570E28C3278B82DDED44A0ADB47A165EB07DE722BBFAEBCAE1238238"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Construction/Utf8ConstructionScope.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "B3BDE4C846F61BEFAD2C4C2CC7CD638815F1BD2FA6A709DC88F7716350F733E7"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Construction/Utf8ConstructionSession.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "9AC8790F63A3D3E9A82097426ED132F4E597C01E7E301A9EE3306B84A3807C68"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Construction/Utf8ConstructionSort.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A8C6E7F14C78579ACDCD0FA0C2FA08E6BA722F0B8B55B919258DB6C9C1350950"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Diagnostics/Utf8ExecutionRoute.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "2B058886DFDAD59A6801A5F36CAA350352E61A69E75673CD4C0BBD0FF2DC1A82"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Diagnostics/Utf8SearchDiagnosticsSession.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "ABBA3EE8DF1A19B8EBEF73C028E89FFB1843CBC103FD872789903EFC095A1F9B"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/AsciiCharClass.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "44F4E134A793BABFE7D0C51020C0FF4214B6D72A7EDE94EFF11AA801A53D615E"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/AsciiOrderedLiteralWindowExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "8E96ACC2C792583283F2D741F029918B6D21752608BE2D6FC729328A8B61BF9D"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/AsciiOrderedLiteralWindowExecutor.Invocation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "E53D10E7806275EBE5CC8E0CEFB48681F745ABFB24EBE37A445C0B5DF3CA1438"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/AsciiOrderedLiteralWindowPlan.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A3FF2C28360C012CF2284C3D9F23F52A415D22177BA29859CE3F52AD45538D37"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/AsciiSimplePatternPlan.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "6CD2FFF2AE629B3E2A01F638C0ECBF97E78AF22F66003274E6ABAC00626420FC"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/AsciiSimplePatternToken.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "ED11AA5C6887AF121B5429635C99F6709E21A17145AEE0F2E24CB0899EDD4DFE"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/AsciiStructuralIdentifierFamilyMatcher.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "0CC838538D73EEA72C17C9C63A539F8C255064104B3B620B1B41BC6FFECF13CA"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/AsciiStructuralIdentifierFamilyPlan.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "2127FE87C1F331245BF0CBB8F6450BCB1557C8DAD824EC62CC7A0BDD1295E26D"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/AsciiStructuralQuotedRelationPlan.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "93C0FF68DEE20CC03C6D4C7064A633850EA4C8A2CD7E6E7F56A27B418E33DC41"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/AsciiStructuralRepeatedSegmentPlan.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A46895B8C7D382591C4B1EE74C35757F461B38028B1306D5CD7DDD61835E2DC0"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/AsciiStructuralSuffixMatcher.Budgeted.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A33C7FA2C75CA998232EF2B8D83E7A13A41FB0E0FD9ECD0D1AB78AA223773384"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/AsciiStructuralSuffixMatcher.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "11003D0F42CECD5DD21D2E9FEE44ECD1EC82E7A6341C381602E473F842D4F8FC"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/AsciiStructuralTokenWindowPlan.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "C122647DA57938AB9EA1B727C81FEB84203A6DED80E33683010FEF9AB353821E"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/AsciiStructuralVerifierProgram.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "314F149EDF0FB25D3AEDDB6E68E76CC6AC008526747F99B621B1AD7FD7F7742A"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/IUtf8InvocationBufferControl.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "5CAB050576D0D8EAE8455DE6CB730CCB00B3C6F387F687792A7AC0650EE79848"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/PreparedAsciiDelimitedTokenSearch.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "4C9049153288BF4467BFE6C443CCCE652C805AF419E92B3711C3F07CE7EC2AC1"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/PreparedAsciiFindPlan.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "0DB133757235B7E3DEF4681471247DAB95E8ED96062D39CD1A08BAD7F5F55187"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/PreparedAsciiLiteralStructuredTokenSearch.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "D61CE64140949F6BF1D28DE43AF9F03FF6357BB0DCE8D8D1FD1DCA3951608ACF"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/PreparedRuntimeLiteralFamilies.Construction.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "5E119BD94A52F5AF2DD7715E3BCCFCE1207C11A18BF3ECB017EE6275FEA0E696"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AlternationBranchSpanMap.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "2004E1ABE371DD82FBBFBB986D27EB863B0EC44EEEF246BEA33F9A27F6024A60"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiAnchoredOptionalFieldExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A1880D585DCC09DAB9447AD597FBFDE487692B96FEB504D2AD9A29F5AE9CC877"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiAnchoredPrefixFamilyExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "0683D188E58C30A1947485AEEC4817BF9AF6A4885BBD474BAD45FDE35603C546"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiAnchoredSuffixFamilyExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "2A436268B13E8DF99540FA73C900FDF62D64B0CFC88685BCA9270EE73A687210"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiAnchoredUrlExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "0DBE77AEF4E86904E6E331E3C4E89805536B4383835FEB54169A8C262CF3F5A8"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiAnchoredValidatorExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "C388DFB074E37C9AFCF76FF350C9D7D0471A7D013EFC9F25CE69850F52414FC1"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiAnchoredWholeFamilyExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "E1C2D1DC779DBE9F42FF18C895372965DEC7B9838EB102B1CF6663339C4A7B8D"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiBoundedDateTokenExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A2C565DAB649726C625A38E9470DD420C2C79939E9866A6843FEDD1A7FD10C32"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiBoundedSuffixLiteralExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "FB6E4B3FC01C8B4F1A348B8EC5185BE697EE70A034D4B19300892ECDFDAB4327"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiBytePredicates.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "B619EF55141A05DF8E165C895A2C0B8CF64B2F3838766DC8F5DBB7E3E195C81D"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiCharClassRunExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "F0BADEAC98E840B573E2E19E82CE6A01751123F9BAFD1561B2C23F368D8F33D6"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiDeterministicFixedWidthCountExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "EBD0A4DAA38EAD8D855877BBE932145D3373B3426E446931B096E18189DD2A3B"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiDirectFamilyCountExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "ACEF9984AD579C6DE965AD6800ED193C2BDA771DF6A80D3C485C91D201D9CB0A"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiDirectFamilyExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "F582983D1CDE13DA66531388E83EC11C32077CFC1EA686072B97EED102EC9493"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiEmailWholeExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "4516DC43FADC70E82DE04A3FFE432FF156EB1A25F1A289277F611A9839FC6C73"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiExactLiteralCountExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "093BF8000AB57B48A977FBCF9E68DCF63E020E715FB249D0D0E16964F9CB0EED"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiFindExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "091376C27C6E112C2190A25BA31C03776EFE3FB06CA17872E052D7A9B7747EB6"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiFindExecutor.Invocation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "527BD1FBCA2BFE43385DCDD28D9D6DC87744C47B756ED4206E6500E7EC594E1A"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiHexColorExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "33DB30A67487E7FD16F4928E04B7873765124F4D340E5D9B1562D90D6800545A"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiInstructionLinearExecutor.Invocation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "12FDE0EBB8BDC820539076E19BD611D0884D8A83FC46E27EEADDF2203E4E138C"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiIpv4TokenExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "049CE4B0D403D70A595DBEA67A8F206CF142400C758A8FA11242B238956F35D6"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiLeadingAnyRunTrailingLiteralExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "942DDC2ECC6F3079E849AA8D32F6FDA96E4D33A5E22A37B871EF342832C1F52C"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiLeadingDigitsTailExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "90B365BFB6CC298E7E090ABDD2DAF224F1374E46F1E08E2BC4107ACFD4D03EB5"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiLiteralBetweenNegatedRunsExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A6AE05B750F0DAF0B4A85F7808AF4E34136420FAFCA0D2B14593279675702BD1"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiLiteralFinder.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "40021B0804C6F0DC2FB0B2C9ED9153350678FCCF8E4458D50E26A23C553671DD"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiPrefixTokenExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "079D594A24599AD95DB97E05155DD9228F482043490C4A177C83A45D7724E48B"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiPreparedTokenFamilyExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "BDDEDC5DB6A5E9991DF97940E1D3122C43E5F4ED991523A8D8C1765760C76062"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiRepeatedDigitGroupExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "09DBBEFA8DB8CA3A72E0B0C7512544AB700B4F6EA2EBF99A4016958EF66D8968"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiSpreadsheetReferenceExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "6BF7F7928E1B2DC8144C82E2AA51E42E4B61BF1B7B5E5FCCA68F8016F43463EE"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiStructuralIdentifierFamilyExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "04485E57733CE15987AD345FAC54C01EF763890FC2AC2281D23971706D6D43D9"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiStructuralIdentifierFamilyExecutor.Invocation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "B4BF5518494299CF3E4687E48FE17B6FBDF189352525237C2302926E080C572F"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiSymmetricLiteralWindowExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "D054C1967F2A33EA39B409D7AD5A3151C5B2AA4FCAAED362D340F3FE6F21BBE4"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiTokenFamilyExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "23BB15BDE65A359F6873E9CAF5F5041118752CDA9BFE006FFA6405A2A61B810D"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiTokenFinderExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "6BA699D0A6215DB1BDE1A9281D84A98CA1075E347495823F5961ADF6421BF0FD"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiUntilByteStarExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "0ECFA3FC732131F5F55F3465C04AFD0DAC6DCB2D0F6CB9469F809B492F6527AD"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8AsciiUriTokenExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "6DB252EB15530EFE039FF185FC4A73EE5D8A07DA927EFF9187F1F84E0B9B8DF5"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8BackendInstructionExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "6569ED33EE8C98543E088B83713E9821EFACB03D1A1663C7B2893474DC5E45C6"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8BalancedBeginEndExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "8AF4C9F1C528B3A887179CD26B2C2AA99CF5BE34ED53F19DE3B92045FF839D47"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8CompiledBackendCapability.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "63CD3554641B57143F0561A0561F1FB03BD22CB1097D4043E1387D11D3F5BF88"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8CompiledEngine.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A0C071F14165AE2B3DCAB302E7ED5336D9FFBF0E894DA7728BD6D7E409017C02"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8CompiledEngineRuntime.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "ACAABE3F35D55F1EB1F6F98E5CCC03D1A83F1C020EAB6AD52D7AC6D914C965AB"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8CompiledFindOptimization.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "C0D5635C970EED1E74F98E6E778075675F9B2E8D675DDA5D3B4E9F253C9DE179"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8CompiledOperationCursorFactory.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "71E496D92E1966F1AAE7BACAD31382052D5262EFF71B0ACD1E28B9AF3AF7A9DE"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8CompiledOperationCursorFactory.Invocation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "B48D20C2EA6E12EB79B600AC1F481655DD606E42C02C305FA1C8E99C3A74D3AD"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8CompiledPatternCategories.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "D974307909C95D70575DF21EF722F7B45994948300C83C7F4F1F82193E9667BB"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8CompiledRuntimeFactory.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "71455A76882021F44B050B1B5122F67B72A68225D267CA25512D7E574FA4266F"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8CompiledSymmetricLiteralWindowCounter.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "B6C789C653FB8296D5999E06811DA5CCE9C7071D53965B5317C815D78891DE0A"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8ConfirmationExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "DD42AC1BE9BDD174E15C2177D37D52D06A85D5470179E95F95214B7FA3F28CD0"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8DecimalDigitRanges.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "B4483C98E750DF5B6CFC5F370BB437091628E2D3B27B4174EC064D19FFC6485D"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8DeterministicVerifierGuards.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "5C789073563BC09840978AB9920B2C3C76C81EC64AB612A061F57CF0961ECC08"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8DynamicIlBuilder.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A44F808364184F8B5C4F6AEEF3B12ACBCCB0C8832FB55C480F758231347D64E2"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8EmitStructuralCompiler.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "B75079A752D2F50E08C0168EECD74A3A6596549478F41C9F8A768AFFFDAE3E1F"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8EmittedDeclarationIdentifierMatcher.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "38E083540A0A69E02D18A13EB9EA1CA29046E30E89C4A03FBCF899E95775F958"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8EmittedDelegate.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "13DEBD03FD0BB0D3D6442D04D720365C49ECDA6DC200AA5CB4B8E9D0CBC021A8"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8EmittedKernelLowerer.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "0DE15737EBD9BCE20222F73D00611B88550D582F70A43C57BAB39C0988181208"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8EmittedKernelPlan.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "87B7A8EFF81373664AE643AFA9FA46A2DF5245EC7C6C44ABE8806BA3B7ABBDDD"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8EmittedLiteralFamilyCounter.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "6B8720120D8597FB406BDED1F5AFD9E0A2A04927DDDFFB282068FD16F57EC8AC"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8EmittedTokenFamilyMatcher.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "24271BD3273B251BD7CFCD22E6FB5C9BD3C3DF74BF73FEDD5221F5E4166034F1"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8EmittedWholeMatcher.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "E19D545DC256D5EFD280DEB2DE4FB83A89B4A93B308BB268E00A80B70D85102E"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8ExactStatePool.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "06324A42F45559BF348D3F450899957C45A9A532C41BD054A8860FB2D6689780"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8ExecutionBackend.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "CCDF4EC3771617A6526C36AF407C03D73832FD71A5E85186CB8C2647D25DAE70"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8ExecutionBudget.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "76C128DFFB5EBA5BA3A4AC907808823CC3A8427E3A228FDBBBFE6EB4E3343B89"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8ExecutionDeadline.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "ABBC3B3F787B1481D4EEFE41240B3ECE7CE9C27E47A896DB4E9A81F46A37D0D9"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8ExecutionInterpreter.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "17D0CDA3CA8A2F3582BF77BC5ADFC0504EDBFE6E963669F1A77F518413938BEB"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8ExecutionInterpreter.SimpleInvocation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A9261A21338CD509D8F74CBB2D8D5EC4A6575F6C9545C71DE32A9C5AFB16C747"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8ExecutionLimitKind.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "B1518C0B1B884F2A29BAEF1B55A082515138727FF7C1F980A6F891EC6D95CAAE"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8ExecutionLimits.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "1DF348E1DD533A3E1CE86BDA9D5AB008FCDA5A82D6D4AEFF51BC0B49C81B1A2D"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8ExecutionNode.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "91E39EB28399F7C64416B06D63E4469E1C6812DEC4E83181225CA021A9CC66E8"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8ExecutionNodeKind.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "0766FE964CBD6825A9693721A42AF4D9D3C91F477A3EF8906E38A3F026F6F2CA"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8ExecutionPrefixFacts.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "F507DF146D6D6ECB75D1FF035DA752D65609127D6117C7A11783DB7C396C95AA"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8ExecutionTree.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "CCA1394197EDD9CC6AB3070E68A8745FE8C30F4A95AB04A56F26E694BD3F6F2E"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8ExecutionTreeLowerer.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "635AAEE82E1E94743A9817814E6B8947E2866CB820393D331CEA09C5ACB03901"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8FallbackDirectFamilyCategories.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "C792C1CB5DF2B3BC3A5C7A8C75ECCDC7437AFE666E21CF568FA0801AFEB8DB58"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8FallbackDirectFamilyCountRouter.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "F2129174A026EC3D950EB6BDE1E64C1B1F39B50067515B9969CCC6CE3BF251F9"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8FallbackDirectFamilyMatchRouter.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "980F7C7C1CF5DC3B3129F66665884BDC718814099421284A600A72B7D5DC00A8"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8FallbackDirectFamilyPlan.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "DF35EAAF636AED0C851E0AB719BCCA5328FF4BB92C986F16A7AD78328EB85C2B"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8FallbackDirectFamilyRuntimePolicy.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "C7C75329BECD405045B50894F66F843F18F7898BB11296E78B71BF13CD715EA4"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8FallbackDirectFamilySupport.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "176ED90A1D535D2AC66778BA430311B76CEDFC0425F4F038489C690ACF902199"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8FallbackPreparedTokenSearchFactory.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "974C2D34E0A992F287D5F842ECCC298E2E4F0B7FBFD3AED7CB40E5705C852A08"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8FallbackStartTransformExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "2267DAEB3B5984070CC73464379DC19FE21A5678635F82ABC3C51CAFD31792E2"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8GroupedLiteralSpanTable.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "B97B0BD41A66543944329E91E4826F6A0D008DEBE8B69AFF4DD6504AC634E83D"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8IlEmitter.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "E4CA55C56D6429A1BDF64100F60AE2DD08218ABA9AD91D832A0108AF710DD40F"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8InvariantCyrillicLiteralCountStrategy.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "03DD8B911B040B126AD4F4F162323127BFB6D5D169211E104EB736DFA943A890"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8InvocationOutput.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "2469F6F4F3CB98C81A93D57582A4FD492AD5E53A3BC1B1B9726A73E815774BC8"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8InvocationResults.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "81585BB4D1FE747844161B73FA0E38D085D7EF40B9626B52D9C5D9872414C6CE"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8InvocationStateBuffer.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "07FA008F6FBC927BA832B1072F2EBB6BA42F400888B208FB07F65F1865823077"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8LiteralCompiledEngineRuntime.Construction.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "7F5460A82782992C45446A15C83B756E6ED11B436EE58E366511B4AA4679F5C4"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8LiteralCompiledEngineRuntime.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "18FA7A431FCA43A193E40478AB292708AC421E807CF1CA4454600B949E6F165B"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8LiteralFamilyCaptureMap.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "8437E42EE7159812BC608FFDBCD3E7EDD0EE8E339DF4744AE637ACD14FB4BB35"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8MatchTimeout.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "1611133F2465894B676E4B7AE9B7CB41A5B4C8FA236F44DCA43F1C23BA970D7B"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8NonBacktrackingLoopGraph.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "AFAB5DC7DC6C29292663E57C501257528ED340020DA29284E9205C82C51F3D1D"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8NonBacktrackingSearchState.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "BAA639D9BEB15A50D3504BF927FEC7580DD09F9858106EC660C64C3FC0077AD4"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8OperationMatchCursor.AnchoredInvocation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "D322ADD75D0D657E0464CE478CFABF2D5D9F3C420AD666E901D2CB8BB0201DF2"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8OperationMatchCursor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "203D5BBD86EF895E9FE654A4D1254DE8CF580A4358316D52D3863797964546C0"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8OperationMatchCursor.SplitStorage.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "2A09FDD0A00B16190D421FCE08953715B16E6C32C475B5B4EE2CF2932E7F1925"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8OperationMatchCursorPlans.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "5BDC2177BD094A34F2CF735E0549BC4E50FE5E4D3CC3DE92DF2EBEE41B33B691"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8OwnedSplitPreparation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "57C6C32B1E4F0BF8F2CFC976C9C3C3E6E11AC13B1BA8237B6DBB01902AD17FB6"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8OwnedTreeSliceLowerer.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "6D657E86E7575EDAED2B4F49C2648831322D8C5E934C4589FA9CC6058B6F3F94"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8PackedNibbleLiteralFamilyCountStrategy.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "88CB592055D1802E47132D08344E50CF6548CF30E3610D132D2FCCC7B6944441"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8PrefilterExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "32B041274C9D07009D948AB918053C6FECB1E40A3352426D588B6FBDF08CE362"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8PreparedScalarExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "D738261029BB0DCB6C88149FD7A9A48938426786D7812EAE9CAB96EC15A61A2F"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8PreparedValueMatchEnumerator.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "EA6888646564A441B6A36CF8D23D8A7A0B80E1B97A0D97A03041F68C2D58126B"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8ProjectionExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "07248B5C3771884BFCCCA85BA0848C2D467493430E65051C29184A2176F0FE90"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8RegexProgram.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "805CD62728D861EFE1F3A828E05C4E035ADAF6A07C247BDE1BF053D9B0267EB3"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8ScalarNeighbors.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "947F25C15E8873B7D82D7599D95961889B8FEC08799156C56F2AC7A05E69B00C"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8ScalarSimplePatternVerifier.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "8BC0F76C68BD43FE1931DC2E52682F20C05447ECDAD04C8DFE021D47A06D9B53"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SearchEngineExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "07DAAAC1FD915F8AE778680C9A1A278962AC0175BBFF7D369FDCDBDA3721DB89"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SearchExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "3DE2C7F9CCE9814FFBBE572260A3095D5F358EB553FCAD37A6882653F6D7E71F"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SearchExecutor.FamilyInvocation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "F20A640E26B67AF4C12D2DDEDBFF19754C2CBE26BC2B4376C0E0D1E6C0AA2093"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SearchExecutor.LiteralInvocation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "364AA4FC6A0D5C2E6E9EF8AEA99B29F1C350886E5ED3E603E24395FC144EE588"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SearchPortfolioRuntime.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "F292EFE48974A5472E3EF494A3C0C862A2C67E57FF7185E0AC8B2A6AEEE7B9DA"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SimplePatternCompiledRuntimePolicy.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "B767D634F37DCB835CAE826959ED1E1FA52C8FB28A98905FF881ABD70A57D437"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SimplePatternCompiledSearchGuidedRouter.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "729CA7CD59BD34D6417A08FD54B6997BF4F16652FD7EA4A1D3898499B821E409"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SimplePatternCompiledWholeMatcher.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "44389DB0AD49AC09F6B3EF240AA0ACE62A57BA36A44B56CBF75E9D10A3E855B7"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceBufferWork.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "58CAF859B06449F84FDA4F04150FE0E2A3C8846F16053A50F0CE449DF0C3A209"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceByteOutput.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "3DD190C27DD1D0334FECCA900F748EFD9EEE9FAA97CA6FD342BD1B520179C57E"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceCaptureProjection.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "80F27B27292C9D1D717C7A420D37F9E68FA426BC5FF033F5B92C1C4EBD7CCDDA"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceCaseEquivalences.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "22ED4BDBED18DC00D31A1FE526346C4C3C2226C3EB383C5AE22F6E0A8D3B8A7E"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceCategories.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "F9D93F4BA1B628E829D95F41A64B9B8EA73A70F776D5E29FC9850CC702496F52"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceClassProgram.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "6E881EFF3BA2CF157A8A202167DE9FE6808C81D480661135E96D8584B64634E3"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceInvocation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "1789456690752B503F7A822FC0F54255AF3AA9AC3BC2F603168A58B5669D941A"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceOutputWriter.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "9C9477A394FB05E7D48820CF8A932AD2CD47912ECBB4CBBFD07E6395848CF0DA"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceParser.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "EEB3F398CDE44922821EE1724C49BEC26C62F3732C14590326C4002FC8919A2D"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceProgram.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "4CCB48412AFDDD2508B9620B9C6C422916CDDEB3D32200A2AF8E0DBA7234A705"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceRunner.Assertions.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "75735B350DF332673C4A03C2850D4815E2D88D91341CFE885EB1165D1B01CE18"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceRunner.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "D00055B63B8784044FAFD032739949C8CCDCC0125939467AB1C1932347DFBB7F"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceRunner.NonBacktracking.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "C492A24C3F51F8CAF46003C0905C1CFFF4421F370F26D52109D9FCD597B98525"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceRunner.TerminalClassRepeat.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "AB803D87189E638A86C3BADF8EB407920B912F4DBFD9BD186695F6300F2492F4"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceScalarClasses.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "9585798B064E70DAC5B4689EDAAB510BE50F167576687DDD4043BF291880F7D3"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8StorageLedger.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "BCAA52FEB3EE89B1D9D4DF972C161B1BCFDB081106FFCBBE77DC583D1A347D4E"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8StructuralLinearCompiledRouter.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "C2ECFBE1850C2D436A46A76499CD6C755D4C8FD4A5CD432738A4DD3984EC5DD4"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8StructuralLinearProgram.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "0FD13343BEA7B3643FBF9449F8FB684DE1ABAEE55CF70C50217823658687042E"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8StructuralSearchExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "B5C98A22D9A7E916248862CC6608334D6A6C153B456E3108939F8B4293B5C77A"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8StructuralSearchExecutor.Invocation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A4A30D85A07BDB1ED47ED08013A577B0426D846E976ED40A72AC6F956F86421C"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8StructuralVerifierPlan.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "64CBFC5483AEE3E05D8D8F5B5255CCDF0483B643DF8E2A3E955F95D561D53606"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8StructuralVerifierRuntime.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "E731F8DCBA4ACBC4B0A310C83C449E295CE1EC468692F6CD8FB166494E818FB0"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8SupplementaryCase.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "D9D4483B80734BC276F9560E8723C5FEB949CCAEA3EEE9D523DE7EE4FD03588E"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8UnicodeCategoryExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "16754B41C4B3B7EB0B2FD852396A1B8B95D29B7BF0B5FDF2C707DBB7964D09D8"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8UnicodeLetterBoundedRepeatExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "564D19CF38F6300C44C2089F0841A8630D019C6EF8C7CCD53C66828A5587FF15"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8UriTokenCountExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "EC7C5900B907A18A36FF36D88057AC08E6C8A2A6D7B8F50BB2672EAF74921ACD"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8VerifierRuntime.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "DAB919BD7EE5E089ACF463541C2B4D14C8957E81AA68ACAABBBE042AE06D85AB"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8WhiteSpaceRanges.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A37A20B0CA4E4159BC5EB6EC933BD900BB34013FAE9E530C32B84B2AE4E29AA0"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8WordDelimitedTokenExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "52F3E23B9B70BD0EEB35EDE4FFA716C67639301E7AD47506071D7B56A6E8C7A6"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Execution/Utf8WordRanges.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A3047BFE095E99585833C2867C3BC538D3C064D46A02850E1C6D54812C32A666"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8AsciiSimplePatternLowerer.BranchContinuations.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "E81F563BB89E9A855A049814A7DB021234A0BD5E44C807876E405A76C34D47E7"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8AsciiSimplePatternLowerer.CharClasses.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "3FECC9E65336F0E7D82E18029CA0F82C5D698680DDAB79AAC3BBA94415693A87"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8AsciiSimplePatternLowerer.CompiledFamilies.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "6A6F3059B55D2D88F7EB2259BBF44E38EF3BCDDBB22F12ED77A2D989CC77EFAE"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8AsciiSimplePatternLowerer.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "AB31F77FDF79AA251DB2E806F9BA47D0228C079538B18101D797986F3432322C"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8AsciiSimplePatternLowerer.LiteralSearch.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "57B37BB676CC86189AFBCA44A5C7B330E122C3E3259FED95FA2F6456D8A4322A"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8AsciiSimplePatternLowerer.SearchGuidedFamilies.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "0FFC093A1092512055A10A824709A2260E5263D0E5665CD21C232C1DA6FFE7F9"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8AsciiSimplePatternLowerer.TreeLowering.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "85DDFC77EAC3DAC2EDD8BD8F1D6A06207BA7FDCC6D61BED504B161CDB77DCDDB"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8CaptureCatalog.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "4594D7AF45E969C17DCD9581CFB879DFB51CFCE7F9539D75B67726BF6A1BD5A1"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8ConstructionArena.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "D107E790A6993B8AEB8B9186561E4B5495BE2A21A736F6073567DD69DF8C3033"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8ConstructionFrames.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "CA4E8280A8336F395429E8DCC30112555A43C37635BB1BF5DAF3A1ECBC656C39"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8ConstructionMap.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "5029C1564E97145FC1C407751031065256F6D07A3B648230831DD7335D04E5C6"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8ConstructionPattern.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "FD86DB977F335F4B8602868DCD43C746D3698810B076C1D49F24A8FC1D8465D5"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8ConstructionReadOnlyMap.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "84C70C151542EBD6DAC69F28B77FD9FC3D825F28C5F6516416060BD402D6430B"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8ConstructionText.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "7A2E38310C6008CF19FE96FF2EEAF31CFE4C08F7953CAB44954436BECF73CF97"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8FallbackAnchoredProfileClassifier.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "F28290192285681BE95FC50A7B75F3A121CDDECFEDB1896FB6887B7B719F0515"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8FallbackClassClassifier.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "C79904853845B1D20E5F031991A10E9C4A615CF2908658B68D9E7D3A3941D6BF"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8FallbackFinalProfileClassifier.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "39D6B8369F892F1B729A59ECBA7E3B682D5EDD97D425C23B125219113CE1C367"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8FallbackLineClassifier.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "B9E3B30E6887E5734492267F36FE1E21DC4A7AE6192BE4625FED13F6D734C391"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8FallbackLiteralClassifier.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "136EAA8EC0F90E80F0AC1D8FA1EF7AF163D154D39BF329D3B26F7E1AC3B8922A"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8FallbackProfileClassifier.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "724D4E1F87B0B8C5A3818239FAACA39B752623861D03F9A470564805D563D2FF"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8FallbackQueryClassifier.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "8B9CD426DB131424202E8CAD6E18B51372E378F271C5F10EA364205BD5091C7A"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8FallbackReasonClassifier.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "9883B5E5D8378999C7A9C1DCC118EF8D7C38AFBF43D54979FD4F869D48C126F0"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8FallbackRegexFamilyAnalyzer.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "DDE02DE4F01501F80CCD0453952DEDFC1DF957061F757D20D9F9DD7212F22229"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8FallbackTokenClassifier.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "9DD359346EB91A21FCAB7BF03BE889652DD0EA869BB3F0660CEBE5867FA039D4"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8FallbackTreeQuery.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "7E77037DDC0BB05DCAE8BEFCAEB61BE5E126C66AF35326548E34FE52B9112CD7"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8FrontEnd.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A6BF4403A4FC8FA8EAA9423560017FD61A9745EFE0DD93954F7AABAB140AB975"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8FrontEndAnalyzer.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "F267FEB22886A51C982370D6909D89372C753B877AD4FD08BA77274299134E3E"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8FrontEndSearchAnalyzer.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "03BFE9E8B74B6BA95BCD0382AF030C7B3E11AA819F2C688414C528AEEC02F762"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8NativeExecutionAnalyzer.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "52CB8DA0E8A006F4ED6F5C0D551C8D4BC6DC33F38D1BC821C26A2683D9DAE79E"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8NonBacktrackingGrammar.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "57D283065D15F463C0A055932838B077B97E1865902397E7E258C9B456E2E307"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8NumericEscape.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "FC596B0781EC6DD066A71A0522263B6ED5092E720887649B9DA720E6718FD094"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8OwnedCaseFold.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A2AA0B6FEFF7559282347A4DBC4F2FC325DF232F4CEC7C9FAD0A695F1F886D15"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8OwnedFindFacts.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "88E2FC83DC7930A90BDF2CB795CCA4FFF13510DD7C963ED7E1EE11A8D72C9816"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8OwnedFindOptimizations.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "FD87F63008482518EAC5D47C49135843570A4F8B3EC46115152E677CE9EEAC17"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8OwnedOptionPrelude.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A665B698D8237934A484F430CE7E6EE86D6408744D617EEE48AAF1FE5C49ACAE"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8OwnedPrefixFamilies.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "2CDD04A4A639A9D8040C69D1765A303D749D43B5528C4040A8CC8ACB0A7BF375"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8OwnedRegexTree.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A7A7F477A09425BD407C51691D007F34AE2707DBA44A565AD329762924E78170"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8OwnedRequiredLiterals.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "2B9BB41EE1F199C3533D663E091D7559D779FFD917E57AE1FEE0E7AD2C6CD4E0"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8OwnedTreeParser.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "0895C6162F6A5487D82576EEC12D9022411E782E3CB0EC77B54C984616DD32C2"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8PatternDiagnostic.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "EBF33EF4C3A13F41AB34B7AF7DFAA089B89CB80C528D49253A45F7EDA5450005"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8PreparationBudget.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "FA08A65A6442D3FCAB1E99625D2EAF9B1E83E727D4F6379B4B8377B639C91085"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8PreparedByteSearchFactory.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "926D1C05626C4D9255A7B43EE5FCE7294AA144724884FAFDB1AE92663C36CCB8"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8RegexAnalysis.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "69CD0E4A25AA48A8E4892C85C10AF1C2A86FC7B7CC21C1B4B9E5A21593D60430"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8RegexFeatures.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "008C28A25B71CE745FE28FB6ABAE2CC412741DEC7494BFEA06E1C45A9D98C712"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8RegexSyntax.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "93985EC1E4C4C25D54C036AB26F45E425ECE6F51FEDD82706324B8ABECB6CA04"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8RuntimeTreeFeatureAnalyzer.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "CEE3C7ECE3C0CB0D34E7CA0F97D29A282B34933F084C9F8253034C00A8D6485A"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8ScalarAsciiProjector.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "F673219DDF6314EC22CA6EFCCB35F9B2001FC43AED907B89EF0CA61FE0EA5F78"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8ScalarClass.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "CFF868701F925E91436D33B88CB2944C2ED3D0C5C98A2D8B7175B154E99454A0"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8SemanticRegex.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "04223B83CA0F39E0CD70E9EF8160839C92F3088B65E7CA91AA2117E519D8AFFB"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8TreeNode.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "C50F0C098B787D1B9816EAB9CE54A3C33EB3D0903A13F505201993617AF6A63A"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/FrontEnd/Utf8TreeNodeKind.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "BE082B6AB2C078FDDEF554AE732649E58BEF121AAF7BD70E5BAB41EB2CBC6010"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Input/Utf16Boundary.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "83948E6DC8A11534FD914CBA1D9738E87773B80213C0A5D1F958376EC94A74B2"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Input/Utf8BoundaryMap.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "B9933D8321BDBEBA6C91E68EA3BAE226F8E6210AB32F1A04A7F2ACF43D348060"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Input/Utf8BoundaryMap.Invocation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "0E437F2FC58C2C4DFD4CC535346102659CCCFFEE01D62B9A17617E0BED931874"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Input/Utf8Coordinates.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "216B0EE70639AA51099DF8AE04B2C63852AD753C03FB9B191DA51001DFFFEC28"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Input/Utf8InputAnalyzer.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "FEA66C3AAE9986290AC3CCFB0BA1A5989E8A03D0E509B531372F3D9218658A0C"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Input/Utf8InvariantCyrillicCase.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "B36A685ACD26B9F27C461B233B80D107ADCF310C74974879860383A9BE1C4F42"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Input/Utf8ValidatedInput.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "DCEAD1167B3CBFBD9B3FDA2341594A387FE57964B1D75EA510FBE9D035A9D5DC"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Input/Utf8Validation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A34F3C4DBEEBCD8DC8EB02FC235E7A6630158A2E728F7D59FF73FB6A44CE1A3C"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Input/Utf8Validation.Invocation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "F83077A7F261A23D17884836A1D69597FEBA035AF55F9F0E82E263D5FF54AED8"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Input/Utf8ValidationCore.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A187F72D16FBD240FDC4DE7C5CC01F1C5C11631616F9D7AC55F2100680ED62EB"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Input/Utf8ValidationResult.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "9FE6052319BD2516506E11A8DFE3423E4404A592E6D69668CFF9C9E9AEC1361C"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Planning/NativeExecutionKind.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "9BC9232E6ECAE1852F18227F906876D9B77DCE2C77906D6FAEB5346F5881B315"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Planning/Utf8AsciiSearchHeuristics.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "7CCFC7CB9D015185CF1757507EEDCD8B4DDC5AE67FF9B0849F9FDF51F219BB03"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Planning/Utf8BoundaryRequirement.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "6631472D8B4F7E1B8C6EBCB9741596DB8B6956574E786684EAFBA46801489A1B"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Planning/Utf8CandidateSearchPlan.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "1A50C89E27D9A3EA705BFF2AA489FC1C24A631C541520EF8E960AEE1F8781D90"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Planning/Utf8ConfirmationPlan.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "7D63C5EAA6B7E6F1C4CFDB9E7D62D031B0FBE2800BCEB89196E9EFA75EFE3E14"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Planning/Utf8FallbackStartTransform.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "F93EF35F448E3D838A8325F5580B469A65DFBFA275E00F871EDD2DFB82A5D0EE"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Planning/Utf8PrefilterPlan.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "FB981A7AE5A78BFFA8AC80E51FE9DF9059A4C5630D222927E29E121D184F0A1A"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Planning/Utf8PreparedRegex.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "44CF7DB8FBF1A56C3BE9D232A33B5712AC51B8DBBE52E966DB2F2A86A4088A18"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Planning/Utf8PreparedSemanticRegex.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "E9414A54B090E674387552D06C943254D562A9DA4B1128E7145C38C0646A802B"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Planning/Utf8ProjectionPlan.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "E7C33B7DCE647062D25A59F68AF7B33448222F5EE4B2CE8C9234CC5D70D0D0B3"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Planning/Utf8RegexPreparer.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "B1BB4A82348659412008467545BEC0BC235EDDF75240FAA12ACEA026C05FED62"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Planning/Utf8SearchFacts.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "8C65447DE9F9654739A2EEEBBA00295EDEE0A597D4554697684D3469FFD9C22E"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Planning/Utf8SearchKind.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "C90F90FD6FEB84C83EDD99DAD888C2A7AAB4A1D22CB825FC413E7EDCE6DE3358"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Planning/Utf8SearchOperationPlan.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "DA95398A658CE4F6F52A3D9CF97F3E381DB5B901FED6CBAD1161C88C10B7349B"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Planning/Utf8SearchPlan.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "EF6FC41EC7803D6E9281B8F6496FC31F223997714D9C491A965744C9F4507C44"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Planning/Utf8SearchPortfolioKind.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "6F2151287087D8D96AB47199B5E92962F7026EB2E9D22C25A96191058586F5FD"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Planning/Utf8SearchStrategySelector.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A5884D690558A152B07F9091D568C12749D6AC74961E0FAF3F246D794171A198"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Planning/Utf8StructuralSearchPlan.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "5D26A0BFBBBC8ED76909194136FB22F4F5E1F123DF99F3EE9B1BA13AA9B5EE97"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Planning/Utf8WindowSearchFacts.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "AD84859DD48E69CD1B715704DCC428F27B2F29E1B37B73964B6D3297D6644278"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Replacement/Utf8AnalyzedReplacement.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "E21B2C7F548BE56D25C2B60190EE7AFDA42AE4B3AEC31EEB8CCE329AB0C6D8D0"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Replacement/Utf8CursorReplaceEngine.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "E2CE50423358FAEFEAAC0FF3A34583AF9C9879BB57E83C34004502290123621E"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Replacement/Utf8ExactLiteralReplacement.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "35815553EE74C719B9707FB941413B67EA17899398DE82F4BDCD1CE4F9FDD281"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Replacement/Utf8FrontEndReplacementAnalyzer.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "1BD4F283CBEF59B0719E1A914B38141E8612A32EEF8271962B01EECACAA7659D"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Replacement/Utf8NativeReplacementExecutor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "78AC5F55D7406957D779C72BE791E4A6FCE8493D478ED559535639AAB436DCC1"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Replacement/Utf8OwnedReplacement.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "FF156E7BFEAC5F1A26D5098FB96237161EAD6F634C2FC947C0867E7BB2FD8B47"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Replacement/Utf8ReplacementInstruction.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "0129EE9D6C92F3863A79BF7E4C9C63580C110DDA5ADA9F88E29BC077ADFB4103"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Replacement/Utf8ReplacementInstructionKind.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "EC0840DDF58E6F0727B36AABC1EDD12C6C8749B4152F22160F0DA4290F7706E8"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Replacement/Utf8ReplacementOutput.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "9DFFA345557507A771EF9738164CBD288A3110D53F46A53163BAD1C2AB4F79A2"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Replacement/Utf8ReplacementPlan.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "665906DD69C10EE6516D63C074E6FFB8B3CBCE22D6BA6F05B4159D39DA4F4D42"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Replacement/Utf8ReplacementPlanCache.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "23A8C0240B7489E699E1CAE1AAD34F82C74FF9DFAF9BDBD8FFE55AC563038A90"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Replacement/Utf8ReplacementPlanInterpreter.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "F682D6449DA68BCDF5BCBCF560630B3A65EBE7023C1B26A5F8B2B042142CC25A"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Replacement/Utf8ReplacementPlanLowerer.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "E6A5C12ACEF4B85C8C85C02234A26D9FA8038C47AC096B81FAFD51116AB6BE91"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Replacement/Utf8ReplacementRetainedStorage.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "BA67BF3869605F865EDCBC16970AA3C167D1BFF55D6974F9629B3D9D5340B368"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Replacement/Utf8SliceReplacementExpansion.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "3A9AC5528420DCE83A557AA0901FA5C7DAEE11B3C3FC1EF7D7989B62F3D65ACB"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/AsciiSearch.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "DB2F439FFC4824C8037F3C4A6FA947D3321CBD3F70091B91C16457A9230CDBC4"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/AsciiSearch.ExactLiteralConstruction.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "BDFA5D7FDAE8BC8488E86D4E17CB72BDA15D8054C36A68B804A8C205F2AAC782"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/PreparedAsciiIgnoreCaseLiteralSetSearch.Construction.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "5C9132BC5E1094A3FADD3902ADAFF5D2209E794708DD768935122F355C1499C8"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/PreparedAsciiIgnoreCaseLiteralSetSearch.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "2C3031249715D46A7DF7BA1DE450295BC2336C4CD89E7B912382348CB83B4C10"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/PreparedByteSet.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "2B3A33F9F2F5B615BA161E86512F7A8BC931A14481E827EF4382CE9DA64DDDB9"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/PreparedLiteralSetSearch.Construction.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "4B18B8AB6CBBC3CA1D69E6297455FD3A97FB3386A335449F33C873F458E1F87E"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/PreparedLiteralSetSearch.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "13D843B5F994E8D36E2500A071AD181171BD53CEA8F9D6D305258965BAE54E90"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/PreparedMultiLiteralAutomatonSearch.Construction.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "7FA096A7C1A6E85986632350C7B63B64DF29A523BA0B1D463201C51C343C3B3F"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/PreparedMultiLiteralMaps.Construction.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "9D1C85168BB22A6F1342DDC5AE7D35A29EE84FCB87D264C77DE0E17B7C064690"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/PreparedMultiLiteralMaskPrefilters.Construction.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "B8008F88051F2C360B0D5AD24AFBFFD14B563A4D72EB903791D4B91D956E79B3"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/PreparedMultiLiteralSearch.Construction.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "7AECB3FD131D355C789941E96E545CB71A9410EB20F5F83F11663E3F4490EAED"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/PreparedMultiLiteralSearch.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "095695D06B86F0A1D333B50AAF74FD229CDAA8D7571D41B5A76CB7952A972F84"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/PreparedMultiLiteralTrieSearch.Construction.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "BA8BB490070A8D256A0FD975451B3650658858718EED36CD0AC3A7D5CB49195A"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/PreparedQuotedAsciiRunSearch.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "3A03B42A3536FF6E00101475CC584742E16B576D82A2B0421058189407DED387"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/PreparedSearcher.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "30386F0D24F719B17E415DDACC6CCDA517AECBE983A128EF85E394E1B0283CC6"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/PreparedSearcher.Invocation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "CDECCBF011EEE2347464F033717D16D8366373D8B86524FE6A0005B8120ED69F"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/PreparedSearchPrimitives.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "1768D016AFD5FDB10A1888261C7CC1A2380A5ED564F20A405687CF5EC13269F5"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/PreparedSmallAsciiLiteralFamilySearch.Construction.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "9A7165B53FDD53A880F144DF55E843C15C90487733D8E8EA3BE214F8C4401E85"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/PreparedSmallAsciiLiteralFamilySearch.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "872B32CECC1EC5B92EB7CECC3A5FE58EFB849C7DE8D43EBCCFEA507FBDE6B7D5"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/PreparedWindowSearch.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "8A42466FABBAF809AEAA162E1376AF8FFDD4B8FF0B1F125D26A1F808BED2309F"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/PreparedWindowSearch.Invocation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "F193B615586C2DD3B8CF52E061FD41652EFEAFA7EF7D2ACAE9FDB0D6B07EE977"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/Utf8LiteralEquality.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "7C2C0CE4AA9F1075F06196EEE6FBECF5597F8579935E4810A5E645384B9BF3F4"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Internal/Search/Utf8SearchAsciiSet.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "E25C9301CFE0313986143516180A8569D73C95BAA89372E5E816E7292210168B"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Properties/AssemblyInfo.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "FAF6CF09F432CBA7444204B2F5C5F5B8EAA4EF235349DB8446ABA4471ED4ACCB"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8CaptureContext.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "548F65E75D3E5215600CF1DBD8AF4921A46A6F70ADD7EE3A687CEA7F2B6F56AE"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8ConstructionPolicy.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "EE347DBE2B384BBAB3E2228FAE9FACFCD4AE67A927C47A24F8CE72A29D93AE0A"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8CountDiagnostics.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "D6A2D4983DF23FE10E3B171D22412D7A1A3B26153375262618522F3427D2BDE5"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8GroupContext.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "F3C100CA07059D0BF069B9D2AEA8A1468C51EE9AD1E47ADF8EC70CF63C5CB883"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8IsMatchDiagnostics.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "497E5AF2D310B036859C42C428A18B8055D022DA4F6E6DCD3BE64AD34A870CA4"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8MatchContext.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "C9AE8E4FE3B83FC0FF64BF2566C352CA36B0521C3E26353C2D4E65B172B44437"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8Regex.Adapters.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "8A8BAA6681FF238A0DA3FB666D0ED36CBAE8DA734C1AED7843125854AD3CCFA1"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8Regex.Compilation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "D100788089B64496FF7E61DBFB473571C0E1F43F926FA2F35191CF8439A95A18"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8Regex.Compiled.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "4F8248004217733F75D24503C733BFF7C65540B50A61E1FF7036DB169E5EB5AA"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8Regex.Construction.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "160E3EEAE9369ECCB7C128F8C1F0D203198F9EC9DDC1BB8D4A81C80344EB1117"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8Regex.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "EF51C62E802C4ECC47EB398ABD604820C69A9152E1D002ABB276983AD28C3ADA"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8Regex.Diagnostics.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "16C6CC07866D800059C56648B091C07BF089A4F7E928488CC7CB1A965395DD07"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8Regex.Fallback.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "05F6742B6669A9F37A8C4C17AD3CA0A472D0F1C4A770AC63228DB24AD2D69F46"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8Regex.NativeLiteralInvocation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "C0F70AB1F58FAD75CD4C0E62C208DAFDFB39B1E2EB0280A730ADEFB0ED2E0CBE"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8Regex.NativeSimpleEnumeration.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "BD0B9A0E1302A972162ED6E2D8A3FC16303FD8625229B2A7180785CF243E4989"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8Regex.NativeStructuralEnumeration.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "3D9D9911110CE500A52D7FD1EBCD40FF98C4B259F3162172797444200C04339D"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8Regex.NativeStructuralInvocation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "4FC4B5835BEE47333D7F95251FB4E87B6F623C9DC4FC4285FAA4C6B109598227"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8Regex.OffsetEnumerationInvocation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A1363548E9356C17199AA790F96C16FBAE5E4342090163CDB752E5EB83EA3F76"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8Regex.Replacement.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "71790DBE8BCD0C7CFC8BD4F1385D8ED11B99CE028773E702AA774310630F5C58"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8Regex.ReplacementPreparation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "DC2EFC1B9D0441D86A0827BC64D13E5D0F3C234A81C5AAF675542C69C49CECCC"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8Regex.ScalarReplacement.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "1C5B2BDBE0B82851E38087EEFE4027E12A1466EA2C7ED1BC0E347600C89ED688"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8Regex.Static.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "464C381781F50FB8900F87251B5326F432A0D0D7B618622552371AF6C4721B4E"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8ReplacementWriter.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "701754CC18EFBC7BD7847CBEC65ED44F0C7122BD5C85C19F12770F24A19AF661"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8ResourceLimitExceededException.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "7FDF28C99DC2093FC15EF94067AFD4E4C1B0D4DCFCADA025B624A2B7522996D2"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8ResourcePolicy.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "42A067CDD003BB0215BBBB6147D1B98FF26B53BDF298F8A2BB4D60121E6A7304"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8ValueMatch.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "1E491FB3F988A75DCE38AA6A3F018A85BB07F82665E048C5118483C9AA771AEC"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8ValueMatchEnumerator.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A255553B1464D311FD118839AFE0B9527E28EB5396F908324F65CB69F39B0864"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8ValueSplit.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "26C2522B6EA53D3BE5F08E0226A2AA46AB31C1E75F31C21566CF5203D9821B07"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/Utf8ValueSplitEnumerator.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "4DD48044F581A4BE57901B5B0A5529F960E79604619D69A6F79064B4DCC23852"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/obj/Release/net10.0/Lokad.Utf8Regex.GlobalUsings.g.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A3C6048BB4D922B1799A9977F84362A3787B68810CAC67AA86AC3AA23295F227"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/obj/Release/net10.0/.NETCoreApp,Version=v10.0.AssemblyAttributes.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "93D67476196EBFC80D1D7D8844B91146CFD678D105F5CE635EB900CA40610C9B"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex/obj/Release/net10.0/Lokad.Utf8Regex.AssemblyInfo.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "BF2B5772D3748C22A1AD87C77BEF9A1FDA3835408C6BCD18B1178D0D9A03FDC2"
+        }
+      ]
+    },
+    {
+      "Package": "Lokad.Utf8Regex.PythonRe.0.4.0-rc.2.nupkg",
+      "PackageSha256": "67E3EDA2761AF73B99967D480A31CF1D89BBB653C33C64A1D556379FEFBB5899",
+      "NuSpecRevision": "d1a14f407ae4e34230430260fc58111c960c1e63",
+      "Assembly": "Lokad.Utf8Regex.PythonRe.dll",
+      "AssemblySha256": "74448A8C167C478E39C6DBFBBEAE745B483AF9DF35BCFEABF5C675861933B811",
+      "InformationalVersion": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+      "Configurations": [
+        "Release"
+      ],
+      "AssemblyRevision": "d1a14f407ae4e34230430260fc58111c960c1e63",
+      "CodeViewEntries": [
+        {
+          "Guid": "018bb30c-cc72-4404-b8ce-f8912b99cb4f",
+          "Stamp": 3069592118,
+          "Age": 1
+        }
+      ],
+      "SymbolPackage": "Lokad.Utf8Regex.PythonRe.0.4.0-rc.2.snupkg",
+      "SymbolPackagePresent": true,
+      "SymbolPackageSha256": "806A6B86A0B10E49F10722CB5B4E50496B4C1027C330A278A868846575CA7DEC",
+      "PdbPresent": true,
+      "PdbSha256": "2D4374643D5A4AC7C0D979C051607237AF798F98A9C923A3D2B86B777AAEF23E",
+      "PdbGuid": "018bb30c-cc72-4404-b8ce-f8912b99cb4f",
+      "PdbStamp": 3069592118,
+      "SourceLinkRecords": [
+        {
+          "IsModuleRecord": true,
+          "Mappings": [
+            {
+              "Document": "/_/*",
+              "Url": "https://raw.githubusercontent.com/Lokad/Utf8Regex/d1a14f407ae4e34230430260fc58111c960c1e63/*",
+              "Revision": "d1a14f407ae4e34230430260fc58111c960c1e63"
+            }
+          ]
+        }
+      ],
+      "Documents": [
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/Properties/AssemblyInfo.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "BBE447C70212CF5DC02AFEA726D5A9000261D4475C80CD9C2A9B6A0E1B6405CF"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReAsciiPrefixDigitMatcher.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "8EF0E6F38A584BD076BD01DDFCCE6B62D24653ADA7419577C8734369496F68A8"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReAst.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "0D4360003A51F2F18019B439CD0D4A1CF7B7C8FA6FF48EBE70FFD7B42A7AEDE8"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReAstFactory.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "72733E0B2AA95DB8F1231D83A61F5F7663C31AB0DAB27068BC62F80BBE9CE77A"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReCompileOptions.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "8BDF434B59F806B8D4CD86392264A5AC63F7925AF812F2F6508198F6DD3FA7A8"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReCompileValidator.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A88B315A188B500C29F88FF65EE26DE2E0E56413AEB216F9E72939AFBFE07A28"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReCoreTypes.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "704CF6919DADFDD700AC85A2A90E3B5CC449F83D5974C967EA488C3BD3929C1C"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReExceptions.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "4CB3964A2BACA9E7D587CCB87BF379987A7B6E24A7FA058BB25F0525A29777FF"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReGroupNameValidator.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "2A5B04299E9A19EE2F6F2C90FF74210CAF0FB28CC0E5C52F4F6D2C5FC586C453"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReIdentifierData.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "63582F3728730A5B54CEDD240399F38868CBB3BBE966BBCB484B0D3B837D1899"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReParser.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "2DA49237D27874E0FB391143A85C58FEB18810DFB1371EBE8947FAA4A3F878E3"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReParser.Frames.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "10F159DA757D18E14EDCA227022D75180BD4DFE044174585611A4EB49F618753"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReParserStorage.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "E8B1E3E5F346B8848F0628BF8FC814506BA67C0F6A3959268299935C027D2AAE"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReReplacementParser.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "B2A079BEA4CEEFC6570009F041B439B908BD281E63496CAFCDB5CCA09C87D713"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReReplacementRetainedStorage.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "C2BCC13D12C64422CBE23D1C089CE42C62267C949E27B4FEECC165B58817A3BE"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReScalarCaseData.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "D13C1A1B267BCCFF35F3ECE45929BD4F49534774DC1B465E75D317572426545E"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReScalarClassData.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A8133A330D8D361CAC645FC88EE219A92F9FE7AF999B527A197CBEBB51F17E08"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReScalarCompiler.Classes.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "14BF1A3750257379E0367862C419D8F7B753B4F56E72D7E148ACDDAEE2317F85"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReScalarCompiler.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "BC1CA528B253E98B16B5D8CA0FD3CB473CEFFCBCCF12CAE56940060FC13C7C84"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReScalarMatchCursor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "31ADAA2F0C8ECD092045397EDD6DB01FA838D6E4A733E57AECF4C5D85D248D7F"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReScalarMatchState.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "8951D605C75CB213140C509A5BD734A1DA423ED5746BA362212F005A607CA8FF"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReScalarNodeFactory.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "AA3B6CDEC43807DAB6D5B34D1466A3A73211BAD4E24406431D56AF0EB21B814D"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReScalarSet.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "BD3A5D11CD0969764B0506BE15DB9C309CFBF9A8B79EC2C078F977EA2ABA7F6D"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReTranslator.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "0EACA9BB9EEA3BB5DF4628D2DDCB179B256A8368F6FD599C2CAFE7921B44EDFD"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/PythonReTranslator.Frames.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "FBE9AA5FC0A41220A532CA90604A13B04CC7B7AE1312A8B84316CA77933D4318"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/Utf8PythonMatchCursor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "66A007D4D162A79B344896F6F2C791439E65A83B89B3FB70FC6767C3B6CA4627"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.Compilation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "026E8FA620D9C830E0F7AA446D79D542C2E5EF2A3F843126CAC6A3F903A65C61"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "C4DC7780A5AA8B4D6170AB9DC41131D0572205EF6A46BAD29238D2F5F2287EDF"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.Cursor.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "588C19EEC38C048A96D03E7BC0F130942189AAE5B9AD94413E32E1319F06ED0D"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.Detailed.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "91DC43D70A7B8E834B0F1589EE240B205D674CFB298E2A9600802EF1746A2464"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.FindAll.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "C3855024B5B9AAD39C43EA41246C128678A3AD0E54AFFDFF2BDA5E6B9EC71C1E"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.FindIter.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A19370BF18D1C1ECB75248EB32E80FF929C5D4D37EAE040D2B307D1D23088F7B"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.OneShotText.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "7FA7395009B2F0546F8CFC528266341564C725C0CF1E064B9D276D7BEA561631"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.ScalarOperations.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A9E2B94C577275CA806E5D8EB0F832A5D8BD95BA806F3F1942FC0C4A1E6E31A8"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.Split.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "B439EAC040BB907BA15D6B88C277D87C5137DE0A8B555B89BDDB0F124CE7C769"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.Substitution.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "7571246B98A36358810D6F9297FCF6E56B00C247AAF0EB71C970D99EDF6EA9CB"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.Utf8.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "F319A3E07C2C1880EDD62A4CBD5BB54B2561BF27320D39F9DF71B9A596841621"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/Utf8PythonRegex.Value.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "0959740540D6EFBC06A547D8909C4133013F0577009CFB4DF8CB33D4C05508B0"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/obj/Release/net10.0/Lokad.Utf8Regex.PythonRe.GlobalUsings.g.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "EBDEA246F2D43C83B20056F0084CB996B84F9C8786A29285F4462185084D4AB3"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/obj/Release/net10.0/.NETCoreApp,Version=v10.0.AssemblyAttributes.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "93D67476196EBFC80D1D7D8844B91146CFD678D105F5CE635EB900CA40610C9B"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.PythonRe/obj/Release/net10.0/Lokad.Utf8Regex.PythonRe.AssemblyInfo.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "29D663C9CF0F5E796CEA49720D3D1D506A82EBC2B98C08519CAD9C6F2AABE6F5"
+        }
+      ]
+    },
+    {
+      "Package": "Lokad.Utf8Regex.Pcre2.0.4.0-rc.2.nupkg",
+      "PackageSha256": "E7B0CAFC6DD655B545C151C1ACEDC0A1752E90575676AF558024E9AC39546B9D",
+      "NuSpecRevision": "d1a14f407ae4e34230430260fc58111c960c1e63",
+      "Assembly": "Lokad.Utf8Regex.Pcre2.dll",
+      "AssemblySha256": "B8816EF7FEED678358E04BD7860B6089C60BB9720913D07F7BD3D2753A315B63",
+      "InformationalVersion": "0.4.0-rc.2+d1a14f407ae4e34230430260fc58111c960c1e63",
+      "Configurations": [
+        "Release"
+      ],
+      "AssemblyRevision": "d1a14f407ae4e34230430260fc58111c960c1e63",
+      "CodeViewEntries": [
+        {
+          "Guid": "938c9236-90b0-4d4e-bdf4-4e5360bb92a7",
+          "Stamp": 4253040735,
+          "Age": 1
+        }
+      ],
+      "SymbolPackage": "Lokad.Utf8Regex.Pcre2.0.4.0-rc.2.snupkg",
+      "SymbolPackagePresent": true,
+      "SymbolPackageSha256": "5802151D1A6FFE71518750D1FE6BA974D2A7E32D81C1825E618DBF256D1B63FC",
+      "PdbPresent": true,
+      "PdbSha256": "36BA2CCF7CEE985AD83CCED8B2F4BAADFE8B8994C9589DECDC2A64C30FEB3888",
+      "PdbGuid": "938c9236-90b0-4d4e-bdf4-4e5360bb92a7",
+      "PdbStamp": 4253040735,
+      "SourceLinkRecords": [
+        {
+          "IsModuleRecord": true,
+          "Mappings": [
+            {
+              "Document": "/_/*",
+              "Url": "https://raw.githubusercontent.com/Lokad/Utf8Regex/d1a14f407ae4e34230430260fc58111c960c1e63/*",
+              "Revision": "d1a14f407ae4e34230430260fc58111c960c1e63"
+            }
+          ]
+        }
+      ],
+      "Documents": [
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2AsciiAnchoredDfaIsMatchCompiler.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "86EDD0EA97FC3BBFB02EE5B29E19A62E239F972EDEDBF108DB348268E78C14DA"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2AsciiBoundedIsMatchCompiler.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "E5C0AA42C9977F6641111CEA6CE562FFB139EDA6C33DD10AB1422E96BFF8BEE2"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2AsciiByteSetFactory.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "E54F70434FF810F88390C1F947292B066255BD2685CA8007D6A7A6E1728320CA"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2AsciiDfaInput.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "CD21A5508B820DA36C4DAA621CDB59EFB81B2630067E078CF1BF4BADC42CEC46"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2AsciiDfaVerifierProgram.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "53AA2A2418E62B3D4073F83557CC6302EDC572881A0F1F0CEB1CE0991D0AC1A0"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2AsciiDfaVerifierProgram.GraphConstruction.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "243E5BBC6D7F319A8443BB2C85CB27E45942D785BE28375C211A509A4E464C49"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2AsciiDfaVerifierProgram.NfaConstruction.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "47A11CB9BAB9604E7675FE9B702618A94951B5CA23EC303F3D95E7123BC9EEE2"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2AsciiDfaVerifierProgram.Runtime.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "61984C2F87A6F233D1AF5D4DB00AE83E5F9ED9903808D4E517E25D4E6E281B73"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2AsciiLiteralAlternationRepeatCompiler.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A8BF3DBBF4E3B6C89DB39F5EAACF7CD1E63CA213DCA0467679D6F493A41B5CE3"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2AsciiOrderedLiteralWindowCompiler.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "BC59C1BE70316E016CA4AC5EA8459E6B7FE434DC9A6B86438B1E7F916E54C6DA"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingCompiler.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "74A7F29F27AC406594C3EDAE9C02BB143D221CB66789B44088E83C6F9D865E89"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingLowerer.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "878E2710B5013D83158747F34183B7CCEBDD157C098CEAB4B6E03BB5E3B28750"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingParser.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "125253105447BA7E8DE336F9F5C272BDFC834A85FC0CF783BDA575A52F3156A2"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingRunner.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "F824BAE06D22A13DB61A9D40C10EF7C8657D18C777889A6847A07B73F1D2EDF6"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingSyntax.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "BC08EF5E68E009142AA5273A32B6CFEF9F4B5940BB79AC6FCE8C399FB25FD9BB"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingWorkspace.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "7D6241BFA3C4A759585CBEB6CAC439DF0679E06800677936E9AFDCABD2A11CCF"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2CaptureNameValidator.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "5DEF3D8855ECBA9E4E7A9AA345E3812D07D26B5F44E9B359B9AC0CD0F3A9977A"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2CaptureProjection.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "F4B26791012EB92E35AA56A7A5A977839A1BC7961CB8E78D2031DB8778E4D451"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2CaptureProjectionBudget.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "72187072BEBAE01CD44D5FEAFBC5C4C208B958872B33A89445763540A97E6770"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2CharacterCompiler.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "4442197126D754E811DB46B7ACC686496B0E6579E763F413CB5086CB5F95ACC5"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2CompileOptions.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "EB66C57D215AD48E104FFDBAADACAD11D7A248101DD9E1D59EA73BF85EEECB2D"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2CompileValidator.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "FC1248655A1140B3203E58A07F99C32316801F0F645B431C98EF934B31FF8C14"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2ErrorKind.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "12108CA4DB65275DA7F6C8E981394237F8DEC1D5CB32719367FAB7C55033C4ED"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2Exceptions.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "98CACAC7CDDA06CD352C6A6BD7471FCEBD07BE4AAE8E771D5E98B177BCA98948"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2ExecutionArchitecture.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "620FDE0867604FC4F2D304FFF1272B956036C41C71AB4C7461718A6B62242BB2"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2FiniteLiteralLanguageAnalyzer.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "394BC494BB20690DA50DF36A113CD18959197BC137ABCF0BE66B5F176464803C"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2GraphemeData.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A2EDB2F19D7CA67BB4759E34D9383C11E5B628520482DCF6D4A7227532F085E1"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2InvocationStateStack.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "5C0B3389464B2D34BB836FD6A61C04F768E4505944086C8368EE650FE9CCF5F6"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2LeadingDotStarLiteralIsMatchCompiler.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "67079AAF64B8BF76C09EB395A2057958F62ABE11DF6CAD564BC7C9703A9144D7"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2LiteralCompiler.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "266E6D28EAF8254DD841589A5C3C75A201CFB9410DAFC2C2BDF9D5B425E66F3A"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2LiteralPrefixRepeatCompiler.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "E02CA27C3291E039FE1B27B61D8DD4CAAF6F7BBAAE84F95FCBFB3D2CAFB93BA8"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2MatchOptions.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A2B1824F8E3F905BD8941032A2F8EB89650CEAA2C5EB5C0CB3B32706EFAAD4B3"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2MultilinePrefixCompiler.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "DCF07F7BD73EA8C5153C575CCB75F93ADD2BA1D3AA888F37F9ABB1451070282B"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2PalindromeIsMatchCompiler.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "3381ED1F954B1D3305148B7E423873CF17E159DD46BC30D710231AAC531A7DE9"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2PartialProbeCompiler.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "D012D919A33338FE9BF50A03EFDF3CB3698AA2C9A85083C2A120354D58CA1271"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2PartialProbeCompiler.Shapes.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "B1E4C5FD759CB49BC3D8E8561E74B74841FFCE550F5321C71A22CC9F1600E870"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2PatternCodeScan.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "ED24BB5B036DD5989205C2A690AA46510591AB0C0DD34665A4347CD92D5C90B1"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2PreparedReplacementParser.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "2532059AEC85E5392CA03391FE2CFC7C236D59A679332720A971597B74C31900"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2ReplacementPreparationControl.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "6CB36BB5E21BF2714AABBF4E88FF83C0B20561D568BE1319583EF71F6F91AC9C"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2ReplacementTemplateWriter.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "6AE164B83903B4046B7E61F4FB2A8988707F5F9F2B12A00A680C354ECDE9699E"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2SameStartLiteralCompiler.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "5AAE2C565039164A938B3F52683EE0990F7E9BCB4BA7B6980B77DB8023BED598"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2SeparatedRunsIsMatchCompiler.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "36059E7BFA9F545048EEB7B02282B57B4BD05BFF7D8AA0684342447249196A70"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2Settings.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "07CF03927EAD7447A09BD9E1EF2FEEC36C425B7BC43BB4BB07BC986463180C05"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2SimpleReplacementParser.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "0EFEC489D2A05939B0832993248F58C64C657A21A529BB2A33314DF7F4DF1662"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2SliceDriver.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "81233A667D785BE2C34D0E8477EC5878A2AB8381D4636AAEB108E25D8DC23A44"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Pcre2SubstitutionOptions.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "67E5DBC41985A78A5574602A9701C0F836C87EE4E6917B2EF0F99D9298E38415"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Properties/AssemblyInfo.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "B9364E1AA761B07AB124D2D70E04993112B511AE7AAC37D9F5D9BA5920A917ED"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Utf8Pcre2CoreTypes.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "982BC03E9E832A1FE96864F30088FFB7B12888AE86AF923CEAEC0F55E514EF89"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Utf8Pcre2Regex.CallbackReplacement.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "9AA8545EFBFF073CBEF5A0E2E54B237BF90832DAC55456684CDF9A92A7BE7B8C"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Utf8Pcre2Regex.Compilation.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "0E416FA7BDF7A718F9CD0A0DF78441617CDD24EC56EB22952D970154CECC7DBA"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Utf8Pcre2Regex.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "6AA9CA095C0DD7E6B6718972F547AD25A6387784D48F7C81BD004D5E4DDBCA44"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Utf8Pcre2Regex.Diagnostics.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "6DC969C8CB5561C5C8E2C0EDF580574CF7F36D2873EA0F1F67FEB63499345090"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/Utf8Pcre2Regex.Probe.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "F06BB4034CD84E387897F974B6E4313DEA9DC6E05916EADC9461C4596DEB732C"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/obj/Release/net10.0/Lokad.Utf8Regex.Pcre2.GlobalUsings.g.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "A3C6048BB4D922B1799A9977F84362A3787B68810CAC67AA86AC3AA23295F227"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/obj/Release/net10.0/.NETCoreApp,Version=v10.0.AssemblyAttributes.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "93D67476196EBFC80D1D7D8844B91146CFD678D105F5CE635EB900CA40610C9B"
+        },
+        {
+          "Name": "/_/src/Lokad.Utf8Regex.Pcre2/obj/Release/net10.0/Lokad.Utf8Regex.Pcre2.AssemblyInfo.cs",
+          "Algorithm": "8829d00f-11b8-4213-878b-770e8597ac16",
+          "Hash": "CC47E6BA31EF3AA15D4BAE155466C3D3985864A13836D0207CFE738B9FF6DCA0"
+        }
+      ]
+    }
+  ]
+}
