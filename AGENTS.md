@@ -93,8 +93,11 @@ Important benchmark rule:
   reused across platforms without a platform-specific apphost; BDN still builds
   its generated measurement worker through its normal toolchain.
 - Child stdout and stderr stream through PowerShell's output stream, preserving
-  ordinary redirection and the original exit code. The outer wall-time cap also
-  terminates descendants; a cap returns exit code 124.
+  ordinary redirection and the original exit code. The outer wall-time cap covers
+  both execution and output draining, returns exit code 124 and terminates a live
+  benchmark process tree. It allows at most one additional second for buffered
+  output before closing readers. If the direct parent has already exited,
+  termination of orphaned descendants is not guaranteed.
 - BenchmarkDotNet parse errors return 2; failed validation/build/execution or an
   execution filter selecting no benchmarks returns 1. Successful measurements
   and informational help/list/info requests return 0. Dry remains smoke evidence.

@@ -116,24 +116,33 @@ try {
                 }
             }
         }
-        if (-not $timedOut -and -not $benchmarkProcess.HasExited -and $effectiveMaxWallTimeSeconds -gt 0 -and
+        # A child can retain an inherited pipe after the direct parent exits.
+        # Outstanding drains still belong to this invocation's wall-time cap.
+        if (-not $timedOut -and $effectiveMaxWallTimeSeconds -gt 0 -and
             $elapsed.Elapsed.TotalSeconds -ge $effectiveMaxWallTimeSeconds) {
             $timedOut = $true
             if (-not $benchmarkProcess.HasExited) { $benchmarkProcess.Kill($true) }
+        }
+        # Keep buffered diagnostics after a kill, but never wait indefinitely for
+        # EOF from an orphan. Closing readers does not guarantee orphan termination.
+        if ($timedOut -and $elapsed.Elapsed.TotalSeconds -ge ($effectiveMaxWallTimeSeconds + 1)) {
+            break
         }
         if ($pendingReads.Count -gt 0) {
             [void][Threading.Tasks.Task]::WaitAny([Threading.Tasks.Task[]]@($pendingReads.Values), 100)
         }
         elseif (-not $benchmarkProcess.HasExited) { [void]$benchmarkProcess.WaitForExit(100) }
     }
-    $benchmarkProcess.WaitForExit()
     if ($timedOut) {
         Write-Error "Benchmark exceeded the $effectiveMaxWallTimeSeconds second wall-time cap. Pass -MaxWallTimeSeconds 0 only for a preflighted milestone refresh." -ErrorAction Continue
         exit 124
     }
+    $benchmarkProcess.WaitForExit()
     exit $benchmarkProcess.ExitCode
 }
 finally {
     if (-not $benchmarkProcess.HasExited) { $benchmarkProcess.Kill($true) }
+    $benchmarkProcess.StandardOutput.Dispose()
+    $benchmarkProcess.StandardError.Dispose()
     $benchmarkProcess.Dispose()
 }
