@@ -570,6 +570,8 @@ public sealed partial class Utf8Pcre2Regex
     }
 
     /// <summary>Probes the UTF-8 subject for a full or permitted subject-end partial match.</summary>
+    /// <remarks>Outside literal/curated partial drivers, only proven generic Soft full matches are supported. None uses ordinary detailed matching.</remarks>
+    /// <exception cref="NotSupportedException">The selected partial result cannot be established for this pattern.</exception>
     public Utf8Pcre2ProbeResult Probe(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode)
         => Probe(input, partialMode, 0, Pcre2MatchOptions.None);
 
@@ -616,14 +618,15 @@ public sealed partial class Utf8Pcre2Regex
             if (partialMode == Pcre2PartialMode.None)
                 return MatchDetailedValidated(input, ref subject, start, matchOptions, ref invocation).AsProbeResult();
 
-            if (_program.Operations.Match is Pcre2BacktrackingDirectProgram or Pcre2SliceDirectProgram &&
+            // Ordinary matching can prove a Soft full result, but cannot decide
+            // Hard partial priority or infer absence of a partial from MARK.
+            if (partialMode == Pcre2PartialMode.Soft &&
+                _program.Operations.Match is Pcre2BacktrackingDirectProgram or Pcre2SliceDirectProgram &&
                 Pcre2Runner.TryMatchDetailed(_program, ref subject, start, matchOptions,
                     ref invocation, out var directGroups, out var directMark))
             {
                 if (directGroups.Length != 0)
                     return Utf8Pcre2ProbeResult.CreateFullMatch(input, directGroups, NameEntries, directMark);
-                if (directMark is not null)
-                    return Utf8Pcre2ProbeResult.CreateNoMatch(input, directMark);
             }
 
             throw CreateUnsupportedProbeException();
@@ -641,6 +644,7 @@ public sealed partial class Utf8Pcre2Regex
     /// <param name="matchOptions">The per-operation match options.</param>
     /// <param name="cancellationToken">The token to observe before entry and during supported metered matching.</param>
     /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
+    /// <exception cref="NotSupportedException">The selected partial result cannot be established for this pattern; only literal/curated partial results and generic Soft full matches are supported.</exception>
     public Utf8Pcre2ProbeResult Probe(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
