@@ -31,6 +31,9 @@ capture and operation boundaries. The selected profiles do not promise complete
   comparator only where its UTF-16 behavior overlaps the scalar contract.
 - Core uses .NET-style grammar within its supported scope. CultureInvariant is
   the primary supported and performance-tested mode; see [SPEC.md](SPEC.md).
+- Optional IL preparation is skipped when the host disables dynamic code,
+  including with `Compiled`; existing non-emitted execution preserves results.
+  NativeAOT publishing and trimming have not been qualified.
 - Instances accept finite work, depth, working-capacity and result-capacity
   policies. **Defaults and static cached calls are unlimited.** Construction has
   separate controls and fixed backstops. These controls do not bound total heap,

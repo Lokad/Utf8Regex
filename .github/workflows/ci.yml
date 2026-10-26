@@ -34,6 +34,20 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit 1 }
           try { dotnet test Lokad.Utf8Regex.slnx -c Release --no-build --no-restore --tl:off --nologo -v minimal 2>&1 | Tee-Object -FilePath test.log } catch { exit 1 }
           if ($LASTEXITCODE -ne 0) { exit 1 }
+      - name: Test disabled dynamic code
+        shell: pwsh
+        run: |
+          # Reuse the same binaries in a fresh host; restore its generated config.
+          $config = Join-Path $PWD 'tests/Lokad.Utf8Regex.Tests/bin/Release/net10.0/Lokad.Utf8Regex.Tests.runtimeconfig.json'
+          $original = [IO.File]::ReadAllBytes($config)
+          try {
+            $runtime = Get-Content -Raw -LiteralPath $config | ConvertFrom-Json -AsHashtable
+            $runtime.runtimeOptions.configProperties['System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported'] = $false
+            $runtime.runtimeOptions.configProperties['System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled'] = $false
+            $runtime | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $config
+            dotnet test tests/Lokad.Utf8Regex.Tests/Lokad.Utf8Regex.Tests.csproj -c Release --no-build --no-restore --tl:off --nologo -v minimal --filter 'FullyQualifiedName~Utf8DynamicCodeCapabilityTests' 2>&1 | Tee-Object -FilePath dynamic-code.log
+            if ($LASTEXITCODE -ne 0) { exit 1 }
+          } finally { [IO.File]::WriteAllBytes($config, $original) }
       - name: Publish test log
         if: always()
         uses: actions/upload-artifact@v4
@@ -42,3 +56,4 @@ jobs:
           path: |
             build.log
             test.log
+            dynamic-code.log

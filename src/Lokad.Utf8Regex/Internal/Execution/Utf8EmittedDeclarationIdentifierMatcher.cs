@@ -2,6 +2,7 @@ using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -62,7 +63,8 @@ internal sealed class Utf8EmittedKernelMatcher
         try
         {
             matcher = null;
-            if (!Utf8EmittedKernelLowerer.TryLower(regexPlan, out var kernelPlan))
+            if (!RuntimeFeature.IsDynamicCodeSupported ||
+                !Utf8EmittedKernelLowerer.TryLower(regexPlan, out var kernelPlan))
             {
                 return false;
             }
@@ -85,7 +87,8 @@ internal sealed class Utf8EmittedKernelMatcher
         try
         {
             matcher = null;
-            if (!Utf8EmittedKernelLowerer.TryLower(familyPlan, searchPlan, out var kernelPlan))
+            if (!RuntimeFeature.IsDynamicCodeSupported ||
+                !Utf8EmittedKernelLowerer.TryLower(familyPlan, searchPlan, out var kernelPlan))
             {
                 return false;
             }

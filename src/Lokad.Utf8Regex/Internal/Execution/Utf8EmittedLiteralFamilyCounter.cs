@@ -3,6 +3,7 @@ using Lokad.Utf8Regex.Internal.Search;
 using System.Numerics;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
@@ -97,7 +98,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
             plan.Kind == Utf8SearchKind.AsciiFoldedByteLiterals &&
             !countProgram.Confirmation.HasValue &&
             !firstMatchProgram.Confirmation.HasValue;
-        return plan.HasPreparedSearcher &&
+        return RuntimeFeature.IsDynamicCodeSupported && plan.HasPreparedSearcher &&
             plan.PreparedSearcher.Kind == PreparedSearcherKind.MultiLiteral &&
             !plan.HasTrailingLiteralRequirement &&
             !isUnconstrainedIgnoreCaseFamily &&
@@ -114,7 +115,8 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         // semantics reconverge to the existing emitted boundary-literal-family kernel.
         var familyPlan = regexPlan.StructuralIdentifierFamilyPlan;
         var searchPlan = regexPlan.SearchPlan;
-        return regexPlan.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
+        return RuntimeFeature.IsDynamicCodeSupported &&
+            regexPlan.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
             !familyPlan.HasSeparator &&
             !familyPlan.HasIdentifier &&
             familyPlan.SuffixParts.Length == 0 &&

@@ -2,6 +2,7 @@ using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -149,7 +150,8 @@ internal sealed class Utf8EmittedDeterministicMatcher
     {
         internal static bool CanCompile(Utf8StructuralLinearProgram program)
         {
-            if (!program.DeterministicProgram.HasValue ||
+            if (!RuntimeFeature.IsDynamicCodeSupported ||
+                !program.DeterministicProgram.HasValue ||
                 program.DeterministicProgram.SearchLiterals.Length != 1 ||
                 program.InstructionProgram.IsStartAnchored ||
                 program.DeterministicProgram.SearchLiteralOffset < 0 ||

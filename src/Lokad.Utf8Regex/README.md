@@ -1,5 +1,9 @@
 # Lokad.Utf8Regex
 
+Optional IL preparation is skipped when the host disables dynamic code,
+including with `Compiled`; non-emitted execution preserves results. NativeAOT
+publishing and trimming have not been qualified.
+
 Development source; a fresh package candidate has not been qualified. The frozen **0.4.0-rc.1** artifacts are unpublished and have known PCRE2 defects; **do not publish those PCRE2 bytes**. A corrected release needs a new immutable candidate.
 
 **0.4.0-rc.2-dev**, .NET 10. Regular expressions over strict UTF-8

@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -39,6 +40,7 @@ internal sealed class Utf8EmittedWholeMatcher
         try
         {
             matcher = null;
+            if (!RuntimeFeature.IsDynamicCodeSupported) return false;
             if (!CanCreate(plan))
             {
                 return false;
@@ -71,6 +73,7 @@ internal sealed class Utf8EmittedWholeMatcher
         try
         {
             matcher = null;
+            if (!RuntimeFeature.IsDynamicCodeSupported) return false;
             if (!plan.HasValue ||
                 plan.SecondFieldMinCount == 0 ||
                 plan.ThirdFieldMinCount == 0 ||
@@ -180,6 +183,7 @@ internal sealed class Utf8EmittedWholeMatcher
         try
         {
             matcher = null;
+            if (!RuntimeFeature.IsDynamicCodeSupported) return false;
             var candidateCount = (plan.HeadMaxCount - plan.HeadMinCount + 1) * 4;
             var maximumLength = plan.HeadMaxCount + plan.TailCount + 4;
             if (!plan.HasValue ||
@@ -321,6 +325,7 @@ internal sealed class Utf8EmittedWholeMatcher
         try
         {
             matcher = null;
+            if (!RuntimeFeature.IsDynamicCodeSupported) return false;
             if (!plan.HasValue ||
                 plan.TrailingMaxDigits < plan.TrailingMinDigits ||
                 plan.RepeatedGroupCount > 4 ||
