@@ -1,0 +1,82 @@
+[
+  {
+    "Arguments": [
+      "--help"
+    ],
+    "ActualExit": 0,
+    "Name": "help-direct",
+    "ExpectedExit": 0,
+    "Passed": true,
+    "Log": "artifacts\\thirty-first-implementation-20261026\\cli-help-direct.log"
+  },
+  {
+    "Arguments": [
+      "@artifacts/thirty-first-implementation-20261026/help.rsp"
+    ],
+    "ActualExit": 0,
+    "Name": "help-response",
+    "ExpectedExit": 0,
+    "Passed": true,
+    "Log": "artifacts\\thirty-first-implementation-20261026\\cli-help-response.log"
+  },
+  {
+    "Arguments": [
+      "@artifacts/thirty-first-implementation-20261026/version.rsp"
+    ],
+    "ActualExit": 0,
+    "Name": "version-response",
+    "ExpectedExit": 0,
+    "Passed": true,
+    "Log": "artifacts\\thirty-first-implementation-20261026\\cli-version-response.log"
+  },
+  {
+    "Arguments": [
+      "@artifacts/thirty-first-implementation-20261026/info.rsp"
+    ],
+    "ActualExit": 0,
+    "Name": "info-response",
+    "ExpectedExit": 0,
+    "Passed": true,
+    "Log": "artifacts\\thirty-first-implementation-20261026\\cli-info-response.log"
+  },
+  {
+    "Arguments": [
+      "@artifacts/thirty-first-implementation-20261026/invalid-job.rsp"
+    ],
+    "ActualExit": 2,
+    "Name": "invalid-job-response",
+    "ExpectedExit": 2,
+    "Passed": true,
+    "Log": "artifacts\\thirty-first-implementation-20261026\\cli-invalid-job-response.log"
+  },
+  {
+    "Arguments": [
+      "@artifacts/thirty-first-implementation-20261026/empty-filter.rsp"
+    ],
+    "ActualExit": 1,
+    "Name": "empty-filter-response",
+    "ExpectedExit": 1,
+    "Passed": true,
+    "Log": "artifacts\\thirty-first-implementation-20261026\\cli-empty-filter-response.log"
+  },
+  {
+    "Arguments": [
+      "@artifacts/thirty-first-implementation-20261026/missing.rsp"
+    ],
+    "ActualExit": 2,
+    "Name": "missing-response",
+    "ExpectedExit": 2,
+    "Passed": true,
+    "Log": "artifacts\\thirty-first-implementation-20261026\\cli-missing-response.log"
+  },
+  {
+    "Arguments": [
+      "--utf8regex-review-invalid-command"
+    ],
+    "ActualExit": 2,
+    "Name": "unknown-direct",
+    "ExpectedExit": 2,
+    "Passed": true,
+    "Log": "artifacts\\thirty-first-implementation-20261026\\cli-unknown-direct.log"
+  }
+]

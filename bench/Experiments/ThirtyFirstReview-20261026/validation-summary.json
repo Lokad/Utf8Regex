@@ -1,0 +1,16 @@
+{
+  "DisabledDynamicCodeCorePass": 7,
+  "CoreFullDuration": "1m23s",
+  "PythonReFinalFocusPass": 330,
+  "CoreInitialFocusPass": 891,
+  "WindowsLinux": "success",
+  "GeneratedPageVerifiersPass": 3,
+  "CliCasesPass": 8,
+  "ProtectedFilesUnchanged": 18,
+  "NoPackageOrSnapshotRefresh": true,
+  "Source": "9ea498ad11fcdca901c2ce54369070488d0e57c0",
+  "Pcre2FinalFocusPass": 633,
+  "CoreFullPass": 39652,
+  "BaselineProductSource": "56042eb1f4bfff5900caf29f304d64f3210d739a",
+  "CI": "https://github.com/Lokad/Utf8Regex/actions/runs/40292330956"
+}

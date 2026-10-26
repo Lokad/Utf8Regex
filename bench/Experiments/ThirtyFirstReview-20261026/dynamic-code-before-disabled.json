@@ -1,0 +1,47 @@
+{
+  "Producer": "0.4.0-rc.2-dev\u002B56042eb1f4bfff5900caf29f304d64f3210d739a",
+  "IsDynamicCodeSupported": false,
+  "IsDynamicCodeCompiled": false,
+  "Results": [
+    {
+      "Name": "DynamicMethod-control",
+      "Correct": false,
+      "Exception": "System.PlatformNotSupportedException"
+    },
+    {
+      "Name": "Core-ordinary-literal",
+      "Correct": true,
+      "Exception": null
+    },
+    {
+      "Name": "Core-ordinary-family",
+      "Correct": false,
+      "Exception": "System.PlatformNotSupportedException"
+    },
+    {
+      "Name": "Core-ordinary-structural",
+      "Correct": false,
+      "Exception": "System.PlatformNotSupportedException"
+    },
+    {
+      "Name": "Core-compiled-date",
+      "Correct": false,
+      "Exception": "System.PlatformNotSupportedException"
+    },
+    {
+      "Name": "Core-finite-structural-control",
+      "Correct": true,
+      "Exception": null
+    },
+    {
+      "Name": "PythonRe-structural-control",
+      "Correct": true,
+      "Exception": null
+    },
+    {
+      "Name": "Pcre2-structural-control",
+      "Correct": true,
+      "Exception": null
+    }
+  ]
+}

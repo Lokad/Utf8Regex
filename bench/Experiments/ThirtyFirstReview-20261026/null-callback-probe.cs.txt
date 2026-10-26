@@ -1,0 +1,32 @@
+using System.Reflection;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.PythonRe;
+using Lokad.Utf8Regex.Pcre2;
+
+var core = new Utf8Regex("a");
+var python = new Utf8PythonRegex("a");
+var pcre = new Utf8Pcre2Regex("a");
+var rows = new List<object>();
+foreach (var hit in new[] { false, true })
+{
+    var input = new[] { hit ? (byte)'a' : (byte)'b' };
+    Check("Core-byte", hit, () => core.Replace<int>(input, 0, (Utf8MatchEvaluator<int>)null!).Length);
+    Check("Core-text", hit, () => core.ReplaceToString<int>(input, 0, (Utf16MatchEvaluator<int>)null!).Length);
+    Check("PythonRe-byte", hit, () => python.Subn<int>(input, 0, (Utf8PythonUtf8MatchEvaluator<int>)null!, 0, 0).ResultBytes.Length);
+    Check("PythonRe-text", hit, () => python.SubnToString<int>(input, 0, (Utf8PythonMatchEvaluator<int>)null!, 0, 0).ResultText.Length);
+    Check("Pcre2-byte", hit, () => pcre.Replace<int>(input, 0, (Pcre2MatchEvaluator<int>)null!).Length);
+    Check("Pcre2-text", hit, () => pcre.ReplaceToString<int>(input, 0, (Pcre2Utf16MatchEvaluator<int>)null!).Length);
+    Check("BCL-text-control", hit, () => new Regex("a").Replace(hit ? "a" : "b", (MatchEvaluator)null!).Length);
+}
+Console.WriteLine(JsonSerializer.Serialize(new {
+    Producer = typeof(Utf8Regex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
+    Results = rows
+}, new JsonSerializerOptions { WriteIndented = true }));
+void Check(string name, bool hit, Func<int> run)
+{
+    try { rows.Add(new { Profile = name, Hit = hit, ReturnedLength = (int?)run(), Exception = (string?)null, Parameter = (string?)null }); }
+    catch (Exception error) { rows.Add(new { Profile = name, Hit = hit, ReturnedLength = (int?)null, Exception = error.GetType().Name,
+        Parameter = (error as ArgumentException)?.ParamName }); }
+}

@@ -1,0 +1,103 @@
+{
+  "Producer": "0.4.0-rc.2-dev\u002B56042eb1f4bfff5900caf29f304d64f3210d739a",
+  "Results": [
+    {
+      "Profile": "Core-byte",
+      "Hit": false,
+      "ReturnedLength": 1,
+      "Exception": null,
+      "Parameter": null
+    },
+    {
+      "Profile": "Core-text",
+      "Hit": false,
+      "ReturnedLength": 1,
+      "Exception": null,
+      "Parameter": null
+    },
+    {
+      "Profile": "PythonRe-byte",
+      "Hit": false,
+      "ReturnedLength": 1,
+      "Exception": null,
+      "Parameter": null
+    },
+    {
+      "Profile": "PythonRe-text",
+      "Hit": false,
+      "ReturnedLength": 1,
+      "Exception": null,
+      "Parameter": null
+    },
+    {
+      "Profile": "Pcre2-byte",
+      "Hit": false,
+      "ReturnedLength": 1,
+      "Exception": null,
+      "Parameter": null
+    },
+    {
+      "Profile": "Pcre2-text",
+      "Hit": false,
+      "ReturnedLength": 1,
+      "Exception": null,
+      "Parameter": null
+    },
+    {
+      "Profile": "BCL-text-control",
+      "Hit": false,
+      "ReturnedLength": null,
+      "Exception": "ArgumentNullException",
+      "Parameter": "evaluator"
+    },
+    {
+      "Profile": "Core-byte",
+      "Hit": true,
+      "ReturnedLength": null,
+      "Exception": "NullReferenceException",
+      "Parameter": null
+    },
+    {
+      "Profile": "Core-text",
+      "Hit": true,
+      "ReturnedLength": null,
+      "Exception": "NullReferenceException",
+      "Parameter": null
+    },
+    {
+      "Profile": "PythonRe-byte",
+      "Hit": true,
+      "ReturnedLength": null,
+      "Exception": "NullReferenceException",
+      "Parameter": null
+    },
+    {
+      "Profile": "PythonRe-text",
+      "Hit": true,
+      "ReturnedLength": null,
+      "Exception": "NullReferenceException",
+      "Parameter": null
+    },
+    {
+      "Profile": "Pcre2-byte",
+      "Hit": true,
+      "ReturnedLength": null,
+      "Exception": "NullReferenceException",
+      "Parameter": null
+    },
+    {
+      "Profile": "Pcre2-text",
+      "Hit": true,
+      "ReturnedLength": null,
+      "Exception": "NullReferenceException",
+      "Parameter": null
+    },
+    {
+      "Profile": "BCL-text-control",
+      "Hit": true,
+      "ReturnedLength": null,
+      "Exception": "ArgumentNullException",
+      "Parameter": "evaluator"
+    }
+  ]
+}

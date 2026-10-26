@@ -17,6 +17,7 @@ contracts; it does not refresh historical benchmark Status. Relevant receipts:
 
 | Evidence | Scope and remaining limits |
 | --- | --- |
+| [Host/callback/preparation cleanup](bench/Experiments/ThirtyFirstReview-20261026/README.md) | Source `56042eb1` versus `9ea498ad`, same .NET 10.0.14: eight public median changes -4.37% to +3.83%, unchanged allocations. One noisy-row confirmation: PCRE2 +0.01%, preparation -1.61%, control -8.83%. Noise limits causal claims; construction is separate. No cumulative/package qualification. |
 | [Twenty-first cleanup](bench/Experiments/TwentyFirstReview-20261022/README.md) | One callback writer and typed PCRE2 probing roots. Confirmation callback/probe medians -4.47% to +6.35%; noisy controls/spreads remain. Construction costs are separate; no cumulative/package qualification. |
 | [Twentieth cleanup](bench/Experiments/TwentiethReview-20261022/README.md) | Default-result correction, selected-profile qualification and native template borrowing; focused public costs and allocation witnesses are separate from release qualification. |
 | [Nineteenth comparison](bench/Experiments/NineteenthReview-20261022/README.md) | Package/member guards delivered. Fixed-baseline comparison and sole confirmation were inconclusive; PCRE2 Count prototype restored. No cumulative 10% qualification. |

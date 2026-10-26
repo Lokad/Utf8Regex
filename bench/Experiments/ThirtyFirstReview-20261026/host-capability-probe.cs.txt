@@ -1,0 +1,30 @@
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.PythonRe;
+using Lokad.Utf8Regex.Pcre2;
+
+var rows = new List<object>();
+const string structural = @"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+";
+Check("DynamicMethod-control", () => { _ = new DynamicMethod("probe", typeof(void), Type.EmptyTypes); return true; });
+Check("Core-ordinary-literal", () => new Utf8Regex("abc").IsMatch("xxabc"u8));
+Check("Core-ordinary-family", () => new Utf8Regex("abc|xyz").IsMatch("xxxyz"u8));
+Check("Core-ordinary-structural", () => new Utf8Regex(structural).IsMatch("class Bravo"u8));
+Check("Core-compiled-date", () => new Utf8Regex("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", RegexOptions.Compiled | RegexOptions.CultureInvariant).IsMatch("2026-10-24"u8));
+Check("Core-finite-structural-control", () => new Utf8Regex(structural, RegexOptions.CultureInvariant,
+    Regex.InfiniteMatchTimeout, new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000 }).IsMatch("class Bravo"u8));
+Check("PythonRe-structural-control", () => new Utf8PythonRegex(structural).IsMatch("class Bravo"u8));
+Check("Pcre2-structural-control", () => new Utf8Pcre2Regex(structural).IsMatch("class Bravo"u8));
+Console.WriteLine(JsonSerializer.Serialize(new {
+    Producer = typeof(Utf8Regex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
+    RuntimeFeature.IsDynamicCodeSupported, RuntimeFeature.IsDynamicCodeCompiled, Results = rows
+}, new JsonSerializerOptions { WriteIndented = true }));
+void Check(string name, Func<bool> run)
+{
+    try { rows.Add(new { Name = name, Correct = run(), Exception = (string?)null }); }
+    catch (Exception error) { rows.Add(new { Name = name, Correct = false, Exception = error.GetType().FullName }); }
+}

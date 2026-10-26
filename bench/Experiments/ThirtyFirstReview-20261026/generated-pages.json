@@ -1,0 +1,14 @@
+[
+  {
+    "Command": "--verify-readme-parity-report",
+    "Exit": 0
+  },
+  {
+    "Command": "--verify-pythonre-benchmark-markdown",
+    "Exit": 0
+  },
+  {
+    "Command": "--verify-pcre2-benchmark-markdown",
+    "Exit": 0
+  }
+]

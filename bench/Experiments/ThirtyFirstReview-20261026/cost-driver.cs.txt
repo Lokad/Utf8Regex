@@ -1,0 +1,74 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.PythonRe;
+using Lokad.Utf8Regex.Pcre2;
+
+public static class Lanes
+{
+    public static string Producer() => typeof(Utf8Regex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
+    public static (string, Func<long>, long)[] Create()
+    {
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é😀a ", 8)));
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 2048,
+            MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 };
+        var core = new Utf8Regex("(?<x>😀)");
+        var finite = new Utf8Regex("(?<x>😀)", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, policy);
+        var python = new Utf8PythonRegex("(?P<x>😀)");
+        var pcre = new Utf8Pcre2Regex("(?<x>😀)");
+        var count = new Utf8Regex("abc", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var countInput = "abc xyz abc"u8.ToArray();
+        // Seventeen keys churn the existing sixteen-entry cache, making the
+        // production parser/resolver/lowerer live on each measured operation.
+        var templates = Enumerable.Range(0, 17).Select(i => "${missing" + i.ToString("D2") + "}" + new string('x', 128)).ToArray();
+        var nextTemplate = 0;
+        var templateInput = "😀"u8.ToArray();
+        var structural = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+");
+        var structuralInput = "é😀 class Bravo struct Alpha"u8.ToArray();
+        return [
+            ("Core/byte-callback-64B", () => core.Replace(input, 0,
+                static (in Utf8MatchContext match, ref Utf8ReplacementWriter writer, ref int state) => writer.Append("x"u8)).Length, 40),
+            ("Core/text-callback-64B", () => core.ReplaceToString(input, 0,
+                static (in Utf8MatchContext match, ref int state) => "x").Length, 32),
+            ("Core/finite-byte-callback-64B", () => finite.Replace(input, 0,
+                static (in Utf8MatchContext match, ref Utf8ReplacementWriter writer, ref int state) => writer.Append("x"u8)).Length, 40),
+            ("PythonRe/text-callback-to-bytes-64B", () => python.Subn(input, 0,
+                static (int state, Utf8PythonDetailedMatchData match) => "x").ResultBytes.Length, 40),
+            ("Pcre2/byte-callback-64B", () => pcre.Replace(input, 0,
+                static (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref int state) => writer.Append("x"u8)).Length, 40),
+            ("Core/cache-churn-17-unknown-templates", () => {
+                var template = templates[nextTemplate];
+                nextTemplate = (nextTemplate + 1) % templates.Length;
+                return core.ReplaceToString(templateInput, template).Length;
+            }, templates[0].Length),
+            ("Core/ordinary-emitted-structural-Count", () => structural.Count(structuralInput), 2),
+            ("Unchanged-control/compiled-literal-Count", () => count.Count(countInput), 2)
+        ];
+    }
+
+    // Construction is a separate fixed 16-instance observation, never a
+    // self-calibrated loop that continuously emits dynamic methods.
+    public static object[] Construction()
+    {
+        var result = new List<object>();
+        foreach (var pattern in new[] { "abc|xyz", @"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+" })
+        {
+            var observations = new List<object>();
+            for (var i = 0; i < 16; i++)
+            {
+                var bytes = GC.GetAllocatedBytesForCurrentThread();
+                var start = Stopwatch.GetTimestamp();
+                var regex = new Utf8Regex(pattern);
+                var elapsed = Stopwatch.GetTimestamp() - start;
+                var allocated = GC.GetAllocatedBytesForCurrentThread() - bytes;
+                if (!regex.IsMatch("abc class Bravo"u8)) throw new Exception("Construction preflight failed");
+                observations.Add(new { Instance = i, Nanoseconds = elapsed * (1e9 / Stopwatch.Frequency), Bytes = allocated });
+                GC.KeepAlive(regex);
+            }
+            result.Add(new { Pattern = pattern, Observations = observations });
+        }
+        return result.ToArray();
+    }
+}

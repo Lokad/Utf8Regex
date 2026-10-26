@@ -1,0 +1,34 @@
+[
+  {
+    "FirstNs": 10398300,
+    "RemainingMedianBytes": 78248,
+    "Instances": 16,
+    "Version": "0.4.0-rc.2-dev+56042eb1f4bfff5900caf29f304d64f3210d739a",
+    "RemainingMedianNs": 342600,
+    "Pattern": "abc|xyz"
+  },
+  {
+    "FirstNs": 582500,
+    "RemainingMedianBytes": 113312,
+    "Instances": 16,
+    "Version": "0.4.0-rc.2-dev+56042eb1f4bfff5900caf29f304d64f3210d739a",
+    "RemainingMedianNs": 518300,
+    "Pattern": "\\b(?:record|struct|class)\\s+[A-Z][A-Za-z0-9_]+"
+  },
+  {
+    "FirstNs": 9854900,
+    "RemainingMedianBytes": 78248,
+    "Instances": 16,
+    "Version": "0.4.0-rc.2-dev+9ea498ad11fcdca901c2ce54369070488d0e57c0",
+    "RemainingMedianNs": 335200,
+    "Pattern": "abc|xyz"
+  },
+  {
+    "FirstNs": 558300,
+    "RemainingMedianBytes": 113312,
+    "Instances": 16,
+    "Version": "0.4.0-rc.2-dev+9ea498ad11fcdca901c2ce54369070488d0e57c0",
+    "RemainingMedianNs": 524900,
+    "Pattern": "\\b(?:record|struct|class)\\s+[A-Z][A-Za-z0-9_]+"
+  }
+]
