@@ -58,11 +58,11 @@ public sealed class PythonReScalarConversionAdmissionTests
     public void RootAdmissionPrecedesArenaMapAndLeafAcquisition(int denial)
     {
         var parse = new PythonReParser("(?P<x>.)").Parse(PythonReCompileOptions.None);
-        var translation = PythonReTranslator.Translate(parse, true);
+        _ = PythonReTranslator.Translate(parse, false);
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, denial == 0 ? 48ul : ulong.MaxValue,
             denial == 2 ? 1ul : ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateArray<byte>(1, false);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReScalarCompiler.Compile(parse, translation));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReScalarCompiler.Compile(parse));
         Assert.Equal(denial switch { 0 => Utf8ResourceLimitKind.ConstructionBytes, 1 => Utf8ResourceLimitKind.ConstructionDepth,
             _ => Utf8ResourceLimitKind.ConstructionWorkSteps }, failure.ResourceKind);
         Assert.Equal(48ul, owner.Budget.ReservedBytes);
@@ -80,11 +80,11 @@ public sealed class PythonReScalarConversionAdmissionTests
     public void ConversionByteBoundariesPreserveParentAndAdmitAtTheMeasuredPeak(string pattern, bool full)
     {
         var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
-        var translation = PythonReTranslator.Translate(parse, true);
+        _ = PythonReTranslator.Translate(parse, false);
         ulong peak;
         using (var measured = Utf8ConstructionScope.Enter())
         {
-            Assert.NotNull(Compile(parse, translation, full));
+            Assert.NotNull(Compile(parse, full));
             peak = measured.Budget.PeakBytes;
         }
         foreach (var allowance in new[] { 0ul, 128ul, peak / 2, peak - 1, peak })
@@ -93,7 +93,7 @@ public sealed class PythonReScalarConversionAdmissionTests
             var parent = PythonReAstFactory.Literal('p');
             var checkpoint = owner.Budget.ReservedBytes;
             Utf8SliceProgram? program = null;
-            var failure = Record.Exception(() => program = Compile(parse, translation, full));
+            var failure = Record.Exception(() => program = Compile(parse, full));
             Assert.Equal(0ul, owner.Budget.Depth);
             Assert.True(owner.Budget.PeakBytes <= allowance + 128);
             if (failure is not null)
@@ -117,11 +117,11 @@ public sealed class PythonReScalarConversionAdmissionTests
     {
         var parse = new PythonReParser("").Parse(PythonReCompileOptions.None)
             with { Root = new PythonReRawNode(@"\C", PythonReRawKind.Escape) };
-        var translation = PythonReTranslator.Translate(parse, true);
+        _ = PythonReTranslator.Translate(parse, false);
         using var owner = Utf8ConstructionScope.Enter();
         var parent = PythonReAstFactory.Literal('p');
         var checkpoint = owner.Budget.ReservedBytes;
-        Assert.Throws<InvalidOperationException>(() => PythonReScalarCompiler.Compile(parse, translation));
+        Assert.Throws<InvalidOperationException>(() => PythonReScalarCompiler.Compile(parse));
         Assert.Throws<PythonRePatternException>(() => new Utf8PythonRegex(@"\C"));
         Assert.Equal(128ul, owner.Budget.ReservedBytes);
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
@@ -129,18 +129,18 @@ public sealed class PythonReScalarConversionAdmissionTests
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.True(owner.Budget.WorkSteps > 2);
         var recovery = new PythonReParser("(?P<x>.)").Parse(PythonReCompileOptions.None);
-        Assert.NotNull(Compile(recovery, PythonReTranslator.Translate(recovery, true), true));
+        Assert.NotNull(Compile(recovery, true));
     }
 
     [Fact]
     public void NumericCaptureNamesAndDirectIrNodesKeepTheirCompiledBehavior()
     {
         var parse = new PythonReParser("(a)(b)(?P<é>.)").Parse(PythonReCompileOptions.None);
-        var translation = PythonReTranslator.Translate(parse, true);
+        _ = PythonReTranslator.Translate(parse, false);
         using var owner = Utf8ConstructionScope.Enter();
-        var program = Compile(parse, translation, true);
+        var program = Compile(parse, true);
         Assert.NotNull(program);
-        Assert.Equal(new[] { "0", "1", "2", "g3" }, program.GroupNames);
+        Assert.Equal(new[] { "0", "1", "2", "é" }, program.GroupNames);
         Assert.True(owner.Budget.ReservedBytes >= Utf8ConstructionBudget.ArrayBytes<string>(program.GroupNames.Length)
             + Utf8ConstructionBudget.StringBytes(program.GroupNames[1].Length)
             + Utf8ConstructionBudget.StringBytes(program.GroupNames[2].Length));
@@ -150,9 +150,9 @@ public sealed class PythonReScalarConversionAdmissionTests
         Assert.Equal(0ul, owner.Budget.Depth);
     }
 
-    private static Utf8SliceProgram Compile(PythonReParseResult parse, PythonReTranslation translation, bool full)
+    private static Utf8SliceProgram Compile(PythonReParseResult parse, bool full)
     {
-        var program = PythonReScalarCompiler.Compile(parse, translation);
+        var program = PythonReScalarCompiler.Compile(parse);
         return full ? PythonReScalarCompiler.RequireFullMatch(program) : program;
     }
 

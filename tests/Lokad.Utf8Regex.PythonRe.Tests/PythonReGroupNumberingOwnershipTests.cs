@@ -40,7 +40,7 @@ public sealed class PythonReGroupNumberingOwnershipTests
         var parser = new PythonReParser(pattern);
         var parseResult = parser.Parse(PythonReCompileOptions.None);
         var translation = PythonReTranslator.Translate(parseResult, true);
-        var managed = new Regex(PythonReDotNetReference.Render(parseResult, translation), PythonReDotNetReference.ToRegexOptions(parseResult.Options), Regex.InfiniteMatchTimeout);
+        var managed = new Regex(PythonReDotNetReference.Render(parseResult), PythonReDotNetReference.ToRegexOptions(parseResult.Options), Regex.InfiniteMatchTimeout);
 
         var expected = new int[parseResult.CaptureGroupCount + 1];
         var namesByPythonGroup = new string?[parseResult.CaptureGroupCount + 1];
@@ -62,16 +62,18 @@ public sealed class PythonReGroupNumberingOwnershipTests
         foreach (var pair in parseResult.NamedGroups.OrderBy(pair => pair.Value))
         {
             expected[pair.Value] = nextNamed++;
-            Assert.Equal(expected[pair.Value], managed.GroupNumberFromName(translation.EmittedGroupNames[pair.Key]));
+            var alias = "g" + pair.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            Assert.Equal(expected[pair.Value], managed.GroupNumberFromName(alias));
+            Assert.Equal(expected[pair.Value], new Utf8Regex(translation.NativePattern, translation.NativeRegexOptions).GroupNumberFromName(alias));
         }
 
-        var program = PythonReScalarCompiler.Compile(parseResult, translation);
+        var program = PythonReScalarCompiler.Compile(parseResult);
         Assert.Equal(Enumerable.Range(0, expected.Length), program.GroupNumbers);
         for (var pythonGroup = 1; pythonGroup < namesByPythonGroup.Length; pythonGroup++)
         {
             var name = namesByPythonGroup[pythonGroup];
             Assert.Equal(name is null ? pythonGroup.ToString(System.Globalization.CultureInfo.InvariantCulture)
-                : translation.EmittedGroupNames[name], program.GroupNames[pythonGroup]);
+                : name, program.GroupNames[pythonGroup]);
         }
     }
 }

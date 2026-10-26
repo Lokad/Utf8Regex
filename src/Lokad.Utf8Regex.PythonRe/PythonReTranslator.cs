@@ -238,17 +238,15 @@ internal static partial class PythonReTranslator
         // Validate scalar lookbehind widths before emitting native pattern text.
         Inspect(parseResult.Root, InspectionKind.Lookbehind, parseResult, widths, null);
 
-        using var arena = Utf8ConstructionArena.Create(construction.Budget);
-        var emittedGroupNames = BuildEmittedGroupNames(parseResult.NamedGroups, arena);
         // References and scalar lookbehind widths are validated even when no
         // operation can use the optional Core program. Its text rendering and
         // numbering permutation then have no consumer.
         if (!renderNativePattern)
         {
-            arena.Complete();
             construction.Complete();
-            return new PythonReTranslation(string.Empty, ToNativeRegexOptions(parseResult.Options), emittedGroupNames);
+            return new PythonReTranslation(string.Empty, ToNativeRegexOptions(parseResult.Options));
         }
+        using var arena = Utf8ConstructionArena.Create(construction.Budget);
         using var builder = Utf8ConstructionText.Create();
         // Core text numbers unnamed groups before named groups; Python numbers by
         // opening order. This temporary permutation serves text rendering only.
@@ -279,7 +277,7 @@ internal static partial class PythonReTranslator
             }
         }
 
-        AppendTree(parseResult.Root, builder, emittedGroupNames, coreNumbersByPython);
+        AppendTree(parseResult.Root, builder, parseResult.NamedGroups, coreNumbersByPython);
         var nativePattern = builder.ToText();
         if ((parseResult.Options & PythonReCompileOptions.Verbose) == 0)
         {
@@ -289,7 +287,7 @@ internal static partial class PythonReTranslator
             nativePattern = Utf8ConstructionText.Replace(nativePattern, @"\ ", " ");
         }
 
-        var result = new PythonReTranslation(nativePattern, ToNativeRegexOptions(parseResult.Options), emittedGroupNames);
+        var result = new PythonReTranslation(nativePattern, ToNativeRegexOptions(parseResult.Options));
         arena.Complete();
         construction.Complete();
         return result;
@@ -328,7 +326,7 @@ internal static partial class PythonReTranslator
     {
         using var construction = Utf8ConstructionScope.Enter();
         using var builder = Utf8ConstructionText.Create();
-        AppendTree(node, builder, Utf8ConstructionReadOnlyMap<string, string>.Empty, []);
+        AppendTree(node, builder, Utf8ConstructionReadOnlyMap<string, int>.Empty, []);
         var result = builder.ToText();
         construction.Complete();
         return result;
@@ -350,49 +348,6 @@ internal static partial class PythonReTranslator
         {
             builder.Append('x');
         }
-    }
-
-    private static IReadOnlyDictionary<string, string> BuildEmittedGroupNames(IReadOnlyDictionary<string, int> namedGroups, Utf8ConstructionArena arena)
-    {
-        using var map = Utf8ConstructionMap<string, string>.Create(arena.Budget, StringComparer.Ordinal);
-        using var names = Utf8ConstructionBuffer<KeyValuePair<string, int>>.Create(arena.Budget);
-        foreach (var pair in namedGroups) {
-            Utf8ConstructionScope.ChargeWork(1);
-            names.Add(pair);
-        }
-        names.Sort(static (left, right) => left.Value.CompareTo(right.Value));
-        for (var index = 0; index < names.Count; index++)
-        {
-            var pair = names[index];
-            Utf8ConstructionScope.ChargeWork(1);
-            if (IsDotNetSafeGroupName(pair.Key)) map[pair.Key] = pair.Key;
-            else
-            {
-                using var name = Utf8ConstructionText.Create();
-                map[pair.Key] = name.Append('g').Append(pair.Value).ToText();
-            }
-        }
-
-        return map.Freeze(arena);
-    }
-
-    private static bool IsDotNetSafeGroupName(string name)
-    {
-        if (string.IsNullOrEmpty(name) || !char.IsAsciiLetter(name[0]) && name[0] != '_')
-        {
-            return false;
-        }
-
-        for (var i = 1; i < name.Length; i++)
-        {
-            Utf8ConstructionScope.ChargeWork(1);
-            if (!(char.IsAsciiLetterOrDigit(name[i]) || name[i] == '_'))
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     private static uint EnsureFixedWidth(PythonReNode node, PythonReParseResult parseResult, Utf8ConstructionMap<PythonReNode, PythonReWidth> widths)
@@ -641,5 +596,4 @@ internal static partial class PythonReTranslator
 
 internal readonly record struct PythonReTranslation(
     string NativePattern,
-    RegexOptions NativeRegexOptions,
-    IReadOnlyDictionary<string, string> EmittedGroupNames);
+    RegexOptions NativeRegexOptions);

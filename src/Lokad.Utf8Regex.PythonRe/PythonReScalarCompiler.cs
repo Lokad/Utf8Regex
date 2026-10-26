@@ -55,8 +55,7 @@ internal static partial class PythonReScalarCompiler
         internal Utf8SliceNode? Yes;
     }
 
-    internal static Utf8SliceProgram Compile(PythonReParseResult parse,
-        PythonReTranslation translation)
+    internal static Utf8SliceProgram Compile(PythonReParseResult parse)
     {
         using var construction = Utf8ConstructionScope.Enter();
         using var frames = Utf8ConstructionFrames<ConversionFrame>.Create(construction.Budget, new(parse.Root, parse.Options));
@@ -216,17 +215,24 @@ internal static partial class PythonReScalarCompiler
         // has its separate named/unnamed numbering; it does not define VM slots.
         var names = arena.Allocate<string>(checked(parse.CaptureGroupCount + 1), true);
         names[0] = "0"; // Borrowed immutable whole-match slot spelling.
+        // Borrow original, admitted Python names. Optional Core aliases never
+        // define owned metadata, and named slots need no discarded decimal text.
+        foreach (var named in parse.NamedGroups)
+        {
+            construction.Budget.ChargeWork(1);
+            names[named.Value] = named.Key;
+        }
         if (names.Length > 1)
         {
             using var nameText = Utf8ConstructionText.Create();
             for (var group = 1; group < names.Length; group++)
             {
+                construction.Budget.ChargeWork(1);
+                if (names[group] is not null) continue;
                 nameText.Clear();
                 names[group] = nameText.Append(group).ToText();
             }
         }
-        foreach (var named in parse.NamedGroups)
-            names[named.Value] = translation.EmittedGroupNames[named.Key];
         var program = Utf8SliceLowerer.Lower(root, names, false, false, false)
             ?? throw new InvalidOperationException("The validated Python tree has no owned scalar program.");
         arena.Complete();

@@ -125,6 +125,7 @@ public sealed class PythonReTranslationLifetimeTests
         var scalar = Translate(false);
         Assert.Equal(string.Empty, scalar.Pattern);
         Assert.Equal(rendered.Name, scalar.Name);
+        Assert.Equal("α", scalar.Name);
         Assert.True(scalar.Work < rendered.Work);
         Assert.True(scalar.PeakBytes < rendered.PeakBytes);
 
@@ -133,7 +134,8 @@ public sealed class PythonReTranslationLifetimeTests
             using var scope = Utf8ConstructionScope.Enter();
             var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
             var translation = PythonReTranslator.Translate(parse, render);
-            return (translation.NativePattern, translation.EmittedGroupNames["α"], scope.Budget.WorkSteps, scope.Budget.PeakBytes);
+            var name = PythonReScalarCompiler.Compile(parse).GroupNames[1];
+            return (translation.NativePattern, name, scope.Budget.WorkSteps, scope.Budget.PeakBytes);
         }
     }
 

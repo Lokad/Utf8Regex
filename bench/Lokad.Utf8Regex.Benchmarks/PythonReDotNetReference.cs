@@ -23,10 +23,11 @@ internal static class PythonReDotNetReference
     internal static string Render(Utf8PythonRegex regex)
     {
         var parsed = new PythonReParser(regex.Pattern).Parse(regex.Options);
-        return Render(parsed, PythonReTranslator.Translate(parsed, true));
+        _ = PythonReTranslator.Translate(parsed, false); // Validate references/lookbehind before rendering.
+        return Render(parsed);
     }
 
-    internal static string Render(PythonReParseResult parseResult, PythonReTranslation translation)
+    internal static string Render(PythonReParseResult parseResult)
     {
         using var construction = Utf8ConstructionScope.Enter();
         using var arena = Utf8ConstructionArena.Create(construction.Budget);
@@ -57,7 +58,7 @@ internal static class PythonReDotNetReference
             }
         }
 
-        AppendTree(parseResult.Root, builder, translation.EmittedGroupNames, coreNumbersByPython);
+        AppendTree(parseResult.Root, builder, parseResult.NamedGroups, coreNumbersByPython);
         var result = builder.ToText();
         if ((parseResult.Options & PythonReCompileOptions.Verbose) == 0)
             result = Utf8ConstructionText.Replace(result, @"\ ", " ");
@@ -365,7 +366,7 @@ internal static class PythonReDotNetReference
     }
 
     private static void AppendTree(PythonReNode node, Utf8ConstructionText builder,
-        IReadOnlyDictionary<string, string> emittedGroupNames, int[] coreNumbersByPython)
+        IReadOnlyDictionary<string, int> pythonGroupNumbers, int[] coreNumbersByPython)
     {
         var budget = Utf8ConstructionScope.CurrentBudget;
         using var frames = Utf8ConstructionFrames<RenderFrame>.Create(budget, new(node));
@@ -374,7 +375,7 @@ internal static class PythonReDotNetReference
             budget.ChargeWork(1);
             var index = frames.Count - 1;
             var frame = frames[index];
-            var complete = ResumeRender(ref frame, builder, emittedGroupNames, coreNumbersByPython, out var child);
+            var complete = ResumeRender(ref frame, builder, pythonGroupNumbers, coreNumbersByPython, out var child);
             frames[index] = frame;
             if (complete) frames.Pop();
             else frames.Push(child);
@@ -382,7 +383,7 @@ internal static class PythonReDotNetReference
     }
 
     private static bool ResumeRender(ref RenderFrame frame, Utf8ConstructionText builder,
-        IReadOnlyDictionary<string, string> names, int[] numbers, out RenderFrame child)
+        IReadOnlyDictionary<string, int> names, int[] numbers, out RenderFrame child)
     {
         child = default;
         switch (frame.Kind)
@@ -393,7 +394,7 @@ internal static class PythonReDotNetReference
                 if (frame.Stage++ == 0)
                 {
                     var group = (PythonReGroupNode)frame.Node;
-                    AppendGroupPrefix(group, builder, names);
+                    AppendGroupPrefix(group, builder);
                     child = new(group.Inner);
                     return false;
                 }
@@ -456,7 +457,7 @@ internal static class PythonReDotNetReference
     }
 
     private static bool ResumeRenderedNode(ref RenderFrame frame, Utf8ConstructionText builder,
-        IReadOnlyDictionary<string, string> names, int[] numbers, out RenderFrame child)
+        IReadOnlyDictionary<string, int> names, int[] numbers, out RenderFrame child)
     {
         child = default;
         switch (frame.Node)
@@ -483,7 +484,7 @@ internal static class PythonReDotNetReference
                 builder.Append(RenderFragment(raw.Text));
                 return true;
             case PythonReNamedBackreferenceNode named:
-                builder.Append(@"\k<").Append(names[named.Name]).Append('>');
+                builder.Append(@"\k<g").Append(names[named.Name]).Append('>');
                 return true;
             case PythonReNumericBackreferenceNode numeric:
                 builder.Append('\\').Append(numbers[numeric.GroupNumber]);
@@ -498,13 +499,12 @@ internal static class PythonReDotNetReference
         }
     }
 
-    private static void AppendGroupPrefix(PythonReGroupNode node, Utf8ConstructionText builder,
-        IReadOnlyDictionary<string, string> names)
+    private static void AppendGroupPrefix(PythonReGroupNode node, Utf8ConstructionText builder)
     {
         if (node.Kind == PythonReGroupKind.NamedCapturing)
         {
-            if (node.Name is not string name) throw new PythonRePatternException("Named capturing group has no group name.");
-            builder.Append("(?<").Append(names[name]).Append('>');
+            if (node.Name is null) throw new PythonRePatternException("Named capturing group has no group name.");
+            builder.Append("(?<g").Append(node.GroupNumber).Append('>');
         }
         else if (node.Kind == PythonReGroupKind.ScopedFlags)
         {
@@ -524,7 +524,7 @@ internal static class PythonReDotNetReference
     }
 
     private static void AppendConditionalPrefix(PythonReConditionalNode node, Utf8ConstructionText builder,
-        IReadOnlyDictionary<string, string> names, int[] numbers)
+        IReadOnlyDictionary<string, int> names, int[] numbers)
     {
         builder.Append("(?(");
         switch (node.Reference.Kind)
@@ -532,7 +532,7 @@ internal static class PythonReDotNetReference
             case PythonReConditionalReferenceKind.GroupNumber: builder.Append(numbers[node.Reference.GroupNumber]); break;
             case PythonReConditionalReferenceKind.GroupName:
                 if (node.Reference.GroupName is not string name) throw new PythonRePatternException("Named conditional reference has no group name.");
-                builder.Append(names[name]);
+                builder.Append('g').Append(names[name]);
                 break;
             default: throw new PythonRePatternException("Unsupported conditional reference.");
         }

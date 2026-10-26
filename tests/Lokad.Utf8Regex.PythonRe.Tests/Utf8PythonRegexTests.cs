@@ -165,7 +165,7 @@ public sealed class Utf8PythonRegexTests
     {
         var regex = new Utf8PythonRegex(@"(?P<word>foo)");
 
-        Assert.Equal(@"(?<word>foo)", PythonReDotNetReference.Render(regex));
+        Assert.Equal(@"(?<g1>foo)", PythonReDotNetReference.Render(regex));
         Assert.Contains("word", regex.GetGroupNames(), StringComparer.Ordinal);
         Assert.True(regex.IsMatch("foo"u8));
     }
@@ -175,7 +175,7 @@ public sealed class Utf8PythonRegexTests
     {
         var regex = new Utf8PythonRegex(@"(?P<word>foo)-(?P=word)");
 
-        Assert.Equal(@"(?<word>foo)-\k<word>", PythonReDotNetReference.Render(regex));
+        Assert.Equal(@"(?<g1>foo)-\k<g1>", PythonReDotNetReference.Render(regex));
         Assert.True(regex.IsMatch("foo-foo"u8));
         Assert.False(regex.IsMatch("foo-bar"u8));
     }

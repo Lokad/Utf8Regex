@@ -213,7 +213,7 @@ internal static partial class PythonReTranslator
     }
 
     private static void AppendTree(PythonReNode node, Utf8ConstructionText builder,
-        IReadOnlyDictionary<string, string> emittedGroupNames, int[] coreNumbersByPython)
+        IReadOnlyDictionary<string, int> pythonGroupNumbers, int[] coreNumbersByPython)
     {
         var budget = Utf8ConstructionScope.CurrentBudget;
         using var frames = Utf8ConstructionFrames<RenderFrame>.Create(budget, new(node));
@@ -222,7 +222,7 @@ internal static partial class PythonReTranslator
             budget.ChargeWork(1);
             var index = frames.Count - 1;
             var frame = frames[index];
-            var complete = ResumeRender(ref frame, builder, emittedGroupNames, coreNumbersByPython, out var child);
+            var complete = ResumeRender(ref frame, builder, pythonGroupNumbers, coreNumbersByPython, out var child);
             frames[index] = frame;
             if (complete) frames.Pop();
             else frames.Push(child);
@@ -230,7 +230,7 @@ internal static partial class PythonReTranslator
     }
 
     private static bool ResumeRender(ref RenderFrame frame, Utf8ConstructionText builder,
-        IReadOnlyDictionary<string, string> names, int[] numbers, out RenderFrame child)
+        IReadOnlyDictionary<string, int> names, int[] numbers, out RenderFrame child)
     {
         child = default;
         switch (frame.Kind)
@@ -241,7 +241,7 @@ internal static partial class PythonReTranslator
                 if (frame.Stage++ == 0)
                 {
                     var group = (PythonReGroupNode)frame.Node;
-                    AppendGroupPrefix(group, builder, names);
+                    AppendGroupPrefix(group, builder);
                     child = new(group.Inner);
                     return false;
                 }
@@ -304,7 +304,7 @@ internal static partial class PythonReTranslator
     }
 
     private static bool ResumeRenderedNode(ref RenderFrame frame, Utf8ConstructionText builder,
-        IReadOnlyDictionary<string, string> names, int[] numbers, out RenderFrame child)
+        IReadOnlyDictionary<string, int> names, int[] numbers, out RenderFrame child)
     {
         child = default;
         switch (frame.Node)
@@ -332,7 +332,7 @@ internal static partial class PythonReTranslator
                 builder.Append(raw.Text);
                 return true;
             case PythonReNamedBackreferenceNode named:
-                builder.Append(@"\k<").Append(names[named.Name]).Append('>');
+                builder.Append(@"\k<g").Append(names[named.Name]).Append('>');
                 return true;
             case PythonReNumericBackreferenceNode numeric:
                 builder.Append('\\').Append(numbers[numeric.GroupNumber]);
@@ -347,13 +347,14 @@ internal static partial class PythonReTranslator
         }
     }
 
-    private static void AppendGroupPrefix(PythonReGroupNode node, Utf8ConstructionText builder,
-        IReadOnlyDictionary<string, string> names)
+    private static void AppendGroupPrefix(PythonReGroupNode node, Utf8ConstructionText builder)
     {
         if (node.Kind == PythonReGroupKind.NamedCapturing)
         {
-            if (node.Name is not string name) throw new PythonRePatternException("Named capturing group has no group name.");
-            builder.Append("(?<").Append(names[name]).Append('>');
+            if (node.Name is null) throw new PythonRePatternException("Named capturing group has no group name.");
+            // Every named capture uses its unique Python slot. User spellings
+            // never enter this namespace, so names such as g1 cannot collide.
+            builder.Append("(?<g").Append(node.GroupNumber).Append('>');
         }
         else if (node.Kind == PythonReGroupKind.ScopedFlags)
         {
@@ -373,7 +374,7 @@ internal static partial class PythonReTranslator
     }
 
     private static void AppendConditionalPrefix(PythonReConditionalNode node, Utf8ConstructionText builder,
-        IReadOnlyDictionary<string, string> names, int[] numbers)
+        IReadOnlyDictionary<string, int> names, int[] numbers)
     {
         builder.Append("(?(");
         switch (node.Reference.Kind)
@@ -381,7 +382,7 @@ internal static partial class PythonReTranslator
             case PythonReConditionalReferenceKind.GroupNumber: builder.Append(numbers[node.Reference.GroupNumber]); break;
             case PythonReConditionalReferenceKind.GroupName:
                 if (node.Reference.GroupName is not string name) throw new PythonRePatternException("Named conditional reference has no group name.");
-                builder.Append(names[name]);
+                builder.Append('g').Append(names[name]);
                 break;
             default: throw new PythonRePatternException("Unsupported conditional reference.");
         }

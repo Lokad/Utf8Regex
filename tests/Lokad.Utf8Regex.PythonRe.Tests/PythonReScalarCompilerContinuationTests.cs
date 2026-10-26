@@ -21,7 +21,7 @@ public sealed class PythonReScalarCompilerContinuationTests
     public void DeepResolvedTreesKeepScalarWidthsWithoutRecursiveRecordHashing(int depth, int shape, bool full)
     {
         var parse = new PythonReParser("(?P<x>.)").Parse(PythonReCompileOptions.None);
-        var translation = PythonReTranslator.Translate(parse, true);
+        _ = PythonReTranslator.Translate(parse, false);
         var node = parse.Root;
         for (var level = 0; level < depth; level++)
             node = shape switch
@@ -34,7 +34,7 @@ public sealed class PythonReScalarCompilerContinuationTests
                 _ => new PythonReGroupNode(PythonReGroupKind.ScopedFlags, node, null,
                     PythonReCompileOptions.Multiline, PythonReCompileOptions.None),
             };
-        var program = PythonReScalarCompiler.Compile(parse with { Root = node }, translation);
+        var program = PythonReScalarCompiler.Compile(parse with { Root = node });
         if (full) program = PythonReScalarCompiler.RequireFullMatch(program);
         Assert.NotNull(program);
         var starts = new int[program.GroupCount];

@@ -222,7 +222,7 @@ public sealed partial class Utf8PythonRegex
         var isExactLiteral = PythonReTranslator.IsExactLiteral(parseResult.Root);
         var prepareCore = !_canMatchEmpty || _canUseUtf8IterationFastPath;
         var translation = PythonReTranslator.Translate(parseResult, prepareCore);
-        _scalarProgram = PythonReScalarCompiler.Compile(parseResult, translation);
+        _scalarProgram = PythonReScalarCompiler.Compile(parseResult);
         // Failed preparation is retryable: a caller's cancellation must not
         // become a permanently cached failure. Concurrent cold callers may each
         // derive under their own construction scope; only one result is kept.

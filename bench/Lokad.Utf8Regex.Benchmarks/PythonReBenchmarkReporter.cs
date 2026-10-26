@@ -983,7 +983,7 @@ internal static partial class PythonReBenchmarkReporter
         const PythonReCompileOptions options = PythonReCompileOptions.None;
         var parseResult = new PythonReParser(pattern).Parse(options);
         var translation = PythonReTranslator.Translate(parseResult, true);
-        var referencePattern = PythonReDotNetReference.Render(parseResult, translation);
+        var referencePattern = PythonReDotNetReference.Render(parseResult);
         var referenceOptions = PythonReDotNetReference.ToRegexOptions(options);
         var input = Encoding.UTF8.GetBytes("prefix item-123 foo Ð¨ÐµÑ€Ð»Ð¾Ðº suffix");
         var fullMatchInputUtf8 = Encoding.UTF8.GetBytes(fullMatchInput);
@@ -1890,7 +1890,7 @@ internal sealed class PythonReBenchmarkContext
         _pythonRegex = new Utf8PythonRegex(benchmarkCase.Pattern, benchmarkCase.Options);
         var parsed = new PythonReParser(benchmarkCase.Pattern).Parse(benchmarkCase.Options);
         var translation = PythonReTranslator.Translate(parsed, true);
-        var translatedPattern = PythonReDotNetReference.Render(parsed, translation);
+        var translatedPattern = PythonReDotNetReference.Render(parsed);
         var regexOptions = PythonReDotNetReference.ToRegexOptions(benchmarkCase.Options);
         _regex = new Regex(translatedPattern, regexOptions, Regex.InfiniteMatchTimeout);
         _fullRegex = new Regex($@"\A(?:{translatedPattern})\z", regexOptions, Regex.InfiniteMatchTimeout);

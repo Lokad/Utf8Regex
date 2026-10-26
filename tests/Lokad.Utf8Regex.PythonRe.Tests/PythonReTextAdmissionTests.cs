@@ -62,12 +62,11 @@ public sealed class PythonReTextAdmissionTests
     }
 
     [Fact]
-    public void TranslationRetainsNativeTextAndNames()
+    public void TranslationRetainsNativeTextWithOrdinalNames()
     {
         var parse = new PythonReParser("(?P<é>a)(b)(?P=é)").Parse(PythonReCompileOptions.None);
         using var owner = Utf8ConstructionScope.Enter();
         var result = PythonReTranslator.Translate(parse, true);
-        Assert.Equal("g1", result.EmittedGroupNames["é"]);
         Assert.Equal("(?<g1>a)(b)\\k<g1>", result.NativePattern);
         Assert.True(owner.Budget.ReservedBytes >= Utf8ConstructionBudget.StringBytes(result.NativePattern.Length));
     }
