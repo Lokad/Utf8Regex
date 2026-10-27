@@ -85,7 +85,7 @@ Archive `685F142A5A0A32E2D01AE0249EA96C7D8A143297BA0967255C7139C85FCDF513`.
 Local predeclaration/source/logs: `artifacts/rtl-strict-end-20261020`. A new fixture
 local function was initially placed after record declarations; it was moved before
 them before any preflight/timing. That setup failure remains preserved.
-Source6b3b9418 [CI39393751142](https://github.com/Lokad/Utf8Regex/actions/runs/39393751142)
+Source6b3b9418 CI39393751142
 is terminal green on Windows/Linux, closed. [Receipt](ci.json). Producer ca0c8a6f
 freezes metadata/docs only for coherent119 qualification. Broader R01–R10 remains
 open; this source pair does not substitute for actual package/default-tier costs.

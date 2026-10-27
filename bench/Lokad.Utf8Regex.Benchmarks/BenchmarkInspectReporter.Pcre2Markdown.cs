@@ -412,7 +412,7 @@ internal static partial class BenchmarkInspectReporter
         else
         {
             writer.WriteLine(
-                $"| [`{dependency.PackageId}`](https://www.nuget.org/packages/PCRE.NET/{dependency.PackageVersion}) | `{dependency.PackageVersion}` | `{dependency.NativePcre2Version}` | `{dependency.License}` | [`{dependency.SourceRevision[..12]}`]({dependency.SourceRepository}/commit/{dependency.SourceRevision}) | {dependency.Profile} |");
+                $"| [`{dependency.PackageId}`](https://www.nuget.org/packages/PCRE.NET/{dependency.PackageVersion}) | `{dependency.PackageVersion}` | `{dependency.NativePcre2Version}` | `{dependency.License}` | `{dependency.SourceRevision[..12]}` | {dependency.Profile} |");
         }
 
         writer.WriteLine();

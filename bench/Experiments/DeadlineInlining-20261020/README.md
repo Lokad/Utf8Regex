@@ -76,7 +76,7 @@ Private source/patch/disassembly/test/transport receipts:
 artifacts/deadline-inline-20261020. One temporary-driver token-overload compile
 error was corrected before preflight/timing; its initial log remains. No timed
 restart, immutable artifact modification, publication or consumer pin change.
-Source CI [39376625283](https://github.com/Lokad/Utf8Regex/actions/runs/39376625283)
+Source CI 39376625283
 is terminal green on Windows/Linux forfabc865c, completed2026-10-20T05:50:43Z;
 [receipt](ci.json). Later matching SkipBuild eager-construction checks additionally
 pass Core31/Python27/PCRE37, reusing measured CoreBAE88E2A.

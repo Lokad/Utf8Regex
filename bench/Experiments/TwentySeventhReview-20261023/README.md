@@ -58,7 +58,7 @@ an artificial backlog. No replacement inventory framework was introduced.
   unlimited and all four finite invocation controls.
 - Full affected PCRE2 suite: 6,126 pass in 7 seconds on the final source.
   Windows/Linux CI both passed for exact source `5aa1647b`:
-  [run 39964724013](https://github.com/Lokad/Utf8Regex/actions/runs/39964724013).
+  run 39964724013.
   CI builds once per platform, then tests all four source fixtures using matching
   binaries. This is source validation, not detached package/consumer qualification.
 - A benchmark/library closure builds Release tooling at `667d1725`. Matching

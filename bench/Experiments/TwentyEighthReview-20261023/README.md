@@ -57,7 +57,7 @@ switch. CHANGELOG documents the retirement and collection improvement.
   (public-api-equality.json). These observations used matching source-built
   fixture binaries before final commit metadata; they are not package provenance.
 - Final source `3a77e699` passes both Windows/Linux source CI:
-  [run 39972986785](https://github.com/Lokad/Utf8Regex/actions/runs/39972986785).
+  run 39972986785.
   CI builds once per platform and tests all four source fixtures using matching
   binaries. Local experiments built affected projects and reused their binaries.
 - Final benchmark/library closure and matching generated-page checks pass without

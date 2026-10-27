@@ -1,6 +1,6 @@
 # Lokad.Utf8Regex
 
-Development source: **0.4.0-rc.3-dev**; no new package candidate is staged. Frozen **0.4.0-rc.2** has Windows/Linux correctness and consumer evidence, while its cumulative performance gate is **inconclusive**. See the [current release correction](https://github.com/Lokad/Utf8Regex/blob/master/bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md). RC1 is superseded.
+Development source: **0.4.0-rc.3-dev**; no new package candidate is staged. Frozen **0.4.0-rc.2** has Windows/Linux correctness and consumer evidence, while its cumulative performance gate is **inconclusive**. See the [current release correction](bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md). RC1 is superseded.
 
 `Lokad.Utf8Regex` **0.4.0-rc.3-dev** is a `net10.0` library matching Unicode
 scalars over strict UTF-8 spans, with byte offsets and lengths. Dot matches 😀
@@ -11,8 +11,8 @@ The prerelease line covers three packages at the same version: **Lokad.Utf8Regex
 exactly Core **[0.4.0-rc.3-dev]** and can share one dependency graph. Upgrade them
 together; do not override an adapter's Core dependency.
 
-Browse the [documentation index](docs/INDEX.md), [release notes](CHANGELOG.md), [migration guide](docs/MIGRATION.md) and
-[host resource/ownership contract](docs/HOST-INTEGRATION.md). The
+Read the [release notes](CHANGELOG.md), [migration guide](docs/MIGRATION.md) and
+[resource and ownership contract](docs/SPEC.md#cancellation-deadlines-and-resource-limits). The
 [PythonRe](src/Lokad.Utf8Regex.PythonRe/README.md) and
 [PCRE2](src/Lokad.Utf8Regex.Pcre2/README.md) profiles have their own grammar,
 capture and operation boundaries. The selected profiles do not promise complete
@@ -26,7 +26,8 @@ capture and operation boundaries. The selected profiles do not promise complete
 - Input must be well-formed UTF-8 throughout, even when a match occurs early.
   Primary match/capture coordinates are bytes. Core uses ordered alternatives;
   it does not implement POSIX leftmost-longest matching.
-- Execution is managed and owned, with native UTF-8 fast paths. Shipped libraries
+- All three packages are fully managed .NET libraries, with optimized UTF-8
+  search paths. Shipped libraries
   do not use BCL regex matchers/results or a native PCRE2 binary. BCL regex is a
   comparator only where its UTF-16 behavior overlaps the scalar contract.
 - Core uses .NET-style grammar within its supported scope. CultureInvariant is
@@ -46,10 +47,8 @@ capture and operation boundaries. The selected profiles do not promise complete
   value-cursor copies have independent positions/shared allowance; PythonRe
   reference aliases share position and disposal.
 
-[Current performance evidence](docs/CURRENT-PERFORMANCE.md) records explicit source,
-package and runtime identities, finite-limit costs and uncertainty. Benchmark
-snapshots below retain their recorded versions; they are not a new RC1 timing
-campaign or a claim that every row qualifies the current implementation.
+Benchmark snapshots below retain their recorded source and runtime versions;
+historical rows do not qualify the current implementation or release.
 
 ## Public API
 
@@ -128,20 +127,12 @@ cancellation and timeout retain their distinct exceptions. Byte caps cover the
 documented modeled capacities, not process memory. Lazy preparation, caller
 callback execution/allocations, later standalone getters and retained host storage
 have separate scope; see
-[host composition](docs/HOST-INTEGRATION.md).
+[host composition](docs/SPEC.md#host-admission).
 
-The tables below mix revisions and dates recorded in `README.Benchmarks.json`;
-most rows remain historical. Four cases were refreshed on source `c2373b04ea08`
-on 2026-10-19: email IsMatch, imports Count, lexer doc-line loops and Russian
-literal Count, in both ordinary and compiled sections. These recorded source
-results show substantial gaps against predecoded .NET; Russian Count beats the
-decode baseline. They do not qualify other rows or a package. See
-[current measurements and limitations](docs/CURRENT-PERFORMANCE.md).
-Historical scalar.110 package costs cover finite limits, live tokens and Python
-materialization, including noisy lanes. Their local-only receipt is
-`artifacts/core-python-scalar110-20261019/vm-cost/RESULT.md`; it is not included
-in a source checkout. Tracked package-cost evidence is in [CURRENT-PERFORMANCE.md](docs/CURRENT-PERFORMANCE.md).
-Earlier source comparisons retain their scope in [CHANGELOG.md](CHANGELOG.md).
+The tables below mix revisions and dates recorded in
+[README.Benchmarks.json](README.Benchmarks.json). Profile measurements are in the
+[PythonRe](src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md) and
+[PCRE2](src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md) benchmark pages.
 
 The README CLI now uses an unboxed allocation sink. Older allocation figures can
 include a 24-byte harness allocation per lane measurement; stored historical rows

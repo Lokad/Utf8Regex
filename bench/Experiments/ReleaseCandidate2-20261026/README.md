@@ -23,7 +23,7 @@ pass on Windows/.NET 10.0.14 and Linux/.NET 10.0.12, without Linux library build
 Both platforms pass the original producer Awk/Lython/PCRE2 consumers and combined
 graph, 121 CPython capture fixtures and 91 semantic digests. Exact-feed/cache/lock/
 DLL, API/member inventory and PDB/SourceLink/source checks are retained.
-[Exact freeze CI](https://github.com/Lokad/Utf8Regex/actions/runs/40364734526) is green.
+Exact freeze CI (run 40364734526) is green.
 
 [Operating costs](RESULT.md) use actual package DLLs versus fixed baseline 844dcbad,
 one 109.138 s comparison and sole 23.568 s confirmation. Fifteen public rows initially

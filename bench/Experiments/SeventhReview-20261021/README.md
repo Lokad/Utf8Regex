@@ -78,7 +78,7 @@ the latter changes tests and one benchmark-only nullable check.
 
 [Complete Windows/Linux source CI](source-ci.json) is terminal green at exact
 `884b156b6a2ad5b0da0781937aff4c2f2b04375a`:
-[run 39567603690](https://github.com/Lokad/Utf8Regex/actions/runs/39567603690).
+run 39567603690.
 All four suites pass on both platforms, no failed/skipped tests or duplicate
 discovery warnings. Existing compiler/analyzer warnings remain. Closeout is
 documentation/receipts only; no repeated complete matrix or package qualification.

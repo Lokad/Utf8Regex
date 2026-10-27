@@ -78,7 +78,7 @@ from these informational/error checks. All three existing generated-page
 verifiers pass without writes.
 
 Windows/Linux full source CI is green at `9ea498ad` in
-[run 40292330956](https://github.com/Lokad/Utf8Regex/actions/runs/40292330956).
+run 40292330956.
 Both existing jobs also run the focused disabled-capability fixture on the same
 binaries; there is no new matrix or qualification framework. `ci-source.json`
 preserves the jobs/steps. Two spaced status requests were used.

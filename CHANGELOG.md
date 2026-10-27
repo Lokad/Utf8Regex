@@ -14,7 +14,7 @@ No new candidate is staged. Development after RC2 includes:
 
 Frozen RC2 correctness/identity/consumer evidence retains its recorded scope.
 Its cumulative performance acceptance was withdrawn as **inconclusive**:
-[dated correction](https://github.com/Lokad/Utf8Regex/blob/master/bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md).
+[dated correction](bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md).
 Package/symbol/ZIP bytes remain unchanged. Development fixes require fresh
 candidate bytes at a future release boundary.
 
@@ -48,7 +48,7 @@ Core [0.4.0-rc.2]; upgrade selected packages together.
   owners and benchmark-only shipped code are removed. Actual Unsafe.SizeOf
   queries remain; conservative construction/cache charges may double-count.
 
-Read [migration](https://github.com/Lokad/Utf8Regex/blob/master/docs/MIGRATION.md) and [host integration](https://github.com/Lokad/Utf8Regex/blob/master/docs/HOST-INTEGRATION.md) before
+Read [migration](docs/MIGRATION.md) and [resource controls](docs/SPEC.md#cancellation-deadlines-and-resource-limits) before
 upgrading. Profile specifications define exclusions; full .NET/Python/PCRE2
 equivalence, POSIX selection, NativeAOT/trimming and universal throughput gains
 are not promised.
@@ -58,8 +58,6 @@ are not promised.
 RC1 is superseded, frozen and unpublished; its PCRE2 grammar/construction defects
 make those bytes unsuitable for publication. Do not overwrite old candidates.
 
-Detailed development history remains in
-[versioned receipts](https://github.com/Lokad/Utf8Regex/tree/master/bench/Experiments)
-and the [prior changelog](https://github.com/Lokad/Utf8Regex/blob/91973e3a/CHANGELOG.md).
-[Performance evidence](https://github.com/Lokad/Utf8Regex/blob/master/docs/CURRENT-PERFORMANCE.md)
-distinguishes historical measurements from current release acceptance.
+Detailed development evidence remains in [versioned receipts](bench/Experiments).
+Benchmark snapshots retain their measured versions; release acceptance remains
+separate from historical measurements.

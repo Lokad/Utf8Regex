@@ -62,14 +62,14 @@ Core/PCRE2 retain only permitted `Unsafe.SizeOf` queries; PythonRe has none.
 There are no unchecked reads, generated staging helpers, native imports or
 shipped BCL matcher/result implementations. BCL timeout/options metadata and
 PCRE2 `Regex.Escape` are not matcher execution. Exact producer
-[Windows/Linux CI](https://github.com/Lokad/Utf8Regex/actions/runs/39401075919)
+Windows/Linux CI (run 39401075919)
 is green; later source must earn its own validation.
 
 ## Contract and limits of the evidence
 
 [README.md](README.md), [SPEC-PCRE2.md](../../docs/SPEC-PCRE2.md),
 [ARCHITECTURE.md](ARCHITECTURE.md) and
-[HOST-INTEGRATION.md](../../docs/HOST-INTEGRATION.md) define the supported managed
+[resource contract](../../docs/SPEC.md#cancellation-deadlines-and-resource-limits) define the supported managed
 profile, operation admission and ownership. Normal matching uses complete scalars
 over strictly validated UTF-8 with primary byte coordinates. Explicit opted-in
 `\C` and non-slice `\K` ranges have their documented special semantics.
@@ -170,9 +170,6 @@ They are historical inputs, not the current dependency graph.
 available to verify the original archive-manifest format; it does not produce
 new candidates. The superseded per-package scripts are removed.
 
-The full former execution ledger, including earlier receipts, failures and
-cost caveats, is preserved in
-[repository history](https://github.com/Lokad/Utf8Regex/blob/0e8238e42ae79d7a8b3332bd9ab6d82aff0ca3f8/src/Lokad.Utf8Regex.Pcre2/QUALIFICATION.md)
-and the local gitignored PLAN.HISTORY.md. It is not an additional current
-qualification claim. Broader profile, host/default-policy, performance and
-publication work is deferred by the focused cleanup plan.
+Earlier execution receipts, failures and cost caveats remain in Git history;
+they are not additional current qualification. Broader profile, host/default-policy,
+performance and publication work remains deferred.

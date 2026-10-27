@@ -71,7 +71,7 @@ were neither rebuilt nor reclassified as current.
   Closure found two benchmark construction callers missing the new required
   internal argument; `28b31f70` fixes them. The earlier source CI failed on those
   callers. Final Windows/Linux source CI passes at `28b31f70` in
-  [run 39989918574](https://github.com/Lokad/Utf8Regex/actions/runs/39989918574),
+  run 39989918574,
   also recorded in `ci-source.json`. CI builds once per platform and tests all
   four existing source fixtures; no package/platform matrix was added here.
 - Four snapshots, nine frozen unpublished RC1 files and five original TODOs

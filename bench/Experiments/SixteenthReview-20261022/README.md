@@ -102,7 +102,7 @@ immutable package bytes retain their original identities and status.
 Prototype: 873 affected Core checks, full Core 39,582 without skips (1m36s), and
 1,002 affected PythonRe checks pass. Source CI 39745270379 at 36ae0e01 passes all
 four fixture projects on Windows/Linux. After restoration, the full local Core suite passes 39,584 without skips in
-1m17s. [Final CI 39746403628](https://github.com/Lokad/Utf8Regex/actions/runs/39746403628)
+1m17s. Final CI 39746403628
 is green at exact d011e9b6 on Windows/Linux, all four fixture projects. Untimed
 static size delegates confirm restored operation 896 B / cursor 1,440 B /
 SearchPlan 2,720 B; no further operation timing. Exact identities are in

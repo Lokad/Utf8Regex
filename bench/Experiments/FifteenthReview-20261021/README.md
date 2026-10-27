@@ -110,7 +110,7 @@ shadow flag. Existing graph, admission, lifetime and resource checks remain.
 Generated README parity and PythonRe/PCRE2 benchmark pages verify unchanged.
 Existing read-only producer/PE/PDB/compiled-source preflight accepts matching
 08cb2ed6 binaries. Four snapshots and nine frozen RC1 files retain hashes/lengths.
-[CI 39626984182](https://github.com/Lokad/Utf8Regex/actions/runs/39626984182) is green
+CI 39626984182 is green
 at exact `08cb2ed6` on Windows/Linux, with all four fixture projects. Incremental
 affected builds, matching binary reuse, one source CI boundary; no routine server shutdown or package matrix.
 

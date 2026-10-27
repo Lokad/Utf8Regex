@@ -54,7 +54,7 @@ working-capacity improvement. No streaming implementation was performance-tuned.
   after the full run; shipped implementation source is unchanged.
 - Core API/formatter 12 and member inventory 12 pass; PythonRe API/member inventory
   one each pass, using matching existing binaries. Complete combined source CI
-  [40359868301](https://github.com/Lokad/Utf8Regex/actions/runs/40359868301) passes
+  40359868301 passes
   on Windows/Linux, including both disabled-dynamic-code steps, at `39a7012f`.
 - Incremental affected-project builds and matching binary reuse. The full suite
   was repeated only to verify removal of the demonstrated failing prototype.

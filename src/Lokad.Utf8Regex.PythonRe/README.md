@@ -1,6 +1,6 @@
 # Lokad.Utf8Regex.PythonRe
 
-Development source: **0.4.0-rc.3-dev**; no new package candidate is staged. Frozen **0.4.0-rc.2** has Windows/Linux correctness and consumer evidence, while its cumulative performance gate is **inconclusive**. See the [current release correction](https://github.com/Lokad/Utf8Regex/blob/master/bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md). RC1 is superseded.
+Development source: **0.4.0-rc.3-dev**; no new package candidate is staged. Frozen **0.4.0-rc.2** has Windows/Linux correctness and consumer evidence, while its cumulative performance gate is **inconclusive**. See the [current release correction](../../bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md). RC1 is superseded.
 
 **0.4.0-rc.3-dev**, .NET 10. A managed Python `re`-style adapter over strict UTF-8
 Unicode scalars, requiring exactly `Lokad.Utf8Regex [0.4.0-rc.3-dev]`. It can coexist
@@ -28,7 +28,7 @@ Bytes-pattern semantics, LOCALE and `\N{...}` Unicode-name lookup are excluded.
 There is no `endpos` parameter. Start offsets follow the documented Python `pos`
 contract without resetting prefix/suffix assertion context. This is a selected
 profile, not complete Python `re` equivalence. See the
-[profile specification](https://github.com/Lokad/Utf8Regex/blob/master/docs/SPEC-PYTHONRE.md).
+[profile specification](../../docs/SPEC-PYTHONRE.md).
 
 ## Controls and lifetimes
 
@@ -57,8 +57,8 @@ token, and eagerly prepare FullMatch. Constructors keep fixed construction
 backstops and lazy FullMatch preparation. Cold FullMatch/replacement preparation,
 cache retention, incidental owners, standalone getters, callback allocations and
 host containers retain separate documented scope. The execution token must be
-passed on each operation. See [HOST-INTEGRATION.md](https://github.com/Lokad/Utf8Regex/blob/master/docs/HOST-INTEGRATION.md)
-and [MIGRATION.md](https://github.com/Lokad/Utf8Regex/blob/master/docs/MIGRATION.md).
+passed on each operation. See [resource contract](../../docs/SPEC.md#cancellation-deadlines-and-resource-limits)
+and [MIGRATION.md](../../docs/MIGRATION.md).
 
 Named captures remain distinct when Unicode identifiers and names such as `g1`
 are mixed. Public names and Python opening-order numbering remain unchanged.
@@ -141,7 +141,7 @@ a new allowance and needs new host admission while earlier results survive.
 Core value-cursor copies have independent positions/shared allowance; PythonRe
 reference aliases share position/disposal. No finalizer-based lease is required.
 
-Read [release notes](https://github.com/Lokad/Utf8Regex/blob/master/CHANGELOG.md). Repository
-[benchmark results](https://github.com/Lokad/Utf8Regex/blob/master/src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md)
+Read [release notes](../../CHANGELOG.md). Repository
+[benchmark results](BENCHMARKS.md)
 retain their recorded source/package/runtime identities and qualification status;
 older rows do not automatically qualify this release.

@@ -58,7 +58,7 @@ Broader profile completion, accounting/checked-access/retention work and rejecte
 replacement streaming consolidation remain deferred.
 
 Final source a2f73b38 is green on Windows/Linux in
-[CI 40481258226](https://github.com/Lokad/Utf8Regex/actions/runs/40481258226),
+CI 40481258226,
 including both disabled-dynamic-code steps. The initial scheduling failure is
 preserved; the correction retained its five-second termination guard. No further
 package or timing run was performed after it.

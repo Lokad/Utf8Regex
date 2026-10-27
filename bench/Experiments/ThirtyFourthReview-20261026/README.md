@@ -2,7 +2,7 @@
 
 Final implementation source `7650e7a5`, development `0.4.0-rc.2-dev`.
 Source commits are pushed; Windows/Linux source CI passes in
-[run 40330818731](https://github.com/Lokad/Utf8Regex/actions/runs/40330818731),
+run 40330818731,
 including both disabled-dynamic-code steps. This receipt preserves the review
 at checkout `36d3980a`, existing product `575eeea6`, and the bounded implementation.
 No package, published benchmark snapshot, VM or external consumer was changed.

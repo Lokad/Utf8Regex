@@ -2,7 +2,7 @@
 
 Development is **0.4.0-rc.3-dev**, with no new candidate staged. Frozen **RC2**
 is unpublished; its correctness evidence retains its scope and its cumulative cost
-gate is inconclusive. See [release notes](https://github.com/Lokad/Utf8Regex/blob/master/CHANGELOG.md). Both adapters require
+gate is inconclusive. See [release notes](../CHANGELOG.md). Both adapters require
 exactly their own Core version: upgrade selected packages together rather than
 overriding dependencies. All target .NET 10.
 
@@ -59,8 +59,8 @@ Core/PythonRe byte-capped timeout diagnostics omit Input to avoid subject decodi
 Use Compile for separate construction caps/timeout/token; ordinary constructors
 retain fixed backstops. Pass execution tokens again later. Cold preparation,
 program/cache retention, standalone getters, callback allocations and host storage
-have separate scope. See [host integration](HOST-INTEGRATION.md) for phase/failure
-mapping and the Core/PythonRe W+R modeled-payload recipe.
+have separate scope. See [resource controls](SPEC.md#cancellation-deadlines-and-resource-limits)
+and [host admission](SPEC.md#host-admission) for the Core/PythonRe W+R recipe.
 
 ## Respect lifetime and default-result rules
 
@@ -98,8 +98,8 @@ producers were internal diagnostics, not matching APIs.
 Compiled falls back to existing non-emitted execution when dynamic code is
 disabled; NativeAOT/trimming are not qualified.
 
-Specifications: [Core](https://github.com/Lokad/Utf8Regex/blob/master/docs/SPEC.md),
-[PythonRe](https://github.com/Lokad/Utf8Regex/blob/master/docs/SPEC-PYTHONRE.md),
-[PCRE2](https://github.com/Lokad/Utf8Regex/blob/master/docs/SPEC-PCRE2.md).
+Specifications: [Core](SPEC.md),
+[PythonRe](SPEC-PYTHONRE.md),
+[PCRE2](SPEC-PCRE2.md).
 Historical benchmark rows retain their own versions and do not qualify this
 development source or promise complete flavor equivalence.

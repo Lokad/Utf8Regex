@@ -63,7 +63,7 @@ new source awaits its coherent delivery boundary. Old decoder/GetText/GetBytes/
 repeat/checked campaigns remain closed. Full R01-R10 stays open.
 
 Source commit461c52f1155d82328b3b0d8ad288c5db42124e7b is pushed.
-[CI39371613397](https://github.com/Lokad/Utf8Regex/actions/runs/39371613397)
+CI39371613397
 is terminal success: Linux04:52:11UTC, Windows04:53:15UTC. The complete source
 Release matrix is green; the run is closed and should not be polled again.
 No immutable117 package is designated by this source CI.

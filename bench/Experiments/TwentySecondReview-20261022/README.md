@@ -93,7 +93,7 @@ reused; one final benchmark/library closure validates friend tooling. Existing
 generated-page/parity and complete producer/PE/PDB/compiled-source checks pass.
 Exact scope, logs/stream-capture limitations and CI state belong to validation.json
 and ci.json. Source CI covers Windows/Linux all four fixture projects.
-Final source [CI 39796746585](https://github.com/Lokad/Utf8Regex/actions/runs/39796746585)
+Final source CI 39796746585
 is green at `07780283fba3d24ec4d7e791641dd76420c80457`.
 
 immutable-files.json verifies four snapshots, nine frozen RC1 files and five

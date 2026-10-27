@@ -89,7 +89,7 @@ were incremental. One benchmark closure build plus its orphan-deletion repair;
 matching binaries serve page/parity and read-only PE/PDB/source checks. No normal
 compiler/server shutdown, repeated package matrix or disabled fixture.
 
-[CI 39607485948](https://github.com/Lokad/Utf8Regex/actions/runs/39607485948)
+CI 39607485948
 passes at exact final `bf042c93` on Windows and Linux: Core 39,585, Diff 1,504,
 PythonRe 3,901 and PCRE2 5,974 on each platform, no failure/skip. The earlier
 source run was canceled. Existing generated pages/parity and read-only

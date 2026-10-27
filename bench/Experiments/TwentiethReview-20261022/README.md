@@ -73,7 +73,7 @@ pass three profile/eight selection+SkipBuild cases with external dotnet calls
 recorded. This source-copy/build-selection check does not claim new package
 qualification. Shared source links remain inside detached consumer trees.
 
-[Windows/Linux CI](https://github.com/Lokad/Utf8Regex/actions/runs/39780440603)
+Windows/Linux CI (run 39780440603)
 is green at `5ee10614350d139ee7cef3891fc7178b4beb4e6c` across all four fixture
 projects. Final producer/PE/PDB/compiled-source and generated README/adapter-page
 checks pass. Experiments build affected projects and reuse matching binaries;

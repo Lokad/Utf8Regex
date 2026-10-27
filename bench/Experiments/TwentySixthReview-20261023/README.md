@@ -53,7 +53,7 @@ arguments, output and invocation authority.
 - One final benchmark/library closure builds friend tooling. Matching binaries
   verify generated README/PythonRe/PCRE2 pages without snapshot writes.
 - Existing Windows/Linux CI both completed successfully for `3dea7dec`:
-  [run 39939033774](https://github.com/Lokad/Utf8Regex/actions/runs/39939033774).
+  run 39939033774.
   It builds the solution once per platform and tests all four source fixtures.
 - Four snapshots, nine frozen RC1 files and five original TODOs retain exact
   bytes; generated Python data and the original capture corpus also stay intact.

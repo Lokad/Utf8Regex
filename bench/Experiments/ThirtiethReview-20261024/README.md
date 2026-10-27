@@ -56,7 +56,7 @@ No additional command or qualification framework was introduced.
   cancellation/native/cursor/API focus:88 pass; PCRE2 resource/cancellation/
   capture/API focus:49 pass. Projects build incrementally; matching binaries reused.
 - Final source `56042eb1` passes both Windows/Linux source CI in
-  [run40096157949](https://github.com/Lokad/Utf8Regex/actions/runs/40096157949).
+  run40096157949.
   CI builds once per platform and tests all four source fixtures. No matrix added.
 - Matching Release benchmark/library closure and all three generated-page
   verifiers pass without writes. The before/after public witness removes all

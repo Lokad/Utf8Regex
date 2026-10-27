@@ -111,7 +111,7 @@ physical-coverage and exact-publication assertions. The repaired affected set
 passes 47 checks, and the full local Core suite passes all 39,585 without skips
 in 2m05s. No production source changed after the measured `097c8343`.
 
-[Final CI 39620833813](https://github.com/Lokad/Utf8Regex/actions/runs/39620833813)
+Final CI 39620833813
 is green at exact `06c30382` on both Windows and Linux, with the complete Release
 solution build and all four fixture projects. Existing generated README parity,
 PythonRe/PCRE2 markdown and read-only producer/PE/PDB/compiled-source reuse checks

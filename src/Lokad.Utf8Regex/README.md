@@ -4,7 +4,7 @@ Optional IL preparation is skipped when the host disables dynamic code,
 including with `Compiled`; non-emitted execution preserves results. NativeAOT
 publishing and trimming have not been qualified.
 
-Development source: **0.4.0-rc.3-dev**; no new package candidate is staged. Frozen **0.4.0-rc.2** has Windows/Linux correctness and consumer evidence, while its cumulative performance gate is **inconclusive**. See the [current release correction](https://github.com/Lokad/Utf8Regex/blob/master/bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md). RC1 is superseded.
+Development source: **0.4.0-rc.3-dev**; no new package candidate is staged. Frozen **0.4.0-rc.2** has Windows/Linux correctness and consumer evidence, while its cumulative performance gate is **inconclusive**. See the [current release correction](../../bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md). RC1 is superseded.
 
 **0.4.0-rc.3-dev**, .NET 10. Regular expressions over strict UTF-8
 `ReadOnlySpan<byte>` / `Span<byte>`, matching Unicode scalars with primary byte
@@ -36,7 +36,7 @@ Original cancellation and absolute deadlines cover validation, matching, require
 shaping and cursor advances. Explicit `Compile` factories offer separate
 construction controls. Memory accounting admits modeled major capacity before
 allocation; it is not total heap/RSS, all preparation, callbacks or retained-host
-storage containment. See [HOST-INTEGRATION.md](https://github.com/Lokad/Utf8Regex/blob/master/docs/HOST-INTEGRATION.md).
+storage containment. See [resource contract](../../docs/SPEC.md#cancellation-deadlines-and-resource-limits).
 
 Keep borrowed subjects unchanged and their owners alive. Owned snapshots remain
 valid after advance/failure/disposal. Copied value cursors retain independent
@@ -47,7 +47,7 @@ Optional `Lokad.Utf8Regex.PythonRe` and `Lokad.Utf8Regex.Pcre2` **0.4.0-rc.3-dev
 require exactly this Core version. Both are managed profile adapters with explicit
 compatibility boundaries; no native PCRE2 binary is shipped.
 
-Read [release notes](https://github.com/Lokad/Utf8Regex/blob/master/CHANGELOG.md) and [migration guide](https://github.com/Lokad/Utf8Regex/blob/master/docs/MIGRATION.md).
-The [repository specification](https://github.com/Lokad/Utf8Regex/blob/master/docs/SPEC.md)
+Read [release notes](../../CHANGELOG.md) and [migration guide](../../docs/MIGRATION.md).
+The [repository specification](../../docs/SPEC.md)
 defines the target contract; qualification fixtures establish implemented scope.
 Performance snapshots retain their recorded source/package/runtime identities.

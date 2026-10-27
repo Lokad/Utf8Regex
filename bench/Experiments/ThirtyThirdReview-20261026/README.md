@@ -59,9 +59,9 @@ Existing tests retain disjoint destination reuse/probing, resource denial,
 captures, ownership and operation selection.
 
 The guard-containing candidate's Windows/Linux source CI passed in
-[run 40313124902](https://github.com/Lokad/Utf8Regex/actions/runs/40313124902).
+run 40313124902.
 Final `575eeea6` Windows/Linux source CI, including both disabled-dynamic-code
-steps, passes in [run 40314312634](https://github.com/Lokad/Utf8Regex/actions/runs/40314312634).
+steps, passes in run 40314312634.
 ci-source.json records both successful jobs. Four spaced status requests across
 the two source runs; local work continued during CI. No earlier package or
 timing evidence qualifies new package bytes.

@@ -77,7 +77,7 @@ permanent link/qualification framework.
 matched fault comparison, CLI results/log excerpts, build output, module identity,
 tracked-link check and protected-file hashes accompany this receipt. Final
 Windows/Linux source CI
-[40341296362](https://github.com/Lokad/Utf8Regex/actions/runs/40341296362) passes,
+40341296362 passes,
 including both disabled-dynamic-code steps. Earlier source `04dbfa47` also passes
 CI40340526037. Three spaced status requests were made while local work continued.
 This does not claim Linux execution of the local Windows wrapper fault controls.

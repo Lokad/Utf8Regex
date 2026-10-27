@@ -94,7 +94,7 @@ Python suite and affected Core bounds/assertion fixtures pass after repair; the
 complete Python suite also passes after source restoration. Diff and PCRE2 passed
 the local boundary unchanged. Exact final source CI is in `validation.json`.
 
-[CI 39614774610](https://github.com/Lokad/Utf8Regex/actions/runs/39614774610)
+CI 39614774610
 passes at exact final `b11afb82` on Windows/Linux: Core 39,585, Diff 1,504,
 PythonRe 3,910 and PCRE2 5,974 on each platform, no failure/skip. The measured
 prototype's separate CI 39613417852 is also green; correctness did not override

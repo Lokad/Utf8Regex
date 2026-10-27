@@ -92,7 +92,7 @@ remain intact; no extra timing was used to repair the coverage description.
 Focused Release: Core writer/evaluator 131, PCRE2 construction/evaluator 217,
 partial-probe/branch-reset/retention 1,759. Full local Core 39,604 (102 s) and
 PCRE2 6,007 (15 s) pass without failures/skips. Source
-[Windows/Linux CI](https://github.com/Lokad/Utf8Regex/actions/runs/39788061003)
+Windows/Linux CI (run 39788061003)
 is green at `66180b1c68c4c27af0d1371e57b290d033936011` across all four fixture
 projects, including unchanged PythonRe and Diff suites.
 

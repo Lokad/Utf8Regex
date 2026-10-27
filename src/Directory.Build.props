@@ -33,7 +33,6 @@
     <None Include="..\..\LICENSE.txt" Pack="true" PackagePath="\" Visible="false" />
     <None Include="..\..\CHANGELOG.md" Pack="true" PackagePath="\" Visible="false" />
     <None Include="..\..\docs\MIGRATION.md" Pack="true" PackagePath="\" Visible="false" />
-    <None Include="..\..\docs\HOST-INTEGRATION.md" Pack="true" PackagePath="\" Visible="false" />
     <None Include="..\..\icon.png" Pack="true" PackagePath="\" Visible="false" />
   </ItemGroup>
 

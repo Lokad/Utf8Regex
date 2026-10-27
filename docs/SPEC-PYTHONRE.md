@@ -6,7 +6,7 @@ case, identifier and predefined-class data. It matches scalars over strict UTF-8
 byte coordinates are primary and UTF-16 coordinates are derived.
 
 See [release notes](../CHANGELOG.md), [migration](MIGRATION.md) and
-[host integration](HOST-INTEGRATION.md). Exact declarations are pinned in the
+[shared resource contract](SPEC.md#cancellation-deadlines-and-resource-limits). Exact declarations are pinned in the
 [API snapshot](../tests/Lokad.Utf8Regex.PythonRe.Tests/PublicApi.Shipped.txt).
 This is a selected profile, not complete Python equivalence.
 
@@ -104,7 +104,7 @@ does not prove that every operation uses it. Fixed finite numeric policies omit
 unmetered preparation those instances cannot execute.
 
 All four invocation limits, cancellation, failures and major-capacity exclusions
-follow the [shared host contract](HOST-INTEGRATION.md). One invocation covers
+follow the [shared resource contract](SPEC.md#cancellation-deadlines-and-resource-limits). One invocation covers
 full validation, discovery, required coordinate/capture shaping, output and
 publication. Work totals saturate; first denial is sticky. Terminal failed
 discovery checks interruption before reporting EOF. Timeout uses
@@ -155,6 +155,6 @@ Assert.Throws<OperationCanceledException>(() => regex.Count("cat horse"u8, 0, ca
 ```
 
 Use the [package README](../src/Lokad.Utf8Regex.PythonRe/README.md) for call examples
-and [performance evidence](CURRENT-PERFORMANCE.md) for qualified measurement scope.
+and [benchmarks](../src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md) for measurement scope.
 Safe finite defaults, complete preparation/retention containment and full grammar
 equivalence are not implied.

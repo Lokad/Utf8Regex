@@ -44,7 +44,7 @@ payload. No new result wrapper, owner, matcher, layout or compatibility mode.
   PowerShell scripts parse successfully. Existing CI and package entry points
   forward that same native setting; no package qualification was repeated merely
   to exercise an argument already proved with the installed runner.
-- Final [Windows/Linux CI 40493641055](https://github.com/Lokad/Utf8Regex/actions/runs/40493641055)
+- Final Windows/Linux CI 40493641055
   is green at 589bb885, including complete profile suites and both disabled-
   dynamic-code steps with the new zero-test policy. Work continued while CI ran;
   status checks were spaced apart. No build-server shutdown or local full matrix.

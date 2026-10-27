@@ -14,7 +14,7 @@ published snapshot, consumer pin or immutable release artifact was created.
   The implementation and its proposed contract/documentation changes are
   completely reverted. The existing eager/lazy preparation, admission, retry,
   cancellation and lifetime contracts remain. No dormant alternative or switch
-  is retained. [Rejected implementation](https://github.com/Lokad/Utf8Regex/commit/e5d58c1b);
+  is retained. Rejected implementation (e5d58c1b);
   the complete rejected patch also remains in local artifacts.
 - **Test useful cursor invariants.** PCRE2 cursor tests still prohibit embedding
   the large candidate-search value payload and bound actual cursor sizes to
@@ -91,7 +91,7 @@ public cost; its signatures are restored without weakening either guard.
 
 After reversion, complete local PythonRe **3,946** passed with zero failures/skips,
 including the original preparation/interruption tests and new public endpoint
-rows. Final [Windows/Linux source CI 40489364017](https://github.com/Lokad/Utf8Regex/actions/runs/40489364017)
+rows. Final Windows/Linux source CI 40489364017
 is green at 427f6b34, including complete relevant suites and both
 disabled-dynamic-code checks; [job/step evidence](ci-source.json) is retained. A new
 source CI run was necessary after the demonstrated prototype rejection, without

@@ -19,9 +19,9 @@ median, pool unlike observations, or conduct a third run of this closed campaign
 The cumulative release-cost gate remains open for future bounded delivery work.
 
 Original evidence:
-- [Protocol](https://github.com/Lokad/Utf8Regex/blob/d58ce915/bench/Experiments/ReleaseCandidate2-20261026/PREDECLARED.md)
-- [Initial observations](https://github.com/Lokad/Utf8Regex/blob/d58ce915/bench/Experiments/ReleaseCandidate2-20261026/public-cost.json)
-- [Sole confirmation](https://github.com/Lokad/Utf8Regex/blob/d58ce915/bench/Experiments/ReleaseCandidate2-20261026/public-cost-confirmation.json)
+- Protocol (d58ce915)
+- Initial observations (d58ce915)
+- Sole confirmation (d58ce915)
 
 The original summary.json Decision and frozen ZIP still contain the superseded
 acceptance. This dated erratum supersedes that conclusion without rewriting those

@@ -59,7 +59,7 @@ projects built incrementally during experiments and matching binaries reused.
 Complete PythonRe: 3,937 pass in 12 s; complete PCRE2: 6,138 in 9 s. Focused Core
 offset/native/fixed-policy/capability checks: 2,034 in 4 s. Existing full source
 CI covers Core, both profiles and tooling on Windows/Linux, green at `4d89398a`
-in [run 40304946205](https://github.com/Lokad/Utf8Regex/actions/runs/40304946205).
+in run 40304946205.
 Both jobs also pass the existing disabled-dynamic-code check. Two spaced status
 requests; local verification/measurement continued while CI ran.
 

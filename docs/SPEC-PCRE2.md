@@ -150,7 +150,7 @@ library allocations.
 TryReplace supports overlapping output by staging where required. Destination
 shortage leaves it unchanged with zero bytes written; other failures throw.
 See the [Core writer/output contract](SPEC.md#results-splitting-and-replacement)
-and [host guide](HOST-INTEGRATION.md) for ownership and exclusions.
+for ownership and exclusions.
 
 ## Interruption and resource controls
 
@@ -188,7 +188,7 @@ has a fixed 256-frame ceiling, tightened by the caller. Separate construction
 backstops and opaque CLR/JIT exclusions remain. Cold finite-heap replacement
 preparation holds its additional peak reservation through output; its checkpoints
 also spend invocation work. Warm plans use their bounded cache. See
-[host integration](HOST-INTEGRATION.md#construction-caches-and-preparation).
+[construction contract](SPEC.md#construction-preparation-and-caches).
 
 ## Isolation and non-goals
 

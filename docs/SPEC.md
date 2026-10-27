@@ -157,8 +157,30 @@ Required capture/projection arrays, maps, output controls, staging/final roots a
 growth overlap are covered. Fixed scalar values, borrowed subjects/programs,
 incidental helpers, standalone getters, arbitrary callback allocations and host
 retention are excluded. Shared/temporary/final storage may count again.
-The limits do not bound total heap/RSS. See [host integration](HOST-INTEGRATION.md)
-for failure mapping, preparation scope and the Core/PythonRe W+R recipe.
+The limits do not bound total heap/RSS. PCRE2 uses its own
+[limit names and failure vocabulary](SPEC-PCRE2.md#interruption-and-resource-controls).
+
+### Host admission
+
+For a Core/PythonRe instance with finite working cap W and result cap R, a host
+can reserve `checked(W + R)` before entry or cursor creation. Refuse entry if a cap
+is unlimited, addition overflows, or host admission fails. Covered active working
+capacity is at most W; covered result/staging acquisition is cumulatively at most R.
+Their union is conservatively bounded by W+R, even when storage counts twice.
+A refused Requested total can exceed a cap without acquiring that allocation.
+
+Hold the reservation until all covered results and permitted cursor aliases are
+gone or transferred to another admitted host owner. Return, EOF and disposal do
+not authorize a refund while owned snapshots survive. Each new call needs separate
+admission; configure work, depth, timeout and cancellation independently.
+
+Fund programs/preparation, subjects, caches/pools, incidental objects, standalone
+getters, callbacks and host containers/copies separately. Borrowed memory stays
+alive and unchanged. Host admission before engine entry needs its own deadline.
+This recipe covers modeled payloads, not exact heap/RSS, total allocations or a
+PCRE2 envelope; it does not establish downstream adoption. Source witnesses are
+`Utf8ExecutionBudget.TryChargeResultBytes`, `Utf8InvocationResultLedger.ReleaseSince`
+and `Utf8PythonMatchCursor.MoveNext`, with finite-result/working/cursor fixtures.
 
 ## Construction, preparation and caches
 
@@ -218,4 +240,4 @@ Qualify scalar/boundary, grammar, captures, RTL/NonBacktracking, malformed-input
 interruption, admission and lifetime behavior through public fixtures. Benchmark
 only equal-result workloads with warm throughput against both strict-decode and
 predecoded controls. Historical measurements are not current qualification:
-[current evidence](CURRENT-PERFORMANCE.md).
+[benchmark snapshots](../README.Benchmarks.json).

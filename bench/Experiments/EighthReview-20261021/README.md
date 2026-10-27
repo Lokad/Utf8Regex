@@ -79,7 +79,7 @@ timing is finished. No universal equivalence or benchmark Status claim.
 
 [Final Windows/Linux source CI](source-ci.json) covers all four suites at exact
 `2e8d071f6bd35c5554d3c2cc52a13e7f827e980d`:
-[run 39577333702](https://github.com/Lokad/Utf8Regex/actions/runs/39577333702).
+run 39577333702.
 It is terminal green: all four suites pass on both platforms, with no failed,
 skipped or duplicate discovery results. Existing analyzer warnings remain.
 The first boundary exposed two stale source inventory locations/expectations:

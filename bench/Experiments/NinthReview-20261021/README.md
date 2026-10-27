@@ -45,7 +45,7 @@ independent expectations and cold expression per operation are unchanged. The
 full affected fixture passes. No generator, test DSL or extra qualification layer.
 
 All four Release suites pass on Windows and Linux at the exact source above:
-[CI 39584852325](https://github.com/Lokad/Utf8Regex/actions/runs/39584852325).
+CI 39584852325.
 No failed/skipped cases or duplicate discovery warnings. Existing compiler/
 analyzer warnings remain. [Validation receipt](correctness-and-validation.json)
 includes focused checks, compiled-source reuse, CI log identities and repairs.

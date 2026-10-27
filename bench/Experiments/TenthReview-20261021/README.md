@@ -59,7 +59,7 @@ They are repaired against the smaller representation; denial/success boundary
 checks remain. The formerly exact capture-list assertion now checks actual public
 replacement values. No semantic fixture is disabled or skipped.
 
-[Windows/Linux source CI 39594045850](https://github.com/Lokad/Utf8Regex/actions/runs/39594045850)
+Windows/Linux source CI 39594045850
 is terminal green at exact `8840fd0057fe5a3fc0233c8909f79f89689d20e7`.
 All four Release suites pass on both platforms, without failed/skipped results;
 existing compiler/analyzer warnings remain. Initial integration failures are

@@ -75,7 +75,7 @@ Private probes/source/patch/logs:artifacts/simple-search-preparation-20261020.
 The first diagnostic probe accessed NoMatch byte coordinates and stopped; its
 partial log remains, and the corrected complete probe is authoritative.
 No package rebuild/qualification, immutable artifact change or consumer pin edit.
-Source CI [39378972339](https://github.com/Lokad/Utf8Regex/actions/runs/39378972339)
+Source CI 39378972339
 is terminal green on Windows/Linux for1b19b9df, completed2026-10-20T06:15:26Z;
 [receipt](ci.json). It builds/tests source and is not immutable-package qualification.
 Broader R06/R07/R08/R09/R10 remains open; do not poll this completed run again.

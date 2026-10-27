@@ -105,7 +105,7 @@ warning is gone; existing unrelated Core warnings remain. No SDK/server shutdown
 per-edit solution matrix or package rebuild. The original 40807822 CI run was
 canceled after the final source fix to avoid duplicate runner work.
 
-Final source [CI 39598950761](https://github.com/Lokad/Utf8Regex/actions/runs/39598950761)
+Final source CI 39598950761
 is terminal green at exact cd984438: all four Release suites pass on Windows
 and Linux. The read-only page/parity/source preflight results are in
 [validation.json](validation.json). No test was disabled to obtain a pass.
