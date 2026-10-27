@@ -1,142 +1,85 @@
 # Lokad.Utf8Regex
 
-Development source: **0.4.0-rc.3-dev**; no new package candidate is staged. Frozen **0.4.0-rc.2** has Windows/Linux correctness and consumer evidence, while its cumulative performance gate is **inconclusive**. See the [current release correction](bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md). RC1 is superseded.
+Regular expressions directly over UTF-8 spans for **.NET 10**. Match, count,
+enumerate and replace without first decoding the subject to a string.
+Core and both optional adapters are fully managed .NET libraries.
 
-`Lokad.Utf8Regex` **0.4.0-rc.3-dev** is a `net10.0` library matching Unicode
-scalars over strict UTF-8 spans, with byte offsets and lengths. Dot matches 😀
-once across four bytes. UTF-16 coordinates and strings are derived conveniences.
-
-The prerelease line covers three packages at the same version: **Lokad.Utf8Regex**,
-**Lokad.Utf8Regex.PythonRe** and **Lokad.Utf8Regex.Pcre2**. Both adapters require
-exactly Core **[0.4.0-rc.3-dev]** and can share one dependency graph. Upgrade them
-together; do not override an adapter's Core dependency.
-
-Read the [release notes](CHANGELOG.md), [migration guide](docs/MIGRATION.md) and
-[resource and ownership contract](docs/SPEC.md#cancellation-deadlines-and-resource-limits). The
-[PythonRe](src/Lokad.Utf8Regex.PythonRe/README.md) and
-[PCRE2](src/Lokad.Utf8Regex.Pcre2/README.md) profiles have their own grammar,
-capture and operation boundaries. The selected profiles do not promise complete
-.NET, CPython or native PCRE2 equivalence.
-
-## Support Scope
-
-- Dot, classes, quantifiers, captures, references, lookarounds, RTL traversal and
-  empty-match advancement respect complete Unicode scalars. Core includes an
-  owned NonBacktracking route for its supported regular subset.
-- Input must be well-formed UTF-8 throughout, even when a match occurs early.
-  Primary match/capture coordinates are bytes. Core uses ordered alternatives;
-  it does not implement POSIX leftmost-longest matching.
-- All three packages are fully managed .NET libraries, with optimized UTF-8
-  search paths. Shipped libraries
-  do not use BCL regex matchers/results or a native PCRE2 binary. BCL regex is a
-  comparator only where its UTF-16 behavior overlaps the scalar contract.
-- Core uses .NET-style grammar within its supported scope. CultureInvariant is
-  the primary supported and performance-tested mode; see [SPEC.md](docs/SPEC.md).
-- Optional IL preparation is skipped when the host disables dynamic code,
-  including with `Compiled`; existing non-emitted execution preserves results.
-  NativeAOT publishing and trimming have not been qualified.
-- Instances accept finite work, depth, working-capacity and result-capacity
-  policies. **Defaults and static cached calls are unlimited.** Construction has
-  separate controls and fixed backstops. These controls do not bound total heap,
-  RSS, callbacks, arbitrary caller retention or all preparation as one envelope.
-- Cancellation is synchronous and uses the original token. One absolute deadline
-  spans validation, matching, shaping and persistent cursor advances, including
-  waits between moves. Caller callbacks cannot be forcibly interrupted.
-- Owned snapshots survive advance, failure and disposal. Borrowed subjects/views
-  require their owner to stay alive and their bytes to remain unchanged. Core
-  value-cursor copies have independent positions/shared allowance; PythonRe
-  reference aliases share position and disposal.
-
-Benchmark snapshots below retain their recorded source and runtime versions;
-historical rows do not qualify the current implementation or release.
-
-## Public API
+## Quick start
 
 ```csharp
-using System.Text;
-using System.Text.RegularExpressions;
 using Lokad.Utf8Regex;
+using System.Text.RegularExpressions;
 
-var regex = new Utf8Regex(
-    pattern: @"AKIA[0-9A-Z]{16}",
-    options: RegexOptions.CultureInvariant);
+var regex = new Utf8Regex(@"[A-Z]{2}\d{4}", RegexOptions.CultureInvariant);
+ReadOnlySpan<byte> input = "Order AB1234 is ready."u8;
 
-ReadOnlySpan<byte> input = Encoding.UTF8.GetBytes("""
-    const key = "AKIA1234567890ABCDEF";
-    """);
-
-bool isMatch = regex.IsMatch(input);
-int count = regex.Count(input);
-
-Utf8ValueMatch first = regex.Match(input);
-if (first.Success)
-{
-    Console.WriteLine($"First match at byte {first.IndexInBytes}, length {first.LengthInBytes}");
-}
-
-foreach (var match in regex.EnumerateMatches(input))
-{
-    var slice = input.Slice(match.IndexInBytes, match.LengthInBytes);
-    Console.WriteLine(Encoding.UTF8.GetString(slice));
-}
-
-byte[] redacted = regex.Replace(input, "***REDACTED***");
-Console.WriteLine(Encoding.UTF8.GetString(redacted));
+bool found = regex.IsMatch(input);              // true
+int count = regex.Count(input);                 // 1
+Utf8ValueMatch first = regex.Match(input);       // byte index 6, length 6
+byte[] redacted = regex.Replace(input, "[order]");
 ```
 
-Notes:
-- Inputs must be well-formed UTF-8.
-- The library also exposes static helpers such as `Utf8Regex.IsMatch(...)`, `Utf8Regex.Count(...)`, `Utf8Regex.Match(...)`, `Utf8Regex.EnumerateMatches(...)`, and `Utf8Regex.Replace(...)`.
-- Match results expose primary byte coordinates and derived UTF-16 coordinates via `Utf8ValueMatch`.
+Use `EnumerateMatches` to visit matches and `MatchDetailed` for groups and
+capture history. Match byte offsets and lengths can be used directly with UTF-8
+slices.
 
-### Finite construction and invocation controls
+## Choose a profile
 
-Use an instance for finite limits. Compilation and each later invocation have
-separate limits, deadlines and cancellation tokens:
+| Package | Matching profile |
+| --- | --- |
+| [Lokad.Utf8Regex](docs/SPEC.md) | .NET-style grammar, captures/history, backreferences, lookarounds, RTL and a NonBacktracking subset |
+| [Lokad.Utf8Regex.PythonRe](src/Lokad.Utf8Regex.PythonRe/README.md) | Python re-style grammar, capture numbering and result shaping |
+| [Lokad.Utf8Regex.Pcre2](src/Lokad.Utf8Regex.Pcre2/README.md) | Managed PCRE2-style grammar, capture slots, substitution and partial probing |
+
+Both adapters require the matching Core package version. Their specifications
+define the supported grammar and operation boundaries.
+
+## Unicode and input
+
+Matching uses **Unicode scalars**. For example,
+`new Utf8Regex(".").Count("A😀"u8)` returns 2; the emoji occupies four bytes.
+Classes, quantifiers, captures and empty-match advancement respect scalar boundaries.
+
+The entire subject must be valid UTF-8, including text after an early match.
+Byte coordinates are primary; UTF-16 coordinates and strings are derived
+conveniences. Keep borrowed input unchanged and its owner alive while a view or
+cursor uses it. Owned snapshots remain valid after cursor advance or disposal.
+
+## Cancellation and limits
+
+Instances accept cancellation tokens, timeouts and optional work, depth, working-
+capacity and result-capacity limits:
 
 ```csharp
-using System.Text.RegularExpressions;
-using Lokad.Utf8Regex;
-
-using var compileCancellation = new CancellationTokenSource();
-var bounded = Utf8Regex.Compile(
+var bounded = new Utf8Regex(
     @"(?<word>\w+)", RegexOptions.CultureInvariant,
-    matchTimeout: TimeSpan.FromMilliseconds(100),
-    resourcePolicy: new()
+    matchTimeout: TimeSpan.FromSeconds(1),
+    resourcePolicy: new Utf8ResourcePolicy
     {
         MaxWorkSteps = 1_000_000, MaxDepth = 256,
         MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576
-    },
-    constructionPolicy: new()
-    {
-        MaxWorkSteps = 1_000_000, MaxDepth = 128,
-        MaxInstructionCapacity = 100_000, MaxBytes = 4_194_304
-    },
-    constructionTimeout: TimeSpan.FromSeconds(1),
-    cancellationToken: compileCancellation.Token);
+    });
 
-using var callCancellation = new CancellationTokenSource();
-int count = bounded.Count("café 😀 tea"u8, callCancellation.Token); // 2
+using var cancellation = new CancellationTokenSource();
+int count = bounded.Count("café tea"u8, cancellation.Token); // 2
 ```
 
-These are example application limits, not library defaults. Legacy overloads and
-static helpers remain unlimited. The construction token governs only `Compile`;
-pass the invocation token to each call. Resource exhaustion throws
-`Utf8ResourceLimitExceededException` with `ResourceKind`, `Limit` and `Requested`;
-cancellation and timeout retain their distinct exceptions. Byte caps cover the
-documented modeled capacities, not process memory. Lazy preparation, caller
-callback execution/allocations, later standalone getters and retained host storage
-have separate scope; see
-[host composition](docs/SPEC.md#host-admission).
+These caps are examples. Defaults and static helpers have unlimited invocation
+budgets. Byte limits cover modeled engine/result capacities, not total process
+memory. `Compile` offers separate construction controls.
+See the [resource contract](docs/SPEC.md#cancellation-deadlines-and-resource-limits)
+for failure, deadline and ownership details.
 
-The tables below mix revisions and dates recorded in
-[README.Benchmarks.json](README.Benchmarks.json). Profile measurements are in the
+See [release notes](CHANGELOG.md) and the [migration guide](docs/MIGRATION.md)
+for the upcoming 0.4.0 changes.
+
+## Benchmarks
+
+The tables below come from [README.Benchmarks.json](README.Benchmarks.json).
+Rows retain their measured source/runtime versions and do not qualify later
+implementations. Profile comparisons are in the
 [PythonRe](src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md) and
 [PCRE2](src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md) benchmark pages.
-
-The README CLI now uses an unboxed allocation sink. Older allocation figures can
-include a 24-byte harness allocation per lane measurement; stored historical rows
-retain their recorded values.
 
 <!-- BEGIN GENERATED DOTNET_PERFORMANCE BENCHMARKS -->
 ## DotNetPerformance Benchmarks
