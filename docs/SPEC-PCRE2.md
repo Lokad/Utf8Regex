@@ -5,7 +5,7 @@
 captures, replacement and failure types. It does not add a flavor switch to Core
 or promise complete native PCRE2 equivalence.
 
-See [release notes](CHANGELOG.md), [migration](MIGRATION.md),
+See [release notes](../CHANGELOG.md), [migration](MIGRATION.md),
 [qualification](../src/Lokad.Utf8Regex.Pcre2/QUALIFICATION.md) and the
 [API snapshot](../tests/Lokad.Utf8Regex.Pcre2.Tests/PublicApi.Shipped.txt).
 Historical receipts retain their original product/runtime identities.

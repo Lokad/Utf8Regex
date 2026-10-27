@@ -11,7 +11,7 @@ The prerelease line covers three packages at the same version: **Lokad.Utf8Regex
 exactly Core **[0.4.0-rc.3-dev]** and can share one dependency graph. Upgrade them
 together; do not override an adapter's Core dependency.
 
-Browse the [documentation index](docs/INDEX.md), [release notes](docs/CHANGELOG.md), [migration guide](docs/MIGRATION.md) and
+Browse the [documentation index](docs/INDEX.md), [release notes](CHANGELOG.md), [migration guide](docs/MIGRATION.md) and
 [host resource/ownership contract](docs/HOST-INTEGRATION.md). The
 [PythonRe](src/Lokad.Utf8Regex.PythonRe/README.md) and
 [PCRE2](src/Lokad.Utf8Regex.Pcre2/README.md) profiles have their own grammar,
@@ -141,7 +141,7 @@ Historical scalar.110 package costs cover finite limits, live tokens and Python
 materialization, including noisy lanes. Their local-only receipt is
 `artifacts/core-python-scalar110-20261019/vm-cost/RESULT.md`; it is not included
 in a source checkout. Tracked package-cost evidence is in [CURRENT-PERFORMANCE.md](docs/CURRENT-PERFORMANCE.md).
-Earlier source comparisons retain their scope in [CHANGELOG.md](docs/CHANGELOG.md).
+Earlier source comparisons retain their scope in [CHANGELOG.md](CHANGELOG.md).
 
 The README CLI now uses an unboxed allocation sink. Older allocation figures can
 include a 24-byte harness allocation per lane measurement; stored historical rows

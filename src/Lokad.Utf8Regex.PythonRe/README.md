@@ -141,7 +141,7 @@ a new allowance and needs new host admission while earlier results survive.
 Core value-cursor copies have independent positions/shared allowance; PythonRe
 reference aliases share position/disposal. No finalizer-based lease is required.
 
-Read [release notes](https://github.com/Lokad/Utf8Regex/blob/master/docs/CHANGELOG.md). Repository
+Read [release notes](https://github.com/Lokad/Utf8Regex/blob/master/CHANGELOG.md). Repository
 [benchmark results](https://github.com/Lokad/Utf8Regex/blob/master/src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md)
 retain their recorded source/package/runtime identities and qualification status;
 older rows do not automatically qualify this release.

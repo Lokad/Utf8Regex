@@ -2,7 +2,7 @@
 
 Core matches complete scalars over strict UTF-8. The UTF-16-parity migration is
 complete for the qualified paths; current development and release acceptance are
-separate in [release notes](CHANGELOG.md) and [performance evidence](CURRENT-PERFORMANCE.md).
+separate in [release notes](../CHANGELOG.md) and [performance evidence](CURRENT-PERFORMANCE.md).
 
 ## Removed
 

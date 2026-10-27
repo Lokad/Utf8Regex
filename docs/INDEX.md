@@ -2,7 +2,7 @@
 
 The development version is **0.4.0-rc.3-dev**. Frozen RC2 is unpublished;
 its cumulative performance gate remains inconclusive. Start with the
-[release notes](CHANGELOG.md) for the distinction between source and candidate.
+[release notes](../CHANGELOG.md) for the distinction between source and candidate.
 
 | Need | Guide |
 | --- | --- |

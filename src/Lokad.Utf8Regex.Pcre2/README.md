@@ -183,7 +183,7 @@ later gaps and captures retain their original bytes. That temporary capacity
 requires working and cumulative result admission under the same invocation.
 Disjoint simple-template output and no-match copies retain their direct paths.
 
-Read [release notes](https://github.com/Lokad/Utf8Regex/blob/master/docs/CHANGELOG.md) and [migration guide](https://github.com/Lokad/Utf8Regex/blob/master/docs/MIGRATION.md).
+Read [release notes](https://github.com/Lokad/Utf8Regex/blob/master/CHANGELOG.md) and [migration guide](https://github.com/Lokad/Utf8Regex/blob/master/docs/MIGRATION.md).
 Repository [benchmark evidence](https://github.com/Lokad/Utf8Regex/blob/master/src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md)
 retains its recorded source/package/runtime scope; previous candidate timings do
 not automatically qualify RC1.

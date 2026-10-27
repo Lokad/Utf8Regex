@@ -1,7 +1,7 @@
 # Core contract
 
 The development line is **0.4.0-rc.3-dev**, targeting .NET 10. See
-[release notes](CHANGELOG.md) for candidate status and [migration](MIGRATION.md)
+[release notes](../CHANGELOG.md) for candidate status and [migration](MIGRATION.md)
 for upgrade guidance. This contract describes supported behavior; the
 [API snapshot](../tests/Lokad.Utf8Regex.Tests/PublicApi.Shipped.txt) and executable
 fixtures establish the implemented surface.

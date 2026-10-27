@@ -5,7 +5,7 @@ It targets CPython **3.13.2 str-pattern semantics**, with owned Unicode **15.1.0
 case, identifier and predefined-class data. It matches scalars over strict UTF-8;
 byte coordinates are primary and UTF-16 coordinates are derived.
 
-See [release notes](CHANGELOG.md), [migration](MIGRATION.md) and
+See [release notes](../CHANGELOG.md), [migration](MIGRATION.md) and
 [host integration](HOST-INTEGRATION.md). Exact declarations are pinned in the
 [API snapshot](../tests/Lokad.Utf8Regex.PythonRe.Tests/PublicApi.Shipped.txt).
 This is a selected profile, not complete Python equivalence.

@@ -16,7 +16,7 @@
     <FileVersion>0.4.0</FileVersion>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <PackageIcon>icon.png</PackageIcon>
-    <PackageReleaseNotes>See https://github.com/Lokad/Utf8Regex/blob/master/docs/CHANGELOG.md for release notes.</PackageReleaseNotes>
+    <PackageReleaseNotes>See https://github.com/Lokad/Utf8Regex/blob/master/CHANGELOG.md for release notes.</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Lokad/Utf8Regex</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Lokad/Utf8Regex.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -31,7 +31,7 @@
 
   <ItemGroup>
     <None Include="..\..\LICENSE.txt" Pack="true" PackagePath="\" Visible="false" />
-    <None Include="..\..\docs\CHANGELOG.md" Pack="true" PackagePath="\" Visible="false" />
+    <None Include="..\..\CHANGELOG.md" Pack="true" PackagePath="\" Visible="false" />
     <None Include="..\..\docs\MIGRATION.md" Pack="true" PackagePath="\" Visible="false" />
     <None Include="..\..\docs\HOST-INTEGRATION.md" Pack="true" PackagePath="\" Visible="false" />
     <None Include="..\..\icon.png" Pack="true" PackagePath="\" Visible="false" />

@@ -47,7 +47,7 @@ Optional `Lokad.Utf8Regex.PythonRe` and `Lokad.Utf8Regex.Pcre2` **0.4.0-rc.3-dev
 require exactly this Core version. Both are managed profile adapters with explicit
 compatibility boundaries; no native PCRE2 binary is shipped.
 
-Read [release notes](https://github.com/Lokad/Utf8Regex/blob/master/docs/CHANGELOG.md) and [migration guide](https://github.com/Lokad/Utf8Regex/blob/master/docs/MIGRATION.md).
+Read [release notes](https://github.com/Lokad/Utf8Regex/blob/master/CHANGELOG.md) and [migration guide](https://github.com/Lokad/Utf8Regex/blob/master/docs/MIGRATION.md).
 The [repository specification](https://github.com/Lokad/Utf8Regex/blob/master/docs/SPEC.md)
 defines the target contract; qualification fixtures establish implemented scope.
 Performance snapshots retain their recorded source/package/runtime identities.

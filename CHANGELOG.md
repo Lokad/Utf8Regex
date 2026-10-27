@@ -9,8 +9,8 @@ No new candidate is staged. Development after RC2 includes:
   identity; matching and admission are unchanged.
 - Detached fixtures use staged API snapshots; repository-only guards stay in
   source CI. Focused and detached test runs fail when no tests are discovered.
-- Documentation is consolidated under docs/; packaged guide filenames remain
-  unchanged.
+- Guides are consolidated under docs/; the changelog remains at repository root.
+  Packaged guide filenames remain unchanged.
 
 Frozen RC2 correctness/identity/consumer evidence retains its recorded scope.
 Its cumulative performance acceptance was withdrawn as **inconclusive**:
@@ -48,7 +48,7 @@ Core [0.4.0-rc.2]; upgrade selected packages together.
   owners and benchmark-only shipped code are removed. Actual Unsafe.SizeOf
   queries remain; conservative construction/cache charges may double-count.
 
-Read [migration](MIGRATION.md) and [host integration](HOST-INTEGRATION.md) before
+Read [migration](https://github.com/Lokad/Utf8Regex/blob/master/docs/MIGRATION.md) and [host integration](https://github.com/Lokad/Utf8Regex/blob/master/docs/HOST-INTEGRATION.md) before
 upgrading. Profile specifications define exclusions; full .NET/Python/PCRE2
 equivalence, POSIX selection, NativeAOT/trimming and universal throughput gains
 are not promised.

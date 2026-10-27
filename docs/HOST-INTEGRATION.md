@@ -1,6 +1,6 @@
 # Resource controls and host ownership
 
-This is the shared 0.4 host contract. See [release notes](CHANGELOG.md) for current
+This is the shared 0.4 host contract. See [release notes](https://github.com/Lokad/Utf8Regex/blob/master/CHANGELOG.md) for current
 source/candidate status. Both adapters require their exact Core version.
 
 ## Select controls for each phase

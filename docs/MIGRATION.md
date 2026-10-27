@@ -2,7 +2,7 @@
 
 Development is **0.4.0-rc.3-dev**, with no new candidate staged. Frozen **RC2**
 is unpublished; its correctness evidence retains its scope and its cumulative cost
-gate is inconclusive. See [release notes](CHANGELOG.md). Both adapters require
+gate is inconclusive. See [release notes](https://github.com/Lokad/Utf8Regex/blob/master/CHANGELOG.md). Both adapters require
 exactly their own Core version: upgrade selected packages together rather than
 overriding dependencies. All target .NET 10.
 
