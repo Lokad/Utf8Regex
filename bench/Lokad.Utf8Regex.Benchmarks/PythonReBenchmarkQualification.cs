@@ -38,18 +38,12 @@ internal static partial class PythonReBenchmarkReporter
     private const double PythonReQualificationMaximumSpread = 1.10;
     private static readonly TimeSpan s_cpythonResponseTimeout = TimeSpan.FromSeconds(10);
 
-    // These exact handoffs are preserved inputs, not product/runner source.
-    // Unknown untracked source, data and documents still block snapshot writes.
+    // Unknown untracked source, data and documents block snapshot writes.
     private static string? ReadPythonReQualificationWorktree() => RunGit(
         "status", "--porcelain=v1", "--untracked-files=all", "--", ".",
         ":(exclude)PythonRe.Benchmarks.json",
         ":(exclude)src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md",
-        ":(exclude)PLAN.md",
-        ":(top,literal,exclude)TODO-AWK-CAPTURE-MATCHER-CLOCK-COST.md",
-        ":(top,literal,exclude)TODO-AWK-SCALAR-PACKAGE-RELEASE-IDENTITY.md",
-        ":(top,literal,exclude)TODO-JQ-COMPATIBILITY.md",
-        ":(top,literal,exclude)TODO-PCRE2-NUMERIC-CAPTURES.md",
-        ":(top,literal,exclude)TODO-PYTHONRE-CAPTURES-AND-RESOURCE-CONTRACT.md");
+        ":(exclude)PLAN.md");
 
     // The producer revision checks build inputs; matched portable PDB document
     // checksums also reject code built from a dirty tree and later reverted.

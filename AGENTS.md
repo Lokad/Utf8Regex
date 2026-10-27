@@ -276,8 +276,9 @@ PythonRe benchmark snapshot and diagnostics:
   measured Core/PythonRe binary identities; older rows without those identities
   remain historical. Benchmark identity is reported while operation/shared
   protocol fingerprints retain their existing role. No snapshot is refreshed
-  merely to add provenance. The source-cleanliness gate permits exactly the five
-  preserved root TODO handoffs; unknown untracked source/data still blocks writes.
+  merely to add provenance. Retired root TODO handoffs live in the ignored history;
+  no handoff-specific worktree exceptions remain. Unknown untracked source/data
+  still blocks snapshot writes.
   Snapshot qualification and freshness/verification preflight loaded runner,
   Core and PythonRe producer revisions against relevant source/build files.
   Their adjacent portable PDBs must match the loaded PE/module and compiled
