@@ -57,6 +57,6 @@ Remaining smaller construction carriers retain their existing factories; real
 algorithmic state vectors remain separate. Retention caches use a conservative bounded
 payload policy; shared storage can be charged again. These modeled limits do not
 bound total CLR/JIT memory or arbitrary host retention. See
-[HOST-INTEGRATION.md](../../HOST-INTEGRATION.md) for scope and lifetime contracts.
+[HOST-INTEGRATION.md](../../docs/HOST-INTEGRATION.md) for scope and lifetime contracts.
 Benchmark-only candidate-count replay lives in the benchmark project; production
 search helpers remain in the library where public execution consumes them.

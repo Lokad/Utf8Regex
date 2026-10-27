@@ -7,8 +7,8 @@
 .env
 
 # Local release planning
-/PLAN.md
-/PLAN.HISTORY.md
+/docs/PLAN.md
+/docs/PLAN.HISTORY.md
 
 # Disposable local logs, probes and experiment scratch (keep the root clear).
 /tmp/

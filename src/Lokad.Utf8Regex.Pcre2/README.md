@@ -42,7 +42,7 @@ decisions and ordinary marked misses throw `NotSupportedException`. Ordinary
 split, full capture history and substitution forms outside the selected profile
 are excluded. Operation/option combinations have explicit admission boundaries;
 similarity to .NET syntax does not establish PCRE2 support. See the
-[profile specification](https://github.com/Lokad/Utf8Regex/blob/master/SPEC-PCRE2.md)
+[profile specification](https://github.com/Lokad/Utf8Regex/blob/master/docs/SPEC-PCRE2.md)
 and its executable fixtures for exact coverage.
 
 Default shorthand classes are ASCII unless the selected UCP/options say otherwise.
@@ -149,7 +149,7 @@ cause earlier construction refusal without changing supported Probe semantics.
 Cold finite-heap replacement preparation borrows
 remaining working capacity as a construction ceiling and retains its additional
 peak through replacement. Warm plans use a separate conservative cache. See
-packaged [HOST-INTEGRATION.md](https://github.com/Lokad/Utf8Regex/blob/master/HOST-INTEGRATION.md) for exact mappings and scopes.
+packaged [HOST-INTEGRATION.md](https://github.com/Lokad/Utf8Regex/blob/master/docs/HOST-INTEGRATION.md) for exact mappings and scopes.
 
 A declined simple-template optimization lends its complete prepared outcome to
 the executor for that call, including templates too large for the cache. Work
@@ -183,7 +183,7 @@ later gaps and captures retain their original bytes. That temporary capacity
 requires working and cumulative result admission under the same invocation.
 Disjoint simple-template output and no-match copies retain their direct paths.
 
-Read [release notes](https://github.com/Lokad/Utf8Regex/blob/master/CHANGELOG.md) and [migration guide](https://github.com/Lokad/Utf8Regex/blob/master/MIGRATION.md).
+Read [release notes](https://github.com/Lokad/Utf8Regex/blob/master/docs/CHANGELOG.md) and [migration guide](https://github.com/Lokad/Utf8Regex/blob/master/docs/MIGRATION.md).
 Repository [benchmark evidence](https://github.com/Lokad/Utf8Regex/blob/master/src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md)
 retains its recorded source/package/runtime scope; previous candidate timings do
 not automatically qualify RC1.

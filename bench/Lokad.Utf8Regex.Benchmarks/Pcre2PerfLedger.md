@@ -24,7 +24,7 @@ defects: **do not publish those PCRE2 bytes**. Its
 their original scope. Detailed local-only handoffs are absent from a source
 checkout. For current source/candidate status, use the
 [qualification page](../../src/Lokad.Utf8Regex.Pcre2/QUALIFICATION.md) and
-[current operating-cost evidence](../../CURRENT-PERFORMANCE.md).
+[current operating-cost evidence](../../docs/CURRENT-PERFORMANCE.md).
 This historical ledger establishes no current throughput or benchmark Status.
 
 The legacy `--emit-pcre2-perf-ledger` and `--emit-pcre2-managed-perf-ledger`

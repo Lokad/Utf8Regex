@@ -67,9 +67,9 @@ is green; later source must earn its own validation.
 
 ## Contract and limits of the evidence
 
-[README.md](README.md), [SPEC-PCRE2.md](../../SPEC-PCRE2.md),
+[README.md](README.md), [SPEC-PCRE2.md](../../docs/SPEC-PCRE2.md),
 [ARCHITECTURE.md](ARCHITECTURE.md) and
-[HOST-INTEGRATION.md](../../HOST-INTEGRATION.md) define the supported managed
+[HOST-INTEGRATION.md](../../docs/HOST-INTEGRATION.md) define the supported managed
 profile, operation admission and ownership. Normal matching uses complete scalars
 over strictly validated UTF-8 with primary byte coordinates. Explicit opted-in
 `\C` and non-slice `\K` ranges have their documented special semantics.

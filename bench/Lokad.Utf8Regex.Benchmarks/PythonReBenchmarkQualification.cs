@@ -42,8 +42,7 @@ internal static partial class PythonReBenchmarkReporter
     private static string? ReadPythonReQualificationWorktree() => RunGit(
         "status", "--porcelain=v1", "--untracked-files=all", "--", ".",
         ":(exclude)PythonRe.Benchmarks.json",
-        ":(exclude)src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md",
-        ":(exclude)PLAN.md");
+        ":(exclude)src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md");
 
     // The producer revision checks build inputs; matched portable PDB document
     // checksums also reject code built from a dirty tree and later reverted.

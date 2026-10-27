@@ -1,4 +1,4 @@
-# PLAN.md M2: benchmark corpus inputs and SHA-pinned test vectors must be
+# Benchmark corpus inputs and SHA-pinned test vectors must be
 # byte-identical on every checkout. Without pinned handling, autocrlf
 # conversion silently changes case inputs and the catalog fingerprint
 # per machine (observed: PythonRe catalog hash drift with a clean tree).

@@ -28,7 +28,7 @@ Bytes-pattern semantics, LOCALE and `\N{...}` Unicode-name lookup are excluded.
 There is no `endpos` parameter. Start offsets follow the documented Python `pos`
 contract without resetting prefix/suffix assertion context. This is a selected
 profile, not complete Python `re` equivalence. See the
-[profile specification](https://github.com/Lokad/Utf8Regex/blob/master/SPEC-PYTHONRE.md).
+[profile specification](https://github.com/Lokad/Utf8Regex/blob/master/docs/SPEC-PYTHONRE.md).
 
 ## Controls and lifetimes
 
@@ -57,8 +57,8 @@ token, and eagerly prepare FullMatch. Constructors keep fixed construction
 backstops and lazy FullMatch preparation. Cold FullMatch/replacement preparation,
 cache retention, incidental owners, standalone getters, callback allocations and
 host containers retain separate documented scope. The execution token must be
-passed on each operation. See [HOST-INTEGRATION.md](https://github.com/Lokad/Utf8Regex/blob/master/HOST-INTEGRATION.md)
-and [MIGRATION.md](https://github.com/Lokad/Utf8Regex/blob/master/MIGRATION.md).
+passed on each operation. See [HOST-INTEGRATION.md](https://github.com/Lokad/Utf8Regex/blob/master/docs/HOST-INTEGRATION.md)
+and [MIGRATION.md](https://github.com/Lokad/Utf8Regex/blob/master/docs/MIGRATION.md).
 
 Named captures remain distinct when Unicode identifiers and names such as `g1`
 are mixed. Public names and Python opening-order numbering remain unchanged.
@@ -141,7 +141,7 @@ a new allowance and needs new host admission while earlier results survive.
 Core value-cursor copies have independent positions/shared allowance; PythonRe
 reference aliases share position/disposal. No finalizer-based lease is required.
 
-Read [release notes](https://github.com/Lokad/Utf8Regex/blob/master/CHANGELOG.md). Repository
+Read [release notes](https://github.com/Lokad/Utf8Regex/blob/master/docs/CHANGELOG.md). Repository
 [benchmark results](https://github.com/Lokad/Utf8Regex/blob/master/src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md)
 retain their recorded source/package/runtime identities and qualification status;
 older rows do not automatically qualify this release.

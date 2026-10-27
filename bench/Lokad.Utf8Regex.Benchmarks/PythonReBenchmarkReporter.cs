@@ -1729,8 +1729,7 @@ internal static partial class PythonReBenchmarkReporter
             "--others",
             "--exclude-standard",
             "--",
-            ".",
-            ":(exclude)PLAN.md");
+            ".");
         return new PythonReBenchmarkEnvironment
         {
             // Checkout provenance and actual loaded bytes are distinct.

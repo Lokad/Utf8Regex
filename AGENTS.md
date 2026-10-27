@@ -6,7 +6,7 @@
 - `System.Text.RegularExpressions.Regex` is a test/benchmark comparator only where its code-unit behavior overlaps the scalar contract. Shipped BCL matcher/result dependencies are removed in the qualified development source; keep them absent and qualify uncovered behavior in the owned engine.
 - Keep useful regex grammar, shared captures, resource admission and synchronous cancellation. UTF-16 coordinates/string APIs are derived interoperability conveniences, not the matching unit or a reason to convert every subject.
 - Retarget old surrogate-half parity tests to explicit scalar outcomes. Remove obsolete unit encodings, VM instructions, selectors and parity-only tooling as their qualified scalar replacements land. Do not merely disable failing tests or preserve a dormant second engine.
-- `SPEC.md` defines the target contract; current implementation coverage must be proved separately. `PLAN.md` records the active migration and cleanup gates.
+- `docs/SPEC.md` defines the target contract; current implementation coverage must be proved separately. `docs/PLAN.md` records the active migration and cleanup gates.
 
 ## Keep scratch files out of the repository root
 
@@ -22,8 +22,8 @@ New-Item -ItemType Directory -Force tmp/focused-check | Out-Null
 
 Keep durable evidence in the existing tracked receipt locations and immutable
 package candidates under `artifacts/package-candidates/`. Normal SDK/tool output
-directories stay in their established locations. `PLAN.md` and `PLAN.HISTORY.md`
-remain the intentional ignored planning files at the root.
+directories stay in their established locations. `docs/PLAN.md` and `docs/PLAN.HISTORY.md`
+remain the intentional ignored planning files in `docs/`.
 
 ## Turn off the .NET “terminal logger”
 
