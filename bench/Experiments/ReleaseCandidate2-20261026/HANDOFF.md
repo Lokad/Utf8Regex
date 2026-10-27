@@ -1,5 +1,13 @@
 # Utf8Regex 0.4.0-rc.2 release handoff
 
+**Correction 2026-10-27:** cumulative performance acceptance below is withdrawn
+as **inconclusive**. Correctness/identity/consumer evidence remains valid.
+[The dated erratum](ERRATA.md) supersedes the original cost sign-off and explains
+frozen ZIP navigation. Original observations and raw receipt bytes are preserved.
+
+## Original 2026-10-26 record
+
+
 **Qualified common prerelease candidate; unpublished.**
 Producer d1a14f407ae4e34230430260fc58111c960c1e63.
 Core, PythonRe and PCRE2 share0.4.0-rc.2; both adapters pin exactly Core.

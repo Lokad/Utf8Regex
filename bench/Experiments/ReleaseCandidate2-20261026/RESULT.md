@@ -1,5 +1,13 @@
 # RC2 package operating cost
 
+**Correction 2026-10-27:** cumulative performance acceptance below is withdrawn
+as **inconclusive**. Correctness/identity/consumer evidence remains valid.
+[The dated erratum](ERRATA.md) supersedes the original cost sign-off and explains
+frozen ZIP navigation. Original observations and raw receipt bytes are preserved.
+
+## Original 2026-10-26 record
+
+
 Measured final package-extracted Core/PythonRe/PCRE2 DLLs against fixed,
 correctness-equivalent baseline 844dcbad on the dedicated Xeon 8573C VM,
 .NET 10.0.12, CPU 6, with default runtime/tiering. The existing same-process

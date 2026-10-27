@@ -1,6 +1,6 @@
 # Lokad.Utf8Regex
 
-This is the common **0.4.0-rc.2** prerelease line. The frozen, unpublished RC1 artifacts are superseded and must not be published. The [release handoff](bench/Experiments/ReleaseCandidate2-20261026/README.md) records Windows/Linux package and consumer qualification; the candidate is unpublished.
+This is the common **0.4.0-rc.2** prerelease line. The frozen, unpublished RC1 artifacts are superseded and must not be published. The [release handoff](bench/Experiments/ReleaseCandidate2-20261026/README.md) records Windows/Linux package and consumer qualification; the candidate is unpublished. Its [cumulative performance gate remains inconclusive](bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md).
 
 `Lokad.Utf8Regex` **0.4.0-rc.2** is a `net10.0` library matching Unicode
 scalars over strict UTF-8 spans, with byte offsets and lengths. Dot matches 😀

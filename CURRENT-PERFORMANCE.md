@@ -11,9 +11,10 @@ compare fixed correctness-equivalent baseline 844dcbad with all current package 
 the quiet VM/.NET 10.0.12. One 109.138 s comparison plus sole 23.568 s confirmation:
 fifteen public rows initially -18.79% to +4.99%; finite Python Count initially
 +10.38% confirms at +0.06%. Absolute Count times differ between runs; both raw
-observations remain. No repeatable regression above 10% remains under the declared
-bounded protocol. This accepts the representative cumulative gate, not universal
-performance equivalence. Allocations are unchanged on these lanes.
+observations remain. The cumulative <=10% gate is **inconclusive**: the reduced-lane
+confirmation changes warm workload/context and does not discharge the uncertainty
+rule. [The dated correction](bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md)
+withdraws the earlier acceptance. Allocations are unchanged on these lanes.
 
 Finite policies have real public costs and can select different routes; see the
 receipt's unlimited/four-finite/token/deadline observations and unchanged

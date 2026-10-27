@@ -1,5 +1,13 @@
 # Common 0.4.0-rc.2 package candidate
 
+**Correction 2026-10-27:** cumulative performance acceptance below is withdrawn
+as **inconclusive**. Correctness/identity/consumer evidence remains valid.
+[The dated erratum](ERRATA.md) supersedes the original cost sign-off and explains
+frozen ZIP navigation. Original observations and raw receipt bytes are preserved.
+
+## Original 2026-10-26 record
+
+
 Qualified, immutable and unpublished. Producer
 d1a14f407ae4e34230430260fc58111c960c1e63; exact common Core dependencies.
 [Handoff](HANDOFF.md), [consume](CONSUMING.md), [package identities](candidate.json),
