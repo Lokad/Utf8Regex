@@ -1,6 +1,8 @@
 # Managed PCRE2 qualification
 
-## 0.4.0 release preparation
+## 0.4.0 — published 2026-10-27
+
+Core, PythonRe and PCRE2 version 0.4.0 are published on NuGet.
 
 Core, PythonRe and PCRE2 share version **0.4.0**; both adapters require exactly
 Core **[0.4.0]**. The existing `qualify-package-candidate.ps1` builds fresh
@@ -9,8 +11,8 @@ profile fixtures. Qualified packages and symbols are delivered to `artifacts/nug
 Its manifest is written to
 `artifacts/package-candidates/0.4.0/candidate.json` after successful qualification.
 
-Source Windows/Linux CI, downstream adoption, performance acceptance and NuGet
-publication are separate checks. Historical observations below identify their
+Source Windows/Linux CI, downstream adoption and performance acceptance retain
+their separate scopes. Historical observations below identify their
 original bytes and do not qualify the new release's operating costs. The earlier
 [inconclusive cost result](../../bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md)
 retains its scope and uncertainty.
@@ -19,7 +21,7 @@ The selected managed profile and its documented exclusions remain the contract.
 Generic partial decisions outside supported drivers, full grammar completion,
 NativeAOT/trimming and complete native PCRE2 equivalence remain unqualified.
 Defaults are unlimited; modeled controls do not contain an entire host process.
-No package publication, external consumer pin changes or old snapshot refresh.
+Publication does not establish external consumer adoption or refresh old snapshots.
 
 ## Historical RC1: superseded, publication blocked
 

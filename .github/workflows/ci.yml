@@ -2,6 +2,8 @@ name: ci
 
 on:
   push:
+    # Tags reuse the checks on their branch commit.
+    branches: ['**']
   pull_request:
 
 permissions:

@@ -71,7 +71,7 @@ See the [resource contract](docs/SPEC.md#cancellation-deadlines-and-resource-lim
 for failure, deadline and ownership details.
 
 See [release notes](CHANGELOG.md) and the [migration guide](docs/MIGRATION.md)
-for the upcoming 0.4.0 changes.
+for the 0.4.0 changes.
 
 ## Benchmarks
 

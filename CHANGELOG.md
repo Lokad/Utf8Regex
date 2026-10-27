@@ -1,6 +1,10 @@
 # Release notes
 
-## Unreleased — 0.4.0
+## 0.4.0 — 2026-10-27
+
+Published on NuGet: [Core](https://www.nuget.org/packages/Lokad.Utf8Regex/0.4.0),
+[PythonRe](https://www.nuget.org/packages/Lokad.Utf8Regex.PythonRe/0.4.0) and
+[PCRE2](https://www.nuget.org/packages/Lokad.Utf8Regex.Pcre2/0.4.0).
 
 - **Breaking:** matching uses Unicode scalars over strict UTF-8, with primary byte
   coordinates. Dot consumes one complete scalar; malformed UTF-8 anywhere in the
