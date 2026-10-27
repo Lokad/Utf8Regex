@@ -500,6 +500,7 @@ $sourceMapping
         if ($TestResultsDirectory) {
             $testArguments += @("--logger", "trx;LogFileName=qualified.trx", "--results-directory", $TestResultsDirectory)
         }
+        $testArguments += @("--", "RunConfiguration.TreatNoTestsAsError=true")
         Invoke-DotNet $testArguments
     }
     finally {

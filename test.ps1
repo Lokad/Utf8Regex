@@ -109,5 +109,7 @@ if ($Filter) {
     $testArguments += @("--filter", $Filter)
 }
 
+# A stale filter must not report successful validation without running tests.
+$testArguments += @("--", "RunConfiguration.TreatNoTestsAsError=true")
 $testExitCode = Invoke-DotNetWithRetry -Arguments $testArguments -MaxAttempts $RetryCount
 exit $testExitCode

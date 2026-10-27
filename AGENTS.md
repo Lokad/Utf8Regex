@@ -32,6 +32,9 @@ dotnet test    --tl:off --nologo -v minimal --no-build
 Use `./test.ps1` from the repository root. During experiments, select the affected
 test project with `-Project`; its dependencies build incrementally. Reuse matching
 configuration binaries with `-SkipBuild` for subsequent focused filters. The
+existing VSTest runner treats zero discovered tests as an error, including filtered
+script, CI and detached package runs; correct a stale filter instead of accepting
+an empty successful check. The
 default solution target is for meaningful delivery boundaries, when the complete
 relevant configuration/platform/package checks are due. Normal runs do not stop
 build servers or test hosts; Windows file-lock retries recover repository hosts.
