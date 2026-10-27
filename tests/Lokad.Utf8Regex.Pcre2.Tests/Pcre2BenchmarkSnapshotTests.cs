@@ -202,8 +202,10 @@ public sealed class Pcre2BenchmarkSnapshotTests
         Assert.True(sampleCount >= 9);
         Assert.True(pair.GetProperty("ManagedBatchCount").GetInt32() > 0);
         Assert.True(pair.GetProperty("ComparatorBatchCount").GetInt32() > 0);
-        Assert.True(pair.GetProperty("ManagedWarmupIterations").GetInt32() >= 64);
-        Assert.True(pair.GetProperty("ComparatorWarmupIterations").GetInt32() >= 64);
+        Assert.True(pair.GetProperty("ManagedWarmupIterations").GetInt32() >= 64 ||
+                    pair.GetProperty("ManagedWarmupMilliseconds").GetDouble() >= 1500);
+        Assert.True(pair.GetProperty("ComparatorWarmupIterations").GetInt32() >= 64 ||
+                    pair.GetProperty("ComparatorWarmupMilliseconds").GetDouble() >= 1500);
         Assert.True(pair.GetProperty("ManagedWarmupMilliseconds").GetDouble() >= 750);
         Assert.True(pair.GetProperty("ComparatorWarmupMilliseconds").GetDouble() >= 750);
         AssertAllocationMeasurement(pair, "Managed");

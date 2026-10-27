@@ -428,22 +428,24 @@ internal static partial class BenchmarkInspectReporter
     private static Pcre2QualificationWarmup WarmPcre2QualificationLane(Func<int> action)
     {
         const int minimumIterations = 64;
-        const int iterationsPerClockCheck = 8;
         const double minimumMilliseconds = 750;
+        const double maximumMillisecondsForCallFloor = 1500;
         var sink = 0;
         var iterations = 0;
+        var batchCount = 1;
         var start = Stopwatch.GetTimestamp();
         do
         {
-            for (var iteration = 0; iteration < iterationsPerClockCheck; iteration++)
-            {
-                sink ^= action();
-            }
-
-            iterations += iterationsPerClockCheck;
+            // Do not turn a 1-second public operation into a 64-second warmup.
+            // Keep the call floor for short operations and record actual work;
+            // sample-duration, lane-order and stability gates stay unchanged.
+            sink ^= MeasurePcre2QualificationBatch(action, batchCount).Sink;
+            iterations += batchCount;
+            batchCount = Math.Min(batchCount * 2, 8);
         }
-        while (iterations < minimumIterations ||
-               Stopwatch.GetElapsedTime(start).TotalMilliseconds < minimumMilliseconds);
+        while (Stopwatch.GetElapsedTime(start).TotalMilliseconds < minimumMilliseconds ||
+               iterations < minimumIterations &&
+               Stopwatch.GetElapsedTime(start).TotalMilliseconds < maximumMillisecondsForCallFloor);
 
         var elapsed = Stopwatch.GetElapsedTime(start);
         GC.KeepAlive(sink);
