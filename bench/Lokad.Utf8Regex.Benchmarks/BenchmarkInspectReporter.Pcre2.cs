@@ -881,11 +881,6 @@ internal static partial class BenchmarkInspectReporter
         var samples = ParseSamples(samplesText);
         var snapshot = LoadPcre2BenchmarkSnapshot();
         snapshot.SchemaVersion = Pcre2BenchmarkSchemaVersion;
-        if (string.IsNullOrWhiteSpace(familyName))
-        {
-            snapshot.ScalingFamilies.Clear();
-        }
-
         var families = CreatePcre2ScalingFamilies()
             .Where(family => string.IsNullOrWhiteSpace(familyName) || string.Equals(family.Name, familyName, StringComparison.Ordinal))
             .ToArray();
@@ -900,9 +895,9 @@ internal static partial class BenchmarkInspectReporter
             foreach (var benchmarkCase in family.Cases)
             {
                 var context = new Utf8Pcre2BenchmarkContext(benchmarkCase);
-                var effectiveIterations = Math.Max(
-                    context.InputBytes.Length <= 1024 ? 32 : context.InputBytes.Length <= 16 * 1024 ? 8 : 2,
-                    requestedIterations);
+                var comparison = MeasureComparisonLanes(requestedIterations, requestedIterations, samples,
+                    [() => ExecutePcre2SnapshotOperation(context.Utf8Pcre2Regex, context, family.Operation)], ["Utf8Pcre2"]);
+                var effectiveIterations = comparison.Iterations[0];
                 var constructionIterations = Math.Min(effectiveIterations, 16);
                 var allocationIterations = Math.Min(effectiveIterations, 32);
                 familySnapshot.Points.Add(new Pcre2ScalingPointJson
@@ -913,14 +908,12 @@ internal static partial class BenchmarkInspectReporter
                     PatternUtf8Bytes = Encoding.UTF8.GetByteCount(benchmarkCase.Pattern),
                     InputUtf8Bytes = context.InputBytes.Length,
                     EffectiveIterations = effectiveIterations,
-                    ConstructionMicroseconds = MeasurePcre2SnapshotMicroseconds(
+                    ConstructionMicroseconds = MeasureMedianMicroseconds(
                         samples,
                         constructionIterations,
                         () => CreatePcre2BenchmarkRegex(benchmarkCase).Pattern.Length),
-                    WarmMicroseconds = MeasurePcre2SnapshotMicroseconds(
-                        samples,
-                        effectiveIterations,
-                        () => ExecutePcre2SnapshotOperation(context.Utf8Pcre2Regex, context, family.Operation)),
+                    WarmMicroseconds = comparison.Medians[0],
+                    SampleMicroseconds = comparison.RawSamples[0],
                     ConstructionAllocatedBytes = MeasureAllocatedBytesPerInvocation(
                         constructionIterations,
                         () => CreatePcre2BenchmarkRegex(benchmarkCase).Pattern.Length),
@@ -1669,6 +1662,8 @@ internal static partial class BenchmarkInspectReporter
         public int EffectiveIterations { get; set; }
 
         public double ConstructionMicroseconds { get; set; }
+
+        public double[]? SampleMicroseconds { get; set; }
 
         public double WarmMicroseconds { get; set; }
 
