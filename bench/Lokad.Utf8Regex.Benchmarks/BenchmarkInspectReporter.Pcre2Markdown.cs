@@ -358,7 +358,7 @@ internal static partial class BenchmarkInspectReporter
         writer.WriteLine();
         writer.WriteLine("Scaling rows are mechanism and complexity guards, not direct .NET parity claims.");
         writer.WriteLine();
-        writer.WriteLine("| Family | Operation | Points | Input range | Pattern range | Warm CPU range |");
+        writer.WriteLine("| Family | Operation | Points | Input range | Pattern range | Warm elapsed range |");
         writer.WriteLine("|---|---|---:|---:|---:|---:|");
         foreach (var (familyName, family) in snapshot.ScalingFamilies.OrderBy(static family => family.Key, StringComparer.Ordinal))
         {

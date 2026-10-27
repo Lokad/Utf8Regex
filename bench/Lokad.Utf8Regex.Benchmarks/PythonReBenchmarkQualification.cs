@@ -203,7 +203,8 @@ internal static partial class PythonReBenchmarkReporter
                 $"consumption={expectedConsumptionToken}/{prepared.ByteControlConsumptionChecksum}.");
         }
 
-        for (var warmupCall = 0; warmupCall < 64; warmupCall++)
+        var tieringWarmup = Stopwatch.StartNew();
+        for (var warmupCall = 0; warmupCall < 64 && tieringWarmup.Elapsed.TotalMilliseconds < 1500; warmupCall++)
         {
             var batch = context.MeasurePythonReQualificationBatch(1);
             VerifyManagedResult(
