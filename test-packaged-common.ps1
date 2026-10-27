@@ -494,7 +494,9 @@ $sourceMapping
         $restoreArguments = @("restore", $testProjectPath, "--configfile", $nugetConfigPath, "--tl:off", "-v", "minimal")
         if ($PinQualifiedPackageSources) { $restoreArguments += "--use-lock-file" }
         Invoke-DotNet $restoreArguments
-        $testArguments = @("test", $testProjectPath, "-c", $Configuration, "--no-restore", "--tl:off", "--nologo", "-v", "minimal")
+        # Source/layout and historical snapshot guards run in source CI. Detached
+        # suites retain consumed-assembly API/member, matching and resource checks.
+        $testArguments = @("test", $testProjectPath, "-c", $Configuration, "--no-restore", "--tl:off", "--nologo", "-v", "minimal", "--filter", "Category!=SourceOnly")
         if ($TestResultsDirectory) {
             $testArguments += @("--logger", "trx;LogFileName=qualified.trx", "--results-directory", $TestResultsDirectory)
         }

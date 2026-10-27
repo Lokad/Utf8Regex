@@ -5,6 +5,7 @@ using System.Globalization;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
+[Trait("Category", "SourceOnly")]
 public sealed class Pcre2BenchmarkSnapshotTests
 {
     private static readonly string[] s_scalingFamilies =

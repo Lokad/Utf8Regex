@@ -196,6 +196,7 @@ public sealed class Utf8AsciiClassAndBoundaryTests
     }
 
     [Fact]
+    [Trait("Category", "SourceOnly")]
     public void ProjectionAndFixedDistanceMembershipHaveSingleOwners()
     {
         var root = FindRepositoryRoot();

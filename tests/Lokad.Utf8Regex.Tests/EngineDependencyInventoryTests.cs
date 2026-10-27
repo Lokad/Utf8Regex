@@ -103,6 +103,7 @@ public sealed class EngineDependencyInventoryTests
 
 
     [Fact]
+    [Trait("Category", "SourceOnly")]
     public void CorePythonReIntegrationPointsAreMarked()
     {
         // Keep the removable profile boundary, without pinning filenames of
@@ -154,6 +155,7 @@ public sealed class EngineDependencyInventoryTests
     }
 
     [Fact]
+    [Trait("Category", "SourceOnly")]
     public void VendoredParserForkIsAbsent()
     {
         // Parser flip (2026-09-26): the vendored Runtime/* parser fork was removed by

@@ -226,7 +226,7 @@ $patterns
         SchemaVersion = 1; PackageVersion = $version; SourceRevision = $sourceRevision; CleanSource = $true
         Configuration = $Configuration; TargetFramework = "net10.0"
         StartedAtUtc = $startedAt.ToString("O"); CompletedAtUtc = [DateTime]::UtcNow.ToString("O")
-        QualificationScope = "Selected Core/adapter candidate; complete detached fixture suites, exact provenance and restore identities. Other platforms, broader profiles, downstream adoption, performance and publication are separate acceptance steps."
+        QualificationScope = "Selected Core/adapter candidate; detached package fixtures (Category!=SourceOnly), exact provenance and restore identities. Source/layout/historical-snapshot guards remain in source CI. Other platforms, broader profiles, downstream adoption, performance and publication are separate acceptance steps."
         Published = $false; BuildCount = $(if ($SkipBuild) { 0 } else { $buildProjects.Count }); PackCountPerPackage = 1
         Packages = $packageRecords; Consumers = $consumerRecords.ToArray(); Steps = $steps.ToArray()
         ProvenanceRelativePath = "package-provenance.json"

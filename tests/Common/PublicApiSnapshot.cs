@@ -15,19 +15,9 @@ internal static class PublicApiSnapshot
     internal static void AssertMatches(Assembly assembly, string testProject)
     {
         var actual = FormatAssembly(assembly);
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null)
-        {
-            var path = Path.Combine(directory.FullName, "tests", testProject, "PublicApi.Shipped.txt");
-            if (Directory.Exists(Path.GetDirectoryName(path)))
-            {
-                Assert.True(File.Exists(path), $"Missing public API snapshot '{path}'.\n{actual}");
-                Assert.Equal(File.ReadAllText(path).ReplaceLineEndings("\n").TrimEnd(), actual);
-                return;
-            }
-            directory = directory.Parent;
-        }
-        throw new DirectoryNotFoundException($"Could not locate the {testProject} public API snapshot.");
+        var path = Path.Combine(AppContext.BaseDirectory, "PublicApi.Shipped.txt");
+        Assert.True(File.Exists(path), $"Missing {testProject} public API snapshot '{path}'.\n{actual}");
+        Assert.Equal(File.ReadAllText(path).ReplaceLineEndings("\n").TrimEnd(), actual);
     }
 
     internal static string FormatAssembly(Assembly assembly)

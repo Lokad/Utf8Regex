@@ -24,6 +24,7 @@ public sealed class CoreCompilationArchitectureTests
     }
 
     [Fact]
+    [Trait("Category", "SourceOnly")]
     public void PreparedRegexConstructionIsInertAndLayerOwnersStayDirectional()
     {
         var sourceRoot = FindCoreSourceDirectory();
@@ -83,6 +84,7 @@ public sealed class CoreCompilationArchitectureTests
     }
 
     [Fact]
+    [Trait("Category", "SourceOnly")]
     public void ByteOffsetExecutionUsesNeutralInputOwnedInfrastructure()
     {
         var sourceRoot = FindCoreSourceDirectory();
@@ -94,6 +96,7 @@ public sealed class CoreCompilationArchitectureTests
     }
 
     [Fact]
+    [Trait("Category", "SourceOnly")]
     public void SimplePatternLoweringDoesNotDependOnSearchPlans()
     {
         var sourceRoot = FindCoreSourceDirectory();
@@ -103,6 +106,7 @@ public sealed class CoreCompilationArchitectureTests
     }
 
     [Fact]
+    [Trait("Category", "SourceOnly")]
     public void ReusableSearchKernelsDoNotDependOnFlavorFrontEnds()
     {
         var sourceRoot = FindCoreSourceDirectory();
@@ -117,7 +121,7 @@ public sealed class CoreCompilationArchitectureTests
     }
 
     [Fact]
-    public void OwnedInternalContractsUseMandatoryParametersAndNoNullSuppression()
+    public void OwnedInternalContractsUseMandatoryParameters()
     {
         var assembly = typeof(Utf8Regex).Assembly;
         const BindingFlags declaredMembers = BindingFlags.Public | BindingFlags.NonPublic |
@@ -134,7 +138,12 @@ public sealed class CoreCompilationArchitectureTests
             .Order(StringComparer.Ordinal)
             .ToArray();
         Assert.True(optionalParameters.Length == 0, string.Join(Environment.NewLine, optionalParameters));
+    }
 
+    [Fact]
+    [Trait("Category", "SourceOnly")]
+    public void OwnedSourceDoesNotUseNullSuppression()
+    {
         var sourceRoot = FindCoreSourceDirectory();
         var nullSuppression = new Regex(@"(?<=[A-Za-z0-9_\)\]])!(?=[\.,;\)\]\[])", RegexOptions.CultureInvariant);
         var suppressions = Directory.EnumerateFiles(sourceRoot, "*.cs", SearchOption.AllDirectories)
@@ -169,6 +178,7 @@ public sealed class CoreCompilationArchitectureTests
     }
 
     [Fact]
+    [Trait("Category", "SourceOnly")]
     public void ReplacementDependsOnExecutionInOneDirectionOnly()
     {
         var sourceRoot = FindCoreSourceDirectory();

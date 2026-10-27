@@ -19,6 +19,7 @@ public sealed class Pcre2AsciiByteSetFactoryTests
     }
 
     [Fact]
+    [Trait("Category", "SourceOnly")]
     public void Pcre2FactoryDoesNotReferenceDotNetRegexCharClass()
     {
         var source = File.ReadAllText(FindRepositoryFile("src", "Lokad.Utf8Regex.Pcre2", "Pcre2AsciiByteSetFactory.cs"));

@@ -308,6 +308,7 @@ public sealed class Pcre2LiteralGlobalOperationTests
     }
 
     [Fact]
+    [Trait("Category", "SourceOnly")]
     public void GenericGlobalDriverHasNoCompletePatternDispatchOrNullableArrayAssertion()
     {
         var root = FindRepositoryDirectory();

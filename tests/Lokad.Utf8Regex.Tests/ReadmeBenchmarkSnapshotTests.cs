@@ -4,6 +4,7 @@ using System.Text.Json;
 
 namespace Lokad.Utf8Regex.Tests;
 
+[Trait("Category", "SourceOnly")]
 public sealed class ReadmeBenchmarkSnapshotTests
 {
     [Fact]

@@ -31,6 +31,7 @@ public sealed class Pcre2SourceGuardTests
     }
 
     [Fact]
+    [Trait("Category", "SourceOnly")]
     public void CorePcre2ReferencesRemainExplicitIntegrationPoints()
     {
         var pcre2SourceDirectory = FindPcre2SourceDirectory();
@@ -47,6 +48,7 @@ public sealed class Pcre2SourceGuardTests
     }
 
     [Fact]
+    [Trait("Category", "SourceOnly")]
     public void Pcre2CharacterSemanticsDoNotDependOnDotNetRegexInternals()
     {
         var source = File.ReadAllText(Path.Combine(FindPcre2SourceDirectory(), "Pcre2CharacterCompiler.cs"));
@@ -57,6 +59,7 @@ public sealed class Pcre2SourceGuardTests
     }
 
     [Fact]
+    [Trait("Category", "SourceOnly")]
     public void Pcre2BacktrackingSemanticsDoNotDependOnDotNetRegexInternals()
     {
         var source = File.ReadAllText(Path.Combine(FindPcre2SourceDirectory(), "Pcre2BacktrackingCompiler.cs"));

@@ -5,6 +5,7 @@ using Lokad.Utf8Regex.Benchmarks;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
+[Trait("Category", "SourceOnly")]
 public sealed class PythonReBenchmarkSnapshotTests
 {
     private static readonly string[] s_mandatorySentinelIds =

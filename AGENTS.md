@@ -65,6 +65,12 @@ receipts retain their original paths. Platform, public downstream and performanc
 acceptance remain separate milestone checks. Do not repeat source/package
 qualification for unchanged code or immutable bytes.
 
+Detached package runs filter Category!=SourceOnly. Repository-source/layout and
+historical benchmark-snapshot guards still run in ordinary source tests/CI.
+Each profile stages PublicApi.Shipped.txt beside its test DLL; API and consumed-
+assembly inventories remain in detached runs. No ancestor checkout is required
+by those package checks.
+
 Each profile fixture inventories the assembly it actually consumes, including
 detached package runs. Core-only tests and qualification require neither adapter
 DLLs nor the benchmark executable. Combined CI still tests all profiles.

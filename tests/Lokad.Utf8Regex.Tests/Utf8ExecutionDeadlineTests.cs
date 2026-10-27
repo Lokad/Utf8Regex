@@ -42,6 +42,7 @@ public sealed class Utf8ExecutionDeadlineTests
     }
 
     [Fact]
+    [Trait("Category", "SourceOnly")]
     public void CoreDeadlineRemainsFlavorNeutralAndNonnullable()
     {
         var sourceRoot = FindCoreSourceDirectory();

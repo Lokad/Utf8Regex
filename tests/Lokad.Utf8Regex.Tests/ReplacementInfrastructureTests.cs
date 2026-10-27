@@ -85,6 +85,7 @@ public sealed class ReplacementInfrastructureTests
     }
 
     [Fact]
+    [Trait("Category", "SourceOnly")]
     public void ReplacementImplementationHasOneOutputAndLedgerOwner()
     {
         var root = FindRepositoryDirectory();
