@@ -3,13 +3,17 @@
 ## Current common RC2 candidate
 
 **0.4.0-rc.2**, producer d1a14f407ae4e34230430260fc58111c960c1e63, is
-qualified and unpublished. Both adapters require exactly Core [0.4.0-rc.2].
+correctness-qualified and unpublished. Both adapters require exactly Core [0.4.0-rc.2].
 The [fresh release receipt](../../bench/Experiments/ReleaseCandidate2-20261026/README.md)
 records complete detached Windows/Linux suites, original public consumers,
 API/member/PDB/source/dependency identities, green source CI and bounded actual-
 package/cumulative costs. PCRE2 has 6,189 passing cases per platform, with no
 final failures/skips. The initial staging correction and cost uncertainty remain
 disclosed. Historical RC1 qualification below does not establish this result.
+
+Current source is **0.4.0-rc.3-dev**, without a new candidate. RC2 cumulative
+performance acceptance is [withdrawn as inconclusive](../../bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md);
+the original receipts and ZIP remain unchanged.
 
 The selected managed profile and its documented exclusions remain the contract.
 Generic partial decisions outside supported drivers, full grammar completion,

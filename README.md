@@ -1,14 +1,14 @@
 # Lokad.Utf8Regex
 
-This is the common **0.4.0-rc.2** prerelease line. The frozen, unpublished RC1 artifacts are superseded and must not be published. The [release handoff](bench/Experiments/ReleaseCandidate2-20261026/README.md) records Windows/Linux package and consumer qualification; the candidate is unpublished. Its [cumulative performance gate remains inconclusive](bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md).
+Development source: **0.4.0-rc.3-dev**; no new package candidate is staged. Frozen **0.4.0-rc.2** has Windows/Linux correctness and consumer evidence, while its cumulative performance gate is **inconclusive**. See the [current release correction](https://github.com/Lokad/Utf8Regex/blob/master/bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md). RC1 is superseded.
 
-`Lokad.Utf8Regex` **0.4.0-rc.2** is a `net10.0` library matching Unicode
+`Lokad.Utf8Regex` **0.4.0-rc.3-dev** is a `net10.0` library matching Unicode
 scalars over strict UTF-8 spans, with byte offsets and lengths. Dot matches 😀
 once across four bytes. UTF-16 coordinates and strings are derived conveniences.
 
 The prerelease line covers three packages at the same version: **Lokad.Utf8Regex**,
 **Lokad.Utf8Regex.PythonRe** and **Lokad.Utf8Regex.Pcre2**. Both adapters require
-exactly Core **[0.4.0-rc.2]** and can share one dependency graph. Upgrade them
+exactly Core **[0.4.0-rc.3-dev]** and can share one dependency graph. Upgrade them
 together; do not override an adapter's Core dependency.
 
 Read the [release notes](CHANGELOG.md), [migration guide](MIGRATION.md) and

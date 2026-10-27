@@ -2,7 +2,9 @@
 
 `Lokad.Utf8Regex.PythonRe` is an optional sidecar package that exposes Python-style regular expression behavior over UTF-8 inputs.
 
-The staged package is **0.4.0-rc.1**; development is **0.4.0-rc.2-dev**.
+Current source is **0.4.0-rc.3-dev**. Frozen **0.4.0-rc.2** has correctness/consumer
+evidence; cumulative cost is [inconclusive](bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md).
+RC1 is superseded; no new development package candidate is staged.
 The exact API is [the reviewed snapshot](tests/Lokad.Utf8Regex.PythonRe.Tests/PublicApi.Shipped.txt).
 See [migration](MIGRATION.md), [host integration](HOST-INTEGRATION.md) and
 [current evidence](CURRENT-PERFORMANCE.md). Historical scalar-candidate narratives,

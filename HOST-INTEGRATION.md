@@ -1,11 +1,14 @@
 # Resource controls and host ownership
 
-This is the **0.4.0-rc.2** host contract for Core, PythonRe and
+This is the **0.4 Unicode-scalar** host contract for Core, PythonRe and
 the managed PCRE2 adapter. Frozen RC1 remains unpublished; its PCRE2 bytes have
 known defects and require replacement before release. Both adapters require
 exactly the same Core version. These controls bound their documented modeled
 scope, not total managed heap/RSS or application containment. Defaults remain
 unlimited for invocation controls.
+
+Current source is **0.4.0-rc.3-dev**; frozen RC2 retains its correctness evidence.
+Its [cumulative cost gate is inconclusive](https://github.com/Lokad/Utf8Regex/blob/master/bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md).
 
 ## Select the public controls
 

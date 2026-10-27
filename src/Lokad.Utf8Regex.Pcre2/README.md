@@ -1,9 +1,9 @@
 # Lokad.Utf8Regex.Pcre2
 
-This is the common **0.4.0-rc.2** prerelease line. The frozen, unpublished RC1 artifacts are superseded and must not be published. See the release handoff for package qualification and publication status.
+Development source: **0.4.0-rc.3-dev**; no new package candidate is staged. Frozen **0.4.0-rc.2** has Windows/Linux correctness and consumer evidence, while its cumulative performance gate is **inconclusive**. See the [current release correction](https://github.com/Lokad/Utf8Regex/blob/master/bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md). RC1 is superseded.
 
-**0.4.0-rc.2**, .NET 10. A strictly managed, UTF-8-native selected PCRE2 10.47
-standard profile, requiring exactly `Lokad.Utf8Regex [0.4.0-rc.2]`. It can coexist
+**0.4.0-rc.3-dev**, .NET 10. A strictly managed, UTF-8-native selected PCRE2 10.47
+standard profile, requiring exactly `Lokad.Utf8Regex [0.4.0-rc.3-dev]`. It can coexist
 with PythonRe at the same version. There is no P/Invoke, native PCRE2 binary,
 RID-specific payload or implementation dependency other than Core and the BCL.
 

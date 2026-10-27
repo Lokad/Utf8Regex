@@ -5,8 +5,9 @@ UTF-8 spans**, with byte offsets and lengths as primary result coordinates.
 The contract was selected on 2026-10-06; UTF-16 matching parity is superseded.
 
 This document defines behavior and the scope of resource controls, not proof of
-complete implementation. All three staged **0.4.0-rc.1** packages are immutable;
-current development is **0.4.0-rc.2-dev**. See [release notes](CHANGELOG.md),
+complete implementation. Current source is **0.4.0-rc.3-dev**.
+Frozen **0.4.0-rc.2** has correctness/consumer evidence; its cumulative cost gate is
+[inconclusive](bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md). RC1 is superseded. See [release notes](CHANGELOG.md),
 [migration](MIGRATION.md), [host integration](HOST-INTEGRATION.md),
 [current evidence](CURRENT-PERFORMANCE.md) and the separate
 [PythonRe](SPEC-PYTHONRE.md)/[PCRE2](SPEC-PCRE2.md) contracts.

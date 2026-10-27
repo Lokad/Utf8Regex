@@ -1,10 +1,14 @@
 # Migrating to the Unicode-scalar 0.4 line
 
-Upgrade `Lokad.Utf8Regex`, `Lokad.Utf8Regex.PythonRe` and
-`Lokad.Utf8Regex.Pcre2` together when using more than one package. Both adapters
-require exactly the same Core version (currently `[0.4.0-rc.2]`). Previous private scalar candidates with
-incompatible exact Core pins cannot be combined by overriding dependencies.
-All packages target .NET 10. Frozen RC1 is superseded and unpublished; do not publish those bytes. Package qualification and publication status are recorded in the release handoff.
+Upgrade selected Core/PythonRe/PCRE2 packages together: adapters require exactly
+their own Core version. The frozen candidate is **0.4.0-rc.2** across all three.
+Its Windows/Linux correctness and consumer evidence remains valid; cumulative
+performance acceptance is [inconclusive](https://github.com/Lokad/Utf8Regex/blob/master/bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md).
+The packages/ZIP remain immutable and unpublished; RC1 is superseded.
+
+Development source is **0.4.0-rc.3-dev**, with no new candidate staged.
+All packages target .NET 10. Incompatible private Core pins cannot be reconciled
+by overriding dependencies. The contract below applies to the scalar 0.4 line.
 
 The 0.4 API removes the formerly public `Utf8CountDiagnostics` and
 `Utf8IsMatchDiagnostics` records. Their only producers were internal benchmark/

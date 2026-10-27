@@ -1,5 +1,15 @@
 # Release notes
 
+## Unreleased after 0.4.0-rc.2
+
+Development is 0.4.0-rc.3-dev; no new package candidate is staged.
+Removed the test-only legacy fallback-reason scanner. Detached package fixtures
+read their staged API snapshot and leave repository-only source/layout/snapshot
+guards to source CI. Matching, public APIs and resource controls are unchanged.
+RC2 correctness/identity/consumer evidence remains valid; its cumulative cost
+acceptance is withdrawn as inconclusive. Frozen packages and ZIP are unchanged;
+see the [dated correction](https://github.com/Lokad/Utf8Regex/blob/master/bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md).
+
 ## 0.4.0-rc.2
 
 Common prerelease for **Lokad.Utf8Regex**, **Lokad.Utf8Regex.PythonRe** and
@@ -54,13 +64,13 @@ UTF-16 coordinates and string helpers remain derived interoperability APIs.
 
 Read [MIGRATION.md](MIGRATION.md) and [HOST-INTEGRATION.md](HOST-INTEGRATION.md)
 before upgrading. Each package README and profile specification describes its
-limits. [CURRENT-PERFORMANCE.md](CURRENT-PERFORMANCE.md) separates measured
+limits. [current performance evidence](https://github.com/Lokad/Utf8Regex/blob/master/CURRENT-PERFORMANCE.md) separates measured
 evidence from release acceptance; this version does not refresh historical
 benchmark Status or claim universal throughput gains.
 
 Detailed development notes remain in
 [repository history](https://github.com/Lokad/Utf8Regex/blob/ee917133/CHANGELOG.md)
-and [experiment receipts](bench/Experiments).
+and [experiment receipts](https://github.com/Lokad/Utf8Regex/tree/master/bench/Experiments).
 
 ## 0.4.0-rc.1
 

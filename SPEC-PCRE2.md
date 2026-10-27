@@ -1,7 +1,8 @@
 # Side-by-side PCRE2 support in `Lokad.Utf8Regex`
 
-Staged packages are **0.4.0-rc.1** with exact Core dependencies; development is
-**0.4.0-rc.2-dev**. See [qualification](src/Lokad.Utf8Regex.Pcre2/QUALIFICATION.md),
+Current source is **0.4.0-rc.3-dev**. Frozen **0.4.0-rc.2** has exact Core pins and
+correctness/consumer evidence; cumulative cost is
+[inconclusive](bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md). RC1 is superseded. See [qualification](src/Lokad.Utf8Regex.Pcre2/QUALIFICATION.md),
 [migration](MIGRATION.md) and [host integration](HOST-INTEGRATION.md).
 Historical scalar-candidate narratives/receipts remain in
 [git](https://github.com/Lokad/Utf8Regex/blob/46318565/SPEC-PCRE2.md) and local ignored

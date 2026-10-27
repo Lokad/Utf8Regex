@@ -3,13 +3,16 @@
 Historical review through **scalar.112-dev**, 2026-10-19. Later development
 cleanup is recorded in [the first receipt](bench/Experiments/PostRc1Simplification-20261020/README.md)
 and [the second receipt](bench/Experiments/SecondSimplification-20261020/README.md).
-The staged common release is [0.4.0-rc.1](bench/Experiments/ReleaseCandidate-20261020/release.json);
-source is 0.4.0-rc.2-dev. Coverage/gate statements below describe that historical
+The historical staged release was [0.4.0-rc.1](bench/Experiments/ReleaseCandidate-20261020/release.json);
+source then was 0.4.0-rc.2-dev. Coverage/gate statements below describe that historical
 checkpoint; common public construction controls have since landed. Original
 receipts retain their revisions and are not requalified by this page.
 The matching contract is complete Unicode scalars over strictly validated UTF-8;
 byte coordinates are primary. This report describes source at that checkpoint and executable
 checks, rather than treating the absence of a name as proof of semantic coverage.
+
+Current source is **0.4.0-rc.3-dev**. The frozen RC2 candidate has correctness
+evidence; [cumulative performance acceptance is inconclusive](bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md).
 
 ## Retired mechanisms
 

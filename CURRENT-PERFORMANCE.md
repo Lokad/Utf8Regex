@@ -1,5 +1,7 @@
 # Performance evidence and frozen measurements
 
+Current source is **0.4.0-rc.3-dev**. No new package or timing claim is made.
+
 **0.4.0-rc.2** is the fresh immutable common Core/PythonRe/PCRE2 candidate.
 Its [release receipt](bench/Experiments/ReleaseCandidate2-20261026/README.md)
 records exact package/DLL/source identities and Windows/Linux detached/public

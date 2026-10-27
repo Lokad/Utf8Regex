@@ -1,7 +1,9 @@
 # .NET 10 / .NET 11 Count comparison
 
 The common candidate is [0.4.0-rc.2](bench/Experiments/ReleaseCandidate2-20261026/README.md)
-for all three packages, qualified and unpublished. The runtime experiment below
+for all three packages, correctness-qualified and unpublished; [cumulative cost is
+inconclusive](bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md). Source is
+0.4.0-rc.3-dev, with no new candidate. The runtime experiment below
 uses **frozen Core114**; it does not qualify current runtime/profile behavior.
 Its comparative-lane gate is closed. [Current package operating costs](CURRENT-PERFORMANCE.md)
 have their own identities and bounded scope. No historical runtime batch was rerun.
