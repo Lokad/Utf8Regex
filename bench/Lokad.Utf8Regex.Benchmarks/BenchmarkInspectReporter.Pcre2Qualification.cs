@@ -432,16 +432,14 @@ internal static partial class BenchmarkInspectReporter
         const double maximumMillisecondsForCallFloor = 1500;
         var sink = 0;
         var iterations = 0;
-        var batchCount = 1;
         var start = Stopwatch.GetTimestamp();
         do
         {
             // Do not turn a 1-second public operation into a 64-second warmup.
             // Keep the call floor for short operations and record actual work;
             // sample-duration, lane-order and stability gates stay unchanged.
-            sink ^= MeasurePcre2QualificationBatch(action, batchCount).Sink;
-            iterations += batchCount;
-            batchCount = Math.Min(batchCount * 2, 8);
+            sink ^= MeasurePcre2QualificationBatch(action, 1).Sink;
+            iterations++;
         }
         while (Stopwatch.GetElapsedTime(start).TotalMilliseconds < minimumMilliseconds ||
                iterations < minimumIterations &&
