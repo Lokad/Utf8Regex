@@ -138,6 +138,10 @@ the repository's existing benchmark files, not a second maintained scoreboard.
   [identities](published04-identities.json) are unchanged. No new package matrix
   or published version was created for these harness changes.
 
+Delivery CI 40568979672 is green at c6660ea8 on Windows and Linux, including
+both runtimes and disabled dynamic code. Later receipt-only commits do not
+change the tested source or benchmark snapshots.
+
 **The complete sub-hour target is not demonstrated.** The corrected main batch
 started 17:59:34Z and took 52m46s, plus its prior 60.17 s build, but retained
 unfinished work. Targeted completion took another 7m29s; subsequent bounded
