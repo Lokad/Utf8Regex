@@ -56,7 +56,9 @@ public sealed class Utf8PythonRegexTests
 
         Assert.True(regex.DebugUsesUtf8RegexBackend);
         Assert.True(regex.DebugUsesZeroOffsetUtf8ValueFastPath);
+        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         Assert.True(regex.FullMatch("foo"u8).Success);
+        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         Assert.Equal("foo", PythonReDotNetReference.Render(regex));
         Assert.True(regex.IsMatch("xxfooyy"u8));
         var nonAsciiPrefixMatch = regex.Search("éfoo"u8);
@@ -295,18 +297,23 @@ public sealed class Utf8PythonRegexTests
 
         Assert.False(conditional.DebugUsesUtf8RegexBackend);
         Assert.True(lookahead.DebugUsesUtf8RegexBackend);
+        Assert.False(conditional.DebugIsScalarFullProgramValueCreated);
+        Assert.False(lookahead.DebugIsScalarFullProgramValueCreated);
         Assert.True(conditional.Search("foobar"u8).Success);
         Assert.True(lookahead.Search("foobar"u8).Success);
         Assert.True(conditional.FullMatch("foobar"u8).Success);
         Assert.True(conditional.FullMatch("baz"u8).Success);
         Assert.False(conditional.FullMatch("foo"u8).Success);
+        Assert.True(conditional.DebugIsScalarFullProgramValueCreated);
         Assert.False(lookahead.FullMatch("foobar"u8).Success);
+        Assert.True(lookahead.DebugIsScalarFullProgramValueCreated);
     }
 
     [Fact]
-    public void FullMatchSupportsConcurrentNativeAndScalarFirstUse()
+    public void LazyUtf8FullMatcherSupportsConcurrentNativeAndScalarFirstUse()
     {
         var native = new Utf8PythonRegex("ab[0-9]{2}");
+        Assert.False(native.DebugIsScalarFullProgramValueCreated);
 
         Parallel.For(0, 32, iteration =>
         {
@@ -324,10 +331,14 @@ public sealed class Utf8PythonRegexTests
             }
         });
 
+        Assert.True(native.DebugIsScalarFullProgramValueCreated);
 
-        // The anchored search shape shares its prepared scalar program.
-        var anchored = new Utf8PythonRegex(@"^ab[0-9]{2}");
-        Parallel.For(0, 32, _ => Assert.True(anchored.FullMatch("ab12"u8).Success));
+        // The anchored search shape shares a lazily created scalar full
+        // matcher across concurrent callers.
+        var managed = new Utf8PythonRegex(@"^ab[0-9]{2}");
+        Assert.False(managed.DebugIsScalarFullProgramValueCreated);
+        Parallel.For(0, 32, _ => Assert.True(managed.FullMatch("ab12"u8).Success));
+        Assert.True(managed.DebugIsScalarFullProgramValueCreated);
     }
 
     [Fact]

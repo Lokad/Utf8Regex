@@ -35,8 +35,8 @@ pre-cancellation first. Empty text and default UTF-8 spans are empty patterns.
 Core's factory takes a string pattern. PythonRe and PCRE2 also accept strict
 UTF-8 pattern spans. Explicit `Compile` does not consult a static pattern cache;
 its construction token is not retained by the returned expression. PythonRe's
-factory and constructors prepare one scalar program shared by Search, Match and
-FullMatch; FullMatch imposes EOF during VM acceptance, without later construction. Replacement preparation and unmodeled CLR/JIT metadata
+factory eagerly prepares the derived FullMatch program too; its constructors
+defer that preparation. Replacement preparation and unmodeled CLR/JIT metadata
 retain their separate scope. Pass the invocation token to each later operation.
 
 Core instances with any fixed finite numeric invocation limit omit the unmetered
@@ -207,7 +207,7 @@ These are separate phase ceilings, not additions to the invocation W + R promise
 
 | Preparation | Admission and reuse |
 | --- | --- |
-| PythonRe FullMatch | Uses the expression's existing scalar program with an EOF acceptance constraint. There is no separate preparation phase, copied instruction buffer or cold construction ceiling. Matching and projection retain invocation admission. |
+| PythonRe FullMatch | Explicit `Compile` eagerly prepares its derived program under the construction policy. Constructors defer it. Execution-triggered preparation borrows finite `MaxWorkingBytes` as a ceiling on additional covered construction capacity. |
 | PythonRe replacement | A cold template cache miss uses the same additional-byte ceiling and fixed construction work/depth backstops. A warm text-key hit needs no preparation scope. |
 | Core replacement | Cold parsing and UTF-8 template-key decoding share a nested additional-byte ceiling. Warm text-key hits need no scope; UTF-8 lookups still fund decoded-key storage. Template validation admits scan work before reading through the active construction owner or fixed scan ceiling. |
 

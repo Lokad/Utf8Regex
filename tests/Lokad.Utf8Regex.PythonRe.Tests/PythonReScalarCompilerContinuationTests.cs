@@ -35,6 +35,7 @@ public sealed class PythonReScalarCompilerContinuationTests
                     PythonReCompileOptions.Multiline, PythonReCompileOptions.None),
             };
         var program = PythonReScalarCompiler.Compile(parse with { Root = node });
+        if (full) program = PythonReScalarCompiler.RequireFullMatch(program);
         Assert.NotNull(program);
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
@@ -42,11 +43,7 @@ public sealed class PythonReScalarCompilerContinuationTests
         Array.Fill(ends, -1);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited,
             Regex.InfiniteMatchTimeout, CancellationToken.None);
-        var workspace = new Utf8SliceRunner.AttemptWorkspace();
-        Utf8SliceMatchOutcome outcome;
-        try { outcome = Utf8SliceRunner.TryMatchAt(program, "\U0001f600"u8, 0, starts, ends,
-            false, false, true, ref workspace, ref invocation, full); }
-        finally { workspace.Release(ref invocation); }
+        var outcome = Utf8SliceRunner.IsMatch(program, "\U0001f600"u8, starts, ends, ref invocation);
         Assert.True(outcome.IsMatch);
         Assert.Equal((0, 4), (starts[0], ends[0]));
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);

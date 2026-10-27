@@ -146,8 +146,7 @@ internal struct PythonReScalarMatchState
 
     internal bool MoveNext(ReadOnlySpan<byte> input) => MoveNextCore(input, true);
 
-    internal bool MatchAtCurrentPosition(ReadOnlySpan<byte> input, bool fullMatch = false)
-        => MoveNextCore(input, false, fullMatch);
+    internal bool MatchAtCurrentPosition(ReadOnlySpan<byte> input) => MoveNextCore(input, false);
 
     internal static bool TryGetLeadingAsciiRange(Utf8SliceProgram program, out int low, out int high)
     {
@@ -182,7 +181,7 @@ internal struct PythonReScalarMatchState
         return true;
     }
 
-    private bool MoveNextCore(ReadOnlySpan<byte> input, bool search, bool fullMatch = false)
+    private bool MoveNextCore(ReadOnlySpan<byte> input, bool search)
     {
         // A scalar cursor exclusively owns this admitted scratch. Published
         // snapshots copy values; ResetAttempt never touches retained results.
@@ -196,7 +195,7 @@ internal struct PythonReScalarMatchState
                 try
                 {
                     // A complete native literal match needs no capture/VM state.
-                    // Match and FullMatch use search=false;
+                    // Match and the derived FullMatch program use search=false;
                     // their additional position/end constraints keep the VM.
                     if (search && _program.GroupCount == 0 && _candidateRegex is { } candidate &&
                         candidate.TryFindNativeLiteralForResult(input, _position, ref _invocation,
@@ -217,7 +216,7 @@ internal struct PythonReScalarMatchState
                             !SeekCandidate(input)) { _finished = true; return false; }
                         _invocation.AnchorOriginByte = _position;
                         outcome = Utf8SliceRunner.TryMatchAt(_program, input, _position,
-                            _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref _workspace, ref _invocation, fullMatch);
+                            _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref _workspace, ref _invocation);
                     }
                 }
                 catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)

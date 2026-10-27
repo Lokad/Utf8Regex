@@ -325,8 +325,8 @@ result-capacity limit. Retained results/aliases remain valid after later denial.
 Pattern/replacement preparation keeps separate construction admission. Finite
 working bytes additionally limit covered Core cold replacement-parser capacity,
 including UTF-8 template-key decoding, through a nested construction ceiling.
-PythonRe applies this separate ceiling to cold templates. FullMatch reuses its
-existing scalar program and needs no execution-triggered construction. `ConstructionBytes` can precede execution denial; totals
+PythonRe applies this separate ceiling to cold templates and execution-triggered
+FullMatch preparation. `ConstructionBytes` can precede execution denial; totals
 include enclosing construction reservations. Failure restores parent capacity/
 ceiling, removes failed publication and preserves spent work. Warm text-key hits
 need no preparation scope; UTF-8 keys still require decoding admission.
@@ -504,11 +504,9 @@ shared resource failure/cancellation/deadline propagates. Optional bodies with
 loops require the full admitted construction proof, including repeat bounds;
 incomplete or duplicate transitions cannot establish eligibility.
 
-PythonRe compilation and constructors prepare one scalar program. FullMatch
-requires EOF during acceptance in that same VM, including backtracking; no
-second program, instruction copy or lazy construction is retained. Construction
-and cold invocation byte/work requirements can decrease; numeric cutoffs remain
-implementation-dependent. PCRE2 has separate [construction coverage](SPEC-PCRE2.md):
+Explicit PythonRe compilation eagerly prepares its derived FullMatch program,
+including its instruction copy/metadata, even when unused. Constructors retain
+retryable lazy preparation. PCRE2 has separate [construction coverage](SPEC-PCRE2.md):
 literal programs admit temporary Rune staging and retained UTF-8 buffers;
 character token/class/property buffers independently admit capacity and bounded
 interruption, without redundant Core preparation. Lexical validation also admits

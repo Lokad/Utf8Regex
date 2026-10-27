@@ -107,10 +107,8 @@ internal static partial class Utf8SliceRunner
         if (tail == instructions.Length) return false;
         var suffix = instructions[tail];
         // RunFrom can retry a child after Accept to satisfy its required end.
-        // An absolute subject-end constraint also needs no shorter endpoint:
-        // none can reach EOF if the maximal greedy run stops before it.
-        if (suffix.Kind == Utf8SliceInstructionKind.Accept &&
-            (requiredEnd is null || requiredEnd == input.Length))
+        // Without that constraint, no shorter successful endpoint is requested.
+        if (suffix.Kind == Utf8SliceInstructionKind.Accept && requiredEnd is null)
         {
             outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
             return true;

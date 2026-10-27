@@ -336,10 +336,11 @@ separate from explicit construction controls.
 The explicit `Utf8PythonRegex.Compile` text/UTF-8 factories additionally accept
 `Utf8ConstructionPolicy`, a construction timeout and construction token. They
 share one eager owner through strict decoding, parsing, translation, scalar
-compilation and capture metadata. Search, Match and FullMatch share the same
-scalar program. FullMatch imposes an EOF acceptance constraint during the owned
-VM attempt, so alternatives can backtrack without a second compiled program.
-Compilation does not retain a construction owner, policy or token for future calls.
+compilation, capture metadata and preparation of the derived FullMatch program.
+That program's instruction copy and metadata are admitted before publication,
+even when the caller never uses FullMatch. Explicit compilation can therefore
+cost more or reach a construction limit that formerly deferred preparation;
+it does not retain a construction owner, policy or token for future calls.
 Positive work/depth/instruction/byte limits
 tighten the fixed ceilings; null retains them. Limits bound covered admission,
 including major growth overlap, rather than every acquisition or process memory.
@@ -401,20 +402,24 @@ Less actual parser work/storage/depth intentionally changes numeric construction
 cutoffs: long patterns can fit the fixed backstop that formerly denied them.
 Explicit finite construction caps, original interruption and pre-acquisition major
 admission remain; no new Core hook, engine, owner, mode or accounting layer.
-FullMatch value/context/data/string operations use the original scalar program.
-Its acceptance constraint requires the full subject end, including when matching
-starts at a nonzero scalar byte offset. A failed endpoint backtracks inside the
-VM; atomic groups still forbid revisiting committed alternatives. Fixed-length
-lookbehind keeps its independent expected endpoint. Measured native FullMatch
-routes remain eligible under their existing predicates.
-
-There is no derived instruction copy, lazy publication or execution-triggered
-FullMatch construction. Explicit Compile and constructors share this preparation
-contract. Reduced construction work/storage and removed cold preparation can
-lower numeric admission requirements; these thresholds are implementation-dependent.
-Strict whole-subject validation, matching, required result shaping and final
-publication retain one original invocation token/deadline and useful work/depth/
-working/result admission. Concurrent first calls have independent invocation state.
+Constructors still defer FullMatch preparation. For scalar FullMatch
+value/context/data/string calls, invocation authority is created before accessing
+that lazy program; explicitly compiled instances already have it. Preparation copies the existing
+top-level scalar instructions, replaces their terminal Accept with an absolute
+end anchor, and appends Accept. Existing instruction targets and backtracking
+remain intact. Immutable predicate tables, assertion programs and capture names
+are shared; the expression no longer retains its parse tree to compile again.
+New instruction storage and program metadata retain construction admission.
+Elapsed cold preparation therefore
+counts toward the original absolute match deadline; the cursor does not restart
+it. Cold compilation observes that call's token and deadline at the existing
+construction checkpoints, preserving any enclosing construction authority.
+Preparation retains fixed separate construction backstops and is not charged to
+execution work/bytes. Interrupted or otherwise failed lazy preparation is
+retryable; a fresh invocation can compile again. Concurrent cold callers may
+each compile under their own bounded construction scope; one immutable program
+is published and reused. Successfully published code survives later call
+interruption. Warm calls retain their existing execution checkpoints.
 
 Finite-timeout bulk `FindAll`, `FindAllToStrings` and `FindAllToUtf8` create
 invocation authority before subject validation or byte-floor projection. Eligible
@@ -477,9 +482,13 @@ plans remain separate, so this does not establish common cumulative metering or 
 combined invocation/retention envelope. Warm cache hits allocate no preparation
 scope or checkpoint closure.
 
-FullMatch has no cold preparation phase or separate construction-byte ceiling.
-Its execution scratch and required result shaping still need invocation admission.
-The completed Compile construction token/deadline is not retained for later calls.
+Uncached FullMatch preparation triggered by execution uses the same separate
+additional-capacity ceiling when `MaxWorkingBytes` is finite. Failure leaves the
+retryable lazy program unpublished and restores the enclosing owner; its byte
+denial can precede invocation denial. Warm calls acquire no preparation scope.
+The explicit `Compile` factory still completes FullMatch directly under its
+eager construction policy and does not borrow the future invocation byte cap.
+Its completed construction token/deadline is not retained for later calls.
 
 Capture-name metadata shares the existing construction owner. The public-name
 array and named-entry array are admitted before acquisition; numeric group labels
@@ -563,7 +572,8 @@ arrays, coordinate maps, output controls and old/new growth overlap. Denials rep
 budgets remain invalid. Exclusive scratch releases synchronously; published
 copied-cursor reservations retain their invocation-long credits. Borrowed subjects,
 programs, incidental metadata and caller-retained results have separate scope.
-Cold replacement parsing also borrows this byte value as the separate phase
+Cold replacement parsing and execution-triggered FullMatch preparation also
+borrow this byte value as the separate phase
 ceiling described above; other preparation keeps its documented scope.
 These controls do not establish exact GC traffic, process-memory bounds,
 common construction/live-retention policies or safe defaults.

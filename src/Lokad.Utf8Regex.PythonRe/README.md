@@ -53,9 +53,8 @@ Input is empty when working or result bytes are bounded to avoid decoding the
 subject for diagnostics after expiry.
 
 Explicit `Compile` factories accept separate construction limits, timeout and
-token. Factories and constructors prepare one scalar program; FullMatch applies
-an EOF constraint in the same VM, without cold construction. Constructors keep
-fixed construction backstops. Cold replacement preparation,
+token, and eagerly prepare FullMatch. Constructors keep fixed construction
+backstops and lazy FullMatch preparation. Cold FullMatch/replacement preparation,
 cache retention, incidental owners, standalone getters, callback allocations and
 host containers retain separate documented scope. The execution token must be
 passed on each operation. See [HOST-INTEGRATION.md](https://github.com/Lokad/Utf8Regex/blob/master/HOST-INTEGRATION.md)

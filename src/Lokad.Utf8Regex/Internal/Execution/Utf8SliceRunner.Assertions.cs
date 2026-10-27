@@ -42,15 +42,13 @@ internal static partial class Utf8SliceRunner
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int start,
         int[] captureStarts, int[] captureEnds, int[] counts, int[] positions, int[] balanceHeads,
         bool collectHistory, bool requireNonEmpty, bool startIsScalarBoundary,
-        ref ChunkedStacks stacks, ref Utf8SliceInvocation invocation, bool requireFullMatch = false)
+        ref ChunkedStacks stacks, ref Utf8SliceInvocation invocation)
     {
         // Only the complete root program may discard terminal rewind choices.
-        // FullMatch asks for EOF, which no shorter greedy outcome can reach;
-        // assertion segments can need shorter outcomes for an interior edge.
+        // Assertion segments can still need them to satisfy RequiredEnd.
         var terminalClassRepeat = CanRunTerminalClassRepeat(program);
         var current = new AssertionCursor(program, start, counts, positions,
             requireNonEmpty, startIsScalarBoundary, stacks.FrameCount);
-        current.RequiredEnd = requireFullMatch ? input.Length : null;
         var continuations = new Utf8InvocationStateBuffer<AssertionContinuation>();
         var resumeFailure = false;
         try
@@ -63,14 +61,10 @@ internal static partial class Utf8SliceRunner
                     : RunSegment(input, captureStarts, captureEnds, balanceHeads,
                         ref current, resumeFailure, ref stacks, ref invocation, out suspended);
                 resumeFailure = false;
-                if (!suspended && outcome.IsMatch && current.RequiredEnd is int requiredPosition && outcome.EndIndex != requiredPosition)
+                if (!suspended && outcome.IsMatch && current.RequiredEnd is int requiredEnd && outcome.EndIndex != requiredEnd)
                 {
-                    // The complete terminal repeat cannot reach EOF by taking
-                    // a shorter greedy outcome. Its workspace has no rewind state.
-                    if (terminalClassRepeat)
-                        return new(false, -1, outcome.Breach, null, null);
-                    // FullMatch and forward fixed-length assertions constrain
-                    // acceptance, so alternatives backtrack within the owned VM.
+                    // A forward fixed-length assertion must end at its original
+                    // edge. Keep alternatives within the same owned VM.
                     resumeFailure = true;
                     continue;
                 }

@@ -335,20 +335,13 @@ internal static partial class Utf8SliceRunner
         bool requireNonEmpty,
         bool startIsScalarBoundary,
         ref AttemptWorkspace workspace,
-        ref Utf8SliceInvocation invocation,
-        bool requireFullMatch = false)
+        ref Utf8SliceInvocation invocation)
     {
         // Profile cursors can reuse this admitted workspace across candidate
         // attempts while preserving their own empty-match and anchor progress.
         if (program.IsNonBacktracking)
-        {
-            // Only the forward Python profile requests a root endpoint. The
-            // ordered NFA has its own acceptance rules and is unchanged.
-            if (requireFullMatch)
-                throw new InvalidOperationException("An endpoint constraint requires the backtracking runner.");
             return TryMatchAt(program, input, start, captureStarts, captureEnds,
                 collectHistory, requireNonEmpty, startIsScalarBoundary, ref invocation);
-        }
         if (!startIsScalarBoundary || (uint)start > (uint)input.Length ||
             start < input.Length && (input[start] & 0xC0) == 0x80)
             return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.None, null, null);
@@ -371,7 +364,7 @@ internal static partial class Utf8SliceRunner
         var completed = false;
         try
         {
-            var attempt = RunFrom(program, input, start, captureStarts, captureEnds, counts, positions, heads, collectHistory, requireNonEmpty, startIsScalarBoundary, ref workspace.Stacks, ref invocation, requireFullMatch);
+            var attempt = RunFrom(program, input, start, captureStarts, captureEnds, counts, positions, heads, collectHistory, requireNonEmpty, startIsScalarBoundary, ref workspace.Stacks, ref invocation);
             if (attempt.IsMatch && program.RightToLeft)
             {
                 // Mirrored runs record right edges at capture starts and left

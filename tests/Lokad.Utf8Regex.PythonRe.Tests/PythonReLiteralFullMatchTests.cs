@@ -37,6 +37,7 @@ public sealed class PythonReLiteralFullMatchTests
                 Assert.Equal((startUtf16, text.Length), (match.StartOffsetInUtf16, match.EndOffsetInUtf16));
                 Assert.Equal(pattern, match.GetValueString());
             }
+            Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         }
     }
 
@@ -50,6 +51,7 @@ public sealed class PythonReLiteralFullMatchTests
         var input = Encoding.UTF8.GetBytes(pattern);
         using var live = new CancellationTokenSource();
         Assert.True(regex.FullMatch(input, 0, live.Token).Success);
+        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         Assert.Equal(0ul, deniedPreparation.Budget.WorkSteps);
         Assert.Equal(0ul, deniedPreparation.Budget.ReservedBytes);
     }
@@ -66,6 +68,7 @@ public sealed class PythonReLiteralFullMatchTests
         using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
         var canceled = Assert.Throws<OperationCanceledException>(() => Run(regex, [0xff], 0, text, cancellation.Token));
         Assert.Equal(cancellation.Token, canceled.CancellationToken);
+        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
     }
 
     [Fact]
@@ -97,6 +100,7 @@ public sealed class PythonReLiteralFullMatchTests
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(success, regex.FullMatch(input, start).Success);
         Assert.Equal(success ? Encoding.UTF8.GetString(input.AsSpan(start)) : null, regex.FullMatchToString(input, start));
+        Assert.True(regex.DebugIsScalarFullProgramValueCreated);
     }
 
     [Theory]
@@ -106,6 +110,7 @@ public sealed class PythonReLiteralFullMatchTests
         var regex = new Utf8PythonRegex("cat");
         foreach (var input in new[] { new byte[] { 0xff, 99, 97, 116 }, new byte[] { 99, 97, 116, 0xff } })
             Assert.Throws<ArgumentException>(() => Run(regex, input, 1, text, default));
+        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
     }
 
     [Theory]
@@ -129,6 +134,7 @@ public sealed class PythonReLiteralFullMatchTests
         Run(regex, input, 65536, text, default);
         Assert.True(regex.FullMatch(input, 65536).Success);
         Assert.Equal("cat", regex.FullMatchToString(input, 65536));
+        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
     }
 
     [Theory]

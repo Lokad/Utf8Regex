@@ -9,9 +9,9 @@ public sealed partial class Utf8PythonRegex
 {
     /// <summary>Compiles pattern text under explicit eager construction and execution policies.</summary>
     /// <remarks>Construction admission and interruption cover eager compilation,
-    /// independently of later invocation
+    /// including the derived FullMatch program, independently of later invocation
     /// limits. Replacement preparation, CLR/JIT metadata and caller retention
-    /// retain separate scope. Search, Match and FullMatch share one scalar program.
+    /// retain separate scope. FullMatch preparation is eager even if unused.
     /// Positive construction limits may tighten fixed backstops; no pattern cache
     /// is consulted. The construction token is not retained for execution.</remarks>
     public static Utf8PythonRegex Compile(string pattern, PythonReCompileOptions options,
@@ -24,7 +24,7 @@ public sealed partial class Utf8PythonRegex
     /// <summary>Compiles strict UTF-8 pattern bytes under explicit eager construction and execution policies.</summary>
     /// <remarks>Admission and interruption include strict decoding before parsing.
     /// The construction timeout is separate from the returned expression's match
-    /// timeout. One scalar program serves Search, Match and FullMatch;
+    /// timeout. The derived FullMatch program is prepared before publication;
     /// replacement preparation and unmodeled metadata retain separate scope.</remarks>
     public static Utf8PythonRegex Compile(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options,
         TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
@@ -46,6 +46,9 @@ public sealed partial class Utf8PythonRegex
         try
         {
             var result = new Utf8PythonRegex(pattern, options, matchTimeout, resourcePolicy, checkPolicy: true);
+            // Explicit compilation finishes both operation programs under this
+            // one owner. Do not retain its policy/token for later invocations.
+            _ = result._lazyScalarFullProgram.Value;
             construction.Budget.ChargeWork(0);
             construction.Complete();
             return result;

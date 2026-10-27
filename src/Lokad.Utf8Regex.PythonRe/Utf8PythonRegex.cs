@@ -71,6 +71,7 @@ public sealed partial class Utf8PythonRegex
     private static readonly UTF8Encoding s_strictUtf8Encoding = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
     private static TimeSpan s_defaultMatchTimeout = Timeout.InfiniteTimeSpan;
     private readonly Utf8SliceProgram _scalarProgram;
+    private readonly Lazy<Utf8SliceProgram> _lazyScalarFullProgram;
     private readonly Utf8Regex? _utf8Regex;
     private readonly PythonReNameEntry[] _nameEntries;
     private readonly IReadOnlyDictionary<string, int> _namedGroups;
@@ -124,7 +125,7 @@ public sealed partial class Utf8PythonRegex
 
     /// <summary>Creates a Python-compatible expression from a well-formed UTF-8 pattern with explicit options, timeout, and invocation resource policy.</summary>
     /// <remarks>Finite work/depth/working/result limits select owned scalar execution. Depth bounds live backtracking/continuation frames; working bounds modeled major active capacity/growth overlap, and result capacity covers major array/text, capture/name, coordinate-map and staging requests cumulatively before acquisition.
-    /// Charges can conservatively count shared storage again and never refund. Cold replacement parsing also uses the working-byte value as a separate ceiling on additional construction capacity; a denial reports ConstructionBytes before execution. Construction work/depth, retained-cache admission, caller callbacks, borrowed storage and later standalone getters keep separate scope.</remarks>
+    /// Charges can conservatively count shared storage again and never refund. Cold replacement parsing and execution-triggered FullMatch preparation also use the working-byte value as a separate ceiling on additional construction capacity; a denial reports ConstructionBytes before execution. Construction work/depth, retained-cache admission, caller callbacks, borrowed storage and later standalone getters keep separate scope.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero; use null for unlimited.</exception>
     public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
         : this(new Utf8ConstructionPattern(patternUtf8), options, matchTimeout, resourcePolicy, checkPolicy: true)
@@ -133,7 +134,7 @@ public sealed partial class Utf8PythonRegex
 
     /// <summary>Creates a Python-compatible expression from UTF-16 text with explicit options, timeout, and invocation resource policy.</summary>
     /// <remarks>Finite work/depth/working/result limits select owned scalar execution. Depth bounds live backtracking/continuation frames; working bounds modeled major active capacity/growth overlap, and result capacity covers major array/text, capture/name, coordinate-map and staging requests cumulatively before acquisition.
-    /// Charges can conservatively count shared storage again and never refund. Cold replacement parsing also uses the working-byte value as a separate ceiling on additional construction capacity; a denial reports ConstructionBytes before execution. Construction work/depth, retained-cache admission, caller callbacks, borrowed storage and later standalone getters keep separate scope.</remarks>
+    /// Charges can conservatively count shared storage again and never refund. Cold replacement parsing and execution-triggered FullMatch preparation also use the working-byte value as a separate ceiling on additional construction capacity; a denial reports ConstructionBytes before execution. Construction work/depth, retained-cache admission, caller callbacks, borrowed storage and later standalone getters keep separate scope.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero; use null for unlimited.</exception>
     public Utf8PythonRegex(string pattern, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
         : this(new Utf8ConstructionPattern(pattern), options, matchTimeout, resourcePolicy, checkPolicy: true)
@@ -222,6 +223,10 @@ public sealed partial class Utf8PythonRegex
         var prepareCore = !_canMatchEmpty || _canUseUtf8IterationFastPath;
         var translation = PythonReTranslator.Translate(parseResult, prepareCore);
         _scalarProgram = PythonReScalarCompiler.Compile(parseResult);
+        // Failed preparation is retryable: a caller's cancellation must not
+        // become a permanently cached failure. Concurrent cold callers may each
+        // derive under their own construction scope; only one result is kept.
+        _lazyScalarFullProgram = new Lazy<Utf8SliceProgram>(() => PythonReScalarCompiler.RequireFullMatch(_scalarProgram), LazyThreadSafetyMode.PublicationOnly);
 
         _groupNames = GetPublicGroupNames(parseResult.CaptureGroupCount, parseResult.NamedGroups);
         _nameEntries = GetPythonNameEntries(parseResult.NamedGroups);
@@ -316,6 +321,7 @@ public sealed partial class Utf8PythonRegex
     internal bool DebugUsesZeroOffsetUtf8SearchValueFastPath =>
         _canUseZeroOffsetUtf8SearchValueFastPath;
 
+    internal bool DebugIsScalarFullProgramValueCreated => _lazyScalarFullProgram.IsValueCreated;
 
     internal bool DebugUsesOptionalExactCaptureFindAllFastPath => _optionalExactCaptureFindAllValue is not null;
 

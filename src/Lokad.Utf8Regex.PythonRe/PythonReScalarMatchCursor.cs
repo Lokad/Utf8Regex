@@ -32,7 +32,7 @@ internal ref struct PythonReScalarMatchCursor
     internal void ReleaseResults<T>(ref Utf8InvocationResultBuffer<T> buffer) => _state.ReleaseResults(ref buffer);
     internal void Checkpoint() => _state.Checkpoint(_input);
     internal bool MoveNext() => _state.MoveNext(_input);
-    internal bool MatchAtCurrentPosition(bool fullMatch = false) => _state.MatchAtCurrentPosition(_input, fullMatch);
+    internal bool MatchAtCurrentPosition() => _state.MatchAtCurrentPosition(_input);
     internal PythonReGroupData SnapshotValueData() => _state.SnapshotValueData(_input);
     internal PythonReNameEntry[] SnapshotNameEntries(PythonReNameEntry[] names) => _state.SnapshotNameEntries(_input, names);
     internal PythonReGroupData[] SnapshotGroups() => _state.SnapshotGroups(_input);
