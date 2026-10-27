@@ -236,7 +236,7 @@ internal static partial class PythonReBenchmarkReporter
             expectedChecksum,
             expectedSemanticDigest,
             expectedConsumptionToken,
-            GetManagedWarmupCalls(benchmarkCase));
+            GetManagedWarmupCalls(benchmarkCase, preliminaryManagedIterations));
         var cpythonWarmup = worker.Warm(
             CpythonStreamLane.Predecoded,
             preliminaryCpythonCalibration.Iterations,
@@ -1074,12 +1074,13 @@ internal static partial class PythonReBenchmarkReporter
             PythonReBenchmarkOperation.ReplaceEvaluatorString or
                 PythonReBenchmarkOperation.SubnEvaluatorString or
                 PythonReBenchmarkOperation.SubnEvaluatorUtf8 => PythonReQualificationReplacementWarmupCalls,
-            // The direct split routes can tier after the default 1,024 calls.
-            // Warming through that transition keeps the calibrated batch above
-            // the qualification duration floor after its steady-state speedup.
+            // Keep the long call floor for fast direct split routes. Materializing
+            // thousands of results 100,000 times can take minutes: use the measured
+            // rate to cap that floor near one second, retaining the default floor.
             PythonReBenchmarkOperation.SplitStrings or
                 PythonReBenchmarkOperation.SplitStringsLimited or
-                PythonReBenchmarkOperation.SplitDetailed => PythonReQualificationSplitWarmupCalls,
+                PythonReBenchmarkOperation.SplitDetailed => Math.Min(PythonReQualificationSplitWarmupCalls,
+                    Math.Max(PythonReQualificationMinimumWarmupCalls, calibratedIterations * 20)),
             _ => PythonReQualificationMinimumWarmupCalls,
         };
     }
