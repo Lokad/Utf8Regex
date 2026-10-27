@@ -2446,12 +2446,13 @@ internal static class Pcre2GlobalOperationDriver
                 return true;
             }
 
-            // A necessary leading-byte set can prove the entire suffix impossible.
-            // Borrow its existing searcher and original authority before renting VM
-            // scratch; finding a byte leaves ordering and verification to Count.
+            // A necessary leading-byte set or the literal after a required run
+            // can prove the entire suffix impossible. Borrow its existing searcher
+            // and original authority before renting VM scratch; finding a candidate
+            // leaves ordering and verification to Count.
             var candidates = compiledProgram.CandidateSearch;
             if (!sliceProgram.SliceProgram.CanMatchEmpty && !sliceProgram.SliceProgram.RightToLeft &&
-                candidates.Kind == Pcre2CandidateSearchKind.LeadingAsciiSet)
+                candidates.Kind is Pcre2CandidateSearchKind.LeadingAsciiSet or Pcre2CandidateSearchKind.LeadingRunThenLiteral)
             {
                 var breach = candidates.Searcher.TryFindMatch(input.Bytes, start.Value, input.ByteLength,
                     false, ref invocation, out _, out var found);

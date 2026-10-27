@@ -58,12 +58,14 @@ public sealed class Pcre2LeadingSetCountTests
         Assert.Equal(0, anchored.Count("xxab"u8));
     }
 
-    [Fact]
-    public void ImpossibleSubjectsNeedNoVmScratchWhileRealAttemptsStillAdmitIt()
+    [Theory]
+    [InlineData("(a+)(b)", 'x', "aaab")]
+    [InlineData("[a-z]+@[a-z]+", 'a', "foo@bar")]
+    public void ImpossibleSubjectsNeedNoVmScratchWhileRealAttemptsStillAdmitIt(string pattern, char filler, string hit)
     {
-        var regex = Create("(a+)(b)", working: 1, result: 1);
+        var regex = Create(pattern, working: 1, result: 1);
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
-        var bytes = Encoding.UTF8.GetBytes(new string('x', 65536));
+        var bytes = Encoding.UTF8.GetBytes(new string(filler, 65536));
         Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(bytes, ref invocation, out var input));
         var validation = invocation.Budget.Steps;
         Assert.True(Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
@@ -73,14 +75,16 @@ public sealed class Pcre2LeadingSetCountTests
         Assert.Equal(0UL, invocation.Budget.PeakWorkingBytes);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         Assert.Equal(Pcre2ErrorKind.HeapLimit,
-            Assert.Throws<Pcre2MatchException>(() => regex.Count("aaab"u8)).ErrorKind);
+            Assert.Throws<Pcre2MatchException>(() => regex.Count(Encoding.UTF8.GetBytes(hit))).ErrorKind);
     }
 
-    [Fact]
-    public void ValidationAndAbsenceSearchSpendOneStickyWorkAllowance()
+    [Theory]
+    [InlineData("(a+)(b)", 'x')]
+    [InlineData("[a-z]+@[a-z]+", 'a')]
+    public void ValidationAndAbsenceSearchSpendOneStickyWorkAllowance(string pattern, char filler)
     {
-        var bytes = Encoding.UTF8.GetBytes(new string('x', 262144));
-        var regex = Create("(a+)(b)");
+        var bytes = Encoding.UTF8.GetBytes(new string(filler, 262144));
+        var regex = Create(pattern);
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
         Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(bytes, ref invocation, out var input));
         var validation = invocation.Budget.Steps;
@@ -90,22 +94,26 @@ public sealed class Pcre2LeadingSetCountTests
         var search = invocation.Budget.Steps - validation;
         Assert.True(validation > 0 && search > 0);
         var limit = checked((uint)Math.Max(validation, search));
-        var denied = Create("(a+)(b)", work: limit);
+        var denied = Create(pattern, work: limit);
         Assert.Equal(Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => denied.Count(bytes)).ErrorKind);
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void AbsenceSearchKeepsOriginalInterruptionAndRetainedCaptures(bool cancel)
+    [InlineData(false, "(a+)(b)", "aaab", "aaa", "b")]
+    [InlineData(true, "(a+)(b)", "aaab", "aaa", "b")]
+    [InlineData(false, "[a-z]+@([a-z]+)", "foo@bar", "bar", null)]
+    [InlineData(true, "[a-z]+@([a-z]+)", "foo@bar", "bar", null)]
+    public void AbsenceSearchKeepsOriginalInterruptionAndRetainedCaptures(bool cancel, string pattern,
+        string hit, string firstCapture, string? secondCapture)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex("(a+)(b)", Pcre2CompileOptions.None, default,
+        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
             new() { MatchLimit = 1000000, DepthLimit = 256, HeapLimitInBytes = 1 << 20,
                 ResultLimitInBytes = 1 << 20 }, TimeSpan.FromMilliseconds(20));
-        var retained = regex.MatchDetailed("aaab"u8);
+        var retained = regex.MatchDetailed(Encoding.UTF8.GetBytes(hit));
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, token.Token);
         var bytes = Encoding.UTF8.GetBytes(new string('x', 262144));
         Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(bytes, ref invocation, out var input));
@@ -124,8 +132,23 @@ public sealed class Pcre2LeadingSetCountTests
         Assert.Equal(0UL, invocation.Budget.PeakWorkingBytes);
         if (cancel) Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         else Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
-        Assert.Equal("aaa", retained.GetGroup(1).GetValueString());
-        Assert.Equal("b", retained.GetGroup(2).GetValueString());
+        Assert.Equal(firstCapture, retained.GetGroup(1).GetValueString());
+        if (secondCapture is not null) Assert.Equal(secondCapture, retained.GetGroup(2).GetValueString());
+    }
+
+    [Fact]
+    public void RequiredLiteralMustOccurInTheRequestedSuffixAndStillNeedsVerification()
+    {
+        var regex = Create("[a-z]+@([a-z]+)");
+        Assert.Equal(Pcre2CandidateSearchKind.LeadingRunThenLiteral, regex.DebugCompiledProgram.CandidateSearch.Kind);
+        var padded = Encoding.UTF8.GetBytes("pad😀@bad foo@bar λaaa@bbbpad");
+        var subject = padded.AsSpan(3, padded.Length - 6);
+        Assert.Equal(2, regex.Count(subject));
+        Assert.Equal(1, regex.Count(subject, Encoding.UTF8.GetByteCount("😀@bad foo@bar λ")));
+        Assert.Equal(0, regex.Count("foo@bar"u8, 4));
+        Assert.Equal(0, regex.Count("@bad aa@!"u8));
+        Assert.Throws<ArgumentException>(() => regex.Count(new byte[] { (byte)'a', 0xFF }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count("😀foo@bar"u8, 1));
     }
 
     private static Utf8Pcre2Regex Create(string pattern, ulong working = 1 << 20,
