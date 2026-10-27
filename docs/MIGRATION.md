@@ -1,10 +1,9 @@
 # Migrating to the 0.4 scalar line
 
-Development is **0.4.0-rc.3-dev**, with no new candidate staged. Frozen **RC2**
-is unpublished; its correctness evidence retains its scope and its cumulative cost
-gate is inconclusive. See [release notes](../CHANGELOG.md). Both adapters require
-exactly their own Core version: upgrade selected packages together rather than
-overriding dependencies. All target .NET 10.
+Version **0.4.0** changes matching from UTF-16 units to Unicode scalars.
+Both adapters require exactly Core **[0.4.0]**: upgrade selected packages together
+rather than overriding dependencies. All target .NET 10.
+See [release notes](../CHANGELOG.md) for the public release history.
 
 ## Match scalars; pass byte coordinates
 

@@ -1,9 +1,7 @@
 # Lokad.Utf8Regex.Pcre2
 
-Development source: **0.4.0-rc.3-dev**; no new package candidate is staged. Frozen **0.4.0-rc.2** has Windows/Linux correctness and consumer evidence, while its cumulative performance gate is **inconclusive**. See the [current release correction](../../bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md). RC1 is superseded.
-
-**0.4.0-rc.3-dev**, .NET 10. A strictly managed, UTF-8-native selected PCRE2 10.47
-standard profile, requiring exactly `Lokad.Utf8Regex [0.4.0-rc.3-dev]`. It can coexist
+**0.4.0**, .NET 10. A strictly managed, UTF-8-native selected PCRE2 10.47
+standard profile, requiring exactly `Lokad.Utf8Regex [0.4.0]`. It can coexist
 with PythonRe at the same version. There is no P/Invoke, native PCRE2 binary,
 RID-specific payload or implementation dependency other than Core and the BCL.
 
@@ -134,7 +132,7 @@ operation selection. Construction charges can fall; invocation units and scope
 remain unchanged.
 
 Explicit `Compile` factories provide separate construction work/depth/instruction/
-byte limits, timeout and token. Development after frozen RC1 admits backtracking
+byte limits, timeout and token. Construction admits backtracking
 metadata conservatively at 256 bytes per UTF-16 pattern character, plus separate
 name-lookup admission per lowerer and instruction/auxiliary-array capacity with
 growth overlap. Its recursive compiler
@@ -186,4 +184,4 @@ Disjoint simple-template output and no-match copies retain their direct paths.
 Read [release notes](../../CHANGELOG.md) and [migration guide](../../docs/MIGRATION.md).
 Repository [benchmark evidence](BENCHMARKS.md)
 retains its recorded source/package/runtime scope; previous candidate timings do
-not automatically qualify RC1.
+not automatically qualify this release.

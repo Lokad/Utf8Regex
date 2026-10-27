@@ -1,12 +1,6 @@
 # Lokad.Utf8Regex
 
-Optional IL preparation is skipped when the host disables dynamic code,
-including with `Compiled`; non-emitted execution preserves results. NativeAOT
-publishing and trimming have not been qualified.
-
-Development source: **0.4.0-rc.3-dev**; no new package candidate is staged. Frozen **0.4.0-rc.2** has Windows/Linux correctness and consumer evidence, while its cumulative performance gate is **inconclusive**. See the [current release correction](../../bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md). RC1 is superseded.
-
-**0.4.0-rc.3-dev**, .NET 10. Regular expressions over strict UTF-8
+**0.4.0**, .NET 10. Regular expressions over strict UTF-8
 `ReadOnlySpan<byte>` / `Span<byte>`, matching Unicode scalars with primary byte
 coordinates. Dot matches 😀 once across four bytes. UTF-16 coordinates and
 string APIs are derived interoperability conveniences.
@@ -26,6 +20,10 @@ promise UTF-16 parity. CultureInvariant is the primary supported mode. Whole
 subjects must be valid UTF-8, including suffixes after an early match. Core uses
 ordered alternatives, not POSIX leftmost-longest matching.
 
+Optional IL preparation is skipped when the host disables dynamic code,
+including with `Compiled`; non-emitted execution preserves results. NativeAOT
+publishing and trimming have not been qualified.
+
 Replacement callbacks can pass local stack buffers and formatting slices to
 `Utf8ReplacementWriter.Append`. Its scoped byte/char span inputs are copied or
 encoded before returning; the writer remains valid only during the callback.
@@ -43,7 +41,7 @@ valid after advance/failure/disposal. Copied value cursors retain independent
 positions while sharing allowance/deadline. A host must separately account for
 retained results and its own storage.
 
-Optional `Lokad.Utf8Regex.PythonRe` and `Lokad.Utf8Regex.Pcre2` **0.4.0-rc.3-dev**
+Optional `Lokad.Utf8Regex.PythonRe` and `Lokad.Utf8Regex.Pcre2` **0.4.0**
 require exactly this Core version. Both are managed profile adapters with explicit
 compatibility boundaries; no native PCRE2 binary is shipped.
 

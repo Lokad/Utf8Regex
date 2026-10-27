@@ -1,19 +1,18 @@
 # Managed PCRE2 qualification
 
-## Current common RC2 candidate
+## 0.4.0 release preparation
 
-**0.4.0-rc.2**, producer d1a14f407ae4e34230430260fc58111c960c1e63, is
-correctness-qualified and unpublished. Both adapters require exactly Core [0.4.0-rc.2].
-The [fresh release receipt](../../bench/Experiments/ReleaseCandidate2-20261026/README.md)
-records complete detached Windows/Linux suites, original public consumers,
-API/member/PDB/source/dependency identities, green source CI and bounded actual-
-package/cumulative costs. PCRE2 has 6,189 passing cases per platform, with no
-final failures/skips. The initial staging correction and cost uncertainty remain
-disclosed. Historical RC1 qualification below does not establish this result.
+Core, PythonRe and PCRE2 share version **0.4.0**; both adapters require exactly
+Core **[0.4.0]**. The existing `qualify-package-candidate.ps1` builds fresh
+packages and checks their provenance, exact restore identities and detached
+profile fixtures. Its manifest is written to
+`artifacts/package-candidates/0.4.0/candidate.json` after successful qualification.
 
-Current source is **0.4.0-rc.3-dev**, without a new candidate. RC2 cumulative
-performance acceptance is [withdrawn as inconclusive](../../bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md);
-the original receipts and ZIP remain unchanged.
+Source Windows/Linux CI, downstream adoption, performance acceptance and NuGet
+publication are separate checks. Historical observations below identify their
+original bytes and do not qualify the new release's operating costs. The earlier
+[inconclusive cost result](../../bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md)
+retains its scope and uncertainty.
 
 The selected managed profile and its documented exclusions remain the contract.
 Generic partial decisions outside supported drivers, full grammar completion,
