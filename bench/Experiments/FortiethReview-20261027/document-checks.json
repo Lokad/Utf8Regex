@@ -1,0 +1,50 @@
+[
+  {
+    "Source": "bench/Experiments/FortiethReview-20261027/README.md",
+    "Target": "validation.json"
+  },
+  {
+    "Source": "bench/Experiments/FortiethReview-20261027/README.md",
+    "Target": "scope-checks.json"
+  },
+  {
+    "Source": "bench/Experiments/FortiethReview-20261027/README.md",
+    "Target": "ci-source.json"
+  },
+  {
+    "Source": "bench/Experiments/FortiethReview-20261027/README.md",
+    "Target": "immutable-inputs.json"
+  },
+  {
+    "Source": "bench/Experiments/FortiethReview-20261027/README.md",
+    "Target": "PREDECLARED.md"
+  },
+  {
+    "Source": "bench/Experiments/FortiethReview-20261027/README.md",
+    "Target": "public-cost.json"
+  },
+  {
+    "Source": "bench/Experiments/FortiethReview-20261027/README.md",
+    "Target": "public-cost-confirmation.json"
+  },
+  {
+    "Source": "bench/Experiments/FortiethReview-20261027/README.md",
+    "Target": "preflight.json"
+  },
+  {
+    "Source": "bench/Experiments/FortiethReview-20261027/README.md",
+    "Target": "measured-identities.json"
+  },
+  {
+    "Source": "bench/Experiments/FortiethReview-20261027/README.md",
+    "Target": "../ThirtySixthReview-20261026/cost-host.cs.txt"
+  },
+  {
+    "Source": "bench/Experiments/FortiethReview-20261027/README.md",
+    "Target": "../ThirtySixthReview-20261026/cost-host.csproj.txt"
+  },
+  {
+    "Source": "bench/Experiments/FortiethReview-20261027/README.md",
+    "Target": "../ReleaseCandidate2-20261026/ERRATA.md"
+  }
+]

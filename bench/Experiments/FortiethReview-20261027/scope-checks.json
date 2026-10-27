@@ -1,0 +1,13 @@
+{
+  "Baseline": "8724b586377c6569e437d0f340c5d3f9b5f169a8",
+  "Source": "589bb885c4f9308ead63430d7f0a37e0384dad0d",
+  "ChangedShippedCSharp": [
+    "src/Lokad.Utf8Regex.PythonRe/PythonReCoreTypes.cs"
+  ],
+  "RetainedArchitectureExamples": [
+    "PreparedRegexConstructionIsInertAndLayerOwnersStayDirectional",
+    "ReusableSearchKernelsDoNotDependOnFlavorFrontEnds",
+    "ReplacementDependsOnExecutionInOneDirectionOnly"
+  ],
+  "SeededWideRepeatFixtureUnchanged": true
+}

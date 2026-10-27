@@ -1,0 +1,45 @@
+{
+  "Versions": [
+    "0.4.0-rc.3-dev\u002B8724b586377c6569e437d0f340c5d3f9b5f169a8",
+    "0.4.0-rc.3-dev\u002B589bb885c4f9308ead63430d7f0a37e0384dad0d"
+  ],
+  "Lanes": [
+    {
+      "Name": "unlimited/SearchDetailedData-short-hit",
+      "Expected": 7
+    },
+    {
+      "Name": "unlimited/SearchDetailedData-miss",
+      "Expected": 0
+    },
+    {
+      "Name": "unlimited/FullMatchDetailedData-optional-unicode",
+      "Expected": 14
+    },
+    {
+      "Name": "unlimited/FindIterDetailed-captured-bulk",
+      "Expected": 192
+    },
+    {
+      "Name": "finite-live/SearchDetailedData-short-hit",
+      "Expected": 7
+    },
+    {
+      "Name": "finite-live/SearchDetailedData-miss",
+      "Expected": 0
+    },
+    {
+      "Name": "finite-live/FullMatchDetailedData-optional-unicode",
+      "Expected": 14
+    },
+    {
+      "Name": "finite-live/FindIterDetailed-captured-bulk",
+      "Expected": 192
+    },
+    {
+      "Name": "Unchanged-control/Core-compiled-literal-Count",
+      "Expected": 2
+    }
+  ],
+  "Preflight": "All selected public outputs agree with independent expected checksums"
+}

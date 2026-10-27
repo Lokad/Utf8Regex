@@ -1,0 +1,57 @@
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.PythonRe;
+
+public static class Lanes
+{
+    private static Utf8PythonDetailedMatchData _retained;
+    private static Utf8PythonDetailedMatchData[]? _retainedBulk;
+    private static readonly CancellationTokenSource Live = new();
+    private static readonly Utf8ResourcePolicy Policy = new() { MaxWorkSteps=50_000_000,MaxDepth=1024,
+        MaxWorkingBytes=64*1024*1024,MaxResultBytes=128*1024*1024 };
+    public static string Producer() => typeof(Utf8PythonRegex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
+    public static (string,Func<long>,long)[] Create()
+    {
+        var lanes=new List<(string,Func<long>,long)>();
+        foreach(var finite in new[]{false,true})
+        {
+            var prefix=finite?"finite-live/":"unlimited/";
+            var token=finite?Live.Token:default;
+            Utf8PythonRegex Prepare(string pattern) => new(pattern,default,Timeout.InfiniteTimeSpan,finite?Policy:default);
+            var captured=Prepare("(?P<x>a)");
+            var hit=captured.SearchDetailedData("a"u8,0,token);
+            if(!hit.Success || hit.Value.ValueText!="a" || hit.Groups[1].ValueText!="a" || hit.LastIndex!=1 || hit.LastGroup!="x") throw new Exception("Captured preflight");
+            lanes.Add((prefix+"SearchDetailedData-short-hit",()=>Single(captured,"a"u8,token,false),7));
+            var miss=captured.SearchDetailedData("bbb"u8,0,token);
+            if(miss.Success || miss.LastIndex is not null || miss.LastGroup is not null || (miss.Groups?.Length??0)!=0 || (miss.NameEntries?.Length??0)!=0) throw new Exception("Miss preflight");
+            lanes.Add((prefix+"SearchDetailedData-miss",()=>Single(captured,"bbb"u8,token,false),0));
+            var optional=Prepare("(?P<x>a)?(?P<y>😀)");
+            var value=optional.FullMatchDetailedData("😀"u8,0,token);
+            if(!value.Success || value.Groups[1].Success || value.Groups[1].ValueText!="" || value.Groups[2].ValueText!="😀" || value.LastGroup!="y") throw new Exception("Optional preflight");
+            lanes.Add((prefix+"FullMatchDetailedData-optional-unicode",()=>Single(optional,"😀"u8,token,true),14));
+            var input=Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("a ",64)));
+            var bulk=captured.FindIterDetailed(input,0,token);
+            if(bulk.Length!=64 || bulk.Where((row,index)=>!row.Success || row.Value.StartOffsetInBytes!=2*index || row.Groups[1].ValueText!="a" || row.LastGroup!="x").Any()) throw new Exception("Bulk preflight");
+            lanes.Add((prefix+"FindIterDetailed-captured-bulk",()=>Bulk(captured,input,token),192));
+        }
+        var control=new Utf8Regex("abc",RegexOptions.CultureInvariant|RegexOptions.Compiled);
+        lanes.Add(("Unchanged-control/Core-compiled-literal-Count",()=>control.Count("abc xabc"u8),2));
+        return lanes.ToArray();
+    }
+    private static long Single(Utf8PythonRegex regex,ReadOnlySpan<byte> input,CancellationToken token,bool full)
+    {
+        _retained=full?regex.FullMatchDetailedData(input,0,token):regex.SearchDetailedData(input,0,token);
+        // Identical defensive consumer shaping supports the original miss values
+        // and the corrected non-null contract without changing caller work.
+        return (_retained.Value.ValueText?.Length??0)+_retained.CaptureSlotCount+_retained.NameEntryCount+
+            (_retained.LastIndex??0)+_retained.Value.EndOffsetInBytes+(_retained.LastGroup?.Length??0);
+    }
+    private static long Bulk(Utf8PythonRegex regex,byte[] input,CancellationToken token)
+    {
+        _retainedBulk=regex.FindIterDetailed(input,0,token);
+        return _retainedBulk.Length+_retainedBulk[0].Value.EndOffsetInBytes+_retainedBulk[^1].Value.EndOffsetInBytes;
+    }
+    public static object Construction() => new { Scope="No constructor change or construction timing is measured." };
+}

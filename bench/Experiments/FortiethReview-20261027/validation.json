@@ -1,0 +1,49 @@
+{
+  "Source": "589bb885c4f9308ead63430d7f0a37e0384dad0d",
+  "Configuration": "Release",
+  "PythonFocused": {
+    "Scope": "defaults, ownership, captures, finite result policy, API/member inventories",
+    "Skipped": 0,
+    "Failed": 0,
+    "Passed": 929
+  },
+  "CoreFocused": {
+    "Scope": "architecture, seeded wide-repeat, API and dependency checks",
+    "Skipped": 0,
+    "Failed": 0,
+    "Passed": 74
+  },
+  "RunnerChecks": {
+    "ScriptKnownFilterExit": 0,
+    "PackageAndCi": "Same native setting forwarded last in existing argument lists",
+    "PowerShellParsing": "test.ps1 and test-packaged-common.ps1 pass",
+    "Setting": "RunConfiguration.TreatNoTestsAsError=true",
+    "KnownFilterPassed": 8,
+    "NativeEmptyFilterExit": 1,
+    "ScriptEmptyFilterExit": 1
+  },
+  "LibraryScope": "Only PythonReCoreTypes.cs changes shipped C#; API shape/init setters and supplied arrays preserved",
+  "StyleRemoval": "Three blanket coding-style tests and exclusive tuple/reflection helper removed; real architecture/safety/semantic/resource tests retained",
+  "NewPackageQualification": false,
+  "ReleaseCost": "Frozen RC2 cumulative gate remains separately inconclusive",
+  "SourceCI": {
+    "RunId": 40493641055,
+    "Result": "success",
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ],
+    "DisabledDynamicCode": "Both platforms pass",
+    "Evidence": "ci-source.json"
+  },
+  "PublicCost": {
+    "Runs": 2,
+    "ComparisonSeconds": 54.5,
+    "ConfirmationSeconds": 60.81,
+    "Allocations": "Unchanged in all measured lanes",
+    "OtherPublicLanes": "Within 10% in both observations",
+    "UnlimitedMiss": "Inconclusive: +11.00% initial, -14.87% reversed-first confirmation; preserve both",
+    "Overall": "No complete performance-equivalence or gate-acceptance claim",
+    "Next": "No further timing in this milestone; carry uncertainty to future delivery qualification"
+  }
+}
