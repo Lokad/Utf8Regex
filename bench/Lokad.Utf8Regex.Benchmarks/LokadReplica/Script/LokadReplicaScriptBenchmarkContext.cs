@@ -75,6 +75,40 @@ internal sealed class LokadReplicaScriptBenchmarkContext
 
     public int TotalInputBytes => BenchmarkCase.Model == LokadReplicaScriptBenchmarkModel.Count ? InputBytes.Length : SampleBytes.Sum(static s => s.Length);
 
+    // Lexer callers consume native coordinates: UTF-8 bytes versus UTF-16 units.
+    // Verify equivalent matched text before timing, then normalize each lane's
+    // sink against its own expected units without charging a conversion that
+    // neither caller requests.
+    internal (int Bytes, int Units) VerifyPrefixMatchResults()
+    {
+        EnsurePrefixMatchLoop();
+        var bytes = 0;
+        var units = 0;
+        for (var index = 0; index < Samples.Length; index++)
+        {
+            var expected = Verify(Regex, Utf8Regex, Samples[index], SampleBytes[index]);
+            _ = Verify(CompiledRegex, CompiledUtf8Regex, Samples[index], SampleBytes[index]);
+            if (expected.Success)
+            {
+                units += expected.Length;
+                bytes += Encoding.UTF8.GetByteCount(Samples[index].AsSpan(expected.Index, expected.Length));
+            }
+        }
+        return (bytes, units);
+
+        static Match Verify(Regex oracle, Utf8Regex actual, string text, byte[] input)
+        {
+            var expected = oracle.Match(text);
+            var match = actual.Match(input);
+            if (match.Success != expected.Success || expected.Success &&
+                (match.IndexInUtf16 != expected.Index || match.LengthInUtf16 != expected.Length ||
+                 match.IndexInBytes != Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)) ||
+                 match.LengthInBytes != Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))))
+                throw new InvalidOperationException("Lexer benchmark match ranges disagree after UTF-8 coordinate projection.");
+            return expected;
+        }
+    }
+
     public int ExecuteUtf8Regex()
     {
         return BenchmarkCase.Model switch

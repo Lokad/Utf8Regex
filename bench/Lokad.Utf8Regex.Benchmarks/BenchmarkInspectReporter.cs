@@ -1344,17 +1344,19 @@ internal static partial class BenchmarkInspectReporter
         if (lokadScriptCase is not null)
         {
             var context = new LokadReplicaScriptBenchmarkContext(lokadScriptCase);
+            var expected = lokadScriptCase.Model == LokadReplicaScriptBenchmarkModel.PrefixMatchLoop
+                ? context.VerifyPrefixMatchResults() : (Bytes: 0, Units: 0);
             var scriptIterationTarget = GetReadmeLokadScriptIterationTarget(lokadScriptCase, requestedIterations);
             var scriptRow = MeasureReadmeCase(
                 requestedIterations,
                 scriptIterationTarget,
                 samples,
-                context.ExecuteUtf8Regex,
-                context.ExecuteUtf8Compiled,
-                context.ExecutePredecodedRegex,
-                context.ExecutePredecodedCompiledRegex,
-                context.ExecuteDecodeThenRegex,
-                context.ExecuteDecodeThenCompiledRegex,
+                () => context.ExecuteUtf8Regex() - expected.Bytes,
+                () => context.ExecuteUtf8Compiled() - expected.Bytes,
+                () => context.ExecutePredecodedRegex() - expected.Units,
+                () => context.ExecutePredecodedCompiledRegex() - expected.Units,
+                () => context.ExecuteDecodeThenRegex() - expected.Units,
+                () => context.ExecuteDecodeThenCompiledRegex() - expected.Units,
                 reverseMeasurementOrder);
             Console.WriteLine(FormatReadmeCaseRow(scriptRow));
             return 0;
