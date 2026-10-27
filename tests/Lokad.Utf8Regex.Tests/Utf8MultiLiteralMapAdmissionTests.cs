@@ -223,7 +223,10 @@ public sealed class Utf8MultiLiteralMapAdmissionTests
     public async Task ReverseDiscoveryExcludesRejectedDiscriminatorsAndTerminates(string subject, int expected)
     {
         var p = PreparedMultiLiteralPackedSearch.Create(Bytes("ab", "cd"));
-        var result = await Task.Run(() => p.LastIndexOf(Encoding.UTF8.GetBytes(subject))).WaitAsync(TimeSpan.FromSeconds(5));
+        // Keep the termination guard independent of shared test-pool scheduling.
+        // A queued Task.Run can spend the entire timeout waiting behind other fixtures.
+        var result = await Task.Factory.StartNew(() => p.LastIndexOf(Encoding.UTF8.GetBytes(subject)),
+            CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(expected, result);
     }
 
