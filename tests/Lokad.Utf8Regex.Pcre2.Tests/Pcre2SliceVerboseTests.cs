@@ -4,7 +4,7 @@ using Lokad.Utf8Regex.Pcre2;
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 // R03 verbose/explicit front ends for the PCRE2 profile: native extended
-// skips vertical tab while BCL IgnorePatternWhitespace keeps it significant,
+// skips vertical tab while Core IgnorePatternWhitespace keeps it significant,
 // so Extended and ExtendedMore decline slice routing. PCRE2 has no
 // ExplicitCapture option, so core explicit programs only arise through
 // delegation with BCL-exact numbering.
@@ -37,12 +37,18 @@ public sealed class Pcre2SliceVerboseTests
     public void ExtendedVerticalTabDivergenceStaysNative()
     {
         // Pinned divergence that forces the decline above: native extended
-        // skips vertical tab while BCL keeps it significant.
+        // skips vertical tab while Core keeps it significant. .NET 11's BCL
+        // now strips it too, so it cannot stand in for the owned Core contract.
         var pattern = "a" + char.ConvertFromUtf32(0x0B) + "b";
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Extended);
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch(Utf8("ab")));
-        Assert.False(Bcl(pattern).IsMatch("ab"));
+        Assert.False(regex.IsMatch(Utf8("a\vb")));
+        var core = new Utf8Regex(pattern,
+            System.Text.RegularExpressions.RegexOptions.IgnorePatternWhitespace |
+            System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+        Assert.False(core.IsMatch("ab"u8));
+        Assert.True(core.IsMatch("a\vb"u8));
     }
 
     public static IEnumerable<object?[]> IsMatchCases()
