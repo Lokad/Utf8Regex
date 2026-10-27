@@ -1,0 +1,66 @@
+{
+  "Runtime": ".NET 10.0.14",
+  "SourceFocused": [
+    {
+      "Profile": "Core",
+      "Passed": 164
+    },
+    {
+      "Profile": "PythonRe",
+      "Passed": 20
+    },
+    {
+      "Profile": "Pcre2",
+      "Passed": 27
+    }
+  ],
+  "DetachedCoverage": [
+    {
+      "TestProject": "Lokad.Utf8Regex.Tests",
+      "Passed": 39582,
+      "ApiInventoryPresent": true,
+      "BinaryMemberInventoryPresent": true,
+      "Failed": 0
+    },
+    {
+      "TestProject": "Lokad.Utf8Regex.PythonRe.Tests",
+      "Passed": 3936,
+      "ApiInventoryPresent": true,
+      "BinaryMemberInventoryPresent": true,
+      "Failed": 0
+    },
+    {
+      "TestProject": "Lokad.Utf8Regex.Pcre2.Tests",
+      "Passed": 6183,
+      "ApiInventoryPresent": true,
+      "BinaryMemberInventoryPresent": true,
+      "Failed": 0
+    }
+  ],
+  "RemovedScannerSourceLines": 71,
+  "DeletedComparisonFixtureLines": 88,
+  "SourceOnlyTraitFilter": "Category!=SourceOnly",
+  "AllSourceGuardsRetainedInDefaultSourceCI": true,
+  "NoNewPackages": true,
+  "NoNewTimings": true,
+  "ReleaseCostGate": "Inconclusive; earlier acceptance withdrawn",
+  "DevelopmentVersion": "0.4.0-rc.3-dev",
+  "ImmutableInputs": 33,
+  "SourceCiRevision": "a2f73b38f847e714644e67efcb259a3937adfa80",
+  "CoordinationCorrection": {
+    "InitialCiRun": 40480148764,
+    "Failure": "Linux reverse-discovery Task.Run guard timed out",
+    "Test": "ReverseDiscoveryExcludesRejectedDiscriminatorsAndTerminates",
+    "OriginalAndRetainedTimeoutSeconds": 5,
+    "FocusedPassed": 48,
+    "NoProductionChange": true,
+    "NoAssertionWeakened": true
+  },
+  "FinalSourceCI": {
+    "Run": 40481258226,
+    "Revision": "a2f73b38f847e714644e67efcb259a3937adfa80",
+    "Windows": "success",
+    "Linux": "success",
+    "DisabledDynamicCode": "success on both platforms"
+  }
+}

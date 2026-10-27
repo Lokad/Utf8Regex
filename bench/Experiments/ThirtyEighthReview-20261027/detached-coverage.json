@@ -1,0 +1,23 @@
+[
+  {
+    "TestProject": "Lokad.Utf8Regex.Tests",
+    "Passed": 39582,
+    "ApiInventoryPresent": true,
+    "BinaryMemberInventoryPresent": true,
+    "Failed": 0
+  },
+  {
+    "TestProject": "Lokad.Utf8Regex.PythonRe.Tests",
+    "Passed": 3936,
+    "ApiInventoryPresent": true,
+    "BinaryMemberInventoryPresent": true,
+    "Failed": 0
+  },
+  {
+    "TestProject": "Lokad.Utf8Regex.Pcre2.Tests",
+    "Passed": 6183,
+    "ApiInventoryPresent": true,
+    "BinaryMemberInventoryPresent": true,
+    "Failed": 0
+  }
+]

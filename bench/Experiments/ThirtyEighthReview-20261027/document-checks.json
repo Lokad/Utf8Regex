@@ -1,0 +1,46 @@
+[
+  {
+    "File": "CHANGELOG.md",
+    "RelativeTargetsPresent": true
+  },
+  {
+    "File": "MIGRATION.md",
+    "RelativeTargetsPresent": true
+  },
+  {
+    "File": "HOST-INTEGRATION.md",
+    "RelativeTargetsPresent": true
+  },
+  {
+    "File": "README.md",
+    "RelativeTargetsPresent": true
+  },
+  {
+    "File": "SPEC.md",
+    "RelativeTargetsPresent": true
+  },
+  {
+    "File": "SPEC-PYTHONRE.md",
+    "RelativeTargetsPresent": true
+  },
+  {
+    "File": "SPEC-PCRE2.md",
+    "RelativeTargetsPresent": true
+  },
+  {
+    "File": "CURRENT-PERFORMANCE.md",
+    "RelativeTargetsPresent": true
+  },
+  {
+    "File": "src/Lokad.Utf8Regex/README.md",
+    "RelativeTargetsPresent": true
+  },
+  {
+    "File": "src/Lokad.Utf8Regex.PythonRe/README.md",
+    "RelativeTargetsPresent": true
+  },
+  {
+    "File": "src/Lokad.Utf8Regex.Pcre2/README.md",
+    "RelativeTargetsPresent": true
+  }
+]

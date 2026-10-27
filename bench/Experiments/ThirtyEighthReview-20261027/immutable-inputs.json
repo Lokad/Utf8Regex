@@ -1,0 +1,134 @@
+[
+  {
+    "Path": "README.Benchmarks.json",
+    "Sha256": "4DDA92671D84DB9851D3D012F6A79F8D414A573A72D5E7AD9CCC852236F9E7FA"
+  },
+  {
+    "Path": "README.Parity.json",
+    "Sha256": "2A82BD2732CBBCA46A1EA65E967359DF6D677AAAFF017031AD1D7E3BBD715D11"
+  },
+  {
+    "Path": "PCRE2.Benchmarks.json",
+    "Sha256": "B113B963453FC283DE6C8B64BFCFCA72E13A5EF8644FC5A38B8A92176B692F95"
+  },
+  {
+    "Path": "PythonRe.Benchmarks.json",
+    "Sha256": "F0E233C1716AAF3602C785FF4AE3D635BF77DFA8D88E9C4E058C0248A22004CD"
+  },
+  {
+    "Path": "artifacts/release-candidates/0.4.0-rc.1/candidate.json",
+    "Sha256": "B248D69B37AF83FDA009CCDC6D54989A38B1B3275F64F9897E228C7331C6E343"
+  },
+  {
+    "Path": "artifacts/utf8regex-0.4.0-rc.1-20261020/final-integrity.json",
+    "Sha256": "00F4F0FBA77FC0910B22D167ED5E5DA83C9B225FB4D9099CF39E44C82B1DD6C6"
+  },
+  {
+    "Path": "artifacts/Utf8Regex.0.4.0-rc.1.zip",
+    "Sha256": "C1692F1378E0E4DB3DFC2B2777A0B1B2B72D687C3B5451845F1DD45E74B46405"
+  },
+  {
+    "Path": "artifacts/release-candidates/0.4.0-rc.1/feed/Lokad.Utf8Regex.0.4.0-rc.1.nupkg",
+    "Sha256": "0F58D0F9373A2CD45EEC4293AC34246BC7215952BCF00AB4376DC69F3558EBC0"
+  },
+  {
+    "Path": "artifacts/release-candidates/0.4.0-rc.1/feed/Lokad.Utf8Regex.0.4.0-rc.1.snupkg",
+    "Sha256": "B171682BE04C7C599A218B128713A70CBB8FFC859E5F6075256A2B9FEFF4320E"
+  },
+  {
+    "Path": "artifacts/release-candidates/0.4.0-rc.1/feed/Lokad.Utf8Regex.PythonRe.0.4.0-rc.1.nupkg",
+    "Sha256": "3D6F71F50348B4AA33C60258F4262084373AA4BD1A4FF11932055650DC396D23"
+  },
+  {
+    "Path": "artifacts/release-candidates/0.4.0-rc.1/feed/Lokad.Utf8Regex.PythonRe.0.4.0-rc.1.snupkg",
+    "Sha256": "710E085D57749F586A74D6DAFD724C003DD5C3FACA954C115ECD8BC1AF5378F0"
+  },
+  {
+    "Path": "artifacts/release-candidates/0.4.0-rc.1/feed/Lokad.Utf8Regex.Pcre2.0.4.0-rc.1.nupkg",
+    "Sha256": "BB7E977A34C09B959B9A7DBF0378151D7693289BF0BA634C592C195427C7F0FD"
+  },
+  {
+    "Path": "artifacts/release-candidates/0.4.0-rc.1/feed/Lokad.Utf8Regex.Pcre2.0.4.0-rc.1.snupkg",
+    "Sha256": "862F639ED0067570F972E76D8ED3E9EC9564456BEBBE495CC28A4A0E396E8F82"
+  },
+  {
+    "Path": "TODO-AWK-CAPTURE-MATCHER-CLOCK-COST.md",
+    "Sha256": "69CB3F73A7C22AB8D03EC025F4FD59FF6C6A23FCECEBF49E72083C49FF54D818"
+  },
+  {
+    "Path": "TODO-AWK-SCALAR-PACKAGE-RELEASE-IDENTITY.md",
+    "Sha256": "984C329B7947123EE91948A28C5D04FE977E6BED1AA1C15FA2E1136CF18F19E6"
+  },
+  {
+    "Path": "TODO-JQ-COMPATIBILITY.md",
+    "Sha256": "86A71DBC587991BC783726E4B2685690DC2A2667D76A8586CA231631335734B6"
+  },
+  {
+    "Path": "TODO-PCRE2-NUMERIC-CAPTURES.md",
+    "Sha256": "F7AA996CAA6B0BF1D17DFD45BB293D7D15E8DE8329565FE294E55D280DB7474E"
+  },
+  {
+    "Path": "TODO-PYTHONRE-CAPTURES-AND-RESOURCE-CONTRACT.md",
+    "Sha256": "00149E36F3DAE171A013C4DAA151B404C55CDAEFFBE663805DC9850AE7285688"
+  },
+  {
+    "Path": "artifacts\\package-candidates\\0.4.0-rc.2\\candidate.json",
+    "Sha256": "4F4A2B965D0DF524CE7FC93454D61A5D84F7A3DB25C16BA625CD46508A954B8A"
+  },
+  {
+    "Path": "artifacts\\package-candidates\\0.4.0-rc.2\\package-provenance.json",
+    "Sha256": "C3262940DC90917683B68EC185A93E17FD365A12367A8F2EFE4BDCF46D1A7955"
+  },
+  {
+    "Path": "artifacts\\package-candidates\\0.4.0-rc.2\\feed\\Lokad.Utf8Regex.0.4.0-rc.2.nupkg",
+    "Sha256": "418C99602420E566C98336D647A28F369BE0AAC8EADC0482B73B211A8D13B99E"
+  },
+  {
+    "Path": "artifacts\\package-candidates\\0.4.0-rc.2\\feed\\Lokad.Utf8Regex.0.4.0-rc.2.snupkg",
+    "Sha256": "114FBA5A4FD46A965F960926127FB5ED350FB9F884940ACAF91125296A7311C5"
+  },
+  {
+    "Path": "artifacts\\package-candidates\\0.4.0-rc.2\\feed\\Lokad.Utf8Regex.Pcre2.0.4.0-rc.2.nupkg",
+    "Sha256": "E7B0CAFC6DD655B545C151C1ACEDC0A1752E90575676AF558024E9AC39546B9D"
+  },
+  {
+    "Path": "artifacts\\package-candidates\\0.4.0-rc.2\\feed\\Lokad.Utf8Regex.Pcre2.0.4.0-rc.2.snupkg",
+    "Sha256": "5802151D1A6FFE71518750D1FE6BA974D2A7E32D81C1825E618DBF256D1B63FC"
+  },
+  {
+    "Path": "artifacts\\package-candidates\\0.4.0-rc.2\\feed\\Lokad.Utf8Regex.PythonRe.0.4.0-rc.2.nupkg",
+    "Sha256": "67E3EDA2761AF73B99967D480A31CF1D89BBB653C33C64A1D556379FEFBB5899"
+  },
+  {
+    "Path": "artifacts\\package-candidates\\0.4.0-rc.2\\feed\\Lokad.Utf8Regex.PythonRe.0.4.0-rc.2.snupkg",
+    "Sha256": "806A6B86A0B10E49F10722CB5B4E50496B4C1027C330A278A868846575CA7DEC"
+  },
+  {
+    "Path": "artifacts\\Utf8Regex.0.4.0-rc.2.zip",
+    "Sha256": "97AB357E0695A4CE14645AE8E61A9C7ACF8514F2EA0AED33A498C2CB17B9F939"
+  },
+  {
+    "Path": "bench\\Experiments\\ReleaseCandidate2-20261026\\candidate.json",
+    "Sha256": "4F4A2B965D0DF524CE7FC93454D61A5D84F7A3DB25C16BA625CD46508A954B8A"
+  },
+  {
+    "Path": "bench\\Experiments\\ReleaseCandidate2-20261026\\final-integrity.json",
+    "Sha256": "6ED42B9A912CA6D3638D4307AC1C24EB5276F50F5C2E90A3DF19DF951579680B"
+  },
+  {
+    "Path": "bench\\Experiments\\ReleaseCandidate2-20261026\\package-provenance.json",
+    "Sha256": "C3262940DC90917683B68EC185A93E17FD365A12367A8F2EFE4BDCF46D1A7955"
+  },
+  {
+    "Path": "bench\\Experiments\\ReleaseCandidate2-20261026\\public-cost-confirmation.json",
+    "Sha256": "62C3C6AA228398D501B85659993CD2435BA2AEDE8133F68A9E3AC67E2234A9CF"
+  },
+  {
+    "Path": "bench\\Experiments\\ReleaseCandidate2-20261026\\public-cost.json",
+    "Sha256": "55649FA22C55937FE15A705FBEB443057428E9F88898EC2B3C9B1AE63F668B72"
+  },
+  {
+    "Path": "bench\\Experiments\\ReleaseCandidate2-20261026\\summary.json",
+    "Sha256": "852429232999CC312A1E4BE0C5B8A0491D01AF1C1C0EDD0EAA5C802C74F5B28D"
+  }
+]
