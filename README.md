@@ -1,6 +1,6 @@
 # Lokad.Utf8Regex
 
-Regular expressions directly over UTF-8 spans for **.NET 10**. Match, count,
+Regular expressions directly over UTF-8 spans for **.NET 10 and .NET 11**. Match, count,
 enumerate and replace without first decoding the subject to a string.
 Core and both optional adapters are fully managed .NET libraries.
 
@@ -72,6 +72,13 @@ for failure, deadline and ownership details.
 
 See [release notes](CHANGELOG.md) and the [migration guide](docs/MIGRATION.md)
 for the 0.4.0 changes.
+
+## Runtime support
+
+The 0.5.0 development source targets `net10.0` and `net11.0`. .NET 11 currently
+uses the SDK pinned in `global.json`, a release candidate. Published 0.4.0
+packages target .NET 10. Benchmark refreshes now target .NET 11; existing rows
+keep their original runtime identities until remeasured.
 
 ## Benchmarks
 

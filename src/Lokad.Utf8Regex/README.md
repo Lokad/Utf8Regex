@@ -1,6 +1,6 @@
 # Lokad.Utf8Regex
 
-**0.4.0**, .NET 10. Regular expressions over strict UTF-8
+**0.5.0 development**, .NET 10 and .NET 11. Regular expressions over strict UTF-8
 `ReadOnlySpan<byte>` / `Span<byte>`, matching Unicode scalars with primary byte
 coordinates. Dot matches 😀 once across four bytes. UTF-16 coordinates and
 string APIs are derived interoperability conveniences.

@@ -61,7 +61,10 @@ public sealed class Utf8SliceVerboseTests
     public void OwnedIsMatchMatchesOracle(string pattern, string inputText, bool expected)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        // Vertical tab stays literal in the owned grammar. .NET 11 now
+        // strips it in verbose mode; an explicit escape restores overlap.
+        var oraclePattern = pattern.Replace("\v", @"\v", StringComparison.Ordinal);
+        var oracle = new Regex(oraclePattern, RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(expected, oracle.IsMatch(inputText));
         foreach (var options in new[]
         {

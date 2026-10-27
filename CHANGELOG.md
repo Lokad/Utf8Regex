@@ -1,5 +1,10 @@
 # Release notes
 
+## Unreleased — 0.5.0
+
+- Target .NET 10 and .NET 11 across Core, PythonRe and PCRE2.
+- Use .NET 11 by default for benchmark runs; historical figures retain their measured runtime.
+
 ## 0.4.0 â€” 2026-10-27
 
 Published on NuGet: [Core](https://www.nuget.org/packages/Lokad.Utf8Regex/0.4.0),

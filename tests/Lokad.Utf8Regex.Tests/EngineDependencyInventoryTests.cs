@@ -91,7 +91,7 @@ public sealed class EngineDependencyInventoryTests
 
         foreach (var options in new RegexOptions[]
         {
-            (RegexOptions)0x0800,
+            (RegexOptions)0x1000,
             RegexOptions.ECMAScript | RegexOptions.Singleline,
             RegexOptions.NonBacktracking | RegexOptions.RightToLeft,
         })
@@ -99,6 +99,9 @@ public sealed class EngineDependencyInventoryTests
             Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("foo", options));
             Assert.Throws<ArgumentOutOfRangeException>(() => new Regex("foo", options));
         }
+        // .NET 11 assigns 0x0800 to AnyNewLine. Runtime support does not
+        // silently extend the owned grammar or its admitted option set.
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("foo", (RegexOptions)0x0800));
     }
 
 

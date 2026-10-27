@@ -11,7 +11,7 @@ function Invoke-DotNet {
 }
 
 function Read-PackageProvenance {
-    param([string] $PackagePath, [string] $ExpectedAssembly)
+    param([string] $PackagePath, [string] $ExpectedAssembly, [string] $TargetFramework = "net10.0")
 
     # Inspect metadata without loading or executing a packaged assembly.
     $package = [System.IO.Compression.ZipFile]::OpenRead($PackagePath)
@@ -25,7 +25,7 @@ function Read-PackageProvenance {
         finally { $textReader.Dispose() }
         $repository = $nuspec.SelectSingleNode("/*[local-name()='package']/*[local-name()='metadata']/*[local-name()='repository']")
 
-        $assemblyEntry = $package.GetEntry("lib/net10.0/$ExpectedAssembly")
+        $assemblyEntry = $package.GetEntry("lib/$TargetFramework/$ExpectedAssembly")
         if ($null -eq $assemblyEntry) { throw "$PackagePath does not contain $ExpectedAssembly." }
         $assemblyStream = [System.IO.MemoryStream]::new()
         try {
@@ -88,7 +88,7 @@ function Read-PackageProvenance {
         $symbolPackageHash = (Get-FileHash -LiteralPath $symbolPackagePath -Algorithm SHA256).Hash
         $symbols = [System.IO.Compression.ZipFile]::OpenRead($symbolPackagePath)
         try {
-            $pdbEntry = $symbols.GetEntry("lib/net10.0/$($ExpectedAssembly -replace '\.dll$', '.pdb')")
+            $pdbEntry = $symbols.GetEntry("lib/$TargetFramework/$($ExpectedAssembly -replace '\.dll$', '.pdb')")
             $pdbPresent = $null -ne $pdbEntry
             if ($pdbPresent) {
                 $pdbStream = [System.IO.MemoryStream]::new()
@@ -143,6 +143,7 @@ function Read-PackageProvenance {
         PackageSha256 = (Get-FileHash -LiteralPath $PackagePath -Algorithm SHA256).Hash
         NuSpecRevision = if ($null -ne $repository) { $repository.GetAttribute("commit").ToLowerInvariant() } else { $null }
         Assembly = $ExpectedAssembly
+        TargetFramework = $TargetFramework
         AssemblySha256 = $assemblyHash
         InformationalVersion = $informationalVersion
         Configurations = $configurations.ToArray()
@@ -220,7 +221,9 @@ function Assert-PackageCompiledSource {
         $relative = [IO.Path]::GetRelativePath($root, $path).Replace('\', '/')
         # Match the existing compiler-evidence policy: only the SDK's known
         # generated attributes/usings are exempt, never arbitrary obj code.
-        $generated = '/obj/' + [Regex]::Escape($Configuration) + '/net10\.0/(?:[^/]+\.AssemblyInfo\.cs|[^/]+\.GlobalUsings\.g\.cs|\.NETCoreApp,Version=v10\.0\.AssemblyAttributes\.cs)$'
+        $framework = $Provenance.TargetFramework
+        $major = $framework -replace '^net(\d+)\.0$', '$1'
+        $generated = '/obj/' + [Regex]::Escape($Configuration) + '/' + [Regex]::Escape($framework) + '/(?:[^/]+\.AssemblyInfo\.cs|[^/]+\.GlobalUsings\.g\.cs|\.NETCoreApp,Version=v' + $major + '\.0\.AssemblyAttributes\.cs)$'
         if ($relative -match $generated) { continue }
         if (!$tracked.Contains($relative) -or $document.Algorithm -ne '8829d00f-11b8-4213-878b-770e8597ac16' -or
             !(Test-Path -LiteralPath $path -PathType Leaf) -or
@@ -266,7 +269,8 @@ function Write-PackageProvenanceEvidence {
         [string] $Configuration,
         [string[]] $PackagePaths,
         [string[]] $ExpectedAssemblies,
-        [bool] $RequireCleanSource
+        [bool] $RequireCleanSource,
+        [string[]] $TargetFrameworks = @("net10.0")
     )
 
     $source = Read-PackageQualificationSource $RepositoryRoot $SourceRevision $RequireCleanSource
@@ -274,10 +278,12 @@ function Write-PackageProvenanceEvidence {
         throw "Package provenance requires one assembly identity per package."
     }
     $records = @(for ($index = 0; $index -lt $PackagePaths.Count; $index++) {
-        $record = Read-PackageProvenance $PackagePaths[$index] $ExpectedAssemblies[$index]
-        Assert-PackageProvenance $record $SourceRevision
-        Assert-PackageCompiledSource $record $RepositoryRoot $Configuration
-        $record
+        foreach ($framework in $TargetFrameworks) {
+            $record = Read-PackageProvenance $PackagePaths[$index] $ExpectedAssemblies[$index] $framework
+            Assert-PackageProvenance $record $SourceRevision
+            Assert-PackageCompiledSource $record $RepositoryRoot $Configuration
+            $record
+        }
     })
     $report = [ordered]@{
         SchemaVersion = 1
@@ -292,7 +298,7 @@ function Write-PackageProvenanceEvidence {
     $report | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $path -Encoding utf8
     # Added artifacts retain manifest schema 1, consumed by existing verifiers.
     $artifacts = @(foreach ($record in $records) {
-        [ordered]@{ Name = "$($record.Assembly)-symbols"; RelativePath = "packages/$($record.SymbolPackage)"; Sha256 = $record.SymbolPackageSha256 }
+        [ordered]@{ Name = "$($record.Assembly)-$($record.TargetFramework)-symbols"; RelativePath = "packages/$($record.SymbolPackage)"; Sha256 = $record.SymbolPackageSha256 }
     })
     $artifacts += [ordered]@{ Name = "package-provenance"; RelativePath = "package-provenance.json"; Sha256 = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash }
     return [pscustomobject]@{ Path = $path; Artifacts = $artifacts }
@@ -303,20 +309,18 @@ function Assert-PackageShape {
         [string] $PackagePath,
         [string] $ExpectedAssembly,
         [string] $RequiredDependency,
-        [string] $RequiredVersion
+        [string] $RequiredVersion,
+        [string[]] $TargetFrameworks = @("net10.0")
     )
 
     $archive = [System.IO.Compression.ZipFile]::OpenRead($PackagePath)
     try {
         $entryNames = @($archive.Entries | ForEach-Object FullName)
-        $expectedLibrary = "lib/net10.0/$ExpectedAssembly"
-        if ($expectedLibrary -notin $entryNames) {
-            throw "$PackagePath does not contain $expectedLibrary."
-        }
-
-        $expectedDocumentation = $expectedLibrary -replace '\.dll$', '.xml'
-        if ($expectedDocumentation -notin $entryNames) {
-            throw "$PackagePath does not contain $expectedDocumentation."
+        $expectedLibraries = @($TargetFrameworks | ForEach-Object { "lib/$_/$ExpectedAssembly" })
+        foreach ($expectedLibrary in $expectedLibraries) {
+            foreach ($expectedEntry in @($expectedLibrary, ($expectedLibrary -replace '\.dll$', '.xml'))) {
+                if ($expectedEntry -notin $entryNames) { throw "$PackagePath does not contain $expectedEntry." }
+            }
         }
 
         $forbiddenEntries = @($entryNames | Where-Object {
@@ -329,7 +333,8 @@ function Assert-PackageShape {
         }
 
         $implementationAssemblies = @($entryNames | Where-Object { $_ -match '^lib/[^/]+/.*\.dll$' })
-        if ($implementationAssemblies.Count -ne 1 -or $implementationAssemblies[0] -ne $expectedLibrary) {
+        if ($implementationAssemblies.Count -ne $expectedLibraries.Count -or
+            @(Compare-Object $implementationAssemblies $expectedLibraries).Count -ne 0) {
             throw "$PackagePath contains an unexpected implementation assembly set: $($implementationAssemblies -join ', ')."
         }
 
@@ -351,18 +356,21 @@ function Assert-PackageShape {
         # Core has no package dependencies; an adapter has only its exact Core pin.
         $dependencies = @($metadata.SelectNodes("*[local-name()='dependencies']/*[local-name()='dependency'] | *[local-name()='dependencies']/*[local-name()='group']/*[local-name()='dependency']"))
         $groups = @($metadata.SelectNodes("*[local-name()='dependencies']/*[local-name()='group']"))
-        if (@($groups | Where-Object { $_.GetAttribute('targetFramework') -cne 'net10.0' }).Count -ne 0 -or
-            $groups.Count -gt 1) {
+        if (@($groups | Where-Object { $_.GetAttribute('targetFramework') -cnotin $TargetFrameworks }).Count -ne 0 -or
+            $groups.Count -ne $TargetFrameworks.Count -or
+            @($groups | ForEach-Object { $_.GetAttribute('targetFramework') } | Sort-Object -Unique).Count -ne $TargetFrameworks.Count) {
             throw "$PackagePath has unexpected dependency target groups."
         }
         if ([string]::IsNullOrEmpty($RequiredDependency)) {
             if ($dependencies.Count -ne 0) { throw "$PackagePath must not declare package dependencies." }
         }
-        elseif ($groups.Count -ne 1 -or $dependencies.Count -ne 1 -or
-            $dependencies[0].ParentNode -ne $groups[0] -or
-            $dependencies[0].GetAttribute('id') -cne $RequiredDependency -or
-            $dependencies[0].GetAttribute('version') -cne "[$RequiredVersion]") {
-            throw "$PackagePath must declare only the exact $RequiredDependency [$RequiredVersion] dependency in net10.0."
+        elseif ($dependencies.Count -ne $groups.Count -or @($groups | Where-Object {
+            $groupDependencies = @($_.SelectNodes("*[local-name()='dependency']"))
+            $groupDependencies.Count -ne 1 -or
+                $groupDependencies[0].GetAttribute('id') -cne $RequiredDependency -or
+                $groupDependencies[0].GetAttribute('version') -cne "[$RequiredVersion]"
+        }).Count -ne 0) {
+            throw "$PackagePath must declare only the exact $RequiredDependency [$RequiredVersion] dependency in each target framework."
         }
     }
     finally {
@@ -401,7 +409,8 @@ function Invoke-IsolatedConsumerTests {
         [string[]]$PackageIds,
         [string]$Version,
         [switch]$PinQualifiedPackageSources,
-        [string]$TestResultsDirectory
+        [string]$TestResultsDirectory,
+        [string]$TargetFramework
     )
 
     $sourceTests = Join-Path (Join-Path $RepositoryRoot "tests") $SourceTestProjectName
@@ -423,6 +432,10 @@ function Invoke-IsolatedConsumerTests {
 
     $testProjectPath = Join-Path $TestDirectory ($SourceTestProjectName + ".csproj")
     [xml] $testProject = Get-Content -LiteralPath $testProjectPath
+    if ($TargetFramework) {
+        @($testProject.SelectNodes("//TargetFrameworks")) | ForEach-Object { [void] $_.ParentNode.RemoveChild($_) }
+        $testProject.SelectSingleNode("//TargetFramework").InnerText = $TargetFramework
+    }
     # Keep linked fixture helpers inside the detached qualification tree.
     # Includes benchmark catalog/provenance and shared assembly-inventory sources.
     $linkedRoot = [IO.Path]::GetFullPath((Join-Path $QualificationRoot "linked-source"))

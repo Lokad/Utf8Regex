@@ -1,6 +1,6 @@
 # Core contract
 
-Version **0.4.0** targets .NET 10. See
+The **0.5.0 development source** targets .NET 10 and .NET 11. See
 [release notes](../CHANGELOG.md) for release status and [migration](MIGRATION.md)
 for upgrade guidance. This contract describes supported behavior; the
 [API snapshot](../tests/Lokad.Utf8Regex.Tests/PublicApi.Shipped.txt) and executable
@@ -32,6 +32,13 @@ Offset resolution retains the complete subject's assertion context and the same
 invocation controls.
 
 ## Input and pattern language
+
+Runtime support keeps the admitted language stable. .NET 11's new
+`RegexOptions.AnyNewLine` is unsupported and rejected. Vertical tab remains a
+literal in verbose patterns. Previously rejected conditional option forms stay
+rejected, and the private `_xmlC`/`_xmlD`/`_xmlI`/`_xmlW` sets retain their frozen
+.NET 10 memberships. BCL comparisons use equivalent patterns or independent
+expectations where .NET 11 changed behavior; they do not redefine this contract.
 
 The entire subject must be well-formed UTF-8, including a suffix after an early
 match. Malformed, overlong, surrogate-encoding and truncated input throws

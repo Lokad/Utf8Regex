@@ -55,7 +55,9 @@ public sealed class Utf8OwnedTreeSliceLoweringTests
         // it counts surrogate halves; the scalar contract consumes all four Runes.
         var comparisonTexts = scalarUniversalClass
             ? Texts.Where(static text => !text.Any(char.IsSurrogate)).ToArray() : Texts;
-        Utf8SliceSparseGroupTests.AssertOwnedOperations(pattern, options, comparisonTexts, options);
+        // .NET 11 strips vertical tab in verbose mode; our grammar keeps it.
+        var oraclePattern = pattern.Replace("\v", @"\v", StringComparison.Ordinal);
+        Utf8SliceSparseGroupTests.AssertOwnedOperations(pattern, options, comparisonTexts, oraclePattern, options);
         if (scalarUniversalClass)
         {
             var regex = new Utf8Regex(pattern, options);

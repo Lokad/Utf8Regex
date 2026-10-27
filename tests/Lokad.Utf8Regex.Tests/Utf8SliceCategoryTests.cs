@@ -545,6 +545,9 @@ public sealed class Utf8SliceCategoryTests
         Assert.NotEmpty(Utf8SliceCategories.BlockNames);
         foreach (var name in Utf8SliceCategories.BlockNames)
         {
+            // Private BCL XML sets changed in .NET 11. Their complete owned
+            // BMP memberships are checked against frozen .NET 10 digests below.
+            if (name.StartsWith("_xml", StringComparison.Ordinal)) continue;
             Assert.True(Utf8SliceCategories.TryResolve(name, out _, out var ranges, out var isBlock));
             Assert.True(isBlock);
             var probes = new HashSet<int> { 0, 0xFFFF };
@@ -573,6 +576,25 @@ public sealed class Utf8SliceCategoryTests
 
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + name);
         }
+    }
+
+    [Theory]
+    [InlineData("_xmlC", "68BD1B0F5CBD12EBFD0E0C6380395A0D0D4FFD2DC7C28191A793FEA17BA51B9C")]
+    [InlineData("_xmlD", "6FFD0190A565731EE3BD3D929D0775F2054F9992C960C9B5CFF83583B19ED5DA")]
+    [InlineData("_xmlI", "85071210A90D61C9EBE18F917816BACA237EFC244C08341D5B33C3A1FA16EB32")]
+    [InlineData("_xmlW", "3BDD6B253950F6D9ED8EDBDE3DC55558FA94852AE7C81C5B031AEC777B9E598A")]
+    public void PrivateXmlClassesKeepFrozenMembership(string name, string expected)
+    {
+        // Generated from .NET 10.0.12: one byte per BMP code point (0/1),
+        // with surrogate entries zero. Preserve this language on both runtimes.
+        var regex = new Utf8Regex("\\p{" + name + "}", RegexOptions.CultureInvariant);
+        var membership = new byte[65536];
+        for (var codePoint = 0; codePoint < membership.Length; codePoint++)
+        {
+            if (codePoint is >= 0xD800 and <= 0xDFFF) continue;
+            membership[codePoint] = regex.IsMatch(Encoding.UTF8.GetBytes(((char)codePoint).ToString())) ? (byte)1 : (byte)0;
+        }
+        Assert.Equal(expected, Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(membership)));
     }
 
     [Fact]

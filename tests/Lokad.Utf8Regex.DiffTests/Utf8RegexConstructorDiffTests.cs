@@ -37,7 +37,6 @@ public sealed class Utf8RegexConstructorDiffTests
     [Theory]
     [InlineData((RegexOptions)(-1))]
     [InlineData((RegexOptions)0x1000)]
-    [InlineData((RegexOptions)0x0800)]
     [InlineData(RegexOptions.ECMAScript | RegexOptions.Singleline)]
     [InlineData(RegexOptions.ECMAScript | RegexOptions.RightToLeft)]
     [InlineData(RegexOptions.ECMAScript | RegexOptions.ExplicitCapture)]

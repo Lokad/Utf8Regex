@@ -91,12 +91,14 @@ public sealed class Utf8RegexRuntimeRegressionDiffTests
         var prefix = compiled.EnumerateMatches(input);
         // Probe only a bounded prefix: .NET 10.0.12 repeats 0:0, 0:1 rather
         // than advancing. Calling its complete Count or enumeration would hang.
-        for (var sample = 0; sample < 8; sample++)
+        var fixedOracle = Environment.Version.Major >= 11;
+        for (var sample = 0; sample < (fixedOracle ? input.Length + 1 : 8); sample++)
         {
             Assert.True(prefix.MoveNext());
-            Assert.Equal(0, prefix.Current.Index);
-            Assert.Equal(sample % 2, prefix.Current.Length);
+            Assert.Equal(fixedOracle ? sample : 0, prefix.Current.Index);
+            Assert.Equal(fixedOracle ? 0 : sample % 2, prefix.Current.Length);
         }
+        if (fixedOracle) Assert.False(prefix.MoveNext());
         foreach (var selection in new[] { options, options | RegexOptions.Compiled })
         {
             var regex = new Utf8Regex(pattern, selection);
@@ -132,9 +134,12 @@ public sealed class Utf8RegexRuntimeRegressionDiffTests
         Assert.True(expected.Success);
         Assert.Equal(0, expected.Length);
         Assert.True(expectedCompiled.Success);
-        Assert.Equal(1, expectedCompiled.Length);
+        // .NET 11 fixes the compiled unwind defect. Both owned modes keep
+        // the same correct result on either supported runtime.
+        var fixedOracle = Environment.Version.Major >= 11;
+        Assert.Equal(fixedOracle ? 0 : 1, expectedCompiled.Length);
         Assert.False(expectedCompiled.Groups[1].Success);
-        Assert.True(expectedCompiled.Groups[2].Success);
+        Assert.Equal(!fixedOracle, expectedCompiled.Groups[2].Success);
 
         var actual = context.Utf8.MatchDetailed(bytes);
         Assert.Equal(expected.Success, actual.Success);
@@ -170,10 +175,13 @@ public sealed class Utf8RegexRuntimeRegressionDiffTests
         Assert.True(expected.Success);
         Assert.Equal(0, expected.Length);
         Assert.True(expectedCompiled.Success);
-        Assert.Equal(1, expectedCompiled.Length);
+        // .NET 11 fixes the compiled unwind defect. Both owned modes keep
+        // the same correct result on either supported runtime.
+        var fixedOracle = Environment.Version.Major >= 11;
+        Assert.Equal(fixedOracle ? 0 : 1, expectedCompiled.Length);
         Assert.False(expectedCompiled.Groups[1].Success);
-        Assert.True(expectedCompiled.Groups[2].Success);
-        Assert.Equal("a", expectedCompiled.Groups[2].Value);
+        Assert.Equal(!fixedOracle, expectedCompiled.Groups[2].Success);
+        Assert.Equal(fixedOracle ? "" : "a", expectedCompiled.Groups[2].Value);
 
         var actual = context.Utf8.MatchDetailed(bytes);
         Assert.Equal(expected.Success, actual.Success);

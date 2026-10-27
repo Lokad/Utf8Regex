@@ -1,4 +1,16 @@
-# Migrating to the 0.4 scalar line
+# Migration guide
+
+## 0.5.0 development: .NET 10 and .NET 11
+
+All three packages now build `net10.0` and `net11.0` assets. Adapters still require
+exactly the same Core version; NuGet selects the asset matching the application.
+The build SDK is pinned in `global.json`; its .NET 11 version is currently a
+release candidate. Matching units, validation, coordinates and resource contracts
+are unchanged. Benchmark runs default to .NET 11; use `-Framework net10.0` with
+the test/benchmark scripts for .NET 10 controls. Historical measurements retain
+their original runtime labels. Published 0.4.0 packages remain .NET 10-only.
+
+## 0.4.0: Unicode scalars
 
 Version **0.4.0** changes matching from UTF-16 units to Unicode scalars.
 Both adapters require exactly Core **[0.4.0]**: upgrade selected packages together

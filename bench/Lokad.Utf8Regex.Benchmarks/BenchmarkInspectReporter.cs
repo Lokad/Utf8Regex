@@ -4766,10 +4766,10 @@ internal static partial class BenchmarkInspectReporter
             Directory.CreateDirectory(generatedDir);
 
             var projectText =
-                """
+                $$"""
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
-                    <TargetFramework>net10.0</TargetFramework>
+                    <TargetFramework>net{{Environment.Version.Major}}.0</TargetFramework>
                     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
                     <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
                   </PropertyGroup>

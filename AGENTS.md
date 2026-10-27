@@ -1,6 +1,6 @@
 # Lokad.Utf8Regex
 
-.NET 10 libraries matching Unicode scalars over strict UTF-8 spans, with primary
+.NET 10/11 libraries matching Unicode scalars over strict UTF-8 spans, with primary
 byte coordinates. Dot matches 😀 once across four bytes. UTF-16 coordinates are
 derived interoperability, not matching units.
 
@@ -18,13 +18,15 @@ derived interoperability, not matching units.
 ## Build and test
 
 Use the SDK pinned by global.json (host install or ignored .dotnet/), and
-`--tl:off` for stable output. Prefer the repository scripts:
+`--tl:off` for stable output. With a local SDK, put .dotnet/ on PATH so direct
+DLL launches and benchmark children use its runtimes. Prefer the repository scripts:
 
 ```powershell
 ./test.ps1 -Configuration Release -Project tests/Lokad.Utf8Regex.Tests/Lokad.Utf8Regex.Tests.csproj -Filter 'FullyQualifiedName~Utf8CoreWorkPolicyTests'
 ./test.ps1 -Configuration Release -Project tests/Lokad.Utf8Regex.Tests/Lokad.Utf8Regex.Tests.csproj -SkipBuild -Filter 'FullyQualifiedName~Utf8FiniteLiteralCountTests'
 ```
 
+Use -Framework net10.0 or net11.0 for focused runs; the test default covers both.
 Build affected projects during experiments; reuse matching binaries with
 -SkipBuild. Zero discovered tests is failure. Reserve solution/platform/package
 matrices for coherent delivery boundaries; do not repeat unchanged qualification.
@@ -37,6 +39,7 @@ and benchmark builds disable incidental packing.
 ## Benchmarks
 
 Use ./bench.ps1 in Release, sequentially, with a focused filter or custom command.
+Benchmarks default to net11.0; use -Framework net10.0 for compatibility controls.
 Use warm throughput (typically -Job Short); Dry is smoke evidence, not parity.
 Custom commands default to a 120-second outer cap; disable it only for preflighted
 milestone refreshes. The cap returns 124 and owns only its launched process tree;
@@ -70,7 +73,8 @@ normal runs do not shut down servers or kill other benchmark hosts.
 Use ./qualify-package-candidate.ps1 at a delivery boundary; Core/PythonRe is the
 default, or select -Profiles Core,PythonRe,Pcre2. Require clean tracked source,
 a new common version and exact adapter-to-Core pins. -SkipBuild requires matching
-configuration/revision binaries; retain source/PDB/DLL/feed/cache/lock checks.
+configuration/revision binaries for both targets; retain source/PDB/DLL/feed/cache/
+lock checks for each asset and isolated consumer.
 
 Qualified packages and symbols are delivered to artifacts/nuget/. Qualification
 records under artifacts/package-candidates/<version> and historical published/

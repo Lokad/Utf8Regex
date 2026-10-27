@@ -1,5 +1,7 @@
 param(
     [string]$Configuration = "Release",
+    [ValidateSet("net10.0", "net11.0")]
+    [string]$Framework = "net11.0",
     [ValidateSet("Dry", "Short", "Medium", "Long")]
     [string]$Job = "Dry",
     [string]$Filter = "*",
@@ -18,7 +20,7 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = $PSScriptRoot
 Set-Location $repoRoot
-$benchmarkArtifactsRoot = Join-Path $repoRoot "bench" "Lokad.Utf8Regex.Benchmarks" "bin" $Configuration "net10.0"
+$benchmarkArtifactsRoot = Join-Path $repoRoot "bench" "Lokad.Utf8Regex.Benchmarks" "bin" $Configuration $Framework
 
 if (-not $CommandArgs) {
     Get-ChildItem -LiteralPath $benchmarkArtifactsRoot -Directory -Filter 'Lokad.Utf8Regex.Benchmarks-*' -ErrorAction SilentlyContinue |
@@ -38,7 +40,7 @@ if (-not $CommandArgs) {
 }
 
 if (-not $SkipBuild) {
-    dotnet build ./bench/Lokad.Utf8Regex.Benchmarks/Lokad.Utf8Regex.Benchmarks.csproj --configuration $Configuration --tl:off --nologo -v minimal --no-restore -p:GeneratePackageOnBuild=false
+    dotnet build ./bench/Lokad.Utf8Regex.Benchmarks/Lokad.Utf8Regex.Benchmarks.csproj --configuration $Configuration --framework $Framework --tl:off --nologo -v minimal --no-restore -p:GeneratePackageOnBuild=false
     if ($LASTEXITCODE -ne 0) {
         exit $LASTEXITCODE
     }

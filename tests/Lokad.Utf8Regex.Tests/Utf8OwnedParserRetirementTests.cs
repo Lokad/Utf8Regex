@@ -80,6 +80,9 @@ public sealed class Utf8OwnedParserRetirementTests
     {
         var options = RegexOptions.CultureInvariant | RegexOptions.IgnorePatternWhitespace;
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, options));
-        Utf8SliceSparseGroupTests.AssertOwnedOperations(pattern, options, Texts, options);
+        // Some formerly invalid conditional option forms are admitted by
+        // .NET 11. Pin the owned admission contract independently of the BCL.
+        var error = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options));
+        Assert.Equal("pattern", error.ParamName);
     }
 }

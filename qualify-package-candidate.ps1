@@ -15,6 +15,8 @@ Set-StrictMode -Version Latest
 . (Join-Path $PSScriptRoot "test-packaged-common.ps1")
 
 $repositoryRoot = [IO.Path]::GetFullPath($PSScriptRoot)
+[xml] $buildProperties = Get-Content -LiteralPath (Join-Path $repositoryRoot "src/Directory.Build.props")
+$frameworks = $buildProperties.SelectSingleNode("//TargetFrameworks").InnerText.Split(';')
 $version = Read-CoherentPackageVersion $repositoryRoot
 if ($version -notmatch '^\d+\.\d+\.\d+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?$') {
     throw "Package candidates require a valid common NuGet version."
@@ -106,13 +108,13 @@ try {
             )
         }
         $dependency = if ($packageId -eq "Lokad.Utf8Regex") { "" } else { "Lokad.Utf8Regex" }
-        Assert-PackageShape (Join-Path $feed "$packageId.$version.nupkg") "$packageId.dll" $dependency $version
+        Assert-PackageShape (Join-Path $feed "$packageId.$version.nupkg") "$packageId.dll" $dependency $version $frameworks
     }
     $packagePaths = @($packages | ForEach-Object { Join-Path $feed "$_.$version.nupkg" })
     $assemblyNames = @($packages | ForEach-Object { "$_.dll" })
     [void] (Write-PackageProvenanceEvidence -RepositoryRoot $repositoryRoot -QualificationRoot $attemptRoot `
         -SourceRevision $sourceRevision -Configuration $Configuration -PackagePaths $packagePaths `
-        -ExpectedAssemblies $assemblyNames -RequireCleanSource $true)
+        -ExpectedAssemblies $assemblyNames -RequireCleanSource $true -TargetFrameworks $frameworks)
     $provenance = Get-Content -LiteralPath (Join-Path $attemptRoot "package-provenance.json") -Raw | ConvertFrom-Json
     $packageRecords = @(foreach ($record in $provenance.Packages) {
         $packageId = [IO.Path]::GetFileNameWithoutExtension($record.Assembly)
@@ -120,12 +122,12 @@ try {
             throw "Unexpected informational version for $packageId."
         }
         $packagePath = Join-Path $feed $record.Package
-        $buildAssembly = Join-Path $repositoryRoot "src/$packageId/bin/$Configuration/net10.0/$($record.Assembly)"
+        $buildAssembly = Join-Path $repositoryRoot "src/$packageId/bin/$Configuration/$($record.TargetFramework)/$($record.Assembly)"
         if ((Get-FileHash -LiteralPath $buildAssembly -Algorithm SHA256).Hash -ne $record.AssemblySha256) {
             throw "Packed and built assembly identities differ for $packageId."
         }
         [ordered]@{
-            Id = $packageId; Version = $version; RelativePath = "feed/$($record.Package)"
+            Id = $packageId; Version = $version; TargetFramework = $record.TargetFramework; RelativePath = "feed/$($record.Package)"
             PackageSha256 = $record.PackageSha256; PackageSha512Base64 = Get-Sha512Base64 $packagePath
             AssemblySha256 = $record.AssemblySha256; SymbolRelativePath = "feed/$($record.SymbolPackage)"
             SymbolSha256 = $record.SymbolPackageSha256; PdbSha256 = $record.PdbSha256
@@ -137,77 +139,80 @@ try {
 
     $consumerRecords = [Collections.Generic.List[object]]::new()
     foreach ($testProjectName in $testProjects) {
-        # Short storage names keep dependency paths below legacy Windows limits.
-        $consumerName = switch ($testProjectName) {
-            "Lokad.Utf8Regex.Tests" { "core" }
-            "Lokad.Utf8Regex.DiffTests" { "diff" }
-            "Lokad.Utf8Regex.PythonRe.Tests" { "pythonre" }
-            "Lokad.Utf8Regex.Pcre2.Tests" { "pcre2" }
-        }
-        $consumerRoot = (New-Item -ItemType Directory -Path (Join-Path $attemptRoot "consumers/$consumerName")).FullName
-        $testDirectory = (New-Item -ItemType Directory -Path (Join-Path $consumerRoot "tests")).FullName
-        $cache = (New-Item -ItemType Directory -Path (Join-Path $consumerRoot "cache")).FullName
-        $packageIds = @("Lokad.Utf8Regex")
-        if ($testProjectName -eq "Lokad.Utf8Regex.PythonRe.Tests") {
-            $packageIds += "Lokad.Utf8Regex.PythonRe"
-        }
-        if ($testProjectName -eq "Lokad.Utf8Regex.Pcre2.Tests") { $packageIds += "Lokad.Utf8Regex.Pcre2" }
-        $resultsDirectory = Join-Path $consumerRoot "results"
-        Invoke-CandidateStep "consumer/$testProjectName" {
-            Invoke-IsolatedConsumerTests -RepositoryRoot $repositoryRoot -QualificationRoot $consumerRoot `
-                -PackageDirectory $feed -TestDirectory $testDirectory -PackageCache $cache -Configuration $Configuration `
-                -SourceTestProjectName $testProjectName -PackageIds $packageIds -Version $version `
-                -PinQualifiedPackageSources -TestResultsDirectory $resultsDirectory
-        }
-        [xml] $trx = Get-Content -LiteralPath (Join-Path $resultsDirectory "qualified.trx")
-        $counts = $trx.SelectSingleNode("/*[local-name()='TestRun']/*[local-name()='ResultSummary']/*[local-name()='Counters']")
-        if ($null -eq $counts -or [int]$counts.total -le 0 -or
-            [int]$counts.passed -ne [int]$counts.total -or [int]$counts.failed -ne 0) {
-            throw "The $testProjectName consumer did not pass every discovered test."
-        }
-        [xml] $project = Get-Content -LiteralPath (Join-Path $testDirectory "$testProjectName.csproj")
-        if ($project.SelectNodes("//ProjectReference").Count -ne 0) { throw "Project reference remained in $testProjectName." }
-        [xml] $sourceProject = Get-Content -LiteralPath (Join-Path $repositoryRoot "tests/$testProjectName/$testProjectName.csproj")
-        $linkedSources = @(foreach ($compile in @($sourceProject.SelectNodes("//Compile[@Include and @Link]"))) {
-            $sourcePath = [IO.Path]::GetFullPath((Join-Path $repositoryRoot "tests/$testProjectName/$($compile.GetAttribute('Include'))"))
-            $detachedPath = Join-Path $consumerRoot "linked-source/$($compile.GetAttribute('Link'))"
-            $sourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
-            if ((Get-FileHash -LiteralPath $detachedPath -Algorithm SHA256).Hash -ne $sourceHash) {
-                throw "Linked fixture source changed for $testProjectName."
+        foreach ($framework in $frameworks) {
+            # Short storage names keep dependency paths below legacy Windows limits.
+            $consumerName = switch ($testProjectName) {
+                "Lokad.Utf8Regex.Tests" { "core" }
+                "Lokad.Utf8Regex.DiffTests" { "diff" }
+                "Lokad.Utf8Regex.PythonRe.Tests" { "pythonre" }
+                "Lokad.Utf8Regex.Pcre2.Tests" { "pcre2" }
             }
-            [ordered]@{ Source = [IO.Path]::GetRelativePath($repositoryRoot, $sourcePath)
-                RelativePath = "consumers/$consumerName/linked-source/$($compile.GetAttribute('Link'))"; Sha256 = $sourceHash }
-        })
-        $lockPath = Join-Path $testDirectory "packages.lock.json"
-        $packageLock = Get-Content -LiteralPath $lockPath -Raw | ConvertFrom-Json -AsHashtable
-        $identities = @(foreach ($packageId in $packageIds) {
-            $record = @($packageRecords | Where-Object Id -EQ $packageId)[0]
-            $lowerId = $packageId.ToLowerInvariant()
-            $cachedRoot = Join-Path $cache "$lowerId/$version"
-            $cachedPackage = Join-Path $cachedRoot "$lowerId.$version.nupkg"
-            $cachedAssembly = Join-Path $cachedRoot "lib/net10.0/$packageId.dll"
-            $consumerAssembly = Join-Path $testDirectory "bin/$Configuration/net10.0/$packageId.dll"
-            $locked = $packageLock.dependencies["net10.0"][$packageId]
-            $cachedMetadata = Get-Content -LiteralPath (Join-Path $cachedRoot ".nupkg.metadata") -Raw | ConvertFrom-Json
-            if ((Get-FileHash -LiteralPath $cachedPackage -Algorithm SHA256).Hash -ne $record.PackageSha256 -or
-                (Get-FileHash -LiteralPath $cachedAssembly -Algorithm SHA256).Hash -ne $record.AssemblySha256 -or
-                (Get-FileHash -LiteralPath $consumerAssembly -Algorithm SHA256).Hash -ne $record.AssemblySha256 -or
-                $locked.resolved -ne $version -or $locked.contentHash -ne $record.PackageSha512Base64 -or
-                $cachedMetadata.source -ne $feed -or $cachedMetadata.contentHash -ne $record.PackageSha512Base64) {
-                throw "Feed/cache/lock/consumer identity disagreement for $testProjectName / $packageId."
+            $consumerName += "/$framework"
+            $consumerRoot = (New-Item -ItemType Directory -Path (Join-Path $attemptRoot "consumers/$consumerName")).FullName
+            $testDirectory = (New-Item -ItemType Directory -Path (Join-Path $consumerRoot "tests")).FullName
+            $cache = (New-Item -ItemType Directory -Path (Join-Path $consumerRoot "cache")).FullName
+            $packageIds = @("Lokad.Utf8Regex")
+            if ($testProjectName -eq "Lokad.Utf8Regex.PythonRe.Tests") {
+                $packageIds += "Lokad.Utf8Regex.PythonRe"
             }
-            [ordered]@{ Id = $packageId; Version = $version; PackageSha256 = $record.PackageSha256
-                PackageSha512Base64 = $record.PackageSha512Base64; AssemblySha256 = $record.AssemblySha256 }
-        })
-        $consumerRecords.Add([ordered]@{
-            TestProject = $testProjectName; Total = [int]$counts.total; Passed = [int]$counts.passed; Failed = [int]$counts.failed
-            ProjectReferences = 0; Packages = $identities
-            LinkedSources = $linkedSources
-            ResultsRelativePath = "consumers/$consumerName/results/qualified.trx"
-            ResultsSha256 = (Get-FileHash -LiteralPath (Join-Path $resultsDirectory "qualified.trx") -Algorithm SHA256).Hash
-            LockRelativePath = "consumers/$consumerName/tests/packages.lock.json"
-            LockSha256 = (Get-FileHash -LiteralPath $lockPath -Algorithm SHA256).Hash
-        })
+            if ($testProjectName -eq "Lokad.Utf8Regex.Pcre2.Tests") { $packageIds += "Lokad.Utf8Regex.Pcre2" }
+            $resultsDirectory = Join-Path $consumerRoot "results"
+            Invoke-CandidateStep "consumer/$testProjectName/$framework" {
+                Invoke-IsolatedConsumerTests -RepositoryRoot $repositoryRoot -QualificationRoot $consumerRoot `
+                    -PackageDirectory $feed -TestDirectory $testDirectory -PackageCache $cache -Configuration $Configuration `
+                    -SourceTestProjectName $testProjectName -PackageIds $packageIds -Version $version `
+                    -PinQualifiedPackageSources -TestResultsDirectory $resultsDirectory -TargetFramework $framework
+            }
+            [xml] $trx = Get-Content -LiteralPath (Join-Path $resultsDirectory "qualified.trx")
+            $counts = $trx.SelectSingleNode("/*[local-name()='TestRun']/*[local-name()='ResultSummary']/*[local-name()='Counters']")
+            if ($null -eq $counts -or [int]$counts.total -le 0 -or
+                [int]$counts.passed -ne [int]$counts.total -or [int]$counts.failed -ne 0) {
+                throw "The $testProjectName consumer did not pass every discovered test."
+            }
+            [xml] $project = Get-Content -LiteralPath (Join-Path $testDirectory "$testProjectName.csproj")
+            if ($project.SelectNodes("//ProjectReference").Count -ne 0) { throw "Project reference remained in $testProjectName." }
+            [xml] $sourceProject = Get-Content -LiteralPath (Join-Path $repositoryRoot "tests/$testProjectName/$testProjectName.csproj")
+            $linkedSources = @(foreach ($compile in @($sourceProject.SelectNodes("//Compile[@Include and @Link]"))) {
+                $sourcePath = [IO.Path]::GetFullPath((Join-Path $repositoryRoot "tests/$testProjectName/$($compile.GetAttribute('Include'))"))
+                $detachedPath = Join-Path $consumerRoot "linked-source/$($compile.GetAttribute('Link'))"
+                $sourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash
+                if ((Get-FileHash -LiteralPath $detachedPath -Algorithm SHA256).Hash -ne $sourceHash) {
+                    throw "Linked fixture source changed for $testProjectName."
+                }
+                [ordered]@{ Source = [IO.Path]::GetRelativePath($repositoryRoot, $sourcePath)
+                    RelativePath = "consumers/$consumerName/linked-source/$($compile.GetAttribute('Link'))"; Sha256 = $sourceHash }
+            })
+            $lockPath = Join-Path $testDirectory "packages.lock.json"
+            $packageLock = Get-Content -LiteralPath $lockPath -Raw | ConvertFrom-Json -AsHashtable
+            $identities = @(foreach ($packageId in $packageIds) {
+                $record = @($packageRecords | Where-Object { $_.Id -eq $packageId -and $_.TargetFramework -eq $framework })[0]
+                $lowerId = $packageId.ToLowerInvariant()
+                $cachedRoot = Join-Path $cache "$lowerId/$version"
+                $cachedPackage = Join-Path $cachedRoot "$lowerId.$version.nupkg"
+                $cachedAssembly = Join-Path $cachedRoot "lib/$framework/$packageId.dll"
+                $consumerAssembly = Join-Path $testDirectory "bin/$Configuration/$framework/$packageId.dll"
+                $locked = $packageLock.dependencies[$framework][$packageId]
+                $cachedMetadata = Get-Content -LiteralPath (Join-Path $cachedRoot ".nupkg.metadata") -Raw | ConvertFrom-Json
+                if ((Get-FileHash -LiteralPath $cachedPackage -Algorithm SHA256).Hash -ne $record.PackageSha256 -or
+                    (Get-FileHash -LiteralPath $cachedAssembly -Algorithm SHA256).Hash -ne $record.AssemblySha256 -or
+                    (Get-FileHash -LiteralPath $consumerAssembly -Algorithm SHA256).Hash -ne $record.AssemblySha256 -or
+                    $locked.resolved -ne $version -or $locked.contentHash -ne $record.PackageSha512Base64 -or
+                    $cachedMetadata.source -ne $feed -or $cachedMetadata.contentHash -ne $record.PackageSha512Base64) {
+                    throw "Feed/cache/lock/consumer identity disagreement for $testProjectName / $packageId."
+                }
+                [ordered]@{ Id = $packageId; Version = $version; PackageSha256 = $record.PackageSha256
+                    PackageSha512Base64 = $record.PackageSha512Base64; AssemblySha256 = $record.AssemblySha256 }
+            })
+            $consumerRecords.Add([ordered]@{
+                TestProject = $testProjectName; TargetFramework = $framework; Total = [int]$counts.total; Passed = [int]$counts.passed; Failed = [int]$counts.failed
+                ProjectReferences = 0; Packages = $identities
+                LinkedSources = $linkedSources
+                ResultsRelativePath = "consumers/$consumerName/results/qualified.trx"
+                ResultsSha256 = (Get-FileHash -LiteralPath (Join-Path $resultsDirectory "qualified.trx") -Algorithm SHA256).Hash
+                LockRelativePath = "consumers/$consumerName/tests/packages.lock.json"
+                LockSha256 = (Get-FileHash -LiteralPath $lockPath -Algorithm SHA256).Hash
+            })
+        }
     }
     [void] (Read-PackageQualificationSource $repositoryRoot $sourceRevision $true)
     # Relative feed paths survive the atomic move. Consumer configs retain the
@@ -232,8 +237,8 @@ $patterns
     [void] (Stop-Transcript)
     $transcriptStarted = $false
     $manifest = [ordered]@{
-        SchemaVersion = 1; PackageVersion = $version; SourceRevision = $sourceRevision; CleanSource = $true
-        Configuration = $Configuration; TargetFramework = "net10.0"
+        SchemaVersion = 2; PackageVersion = $version; SourceRevision = $sourceRevision; CleanSource = $true
+        Configuration = $Configuration; TargetFrameworks = $frameworks
         StartedAtUtc = $startedAt.ToString("O"); CompletedAtUtc = [DateTime]::UtcNow.ToString("O")
         QualificationScope = "Selected Core/adapter candidate; detached package fixtures (Category!=SourceOnly), exact provenance and restore identities. Source/layout/historical-snapshot guards remain in source CI. Other platforms, broader profiles, downstream adoption, performance and publication are separate acceptance steps."
         Published = $false; BuildCount = $(if ($SkipBuild) { 0 } else { $buildProjects.Count }); PackCountPerPackage = 1

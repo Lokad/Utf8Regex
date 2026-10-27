@@ -126,7 +126,7 @@ public sealed class Utf8SliceInlineTests
     [MemberData(nameof(ParserDeclines))]
     public void InlineInvalidShapesFailOwnedConstruction(string pattern)
     {
-        Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
+        // Owned grammar admission stays stable when the runtime adds syntax.
         Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
     }
 

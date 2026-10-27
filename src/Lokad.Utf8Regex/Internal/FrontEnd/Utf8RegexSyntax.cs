@@ -9,8 +9,8 @@ internal static class Utf8RegexSyntax
 
     /// <summary>
     /// Owned option validation matching <c>System.Text.RegularExpressions.Regex.ValidateOptions</c>
-    /// at <c>external/runtime</c> <c>9ffface2f3f</c> (and identical in assessed .NET 11 RC1
-    /// <c>ab19415702aa</c>). Throws <see cref="ArgumentOutOfRangeException"/> with
+    /// at <c>external/runtime</c> <c>9ffface2f3f</c>. .NET 11 runtime support
+    /// retains this admitted set; its new AnyNewLine option is unsupported. Throws <see cref="ArgumentOutOfRangeException"/> with
     /// <c>ParamName == "options"</c> for undefined bits and for the two documented
     /// incompatible combinations (ECMAScript scope and NonBacktracking scope).
     /// This replaces the former BCL-construction probe without changing observable behavior.

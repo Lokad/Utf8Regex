@@ -1,5 +1,7 @@
 param(
     [string]$Configuration = "Debug",
+    [ValidateSet("net10.0", "net11.0")]
+    [string]$Framework,
     [switch]$SkipBuild,
     [string]$Filter,
     [string]$Project = "Lokad.Utf8Regex.slnx",
@@ -88,6 +90,7 @@ if (-not $SkipBuild) {
         "-p:GeneratePackageOnBuild=false"
     )
 
+    if ($Framework) { $buildArguments += @("--framework", $Framework) }
     $buildExitCode = Invoke-DotNetWithRetry -Arguments $buildArguments -MaxAttempts $RetryCount
     if ($buildExitCode -ne 0) {
         exit $buildExitCode
@@ -105,6 +108,7 @@ $testArguments = @(
     "--no-restore"
 )
 
+if ($Framework) { $testArguments += @("--framework", $Framework) }
 if ($Filter) {
     $testArguments += @("--filter", $Filter)
 }

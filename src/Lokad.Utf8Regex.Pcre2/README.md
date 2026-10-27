@@ -1,7 +1,7 @@
 # Lokad.Utf8Regex.Pcre2
 
-**0.4.0**, .NET 10. A strictly managed, UTF-8-native selected PCRE2 10.47
-standard profile, requiring exactly `Lokad.Utf8Regex [0.4.0]`. It can coexist
+**0.5.0 development**, .NET 10 and .NET 11. A strictly managed, UTF-8-native selected PCRE2 10.47
+standard profile, requiring exactly `Lokad.Utf8Regex [0.5.0-dev]`. It can coexist
 with PythonRe at the same version. There is no P/Invoke, native PCRE2 binary,
 RID-specific payload or implementation dependency other than Core and the BCL.
 
