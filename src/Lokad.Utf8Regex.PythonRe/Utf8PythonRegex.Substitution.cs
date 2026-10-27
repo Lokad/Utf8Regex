@@ -9,7 +9,7 @@ using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
-// PLAN.md D09: substitution entry points, split from the Python facade along the substitution ownership boundary.
+// substitution entry points, split from the Python facade along the substitution ownership boundary.
 /// <summary>Substitution entry points for <see cref="Utf8PythonRegex"/>.</summary>
 public sealed partial class Utf8PythonRegex
 {
@@ -20,7 +20,7 @@ public sealed partial class Utf8PythonRegex
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int count) =>
         Replace(input, replacement, count, 0);
 
-    // PLAN.md D03: replacement templates are parsed once per distinct template and shared across operations; failures are never retained.
+    // replacement templates are parsed once per distinct template and shared across operations; failures are never retained.
     private PythonReReplacementPlan GetReplacementPlan(string replacement) =>
         _replacementPlanCache.GetOrAdd(
             replacement,

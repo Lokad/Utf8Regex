@@ -6,7 +6,7 @@ using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
-// PLAN.md D09: UTF-8 backend engines, split from the Python facade along the backend ownership boundary.
+// UTF-8 backend engines, split from the Python facade along the backend ownership boundary.
 /// <summary>UTF-8 backend engines for <see cref="Utf8PythonRegex"/>.</summary>
 public sealed partial class Utf8PythonRegex
 {

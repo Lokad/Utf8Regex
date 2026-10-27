@@ -1,6 +1,6 @@
 namespace Lokad.Utf8Regex.PythonRe;
 
-// PLAN.md D09: detailed match entry points, split from the Python facade along the detailed-match ownership boundary.
+// detailed match entry points, split from the Python facade along the detailed-match ownership boundary.
 /// <summary>Detailed match entry points for <see cref="Utf8PythonRegex"/>.</summary>
 public sealed partial class Utf8PythonRegex
 {

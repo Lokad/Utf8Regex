@@ -602,7 +602,7 @@ public sealed class Utf8ValidationTests
     [Fact]
     public void ThrowIfInvalidOnlyAgreesWithBclOracleOnAdversarialLeads()
     {
-        // PLAN.md W1: guards the SIMD lead-classification matrix (ASCII,
+        // guards the SIMD lead-classification matrix (ASCII,
         // two-byte, safe/constrained three-byte, four-byte, overlong and
         // surrogate leads) at every 32-byte alignment reviewers of the
         // validation drain may disturb.

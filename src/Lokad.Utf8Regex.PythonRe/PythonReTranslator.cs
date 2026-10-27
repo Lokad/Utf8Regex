@@ -9,7 +9,7 @@ internal static partial class PythonReTranslator
 
     public static bool CanMatchEmpty(PythonReNode node, PythonReParseResult parseResult)
     {
-        // Backreferences keep CPython getwidth content semantics (PLAN.md C10): a backreference to an unset group fails in both CPython 3.13.2 and .NET 10 (verified: `(a)?b\1` on "b" matches in neither), so in every successful match each executed backreference contributes at least its group's content minimum, while alternation minima and zeroable quantifiers already absorb non-executed positions. The structural minimum is therefore a lower bound over successful matches: zero keeps the general route (always safe) and a positive minimum proves no empty match exists.
+        // Backreferences keep CPython getwidth content semantics: a backreference to an unset group fails in both CPython 3.13.2 and .NET 10 (verified: `(a)?b\1` on "b" matches in neither), so in every successful match each executed backreference contributes at least its group's content minimum, while alternation minima and zeroable quantifiers already absorb non-executed positions. The structural minimum is therefore a lower bound over successful matches: zero keeps the general route (always safe) and a positive minimum proves no empty match exists.
         return GetWidth(node, parseResult).Min == 0;
     }
 

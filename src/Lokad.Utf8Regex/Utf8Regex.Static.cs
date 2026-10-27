@@ -12,7 +12,7 @@ using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex;
 
-// PLAN.md D09: static entry points, split from the instance facade along the stateless-entry ownership boundary.
+// static entry points, split from the instance facade along the stateless-entry ownership boundary.
 /// <summary>Static entry points for <see cref="Utf8Regex"/>.</summary>
 public sealed partial class Utf8Regex
 {

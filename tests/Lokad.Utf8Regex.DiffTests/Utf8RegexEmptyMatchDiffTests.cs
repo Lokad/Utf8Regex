@@ -32,7 +32,7 @@ public sealed class Utf8RegexEmptyMatchDiffTests
     [MemberData(nameof(EmptyCapableCases))]
     public void EmptyCapableCountMatchesRuntime(string pattern, string input)
     {
-        // PLAN.md M1: global loops must advance identically after empty and
+        // global loops must advance identically after empty and
         // nonempty matches; the oracle defines the retry contract.
         RegexParityContext.Create(pattern, input, RegexOptions.CultureInvariant).AssertCountParity();
     }

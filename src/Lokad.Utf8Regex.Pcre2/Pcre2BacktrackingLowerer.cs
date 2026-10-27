@@ -7,7 +7,7 @@ using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
-// PLAN.md D09: backtracking lowerer, split from the compiler collection along the lowering ownership boundary.
+// backtracking lowerer, split from the compiler collection along the lowering ownership boundary.
 internal sealed class Pcre2BacktrackingLowerer
 {
     private readonly Utf8ConstructionBuffer<Pcre2BacktrackingInstruction> _instructions = new(Utf8ConstructionScope.CurrentBudget, true);

@@ -13,7 +13,7 @@ internal sealed partial class PythonReParser
     private const string AsciiSpaceClass = @"[\t\n\r\f\v ]";
     private const string AsciiNonSpaceClass = @"(?:(?![\t\n\r\f\v ])" + UnicodeScalarPattern + ")";
     internal const string AsciiWordBoundary = @"(?:(?<![A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<=[A-Za-z0-9_])(?![A-Za-z0-9_]))";
-    // PLAN.md C08: `\B` fails on an empty range in CPython (beginning == end rejects both boundary kinds) while .NET matches empty. The guard fails only when the subject itself is empty, which coincides with an empty range because this API has no endpos parameter.
+    // `\B` fails on an empty range in CPython (beginning == end rejects both boundary kinds) while .NET matches empty. The guard fails only when the subject itself is empty, which coincides with an empty range because this API has no endpos parameter.
     internal const string AsciiNonWordBoundary = @"(?:(?!\A\z)(?:(?<=[A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<![A-Za-z0-9_])(?![A-Za-z0-9_])))";
     // Semantic fragments identify pinned predicates and native planning atoms.
     // The scalar compiler lowers them directly with pinned profile predicates;
@@ -228,7 +228,7 @@ internal sealed partial class PythonReParser
 
         if (TryConsume('.'))
         {
-            // PLAN.md C06: `.` matches one scalar, not one UTF-16 unit. The text is fixed at parse time from the DotAll scope so shape analyses keep keying on the Dot kind; ASCII mode does not restrict dot.
+            // `.` matches one scalar, not one UTF-16 unit. The text is fixed at parse time from the DotAll scope so shape analyses keep keying on the Dot kind; ASCII mode does not restrict dot.
             var dot = (options & PythonReCompileOptions.DotAll) != 0 ? UnicodeScalarPattern : UnicodeScalarDot;
             return PythonReAstFactory.Raw(dot, PythonReRawKind.Dot);
         }
@@ -246,7 +246,7 @@ internal sealed partial class PythonReParser
         var literal = ReadRawPatternScalar(Consume());
         if (literal > char.MaxValue)
         {
-            // PLAN.md C06: tokenize one scalar before quantification so a repeat binds the whole pair. Mirrors the astral escape path: explicit case partners when folding needs them, otherwise one escaped pair atom.
+            // tokenize one scalar before quantification so a repeat binds the whole pair. Mirrors the astral escape path: explicit case partners when folding needs them, otherwise one escaped pair atom.
             return ExpandIgnoreCaseScalar(literal, options)
                 ?? PythonReAstFactory.Raw(Utf8ConstructionText.EscapeScalar(literal), PythonReRawKind.AstralLiteral);
         }

@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// PLAN.md C13: literal search plans dropped leading and middle lookarounds of
+// literal search plans dropped leading and middle lookarounds of
 // either direction and miscompiled trailing lookbehind as a forward guard,
 // while MatchDetailed on the same inputs was already correct. Every row below
 // failed on at least one value API before the direction-aware admission fix

@@ -22,9 +22,10 @@ defects: **do not publish those PCRE2 bytes**. Its
 [identities](../Experiments/ReleaseCandidate-20261020/release.json) and
 [qualification scope](../../src/Lokad.Utf8Regex.Pcre2/QUALIFICATION.md) retain
 their original scope. Detailed local-only handoffs are absent from a source
-checkout. Source remains **0.4.0-rc.2-dev**; see
-[current performance evidence](../../CURRENT-PERFORMANCE.md) for later work and
-its limitations. No new throughput or benchmark Status claim follows.
+checkout. For current source/candidate status, use the
+[qualification page](../../src/Lokad.Utf8Regex.Pcre2/QUALIFICATION.md) and
+[current operating-cost evidence](../../CURRENT-PERFORMANCE.md).
+This historical ledger establishes no current throughput or benchmark Status.
 
 The legacy `--emit-pcre2-perf-ledger` and `--emit-pcre2-managed-perf-ledger`
 producers are retired. Use the snapshot/generated page and retained per-case

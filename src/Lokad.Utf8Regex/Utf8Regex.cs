@@ -1489,7 +1489,7 @@ public sealed partial class Utf8Regex
             TryUseAsciiInputValidationShortcut(input);
 
         // An ASCII whole-match is incomplete for non-ASCII input unless the
-        // simple-pattern plan is UTF-8 byte-safe (PLAN.md C01): a miss must not
+        // simple-pattern plan is UTF-8 byte-safe: a miss must not
         // shortcut Unicode verification. Those inputs fall through to full
         // validation and the compiled engine, which selects the semantic fallback.
         var requiresUnicodeVerification =

@@ -6,7 +6,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8ExecutionInterpreter
 {
-    // PLAN.md D06: single owner for the interpreter-backed simple-pattern Count loop; both compiled runtimes reach it only after their route-specific preconditions.
+    // single owner for the interpreter-backed simple-pattern Count loop; both compiled runtimes reach it only after their route-specific preconditions.
     internal static int CountSimplePattern(
         ReadOnlySpan<byte> input,
         in Utf8SearchPlan searchPlan,

@@ -2,7 +2,7 @@ using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
-// PLAN.md D09: value entry points, split from the Python facade along the value-operation ownership boundary.
+// value entry points, split from the Python facade along the value-operation ownership boundary.
 /// <summary>Value entry points for <see cref="Utf8PythonRegex"/>.</summary>
 public sealed partial class Utf8PythonRegex
 {

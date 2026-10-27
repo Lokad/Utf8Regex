@@ -12,7 +12,7 @@ using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex;
 
-// PLAN.md D09: byte-offset adapters and direct probes, split from the matching facade along the operation-adapter ownership boundary.
+// byte-offset adapters and direct probes, split from the matching facade along the operation-adapter ownership boundary.
 /// <summary>Byte-offset operation adapters and direct probes for <see cref="Utf8Regex"/>.</summary>
 public sealed partial class Utf8Regex
 {

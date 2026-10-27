@@ -22,7 +22,7 @@ public sealed class Utf8RegexBackreferenceDiffTests
     [MemberData(nameof(BackreferenceCases))]
     public void BackreferenceCountMatchesRuntime(string pattern, string input)
     {
-        // PLAN.md M1: backreferences reuse capture slots across global retries;
+        // backreferences reuse capture slots across global retries;
         // the oracle defines the per-retry contract.
         RegexParityContext.Create(pattern, input, RegexOptions.CultureInvariant).AssertCountParity();
     }

@@ -1,6 +1,6 @@
 namespace Lokad.Utf8Regex.PythonRe;
 
-// PLAN.md D09: split entry points, split from the Python facade along the split ownership boundary.
+// split entry points, split from the Python facade along the split ownership boundary.
 /// <summary>Split entry points for <see cref="Utf8PythonRegex"/>.</summary>
 public sealed partial class Utf8PythonRegex
 {

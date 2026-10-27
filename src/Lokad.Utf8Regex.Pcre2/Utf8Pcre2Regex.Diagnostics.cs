@@ -1,6 +1,6 @@
 namespace Lokad.Utf8Regex.Pcre2;
 
-// PLAN.md D09: diagnostic and debug-projection operations, split from the matching facade along the diagnostics ownership boundary.
+// diagnostic and debug-projection operations, split from the matching facade along the diagnostics ownership boundary.
 /// <summary>Diagnostic and debug-projection operations for <see cref="Utf8Pcre2Regex"/>.</summary>
 public sealed partial class Utf8Pcre2Regex
 {

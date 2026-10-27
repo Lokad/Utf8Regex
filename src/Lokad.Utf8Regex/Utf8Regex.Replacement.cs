@@ -12,7 +12,7 @@ using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex;
 
-// PLAN.md D09: replacement execution cores, split from the matching facade along the replacement ownership boundary.
+// replacement execution cores, split from the matching facade along the replacement ownership boundary.
 /// <summary>Replacement execution cores for <see cref="Utf8Regex"/>.</summary>
 public sealed partial class Utf8Regex
 {

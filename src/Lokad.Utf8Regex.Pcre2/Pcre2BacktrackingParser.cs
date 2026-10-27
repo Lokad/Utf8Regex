@@ -7,7 +7,7 @@ using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
-// PLAN.md D09: backtracking parser, split from the compiler collection along the parse ownership boundary.
+// backtracking parser, split from the compiler collection along the parse ownership boundary.
 internal sealed class Pcre2BacktrackingParser
 {
     private readonly Pcre2CompileRequest _request;

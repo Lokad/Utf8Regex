@@ -3,7 +3,7 @@ using Lokad.Utf8Regex.PythonRe;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
-// PLAN.md C08: the facade mixed whole-subject matching with sliced suffixes, so
+// the facade mixed whole-subject matching with sliced suffixes, so
 // `^` matched slice starts, lookbehind lost its prefix (and value/detailed
 // disagreed), `\Z` admitted a trailing newline, and `\B` matched the empty
 // subject. Offsets now follow Python `pos` semantics with intact context on every

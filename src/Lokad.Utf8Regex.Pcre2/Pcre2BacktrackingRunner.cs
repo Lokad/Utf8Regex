@@ -7,7 +7,7 @@ using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
-// PLAN.md D09: backtracking execution state and runner, split from the compiler collection along the execution ownership boundary.
+// backtracking execution state and runner, split from the compiler collection along the execution ownership boundary.
 internal enum Pcre2BacktrackingResumeAction : byte
 {
     None = 0,

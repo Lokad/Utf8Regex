@@ -2,7 +2,7 @@ using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-// PLAN.md C11: callout rejection used a raw (?C substring scan, so callout-looking text inside a class, a quoted literal, a comment, or behind an escape was rejected although native PCRE2 reads it literally. The same audit covers the sibling raw scans and the compatible-backend routing.
+// callout rejection used a raw (?C substring scan, so callout-looking text inside a class, a quoted literal, a comment, or behind an escape was rejected although native PCRE2 reads it literally. The same audit covers the sibling raw scans and the compatible-backend routing.
 public sealed class Pcre2CalloutCompilerTests
 {
     [Fact]

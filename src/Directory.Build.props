@@ -1,5 +1,5 @@
 <Project>
-  <!-- Shared release metadata for the three shipped packages (PLAN.md D08).
+  <!-- Shared release metadata for the three shipped packages.
        Per-package identity (PackageId/Title/Description/Tags/README asset)
        and project references stay in the individual project files. -->
   <Import Project="..\Directory.Build.props" />

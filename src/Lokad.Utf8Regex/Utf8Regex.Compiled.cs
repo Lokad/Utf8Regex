@@ -13,7 +13,7 @@ using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex;
 
-// PLAN.md D09: compiled execution engines, split from the matching facade along the execution-engine ownership boundary.
+// compiled execution engines, split from the matching facade along the execution-engine ownership boundary.
 /// <summary>Compiled execution engines for <see cref="Utf8Regex"/>.</summary>
 public sealed partial class Utf8Regex
 {

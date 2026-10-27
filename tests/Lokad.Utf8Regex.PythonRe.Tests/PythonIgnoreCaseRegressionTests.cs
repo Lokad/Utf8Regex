@@ -3,7 +3,7 @@ using Lokad.Utf8Regex.PythonRe;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
-// PLAN.md C05: PythonRe converted IgnoreCase to invariant folding, missing
+// PythonRe converted IgnoreCase to invariant folding, missing
 // CPython-only fold partners (`i` vs U+0131/U+0130, `[a-z]` vs U+0130) and
 // over-matching ASCII-mode literals against non-ASCII partners (`k` vs U+212A
 // under Ascii|IgnoreCase). Expectations below are CPython 3.13.2 ground truth

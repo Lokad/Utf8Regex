@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// PLAN.md C01: core anchored Unicode Match loses valid matches.
+// core anchored Unicode Match loses valid matches.
 // `^\w$` on non-ASCII word characters selects AsciiSimplePattern with a
 // trailing-anchor fixed-length search. IsMatch and Count agreed with .NET
 // while Match reported no match.

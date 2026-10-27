@@ -8,7 +8,7 @@ using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
-// PLAN.md D09: find-all entry points, split from the Python facade along the find-all ownership boundary.
+// find-all entry points, split from the Python facade along the find-all ownership boundary.
 /// <summary>Find-all entry points for <see cref="Utf8PythonRegex"/>.</summary>
 public sealed partial class Utf8PythonRegex
 {

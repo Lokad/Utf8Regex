@@ -3,7 +3,7 @@ using Lokad.Utf8Regex.PythonRe;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
-// PLAN.md C07: Python numbers groups strictly by opening paren while .NET numbers
+// Python numbers groups strictly by opening paren while .NET numbers
 // unnamed groups first, so numeric backreferences, conditionals, replacement
 // references, and several result builders disagreed with CPython whenever a named
 // group preceded an unnamed one. Every surface below now indexes Python slots;

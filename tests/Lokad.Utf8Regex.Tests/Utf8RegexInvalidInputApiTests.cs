@@ -95,7 +95,7 @@ public sealed class Utf8RegexInvalidInputApiTests
     [InlineData(true)]
     public void InstanceEvaluatorAndCountedSplitApisRejectInvalidUtf8(bool compiled)
     {
-        // PLAN.md M1: user callbacks run inside replacement machinery that rents
+        // user callbacks run inside replacement machinery that rents
         // pooled buffers; malformed input must be rejected before any callback runs.
         var regex = CreateRegex(compiled);
         var calls = 0;

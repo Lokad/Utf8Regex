@@ -30,7 +30,7 @@ public sealed class Utf8RegexCacheTests
         Assert.Equal(before + 2, Utf8RegexCache.EntryCount);
     }
 
-    // PLAN.md D07: Compiled is execution-mode identity, not a shareable semantic
+    // Compiled is execution-mode identity, not a shareable semantic
     // option. Ordinary and compiled static requests keep separate entries.
     [Fact]
     public void CacheSeparatesCompiledExecutionMode()

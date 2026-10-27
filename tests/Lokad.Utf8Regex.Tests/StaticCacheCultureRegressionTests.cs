@@ -5,7 +5,7 @@ using Lokad.Utf8Regex.Internal.Caching;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// PLAN.md C02: the static core cache ignored the construction culture, so a
+// the static core cache ignored the construction culture, so a
 // culture-sensitive instance built under one culture was reused under another.
 // The oracle is System.Text.RegularExpressions, whose static cache keys the
 // effective construction culture.

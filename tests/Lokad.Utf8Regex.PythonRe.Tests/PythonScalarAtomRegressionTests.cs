@@ -3,7 +3,7 @@ using Lokad.Utf8Regex.PythonRe;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
-// PLAN.md C06: pattern atoms operated on UTF-16 halves instead of scalars. A
+// pattern atoms operated on UTF-16 halves instead of scalars. A
 // bare `.` matched one half, astral literals quantified only their trailing
 // half, complements reported half ranges, and the value extractor reinterpreted
 // split offsets as rune indices while offsets stayed split. Expectations below

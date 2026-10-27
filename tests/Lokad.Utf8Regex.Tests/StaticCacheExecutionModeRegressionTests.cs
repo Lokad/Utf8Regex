@@ -4,7 +4,7 @@ using Lokad.Utf8Regex.Internal.Caching;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// PLAN.md D07: the static core cache stripped RegexOptions.Compiled, so a
+// the static core cache stripped RegexOptions.Compiled, so a
 // static compiled request reused the ordinary cached instance and never
 // reached the compiled engine. Execution mode is part of the cache identity;
 // the prepared program stays shared underneath both entries.

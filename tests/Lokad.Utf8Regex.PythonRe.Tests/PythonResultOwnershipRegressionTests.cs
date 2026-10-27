@@ -3,7 +3,7 @@ using Lokad.Utf8Regex.PythonRe;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
-// PLAN.md C09: compiled name metadata escaped through result arrays, so mutating
+// compiled name metadata escaped through result arrays, so mutating
 // one result corrupted the regex instance for subsequent operations. Results and
 // lookup APIs now hand out owned arrays (empty entry arrays stay shared: they have
 // no slots to mutate).

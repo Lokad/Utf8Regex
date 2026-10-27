@@ -93,7 +93,7 @@ internal static class PythonReDotNetReference
     internal static RegexOptions ToRegexOptions(PythonReCompileOptions options)
     {
         var translated = RegexOptions.CultureInvariant;
-        // Top-level ASCII runs the backend case-sensitively (PLAN.md C05): every
+        // Top-level ASCII runs the backend case-sensitively: every
         // ASCII case pair is expanded explicitly at parse time, and a folding
         // backend could not exclude non-ASCII fold partners (U+212A and friends).
         // Scoped (?i:) regions still fold through inline flags.
@@ -186,7 +186,7 @@ internal static class PythonReDotNetReference
                 case PythonReCharacterClassPredefinedItem predefined:
                     if (predefined.IsStandaloneAtom)
                     {
-                        // Complete class atoms (PLAN.md C04): emitted as their own
+                        // Complete class atoms: emitted as their own
                         // alternation branch so astral scalars keep matching instead
                         // of being dropped by the BMP-only class below.
                         standaloneAtoms.Add(RenderFragment(predefined.RegexClassFragment));

@@ -12,7 +12,7 @@ using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex;
 
-// PLAN.md D09: scalar fallback execution and native verification, split from the matching facade.
+// scalar fallback execution and native verification, split from the matching facade.
 /// <summary>Scalar fallback execution and native verification for <see cref="Utf8Regex"/>.</summary>
 public sealed partial class Utf8Regex
 {
@@ -634,7 +634,7 @@ public sealed partial class Utf8Regex
     {
         // Anchored simple-pattern routes compare ASCII literals and classes without
         // Kelvin folding, while .NET matches U+212A against `k`/`K` under invariant
-        // IgnoreCase (PLAN.md C05). Fencing the whole kind when IgnoreCase is set is
+        // IgnoreCase. Fencing the whole kind when IgnoreCase is set is
         // conservative but exact: only Kelvin-containing inputs take the fallback.
         if (preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
             preparedRegex.SimplePatternPlan.IgnoreCase)

@@ -1,6 +1,6 @@
 namespace Lokad.Utf8Regex.PythonRe;
 
-// PLAN.md D09: iteration entry points, split from the Python facade along the iteration ownership boundary.
+// iteration entry points, split from the Python facade along the iteration ownership boundary.
 /// <summary>Iteration entry points for <see cref="Utf8PythonRegex"/>.</summary>
 public sealed partial class Utf8PythonRegex
 {

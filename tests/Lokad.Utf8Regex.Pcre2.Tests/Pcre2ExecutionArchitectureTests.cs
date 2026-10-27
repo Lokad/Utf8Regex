@@ -50,16 +50,17 @@ public sealed class Pcre2ExecutionArchitectureTests
     }
 
     [Fact]
-    public void Pcre2CursorsReferenceRegexOwnedCandidateSearchPlan()
+    public void Pcre2CursorsDoNotEmbedLargeCandidateSearchState()
     {
         foreach (var cursor in new[] { typeof(Pcre2DirectGlobalMatchCursor), typeof(Pcre2BacktrackingDetailedGlobalMatchCursor) })
         {
             var fields = cursor.GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            var candidate = Assert.Single(fields, static field => field.Name == "_candidateSearch");
-            Assert.Equal(typeof(Pcre2CandidateSearchPlan), candidate.FieldType);
-            Assert.True(candidate.IsInitOnly);
             Assert.DoesNotContain(fields, static field => field.FieldType == typeof(Pcre2CandidateSearchProgram));
         }
+        // Keep the actual cursor footprint bounded without prescribing a field
+        // name or the class used to reference immutable candidate-search state.
+        Assert.InRange(Pcre2DirectGlobalMatchCursor.DebugSizeInBytes, 1, 64 * IntPtr.Size);
+        Assert.InRange(Pcre2BacktrackingDetailedGlobalMatchCursor.DebugSizeInBytes, 1, 64 * IntPtr.Size);
     }
 
     [Fact]

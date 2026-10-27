@@ -3,7 +3,7 @@ using Lokad.Utf8Regex.PythonRe;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
-// PLAN.md C10: backreference widths were always (0, null), so every lookbehind over
+// backreference widths were always (0, null), so every lookbehind over
 // a backreference was rejected; verbose mode skipped char.IsWhiteSpace instead of
 // Python ASCII whitespace; and bare `\z` passed through although CPython rejects it.
 // Expectations are CPython 3.13.2 ground truth (see ground-c10*.py). Non-ASCII

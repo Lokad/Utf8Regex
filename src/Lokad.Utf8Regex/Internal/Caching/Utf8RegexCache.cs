@@ -32,12 +32,12 @@ internal static class Utf8RegexCache
     {
         if (pattern is null) throw new ArgumentNullException(nameof(pattern));
         var normalizedOptions = Utf8RegexSyntax.NormalizeNonSemanticOptions(options);
-        // Mirror System.Text.RegularExpressions.RegexCache (PLAN.md C02): the
+        // Mirror System.Text.RegularExpressions.RegexCache: the
         // effective construction culture is part of the cache identity, so a
         // culture-sensitive instance is never reused under another culture.
         // Invariant requests keep sharing one entry: their culture is constant.
         var culture = Utf8OwnedOptionPrelude.GetTargetCulture(normalizedOptions).ToString();
-        // PLAN.md D07: Compiled is execution-mode identity, not a shareable semantic option. The prepared program is identical for both modes, but engine selection differs, so each mode keeps its own cache entry.
+        // Compiled is execution-mode identity, not a shareable semantic option. The prepared program is identical for both modes, but engine selection differs, so each mode keeps its own cache entry.
         var keyOptions = normalizedOptions | (options & RegexOptions.Compiled);
         var key = new Utf8RegexCacheKey(pattern, culture, keyOptions, matchTimeout);
         return Cache.GetOrAdd(
