@@ -13,6 +13,37 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
     private const string Subject = "KILO cat";
 
     [Theory]
+    [InlineData("Sherlock Holmes|John Watson|Irene Adler", "é😀 sheRLock hOlmes λ John Watson 😀 IRENE ADLER")]
+    [InlineData("a|aaa", "éAAA😀a")]
+    [InlineData("aa|a", "éAAA😀a")]
+    [InlineData("(cat)|(horse)", "😀é CAT λ Horse")]
+    [InlineData(@"\b(?:cat|dog)\b", "éCAT😀 catDOG dog")]
+    [InlineData("kilo|cat|dog", "é😀 KILO CAT dog")]
+    [InlineData("sherlock|moriarty", "éſherlock SHERLOCK 😀 moriarty")]
+    [InlineData("cat||dog", "é😀 CAT dog")]
+    public void FoldedFamiliesKeepAllPublicOperationsOnMixedSubjects(string pattern, string text)
+    {
+        foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft,
+            RegexOptions.Compiled | RegexOptions.RightToLeft })
+        {
+            var options = mode | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+            var regex = new Utf8Regex(pattern, options);
+            var oracle = new Regex(pattern, options);
+            Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, oracle, [text]);
+        }
+    }
+
+    [Fact]
+    public void FoldedFamilyRejectsMalformedSuffixAfterEarlyMatch()
+    {
+        var regex = new Utf8Regex("cat|horse", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        byte[] input = [.. "é😀 CAT"u8, 0xF0, 0x80];
+        Assert.Throws<ArgumentException>(() => regex.IsMatch(input));
+        Assert.Throws<ArgumentException>(() => regex.Count(input));
+        Assert.Throws<ArgumentException>(() => regex.Match(input));
+    }
+
+    [Theory]
     [InlineData("kilo", false)]
     [InlineData("kilo", true)]
     [InlineData("KILO", false)]

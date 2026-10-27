@@ -380,7 +380,7 @@ public sealed partial class Utf8Regex
 
     private static void ValidateOptions(RegexOptions options)
     {
-        // R00: owned validation; no BCL regex construction. Matches BCL ValidateOptions semantics.
+        // Own the admitted option set; runtime upgrades do not extend the grammar.
         Utf8RegexSyntax.ValidateOptions(options);
     }
 
@@ -481,6 +481,13 @@ public sealed partial class Utf8Regex
         // shortcuts must not bypass a finite deadline or restart it after work.
         if (HasFiniteExecutionLimits || MatchTimeout != Regex.InfiniteMatchTimeout) return _ownedSliceProgram;
         if (_preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex) return _ownedSliceProgram;
+        // ASCII folded literals cannot start or end inside a UTF-8 scalar.
+        // Their non-ASCII fold partner (Kelvin sign) is checked below; unrelated
+        // Unicode elsewhere in the subject does not require scalar discovery.
+        var scalarAlignedLiteral = _preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or
+            NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals ||
+            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals &&
+            (Options & RegexOptions.CultureInvariant) != 0;
         if (_ownedSliceProgram.CanMatchEmpty && _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral ||
              _ownedSliceProgram.UsesInterpretedLazyLoopSemantics ||
              _ownedSliceProgram.HasSharedCaptureDeclarations ||
@@ -506,8 +513,7 @@ public sealed partial class Utf8Regex
              // Exact byte literals already preserve scalar endpoints. Native
              // boundary/class predicates need scalar qualification before they
              // can serve mixed subjects without the shared owned VM.
-             (_preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or
-                    NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals) ||
+             (!scalarAlignedLiteral ||
                  _preparedRegex.SearchPlan.HasBoundaryRequirements) &&
                 !Utf8InputAnalyzer.IsAscii(input))
             return _ownedSliceProgram;

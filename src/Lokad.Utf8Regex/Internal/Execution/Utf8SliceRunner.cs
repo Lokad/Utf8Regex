@@ -574,11 +574,20 @@ internal static partial class Utf8SliceRunner
             candidatePlan.Distance == 0 && candidatePlan.Kind is
                 Utf8SearchKind.ExactAsciiLiteral or
                 Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals;
+        var whitespaceLiteral = !seekLiteral && !program.RightToLeft && input.Length - fromByte >= 256 &&
+            invocation.IsUnmetered && invocation.CheckpointHook is null
+            ? GetLeadingWhitespaceLiteral(program) : -1;
+        var whitespaceWindowEnd = -1;
         var workspace = new AttemptWorkspace();
         try
         {
             while (true)
             {
+                if (whitespaceLiteral >= 0 && position > whitespaceWindowEnd)
+                {
+                    position = SeekLeadingWhitespaceLiteral(input, position, (byte)whitespaceLiteral, out whitespaceWindowEnd);
+                    if (position < 0) break;
+                }
                 // A mandatory initial strict-end anchor admits only EOF, even
                 // after an empty match. Keep original terminal authority when
                 // an offset or the preceding match has moved below that start.
