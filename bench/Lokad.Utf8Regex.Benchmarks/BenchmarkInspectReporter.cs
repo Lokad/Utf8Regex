@@ -1707,25 +1707,25 @@ internal static partial class BenchmarkInspectReporter
 
     private static void WriteReadmeDefaultTableHeader(StringWriter writer)
     {
-        writer.WriteLine("| Case | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU |");
+        writer.WriteLine("| Case | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed |");
         writer.WriteLine("|---|---:|---:|---:|");
     }
 
     private static void WriteReadmeCompiledTableHeader(StringWriter writer)
     {
-        writer.WriteLine("| Case | Utf8Regex Compiled CPU | .NET compiled predecoded CPU | .NET compiled + decode CPU |");
+        writer.WriteLine("| Case | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed |");
         writer.WriteLine("|---|---:|---:|---:|");
     }
 
     private static void WriteReadmePublicDefaultTableHeader(StringWriter writer)
     {
-        writer.WriteLine("| Case | Operation | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU |");
+        writer.WriteLine("| Case | Operation | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed |");
         writer.WriteLine("|---|---|---:|---:|---:|");
     }
 
     private static void WriteReadmePublicCompiledTableHeader(StringWriter writer)
     {
-        writer.WriteLine("| Case | Operation | Utf8Regex Compiled CPU | .NET compiled predecoded CPU | .NET compiled + decode CPU |");
+        writer.WriteLine("| Case | Operation | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed |");
         writer.WriteLine("|---|---|---:|---:|---:|");
     }
 
@@ -1921,7 +1921,7 @@ internal static partial class BenchmarkInspectReporter
     private static void WriteReadmeComparatorPolicy(StringWriter writer)
     {
         writer.WriteLine();
-        writer.WriteLine("Predecoded .NET is the primary CPU parity comparator. `.NET + decode` is a secondary end-to-end indicator.");
+        writer.WriteLine("Predecoded .NET is the primary comparator for execution time. `.NET + decode` is a secondary end-to-end indicator.");
     }
 
     private static IEnumerable<ReadmeBenchmarkSection> GetReadmeTargetsForCase(string caseId)

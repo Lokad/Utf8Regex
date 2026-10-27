@@ -322,7 +322,7 @@ internal static partial class PythonReBenchmarkReporter
         {
             writer.WriteLine("`vs decode` is `PythonRe / .NET + decode`; lower is better, and `1.00x` is exact median parity. Times are medians in microseconds per public operation.");
             writer.WriteLine();
-            writer.WriteLine("| Case | Operation | Input | PythonRe CPU | .NET predecoded CPU | .NET + decode CPU | vs decode | PythonRe alloc | .NET + decode alloc |");
+            writer.WriteLine("| Case | Operation | Input | PythonRe elapsed | .NET predecoded elapsed | .NET + decode elapsed | vs decode | PythonRe alloc | .NET + decode alloc |");
             writer.WriteLine("|---|---|---:|---:|---:|---:|---:|---:|---:|");
             foreach (var (caseId, measurement) in rows)
             {
