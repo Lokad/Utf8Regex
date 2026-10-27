@@ -1,0 +1,53 @@
+{
+  "Versions": [
+    "0.4.0-rc.3-dev\u002B45af53e50a12690886b6bd25c56e777f50beed08",
+    "0.4.0-rc.3-dev\u002Bff6a5f6cbdc3ad5c8ab455926144fdbcb68cf390"
+  ],
+  "Lanes": [
+    {
+      "Name": "unlimited/FullMatch-alternation-short",
+      "Expected": 2
+    },
+    {
+      "Name": "unlimited/FullMatchDetailed-unicode-lazy",
+      "Expected": 81
+    },
+    {
+      "Name": "unlimited/FullMatch-terminal-word",
+      "Expected": 1536
+    },
+    {
+      "Name": "unlimited/FullMatchToString-lazy",
+      "Expected": 128
+    },
+    {
+      "Name": "finite-live/FullMatch-alternation-short",
+      "Expected": 2
+    },
+    {
+      "Name": "finite-live/FullMatchDetailed-unicode-lazy",
+      "Expected": 81
+    },
+    {
+      "Name": "finite-live/FullMatch-terminal-word",
+      "Expected": 1536
+    },
+    {
+      "Name": "finite-live/FullMatchToString-lazy",
+      "Expected": 128
+    },
+    {
+      "Name": "Unchanged-native/Python-literal-FullMatch",
+      "Expected": 3
+    },
+    {
+      "Name": "Unchanged-control/Core-compiled-literal-Count",
+      "Expected": 2
+    },
+    {
+      "Name": "Default-VM-control/Core-Match",
+      "Expected": 129
+    }
+  ],
+  "Preflight": "All selected public outputs agree with independent expected checksums"
+}

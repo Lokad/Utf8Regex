@@ -1,0 +1,42 @@
+[
+  {
+    "Lane": "before",
+    "File": "Lokad.Utf8Regex.dll",
+    "Sha256": "6DCEE50BA95DA0F37C64426421EBC2374CFA0794C4805A4637E365C2988062DD"
+  },
+  {
+    "Lane": "before",
+    "File": "Lokad.Utf8Regex.pdb",
+    "Sha256": "F1F6DC0C265C332BAB5601575448D5515518803CFCD94E3A28CB568B824BB8C8"
+  },
+  {
+    "Lane": "before",
+    "File": "Lokad.Utf8Regex.PythonRe.dll",
+    "Sha256": "45B0CD9FF3598FDA4CB19C91E65959173A5EE84599B3D95B18BAD20FED334EFB"
+  },
+  {
+    "Lane": "before",
+    "File": "Lokad.Utf8Regex.PythonRe.pdb",
+    "Sha256": "B2491C2BA79FBB743DDB54C52A04546AD301F454DBBAF67824080E77CA990439"
+  },
+  {
+    "Lane": "after",
+    "File": "Lokad.Utf8Regex.dll",
+    "Sha256": "0C39DF876DFBFD695E071A2A629B76F87A78A977DC0CBD77ECA2F74D8A10542A"
+  },
+  {
+    "Lane": "after",
+    "File": "Lokad.Utf8Regex.pdb",
+    "Sha256": "732B96544DD9421448A9EF9C0B7877B1ACBD2F7662FAD0D86F6FC47FD51C0B37"
+  },
+  {
+    "Lane": "after",
+    "File": "Lokad.Utf8Regex.PythonRe.dll",
+    "Sha256": "ABBA00824210488DFD3DA61D1AE83206753D44F4CA4A68A293264F8EC6170154"
+  },
+  {
+    "Lane": "after",
+    "File": "Lokad.Utf8Regex.PythonRe.pdb",
+    "Sha256": "21BDC983052DD477DCE2C2C8CDE30B39CC3DB7EA6921257A2E5A6EB91E0D7C29"
+  }
+]

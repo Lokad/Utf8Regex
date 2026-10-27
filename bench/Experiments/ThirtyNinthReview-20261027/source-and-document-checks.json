@@ -1,0 +1,72 @@
+{
+  "FinalSource": "427f6b3495db945fb5ccf5e07227ef779d2553f2",
+  "ComparedWith": "45af53e50a12690886b6bd25c56e777f50beed08",
+  "ChangedProductionLines": 58,
+  "AllChangedProductionLinesAreComments": true,
+  "LocalDocumentLinks": [
+    {
+      "Source": "bench/Experiments/ThirtyNinthReview-20261027/README.md",
+      "Target": "PREDECLARED.md"
+    },
+    {
+      "Source": "bench/Experiments/ThirtyNinthReview-20261027/README.md",
+      "Target": "public-cost.json"
+    },
+    {
+      "Source": "bench/Experiments/ThirtyNinthReview-20261027/README.md",
+      "Target": "preflight.json"
+    },
+    {
+      "Source": "bench/Experiments/ThirtyNinthReview-20261027/README.md",
+      "Target": "measured-identities.json"
+    },
+    {
+      "Source": "bench/Experiments/ThirtyNinthReview-20261027/README.md",
+      "Target": "../ThirtySixthReview-20261026/cost-host.cs.txt"
+    },
+    {
+      "Source": "bench/Experiments/ThirtyNinthReview-20261027/README.md",
+      "Target": "../ThirtySixthReview-20261026/cost-host.csproj.txt"
+    },
+    {
+      "Source": "bench/Experiments/ThirtyNinthReview-20261027/README.md",
+      "Target": "../ReleaseCandidate2-20261026/ERRATA.md"
+    },
+    {
+      "Source": "bench/Experiments/ThirtyNinthReview-20261027/README.md",
+      "Target": "ci-source.json"
+    },
+    {
+      "Source": "bench/Experiments/ThirtyNinthReview-20261027/README.md",
+      "Target": "immutable-inputs.json"
+    },
+    {
+      "Source": "bench/Lokad.Utf8Regex.Benchmarks/Pcre2PerfLedger.md",
+      "Target": "../../PCRE2.Benchmarks.json"
+    },
+    {
+      "Source": "bench/Lokad.Utf8Regex.Benchmarks/Pcre2PerfLedger.md",
+      "Target": "../../src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md"
+    },
+    {
+      "Source": "bench/Lokad.Utf8Regex.Benchmarks/Pcre2PerfLedger.md",
+      "Target": "../Experiments/ReleaseCandidate-20261020/README.md"
+    },
+    {
+      "Source": "bench/Lokad.Utf8Regex.Benchmarks/Pcre2PerfLedger.md",
+      "Target": "../Experiments/ReleaseCandidate-20261020/release.json"
+    },
+    {
+      "Source": "bench/Lokad.Utf8Regex.Benchmarks/Pcre2PerfLedger.md",
+      "Target": "../../src/Lokad.Utf8Regex.Pcre2/QUALIFICATION.md"
+    },
+    {
+      "Source": "bench/Lokad.Utf8Regex.Benchmarks/Pcre2PerfLedger.md",
+      "Target": "../../src/Lokad.Utf8Regex.Pcre2/QUALIFICATION.md"
+    },
+    {
+      "Source": "bench/Lokad.Utf8Regex.Benchmarks/Pcre2PerfLedger.md",
+      "Target": "../../CURRENT-PERFORMANCE.md"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.PythonRe;
+
+public static class Lanes
+{
+    private static string? _text;
+    private static Utf8PythonDetailedMatchData _detailed;
+    private static Utf8PythonRegex[]? _constructed;
+    private static readonly CancellationTokenSource Live = new();
+    private static readonly Utf8ResourcePolicy Policy = new() { MaxWorkSteps=50_000_000, MaxDepth=4096,
+        MaxWorkingBytes=64*1024*1024, MaxResultBytes=128*1024*1024 };
+    public static string Producer() => typeof(Utf8PythonRegex).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
+    public static (string,Func<long>,long)[] Create()
+    {
+        var lanes = new List<(string,Func<long>,long)>();
+        foreach(var finite in new[]{false,true})
+        {
+            var prefix=finite?"finite-live/":"unlimited/";
+            var token=finite?Live.Token:default;
+            Utf8PythonRegex Prepare(string pattern) => new(pattern,default,Timeout.InfiniteTimeSpan,finite?Policy:default);
+            var shortRegex=Prepare("(?P<x>a|ab)");
+            lanes.Add((prefix+"FullMatch-alternation-short",()=>Value(shortRegex,"ab"u8,token),2));
+            var unicode=Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀a",16)));
+            var captures=Prepare("(?P<x>😀|a)+?");
+            var projected=captures.FullMatchDetailedData(unicode,0,token);
+            if(projected.LastIndex!=1 || projected.LastGroup!="x" || projected.Groups[1].ValueText!="a" || projected.Value.ValueText!=Encoding.UTF8.GetString(unicode)) throw new Exception("Capture preflight");
+            lanes.Add((prefix+"FullMatchDetailed-unicode-lazy",()=>Detailed(captures,unicode,token),unicode.Length+1));
+            var words=Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("éa",512)));
+            var word=Prepare(@"\w+");
+            lanes.Add((prefix+"FullMatch-terminal-word",()=>Value(word,words,token),words.Length));
+            var text=Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("ab",64)));
+            var shaped=Prepare("(ab|a)+?");
+            if(shaped.FullMatchToString(text,0,token)!=Encoding.UTF8.GetString(text)) throw new Exception("Text preflight");
+            lanes.Add((prefix+"FullMatchToString-lazy",()=>Text(shaped,text,token),text.Length));
+        }
+        var literal=new Utf8PythonRegex("cat");
+        lanes.Add(("Unchanged-native/Python-literal-FullMatch",()=>Value(literal,"cat"u8,default),3));
+        var coreLiteral=new Utf8Regex("abc",RegexOptions.CultureInvariant|RegexOptions.Compiled);
+        lanes.Add(("Unchanged-control/Core-compiled-literal-Count",()=>coreLiteral.Count("abc xabc"u8),2));
+        var coreVm=new Utf8Regex("(?=a)(a+?)b",RegexOptions.CultureInvariant);
+        var subject=Encoding.UTF8.GetBytes(new string('a',128)+"b");
+        lanes.Add(("Default-VM-control/Core-Match",()=>coreVm.Match(subject).LengthInBytes,subject.Length));
+        return lanes.ToArray();
+    }
+    private static long Value(Utf8PythonRegex regex,ReadOnlySpan<byte> input,CancellationToken token)
+    { var result=regex.FullMatch(input,0,token); return result.Success?result.EndOffsetInBytes:-1; }
+    private static long Detailed(Utf8PythonRegex regex,byte[] input,CancellationToken token)
+    { _detailed=regex.FullMatchDetailedData(input,0,token); return _detailed.Success?_detailed.Value.EndOffsetInBytes+(_detailed.LastIndex??0):-1; }
+    private static long Text(Utf8PythonRegex regex,byte[] input,CancellationToken token)
+    { _text=regex.FullMatchToString(input,0,token); return _text?.Length??-1; }
+    public static object Construction()
+    {
+        return new[]{Measure(false),Measure(true)};
+        static object Measure(bool explicitCompile)
+        {
+            const string pattern="(?P<x>a|ab)+";
+            Utf8PythonRegex Create() => explicitCompile?Utf8PythonRegex.Compile(pattern,default,Timeout.InfiniteTimeSpan,default,
+                Utf8ConstructionPolicy.Default,Timeout.InfiniteTimeSpan,default):new(pattern);
+            for(var i=0;i<2;i++) _=Create();
+            var instances=new Utf8PythonRegex[8];
+            var before=GC.GetAllocatedBytesForCurrentThread();
+            for(var i=0;i<instances.Length;i++) instances[i]=Create();
+            var bytes=GC.GetAllocatedBytesForCurrentThread()-before;
+            _constructed=instances;
+            return new { ExplicitCompile=explicitCompile,BytesPerConstructor=bytes/instances.Length,Instances=instances.Length };
+        }
+    }
+}

@@ -1,0 +1,40 @@
+{
+  "Baseline": "45af53e50a12690886b6bd25c56e777f50beed08",
+  "Prototype": "ff6a5f6cbdc3ad5c8ab455926144fdbcb68cf390",
+  "FinalSource": "427f6b3495db945fb5ccf5e07227ef779d2553f2",
+  "Configuration": "Release",
+  "FinalPython": {
+    "LocalLog": "artifacts/thirty-ninth-review-20261027/python-final.log",
+    "Passed": 3946,
+    "Skipped": 0,
+    "Failed": 0
+  },
+  "PrototypeLocal": {
+    "Pcre2Focused": 1269,
+    "PythonFocused": 394,
+    "CoreFocused": 959,
+    "PythonFull": 3933
+  },
+  "PublicCost": {
+    "Raw": "public-cost.json",
+    "WallSeconds": 66.62,
+    "Decision": "Reject and fully revert",
+    "Confirmations": 0,
+    "Reason": "Representative affected public lazy FullMatch operations are 16-25% slower with tight spreads and stable controls",
+    "Runs": 1
+  },
+  "FinalLibraryChanges": "Comments only relative to review baseline; all prototype matching/ownership/contract changes reverted",
+  "ImmutableInputs": 40,
+  "NewPackageQualification": false,
+  "ReleaseGate": "Frozen RC2 cumulative cost remains inconclusive",
+  "FinalSourceCI": {
+    "RunId": 40489364017,
+    "Result": "success",
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ],
+    "DisabledDynamicCode": "Both platforms pass",
+    "Evidence": "ci-source.json"
+  }
+}
