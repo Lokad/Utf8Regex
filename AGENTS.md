@@ -72,7 +72,8 @@ default, or select -Profiles Core,PythonRe,Pcre2. Require clean tracked source,
 a new common version and exact adapter-to-Core pins. -SkipBuild requires matching
 configuration/revision binaries; retain source/PDB/DLL/feed/cache/lock checks.
 
-Candidates under artifacts/package-candidates/<version> and historical published/
+Qualified packages and symbols are delivered to artifacts/nuget/. Qualification
+records under artifacts/package-candidates/<version> and historical published/
 staged bytes are immutable. Platform, performance and original consumer acceptance
 remain separate checks. Detached fixtures stage API snapshots and filter
 Category!=SourceOnly; source CI keeps repository/layout/snapshot guards.

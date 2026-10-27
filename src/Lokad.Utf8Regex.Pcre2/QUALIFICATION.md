@@ -5,7 +5,8 @@
 Core, PythonRe and PCRE2 share version **0.4.0**; both adapters require exactly
 Core **[0.4.0]**. The existing `qualify-package-candidate.ps1` builds fresh
 packages and checks their provenance, exact restore identities and detached
-profile fixtures. Its manifest is written to
+profile fixtures. Qualified packages and symbols are delivered to `artifacts/nuget/`.
+Its manifest is written to
 `artifacts/package-candidates/0.4.0/candidate.json` after successful qualification.
 
 Source Windows/Linux CI, downstream adoption, performance acceptance and NuGet

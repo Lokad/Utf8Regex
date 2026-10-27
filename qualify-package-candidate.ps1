@@ -20,6 +20,7 @@ if ($version -notmatch '^\d+\.\d+\.\d+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?$') {
     throw "Package candidates require a valid common NuGet version."
 }
 $artifactsRoot = [IO.Path]::GetFullPath((Join-Path $repositoryRoot "artifacts"))
+$nugetRoot = Join-Path $artifactsRoot "nuget"
 $candidateRoot = Join-Path $artifactsRoot "package-candidates/$version"
 foreach ($existing in @($candidateRoot, (Join-Path $artifactsRoot "scalar-candidates/$version"),
     (Join-Path $artifactsRoot "release-candidates/$version"))) {
@@ -43,6 +44,14 @@ foreach ($adapter in @("PythonRe", "Pcre2")) {
     if ($adapter -in $Profiles) {
         $packages += "Lokad.Utf8Regex.$adapter"
         $testProjects += "Lokad.Utf8Regex.$adapter.Tests"
+    }
+}
+foreach ($packageId in $packages) {
+    foreach ($extension in @("nupkg", "snupkg")) {
+        $destination = Join-Path $nugetRoot "$packageId.$version.$extension"
+        if (Test-Path -LiteralPath $destination) {
+            throw "A package output already exists: $destination. Use a new version for new bytes."
+        }
     }
 }
 $startedAt = [DateTime]::UtcNow
@@ -245,7 +254,12 @@ $patterns
     [void] (New-Item -ItemType Directory -Path (Split-Path -Parent $candidateRoot) -Force)
     if (Test-Path -LiteralPath $candidateRoot) { throw "Candidate appeared during qualification; refusing to overwrite it." }
     [IO.Directory]::Move($attemptRoot, $candidateRoot)
+    [void] [IO.Directory]::CreateDirectory($nugetRoot)
+    foreach ($package in Get-ChildItem -LiteralPath (Join-Path $candidateRoot "feed") -File) {
+        [IO.File]::Copy($package.FullName, (Join-Path $nugetRoot $package.Name), $false)
+    }
     Write-Host "Qualified immutable package candidate: $candidateRoot"
+    Write-Host "NuGet packages and symbols: $nugetRoot"
 }
 finally {
     if ($transcriptStarted) { [void] (Stop-Transcript) }
