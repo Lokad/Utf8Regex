@@ -1366,9 +1366,11 @@ def run_stream_worker() -> int:
                     checksum = result["Checksum"]
                     calls += iterations
                     batches += 1
-                    if (
-                        time.perf_counter_ns() - warmup_started >= minimum_milliseconds * 1_000_000
-                        and calls >= minimum_calls
+                    elapsed = time.perf_counter_ns() - warmup_started
+                    # Keep cheap-lane call floors without making expensive corpus
+                    # operations exceed the streaming response deadline just to warm.
+                    if elapsed >= minimum_milliseconds * 1_000_000 and (
+                        calls >= minimum_calls or elapsed >= 1_500_000_000
                     ):
                         break
                 write_stream_message(
