@@ -189,9 +189,15 @@ public sealed class Pcre2BenchmarkSnapshotTests
         AssertWorkspaceContract(pair.GetProperty("ComparatorWorkspaceContract"), comparator: true);
         Assert.False(string.IsNullOrWhiteSpace(pair.GetProperty("ManagedRoute").GetString()));
         Assert.False(string.IsNullOrWhiteSpace(pair.GetProperty("ManagedPlan").GetString()));
-        Assert.Equal("highest-efficiency-class", pair.GetProperty("ProcessorSetPolicy").GetString());
-        Assert.StartsWith("0x", pair.GetProperty("ProcessorAffinityMask").GetString(), StringComparison.Ordinal);
-        Assert.True(pair.GetProperty("ProcessorEfficiencyClass").GetInt32() >= 0);
+        var processorPolicy = pair.GetProperty("ProcessorSetPolicy").GetString();
+        Assert.Contains(processorPolicy, new[] { "highest-efficiency-class", "scheduler-default",
+            "single-least-contended-highest-efficiency-processor", "single-least-contended-allowed-processor" });
+        if (processorPolicy == "scheduler-default")
+            Assert.Equal("unavailable", pair.GetProperty("ProcessorAffinityMask").GetString());
+        else
+            Assert.StartsWith("0x", pair.GetProperty("ProcessorAffinityMask").GetString(), StringComparison.Ordinal);
+        if (pair.TryGetProperty("ProcessorEfficiencyClass", out var efficiencyClass))
+            Assert.True(efficiencyClass.GetInt32() >= 0);
         Assert.True(ulong.TryParse(
             pair.GetProperty("ResultChecksum").GetString(),
             NumberStyles.HexNumber,

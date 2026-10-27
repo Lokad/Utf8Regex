@@ -68,7 +68,7 @@ internal static partial class BenchmarkInspectReporter
             return 1;
         }
 
-        using var processorSet = BenchmarkProcessorScope.EnterHighestEfficiencyClass();
+        using var processorSet = BenchmarkProcessorScope.EnterSingleHighestEfficiencyProcessor();
         Console.WriteLine($"Qualification CPU set: {processorSet.Description}");
         Console.WriteLine(
             $"Initial paired lane: {(comparatorFirst ? "PCRE.NET / PCRE2 NFA" : "Utf8Pcre2")}");

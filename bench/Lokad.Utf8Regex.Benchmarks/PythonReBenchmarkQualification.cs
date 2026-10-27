@@ -1722,7 +1722,8 @@ internal static partial class PythonReBenchmarkReporter
         }
         while (batches < maximumBatches &&
                (Stopwatch.GetElapsedTime(started).TotalMilliseconds < 100 ||
-                (long)batches * iterations < minimumCalls));
+                (long)batches * iterations < minimumCalls &&
+                Stopwatch.GetElapsedTime(started).TotalMilliseconds < 1500));
 
         return new PythonReWarmup(
             batches * iterations,
