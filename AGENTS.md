@@ -8,6 +8,23 @@
 - Retarget old surrogate-half parity tests to explicit scalar outcomes. Remove obsolete unit encodings, VM instructions, selectors and parity-only tooling as their qualified scalar replacements land. Do not merely disable failing tests or preserve a dormant second engine.
 - `SPEC.md` defines the target contract; current implementation coverage must be proved separately. `PLAN.md` records the active migration and cleanup gates.
 
+## Keep scratch files out of the repository root
+
+Use the ignored `tmp/<task>/` directory for disposable logs, probes, temporary
+scripts and experiment scratch. Create it as needed and remove the task directory
+when finished; do not leave loose output files at the repository root or create
+backup copies of disposable scratch. For example:
+
+```powershell
+New-Item -ItemType Directory -Force tmp/focused-check | Out-Null
+./test.ps1 -Configuration Release -Project tests/Lokad.Utf8Regex.Tests/Lokad.Utf8Regex.Tests.csproj -Filter 'FullyQualifiedName~Utf8CoreWorkPolicyTests' *> tmp/focused-check/tests.log
+```
+
+Keep durable evidence in the existing tracked receipt locations and immutable
+package candidates under `artifacts/package-candidates/`. Normal SDK/tool output
+directories stay in their established locations. `PLAN.md` and `PLAN.HISTORY.md`
+remain the intentional ignored planning files at the root.
+
 ## Turn off the .NET “terminal logger”
 
 Normal builds use stable SDK **10.0.401**, selected exactly by `global.json`.

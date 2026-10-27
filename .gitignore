@@ -10,6 +10,9 @@
 /PLAN.md
 /PLAN.HISTORY.md
 
+# Disposable local logs, probes and experiment scratch (keep the root clear).
+/tmp/
+
 # Optional repository-local SDK, selected by global.json before the host SDKs.
 /.dotnet/
 
