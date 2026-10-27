@@ -46,6 +46,13 @@ internal static partial class BenchmarkInspectReporter
             "--untracked-files=all",
             "--",
             ".",
+            // A combined refresh dirties other profiles' generated outputs too.
+            // Code, build inputs, corpus data and unknown files remain gated.
+            ":(exclude)README.md",
+            ":(exclude)README.Benchmarks.json",
+            ":(exclude)README.Parity.json",
+            ":(exclude)PythonRe.Benchmarks.json",
+            ":(exclude)src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md",
             ":(exclude)PCRE2.Benchmarks.json",
             ":(exclude)src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md");
         if (unexpectedWorktreeState is null)

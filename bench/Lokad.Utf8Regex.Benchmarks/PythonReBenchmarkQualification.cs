@@ -41,6 +41,11 @@ internal static partial class PythonReBenchmarkReporter
     // Unknown untracked source, data and documents block snapshot writes.
     private static string? ReadPythonReQualificationWorktree() => RunGit(
         "status", "--porcelain=v1", "--untracked-files=all", "--", ".",
+        ":(exclude)README.md",
+        ":(exclude)README.Benchmarks.json",
+        ":(exclude)README.Parity.json",
+        ":(exclude)PCRE2.Benchmarks.json",
+        ":(exclude)src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md",
         ":(exclude)PythonRe.Benchmarks.json",
         ":(exclude)src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md");
 

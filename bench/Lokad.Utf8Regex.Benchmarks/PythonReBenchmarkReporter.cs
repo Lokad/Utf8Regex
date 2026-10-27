@@ -1738,6 +1738,11 @@ internal static partial class PythonReBenchmarkReporter
             "--untracked-files=no",
             "--",
             ".",
+            ":(exclude)README.md",
+            ":(exclude)README.Benchmarks.json",
+            ":(exclude)README.Parity.json",
+            ":(exclude)PCRE2.Benchmarks.json",
+            ":(exclude)src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md",
             ":(exclude)PythonRe.Benchmarks.json",
             ":(exclude)src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md");
         var untrackedStatus = RunGit(
