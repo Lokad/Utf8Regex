@@ -56,9 +56,7 @@ public sealed class Utf8PythonRegexTests
 
         Assert.True(regex.DebugUsesUtf8RegexBackend);
         Assert.True(regex.DebugUsesZeroOffsetUtf8ValueFastPath);
-        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         Assert.True(regex.FullMatch("foo"u8).Success);
-        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         Assert.Equal("foo", PythonReDotNetReference.Render(regex));
         Assert.True(regex.IsMatch("xxfooyy"u8));
         var nonAsciiPrefixMatch = regex.Search("éfoo"u8);
@@ -297,23 +295,18 @@ public sealed class Utf8PythonRegexTests
 
         Assert.False(conditional.DebugUsesUtf8RegexBackend);
         Assert.True(lookahead.DebugUsesUtf8RegexBackend);
-        Assert.False(conditional.DebugIsScalarFullProgramValueCreated);
-        Assert.False(lookahead.DebugIsScalarFullProgramValueCreated);
         Assert.True(conditional.Search("foobar"u8).Success);
         Assert.True(lookahead.Search("foobar"u8).Success);
         Assert.True(conditional.FullMatch("foobar"u8).Success);
         Assert.True(conditional.FullMatch("baz"u8).Success);
         Assert.False(conditional.FullMatch("foo"u8).Success);
-        Assert.True(conditional.DebugIsScalarFullProgramValueCreated);
         Assert.False(lookahead.FullMatch("foobar"u8).Success);
-        Assert.True(lookahead.DebugIsScalarFullProgramValueCreated);
     }
 
     [Fact]
-    public void LazyUtf8FullMatcherSupportsConcurrentNativeAndScalarFirstUse()
+    public void FullMatchSupportsConcurrentNativeAndScalarFirstUse()
     {
         var native = new Utf8PythonRegex("ab[0-9]{2}");
-        Assert.False(native.DebugIsScalarFullProgramValueCreated);
 
         Parallel.For(0, 32, iteration =>
         {
@@ -331,14 +324,10 @@ public sealed class Utf8PythonRegexTests
             }
         });
 
-        Assert.True(native.DebugIsScalarFullProgramValueCreated);
 
-        // The anchored search shape shares a lazily created scalar full
-        // matcher across concurrent callers.
-        var managed = new Utf8PythonRegex(@"^ab[0-9]{2}");
-        Assert.False(managed.DebugIsScalarFullProgramValueCreated);
-        Parallel.For(0, 32, _ => Assert.True(managed.FullMatch("ab12"u8).Success));
-        Assert.True(managed.DebugIsScalarFullProgramValueCreated);
+        // The anchored search shape shares its prepared scalar program.
+        var anchored = new Utf8PythonRegex(@"^ab[0-9]{2}");
+        Parallel.For(0, 32, _ => Assert.True(anchored.FullMatch("ab12"u8).Success));
     }
 
     [Fact]
@@ -493,7 +482,7 @@ public sealed class Utf8PythonRegexTests
     [Fact]
     public void EvaluatorExceptionPropagatesAndLeavesInstanceUsable()
     {
-        // PLAN.md M1: user callbacks run inside cursor-driven replacement loops; the exception must surface unchanged and leave no per-operation state behind. CPython re.sub propagates the callback exception identically.
+        // user callbacks run inside cursor-driven replacement loops; the exception must surface unchanged and leave no per-operation state behind. CPython re.sub propagates the callback exception identically.
         var regex = new Utf8PythonRegex("([a-z]+)");
         var input = System.Text.Encoding.UTF8.GetBytes("cat dog");
         Assert.Throws<System.InvalidOperationException>(() =>
@@ -539,7 +528,7 @@ public sealed class Utf8PythonRegexTests
     [Fact]
     public void Utf8BackendReportsContiguousByteRangesForScalarMatches()
     {
-        // PLAN.md C06: `.` consumes one scalar, so the native backend reports the
+        // `.` consumes one scalar, so the native backend reports the
         // whole-scalar byte range. The previous revision pinned the half-match
         // contract (no contiguous range, throwing value bytes); scalar tokenization
         // eliminated that premise, and invention would now fail these pins.
@@ -1294,7 +1283,7 @@ public sealed class Utf8PythonRegexTests
     [Fact]
     public void SubnWithSingleReplacementLimitReportsExactCount()
     {
-        // PLAN.md D03: count 1 needs only existence, not a full-subject count.
+        // count 1 needs only existence, not a full-subject count.
         var regex = new Utf8PythonRegex(@"(?P<word>foo)-(?P=word)");
 
         var replaced = regex.SubnToString("xx foo-foo yy foo-foo"u8, "<\\g<word>>", count: 1, startOffsetInBytes: 3);
@@ -1311,7 +1300,7 @@ public sealed class Utf8PythonRegexTests
     [Fact]
     public void SubnManualLoopHonorsLimitsWithEmptyMatches()
     {
-        // PLAN.md D02: the managed progression cursor owns empty-match advancement in Subn; oracle is CPython 3.13.2 re.subn.
+        // the managed progression cursor owns empty-match advancement in Subn; oracle is CPython 3.13.2 re.subn.
         var optional = new Utf8PythonRegex("(a)?");
 
         var one = optional.SubnToString("ab"u8, "-", 1);
@@ -1336,7 +1325,7 @@ public sealed class Utf8PythonRegexTests
     [Fact]
     public void SplitManagedLoopHonorsLimitsWithEmptyMatches()
     {
-        // PLAN.md D02: the managed progression cursor owns empty-match advancement in Split; oracle is CPython 3.13.2 re.split.
+        // the managed progression cursor owns empty-match advancement in Split; oracle is CPython 3.13.2 re.split.
         var star = new Utf8PythonRegex("x*");
 
         Assert.Equal(["", "a", "", "b", "", "c", ""], star.SplitToStrings("axbxc"u8, 0));
@@ -1352,7 +1341,7 @@ public sealed class Utf8PythonRegexTests
     [Fact]
     public void EvaluatorSubnHonorsLimitsWithEmptyMatches()
     {
-        // PLAN.md D02: the managed progression cursor owns empty-match advancement in evaluator Subn; oracle is CPython 3.13.2 re.subn.
+        // the managed progression cursor owns empty-match advancement in evaluator Subn; oracle is CPython 3.13.2 re.subn.
         var star = new Utf8PythonRegex("x*");
 
         var one = star.SubnToString("ab"u8, "-", static (prefix, _) => prefix, count: 1);
@@ -1381,7 +1370,7 @@ public sealed class Utf8PythonRegexTests
     [Fact]
     public void TemplateSubnHonorsLimits()
     {
-        // PLAN.md D03: non-empty-matching patterns take the single-pass cursor template route; oracle is CPython 3.13.2 re.subn.
+        // non-empty-matching patterns take the single-pass cursor template route; oracle is CPython 3.13.2 re.subn.
         var words = new Utf8PythonRegex("([a-z]+)");
 
         var all = words.SubnToString("cat dog"u8, "<\\1>", 0, 0);
@@ -1413,7 +1402,7 @@ public sealed class Utf8PythonRegexTests
     [Fact]
     public void ManagedCountProgressionMatchesCpython()
     {
-        // PLAN.md D02: the managed progression cursor owns empty-match advancement; oracle is CPython 3.13.2 re.findall length.
+        // the managed progression cursor owns empty-match advancement; oracle is CPython 3.13.2 re.findall length.
         Assert.Equal(6, new Utf8PythonRegex("x*").Count("axbxc"u8));
         Assert.Equal(4, new Utf8PythonRegex("x*").Count("a\U0001F600b"u8));
         Assert.Equal(3, new Utf8PythonRegex("(a)?").Count("ab"u8));
@@ -1424,7 +1413,7 @@ public sealed class Utf8PythonRegexTests
     [Fact]
     public void ReplacementPlansArePreparedOncePerTemplate()
     {
-        // PLAN.md D03: bounded template preparation shares one parsed plan.
+        // bounded template preparation shares one parsed plan.
         var regex = new Utf8PythonRegex(@"(?P<word>foo)-(?P=word)");
 
         Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);

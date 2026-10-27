@@ -49,7 +49,6 @@ public sealed class PythonReOneShotTextTests
         var input = "πstart\n東京😀end"u8.ToArray();
         Assert.True(regex.DebugUsesAsciiDotAllFullMatchFastPath);
         Assert.Equal("start\n東京😀end", regex.FullMatchToString(input, 2));
-        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         Assert.Null(regex.FullMatchToString("startendX"u8));
     }
 

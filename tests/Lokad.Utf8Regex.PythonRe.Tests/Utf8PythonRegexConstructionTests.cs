@@ -2,18 +2,15 @@ using Lokad.Utf8Regex.PythonRe;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
-// Full match wrappers are lazy and reuse admitted core scalar programs.
-// Constructing or using them must not create the managed full-match engine.
+// FullMatch shares scalar preparation with other operations.
 public sealed class Utf8PythonRegexConstructionTests
 {
     [Fact]
-    public void ScalarFullProgramIsCreatedLazily()
+    public void FullMatchKeepsWholeSubjectLookbehindContext()
     {
         var regex = new Utf8PythonRegex("(?<=ab)c");
 
-        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         Assert.False(regex.FullMatch("abc"u8).Success);
-        Assert.True(regex.DebugIsScalarFullProgramValueCreated);
     }
 
     [Fact]
@@ -26,7 +23,7 @@ public sealed class Utf8PythonRegexConstructionTests
     }
 
     [Fact]
-    public void Utf8BackedFullMatchUsesTheScalarFullProgram()
+    public void LiteralFullMatchKeepsItsNativeRoute()
     {
         var regex = new Utf8PythonRegex("foo");
 
@@ -34,7 +31,7 @@ public sealed class Utf8PythonRegexConstructionTests
     }
 
     [Fact]
-    public void NonFullMatchOperationsDoNotCreateTheScalarFullProgram()
+    public void SearchMatchCountAndFullMatchShareThePreparedExpression()
     {
         var regex = new Utf8PythonRegex("foo");
 
@@ -42,7 +39,7 @@ public sealed class Utf8PythonRegexConstructionTests
         Assert.Equal(2, regex.Count("foo xx foo"u8));
         Assert.True(regex.Search("xxfoo"u8).Success);
         Assert.True(regex.Match("foo xx"u8).Success);
-        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
+        Assert.True(regex.FullMatch("foo"u8).Success);
     }
 
     [Fact]

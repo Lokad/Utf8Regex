@@ -22,11 +22,11 @@ public sealed partial class Utf8PythonRegex
             finally { results.Release(ref invocation); }
         }
 
-        var cursor = CreateScalarCursor(input, startOffsetInBytes, kind, cancellationToken);
+        var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
         try
         {
             string? completed = null;
-            if (kind == 0 ? cursor.MoveNext() : cursor.MatchAtCurrentPosition())
+            if (kind == 0 ? cursor.MoveNext() : cursor.MatchAtCurrentPosition(kind == 2))
                 completed = cursor.GetText(cursor.StartOffsetInBytes, cursor.EndOffsetInBytes);
             cursor.Checkpoint();
             return completed;

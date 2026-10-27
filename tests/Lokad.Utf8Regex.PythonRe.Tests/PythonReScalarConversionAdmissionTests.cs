@@ -74,17 +74,16 @@ public sealed class PythonReScalarConversionAdmissionTests
     }
 
     [Theory]
-    [InlineData("(?P<x>😀)(?(x)é|x)", false)]
-    [InlineData("(?P<x>😀)(?(x)é|x)", true)]
-    [InlineData("(a)(?P<x>.)(?<=\\1)(?(x)(?:é|b)+|x)", true)]
-    public void ConversionByteBoundariesPreserveParentAndAdmitAtTheMeasuredPeak(string pattern, bool full)
+    [InlineData("(?P<x>😀)(?(x)é|x)")]
+    [InlineData("(a)(?P<x>.)(?<=\\1)(?(x)(?:é|b)+|x)")]
+    public void ConversionByteBoundariesPreserveParentAndAdmitAtTheMeasuredPeak(string pattern)
     {
         var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
         _ = PythonReTranslator.Translate(parse, false);
         ulong peak;
         using (var measured = Utf8ConstructionScope.Enter())
         {
-            Assert.NotNull(Compile(parse, full));
+            Assert.NotNull(PythonReScalarCompiler.Compile(parse));
             peak = measured.Budget.PeakBytes;
         }
         foreach (var allowance in new[] { 0ul, 128ul, peak / 2, peak - 1, peak })
@@ -93,7 +92,7 @@ public sealed class PythonReScalarConversionAdmissionTests
             var parent = PythonReAstFactory.Literal('p');
             var checkpoint = owner.Budget.ReservedBytes;
             Utf8SliceProgram? program = null;
-            var failure = Record.Exception(() => program = Compile(parse, full));
+            var failure = Record.Exception(() => program = PythonReScalarCompiler.Compile(parse));
             Assert.Equal(0ul, owner.Budget.Depth);
             Assert.True(owner.Budget.PeakBytes <= allowance + 128);
             if (failure is not null)
@@ -129,7 +128,7 @@ public sealed class PythonReScalarConversionAdmissionTests
         Assert.Equal(0ul, owner.Budget.Depth);
         Assert.True(owner.Budget.WorkSteps > 2);
         var recovery = new PythonReParser("(?P<x>.)").Parse(PythonReCompileOptions.None);
-        Assert.NotNull(Compile(recovery, true));
+        Assert.NotNull(PythonReScalarCompiler.Compile(recovery));
     }
 
     [Fact]
@@ -138,7 +137,7 @@ public sealed class PythonReScalarConversionAdmissionTests
         var parse = new PythonReParser("(a)(b)(?P<é>.)").Parse(PythonReCompileOptions.None);
         _ = PythonReTranslator.Translate(parse, false);
         using var owner = Utf8ConstructionScope.Enter();
-        var program = Compile(parse, true);
+        var program = PythonReScalarCompiler.Compile(parse);
         Assert.NotNull(program);
         Assert.Equal(new[] { "0", "1", "2", "é" }, program.GroupNames);
         Assert.True(owner.Budget.ReservedBytes >= Utf8ConstructionBudget.ArrayBytes<string>(program.GroupNames.Length)
@@ -148,12 +147,6 @@ public sealed class PythonReScalarConversionAdmissionTests
         // instead of requiring temporary IR nodes in an accounting registry.
         Assert.Equal("ab😀", new Utf8PythonRegex("(a)(b)(?P<é>.)").FullMatchToString("ab😀"u8));
         Assert.Equal(0ul, owner.Budget.Depth);
-    }
-
-    private static Utf8SliceProgram Compile(PythonReParseResult parse, bool full)
-    {
-        var program = PythonReScalarCompiler.Compile(parse);
-        return full ? PythonReScalarCompiler.RequireFullMatch(program) : program;
     }
 
     private static Utf8SliceNode Create(int kind) => kind switch

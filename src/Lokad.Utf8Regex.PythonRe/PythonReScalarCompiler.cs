@@ -8,42 +8,6 @@ namespace Lokad.Utf8Regex.PythonRe;
 // to the shared VM rather than rediscovering folding from a .NET option flag.
 internal static partial class PythonReScalarCompiler
 {
-    // Lowering ends the top-level instruction array with one Accept; all jumps
-    // use absolute indices. Replacing that terminal instruction leaves every
-    // existing target intact, including branches that must backtrack at EOF.
-    // Assertion bodies and immutable predicate/capture tables stay shared.
-    internal static Utf8SliceProgram RequireFullMatch(Utf8SliceProgram program)
-    {
-        if (program.IsNonBacktracking || program.RightToLeft ||
-            program.Instructions.Length == 0 ||
-            program.Instructions[^1].Kind != Utf8SliceInstructionKind.Accept)
-            throw new InvalidOperationException("A forward Python scalar program must end with Accept.");
-
-        using var construction = Utf8ConstructionScope.Enter();
-        var budget = construction.Budget;
-        budget.ChargeWork(1);
-        var instructions = budget.AllocateArray<Utf8SliceInstruction>(checked(program.Instructions.Length + 1), true);
-        for (var offset = 0; offset < program.Instructions.Length;)
-        {
-            var count = Math.Min(256, program.Instructions.Length - offset);
-            budget.ChargeWork((ulong)count);
-            program.Instructions.AsSpan(offset, count).CopyTo(instructions.AsSpan(offset, count));
-            offset += count;
-        }
-        instructions[^2] = new(Utf8SliceInstructionKind.Anchor, (int)Utf8SliceAnchorKind.VeryEnd, 0, 0, 0);
-        instructions[^1] = new(Utf8SliceInstructionKind.Accept, 0, 0, 0, 0);
-        var result = Utf8SliceProgram.Create(instructions, program.SetMasks,
-            program.CategorySetMembers, program.RepeatCount, program.GroupCount,
-            program.RequiresUnicodeWordBoundary, program.RequiresUnicodeShorthand, program.RequiresUnicodeCategory,
-            program.Assertions, program.HasNonFixedLookbehind, program.GroupNames, program.HasMixedNamedGroups,
-            program.HasBalancing, program.IgnoreCase, program.HasContiguousAnchor, program.HasConditionalTest,
-            program.RightToLeft, program.SawLookaround, program.SawCapturingLookbehind, program.CanMatchEmpty,
-            program.CaptureCatalog, program.UsesInterpretedLazyLoopSemantics, program.UsesLiteralClassBracketSyntax,
-            program.CaseBehavior, false, 0, [], program.BackreferenceLowerings);
-        construction.Complete();
-        return result;
-    }
-
     private struct ConversionFrame(PythonReNode node, PythonReCompileOptions options)
     {
         internal readonly PythonReNode Node = node;

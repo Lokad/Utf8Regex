@@ -5,7 +5,12 @@
 Development is 0.4.0-rc.3-dev; no new package candidate is staged.
 Removed the test-only legacy fallback-reason scanner. Detached package fixtures
 read their staged API snapshot and leave repository-only source/layout/snapshot
-guards to source CI. Matching, public APIs and resource controls are unchanged.
+guards to source CI.
+PythonRe Search, Match and FullMatch now share one scalar program. FullMatch
+constrains acceptance at EOF while preserving backtracking and atomicity. Its
+copied program and lazy/eager derivation machinery are removed. Construction and
+cold invocation work/storage requirements may decrease; matching semantics,
+public APIs, cancellation and useful resource controls are preserved.
 RC2 correctness/identity/consumer evidence remains valid; its cumulative cost
 acceptance is withdrawn as inconclusive. Frozen packages and ZIP are unchanged;
 see the [dated correction](https://github.com/Lokad/Utf8Regex/blob/master/bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md).
