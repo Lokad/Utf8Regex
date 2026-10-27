@@ -132,10 +132,16 @@ internal static partial class BenchmarkInspectReporter
         var decodeAllocatedBytes = compiled ? measurement.DecodeThenCompiledRegexAllocatedBytes : measurement.DecodeThenRegexAllocatedBytes;
         var qualified = snapshotHasCurrentProtocol &&
             measurement.Environment is { TrackedDirty: false } &&
-            measurement.MeasurementProtocol is "AlternatingSixLaneV1" or ReadmeMeasurementProtocol &&
+            measurement.MeasurementProtocol is "AlternatingSixLaneV1" or "AlternatingSixLaneV2" or ReadmeMeasurementProtocol &&
             measurement.RequestedIterations > 0 &&
             measurement.EffectiveIterations >= measurement.RequestedIterations &&
             measurement.Samples >= 5 &&
+            (measurement.MeasurementProtocol != ReadmeMeasurementProtocol ||
+                measurement.LaneIterations is { Length: 6 } counts &&
+                counts.All(count => count >= measurement.RequestedIterations) &&
+                measurement.SampleMicroseconds is { Length: 6 } lanes &&
+                lanes.All(lane => lane.Length == measurement.Samples &&
+                    lane.All(duration => double.IsFinite(duration) && duration >= 20_000))) &&
             utf8Microseconds > 0 &&
             predecodedMicroseconds > 0 &&
             decodeMicroseconds > 0 &&
@@ -159,6 +165,7 @@ internal static partial class BenchmarkInspectReporter
             Operation = GetReadmeOperation(caseId),
             Mode = compiled ? "Compiled" : "Ordinary",
             Status = status,
+            StatusReason = qualified ? null : "Missing clean provenance, sufficient samples or valid per-lane durations (V3 requires at least 20 ms).",
             MeasurementProtocol = measurement.MeasurementProtocol,
             Utf8Microseconds = utf8Microseconds,
             PredecodedRegexMicroseconds = predecodedMicroseconds,
@@ -222,6 +229,8 @@ internal static partial class BenchmarkInspectReporter
         public required string Mode { get; set; }
 
         public required string Status { get; set; }
+
+        public string? StatusReason { get; set; }
 
         public string? MeasurementProtocol { get; set; }
 

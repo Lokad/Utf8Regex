@@ -1410,7 +1410,7 @@ internal static partial class BenchmarkInspectReporter
     }
 
     private const string ReadmeBenchmarkSnapshotFileName = "README.Benchmarks.json";
-    private const string ReadmeMeasurementProtocol = "AlternatingSixLaneV2";
+    private const string ReadmeMeasurementProtocol = "IndependentSixLaneV3";
 
     private static ReadmeBenchmarkSnapshot LoadReadmeBenchmarkSnapshot()
     {
@@ -1421,7 +1421,7 @@ internal static partial class BenchmarkInspectReporter
 
     private static void SaveReadmeBenchmarkSnapshot(ReadmeBenchmarkSnapshot snapshot)
     {
-        snapshot.SchemaVersion = 5;
+        snapshot.SchemaVersion = 6;
         var path = Path.Combine(Path.GetDirectoryName(FindRepoFile("README.md"))!, ReadmeBenchmarkSnapshotFileName);
         var json = JsonSerializer.Serialize(snapshot, ReadmeBenchmarkSnapshotJsonOptions);
         BenchmarkFileWriter.WriteTextAtomically(path, json + Environment.NewLine);
@@ -1655,21 +1655,7 @@ internal static partial class BenchmarkInspectReporter
         ReadmeCaseMeasurementJson first,
         ReadmeCaseMeasurementJson second)
         => first.MeasurementProtocol == second.MeasurementProtocol &&
-            first.RequestedIterations == second.RequestedIterations &&
-            first.EffectiveIterations == second.EffectiveIterations &&
-            first.Samples == second.Samples &&
-            first.Utf8Regex == second.Utf8Regex &&
-            first.Utf8Compiled == second.Utf8Compiled &&
-            first.PredecodedRegex == second.PredecodedRegex &&
-            first.CompiledRegex == second.CompiledRegex &&
-            first.DecodeThenRegex == second.DecodeThenRegex &&
-            first.DecodeThenCompiledRegex == second.DecodeThenCompiledRegex &&
-            first.Utf8RegexAllocatedBytes == second.Utf8RegexAllocatedBytes &&
-            first.Utf8CompiledAllocatedBytes == second.Utf8CompiledAllocatedBytes &&
-            first.PredecodedRegexAllocatedBytes == second.PredecodedRegexAllocatedBytes &&
-            first.CompiledRegexAllocatedBytes == second.CompiledRegexAllocatedBytes &&
-            first.DecodeThenRegexAllocatedBytes == second.DecodeThenRegexAllocatedBytes &&
-            first.DecodeThenCompiledRegexAllocatedBytes == second.DecodeThenCompiledRegexAllocatedBytes;
+            JsonSerializer.Serialize(first.ToMeasurement()) == JsonSerializer.Serialize(second.ToMeasurement());
 
     private static void RemoveUnexpectedReadmeCases(
         ReadmeBenchmarkSectionJson section,
@@ -2593,7 +2579,7 @@ internal static partial class BenchmarkInspectReporter
 
     private static int WarmupForMilliseconds(Func<int> action, int milliseconds, int minimumIterations)
     {
-        const int maximumIterations = 262144;
+        const int maximumIterations = 10_000_000;
         var target = TimeSpan.FromMilliseconds(milliseconds);
         var iterations = 0;
         var sink = 0;
@@ -5427,55 +5413,72 @@ internal static partial class BenchmarkInspectReporter
             decodeThenRegex,
             decodeThenCompiledRegex,
         ];
+        var comparison = MeasureComparisonLanes(requestedIterations, iterationTarget, samples, actions,
+            ["Utf8Regex", "Utf8Compiled", "PredecodedRegex", "CompiledRegex", "DecodeThenRegex", "DecodeThenCompiledRegex"],
+            reverseMeasurementOrder);
+        return new ReadmeCaseMeasurement(
+            comparison.Medians[0],
+            comparison.Medians[1],
+            comparison.Medians[2],
+            comparison.Medians[3],
+            comparison.Medians[4],
+            comparison.Medians[5],
+            comparison.AllocatedBytes[0],
+            comparison.AllocatedBytes[1],
+            comparison.AllocatedBytes[2],
+            comparison.AllocatedBytes[3],
+            comparison.AllocatedBytes[4],
+            comparison.AllocatedBytes[5],
+            requestedIterations,
+            comparison.Iterations.Min(),
+            samples,
+            comparison.Iterations,
+            comparison.RawSamples,
+            comparison.Phases);
+    }
+    private static (double[] Medians, double[] AllocatedBytes, int[] Iterations, double[][] RawSamples,
+        Dictionary<string, double> Phases) MeasureComparisonLanes(
+        int requestedIterations, int iterationTarget, int samples, Func<int>[] actions,
+        string[] laneNames, bool reverseMeasurementOrder = false)
+    {
+        using var processorScope = BenchmarkProcessorScope.EnterSingleHighestEfficiencyProcessor();
         var expected = actions[0]();
         for (var index = 1; index < actions.Length; index++)
         {
             if (actions[index]() != expected)
-                throw new InvalidOperationException($"README benchmark lane {index} disagrees with the UTF-8 result.");
+                throw new InvalidOperationException($"Comparison lane {index} disagrees with the UTF-8 result.");
         }
+        var phases = new Dictionary<string, double>();
+        var phase = Stopwatch.StartNew();
         var warmupSink = 0;
         foreach (var action in actions)
             warmupSink ^= WarmupCore(action).Sink;
         Volatile.Write(ref s_allocationSink, warmupSink);
-        var effectiveIterations = CalibrateReadmeIterations(
-            requestedIterations,
-            iterationTarget,
-            samples,
-            actions);
-        var measurements = MeasureReadmeAlternatingMedianMicroseconds(
-            samples,
-            effectiveIterations,
-            actions,
-            reverseMeasurementOrder);
+        phases["Warmup"] = phase.Elapsed.TotalMilliseconds;
+        phase.Restart();
+        var laneIterations = CalibrateReadmeIterations(requestedIterations, iterationTarget, actions);
+        phases["Calibration"] = phase.Elapsed.TotalMilliseconds;
+        phase.Restart();
+        var (measurements, rawSamples) = MeasureReadmeAlternatingMedianMicroseconds(
+            samples, laneIterations, actions, laneNames, reverseMeasurementOrder);
+        phases["Sampling"] = phase.Elapsed.TotalMilliseconds;
+        phase.Restart();
         var allocatedBytes = new double[actions.Length];
         for (var position = 0; position < actions.Length; position++)
         {
             var index = reverseMeasurementOrder ? actions.Length - position - 1 : position;
-            allocatedBytes[index] = MeasureAllocatedBytesPerOperation(effectiveIterations, actions[index]);
+            allocatedBytes[index] = MeasureAllocatedBytesPerOperation(laneIterations[index], actions[index]);
         }
+        phases["Allocation"] = phase.Elapsed.TotalMilliseconds;
 
-        return new ReadmeCaseMeasurement(
-            measurements[0],
-            measurements[1],
-            measurements[2],
-            measurements[3],
-            measurements[4],
-            measurements[5],
-            allocatedBytes[0],
-            allocatedBytes[1],
-            allocatedBytes[2],
-            allocatedBytes[3],
-            allocatedBytes[4],
-            allocatedBytes[5],
-            requestedIterations,
-            effectiveIterations,
-            samples);
+        return (measurements, allocatedBytes, laneIterations, rawSamples, phases);
     }
 
-    private static double[] MeasureReadmeAlternatingMedianMicroseconds(
+    private static (double[] Medians, double[][] RawSamples) MeasureReadmeAlternatingMedianMicroseconds(
         int samples,
-        int iterations,
+        int[] laneIterations,
         IReadOnlyList<Func<int>> actions,
+        IReadOnlyList<string> laneNames,
         bool reverseFirstSample)
     {
         var sink = 0;
@@ -5494,32 +5497,32 @@ internal static partial class BenchmarkInspectReporter
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
-                var measurement = MeasureTimedCore(iterations, actions[index]);
+                var measurement = MeasureTimedCore(laneIterations[index], actions[index]);
                 elapsedByAction[index][sample] = measurement.Elapsed;
                 sink ^= measurement.Sink;
             }
         }
 
         // Preserve the paired evidence before sorting; report outside timed loops.
-        string[] laneNames = ["Utf8Regex", "Utf8Compiled", "PredecodedRegex", "CompiledRegex", "DecodeThenRegex", "DecodeThenCompiledRegex"];
         for (var sample = 0; sample < samples; sample++)
         {
             for (var index = 0; index < elapsedByAction.Length; index++)
             {
                 Console.Error.WriteLine(string.Create(CultureInfo.InvariantCulture,
-                    $"ReadmeSample;Index={sample};Lane={laneNames[index]};Iterations={iterations};ElapsedMicroseconds={elapsedByAction[index][sample].TotalMicroseconds:F3}"));
+                    $"ComparisonSample;Index={sample};Lane={laneNames[index]};Iterations={laneIterations[index]};ElapsedMicroseconds={elapsedByAction[index][sample].TotalMicroseconds:F3}"));
             }
         }
 
+        var rawSamples = elapsedByAction.Select(static lane => lane.Select(static elapsed => elapsed.TotalMicroseconds).ToArray()).ToArray();
         var medians = new double[actions.Count];
         for (var index = 0; index < elapsedByAction.Length; index++)
         {
             Array.Sort(elapsedByAction[index]);
-            medians[index] = elapsedByAction[index][samples / 2].TotalMicroseconds / iterations;
+            medians[index] = elapsedByAction[index][samples / 2].TotalMicroseconds / laneIterations[index];
         }
 
         GC.KeepAlive(sink);
-        return medians;
+        return (medians, rawSamples);
     }
 
     private static double MeasureAllocatedBytesPerOperation(int iterations, Func<int> action)
@@ -5539,37 +5542,31 @@ internal static partial class BenchmarkInspectReporter
         return (double)allocatedBytes / iterations;
     }
 
-    private static int CalibrateReadmeIterations(
+    private static int[] CalibrateReadmeIterations(
         int requestedIterations,
         int iterationTarget,
-        int samples,
         IReadOnlyList<Func<int>> actions)
     {
-        const double targetSampleMicroseconds = 100_000;
-        const double targetCaseMeasurementMicroseconds = 30_000_000;
-        var slowestMicroseconds = 0d;
-        var totalMicroseconds = 0d;
-        foreach (var action in actions)
+        // Independent counts prevent decode-heavy lanes from reducing matching
+        // samples to microseconds. All lanes still perform the same public work
+        // per operation; normalize by their actual counts and alternate order.
+        const double targetSampleMicroseconds = 50_000;
+        var maximumIterations = Math.Max(requestedIterations, 10_000_000);
+        var counts = new int[actions.Count];
+        for (var lane = 0; lane < actions.Count; lane++)
         {
-            var microseconds = MeasureReadmeProbeMicrosecondsPerOperation(action, iterationTarget);
-            slowestMicroseconds = Math.Max(slowestMicroseconds, microseconds);
-            totalMicroseconds += microseconds;
+            var action = actions[lane];
+            var cost = MeasureReadmeProbeMicrosecondsPerOperation(action, Math.Max(iterationTarget, 1_000_000));
+            var count = (int)Math.Clamp(Math.Ceiling(targetSampleMicroseconds / Math.Max(cost, double.Epsilon)),
+                requestedIterations, maximumIterations);
+            // One duration confirmation after calibration. Do not keep retrying
+            // noisy cases: raw samples below 20 ms remain unqualified.
+            var elapsed = MeasureTimedCore(count, action).Elapsed.TotalMicroseconds;
+            if (elapsed > 0 && (elapsed < 40_000 || elapsed > 75_000))
+                count = (int)Math.Clamp(Math.Ceiling(count * targetSampleMicroseconds / elapsed), requestedIterations, maximumIterations);
+            counts[lane] = count;
         }
-
-        if (slowestMicroseconds <= 0 || totalMicroseconds <= 0)
-        {
-            return iterationTarget;
-        }
-
-        var sampleBound = (int)Math.Clamp(
-            Math.Floor(targetSampleMicroseconds / slowestMicroseconds),
-            1,
-            iterationTarget);
-        var caseBound = (int)Math.Clamp(
-            Math.Floor(targetCaseMeasurementMicroseconds / (samples * totalMicroseconds)),
-            1,
-            iterationTarget);
-        return Math.Clamp(Math.Min(sampleBound, caseBound), requestedIterations, iterationTarget);
+        return counts;
     }
 
     private static double MeasureReadmeProbeMicrosecondsPerOperation(Func<int> action, int iterationTarget)
@@ -5643,111 +5640,10 @@ internal static partial class BenchmarkInspectReporter
     }
 
     private static string FormatReadmeCaseRow(ReadmeCaseMeasurement row)
-        => string.Create(
-            CultureInfo.InvariantCulture,
-            $"RequestedIterations={row.RequestedIterations};EffectiveIterations={row.EffectiveIterations};Samples={row.Samples};Utf8Regex={row.Utf8Regex:F3};Utf8Compiled={row.Utf8Compiled:F3};PredecodedRegex={row.PredecodedRegex:F3};CompiledRegex={row.CompiledRegex:F3};DecodeThenRegex={row.DecodeThenRegex:F3};DecodeThenCompiledRegex={row.DecodeThenCompiledRegex:F3};Utf8RegexAllocatedBytes={row.Utf8RegexAllocatedBytes:F3};Utf8CompiledAllocatedBytes={row.Utf8CompiledAllocatedBytes:F3};PredecodedRegexAllocatedBytes={row.PredecodedRegexAllocatedBytes:F3};CompiledRegexAllocatedBytes={row.CompiledRegexAllocatedBytes:F3};DecodeThenRegexAllocatedBytes={row.DecodeThenRegexAllocatedBytes:F3};DecodeThenCompiledRegexAllocatedBytes={row.DecodeThenCompiledRegexAllocatedBytes:F3}");
+        => JsonSerializer.Serialize(row);
 
     private static ReadmeCaseMeasurement ParseReadmeCaseRow(string text)
-    {
-        double utf8 = 0;
-        double utf8Compiled = 0;
-        double predecoded = 0;
-        double compiledRegex = 0;
-        double decode = 0;
-        double decodeCompiled = 0;
-        double utf8Allocated = -1;
-        double utf8CompiledAllocated = -1;
-        double predecodedAllocated = -1;
-        double compiledAllocated = -1;
-        double decodeAllocated = -1;
-        double decodeCompiledAllocated = -1;
-        var requestedIterations = 0;
-        var effectiveIterations = 0;
-        var samples = 0;
-
-        foreach (var part in text.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-        {
-            var pieces = part.Split('=', 2, StringSplitOptions.TrimEntries);
-            if (pieces.Length != 2)
-            {
-                continue;
-            }
-
-            switch (pieces[0])
-            {
-                case "RequestedIterations":
-                    requestedIterations = int.Parse(pieces[1], CultureInfo.InvariantCulture);
-                    break;
-                case "EffectiveIterations":
-                    effectiveIterations = int.Parse(pieces[1], CultureInfo.InvariantCulture);
-                    break;
-                case "Samples":
-                    samples = int.Parse(pieces[1], CultureInfo.InvariantCulture);
-                    break;
-                case "Utf8Regex":
-                    utf8 = double.Parse(pieces[1], CultureInfo.InvariantCulture);
-                    break;
-                case "PredecodedRegex":
-                    predecoded = double.Parse(pieces[1], CultureInfo.InvariantCulture);
-                    break;
-                case "Utf8Compiled":
-                    utf8Compiled = double.Parse(pieces[1], CultureInfo.InvariantCulture);
-                    break;
-                case "CompiledRegex":
-                    compiledRegex = double.Parse(pieces[1], CultureInfo.InvariantCulture);
-                    break;
-                case "DecodeThenRegex":
-                    decode = double.Parse(pieces[1], CultureInfo.InvariantCulture);
-                    break;
-                case "DecodeThenCompiledRegex":
-                    decodeCompiled = double.Parse(pieces[1], CultureInfo.InvariantCulture);
-                    break;
-                case "Utf8RegexAllocatedBytes":
-                    utf8Allocated = double.Parse(pieces[1], CultureInfo.InvariantCulture);
-                    break;
-                case "Utf8CompiledAllocatedBytes":
-                    utf8CompiledAllocated = double.Parse(pieces[1], CultureInfo.InvariantCulture);
-                    break;
-                case "PredecodedRegexAllocatedBytes":
-                    predecodedAllocated = double.Parse(pieces[1], CultureInfo.InvariantCulture);
-                    break;
-                case "CompiledRegexAllocatedBytes":
-                    compiledAllocated = double.Parse(pieces[1], CultureInfo.InvariantCulture);
-                    break;
-                case "DecodeThenRegexAllocatedBytes":
-                    decodeAllocated = double.Parse(pieces[1], CultureInfo.InvariantCulture);
-                    break;
-                case "DecodeThenCompiledRegexAllocatedBytes":
-                    decodeCompiledAllocated = double.Parse(pieces[1], CultureInfo.InvariantCulture);
-                    break;
-            }
-        }
-
-        if (requestedIterations <= 0 || effectiveIterations < requestedIterations || samples <= 0 ||
-            utf8 <= 0 || utf8Compiled <= 0 || predecoded <= 0 || compiledRegex <= 0 || decode <= 0 || decodeCompiled <= 0 ||
-            utf8Allocated < 0 || utf8CompiledAllocated < 0 || predecodedAllocated < 0 || compiledAllocated < 0 ||
-            decodeAllocated < 0 || decodeCompiledAllocated < 0)
-        {
-            throw new InvalidOperationException($"Child process returned an incomplete README benchmark row: {text}");
-        }
-
-        return new ReadmeCaseMeasurement(
-            utf8,
-            utf8Compiled,
-            predecoded,
-            compiledRegex,
-            decode,
-            decodeCompiled,
-            utf8Allocated,
-            utf8CompiledAllocated,
-            predecodedAllocated,
-            compiledAllocated,
-            decodeAllocated,
-            decodeCompiledAllocated,
-            requestedIterations,
-            effectiveIterations,
-            samples);
-    }
+        => JsonSerializer.Deserialize<ReadmeCaseMeasurement>(text);
 
     private static readonly JsonSerializerOptions ReadmeBenchmarkSnapshotJsonOptions = new()
     {
@@ -5757,7 +5653,7 @@ internal static partial class BenchmarkInspectReporter
 
     private sealed class ReadmeBenchmarkSnapshot
     {
-        public int SchemaVersion { get; set; } = 5;
+        public int SchemaVersion { get; set; } = 6;
 
         public Dictionary<string, ReadmeBenchmarkSectionJson> Sections { get; set; } = new(StringComparer.Ordinal);
     }
@@ -5780,6 +5676,12 @@ internal static partial class BenchmarkInspectReporter
         public int EffectiveIterations { get; set; }
 
         public int Samples { get; set; }
+
+        public int[]? LaneIterations { get; set; }
+
+        public double[][]? SampleMicroseconds { get; set; }
+
+        public Dictionary<string, double>? PhaseMilliseconds { get; set; }
 
         public double Utf8Regex { get; set; }
 
@@ -5814,6 +5716,9 @@ internal static partial class BenchmarkInspectReporter
                 RequestedIterations = measurement.RequestedIterations,
                 EffectiveIterations = measurement.EffectiveIterations,
                 Samples = measurement.Samples,
+                LaneIterations = measurement.LaneIterations,
+                SampleMicroseconds = measurement.SampleMicroseconds,
+                PhaseMilliseconds = measurement.PhaseMilliseconds,
                 Utf8Regex = measurement.Utf8Regex,
                 Utf8Compiled = measurement.Utf8Compiled,
                 PredecodedRegex = measurement.PredecodedRegex,
@@ -5844,7 +5749,10 @@ internal static partial class BenchmarkInspectReporter
                 DecodeThenCompiledRegexAllocatedBytes,
                 RequestedIterations,
                 EffectiveIterations,
-                Samples);
+                Samples,
+                LaneIterations,
+                SampleMicroseconds,
+                PhaseMilliseconds);
     }
 
     private readonly record struct ReadmeCaseMeasurement(
@@ -5862,7 +5770,10 @@ internal static partial class BenchmarkInspectReporter
         double DecodeThenCompiledRegexAllocatedBytes,
         int RequestedIterations,
         int EffectiveIterations,
-        int Samples);
+        int Samples,
+        int[]? LaneIterations = null,
+        double[][]? SampleMicroseconds = null,
+        Dictionary<string, double>? PhaseMilliseconds = null);
     private readonly record struct HybridLiteralFamilyMetrics(
         int Count,
         int Windows,
@@ -6109,7 +6020,7 @@ internal static partial class BenchmarkInspectReporter
 
     private static WarmupSummary WarmupCore(Func<int> action)
     {
-        const int maximumIterations = 262144;
+        const int maximumIterations = 10_000_000;
         var target = TimeSpan.FromMilliseconds(250);
         var sink = 0;
         var iterations = 0;

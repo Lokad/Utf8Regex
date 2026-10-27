@@ -825,6 +825,22 @@ class CaseRunner:
         raise ValueError(f"Unsupported PythonRe operation: {operation}")
 
 
+def calibrate_refresh_batch(batch: Callable[[int], tuple[int, Any]]) -> int:
+    # Time the real loop independently, rather than capping fast CPython lanes
+    # at a managed iteration hint. One confirmation; never retry noisy samples.
+    count = 1
+    while True:
+        elapsed, _ = batch(count)
+        if elapsed >= 20_000_000 or count >= 10_000_000:
+            break
+        count = min(count * 2, 10_000_000)
+    count = min(10_000_000, max(1, math.ceil(count * 50_000_000 / max(elapsed, 1))))
+    elapsed, _ = batch(count)
+    if elapsed < 40_000_000:
+        count = min(10_000_000, max(1, math.ceil(count * 50_000_000 / max(elapsed, 1))))
+    return count
+
+
 def measure(operation: Callable[[], Any], maximum_iterations: int, sample_count: int) -> tuple[dict[str, Any], Any]:
     warmup_started = time.perf_counter_ns()
     warmup_calls = 0
@@ -836,15 +852,19 @@ def measure(operation: Callable[[], Any], maximum_iterations: int, sample_count:
             break
 
     warmup_elapsed = time.perf_counter_ns() - warmup_started
-    average_warmup_nanoseconds = warmup_elapsed / warmup_calls
-    calibrated_iterations = max(1, math.ceil(WARMUP_SECONDS * 1_000_000_000 / average_warmup_nanoseconds))
-    iterations = min(maximum_iterations, calibrated_iterations)
+    def batch(count: int) -> tuple[int, Any]:
+        started = time.perf_counter_ns()
+        last = None
+        for _ in range(count):
+            last = operation()
+        return time.perf_counter_ns() - started, last
+
+    iterations = calibrate_refresh_batch(batch)
+    raw_microseconds: list[float] = []
     microseconds: list[float] = []
     for _ in range(sample_count):
-        started = time.perf_counter_ns()
-        for _ in range(iterations):
-            result = operation()
-        elapsed = time.perf_counter_ns() - started
+        elapsed, result = batch(iterations)
+        raw_microseconds.append(elapsed / 1_000)
         microseconds.append(elapsed / iterations / 1_000)
 
     microseconds.sort()
@@ -854,6 +874,7 @@ def measure(operation: Callable[[], Any], maximum_iterations: int, sample_count:
             "MinimumMicroseconds": microseconds[0],
             "MaximumMicroseconds": microseconds[-1],
             "EffectiveIterations": iterations,
+            "SampleMicroseconds": raw_microseconds,
             "WarmupCalls": warmup_calls,
             "WarmupMilliseconds": warmup_elapsed / 1_000_000,
         },
@@ -877,12 +898,12 @@ def measure_predecoded(
             break
 
     warmup_elapsed = time.perf_counter_ns() - warmup_started
-    average_warmup_nanoseconds = warmup_elapsed / warmup_calls
-    calibrated_iterations = max(1, math.ceil(WARMUP_SECONDS * 1_000_000_000 / average_warmup_nanoseconds))
-    iterations = min(maximum_iterations, calibrated_iterations)
+    iterations = calibrate_refresh_batch(runner.execute_predecoded_batch)
+    raw_microseconds: list[float] = []
     microseconds: list[float] = []
     for _ in range(sample_count):
         elapsed, result = runner.execute_predecoded_batch(iterations)
+        raw_microseconds.append(elapsed / 1_000)
         actual_checksum = runner.checksum(result)
         if actual_checksum != expected_checksum:
             raise RuntimeError(
@@ -898,6 +919,7 @@ def measure_predecoded(
             "MinimumMicroseconds": microseconds[0],
             "MaximumMicroseconds": microseconds[-1],
             "EffectiveIterations": iterations,
+            "SampleMicroseconds": raw_microseconds,
             "WarmupCalls": warmup_calls,
             "WarmupMilliseconds": warmup_elapsed / 1_000_000,
         },

@@ -1,6 +1,6 @@
 # Release notes
 
-## Unreleased — 0.5.0
+## Unreleased â€” 0.5.0
 
 - Target .NET 10 and .NET 11 across Core, PythonRe and PCRE2.
 - Use .NET 11 by default for benchmark runs; historical figures retain their measured runtime.

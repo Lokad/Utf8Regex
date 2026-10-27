@@ -283,28 +283,25 @@ internal static partial class PythonReBenchmarkReporter
 
     private static int Refresh(int iterations, int samples)
     {
-        var measurements = new SortedDictionary<string, PythonReCaseMeasurement>(StringComparer.Ordinal);
+        var snapshot = LoadPythonReBenchmarkSnapshot();
         foreach (var benchmarkCase in PythonReBenchmarkCatalog.Cases)
         {
             Console.WriteLine();
             var measurement = Measure(benchmarkCase, iterations, samples);
             Print(benchmarkCase, measurement);
-            measurements.Add(benchmarkCase.Id, measurement);
+            snapshot.Cases[benchmarkCase.Id] = measurement;
+            WriteSnapshot(new PythonReBenchmarkSnapshot
+            {
+                SchemaVersion = PythonReBenchmarkSchemaVersion,
+                GeneratedAtUtc = DateTimeOffset.UtcNow,
+                CatalogSha256 = ComputePythonReCatalogSha256(),
+                CatalogCaseIds = GetPythonReCatalogCaseIds(),
+                Corpus = CaptureCorpusProvenance(),
+                Cases = snapshot.Cases,
+                Lifecycle = snapshot.Lifecycle,
+                ScalingFamilies = snapshot.ScalingFamilies,
+            });
         }
-
-        var snapshot = new PythonReBenchmarkSnapshot
-        {
-            SchemaVersion = PythonReBenchmarkSchemaVersion,
-            GeneratedAtUtc = DateTimeOffset.UtcNow,
-            CatalogSha256 = ComputePythonReCatalogSha256(),
-            CatalogCaseIds = GetPythonReCatalogCaseIds(),
-            Corpus = CaptureCorpusProvenance(),
-            Cases = measurements,
-            Lifecycle = [],
-            ScalingFamilies = [],
-        };
-        WriteSnapshot(snapshot);
-        Console.WriteLine();
         Console.WriteLine($"Snapshot           : {Path.GetFullPath(SnapshotFileName)}");
         return 0;
     }
@@ -1394,9 +1391,10 @@ internal static partial class PythonReBenchmarkReporter
             ByteControlEligible = byteControl.IsEligible,
             ByteControlReason = byteControl.Reason,
             Environment = CaptureEnvironment(),
-            PythonRe = MeasurePythonReOperation(context, effectiveIterations, samples, pythonResult),
-            DecodeThenRegex = MeasureOperation(context.ExecuteDecodeThenRegex, effectiveIterations, samples),
-            PredecodedRegex = MeasureOperation(context.ExecutePredecodedRegex, effectiveIterations, samples),
+            MeasurementProtocol = "RetainedResultBatchV2",
+            PythonRe = MeasureResultOperation(context.MeasurePythonReBatch, effectiveIterations, samples, pythonResult),
+            DecodeThenRegex = MeasureResultOperation(count => context.MeasureRegexBatch(count, decode: true), effectiveIterations, samples, pythonResult),
+            PredecodedRegex = MeasureResultOperation(count => context.MeasureRegexBatch(count, decode: false), effectiveIterations, samples, pythonResult),
             Cpython = cpython,
             Qualification = PythonReQualificationMeasurement.CreateHistoricalUnqualified(),
         };
@@ -1508,8 +1506,8 @@ internal static partial class PythonReBenchmarkReporter
         return Math.Max(requestedIterations, minimum);
     }
 
-    private static PythonReOperationMeasurement MeasurePythonReOperation(
-        PythonReBenchmarkContext context,
+    private static PythonReOperationMeasurement MeasureResultOperation(
+        Func<int, PythonReBenchmarkBatch> runBatch,
         int iterations,
         int samples,
         int expectedChecksum)
@@ -1519,7 +1517,7 @@ internal static partial class PythonReBenchmarkReporter
         var warmupBatchSize = Math.Min(iterations, 16);
         do
         {
-            var batch = context.MeasurePythonReBatch(warmupBatchSize);
+            var batch = runBatch(warmupBatchSize);
             if (batch.Checksum != expectedChecksum)
             {
                 throw new InvalidOperationException(
@@ -1531,11 +1529,26 @@ internal static partial class PythonReBenchmarkReporter
         }
         while (warmup.ElapsedMilliseconds < 100 && warmupCalls < 65_536);
 
+        // Calibrate the retained-result loop independently. Consume results
+        // after timing, as in the producer and CPython batch implementations.
+        var probeCount = 1;
+        PythonReBenchmarkBatch probe;
+        do
+        {
+            probe = runBatch(probeCount);
+            if (probe.Elapsed.TotalMilliseconds >= 20 || probeCount >= 10_000_000) break;
+            probeCount = Math.Min(probeCount * 2, 10_000_000);
+        } while (true);
+        iterations = (int)Math.Clamp(Math.Ceiling(probeCount * 50 / Math.Max(probe.Elapsed.TotalMilliseconds, double.Epsilon)), 1, 10_000_000);
+        var confirmation = runBatch(iterations);
+        if (confirmation.Elapsed.TotalMilliseconds is > 0 and < 40)
+            iterations = (int)Math.Clamp(Math.Ceiling(iterations * 50 / confirmation.Elapsed.TotalMilliseconds), 1, 10_000_000);
+        var rawMicroseconds = new double[samples];
         var microseconds = new double[samples];
         var allocations = new long[samples];
         for (var sample = 0; sample < samples; sample++)
         {
-            var batch = context.MeasurePythonReBatch(iterations);
+            var batch = runBatch(iterations);
             if (batch.Checksum != expectedChecksum)
             {
                 throw new InvalidOperationException(
@@ -1543,6 +1556,7 @@ internal static partial class PythonReBenchmarkReporter
             }
 
             allocations[sample] = batch.AllocatedBytes / iterations;
+            rawMicroseconds[sample] = batch.Elapsed.TotalMicroseconds;
             microseconds[sample] = batch.Elapsed.TotalMicroseconds / iterations;
             s_sink ^= batch.Checksum;
         }
@@ -1555,6 +1569,8 @@ internal static partial class PythonReBenchmarkReporter
             MinimumMicroseconds = microseconds[0],
             MaximumMicroseconds = microseconds[^1],
             MedianAllocatedBytes = allocations[allocations.Length / 2],
+            EffectiveIterations = iterations,
+            SampleMicroseconds = rawMicroseconds,
             WarmupCalls = warmupCalls,
             WarmupMilliseconds = warmup.Elapsed.TotalMilliseconds,
         };
@@ -1890,7 +1906,7 @@ internal sealed class PythonReBenchmarkContext
         var parsed = new PythonReParser(benchmarkCase.Pattern).Parse(benchmarkCase.Options);
         var translation = PythonReTranslator.Translate(parsed, true);
         var translatedPattern = PythonReDotNetReference.Render(parsed);
-        var regexOptions = PythonReDotNetReference.ToRegexOptions(benchmarkCase.Options);
+        var regexOptions = PythonReDotNetReference.ToRegexOptions(parsed.Options);
         _regex = new Regex(translatedPattern, regexOptions, Regex.InfiniteMatchTimeout);
         _fullRegex = new Regex($@"\A(?:{translatedPattern})\z", regexOptions, Regex.InfiniteMatchTimeout);
         _captureCount = _regex.GetGroupNumbers().Length - 1;
@@ -4254,7 +4270,7 @@ internal sealed class PythonReBenchmarkContext
         PythonReBenchmarkOperation.SubnUtf8 => Checksum(ReplaceAndCount(input, encodeUtf8: true, materializeCallback: false)),
         PythonReBenchmarkOperation.SubnEvaluatorString => Checksum(ReplaceAndCount(input, encodeUtf8: false, materializeCallback: true)),
         PythonReBenchmarkOperation.SubnEvaluatorUtf8 => Checksum(ReplaceAndCount(input, encodeUtf8: true, materializeCallback: true)),
-        PythonReBenchmarkOperation.ReplaceEvaluatorString => ExecuteRegexReplaceEvaluator(input),
+        PythonReBenchmarkOperation.ReplaceEvaluatorString => ChecksumRegexReplaceEvaluator(input),
         PythonReBenchmarkOperation.SplitStrings => Checksum(MaterializeSplitStrings(input)),
         PythonReBenchmarkOperation.SplitStringsLimited => Checksum(MaterializeSplitStrings(
             input,
@@ -4262,6 +4278,47 @@ internal sealed class PythonReBenchmarkContext
         PythonReBenchmarkOperation.SplitDetailed => Checksum(MaterializeSplitDetailed(input)),
         _ => throw new InvalidOperationException(),
     };
+
+    internal PythonReBenchmarkBatch MeasureRegexBatch(int iterations, bool decode) => _case.Operation switch
+    {
+        PythonReBenchmarkOperation.IsMatch => MeasureRegexBatch(iterations, decode, input => _regex.IsMatch(input) ? 1 : 0, result => result),
+        PythonReBenchmarkOperation.Search => MeasureRegexBatch(iterations, decode, input => _regex.Match(input), Checksum),
+        PythonReBenchmarkOperation.SearchFromOffset => MeasureRegexBatch(iterations, decode, input => _regex.Match(input, _startOffsetInUtf16), Checksum),
+        PythonReBenchmarkOperation.Match => MeasureRegexBatch(iterations, decode, input => _regex.Match(input), ChecksumAtStart),
+        PythonReBenchmarkOperation.FullMatch => MeasureRegexBatch(iterations, decode, input => _fullRegex.Match(input), Checksum),
+        PythonReBenchmarkOperation.SearchDetailed => MeasureRegexBatch(iterations, decode, input => MaterializeDetailed(_regex.Match(input), input, GetUtf8Offsets(input)), Checksum),
+        PythonReBenchmarkOperation.Count => MeasureRegexBatch(iterations, decode, input => _regex.Count(input), result => result),
+        PythonReBenchmarkOperation.CountFromOffset => MeasureRegexBatch(iterations, decode, input => _regex.Count(input, _startOffsetInUtf16), result => result),
+        PythonReBenchmarkOperation.FindAllStrings => MeasureRegexBatch(iterations, decode, input => MaterializeFindAllStrings(input), Checksum),
+        PythonReBenchmarkOperation.FindAllStringsFromOffset => MeasureRegexBatch(iterations, decode, input => MaterializeFindAllStrings(input, _startOffsetInUtf16), Checksum),
+        PythonReBenchmarkOperation.FindAllUtf8 => MeasureRegexBatch(iterations, decode, input => MaterializeFindAllUtf8(input), Checksum),
+        PythonReBenchmarkOperation.FindIterDetailed => MeasureRegexBatch(iterations, decode, input => MaterializeFindIterDetailed(input), Checksum),
+        PythonReBenchmarkOperation.FindAllStructural => MeasureRegexBatch(iterations, decode, input => MaterializeFindAllStructural(input), Checksum),
+        PythonReBenchmarkOperation.ReplaceString => MeasureRegexBatch(iterations, decode, input => _regex.Replace(input, _dotNetReplacement), Checksum),
+        PythonReBenchmarkOperation.ReplaceUtf8 => MeasureRegexBatch(iterations, decode, input => Encoding.UTF8.GetBytes(_regex.Replace(input, _dotNetReplacement)), Checksum),
+        PythonReBenchmarkOperation.ReplaceStringLimited => MeasureRegexBatch(iterations, decode, input => _regex.Replace(input, _dotNetReplacement, _case.Coverage.ReplacementCount), Checksum),
+        PythonReBenchmarkOperation.SubnString => MeasureRegexBatch(iterations, decode, input => ReplaceAndCount(input, encodeUtf8: false, materializeCallback: false), Checksum),
+        PythonReBenchmarkOperation.SubnUtf8 => MeasureRegexBatch(iterations, decode, input => ReplaceAndCount(input, encodeUtf8: true, materializeCallback: false), Checksum),
+        PythonReBenchmarkOperation.SubnEvaluatorString => MeasureRegexBatch(iterations, decode, input => ReplaceAndCount(input, encodeUtf8: false, materializeCallback: true), Checksum),
+        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => MeasureRegexBatch(iterations, decode, input => ReplaceAndCount(input, encodeUtf8: true, materializeCallback: true), Checksum),
+        PythonReBenchmarkOperation.ReplaceEvaluatorString => MeasureRegexBatch(iterations, decode, input => MaterializeRegexReplaceEvaluator(input), result => Combine(Checksum(result.Text), result.CallbackChecksum)),
+        PythonReBenchmarkOperation.SplitStrings => MeasureRegexBatch(iterations, decode, input => MaterializeSplitStrings(input), Checksum),
+        PythonReBenchmarkOperation.SplitStringsLimited => MeasureRegexBatch(iterations, decode, input => MaterializeSplitStrings(input, _case.Coverage.MaxSplit), Checksum),
+        PythonReBenchmarkOperation.SplitDetailed => MeasureRegexBatch(iterations, decode, input => MaterializeSplitDetailed(input), Checksum),
+        _ => throw new InvalidOperationException(),
+    };
+
+    private PythonReBenchmarkBatch MeasureRegexBatch<T>(int iterations, bool decode, Func<string, T> execute, Func<T, int> checksum)
+    {
+        var result = default(T)!;
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var started = Stopwatch.GetTimestamp();
+        for (var iteration = 0; iteration < iterations; iteration++)
+            result = execute(decode ? s_strictUtf8.GetString(InputBytes) : _decoded);
+        var elapsed = Stopwatch.GetElapsedTime(started);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        return new PythonReBenchmarkBatch(elapsed, allocated, checksum(result), 0, 0);
+    }
 
     private BclFindAllResult MaterializeFindAllStrings(string input, int startOffsetInUtf16 = 0)
     {
@@ -4550,7 +4607,13 @@ internal sealed class PythonReBenchmarkContext
             materializeCallback ? callbackChecksum : null);
     }
 
-    private int ExecuteRegexReplaceEvaluator(string input)
+    private int ChecksumRegexReplaceEvaluator(string input)
+    {
+        var result = MaterializeRegexReplaceEvaluator(input);
+        return Combine(Checksum(result.Text), result.CallbackChecksum);
+    }
+
+    private (string Text, int CallbackChecksum) MaterializeRegexReplaceEvaluator(string input)
     {
         var callbackChecksum = 0;
         var utf8Offsets = GetUtf8Offsets(input);
@@ -4561,7 +4624,7 @@ internal sealed class PythonReBenchmarkContext
                 Checksum(MaterializeDetailed(match, input, utf8Offsets)));
             return _case.Replacement;
         });
-        return Combine(Checksum(result), callbackChecksum);
+        return (result, callbackChecksum);
     }
 
     private static BclDetailedMatch MaterializeDetailed(Match match, string input, int[]? utf8Offsets)
@@ -5294,6 +5357,7 @@ internal sealed class PythonReCorpusProvenance
 
 internal sealed class PythonReCaseMeasurement
 {
+    public string? MeasurementProtocol { get; init; }
     public required string Pattern { get; init; }
     public required string Options { get; init; }
     public required string Operation { get; init; }
@@ -5446,6 +5510,8 @@ internal sealed class PythonRePairedSampleEvidence
 
 internal sealed class PythonReOperationMeasurement
 {
+    public int? EffectiveIterations { get; init; }
+    public double[]? SampleMicroseconds { get; init; }
     public required double MedianMicroseconds { get; init; }
     public required double MinimumMicroseconds { get; init; }
     public required double MaximumMicroseconds { get; init; }
@@ -5480,6 +5546,7 @@ internal sealed class CpythonBenchmarkMeasurement
 
 internal sealed class CpythonOperationMeasurement
 {
+    public double[]? SampleMicroseconds { get; init; }
     public required double MedianMicroseconds { get; init; }
     public required double MinimumMicroseconds { get; init; }
     public required double MaximumMicroseconds { get; init; }

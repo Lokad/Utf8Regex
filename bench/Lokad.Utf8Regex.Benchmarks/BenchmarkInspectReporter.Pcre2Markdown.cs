@@ -195,7 +195,7 @@ internal static partial class BenchmarkInspectReporter
         writer.WriteLine();
         writer.WriteLine("Each row applies only to its recorded source, runtime and result contract. This snapshot can contain several source generations; updating one row does not qualify the others. Measurements predating the strict UTF-8/scalar migration remain historical evidence and cannot establish current-engine semantics or performance. Current independent PCRE2 delivery and operating-cost evidence are linked from the [adapter README](README.md).");
         writer.WriteLine();
-        writer.WriteLine("Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`. `.NET + decode` performs strict UTF-8 decoding for every operation and is the primary end-to-end managed baseline; `.NET predecoded` is a lower bound. PCRE2-only rows cannot use .NET as a semantic comparator and therefore report managed PCRE2 measurements without fabricating a cross-dialect baseline.");
+        writer.WriteLine("Compatible rows compare equivalent work against `Utf8Regex` and `Regex` on the recorded .NET runtime. `.NET + decode` performs strict UTF-8 decoding for every operation and is the primary end-to-end managed baseline; `.NET predecoded` is a lower bound. PCRE2-only rows cannot use .NET as a semantic comparator and therefore report managed PCRE2 measurements without fabricating a cross-dialect baseline.");
         writer.WriteLine();
         writer.WriteLine("## Snapshot summary");
         writer.WriteLine();

@@ -60,6 +60,10 @@ normal runs do not shut down servers or kill other benchmark hosts.
   PythonRe.Benchmarks.json and PCRE2.Benchmarks.json. Regenerate their Markdown
   through the existing rewrite/verify commands; never hand-edit generated tables.
   Prefer selective refresh and preserve historical identities/uncertainty.
+  New Core/PCRE2 refresh lanes calibrate independently and retain raw durations;
+  Core V3 samples below 20 ms remain unqualified. Python/.NET/CPython result
+  batches consume checksums after timing. Keep lifecycle/scaling evidence when
+  refreshing ordinary rows; package matrices stay at delivery boundaries.
 - Python comparisons use an official CPython in a long-lived worker, excluding
   startup/compilation. Set UTF8REGEX_CPYTHON if needed. Qualification requires
   matching loaded binaries/PDB source checksums, clean relevant inputs and the

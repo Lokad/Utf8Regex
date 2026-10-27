@@ -83,6 +83,11 @@ keep their original runtime identities until remeasured.
 ## Benchmarks
 
 The tables below come from [README.Benchmarks.json](README.Benchmarks.json).
+The 0.5 refresh uses independent lane calibration and alternating sample order;
+counts and raw durations are retained. Core samples below 20 ms cannot set parity
+status. Python and .NET result batches consume checksums after timing, while
+including required result materialization. CPython paired measurements and the
+native PCRE2 comparator retain their own semantic and qualification gates.
 Rows retain their measured source/runtime versions and do not qualify later
 implementations. Profile comparisons are in the
 [PythonRe](src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md) and

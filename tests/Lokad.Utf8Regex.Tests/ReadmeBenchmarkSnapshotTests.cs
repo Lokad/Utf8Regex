@@ -12,7 +12,7 @@ public sealed class ReadmeBenchmarkSnapshotTests
     {
         using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("README.Benchmarks.json")));
         var root = document.RootElement;
-        Assert.Equal(5, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.InRange(root.GetProperty("SchemaVersion").GetInt32(), 5, 6);
 
         var sections = root.GetProperty("Sections");
         AssertSection(sections, "dotnet-performance", 55);
@@ -42,19 +42,27 @@ public sealed class ReadmeBenchmarkSnapshotTests
 
         var summary = root.GetProperty("Summary");
         Assert.Equal(178, summary.GetProperty("Rows").GetInt32());
-        Assert.Equal(0, summary.GetProperty("Unqualified").GetInt32());
+        Assert.InRange(summary.GetProperty("Unqualified").GetInt32(), 0, 178);
         Assert.Equal(
             178,
             summary.GetProperty("Wins").GetInt32() +
             summary.GetProperty("TieCandidates").GetInt32() +
-            summary.GetProperty("Gaps").GetInt32());
+            summary.GetProperty("Gaps").GetInt32() +
+            summary.GetProperty("Unqualified").GetInt32());
 
         var rows = root.GetProperty("Rows").EnumerateArray().ToArray();
         Assert.Equal(178, rows.Length);
         Assert.All(rows, row =>
         {
-            Assert.Contains(row.GetProperty("Status").GetString(), new[] { "Win", "TieCandidate", "Gap" });
-            Assert.Contains(row.GetProperty("MeasurementProtocol").GetString(), new[] { "AlternatingSixLaneV1", "AlternatingSixLaneV2" });
+            Assert.Contains(row.GetProperty("Status").GetString(), new[] { "Win", "TieCandidate", "Gap", "Unqualified" });
+            Assert.Contains(row.GetProperty("MeasurementProtocol").GetString(), new[] { "AlternatingSixLaneV1", "AlternatingSixLaneV2", "IndependentSixLaneV3" });
+            if (row.GetProperty("Status").GetString() == "Unqualified")
+            {
+                Assert.False(string.IsNullOrWhiteSpace(row.GetProperty("StatusReason").GetString()));
+                Assert.False(row.TryGetProperty("RatioToDecode", out var decode) && decode.ValueKind != JsonValueKind.Null);
+                Assert.False(row.TryGetProperty("RatioToPredecoded", out var predecoded) && predecoded.ValueKind != JsonValueKind.Null);
+                return;
+            }
             Assert.True(row.GetProperty("RatioToDecode").GetDouble() > 0);
             var ratioToPredecoded = row.GetProperty("RatioToPredecoded").GetDouble();
             Assert.True(ratioToPredecoded > 0);
@@ -109,11 +117,27 @@ public sealed class ReadmeBenchmarkSnapshotTests
         {
             var measurement = benchmarkCase.Value;
             var requestedIterations = measurement.GetProperty("RequestedIterations").GetInt32();
-            Assert.Contains(measurement.GetProperty("MeasurementProtocol").GetString(), new[] { "AlternatingSixLaneV1", "AlternatingSixLaneV2" });
+            Assert.Contains(measurement.GetProperty("MeasurementProtocol").GetString(), new[] { "AlternatingSixLaneV1", "AlternatingSixLaneV2", "IndependentSixLaneV3" });
             Assert.True(requestedIterations > 0, benchmarkCase.Name);
             Assert.True(measurement.GetProperty("EffectiveIterations").GetInt32() >= requestedIterations, benchmarkCase.Name);
             Assert.True(measurement.GetProperty("Samples").GetInt32() >= 5, benchmarkCase.Name);
             AssertPositiveRow(sections.GetProperty(sectionName), benchmarkCase.Name);
+            if (measurement.GetProperty("MeasurementProtocol").GetString() == "IndependentSixLaneV3")
+            {
+                string[] metrics = ["Utf8Regex", "Utf8Compiled", "PredecodedRegex", "CompiledRegex", "DecodeThenRegex", "DecodeThenCompiledRegex"];
+                var counts = measurement.GetProperty("LaneIterations").EnumerateArray().Select(x => x.GetInt32()).ToArray();
+                var samples = measurement.GetProperty("SampleMicroseconds").EnumerateArray().ToArray();
+                Assert.Equal(6, counts.Length);
+                Assert.Equal(6, samples.Length);
+                for (var lane = 0; lane < counts.Length; lane++)
+                {
+                    Assert.True(counts[lane] >= requestedIterations);
+                    var durations = samples[lane].EnumerateArray().Select(x => x.GetDouble()).Order().ToArray();
+                    Assert.Equal(measurement.GetProperty("Samples").GetInt32(), durations.Length);
+                    Assert.All(durations, duration => Assert.True(double.IsFinite(duration) && duration > 0));
+                    Assert.Equal(durations[durations.Length / 2] / counts[lane], measurement.GetProperty(metrics[lane]).GetDouble(), 8);
+                }
+            }
 
             var environment = measurement.GetProperty("Environment");
             Assert.False(environment.GetProperty("TrackedDirty").GetBoolean(), benchmarkCase.Name);

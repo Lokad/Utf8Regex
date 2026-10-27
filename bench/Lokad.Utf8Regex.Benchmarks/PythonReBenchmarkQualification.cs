@@ -1274,6 +1274,10 @@ internal static partial class PythonReBenchmarkReporter
         foreach (var benchmarkCase in cases)
         {
             var context = new PythonReBenchmarkContext(benchmarkCase);
+            var resultChecksum = context.ExecutePythonRe();
+            if (context.MeasureRegexBatch(2, decode: false).Checksum != resultChecksum ||
+                context.MeasureRegexBatch(2, decode: true).Checksum != resultChecksum)
+                throw new InvalidOperationException($"Retained .NET result batches disagree for '{benchmarkCase.Id}'.");
             var byteControlEligibility = PythonReBenchmarkCatalog.GetByteControlEligibility(
                 benchmarkCase,
                 context.InputBytes);
