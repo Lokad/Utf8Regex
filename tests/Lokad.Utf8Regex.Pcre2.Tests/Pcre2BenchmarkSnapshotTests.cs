@@ -118,7 +118,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
             .GroupBy(static row => row.Value.GetProperty("PcreNetNativeStatus").GetString())
             .ToDictionary(static group => group.Key!, static group => group.Count(), StringComparer.Ordinal);
         Assert.Contains($"Snapshot SHA-256: `{hash}`", page, StringComparison.Ordinal);
-        Assert.Contains("PCRE.NET / PCRE2 NFA CPU", page, StringComparison.Ordinal);
+        Assert.Contains("PCRE.NET / PCRE2 NFA elapsed", page, StringComparison.Ordinal);
         Assert.Contains(
             $"Comparator Status: `{statusCounts.GetValueOrDefault("ManagedFaster")}` managed faster, " +
             $"`{statusCounts.GetValueOrDefault("Equivalent")}` equivalent, " +
@@ -131,7 +131,11 @@ public sealed class Pcre2BenchmarkSnapshotTests
         Assert.Contains($"Rows with paired qualification evidence: `{pairedRowCount}/101`", page, StringComparison.Ordinal);
         if (pairedRowCount > 0)
         {
-            Assert.Contains("Qualification processor sets: `highest-efficiency-class ", page, StringComparison.Ordinal);
+            Assert.Contains("Qualification processor sets: `", page, StringComparison.Ordinal);
+            foreach (var row in operationRows)
+                if (row.Value.TryGetProperty("PcreNetNativePair", out var pair))
+                    Assert.Contains($"{pair.GetProperty("ProcessorSetPolicy").GetString()} {pair.GetProperty("ProcessorAffinityMask").GetString()}",
+                        page, StringComparison.Ordinal);
             Assert.Contains("Managed qualification lifecycle", page, StringComparison.Ordinal);
             Assert.Contains("IQR ", page, StringComparison.Ordinal);
             Assert.Contains("Plan SHA-256", page, StringComparison.Ordinal);

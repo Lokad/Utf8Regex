@@ -273,7 +273,7 @@ internal static partial class BenchmarkInspectReporter
             writer.WriteLine();
             if (compatible)
             {
-                writer.WriteLine("| Case | Status | Input | Utf8Pcre2 CPU | PCRE.NET / PCRE2 NFA CPU | R | 95% R | E | Paired samples | Managed route | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU | vs decode | Utf8Pcre2 managed alloc | Comparator managed alloc |");
+                writer.WriteLine("| Case | Status | Input | Utf8Pcre2 elapsed | PCRE.NET / PCRE2 NFA elapsed | R | 95% R | E | Paired samples | Managed route | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | vs decode | Utf8Pcre2 managed alloc | Comparator managed alloc |");
                 writer.WriteLine("|---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---:|---:|");
                 foreach (var (caseId, row) in section.Cases.OrderBy(static row => row.Key, StringComparer.Ordinal))
                 {
@@ -288,7 +288,7 @@ internal static partial class BenchmarkInspectReporter
             }
             else
             {
-                writer.WriteLine("| Case | Status | Input | Utf8Pcre2 CPU | PCRE.NET / PCRE2 NFA CPU | R | 95% R | E | Paired samples | Managed route | Utf8Pcre2 managed alloc | Comparator managed alloc | Construction CPU | Construction alloc |");
+                writer.WriteLine("| Case | Status | Input | Utf8Pcre2 elapsed | PCRE.NET / PCRE2 NFA elapsed | R | 95% R | E | Paired samples | Managed route | Utf8Pcre2 managed alloc | Comparator managed alloc | Construction elapsed | Construction alloc |");
                 writer.WriteLine("|---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|");
                 foreach (var (caseId, row) in section.Cases.OrderBy(static row => row.Key, StringComparer.Ordinal))
                 {

@@ -1702,6 +1702,8 @@ internal static partial class PythonReBenchmarkReporter
         ulong expectedConsumptionToken,
         int minimumCalls = PythonReQualificationMinimumWarmupCalls)
     {
+        // Keep cheap-route call floors; expensive result materialization must
+        // not spend minutes warming. Actual calls/time and sample stability remain recorded.
         var batchesRequiredForCallFloor = checked(
             (int)(((long)minimumCalls + iterations - 1) / iterations));
         var maximumBatches = Math.Max(32, batchesRequiredForCallFloor);
