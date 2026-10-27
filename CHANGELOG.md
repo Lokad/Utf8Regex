@@ -6,6 +6,10 @@ Development is 0.4.0-rc.3-dev; no new package candidate is staged.
 Removed the test-only legacy fallback-reason scanner. Detached package fixtures
 read their staged API snapshot and leave repository-only source/layout/snapshot
 guards to source CI. Matching, public APIs and resource controls are unchanged.
+PythonRe match/group text and detailed capture/name collections now expose empty
+values for default and unsuccessful results, as their non-null contracts require.
+Supplied result arrays retain their identity; no match discovery or admission
+policy changes accompany this correction.
 RC2 correctness/identity/consumer evidence remains valid; its cumulative cost
 acceptance is withdrawn as inconclusive. Frozen packages and ZIP are unchanged;
 see the [dated correction](https://github.com/Lokad/Utf8Regex/blob/master/bench/Experiments/ReleaseCandidate2-20261026/ERRATA.md).

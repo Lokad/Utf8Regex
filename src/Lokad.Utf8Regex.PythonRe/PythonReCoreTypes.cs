@@ -118,7 +118,7 @@ public readonly struct Utf8PythonMatchData
     public int EndOffsetInUtf16 { get; init; }
 
     /// <summary>Gets the matched text, or an empty string after no match.</summary>
-    public string ValueText { get; init; }
+    public string ValueText { get => field ?? string.Empty; init; }
 
 }
 
@@ -216,7 +216,7 @@ public readonly struct Utf8PythonGroupMatchData
     public bool HasContiguousByteRange { get; init; }
 
     /// <summary>Gets the captured UTF-16 text, or an empty string when unmatched.</summary>
-    public string ValueText { get; init; }
+    public string ValueText { get => field ?? string.Empty; init; }
 }
 
 /// <summary>Stores an owned detailed match with numbered and named group metadata.</summary>
@@ -230,7 +230,7 @@ public readonly struct Utf8PythonDetailedMatchData
     {
         get
         {
-            if (!Success || LastIndex is not int number || NameEntries is null) return null;
+            if (!Success || LastIndex is not int number) return null;
             foreach (var entry in NameEntries) if (entry.Number == number) return entry.Name;
             return null;
         }
@@ -242,22 +242,22 @@ public readonly struct Utf8PythonDetailedMatchData
     /// <summary>Gets group zero, or its default value after no match.</summary>
     public Utf8PythonGroupMatchData Value => Success ? Groups[0] : default;
 
-    /// <summary>Gets all capture slots, including group zero.</summary>
-    public Utf8PythonGroupMatchData[] Groups { get; init; }
+    /// <summary>Gets all capture slots, including group zero, or an empty array after no match.</summary>
+    public Utf8PythonGroupMatchData[] Groups { get => field ?? []; init; }
 
-    /// <summary>Gets the mappings from named groups to capture slots.</summary>
-    public PythonReNameEntry[] NameEntries { get; init; }
+    /// <summary>Gets the mappings from named groups to capture slots, or an empty array when none are supplied.</summary>
+    public PythonReNameEntry[] NameEntries { get => field ?? []; init; }
 
     /// <summary>Gets the number of capture slots, including group zero.</summary>
-    public int CaptureSlotCount => Groups?.Length ?? 0;
+    public int CaptureSlotCount => Groups.Length;
 
     /// <summary>Gets the number of named-group mappings.</summary>
-    public int NameEntryCount => NameEntries?.Length ?? 0;
+    public int NameEntryCount => NameEntries.Length;
 
     /// <summary>Attempts to get a capture slot by number, including an unmatched slot.</summary>
     public bool TryGetGroup(int number, out Utf8PythonGroupMatchData group)
     {
-        if (Groups is null || number < 0 || number >= Groups.Length)
+        if ((uint)number >= (uint)Groups.Length)
         {
             group = default;
             return false;
@@ -270,12 +270,6 @@ public readonly struct Utf8PythonDetailedMatchData
     /// <summary>Attempts to resolve a named capture slot.</summary>
     public bool TryGetFirstSetGroup(string name, out Utf8PythonGroupMatchData group)
     {
-        if (NameEntries is null)
-        {
-            group = default;
-            return false;
-        }
-
         foreach (var entry in NameEntries)
         {
             if (!string.Equals(entry.Name, name, StringComparison.Ordinal))

@@ -74,6 +74,10 @@ backend presence alone does not establish execution. A Core preparation may stil
 be built transiently to discover eligibility, under the original construction
 owner. Discarding a root reduces retention, not all construction traffic.
 
+Default and unsuccessful detailed results expose empty capture/name arrays and
+empty value text. Default match/group data also expose empty text. Successful
+snapshots keep their supplied arrays and retain their values across later calls.
+
 ## Public API
 
 ```csharp

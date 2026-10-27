@@ -313,6 +313,12 @@ charges, token/deadline and working/result admission remain, while fewer actual
 frames/work can admit tighter caps. Captured/lazy/nullable/tail/assertion/full-end
 contexts retain their general paths.
 
+Default and unsuccessful detailed results expose empty `Groups`/`NameEntries`
+arrays and empty group-zero `ValueText`. Default match/group data expose empty
+text too; zero initialization requires no constructor or preparation. Successful
+results retain supplied text and array identity. Required result admission and
+retained-result lifetimes are unchanged; empty defaults acquire no per-call payload.
+
 ## Generic bulk result discovery
 
 Capture-free generic bulk discovery uses
