@@ -100,8 +100,12 @@ public sealed class PythonReBenchmarkSnapshotTests
 
             var cpython = benchmarkCase.Value.GetProperty("Cpython");
             Assert.Equal(1, cpython.GetProperty("ProtocolVersion").GetInt32());
-            AssertCpythonMeasurement(cpython.GetProperty("PredecodedRe"), benchmarkCase.Value.GetProperty("EffectiveIterations").GetInt32());
-            AssertCpythonMeasurement(cpython.GetProperty("DecodeThenRe"), benchmarkCase.Value.GetProperty("EffectiveIterations").GetInt32());
+            // V2 calibrates actual public batches independently across runtimes.
+            var maximumCpythonIterations = benchmarkCase.Value.TryGetProperty("MeasurementProtocol", out var protocol) &&
+                protocol.GetString() == "RetainedResultBatchV2" ? 10_000_000 :
+                benchmarkCase.Value.GetProperty("EffectiveIterations").GetInt32();
+            AssertCpythonMeasurement(cpython.GetProperty("PredecodedRe"), maximumCpythonIterations);
+            AssertCpythonMeasurement(cpython.GetProperty("DecodeThenRe"), maximumCpythonIterations);
             var cpythonEnvironment = cpython.GetProperty("Environment");
             Assert.Equal("CPython", cpythonEnvironment.GetProperty("Implementation").GetString());
             Assert.False(string.IsNullOrWhiteSpace(cpythonEnvironment.GetProperty("Version").GetString()));
