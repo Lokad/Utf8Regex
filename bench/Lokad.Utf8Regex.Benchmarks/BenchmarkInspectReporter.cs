@@ -5563,6 +5563,11 @@ internal static partial class BenchmarkInspectReporter
                 requestedIterations, maximumIterations);
             // One duration confirmation after calibration. Do not keep retrying
             // noisy cases: raw samples below 20 ms remain unqualified.
+            // Match sampling's GC preflight. Uncollected decode allocations
+            // otherwise inflate this probe and leave its later samples too short.
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
             var elapsed = MeasureTimedCore(count, action).Elapsed.TotalMicroseconds;
             if (elapsed > 0 && (elapsed < 40_000 || elapsed > 75_000))
                 count = (int)Math.Clamp(Math.Ceiling(count * targetSampleMicroseconds / elapsed), requestedIterations, maximumIterations);
