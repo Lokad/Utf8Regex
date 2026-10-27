@@ -1,0 +1,135 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "Versions": [
+    {
+      "Core": {
+        "TargetFramework": ".NETCoreApp,Version=v11.0",
+        "Version": "0.5.0-dev\u002Bb70f1ff132ebb7d59bf591ae7617d952af1c8936",
+        "Sha256": "6D885AAE19B84F5A13E249B2D0C43B9BD5F10F888E152EBFA18718CD2D14C6CA"
+      },
+      "Pcre2": {
+        "TargetFramework": ".NETCoreApp,Version=v11.0",
+        "Version": "0.5.0-dev\u002Bb70f1ff132ebb7d59bf591ae7617d952af1c8936",
+        "Sha256": "28501ECFD265A0806E75519EB9B48D8FA7041B3D6B9BC91FCB0BC23AFA880412"
+      }
+    },
+    {
+      "Core": {
+        "TargetFramework": ".NETCoreApp,Version=v11.0",
+        "Version": "0.5.0-dev\u002Bd5aa7a7ec87448b08f78ef44d85a8ee391c4b99d",
+        "Sha256": "986B33E498CACE0BA6223E588FF775DA51913DFC1427047417944F7F51311159"
+      },
+      "Pcre2": {
+        "TargetFramework": ".NETCoreApp,Version=v11.0",
+        "Version": "0.5.0-dev\u002Bd5aa7a7ec87448b08f78ef44d85a8ee391c4b99d",
+        "Sha256": "895498EF26FEE8DC2C586C20757212EA98605173DEBAD017F653429345BA5E78"
+      }
+    }
+  ],
+  "Rows": [
+    {
+      "Id": "required-literal-hit",
+      "Pattern": "[a-z]\u002B@[a-z]\u002B",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 4096,
+      "InputSha256": "9D61BDB85FDD0C21B0AA0759BE40DDC89971C133DF2EE9635C72901118941338",
+      "Expected": 512,
+      "Iterations": [
+        385,
+        401
+      ],
+      "Microseconds": [
+        [
+          122.83454545454546,
+          121.27922077922078,
+          122.64259740259739,
+          122.74233766233768,
+          122.85376623376622,
+          122.43116883116883,
+          122.9631168831169
+        ],
+        [
+          123.03117206982543,
+          122.48354114713217,
+          122.70822942643392,
+          122.63665835411472,
+          123.30399002493765,
+          122.28503740648378,
+          122.92443890274315
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1680,
+          1680,
+          1680,
+          1680,
+          1680,
+          1680,
+          1680
+        ],
+        [
+          1680,
+          1680,
+          1680,
+          1680,
+          1680,
+          1680,
+          1680
+        ]
+      ]
+    },
+    {
+      "Id": "unchanged-literal-control",
+      "Pattern": "abc",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 16384,
+      "InputSha256": "A7954F59A4075EE4A8F422617E5F5093440026423EFD2C322B25ADAD43821216",
+      "Expected": 4096,
+      "Iterations": [
+        1019,
+        1000
+      ],
+      "Microseconds": [
+        [
+          49.946516192345435,
+          49.85299313052011,
+          49.845534838076546,
+          49.497546614327774,
+          49.793523061825326,
+          49.650441609421,
+          49.794406280667324
+        ],
+        [
+          49.9365,
+          50.1682,
+          49.8022,
+          51.0536,
+          49.4399,
+          49.7239,
+          49.8197
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    }
+  ]
+}

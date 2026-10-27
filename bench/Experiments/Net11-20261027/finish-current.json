@@ -1,0 +1,140 @@
+{
+  "StartedAtUtc": "2026-10-27T18:53:20.1171591+00:00",
+  "EndedAtUtc": "2026-10-27T19:00:49.3319532+00:00",
+  "ElapsedSeconds": 449.2130592,
+  "Steps": [
+    {
+      "Name": "python-pending",
+      "Succeeded": false,
+      "ExitCode": 124,
+      "Error": null,
+      "Seconds": 210.2785969
+    },
+    {
+      "Name": "python-priorities",
+      "Succeeded": true,
+      "ExitCode": 0,
+      "Error": null,
+      "Seconds": 0.148635
+    },
+    {
+      "Name": "pcre2-priorities",
+      "Succeeded": true,
+      "ExitCode": 0,
+      "Error": null,
+      "Seconds": 0.161734
+    },
+    {
+      "Name": "python-freshness",
+      "Succeeded": true,
+      "ExitCode": 0,
+      "Error": null,
+      "Seconds": 1.1012075
+    },
+    {
+      "Name": "freeze",
+      "Succeeded": true,
+      "ExitCode": 0,
+      "Error": null,
+      "Seconds": 0.0756967
+    },
+    {
+      "Name": "pcre2-comparison",
+      "Succeeded": true,
+      "ExitCode": 0,
+      "Error": null,
+      "Seconds": 143.9830646
+    },
+    {
+      "Name": "source",
+      "Succeeded": true,
+      "ExitCode": 0,
+      "Error": null,
+      "Seconds": 0.5779231
+    },
+    {
+      "Name": "build",
+      "Succeeded": true,
+      "ExitCode": 0,
+      "Error": null,
+      "Seconds": 17.5264679
+    },
+    {
+      "Name": "confirm-industry_leipzig-twain-count",
+      "Succeeded": true,
+      "ExitCode": 0,
+      "Error": null,
+      "Seconds": 4.8698369
+    },
+    {
+      "Name": "confirm-industry_leipzig-river-window-count",
+      "Succeeded": true,
+      "ExitCode": 0,
+      "Error": null,
+      "Seconds": 5.9274085
+    },
+    {
+      "Name": "confirm-industry_leipzig-symbol-count",
+      "Succeeded": true,
+      "ExitCode": 0,
+      "Error": null,
+      "Seconds": 31.8411895
+    },
+    {
+      "Name": "pcre2-required-literal",
+      "Succeeded": true,
+      "ExitCode": 0,
+      "Error": null,
+      "Seconds": 5.6216376
+    },
+    {
+      "Name": "pcre2-ipv4",
+      "Succeeded": true,
+      "ExitCode": 0,
+      "Error": null,
+      "Seconds": 25.955911
+    },
+    {
+      "Name": "rewrite-core",
+      "Succeeded": true,
+      "ExitCode": 0,
+      "Error": null,
+      "Seconds": 0.1011649
+    },
+    {
+      "Name": "rewrite-python",
+      "Succeeded": true,
+      "ExitCode": 0,
+      "Error": null,
+      "Seconds": 0.2529249
+    },
+    {
+      "Name": "rewrite-pcre2",
+      "Succeeded": true,
+      "ExitCode": 0,
+      "Error": null,
+      "Seconds": 0.1880179
+    },
+    {
+      "Name": "verify-parity",
+      "Succeeded": true,
+      "ExitCode": 0,
+      "Error": null,
+      "Seconds": 0.1157858
+    },
+    {
+      "Name": "verify-python",
+      "Succeeded": true,
+      "ExitCode": 0,
+      "Error": null,
+      "Seconds": 0.2515677
+    },
+    {
+      "Name": "verify-pcre2",
+      "Succeeded": true,
+      "ExitCode": 0,
+      "Error": null,
+      "Seconds": 0.1855689
+    }
+  ]
+}

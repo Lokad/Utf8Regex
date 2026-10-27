@@ -1,0 +1,61 @@
+{
+  "Source": "d5aa7a7ec87448b08f78ef44d85a8ee391c4b99d",
+  "StartedAtUtc": "2026-10-27T19:05:50.5101033+00:00",
+  "EndedAtUtc": "2026-10-27T19:07:20.0951714+00:00",
+  "Steps": [
+    {
+      "Case": "common/date-miss",
+      "Seconds": 10.3254771,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Case": "common/ip-match",
+      "Seconds": 4.7129804,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Case": "corpus/code-declarations",
+      "Seconds": 5.3027759,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Case": "corpus/code-log-methods",
+      "Seconds": 3.980801,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Case": "corpus/mail-email-count",
+      "Seconds": 45.2435823,
+      "ExitCode": 124,
+      "Error": null
+    },
+    {
+      "Case": "corpus/sherlock-ru",
+      "Seconds": 4.3719608,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Case": "split/detailed",
+      "Seconds": 4.5374586,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Case": "split/unicode",
+      "Seconds": 4.4483089,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Case": "split/zero-width",
+      "Seconds": 6.5964423,
+      "ExitCode": 0,
+      "Error": null
+    }
+  ]
+}

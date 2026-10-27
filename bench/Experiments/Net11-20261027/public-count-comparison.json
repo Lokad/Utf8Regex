@@ -1,0 +1,153 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "Baseline": {
+    "Version": "0.5.0-dev\u002B427f67892463c108ae95090f3990b996a8886784",
+    "Sha256": "F88422884E9AADFDCC267B1DE40FB2A6AAD8C74E7AD9141E3843AA866B5B492A"
+  },
+  "Candidate": {
+    "Version": "0.5.0-dev\u002B4465d08cea0c793265993ca4d2bbef3c9d97d8a9",
+    "Sha256": "9F7D4D66E625676E1F53F99F8869D4A15BC3E529B3F04A0B0F384855B023328A"
+  },
+  "Rows": [
+    {
+      "Id": "ruff-noqa/real",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 32514627,
+      "InputSha256": "FB6F37144103CC533B20FC8C735F4C65B7146D9FBD9931F3D0A231B12BC4A257",
+      "Expected": 20,
+      "Iterations": [
+        1,
+        1
+      ],
+      "Microseconds": [
+        [
+          8513667.4,
+          8506147.8,
+          8464017.6
+        ],
+        [
+          433780.8,
+          418601.60000000003,
+          417755.4
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          5416,
+          5416,
+          5416
+        ],
+        [
+          3600,
+          3600,
+          3600
+        ]
+      ]
+    },
+    {
+      "Id": "ruff-noqa/real",
+      "FiniteAndLiveToken": true,
+      "InputBytes": 32768,
+      "InputSha256": "EC8899354436CD8CFE5726DE91A8433273AFB3F3566076DAFA6ABF7895385C3F",
+      "Expected": 0,
+      "Iterations": [
+        7,
+        7
+      ],
+      "Microseconds": [
+        [
+          7231.928571428572,
+          7280.371428571429,
+          7255.028571428572
+        ],
+        [
+          7672.171428571428,
+          7647.157142857142,
+          7610.5
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3712,
+          3712,
+          3712
+        ],
+        [
+          3712,
+          3712,
+          3712
+        ]
+      ]
+    },
+    {
+      "Id": "literal-alternate/sherlock-casei-en",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 899232,
+      "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+      "Expected": 725,
+      "Iterations": [
+        4,
+        30
+      ],
+      "Microseconds": [
+        [
+          14069.699999999999,
+          13906.3,
+          13867.775
+        ],
+        [
+          1723.45,
+          1705.4900000000002,
+          1707.27
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "Id": "literal/sherlock-en",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 899232,
+      "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+      "Expected": 513,
+      "Iterations": [
+        488,
+        487
+      ],
+      "Microseconds": [
+        [
+          100.23811475409838,
+          99.28258196721312,
+          99.55081967213115
+        ],
+        [
+          100.95071868583162,
+          100.68028747433266,
+          100.15112936344968
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ]
+    }
+  ]
+}

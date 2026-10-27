@@ -1,0 +1,57 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+var versions=new[]{Load(args[0],"before"),Load(args[1],"after")};
+var rows=new List<object>();
+foreach(var (id,pattern,text,finite) in new[]{
+ ("required-literal-miss-16KiB","[a-z]+@[a-z]+",new string('a',16384),false),
+ ("required-literal-miss-128KiB","[a-z]+@[a-z]+",new string('a',131072),false),
+ ("required-literal-miss-finite-live-4KiB","[a-z]+@[a-z]+",new string('a',4096),true),
+ ("required-literal-hit","[a-z]+@[a-z]+",string.Concat(Enumerable.Repeat("foo@bar ",512)),false),
+ ("unchanged-literal-control","abc",string.Concat(Enumerable.Repeat("abc ",4096)),false)}) {
+ var input=Encoding.UTF8.GetBytes(text);var expected=new Regex(pattern,RegexOptions.CultureInvariant).Count(text);
+ using var token=new CancellationTokenSource();
+ var actions=versions.Select(v=>Calls.Create(v.Pcre,pattern,input,finite,token.Token)).ToArray();
+ var counts=new int[2];var elapsed=new[]{new double[3],new double[3]};var allocations=new[]{new double[3],new double[3]};
+ for(int lane=0;lane<2;lane++){
+  var warm=Stopwatch.StartNew();do {if(actions[lane]()!=expected)throw new Exception("Preflight mismatch");}while(warm.ElapsedMilliseconds<250);
+  int n=1;var probe=Calls.Loop(n,actions[lane]);while(probe.Ms<20&&n<1_000_000){n=Math.Min(n*2,1_000_000);probe=Calls.Loop(n,actions[lane]);}
+  counts[lane]=(int)Math.Clamp(Math.Ceiling(n*50/Math.Max(probe.Ms,0.000001)),1,1_000_000);
+ }
+ for(int sample=0;sample<3;sample++)for(int position=0;position<2;position++){
+  int lane=(sample&1)==0?position:1-position;GC.Collect();GC.WaitForPendingFinalizers();GC.Collect();
+  var r=Calls.Loop(counts[lane],actions[lane]);if(r.Last!=expected)throw new Exception("Sample mismatch");
+  elapsed[lane][sample]=r.Ms*1000/counts[lane];allocations[lane][sample]=(double)r.Bytes/counts[lane];
+ }
+ rows.Add(new{Id=id,Pattern=pattern,FiniteAndLiveToken=finite,InputBytes=input.Length,InputSha256=Convert.ToHexString(SHA256.HashData(input)),Expected=expected,Iterations=counts,Microseconds=elapsed,AllocatedBytes=allocations});
+ Console.Error.WriteLine($"{id}: {string.Join(" / ",elapsed.Select(x=>x.Order().ElementAt(1)))} us/op");
+}
+Console.WriteLine(JsonSerializer.Serialize(new{Runtime=RuntimeInformation.FrameworkDescription,Versions=versions.Select(v=>new{Core=Identity(v.Core),Pcre2=Identity(v.Pcre)}),Rows=rows},new JsonSerializerOptions{WriteIndented=true}));
+static (Assembly Core,Assembly Pcre) Load(string root,string name){root=Path.GetFullPath(root);var context=new AssemblyLoadContext(name);context.Resolving+=(_,n)=>File.Exists(Path.Combine(root,n.Name+".dll"))?context.LoadFromAssemblyPath(Path.Combine(root,n.Name+".dll")):null;return(context.LoadFromAssemblyPath(Path.Combine(root,"Lokad.Utf8Regex.dll")),context.LoadFromAssemblyPath(Path.Combine(root,"Lokad.Utf8Regex.Pcre2.dll")));}
+static object Identity(Assembly a)=>new{Version=a.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,Sha256=Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(a.Location)))};
+static class Calls {
+ internal static Func<int> Create(Assembly assembly,string pattern,byte[] input,bool finite,CancellationToken token){
+  var type=assembly.GetType("Lokad.Utf8Regex.Pcre2.Utf8Pcre2Regex")!;
+  if(!finite){var instance=type.GetConstructor([typeof(string)])!.Invoke([pattern]);var call=type.GetMethod("Count",[typeof(ReadOnlySpan<byte>)])!.CreateDelegate<Count>(instance);return()=>call(input);}
+  var compile=assembly.GetType("Lokad.Utf8Regex.Pcre2.Pcre2CompileOptions")!;
+  var settings=assembly.GetType("Lokad.Utf8Regex.Pcre2.Utf8Pcre2CompileSettings")!;
+  var limitsType=assembly.GetType("Lokad.Utf8Regex.Pcre2.Utf8Pcre2ExecutionLimits")!;var limits=Activator.CreateInstance(limitsType)!;
+  limitsType.GetProperty("MatchLimit")!.SetValue(limits,1_000_000_000u);limitsType.GetProperty("DepthLimit")!.SetValue(limits,4096u);
+  limitsType.GetProperty("HeapLimitInBytes")!.SetValue(limits,16_777_216UL);limitsType.GetProperty("ResultLimitInBytes")!.SetValue(limits,16_777_216UL);
+  var regex=type.GetConstructor([typeof(string),compile,settings,limitsType,typeof(TimeSpan)])!.Invoke([pattern,Enum.ToObject(compile,0),Activator.CreateInstance(settings),limits,Timeout.InfiniteTimeSpan]);
+  var options=assembly.GetType("Lokad.Utf8Regex.Pcre2.Pcre2MatchOptions")!;
+  return (Func<int>)typeof(Calls).GetMethod(nameof(Token),BindingFlags.Static|BindingFlags.NonPublic)!.MakeGenericMethod(options).Invoke(null,[regex,input,token])!;
+ }
+ private static Func<int> Token<T>(object instance,byte[] input,CancellationToken token){var call=instance.GetType().GetMethod("Count",[typeof(ReadOnlySpan<byte>),typeof(int),typeof(T),typeof(CancellationToken)])!.CreateDelegate<TokenCount<T>>(instance);return()=>call(input,0,default!,token);}
+ [MethodImpl(MethodImplOptions.NoInlining)]
+ internal static (double Ms,long Bytes,int Last) Loop(int n,Func<int> action){long before=GC.GetAllocatedBytesForCurrentThread(),start=Stopwatch.GetTimestamp();int last=0;for(int i=0;i<n;i++)last=action();return(Stopwatch.GetElapsedTime(start).TotalMilliseconds,GC.GetAllocatedBytesForCurrentThread()-before,last);}
+ private delegate int Count(ReadOnlySpan<byte> input);
+ private delegate int TokenCount<T>(ReadOnlySpan<byte> input,int offset,T options,CancellationToken token);
+}

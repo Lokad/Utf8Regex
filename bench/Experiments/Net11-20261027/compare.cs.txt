@@ -1,0 +1,68 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+var hostRoot=Path.GetFullPath(args[0]);
+var baselinePath=Path.Combine(hostRoot,"Lokad.Utf8Regex.dll");
+var candidatePath=Path.GetFullPath(args[1]);
+AssemblyLoadContext.Default.Resolving += (_,name) => File.Exists(Path.Combine(hostRoot,name.Name+".dll"))
+    ? AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(hostRoot,name.Name+".dll")) : null;
+var baseline=AssemblyLoadContext.Default.LoadFromAssemblyPath(baselinePath);
+var candidate=new AssemblyLoadContext("candidate").LoadFromAssemblyPath(candidatePath);
+var catalog=AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(hostRoot,"Lokad.Utf8Regex.Benchmarks.dll"))
+    .GetType("Lokad.Utf8Regex.Benchmarks.ReplicaCountBenchmarkCase")!;
+var resolve=catalog.GetMethod("Resolve",BindingFlags.Static|BindingFlags.Public|BindingFlags.NonPublic)!;
+var rows=new List<object>();
+foreach(var id in new[]{"ruff-noqa/real","literal-alternate/sherlock-casei-en","literal/sherlock-en"}) {
+ var definition=resolve.Invoke(null,[id])!;
+ T Get<T>(string property)=>(T)definition.GetType().GetProperty(property)!.GetValue(definition)!;
+ var bytes=Get<byte[]>("InputBytes");var pattern=Get<string>("Utf8Pattern");var options=Get<RegexOptions>("Options");
+ var expected=Get<Regex>("Regex").Count(Encoding.UTF8.GetString(bytes));
+ foreach(var finite in id=="ruff-noqa/real"?new[]{false,true}:new[]{false}) {
+  var input=bytes;
+  if(finite){var length=Math.Min(32768,input.Length);while(length<input.Length&&(input[length]&0xC0)==0x80)length--;input=input[..length];expected=new Regex(pattern,options).Count(Encoding.UTF8.GetString(input));}
+  using var cancellation=new CancellationTokenSource();
+  Func<int> Make(Assembly assembly) {
+   var type=assembly.GetType("Lokad.Utf8Regex.Utf8Regex")!;object instance;
+   if(finite){var policyType=assembly.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!;var policy=Activator.CreateInstance(policyType)!;
+    foreach(var (key,value) in new[]{("MaxWorkSteps",10_000_000UL),("MaxDepth",4096UL),("MaxWorkingBytes",16_777_216UL),("MaxResultBytes",16_777_216UL)})
+      {var property=policyType.GetProperty(key)!;property.SetValue(policy,Convert.ChangeType(value,Nullable.GetUnderlyingType(property.PropertyType)??property.PropertyType));}
+    instance=type.GetConstructor([typeof(string),typeof(RegexOptions),typeof(TimeSpan),policyType])!.Invoke([pattern,options,Regex.InfiniteMatchTimeout,policy]);
+    var count=type.GetMethod("Count",[typeof(ReadOnlySpan<byte>),typeof(CancellationToken)])!.CreateDelegate<TokenCount>(instance);
+    return ()=>count(input,cancellation.Token);
+   }
+   instance=type.GetConstructor([typeof(string),typeof(RegexOptions)])!.Invoke([pattern,options]);
+   var simple=type.GetMethod("Count",[typeof(ReadOnlySpan<byte>)])!.CreateDelegate<SpanCount>(instance);
+   return ()=>simple(input);
+  }
+  var actions=new[]{Make(baseline),Make(candidate)};
+  var iterations=new int[2];
+  for(int lane=0;lane<2;lane++) {
+   if(actions[lane]()!=expected)throw new Exception("Preflight mismatch");
+   int count=1;var probe=Loop(count,actions[lane]);
+   while(probe.Milliseconds<20&&count<1_000_000){count=Math.Min(count*2,1_000_000);probe=Loop(count,actions[lane]);}
+   iterations[lane]=(int)Math.Clamp(Math.Ceiling(count*50/Math.Max(probe.Milliseconds,0.000001)),1,1_000_000);
+  }
+  var times=new[]{new double[3],new double[3]};var allocated=new[]{new double[3],new double[3]};
+  for(int sample=0;sample<3;sample++) for(int position=0;position<2;position++) {
+   int lane=sample%2==0?position:1-position;
+   GC.Collect();GC.WaitForPendingFinalizers();GC.Collect();
+   var result=Loop(iterations[lane],actions[lane]);if(result.Last!=expected)throw new Exception("Timed result mismatch");
+   times[lane][sample]=result.Milliseconds*1000/iterations[lane];allocated[lane][sample]=(double)result.Bytes/iterations[lane];
+  }
+  rows.Add(new{Id=id,FiniteAndLiveToken=finite,InputBytes=input.Length,InputSha256=Convert.ToHexString(SHA256.HashData(input)),Expected=expected,Iterations=iterations,Microseconds=times,AllocatedBytes=allocated});
+  Console.Error.WriteLine($"Completed {id} finite={finite}: {string.Join(" / ",times.Select(x=>x.Order().ElementAt(1)))} us/op");
+ }
+}
+Console.WriteLine(JsonSerializer.Serialize(new{Runtime=RuntimeInformation.FrameworkDescription,Baseline=Identity(baseline),Candidate=Identity(candidate),Rows=rows},new JsonSerializerOptions{WriteIndented=true}));
+static object Identity(Assembly a)=>new{Version=a.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,Sha256=Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(a.Location)))};
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds,long Bytes,int Last) Loop(int count,Func<int> action){int value=0;long before=GC.GetAllocatedBytesForCurrentThread();long start=Stopwatch.GetTimestamp();for(int i=0;i<count;i++)value=action();var elapsed=Stopwatch.GetElapsedTime(start);return(elapsed.TotalMilliseconds,GC.GetAllocatedBytesForCurrentThread()-before,value);}
+delegate int SpanCount(ReadOnlySpan<byte> input);
+delegate int TokenCount(ReadOnlySpan<byte> input,CancellationToken token);

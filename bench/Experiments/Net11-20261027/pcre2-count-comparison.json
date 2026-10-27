@@ -1,0 +1,207 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "Versions": [
+    {
+      "Core": {
+        "Version": "0.5.0-dev\u002Bb70f1ff132ebb7d59bf591ae7617d952af1c8936",
+        "Sha256": "6D885AAE19B84F5A13E249B2D0C43B9BD5F10F888E152EBFA18718CD2D14C6CA"
+      },
+      "Pcre2": {
+        "Version": "0.5.0-dev\u002Bb70f1ff132ebb7d59bf591ae7617d952af1c8936",
+        "Sha256": "28501ECFD265A0806E75519EB9B48D8FA7041B3D6B9BC91FCB0BC23AFA880412"
+      }
+    },
+    {
+      "Core": {
+        "Version": "0.5.0-dev\u002B0e9671b6c4d4f55c7ec15326da9d33eac9ec8484",
+        "Sha256": "98E47D1923DAFA1BEF4661D2058B6BE8454831EF2E7B65523F9DFC517E7F420F"
+      },
+      "Pcre2": {
+        "Version": "0.5.0-dev\u002B0e9671b6c4d4f55c7ec15326da9d33eac9ec8484",
+        "Sha256": "656C8F81D721B6D06B458408DC8409C879A466B028DA87EC490EF92A3E3027C1"
+      }
+    }
+  ],
+  "Rows": [
+    {
+      "Id": "required-literal-miss-16KiB",
+      "Pattern": "[a-z]\u002B@[a-z]\u002B",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 16384,
+      "InputSha256": "F3336BEA752B5A28743033DD2C844A4A63FBA08871AAEE2586A2BF2D69BE83A2",
+      "Expected": 0,
+      "Iterations": [
+        1,
+        28811
+      ],
+      "Microseconds": [
+        [
+          918429.2000000001,
+          659899.7000000001,
+          434297.39999999997
+        ],
+        [
+          1.743903370240533,
+          1.731109645621464,
+          3.775616951858665
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1680,
+          1680,
+          1680
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "Id": "required-literal-miss-128KiB",
+      "Pattern": "[a-z]\u002B@[a-z]\u002B",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 131072,
+      "InputSha256": "B44FFB72FCC259676BD80495FEF1B44B808CA8F1FFE1B1706A4D7911B0E31F11",
+      "Expected": 0,
+      "Iterations": [
+        1,
+        10214
+      ],
+      "Microseconds": [
+        [
+          27142670.5,
+          27125105,
+          27136845
+        ],
+        [
+          4.992412375171334,
+          4.941991384374388,
+          4.988985705893871
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1680,
+          1680,
+          1680
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "Id": "required-literal-miss-finite-live-4KiB",
+      "Pattern": "[a-z]\u002B@[a-z]\u002B",
+      "FiniteAndLiveToken": true,
+      "InputBytes": 4096,
+      "InputSha256": "C93EEE2D0DB02F10ACC7460D9576E122DCF8CD53C4BF8DFCAE1B3E74EBCFFF5A",
+      "Expected": 0,
+      "Iterations": [
+        2,
+        29004
+      ],
+      "Microseconds": [
+        [
+          37284.4,
+          36463.299999999996,
+          36570.799999999996
+        ],
+        [
+          1.670410977796166,
+          1.6596848710522687,
+          1.6638360226175701
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1792,
+          1792,
+          1792
+        ],
+        [
+          112,
+          112,
+          112
+        ]
+      ]
+    },
+    {
+      "Id": "required-literal-hit",
+      "Pattern": "[a-z]\u002B@[a-z]\u002B",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 4096,
+      "InputSha256": "9D61BDB85FDD0C21B0AA0759BE40DDC89971C133DF2EE9635C72901118941338",
+      "Expected": 512,
+      "Iterations": [
+        330,
+        101
+      ],
+      "Microseconds": [
+        [
+          153.12939393939394,
+          151.11515151515152,
+          151.6439393939394
+        ],
+        [
+          492.60693069306933,
+          493.92475247524754,
+          494.6960396039604
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1680,
+          1680,
+          1680
+        ],
+        [
+          1680,
+          1680,
+          1680
+        ]
+      ]
+    },
+    {
+      "Id": "unchanged-literal-control",
+      "Pattern": "abc",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 16384,
+      "InputSha256": "A7954F59A4075EE4A8F422617E5F5093440026423EFD2C322B25ADAD43821216",
+      "Expected": 4096,
+      "Iterations": [
+        399,
+        440
+      ],
+      "Microseconds": [
+        [
+          125.45037593984962,
+          125.66917293233082,
+          125.2904761904762
+        ],
+        [
+          114.33863636363637,
+          114.12863636363636,
+          114.2859090909091
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ]
+    }
+  ]
+}

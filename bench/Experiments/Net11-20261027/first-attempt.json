@@ -1,0 +1,67 @@
+{
+  "Source": "427f67892463c108ae95090f3990b996a8886784",
+  "StartedAtUtc": "2026-10-27T16:49:36.0000000",
+  "ElapsedSeconds": 2678.5836927,
+  "Steps": [
+    {
+      "Name": "build",
+      "Succeeded": true,
+      "Seconds": 63.2694495
+    },
+    {
+      "Name": "tests",
+      "Succeeded": true,
+      "Seconds": 155.3727136
+    },
+    {
+      "Name": "dynamic-net10.0",
+      "Succeeded": true,
+      "Seconds": 8.0767372
+    },
+    {
+      "Name": "dynamic-net11.0",
+      "Succeeded": true,
+      "Seconds": 8.4535498
+    },
+    {
+      "Name": "semantic",
+      "Succeeded": true,
+      "Seconds": 14.5827663
+    },
+    {
+      "Name": "core",
+      "Succeeded": false,
+      "Seconds": 451.1732822
+    },
+    {
+      "Name": "python",
+      "Succeeded": true,
+      "Seconds": 300.9467731
+    },
+    {
+      "Name": "python-scaling",
+      "Succeeded": true,
+      "Seconds": 22.2679744
+    },
+    {
+      "Name": "pcre2",
+      "Succeeded": true,
+      "Seconds": 349.0658746
+    },
+    {
+      "Name": "pcre2-scaling",
+      "Succeeded": false,
+      "Seconds": 600.2147136
+    },
+    {
+      "Name": "finite",
+      "Succeeded": false,
+      "Seconds": 90.328935
+    },
+    {
+      "Name": "python-pairs",
+      "Succeeded": false,
+      "Seconds": 0.3632088
+    }
+  ]
+}
