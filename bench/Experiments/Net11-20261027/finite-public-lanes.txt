@@ -1,0 +1,835 @@
+Case: pattern=(a+)(b+) inputBytes=9
+  Core routes: ownedSlice=True kind=FallbackRegex
+  PythonRe preparation: coreKind=FallbackRegex
+  Core/PythonRe finite: work=1000000 depth=1024 working=1048576 result=1048576
+  Finite preparation: core=FallbackRegex pythonCore=FallbackRegex
+  Pcre2 plan: IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice
+  Pcre2 finite plan: IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice
+  Protocol: warmupMinimumCalls=256 warmupTargetMs=250 sampleTargetMs=50 finalDurationChecks=3 requestedMinimumIterations=20000
+  Raw: operation=IsMatch lane=core/unlimited sample=0 iterations=43153 elapsedMs=49.566600 us/op=1.148625
+  Raw: operation=IsMatch lane=core/token sample=0 iterations=39235 elapsedMs=50.019500 us/op=1.274869
+  Raw: operation=IsMatch lane=core/finite sample=0 iterations=36396 elapsedMs=48.900200 us/op=1.343560
+  Raw: operation=IsMatch lane=core/finite+token sample=0 iterations=36199 elapsedMs=49.232500 us/op=1.360051
+  Raw: operation=IsMatch lane=python/unlimited sample=0 iterations=44803 elapsedMs=50.403900 us/op=1.125012
+  Raw: operation=IsMatch lane=python/token sample=0 iterations=39337 elapsedMs=49.624700 us/op=1.261527
+  Raw: operation=IsMatch lane=python/finite sample=0 iterations=39320 elapsedMs=49.567000 us/op=1.260605
+  Raw: operation=IsMatch lane=python/finite+token sample=0 iterations=38186 elapsedMs=49.601900 us/op=1.298955
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=0 iterations=609726 elapsedMs=50.055900 us/op=0.082096
+  Raw: operation=IsMatch lane=dotnet/decode sample=0 iterations=505005 elapsedMs=50.073300 us/op=0.099154
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=0 iterations=43618 elapsedMs=56.950900 us/op=1.305674
+  Raw: operation=IsMatch lane=pcre2/finite sample=0 iterations=37589 elapsedMs=51.083300 us/op=1.358996
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=0 iterations=36365 elapsedMs=49.497400 us/op=1.361127
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=1 iterations=36365 elapsedMs=50.150900 us/op=1.379098
+  Raw: operation=IsMatch lane=pcre2/finite sample=1 iterations=37589 elapsedMs=51.238200 us/op=1.363117
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=1 iterations=43618 elapsedMs=52.843700 us/op=1.211511
+  Raw: operation=IsMatch lane=dotnet/decode sample=1 iterations=505005 elapsedMs=50.040800 us/op=0.099090
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=1 iterations=609726 elapsedMs=50.050400 us/op=0.082087
+  Raw: operation=IsMatch lane=python/finite+token sample=1 iterations=38186 elapsedMs=59.120800 us/op=1.548232
+  Raw: operation=IsMatch lane=python/finite sample=1 iterations=39320 elapsedMs=53.193700 us/op=1.352841
+  Raw: operation=IsMatch lane=python/token sample=1 iterations=39337 elapsedMs=51.128800 us/op=1.299764
+  Raw: operation=IsMatch lane=python/unlimited sample=1 iterations=44803 elapsedMs=51.301600 us/op=1.145048
+  Raw: operation=IsMatch lane=core/finite+token sample=1 iterations=36199 elapsedMs=50.146000 us/op=1.385287
+  Raw: operation=IsMatch lane=core/finite sample=1 iterations=36396 elapsedMs=48.458300 us/op=1.331418
+  Raw: operation=IsMatch lane=core/token sample=1 iterations=39235 elapsedMs=49.234500 us/op=1.254862
+  Raw: operation=IsMatch lane=core/unlimited sample=1 iterations=43153 elapsedMs=47.944600 us/op=1.111037
+  Raw: operation=IsMatch lane=core/unlimited sample=2 iterations=43153 elapsedMs=48.344700 us/op=1.120309
+  Raw: operation=IsMatch lane=core/token sample=2 iterations=39235 elapsedMs=48.816100 us/op=1.244198
+  Raw: operation=IsMatch lane=core/finite sample=2 iterations=36396 elapsedMs=49.912200 us/op=1.371365
+  Raw: operation=IsMatch lane=core/finite+token sample=2 iterations=36199 elapsedMs=50.722000 us/op=1.401199
+  Raw: operation=IsMatch lane=python/unlimited sample=2 iterations=44803 elapsedMs=50.734500 us/op=1.132391
+  Raw: operation=IsMatch lane=python/token sample=2 iterations=39337 elapsedMs=49.658000 us/op=1.262374
+  Raw: operation=IsMatch lane=python/finite sample=2 iterations=39320 elapsedMs=49.882300 us/op=1.268624
+  Raw: operation=IsMatch lane=python/finite+token sample=2 iterations=38186 elapsedMs=50.232800 us/op=1.315477
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=2 iterations=609726 elapsedMs=51.071000 us/op=0.083761
+  Raw: operation=IsMatch lane=dotnet/decode sample=2 iterations=505005 elapsedMs=50.373900 us/op=0.099749
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=2 iterations=43618 elapsedMs=58.917200 us/op=1.350754
+  Raw: operation=IsMatch lane=pcre2/finite sample=2 iterations=37589 elapsedMs=55.380300 us/op=1.473311
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=2 iterations=36365 elapsedMs=53.381200 us/op=1.467928
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=3 iterations=36365 elapsedMs=53.425500 us/op=1.469146
+  Raw: operation=IsMatch lane=pcre2/finite sample=3 iterations=37589 elapsedMs=52.933500 us/op=1.408218
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=3 iterations=43618 elapsedMs=52.088600 us/op=1.194200
+  Raw: operation=IsMatch lane=dotnet/decode sample=3 iterations=505005 elapsedMs=49.751500 us/op=0.098517
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=3 iterations=609726 elapsedMs=50.646600 us/op=0.083065
+  Raw: operation=IsMatch lane=python/finite+token sample=3 iterations=38186 elapsedMs=54.525200 us/op=1.427885
+  Raw: operation=IsMatch lane=python/finite sample=3 iterations=39320 elapsedMs=51.206300 us/op=1.302297
+  Raw: operation=IsMatch lane=python/token sample=3 iterations=39337 elapsedMs=50.757600 us/op=1.290327
+  Raw: operation=IsMatch lane=python/unlimited sample=3 iterations=44803 elapsedMs=51.397100 us/op=1.147180
+  Raw: operation=IsMatch lane=core/finite+token sample=3 iterations=36199 elapsedMs=49.581700 us/op=1.369698
+  Raw: operation=IsMatch lane=core/finite sample=3 iterations=36396 elapsedMs=48.698600 us/op=1.338021
+  Raw: operation=IsMatch lane=core/token sample=3 iterations=39235 elapsedMs=50.033700 us/op=1.275231
+  Raw: operation=IsMatch lane=core/unlimited sample=3 iterations=43153 elapsedMs=48.619200 us/op=1.126670
+  Raw: operation=IsMatch lane=core/unlimited sample=4 iterations=43153 elapsedMs=48.346500 us/op=1.120351
+  Raw: operation=IsMatch lane=core/token sample=4 iterations=39235 elapsedMs=48.511600 us/op=1.236437
+  Raw: operation=IsMatch lane=core/finite sample=4 iterations=36396 elapsedMs=49.110700 us/op=1.349343
+  Raw: operation=IsMatch lane=core/finite+token sample=4 iterations=36199 elapsedMs=50.186400 us/op=1.386403
+  Raw: operation=IsMatch lane=python/unlimited sample=4 iterations=44803 elapsedMs=51.356100 us/op=1.146265
+  Raw: operation=IsMatch lane=python/token sample=4 iterations=39337 elapsedMs=50.183800 us/op=1.275740
+  Raw: operation=IsMatch lane=python/finite sample=4 iterations=39320 elapsedMs=50.262500 us/op=1.278293
+  Raw: operation=IsMatch lane=python/finite+token sample=4 iterations=38186 elapsedMs=50.395000 us/op=1.319725
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=4 iterations=609726 elapsedMs=50.711500 us/op=0.083171
+  Raw: operation=IsMatch lane=dotnet/decode sample=4 iterations=505005 elapsedMs=49.753800 us/op=0.098521
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=4 iterations=43618 elapsedMs=54.132200 us/op=1.241052
+  Raw: operation=IsMatch lane=pcre2/finite sample=4 iterations=37589 elapsedMs=50.394100 us/op=1.340661
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=4 iterations=36365 elapsedMs=50.383900 us/op=1.385505
+  Operation: IsMatch
+    core/unlimited: result=1 us/op=1.120 bytes/op=5,744.0
+    core/token: result=1 us/op=1.255 bytes/op=5,856.0
+    core/finite: result=1 us/op=1.344 bytes/op=5,856.0
+    core/finite+token: result=1 us/op=1.385 bytes/op=5,856.0
+    python/unlimited: result=1 us/op=1.145 bytes/op=5,744.0
+    python/token: result=1 us/op=1.276 bytes/op=5,856.0
+    python/finite: result=1 us/op=1.278 bytes/op=5,856.0
+    python/finite+token: result=1 us/op=1.320 bytes/op=5,856.0
+    dotnet/predecoded: result=1 us/op=0.083 bytes/op=0.0
+    dotnet/decode: result=1 us/op=0.099 bytes/op=40.0
+    pcre2/unlimited: result=1 us/op=1.241 bytes/op=5,744.0
+    pcre2/finite: result=1 us/op=1.363 bytes/op=5,856.0
+    pcre2/finite+token: result=1 us/op=1.386 bytes/op=5,856.0
+  Protocol: warmupMinimumCalls=256 warmupTargetMs=250 sampleTargetMs=50 finalDurationChecks=3 requestedMinimumIterations=20000
+  Raw: operation=Count lane=core/unlimited sample=0 iterations=41299 elapsedMs=50.891500 us/op=1.232270
+  Raw: operation=Count lane=core/token sample=0 iterations=35651 elapsedMs=49.866200 us/op=1.398732
+  Raw: operation=Count lane=core/finite sample=0 iterations=35906 elapsedMs=49.713600 us/op=1.384549
+  Raw: operation=Count lane=core/finite+token sample=0 iterations=34940 elapsedMs=49.867600 us/op=1.427235
+  Raw: operation=Count lane=python/unlimited sample=0 iterations=34789 elapsedMs=50.244500 us/op=1.444264
+  Raw: operation=Count lane=python/token sample=0 iterations=30793 elapsedMs=50.026000 us/op=1.624590
+  Raw: operation=Count lane=python/finite sample=0 iterations=30793 elapsedMs=50.134300 us/op=1.628107
+  Raw: operation=Count lane=python/finite+token sample=0 iterations=30426 elapsedMs=50.889600 us/op=1.672570
+  Raw: operation=Count lane=dotnet/predecoded sample=0 iterations=525196 elapsedMs=50.355200 us/op=0.095879
+  Raw: operation=Count lane=dotnet/decode sample=0 iterations=433237 elapsedMs=49.693600 us/op=0.114703
+  Raw: operation=Count lane=pcre2/unlimited sample=0 iterations=25122 elapsedMs=52.663100 us/op=2.096294
+  Raw: operation=Count lane=pcre2/finite sample=0 iterations=23425 elapsedMs=52.511100 us/op=2.241669
+  Raw: operation=Count lane=pcre2/finite+token sample=0 iterations=22632 elapsedMs=50.490600 us/op=2.230938
+  Raw: operation=Count lane=pcre2/finite+token sample=1 iterations=22632 elapsedMs=50.745400 us/op=2.242197
+  Raw: operation=Count lane=pcre2/finite sample=1 iterations=23425 elapsedMs=51.953000 us/op=2.217844
+  Raw: operation=Count lane=pcre2/unlimited sample=1 iterations=25122 elapsedMs=50.149900 us/op=1.996254
+  Raw: operation=Count lane=dotnet/decode sample=1 iterations=433237 elapsedMs=49.403500 us/op=0.114033
+  Raw: operation=Count lane=dotnet/predecoded sample=1 iterations=525196 elapsedMs=50.497600 us/op=0.096150
+  Raw: operation=Count lane=python/finite+token sample=1 iterations=30426 elapsedMs=55.560600 us/op=1.826090
+  Raw: operation=Count lane=python/finite sample=1 iterations=30793 elapsedMs=52.219000 us/op=1.695807
+  Raw: operation=Count lane=python/token sample=1 iterations=30793 elapsedMs=50.846900 us/op=1.651249
+  Raw: operation=Count lane=python/unlimited sample=1 iterations=34789 elapsedMs=50.398200 us/op=1.448682
+  Raw: operation=Count lane=core/finite+token sample=1 iterations=34940 elapsedMs=49.750100 us/op=1.423872
+  Raw: operation=Count lane=core/finite sample=1 iterations=35906 elapsedMs=49.846600 us/op=1.388253
+  Raw: operation=Count lane=core/token sample=1 iterations=35651 elapsedMs=50.415600 us/op=1.414143
+  Raw: operation=Count lane=core/unlimited sample=1 iterations=41299 elapsedMs=50.413300 us/op=1.220691
+  Raw: operation=Count lane=core/unlimited sample=2 iterations=41299 elapsedMs=51.263000 us/op=1.241265
+  Raw: operation=Count lane=core/token sample=2 iterations=35651 elapsedMs=50.119500 us/op=1.405837
+  Raw: operation=Count lane=core/finite sample=2 iterations=35906 elapsedMs=50.416000 us/op=1.404111
+  Raw: operation=Count lane=core/finite+token sample=2 iterations=34940 elapsedMs=50.496100 us/op=1.445223
+  Raw: operation=Count lane=python/unlimited sample=2 iterations=34789 elapsedMs=51.315300 us/op=1.475044
+  Raw: operation=Count lane=python/token sample=2 iterations=30793 elapsedMs=50.238900 us/op=1.631504
+  Raw: operation=Count lane=python/finite sample=2 iterations=30793 elapsedMs=50.377300 us/op=1.635998
+  Raw: operation=Count lane=python/finite+token sample=2 iterations=30426 elapsedMs=51.563400 us/op=1.694715
+  Raw: operation=Count lane=dotnet/predecoded sample=2 iterations=525196 elapsedMs=50.179500 us/op=0.095544
+  Raw: operation=Count lane=dotnet/decode sample=2 iterations=433237 elapsedMs=49.742000 us/op=0.114815
+  Raw: operation=Count lane=pcre2/unlimited sample=2 iterations=25122 elapsedMs=54.684100 us/op=2.176742
+  Raw: operation=Count lane=pcre2/finite sample=2 iterations=23425 elapsedMs=55.328200 us/op=2.361930
+  Raw: operation=Count lane=pcre2/finite+token sample=2 iterations=22632 elapsedMs=53.227400 us/op=2.351865
+  Raw: operation=Count lane=pcre2/finite+token sample=3 iterations=22632 elapsedMs=52.747400 us/op=2.330656
+  Raw: operation=Count lane=pcre2/finite sample=3 iterations=23425 elapsedMs=52.623300 us/op=2.246459
+  Raw: operation=Count lane=pcre2/unlimited sample=3 iterations=25122 elapsedMs=51.148500 us/op=2.036004
+  Raw: operation=Count lane=dotnet/decode sample=3 iterations=433237 elapsedMs=49.576800 us/op=0.114433
+  Raw: operation=Count lane=dotnet/predecoded sample=3 iterations=525196 elapsedMs=50.903800 us/op=0.096923
+  Raw: operation=Count lane=python/finite+token sample=3 iterations=30426 elapsedMs=55.910200 us/op=1.837580
+  Raw: operation=Count lane=python/finite sample=3 iterations=30793 elapsedMs=52.324400 us/op=1.699230
+  Raw: operation=Count lane=python/token sample=3 iterations=30793 elapsedMs=50.603300 us/op=1.643338
+  Raw: operation=Count lane=python/unlimited sample=3 iterations=34789 elapsedMs=49.587900 us/op=1.425390
+  Raw: operation=Count lane=core/finite+token sample=3 iterations=34940 elapsedMs=49.791900 us/op=1.425069
+  Raw: operation=Count lane=core/finite sample=3 iterations=35906 elapsedMs=50.138000 us/op=1.396368
+  Raw: operation=Count lane=core/token sample=3 iterations=35651 elapsedMs=51.052800 us/op=1.432016
+  Raw: operation=Count lane=core/unlimited sample=3 iterations=41299 elapsedMs=51.033600 us/op=1.235710
+  Raw: operation=Count lane=core/unlimited sample=4 iterations=41299 elapsedMs=50.925800 us/op=1.233100
+  Raw: operation=Count lane=core/token sample=4 iterations=35651 elapsedMs=50.595100 us/op=1.419178
+  Raw: operation=Count lane=core/finite sample=4 iterations=35906 elapsedMs=50.827400 us/op=1.415568
+  Raw: operation=Count lane=core/finite+token sample=4 iterations=34940 elapsedMs=50.726600 us/op=1.451820
+  Raw: operation=Count lane=python/unlimited sample=4 iterations=34789 elapsedMs=51.238400 us/op=1.472833
+  Raw: operation=Count lane=python/token sample=4 iterations=30793 elapsedMs=50.969700 us/op=1.655237
+  Raw: operation=Count lane=python/finite sample=4 iterations=30793 elapsedMs=50.604900 us/op=1.643390
+  Raw: operation=Count lane=python/finite+token sample=4 iterations=30426 elapsedMs=51.156200 us/op=1.681332
+  Raw: operation=Count lane=dotnet/predecoded sample=4 iterations=525196 elapsedMs=50.348000 us/op=0.095865
+  Raw: operation=Count lane=dotnet/decode sample=4 iterations=433237 elapsedMs=49.562200 us/op=0.114400
+  Raw: operation=Count lane=pcre2/unlimited sample=4 iterations=25122 elapsedMs=51.987400 us/op=2.069397
+  Raw: operation=Count lane=pcre2/finite sample=4 iterations=23425 elapsedMs=51.365000 us/op=2.192743
+  Raw: operation=Count lane=pcre2/finite+token sample=4 iterations=22632 elapsedMs=51.125400 us/op=2.258987
+  Operation: Count
+    core/unlimited: result=1 us/op=1.233 bytes/op=3,552.0
+    core/token: result=1 us/op=1.414 bytes/op=3,664.0
+    core/finite: result=1 us/op=1.396 bytes/op=3,664.0
+    core/finite+token: result=1 us/op=1.427 bytes/op=3,664.0
+    python/unlimited: result=1 us/op=1.449 bytes/op=5,744.0
+    python/token: result=1 us/op=1.643 bytes/op=5,856.0
+    python/finite: result=1 us/op=1.643 bytes/op=5,856.0
+    python/finite+token: result=1 us/op=1.695 bytes/op=5,856.0
+    dotnet/predecoded: result=1 us/op=0.096 bytes/op=0.0
+    dotnet/decode: result=1 us/op=0.114 bytes/op=40.0
+    pcre2/unlimited: result=1 us/op=2.069 bytes/op=5,744.0
+    pcre2/finite: result=1 us/op=2.242 bytes/op=5,856.0
+    pcre2/finite+token: result=1 us/op=2.259 bytes/op=5,856.0
+Case: pattern=(ab|cd)+ inputBytes=10
+  Core routes: ownedSlice=True kind=FallbackRegex
+  PythonRe preparation: coreKind=FallbackRegex
+  Core/PythonRe finite: work=1000000 depth=1024 working=1048576 result=1048576
+  Finite preparation: core=FallbackRegex pythonCore=FallbackRegex
+  Pcre2 plan: IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice
+  Pcre2 finite plan: IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice
+  Protocol: warmupMinimumCalls=256 warmupTargetMs=250 sampleTargetMs=50 finalDurationChecks=3 requestedMinimumIterations=20000
+  Raw: operation=IsMatch lane=core/unlimited sample=0 iterations=39312 elapsedMs=51.961200 us/op=1.321764
+  Raw: operation=IsMatch lane=core/token sample=0 iterations=37236 elapsedMs=50.859100 us/op=1.365858
+  Raw: operation=IsMatch lane=core/finite sample=0 iterations=34935 elapsedMs=50.402400 us/op=1.442748
+  Raw: operation=IsMatch lane=core/finite+token sample=0 iterations=33882 elapsedMs=50.328200 us/op=1.485396
+  Raw: operation=IsMatch lane=python/unlimited sample=0 iterations=46027 elapsedMs=51.635700 us/op=1.121857
+  Raw: operation=IsMatch lane=python/token sample=0 iterations=39236 elapsedMs=48.794100 us/op=1.243605
+  Raw: operation=IsMatch lane=python/finite sample=0 iterations=40526 elapsedMs=50.901000 us/op=1.256008
+  Raw: operation=IsMatch lane=python/finite+token sample=0 iterations=38878 elapsedMs=50.652600 us/op=1.302860
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=0 iterations=262242 elapsedMs=50.426300 us/op=0.192289
+  Raw: operation=IsMatch lane=dotnet/decode sample=0 iterations=236864 elapsedMs=49.566800 us/op=0.209263
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=0 iterations=37258 elapsedMs=54.345800 us/op=1.458634
+  Raw: operation=IsMatch lane=pcre2/finite sample=0 iterations=33987 elapsedMs=51.702200 us/op=1.521235
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=0 iterations=31954 elapsedMs=49.461900 us/op=1.547909
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=1 iterations=31954 elapsedMs=49.473000 us/op=1.548257
+  Raw: operation=IsMatch lane=pcre2/finite sample=1 iterations=33987 elapsedMs=51.729200 us/op=1.522029
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=1 iterations=37258 elapsedMs=49.867400 us/op=1.338435
+  Raw: operation=IsMatch lane=dotnet/decode sample=1 iterations=236864 elapsedMs=49.594600 us/op=0.209380
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=1 iterations=262242 elapsedMs=50.393200 us/op=0.192163
+  Raw: operation=IsMatch lane=python/finite+token sample=1 iterations=38878 elapsedMs=56.069800 us/op=1.442199
+  Raw: operation=IsMatch lane=python/finite sample=1 iterations=40526 elapsedMs=51.907200 us/op=1.280837
+  Raw: operation=IsMatch lane=python/token sample=1 iterations=39236 elapsedMs=49.320500 us/op=1.257022
+  Raw: operation=IsMatch lane=python/unlimited sample=1 iterations=46027 elapsedMs=51.230400 us/op=1.113051
+  Raw: operation=IsMatch lane=core/finite+token sample=1 iterations=33882 elapsedMs=49.994900 us/op=1.475559
+  Raw: operation=IsMatch lane=core/finite sample=1 iterations=34935 elapsedMs=49.976700 us/op=1.430562
+  Raw: operation=IsMatch lane=core/token sample=1 iterations=37236 elapsedMs=50.616400 us/op=1.359340
+  Raw: operation=IsMatch lane=core/unlimited sample=1 iterations=39312 elapsedMs=50.746800 us/op=1.290873
+  Raw: operation=IsMatch lane=core/unlimited sample=2 iterations=39312 elapsedMs=49.503000 us/op=1.259234
+  Raw: operation=IsMatch lane=core/token sample=2 iterations=37236 elapsedMs=50.173000 us/op=1.347433
+  Raw: operation=IsMatch lane=core/finite sample=2 iterations=34935 elapsedMs=49.977100 us/op=1.430574
+  Raw: operation=IsMatch lane=core/finite+token sample=2 iterations=33882 elapsedMs=49.542800 us/op=1.462216
+  Raw: operation=IsMatch lane=python/unlimited sample=2 iterations=46027 elapsedMs=50.914600 us/op=1.106190
+  Raw: operation=IsMatch lane=python/token sample=2 iterations=39236 elapsedMs=48.603300 us/op=1.238742
+  Raw: operation=IsMatch lane=python/finite sample=2 iterations=40526 elapsedMs=50.227300 us/op=1.239385
+  Raw: operation=IsMatch lane=python/finite+token sample=2 iterations=38878 elapsedMs=49.883400 us/op=1.283075
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=2 iterations=262242 elapsedMs=49.732600 us/op=0.189644
+  Raw: operation=IsMatch lane=dotnet/decode sample=2 iterations=236864 elapsedMs=49.862500 us/op=0.210511
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=2 iterations=37258 elapsedMs=55.999300 us/op=1.503014
+  Raw: operation=IsMatch lane=pcre2/finite sample=2 iterations=33987 elapsedMs=53.420100 us/op=1.571780
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=2 iterations=31954 elapsedMs=50.265700 us/op=1.573064
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=3 iterations=31954 elapsedMs=49.772300 us/op=1.557623
+  Raw: operation=IsMatch lane=pcre2/finite sample=3 iterations=33987 elapsedMs=51.271400 us/op=1.508559
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=3 iterations=37258 elapsedMs=49.285700 us/op=1.322822
+  Raw: operation=IsMatch lane=dotnet/decode sample=3 iterations=236864 elapsedMs=49.769200 us/op=0.210117
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=3 iterations=262242 elapsedMs=50.811900 us/op=0.193760
+  Raw: operation=IsMatch lane=python/finite+token sample=3 iterations=38878 elapsedMs=55.125700 us/op=1.417915
+  Raw: operation=IsMatch lane=python/finite sample=3 iterations=40526 elapsedMs=51.812100 us/op=1.278490
+  Raw: operation=IsMatch lane=python/token sample=3 iterations=39236 elapsedMs=49.804700 us/op=1.269362
+  Raw: operation=IsMatch lane=python/unlimited sample=3 iterations=46027 elapsedMs=51.201400 us/op=1.112421
+  Raw: operation=IsMatch lane=core/finite+token sample=3 iterations=33882 elapsedMs=49.357700 us/op=1.456753
+  Raw: operation=IsMatch lane=core/finite sample=3 iterations=34935 elapsedMs=50.195700 us/op=1.436831
+  Raw: operation=IsMatch lane=core/token sample=3 iterations=37236 elapsedMs=50.757900 us/op=1.363141
+  Raw: operation=IsMatch lane=core/unlimited sample=3 iterations=39312 elapsedMs=49.948700 us/op=1.270571
+  Raw: operation=IsMatch lane=core/unlimited sample=4 iterations=39312 elapsedMs=50.226300 us/op=1.277633
+  Raw: operation=IsMatch lane=core/token sample=4 iterations=37236 elapsedMs=50.510900 us/op=1.356507
+  Raw: operation=IsMatch lane=core/finite sample=4 iterations=34935 elapsedMs=50.854200 us/op=1.455681
+  Raw: operation=IsMatch lane=core/finite+token sample=4 iterations=33882 elapsedMs=50.952400 us/op=1.503819
+  Raw: operation=IsMatch lane=python/unlimited sample=4 iterations=46027 elapsedMs=52.129900 us/op=1.132594
+  Raw: operation=IsMatch lane=python/token sample=4 iterations=39236 elapsedMs=49.170700 us/op=1.253204
+  Raw: operation=IsMatch lane=python/finite sample=4 iterations=40526 elapsedMs=50.344000 us/op=1.242264
+  Raw: operation=IsMatch lane=python/finite+token sample=4 iterations=38878 elapsedMs=49.805700 us/op=1.281077
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=4 iterations=262242 elapsedMs=50.284000 us/op=0.191747
+  Raw: operation=IsMatch lane=dotnet/decode sample=4 iterations=236864 elapsedMs=49.453900 us/op=0.208786
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=4 iterations=37258 elapsedMs=53.007000 us/op=1.422701
+  Raw: operation=IsMatch lane=pcre2/finite sample=4 iterations=33987 elapsedMs=51.243200 us/op=1.507729
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=4 iterations=31954 elapsedMs=48.741600 us/op=1.525368
+  Operation: IsMatch
+    core/unlimited: result=1 us/op=1.278 bytes/op=5,744.0
+    core/token: result=1 us/op=1.359 bytes/op=5,856.0
+    core/finite: result=1 us/op=1.437 bytes/op=5,856.0
+    core/finite+token: result=1 us/op=1.476 bytes/op=5,856.0
+    python/unlimited: result=1 us/op=1.113 bytes/op=5,744.0
+    python/token: result=1 us/op=1.253 bytes/op=5,856.0
+    python/finite: result=1 us/op=1.256 bytes/op=5,856.0
+    python/finite+token: result=1 us/op=1.303 bytes/op=5,856.0
+    dotnet/predecoded: result=1 us/op=0.192 bytes/op=0.0
+    dotnet/decode: result=1 us/op=0.209 bytes/op=48.0
+    pcre2/unlimited: result=1 us/op=1.423 bytes/op=5,744.0
+    pcre2/finite: result=1 us/op=1.521 bytes/op=5,856.0
+    pcre2/finite+token: result=1 us/op=1.548 bytes/op=5,856.0
+  Protocol: warmupMinimumCalls=256 warmupTargetMs=250 sampleTargetMs=50 finalDurationChecks=3 requestedMinimumIterations=20000
+  Raw: operation=Count lane=core/unlimited sample=0 iterations=60368 elapsedMs=53.554300 us/op=0.887131
+  Raw: operation=Count lane=core/token sample=0 iterations=54065 elapsedMs=51.811700 us/op=0.958322
+  Raw: operation=Count lane=core/finite sample=0 iterations=54519 elapsedMs=51.655600 us/op=0.947479
+  Raw: operation=Count lane=core/finite+token sample=0 iterations=51831 elapsedMs=50.848500 us/op=0.981044
+  Raw: operation=Count lane=python/unlimited sample=0 iterations=41861 elapsedMs=50.688400 us/op=1.210874
+  Raw: operation=Count lane=python/token sample=0 iterations=37170 elapsedMs=50.060600 us/op=1.346801
+  Raw: operation=Count lane=python/finite sample=0 iterations=37155 elapsedMs=50.543500 us/op=1.360342
+  Raw: operation=Count lane=python/finite+token sample=0 iterations=35752 elapsedMs=50.378600 us/op=1.409113
+  Raw: operation=Count lane=dotnet/predecoded sample=0 iterations=240863 elapsedMs=50.551500 us/op=0.209877
+  Raw: operation=Count lane=dotnet/decode sample=0 iterations=213991 elapsedMs=50.776200 us/op=0.237282
+  Raw: operation=Count lane=pcre2/unlimited sample=0 iterations=22584 elapsedMs=52.778800 us/op=2.337000
+  Raw: operation=Count lane=pcre2/finite sample=0 iterations=20279 elapsedMs=51.176300 us/op=2.523611
+  Raw: operation=Count lane=pcre2/finite+token sample=0 iterations=20000 elapsedMs=51.744600 us/op=2.587230
+  Raw: operation=Count lane=pcre2/finite+token sample=1 iterations=20000 elapsedMs=51.334300 us/op=2.566715
+  Raw: operation=Count lane=pcre2/finite sample=1 iterations=20279 elapsedMs=50.802800 us/op=2.505193
+  Raw: operation=Count lane=pcre2/unlimited sample=1 iterations=22584 elapsedMs=50.846600 us/op=2.251443
+  Raw: operation=Count lane=dotnet/decode sample=1 iterations=213991 elapsedMs=51.308300 us/op=0.239768
+  Raw: operation=Count lane=dotnet/predecoded sample=1 iterations=240863 elapsedMs=50.821500 us/op=0.210998
+  Raw: operation=Count lane=python/finite+token sample=1 iterations=35752 elapsedMs=55.621000 us/op=1.555745
+  Raw: operation=Count lane=python/finite sample=1 iterations=37155 elapsedMs=59.920100 us/op=1.612706
+  Raw: operation=Count lane=python/token sample=1 iterations=37170 elapsedMs=52.115900 us/op=1.402096
+  Raw: operation=Count lane=python/unlimited sample=1 iterations=41861 elapsedMs=51.233800 us/op=1.223903
+  Raw: operation=Count lane=core/finite+token sample=1 iterations=51831 elapsedMs=51.029800 us/op=0.984542
+  Raw: operation=Count lane=core/finite sample=1 iterations=54519 elapsedMs=51.038900 us/op=0.936167
+  Raw: operation=Count lane=core/token sample=1 iterations=54065 elapsedMs=50.015800 us/op=0.925105
+  Raw: operation=Count lane=core/unlimited sample=1 iterations=60368 elapsedMs=50.439900 us/op=0.835540
+  Raw: operation=Count lane=core/unlimited sample=2 iterations=60368 elapsedMs=49.992900 us/op=0.828136
+  Raw: operation=Count lane=core/token sample=2 iterations=54065 elapsedMs=49.371400 us/op=0.913186
+  Raw: operation=Count lane=core/finite sample=2 iterations=54519 elapsedMs=50.354600 us/op=0.923616
+  Raw: operation=Count lane=core/finite+token sample=2 iterations=51831 elapsedMs=49.932400 us/op=0.963369
+  Raw: operation=Count lane=python/unlimited sample=2 iterations=41861 elapsedMs=50.438900 us/op=1.204914
+  Raw: operation=Count lane=python/token sample=2 iterations=37170 elapsedMs=50.246500 us/op=1.351803
+  Raw: operation=Count lane=python/finite sample=2 iterations=37155 elapsedMs=51.859600 us/op=1.395764
+  Raw: operation=Count lane=python/finite+token sample=2 iterations=35752 elapsedMs=52.782400 us/op=1.476348
+  Raw: operation=Count lane=dotnet/predecoded sample=2 iterations=240863 elapsedMs=50.860000 us/op=0.211157
+  Raw: operation=Count lane=dotnet/decode sample=2 iterations=213991 elapsedMs=50.696500 us/op=0.236909
+  Raw: operation=Count lane=pcre2/unlimited sample=2 iterations=22584 elapsedMs=53.722000 us/op=2.378764
+  Raw: operation=Count lane=pcre2/finite sample=2 iterations=20279 elapsedMs=52.153100 us/op=2.571779
+  Raw: operation=Count lane=pcre2/finite+token sample=2 iterations=20000 elapsedMs=51.567800 us/op=2.578390
+  Raw: operation=Count lane=pcre2/finite+token sample=3 iterations=20000 elapsedMs=50.660800 us/op=2.533040
+  Raw: operation=Count lane=pcre2/finite sample=3 iterations=20279 elapsedMs=50.453600 us/op=2.487973
+  Raw: operation=Count lane=pcre2/unlimited sample=3 iterations=22584 elapsedMs=50.116000 us/op=2.219093
+  Raw: operation=Count lane=dotnet/decode sample=3 iterations=213991 elapsedMs=50.941300 us/op=0.238053
+  Raw: operation=Count lane=dotnet/predecoded sample=3 iterations=240863 elapsedMs=50.146700 us/op=0.208196
+  Raw: operation=Count lane=python/finite+token sample=3 iterations=35752 elapsedMs=54.819700 us/op=1.533332
+  Raw: operation=Count lane=python/finite sample=3 iterations=37155 elapsedMs=51.236000 us/op=1.378980
+  Raw: operation=Count lane=python/token sample=3 iterations=37170 elapsedMs=51.461400 us/op=1.384487
+  Raw: operation=Count lane=python/unlimited sample=3 iterations=41861 elapsedMs=50.242200 us/op=1.200215
+  Raw: operation=Count lane=core/finite+token sample=3 iterations=51831 elapsedMs=50.366900 us/op=0.971752
+  Raw: operation=Count lane=core/finite sample=3 iterations=54519 elapsedMs=50.438100 us/op=0.925147
+  Raw: operation=Count lane=core/token sample=3 iterations=54065 elapsedMs=50.155000 us/op=0.927680
+  Raw: operation=Count lane=core/unlimited sample=3 iterations=60368 elapsedMs=52.022700 us/op=0.861760
+  Raw: operation=Count lane=core/unlimited sample=4 iterations=60368 elapsedMs=51.549000 us/op=0.853913
+  Raw: operation=Count lane=core/token sample=4 iterations=54065 elapsedMs=51.014500 us/op=0.943577
+  Raw: operation=Count lane=core/finite sample=4 iterations=54519 elapsedMs=51.062300 us/op=0.936596
+  Raw: operation=Count lane=core/finite+token sample=4 iterations=51831 elapsedMs=50.576700 us/op=0.975800
+  Raw: operation=Count lane=python/unlimited sample=4 iterations=41861 elapsedMs=50.766400 us/op=1.212737
+  Raw: operation=Count lane=python/token sample=4 iterations=37170 elapsedMs=49.976000 us/op=1.344525
+  Raw: operation=Count lane=python/finite sample=4 iterations=37155 elapsedMs=50.314000 us/op=1.354165
+  Raw: operation=Count lane=python/finite+token sample=4 iterations=35752 elapsedMs=49.878200 us/op=1.395116
+  Raw: operation=Count lane=dotnet/predecoded sample=4 iterations=240863 elapsedMs=50.651300 us/op=0.210291
+  Raw: operation=Count lane=dotnet/decode sample=4 iterations=213991 elapsedMs=50.374000 us/op=0.235402
+  Raw: operation=Count lane=pcre2/unlimited sample=4 iterations=22584 elapsedMs=52.500700 us/op=2.324686
+  Raw: operation=Count lane=pcre2/finite sample=4 iterations=20279 elapsedMs=50.114300 us/op=2.471241
+  Raw: operation=Count lane=pcre2/finite+token sample=4 iterations=20000 elapsedMs=49.982400 us/op=2.499120
+  Operation: Count
+    core/unlimited: result=1 us/op=0.854 bytes/op=3,552.0
+    core/token: result=1 us/op=0.928 bytes/op=3,664.0
+    core/finite: result=1 us/op=0.936 bytes/op=3,664.0
+    core/finite+token: result=1 us/op=0.976 bytes/op=3,664.0
+    python/unlimited: result=1 us/op=1.211 bytes/op=5,744.0
+    python/token: result=1 us/op=1.352 bytes/op=5,856.0
+    python/finite: result=1 us/op=1.379 bytes/op=5,856.0
+    python/finite+token: result=1 us/op=1.476 bytes/op=5,856.0
+    dotnet/predecoded: result=1 us/op=0.210 bytes/op=0.0
+    dotnet/decode: result=1 us/op=0.237 bytes/op=48.0
+    pcre2/unlimited: result=1 us/op=2.325 bytes/op=5,744.0
+    pcre2/finite: result=1 us/op=2.505 bytes/op=5,856.0
+    pcre2/finite+token: result=1 us/op=2.567 bytes/op=5,856.0
+Case: pattern=(a|ab)+c inputBytes=11
+  Core routes: ownedSlice=True kind=FallbackRegex
+  PythonRe preparation: coreKind=None
+  Core/PythonRe finite: work=1000000 depth=1024 working=1048576 result=1048576
+  Finite preparation: core=FallbackRegex pythonCore=None
+  Pcre2 plan: IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice
+  Pcre2 finite plan: IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice
+  Protocol: warmupMinimumCalls=256 warmupTargetMs=250 sampleTargetMs=50 finalDurationChecks=3 requestedMinimumIterations=20000
+  Raw: operation=IsMatch lane=core/unlimited sample=0 iterations=40711 elapsedMs=50.425600 us/op=1.238623
+  Raw: operation=IsMatch lane=core/token sample=0 iterations=37695 elapsedMs=51.629100 us/op=1.369654
+  Raw: operation=IsMatch lane=core/finite sample=0 iterations=34979 elapsedMs=51.081000 us/op=1.460333
+  Raw: operation=IsMatch lane=core/finite+token sample=0 iterations=34345 elapsedMs=52.201700 us/op=1.519921
+  Raw: operation=IsMatch lane=python/unlimited sample=0 iterations=41758 elapsedMs=50.578800 us/op=1.211236
+  Raw: operation=IsMatch lane=python/token sample=0 iterations=36568 elapsedMs=49.685600 us/op=1.358718
+  Raw: operation=IsMatch lane=python/finite sample=0 iterations=36795 elapsedMs=50.121100 us/op=1.362171
+  Raw: operation=IsMatch lane=python/finite+token sample=0 iterations=35204 elapsedMs=50.327500 us/op=1.429596
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=0 iterations=333933 elapsedMs=50.175100 us/op=0.150255
+  Raw: operation=IsMatch lane=dotnet/decode sample=0 iterations=295294 elapsedMs=50.043200 us/op=0.169469
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=0 iterations=40635 elapsedMs=55.999800 us/op=1.378117
+  Raw: operation=IsMatch lane=pcre2/finite sample=0 iterations=34702 elapsedMs=51.317900 us/op=1.478817
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=0 iterations=34227 elapsedMs=52.330400 us/op=1.528922
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=1 iterations=34227 elapsedMs=53.019500 us/op=1.549055
+  Raw: operation=IsMatch lane=pcre2/finite sample=1 iterations=34702 elapsedMs=51.392500 us/op=1.480967
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=1 iterations=40635 elapsedMs=51.840200 us/op=1.275752
+  Raw: operation=IsMatch lane=dotnet/decode sample=1 iterations=295294 elapsedMs=50.295500 us/op=0.170323
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=1 iterations=333933 elapsedMs=50.276900 us/op=0.150560
+  Raw: operation=IsMatch lane=python/finite+token sample=1 iterations=35204 elapsedMs=55.487900 us/op=1.576182
+  Raw: operation=IsMatch lane=python/finite sample=1 iterations=36795 elapsedMs=53.276300 us/op=1.447922
+  Raw: operation=IsMatch lane=python/token sample=1 iterations=36568 elapsedMs=52.518700 us/op=1.436193
+  Raw: operation=IsMatch lane=python/unlimited sample=1 iterations=41758 elapsedMs=53.644700 us/op=1.284657
+  Raw: operation=IsMatch lane=core/finite+token sample=1 iterations=34345 elapsedMs=52.981000 us/op=1.542612
+  Raw: operation=IsMatch lane=core/finite sample=1 iterations=34979 elapsedMs=51.686300 us/op=1.477638
+  Raw: operation=IsMatch lane=core/token sample=1 iterations=37695 elapsedMs=52.364600 us/op=1.389166
+  Raw: operation=IsMatch lane=core/unlimited sample=1 iterations=40711 elapsedMs=50.569500 us/op=1.242158
+  Raw: operation=IsMatch lane=core/unlimited sample=2 iterations=40711 elapsedMs=50.205200 us/op=1.233210
+  Raw: operation=IsMatch lane=core/token sample=2 iterations=37695 elapsedMs=51.149200 us/op=1.356923
+  Raw: operation=IsMatch lane=core/finite sample=2 iterations=34979 elapsedMs=49.952500 us/op=1.428071
+  Raw: operation=IsMatch lane=core/finite+token sample=2 iterations=34345 elapsedMs=50.561000 us/op=1.472150
+  Raw: operation=IsMatch lane=python/unlimited sample=2 iterations=41758 elapsedMs=50.542200 us/op=1.210360
+  Raw: operation=IsMatch lane=python/token sample=2 iterations=36568 elapsedMs=49.907300 us/op=1.364781
+  Raw: operation=IsMatch lane=python/finite sample=2 iterations=36795 elapsedMs=51.016800 us/op=1.386514
+  Raw: operation=IsMatch lane=python/finite+token sample=2 iterations=35204 elapsedMs=51.158000 us/op=1.453187
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=2 iterations=333933 elapsedMs=50.470600 us/op=0.151140
+  Raw: operation=IsMatch lane=dotnet/decode sample=2 iterations=295294 elapsedMs=50.476700 us/op=0.170937
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=2 iterations=40635 elapsedMs=58.438800 us/op=1.438140
+  Raw: operation=IsMatch lane=pcre2/finite sample=2 iterations=34702 elapsedMs=51.847900 us/op=1.494090
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=2 iterations=34227 elapsedMs=51.104400 us/op=1.493102
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=3 iterations=34227 elapsedMs=50.925800 us/op=1.487884
+  Raw: operation=IsMatch lane=pcre2/finite sample=3 iterations=34702 elapsedMs=50.881400 us/op=1.466238
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=3 iterations=40635 elapsedMs=51.225000 us/op=1.260613
+  Raw: operation=IsMatch lane=dotnet/decode sample=3 iterations=295294 elapsedMs=50.252800 us/op=0.170179
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=3 iterations=333933 elapsedMs=50.557200 us/op=0.151399
+  Raw: operation=IsMatch lane=python/finite+token sample=3 iterations=35204 elapsedMs=54.444600 us/op=1.546546
+  Raw: operation=IsMatch lane=python/finite sample=3 iterations=36795 elapsedMs=52.170300 us/op=1.417864
+  Raw: operation=IsMatch lane=python/token sample=3 iterations=36568 elapsedMs=50.738000 us/op=1.387497
+  Raw: operation=IsMatch lane=python/unlimited sample=3 iterations=41758 elapsedMs=52.337400 us/op=1.253350
+  Raw: operation=IsMatch lane=core/finite+token sample=3 iterations=34345 elapsedMs=50.718900 us/op=1.476748
+  Raw: operation=IsMatch lane=core/finite sample=3 iterations=34979 elapsedMs=50.430100 us/op=1.441725
+  Raw: operation=IsMatch lane=core/token sample=3 iterations=37695 elapsedMs=51.327300 us/op=1.361647
+  Raw: operation=IsMatch lane=core/unlimited sample=3 iterations=40711 elapsedMs=50.973000 us/op=1.252069
+  Raw: operation=IsMatch lane=core/unlimited sample=4 iterations=40711 elapsedMs=50.580100 us/op=1.242419
+  Raw: operation=IsMatch lane=core/token sample=4 iterations=37695 elapsedMs=51.752900 us/op=1.372938
+  Raw: operation=IsMatch lane=core/finite sample=4 iterations=34979 elapsedMs=49.864800 us/op=1.425564
+  Raw: operation=IsMatch lane=core/finite+token sample=4 iterations=34345 elapsedMs=50.991500 us/op=1.484685
+  Raw: operation=IsMatch lane=python/unlimited sample=4 iterations=41758 elapsedMs=51.597300 us/op=1.235627
+  Raw: operation=IsMatch lane=python/token sample=4 iterations=36568 elapsedMs=51.113500 us/op=1.397766
+  Raw: operation=IsMatch lane=python/finite sample=4 iterations=36795 elapsedMs=51.407100 us/op=1.397122
+  Raw: operation=IsMatch lane=python/finite+token sample=4 iterations=35204 elapsedMs=51.176000 us/op=1.453698
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=4 iterations=333933 elapsedMs=50.724900 us/op=0.151901
+  Raw: operation=IsMatch lane=dotnet/decode sample=4 iterations=295294 elapsedMs=50.412600 us/op=0.170720
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=4 iterations=40635 elapsedMs=56.313300 us/op=1.385832
+  Raw: operation=IsMatch lane=pcre2/finite sample=4 iterations=34702 elapsedMs=50.630300 us/op=1.459002
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=4 iterations=34227 elapsedMs=51.320100 us/op=1.499404
+  Operation: IsMatch
+    core/unlimited: result=1 us/op=1.242 bytes/op=5,744.0
+    core/token: result=1 us/op=1.370 bytes/op=5,856.0
+    core/finite: result=1 us/op=1.442 bytes/op=5,856.0
+    core/finite+token: result=1 us/op=1.485 bytes/op=5,856.0
+    python/unlimited: result=1 us/op=1.236 bytes/op=5,744.0
+    python/token: result=1 us/op=1.387 bytes/op=5,856.0
+    python/finite: result=1 us/op=1.397 bytes/op=5,856.0
+    python/finite+token: result=1 us/op=1.454 bytes/op=5,856.0
+    dotnet/predecoded: result=1 us/op=0.151 bytes/op=0.0
+    dotnet/decode: result=1 us/op=0.170 bytes/op=48.0
+    pcre2/unlimited: result=1 us/op=1.378 bytes/op=5,744.0
+    pcre2/finite: result=1 us/op=1.479 bytes/op=5,856.0
+    pcre2/finite+token: result=1 us/op=1.499 bytes/op=5,856.0
+  Protocol: warmupMinimumCalls=256 warmupTargetMs=250 sampleTargetMs=50 finalDurationChecks=3 requestedMinimumIterations=20000
+  Raw: operation=Count lane=core/unlimited sample=0 iterations=27076 elapsedMs=51.380000 us/op=1.897622
+  Raw: operation=Count lane=core/token sample=0 iterations=24171 elapsedMs=50.889900 us/op=2.105411
+  Raw: operation=Count lane=core/finite sample=0 iterations=24110 elapsedMs=50.506000 us/op=2.094815
+  Raw: operation=Count lane=core/finite+token sample=0 iterations=23937 elapsedMs=51.605600 us/op=2.155893
+  Raw: operation=Count lane=python/unlimited sample=0 iterations=23371 elapsedMs=52.455900 us/op=2.244487
+  Raw: operation=Count lane=python/token sample=0 iterations=20996 elapsedMs=50.236800 us/op=2.392684
+  Raw: operation=Count lane=python/finite sample=0 iterations=21004 elapsedMs=50.092800 us/op=2.384917
+  Raw: operation=Count lane=python/finite+token sample=0 iterations=20461 elapsedMs=50.191600 us/op=2.453037
+  Raw: operation=Count lane=dotnet/predecoded sample=0 iterations=168312 elapsedMs=50.266800 us/op=0.298653
+  Raw: operation=Count lane=dotnet/decode sample=0 iterations=153621 elapsedMs=50.447400 us/op=0.328389
+  Raw: operation=Count lane=pcre2/unlimited sample=0 iterations=20000 elapsedMs=56.706700 us/op=2.835335
+  Raw: operation=Count lane=pcre2/finite sample=0 iterations=20000 elapsedMs=60.898600 us/op=3.044930
+  Raw: operation=Count lane=pcre2/finite+token sample=0 iterations=20000 elapsedMs=60.864000 us/op=3.043200
+  Raw: operation=Count lane=pcre2/finite+token sample=1 iterations=20000 elapsedMs=61.322400 us/op=3.066120
+  Raw: operation=Count lane=pcre2/finite sample=1 iterations=20000 elapsedMs=59.446200 us/op=2.972310
+  Raw: operation=Count lane=pcre2/unlimited sample=1 iterations=20000 elapsedMs=55.201800 us/op=2.760090
+  Raw: operation=Count lane=dotnet/decode sample=1 iterations=153621 elapsedMs=50.253600 us/op=0.327127
+  Raw: operation=Count lane=dotnet/predecoded sample=1 iterations=168312 elapsedMs=50.621600 us/op=0.300760
+  Raw: operation=Count lane=python/finite+token sample=1 iterations=20461 elapsedMs=53.339200 us/op=2.606872
+  Raw: operation=Count lane=python/finite sample=1 iterations=21004 elapsedMs=51.979900 us/op=2.474762
+  Raw: operation=Count lane=python/token sample=1 iterations=20996 elapsedMs=51.089300 us/op=2.433287
+  Raw: operation=Count lane=python/unlimited sample=1 iterations=23371 elapsedMs=51.629500 us/op=2.209127
+  Raw: operation=Count lane=core/finite+token sample=1 iterations=23937 elapsedMs=51.164400 us/op=2.137461
+  Raw: operation=Count lane=core/finite sample=1 iterations=24110 elapsedMs=50.470900 us/op=2.093360
+  Raw: operation=Count lane=core/token sample=1 iterations=24171 elapsedMs=50.803300 us/op=2.101829
+  Raw: operation=Count lane=core/unlimited sample=1 iterations=27076 elapsedMs=50.948400 us/op=1.881681
+  Raw: operation=Count lane=core/unlimited sample=2 iterations=27076 elapsedMs=51.368500 us/op=1.897197
+  Raw: operation=Count lane=core/token sample=2 iterations=24171 elapsedMs=51.454200 us/op=2.128758
+  Raw: operation=Count lane=core/finite sample=2 iterations=24110 elapsedMs=51.844600 us/op=2.150336
+  Raw: operation=Count lane=core/finite+token sample=2 iterations=23937 elapsedMs=52.545300 us/op=2.195150
+  Raw: operation=Count lane=python/unlimited sample=2 iterations=23371 elapsedMs=53.486700 us/op=2.288593
+  Raw: operation=Count lane=python/token sample=2 iterations=20996 elapsedMs=52.301400 us/op=2.491017
+  Raw: operation=Count lane=python/finite sample=2 iterations=21004 elapsedMs=51.394600 us/op=2.446896
+  Raw: operation=Count lane=python/finite+token sample=2 iterations=20461 elapsedMs=51.122500 us/op=2.498534
+  Raw: operation=Count lane=dotnet/predecoded sample=2 iterations=168312 elapsedMs=50.603800 us/op=0.300655
+  Raw: operation=Count lane=dotnet/decode sample=2 iterations=153621 elapsedMs=50.430100 us/op=0.328276
+  Raw: operation=Count lane=pcre2/unlimited sample=2 iterations=20000 elapsedMs=57.078800 us/op=2.853940
+  Raw: operation=Count lane=pcre2/finite sample=2 iterations=20000 elapsedMs=61.415200 us/op=3.070760
+  Raw: operation=Count lane=pcre2/finite+token sample=2 iterations=20000 elapsedMs=62.059000 us/op=3.102950
+  Raw: operation=Count lane=pcre2/finite+token sample=3 iterations=20000 elapsedMs=61.988600 us/op=3.099430
+  Raw: operation=Count lane=pcre2/finite sample=3 iterations=20000 elapsedMs=59.966700 us/op=2.998335
+  Raw: operation=Count lane=pcre2/unlimited sample=3 iterations=20000 elapsedMs=55.633600 us/op=2.781680
+  Raw: operation=Count lane=dotnet/decode sample=3 iterations=153621 elapsedMs=50.324700 us/op=0.327590
+  Raw: operation=Count lane=dotnet/predecoded sample=3 iterations=168312 elapsedMs=50.691200 us/op=0.301174
+  Raw: operation=Count lane=python/finite+token sample=3 iterations=20461 elapsedMs=53.495700 us/op=2.614520
+  Raw: operation=Count lane=python/finite sample=3 iterations=21004 elapsedMs=51.791900 us/op=2.465811
+  Raw: operation=Count lane=python/token sample=3 iterations=20996 elapsedMs=50.729200 us/op=2.416136
+  Raw: operation=Count lane=python/unlimited sample=3 iterations=23371 elapsedMs=50.867800 us/op=2.176535
+  Raw: operation=Count lane=core/finite+token sample=3 iterations=23937 elapsedMs=50.211200 us/op=2.097640
+  Raw: operation=Count lane=core/finite sample=3 iterations=24110 elapsedMs=49.379500 us/op=2.048092
+  Raw: operation=Count lane=core/token sample=3 iterations=24171 elapsedMs=49.992000 us/op=2.068264
+  Raw: operation=Count lane=core/unlimited sample=3 iterations=27076 elapsedMs=50.466500 us/op=1.863883
+  Raw: operation=Count lane=core/unlimited sample=4 iterations=27076 elapsedMs=50.443600 us/op=1.863037
+  Raw: operation=Count lane=core/token sample=4 iterations=24171 elapsedMs=50.537900 us/op=2.090849
+  Raw: operation=Count lane=core/finite sample=4 iterations=24110 elapsedMs=50.466400 us/op=2.093173
+  Raw: operation=Count lane=core/finite+token sample=4 iterations=23937 elapsedMs=51.055300 us/op=2.132903
+  Raw: operation=Count lane=python/unlimited sample=4 iterations=23371 elapsedMs=51.353600 us/op=2.197321
+  Raw: operation=Count lane=python/token sample=4 iterations=20996 elapsedMs=49.985100 us/op=2.380696
+  Raw: operation=Count lane=python/finite sample=4 iterations=21004 elapsedMs=50.252100 us/op=2.392501
+  Raw: operation=Count lane=python/finite+token sample=4 iterations=20461 elapsedMs=50.171800 us/op=2.452070
+  Raw: operation=Count lane=dotnet/predecoded sample=4 iterations=168312 elapsedMs=50.461300 us/op=0.299808
+  Raw: operation=Count lane=dotnet/decode sample=4 iterations=153621 elapsedMs=49.700100 us/op=0.323524
+  Raw: operation=Count lane=pcre2/unlimited sample=4 iterations=20000 elapsedMs=56.948200 us/op=2.847410
+  Raw: operation=Count lane=pcre2/finite sample=4 iterations=20000 elapsedMs=59.545600 us/op=2.977280
+  Raw: operation=Count lane=pcre2/finite+token sample=4 iterations=20000 elapsedMs=62.303600 us/op=3.115180
+  Operation: Count
+    core/unlimited: result=2 us/op=1.882 bytes/op=3,552.0
+    core/token: result=2 us/op=2.102 bytes/op=3,664.0
+    core/finite: result=2 us/op=2.093 bytes/op=3,664.0
+    core/finite+token: result=2 us/op=2.137 bytes/op=3,664.0
+    python/unlimited: result=2 us/op=2.209 bytes/op=5,744.0
+    python/token: result=2 us/op=2.416 bytes/op=5,856.0
+    python/finite: result=2 us/op=2.447 bytes/op=5,856.0
+    python/finite+token: result=2 us/op=2.499 bytes/op=5,856.0
+    dotnet/predecoded: result=2 us/op=0.301 bytes/op=0.0
+    dotnet/decode: result=2 us/op=0.328 bytes/op=48.0
+    pcre2/unlimited: result=2 us/op=2.835 bytes/op=5,744.0
+    pcre2/finite: result=2 us/op=2.998 bytes/op=5,856.0
+    pcre2/finite+token: result=2 us/op=3.099 bytes/op=5,856.0
+Case: pattern=a+b inputBytes=6
+  Core routes: ownedSlice=True kind=FallbackRegex
+  PythonRe preparation: coreKind=FallbackRegex
+  Core/PythonRe finite: work=1000000 depth=1024 working=1048576 result=1048576
+  Finite preparation: core=FallbackRegex pythonCore=FallbackRegex
+  Pcre2 plan: IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice
+  Pcre2 finite plan: IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice
+  Protocol: warmupMinimumCalls=256 warmupTargetMs=250 sampleTargetMs=50 finalDurationChecks=3 requestedMinimumIterations=20000
+  Raw: operation=IsMatch lane=core/unlimited sample=0 iterations=64198 elapsedMs=50.296600 us/op=0.783461
+  Raw: operation=IsMatch lane=core/token sample=0 iterations=54177 elapsedMs=50.215600 us/op=0.926880
+  Raw: operation=IsMatch lane=core/finite sample=0 iterations=51704 elapsedMs=50.488600 us/op=0.976493
+  Raw: operation=IsMatch lane=core/finite+token sample=0 iterations=49155 elapsedMs=50.868400 us/op=1.034857
+  Raw: operation=IsMatch lane=python/unlimited sample=0 iterations=61787 elapsedMs=50.687700 us/op=0.820362
+  Raw: operation=IsMatch lane=python/token sample=0 iterations=55147 elapsedMs=50.771100 us/op=0.920650
+  Raw: operation=IsMatch lane=python/finite sample=0 iterations=54707 elapsedMs=49.933900 us/op=0.912752
+  Raw: operation=IsMatch lane=python/finite+token sample=0 iterations=52564 elapsedMs=50.049000 us/op=0.952154
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=0 iterations=891225 elapsedMs=50.979200 us/op=0.057201
+  Raw: operation=IsMatch lane=dotnet/decode sample=0 iterations=672345 elapsedMs=49.075000 us/op=0.072991
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=0 iterations=61058 elapsedMs=52.533000 us/op=0.860379
+  Raw: operation=IsMatch lane=pcre2/finite sample=0 iterations=52695 elapsedMs=50.188900 us/op=0.952441
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=0 iterations=51506 elapsedMs=51.019200 us/op=0.990549
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=1 iterations=51506 elapsedMs=50.022300 us/op=0.971194
+  Raw: operation=IsMatch lane=pcre2/finite sample=1 iterations=52695 elapsedMs=50.026700 us/op=0.949363
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=1 iterations=61058 elapsedMs=49.064100 us/op=0.803565
+  Raw: operation=IsMatch lane=dotnet/decode sample=1 iterations=672345 elapsedMs=48.356600 us/op=0.071922
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=1 iterations=891225 elapsedMs=50.356600 us/op=0.056503
+  Raw: operation=IsMatch lane=python/finite+token sample=1 iterations=52564 elapsedMs=53.735100 us/op=1.022280
+  Raw: operation=IsMatch lane=python/finite sample=1 iterations=54707 elapsedMs=51.599400 us/op=0.943196
+  Raw: operation=IsMatch lane=python/token sample=1 iterations=55147 elapsedMs=50.741200 us/op=0.920108
+  Raw: operation=IsMatch lane=python/unlimited sample=1 iterations=61787 elapsedMs=50.260400 us/op=0.813446
+  Raw: operation=IsMatch lane=core/finite+token sample=1 iterations=49155 elapsedMs=54.330200 us/op=1.105283
+  Raw: operation=IsMatch lane=core/finite sample=1 iterations=51704 elapsedMs=55.126100 us/op=1.066186
+  Raw: operation=IsMatch lane=core/token sample=1 iterations=54177 elapsedMs=53.267300 us/op=0.983209
+  Raw: operation=IsMatch lane=core/unlimited sample=1 iterations=64198 elapsedMs=52.313400 us/op=0.814876
+  Raw: operation=IsMatch lane=core/unlimited sample=2 iterations=64198 elapsedMs=50.841100 us/op=0.791942
+  Raw: operation=IsMatch lane=core/token sample=2 iterations=54177 elapsedMs=49.897400 us/op=0.921007
+  Raw: operation=IsMatch lane=core/finite sample=2 iterations=51704 elapsedMs=51.500100 us/op=0.996056
+  Raw: operation=IsMatch lane=core/finite+token sample=2 iterations=49155 elapsedMs=50.542700 us/op=1.028231
+  Raw: operation=IsMatch lane=python/unlimited sample=2 iterations=61787 elapsedMs=51.051600 us/op=0.826251
+  Raw: operation=IsMatch lane=python/token sample=2 iterations=55147 elapsedMs=51.315700 us/op=0.930526
+  Raw: operation=IsMatch lane=python/finite sample=2 iterations=54707 elapsedMs=51.774200 us/op=0.946391
+  Raw: operation=IsMatch lane=python/finite+token sample=2 iterations=52564 elapsedMs=51.801600 us/op=0.985496
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=2 iterations=891225 elapsedMs=50.461300 us/op=0.056620
+  Raw: operation=IsMatch lane=dotnet/decode sample=2 iterations=672345 elapsedMs=49.207200 us/op=0.073187
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=2 iterations=61058 elapsedMs=55.172700 us/op=0.903611
+  Raw: operation=IsMatch lane=pcre2/finite sample=2 iterations=52695 elapsedMs=51.297200 us/op=0.973474
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=2 iterations=51506 elapsedMs=50.881800 us/op=0.987881
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=3 iterations=51506 elapsedMs=50.715900 us/op=0.984660
+  Raw: operation=IsMatch lane=pcre2/finite sample=3 iterations=52695 elapsedMs=50.925400 us/op=0.966418
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=3 iterations=61058 elapsedMs=49.679000 us/op=0.813636
+  Raw: operation=IsMatch lane=dotnet/decode sample=3 iterations=672345 elapsedMs=48.727800 us/op=0.072474
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=3 iterations=891225 elapsedMs=50.311300 us/op=0.056452
+  Raw: operation=IsMatch lane=python/finite+token sample=3 iterations=52564 elapsedMs=54.166600 us/op=1.030489
+  Raw: operation=IsMatch lane=python/finite sample=3 iterations=54707 elapsedMs=51.338800 us/op=0.938432
+  Raw: operation=IsMatch lane=python/token sample=3 iterations=55147 elapsedMs=50.747400 us/op=0.920221
+  Raw: operation=IsMatch lane=python/unlimited sample=3 iterations=61787 elapsedMs=49.782400 us/op=0.805710
+  Raw: operation=IsMatch lane=core/finite+token sample=3 iterations=49155 elapsedMs=50.199100 us/op=1.021241
+  Raw: operation=IsMatch lane=core/finite sample=3 iterations=51704 elapsedMs=51.316900 us/op=0.992513
+  Raw: operation=IsMatch lane=core/token sample=3 iterations=54177 elapsedMs=50.995200 us/op=0.941270
+  Raw: operation=IsMatch lane=core/unlimited sample=3 iterations=64198 elapsedMs=50.424200 us/op=0.785448
+  Raw: operation=IsMatch lane=core/unlimited sample=4 iterations=64198 elapsedMs=49.579000 us/op=0.772283
+  Raw: operation=IsMatch lane=core/token sample=4 iterations=54177 elapsedMs=49.759500 us/op=0.918462
+  Raw: operation=IsMatch lane=core/finite sample=4 iterations=51704 elapsedMs=51.151800 us/op=0.989320
+  Raw: operation=IsMatch lane=core/finite+token sample=4 iterations=49155 elapsedMs=50.589800 us/op=1.029189
+  Raw: operation=IsMatch lane=python/unlimited sample=4 iterations=61787 elapsedMs=51.925100 us/op=0.840389
+  Raw: operation=IsMatch lane=python/token sample=4 iterations=55147 elapsedMs=52.333300 us/op=0.948978
+  Raw: operation=IsMatch lane=python/finite sample=4 iterations=54707 elapsedMs=50.944100 us/op=0.931217
+  Raw: operation=IsMatch lane=python/finite+token sample=4 iterations=52564 elapsedMs=51.309600 us/op=0.976136
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=4 iterations=891225 elapsedMs=50.164800 us/op=0.056287
+  Raw: operation=IsMatch lane=dotnet/decode sample=4 iterations=672345 elapsedMs=49.110900 us/op=0.073044
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=4 iterations=61058 elapsedMs=55.091800 us/op=0.902286
+  Raw: operation=IsMatch lane=pcre2/finite sample=4 iterations=52695 elapsedMs=52.214900 us/op=0.990889
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=4 iterations=51506 elapsedMs=51.241100 us/op=0.994857
+  Operation: IsMatch
+    core/unlimited: result=1 us/op=0.785 bytes/op=3,552.0
+    core/token: result=1 us/op=0.927 bytes/op=3,664.0
+    core/finite: result=1 us/op=0.993 bytes/op=3,664.0
+    core/finite+token: result=1 us/op=1.029 bytes/op=3,664.0
+    python/unlimited: result=1 us/op=0.820 bytes/op=3,552.0
+    python/token: result=1 us/op=0.921 bytes/op=3,664.0
+    python/finite: result=1 us/op=0.938 bytes/op=3,664.0
+    python/finite+token: result=1 us/op=0.985 bytes/op=3,664.0
+    dotnet/predecoded: result=1 us/op=0.057 bytes/op=0.0
+    dotnet/decode: result=1 us/op=0.073 bytes/op=40.0
+    pcre2/unlimited: result=1 us/op=0.860 bytes/op=3,552.0
+    pcre2/finite: result=1 us/op=0.966 bytes/op=3,664.0
+    pcre2/finite+token: result=1 us/op=0.988 bytes/op=3,664.0
+  Protocol: warmupMinimumCalls=256 warmupTargetMs=250 sampleTargetMs=50 finalDurationChecks=3 requestedMinimumIterations=20000
+  Raw: operation=Count lane=core/unlimited sample=0 iterations=55988 elapsedMs=50.964200 us/op=0.910270
+  Raw: operation=Count lane=core/token sample=0 iterations=47768 elapsedMs=50.215600 us/op=1.051239
+  Raw: operation=Count lane=core/finite sample=0 iterations=48030 elapsedMs=50.650900 us/op=1.054568
+  Raw: operation=Count lane=core/finite+token sample=0 iterations=45009 elapsedMs=48.940000 us/op=1.087338
+  Raw: operation=Count lane=python/unlimited sample=0 iterations=56028 elapsedMs=50.779000 us/op=0.906315
+  Raw: operation=Count lane=python/token sample=0 iterations=49808 elapsedMs=50.549100 us/op=1.014879
+  Raw: operation=Count lane=python/finite sample=0 iterations=50463 elapsedMs=51.287000 us/op=1.016329
+  Raw: operation=Count lane=python/finite+token sample=0 iterations=47715 elapsedMs=50.123600 us/op=1.050479
+  Raw: operation=Count lane=dotnet/predecoded sample=0 iterations=734408 elapsedMs=49.982000 us/op=0.068058
+  Raw: operation=Count lane=dotnet/decode sample=0 iterations=589964 elapsedMs=50.141600 us/op=0.084991
+  Raw: operation=Count lane=pcre2/unlimited sample=0 iterations=37504 elapsedMs=52.131800 us/op=1.390033
+  Raw: operation=Count lane=pcre2/finite sample=0 iterations=34812 elapsedMs=51.435900 us/op=1.477534
+  Raw: operation=Count lane=pcre2/finite+token sample=0 iterations=33963 elapsedMs=50.493400 us/op=1.486718
+  Raw: operation=Count lane=pcre2/finite+token sample=1 iterations=33963 elapsedMs=50.772700 us/op=1.494942
+  Raw: operation=Count lane=pcre2/finite sample=1 iterations=34812 elapsedMs=49.821500 us/op=1.431159
+  Raw: operation=Count lane=pcre2/unlimited sample=1 iterations=37504 elapsedMs=48.895100 us/op=1.303730
+  Raw: operation=Count lane=dotnet/decode sample=1 iterations=589964 elapsedMs=49.977200 us/op=0.084712
+  Raw: operation=Count lane=dotnet/predecoded sample=1 iterations=734408 elapsedMs=50.499300 us/op=0.068762
+  Raw: operation=Count lane=python/finite+token sample=1 iterations=47715 elapsedMs=54.443400 us/op=1.141012
+  Raw: operation=Count lane=python/finite sample=1 iterations=50463 elapsedMs=53.503800 us/op=1.060258
+  Raw: operation=Count lane=python/token sample=1 iterations=49808 elapsedMs=52.502100 us/op=1.054090
+  Raw: operation=Count lane=python/unlimited sample=1 iterations=56028 elapsedMs=52.613300 us/op=0.939054
+  Raw: operation=Count lane=core/finite+token sample=1 iterations=45009 elapsedMs=49.954600 us/op=1.109880
+  Raw: operation=Count lane=core/finite sample=1 iterations=48030 elapsedMs=51.625900 us/op=1.074868
+  Raw: operation=Count lane=core/token sample=1 iterations=47768 elapsedMs=50.416700 us/op=1.055449
+  Raw: operation=Count lane=core/unlimited sample=1 iterations=55988 elapsedMs=50.634000 us/op=0.904372
+  Raw: operation=Count lane=core/unlimited sample=2 iterations=55988 elapsedMs=51.081700 us/op=0.912369
+  Raw: operation=Count lane=core/token sample=2 iterations=47768 elapsedMs=50.315200 us/op=1.053324
+  Raw: operation=Count lane=core/finite sample=2 iterations=48030 elapsedMs=50.913900 us/op=1.060044
+  Raw: operation=Count lane=core/finite+token sample=2 iterations=45009 elapsedMs=49.356900 us/op=1.096601
+  Raw: operation=Count lane=python/unlimited sample=2 iterations=56028 elapsedMs=51.380600 us/op=0.917052
+  Raw: operation=Count lane=python/token sample=2 iterations=49808 elapsedMs=51.164200 us/op=1.027229
+  Raw: operation=Count lane=python/finite sample=2 iterations=50463 elapsedMs=51.367700 us/op=1.017928
+  Raw: operation=Count lane=python/finite+token sample=2 iterations=47715 elapsedMs=50.336000 us/op=1.054930
+  Raw: operation=Count lane=dotnet/predecoded sample=2 iterations=734408 elapsedMs=49.968800 us/op=0.068040
+  Raw: operation=Count lane=dotnet/decode sample=2 iterations=589964 elapsedMs=49.840000 us/op=0.084480
+  Raw: operation=Count lane=pcre2/unlimited sample=2 iterations=37504 elapsedMs=52.217800 us/op=1.392326
+  Raw: operation=Count lane=pcre2/finite sample=2 iterations=34812 elapsedMs=52.202100 us/op=1.499543
+  Raw: operation=Count lane=pcre2/finite+token sample=2 iterations=33963 elapsedMs=51.811300 us/op=1.525522
+  Raw: operation=Count lane=pcre2/finite+token sample=3 iterations=33963 elapsedMs=51.205700 us/op=1.507691
+  Raw: operation=Count lane=pcre2/finite sample=3 iterations=34812 elapsedMs=50.643500 us/op=1.454771
+  Raw: operation=Count lane=pcre2/unlimited sample=3 iterations=37504 elapsedMs=49.924800 us/op=1.331186
+  Raw: operation=Count lane=dotnet/decode sample=3 iterations=589964 elapsedMs=49.856200 us/op=0.084507
+  Raw: operation=Count lane=dotnet/predecoded sample=3 iterations=734408 elapsedMs=49.805800 us/op=0.067818
+  Raw: operation=Count lane=python/finite+token sample=3 iterations=47715 elapsedMs=53.583600 us/op=1.122993
+  Raw: operation=Count lane=python/finite sample=3 iterations=50463 elapsedMs=51.592200 us/op=1.022377
+  Raw: operation=Count lane=python/token sample=3 iterations=49808 elapsedMs=49.996000 us/op=1.003774
+  Raw: operation=Count lane=python/unlimited sample=3 iterations=56028 elapsedMs=50.295800 us/op=0.897690
+  Raw: operation=Count lane=core/finite+token sample=3 iterations=45009 elapsedMs=48.953600 us/op=1.087640
+  Raw: operation=Count lane=core/finite sample=3 iterations=48030 elapsedMs=50.266200 us/op=1.046558
+  Raw: operation=Count lane=core/token sample=3 iterations=47768 elapsedMs=50.083800 us/op=1.048480
+  Raw: operation=Count lane=core/unlimited sample=3 iterations=55988 elapsedMs=49.654900 us/op=0.886885
+  Raw: operation=Count lane=core/unlimited sample=4 iterations=55988 elapsedMs=49.537500 us/op=0.884788
+  Raw: operation=Count lane=core/token sample=4 iterations=47768 elapsedMs=49.277800 us/op=1.031607
+  Raw: operation=Count lane=core/finite sample=4 iterations=48030 elapsedMs=50.355300 us/op=1.048413
+  Raw: operation=Count lane=core/finite+token sample=4 iterations=45009 elapsedMs=49.144200 us/op=1.091875
+  Raw: operation=Count lane=python/unlimited sample=4 iterations=56028 elapsedMs=51.584100 us/op=0.920684
+  Raw: operation=Count lane=python/token sample=4 iterations=49808 elapsedMs=50.953000 us/op=1.022988
+  Raw: operation=Count lane=python/finite sample=4 iterations=50463 elapsedMs=51.312800 us/op=1.016840
+  Raw: operation=Count lane=python/finite+token sample=4 iterations=47715 elapsedMs=50.352100 us/op=1.055268
+  Raw: operation=Count lane=dotnet/predecoded sample=4 iterations=734408 elapsedMs=50.122200 us/op=0.068248
+  Raw: operation=Count lane=dotnet/decode sample=4 iterations=589964 elapsedMs=50.080100 us/op=0.084887
+  Raw: operation=Count lane=pcre2/unlimited sample=4 iterations=37504 elapsedMs=52.327700 us/op=1.395257
+  Raw: operation=Count lane=pcre2/finite sample=4 iterations=34812 elapsedMs=51.736000 us/op=1.486154
+  Raw: operation=Count lane=pcre2/finite+token sample=4 iterations=33963 elapsedMs=51.074800 us/op=1.503837
+  Operation: Count
+    core/unlimited: result=1 us/op=0.904 bytes/op=3,552.0
+    core/token: result=1 us/op=1.051 bytes/op=3,664.0
+    core/finite: result=1 us/op=1.055 bytes/op=3,664.0
+    core/finite+token: result=1 us/op=1.092 bytes/op=3,664.0
+    python/unlimited: result=1 us/op=0.917 bytes/op=3,552.0
+    python/token: result=1 us/op=1.023 bytes/op=3,664.0
+    python/finite: result=1 us/op=1.018 bytes/op=3,664.0
+    python/finite+token: result=1 us/op=1.055 bytes/op=3,664.0
+    dotnet/predecoded: result=1 us/op=0.068 bytes/op=0.0
+    dotnet/decode: result=1 us/op=0.085 bytes/op=40.0
+    pcre2/unlimited: result=1 us/op=1.390 bytes/op=3,552.0
+    pcre2/finite: result=1 us/op=1.478 bytes/op=3,664.0
+    pcre2/finite+token: result=1 us/op=1.504 bytes/op=3,664.0
+Case: pattern=x*|y inputBytes=1
+  Core routes: ownedSlice=True kind=FallbackRegex
+  PythonRe preparation: coreKind=None
+  Core/PythonRe finite: work=1000000 depth=1024 working=1048576 result=1048576
+  Finite preparation: core=FallbackRegex pythonCore=None
+  Pcre2 plan: IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice
+  Pcre2 finite plan: IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice
+  Protocol: warmupMinimumCalls=256 warmupTargetMs=250 sampleTargetMs=50 finalDurationChecks=3 requestedMinimumIterations=20000
+  Raw: operation=IsMatch lane=core/unlimited sample=0 iterations=98736 elapsedMs=52.011300 us/op=0.526771
+  Raw: operation=IsMatch lane=core/token sample=0 iterations=83913 elapsedMs=51.744900 us/op=0.616649
+  Raw: operation=IsMatch lane=core/finite sample=0 iterations=78876 elapsedMs=51.046800 us/op=0.647178
+  Raw: operation=IsMatch lane=core/finite+token sample=0 iterations=73293 elapsedMs=49.261200 us/op=0.672113
+  Raw: operation=IsMatch lane=python/unlimited sample=0 iterations=93041 elapsedMs=50.474000 us/op=0.542492
+  Raw: operation=IsMatch lane=python/token sample=0 iterations=79214 elapsedMs=50.003300 us/op=0.631243
+  Raw: operation=IsMatch lane=python/finite sample=0 iterations=78579 elapsedMs=49.851500 us/op=0.634413
+  Raw: operation=IsMatch lane=python/finite+token sample=0 iterations=75181 elapsedMs=49.907800 us/op=0.663835
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=0 iterations=860218 elapsedMs=50.095200 us/op=0.058235
+  Raw: operation=IsMatch lane=dotnet/decode sample=0 iterations=690558 elapsedMs=50.063800 us/op=0.072498
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=0 iterations=85867 elapsedMs=57.119700 us/op=0.665211
+  Raw: operation=IsMatch lane=pcre2/finite sample=0 iterations=73880 elapsedMs=51.402600 us/op=0.695758
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=0 iterations=70814 elapsedMs=51.225200 us/op=0.723377
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=1 iterations=70814 elapsedMs=49.709500 us/op=0.701973
+  Raw: operation=IsMatch lane=pcre2/finite sample=1 iterations=73880 elapsedMs=50.268000 us/op=0.680401
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=1 iterations=85867 elapsedMs=48.776400 us/op=0.568046
+  Raw: operation=IsMatch lane=dotnet/decode sample=1 iterations=690558 elapsedMs=49.499600 us/op=0.071681
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=1 iterations=860218 elapsedMs=50.459600 us/op=0.058659
+  Raw: operation=IsMatch lane=python/finite+token sample=1 iterations=75181 elapsedMs=55.926000 us/op=0.743885
+  Raw: operation=IsMatch lane=python/finite sample=1 iterations=78579 elapsedMs=51.314600 us/op=0.653032
+  Raw: operation=IsMatch lane=python/token sample=1 iterations=79214 elapsedMs=50.811700 us/op=0.641448
+  Raw: operation=IsMatch lane=python/unlimited sample=1 iterations=93041 elapsedMs=51.285300 us/op=0.551212
+  Raw: operation=IsMatch lane=core/finite+token sample=1 iterations=73293 elapsedMs=51.273200 us/op=0.699565
+  Raw: operation=IsMatch lane=core/finite sample=1 iterations=78876 elapsedMs=51.018400 us/op=0.646818
+  Raw: operation=IsMatch lane=core/token sample=1 iterations=83913 elapsedMs=50.812200 us/op=0.605534
+  Raw: operation=IsMatch lane=core/unlimited sample=1 iterations=98736 elapsedMs=52.146000 us/op=0.528136
+  Raw: operation=IsMatch lane=core/unlimited sample=2 iterations=98736 elapsedMs=50.491000 us/op=0.511374
+  Raw: operation=IsMatch lane=core/token sample=2 iterations=83913 elapsedMs=49.639700 us/op=0.591561
+  Raw: operation=IsMatch lane=core/finite sample=2 iterations=78876 elapsedMs=51.247600 us/op=0.649724
+  Raw: operation=IsMatch lane=core/finite+token sample=2 iterations=73293 elapsedMs=49.786500 us/op=0.679280
+  Raw: operation=IsMatch lane=python/unlimited sample=2 iterations=93041 elapsedMs=50.431900 us/op=0.542040
+  Raw: operation=IsMatch lane=python/token sample=2 iterations=79214 elapsedMs=50.400500 us/op=0.636257
+  Raw: operation=IsMatch lane=python/finite sample=2 iterations=78579 elapsedMs=49.406400 us/op=0.628748
+  Raw: operation=IsMatch lane=python/finite+token sample=2 iterations=75181 elapsedMs=50.187800 us/op=0.667560
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=2 iterations=860218 elapsedMs=50.224600 us/op=0.058386
+  Raw: operation=IsMatch lane=dotnet/decode sample=2 iterations=690558 elapsedMs=49.736300 us/op=0.072023
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=2 iterations=85867 elapsedMs=54.473200 us/op=0.634390
+  Raw: operation=IsMatch lane=pcre2/finite sample=2 iterations=73880 elapsedMs=50.892200 us/op=0.688849
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=2 iterations=70814 elapsedMs=50.178800 us/op=0.708600
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=3 iterations=70814 elapsedMs=50.664000 us/op=0.715452
+  Raw: operation=IsMatch lane=pcre2/finite sample=3 iterations=73880 elapsedMs=50.802400 us/op=0.687634
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=3 iterations=85867 elapsedMs=49.973600 us/op=0.581988
+  Raw: operation=IsMatch lane=dotnet/decode sample=3 iterations=690558 elapsedMs=49.324900 us/op=0.071428
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=3 iterations=860218 elapsedMs=50.368700 us/op=0.058553
+  Raw: operation=IsMatch lane=python/finite+token sample=3 iterations=75181 elapsedMs=54.850500 us/op=0.729579
+  Raw: operation=IsMatch lane=python/finite sample=3 iterations=78579 elapsedMs=49.416800 us/op=0.628880
+  Raw: operation=IsMatch lane=python/token sample=3 iterations=79214 elapsedMs=49.903400 us/op=0.629982
+  Raw: operation=IsMatch lane=python/unlimited sample=3 iterations=93041 elapsedMs=50.732900 us/op=0.545275
+  Raw: operation=IsMatch lane=core/finite+token sample=3 iterations=73293 elapsedMs=49.167900 us/op=0.670840
+  Raw: operation=IsMatch lane=core/finite sample=3 iterations=78876 elapsedMs=50.653800 us/op=0.642195
+  Raw: operation=IsMatch lane=core/token sample=3 iterations=83913 elapsedMs=50.473400 us/op=0.601497
+  Raw: operation=IsMatch lane=core/unlimited sample=3 iterations=98736 elapsedMs=50.706500 us/op=0.513556
+  Raw: operation=IsMatch lane=core/unlimited sample=4 iterations=98736 elapsedMs=50.933300 us/op=0.515853
+  Raw: operation=IsMatch lane=core/token sample=4 iterations=83913 elapsedMs=50.685700 us/op=0.604027
+  Raw: operation=IsMatch lane=core/finite sample=4 iterations=78876 elapsedMs=51.716000 us/op=0.655662
+  Raw: operation=IsMatch lane=core/finite+token sample=4 iterations=73293 elapsedMs=50.905300 us/op=0.694545
+  Raw: operation=IsMatch lane=python/unlimited sample=4 iterations=93041 elapsedMs=51.284600 us/op=0.551204
+  Raw: operation=IsMatch lane=python/token sample=4 iterations=79214 elapsedMs=50.289800 us/op=0.634860
+  Raw: operation=IsMatch lane=python/finite sample=4 iterations=78579 elapsedMs=49.332400 us/op=0.627806
+  Raw: operation=IsMatch lane=python/finite+token sample=4 iterations=75181 elapsedMs=49.858100 us/op=0.663174
+  Raw: operation=IsMatch lane=dotnet/predecoded sample=4 iterations=860218 elapsedMs=50.248900 us/op=0.058414
+  Raw: operation=IsMatch lane=dotnet/decode sample=4 iterations=690558 elapsedMs=49.870100 us/op=0.072217
+  Raw: operation=IsMatch lane=pcre2/unlimited sample=4 iterations=85867 elapsedMs=55.050400 us/op=0.641112
+  Raw: operation=IsMatch lane=pcre2/finite sample=4 iterations=73880 elapsedMs=50.553000 us/op=0.684258
+  Raw: operation=IsMatch lane=pcre2/finite+token sample=4 iterations=70814 elapsedMs=49.436600 us/op=0.698119
+  Operation: IsMatch
+    core/unlimited: result=1 us/op=0.516 bytes/op=3,552.0
+    core/token: result=1 us/op=0.604 bytes/op=3,664.0
+    core/finite: result=1 us/op=0.647 bytes/op=3,664.0
+    core/finite+token: result=1 us/op=0.679 bytes/op=3,664.0
+    python/unlimited: result=1 us/op=0.545 bytes/op=3,552.0
+    python/token: result=1 us/op=0.635 bytes/op=3,664.0
+    python/finite: result=1 us/op=0.629 bytes/op=3,664.0
+    python/finite+token: result=1 us/op=0.668 bytes/op=3,664.0
+    dotnet/predecoded: result=1 us/op=0.058 bytes/op=0.0
+    dotnet/decode: result=1 us/op=0.072 bytes/op=24.0
+    pcre2/unlimited: result=1 us/op=0.634 bytes/op=3,552.0
+    pcre2/finite: result=1 us/op=0.688 bytes/op=3,664.0
+    pcre2/finite+token: result=1 us/op=0.709 bytes/op=3,664.0
+  Protocol: warmupMinimumCalls=256 warmupTargetMs=250 sampleTargetMs=50 finalDurationChecks=3 requestedMinimumIterations=20000
+  Raw: operation=Count lane=core/unlimited sample=0 iterations=72266 elapsedMs=51.086900 us/op=0.706929
+  Raw: operation=Count lane=core/token sample=0 iterations=65185 elapsedMs=50.534500 us/op=0.775247
+  Raw: operation=Count lane=core/finite sample=0 iterations=65993 elapsedMs=50.927000 us/op=0.771703
+  Raw: operation=Count lane=core/finite+token sample=0 iterations=63034 elapsedMs=50.993200 us/op=0.808979
+  Raw: operation=Count lane=python/unlimited sample=0 iterations=49575 elapsedMs=50.402300 us/op=1.016688
+  Raw: operation=Count lane=python/token sample=0 iterations=44108 elapsedMs=50.216100 us/op=1.138481
+  Raw: operation=Count lane=python/finite sample=0 iterations=44142 elapsedMs=51.127000 us/op=1.158239
+  Raw: operation=Count lane=python/finite+token sample=0 iterations=42073 elapsedMs=50.672900 us/op=1.204404
+  Raw: operation=Count lane=dotnet/predecoded sample=0 iterations=465393 elapsedMs=49.774300 us/op=0.106951
+  Raw: operation=Count lane=dotnet/decode sample=0 iterations=407076 elapsedMs=50.151800 us/op=0.123200
+  Raw: operation=Count lane=pcre2/unlimited sample=0 iterations=20369 elapsedMs=57.332700 us/op=2.814704
+  Raw: operation=Count lane=pcre2/finite sample=0 iterations=20000 elapsedMs=55.027200 us/op=2.751360
+  Raw: operation=Count lane=pcre2/finite+token sample=0 iterations=20000 elapsedMs=56.769900 us/op=2.838495
+  Raw: operation=Count lane=pcre2/finite+token sample=1 iterations=20000 elapsedMs=57.388600 us/op=2.869430
+  Raw: operation=Count lane=pcre2/finite sample=1 iterations=20000 elapsedMs=54.339100 us/op=2.716955
+  Raw: operation=Count lane=pcre2/unlimited sample=1 iterations=20369 elapsedMs=50.069700 us/op=2.458132
+  Raw: operation=Count lane=dotnet/decode sample=1 iterations=407076 elapsedMs=49.656700 us/op=0.121984
+  Raw: operation=Count lane=dotnet/predecoded sample=1 iterations=465393 elapsedMs=50.147300 us/op=0.107753
+  Raw: operation=Count lane=python/finite+token sample=1 iterations=42073 elapsedMs=56.154700 us/op=1.334697
+  Raw: operation=Count lane=python/finite sample=1 iterations=44142 elapsedMs=56.170000 us/op=1.272484
+  Raw: operation=Count lane=python/token sample=1 iterations=44108 elapsedMs=54.640800 us/op=1.238796
+  Raw: operation=Count lane=python/unlimited sample=1 iterations=49575 elapsedMs=53.781800 us/op=1.084857
+  Raw: operation=Count lane=core/finite+token sample=1 iterations=63034 elapsedMs=52.858700 us/op=0.838574
+  Raw: operation=Count lane=core/finite sample=1 iterations=65993 elapsedMs=52.434700 us/op=0.794549
+  Raw: operation=Count lane=core/token sample=1 iterations=65185 elapsedMs=51.771400 us/op=0.794223
+  Raw: operation=Count lane=core/unlimited sample=1 iterations=72266 elapsedMs=50.788100 us/op=0.702794
+  Raw: operation=Count lane=core/unlimited sample=2 iterations=72266 elapsedMs=50.803300 us/op=0.703004
+  Raw: operation=Count lane=core/token sample=2 iterations=65185 elapsedMs=51.523600 us/op=0.790421
+  Raw: operation=Count lane=core/finite sample=2 iterations=65993 elapsedMs=51.378800 us/op=0.778549
+  Raw: operation=Count lane=core/finite+token sample=2 iterations=63034 elapsedMs=51.213100 us/op=0.812468
+  Raw: operation=Count lane=python/unlimited sample=2 iterations=49575 elapsedMs=50.167600 us/op=1.011954
+  Raw: operation=Count lane=python/token sample=2 iterations=44108 elapsedMs=50.755400 us/op=1.150707
+  Raw: operation=Count lane=python/finite sample=2 iterations=44142 elapsedMs=50.430600 us/op=1.142463
+  Raw: operation=Count lane=python/finite+token sample=2 iterations=42073 elapsedMs=50.565800 us/op=1.201859
+  Raw: operation=Count lane=dotnet/predecoded sample=2 iterations=465393 elapsedMs=49.815200 us/op=0.107039
+  Raw: operation=Count lane=dotnet/decode sample=2 iterations=407076 elapsedMs=50.227700 us/op=0.123387
+  Raw: operation=Count lane=pcre2/unlimited sample=2 iterations=20369 elapsedMs=56.363700 us/op=2.767131
+  Raw: operation=Count lane=pcre2/finite sample=2 iterations=20000 elapsedMs=56.045800 us/op=2.802290
+  Raw: operation=Count lane=pcre2/finite+token sample=2 iterations=20000 elapsedMs=56.375700 us/op=2.818785
+  Raw: operation=Count lane=pcre2/finite+token sample=3 iterations=20000 elapsedMs=56.650100 us/op=2.832505
+  Raw: operation=Count lane=pcre2/finite sample=3 iterations=20000 elapsedMs=54.839700 us/op=2.741985
+  Raw: operation=Count lane=pcre2/unlimited sample=3 iterations=20369 elapsedMs=48.775200 us/op=2.394580
+  Raw: operation=Count lane=dotnet/decode sample=3 iterations=407076 elapsedMs=49.715400 us/op=0.122128
+  Raw: operation=Count lane=dotnet/predecoded sample=3 iterations=465393 elapsedMs=49.604000 us/op=0.106585
+  Raw: operation=Count lane=python/finite+token sample=3 iterations=42073 elapsedMs=54.205800 us/op=1.288375
+  Raw: operation=Count lane=python/finite sample=3 iterations=44142 elapsedMs=51.894100 us/op=1.175617
+  Raw: operation=Count lane=python/token sample=3 iterations=44108 elapsedMs=50.758400 us/op=1.150775
+  Raw: operation=Count lane=python/unlimited sample=3 iterations=49575 elapsedMs=50.736100 us/op=1.023421
+  Raw: operation=Count lane=core/finite+token sample=3 iterations=63034 elapsedMs=51.185600 us/op=0.812032
+  Raw: operation=Count lane=core/finite sample=3 iterations=65993 elapsedMs=51.636900 us/op=0.782460
+  Raw: operation=Count lane=core/token sample=3 iterations=65185 elapsedMs=50.962000 us/op=0.781806
+  Raw: operation=Count lane=core/unlimited sample=3 iterations=72266 elapsedMs=49.774200 us/op=0.688764
+  Raw: operation=Count lane=core/unlimited sample=4 iterations=72266 elapsedMs=49.642900 us/op=0.686947
+  Raw: operation=Count lane=core/token sample=4 iterations=65185 elapsedMs=50.415500 us/op=0.773422
+  Raw: operation=Count lane=core/finite sample=4 iterations=65993 elapsedMs=51.034900 us/op=0.773338
+  Raw: operation=Count lane=core/finite+token sample=4 iterations=63034 elapsedMs=50.779500 us/op=0.805589
+  Raw: operation=Count lane=python/unlimited sample=4 iterations=49575 elapsedMs=50.360400 us/op=1.015843
+  Raw: operation=Count lane=python/token sample=4 iterations=44108 elapsedMs=49.930700 us/op=1.132010
+  Raw: operation=Count lane=python/finite sample=4 iterations=44142 elapsedMs=50.023100 us/op=1.133231
+  Raw: operation=Count lane=python/finite+token sample=4 iterations=42073 elapsedMs=49.806800 us/op=1.183819
+  Raw: operation=Count lane=dotnet/predecoded sample=4 iterations=465393 elapsedMs=49.846100 us/op=0.107105
+  Raw: operation=Count lane=dotnet/decode sample=4 iterations=407076 elapsedMs=49.852900 us/op=0.122466
+  Raw: operation=Count lane=pcre2/unlimited sample=4 iterations=20369 elapsedMs=56.298600 us/op=2.763935
+  Raw: operation=Count lane=pcre2/finite sample=4 iterations=20000 elapsedMs=55.658000 us/op=2.782900
+  Raw: operation=Count lane=pcre2/finite+token sample=4 iterations=20000 elapsedMs=56.035100 us/op=2.801755
+  Operation: Count
+    core/unlimited: result=2 us/op=0.703 bytes/op=3,552.0
+    core/token: result=2 us/op=0.782 bytes/op=3,664.0
+    core/finite: result=2 us/op=0.779 bytes/op=3,664.0
+    core/finite+token: result=2 us/op=0.812 bytes/op=3,664.0
+    python/unlimited: result=3 us/op=1.017 bytes/op=3,552.0
+    python/token: result=3 us/op=1.151 bytes/op=3,664.0
+    python/finite: result=3 us/op=1.158 bytes/op=3,664.0
+    python/finite+token: result=3 us/op=1.204 bytes/op=3,664.0
+    dotnet/predecoded: result=2 us/op=0.107 bytes/op=0.0
+    dotnet/decode: result=2 us/op=0.122 bytes/op=24.0
+    pcre2/unlimited: result=3 us/op=2.764 bytes/op=14,208.0
+    pcre2/finite: result=3 us/op=2.751 bytes/op=14,320.0
+    pcre2/finite+token: result=3 us/op=2.833 bytes/op=14,320.0

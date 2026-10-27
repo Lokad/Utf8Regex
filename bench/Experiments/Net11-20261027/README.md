@@ -7,7 +7,7 @@ republish or modify 0.4.0 artifacts.
 ## Public Count comparison
 
 [Raw samples and identities](public-count-comparison.json),
-[elapsed time](public-count-comparison.log), [driver](compare.cs.txt),
+[elapsed time](public-count-comparison.txt), [driver](compare.cs.txt),
 [project](compare.csproj.txt).
 
 Ubuntu 24.04.4, Xeon Platinum 8573C, .NET 11 RC3, CPU2, default tiering.
@@ -131,7 +131,7 @@ the repository's existing benchmark files, not a second maintained scoreboard.
 - Finite/live-token public IsMatch/Count sweep: all five cases across all three
   profiles completed in 101.37 s, including the four finite invocation controls,
   exact result agreement, allocations and decode/predecoded controls.
-  [Raw public lanes](finite-public-lanes.log).
+  [Raw public lanes](finite-public-lanes.txt).
 - Release correctness covers both runtimes on Windows and Linux, including
   disabled dynamic code; focused new resource/candidate tests also pass.
   Generated-page/parity verification passes. Published 0.4.0 package/symbol
@@ -158,7 +158,7 @@ can exceed these soft warmup durations; outer command caps still apply.
 The mail-corpus qualification ultimately completed in 74.99 s after fixing both
 managed and CPython warmup floors. Its actual paired public Count costs are
 2.508 s versus 358 ms predecoded CPython (7.05x); the 2.851 s independent figure
-remains as originally measured. [Final qualification log](python-email-final.log).
+remains as originally measured. [Final qualification log](python-email-final.txt).
 
 ## PCRE2 required-literal Count
 

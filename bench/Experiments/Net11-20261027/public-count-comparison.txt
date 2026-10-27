@@ -1,0 +1,5 @@
+Completed ruff-noqa/real finite=False: 8506147.8 / 418601.60000000003 us/op
+Completed ruff-noqa/real finite=True: 7255.028571428572 / 7647.157142857142 us/op
+Completed literal-alternate/sherlock-casei-en finite=False: 13906.3 / 1707.27 us/op
+Completed literal/sherlock-en finite=False: 99.55081967213115 / 100.68028747433266 us/op
+elapsed_seconds=49.69

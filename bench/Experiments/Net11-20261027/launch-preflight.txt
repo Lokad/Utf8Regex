@@ -1,0 +1,17 @@
+Unhandled exception. System.Reflection.TargetInvocationException: Exception has been thrown by the target of an invocation.
+ ---> System.IO.DirectoryNotFoundException: Benchmark data directory 'DotNetPerformanceReplica/Stress/Data' was not found beside the executable or in the repository.
+   at Lokad.Utf8Regex.Benchmarks.BenchmarkDataFiles.GetDirectory(String relativePath) in /home/vermorel/tmp/utf8regex-net11-memory/repo/bench/Lokad.Utf8Regex.Benchmarks/BenchmarkDataFiles.cs:line 31
+   at Lokad.Utf8Regex.Benchmarks.DotNetPerformanceReplicaBenchmarkContext..ctor(DotNetPerformanceReplicaBenchmarkCase benchmarkCase) in /home/vermorel/tmp/utf8regex-net11-memory/repo/bench/Lokad.Utf8Regex.Benchmarks/DotNetPerformanceReplica/Stress/DotNetPerformanceReplicaBenchmarkContext.cs:line 11
+   at Lokad.Utf8Regex.Benchmarks.ReplicaCountBenchmarkCase.FromDotNetPerformance(DotNetPerformanceReplicaBenchmarkCase benchmarkCase) in /home/vermorel/tmp/utf8regex-net11-memory/repo/bench/Lokad.Utf8Regex.Benchmarks/ReplicaCountBenchmarkCase.cs:line 160
+   at Lokad.Utf8Regex.Benchmarks.ReplicaCountBenchmarkCase.TryGetDotNetPerformance(String caseId) in /home/vermorel/tmp/utf8regex-net11-memory/repo/bench/Lokad.Utf8Regex.Benchmarks/ReplicaCountBenchmarkCase.cs:line 143
+   at Lokad.Utf8Regex.Benchmarks.ReplicaCountBenchmarkCase.Resolve(String caseId) in /home/vermorel/tmp/utf8regex-net11-memory/repo/bench/Lokad.Utf8Regex.Benchmarks/ReplicaCountBenchmarkCase.cs:line 97
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+   --- End of inner exception stack trace ---
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+   at Program.<Main>$(String[] args)
+timeout: the monitored command dumped core
+Command terminated by signal 6
+elapsed_seconds=1.15
