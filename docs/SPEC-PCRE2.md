@@ -168,7 +168,9 @@ Pre-cancellation wins; timeout reports `Pcre2MatchException` / Timeout.
 
 Create maps positive nullable common policies to these limits; null becomes zero,
 common zero rejects, and work values above uint.MaxValue reject. Units depend on
-the managed route, not native PCRE2. Depth admits live frames/assertion state
+the managed route, not native PCRE2. Optimizations can change work counts or avoid
+VM workspace on proven misses; exact denial thresholds are not version-stable.
+Depth admits live frames/assertion state
 before growth. Working admission includes major workspace/output growth overlap;
 result admission cumulatively covers owned capture/probe roots, staging and
 returned bytes/text without refunds. Fixed values/inline partials need no result
