@@ -1,0 +1,15 @@
+tests (windows-latest)	Test Release	2026-10-28T14:27:47.1074797Z   Failed Lokad.Utf8Regex.Pcre2.Tests.Pcre2InvocationWorkspaceTests.WarmPublicVmMatchingReusesWorkspaceWithoutPerCallAllocation [12 ms]
+tests (windows-latest)	Test Release	2026-10-28T14:27:47.1590334Z   Error Message:
+tests (windows-latest)	Test Release	2026-10-28T14:27:47.2042865Z    Assert.Equal() Failure: Values differ
+tests (windows-latest)	Test Release	2026-10-28T14:27:47.2056067Z Expected: 0
+tests (windows-latest)	Test Release	2026-10-28T14:27:47.2589184Z Actual:   6368
+tests (windows-latest)	Test Release	2026-10-28T14:27:47.2752068Z   Stack Trace:
+tests (windows-latest)	Test Release	2026-10-28T14:27:47.5199401Z      at Lokad.Utf8Regex.Pcre2.Tests.Pcre2InvocationWorkspaceTests.WarmPublicVmMatchingReusesWorkspaceWithoutPerCallAllocation() in D:\a\Utf8Regex\Utf8Regex\tests\Lokad.Utf8Regex.Pcre2.Tests\Pcre2InvocationWorkspaceTests.cs:line 272
+tests (windows-latest)	Test Release	2026-10-28T14:27:47.5660091Z    at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+tests (windows-latest)	Test Release	2026-10-28T14:27:47.7942089Z    at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+tests (windows-latest)	Test Release	2026-10-28T14:27:53.1992381Z    at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+tests (windows-latest)	Test Release	2026-10-28T14:27:53.2281757Z
+tests (windows-latest)	Test Release	2026-10-28T14:27:53.2649726Z Failed!  - Failed:     1, Passed:  6199, Skipped:     0, Total:  6200, Duration: 46 s - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)
+tests (windows-latest)	Test Release	2026-10-28T14:27:53.3936310Z
+tests (windows-latest)	Test Release	2026-10-28T14:27:53.4625835Z Passed!  - Failed:     0, Passed:  3954, Skipped:     0, Total:  3954, Duration: 37 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)
+tests (windows-latest)	Test Release	2026-10-28T14:27:53.6375063Z Test run for D:\a\Utf8Regex\Utf8Regex\tests\Lokad.Utf8Regex.Tests\bin\Release\net10.0\Lokad.Utf8Regex.Tests.dll (.NETCoreApp,Version=v10.0)

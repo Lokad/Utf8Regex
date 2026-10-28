@@ -1,0 +1,4 @@
+Test run for D:\code\utf8regex\tests\Lokad.Utf8Regex.PythonRe.Tests\bin\Release\net11.0\Lokad.Utf8Regex.PythonRe.Tests.dll (.NETCoreApp,Version=v11.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:   129, Skipped:     0, Total:   129, Duration: 362 ms - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)

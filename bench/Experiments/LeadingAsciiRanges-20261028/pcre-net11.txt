@@ -1,0 +1,4 @@
+Test run for D:\code\utf8regex\tests\Lokad.Utf8Regex.Pcre2.Tests\bin\Release\net11.0\Lokad.Utf8Regex.Pcre2.Tests.dll (.NETCoreApp,Version=v11.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:   449, Skipped:     0, Total:   449, Duration: 1 s - Lokad.Utf8Regex.Pcre2.Tests.dll (net11.0)
