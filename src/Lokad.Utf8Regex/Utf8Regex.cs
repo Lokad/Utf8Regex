@@ -848,7 +848,7 @@ public sealed partial class Utf8Regex
     private bool RejectMissingRequiredLiteral(ReadOnlySpan<byte> input, Utf8SliceProgram program,
         ref Utf8SliceInvocation invocation)
     {
-        if (invocation.IsUnmetered || !ReferenceEquals(program, _ownedSliceProgram) ||
+        if (!ReferenceEquals(program, _ownedSliceProgram) ||
             program.RightToLeft || program.HasContiguousAnchor ||
             _preparedRegex.Features.HasAbsoluteStartAnchor ||
             _preparedRegex.SearchPlan.CanGuideFallbackStarts) return false;

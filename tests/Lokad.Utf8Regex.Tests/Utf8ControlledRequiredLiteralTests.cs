@@ -36,12 +36,17 @@ public sealed class Utf8ControlledRequiredLiteralTests
     [InlineData("bar(?!foo)", "bar", 1)]
     [InlineData("(?i:ab)+@end", "ABab@end", 1)]
     [InlineData("(?<x>é+)😀fin", "éé😀fin é😀fin", 2)]
+    [InlineData(@"[^a]+\.[^z]+", "This regex has the potential to be optimized further", 0)]
+    [InlineData(@"[^a]+\.[^z]+", "abc.é😀", 1)]
+    [InlineData(@"[^a]+\.[^z]+", ".", 0)]
     public void RequiredFactsNeverApproveMatchesOrRejectValidScalarAlternatives(
         string pattern, string text, int expected)
     {
         foreach (var extra in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft })
+        foreach (var unlimited in new[] { false, true })
         {
-            var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | extra,
+            var options = RegexOptions.CultureInvariant | extra;
+            var regex = unlimited ? new Utf8Regex(pattern, options) : new Utf8Regex(pattern, options,
                 Regex.InfiniteMatchTimeout, new()
                 {
                     MaxWorkSteps = 1000000, MaxDepth = 8192,
@@ -61,6 +66,9 @@ public sealed class Utf8ControlledRequiredLiteralTests
             Regex.InfiniteMatchTimeout, new() { MaxWorkSteps = 1024, MaxWorkingBytes = 1 });
         Assert.Contains("100000", Assert.Throws<ArgumentException>(() => regex.IsMatch(input)).Message);
         Assert.Contains("100000", Assert.Throws<ArgumentException>(() => regex.Count(input)).Message);
+        var unlimited = new Utf8Regex(@"[a-z]+@[a-z]+\.[a-z]+", RegexOptions.CultureInvariant);
+        Assert.Contains("100000", Assert.Throws<ArgumentException>(() => unlimited.IsMatch(input)).Message);
+        Assert.Contains("100000", Assert.Throws<ArgumentException>(() => unlimited.Count(input)).Message);
     }
 
     [Fact]
