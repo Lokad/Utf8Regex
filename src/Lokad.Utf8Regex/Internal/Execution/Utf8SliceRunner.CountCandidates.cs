@@ -41,24 +41,33 @@ internal static partial class Utf8SliceRunner
         return Utf8ExecutionLimitKind.None;
     }
 
-    // A leading \s* followed by an exact non-whitespace ASCII scalar can only
-    // start in the whitespace run immediately before that scalar, or at it.
+    // A whitespace repeat followed by an exact non-whitespace ASCII scalar
+    // admits a window before that scalar; one scalar-class run can precede it.
     // Verify every start in that window with the unchanged VM: captures,
     // references and assertions may make a later start win after an earlier
     // one fails. No candidate is itself accepted by this necessary condition.
-    private static int GetLeadingWhitespaceLiteral(Utf8SliceProgram program)
+    private static int GetLeadingWhitespaceLiteral(Utf8SliceProgram program,
+        out int leadingClass, out int literalIndex)
     {
+        leadingClass = -1;
+        literalIndex = -1;
         var code = program.Instructions.AsSpan();
         var index = 0;
-        while (index < code.Length && code[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
+        while (index < code.Length && index < 64 && code[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
             index++;
-        if (code.Length - index < 5) return -1;
+        // One leading scalar-class run may precede the whitespace run. Reuse
+        // the actual VM predicate when rewinding: ASCII intersections are not
+        // a proof of Unicode word/category membership.
+        if (IsSingleClassRepeat(code, index) && code[index].RepeatMinimum == 1)
+        {
+            leadingClass = index + 1;
+            index += 4;
+            while (index < code.Length && index < 64 && code[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
+                index++;
+        }
+        if (index >= 64 || !IsSingleClassRepeat(code, index)) return -1;
         var repeat = code[index];
-        if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy || repeat.RepeatMinimum != 0 ||
-            repeat.RepeatMaximum != long.MaxValue || repeat.A != index + 3 ||
-            code[index + 2].Kind != Utf8SliceInstructionKind.RepeatEnd || code[index + 2].A != index ||
-            code[index + 3].Kind != Utf8SliceInstructionKind.RepeatExit)
-            return -1;
+        if (repeat.RepeatMinimum > (leadingClass >= 0 ? 1 : 0)) return -1;
         var body = code[index + 1];
         var whitespace = body.Kind == Utf8SliceInstructionKind.Shorthand && body.A == (int)Utf8SliceShorthand.Space ||
             body.Kind == Utf8SliceInstructionKind.Hybrid && body.B == 0 && body.D == 0 &&
@@ -66,12 +75,60 @@ internal static partial class Utf8SliceRunner
             ContainsOnlyAsciiWhitespace(program.SetMasks[body.A]);
         if (!whitespace) return -1;
         index += 4;
-        while (index < code.Length && code[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
+        while (index < code.Length && index < 64 && code[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
             index++;
-        if (index == code.Length || code[index].Kind != Utf8SliceInstructionKind.Literal || code[index].B != 0 ||
+        if (index >= code.Length || index >= 64 || code[index].Kind != Utf8SliceInstructionKind.Literal || code[index].B != 0 ||
             (uint)code[index].A >= 128 || Rune.IsWhiteSpace(new Rune(code[index].A)))
             return -1;
+        literalIndex = index;
         return code[index].A;
+    }
+
+    private static bool IsSingleClassRepeat(ReadOnlySpan<Utf8SliceInstruction> code, int index)
+        => code.Length - index >= 4 && code[index].Kind == Utf8SliceInstructionKind.RepeatGreedy &&
+            code[index].RepeatMaximum == long.MaxValue && code[index].A == index + 3 &&
+            code[index + 1].Kind is (Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Set or
+                Utf8SliceInstructionKind.Shorthand or Utf8SliceInstructionKind.Hybrid or Utf8SliceInstructionKind.CategorySet) &&
+            code[index + 2].Kind == Utf8SliceInstructionKind.RepeatEnd && code[index + 2].A == index &&
+            code[index + 3].Kind == Utf8SliceInstructionKind.RepeatExit && code[index + 3].A == code[index].B;
+
+    private static bool LiteralStartsAtInstruction(Utf8SliceProgram program, int index, ReadOnlySpan<byte> needle)
+    {
+        // A required fragment elsewhere in the tail is not the literal at the
+        // end of these runs. Check alignment before borrowing the prepared search.
+        if (needle.IsEmpty || needle.Length > 64 || program.Instructions.Length - index < needle.Length) return false;
+        for (var i = 0; i < needle.Length; i++)
+        {
+            var instruction = program.Instructions[index + i];
+            if (needle[i] >= 128 || instruction.Kind != Utf8SliceInstructionKind.Literal ||
+                instruction.B != 0 || instruction.A != needle[i]) return false;
+        }
+        return true;
+    }
+
+    private static Utf8ExecutionLimitKind TryRewindClassWhitespace(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int floor, int leadingClass, ref int position, ref Utf8SliceInvocation invocation)
+    {
+        // The classes can overlap. Cover the complete whitespace/class window,
+        // then let the VM test each start, rather than choosing a split here.
+        while (position > floor)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            if (!TryReadScalar(input, position, true, out var scalar, out var width) || !Rune.IsWhiteSpace(scalar)) break;
+            position -= width;
+        }
+        while (position > floor)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            if (!TryReadScalar(input, position, true, out var scalar, out var width)) break;
+            breach = TryMatchScalarClass(program, program.Instructions[leadingClass], scalar, ref invocation, out var hit);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            if (!hit) break;
+            position -= width;
+        }
+        return Utf8ExecutionLimitKind.None;
     }
 
     private static bool ContainsOnlyAsciiWhitespace(ReadOnlySpan<byte> mask)

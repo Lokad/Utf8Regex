@@ -577,9 +577,16 @@ internal static partial class Utf8SliceRunner
         var leadingAsciiLiteral = !seekLiteral && !program.RightToLeft && !program.IgnoreCase &&
             !program.CanMatchEmpty && !program.HasContiguousAnchor
             ? GetLeadingAsciiLiteral(program) : -1;
-        var whitespaceLiteral = !seekLiteral && !program.RightToLeft && input.Length - fromByte >= 256 &&
-            invocation.IsUnmetered && invocation.CheckpointHook is null
-            ? GetLeadingWhitespaceLiteral(program) : -1;
+        var leadingClass = -1;
+        var whitespaceLiteralIndex = -1;
+        var whitespaceLiteral = !seekLiteral && !program.RightToLeft && !program.IgnoreCase &&
+            !program.HasContiguousAnchor && input.Length - fromByte >= 256
+            ? GetLeadingWhitespaceLiteral(program, out leadingClass, out whitespaceLiteralIndex) : -1;
+        if (whitespaceLiteral >= 0 && (leadingClass >= 0
+            ? candidatePlan.LiteralSearch is not { IgnoreCase: false } classSearch ||
+                !LiteralStartsAtInstruction(program, whitespaceLiteralIndex, classSearch.Needle)
+            : !invocation.IsUnmetered || invocation.CheckpointHook is not null))
+            whitespaceLiteral = -1;
         var whitespaceWindowEnd = -1;
         var workspace = new AttemptWorkspace();
         try
@@ -595,8 +602,27 @@ internal static partial class Utf8SliceRunner
                 }
                 if (whitespaceLiteral >= 0 && position > whitespaceWindowEnd)
                 {
-                    position = SeekLeadingWhitespaceLiteral(input, position, (byte)whitespaceLiteral, out whitespaceWindowEnd);
-                    if (position < 0) break;
+                    if (leadingClass >= 0)
+                    {
+                        var search = candidatePlan.LiteralSearch.GetValueOrDefault();
+                        var seekBreach = Utf8SearchExecutor.TryFindLiteralCandidate(search, input, position,
+                            input.Length - search.Length, false, ref invocation, out whitespaceWindowEnd);
+                        if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
+                        var floor = position;
+                        position = whitespaceWindowEnd;
+                        if (position >= 0)
+                        {
+                            seekBreach = TryRewindClassWhitespace(program, input, floor, leadingClass, ref position, ref invocation);
+                            if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
+                        }
+                    }
+                    else position = SeekLeadingWhitespaceLiteral(input, position, (byte)whitespaceLiteral, out whitespaceWindowEnd);
+                    if (position < 0)
+                    {
+                        if (leadingClass >= 0)
+                            return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                        break;
+                    }
                 }
                 // A mandatory initial strict-end anchor admits only EOF, even
                 // after an empty match. Keep original terminal authority when
