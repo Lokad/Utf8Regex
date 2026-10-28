@@ -23,8 +23,13 @@ public sealed class Pcre2LeadingSetCountTests
         Assert.Equal(expected, regex.Count(input));
         Assert.Equal(expected, regex.Count(input, 4, Pcre2MatchOptions.None, token.Token));
         Assert.Equal(0, regex.Count(input, input.Length));
+        Assert.True(regex.IsMatch(input));
+        Assert.True(regex.IsMatch(input, 4, Pcre2MatchOptions.None, token.Token));
+        Assert.False(regex.IsMatch(input, input.Length));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count(Encoding.UTF8.GetBytes(text), 1));
         Assert.Throws<ArgumentException>(() => regex.Count(new byte[] { (byte)'x', 255 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatch(Encoding.UTF8.GetBytes(text), 1));
+        Assert.Throws<ArgumentException>(() => regex.IsMatch(new byte[] { (byte)'x', 255 }));
     }
 
     [Theory]
@@ -53,6 +58,9 @@ public sealed class Pcre2LeadingSetCountTests
         Assert.Equal(1, regex.Count("xxab"u8));
         Assert.Equal(0, regex.Count("xxab"u8, 0, Pcre2MatchOptions.Anchored));
         Assert.Equal(0, regex.Count("ab😀"u8, 2));
+        Assert.True(regex.IsMatch("xxab"u8));
+        Assert.False(regex.IsMatch("xxab"u8, 0, Pcre2MatchOptions.Anchored));
+        Assert.False(regex.IsMatch("ab😀"u8, 2));
         var anchored = new Utf8Pcre2Regex("(a+)(b)", Pcre2CompileOptions.Anchored);
         Assert.Equal(Pcre2CandidateSearchKind.None, anchored.DebugCompiledProgram.CandidateSearch.Kind);
         Assert.Equal(0, anchored.Count("xxab"u8));
@@ -61,6 +69,7 @@ public sealed class Pcre2LeadingSetCountTests
     [Theory]
     [InlineData("(a+)(b)", 'x', "aaab")]
     [InlineData("[a-z]+@[a-z]+", 'a', "foo@bar")]
+    [InlineData(@"[^a]+\.[^z]+", 'b', "ébc.😀tail")]
     public void ImpossibleSubjectsNeedNoVmScratchWhileRealAttemptsStillAdmitIt(string pattern, char filler, string hit)
     {
         var regex = Create(pattern, working: 1, result: 1);
@@ -76,11 +85,25 @@ public sealed class Pcre2LeadingSetCountTests
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         Assert.Equal(Pcre2ErrorKind.HeapLimit,
             Assert.Throws<Pcre2MatchException>(() => regex.Count(Encoding.UTF8.GetBytes(hit))).ErrorKind);
+
+        invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
+        Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(bytes, ref invocation, out input));
+        validation = invocation.Budget.Steps;
+        Assert.True(Pcre2Runner.TryIsMatch(regex.DebugCompiledProgram, ref input,
+            new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out var found));
+        Assert.False(found);
+        Assert.True(invocation.Budget.Steps > validation);
+        Assert.Equal(0UL, invocation.Budget.PeakWorkingBytes);
+        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        Assert.False(regex.IsMatch(bytes));
+        Assert.Equal(Pcre2ErrorKind.HeapLimit,
+            Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(Encoding.UTF8.GetBytes(hit))).ErrorKind);
     }
 
     [Theory]
     [InlineData("(a+)(b)", 'x')]
     [InlineData("[a-z]+@[a-z]+", 'a')]
+    [InlineData(@"[^a]+\.[^z]+", 'b')]
     public void ValidationAndAbsenceSearchSpendOneStickyWorkAllowance(string pattern, char filler)
     {
         var bytes = Encoding.UTF8.GetBytes(new string(filler, 262144));
@@ -97,14 +120,20 @@ public sealed class Pcre2LeadingSetCountTests
         var denied = Create(pattern, work: limit);
         Assert.Equal(Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => denied.Count(bytes)).ErrorKind);
+        Assert.Equal(Pcre2ErrorKind.MatchLimit,
+            Assert.Throws<Pcre2MatchException>(() => denied.IsMatch(bytes)).ErrorKind);
     }
 
     [Theory]
-    [InlineData(false, "(a+)(b)", "aaab", "aaa", "b")]
-    [InlineData(true, "(a+)(b)", "aaab", "aaa", "b")]
-    [InlineData(false, "[a-z]+@([a-z]+)", "foo@bar", "bar", null)]
-    [InlineData(true, "[a-z]+@([a-z]+)", "foo@bar", "bar", null)]
-    public void AbsenceSearchKeepsOriginalInterruptionAndRetainedCaptures(bool cancel, string pattern,
+    [InlineData(false, false, "(a+)(b)", "aaab", "aaa", "b")]
+    [InlineData(true, false, "(a+)(b)", "aaab", "aaa", "b")]
+    [InlineData(false, false, "[a-z]+@([a-z]+)", "foo@bar", "bar", null)]
+    [InlineData(true, false, "[a-z]+@([a-z]+)", "foo@bar", "bar", null)]
+    [InlineData(false, true, "(a+)(b)", "aaab", "aaa", "b")]
+    [InlineData(true, true, "(a+)(b)", "aaab", "aaa", "b")]
+    [InlineData(false, true, "[a-z]+@([a-z]+)", "foo@bar", "bar", null)]
+    [InlineData(true, true, "[a-z]+@([a-z]+)", "foo@bar", "bar", null)]
+    public void AbsenceSearchKeepsOriginalInterruptionAndRetainedCaptures(bool cancel, bool isMatch, string pattern,
         string hit, string firstCapture, string? secondCapture)
     {
         long ticks = 0;
@@ -123,8 +152,12 @@ public sealed class Pcre2LeadingSetCountTests
         Exception? failure = null;
         try
         {
-            Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
-                new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out _);
+            if (isMatch)
+                Pcre2Runner.TryIsMatch(regex.DebugCompiledProgram, ref input,
+                    new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out _);
+            else
+                Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
+                    new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out _);
         }
         catch (Exception error) { failure = error; }
         Assert.True(checkpoints > 0 && invocation.Budget.Steps > validation);
@@ -147,6 +180,9 @@ public sealed class Pcre2LeadingSetCountTests
         Assert.Equal(1, regex.Count(subject, Encoding.UTF8.GetByteCount("😀@bad foo@bar λ")));
         Assert.Equal(0, regex.Count("foo@bar"u8, 4));
         Assert.Equal(0, regex.Count("@bad aa@!"u8));
+        Assert.True(regex.IsMatch(subject));
+        Assert.False(regex.IsMatch("foo@bar"u8, 4));
+        Assert.False(regex.IsMatch("@bad aa@!"u8));
         Assert.Throws<ArgumentException>(() => regex.Count(new byte[] { (byte)'a', 0xFF }));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count("😀foo@bar"u8, 1));
     }

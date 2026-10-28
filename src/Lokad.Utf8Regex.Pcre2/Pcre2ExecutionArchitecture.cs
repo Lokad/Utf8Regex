@@ -2030,6 +2030,13 @@ internal static partial class Pcre2Runner
                 return true;
             }
 
+            if (Pcre2SliceDriver.RejectMissingCandidate(sliceProgram.SliceProgram,
+                compiledProgram.CandidateSearch, input.Bytes, start.Value, ref invocation))
+            {
+                result = false;
+                return true;
+            }
+
             result = Pcre2SliceDriver.IsMatch(
                 sliceProgram.SliceProgram,
                 ref input,
@@ -2446,22 +2453,11 @@ internal static class Pcre2GlobalOperationDriver
                 return true;
             }
 
-            // A necessary leading-byte set or the literal after a required run
-            // can prove the entire suffix impossible. Borrow its existing searcher
-            // and original authority before renting VM scratch; finding a candidate
-            // leaves ordering and verification to Count.
-            var candidates = compiledProgram.CandidateSearch;
-            if (!sliceProgram.SliceProgram.CanMatchEmpty && !sliceProgram.SliceProgram.RightToLeft &&
-                candidates.Kind is Pcre2CandidateSearchKind.LeadingAsciiSet or Pcre2CandidateSearchKind.LeadingRunThenLiteral)
+            if (Pcre2SliceDriver.RejectMissingCandidate(sliceProgram.SliceProgram,
+                compiledProgram.CandidateSearch, input.Bytes, start.Value, ref invocation))
             {
-                var breach = candidates.Searcher.TryFindMatch(input.Bytes, start.Value, input.ByteLength,
-                    false, ref invocation, out _, out var found);
-                Pcre2SliceDriver.ThrowIfSliceBreached(breach);
-                if (!found)
-                {
-                    result = 0;
-                    return true;
-                }
+                result = 0;
+                return true;
             }
 
             result = Pcre2SliceDriver.Count(

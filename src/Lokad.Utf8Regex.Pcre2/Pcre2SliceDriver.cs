@@ -249,6 +249,26 @@ internal static class Pcre2SliceDriver
         return (uint)position >= (uint)bytes.Length || (bytes[position] & 0xC0) != 0x80;
     }
 
+    // These admitted searches prove a necessary byte/literal absent, never a
+    // match present. Share the proof and original authority across scalar public
+    // operations before renting VM scratch; candidates still need verification.
+    internal static bool RejectMissingCandidate(
+        Utf8SliceProgram program,
+        Pcre2CandidateSearchProgram candidates,
+        ReadOnlySpan<byte> input,
+        int start,
+        scoped ref Utf8SliceInvocation invocation)
+    {
+        if (program.CanMatchEmpty || program.RightToLeft ||
+            candidates.Kind is not (Pcre2CandidateSearchKind.LeadingAsciiSet or
+                Pcre2CandidateSearchKind.LeadingRunThenLiteral)) return false;
+
+        var breach = candidates.Searcher.TryFindMatch(input, start, input.Length,
+            false, ref invocation, out _, out var found);
+        ThrowIfSliceBreached(breach);
+        return !found;
+    }
+
     internal static bool IsMatch(
         Utf8SliceProgram program,
         ref Utf8ValidatedInput input,
