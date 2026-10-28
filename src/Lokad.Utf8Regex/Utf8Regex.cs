@@ -847,6 +847,11 @@ public sealed partial class Utf8Regex
             invocation.Budget.ThrowIfCancellationRequested();
             return found;
         }
+        // Reuse the already-admitted scalar URI language and the Count scan.
+        // This is existence only: Match/captures retain scalar verification.
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.Utf8UriToken &&
+            CanUseNativeScalarTokenSearch(program, startByte))
+            return Utf8UriTokenExecutor.IsMatchWellFormed(input, ref invocation);
         if (RejectMissingRequiredLiteral(input, program, ref invocation)) return false;
         var slots = new Utf8SliceSlots([], []);
         try
@@ -1266,7 +1271,7 @@ public sealed partial class Utf8Regex
         try
         {
             if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program) ||
-                CanUseNativeScalarTokenCount(program, startByte))
+                CanUseNativeScalarTokenSearch(program, startByte))
             {
                 // These complete counters consume validated bytes, not coordinate metadata.
                 // Keep structural validation and the existing counting kernel intact.
@@ -1329,7 +1334,7 @@ public sealed partial class Utf8Regex
         }
     }
 
-    private bool CanUseNativeScalarTokenCount(Utf8SliceProgram program, int startByte)
+    private bool CanUseNativeScalarTokenSearch(Utf8SliceProgram program, int startByte)
         => startByte == 0 && ReferenceEquals(program, _ownedSliceProgram) && !_hasCaptures &&
             !program.RightToLeft && !program.IgnoreCase &&
             (Options & (RegexOptions.ECMAScript | RegexOptions.NonBacktracking)) == 0 &&
@@ -1338,10 +1343,10 @@ public sealed partial class Utf8Regex
     private int OwnedSliceCountFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program,
         int startByte, ref Utf8SliceInvocation invocation)
     {
-        if (CanUseNativeScalarTokenCount(program, startByte))
+        if (CanUseNativeScalarTokenSearch(program, startByte))
         {
             if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.Utf8UriToken)
-                return Utf8UriTokenCountExecutor.CountWellFormed(input, ref invocation);
+                return Utf8UriTokenExecutor.CountWellFormed(input, ref invocation);
             var breach = Utf8WordDelimitedTokenExecutor.TryCountWellFormed(input, ref invocation, out var count);
             if (breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException("Word-delimited count breached the invocation budget.");

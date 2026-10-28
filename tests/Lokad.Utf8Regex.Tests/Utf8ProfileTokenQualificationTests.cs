@@ -52,7 +52,7 @@ public sealed class Utf8ProfileTokenQualificationTests
             var input = Encoding.ASCII.GetBytes(text);
             var expectedCount = oracle.Count(text);
             var actualCount = plan.Kind == Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount ? Utf8AsciiIpv4TokenExecutor.CountAsciiIpv4Tokens(input) :
-                plan.Kind == Utf8FallbackDirectFamilyKind.Utf8UriToken ? Utf8UriTokenCountExecutor.CountWellFormed(input) : Utf8AsciiBoundedDateTokenExecutor.CountAsciiBoundedDateTokens(input, plan);
+                plan.Kind == Utf8FallbackDirectFamilyKind.Utf8UriToken ? Utf8UriTokenExecutor.CountWellFormed(input) : Utf8AsciiBoundedDateTokenExecutor.CountAsciiBoundedDateTokens(input, plan);
             Assert.Equal(expectedCount, actualCount);
             for (var floor = 0; floor <= input.Length; floor++)
             {
@@ -69,18 +69,18 @@ public sealed class Utf8ProfileTokenQualificationTests
     {
         foreach (var text in new[] { "x://😀", "𐐀://😀?q#f", "x://𐐀", "x:///😀😀" })
         {
-            Assert.Equal(0, Utf8UriTokenCountExecutor.CountWellFormed(Encoding.UTF8.GetBytes(text)));
+            Assert.Equal(0, Utf8UriTokenExecutor.CountWellFormed(Encoding.UTF8.GetBytes(text)));
             foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled }) Assert.Equal(0, new Utf8Regex(Uri, options).Count(Encoding.UTF8.GetBytes(text)));
         }
         Range(Uri, " x://😀/ ", 1, 9); Range(Uri, " 𐐀://😀😀?q#f ", 1, 19);
-        Assert.Equal(1, Utf8UriTokenCountExecutor.CountWellFormed("𐐀://😀😀"u8));
+        Assert.Equal(1, Utf8UriTokenExecutor.CountWellFormed("𐐀://😀😀"u8));
     }
 
     [Fact]
     public void UriFragmentAllowsNulAndDoesNotStartASecondTokenInsideIt()
     {
         var text = "x://😀a#\0y://ab";
-        Assert.Equal(1, Utf8UriTokenCountExecutor.CountWellFormed(Encoding.UTF8.GetBytes(text)));
+        Assert.Equal(1, Utf8UriTokenExecutor.CountWellFormed(Encoding.UTF8.GetBytes(text)));
         Range(Uri, text, 0, Encoding.UTF8.GetByteCount(text));
     }
 

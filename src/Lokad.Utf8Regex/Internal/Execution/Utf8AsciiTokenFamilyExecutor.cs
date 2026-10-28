@@ -142,7 +142,7 @@ internal static class Utf8AsciiTokenFamilyExecutor
                     : Utf8ExecutionRoute.FallbackDirectUtf8UriToken;
                 count = isAscii
                     ? Utf8AsciiUriTokenExecutor.CountAsciiUriTokens(input)
-                    : Utf8UriTokenCountExecutor.CountWellFormed(input);
+                    : Utf8UriTokenExecutor.CountWellFormed(input);
                 return true;
 
             case Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken when isAscii:

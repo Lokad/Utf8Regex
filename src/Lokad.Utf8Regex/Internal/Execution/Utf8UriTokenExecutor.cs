@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal static class Utf8UriTokenCountExecutor
+internal static class Utf8UriTokenExecutor
 {
     public static int CountWellFormed(ReadOnlySpan<byte> input)
     {
@@ -16,6 +16,24 @@ internal static class Utf8UriTokenCountExecutor
         Checkpoint(ref invocation);
         var count = 0;
         var searchFrom = 0;
+        while (TryFindNext(input, ref searchFrom, ref invocation)) count++;
+        Checkpoint(ref invocation);
+        invocation.Budget.ThrowIfCancellationRequested();
+        return count;
+    }
+
+    internal static bool IsMatchWellFormed(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)
+    {
+        Checkpoint(ref invocation);
+        var searchFrom = 0;
+        var found = TryFindNext(input, ref searchFrom, ref invocation);
+        Checkpoint(ref invocation);
+        invocation.Budget.ThrowIfCancellationRequested();
+        return found;
+    }
+
+    private static bool TryFindNext(ReadOnlySpan<byte> input, ref int searchFrom, ref Utf8SliceInvocation invocation)
+    {
         while ((uint)searchFrom < (uint)input.Length)
         {
             var delimiterIndex = -1;
@@ -45,20 +63,17 @@ internal static class Utf8UriTokenCountExecutor
                 continue;
             }
 
-            count++;
             searchFrom = tokenEnd;
+            return true;
         }
-
-        Checkpoint(ref invocation);
-        invocation.Budget.ThrowIfCancellationRequested();
-        return count;
+        return false;
     }
 
     private static void Checkpoint(ref Utf8SliceInvocation invocation)
     {
         if (invocation.IsUnmetered) return;
         if (invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None)
-            throw new InvalidOperationException("URI count breached the invocation budget.");
+            throw new InvalidOperationException("URI search breached the invocation budget.");
     }
 
 

@@ -43,6 +43,8 @@ public sealed class Utf8FiniteUriCountTests
             var regex = Create(options, 100000);
             Assert.Equal(expected, regex.Count(input.AsSpan(3, length)));
             Assert.Equal(expected, regex.Count(input.AsSpan(3, length), cancellation.Token));
+            Assert.Equal(expected != 0, regex.IsMatch(input.AsSpan(3, length)));
+            Assert.Equal(expected != 0, regex.IsMatch(input.AsSpan(3, length), cancellation.Token));
         }
     }
 
@@ -52,7 +54,10 @@ public sealed class Utf8FiniteUriCountTests
     {
         var input = Encoding.UTF8.GetBytes(new string('x', schemeLength) + "://ab?q#f");
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
+        {
             Assert.Equal(1, Create(options, 100000).Count(input));
+            Assert.True(Create(options, 100000).IsMatch(input));
+        }
     }
 
     [Fact]
@@ -93,7 +98,7 @@ public sealed class Utf8FiniteUriCountTests
         var invocation = new Utf8SliceInvocation(new(100000, 1, 1, 1), Regex.InfiniteMatchTimeout, cancellation.Token);
         invocation.CheckpointHook = _ => cancellation.Cancel();
         var failure = Assert.Throws<OperationCanceledException>(() =>
-            Utf8UriTokenCountExecutor.CountWellFormed(input, ref invocation));
+            Utf8UriTokenExecutor.CountWellFormed(input, ref invocation));
         Assert.Equal(cancellation.Token, failure.CancellationToken);
         Assert.Equal(0ul, invocation.Ledger.ReservedBytes);
     }
@@ -108,7 +113,7 @@ public sealed class Utf8FiniteUriCountTests
         var invocation = new Utf8SliceInvocation(new(100000, 1, 1, 1), TimeSpan.FromMilliseconds(200), default);
         invocation.CheckpointHook = _ => ticks = 250;
         Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
-            Utf8UriTokenCountExecutor.CountWellFormed(input, ref invocation));
+            Utf8UriTokenExecutor.CountWellFormed(input, ref invocation));
         Assert.Equal(0ul, invocation.Ledger.ReservedBytes);
     }
 
@@ -139,6 +144,7 @@ public sealed class Utf8FiniteUriCountTests
             var input = Encoding.UTF8.GetBytes(text);
             byte[] storage = [0xff, .. input, 0xff];
             Assert.Equal(captured.Count(input), native.Count(storage.AsSpan(1, input.Length)));
+            Assert.Equal(captured.IsMatch(input), native.IsMatch(storage.AsSpan(1, input.Length)));
         }
     }
 
@@ -148,7 +154,7 @@ public sealed class Utf8FiniteUriCountTests
     {
         var input = "x://ab"u8.ToArray();
         var complete = new Utf8SliceInvocation(new(1000, 1, 1, 1), Regex.InfiniteMatchTimeout, default);
-        Assert.Equal(1, Utf8UriTokenCountExecutor.CountWellFormed(input, ref complete));
+        Assert.Equal(1, Utf8UriTokenExecutor.CountWellFormed(input, ref complete));
         using var cancellation = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -159,11 +165,11 @@ public sealed class Utf8FiniteUriCountTests
         invocation.CheckpointHook = _ => { if (deadline) ticks = 250; else cancellation.Cancel(); };
         if (deadline)
             Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
-                Utf8UriTokenCountExecutor.CountWellFormed(input, ref invocation));
+                Utf8UriTokenExecutor.CountWellFormed(input, ref invocation));
         else
         {
             var error = Assert.Throws<OperationCanceledException>(() =>
-                Utf8UriTokenCountExecutor.CountWellFormed(input, ref invocation));
+                Utf8UriTokenExecutor.CountWellFormed(input, ref invocation));
             Assert.Equal(cancellation.Token, error.CancellationToken);
         }
         Assert.Equal(0ul, invocation.Ledger.ReservedBytes);
