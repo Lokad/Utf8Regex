@@ -120,7 +120,6 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 
 | Case | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `aws-keys/quick` | 3,892,909.500 us | 9,946.050 us | 43,766.750 us | 391.40x |
 | `ruff-noqa/tweaked` | 2,049,613.300 us | 7,960.200 us | 43,682.550 us | 257.48x |
 | `aws-keys/full` | 4,913,885.700 us | 85,935.500 us | 121,136.400 us | 57.18x |
 | `bounded-repeat/capitals` | 765,702.300 us | 47,100.950 us | 53,194.700 us | 16.26x |
@@ -130,6 +129,7 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 | `bounded-repeat/letters-en` | 12,278.700 us | 2,835.494 us | 2,950.835 us | 4.33x |
 | `literal-alternate/sherlock-zh` | 236.367 us | 69.670 us | 2,181.591 us | 3.39x |
 | `literal/sherlock-ru` | 247.409 us | 97.602 us | 5,306.210 us | 2.53x |
+| `aws-keys/quick` | 19,486.600 us | 16,437.575 us | 75,330.950 us | 1.19x |
 | `literal/sherlock-casei-en` | 170.643 us | 190.831 us | 580.143 us | 0.89x |
 | `literal/sherlock-en` | 70.161 us | 85.809 us | 465.229 us | 0.82x |
 | `literal/sherlock-casei-ru` | 239.221 us | 368.570 us | 5,642.989 us | 0.65x |
@@ -202,7 +202,6 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 
 | Case | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `aws-keys/quick` | 3,895,893.300 us | 3,640.179 us | 35,024.000 us | 1070.25x |
 | `ruff-noqa/tweaked` | 2,053,154.800 us | 4,588.427 us | 40,022.600 us | 447.46x |
 | `aws-keys/full` | 4,906,551.500 us | 18,958.467 us | 52,097.150 us | 258.81x |
 | `bounded-repeat/capitals` | 763,827.400 us | 13,650.775 us | 20,355.567 us | 55.95x |
@@ -211,6 +210,7 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 | `literal-alternate/sherlock-zh` | 247.035 us | 36.260 us | 2,168.896 us | 6.81x |
 | `bounded-repeat/letters-en` | 12,380.160 us | 1,836.996 us | 1,950.331 us | 6.74x |
 | `literal/sherlock-zh` | 133.114 us | 24.089 us | 2,180.178 us | 5.53x |
+| `aws-keys/quick` | 19,536.733 us | 4,010.462 us | 60,315.700 us | 4.87x |
 | `literal/sherlock-ru` | 253.819 us | 89.106 us | 5,270.370 us | 2.85x |
 | `literal/sherlock-casei-en` | 170.842 us | 80.031 us | 444.352 us | 2.13x |
 | `literal-alternate/sherlock-casei-en` | 232.271 us | 146.494 us | 617.257 us | 1.59x |
