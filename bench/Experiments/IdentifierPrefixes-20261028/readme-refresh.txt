@@ -1,0 +1,32 @@
+Measuring README benchmark case: structural/keyword-family-to-capitalized-identifier (requested=1, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=158;ElapsedMicroseconds=50265.200
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=159;ElapsedMicroseconds=50512.600
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=229;ElapsedMicroseconds=50562.100
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=6450;ElapsedMicroseconds=49987.300
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=218;ElapsedMicroseconds=50683.900
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=2227;ElapsedMicroseconds=42205.400
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=158;ElapsedMicroseconds=50615.300
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=159;ElapsedMicroseconds=50314.600
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=229;ElapsedMicroseconds=50081.900
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=6450;ElapsedMicroseconds=49921.100
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=218;ElapsedMicroseconds=50364.100
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=2227;ElapsedMicroseconds=42200.300
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=158;ElapsedMicroseconds=49970.600
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=159;ElapsedMicroseconds=50408.700
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=229;ElapsedMicroseconds=50412.900
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=6450;ElapsedMicroseconds=49994.700
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=218;ElapsedMicroseconds=51060.500
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=2227;ElapsedMicroseconds=42629.000
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=158;ElapsedMicroseconds=49995.300
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=159;ElapsedMicroseconds=50346.700
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=229;ElapsedMicroseconds=50164.300
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=6450;ElapsedMicroseconds=49775.500
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=218;ElapsedMicroseconds=50677.600
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=2227;ElapsedMicroseconds=42114.800
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=158;ElapsedMicroseconds=50067.400
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=159;ElapsedMicroseconds=50641.300
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=229;ElapsedMicroseconds=50805.700
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=6450;ElapsedMicroseconds=49835.200
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=218;ElapsedMicroseconds=50572.600
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=2227;ElapsedMicroseconds=42039.900
+Updated README case: structural/keyword-family-to-capitalized-identifier

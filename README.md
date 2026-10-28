@@ -282,7 +282,6 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | Case | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
 | `lokad/folding/region-marker` | 6,454.150 us | 36.535 us | 60.756 us | 176.66x |
-| `structural/keyword-family-to-capitalized-identifier` | 3,824.200 us | 216.721 us | 228.324 us | 17.65x |
 | `lokad/docs/inline-doc-prefix` | 36.588 us | 2.678 us | 3.589 us | 13.66x |
 | `lokad/lexer/number` | 86.260 us | 6.887 us | 8.347 us | 12.53x |
 | `lokad/langserv/url-dashboard` | 89.317 us | 7.363 us | 7.886 us | 12.13x |
@@ -298,6 +297,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `lokad/lexer/identifier` | 106.308 us | 16.652 us | 21.048 us | 6.38x |
 | `balancing/begin-end-blocks` | 12,620.675 us | 4,222.675 us | 4,233.725 us | 2.99x |
 | `lokad/langserv/color-short-hex` | 1.682 us | 1.104 us | 1.247 us | 1.52x |
+| `structural/keyword-family-to-capitalized-identifier` | 316.882 us | 220.144 us | 232.466 us | 1.44x |
 | `structural/keyword-to-generic-type` | 5.830 us | 4.118 us | 15.750 us | 1.42x |
 | `lokad/langserv/identifier-validator` | 11.724 us | 9.702 us | 11.734 us | 1.21x |
 | `structural/ordered-keyword-pair` | 6.110 us | 5.521 us | 17.198 us | 1.11x |
@@ -332,8 +332,8 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 
 | Case | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `structural/keyword-family-to-capitalized-identifier` | 3,820.514 us | 7.706 us | 18.859 us | 495.80x |
 | `lokad/folding/region-marker` | 6,420.163 us | 37.288 us | 58.982 us | 172.18x |
+| `structural/keyword-family-to-capitalized-identifier` | 317.036 us | 7.740 us | 18.949 us | 40.96x |
 | `balancing/begin-end-blocks` | 12,894.325 us | 471.357 us | 499.274 us | 27.36x |
 | `lokad/docs/inline-doc-prefix` | 37.181 us | 2.731 us | 3.643 us | 13.61x |
 | `lokad/lexer/number` | 88.666 us | 6.987 us | 8.527 us | 12.69x |

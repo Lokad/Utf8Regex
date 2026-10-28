@@ -1,0 +1,376 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 9.6424594,
+  "LaneNames": [
+    "Baseline",
+    "Candidate",
+    "PredecodedRegex",
+    "DecodeThenRegex"
+  ],
+  "Baseline": {
+    "Version": "0.5.0-dev\u002Ba40bda03c8f984cef1d884447cccc805d2ceaa01",
+    "Sha256": "88908D310EE129970BECD18F4C4A0632F9B4F151432F875EB68AFB12EE6F0B47"
+  },
+  "Candidate": {
+    "Version": "0.5.0-dev\u002Ba5ca07b632be68b3cc84538afa00369d9e5399a0",
+    "Sha256": "C65BC2F4A49FABA32ACAA98833164CFA41D0165BC5ECCFE257E8E52607EB075E"
+  },
+  "Rows": [
+    {
+      "Name": "ordinary",
+      "Id": "structural/keyword-family-to-capitalized-identifier",
+      "Options": "CultureInvariant",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 53352,
+      "InputSha256": "E25F45289E44A6DE119149C10B258E8416A8E24E4FF01D94ED4753FA5A9A351B",
+      "Expected": 73,
+      "Iterations": [
+        13,
+        136,
+        44,
+        47
+      ],
+      "WarmupCalls": [
+        25,
+        137,
+        435,
+        212
+      ],
+      "WarmupMilliseconds": [
+        251.6258,
+        250.2561,
+        251.1642,
+        250.3564
+      ],
+      "Microseconds": [
+        [
+          4025.723076923077,
+          4037.653846153846,
+          4021.4769230769234
+        ],
+        [
+          369.53602941176473,
+          348.4661764705882,
+          346.3970588235294
+        ],
+        [
+          234.65227272727273,
+          238.76590909090908,
+          235.85
+        ],
+        [
+          284.1063829787234,
+          281.1489361702128,
+          266.2617021276596
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          106728,
+          106728,
+          106728
+        ]
+      ]
+    },
+    {
+      "Name": "compiled",
+      "Id": "structural/keyword-family-to-capitalized-identifier",
+      "Options": "Compiled, CultureInvariant",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 53352,
+      "InputSha256": "E25F45289E44A6DE119149C10B258E8416A8E24E4FF01D94ED4753FA5A9A351B",
+      "Expected": 73,
+      "Iterations": [
+        13,
+        159,
+        6243,
+        2454
+      ],
+      "WarmupCalls": [
+        63,
+        789,
+        27027,
+        12054
+      ],
+      "WarmupMilliseconds": [
+        250.8302,
+        250.2965,
+        250.0041,
+        250.0014
+      ],
+      "Microseconds": [
+        [
+          3887.1923076923076,
+          3856.7153846153847,
+          3856.9384615384615
+        ],
+        [
+          317.1698113207547,
+          317.2761006289308,
+          315.3182389937107
+        ],
+        [
+          8.015569437770303,
+          8.00546211757168,
+          7.993336536921352
+        ],
+        [
+          20.375835370823143,
+          20.348696006519965,
+          20.317114914425428
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          106728,
+          106728,
+          106728
+        ]
+      ]
+    },
+    {
+      "Name": "finite-token",
+      "Id": "structural/keyword-family-to-capitalized-identifier",
+      "Options": "Compiled, CultureInvariant",
+      "FiniteAndLiveToken": true,
+      "InputBytes": 32768,
+      "InputSha256": "34B0E346E85660B59E433268B5330C5169FD3B904BB2FAB3080C55119EC2DD1B",
+      "Expected": 47,
+      "Iterations": [
+        20,
+        184,
+        9778,
+        5244
+      ],
+      "WarmupCalls": [
+        99,
+        917,
+        47464,
+        21553
+      ],
+      "WarmupMilliseconds": [
+        250.9976,
+        250.0946,
+        250.0038,
+        250.0087
+      ],
+      "Microseconds": [
+        [
+          2533.1,
+          2515.4,
+          2508.84
+        ],
+        [
+          258.2527173913044,
+          257.35597826086956,
+          258.5010869565217
+        ],
+        [
+          5.080323174473308,
+          5.103149928410717,
+          5.07649826140315
+        ],
+        [
+          11.33640350877193,
+          9.610259344012205,
+          11.897063310450038
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3664,
+          3664,
+          3664
+        ],
+        [
+          3664,
+          3664,
+          3664
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          65560,
+          65560,
+          65560
+        ]
+      ]
+    },
+    {
+      "Name": "dense-hit",
+      "Id": "structural/keyword-family-to-capitalized-identifier",
+      "Options": "Compiled, CultureInvariant",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 34816,
+      "InputSha256": "0A630DA7256240275B56F0B4A61A82A422018C3544CFFB742BA96CF563ACA014",
+      "Expected": 1024,
+      "Iterations": [
+        23,
+        60,
+        633,
+        459
+      ],
+      "WarmupCalls": [
+        114,
+        298,
+        3159,
+        2276
+      ],
+      "WarmupMilliseconds": [
+        250.8005,
+        250.1577,
+        250.0003,
+        250.0548
+      ],
+      "Microseconds": [
+        [
+          2202.1521739130435,
+          2203.7347826086952,
+          2204.317391304348
+        ],
+        [
+          844.4033333333334,
+          849.1016666666667,
+          835.435
+        ],
+        [
+          81.55750394944708,
+          80.60236966824644,
+          80.60157977883097
+        ],
+        [
+          109.87472766884531,
+          109.70174291938997,
+          109.23986928104574
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          65560,
+          65560,
+          65560
+        ]
+      ]
+    },
+    {
+      "Name": "control",
+      "Id": "literal/sherlock-en",
+      "Options": "Compiled",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 899232,
+      "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+      "Expected": 513,
+      "Iterations": [
+        704,
+        706,
+        664,
+        131
+      ],
+      "WarmupCalls": [
+        2587,
+        3433,
+        3308,
+        570
+      ],
+      "WarmupMilliseconds": [
+        250.0672,
+        250.0315,
+        250.0553,
+        250.2416
+      ],
+      "Microseconds": [
+        [
+          71.63707386363636,
+          72.89105113636364,
+          71.96960227272729
+        ],
+        [
+          70.74220963172804,
+          74.20368271954673,
+          73.75764872521246
+        ],
+        [
+          75.96506024096387,
+          75.7953313253012,
+          75.68403614457831
+        ],
+        [
+          470.98320610687017,
+          458.36412213740454,
+          444.830534351145
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          1797352,
+          1797352,
+          1797352
+        ]
+      ]
+    }
+  ]
+}
