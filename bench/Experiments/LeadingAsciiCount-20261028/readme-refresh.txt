@@ -1,0 +1,32 @@
+Measuring README benchmark case: ruff-noqa/tweaked (requested=1, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=4;ElapsedMicroseconds=52767.200
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=4;ElapsedMicroseconds=51754.100
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=7;ElapsedMicroseconds=58400.700
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=11;ElapsedMicroseconds=50684.000
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=2;ElapsedMicroseconds=90325.300
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=2;ElapsedMicroseconds=84000.600
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=4;ElapsedMicroseconds=49284.200
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=4;ElapsedMicroseconds=52422.400
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=7;ElapsedMicroseconds=53584.400
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=11;ElapsedMicroseconds=56227.500
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=2;ElapsedMicroseconds=89594.900
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=2;ElapsedMicroseconds=80411.100
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=4;ElapsedMicroseconds=49271.700
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=4;ElapsedMicroseconds=49264.600
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=7;ElapsedMicroseconds=58715.600
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=11;ElapsedMicroseconds=50748.300
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=2;ElapsedMicroseconds=87269.200
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=2;ElapsedMicroseconds=82152.800
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=4;ElapsedMicroseconds=49308.000
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=4;ElapsedMicroseconds=52381.300
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=7;ElapsedMicroseconds=53084.700
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=11;ElapsedMicroseconds=56845.600
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=2;ElapsedMicroseconds=87851.200
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=2;ElapsedMicroseconds=82192.700
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=4;ElapsedMicroseconds=49292.400
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=4;ElapsedMicroseconds=49198.500
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=7;ElapsedMicroseconds=57906.000
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=11;ElapsedMicroseconds=50686.800
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=2;ElapsedMicroseconds=86923.100
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=2;ElapsedMicroseconds=81087.100
+Updated README case: ruff-noqa/tweaked

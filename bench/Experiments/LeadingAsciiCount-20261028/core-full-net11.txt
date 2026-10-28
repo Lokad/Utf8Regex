@@ -1,0 +1,4 @@
+Test run for D:\code\utf8regex\tests\Lokad.Utf8Regex.Tests\bin\Release\net11.0\Lokad.Utf8Regex.Tests.dll (.NETCoreApp,Version=v11.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed: 39639, Skipped:     0, Total: 39639, Duration: 1 m 41 s - Lokad.Utf8Regex.Tests.dll (net11.0)

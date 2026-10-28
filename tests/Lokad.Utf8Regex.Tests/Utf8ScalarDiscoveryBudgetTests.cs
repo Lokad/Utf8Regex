@@ -24,7 +24,10 @@ public sealed class Utf8ScalarDiscoveryBudgetTests
     {
         var regex = new Utf8Regex("(a(.)c)", RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Scalar program missing.");
-        var input = System.Text.Encoding.UTF8.GetBytes(new string('x', 4096));
+        // Exercise failed captured attempts in either direction. A subject
+        // with no starting literal may finish in the prefix search alone.
+        var input = System.Text.Encoding.UTF8.GetBytes(string.Concat(
+            Enumerable.Repeat(reverse ? "xbc" : "abx", 1024)));
         using var source = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(13));

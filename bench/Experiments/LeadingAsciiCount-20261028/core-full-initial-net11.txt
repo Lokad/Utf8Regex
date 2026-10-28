@@ -1,0 +1,13 @@
+Test run for D:\code\utf8regex\tests\Lokad.Utf8Regex.Tests\bin\Release\net11.0\Lokad.Utf8Regex.Tests.dll (.NETCoreApp,Version=v11.0)
+A total of 1 test files matched the specified pattern.
+  Failed Lokad.Utf8Regex.Tests.Utf8ScalarDiscoveryBudgetTests.CapturedCandidateCancellationReleasesReusedStorage(reverse: False, count: True) [7 ms]
+  Error Message:
+   Assert.Throws() Failure: No exception was thrown
+Expected: typeof(System.OperationCanceledException)
+  Stack Trace:
+     at Lokad.Utf8Regex.Tests.Utf8ScalarDiscoveryBudgetTests.CapturedCandidateCancellationReleasesReusedStorage(Boolean reverse, Boolean count) in D:\code\utf8regex\tests\Lokad.Utf8Regex.Tests\Utf8ScalarDiscoveryBudgetTests.cs:line 40
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+[xUnit.net 00:02:01.65]     Lokad.Utf8Regex.Tests.Utf8ScalarDiscoveryBudgetTests.CapturedCandidateCancellationReleasesReusedStorage(reverse: False, count: True) [FAIL]
+
+Failed!  - Failed:     1, Passed: 39638, Skipped:     0, Total: 39639, Duration: 2 m 47 s - Lokad.Utf8Regex.Tests.dll (net11.0)
