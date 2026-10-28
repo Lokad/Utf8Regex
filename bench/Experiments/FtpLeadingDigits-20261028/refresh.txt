@@ -1,0 +1,32 @@
+Measuring README benchmark case: industry/boostdocs-ftp-line-match (requested=1, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=278938;ElapsedMicroseconds=50172.600
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=279083;ElapsedMicroseconds=50031.500
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=452500;ElapsedMicroseconds=49359.400
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=1038075;ElapsedMicroseconds=50603.800
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=312225;ElapsedMicroseconds=46008.700
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=540673;ElapsedMicroseconds=47691.900
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=278938;ElapsedMicroseconds=50122.500
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=279083;ElapsedMicroseconds=49924.800
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=452500;ElapsedMicroseconds=49827.600
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=1038075;ElapsedMicroseconds=50728.300
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=312225;ElapsedMicroseconds=46987.400
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=540673;ElapsedMicroseconds=47649.100
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=278938;ElapsedMicroseconds=50319.700
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=279083;ElapsedMicroseconds=50326.000
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=452500;ElapsedMicroseconds=49628.800
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=1038075;ElapsedMicroseconds=50229.500
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=312225;ElapsedMicroseconds=46122.800
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=540673;ElapsedMicroseconds=47571.800
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=278938;ElapsedMicroseconds=50071.700
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=279083;ElapsedMicroseconds=49519.400
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=452500;ElapsedMicroseconds=49161.500
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=1038075;ElapsedMicroseconds=50593.800
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=312225;ElapsedMicroseconds=45438.400
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=540673;ElapsedMicroseconds=47151.600
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=278938;ElapsedMicroseconds=49985.100
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=279083;ElapsedMicroseconds=49964.300
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=452500;ElapsedMicroseconds=49725.900
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=1038075;ElapsedMicroseconds=51197.700
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=312225;ElapsedMicroseconds=45806.300
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=540673;ElapsedMicroseconds=48081.600
+Updated README case: industry/boostdocs-ftp-line-match

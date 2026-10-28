@@ -1,0 +1,21 @@
+SourceKind        : dotnet-performance-case
+Origin            : public//IsMatch
+Pattern           : ^([0-9]+)(\-| |$)(.*)$
+Options           : None
+InputChars        : 67
+InputBytes        : 67
+CompiledEngine    : FallbackRegex
+ExecutionKind     : FallbackRegex
+DirectFamily      : AnchoredAsciiLeadingDigitsTail
+OwnedScalarPlan   : True
+ScalarPrepared    : True
+SearchKind        : None
+PortfolioKind     : None
+PreparedSearcher  : None
+RequiredPrefilter : None
+WindowSearch      : None
+StructuralYield   : None
+StructuralStages  : 0
+FallbackPlans     : 0
+Verifier          : None
+FallbackReason    : <native>

@@ -1,0 +1,137 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+const string Header = @"^([0-9]+)(\-| |$)(.*)$";
+const string HeaderText = "100- this is a line of ftp response which contains a message string";
+var before = Load(Path.GetFullPath(args[0]), "baseline");
+var after = Load(Path.GetFullPath(args[1]), "candidate");
+if (Hash(before) == Hash(after) ||
+    !after.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion.Contains(args[2], StringComparison.Ordinal))
+    throw new Exception("Stale or unexpected candidate binary");
+using var process = Process.GetCurrentProcess();
+process.ProcessorAffinity = (nint)4;
+var elapsed = Stopwatch.StartNew();
+var rows = new List<object>();
+foreach (var name in new[] { "ordinary", "compiled", "finite-token", "long-digits", "unicode-tail", "miss",
+    "unicode-prefix-control", "count-control", "match-control", "literal-control" })
+{
+    var pattern = Header;
+    var text = HeaderText;
+    if (name == "long-digits") text = new string('1', 8192) + "-tail";
+    if (name == "unicode-tail") text = "100-" + string.Concat(Enumerable.Repeat("😀 é \t\r\0", 256));
+    if (name == "miss") text = "100-" + new string('x', 8192) + "\nrest";
+    if (name == "unicode-prefix-control") { pattern = @"\A(\p{Nd}+)([é\- ]|\Z)([^\n]*)\Z"; text = new string('1', 8192) + "١é😀"; }
+    if (name == "literal-control") { pattern = "alpha"; text = new string('x', 4096); }
+    var input = Encoding.UTF8.GetBytes(text);
+    var finite = name == "finite-token";
+    var operation = name == "match-control" ? "Match" : name == "count-control" ? "Count" : "IsMatch";
+    var options = name == "ordinary" ? RegexOptions.None : RegexOptions.Compiled;
+    var oracle = new Regex(pattern, options);
+    bool Oracle(string subject) => operation == "IsMatch" ? oracle.IsMatch(subject)
+        : operation == "Count" ? oracle.Count(subject) != 0 : oracle.Match(subject).Success;
+    var expected = Oracle(text);
+    using var cancellation = new CancellationTokenSource();
+    Func<bool> Make(Assembly assembly)
+    {
+        var type = assembly.GetType("Lokad.Utf8Regex.Utf8Regex")!;
+        object owner;
+        if (finite)
+        {
+            var policyType = assembly.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!;
+            var policy = Activator.CreateInstance(policyType)!;
+            foreach (var (key, value) in new[] { ("MaxWorkSteps", 10000000UL), ("MaxDepth", 4096UL),
+                ("MaxWorkingBytes", 16777216UL), ("MaxResultBytes", 16777216UL) })
+            {
+                var property = policyType.GetProperty(key)!;
+                property.SetValue(policy, Convert.ChangeType(value, Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType));
+            }
+            owner = type.GetConstructor([typeof(string), typeof(RegexOptions), typeof(TimeSpan), policyType])!
+                .Invoke([pattern, options, Timeout.InfiniteTimeSpan, policy]);
+            var call = type.GetMethod(operation, [typeof(ReadOnlySpan<byte>), typeof(CancellationToken)])!
+                .CreateDelegate<TokenBool>(owner);
+            return () => call(input, cancellation.Token);
+        }
+        owner = type.GetConstructor([typeof(string), typeof(RegexOptions)])!.Invoke([pattern, options]);
+        var method = type.GetMethod(operation, [typeof(ReadOnlySpan<byte>)])!;
+        if (operation == "IsMatch")
+        {
+            var call = method.CreateDelegate<SpanBool>(owner);
+            return () => call(input);
+        }
+        if (operation == "Count")
+        {
+            var call = method.CreateDelegate<SpanCount>(owner);
+            return () => call(input) != 0;
+        }
+        // Consume the public value result without boxing its span-based arguments.
+        var bridge = new DynamicMethod(operation + "Success", typeof(bool), [typeof(object), typeof(byte[])], typeof(Program).Module, true);
+        var il = bridge.GetILGenerator();
+        var result = il.DeclareLocal(method.ReturnType);
+        il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Castclass, type);
+        il.Emit(OpCodes.Ldarg_1); il.Emit(OpCodes.Newobj, typeof(ReadOnlySpan<byte>).GetConstructor([typeof(byte[])])!);
+        il.Emit(OpCodes.Call, method); il.Emit(OpCodes.Stloc, result);
+        il.Emit(OpCodes.Ldloca, result); il.Emit(OpCodes.Call, method.ReturnType.GetProperty("Success")!.GetMethod!);
+        il.Emit(OpCodes.Ret);
+        var valueCall = bridge.CreateDelegate<Func<object, byte[], bool>>();
+        return () => valueCall(owner, input);
+    }
+    Func<bool>[] actions = [Make(before), Make(after), () => Oracle(text), () => Oracle(Encoding.UTF8.GetString(input))];
+    var iterations = new int[4]; var warmupCalls = new int[4]; var warmupMilliseconds = new double[4];
+    for (var lane = 0; lane < 4; lane++)
+    {
+        if (actions[lane]() != expected) throw new Exception($"Preflight mismatch: {name}, lane {lane}");
+        var warmup = Stopwatch.StartNew();
+        do { Loop(1, actions[lane]); warmupCalls[lane]++; } while (warmup.ElapsedMilliseconds < 500);
+        warmupMilliseconds[lane] = warmup.Elapsed.TotalMilliseconds;
+        var count = 1; var probe = Loop(count, actions[lane]);
+        while (probe.Milliseconds < 20 && count < 1000000) { count *= 2; probe = Loop(count, actions[lane]); }
+        iterations[lane] = (int)Math.Clamp(Math.Ceiling(count * 50 / Math.Max(probe.Milliseconds, 0.000001)), 1, 1000000);
+    }
+    var times = Enumerable.Range(0, 4).Select(_ => new double[3]).ToArray();
+    var allocations = Enumerable.Range(0, 4).Select(_ => new double[3]).ToArray();
+    for (var sample = 0; sample < 3; sample++)
+    for (var position = 0; position < 4; position++)
+    {
+        var lane = sample % 2 == 0 ? position : 3 - position;
+        GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        var result = Loop(iterations[lane], actions[lane]);
+        if (result.Last != expected) throw new Exception("Timed mismatch");
+        times[lane][sample] = result.Milliseconds * 1000 / iterations[lane];
+        allocations[lane][sample] = (double)result.Bytes / iterations[lane];
+    }
+    rows.Add(new { Name = name, Operation = operation, Pattern = pattern, Options = options.ToString(), InputBytes = input.Length,
+        InputSha256 = Convert.ToHexString(SHA256.HashData(input)), Expected = expected, FiniteAndLiveToken = finite,
+        Iterations = iterations, WarmupCalls = warmupCalls, WarmupMilliseconds = warmupMilliseconds,
+        Microseconds = times, AllocatedBytes = allocations });
+    Console.Error.WriteLine($"Completed {name}: {string.Join(" / ", times.Select(t => t.Order().ElementAt(1)))} us/op");
+}
+Console.WriteLine(JsonSerializer.Serialize(new { Runtime = RuntimeInformation.FrameworkDescription, CpuAffinityMask = "4",
+    ElapsedSeconds = elapsed.Elapsed.TotalSeconds, LaneNames = new[] { "Baseline", "Candidate", "PredecodedRegex", "DecodeThenRegex" },
+    Baseline = Identity(before), Candidate = Identity(after), Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+static Assembly Load(string root, string name)
+{
+    var context = new AssemblyLoadContext(name);
+    context.Resolving += (ctx, n) => File.Exists(Path.Combine(root, n.Name + ".dll")) ? ctx.LoadFromAssemblyPath(Path.Combine(root, n.Name + ".dll")) : null;
+    return context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.dll"));
+}
+static string Hash(Assembly assembly) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location)));
+static object Identity(Assembly assembly) => new { Version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion, Sha256 = Hash(assembly) };
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds, long Bytes, bool Last) Loop(int count, Func<bool> action)
+{
+    var value = false; var bytes = GC.GetAllocatedBytesForCurrentThread(); var start = Stopwatch.GetTimestamp();
+    for (var i = 0; i < count; i++) value = action();
+    var elapsed = Stopwatch.GetElapsedTime(start);
+    return (elapsed.TotalMilliseconds, GC.GetAllocatedBytesForCurrentThread() - bytes, value);
+}
+delegate bool SpanBool(ReadOnlySpan<byte> input);
+delegate bool TokenBool(ReadOnlySpan<byte> input, CancellationToken token);
+delegate int SpanCount(ReadOnlySpan<byte> input);
