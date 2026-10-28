@@ -45,14 +45,16 @@ public sealed class Utf8PrefixCountPublicationTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(false, true)]
-    [InlineData(true, false)] [InlineData(true, true)]
-    public void ExhaustedPrefixChecksOriginalAuthorityAtTheFinalAdmittedStep(bool priorMatch, bool expire)
+    [InlineData(false, false, "(ab|cd)+")] [InlineData(false, true, "(ab|cd)+")]
+    [InlineData(true, false, "(ab|cd)+")] [InlineData(true, true, "(ab|cd)+")]
+    [InlineData(false, false, "#[xy]+")] [InlineData(false, true, "#[xy]+")]
+    [InlineData(true, false, "#[xy]+")] [InlineData(true, true, "#[xy]+")]
+    public void ExhaustedPrefixChecksOriginalAuthorityAtTheFinalAdmittedStep(bool priorMatch, bool expire, string pattern)
     {
-        var regex = new Utf8Regex("(ab|cd)+", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         var program = regex.Inspection.AvailableOwnedSliceProgram;
         var plan = regex.Inspection.SearchPlan;
-        var input = Encoding.UTF8.GetBytes(priorMatch ? "ab xxxx" : "xxxx");
+        var input = Encoding.UTF8.GetBytes(priorMatch ? (pattern[0] == '#' ? "#x xxxx" : "ab xxxx") : "xxxx");
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
         var limits = new Utf8ExecutionLimits(ulong.MaxValue, 0, 0);

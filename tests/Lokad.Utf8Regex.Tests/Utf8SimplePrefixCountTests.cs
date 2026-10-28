@@ -16,6 +16,8 @@ public sealed class Utf8SimplePrefixCountTests
     [InlineData("(?i:ab)[0-9]{2}")]
     [InlineData(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+")]
     [InlineData(@"\b(?:record|rec|class)\s+[A-Z][A-Za-z0-9_]+")]
+    [InlineData(@"(?<head>#)(?<text>.+)\k<head>")]
+    [InlineData(@"(?:# [Nn][Oo][Qq][Aa])(?::\s?(([A-Z]+[0-9]+(?:[,\s]+)?)+))?")]
     public void PrefixCandidatesPreserveVerificationOrderOffsetsAndTails(string pattern)
     {
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
@@ -26,6 +28,7 @@ public sealed class Utf8SimplePrefixCountTests
                 "😀ab12é AB34", "prefix1prefixxprefix2", "1longsuffix 2longsuffix", "aB12 AB34",
                 "éclass Foo 😀class Bar record Baz struct lower class Last",
                 "class\u00a0Name record\u2003Other xrecord Nope rec Short",
+                "é#😀word #line# # noqa: F401,E123 # NOQA #noqa # nearTail",
                 "😀" + new string('x', 2042) + "AB12XY34aba56 class NearTail" })
             {
                 var bytes = Encoding.UTF8.GetBytes(text);
@@ -103,6 +106,28 @@ public sealed class Utf8SimplePrefixCountTests
         Assert.Equal(Utf8ExecutionLimitKind.WorkSteps,
             Utf8PreparedScalarExecutor.TryCount(regex.Inspection.PreparedRegex,
                 input, validation, ref denied, out _));
+    }
+
+    [Fact]
+    public void LeadingAsciiLiteralKeepsScalarDotAndDeepCaptureSemantics()
+    {
+        // A supplementary scalar is one dot; the UTF-16 BCL matcher is not
+        // an oracle for this case.
+        foreach (var compiled in new[] { false, true })
+        {
+            var regex = new Utf8Regex("#.[a-z]+", Options(compiled));
+            Assert.Equal(2, regex.Count("#😀word #xfoo"u8));
+        }
+        var deep = new Utf8Regex(new string('(', 100) + "#x" + new string(')', 100));
+        var input = "zz#x zz#x"u8.ToArray();
+        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(1000000, 1024, 1 << 20),
+            Regex.InfiniteMatchTimeout, default);
+        var program = deep.Inspection.AvailableOwnedSliceProgram;
+        var starts = new int[program.GroupCount];
+        var ends = new int[program.GroupCount];
+        var result = Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref invocation);
+        Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
+        Assert.Equal(2, result.Count);
     }
 
     private static RegexOptions Options(bool compiled) => RegexOptions.CultureInvariant |

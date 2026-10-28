@@ -574,6 +574,9 @@ internal static partial class Utf8SliceRunner
             candidatePlan.Distance == 0 && candidatePlan.Kind is
                 Utf8SearchKind.ExactAsciiLiteral or
                 Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals;
+        var leadingAsciiLiteral = !seekLiteral && !program.RightToLeft && !program.IgnoreCase &&
+            !program.CanMatchEmpty && !program.HasContiguousAnchor
+            ? GetLeadingAsciiLiteral(program) : -1;
         var whitespaceLiteral = !seekLiteral && !program.RightToLeft && input.Length - fromByte >= 256 &&
             invocation.IsUnmetered && invocation.CheckpointHook is null
             ? GetLeadingWhitespaceLiteral(program) : -1;
@@ -583,6 +586,13 @@ internal static partial class Utf8SliceRunner
         {
             while (true)
             {
+                if (leadingAsciiLiteral >= 0)
+                {
+                    var seekBreach = TrySeekAsciiLiteral(input, ref position, (byte)leadingAsciiLiteral, ref invocation);
+                    if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
+                    if (position < 0)
+                        return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                }
                 if (whitespaceLiteral >= 0 && position > whitespaceWindowEnd)
                 {
                     position = SeekLeadingWhitespaceLiteral(input, position, (byte)whitespaceLiteral, out whitespaceWindowEnd);
