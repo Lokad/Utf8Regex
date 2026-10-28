@@ -239,6 +239,7 @@ internal sealed class Utf8EmittedKernelMatcher
         var indexLocal = emitter.DeclareLocal<int>();
         var inputLengthLocal = emitter.DeclareLocal<int>();
         var separatorCountLocal = emitter.DeclareLocal<int>();
+        var tailStartLocal = emitter.DeclareLocal<int>();
         var valueLocal = emitter.DeclareLocal<byte>();
         var relativeIndexLocal = emitter.DeclareLocal<int>();
         Utf8IlLocal? countLocal = forCount ? emitter.DeclareLocal<int>() : null;
@@ -249,7 +250,7 @@ internal sealed class Utf8EmittedKernelMatcher
         var separatorLoopConsumeLabel = emitter.DefineLabel();
         var afterSeparatorLoopLabel = emitter.DefineLabel();
         var tailLoopLabel = emitter.DefineLabel();
-        var successLabel = emitter.DefineLabel();
+        var afterTailLoopLabel = emitter.DefineLabel();
         var prefixMatchedLabel = emitter.DefineLabel();
         var advanceLabel = emitter.DefineLabel();
         var notFoundLabel = emitter.DefineLabel();
@@ -338,18 +339,39 @@ internal sealed class Utf8EmittedKernelMatcher
         emitter.EmitAsciiUpperBranch(valueLocal, successLabel: null, failureLabel: advanceLabel);
 
         emitter.AddToLocal(indexLocal, 1);
+        if (plan.IdentifierTailMinCount > 0 || plan.IdentifierTailMaxCount != int.MaxValue)
+        {
+            emitter.LoadLocal(indexLocal);
+            emitter.StoreLocal(tailStartLocal);
+        }
 
         emitter.MarkLabel(tailLoopLabel);
+        if (plan.IdentifierTailMaxCount != int.MaxValue)
+        {
+            emitter.LoadLocal(indexLocal);
+            emitter.LoadLocal(tailStartLocal);
+            emitter.Emit(OpCodes.Sub);
+            emitter.LdcI4(plan.IdentifierTailMaxCount);
+            emitter.Emit(OpCodes.Bge, afterTailLoopLabel);
+        }
         emitter.LoadLocal(indexLocal);
         emitter.LoadLocal(inputLengthLocal);
-        emitter.Emit(OpCodes.Bge, successLabel);
+        emitter.Emit(OpCodes.Bge, afterTailLoopLabel);
         emitter.LoadInputByte(indexLocal);
         emitter.StoreLocal(valueLocal);
-        emitter.EmitAsciiWordBranch(valueLocal, successLabel: null, failureLabel: successLabel);
+        emitter.EmitAsciiWordBranch(valueLocal, successLabel: null, failureLabel: afterTailLoopLabel);
         emitter.AddToLocal(indexLocal, 1);
         emitter.Emit(OpCodes.Br, tailLoopLabel);
 
-        emitter.MarkLabel(successLabel);
+        emitter.MarkLabel(afterTailLoopLabel);
+        if (plan.IdentifierTailMinCount > 0)
+        {
+            emitter.LoadLocal(indexLocal);
+            emitter.LoadLocal(tailStartLocal);
+            emitter.Emit(OpCodes.Sub);
+            emitter.LdcI4(plan.IdentifierTailMinCount);
+            emitter.Emit(OpCodes.Blt, advanceLabel);
+        }
         if (forCount)
         {
             emitter.AddToLocal(RequireCountLocal(countLocal), 1);

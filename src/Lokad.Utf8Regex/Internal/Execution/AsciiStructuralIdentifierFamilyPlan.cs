@@ -26,8 +26,13 @@ internal readonly struct AsciiStructuralIdentifierFamilyPlan
             owner.ChargeWork(1);
             Prefixes = prefixes;
             var overlap = Utf8SearchPlan.GetLiteralOverlap(prefixes);
-            HasOverlappingPrefixes = overlap != Utf8AlternateLiteralOverlapKind.None;
             HasPrefixOverlap = (overlap & Utf8AlternateLiteralOverlapKind.SameStartPrefix) != 0;
+            // A proper-start overlap inside an ASCII word cannot satisfy the
+            // leading boundary. Same-start alternatives still need scalar retry
+            // when a shorter prefix's suffix fails before a longer one succeeds.
+            HasUnresolvedPrefixOverlap = overlap != Utf8AlternateLiteralOverlapKind.None &&
+                (HasPrefixOverlap || leadingBoundary != Utf8BoundaryRequirement.Boundary ||
+                 !HaveOnlyWordPrefixes(prefixes, owner));
             HasSeparator = separatorClass.HasValue;
             SeparatorMinCount = separatorMinCount;
             HasIdentifier = identifierStartClass.HasValue;
@@ -62,7 +67,7 @@ internal readonly struct AsciiStructuralIdentifierFamilyPlan
 
     public byte[][] Prefixes { get; }
 
-    public bool HasOverlappingPrefixes { get; }
+    public bool HasUnresolvedPrefixOverlap { get; }
 
     public bool HasPrefixOverlap { get; }
 
@@ -100,6 +105,17 @@ internal readonly struct AsciiStructuralIdentifierFamilyPlan
     }
 
 
+
+    private static bool HaveOnlyWordPrefixes(byte[][] prefixes, Utf8ConstructionBudget owner)
+    {
+        foreach (var prefix in prefixes)
+        foreach (var value in prefix)
+        {
+            owner.ChargeWork(1);
+            if (!AsciiStructuralIdentifierFamilyMatcher.IsAsciiWordByte(value)) return false;
+        }
+        return true;
+    }
 
     private static bool HasSamePositiveDefinition(AsciiCharClass charClass, Func<byte, bool> predicate)
     {

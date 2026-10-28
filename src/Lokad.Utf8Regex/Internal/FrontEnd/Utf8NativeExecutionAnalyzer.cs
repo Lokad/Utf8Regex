@@ -2526,8 +2526,9 @@ internal static class Utf8NativeExecutionAnalyzer
         if (node.Kind != Utf8TreeNodeKind.Setloop ||
             !Utf8ScalarAsciiProjector.TryProjectAsciiDefinition(node.ScalarClass, out var charClass)) return false;
         runtimeSet = charClass;
-        minCount = Math.Max(node.M - 1, 0);
-        maxCount = Math.Max(node.N - 1, 0);
+        // The preceding identifier-start atom is separate from this tail loop.
+        minCount = node.M;
+        maxCount = node.N;
         return true;
     }
 

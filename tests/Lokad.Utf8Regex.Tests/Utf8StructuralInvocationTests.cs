@@ -248,7 +248,7 @@ public sealed class Utf8StructuralInvocationTests
         var regex = new Utf8Regex(pattern, options, finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout);
         var oracle = new Regex(pattern, options);
         var input = Encoding.UTF8.GetBytes(text);
-        Assert.True(Prepared(regex).StructuralIdentifierFamilyPlan.HasOverlappingPrefixes);
+        Assert.True(Prepared(regex).StructuralIdentifierFamilyPlan.HasUnresolvedPrefixOverlap);
         using var source = new CancellationTokenSource();
         var token = liveToken ? source.Token : default;
         Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input, token));

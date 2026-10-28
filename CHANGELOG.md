@@ -8,6 +8,8 @@
   prune impossible leading-whitespace Count starts before scalar VM verification.
 - PCRE2 Count checks an existing required literal before allocating slice VM
   scratch, avoiding repeated attempts on subjects without that literal.
+- Admit boundary-disjoint ASCII prefix families to existing structural routes;
+  preserve identifier-tail bounds and narrower whitespace classes in native plans.
 
 ## 0.4.0 — 2026-10-27
 

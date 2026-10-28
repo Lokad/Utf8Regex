@@ -50,7 +50,9 @@ internal readonly struct Utf8EmittedKernelPlan
         Utf8BoundaryRequirement leadingTrailingBoundary,
         Utf8BoundaryRequirement trailingLeadingBoundary,
         Utf8BoundaryRequirement trailingTrailingBoundary,
-        Utf8EmittedKernelBlock[] blocks)
+        Utf8EmittedKernelBlock[] blocks,
+        int identifierTailMinCount = 0,
+        int identifierTailMaxCount = int.MaxValue)
     {
         Kind = kind;
         FindOptimization = findOptimization;
@@ -64,6 +66,8 @@ internal readonly struct Utf8EmittedKernelPlan
         TrailingLeadingBoundary = trailingLeadingBoundary;
         TrailingTrailingBoundary = trailingTrailingBoundary;
         Blocks = blocks;
+        IdentifierTailMinCount = identifierTailMinCount;
+        IdentifierTailMaxCount = identifierTailMaxCount;
     }
 
     public Utf8EmittedKernelKind Kind { get; }
@@ -90,15 +94,21 @@ internal readonly struct Utf8EmittedKernelPlan
 
     public Utf8EmittedKernelBlock[] Blocks { get; }
 
+    public int IdentifierTailMinCount { get; }
+
+    public int IdentifierTailMaxCount { get; }
+
     public bool HasValue => Kind != Utf8EmittedKernelKind.None;
 
     public static Utf8EmittedKernelPlan CreateUpperWordIdentifierFamily(
         Utf8CompiledFindOptimization findOptimization,
         byte[][] prefixes,
+        int identifierTailMinCount,
+        int identifierTailMaxCount,
         Utf8EmittedKernelBlock[] blocks) =>
         new(Utf8EmittedKernelKind.UpperWordIdentifierFamily, findOptimization, prefixes, 0, 0, 0, false,
             Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None,
-            Utf8BoundaryRequirement.None, blocks);
+            Utf8BoundaryRequirement.None, blocks, identifierTailMinCount, identifierTailMaxCount);
 
     public static Utf8EmittedKernelPlan CreateSharedPrefixAsciiWhitespaceSuffix(
         Utf8CompiledFindOptimization findOptimization,

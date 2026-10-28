@@ -574,7 +574,7 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
 
             Utf8SearchDiagnosticsSession.Current?.CountVerifierMatch();
             count++;
-            anchorSearchFrom = Math.Max(anchorSearchFrom, matchIndex + matchedLength + 3);
+            anchorSearchFrom = Math.Max(anchorSearchFrom, matchIndex + matchedLength + anchorOffset);
         }
 
         return count;
@@ -1564,12 +1564,15 @@ internal static partial class Utf8AsciiStructuralIdentifierFamilyExecutor
         }
 
         index++;
+        var tailStart = index;
         while ((uint)index < (uint)input.Length &&
+               index - tailStart < familyPlan.IdentifierTailMaxCount &&
                AsciiStructuralIdentifierFamilyMatcher.IsAsciiWordByte(input[index]))
         {
             index++;
         }
 
+        if (index - tailStart < familyPlan.IdentifierTailMinCount) return false;
         matchedLength = index - matchIndex;
         return true;
     }

@@ -29,7 +29,11 @@ internal static class Utf8EmittedKernelLowerer
         try
         {
             budget.ChargeWork(1);
-            if (Utf8AsciiStructuralIdentifierFamilyExecutor.TryGetUpperWordIdentifierKernelSpec(familyPlan, budget.Deadline, out var anchorOffset, out var anchorClass))
+            // This emitted loop consumes all six ASCII whitespace bytes. The
+            // ordinary executor honors narrower separator classes directly.
+            if (familyPlan.SeparatorCharClass.Count == 6 &&
+                Utf8AsciiStructuralIdentifierFamilyExecutor.IsAsciiWhitespaceCharClass(familyPlan.SeparatorCharClass) &&
+                Utf8AsciiStructuralIdentifierFamilyExecutor.TryGetUpperWordIdentifierKernelSpec(familyPlan, budget.Deadline, out var anchorOffset, out var anchorClass))
             {
                 var anchorBytes = anchorClass.GetPositiveMatchBytes();
                 var anchorPrefixesByByte = budget.AllocateArray<byte[]>(256, false);
@@ -42,6 +46,8 @@ internal static class Utf8EmittedKernelLowerer
                 kernelPlan = Utf8EmittedKernelPlan.CreateUpperWordIdentifierFamily(
                     new Utf8CompiledFindOptimization(anchorOffset, anchorBytes, anchorPrefixesByByte),
                     familyPlan.Prefixes,
+                    familyPlan.IdentifierTailMinCount,
+                    familyPlan.IdentifierTailMaxCount,
                     CreateBlocks(budget, [Utf8EmittedKernelBlockKind.FindAnchorSet, Utf8EmittedKernelBlockKind.DispatchPrefixesAtAnchor, Utf8EmittedKernelBlockKind.ConsumeAsciiWhitespace, Utf8EmittedKernelBlockKind.RequireAsciiUpper, Utf8EmittedKernelBlockKind.ConsumeAsciiWordTail, Utf8EmittedKernelBlockKind.AcceptAndAdvance]));
                 scope.Complete();
                 return true;

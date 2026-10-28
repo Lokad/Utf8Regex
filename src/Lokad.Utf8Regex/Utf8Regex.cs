@@ -497,7 +497,7 @@ public sealed partial class Utf8Regex
              // A shorter structural prefix can fail its suffix where a longer
              // branch at the same start succeeds. The owned VM retries it.
              _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
-                _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
+                _preparedRegex.StructuralIdentifierFamilyPlan.HasUnresolvedPrefixOverlap ||
              // Anchored simple plans without a dedicated native matcher use
              // the cached scalar program. Keep qualified native and line paths.
              _compiledEngine.Kind == Utf8CompiledEngineKind.SimplePatternInterpreter &&
@@ -612,7 +612,7 @@ public sealed partial class Utf8Regex
         {
             // Mixed subjects and overlapping prefixes use shared scalar
             // verification under the same invocation.
-            if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
+            if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasUnresolvedPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
                 return OwnedSliceIsMatchFromByte(input, _ownedSliceProgram,
@@ -930,7 +930,7 @@ public sealed partial class Utf8Regex
         }
         if (TryStartNativeStructuralInvocation(input, cancellationToken, false, out var structuralInvocation, out var structuralValidation))
         {
-            if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
+            if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasUnresolvedPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
                 return OwnedSliceCountFromByte(input, _ownedSliceProgram,
@@ -1172,7 +1172,7 @@ public sealed partial class Utf8Regex
             if (fastBudget.IsInfinite &&
                 _directStructuralFamilyKernelMatcher is not null)
             {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeStructuralFamilyEmitSharedPrefixSuffix);
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(_directStructuralFamilyKernelMatcher.Plan.Route);
                 return _directStructuralFamilyKernelMatcher.Count(input);
             }
 
@@ -1288,7 +1288,7 @@ public sealed partial class Utf8Regex
                 var validation = Utf8Validation.Validate(input, ref invocation);
                 if (validation.IsAscii && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
                     _preparedRegex.StructuralSearchPlan.HasValue && _preparedRegex.StructuralVerifier.AsciiProgram.LinearProgram.HasValue &&
-                    !_preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes &&
+                    !_preparedRegex.StructuralIdentifierFamilyPlan.HasUnresolvedPrefixOverlap &&
                     !_preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap &&
                     !_preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
                 {
@@ -1476,7 +1476,7 @@ public sealed partial class Utf8Regex
         if (HasFiniteExecutionLimits) return OwnedSliceMatch(input, _ownedSliceProgram, cancellationToken);
         if (TryStartNativeStructuralInvocation(input, cancellationToken, false, out var structuralInvocation, out var structuralValidation))
         {
-            if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasOverlappingPrefixes ||
+            if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasUnresolvedPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
                 return OwnedSliceMatchFromByte(input, _ownedSliceProgram,
