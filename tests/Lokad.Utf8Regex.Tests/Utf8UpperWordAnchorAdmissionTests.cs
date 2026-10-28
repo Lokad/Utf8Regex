@@ -11,7 +11,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8UpperWordAnchorAdmissionTests
 {
     private static AsciiStructuralIdentifierFamilyPlan Family(byte[][] prefixes)
-        => new(prefixes, AsciiCharClass.ForByte((byte)' '), 1,
+        => new(prefixes, AsciiCharClass.FromBytes(" \t\r\n\f\v"u8), 1,
             AsciiCharClass.FromBytes("ABCDEFGHIJKLMNOPQRSTUVWXYZ"u8),
             AsciiCharClass.FromBytes("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"u8),
             1, int.MaxValue, null, [], Utf8BoundaryRequirement.Boundary, Utf8BoundaryRequirement.None);

@@ -58,3 +58,11 @@ and read-only route probe. Preserve both archives and the frozen release baselin
 This bounded experiment is closed. Next priority is the qualified PythonRe date
 miss (37.57x CPython); remaining Core/PCRE2 gaps and release-boundary qualification
 stay visible in PLAN.md.
+
+CI 40727672645 found that the manual upper-word construction-admission fixture
+still supplied a space-only separator to the now correctly restricted emitter.
+Its family uses all six ASCII whitespace bytes now; cutoff, rollback, original
+token/deadline and zero-allocation assertions are retained. The production
+change's narrow-separator public tests remain. [Focused both-runtime checks](ci-fixture-fixed.txt)
+pass. Raw failed CI is preserved beside the archives as
+`ci-40727672645-failed.txt`; no performance or package campaign was repeated.
