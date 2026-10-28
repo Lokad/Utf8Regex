@@ -61,6 +61,19 @@ public sealed class Utf8QuotedOperandCountTests
             Assert.Equal(new Regex(pattern, RegexOptions.Multiline).Count(text), regex.Count(Encoding.UTF8.GetBytes(text)));
     }
 
+    [Fact]
+    public void NativeAsciiCountHonorsItsExistingPrefilterSkipPolicy()
+    {
+        var regex = new Utf8Regex(Pattern, RegexOptions.Multiline);
+        var session = Utf8SearchDiagnosticsSession.Start();
+        try
+        {
+            Assert.Equal(0, regex.Count("unrelated ASCII text"u8));
+            Assert.Equal(Utf8ExecutionRoute.NativeStructuralLinearAutomaton, session.ExecutionRoute);
+        }
+        finally { session.Complete(); }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

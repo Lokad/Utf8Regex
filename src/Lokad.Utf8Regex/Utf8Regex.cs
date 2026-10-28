@@ -1164,7 +1164,7 @@ public sealed partial class Utf8Regex
             return OwnedSliceCount(input, _ownedSliceProgram, cancellationToken);
         }
 
-        if (RejectsByRequiredPrefilter(input))
+        if (!ShouldSkipRequiredPrefilterForCount() && RejectsByRequiredPrefilter(input))
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.RequiredPrefilterReject);
             return 0;
