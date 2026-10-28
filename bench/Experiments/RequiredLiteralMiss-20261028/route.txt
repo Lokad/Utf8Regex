@@ -1,0 +1,2 @@
+Direct: none
+IsMatch: Pcre2SliceDirectProgram

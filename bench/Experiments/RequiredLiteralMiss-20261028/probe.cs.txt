@@ -1,0 +1,25 @@
+using System.Reflection;
+using System.Runtime.Loader;
+var folder = Path.GetDirectoryName(Path.GetFullPath(args[0]))!;
+AssemblyLoadContext.Default.Resolving += (_, n) => AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(folder, n.Name + ".dll"));
+var type = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.GetFullPath(args[0])).GetType("Lokad.Utf8Regex.Pcre2.Utf8Pcre2Regex")!;
+var owner = type.GetConstructor([typeof(string)])!.Invoke([@"[^a]+\.[^z]+"]);
+const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+object Get(object value, string name) => value.GetType().GetProperty(name, flags)?.GetValue(value);
+var direct = type.GetField("_unmeteredIsMatchProgram", flags)!.GetValue(owner);
+Console.WriteLine("Direct: " + (direct?.GetType().Name ?? "none"));
+var compiled = type.GetField("_program", flags)!.GetValue(owner)!;
+var operations = Get(compiled, "Operations")!;
+Console.WriteLine("IsMatch: " + Get(operations, "IsMatch")?.GetType().Name);
+var regex = direct is null ? null : Get(direct, "Regex");
+if (regex is not null)
+{
+    foreach (var name in new[] { "Pattern", "Options", "MatchTimeout", "ResourcePolicy" }) Console.WriteLine(name + ": " + Get(regex, name));
+    var prepared = regex.GetType().GetField("_preparedRegex", flags)!.GetValue(regex)!;
+    var search = Get(prepared, "SearchPlan")!;
+    var features = Get(prepared, "Features")!;
+    foreach (var name in new[] { "Kind", "CanGuideFallbackStarts" }) Console.WriteLine(name + ": " + Get(search, name));
+    var required = Get(search, "RequiredPrefilterSearcher")!;
+    Console.WriteLine("Required: " + Get(required, "Kind"));
+    Console.WriteLine("Absolute: " + Get(features, "HasAbsoluteStartAnchor"));
+}

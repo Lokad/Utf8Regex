@@ -149,7 +149,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | Case | Operation | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
 | `industry/mariomka-ip-count` | `Count` | 1,106,611.500 us | 8,621.767 us | 17,384.800 us | 128.35x |
-| `common/one-node-backtracking` | `IsMatch` | 34.895 us | 0.611 us | 0.643 us | 57.11x |
 | `industry/leipzig-symbol-count` | `Count` | 1,152,702.300 us | 23,036.733 us | 30,488.150 us | 50.04x |
 | `industry/rust-sherlock-word-holmes-count` | `Count` | 231,343.700 us | 8,453.017 us | 8,894.100 us | 27.37x |
 | `common/uri-miss` | `IsMatch` | 4.732 us | 0.190 us | 0.207 us | 24.88x |
@@ -175,6 +174,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/leipzig-name-family-count` | `Count` | 4,216.867 us | 9,795.667 us | 17,176.000 us | 0.43x |
 | `common/matches-set` | `Count` | 78.910 us | 194.124 us | 197.086 us | 0.41x |
 | `common/matches-word` | `Count` | 1.422 us | 4.262 us | 6.079 us | 0.33x |
+| `common/one-node-backtracking` | `IsMatch` | 0.189 us | 0.628 us | 0.659 us | 0.30x |
 | `common/date-match` | `IsMatch` | 0.029 us | 0.110 us | 0.139 us | 0.26x |
 | `industry/boostdocs-postcode-match` | `IsMatch` | 0.020 us | 0.084 us | 0.100 us | 0.23x |
 | `common/split-words` | `Split` | 14.617 us | 78.730 us | 80.361 us | 0.19x |
@@ -231,7 +231,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | Case | Operation | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
 | `industry/leipzig-symbol-count` | `Count` | 1,153,094.300 us | 1,235.305 us | 6,850.600 us | 933.45x |
-| `common/one-node-backtracking` | `IsMatch` | 34.735 us | 0.089 us | 0.128 us | 390.51x |
 | `industry/mariomka-ip-count` | `Count` | 1,106,995.400 us | 3,525.667 us | 11,334.350 us | 313.98x |
 | `common/backtracking` | `IsMatch` | 4.408 us | 0.044 us | 0.075 us | 99.71x |
 | `common/uri-miss` | `IsMatch` | 4.703 us | 0.065 us | 0.084 us | 72.81x |
@@ -251,6 +250,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/mariomka-email-count` | `Count` | 1,529.000 us | 455.287 us | 7,853.633 us | 3.36x |
 | `industry/rust-sherlock-nonnewline-count` | `Count` | 4,784.783 us | 1,499.603 us | 1,806.293 us | 3.19x |
 | `common/match-word` | `Match` | 0.203 us | 0.080 us | 0.994 us | 2.53x |
+| `common/one-node-backtracking` | `IsMatch` | 0.190 us | 0.088 us | 0.129 us | 2.15x |
 | `industry/boostdocs-date-match` | `IsMatch` | 0.055 us | 0.030 us | 0.049 us | 1.83x |
 | `industry/boostdocs-postcode-match` | `IsMatch` | 0.052 us | 0.031 us | 0.048 us | 1.67x |
 | `industry/mariomka-uri-count` | `Count` | 1,751.900 us | 1,099.909 us | 8,499.333 us | 1.59x |
