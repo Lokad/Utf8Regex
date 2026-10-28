@@ -527,14 +527,19 @@ public sealed partial class Utf8Regex
 
     private bool ShouldSkipRequiredPrefilterForCount()
     {
-        return _preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex &&
+        // The ASCII relation finder already seeks quotes and verifies operands.
+        // Its new necessary-family filter serves owned scalar calls instead;
+        // adding another scan to this native route only duplicates discovery.
+        return _preparedRegex.StructuralLinearProgram.QuotedRelationPlan.HasValue ||
+            _preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex &&
             !CanGuideFallbackVerification() &&
             _compiledEngineRuntime.SkipRequiredPrefilterForCount;
     }
 
     private bool ShouldSkipRequiredPrefilterForMatch()
     {
-        return _compiledEngineRuntime.SkipRequiredPrefilterForMatch;
+        return _preparedRegex.StructuralLinearProgram.QuotedRelationPlan.HasValue ||
+            _compiledEngineRuntime.SkipRequiredPrefilterForMatch;
     }
 
     private bool RequiresScalarValueExecution()

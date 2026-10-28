@@ -1227,7 +1227,8 @@ internal static partial class Utf8AsciiInstructionLinearExecutor
                     // one match. Keep each extension on the original clock.
                     if (program.QuotedRelationPlan.RepeatWholeRelation)
                     {
-                        while (candidate + matchedLength < input.Length)
+                        while (candidate + matchedLength < input.Length &&
+                            input[candidate + matchedLength] is (byte)'"' or (byte)'\'')
                         {
                             budget.Step();
                             if (!TryMatchQuotedRelationAt(input, candidate + matchedLength,
