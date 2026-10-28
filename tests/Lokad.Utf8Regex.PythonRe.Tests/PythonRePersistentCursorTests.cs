@@ -142,7 +142,9 @@ public sealed class PythonRePersistentCursorTests
         var timeout = expire ? TimeSpan.FromMilliseconds(100) : Regex.InfiniteMatchTimeout;
         var invocation = new Utf8SliceInvocation(new(1000000, 0, 4UL << 20), timeout, token.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
-        var input = Encoding.UTF8.GetBytes("z" + new string('a', 65536));
+        // Candidate filtering meters 2048-byte windows, so this suffix still
+        // crosses the diagnostic hook's 64-step interval after the first hit.
+        var input = Encoding.UTF8.GetBytes("z" + new string('a', 262144));
         using var cursor = InternalCursor(input, "(z)", invocation, timeout);
         Assert.True(cursor.MoveNext()); var retained = cursor.Current;
         var seed = invocation.Budget.Steps;
@@ -195,7 +197,7 @@ public sealed class PythonRePersistentCursorTests
     public void ReentrantCallsAreRejectedWithoutInvalidatingTheOwner()
     {
         var invocation = Invocation();
-        using var cursor = InternalCursor(Encoding.UTF8.GetBytes(new string('a', 1024) + "z"), "(z)", invocation);
+        using var cursor = InternalCursor(Encoding.UTF8.GetBytes(new string('a', 262144) + "z"), "(z)", invocation);
         var entered = false;
         cursor.WorkingInvocation.CheckpointHook = _ =>
         {
@@ -213,7 +215,7 @@ public sealed class PythonRePersistentCursorTests
     public async Task ConcurrentCallsAreRejectedAndSequentialOwnershipCanResume()
     {
         var invocation = Invocation();
-        using var cursor = InternalCursor(Encoding.UTF8.GetBytes(new string('a', 1024) + "z"), "(z)", invocation);
+        using var cursor = InternalCursor(Encoding.UTF8.GetBytes(new string('a', 262144) + "z"), "(z)", invocation);
         using var entered = new ManualResetEventSlim();
         using var resume = new ManualResetEventSlim();
         var first = true;

@@ -41,11 +41,6 @@ internal struct PythonReScalarMatchState
         _program = program;
         if (CanUseCandidateRegex(program, candidateRegex)) _candidateRegex = candidateRegex;
         _leadingAsciiLow = _leadingAsciiHigh = -1;
-        if (_candidateRegex is null && TryGetLeadingAsciiRange(program, out var low, out var high))
-        {
-            _leadingAsciiLow = low;
-            _leadingAsciiHigh = high;
-        }
         _pattern = pattern;
         _timeout = timeout;
         _position = startOffsetInBytes;
@@ -55,6 +50,11 @@ internal struct PythonReScalarMatchState
         try
         {
             _validation = Utf8Validation.Validate(input, ref _invocation);
+            if (_candidateRegex is null && TryGetLeadingAsciiRange(program, _validation.IsAscii, out var low, out var high))
+            {
+                _leadingAsciiLow = low;
+                _leadingAsciiHigh = high;
+            }
             _slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref _invocation);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
@@ -148,29 +148,43 @@ internal struct PythonReScalarMatchState
 
     internal bool MatchAtCurrentPosition(ReadOnlySpan<byte> input) => MoveNextCore(input, false);
 
-    internal static bool TryGetLeadingAsciiRange(Utf8SliceProgram program, out int low, out int high)
+    internal static bool TryGetLeadingAsciiRange(Utf8SliceProgram program, bool asciiInput, out int low, out int high)
     {
         low = high = -1;
         if (program.CanMatchEmpty || program.HasContiguousAnchor || program.RightToLeft || program.IgnoreCase ||
             program.Instructions.Length == 0) return false;
-        var instructions = program.Instructions;
-        if (instructions[0] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } literal && (uint)literal.A < 128)
+        var index = FindLeadingPredicate(program.Instructions);
+        if (index < 0) return false;
+        var atom = program.Instructions[index];
+        if (atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } literal && (uint)literal.A < 128)
         {
             low = high = literal.A;
             return true;
         }
 
-        // A capture start cannot fail; a positive minimum must enter the body.
-        // Inspect at most three instructions, even for deeply nested patterns.
-        var index = instructions[0].Kind == Utf8SliceInstructionKind.CaptureStart ? 1 : 0;
-        if (index < instructions.Length && instructions[index] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: > 0 }) index++;
-        if (index >= instructions.Length || instructions[index] is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } set)
+        if (atom is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } &&
+            !(asciiInput && atom is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 }))
             return false;
-        var mask = program.SetMasks[set.A];
+        var mask = program.SetMasks[atom.A];
         if (mask.Length != 16) return false;
         // ASCII masks store bit n at byte n/8, bit n%8, independently of host endian.
         var lower = BinaryPrimitives.ReadUInt64LittleEndian(mask);
         var upper = BinaryPrimitives.ReadUInt64LittleEndian(mask.AsSpan(8));
+        if (atom.Kind == Utf8SliceInstructionKind.CategorySet)
+        {
+            // The stored mask is only one term in a category union. Only the
+            // profile's fixed predicates supply these exact ASCII projections;
+            // a general table/subtraction keeps the scalar candidate loop.
+            var members = program.CategorySetMembers[atom.D];
+            if (members.Length != 1 || members[0].Negated) return false;
+            var predicate = members[0].Table.ScalarPredicate;
+            var ascii = predicate == PythonReScalarClassData.IsDigit ? PythonReScalarClassData.DigitAscii
+                : predicate == PythonReScalarClassData.IsWord ? PythonReScalarClassData.WordAscii
+                : predicate == PythonReScalarClassData.IsSpace ? PythonReScalarClassData.SpaceAscii : null;
+            if (ascii is null) return false;
+            lower |= BinaryPrimitives.ReadUInt64LittleEndian(ascii);
+            upper |= BinaryPrimitives.ReadUInt64LittleEndian(ascii.AsSpan(8));
+        }
         if ((lower | upper) == 0) return false;
         var first = lower != 0 ? BitOperations.TrailingZeroCount(lower) : 64 + BitOperations.TrailingZeroCount(upper);
         var last = upper != 0 ? 127 - BitOperations.LeadingZeroCount(upper) : 63 - BitOperations.LeadingZeroCount(lower);
@@ -179,6 +193,60 @@ internal struct PythonReScalarMatchState
         low = first;
         high = last;
         return true;
+    }
+
+    private static int FindLeadingPredicate(ReadOnlySpan<Utf8SliceInstruction> code)
+    {
+        // This optional proof is bounded independently of pattern depth/size.
+        // Every zero-width branch must converge on the same consuming atom;
+        // it remains necessary only, and the original VM verifies assertions.
+        Span<int> pending = stackalloc int[16];
+        var count = 0;
+        var index = 0;
+        var leading = -1;
+        for (var work = 0; work < 64 && (uint)index < (uint)code.Length; work++)
+        {
+            var instruction = code[index];
+            switch (instruction.Kind)
+            {
+                case Utf8SliceInstructionKind.CaptureStart:
+                case Utf8SliceInstructionKind.CaptureEnd:
+                case Utf8SliceInstructionKind.Anchor:
+                case Utf8SliceInstructionKind.Boundary:
+                case Utf8SliceInstructionKind.Lookbehind:
+                    index++;
+                    continue;
+                case Utf8SliceInstructionKind.RepeatGreedy when instruction.RepeatMinimum > 0:
+                    index++;
+                    continue;
+                case Utf8SliceInstructionKind.Jump:
+                    index = instruction.A;
+                    continue;
+                case Utf8SliceInstructionKind.Fork when instruction.B == 0:
+                    if (count == pending.Length) return -1;
+                    pending[count++] = instruction.A;
+                    index++;
+                    continue;
+                case Utf8SliceInstructionKind.Fork when instruction.B == 1:
+                    // Lookahead restores its input position. Recognize the
+                    // lowerer's negative Commit/Fail and positive Commit/Jump/
+                    // Fail trailers; never treat its body as consuming input.
+                    var target = instruction.A;
+                    if (target < index + 3 || target > code.Length ||
+                        code[target - 2].Kind != Utf8SliceInstructionKind.Commit) return -1;
+                    if (code[target - 1].Kind == Utf8SliceInstructionKind.Fail) index = target;
+                    else if (target < code.Length && code[target].Kind == Utf8SliceInstructionKind.Fail &&
+                        code[target - 1] is { Kind: Utf8SliceInstructionKind.Jump } jump && jump.A == target + 1)
+                        index = target + 1;
+                    else return -1;
+                    continue;
+            }
+            if (leading >= 0 && leading != index) return -1;
+            leading = index;
+            if (count == 0) return leading;
+            index = pending[--count];
+        }
+        return -1;
     }
 
     private bool MoveNextCore(ReadOnlySpan<byte> input, bool search)

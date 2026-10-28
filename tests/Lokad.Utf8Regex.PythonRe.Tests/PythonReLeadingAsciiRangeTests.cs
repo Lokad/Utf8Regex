@@ -11,11 +11,9 @@ public sealed class PythonReLeadingAsciiRangeTests
 
     private static Utf8SliceProgram Compile(string pattern)
     {
-        using var construction = global::Lokad.Utf8Regex.Internal.Utf8ConstructionScope.Enter();
-        var parse = PythonReParser.Create(pattern).Parse(PythonReCompileOptions.None);
-        var program = PythonReScalarCompiler.Compile(parse);
-        construction.Complete();
-        return program;
+        var regex = new Utf8PythonRegex(pattern);
+        return (Utf8SliceProgram)typeof(Utf8PythonRegex).GetField("_scalarProgram",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue(regex)!;
     }
 
     [Theory]
@@ -35,7 +33,7 @@ public sealed class PythonReLeadingAsciiRangeTests
     public void MandatoryMaskIsContainedInTheDerivedAsciiInterval(string pattern, int minimum, int maximum)
     {
         var program = Compile(pattern);
-        Assert.True(PythonReScalarMatchState.TryGetLeadingAsciiRange(program, out var low, out var high));
+        Assert.True(PythonReScalarMatchState.TryGetLeadingAsciiRange(program, false, out var low, out var high));
         Assert.Equal(minimum, low); Assert.Equal(maximum, high);
         var mask = program.SetMasks[program.Instructions.First(instruction => instruction.Kind == Utf8SliceInstructionKind.Set).A];
         for (var scalar = 0; scalar < 128; scalar++)
@@ -52,13 +50,53 @@ public sealed class PythonReLeadingAsciiRangeTests
     [InlineData("[a-z]*Z")]
     [InlineData("([a-z]+)?Z")]
     [InlineData("[a-z]+?Z")]
-    [InlineData("(?=[a-z])([a-z]+)")]
-    [InlineData("(([a-z]+))")]
-    [InlineData(@"\A([a-z]+)")]
     [InlineData("[é-ö]+")]
     public void UnprovedPrefixesKeepTheExistingCandidateLoop(string pattern)
     {
-        Assert.False(PythonReScalarMatchState.TryGetLeadingAsciiRange(Compile(pattern), out _, out _));
+        Assert.False(PythonReScalarMatchState.TryGetLeadingAsciiRange(Compile(pattern), false, out _, out _));
+    }
+
+    [Theory]
+    [InlineData("(?=[a-z])([a-z]+)")]
+    [InlineData("(([a-z]+))")]
+    [InlineData(@"\A([a-z]+)")]
+    [InlineData("(?:^|(?=x))[a-z]+")]
+    [InlineData("(?![0-9])[a-z]+")]
+    public void ZeroWidthPrefixesConvergeOnTheSameMandatoryMask(string pattern)
+    {
+        Assert.True(PythonReScalarMatchState.TryGetLeadingAsciiRange(Compile(pattern), false, out var low, out var high));
+        Assert.Equal(97, low); Assert.Equal(122, high);
+    }
+
+    [Theory]
+    [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", 48, 57)]
+    [InlineData(@"\B\d+", 48, 57)]
+    [InlineData(@"(?=[A-Z])\d+", 48, 57)]
+    [InlineData(@"(?P<x>\d+)-(?P=x)", 48, 57)]
+    [InlineData(@"(?<=:)\w+", 48, 122)]
+    [InlineData(@"(?<!:)\s+", 9, 32)]
+    public void ProfileCategoryProjectionRequiresAuthoritativeAsciiInput(string pattern, int minimum, int maximum)
+    {
+        var program = Compile(pattern);
+        Assert.True(PythonReScalarMatchState.TryGetLeadingAsciiRange(program, true, out var low, out var high));
+        Assert.Equal(minimum, low); Assert.Equal(maximum, high);
+        Assert.False(PythonReScalarMatchState.TryGetLeadingAsciiRange(program, false, out _, out _));
+    }
+
+    [Theory]
+    [InlineData(@"(?:\d+|[a-z]+)")]
+    [InlineData(@"(?i:[a-z]+)")]
+    [InlineData(@"(?P<x>[a-z]+)?\d+")]
+    [InlineData(@"[\d\s]+")]
+    public void NonConvergentOrUnprovedCategoryDefinitionsDecline(string pattern)
+        => Assert.False(PythonReScalarMatchState.TryGetLeadingAsciiRange(Compile(pattern), true, out _, out _));
+
+    [Fact]
+    public void OptionalProofStopsAtItsFixedWorkBound()
+    {
+        var pattern = new string('(', 70) + "[a-z]+" + new string(')', 70);
+        Assert.False(PythonReScalarMatchState.TryGetLeadingAsciiRange(Compile(pattern), true, out _, out _));
+        Assert.True(new Utf8PythonRegex(pattern).IsMatch("123 alpha"u8));
     }
 
     [Theory]
@@ -149,17 +187,19 @@ public sealed class PythonReLeadingAsciiRangeTests
         Assert.All(regex.FindIterDetailed(input), match => Assert.Equal(2, match.LastIndex));
     }
 
-    [Fact]
-    public void WorkDenialInCandidateSearchKeepsItsAuthorityAndReleasesStorage()
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void WorkDenialInCandidateSearchKeepsItsAuthorityAndReleasesStorage(bool category)
     {
-        var program = Compile(Pattern);
-        var input = Encoding.UTF8.GetBytes(new string('9', 8192) + "alpha");
+        var pattern = category ? @"\b(?P<digits>\d+)\b" : Pattern;
+        var program = Compile(pattern);
+        var input = Encoding.UTF8.GetBytes(new string(category ? 'x' : '9', 8192) + (category ? " 123" : "alpha"));
         var probe = new PythonReScalarMatchCursor(input, program, 0, Timeout.InfiniteTimeSpan,
-            null, Pattern, new(Limits, Timeout.InfiniteTimeSpan, default));
+            null, pattern, new(Limits, Timeout.InfiniteTimeSpan, default));
         var constructionWork = probe.WorkingInvocation.Budget.Steps;
         probe.Dispose();
         var cursor = new PythonReScalarMatchCursor(input, program, 0, Timeout.InfiniteTimeSpan,
-            null, Pattern, new(new(constructionWork + 1, 32, 1 << 20, 1 << 20), Timeout.InfiniteTimeSpan, default));
+            null, pattern, new(new(constructionWork + 1, 32, 1 << 20, 1 << 20), Timeout.InfiniteTimeSpan, default));
         Exception? error = null;
         try { cursor.MoveNext(); } catch (Exception failure) { error = failure; }
         finally { cursor.Dispose(); }
@@ -168,16 +208,17 @@ public sealed class PythonReLeadingAsciiRangeTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(true, false)]
-    [InlineData(false, true)] [InlineData(true, true)]
-    public void CandidateBlocksObserveOriginalTokenAndDeadlineAndKeepParentLoans(bool expire, bool disjoint)
+    [InlineData(false, 0)] [InlineData(true, 0)]
+    [InlineData(false, 1)] [InlineData(true, 1)]
+    [InlineData(false, 2)] [InlineData(true, 2)]
+    public void CandidateBlocksObserveOriginalTokenAndDeadlineAndKeepParentLoans(bool expire, int kind)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cancellation = new CancellationTokenSource();
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
-        var pattern = disjoint ? "(?P<word>[A-Za-z_]+)" : Pattern;
-        var cursor = new PythonReScalarMatchCursor(Encoding.UTF8.GetBytes(new string('9', 200000) + "alpha"),
+        var pattern = kind switch { 1 => "(?P<word>[A-Za-z_]+)", 2 => @"\b(?P<digits>\d+)\b", _ => Pattern };
+        var cursor = new PythonReScalarMatchCursor(Encoding.UTF8.GetBytes(new string(kind == 2 ? 'x' : '9', 200000) + (kind == 2 ? " 123" : "alpha")),
             Compile(pattern), 0, timeout,
             null, pattern, new(Limits, timeout, cancellation.Token));
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
