@@ -1,0 +1,525 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 75.9297788,
+  "LaneNames": [
+    "Baseline",
+    "Candidate",
+    "PredecodedRegex",
+    "DecodeThenRegex"
+  ],
+  "Baseline": {
+    "Version": "0.5.0-dev\u002Ba40bda03c8f984cef1d884447cccc805d2ceaa01",
+    "Sha256": "88908D310EE129970BECD18F4C4A0632F9B4F151432F875EB68AFB12EE6F0B47"
+  },
+  "Candidate": {
+    "Version": "0.5.0-dev\u002Ba7369fafd0a4de54e5f6c0fc430e3cffff4d8ba2",
+    "Sha256": "E1CFF8D1A373A14B522E3EF12D9697C75A386492690F427E8206D74D4DA536C2"
+  },
+  "CorrectnessOnly": {
+    "Subject": "two adjacent complete relations under outer greedy \u002B",
+    "BaselineCount": 2,
+    "CandidateCount": 1,
+    "ExpectedCount": 1,
+    "TimingExcludedReason": "Old and new results differ; this is correctness evidence only."
+  },
+  "Rows": [
+    {
+      "Name": "ordinary",
+      "Id": "aws-keys/full",
+      "Options": "Multiline",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 32514627,
+      "InputSha256": "FB6F37144103CC533B20FC8C735F4C65B7146D9FBD9931F3D0A231B12BC4A257",
+      "Expected": 0,
+      "Iterations": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "WarmupCalls": [
+        1,
+        2,
+        1,
+        3
+      ],
+      "WarmupMilliseconds": [
+        5047.1299,
+        306.461,
+        293.1154,
+        306.3988
+      ],
+      "Microseconds": [
+        [
+          5038199.1,
+          5041315.899999999,
+          5066244.800000001
+        ],
+        [
+          148618.30000000002,
+          146694.4,
+          146752.1
+        ],
+        [
+          86894.59999999999,
+          86126.5,
+          88176
+        ],
+        [
+          103835.40000000001,
+          100023.9,
+          102788.5
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          6752,
+          6752,
+          6752
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          65019784,
+          65019784,
+          65019784
+        ]
+      ]
+    },
+    {
+      "Name": "compiled",
+      "Id": "aws-keys/full",
+      "Options": "Multiline, Compiled",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 32514627,
+      "InputSha256": "FB6F37144103CC533B20FC8C735F4C65B7146D9FBD9931F3D0A231B12BC4A257",
+      "Expected": 0,
+      "Iterations": [
+        1,
+        1,
+        3,
+        1
+      ],
+      "WarmupCalls": [
+        1,
+        2,
+        14,
+        5
+      ],
+      "WarmupMilliseconds": [
+        5057.7793,
+        293.448,
+        260.7975,
+        264.6288
+      ],
+      "Microseconds": [
+        [
+          5043344.3,
+          5053856.1,
+          5053214.600000001
+        ],
+        [
+          146178.40000000002,
+          146333,
+          148051.09999999998
+        ],
+        [
+          19018.933333333334,
+          19029.8,
+          19714.366666666665
+        ],
+        [
+          59810.5,
+          50416.3,
+          53386.7
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          6752,
+          6752,
+          6752
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          65019784,
+          65019784,
+          65019784
+        ]
+      ]
+    },
+    {
+      "Name": "finite-token",
+      "Id": "aws-keys/full",
+      "Options": "Multiline, Compiled",
+      "FiniteAndLiveToken": true,
+      "InputBytes": 32768,
+      "InputSha256": "EC8899354436CD8CFE5726DE91A8433273AFB3F3566076DAFA6ABF7895385C3F",
+      "Expected": 0,
+      "Iterations": [
+        5,
+        112,
+        1480,
+        1043
+      ],
+      "WarmupCalls": [
+        39,
+        965,
+        7373,
+        2919
+      ],
+      "WarmupMilliseconds": [
+        250.354,
+        251.3725,
+        250.2702,
+        250.0094
+      ],
+      "Microseconds": [
+        [
+          5744.72,
+          8210.52,
+          9732.54
+        ],
+        [
+          230.64642857142857,
+          229.2875,
+          405.2830357142857
+        ],
+        [
+          17.68797297297297,
+          17.72668918918919,
+          31.957027027027028
+        ],
+        [
+          27.339309683604988,
+          27.476030680728666,
+          48.73672099712368
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3744,
+          3744,
+          3744
+        ],
+        [
+          112,
+          112,
+          112
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          65544,
+          65544,
+          65544
+        ]
+      ]
+    },
+    {
+      "Name": "dense-hit",
+      "Id": "aws-keys/full",
+      "Options": "Multiline, Compiled",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 36864,
+      "InputSha256": "3560947FDED06B765A90F2D27CDC44F08CF856BB65AFE66DCF36030C6164EA55",
+      "Expected": 512,
+      "Iterations": [
+        8,
+        4,
+        805,
+        611
+      ],
+      "WarmupCalls": [
+        135,
+        30,
+        3338,
+        2935
+      ],
+      "WarmupMilliseconds": [
+        250.3074,
+        259.7785,
+        250.0392,
+        250.0449
+      ],
+      "Microseconds": [
+        [
+          1499.0625,
+          1408.2875,
+          2168.7
+        ],
+        [
+          1477.875,
+          1369.8,
+          2565.575
+        ],
+        [
+          63.25751552795031,
+          62.70807453416149,
+          84.9951552795031
+        ],
+        [
+          81.90687397708675,
+          81.9240589198036,
+          81.9581014729951
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3632,
+          3632,
+          3632
+        ],
+        [
+          3632,
+          3632,
+          3632
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          70680,
+          70680,
+          70680
+        ]
+      ]
+    },
+    {
+      "Name": "ascii-separated-hit",
+      "Id": "aws-keys/full",
+      "Options": "Multiline, Compiled",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 34304,
+      "InputSha256": "6AD5BCEA76E5CC03F036E45139837E7F78F09019B8E604AA70FFB800B01E5348",
+      "Expected": 512,
+      "Iterations": [
+        58,
+        50,
+        894,
+        772
+      ],
+      "WarmupCalls": [
+        448,
+        381,
+        2430,
+        3723
+      ],
+      "WarmupMilliseconds": [
+        250.2193,
+        250.0295,
+        250.0225,
+        250.0181
+      ],
+      "Microseconds": [
+        [
+          428.9448275862069,
+          72.43275862068967,
+          72.25689655172413
+        ],
+        [
+          1515.408,
+          110.45,
+          109.48200000000001
+        ],
+        [
+          104.92091722595079,
+          56.245302013422815,
+          56.24843400447427
+        ],
+        [
+          108.46722797927461,
+          64.58406735751295,
+          64.93963730569948
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          68632,
+          68632,
+          68632
+        ]
+      ]
+    },
+    {
+      "Name": "literal-present-miss",
+      "Id": "aws-keys/full",
+      "Options": "Multiline, Compiled",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 4102,
+      "InputSha256": "1D97EF4ECC750293DEF65284749BFC9D40438A23AB3E7FFB4082D317FA48B5D1",
+      "Expected": 0,
+      "Iterations": [
+        119071,
+        4488,
+        332153,
+        82874
+      ],
+      "WarmupCalls": [
+        403392,
+        22206,
+        1004169,
+        327202
+      ],
+      "WarmupMilliseconds": [
+        250.0003,
+        250.0104,
+        250.0001,
+        250.0003
+      ],
+      "Microseconds": [
+        [
+          0.4158359298233827,
+          0.4226772261927757,
+          0.4239042252101687
+        ],
+        [
+          11.175490196078432,
+          11.177027629233512,
+          11.120766488413548
+        ],
+        [
+          0.15088076880232903,
+          0.15085276965735672,
+          0.15102829117906508
+        ],
+        [
+          0.7467372155320124,
+          0.6435480367787243,
+          0.8131537032121051
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          8232,
+          8232,
+          8232
+        ]
+      ]
+    },
+    {
+      "Name": "control",
+      "Id": "literal/sherlock-en",
+      "Options": "Compiled",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 899232,
+      "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+      "Expected": 513,
+      "Iterations": [
+        714,
+        716,
+        712,
+        146
+      ],
+      "WarmupCalls": [
+        2200,
+        3253,
+        3420,
+        393
+      ],
+      "WarmupMilliseconds": [
+        252.944,
+        250.0054,
+        250.0096,
+        250.1294
+      ],
+      "Microseconds": [
+        [
+          70.34481792717087,
+          69.91008403361344,
+          70.05182072829132
+        ],
+        [
+          70.23477653631285,
+          70.37527932960893,
+          70.17960893854749
+        ],
+        [
+          71.07837078651684,
+          70.8431179775281,
+          70.9751404494382
+        ],
+        [
+          364.1308219178082,
+          345.49931506849316,
+          366.0842465753425
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          1797352,
+          1797352,
+          1797352
+        ]
+      ]
+    }
+  ]
+}
