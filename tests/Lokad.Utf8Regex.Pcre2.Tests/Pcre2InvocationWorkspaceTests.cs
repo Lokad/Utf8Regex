@@ -259,20 +259,26 @@ public sealed class Pcre2InvocationWorkspaceTests
         {
             var regex = new Utf8Pcre2Regex("(*MARK:tag)(a+)\\1");
             Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
-            for (var i = 0; i < 64; i++) Assert.True(regex.IsMatch("xaaaa"u8));
-            // Warm one complete measurement batch as well as the initial calls,
-            // as in WarmedOneShotBacktrackingDoesNotAllocate. Otherwise runtime
-            // tier transitions can enter the supposed steady-state sample.
-            for (var i = 0; i < 256; i++) Assert.True(regex.IsMatch("xaaaa"u8));
-            var correct = true;
-            var before = GC.GetAllocatedBytesForCurrentThread();
-            for (var i = 0; i < 256; i++) correct &= regex.IsMatch("xaaaa"u8);
-            var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+            // Warm the same call site as the measured batch. A few hundred
+            // fast calls can finish before the runtime's delayed tiering starts.
+            var warmup = System.Diagnostics.Stopwatch.StartNew();
+            do { _ = MeasureVmBatch(regex, out var warmedCorrect); Assert.True(warmedCorrect); }
+            while (warmup.ElapsedMilliseconds < 250);
+            var allocated = MeasureVmBatch(regex, out var correct);
             Assert.True(correct);
             Assert.Equal(0, allocated);
             Assert.True(Utf8ExactStatePool.RetainedBytes <= Utf8ExactStatePool.MaximumRetainedBytes);
         }
         finally { Utf8ExactStatePool.Clear(); }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static long MeasureVmBatch(Utf8Pcre2Regex regex, out bool correct)
+    {
+        correct = true;
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var i = 0; i < 256; i++) correct &= regex.IsMatch("xaaaa"u8);
+        return GC.GetAllocatedBytesForCurrentThread() - before;
     }
 
     [Fact]
