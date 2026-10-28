@@ -2,7 +2,9 @@
 
 0.5.0 development targets .NET 10 and .NET 11. The available pinned SDK is
 11.0.100-rc.3.26522.148, a go-live release candidate, not GA. This work does not
-republish or modify 0.4.0 artifacts.
+republish or modify 0.4.0 artifacts. The complete 28 October refresh below
+passed the 60-minute target in **45m37s**; earlier incomplete attempts remain
+historical evidence.
 
 ## Public Count comparison
 
@@ -200,3 +202,59 @@ Next work follows the existing plan: largest absolute/relative public gaps by
 profile (AWS scans, Python mail Count, PCRE2 IPv4 Count), then one fresh complete
 VM cycle at a meaningful delivery boundary. No unchecked-access campaign,
 accounting framework, dormant engine or profile expansion was introduced.
+
+
+## Complete frozen refresh (28 October)
+
+[Phase receipt](subhour-refresh.json), [pilot and failure-path checks](refresh-workflow-validation.json),
+[mail pilot](refresh-pilot-mail.txt), [literal control](refresh-pilot-literal.txt),
+[complete measurements, logs and exact .NET 11 binaries (local archive)](../../../artifacts/experiments/net11-20261027/subhour-a40bda03.tar.gz).
+Archive SHA256: `333FF4E54FAED60D909F8DCF81D9091BAE35DD2B876837095ED9693D37BD7454`.
+
+Source a40bda03, the same Ubuntu/Xeon VM, .NET 11 RC3 and CPython 3.13.2.
+One fresh checkout, one Release solution build and one uninterrupted clock:
+2026-10-28 09:14:12Z–09:59:49Z, **2736.78 seconds (45m37s)**. All steps passed;
+no stopped rows, retries or later completion were subtracted. First-time SDK/
+interpreter provisioning and package qualification are outside this refresh.
+Snapshot processor fields retain their reported `X64`; the archive's environment
+record supplies the exact Xeon Platinum 8573C identity rather than rewriting them.
+
+| Phase | Seconds |
+| --- | ---: |
+| Build | 37.89 |
+| Both-runtime tests and disabled dynamic code | 174.03 |
+| Core, including ordinary/compiled and decode/predecoded lanes | 772.18 |
+| Python semantic checks, raw rows, paired CPython, lifecycle and scaling | 843.86 |
+| PCRE2 raw, paired native and scaling | 804.67 |
+| Finite-limit/live-token public costs and allocations | 101.43 |
+| Final consistency checks | 1.87 |
+
+The existing JSON snapshots and generated pages now carry this frozen run:
+89 unique Core cases / 178 rows, 90 paired Python operations, four Python
+lifecycle and seven scaling families (28 points), 126 PCRE2 rows and 16 scaling
+families. All applicable native pairs were refreshed; 25 exclusions remain.
+Uncertainty stays explicit: four unqualified Core rows; fifteen inconclusive and
+two unqualified Python rows; twelve inconclusive native-PCRE2 rows. No favorable
+confirmation campaign followed.
+
+Use [refresh-benchmarks.ps1](../../../refresh-benchmarks.ps1) for a complete cycle
+or selected phases; existing single-case commands remain the shortest iteration
+path. Benchmark children share the remaining budget. The VM's outer `timeout`
+also caps builds/tests; partial/failing runs cannot set `Complete=true`.
+There is no new package qualification or engine change in this workflow batch.
+
+The raw Python helper started with sixteen warmup calls even for second-long
+operations; it now starts with one and grows cheap batches. The pilot's whole
+mail command took 33.27s, with correct results and unchanged 7200 B/op; the short
+control took 2.74s and retained zero allocations. These are preparation checks,
+not a controlled engine-throughput comparison. **Historical raw Python
+`WarmupMilliseconds` also includes calibration/sampling because the stopwatch
+was not stopped.** That affects the old snapshots and this frozen run; do not
+sum those fields as isolated warmup costs. Raw samples and overall phase clocks
+remain valid. The reporting correction is separate and does not warrant another
+catalog refresh.
+
+The complete <=60-minute workflow gate is now met. Next work can return to the
+largest qualified public gaps, using selected cases and bounded comparisons.
+The earlier Windows/package PCRE2 hit-cost uncertainty remains a release-boundary
+check; this refresh does not resolve it or republish packages.

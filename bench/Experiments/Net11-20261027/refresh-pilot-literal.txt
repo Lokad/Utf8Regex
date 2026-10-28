@@ -1,0 +1,16 @@
+CaseId             : literal/search
+Pattern            : needle
+Options            : None
+Operation          : Search
+InputBytes         : 65542
+Iterations         : 5000
+Samples            : 5
+CheckoutCommit     : a40bda03c8f9
+BenchmarkAssembly  : 1.0.0+a40bda03c8f984cef1d884447cccc805d2ceaa01 sha256=3E49B918E619C9503D7F96305B2E3DA0088090BA2DBEA9EF81052E9F73E35C07
+CoreAssembly       : 0.5.0-dev+a40bda03c8f984cef1d884447cccc805d2ceaa01 sha256=88908D310EE129970BECD18F4C4A0632F9B4F151432F875EB68AFB12EE6F0B47
+PythonReAssembly   : 0.5.0-dev+a40bda03c8f984cef1d884447cccc805d2ceaa01 sha256=077CBA962A92865948E35B475BA86C77DE227085734391EBB8EB6EE0A3DFF5C7
+PythonRe           :      4.597 us/op | range=4.577..4.610 | alloc=0 B/op | warmup=19695 calls/444.4 ms
+DecodeThenRegex    :     23.859 us/op | range=23.059..27.294 | alloc=131358 B/op | warmup=1951 calls/382.7 ms
+PredecodedRegex    :      5.548 us/op | range=5.418..9.693 | alloc=208 B/op | warmup=15119 calls/441.5 ms
+CPythonDecode      :     27.893 us/op | range=27.760..28.098 | iterations=1760 | warmup=3503 calls/100.0 ms
+CPythonPredecoded  :     22.352 us/op | range=22.127..22.390 | iterations=2253 | warmup=4312 calls/100.0 ms

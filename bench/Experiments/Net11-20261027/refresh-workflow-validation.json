@@ -1,0 +1,97 @@
+{
+  "Source": "a40bda03c8f984cef1d884447cccc805d2ceaa01",
+  "Pilot": [
+    {
+      "ExitCode": 0,
+      "Case": "corpus/mail-email-count",
+      "Seconds": 33.2696478
+    },
+    {
+      "ExitCode": 0,
+      "Case": "literal/search",
+      "Seconds": 2.7416162
+    }
+  ],
+  "OldRawMail": {
+    "EffectiveIterations": 1,
+    "SampleMicroseconds": [
+      2851489.4,
+      2843110.7,
+      2893258.9,
+      2853559.6,
+      2845101
+    ],
+    "MedianMicroseconds": 2851489.4,
+    "MinimumMicroseconds": 2843110.7,
+    "MaximumMicroseconds": 2893258.9,
+    "MedianAllocatedBytes": 7200,
+    "WarmupCalls": 16,
+    "WarmupMilliseconds": 65725.2058
+  },
+  "WarmupCallsAfter": 1,
+  "ReportedMailWarmupMillisecondsAfter": 20438.7,
+  "MailAllocatedBytesAfter": 7200,
+  "LiteralAllocatedBytesAfter": 0,
+  "Interpretation": "Result checks passed and allocations agree with the old snapshot. This is preparation/whole-command evidence, not a controlled engine throughput comparison. Historical raw Python WarmupMilliseconds includes calibration and sampling because its stopwatch was not stopped; do not interpret those fields as isolated warmup costs. Raw timings are preserved.",
+  "FailurePathChecks": {
+    "verify": {
+      "Scope": "Selected phases",
+      "Complete": false,
+      "BudgetSeconds": 3600,
+      "ElapsedSeconds": 2.3628831,
+      "Steps": [
+        {
+          "Name": "verify-core",
+          "Status": "Passed",
+          "Seconds": 0.9394923,
+          "ExitCode": 0,
+          "Error": null
+        },
+        {
+          "Name": "verify-python",
+          "Status": "Passed",
+          "Seconds": 0.3967238,
+          "ExitCode": 0,
+          "Error": null
+        },
+        {
+          "Name": "verify-python-pairs",
+          "Status": "Failed",
+          "Seconds": 0.7685403,
+          "ExitCode": 1,
+          "Error": "verify-python-pairs failed with exit code 1. See D:\\code\\utf8regex\\tmp\\refresh60\\verify/verify-python-pairs.txt"
+        }
+      ]
+    },
+    "budget-probe": {
+      "Scope": "Selected phases",
+      "Complete": false,
+      "BudgetSeconds": 1,
+      "ElapsedSeconds": 0.2005513,
+      "Steps": [
+        {
+          "Name": "resources",
+          "Status": "Failed",
+          "Seconds": 0.024589,
+          "ExitCode": null,
+          "Error": "Refresh wall-time budget exhausted."
+        }
+      ]
+    },
+    "child-budget-probe": {
+      "Scope": "Selected phases",
+      "Complete": false,
+      "BudgetSeconds": 3,
+      "ElapsedSeconds": 2.4158985,
+      "Steps": [
+        {
+          "Name": "resources",
+          "Status": "Failed",
+          "Seconds": 2.324874,
+          "ExitCode": 124,
+          "Error": "resources failed with exit code 124. See D:\\code\\utf8regex\\tmp\\refresh60\\child-budget-probe/resources.txt"
+        }
+      ]
+    }
+  }
+}

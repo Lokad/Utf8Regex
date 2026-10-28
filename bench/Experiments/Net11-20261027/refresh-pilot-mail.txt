@@ -1,0 +1,16 @@
+CaseId             : corpus/mail-email-count
+Pattern            : [\w\.+-]+@[\w\.-]+\.[\w\.-]+
+Options            : None
+Operation          : Count
+InputBytes         : 6839410
+Iterations         : 2
+Samples            : 5
+CheckoutCommit     : a40bda03c8f9
+BenchmarkAssembly  : 1.0.0+a40bda03c8f984cef1d884447cccc805d2ceaa01 sha256=3E49B918E619C9503D7F96305B2E3DA0088090BA2DBEA9EF81052E9F73E35C07
+CoreAssembly       : 0.5.0-dev+a40bda03c8f984cef1d884447cccc805d2ceaa01 sha256=88908D310EE129970BECD18F4C4A0632F9B4F151432F875EB68AFB12EE6F0B47
+PythonReAssembly   : 0.5.0-dev+a40bda03c8f984cef1d884447cccc805d2ceaa01 sha256=077CBA962A92865948E35B475BA86C77DE227085734391EBB8EB6EE0A3DFF5C7
+PythonRe           : 2536205.300 us/op | range=2533059.000..2541341.300 | alloc=7200 B/op | warmup=1 calls/20438.7 ms
+DecodeThenRegex    :  24619.300 us/op | range=23808.100..35044.467 | alloc=12389328 B/op | warmup=4 calls/634.9 ms
+PredecodedRegex    :    487.247 us/op | range=486.159..563.477 | alloc=0 B/op | warmup=205 calls/474.5 ms
+CPythonDecode      : 367810.631 us/op | range=366362.238..368842.143 | iterations=1 | warmup=1 calls/366.4 ms
+CPythonPredecoded  : 358346.097 us/op | range=356633.207..403582.800 | iterations=1 | warmup=1 calls/357.0 ms
