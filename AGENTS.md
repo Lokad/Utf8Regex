@@ -51,7 +51,7 @@ normal runs do not shut down servers or kill other benchmark hosts.
 ./bench.ps1 -SkipBuild -CommandArgs '--measure-case-deep','lokad/imports/module-imports','20'
 ```
 
-Use `./refresh-benchmarks.ps1 -Phase Resources,Verify` for selected refresh phases.
+Use `./refresh-benchmarks.ps1 -Phase Resources` for a selected refresh phase.
 The default runs one Release build, both-runtime tests and the complete .NET 11
 catalogs, lifecycle/scaling, paired comparators and resource checks, reusing those
 binaries. Phase logs and `refresh.json` go to `artifacts/benchmark-refresh/`.
@@ -59,6 +59,8 @@ Only a completed full run counts toward the 60-minute VM target. Benchmark child
 share the remaining budget; on Linux wrap the runner in
 `timeout --kill-after=5s 3600s pwsh -NoProfile -File ./refresh-benchmarks.ps1`
 to hard-cap builds/tests too. Set PATH and UTF8REGEX_CPYTHON before starting.
+The Verify phase requires matching frozen paired evidence; it deliberately rejects
+old comparisons after source or binaries change.
 
 - Compare equal-result public operations against both decode-then-Regex and
   predecoded Regex. Include finite-limit costs and allocations where relevant.

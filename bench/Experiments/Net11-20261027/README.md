@@ -261,3 +261,8 @@ The complete <=60-minute workflow gate is now met. Next work can return to the
 largest qualified public gaps, using selected cases and bounded comparisons.
 The earlier Windows/package PCRE2 hit-cost uncertainty remains a release-boundary
 check; this refresh does not resolve it or republish packages.
+
+Final workflow/data/reporting CI 40669119266 passed at 9adb0e84 on Windows
+and Linux, including both runtimes and disabled dynamic code. Published 0.4.0
+package and symbol hashes remain unchanged. Later receipt/AGENTS edits do not
+change the tested executable source or snapshots.
