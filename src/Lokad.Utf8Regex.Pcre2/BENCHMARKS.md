@@ -13,21 +13,21 @@ Enumeration and MatchMany consume byte ranges. Managed public results also suppl
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `4A8AB4F9C702B4D1A7605165524CBCD0582486DEAADAA32406BE1DB1C9E562D5`
-- Latest managed row measurement: `2026-10-28T09:56:44.1493932+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-10-28T09:56:44.1493932+00:00`
+- Snapshot SHA-256: `D9DE0D3835C0D072E9B274D02D2750EF31CF7908379CF16928B4498B754DEC6E`
+- Latest managed row measurement: `2026-10-28T11:52:05.8744738+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-10-28T11:52:05.8744738+00:00`
 - Operation rows: `126` across `10` sections
-- Comparable rows at or below the decode-then-.NET median: `32/60`
+- Comparable rows at or below the decode-then-.NET median: `33/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `101/126`
-- Comparator Status: `66` managed faster, `3` equivalent, `20` native faster, `12` inconclusive, `0` unqualified, `25` excluded
+- Comparator Status: `66` managed faster, `3` equivalent, `19` native faster, `13` inconclusive, `0` unqualified, `25` excluded
 - Rows with paired qualification evidence: `101/101`
 - Qualification processor sets: `single-least-contended-allowed-processor 0x1`, `single-least-contended-allowed-processor 0x10`, `single-least-contended-allowed-processor 0x2`, `single-least-contended-allowed-processor 0x20`, `single-least-contended-allowed-processor 0x4`, `single-least-contended-allowed-processor 0x40`, `single-least-contended-allowed-processor 0x8`, `single-least-contended-allowed-processor 0x80`
 - Scaling families: `16`
-- Managed/comparator measurement environments represented: `1/1`
+- Managed/comparator measurement environments represented: `2/2`
 
-Managed rows were measured from source `a40bda03c8f9` on .NET 11.0.0-rc.3.26522.148, Ubuntu 24.04.4 LTS, X64; Tiered PGO `runtime-default`.
+Managed rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.
 
-PCRE.NET / PCRE2 NFA rows were measured from source `a40bda03c8f9` on .NET 11.0.0-rc.3.26522.148, Ubuntu 24.04.4 LTS, X64; Tiered PGO `runtime-default`, tracked dirty `False`, untracked files `False`.
+Comparator rows span more than one measurement environment. Consult each row's `PcreNetNativeEnvironment` metadata before comparing small differences.
 
 NuGet package SHA-512: `Zu3NJGiU1S7tHHaW4UdEK1WZ9LFYqPI+6Y0eiL6YPHVOHSoWjbq0x5j3uN9895DoIgO5XI/50S6dj2ZmRHirNA==`.
 
@@ -66,7 +66,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `common/email-miss` | **Native faster** | 35 B | 1.876 us | 0.356 us | 5.26x | 5.21–5.38x | +1.521 us | 9 pairs; 37/39 ms; 19,457/110,568 ops/lane; IQR 1.027/1.014 | `Pcre2Slice` | 1.957 us | 0.447 us | 0.473 us | 3.97x | 5,856 B | 0 B |
 | `common/ip-match` | **Native faster** | 15 B | 1.065 us | 0.288 us | 3.70x | 3.64–3.78x | +0.777 us | 9 pairs; 36/40 ms; 33,914/138,753 ops/lane; IQR 1.005/1.013 | `Pcre2Slice` | 1.173 us | 0.241 us | 0.266 us | 4.00x | 3,568 B | 0 B |
 | `common/ip-miss` | **Native faster** | 15 B | 1.100 us | 0.316 us | 3.51x | 3.47–3.59x | +0.783 us | 9 pairs; 35/39 ms; 31,488/122,281 ops/lane; IQR 1.023/1.016 | `Pcre2Slice` | 1.133 us | 0.257 us | 0.279 us | 3.94x | 3,568 B | 0 B |
-| `common/one-node-backtracking` | **Native faster** | 52 B | 34.607 us | 0.080 us | 432.70x | 426.14–437.28x | +34.527 us | 9 pairs; 38/39 ms; 1,084/487,329 ops/lane; IQR 1.003/1.020 | `Pcre2Slice` | 37.037 us | 0.955 us | 0.987 us | 35.08x | 3,552 B | 0 B |
+| `common/one-node-backtracking` | **Inconclusive** | 52 B | 0.164 us | 0.076 us | 2.15x | 2.05–2.21x | +0.088 us | 9 pairs; 40/38 ms; 241,580/499,978 ops/lane; IQR 1.002/1.036 | `Pcre2Slice` | 0.188 us | 0.619 us | 0.660 us | 0.25x | 0 B | 0 B |
 | `common/uri-match` | **Managed faster** | 46 B | 0.069 us | 0.198 us | 0.35x | 0.35–0.35x | -0.128 us | 9 pairs; 40/40 ms; 581,587/204,488 ops/lane; IQR 1.002/1.012 | `Pcre2Backtracking` | 3.092 us | 0.309 us | 0.349 us | 0.20x | 0 B | 0 B |
 | `common/uri-miss` | **Managed faster** | 19 B | 0.134 us | 0.613 us | 0.22x | 0.22–0.22x | -0.478 us | 9 pairs; 40/40 ms; 299,637/65,523 ops/lane; IQR 1.005/1.007 | `Pcre2Backtracking` | 5.992 us | 0.237 us | 0.261 us | 0.51x | 0 B | 0 B |
 | `industry/boostdocs-credit-card-match` | **Managed faster** | 18 B | 0.033 us | 0.153 us | 0.22x | 0.22–0.22x | -0.120 us | 9 pairs; 39/40 ms; 1,159,792/259,211 ops/lane; IQR 1.020/1.009 | `Pcre2Backtracking` | 1.546 us | 0.184 us | 0.203 us | 0.16x | 0 B | 0 B |

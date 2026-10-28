@@ -1,0 +1,389 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 9.8383926,
+  "LaneNames": [
+    "Baseline",
+    "Candidate",
+    "PredecodedRegex",
+    "DecodeThenRegex"
+  ],
+  "Baseline": {
+    "Version": "0.5.0-dev\u002Ba40bda03c8f984cef1d884447cccc805d2ceaa01",
+    "Sha256": "88908D310EE129970BECD18F4C4A0632F9B4F151432F875EB68AFB12EE6F0B47"
+  },
+  "Candidate": {
+    "Version": "0.5.0-dev\u002B3b961b7352825bfe4e763ce2b13f573cfa8f4b37",
+    "Sha256": "5EE1A02387E3E832F904E0E3EB079E49A0BE6B5FA565AE8CFB6BC2AFB61104FC"
+  },
+  "BaselinePcre2": {
+    "Version": "0.5.0-dev\u002Ba40bda03c8f984cef1d884447cccc805d2ceaa01",
+    "Sha256": "7B5DF8E5C19833D4C50810E0256274CB53A0986E7045ED096F8D3EB28416BD3B"
+  },
+  "CandidatePcre2": {
+    "Version": "0.5.0-dev\u002B3b961b7352825bfe4e763ce2b13f573cfa8f4b37",
+    "Sha256": "1DADF917200CD7A2163AE22751B999EA1CEC3A56BE143A51D82DC27FEFA5160D"
+  },
+  "Rows": [
+    {
+      "Name": "miss",
+      "Id": "common/one-node-backtracking",
+      "Options": "Pcre2 defaults; .NET comparator Compiled",
+      "Profile": "Pcre2",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 52,
+      "InputSha256": "362407A8BDDF0524B0E9A29EC6F29CFFDC8F5A8151872BFB074BDD9698DACDB5",
+      "Expected": 0,
+      "Iterations": [
+        1362,
+        297595,
+        547162,
+        230356
+      ],
+      "WarmupCalls": [
+        3081,
+        521240,
+        1163781,
+        738061
+      ],
+      "WarmupMilliseconds": [
+        250.0454,
+        250.0001,
+        250.0002,
+        250.0003
+      ],
+      "Microseconds": [
+        [
+          35.198898678414096,
+          35.256534508076356,
+          34.818575624082236
+        ],
+        [
+          0.16851593608763588,
+          0.1683069271997177,
+          0.1664439926746081
+        ],
+        [
+          0.09283027695636759,
+          0.09219847138507425,
+          0.09064445264839299
+        ],
+        [
+          0.3022248172394033,
+          0.13595651947420515,
+          0.1285189011790446
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          128,
+          128,
+          128
+        ]
+      ]
+    },
+    {
+      "Name": "finite-token",
+      "Id": "common/one-node-backtracking",
+      "Options": "Pcre2 defaults; .NET comparator Compiled",
+      "Profile": "Pcre2",
+      "FiniteAndLiveToken": true,
+      "InputBytes": 52,
+      "InputSha256": "362407A8BDDF0524B0E9A29EC6F29CFFDC8F5A8151872BFB074BDD9698DACDB5",
+      "Expected": 0,
+      "Iterations": [
+        1251,
+        214198,
+        572795,
+        387336
+      ],
+      "WarmupCalls": [
+        6375,
+        561259,
+        1196440,
+        1006877
+      ],
+      "WarmupMilliseconds": [
+        250.0206,
+        250.0004,
+        250.0001,
+        250.0003
+      ],
+      "Microseconds": [
+        [
+          38.27418065547562,
+          38.37106314948042,
+          38.43005595523581
+        ],
+        [
+          0.23557269442291714,
+          0.2518048721276576,
+          0.23676178115575308
+        ],
+        [
+          0.09408165224905944,
+          0.09445805218271808,
+          0.09397096692533978
+        ],
+        [
+          0.12834670673523763,
+          0.12800669186442779,
+          0.12952656091868558
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3664,
+          3664,
+          3664
+        ],
+        [
+          112,
+          112,
+          112
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          128,
+          128,
+          128
+        ]
+      ]
+    },
+    {
+      "Name": "present-miss",
+      "Id": "common/one-node-backtracking",
+      "Options": "Pcre2 defaults; .NET comparator Compiled",
+      "Profile": "Pcre2",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 53,
+      "InputSha256": "BEAEE95D130695EE6E4C5450EC1F3F7C33FEFF2296113B42810C0B631E3A48AA",
+      "Expected": 0,
+      "Iterations": [
+        1239,
+        291,
+        511777,
+        360466
+      ],
+      "WarmupCalls": [
+        6373,
+        1453,
+        1158737,
+        969931
+      ],
+      "WarmupMilliseconds": [
+        250.0345,
+        250.0224,
+        250.0001,
+        250.0001
+      ],
+      "Microseconds": [
+        [
+          37.72687651331719,
+          37.427441485068606,
+          37.56408393866021
+        ],
+        [
+          37.356013745704466,
+          37.69862542955326,
+          37.47422680412371
+        ],
+        [
+          0.10034839392938721,
+          0.09964418096162979,
+          0.09917249114360356
+        ],
+        [
+          0.13662952955341143,
+          0.13624142082748442,
+          0.1393842969933364
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          128,
+          128,
+          128
+        ]
+      ]
+    },
+    {
+      "Name": "hit",
+      "Id": "common/one-node-backtracking",
+      "Options": "Pcre2 defaults; .NET comparator Compiled",
+      "Profile": "Pcre2",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 13,
+      "InputSha256": "657F2874DE8F0899DEE1616BF79B6FF044FF9FFF5FDBDF9E9C225418FA4DB1C7",
+      "Expected": 1,
+      "Iterations": [
+        45405,
+        43348,
+        985775,
+        561296
+      ],
+      "WarmupCalls": [
+        188636,
+        194718,
+        1656853,
+        1316753
+      ],
+      "WarmupMilliseconds": [
+        250.0013,
+        250.0008,
+        250.0001,
+        250.0001
+      ],
+      "Microseconds": [
+        [
+          1.1932980949234666,
+          1.167670961347869,
+          1.1452923686818632
+        ],
+        [
+          1.2471878748731198,
+          1.244260404170896,
+          1.2002583740887698
+        ],
+        [
+          0.05211807968349775,
+          0.05204524359006873,
+          0.05272034693515255
+        ],
+        [
+          0.0849411005957641,
+          0.08697496508081297,
+          0.08773677346711894
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          48,
+          48,
+          48
+        ]
+      ]
+    },
+    {
+      "Name": "control",
+      "Id": "literal/sherlock-en",
+      "Options": "Pcre2 defaults; .NET comparator Compiled",
+      "Profile": "Pcre2",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 899232,
+      "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+      "Expected": 1,
+      "Iterations": [
+        1653,
+        1662,
+        867562,
+        151
+      ],
+      "WarmupCalls": [
+        7759,
+        7875,
+        1500428,
+        627
+      ],
+      "WarmupMilliseconds": [
+        250.0221,
+        250.0172,
+        250.0002,
+        250.2208
+      ],
+      "Microseconds": [
+        [
+          30.5546279491833,
+          30.290865093768904,
+          30.569328493647912
+        ],
+        [
+          30.298074608904933,
+          30.68580024067389,
+          29.083935018050543
+        ],
+        [
+          0.05750989554637018,
+          0.05785626848571053,
+          0.05730714346640355
+        ],
+        [
+          363.2026490066225,
+          341.98807947019867,
+          337.86291390728474
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          1797352,
+          1797352,
+          1797352
+        ]
+      ]
+    }
+  ]
+}

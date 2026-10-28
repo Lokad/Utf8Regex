@@ -1,0 +1,4 @@
+Qualification CPU set: least-contended allowed processor (0x10; Linux efficiency class unknown)
+Initial paired lane: Utf8Pcre2
+pcre2-managed-compatible-ismatch: Inconclusive; R=2.153 [2.047, 2.210]; managed=0.164 us; comparator=0.076 us
+Qualified PCRE.NET / PCRE2 NFA benchmark case: common/one-node-backtracking

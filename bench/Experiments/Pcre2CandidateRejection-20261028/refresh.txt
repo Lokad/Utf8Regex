@@ -1,0 +1,21 @@
+ComparisonSample;Index=0;Lane=Utf8Pcre2;Iterations=293851;ElapsedMicroseconds=50538.500
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=266289;ElapsedMicroseconds=49850.500
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=79740;ElapsedMicroseconds=49625.500
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=75632;ElapsedMicroseconds=49890.500
+ComparisonSample;Index=1;Lane=Utf8Pcre2;Iterations=293851;ElapsedMicroseconds=50785.600
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=266289;ElapsedMicroseconds=49904.600
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=79740;ElapsedMicroseconds=49344.800
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=75632;ElapsedMicroseconds=49980.000
+ComparisonSample;Index=2;Lane=Utf8Pcre2;Iterations=293851;ElapsedMicroseconds=50994.800
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=266289;ElapsedMicroseconds=50036.800
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=79740;ElapsedMicroseconds=49819.000
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=75632;ElapsedMicroseconds=49836.800
+ComparisonSample;Index=3;Lane=Utf8Pcre2;Iterations=293851;ElapsedMicroseconds=50709.300
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=266289;ElapsedMicroseconds=50167.700
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=79740;ElapsedMicroseconds=49344.600
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=75632;ElapsedMicroseconds=50080.900
+ComparisonSample;Index=4;Lane=Utf8Pcre2;Iterations=293851;ElapsedMicroseconds=50760.700
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=266289;ElapsedMicroseconds=50057.200
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=79740;ElapsedMicroseconds=49321.500
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=75632;ElapsedMicroseconds=49539.300
+Updated PCRE2 benchmark case: common/one-node-backtracking
