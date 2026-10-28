@@ -1932,6 +1932,7 @@ internal static partial class BenchmarkInspectReporter
     {
         writer.WriteLine();
         writer.WriteLine("Predecoded .NET is the primary comparator for execution time. `.NET + decode` is a secondary end-to-end indicator. `Ratio` is Utf8Regex / .NET predecoded using the matching ordinary or compiled lanes; lower is better. Tables sort by decreasing ratio.");
+        writer.WriteLine("Ratios describe recorded medians; qualification verdicts and unqualified rows are recorded separately in [README.Parity.json](README.Parity.json).");
     }
 
     private static IEnumerable<ReadmeBenchmarkSection> GetReadmeTargetsForCase(string caseId)

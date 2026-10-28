@@ -1532,6 +1532,7 @@ internal static partial class PythonReBenchmarkReporter
                 warmupBatchSize = Math.Min(warmupBatchSize * 2, Math.Min(iterations, 16));
         }
         while (warmup.ElapsedMilliseconds < 100 && warmupCalls < 65_536);
+        warmup.Stop();
 
         // Calibrate the retained-result loop independently. Consume results
         // after timing, as in the producer and CPython batch implementations.
@@ -1595,6 +1596,7 @@ internal static partial class PythonReBenchmarkReporter
         }
         while ((warmup.ElapsedMilliseconds < 100 || warmupCalls < minimumWarmupCalls) &&
                warmupCalls < 65_536);
+        warmup.Stop();
 
         var microseconds = new double[samples];
         var allocations = new long[samples];
@@ -1643,6 +1645,7 @@ internal static partial class PythonReBenchmarkReporter
         }
         while ((warmup.ElapsedMilliseconds < 100 || warmupCalls < minimumWarmupCalls) &&
                warmupCalls < maximumWarmupCalls);
+        warmup.Stop();
 
         var microseconds = new double[samples];
         var allocations = new long[samples];

@@ -252,7 +252,10 @@ not a controlled engine-throughput comparison. **Historical raw Python
 was not stopped.** That affects the old snapshots and this frozen run; do not
 sum those fields as isolated warmup costs. Raw samples and overall phase clocks
 remain valid. The reporting correction is separate and does not warrant another
-catalog refresh.
+catalog refresh. It stops the three raw/diagnostic helper stopwatches immediately
+after their warmup loops. A [focused readonly literal check](refresh-warmup-field-check.txt)
+reported 100.0–100.2 ms for the three managed warmups, with valid results and
+unchanged allocations. README ratios also link the separate qualification verdicts.
 
 The complete <=60-minute workflow gate is now met. Next work can return to the
 largest qualified public gaps, using selected cases and bounded comparisons.
