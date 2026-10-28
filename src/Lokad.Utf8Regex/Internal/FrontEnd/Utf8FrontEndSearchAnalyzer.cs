@@ -536,6 +536,9 @@ internal static class Utf8FrontEndSearchAnalyzer
                        new Utf8SearchFactData
                        {
                            AlternateLiteralsUtf8 = alternateLiterals,
+                           // Covering prefixes prove possible starts, never
+                           // complete matches. Let the scalar VM verify them.
+                           CanGuideFallbackStarts = CanGuideFallbackStarts(semanticRegex.ExecutionOptions),
                            ExactRequiredLength = exactRequiredLength,
                            MaxPossibleLength = maxPossibleLength,
                        });
@@ -552,7 +555,9 @@ internal static class Utf8FrontEndSearchAnalyzer
                            simplePatternPlan.IgnoreCase ? Utf8SearchKind.AsciiFoldedByteLiteral : Utf8SearchKind.ExactAsciiLiteral,
                            new Utf8SearchFactData
                            {
-                           LiteralUtf8 = EncodeLiteral(literalPrefix),
+                               LiteralUtf8 = EncodeLiteral(literalPrefix),
+                               CanGuideFallbackStarts = !simplePatternPlan.IgnoreCase &&
+                                   CanGuideFallbackStarts(semanticRegex.ExecutionOptions),
                                ExactRequiredLength = exactRequiredLength,
                                MaxPossibleLength = maxPossibleLength,
                            });
