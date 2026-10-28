@@ -1,0 +1,1 @@
+PCRE2 qualification consistency passed: 101 paired rows, 79 fast-row repeatability checks, maximum IQR spread 1.175, balanced alternating lane orders, current derived Status, 3 required sentinels.

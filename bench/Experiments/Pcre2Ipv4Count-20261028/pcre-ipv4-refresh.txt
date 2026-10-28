@@ -1,0 +1,21 @@
+ComparisonSample;Index=0;Lane=Utf8Pcre2;Iterations=10;ElapsedMicroseconds=47640.500
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=19;ElapsedMicroseconds=50385.500
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=6;ElapsedMicroseconds=50567.800
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=4;ElapsedMicroseconds=63958.000
+ComparisonSample;Index=1;Lane=Utf8Pcre2;Iterations=10;ElapsedMicroseconds=47667.800
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=19;ElapsedMicroseconds=50613.900
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=6;ElapsedMicroseconds=50627.000
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=4;ElapsedMicroseconds=101806.400
+ComparisonSample;Index=2;Lane=Utf8Pcre2;Iterations=10;ElapsedMicroseconds=47810.900
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=19;ElapsedMicroseconds=50425.700
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=6;ElapsedMicroseconds=50746.400
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=4;ElapsedMicroseconds=127379.500
+ComparisonSample;Index=3;Lane=Utf8Pcre2;Iterations=10;ElapsedMicroseconds=47848.400
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=19;ElapsedMicroseconds=50617.000
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=6;ElapsedMicroseconds=50434.000
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=4;ElapsedMicroseconds=123216.400
+ComparisonSample;Index=4;Lane=Utf8Pcre2;Iterations=10;ElapsedMicroseconds=47843.900
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=19;ElapsedMicroseconds=50474.700
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=6;ElapsedMicroseconds=50683.600
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=4;ElapsedMicroseconds=126890.500
+Updated PCRE2 benchmark case: industry/mariomka-ip-count

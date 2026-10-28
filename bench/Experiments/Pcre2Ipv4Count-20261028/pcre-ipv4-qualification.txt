@@ -1,0 +1,4 @@
+Qualification CPU set: least-contended allowed processor (0x8; Linux efficiency class unknown)
+Initial paired lane: Utf8Pcre2
+pcre2-managed-compatible-count: Managed faster; R=0.221 [0.219, 0.223]; managed=4835.688 us; comparator=21857.550 us
+Qualified PCRE.NET / PCRE2 NFA benchmark case: industry/mariomka-ip-count

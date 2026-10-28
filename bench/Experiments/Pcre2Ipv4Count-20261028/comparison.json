@@ -1,0 +1,605 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 29.5622051,
+  "LaneNames": [
+    "Baseline",
+    "Candidate",
+    "PredecodedRegex",
+    "DecodeThenRegex"
+  ],
+  "Baseline": {
+    "Version": "0.5.0-dev\u002B75ef57599721a63d2bdbee7e4cd3f3f322d44d98",
+    "Sha256": "C0CFAAFE7A66AC3F9D9C21FA25024638A633A26FB4CCA2C4388262ABCE1D2F85"
+  },
+  "Candidate": {
+    "Version": "0.5.0-dev\u002Bbcfc318cf9c01089e3c5d564d709841438a55ef1",
+    "Sha256": "88DCB8D1F78506E72D3204E3BB26968C029BCF23406344466320C13096B0FC7A"
+  },
+  "BaselinePcre2": {
+    "Version": "0.5.0-dev\u002B75ef57599721a63d2bdbee7e4cd3f3f322d44d98",
+    "Sha256": "C2C717BCDA56298AF6FB219B8D41D5023F6138E9C961CA943EB72152A0BFF358"
+  },
+  "CandidatePcre2": {
+    "Version": "0.5.0-dev\u002Bbcfc318cf9c01089e3c5d564d709841438a55ef1",
+    "Sha256": "B08452B2EFB052B02929F6D88BBFD254042AC56A9489777B3BFAC3AD2E5EEA37"
+  },
+  "Rows": [
+    {
+      "Name": "pcre-full",
+      "Id": "industry/mariomka-ip-count",
+      "Options": "Pcre2 defaults; .NET comparator Compiled",
+      "Profile": "Pcre2",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 6839410,
+      "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+      "Expected": 5,
+      "Iterations": [
+        1,
+        11,
+        15,
+        2
+      ],
+      "WarmupCalls": [
+        1,
+        91,
+        143,
+        35
+      ],
+      "WarmupMilliseconds": [
+        1080.0153,
+        501.2818,
+        502.6204,
+        503.5637
+      ],
+      "Microseconds": [
+        [
+          1080124,
+          1080020,
+          1080266.4
+        ],
+        [
+          4790.181818181818,
+          4739.400000000001,
+          4756.781818181818
+        ],
+        [
+          3536.2,
+          3517.673333333333,
+          3520.76
+        ],
+        [
+          26067.15,
+          25309.05,
+          26367.75
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3568,
+          3568,
+          3568
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          12389328,
+          12389328,
+          12389328
+        ]
+      ]
+    },
+    {
+      "Name": "pcre-finite",
+      "Id": "industry/mariomka-ip-count",
+      "Options": "Pcre2 defaults; .NET comparator Compiled",
+      "Profile": "Pcre2",
+      "FiniteAndLiveToken": true,
+      "InputBytes": 32767,
+      "InputSha256": "F7C6ECE5F77EEC78772C9EC3DB891FA06456F30166FFD4693C03117F689E17E6",
+      "Expected": 0,
+      "Iterations": [
+        9,
+        6078,
+        18717,
+        4419
+      ],
+      "WarmupCalls": [
+        80,
+        55995,
+        178856,
+        38854
+      ],
+      "WarmupMilliseconds": [
+        500.807,
+        500.0032,
+        500.0009,
+        500.0061
+      ],
+      "Microseconds": [
+        [
+          5940.533333333333,
+          5929.8,
+          5899.711111111112
+        ],
+        [
+          8.158983218163868,
+          8.231474169134584,
+          8.066107272128988
+        ],
+        [
+          2.688913821659454,
+          2.6918149276059196,
+          2.6715659560827056
+        ],
+        [
+          13.194614166100928,
+          11.18071961982349,
+          13.970264765784114
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3680,
+          3680,
+          3680
+        ],
+        [
+          112,
+          112,
+          112
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          63880,
+          63880,
+          63880
+        ]
+      ]
+    },
+    {
+      "Name": "pcre-unicode",
+      "Id": "industry/mariomka-ip-count",
+      "Options": "Pcre2 defaults; .NET comparator Compiled",
+      "Profile": "Pcre2",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 2688,
+      "InputSha256": "3A252DBFEEB20893C0021889BEDB961552A407E2E91A28FF76B0C4156F77B894",
+      "Expected": 128,
+      "Iterations": [
+        474,
+        10879,
+        10195,
+        6523
+      ],
+      "WarmupCalls": [
+        4731,
+        106113,
+        99462,
+        63712
+      ],
+      "WarmupMilliseconds": [
+        500.0775,
+        500.0016,
+        500.0019,
+        500.0006
+      ],
+      "Microseconds": [
+        [
+          104.62573839662447,
+          104.72616033755274,
+          104.31603375527425
+        ],
+        [
+          4.600229800533137,
+          4.512593069215921,
+          4.543965437999816
+        ],
+        [
+          5.053035801863659,
+          5.054232466895537,
+          5.04505149583129
+        ],
+        [
+          7.698466963053809,
+          7.6788134294036485,
+          7.692948030047524
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3568,
+          3568,
+          3568
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          4632,
+          4632,
+          4632
+        ]
+      ]
+    },
+    {
+      "Name": "pcre-miss",
+      "Id": "industry/mariomka-ip-count",
+      "Options": "Pcre2 defaults; .NET comparator Compiled",
+      "Profile": "Pcre2",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 4098,
+      "InputSha256": "E689D8F883B1B55818B55E9952DAA115B47F2538B2064C5A9D8D6706BBDD7907",
+      "Expected": 0,
+      "Iterations": [
+        73,
+        1148,
+        566901,
+        47197
+      ],
+      "WarmupCalls": [
+        722,
+        11425,
+        2729313,
+        383685
+      ],
+      "WarmupMilliseconds": [
+        500.056,
+        500.0267,
+        500.0001,
+        500.001
+      ],
+      "Microseconds": [
+        [
+          694.2904109589041,
+          695.2972602739727,
+          694.4356164383562
+        ],
+        [
+          43.73728222996516,
+          43.82343205574913,
+          43.75078397212544
+        ],
+        [
+          0.10026706603092957,
+          0.09789663450937643,
+          0.10062427125723891
+        ],
+        [
+          1.3781490348962857,
+          1.0865139733457634,
+          1.350996885395258
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3568,
+          3568,
+          3568
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          8216,
+          8216,
+          8216
+        ]
+      ]
+    },
+    {
+      "Name": "pcre-captured-control",
+      "Id": "industry/mariomka-ip-count",
+      "Options": "Pcre2 defaults; .NET comparator Compiled",
+      "Profile": "Pcre2",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 2688,
+      "InputSha256": "3A252DBFEEB20893C0021889BEDB961552A407E2E91A28FF76B0C4156F77B894",
+      "Expected": 128,
+      "Iterations": [
+        451,
+        434,
+        7994,
+        5580
+      ],
+      "WarmupCalls": [
+        4134,
+        2673,
+        78169,
+        55118
+      ],
+      "WarmupMilliseconds": [
+        500.0112,
+        500.0177,
+        500.0035,
+        500.0041
+      ],
+      "Microseconds": [
+        [
+          109.82128603104213,
+          111.05454545454545,
+          110.19223946784922
+        ],
+        [
+          113.14400921658986,
+          109.82511520737327,
+          111.77073732718894
+        ],
+        [
+          6.336464848636477,
+          6.328446334751063,
+          6.321641230923193
+        ],
+        [
+          8.961863799283154,
+          8.956487455197133,
+          8.957455197132616
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          5760,
+          5760,
+          5760
+        ],
+        [
+          5760,
+          5760,
+          5760
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          4632,
+          4632,
+          4632
+        ]
+      ]
+    },
+    {
+      "Name": "pcre-control",
+      "Id": "literal/sherlock-en",
+      "Options": "Pcre2 defaults; .NET comparator Compiled",
+      "Profile": "Pcre2",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 899232,
+      "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+      "Expected": 513,
+      "Iterations": [
+        244,
+        242,
+        629,
+        90
+      ],
+      "WarmupCalls": [
+        2150,
+        2204,
+        6254,
+        875
+      ],
+      "WarmupMilliseconds": [
+        500.0403,
+        500.1126,
+        500.0278,
+        500.2707
+      ],
+      "Microseconds": [
+        [
+          210.20696721311475,
+          210.1938524590164,
+          209.3200819672131
+        ],
+        [
+          205.8702479338843,
+          206.1574380165289,
+          210.5260330578512
+        ],
+        [
+          81.13624801271861,
+          81.41399046104928,
+          81.23656597774246
+        ],
+        [
+          669.6622222222222,
+          467.5433333333333,
+          677.5955555555556
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          1797352,
+          1797352,
+          1797352
+        ]
+      ]
+    },
+    {
+      "Name": "core-unlimited-control",
+      "Id": "industry/mariomka-ip-count",
+      "Options": "Compiled",
+      "Profile": "Core",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 6839410,
+      "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+      "Expected": 5,
+      "Iterations": [
+        19,
+        19,
+        14,
+        5
+      ],
+      "WarmupCalls": [
+        151,
+        155,
+        139,
+        43
+      ],
+      "WarmupMilliseconds": [
+        500.7803,
+        500.8909,
+        500.9272,
+        501.7861
+      ],
+      "Microseconds": [
+        [
+          2651.1473684210528,
+          2648.1052631578946,
+          2652.726315789474
+        ],
+        [
+          2648.2000000000003,
+          2667.863157894737,
+          2654.168421052632
+        ],
+        [
+          3663.4,
+          3665.6071428571427,
+          3658.5071428571428
+        ],
+        [
+          11539.92,
+          10997.28,
+          12039.279999999999
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          12389328,
+          12389328,
+          12389328
+        ]
+      ]
+    },
+    {
+      "Name": "core-finite",
+      "Id": "industry/mariomka-ip-count",
+      "Options": "Compiled",
+      "Profile": "Core",
+      "FiniteAndLiveToken": true,
+      "InputBytes": 32767,
+      "InputSha256": "F7C6ECE5F77EEC78772C9EC3DB891FA06456F30166FFD4693C03117F689E17E6",
+      "Expected": 0,
+      "Iterations": [
+        9,
+        7274,
+        18806,
+        4541
+      ],
+      "WarmupCalls": [
+        85,
+        71507,
+        176206,
+        42063
+      ],
+      "WarmupMilliseconds": [
+        504.9975,
+        500.0011,
+        500.0017,
+        500.0025
+      ],
+      "Microseconds": [
+        [
+          5930.288888888888,
+          5934.5888888888885,
+          5932.644444444444
+        ],
+        [
+          6.729433599120155,
+          6.775048116579598,
+          6.799133901567225
+        ],
+        [
+          2.71921195363182,
+          2.7401573965755612,
+          2.7129586302243967
+        ],
+        [
+          13.47998238273508,
+          11.192931072451001,
+          13.789517727372827
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3680,
+          3680,
+          3680
+        ],
+        [
+          112,
+          112,
+          112
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          63880,
+          63880,
+          63880
+        ]
+      ]
+    }
+  ]
+}

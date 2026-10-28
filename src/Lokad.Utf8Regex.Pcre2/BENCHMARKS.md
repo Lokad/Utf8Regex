@@ -13,17 +13,17 @@ Enumeration and MatchMany consume byte ranges. Managed public results also suppl
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `D9DE0D3835C0D072E9B274D02D2750EF31CF7908379CF16928B4498B754DEC6E`
-- Latest managed row measurement: `2026-10-28T11:52:05.8744738+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-10-28T11:52:05.8744738+00:00`
+- Snapshot SHA-256: `7CCF6145BF281A21F57D434A1F6B5F25C844EF7B6745B86CA4350B39B4CF39BD`
+- Latest managed row measurement: `2026-10-28T15:46:03.4330473+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-10-28T15:46:03.4330473+00:00`
 - Operation rows: `126` across `10` sections
-- Comparable rows at or below the decode-then-.NET median: `33/60`
+- Comparable rows at or below the decode-then-.NET median: `34/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `101/126`
-- Comparator Status: `66` managed faster, `3` equivalent, `19` native faster, `13` inconclusive, `0` unqualified, `25` excluded
+- Comparator Status: `67` managed faster, `3` equivalent, `18` native faster, `13` inconclusive, `0` unqualified, `25` excluded
 - Rows with paired qualification evidence: `101/101`
 - Qualification processor sets: `single-least-contended-allowed-processor 0x1`, `single-least-contended-allowed-processor 0x10`, `single-least-contended-allowed-processor 0x2`, `single-least-contended-allowed-processor 0x20`, `single-least-contended-allowed-processor 0x4`, `single-least-contended-allowed-processor 0x40`, `single-least-contended-allowed-processor 0x8`, `single-least-contended-allowed-processor 0x80`
 - Scaling families: `16`
-- Managed/comparator measurement environments represented: `2/2`
+- Managed/comparator measurement environments represented: `3/3`
 
 Managed rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.
 
@@ -99,7 +99,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `industry/leipzig-symbol-count` | **Inconclusive** | 16,013,977 B | 1,954.710 us | 484,161.000 us | 0.00x | 0.00–0.00x | -482200.314 us | 9 pairs; 41/484 ms; 21/1 ops/lane; IQR 1.038/1.001 | `Pcre2Character` | 1,406,977.100 us | 23,211.567 us | 30,649.750 us | 0.06x | 0 B | 0 B |
 | `industry/leipzig-twain-count` | **Inconclusive** | 16,013,977 B | 5,538.817 us | 12,097.567 us | 0.46x | 0.44–0.47x | -6541.650 us | 9 pairs; 33/36 ms; 6/3 ops/lane; IQR 1.008/1.055 | `Pcre2Literal` | 1,470.897 us | 1,396.718 us | 8,530.433 us | 0.65x | 0 B | 0 B |
 | `industry/mariomka-email-count` | **Managed faster** | 6,839,410 B | 19,075.800 us | 145,776.700 us | 0.13x | 0.13–0.13x | -126765.750 us | 9 pairs; 38/146 ms; 2/1 ops/lane; IQR 1.011/1.007 | `Pcre2Backtracking` | 1,629.994 us | 535.543 us | 8,557.667 us | 2.23x | 0 B | 0 B |
-| `industry/mariomka-ip-count` | **Native faster** | 6,839,410 B | 1,090,744.800 us | 21,934.650 us | 49.58x | 49.27–50.13x | +1068663.550 us | 9 pairs; 1091/44 ms; 1/2 ops/lane; IQR 1.002/1.011 | `Pcre2Slice` | 1,117,759.800 us | 10,780.800 us | 19,008.167 us | 57.38x | 3,568 B | 0 B |
+| `industry/mariomka-ip-count` | **Managed faster** | 6,839,410 B | 4,835.688 us | 21,857.550 us | 0.22x | 0.22–0.22x | -17032.063 us | 9 pairs; 39/44 ms; 8/2 ops/lane; IQR 1.004/1.011 | `Pcre2Slice` | 2,656.563 us | 8,437.833 us | 30,804.100 us | 0.16x | 0 B | 0 B |
 | `industry/mariomka-uri-count` | **Managed faster** | 6,839,410 B | 23,451.750 us | 133,634.200 us | 0.18x | 0.17–0.18x | -110259.550 us | 9 pairs; 47/134 ms; 2/1 ops/lane; IQR 1.006/1.004 | `Pcre2Backtracking` | 1,911.744 us | 2,369.495 us | 10,525.480 us | 2.23x | 0 B | 0 B |
 | `industry/rust-sherlock-holmes-window-count` | **Managed faster** | 594,930 B | 776.420 us | 994.023 us | 0.78x | 0.76–0.79x | -216.211 us | 9 pairs; 39/40 ms; 50/40 ops/lane; IQR 1.004/1.029 | `Pcre2Backtracking` | 893.911 us | 321.336 us | 544.902 us | 1.42x | 3,552 B | 0 B |
 | `industry/rust-sherlock-ing-count` | **Equivalent** | 594,930 B | 13,670.067 us | 13,582.767 us | 1.01x | 1.01–1.01x | +92.600 us | 9 pairs; 41/41 ms; 3/3 ops/lane; IQR 1.002/1.003 | `Pcre2Backtracking` | 320.392 us | 15,071.075 us | 15,315.350 us | 0.89x | 0 B | 0 B |
