@@ -928,6 +928,19 @@ public sealed partial class Utf8Regex
                 throw new InvalidOperationException($"Native literal execution exceeded {breach}.");
             return count;
         }
+        // This existing ordered grammar proof admits only ASCII scalars. Its
+        // checked byte kernel is therefore valid within a fully validated UTF-8
+        // subject too; wider scalars cannot contain an ASCII candidate byte.
+        // Controlled calls and direction/NB semantics retain their owned routes.
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount &&
+            !_ownedSliceProgram.RightToLeft && !_ownedSliceProgram.IsNonBacktracking &&
+            !cancellationToken.CanBeCanceled && MatchTimeout == Regex.InfiniteMatchTimeout &&
+            Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null)
+        {
+            Utf8Validation.ThrowIfInvalidOnly(input);
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAsciiDottedDecimalQuad);
+            return Utf8AsciiIpv4TokenExecutor.CountAsciiIpv4Tokens(input);
+        }
         // This qualified kernel consumes scalar whitespace around an ASCII-only
         // repeated run and literal. Keep its unlimited, no-token native lane;
         // metered and cancellation-aware calls retain the shared scalar VM.
