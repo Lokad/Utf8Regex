@@ -1108,6 +1108,9 @@ internal static class Utf8NativeExecutionAnalyzer
                     new Utf8SearchFactData
                     {
                         AlternateLiteralsUtf8 = prefixes,
+                        // Boundaries and suffixes still belong to verification;
+                        // every admitted branch starts with one of these literals.
+                        CanGuideFallbackStarts = true,
                         LeadingBoundary = leadingBoundary,
                     }),
                 plan);

@@ -1,5 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -12,6 +14,8 @@ public sealed class Utf8SimplePrefixCountTests
     [InlineData("prefix[0-9]")]
     [InlineData("[0-9]longsuffix")]
     [InlineData("(?i:ab)[0-9]{2}")]
+    [InlineData(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+")]
+    [InlineData(@"\b(?:record|rec|class)\s+[A-Z][A-Za-z0-9_]+")]
     public void PrefixCandidatesPreserveVerificationOrderOffsetsAndTails(string pattern)
     {
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
@@ -20,7 +24,9 @@ public sealed class Utf8SimplePrefixCountTests
             var regex = new Utf8Regex(pattern, Options(compiled));
             foreach (var text in new[] { "", "AB", "ABxXY12", "aba12 ab34 a56", "AB12XY34ABxxAB56",
                 "😀ab12é AB34", "prefix1prefixxprefix2", "1longsuffix 2longsuffix", "aB12 AB34",
-                "😀" + new string('x', 2042) + "AB12XY34aba56" })
+                "éclass Foo 😀class Bar record Baz struct lower class Last",
+                "class\u00a0Name record\u2003Other xrecord Nope rec Short",
+                "😀" + new string('x', 2042) + "AB12XY34aba56 class NearTail" })
             {
                 var bytes = Encoding.UTF8.GetBytes(text);
                 foreach (var offset in new[] { 0, 3, 9 })
@@ -73,6 +79,30 @@ public sealed class Utf8SimplePrefixCountTests
         Assert.Equal("12", match.GetGroup(2).GetValueString());
         Assert.Equal(2, regex.Count(input));
         Assert.Equal("12", match.GetGroup(2).GetValueString());
+    }
+
+    [Fact]
+    public void PreparedScalarCountBorrowsPrefixProofAndOriginalWorkingAuthority()
+    {
+        var regex = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+");
+        var input = Encoding.UTF8.GetBytes("😀" + new string('x', 65536));
+        var validation = Utf8Validation.Validate(input);
+        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(1000000, 1, 256),
+            Regex.InfiniteMatchTimeout, default);
+        var breach = Utf8PreparedScalarExecutor.TryCount(regex.Inspection.PreparedRegex,
+            input, validation, ref invocation, out var count);
+        Assert.Equal(Utf8ExecutionLimitKind.None, breach);
+        Assert.Equal(0, count);
+        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+
+        // A later native-looking prefix is not sufficient: Unicode word
+        // boundaries, Unicode whitespace and the whole suffix stay scalar.
+        Assert.Equal(2, regex.Count("éclass Wrong 😀class\u00a0Right record Good"u8));
+        var denied = new Utf8SliceInvocation(new Utf8ExecutionLimits(1, 1, 256),
+            Regex.InfiniteMatchTimeout, default);
+        Assert.Equal(Utf8ExecutionLimitKind.WorkSteps,
+            Utf8PreparedScalarExecutor.TryCount(regex.Inspection.PreparedRegex,
+                input, validation, ref denied, out _));
     }
 
     private static RegexOptions Options(bool compiled) => RegexOptions.CultureInvariant |

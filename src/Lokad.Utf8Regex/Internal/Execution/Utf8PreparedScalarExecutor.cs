@@ -61,7 +61,8 @@ internal static class Utf8PreparedScalarExecutor
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         try
         {
-            var outcome = Utf8SliceRunner.Count(program, input, slots.Starts, slots.Ends, ref invocation);
+            var outcome = Utf8SliceRunner.CountFromBytes(program, input, program.RightToLeft ? input.Length : 0,
+                slots.Starts, slots.Ends, ref invocation, prepared.SearchPlan);
             if (outcome.Breach != Utf8ExecutionLimitKind.None) return outcome.Breach;
             breach = invocation.TryChargeInputStep();
             invocation.Budget.ThrowIfCancellationRequested();
