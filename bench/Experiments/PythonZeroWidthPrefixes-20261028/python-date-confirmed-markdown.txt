@@ -1,0 +1,1 @@
+PythonRe benchmark page is current: /home/vermorel/tmp/utf8regex-net11-memory/pilot/src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md

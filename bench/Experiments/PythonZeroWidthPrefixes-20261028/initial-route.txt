@@ -1,0 +1,32 @@
+0.5.0-dev+a15aad79e35e27b06ff30308f8ae09ada19d296a
+Pattern=\b\d{1,2}\/\d{1,2}\/\d{2,4}\b; groups=0; empty=False; captures=False; fold=False; hint=False -1..-1
+Core candidate retained=False
+0: Fork A=7 B=0 C=0 D=0
+1: Lookbehind A=0 B=1 C=0 D=0
+2: Fork A=6 B=1 C=0 D=0
+3: CategorySet A=0 B=0 C=0 D=0
+ category: negated=False; predicate=Boolean IsWord(Int32); mask=000000000000FF03FEFFFF87FEFFFF07
+4: Commit A=0 B=0 C=0 D=0
+5: Fail A=0 B=0 C=0 D=0
+6: Jump A=13 B=0 C=0 D=0
+7: Lookbehind A=1 B=0 C=0 D=0
+8: Fork A=12 B=1 C=0 D=0
+9: CategorySet A=1 B=0 C=0 D=1
+ category: negated=False; predicate=Boolean IsWord(Int32); mask=000000000000FF03FEFFFF87FEFFFF07
+10: Commit A=0 B=0 C=0 D=0
+11: Jump A=13 B=0 C=0 D=0
+12: Fail A=0 B=0 C=0 D=0
+13: RepeatGreedy A=16 B=0 C=1 D=2
+14: CategorySet A=2 B=0 C=0 D=2
+ category: negated=False; predicate=Boolean IsDigit(Int32); mask=000000000000FF030000000000000000
+15: RepeatEnd A=13 B=0 C=0 D=0
+16: RepeatExit A=0 B=0 C=0 D=0
+17: Literal A=47 B=0 C=0 D=0
+18: RepeatGreedy A=21 B=1 C=1 D=2
+19: CategorySet A=3 B=0 C=0 D=3
+ category: negated=False; predicate=Boolean IsDigit(Int32); mask=000000000000FF030000000000000000
+20: RepeatEnd A=18 B=0 C=0 D=0
+21: RepeatExit A=1 B=0 C=0 D=0
+22: Literal A=47 B=0 C=0 D=0
+23: RepeatGreedy A=26 B=2 C=2 D=4
+Public IsMatch=False

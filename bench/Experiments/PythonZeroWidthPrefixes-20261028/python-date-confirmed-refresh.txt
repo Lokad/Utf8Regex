@@ -1,0 +1,19 @@
+
+CaseId             : common/date-miss
+Pattern            : \b\d{1,2}\/\d{1,2}\/\d{2,4}\b
+Options            : None
+Operation          : IsMatch
+InputBytes         : 47
+Iterations         : 20000
+Samples            : 5
+CheckoutCommit     : 516057469acd
+BenchmarkAssembly  : 1.0.0+516057469acda677c7de90de9db054aaf13969d0 sha256=34B0255AA20FFB2B6A5760949C3D35A8780A2F52A764C5FE86DA84B6586393A9
+CoreAssembly       : 0.5.0-dev+516057469acda677c7de90de9db054aaf13969d0 sha256=34C49762545C12D77BDA74E4A8D7329A81E0A767D007EF8D9B0FB64F107F9181
+PythonReAssembly   : 0.5.0-dev+516057469acda677c7de90de9db054aaf13969d0 sha256=2D522E57C99584A55431A627F7AF34DA8C7017603036820461087C4E6639DCF4
+PythonRe           :     21.922 us/op | range=21.758..24.699 | alloc=3568 B/op | warmup=33199 calls/1000.4 ms
+DecodeThenRegex    :      2.920 us/op | range=2.914..3.002 | alloc=120 B/op | warmup=65551 calls/567.2 ms
+PredecodedRegex    :      2.851 us/op | range=2.830..2.902 | alloc=0 B/op | warmup=65551 calls/192.3 ms
+CPythonDecode      :      2.041 us/op | range=2.010..2.050 | iterations=24384 | warmup=41415 calls/100.0 ms
+CPythonPredecoded  :      1.668 us/op | range=1.657..1.678 | iterations=29857 | warmup=36481 calls/100.0 ms
+
+Snapshot           : /home/vermorel/tmp/utf8regex-net11-memory/pilot/PythonRe.Benchmarks.json
