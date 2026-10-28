@@ -1,0 +1,32 @@
+Measuring README benchmark case: common/backtracking (requested=1, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=268232;ElapsedMicroseconds=49687.900
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=268888;ElapsedMicroseconds=50788.100
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=58714;ElapsedMicroseconds=49874.000
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=1145364;ElapsedMicroseconds=50603.600
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=55777;ElapsedMicroseconds=49711.700
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=639899;ElapsedMicroseconds=48137.400
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=268232;ElapsedMicroseconds=49607.100
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=268888;ElapsedMicroseconds=53014.700
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=58714;ElapsedMicroseconds=49788.800
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=1145364;ElapsedMicroseconds=50345.500
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=55777;ElapsedMicroseconds=49882.900
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=639899;ElapsedMicroseconds=47920.500
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=268232;ElapsedMicroseconds=49646.700
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=268888;ElapsedMicroseconds=51016.800
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=58714;ElapsedMicroseconds=52511.100
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=1145364;ElapsedMicroseconds=49913.000
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=55777;ElapsedMicroseconds=49907.200
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=639899;ElapsedMicroseconds=47869.400
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=268232;ElapsedMicroseconds=49772.800
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=268888;ElapsedMicroseconds=50057.600
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=58714;ElapsedMicroseconds=50058.900
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=1145364;ElapsedMicroseconds=50055.300
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=55777;ElapsedMicroseconds=49800.200
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=639899;ElapsedMicroseconds=48130.900
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=268232;ElapsedMicroseconds=49614.700
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=268888;ElapsedMicroseconds=53239.100
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=58714;ElapsedMicroseconds=49336.800
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=1145364;ElapsedMicroseconds=50064.100
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=55777;ElapsedMicroseconds=49760.400
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=639899;ElapsedMicroseconds=53653.300
+Updated README case: common/backtracking
