@@ -1338,7 +1338,8 @@ public sealed partial class Utf8Regex
         => startByte == 0 && ReferenceEquals(program, _ownedSliceProgram) && !_hasCaptures &&
             !program.RightToLeft && !program.IgnoreCase &&
             (Options & (RegexOptions.ECMAScript | RegexOptions.NonBacktracking)) == 0 &&
-            _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or Utf8FallbackDirectFamilyKind.Utf8UriToken;
+            _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or
+                Utf8FallbackDirectFamilyKind.Utf8UriToken or Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount;
 
     private int OwnedSliceCountFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program,
         int startByte, ref Utf8SliceInvocation invocation)
@@ -1347,6 +1348,13 @@ public sealed partial class Utf8Regex
         {
             if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.Utf8UriToken)
                 return Utf8UriTokenExecutor.CountWellFormed(input, ref invocation);
+            if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount)
+            {
+                var tokenBreach = Utf8AsciiIpv4TokenExecutor.TryCountAsciiIpv4Tokens(input, ref invocation, out var tokenCount);
+                if (tokenBreach != Utf8ExecutionLimitKind.None)
+                    throw new InvalidOperationException("ASCII IPv4 count breached the invocation budget.");
+                return tokenCount;
+            }
             var breach = Utf8WordDelimitedTokenExecutor.TryCountWellFormed(input, ref invocation, out var count);
             if (breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException("Word-delimited count breached the invocation budget.");

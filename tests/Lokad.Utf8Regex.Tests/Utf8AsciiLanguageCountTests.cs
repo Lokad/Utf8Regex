@@ -19,6 +19,8 @@ public sealed class Utf8AsciiLanguageCountTests
         foreach (var pattern in new[] { Pattern, Pattern.Replace("25", @"\x32\x35").Replace(@"\.", @"\x2e") })
         {
             var regex = new Utf8Regex(pattern, options);
+            var controlled = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
+                new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
             var oracle = new Regex(pattern, options);
             foreach (var text in new[] { "", "1.2.3.4", "..😀..", "😀00.11.22.25500é",
                 "٣٣.44.55.66 00.11.22.255😀255.249.199.000é", "999.999.999.999", "00.00.00.00" })
@@ -30,6 +32,7 @@ public sealed class Utf8AsciiLanguageCountTests
                 {
                     Assert.Equal(oracle.Count(text), regex.Count(input));
                     Assert.Equal(Utf8ExecutionRoute.FallbackDirectAsciiDottedDecimalQuad, session.ExecutionRoute);
+                    Assert.Equal(oracle.Count(text), controlled.Count(input));
                 }
                 finally { session.Complete(); }
             }
@@ -121,5 +124,47 @@ public sealed class Utf8AsciiLanguageCountTests
         try { Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(bytes)); }
         finally { session.Complete(); }
         Assert.Equal("00.11.22.255", retained.GetGroup(0).GetValueString());
+    }
+
+    [Fact]
+    public void EveryCounterWorkCutoffPreservesBorrowedStorage()
+    {
+        var input = "é00.11.22.255😀255.249.199.000"u8.ToArray();
+        var complete = new Utf8SliceInvocation(new(1000, 1, 0, 1), Regex.InfiniteMatchTimeout, default);
+        Assert.True(complete.Ledger.TryReserve(13));
+        Assert.Equal(Utf8ExecutionLimitKind.None,
+            Utf8AsciiIpv4TokenExecutor.TryCountAsciiIpv4Tokens(input, ref complete, out var count));
+        Assert.Equal(2, count);
+        Assert.Equal(13UL, complete.Ledger.ReservedBytes);
+        for (ulong cap = 1; cap <= complete.Budget.Steps; cap++)
+        {
+            var invocation = new Utf8SliceInvocation(new(cap, 1, 0, 1), Regex.InfiniteMatchTimeout, default);
+            Assert.True(invocation.Ledger.TryReserve(13));
+            var breach = Utf8AsciiIpv4TokenExecutor.TryCountAsciiIpv4Tokens(input, ref invocation, out _);
+            Assert.Equal(cap < complete.Budget.Steps ? Utf8ExecutionLimitKind.WorkSteps : Utf8ExecutionLimitKind.None, breach);
+            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        }
+    }
+
+    [Fact]
+    public void CounterPublicationObservesCancellationFromItsLastDeadlinePoll()
+    {
+        var reads = 0;
+        var cancelAt = int.MaxValue;
+        using var cancellation = new CancellationTokenSource();
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
+        {
+            if (++reads == cancelAt) cancellation.Cancel();
+            return 0;
+        });
+        var regex = new Utf8Regex(Pattern, RegexOptions.None, TimeSpan.FromSeconds(1),
+            new() { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        Assert.Equal(1, regex.Count("😀00.11.22.255é"u8, cancellation.Token));
+        Assert.True(reads > 1);
+        cancelAt = reads;
+        reads = 0;
+        Assert.Equal(cancellation.Token,
+            Assert.Throws<OperationCanceledException>(() => regex.Count("😀00.11.22.255é"u8, cancellation.Token)).CancellationToken);
+        Assert.Equal(cancelAt, reads);
     }
 }

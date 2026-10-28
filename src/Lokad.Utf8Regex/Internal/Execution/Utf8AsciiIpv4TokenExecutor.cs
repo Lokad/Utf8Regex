@@ -60,6 +60,35 @@ internal static class Utf8AsciiIpv4TokenExecutor
         return count;
     }
 
+    internal static Utf8ExecutionLimitKind TryCountAsciiIpv4Tokens(ReadOnlySpan<byte> input,
+        ref Utf8SliceInvocation invocation, out int count)
+    {
+        count = 0;
+        var breach = invocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        var position = 0;
+        // A complete token occupies at most 15 ASCII bytes. Admit starts in
+        // each window, with enough lookahead to finish every crossing token.
+        // The existing finder still chooses the earliest ordered match.
+        const int lookahead = 14;
+        while (position < input.Length)
+        {
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            var starts = Math.Min(2048 - lookahead, input.Length - position);
+            var block = input.Slice(position, Math.Min(starts + lookahead, input.Length - position));
+            if (TryFindAsciiIpv4Token(block, 0, out var relative, out var length) && relative < starts)
+            {
+                count++;
+                position += relative + length;
+            }
+            else position += starts;
+        }
+        breach = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        return breach;
+    }
+
     private static bool TryMatchAt(ReadOnlySpan<byte> input, out int matchedLength)
     {
         matchedLength = 0;

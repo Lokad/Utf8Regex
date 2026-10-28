@@ -178,10 +178,12 @@ internal sealed class Pcre2SliceDirectProgram : IPcre2DirectProgram
 {
     internal Pcre2SliceDirectProgram(
         Utf8SliceProgram sliceProgram,
-        Pcre2BacktrackingProgram fallback)
+        Pcre2BacktrackingProgram fallback,
+        bool hasAsciiIpv4CountProof)
     {
         SliceProgram = sliceProgram;
         Fallback = fallback;
+        HasAsciiIpv4CountProof = hasAsciiIpv4CountProof;
     }
 
     public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Pcre2Slice;
@@ -189,6 +191,8 @@ internal sealed class Pcre2SliceDirectProgram : IPcre2DirectProgram
     internal Utf8SliceProgram SliceProgram { get; }
 
     internal Pcre2BacktrackingProgram Fallback { get; }
+
+    internal bool HasAsciiIpv4CountProof { get; }
 }
 
 internal sealed class Pcre2AsciiRegularIsMatchDirectProgram : IPcre2DirectProgram
@@ -833,7 +837,12 @@ internal static class Pcre2CompiledProgramOverlay
             return operations;
         }
 
-        var shared = new Pcre2SliceDirectProgram(sliceProgram, fallback);
+        // Keep the complete admitted language fact, without retaining another
+        // Core regex/root. Count can reuse its checked primitive under this
+        // profile's original invocation; other operations keep the slice.
+        var shared = new Pcre2SliceDirectProgram(sliceProgram, fallback,
+            sliceProgram.GroupCount == 0 && preparedCore.Inspection.PreparedRegex.FallbackDirectFamily.Kind ==
+                Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount);
         return operations with
         {
             IsMatch = operations.IsMatch is Pcre2BacktrackingDirectProgram ? shared : operations.IsMatch,
@@ -2453,6 +2462,13 @@ internal static class Pcre2GlobalOperationDriver
                 return true;
             }
 
+            if (sliceProgram.HasAsciiIpv4CountProof)
+            {
+                var breach = Utf8AsciiIpv4TokenExecutor.TryCountAsciiIpv4Tokens(
+                    input.Bytes[start.Value..], ref invocation, out result);
+                Pcre2SliceDriver.ThrowIfSliceBreached(breach);
+                return true;
+            }
             if (Pcre2SliceDriver.RejectMissingCandidate(sliceProgram.SliceProgram,
                 compiledProgram.CandidateSearch, input.Bytes, start.Value, ref invocation))
             {
