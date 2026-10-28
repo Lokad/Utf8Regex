@@ -4,27 +4,54 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8SliceRunner
 {
-    // Capture markers consume no input. A first exact ASCII scalar therefore
-    // proves a possible start even when the front-end chose a different search
-    // portfolio. Other instructions (including forks/assertions) decline.
-    private static int GetLeadingAsciiLiteral(Utf8SliceProgram program)
+    // Capture markers and mandatory repeat entries precede the first scalar.
+    // An unfolded ASCII literal/positive range proves possible starts. Other
+    // instructions (including optional repeats/forks/assertions) decline.
+    private static int GetLeadingAsciiCandidate(Utf8SliceProgram program, out byte last)
     {
+        last = 0;
         var code = program.Instructions.AsSpan();
         var index = 0;
         // This optional per-invocation proof stays bounded even for deeply
         // nested captures; larger prefixes retain the metered VM scan.
-        while (index < code.Length && index < 64 && code[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
-            index++;
-        return index < code.Length && index < 64 && code[index] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } literal &&
-            (uint)literal.A < 128 ? literal.A : -1;
+        while (index < code.Length && index < 64)
+        {
+            var entry = code[index];
+            if (entry.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd ||
+                entry.Kind == Utf8SliceInstructionKind.RepeatGreedy && entry.RepeatMinimum > 0)
+                index++;
+            else break;
+        }
+        if (index >= code.Length || index >= 64) return -1;
+        if (code[index] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } literal && (uint)literal.A < 128)
+        {
+            last = (byte)literal.A;
+            return literal.A;
+        }
+        if (code[index] is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } set) return -1;
+        var mask = program.SetMasks[set.A].AsSpan();
+        if (mask.Length != 16) return -1;
+        var first = -1;
+        var ended = false;
+        for (var value = 0; value < 128; value++)
+        {
+            if ((mask[value >> 3] & (1 << (value & 7))) != 0)
+            {
+                if (ended) return -1; // A union is not its enclosing range.
+                if (first < 0) first = value;
+                last = (byte)value;
+            }
+            else if (first >= 0) ended = true;
+        }
+        return first;
     }
 
-    private static Utf8ExecutionLimitKind TrySeekAsciiLiteral(ReadOnlySpan<byte> input, ref int position,
-        byte literal, ref Utf8SliceInvocation invocation)
+    private static Utf8ExecutionLimitKind TrySeekAsciiCandidate(ReadOnlySpan<byte> input, ref int position,
+        byte first, byte last, ref Utf8SliceInvocation invocation)
     {
         if (invocation.IsUnmetered && invocation.CheckpointHook is null)
         {
-            var relative = input[position..].IndexOf(literal);
+            var relative = first == last ? input[position..].IndexOf(first) : input[position..].IndexOfAnyInRange(first, last);
             position = relative < 0 ? -1 : position + relative;
             return Utf8ExecutionLimitKind.None;
         }
@@ -33,7 +60,8 @@ internal static partial class Utf8SliceRunner
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var length = Math.Min(2048, input.Length - position);
-            var relative = input.Slice(position, length).IndexOf(literal);
+            var block = input.Slice(position, length);
+            var relative = first == last ? block.IndexOf(first) : block.IndexOfAnyInRange(first, last);
             if (relative >= 0) { position += relative; return Utf8ExecutionLimitKind.None; }
             position += length;
         }
