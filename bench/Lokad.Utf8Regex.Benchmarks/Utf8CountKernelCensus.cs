@@ -396,8 +396,8 @@ internal static class Utf8CountKernelCensus
 
             candidates++;
             var delimiterIndex = searchFrom + relative;
-            if (!Utf8UriTokenCountExecutor.TryFindSchemeStart(input, searchFrom, delimiterIndex, ref invocation, out _) ||
-                !Utf8UriTokenCountExecutor.TryConsumeBody(input, delimiterIndex + 3, ref invocation, out var tokenEnd))
+            if (!Utf8UriTokenExecutor.TryFindSchemeStart(input, searchFrom, delimiterIndex, ref invocation, out _) ||
+                !Utf8UriTokenExecutor.TryConsumeBody(input, delimiterIndex + 3, ref invocation, out var tokenEnd))
             {
                 searchFrom = delimiterIndex + 3;
                 continue;
