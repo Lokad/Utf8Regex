@@ -1514,7 +1514,7 @@ internal static partial class PythonReBenchmarkReporter
     {
         var warmup = Stopwatch.StartNew();
         var warmupCalls = 0;
-        var warmupBatchSize = Math.Min(iterations, 16);
+        var warmupBatchSize = 1;
         do
         {
             var batch = runBatch(warmupBatchSize);
@@ -1526,6 +1526,10 @@ internal static partial class PythonReBenchmarkReporter
 
             s_sink ^= batch.Checksum;
             warmupCalls += warmupBatchSize;
+            // A slow public call needs one warmup, not an opaque 16-call batch.
+            // Amortize the clock only after measuring a cheap batch.
+            if (batch.Elapsed.TotalMilliseconds < 20)
+                warmupBatchSize = Math.Min(warmupBatchSize * 2, Math.Min(iterations, 16));
         }
         while (warmup.ElapsedMilliseconds < 100 && warmupCalls < 65_536);
 
