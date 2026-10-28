@@ -1,0 +1,127 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+var hostRoot = Path.GetFullPath(args[0]);
+var candidatePath = Path.GetFullPath(args[1]);
+AssemblyLoadContext.Default.Resolving += (_, name) => File.Exists(Path.Combine(hostRoot, name.Name + ".dll"))
+    ? AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(hostRoot, name.Name + ".dll")) : null;
+var baseline = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(hostRoot, "Lokad.Utf8Regex.dll"));
+var candidate = new AssemblyLoadContext("candidate").LoadFromAssemblyPath(candidatePath);
+var baselineHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(baseline.Location)));
+var candidateHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(candidate.Location)));
+var candidateVersion = candidate.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
+if (candidateHash == baselineHash || !candidateVersion.Contains(args[2], StringComparison.Ordinal))
+    throw new Exception("Stale or unexpected candidate binary: " + candidateVersion);
+var catalog = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(hostRoot, "Lokad.Utf8Regex.Benchmarks.dll"))
+    .GetType("Lokad.Utf8Regex.Benchmarks.ReplicaCountBenchmarkCase")!;
+var resolve = catalog.GetMethod("Resolve", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)!;
+var clock = Stopwatch.StartNew();
+var rows = new List<object>();
+using var process = Process.GetCurrentProcess();
+process.ProcessorAffinity = (nint)4; // CPU2, matching the frozen quiet-VM comparison policy.
+foreach (var name in new[] { "ordinary-miss", "compiled-miss", "hit", "finite-token", "long-miss", "unicode-hit", "count-control", "literal-control" })
+{
+    var countOperation = name == "count-control";
+    var id = name switch { "literal-control" => "literal/sherlock-en",
+        "count-control" => "industry/mariomka-uri-count", "hit" => "common/uri-match", _ => "common/uri-miss" };
+    var definition = name == "literal-control" ? resolve.Invoke(null, [id])! :
+        Activator.CreateInstance(catalog.Assembly.GetType("Lokad.Utf8Regex.Benchmarks.LokadPublicBenchmarkContext")!, [id])!;
+    T Get<T>(string property) => (T)definition.GetType().GetProperty(property)!.GetValue(definition)!;
+    var input = Get<byte[]>("InputBytes");
+    var pattern = Get<string>(name == "literal-control" ? "Utf8Pattern" : "Pattern");
+    var options = Get<RegexOptions>("Options") | (name == "ordinary-miss" ? 0 : RegexOptions.Compiled);
+    var finite = name == "finite-token";
+    if (name == "long-miss") input = Encoding.UTF8.GetBytes(new string('x', 4096));
+    if (name == "unicode-hit") input = Encoding.UTF8.GetBytes(new string('x', 4096) + " é://😀😀?q#f");
+    var text = Encoding.UTF8.GetString(input);
+    var oracle = new Regex(pattern, options);
+    var expected = countOperation ? oracle.Count(text) : oracle.IsMatch(text) ? 1 : 0;
+    using var cancellation = new CancellationTokenSource();
+    Func<int> Make(Assembly assembly)
+    {
+        var type = assembly.GetType("Lokad.Utf8Regex.Utf8Regex")!;
+        if (finite)
+        {
+            var policyType = assembly.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!;
+            var policy = Activator.CreateInstance(policyType)!;
+            foreach (var (key, value) in new[] { ("MaxWorkSteps", 10000000UL), ("MaxDepth", 4096UL),
+                ("MaxWorkingBytes", 16777216UL), ("MaxResultBytes", 16777216UL) })
+            {
+                var property = policyType.GetProperty(key)!;
+                property.SetValue(policy, Convert.ChangeType(value, Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType));
+            }
+            var owner = type.GetConstructor([typeof(string), typeof(RegexOptions), typeof(TimeSpan), policyType])!
+                .Invoke([pattern, options, Regex.InfiniteMatchTimeout, policy]);
+            var count = type.GetMethod("IsMatch", [typeof(ReadOnlySpan<byte>), typeof(CancellationToken)])!
+                .CreateDelegate<TokenPredicate>(owner);
+            return () => count(input, cancellation.Token) ? 1 : 0;
+        }
+        var instance = type.GetConstructor([typeof(string), typeof(RegexOptions)])!.Invoke([pattern, options]);
+        if (countOperation)
+        {
+            var count = type.GetMethod("Count", [typeof(ReadOnlySpan<byte>)])!.CreateDelegate<SpanCount>(instance);
+            return () => count(input);
+        }
+        var simple = type.GetMethod("IsMatch", [typeof(ReadOnlySpan<byte>)])!.CreateDelegate<SpanPredicate>(instance);
+        return () => simple(input) ? 1 : 0;
+    }
+    Func<int>[] actions = [Make(baseline), Make(candidate), () => countOperation ? oracle.Count(text) : oracle.IsMatch(text) ? 1 : 0,
+        () => countOperation ? oracle.Count(Encoding.UTF8.GetString(input)) : oracle.IsMatch(Encoding.UTF8.GetString(input)) ? 1 : 0];
+    var iterations = new int[4];
+    var warmupCalls = new int[4];
+    var warmupMs = new double[4];
+    for (var lane = 0; lane < actions.Length; lane++)
+    {
+        if (actions[lane]() != expected) throw new Exception("Preflight mismatch");
+        var warmup = Stopwatch.StartNew();
+        do { Loop(1, actions[lane]); warmupCalls[lane]++; } while (warmup.ElapsedMilliseconds < 250);
+        warmupMs[lane] = warmup.Elapsed.TotalMilliseconds;
+        var count = 1;
+        var probe = Loop(count, actions[lane]);
+        while (probe.Milliseconds < 20 && count < 1000000)
+        { count = Math.Min(count * 2, 1000000); probe = Loop(count, actions[lane]); }
+        iterations[lane] = (int)Math.Clamp(Math.Ceiling(count * 50 / Math.Max(probe.Milliseconds, 0.000001)), 1, 1000000);
+    }
+    var times = Enumerable.Range(0, 4).Select(_ => new double[3]).ToArray();
+    var allocations = Enumerable.Range(0, 4).Select(_ => new double[3]).ToArray();
+    for (var sample = 0; sample < 3; sample++)
+    for (var position = 0; position < 4; position++)
+    {
+        var lane = sample % 2 == 0 ? position : 3 - position;
+        GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        var result = Loop(iterations[lane], actions[lane]);
+        if (result.Last != expected) throw new Exception("Timed result mismatch");
+        times[lane][sample] = result.Milliseconds * 1000 / iterations[lane];
+        allocations[lane][sample] = (double)result.Bytes / iterations[lane];
+    }
+    rows.Add(new { Name = name, Id = id, Options = options.ToString(), Profile = "Core", Operation = countOperation ? "Count" : "IsMatch", FiniteAndLiveToken = finite,
+        InputBytes = input.Length, InputSha256 = Convert.ToHexString(SHA256.HashData(input)), Expected = expected,
+        Iterations = iterations, WarmupCalls = warmupCalls, WarmupMilliseconds = warmupMs,
+        Microseconds = times, AllocatedBytes = allocations });
+    Console.Error.WriteLine($"Completed {name}: {string.Join(" / ", times.Select(t => t.Order().ElementAt(1)))} us/op");
+}
+Console.WriteLine(JsonSerializer.Serialize(new { Runtime = RuntimeInformation.FrameworkDescription,
+    CpuAffinityMask = "4", ElapsedSeconds = clock.Elapsed.TotalSeconds,
+    LaneNames = new[] { "Baseline", "Candidate", "PredecodedRegex", "DecodeThenRegex" },
+    Baseline = Identity(baseline), Candidate = Identity(candidate), Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+static object Identity(Assembly a) => new { Version = a.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
+    Sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(a.Location))) };
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds, long Bytes, int Last) Loop(int count, Func<int> action)
+{
+    var value = 0; var before = GC.GetAllocatedBytesForCurrentThread(); var start = Stopwatch.GetTimestamp();
+    for (var i = 0; i < count; i++) value = action();
+    var elapsed = Stopwatch.GetElapsedTime(start);
+    return (elapsed.TotalMilliseconds, GC.GetAllocatedBytesForCurrentThread() - before, value);
+}
+delegate bool SpanPredicate(ReadOnlySpan<byte> input);
+delegate bool TokenPredicate(ReadOnlySpan<byte> input, CancellationToken token);
+
+delegate int SpanCount(ReadOnlySpan<byte> input);
