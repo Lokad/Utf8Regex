@@ -75,3 +75,12 @@ Immutable evidence under `artifacts/experiments/python-zero-width-prefixes-20261
   `0ECB0276A7ACB0E4E1B404E28285A20124F4735BFF4AD00D78D836BE37D37E03`.
 - `correctness-attempts.zip`: initial setup/cursor-witness failures and route-build
   log. The implementation and bounded comparison are accepted; this pilot is closed.
+
+CI 40735991657 passed Linux; Windows/net11 failed the existing ordinary literal-
+family allocation witness (5056 B, allowed 0–512 B). The allocation source is
+unconfirmed. Its 64-call warmup and separate measured loop are replaced by one
+NoInlining batch warmed for one second at the measured call site. The allocation
+threshold is unchanged, and every call now also verifies the expected miss.
+[Focused both-runtime checks](core-allocation-fixture.txt) pass. Raw failed CI is
+preserved beside the archives as `ci-40735991657-failed.txt`. No production pool
+or matcher change, CI retry, benchmark replay or package qualification was used.

@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using System.Text;
+using System.Runtime.CompilerServices;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
@@ -2555,22 +2556,23 @@ public sealed class Utf8RegexConstructionTests
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var regex = new Utf8Regex(pattern, options);
         var input = Encoding.UTF8.GetBytes("é " + new string('x', 32_768) + " 夏");
-        var sink = false;
-
-        for (var i = 0; i < 64; i++)
-        {
-            sink ^= regex.IsMatch(input);
-        }
-
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 256; i++)
-        {
-            sink ^= regex.IsMatch(input);
-        }
-
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-        GC.KeepAlive(sink);
+        // Warm the measured call site through delayed tiering, rather than
+        // switching from a short warmup loop to a different measured loop.
+        var warmup = System.Diagnostics.Stopwatch.StartNew();
+        do { _ = MeasureLiteralFamilyIsMatchBatch(regex, input, out var warmedCorrect); Assert.True(warmedCorrect); }
+        while (warmup.ElapsedMilliseconds < 1_000);
+        var allocated = MeasureLiteralFamilyIsMatchBatch(regex, input, out var correct);
+        Assert.True(correct);
         Assert.InRange(allocated, 0, 512);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static long MeasureLiteralFamilyIsMatchBatch(Utf8Regex regex, byte[] input, out bool correct)
+    {
+        correct = true;
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var i = 0; i < 256; i++) correct &= !regex.IsMatch(input);
+        return GC.GetAllocatedBytesForCurrentThread() - before;
     }
 
     [Theory]
