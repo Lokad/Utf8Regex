@@ -281,7 +281,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 
 | Case | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `lokad/folding/region-marker` | 6,454.150 us | 36.535 us | 60.756 us | 176.66x |
+| `lokad/folding/region-marker` | 5,376.030 us | 37.099 us | 60.876 us | 144.91x |
 | `lokad/docs/inline-doc-prefix` | 36.588 us | 2.678 us | 3.589 us | 13.66x |
 | `lokad/lexer/number` | 86.260 us | 6.887 us | 8.347 us | 12.53x |
 | `lokad/langserv/url-dashboard` | 89.317 us | 7.363 us | 7.886 us | 12.13x |
@@ -332,7 +332,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 
 | Case | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `lokad/folding/region-marker` | 6,420.163 us | 37.288 us | 58.982 us | 172.18x |
+| `lokad/folding/region-marker` | 5,395.440 us | 37.293 us | 60.206 us | 144.68x |
 | `structural/keyword-family-to-capitalized-identifier` | 317.036 us | 7.740 us | 18.949 us | 40.96x |
 | `balancing/begin-end-blocks` | 12,894.325 us | 471.357 us | 499.274 us | 27.36x |
 | `lokad/docs/inline-doc-prefix` | 37.181 us | 2.731 us | 3.643 us | 13.61x |
