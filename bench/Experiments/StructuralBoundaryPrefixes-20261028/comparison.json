@@ -1,0 +1,518 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 20.5134406,
+  "LaneNames": [
+    "Baseline",
+    "Candidate",
+    "PredecodedRegex",
+    "DecodeThenRegex"
+  ],
+  "Baseline": {
+    "Version": "0.5.0-dev\u002Bbcfc318cf9c01089e3c5d564d709841438a55ef1",
+    "Sha256": "88DCB8D1F78506E72D3204E3BB26968C029BCF23406344466320C13096B0FC7A"
+  },
+  "Candidate": {
+    "Version": "0.5.0-dev\u002B4a8037bb7e0ebb86fe3eab2927a654992f4c3f84",
+    "Sha256": "504D04D1983639A4783AC7A68952946C03D89C300ED8ED96A8D856F2D6EFDC84"
+  },
+  "Rows": [
+    {
+      "Name": "ordinary",
+      "Id": "structural/keyword-family-to-capitalized-identifier",
+      "Options": "CultureInvariant",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 53352,
+      "InputSha256": "E25F45289E44A6DE119149C10B258E8416A8E24E4FF01D94ED4753FA5A9A351B",
+      "Expected": 73,
+      "Iterations": [
+        157,
+        673,
+        195,
+        209
+      ],
+      "WarmupCalls": [
+        767,
+        5122,
+        974,
+        2070
+      ],
+      "WarmupMilliseconds": [
+        500.0214,
+        500.0637,
+        500.1556,
+        500.131
+      ],
+      "Microseconds": [
+        [
+          322.1484076433121,
+          314.1375796178344,
+          310.0324840764331
+        ],
+        [
+          75.36121842496286,
+          75.38395245170877,
+          75.3367013372957
+        ],
+        [
+          223.76564102564103,
+          219.6076923076923,
+          221.53128205128203
+        ],
+        [
+          232.466985645933,
+          233.69186602870812,
+          238.31435406698563
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          106728,
+          106728,
+          106728
+        ]
+      ]
+    },
+    {
+      "Name": "compiled",
+      "Id": "structural/keyword-family-to-capitalized-identifier",
+      "Options": "Compiled, CultureInvariant",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 53352,
+      "InputSha256": "E25F45289E44A6DE119149C10B258E8416A8E24E4FF01D94ED4753FA5A9A351B",
+      "Expected": 73,
+      "Iterations": [
+        159,
+        675,
+        6490,
+        2557
+      ],
+      "WarmupCalls": [
+        1519,
+        6377,
+        62196,
+        25323
+      ],
+      "WarmupMilliseconds": [
+        500.2194,
+        500.0151,
+        500.0003,
+        500.0034
+      ],
+      "Microseconds": [
+        [
+          317.36603773584903,
+          310.77861635220125,
+          310.1264150943396
+        ],
+        [
+          75.48237037037036,
+          74.49259259259259,
+          75.67437037037037
+        ],
+        [
+          7.776671802773498,
+          7.748998459167951,
+          7.782033898305085
+        ],
+        [
+          19.599022291748142,
+          19.437622213531483,
+          19.73707469691044
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          106728,
+          106728,
+          106728
+        ]
+      ]
+    },
+    {
+      "Name": "finite-token",
+      "Id": "structural/keyword-family-to-capitalized-identifier",
+      "Options": "Compiled, CultureInvariant",
+      "FiniteAndLiveToken": true,
+      "InputBytes": 32768,
+      "InputSha256": "34B0E346E85660B59E433268B5330C5169FD3B904BB2FAB3080C55119EC2DD1B",
+      "Expected": 47,
+      "Iterations": [
+        203,
+        240,
+        10158,
+        5272
+      ],
+      "WarmupCalls": [
+        1966,
+        1426,
+        99217,
+        47940
+      ],
+      "WarmupMilliseconds": [
+        500.0322,
+        500.1556,
+        500.0031,
+        500.0043
+      ],
+      "Microseconds": [
+        [
+          242.51133004926106,
+          243.73645320197045,
+          242.4985221674877
+        ],
+        [
+          206.89875,
+          205.58958333333334,
+          204.06916666666666
+        ],
+        [
+          4.994467414845443,
+          4.997666863555819,
+          4.921155739318763
+        ],
+        [
+          10.981088770864947,
+          9.671225341426403,
+          11.371927162367223
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3664,
+          3664,
+          3664
+        ],
+        [
+          3664,
+          3664,
+          3664
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          65560,
+          65560,
+          65560
+        ]
+      ]
+    },
+    {
+      "Name": "dense-ascii",
+      "Id": "structural/keyword-family-to-capitalized-identifier",
+      "Options": "Compiled, CultureInvariant",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 30720,
+      "InputSha256": "1ACF5C4A04795CAE4561373BFFD8FDC11A9FBBB75299C9518666483A0AF2A409",
+      "Expected": 1536,
+      "Iterations": [
+        59,
+        694,
+        595,
+        538
+      ],
+      "WarmupCalls": [
+        586,
+        6961,
+        5955,
+        5395
+      ],
+      "WarmupMilliseconds": [
+        500.4838,
+        500.0207,
+        500.0314,
+        500.0692
+      ],
+      "Microseconds": [
+        [
+          849.7779661016948,
+          854.1898305084745,
+          845.6355932203389
+        ],
+        [
+          71.8321325648415,
+          71.63184438040346,
+          71.43544668587896
+        ],
+        [
+          84.30285714285715,
+          85.31495798319328,
+          84.89764705882352
+        ],
+        [
+          93.50260223048328,
+          93.49944237918217,
+          91.89684014869889
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          61464,
+          61464,
+          61464
+        ]
+      ]
+    },
+    {
+      "Name": "dense-unicode",
+      "Id": "structural/keyword-family-to-capitalized-identifier",
+      "Options": "Compiled, CultureInvariant",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 34816,
+      "InputSha256": "0A630DA7256240275B56F0B4A61A82A422018C3544CFFB742BA96CF563ACA014",
+      "Expected": 1024,
+      "Iterations": [
+        62,
+        59,
+        654,
+        463
+      ],
+      "WarmupCalls": [
+        614,
+        577,
+        6483,
+        4571
+      ],
+      "WarmupMilliseconds": [
+        500.4909,
+        500.6065,
+        500.0254,
+        500.065
+      ],
+      "Microseconds": [
+        [
+          817.166129032258,
+          814.2161290322581,
+          820.5338709677419
+        ],
+        [
+          859.3000000000001,
+          839.1627118644068,
+          861.1898305084746
+        ],
+        [
+          77.22477064220183,
+          78.09969418960245,
+          77.5191131498471
+        ],
+        [
+          106.96306695464362,
+          106.89481641468683,
+          107.67796976241901
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          65560,
+          65560,
+          65560
+        ]
+      ]
+    },
+    {
+      "Name": "native-star-control",
+      "Id": "structural/keyword-family-to-capitalized-identifier",
+      "Options": "Compiled, CultureInvariant",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 16384,
+      "InputSha256": "EF7D335C52F68E0C9F1CEBA92C9F3AFDBB6DA550A88462AA2FF9F62310758A1A",
+      "Expected": 1024,
+      "Iterations": [
+        1782,
+        1799,
+        1153,
+        1054
+      ],
+      "WarmupCalls": [
+        12555,
+        17688,
+        11288,
+        10225
+      ],
+      "WarmupMilliseconds": [
+        500.0106,
+        500.0181,
+        500.0125,
+        500.0038
+      ],
+      "Microseconds": [
+        [
+          27.95679012345679,
+          27.695679012345682,
+          27.86026936026936
+        ],
+        [
+          28.22912729294052,
+          28.10561423012785,
+          27.953807670928295
+        ],
+        [
+          45.56556808326106,
+          45.18664353859497,
+          45.16270598438855
+        ],
+        [
+          47.84335863377609,
+          48.0246679316888,
+          48.28965844402277
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          32792,
+          32792,
+          32792
+        ]
+      ]
+    },
+    {
+      "Name": "control",
+      "Id": "literal/sherlock-en",
+      "Options": "Compiled",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 899232,
+      "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+      "Expected": 513,
+      "Iterations": [
+        710,
+        672,
+        658,
+        127
+      ],
+      "WarmupCalls": [
+        6075,
+        6613,
+        6554,
+        1116
+      ],
+      "WarmupMilliseconds": [
+        500.0354,
+        500.0048,
+        500.0094,
+        500.6078
+      ],
+      "Microseconds": [
+        [
+          71.6443661971831,
+          71.46070422535212,
+          71.72408450704226
+        ],
+        [
+          75.2125,
+          74.328125,
+          75.50803571428571
+        ],
+        [
+          76.93252279635259,
+          76.73510638297873,
+          76.79939209726444
+        ],
+        [
+          438.111811023622,
+          431.21968503937,
+          468.7464566929134
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          1797352,
+          1797352,
+          1797352
+        ]
+      ]
+    }
+  ]
+}

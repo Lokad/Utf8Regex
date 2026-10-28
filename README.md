@@ -297,7 +297,6 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `lokad/lexer/identifier` | 106.308 us | 16.652 us | 21.048 us | 6.38x |
 | `balancing/begin-end-blocks` | 12,620.675 us | 4,222.675 us | 4,233.725 us | 2.99x |
 | `lokad/langserv/color-short-hex` | 1.682 us | 1.104 us | 1.247 us | 1.52x |
-| `structural/keyword-family-to-capitalized-identifier` | 316.882 us | 220.144 us | 232.466 us | 1.44x |
 | `structural/keyword-to-generic-type` | 5.830 us | 4.118 us | 15.750 us | 1.42x |
 | `lokad/langserv/identifier-validator` | 11.724 us | 9.702 us | 11.734 us | 1.21x |
 | `structural/ordered-keyword-pair` | 6.110 us | 5.521 us | 17.198 us | 1.11x |
@@ -313,6 +312,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `literal/identifier-token-casei` | 7.452 us | 15.546 us | 27.323 us | 0.48x |
 | `structural/ordered-keyword-window` | 6.874 us | 18.003 us | 29.815 us | 0.38x |
 | `structural/ordered-modifier-pair` | 6.073 us | 17.663 us | 28.785 us | 0.34x |
+| `structural/keyword-family-to-capitalized-identifier` | 74.910 us | 220.031 us | 231.281 us | 0.34x |
 | `structural/ordered-identifier-window` | 6.493 us | 29.202 us | 40.545 us | 0.22x |
 | `structural/modifier-family-to-type-pair` | 24.891 us | 135.047 us | 147.705 us | 0.18x |
 <!-- END GENERATED LOKAD BENCHMARKS -->
@@ -333,13 +333,13 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | Case | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
 | `lokad/folding/region-marker` | 5,395.440 us | 37.293 us | 60.206 us | 144.68x |
-| `structural/keyword-family-to-capitalized-identifier` | 317.036 us | 7.740 us | 18.949 us | 40.96x |
 | `balancing/begin-end-blocks` | 12,894.325 us | 471.357 us | 499.274 us | 27.36x |
 | `lokad/docs/inline-doc-prefix` | 37.181 us | 2.731 us | 3.643 us | 13.61x |
 | `lokad/lexer/number` | 88.666 us | 6.987 us | 8.527 us | 12.69x |
 | `lokad/langserv/url-dashboard` | 88.801 us | 7.434 us | 8.055 us | 11.94x |
 | `lokad/style/hex-color` | 5.636 us | 0.498 us | 0.595 us | 11.31x |
 | `lokad/langserv/url-download` | 145.706 us | 12.969 us | 13.454 us | 11.23x |
+| `structural/keyword-family-to-capitalized-identifier` | 74.881 us | 7.748 us | 19.121 us | 9.67x |
 | `lokad/lexer/doc-line` | 20.079 us | 2.181 us | 3.067 us | 9.20x |
 | `lokad/imports/module-imports` | 37.317 us | 4.443 us | 26.603 us | 8.40x |
 | `lokad/style/cell-ref` | 13.998 us | 1.747 us | 1.972 us | 8.01x |
