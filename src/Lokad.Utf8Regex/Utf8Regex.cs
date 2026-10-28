@@ -1428,6 +1428,21 @@ public sealed partial class Utf8Regex
             }
         }
         if (RejectMissingRequiredLiteral(input, program, ref invocation)) return 0;
+        if (startByte == 0 && ReferenceEquals(program, _ownedSliceProgram) &&
+            !program.RightToLeft && !program.IgnoreCase && !program.IsNonBacktracking &&
+            _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.Utf8BalancedBeginEndCount)
+        {
+            var breach = Utf8BalancedBeginEndExecutor.TryCountWellFormed(input, ref invocation,
+                out var count, out var handled);
+            if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
+            if (handled)
+            {
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectUtf8BalancedBeginEnd);
+                return count;
+            }
+            // The fixed native nesting envelope declined. Keep all work already
+            // spent and retry scalar discovery from the original start.
+        }
         var slots = new Utf8SliceSlots([], []);
         try
         {

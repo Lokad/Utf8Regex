@@ -14,6 +14,8 @@
   profile verification and Unicode behavior on validated UTF-8.
 - Reuse the anchored leading-digits/tail grammar for Boolean matching without
   capture workspace, preserving Unicode-prefix verification and finite limits.
+- Reuse the proved balanced-block counter with finite work/depth/working limits;
+  deeper nesting retains scalar execution under the original invocation.
 
 ## 0.4.0 — 2026-10-27
 

@@ -144,7 +144,7 @@ unlimited and zero is invalid. Defaults and static cached calls are unlimited.
 | Policy | Covered scope | Denial kind |
 | --- | --- | --- |
 | `MaxWorkSteps` | Cumulative bounded engine/checkpoint work | `ExecutionWorkSteps` |
-| `MaxDepth` | Live backtracking/continuation/assertion frames or pending linear alternatives | `ExecutionDepth` |
+| `MaxDepth` | Live backtracking/continuation/assertion frames, pending linear alternatives or native nesting records | `ExecutionDepth` |
 | `MaxWorkingBytes` | Conservative major active capacities, including growth overlap | `ExecutionWorkingBytes` |
 | `MaxResultBytes` | Cumulative modeled result/staging capacity, admitted before acquisition without refunds | `ExecutionResultBytes` |
 
@@ -153,6 +153,9 @@ total. Totals saturate, and first denial stays sticky across copies. Denial is n
 no-match or partial success. Numerical charges depend on route/version; they are
 not byte counts, CPU instructions, elapsed time or portable per-pattern minima.
 Native shortcuts still meter bounded search, comparison and publication.
+Native counters admit their fixed scratch capacity against working bytes before
+use and record active nesting against depth. A Count shortcut can avoid capture
+workspace; a declined shortcut retains its spent work when scalar execution resumes.
 
 Copied value cursors have independent positions but share allowance/deadline and
 published map/table reservations; concurrent advancement is unsupported.
