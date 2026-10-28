@@ -148,7 +148,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 
 | Case | Operation | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
-| `industry/mariomka-ip-count` | `Count` | 1,106,611.500 us | 8,621.767 us | 17,384.800 us | 128.35x |
 | `industry/leipzig-symbol-count` | `Count` | 1,152,702.300 us | 23,036.733 us | 30,488.150 us | 50.04x |
 | `industry/rust-sherlock-word-holmes-count` | `Count` | 231,343.700 us | 8,453.017 us | 8,894.100 us | 27.37x |
 | `common/uri-miss` | `IsMatch` | 4.732 us | 0.190 us | 0.207 us | 24.88x |
@@ -174,6 +173,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/leipzig-name-family-count` | `Count` | 4,216.867 us | 9,795.667 us | 17,176.000 us | 0.43x |
 | `common/matches-set` | `Count` | 78.910 us | 194.124 us | 197.086 us | 0.41x |
 | `common/matches-word` | `Count` | 1.422 us | 4.262 us | 6.079 us | 0.33x |
+| `industry/mariomka-ip-count` | `Count` | 2,654.368 us | 8,643.717 us | 17,226.200 us | 0.31x |
 | `common/one-node-backtracking` | `IsMatch` | 0.189 us | 0.628 us | 0.659 us | 0.30x |
 | `common/date-match` | `IsMatch` | 0.029 us | 0.110 us | 0.139 us | 0.26x |
 | `industry/boostdocs-postcode-match` | `IsMatch` | 0.020 us | 0.084 us | 0.100 us | 0.23x |
@@ -231,7 +231,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | Case | Operation | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
 | `industry/leipzig-symbol-count` | `Count` | 1,153,094.300 us | 1,235.305 us | 6,850.600 us | 933.45x |
-| `industry/mariomka-ip-count` | `Count` | 1,106,995.400 us | 3,525.667 us | 11,334.350 us | 313.98x |
 | `common/backtracking` | `IsMatch` | 4.408 us | 0.044 us | 0.075 us | 99.71x |
 | `common/uri-miss` | `IsMatch` | 4.703 us | 0.065 us | 0.084 us | 72.81x |
 | `industry/rust-sherlock-word-holmes-count` | `Count` | 231,533.400 us | 3,980.992 us | 4,399.225 us | 58.16x |
@@ -257,6 +256,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/leipzig-name-family-count` | `Count` | 4,283.100 us | 3,108.941 us | 8,415.833 us | 1.38x |
 | `industry/leipzig-twain-count` | `Count` | 1,320.782 us | 1,333.897 us | 5,548.167 us | 0.99x |
 | `common/matches-words` | `Count` | 9.540 us | 11.005 us | 14.130 us | 0.87x |
+| `industry/mariomka-ip-count` | `Count` | 2,655.547 us | 3,546.340 us | 11,183.800 us | 0.75x |
 | `common/matches-set` | `Count` | 78.954 us | 105.581 us | 107.626 us | 0.75x |
 | `common/split-words` | `Split` | 14.632 us | 21.080 us | 22.875 us | 0.69x |
 | `common/date-match` | `IsMatch` | 0.030 us | 0.044 us | 0.074 us | 0.68x |
