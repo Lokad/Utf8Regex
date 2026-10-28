@@ -149,7 +149,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | Case | Operation | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
 | `industry/leipzig-symbol-count` | `Count` | 1,152,702.300 us | 23,036.733 us | 30,488.150 us | 50.04x |
-| `industry/rust-sherlock-word-holmes-count` | `Count` | 231,343.700 us | 8,453.017 us | 8,894.100 us | 27.37x |
 | `industry/boostdocs-ftp-line-match` | `IsMatch` | 1.450 us | 0.111 us | 0.144 us | 13.06x |
 | `industry/boostdocs-credit-card-match` | `IsMatch` | 1.420 us | 0.167 us | 0.188 us | 8.52x |
 | `common/ip-match` | `IsMatch` | 1.100 us | 0.177 us | 0.195 us | 6.23x |
@@ -181,6 +180,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/date-miss` | `IsMatch` | 0.099 us | 0.561 us | 0.592 us | 0.18x |
 | `industry/boostdocs-float-match` | `IsMatch` | 0.011 us | 0.078 us | 0.091 us | 0.14x |
 | `common/matches-words` | `Count` | 9.542 us | 69.688 us | 71.353 us | 0.14x |
+| `industry/rust-sherlock-word-holmes-count` | `Count` | 522.382 us | 8,730.300 us | 9,193.533 us | 0.06x |
 | `industry/rust-sherlock-ing-count` | `Count` | 266.929 us | 11,941.220 us | 12,497.400 us | 0.02x |
 <!-- END GENERATED DOTNET_PERFORMANCE BENCHMARKS -->
 
@@ -231,7 +231,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | Case | Operation | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
 | `industry/leipzig-symbol-count` | `Count` | 1,153,094.300 us | 1,235.305 us | 6,850.600 us | 933.45x |
-| `industry/rust-sherlock-word-holmes-count` | `Count` | 231,533.400 us | 3,980.992 us | 4,399.225 us | 58.16x |
 | `industry/boostdocs-ftp-line-match` | `IsMatch` | 1.447 us | 0.048 us | 0.085 us | 29.97x |
 | `industry/boostdocs-credit-card-match` | `IsMatch` | 1.442 us | 0.055 us | 0.078 us | 26.35x |
 | `common/ip-miss` | `IsMatch` | 1.142 us | 0.048 us | 0.070 us | 23.56x |
@@ -263,6 +262,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/matches-word` | `Count` | 1.422 us | 2.363 us | 3.649 us | 0.60x |
 | `common/date-miss` | `IsMatch` | 0.100 us | 0.203 us | 0.238 us | 0.49x |
 | `industry/boostdocs-float-match` | `IsMatch` | 0.013 us | 0.035 us | 0.053 us | 0.36x |
+| `industry/rust-sherlock-word-holmes-count` | `Count` | 524.364 us | 3,986.215 us | 4,417.133 us | 0.13x |
 | `industry/rust-sherlock-ing-count` | `Count` | 267.806 us | 4,816.909 us | 5,222.220 us | 0.06x |
 <!-- END GENERATED DOTNET_PERFORMANCE_COMPILED BENCHMARKS -->
 

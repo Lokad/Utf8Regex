@@ -135,6 +135,28 @@ public sealed class Utf8ClassPrefixCandidateTests
         else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
     }
 
+    [Fact]
+    public void FinalFailedSearchCannotPublishAfterItsLastDeadlinePollCancelsTheToken()
+    {
+        var reads = 0;
+        var cancelAt = int.MaxValue;
+        using var cancellation = new CancellationTokenSource();
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
+        {
+            if (++reads == cancelAt) cancellation.Cancel();
+            return 0;
+        });
+        var regex = new Utf8Regex(@"\w+\s+Holmes", RegexOptions.None, TimeSpan.FromSeconds(1), Funded);
+        var input = Encoding.UTF8.GetBytes("word Holmes" + new string('!', 8192));
+        Assert.Equal(1, regex.Count(input, cancellation.Token));
+        Assert.True(reads > 1);
+        cancelAt = reads;
+        reads = 0;
+        Assert.Equal(cancellation.Token,
+            Assert.Throws<OperationCanceledException>(() => regex.Count(input, cancellation.Token)).CancellationToken);
+        Assert.Equal(cancelAt, reads);
+    }
+
     private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 4000000, MaxDepth = 4096,
         MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 };
 }
