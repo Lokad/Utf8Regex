@@ -2,6 +2,65 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8AsciiLeadingDigitsTailExecutor
 {
+    // The caller validates the complete subject. The grammar proof projects
+    // leading and separator classes into ASCII, so a wider prefix must defer to
+    // the scalar VM. After a recognized separator, the proved dot tail accepts
+    // every scalar except LF, whose byte cannot occur inside valid UTF-8.
+    internal static Utf8ExecutionLimitKind TryIsMatchWellFormedWhole(ReadOnlySpan<byte> input,
+        ReadOnlySpan<byte> separatorBytes, ref Utf8SliceInvocation invocation,
+        out bool handled, out bool isMatch)
+    {
+        handled = isMatch = false;
+        var end = input.Length;
+        if (end != 0 && input[end - 1] == (byte)'\n') end--;
+        var position = 0;
+        var matched = false;
+        while (position < end)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            var length = Math.Min(2048, end - position);
+            var firstOther = input.Slice(position, length).IndexOfAnyExceptInRange((byte)'0', (byte)'9');
+            position += firstOther < 0 ? length : firstOther;
+            if (firstOther >= 0) break;
+        }
+        if (position < end && input[position] >= 128)
+        {
+            var breach = invocation.TryChargeInputStep();
+            invocation.Budget.ThrowIfCancellationRequested();
+            return breach;
+        }
+        if (position > 0)
+        {
+            matched = position == end;
+            if (!matched && separatorBytes.IndexOf(input[position]) >= 0)
+            {
+                matched = true;
+                position++;
+                while (position < end)
+                {
+                    var breach = invocation.TryChargeInputStep();
+                    if (breach != Utf8ExecutionLimitKind.None) return breach;
+                    var length = Math.Min(2048, end - position);
+                    if (input.Slice(position, length).IndexOf((byte)'\n') >= 0)
+                    {
+                        matched = false;
+                        break;
+                    }
+                    position += length;
+                }
+            }
+        }
+        var finalBreach = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        if (finalBreach == Utf8ExecutionLimitKind.None)
+        {
+            handled = true;
+            isMatch = matched;
+        }
+        return finalBreach;
+    }
+
     public static bool TryMatchPrintableAsciiWhole(
         ReadOnlySpan<byte> input,
         ReadOnlySpan<byte> separatorBytes,

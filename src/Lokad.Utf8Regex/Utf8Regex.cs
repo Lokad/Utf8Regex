@@ -852,6 +852,22 @@ public sealed partial class Utf8Regex
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.Utf8UriToken &&
             CanUseNativeScalarTokenSearch(program, startByte))
             return Utf8UriTokenExecutor.IsMatchWellFormed(input, ref invocation);
+        // This complete anchored grammar needs no capture state for existence.
+        // Wider leading/separator classes keep the scalar VM under this same
+        // invocation; the recognized ASCII prefix permits a scalar dot tail.
+        if (startByte == 0 && ReferenceEquals(program, _ownedSliceProgram) &&
+            !program.RightToLeft && !program.IgnoreCase && !program.IsNonBacktracking &&
+            _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail)
+        {
+            var breach = Utf8AsciiLeadingDigitsTailExecutor.TryIsMatchWellFormedWhole(input,
+                _fallbackDirectFamily.LiteralUtf8, ref invocation, out var handled, out var matched);
+            if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
+            if (handled)
+            {
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredDigitsTail);
+                return matched;
+            }
+        }
         if (RejectMissingRequiredLiteral(input, program, ref invocation)) return false;
         var slots = new Utf8SliceSlots([], []);
         try

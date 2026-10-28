@@ -12,6 +12,8 @@
   preserve identifier-tail bounds and narrower whitespace classes in native plans.
 - Filter PythonRe search starts through convergent zero-width prefixes, retaining
   profile verification and Unicode behavior on validated UTF-8.
+- Reuse the anchored leading-digits/tail grammar for Boolean matching without
+  capture workspace, preserving Unicode-prefix verification and finite limits.
 
 ## 0.4.0 — 2026-10-27
 
