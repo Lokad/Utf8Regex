@@ -47,7 +47,7 @@ internal readonly partial struct PreparedSearcher
         Kind = PreparedSearcherKind.QuotedAsciiRun;
     }
 
-    private PreparedSubstringSearch LiteralSearch { get; }
+    internal PreparedSubstringSearch LiteralSearch { get; }
 
     private PreparedByteSearch ByteSearch { get; }
 

@@ -831,6 +831,22 @@ public sealed partial class Utf8Regex
                 throw new InvalidOperationException("Native literal existence search breached the invocation budget.");
             return found;
         }
+        // Dot-star can consume nothing: existence is exactly the complete
+        // literal suffix's existence. A necessary literal of that full length
+        // is the suffix; a fragment from separate captures is insufficient.
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral &&
+            ReferenceEquals(program, _ownedSliceProgram) &&
+            !program.RightToLeft && !program.IgnoreCase && !program.IsNonBacktracking &&
+            _preparedRegex.SearchPlan.RequiredPrefilterSearcher is { Kind: PreparedSearcherKind.ExactLiteral } required &&
+            required.LiteralSearch.Length == _fallbackDirectFamily.LiteralUtf8.Length)
+        {
+            var breach = required.TryFindMatch(input, startByte, input.Length, false,
+                ref invocation, out _, out var found);
+            if (breach == Utf8ExecutionLimitKind.None) breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
+            invocation.Budget.ThrowIfCancellationRequested();
+            return found;
+        }
         if (RejectMissingRequiredLiteral(input, program, ref invocation)) return false;
         var slots = new Utf8SliceSlots([], []);
         try
