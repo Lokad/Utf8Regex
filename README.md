@@ -76,20 +76,29 @@ for the 0.4.0 changes.
 ## Runtime support
 
 The 0.5.0 development source targets `net10.0` and `net11.0`. .NET 11 currently
-uses the SDK pinned in `global.json`, a release candidate. Published 0.4.0
-packages target .NET 10. Benchmark refreshes now target .NET 11; existing rows
-keep their original runtime identities until remeasured.
+uses the release-candidate SDK pinned in [global.json](global.json) and is the
+primary benchmark baseline. .NET 10 remains a compatibility target, with both
+runtimes checked in Windows/Linux CI. Published 0.4.0 packages target .NET 10.
 
 ## Benchmarks
 
-The tables below come from [README.Benchmarks.json](README.Benchmarks.json).
-The 0.5 refresh uses independent lane calibration and alternating sample order;
-counts and raw durations are retained. Core samples below 20 ms cannot set parity
-status. Python and .NET result batches consume checksums after timing, while
-including required result materialization. CPython paired measurements and the
-native PCRE2 comparator retain their own semantic and qualification gates.
-Rows retain their measured source/runtime versions and do not qualify later
-implementations. Profile comparisons are in the
+The tables below were refreshed on **28 October 2026** using **.NET 11 RC3**
+(`11.0.0-rc.3.26522.148`) on Ubuntu 24.04.4 x64, Intel Xeon Platinum 8573C.
+They measure public operations, including strict UTF-8 validation and required
+result materialization. Values come from
+[README.Benchmarks.json](README.Benchmarks.json); raw samples, binary identities
+and [qualification verdicts](README.Parity.json) are retained. Four Core rows
+remain unqualified; their displayed medians do not establish parity. Measurements
+describe the frozen implementation, not later source changes.
+
+The complete Core/PythonRe/PCRE2 refresh took **45 minutes 37 seconds**, including
+a fresh Release build, .NET 10/11 tests, paired comparators, lifecycle/scaling
+measurements and resource checks. See the
+[run receipt](bench/Experiments/Net11-20261027/subhour-refresh.json).
+[refresh-benchmarks.ps1](refresh-benchmarks.ps1) runs the full cycle or selected
+phases; [bench.ps1](bench.ps1) supports focused single-case iterations.
+
+Profile comparisons are in the
 [PythonRe](src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md) and
 [PCRE2](src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md) benchmark pages.
 
