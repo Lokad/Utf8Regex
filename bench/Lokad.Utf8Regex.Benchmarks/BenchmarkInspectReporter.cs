@@ -1707,47 +1707,50 @@ internal static partial class BenchmarkInspectReporter
 
     private static void WriteReadmeDefaultTableHeader(StringWriter writer)
     {
-        writer.WriteLine("| Case | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed |");
-        writer.WriteLine("|---|---:|---:|---:|");
+        writer.WriteLine("| Case | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |");
+        writer.WriteLine("|---|---:|---:|---:|---:|");
     }
 
     private static void WriteReadmeCompiledTableHeader(StringWriter writer)
     {
-        writer.WriteLine("| Case | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed |");
-        writer.WriteLine("|---|---:|---:|---:|");
+        writer.WriteLine("| Case | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |");
+        writer.WriteLine("|---|---:|---:|---:|---:|");
     }
 
     private static void WriteReadmePublicDefaultTableHeader(StringWriter writer)
     {
-        writer.WriteLine("| Case | Operation | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed |");
-        writer.WriteLine("|---|---|---:|---:|---:|");
+        writer.WriteLine("| Case | Operation | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |");
+        writer.WriteLine("|---|---|---:|---:|---:|---:|");
     }
 
     private static void WriteReadmePublicCompiledTableHeader(StringWriter writer)
     {
-        writer.WriteLine("| Case | Operation | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed |");
-        writer.WriteLine("|---|---|---:|---:|---:|");
+        writer.WriteLine("| Case | Operation | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |");
+        writer.WriteLine("|---|---|---:|---:|---:|---:|");
     }
 
     private static void WriteReadmePlainDefaultCaseRow(StringWriter writer, string caseId, ReadmeCaseMeasurement row)
     {
-        writer.WriteLine($"| `{caseId}` | {FormatMicros(row.Utf8Regex)} | {FormatMicros(row.PredecodedRegex)} | {FormatMicros(row.DecodeThenRegex)} |");
+        writer.WriteLine($"| `{caseId}` | {FormatMicros(row.Utf8Regex)} | {FormatMicros(row.PredecodedRegex)} | {FormatMicros(row.DecodeThenRegex)} | {FormatReadmeRatio(row.Utf8Regex, row.PredecodedRegex)} |");
     }
 
     private static void WriteReadmePlainCompiledCaseRow(StringWriter writer, string caseId, ReadmeCaseMeasurement row)
     {
-        writer.WriteLine($"| `{caseId}` | {FormatMicros(row.Utf8Compiled)} | {FormatMicros(row.CompiledRegex)} | {FormatMicros(row.DecodeThenCompiledRegex)} |");
+        writer.WriteLine($"| `{caseId}` | {FormatMicros(row.Utf8Compiled)} | {FormatMicros(row.CompiledRegex)} | {FormatMicros(row.DecodeThenCompiledRegex)} | {FormatReadmeRatio(row.Utf8Compiled, row.CompiledRegex)} |");
     }
 
     private static void WriteReadmePlainPublicDefaultCaseRow(StringWriter writer, string caseId, ReadmeCaseMeasurement row, LokadPublicBenchmarkOperation operation)
     {
-        writer.WriteLine($"| `{caseId}` | `{operation}` | {FormatMicros(row.Utf8Regex)} | {FormatMicros(row.PredecodedRegex)} | {FormatMicros(row.DecodeThenRegex)} |");
+        writer.WriteLine($"| `{caseId}` | `{operation}` | {FormatMicros(row.Utf8Regex)} | {FormatMicros(row.PredecodedRegex)} | {FormatMicros(row.DecodeThenRegex)} | {FormatReadmeRatio(row.Utf8Regex, row.PredecodedRegex)} |");
     }
 
     private static void WriteReadmePlainPublicCompiledCaseRow(StringWriter writer, string caseId, ReadmeCaseMeasurement row, LokadPublicBenchmarkOperation operation)
     {
-        writer.WriteLine($"| `{caseId}` | `{operation}` | {FormatMicros(row.Utf8Compiled)} | {FormatMicros(row.CompiledRegex)} | {FormatMicros(row.DecodeThenCompiledRegex)} |");
+        writer.WriteLine($"| `{caseId}` | `{operation}` | {FormatMicros(row.Utf8Compiled)} | {FormatMicros(row.CompiledRegex)} | {FormatMicros(row.DecodeThenCompiledRegex)} | {FormatReadmeRatio(row.Utf8Compiled, row.CompiledRegex)} |");
     }
+
+    private static string FormatReadmeRatio(double utf8, double predecoded)
+        => (utf8 / predecoded).ToString("F2", CultureInfo.InvariantCulture) + "x";
 
     private static string ReplaceMarkedSection(string text, string beginMarker, string endMarker, string replacement)
     {
@@ -1809,6 +1812,13 @@ internal static partial class BenchmarkInspectReporter
         var writer = new StringWriter(CultureInfo.InvariantCulture);
         var sectionSnapshot = GetRequiredSnapshotSection(snapshot, section);
 
+        var compiled = section is ReadmeBenchmarkSection.DotNetPerformanceCompiled or ReadmeBenchmarkSection.LokadCompiled;
+        IEnumerable<string> OrderedCases(IEnumerable<string> ids) => ids.OrderByDescending(id =>
+        {
+            var row = GetRequiredSnapshotMeasurement(sectionSnapshot, id);
+            return compiled ? row.Utf8Compiled / row.CompiledRegex : row.Utf8Regex / row.PredecodedRegex;
+        }).ThenBy(static id => id, StringComparer.Ordinal);
+
         switch (section)
         {
             case ReadmeBenchmarkSection.DotNetPerformance:
@@ -1826,7 +1836,7 @@ internal static partial class BenchmarkInspectReporter
                 writer.WriteLine("### Stress Count Workloads");
                 writer.WriteLine();
                 WriteReadmeDefaultTableHeader(writer);
-                foreach (var caseId in ReplicaCountBenchmarkCase.GetAllIds(ReplicaBenchmarkSource.DotNetPerformance))
+                foreach (var caseId in OrderedCases(ReplicaCountBenchmarkCase.GetAllIds(ReplicaBenchmarkSource.DotNetPerformance)))
                 {
                     WriteReadmePlainDefaultCaseRow(writer, caseId, GetRequiredSnapshotMeasurement(sectionSnapshot, caseId).ToMeasurement());
                 }
@@ -1837,7 +1847,7 @@ internal static partial class BenchmarkInspectReporter
                 writer.WriteLine("These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `Split(...)` depending on the case.");
                 writer.WriteLine();
                 WriteReadmePublicDefaultTableHeader(writer);
-                foreach (var caseId in LokadPublicBenchmarkContext.GetAllCaseIds())
+                foreach (var caseId in OrderedCases(LokadPublicBenchmarkContext.GetAllCaseIds()))
                 {
                     WriteReadmePlainPublicDefaultCaseRow(writer, caseId, GetRequiredSnapshotMeasurement(sectionSnapshot, caseId).ToMeasurement(), LokadPublicBenchmarkContext.GetOperation(caseId));
                 }
@@ -1858,7 +1868,7 @@ internal static partial class BenchmarkInspectReporter
                 writer.WriteLine("### Stress Count Workloads");
                 writer.WriteLine();
                 WriteReadmeCompiledTableHeader(writer);
-                foreach (var caseId in ReplicaCountBenchmarkCase.GetAllIds(ReplicaBenchmarkSource.DotNetPerformance))
+                foreach (var caseId in OrderedCases(ReplicaCountBenchmarkCase.GetAllIds(ReplicaBenchmarkSource.DotNetPerformance)))
                 {
                     WriteReadmePlainCompiledCaseRow(writer, caseId, GetRequiredSnapshotMeasurement(sectionSnapshot, caseId).ToMeasurement());
                 }
@@ -1869,7 +1879,7 @@ internal static partial class BenchmarkInspectReporter
                 writer.WriteLine("These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `Split(...)` depending on the case.");
                 writer.WriteLine();
                 WriteReadmePublicCompiledTableHeader(writer);
-                foreach (var caseId in LokadPublicBenchmarkContext.GetAllCaseIds())
+                foreach (var caseId in OrderedCases(LokadPublicBenchmarkContext.GetAllCaseIds()))
                 {
                     WriteReadmePlainPublicCompiledCaseRow(writer, caseId, GetRequiredSnapshotMeasurement(sectionSnapshot, caseId).ToMeasurement(), LokadPublicBenchmarkContext.GetOperation(caseId));
                 }
@@ -1887,7 +1897,7 @@ internal static partial class BenchmarkInspectReporter
                 writer.WriteLine("This combined suite covers Lokad production-style workloads, mixing coding-agent-style codebase probes over a plausible C# corpus with Lokad script whole-document counts and anchored per-sample prefix-match loops.");
                 writer.WriteLine();
                 WriteReadmeDefaultTableHeader(writer);
-                foreach (var caseId in ReplicaCountBenchmarkCase.GetAllIds(ReplicaBenchmarkSource.Lokad))
+                foreach (var caseId in OrderedCases(ReplicaCountBenchmarkCase.GetAllIds(ReplicaBenchmarkSource.Lokad)))
                 {
                     WriteReadmePlainDefaultCaseRow(writer, caseId, GetRequiredSnapshotMeasurement(sectionSnapshot, caseId).ToMeasurement());
                 }
@@ -1905,7 +1915,7 @@ internal static partial class BenchmarkInspectReporter
                 writer.WriteLine("This combined suite covers Lokad production-style workloads, mixing coding-agent-style codebase probes over a plausible C# corpus with Lokad script whole-document counts and anchored per-sample prefix-match loops.");
                 writer.WriteLine();
                 WriteReadmeCompiledTableHeader(writer);
-                foreach (var caseId in ReplicaCountBenchmarkCase.GetAllIds(ReplicaBenchmarkSource.Lokad))
+                foreach (var caseId in OrderedCases(ReplicaCountBenchmarkCase.GetAllIds(ReplicaBenchmarkSource.Lokad)))
                 {
                     WriteReadmePlainCompiledCaseRow(writer, caseId, GetRequiredSnapshotMeasurement(sectionSnapshot, caseId).ToMeasurement());
                 }
@@ -1921,7 +1931,7 @@ internal static partial class BenchmarkInspectReporter
     private static void WriteReadmeComparatorPolicy(StringWriter writer)
     {
         writer.WriteLine();
-        writer.WriteLine("Predecoded .NET is the primary comparator for execution time. `.NET + decode` is a secondary end-to-end indicator.");
+        writer.WriteLine("Predecoded .NET is the primary comparator for execution time. `.NET + decode` is a secondary end-to-end indicator. `Ratio` is Utf8Regex / .NET predecoded using the matching ordinary or compiled lanes; lower is better. Tables sort by decreasing ratio.");
     }
 
     private static IEnumerable<ReadmeBenchmarkSection> GetReadmeTargetsForCase(string caseId)
