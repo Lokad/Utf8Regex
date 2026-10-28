@@ -295,7 +295,6 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `lokad/langserv/helper-identifier` | 31.950 us | 4.882 us | 6.212 us | 6.54x |
 | `lokad/lexer/string` | 286.829 us | 44.581 us | 49.472 us | 6.43x |
 | `lokad/lexer/identifier` | 106.308 us | 16.652 us | 21.048 us | 6.38x |
-| `balancing/begin-end-blocks` | 12,620.675 us | 4,222.675 us | 4,233.725 us | 2.99x |
 | `lokad/langserv/color-short-hex` | 1.682 us | 1.104 us | 1.247 us | 1.52x |
 | `structural/keyword-to-generic-type` | 5.830 us | 4.118 us | 15.750 us | 1.42x |
 | `lokad/langserv/identifier-validator` | 11.724 us | 9.702 us | 11.734 us | 1.21x |
@@ -315,6 +314,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `structural/keyword-family-to-capitalized-identifier` | 74.910 us | 220.031 us | 231.281 us | 0.34x |
 | `structural/ordered-identifier-window` | 6.493 us | 29.202 us | 40.545 us | 0.22x |
 | `structural/modifier-family-to-type-pair` | 24.891 us | 135.047 us | 147.705 us | 0.18x |
+| `balancing/begin-end-blocks` | 7.333 us | 4,248.158 us | 4,248.675 us | 0.00x |
 <!-- END GENERATED LOKAD BENCHMARKS -->
 
 <!-- BEGIN GENERATED LOKAD_COMPILED BENCHMARKS -->
@@ -333,7 +333,6 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | Case | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
 | `lokad/folding/region-marker` | 5,395.440 us | 37.293 us | 60.206 us | 144.68x |
-| `balancing/begin-end-blocks` | 12,894.325 us | 471.357 us | 499.274 us | 27.36x |
 | `lokad/docs/inline-doc-prefix` | 37.181 us | 2.731 us | 3.643 us | 13.61x |
 | `lokad/lexer/number` | 88.666 us | 6.987 us | 8.527 us | 12.69x |
 | `lokad/langserv/url-dashboard` | 88.801 us | 7.434 us | 8.055 us | 11.94x |
@@ -366,4 +365,5 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `structural/ordered-modifier-pair` | 6.042 us | 8.654 us | 19.744 us | 0.70x |
 | `structural/ordered-identifier-window` | 6.484 us | 10.777 us | 21.938 us | 0.60x |
 | `literal/identifier-token` | 2.791 us | 4.756 us | 15.064 us | 0.59x |
+| `balancing/begin-end-blocks` | 7.342 us | 467.528 us | 489.277 us | 0.02x |
 <!-- END GENERATED LOKAD_COMPILED BENCHMARKS -->

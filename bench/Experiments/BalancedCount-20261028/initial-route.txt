@@ -1,0 +1,35 @@
+SourceKind        : lokad-case
+Origin            : balancing/regex_balancing/Regex
+Pattern           : BEGIN(?:(?<open>BEGIN)|(?<-open>END)|(?:(?!BEGIN|END)[\s\S]))*END(?(open)(?!))
+Options           : CultureInvariant
+InputChars        : 53352
+InputBytes        : 53352
+CompiledEngine    : FallbackRegex
+ExecutionKind     : FallbackRegex
+DirectFamily      : Utf8BalancedBeginEndCount
+OwnedScalarPlan   : True
+ScalarPrepared    : True
+SearchKind        : FixedDistanceAsciiSets
+PortfolioKind     : None
+PreparedSearcher  : None
+RequiredPrefilter : ExactLiteral
+WindowSearch      : None
+StructuralYield   : Start
+StructuralStages  : 13
+StructuralStage[0] : FindAscii
+StructuralStage[1] : RequireByteAtOffset @0='B'
+StructuralStage[2] : RequireByteAtOffset @1='E'
+StructuralStage[3] : RequireByteAtOffset @2='G'
+StructuralStage[4] : RequireByteAtOffset @3='I'
+StructuralStage[5] : RequireByteAtOffset @4='N'
+StructuralStage[6] : RequireByteAtOffset @2='G'
+StructuralStage[7] : RequireByteAtOffset @0='B'
+StructuralStage[8] : RequireByteAtOffset @1='E'
+StructuralStage[9] : RequireByteAtOffset @3='I'
+StructuralStage[10] : RequireByteAtOffset @4='N'
+StructuralStage[11] : RequireMinLength 8
+StructuralStage[12] : YieldStart
+FallbackPlans     : 1
+FallbackPlan[0]  : Yield=Start, Stages=2
+Verifier          : None
+FallbackReason    : unsupported_conditional

@@ -1,0 +1,32 @@
+Measuring README benchmark case: balancing/begin-end-blocks (requested=1, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=6715;ElapsedMicroseconds=50149.300
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=6813;ElapsedMicroseconds=49345.200
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=12;ElapsedMicroseconds=51376.700
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=110;ElapsedMicroseconds=51641.500
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=12;ElapsedMicroseconds=51919.100
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=99;ElapsedMicroseconds=48438.400
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=6715;ElapsedMicroseconds=48856.300
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=6813;ElapsedMicroseconds=49583.600
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=12;ElapsedMicroseconds=50977.900
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=110;ElapsedMicroseconds=51290.900
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=12;ElapsedMicroseconds=50734.600
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=99;ElapsedMicroseconds=47710.300
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=6715;ElapsedMicroseconds=49309.100
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=6813;ElapsedMicroseconds=50018.900
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=12;ElapsedMicroseconds=50586.900
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=110;ElapsedMicroseconds=50865.700
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=12;ElapsedMicroseconds=50984.100
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=99;ElapsedMicroseconds=48363.600
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=6715;ElapsedMicroseconds=49177.300
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=6813;ElapsedMicroseconds=50179.400
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=12;ElapsedMicroseconds=51747.000
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=110;ElapsedMicroseconds=51428.100
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=12;ElapsedMicroseconds=51138.900
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=99;ElapsedMicroseconds=48863.300
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=6715;ElapsedMicroseconds=49237.800
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=6813;ElapsedMicroseconds=50131.800
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=12;ElapsedMicroseconds=50413.400
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=110;ElapsedMicroseconds=51593.200
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=12;ElapsedMicroseconds=50770.500
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=99;ElapsedMicroseconds=49005.000
+Updated README case: balancing/begin-end-blocks
