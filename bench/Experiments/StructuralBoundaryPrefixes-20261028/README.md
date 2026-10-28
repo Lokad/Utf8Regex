@@ -35,11 +35,11 @@ The Unicode/control variation is +5.2%, +0.9% and +5.0%; do not describe those
 lanes as improvements. The finite lane's measured reduction is retained without
 attributing it to a new finite executor.
 
-One [five-sample refresh](keyword-boundary-refresh.log) changed only this case's
+One [five-sample refresh](keyword-boundary-refresh.txt) changed only this case's
 ordinary/compiled rows. The generated predecoded ratios are **0.34x ordinary**
 (previously 1.44x) and **9.67x compiled** (previously 40.96x), with zero allocation.
 The compiled lane remains a qualified gap. Other cases and lifecycle/scaling
-evidence are unchanged. [Report verification](keyword-boundary-verify.log) passed;
+evidence are unchanged. [Report verification](keyword-boundary-verify.txt) passed;
 README tables remain generated and sorted by decreasing ratio.
 
 [Focused Core checks](core-both.txt) passed on both runtimes, including public
