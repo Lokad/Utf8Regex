@@ -577,16 +577,17 @@ public sealed class Utf8SearchPlanTests
         Assert.NotNull(analysis.SemanticRegex.RuntimeTree);
         var family = Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(analysis.SemanticRegex.RuntimeTree!.Root);
         Assert.Null(family);
-        // No single literal family spans this alternation, and none is needed:
-        // the asserts below prove the quoted-relation route classifies and serves it
-        // with no required-prefilter searcher.
+        // The generic collector does not cross this nested dirty alternation.
+        // The admitted structural grammar supplies its own necessary quoted
+        // prefix family, without claiming that an operand proves a match/start.
 
         var regex = new Utf8Regex(pattern, RegexOptions.Multiline);
 
         Assert.Equal(NativeExecutionKind.AsciiStructuralQuotedRelation, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
         Assert.Equal(Utf8StructuralLinearProgramKind.AsciiQuotedRelation, regex.Inspection.StructuralLinearProgramKind);
-        Assert.Equal(PreparedSearcherKind.None, regex.Inspection.SearchPlan.RequiredPrefilterSearcher.Kind);
+        Assert.Equal(PreparedSearcherKind.MultiLiteral, regex.Inspection.SearchPlan.RequiredPrefilterSearcher.Kind);
+        Assert.False(regex.Inspection.SearchPlan.CanGuideFallbackStarts);
         Assert.Equal(PreparedSearcherKind.None, regex.Inspection.SearchPlan.SecondaryRequiredPrefilterSearcher.Kind);
         Assert.Null(regex.Inspection.SearchPlan.RequiredWindowPrefilterPlans);
         Assert.False(regex.Inspection.SearchPlan.HasFallbackCandidates);

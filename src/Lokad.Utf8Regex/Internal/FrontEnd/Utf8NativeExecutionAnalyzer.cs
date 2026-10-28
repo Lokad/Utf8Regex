@@ -1925,11 +1925,30 @@ internal static class Utf8NativeExecutionAnalyzer
                 return false;
             }
 
+            // Every admitted branch contains a quoted prefixed operand, at
+            // either edge. These literals are necessary anywhere in a match;
+            // they do not identify its start or prove the whole relation.
+            var quotedPrefixes = owner.AllocateArray<byte[]>(checked(plan.PrefixesUtf8.Length * 2), false);
+            for (var index = 0; index < plan.PrefixesUtf8.Length; index++)
+            {
+                var prefix = plan.PrefixesUtf8[index];
+                for (var quote = 0; quote < 2; quote++)
+                {
+                    owner.ChargeWork(checked((ulong)prefix.Length + 1));
+                    var literal = owner.AllocateArray<byte>(checked(prefix.Length + 1), false);
+                    literal[0] = quote == 0 ? (byte)'\'' : (byte)'"';
+                    prefix.AsSpan().CopyTo(literal.AsSpan(1));
+                    quotedPrefixes[index * 2 + quote] = literal;
+                }
+            }
             analyzedRegex = Utf8RegexAnalysis.CreateStructuralQuotedRelation(
                 semanticRegex,
                 executionPattern,
                 Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
-                Utf8SearchFacts.Create(Utf8SearchKind.None),
+                Utf8SearchFacts.Create(Utf8SearchKind.None, new Utf8SearchFactData
+                {
+                    RequiredPrefilterAlternateLiteralsUtf8 = quotedPrefixes,
+                }),
                 plan);
             construction.Complete(); return true;
         }
@@ -1999,11 +2018,16 @@ internal static class Utf8NativeExecutionAnalyzer
             using var frames = Utf8ConstructionFrames<ScanFrame>.Create(owner, new(node, 0, false));
             plan = default;
             node = UnwrapRuntimeNode(node, frames);
+            var repeatWholeRelation = false;
             if (node.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop &&
                 node.ChildCount == 1 &&
                 node.M >= 1 &&
                 node.N == int.MaxValue)
             {
+                // The native relation finder models a greedy +. Other minima
+                // and lazy outer repeats retain the scalar program's choices.
+                if (node.Kind != Utf8TreeNodeKind.Loop || node.M != 1) return false;
+                repeatWholeRelation = true;
                 node = UnwrapRuntimeNode(node.Child(0), frames);
             }
 
@@ -2027,7 +2051,8 @@ internal static class Utf8NativeExecutionAnalyzer
                 quotedRunClass,
                 firstRunLength,
                 firstBranch,
-                secondBranch);
+                secondBranch,
+                repeatWholeRelation);
             construction.Complete(); return true;
         }
         finally { owner.LeaveDepth(); }

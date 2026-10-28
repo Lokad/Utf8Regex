@@ -850,10 +850,13 @@ public sealed partial class Utf8Regex
     {
         if (!ReferenceEquals(program, _ownedSliceProgram) ||
             program.RightToLeft || program.HasContiguousAnchor ||
-            _preparedRegex.Features.HasAbsoluteStartAnchor ||
+            // This feature includes internal multiline ^ assertions. The
+            // quoted-relation proof starts at an operand, not at that assertion.
+            _preparedRegex.Features.HasAbsoluteStartAnchor &&
+                !_preparedRegex.StructuralLinearProgram.QuotedRelationPlan.HasValue ||
             _preparedRegex.SearchPlan.CanGuideFallbackStarts) return false;
         var prefilter = _preparedRegex.SearchPlan.RequiredPrefilterSearcher;
-        if (prefilter.Kind != PreparedSearcherKind.ExactLiteral) return false;
+        if (prefilter.Kind is not (PreparedSearcherKind.ExactLiteral or PreparedSearcherKind.MultiLiteral)) return false;
         // The existing planner proves this literal is necessary. Search the
         // complete already-validated subject, including lookbehind context;
         // presence proves nothing about a match and retains normal verification.

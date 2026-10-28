@@ -1223,6 +1223,18 @@ internal static partial class Utf8AsciiInstructionLinearExecutor
                 diagnostics?.CountSearchCandidate();
                 if (TryMatchQuotedRelationAt(input, candidate, program.QuotedRelationPlan, out matchedLength))
                 {
+                    // A greedy outer + owns adjacent complete relations as
+                    // one match. Keep each extension on the original clock.
+                    if (program.QuotedRelationPlan.RepeatWholeRelation)
+                    {
+                        while (candidate + matchedLength < input.Length)
+                        {
+                            budget.Step();
+                            if (!TryMatchQuotedRelationAt(input, candidate + matchedLength,
+                                program.QuotedRelationPlan, out var continuation)) break;
+                            matchedLength += continuation;
+                        }
+                    }
                     diagnostics?.CountVerifierInvocation();
                     diagnostics?.CountVerifierMatch();
                     return candidate;

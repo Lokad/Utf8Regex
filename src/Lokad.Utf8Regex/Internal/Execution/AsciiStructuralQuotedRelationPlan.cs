@@ -48,7 +48,8 @@ internal readonly struct AsciiStructuralQuotedRelationPlan
         AsciiCharClass quotedRunClass,
         int quotedRunLength,
         AsciiStructuralQuotedRelationBranchPlan firstBranch,
-        AsciiStructuralQuotedRelationBranchPlan secondBranch)
+        AsciiStructuralQuotedRelationBranchPlan secondBranch,
+        bool repeatWholeRelation)
     {
         PrefixesUtf8 = prefixesUtf8;
         PrefixedTailClass = prefixedTailClass;
@@ -57,6 +58,7 @@ internal readonly struct AsciiStructuralQuotedRelationPlan
         QuotedRunLength = quotedRunLength;
         FirstBranch = firstBranch;
         SecondBranch = secondBranch;
+        RepeatWholeRelation = repeatWholeRelation;
     }
 
     public byte[][] PrefixesUtf8 { get; }
@@ -72,6 +74,8 @@ internal readonly struct AsciiStructuralQuotedRelationPlan
     public AsciiStructuralQuotedRelationBranchPlan FirstBranch { get; }
 
     public AsciiStructuralQuotedRelationBranchPlan SecondBranch { get; }
+
+    public bool RepeatWholeRelation { get; }
 
     public bool HasValue =>
         PrefixesUtf8 is { Length: > 0 } &&
