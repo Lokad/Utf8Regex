@@ -8,6 +8,49 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8NonBacktrackingBatchTests
 {
+    [Fact]
+    public void PackedWordBoundariesPreservePublicCountsCapturesAndAliases()
+    {
+        var widths = new HashSet<int>();
+        for (var length = 48; length <= 70; length++)
+        {
+            var literal = new string('a', length);
+            var pattern = $"(?<x>{literal})|(?<last>b)$";
+            var regex = new Utf8Regex(pattern, RegexOptions.NonBacktracking);
+            var width = regex.Inspection.AvailableOwnedSliceProgram.Instructions.Length;
+            if (width is < 63 or > 65) continue;
+            widths.Add(width);
+            var oracle = new Regex(pattern, RegexOptions.NonBacktracking);
+            foreach (var text in new[] { "", "b", "é" + literal + "😀b", literal + literal + "!" })
+            {
+                var input = Encoding.UTF8.GetBytes(text);
+                Assert.Equal(oracle.Count(text), regex.Count(input));
+                Assert.Equal(oracle.Replace(text, "<$0>"), regex.ReplaceToString(input, "<$0>"));
+                var matches = oracle.Matches(text);
+                var cursor = regex.EnumerateMatches(input);
+                var alias = cursor.GetEnumerator();
+                var index = 0;
+                while (cursor.MoveNext())
+                {
+                    var expected = matches[index++];
+                    Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), cursor.Current.IndexInBytes);
+                    Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), cursor.Current.LengthInBytes);
+                }
+                Assert.Equal(matches.Count, index);
+                Assert.Equal(matches.Count != 0, alias.MoveNext());
+                if (matches.Count != 0)
+                {
+                    var detailed = regex.MatchDetailed(input);
+                    Assert.Equal(matches[0].Groups["x"].Value, detailed.GetGroup("x").GetValueString());
+                    Assert.Equal(matches[0].Groups["last"].Value, detailed.GetGroup("last").GetValueString());
+                }
+            }
+        }
+        Assert.Contains(63, widths);
+        Assert.Contains(64, widths);
+        Assert.Contains(65, widths);
+    }
+
     [Theory]
     [InlineData(false)] [InlineData(true)]
     public void PersistentScalarTableFundsCompleteOffsetAndBitArrays(bool empty)

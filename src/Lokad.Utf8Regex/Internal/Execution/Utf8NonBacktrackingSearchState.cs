@@ -115,9 +115,15 @@ internal sealed class Utf8NonBacktrackingSearchState
                 boundaries[index] = Utf8SliceRunner.AdvancePastScalar(input, boundaries[index - 1], false);
             }
             var result = new Utf8NonBacktrackingSearchState(boundaries, bits, stride, reservation);
+            var singleWord = stride == 1;
             for (var boundary = scalars; boundary >= 0; boundary--)
             {
                 var edge = boundaries[boundary];
+                // Epsilon order resolves this row's dependencies before use.
+                // Small programs need no repeated array loads/stores for them;
+                // the next row is complete already. Wider rows keep the table.
+                ulong current = 0;
+                var following = singleWord && boundary < scalars ? bits[boundary + 1] : 0;
                 var scalar = default(Rune);
                 var before = default(Rune);
                 if (boundary < scalars) _ = Rune.DecodeFromUtf8(input[edge..], out scalar, out _);
@@ -137,32 +143,44 @@ internal sealed class Utf8NonBacktrackingSearchState
                             viable = false;
                             break;
                         case Utf8SliceInstructionKind.Fork:
-                            viable = result.CanMatch(boundary, pc + 1) || result.CanMatch(boundary, instruction.A);
+                            viable = singleWord
+                                ? (current & ((1UL << (pc + 1)) | (1UL << instruction.A))) != 0
+                                : result.CanMatch(boundary, pc + 1) || result.CanMatch(boundary, instruction.A);
                             break;
                         case Utf8SliceInstructionKind.Jump:
-                            viable = result.CanMatch(boundary, instruction.A);
+                            viable = singleWord ? (current & (1UL << instruction.A)) != 0
+                                : result.CanMatch(boundary, instruction.A);
                             break;
                         case Utf8SliceInstructionKind.CaptureStart:
                         case Utf8SliceInstructionKind.CaptureEnd:
-                            viable = result.CanMatch(boundary, pc + 1);
+                            viable = singleWord ? (current & (1UL << (pc + 1))) != 0
+                                : result.CanMatch(boundary, pc + 1);
                             break;
                         case Utf8SliceInstructionKind.Anchor:
-                            viable = result.CanMatch(boundary, pc + 1) &&
+                            viable = (singleWord ? (current & (1UL << (pc + 1))) != 0
+                                : result.CanMatch(boundary, pc + 1)) &&
                                 Utf8SliceRunner.HoldsNonBacktrackingAnchor(instruction, input, edge);
                             break;
                         case Utf8SliceInstructionKind.Boundary:
                             var beforeWord = boundary > 0 && Utf8SliceScalarClasses.IsWord(before, true, instruction.B != 0);
                             var afterWord = boundary < scalars && Utf8SliceScalarClasses.IsWord(scalar, true, instruction.B != 0);
-                            viable = result.CanMatch(boundary, pc + 1) && (beforeWord != afterWord) == (instruction.A != 0);
+                            viable = (singleWord ? (current & (1UL << (pc + 1))) != 0
+                                : result.CanMatch(boundary, pc + 1)) && (beforeWord != afterWord) == (instruction.A != 0);
                             break;
                         default:
-                            viable = boundary < scalars && result.CanMatch(boundary + 1, pc + 1) &&
+                            viable = boundary < scalars && (singleWord ? (following & (1UL << (pc + 1))) != 0
+                                : result.CanMatch(boundary + 1, pc + 1)) &&
                                 Utf8SliceRunner.MatchesNonBacktrackingAtom(program, instruction, scalar, ref invocation, out breach);
                             if (breach != Utf8ExecutionLimitKind.None) return breach;
                             break;
                     }
-                    if (viable) bits[boundary * stride + (pc >> 6)] |= 1UL << (pc & 63);
+                    if (viable)
+                    {
+                        if (singleWord) current |= 1UL << pc;
+                        else bits[boundary * stride + (pc >> 6)] |= 1UL << (pc & 63);
+                    }
                 }
+                if (singleWord) bits[boundary] = current;
             }
             invocation.Budget.ThrowIfCancellationRequested();
             state = result;
