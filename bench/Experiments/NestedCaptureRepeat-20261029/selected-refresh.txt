@@ -1,0 +1,32 @@
+Measuring README benchmark case: lokad/imports/module-imports (requested=1, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=1650;ElapsedMicroseconds=50877.300
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=1621;ElapsedMicroseconds=49640.600
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=7898;ElapsedMicroseconds=49815.400
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=11421;ElapsedMicroseconds=49733.500
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=1686;ElapsedMicroseconds=48872.700
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=1905;ElapsedMicroseconds=50791.600
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=1650;ElapsedMicroseconds=50552.000
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=1621;ElapsedMicroseconds=49834.000
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=7898;ElapsedMicroseconds=50097.500
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=11421;ElapsedMicroseconds=50376.300
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=1686;ElapsedMicroseconds=48751.000
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=1905;ElapsedMicroseconds=50252.800
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=1650;ElapsedMicroseconds=49954.900
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=1621;ElapsedMicroseconds=49566.500
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=7898;ElapsedMicroseconds=50063.200
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=11421;ElapsedMicroseconds=49894.900
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=1686;ElapsedMicroseconds=49317.400
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=1905;ElapsedMicroseconds=50960.700
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=1650;ElapsedMicroseconds=50533.200
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=1621;ElapsedMicroseconds=50331.500
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=7898;ElapsedMicroseconds=50202.400
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=11421;ElapsedMicroseconds=50947.200
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=1686;ElapsedMicroseconds=48509.500
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=1905;ElapsedMicroseconds=50095.600
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=1650;ElapsedMicroseconds=50781.900
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=1621;ElapsedMicroseconds=49454.700
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=7898;ElapsedMicroseconds=50875.400
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=11421;ElapsedMicroseconds=50304.100
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=1686;ElapsedMicroseconds=49005.400
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=1905;ElapsedMicroseconds=51329.600
+Updated README case: lokad/imports/module-imports

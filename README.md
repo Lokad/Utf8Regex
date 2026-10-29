@@ -290,13 +290,13 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | Case | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
 | `lokad/folding/region-marker` | 5,376.030 us | 37.099 us | 60.876 us | 144.91x |
-| `lokad/imports/module-imports` | 37.087 us | 4.439 us | 26.804 us | 8.36x |
 | `lokad/style/cell-ref` | 13.353 us | 1.749 us | 1.995 us | 7.64x |
 | `lokad/style/range-ref` | 10.809 us | 1.469 us | 1.595 us | 7.36x |
 | `lokad/lexer/operator-run` | 13.210 us | 1.971 us | 2.578 us | 6.70x |
 | `lokad/langserv/helper-identifier` | 31.950 us | 4.882 us | 6.212 us | 6.54x |
 | `lokad/lexer/string` | 286.829 us | 44.581 us | 49.472 us | 6.43x |
 | `lokad/lexer/identifier` | 106.308 us | 16.652 us | 21.048 us | 6.38x |
+| `lokad/imports/module-imports` | 30.638 us | 6.343 us | 28.987 us | 4.83x |
 | `lokad/langserv/color-short-hex` | 1.682 us | 1.104 us | 1.247 us | 1.52x |
 | `structural/keyword-to-generic-type` | 5.830 us | 4.118 us | 15.750 us | 1.42x |
 | `lokad/lexer/doc-line` | 4.420 us | 3.124 us | 3.864 us | 1.41x |
@@ -342,9 +342,9 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 |---|---:|---:|---:|---:|
 | `lokad/folding/region-marker` | 5,395.440 us | 37.293 us | 60.206 us | 144.68x |
 | `structural/keyword-family-to-capitalized-identifier` | 74.881 us | 7.748 us | 19.121 us | 9.67x |
-| `lokad/imports/module-imports` | 37.317 us | 4.443 us | 26.603 us | 8.40x |
 | `lokad/style/cell-ref` | 13.998 us | 1.747 us | 1.972 us | 8.01x |
 | `lokad/style/range-ref` | 10.727 us | 1.502 us | 1.600 us | 7.14x |
+| `lokad/imports/module-imports` | 30.623 us | 4.405 us | 26.662 us | 6.95x |
 | `lokad/lexer/operator-run` | 13.443 us | 1.958 us | 2.585 us | 6.86x |
 | `lokad/lexer/string` | 294.849 us | 44.984 us | 48.666 us | 6.55x |
 | `lokad/langserv/helper-identifier` | 31.510 us | 4.847 us | 6.279 us | 6.50x |
