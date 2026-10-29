@@ -1,0 +1,32 @@
+Measuring README benchmark case: common/email-miss (requested=1, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=271499;ElapsedMicroseconds=49844.500
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=269468;ElapsedMicroseconds=49187.800
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=144907;ElapsedMicroseconds=50224.100
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=559958;ElapsedMicroseconds=49937.600
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=135008;ElapsedMicroseconds=50372.000
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=431188;ElapsedMicroseconds=49775.800
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=271499;ElapsedMicroseconds=49998.000
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=269468;ElapsedMicroseconds=49587.100
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=144907;ElapsedMicroseconds=50677.200
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=559958;ElapsedMicroseconds=49679.300
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=135008;ElapsedMicroseconds=50419.800
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=431188;ElapsedMicroseconds=49685.000
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=271499;ElapsedMicroseconds=49814.000
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=269468;ElapsedMicroseconds=48939.500
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=144907;ElapsedMicroseconds=50202.500
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=559958;ElapsedMicroseconds=49863.400
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=135008;ElapsedMicroseconds=50304.800
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=431188;ElapsedMicroseconds=55884.800
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=271499;ElapsedMicroseconds=49631.700
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=269468;ElapsedMicroseconds=48809.400
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=144907;ElapsedMicroseconds=50125.600
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=559958;ElapsedMicroseconds=49820.000
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=135008;ElapsedMicroseconds=50259.000
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=431188;ElapsedMicroseconds=50073.300
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=271499;ElapsedMicroseconds=49527.400
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=269468;ElapsedMicroseconds=49127.500
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=144907;ElapsedMicroseconds=49995.100
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=559958;ElapsedMicroseconds=49914.400
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=135008;ElapsedMicroseconds=50412.500
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=431188;ElapsedMicroseconds=56580.100
+Updated README case: common/email-miss

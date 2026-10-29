@@ -153,8 +153,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | Case | Operation | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
 | `industry/leipzig-symbol-count` | `Count` | 1,152,702.300 us | 23,036.733 us | 30,488.150 us | 50.04x |
-| `common/email-match` | `IsMatch` | 1.571 us | 0.276 us | 0.305 us | 5.68x |
-| `common/email-miss` | `IsMatch` | 1.920 us | 0.348 us | 0.369 us | 5.52x |
 | `common/matches-boundary` | `Count` | 833.867 us | 164.674 us | 166.856 us | 5.06x |
 | `industry/rust-sherlock-nonnewline-count` | `Count` | 4,808.973 us | 979.187 us | 1,276.603 us | 4.91x |
 | `industry/mariomka-email-count` | `Count` | 1,525.918 us | 492.350 us | 9,040.367 us | 3.10x |
@@ -168,9 +166,11 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/uri-miss` | `IsMatch` | 0.166 us | 0.204 us | 0.226 us | 0.81x |
 | `common/uri-match` | `IsMatch` | 0.167 us | 0.234 us | 0.270 us | 0.71x |
 | `common/ip-match` | `IsMatch` | 0.125 us | 0.181 us | 0.201 us | 0.69x |
+| `common/email-match` | `IsMatch` | 0.179 us | 0.269 us | 0.293 us | 0.67x |
 | `common/ip-miss` | `IsMatch` | 0.124 us | 0.189 us | 0.209 us | 0.66x |
 | `industry/leipzig-river-window-count` | `Count` | 19,542.333 us | 32,374.150 us | 46,719.000 us | 0.60x |
 | `industry/boostdocs-date-match` | `IsMatch` | 0.050 us | 0.085 us | 0.102 us | 0.58x |
+| `common/email-miss` | `IsMatch` | 0.183 us | 0.346 us | 0.373 us | 0.53x |
 | `industry/boostdocs-credit-card-match` | `IsMatch` | 0.083 us | 0.163 us | 0.179 us | 0.51x |
 | `industry/leipzig-name-family-count` | `Count` | 4,216.867 us | 9,795.667 us | 17,176.000 us | 0.43x |
 | `common/matches-set` | `Count` | 78.910 us | 194.124 us | 197.086 us | 0.41x |
@@ -235,8 +235,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | Case | Operation | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
 | `industry/leipzig-symbol-count` | `Count` | 1,153,094.300 us | 1,235.305 us | 6,850.600 us | 933.45x |
-| `common/email-miss` | `IsMatch` | 1.937 us | 0.089 us | 0.115 us | 21.80x |
-| `common/email-match` | `IsMatch` | 1.586 us | 0.107 us | 0.134 us | 14.86x |
 | `industry/leipzig-river-window-count` | `Count` | 21,083.300 us | 1,584.697 us | 16,530.400 us | 13.30x |
 | `industry/rust-sherlock-holmes-window-count` | `Count` | 789.033 us | 63.330 us | 270.703 us | 12.46x |
 | `common/matches-boundary` | `Count` | 834.275 us | 106.333 us | 107.975 us | 7.85x |
@@ -250,7 +248,9 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/ip-match` | `IsMatch` | 0.124 us | 0.049 us | 0.070 us | 2.55x |
 | `common/match-word` | `Match` | 0.203 us | 0.080 us | 0.994 us | 2.53x |
 | `common/ip-miss` | `IsMatch` | 0.121 us | 0.050 us | 0.072 us | 2.43x |
+| `common/email-match` | `IsMatch` | 0.178 us | 0.082 us | 0.109 us | 2.17x |
 | `common/one-node-backtracking` | `IsMatch` | 0.190 us | 0.088 us | 0.129 us | 2.15x |
+| `common/email-miss` | `IsMatch` | 0.182 us | 0.089 us | 0.116 us | 2.05x |
 | `common/uri-match` | `IsMatch` | 0.168 us | 0.089 us | 0.120 us | 1.90x |
 | `industry/boostdocs-date-match` | `IsMatch` | 0.055 us | 0.030 us | 0.049 us | 1.83x |
 | `industry/boostdocs-postcode-match` | `IsMatch` | 0.052 us | 0.031 us | 0.048 us | 1.67x |

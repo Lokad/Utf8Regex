@@ -1,0 +1,24 @@
+SourceKind        : dotnet-performance-case
+Origin            : public//IsMatch
+Pattern           : ^([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,12}|[0-9]{1,3})(\]?)$
+Options           : None
+InputChars        : 35
+InputBytes        : 35
+CompiledEngine    : FallbackRegex
+ExecutionKind     : FallbackRegex
+DirectFamily      : AnchoredAsciiEmailWhole
+OwnedScalarPlan   : True
+ScalarPrepared    : True
+SearchKind        : ExactAsciiLiteral
+PortfolioKind     : ExactLiteral
+PreparedSearcher  : ExactLiteral
+RequiredPrefilter : ExactLiteral
+WindowSearch      : None
+StructuralYield   : Start
+StructuralStages  : 2
+StructuralStage[0] : FindLiteralFamily ExactLiteral
+StructuralStage[1] : YieldStart
+FallbackPlans     : 1
+FallbackPlan[0]  : Yield=Start, Stages=2
+Verifier          : None
+FallbackReason    : <native>
