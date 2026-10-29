@@ -4,8 +4,6 @@
 
 - Target .NET 10 and .NET 11 across Core, PythonRe and PCRE2.
 - Use .NET 11 by default for benchmark runs; historical figures retain their measured runtime.
-- Reuse proved greedy repeated-segment Count on mixed UTF-8, preserving Unicode
-  whitespace separators; controlled calls retain the scalar invocation.
 - Reuse scalar-aligned folded literal-family routes on mixed UTF-8 subjects and
   prune impossible leading-whitespace Count starts before scalar VM verification.
 - PCRE2 Count checks an existing required literal before allocating slice VM

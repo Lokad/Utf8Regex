@@ -1068,21 +1068,6 @@ public sealed partial class Utf8Regex
             return Utf8AsciiBoundedSuffixLiteralExecutor.Count(input, boundedSuffixLiteralPlan, CreateExecutionBudget());
         }
 
-        // This proved greedy/disjoint grammar has ASCII leading/tail classes
-        // and either an ASCII or scalar-whitespace separator. Count needs no
-        // coordinate projection; value/result routes retain scalar admission.
-        // Controlled calls keep the original owned invocation and its metering.
-        if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralRepeatedSegment &&
-            !UsesRightToLeft() && !_ownedSliceProgram.IsNonBacktracking &&
-            !cancellationToken.CanBeCanceled && MatchTimeout == Regex.InfiniteMatchTimeout &&
-            Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null)
-        {
-            Utf8Validation.ThrowIfInvalidOnly(input);
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeStructuralLinearAutomaton);
-            return Utf8AsciiInstructionLinearExecutor.CountNonDeterministic(
-                _preparedRegex.StructuralLinearProgram, input, CreateExecutionBudget());
-        }
-
         if (GetOwnedSliceProgram(input, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceCount(input, ownedProgram, cancellationToken);

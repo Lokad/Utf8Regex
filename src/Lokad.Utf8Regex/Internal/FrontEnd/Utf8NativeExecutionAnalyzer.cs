@@ -2004,10 +2004,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 separatorSet,
                 separatorMin,
                 node.M,
-                node.N,
-                // The structural projection admits exact ASCII definitions or
-                // pure Unicode whitespace. Keep that distinction for mixed Count.
-                !Utf8ScalarAsciiProjector.TryProjectAsciiDefinition(separatorSetNode.ScalarClass, out _));
+                node.N);
             construction.Complete(); return true;
         }
         finally { owner.LeaveDepth(); }
