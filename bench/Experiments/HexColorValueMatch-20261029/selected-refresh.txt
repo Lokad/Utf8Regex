@@ -1,0 +1,33 @@
+Measuring README benchmark case: lokad/style/hex-color (requested=1, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=63864;ElapsedMicroseconds=50253.500
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=60628;ElapsedMicroseconds=49743.100
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=53660;ElapsedMicroseconds=44044.800
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=94394;ElapsedMicroseconds=51968.000
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=58368;ElapsedMicroseconds=52499.300
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=77700;ElapsedMicroseconds=49737.000
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=63864;ElapsedMicroseconds=51466.000
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=60628;ElapsedMicroseconds=49509.000
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=53660;ElapsedMicroseconds=42352.600
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=94394;ElapsedMicroseconds=48533.100
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=58368;ElapsedMicroseconds=51556.900
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=77700;ElapsedMicroseconds=48746.000
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=63864;ElapsedMicroseconds=50576.300
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=60628;ElapsedMicroseconds=49963.800
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=53660;ElapsedMicroseconds=44672.400
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=94394;ElapsedMicroseconds=52406.800
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=58368;ElapsedMicroseconds=52257.100
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=77700;ElapsedMicroseconds=48770.800
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=63864;ElapsedMicroseconds=49932.600
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=60628;ElapsedMicroseconds=49725.900
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=53660;ElapsedMicroseconds=41601.400
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=94394;ElapsedMicroseconds=47456.400
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=58368;ElapsedMicroseconds=50771.000
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=77700;ElapsedMicroseconds=47977.900
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=63864;ElapsedMicroseconds=50556.600
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=60628;ElapsedMicroseconds=49273.600
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=53660;ElapsedMicroseconds=44455.700
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=94394;ElapsedMicroseconds=52342.500
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=58368;ElapsedMicroseconds=52216.000
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=77700;ElapsedMicroseconds=48514.600
+Updated README case: lokad/style/hex-color
+Rewrote README.Parity.json from README.Benchmarks.json.

@@ -1,0 +1,154 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+var before = Load(Path.GetFullPath(args[0]), "baseline");
+var after = Load(Path.GetFullPath(args[1]), "candidate");
+if (Hash(before) == Hash(after) || !after.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion.Contains(args[2], StringComparison.Ordinal))
+    throw new Exception("Stale or unexpected candidate binary");
+var hostRoot = Path.GetFullPath(args[1]);
+var host = AssemblyLoadContext.GetLoadContext(after)!.LoadFromAssemblyPath(Path.Combine(hostRoot, "Lokad.Utf8Regex.Benchmarks.dll"));
+var catalog = host.GetType("Lokad.Utf8Regex.Benchmarks.LokadReplicaScriptBenchmarkCatalog")!.GetMethod("Get")!;
+var identities = new Dictionary<string, string>();
+(string Pattern, string[] Texts, RegexOptions Options) Definition(string id)
+{
+    var definition = catalog.Invoke(null, [id])!;
+    var samplePath = Path.Combine(hostRoot, "LokadReplica", "Script", "Data", (string)definition.GetType().GetProperty("SampleRelativePath")!.GetValue(definition)!);
+    identities[id] = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(samplePath)));
+    return ((string)definition.GetType().GetProperty("Pattern")!.GetValue(definition)!,
+        File.ReadAllLines(samplePath, Encoding.UTF8).Where(s => !string.IsNullOrWhiteSpace(s)).ToArray(),
+        (RegexOptions)definition.GetType().GetProperty("Utf8Options")!.GetValue(definition)!);
+}
+var color = Definition("lokad/style/hex-color");
+using var process = Process.GetCurrentProcess(); process.ProcessorAffinity = (nint)4;
+var elapsed = Stopwatch.StartNew(); var rows = new List<object>();
+var preflightOnly = args.Length > 3 && args[3] == "--preflight";
+foreach (var name in new[] { "color-ordinary", "color-compiled", "finite-color", "color-misses", "finite-misses", "three-digit",
+    "unicode-control", "proof-control", "nb-control", "rtl-control", "detailed-control", "count-control", "ismatch-control", "literal-control" })
+{
+    var definition = color;
+    var pattern = definition.Pattern; var texts = definition.Texts;
+    if (name is "color-misses" or "finite-misses") texts = ["", "#", "ab", "#12g", "abcd", "abcdefg", "abc\r\n", "abc\n\n", "#ABC123\nrest"];
+    if (name == "three-digit") texts = ["abc", "#ABC", "123\n", "#aB3\n"];
+    if (name == "unicode-control") texts = ["😀", "abcé", "#１２３", "ﬀaa", "Kbc"];
+    if (name == "proof-control") { pattern = @"^#?([a-g0-9]{6}|[a-g0-9]{3})$"; texts = ["abc", "#ABC123", "ggg", "#GGG", "wrong"]; }
+    if (name == "literal-control") { pattern = "alpha"; texts = [new string('x', 4096)]; }
+    var inputs = texts.Select(Encoding.UTF8.GetBytes).ToArray();
+    var finite = name.StartsWith("finite-", StringComparison.Ordinal);
+    var operation = name == "count-control" ? "Count" : name == "ismatch-control" ? "IsMatch" : name == "detailed-control" ? "MatchDetailed" : "Match";
+    var options = definition.Options | (name.EndsWith("ordinary", StringComparison.Ordinal) ? 0 : RegexOptions.Compiled);
+    if (name == "literal-control") options = RegexOptions.Compiled | RegexOptions.CultureInvariant;
+    if (name == "nb-control") options |= RegexOptions.NonBacktracking;
+    if (name == "rtl-control") options |= RegexOptions.RightToLeft;
+    var oracle = new Regex(pattern, options);
+    int Oracle(string text) => operation == "Count" ? oracle.Count(text) : operation == "IsMatch" ? (oracle.IsMatch(text) ? 1 : 0) : oracle.Match(text).Length;
+    var expected = texts.Sum(Oracle);
+    using var token = new CancellationTokenSource();
+    Func<int> Make(Assembly assembly)
+    {
+        var type = assembly.GetType("Lokad.Utf8Regex.Utf8Regex")!; object owner;
+        if (finite)
+        {
+            var policyType = assembly.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!; var policy = Activator.CreateInstance(policyType)!;
+            foreach (var (key, value) in new[] { ("MaxWorkSteps", 10000000UL), ("MaxDepth", 4096UL), ("MaxWorkingBytes", 67108864UL), ("MaxResultBytes", 67108864UL) })
+            {
+                var property = policyType.GetProperty(key)!;
+                property.SetValue(policy, Convert.ChangeType(value, Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType));
+            }
+            owner = type.GetConstructor([typeof(string), typeof(RegexOptions), typeof(TimeSpan), policyType])!.Invoke([pattern, options, Timeout.InfiniteTimeSpan, policy]);
+        }
+        else owner = type.GetConstructor([typeof(string), typeof(RegexOptions)])!.Invoke([pattern, options]);
+        var method = finite ? type.GetMethod(operation, [typeof(ReadOnlySpan<byte>), typeof(CancellationToken)])!
+            : type.GetMethod(operation, [typeof(ReadOnlySpan<byte>)])!;
+        // Consume the same public range length as the benchmark loop, using
+        // derived UTF-16 coordinates to compare Unicode controls fairly.
+        var bridge = new DynamicMethod(operation + "Length", typeof(int), [typeof(object), typeof(byte[]), typeof(CancellationToken)], typeof(Program).Module, true);
+        var il = bridge.GetILGenerator();
+        il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Castclass, type);
+        il.Emit(OpCodes.Ldarg_1); il.Emit(OpCodes.Newobj, typeof(ReadOnlySpan<byte>).GetConstructor([typeof(byte[])])!);
+        if (finite) il.Emit(OpCodes.Ldarg_2);
+        il.Emit(OpCodes.Call, method);
+        if (operation is "Match" or "MatchDetailed")
+        {
+            var result = il.DeclareLocal(method.ReturnType);
+            il.Emit(OpCodes.Stloc, result); il.Emit(OpCodes.Ldloca, result);
+            il.Emit(OpCodes.Call, method.ReturnType.GetProperty("LengthInUtf16")!.GetMethod!);
+        }
+        il.Emit(OpCodes.Ret);
+        var call = bridge.CreateDelegate<PublicCall>();
+        for (var i = 0; i < inputs.Length; i++) if (call(owner, inputs[i], token.Token) != Oracle(texts[i])) throw new Exception($"Per-sample mismatch: {name}, {i}");
+        return () => { var sum = 0; foreach (var input in inputs) sum += call(owner, input, token.Token); return sum; };
+    }
+    int Predecoded()
+    {
+        var sum = 0;
+        if (operation == "Count") foreach (var text in texts) sum += oracle.Count(text);
+        else if (operation == "IsMatch") foreach (var text in texts) sum += oracle.IsMatch(text) ? 1 : 0;
+        else foreach (var text in texts) sum += oracle.Match(text).Length;
+        return sum;
+    }
+    int Decoded()
+    {
+        var sum = 0;
+        if (operation == "Count") foreach (var input in inputs) sum += oracle.Count(Encoding.UTF8.GetString(input));
+        else if (operation == "IsMatch") foreach (var input in inputs) sum += oracle.IsMatch(Encoding.UTF8.GetString(input)) ? 1 : 0;
+        else foreach (var input in inputs) sum += oracle.Match(Encoding.UTF8.GetString(input)).Length;
+        return sum;
+    }
+    Func<int>[] actions = [Make(before), Make(after), Predecoded, Decoded];
+    for (var lane = 0; lane < 4; lane++)
+        if (actions[lane]() != expected) throw new Exception($"Preflight mismatch: {name}, lane {lane}");
+    if (preflightOnly) { Console.Error.WriteLine($"Preflight {name}: {expected}"); continue; }
+    var iterations = new int[4]; var warmupCalls = new int[4]; var warmupMilliseconds = new double[4];
+    for (var lane = 0; lane < 4; lane++)
+    {
+        if (actions[lane]() != expected) throw new Exception($"Preflight mismatch: {name}, lane {lane}");
+        var warmup = Stopwatch.StartNew();
+        do { Loop(1, actions[lane]); warmupCalls[lane]++; } while (warmup.ElapsedMilliseconds < 1000);
+        warmupMilliseconds[lane] = warmup.Elapsed.TotalMilliseconds;
+        var count = 1; var probe = Loop(count, actions[lane]);
+        while (probe.Milliseconds < 20 && count < 1000000) { count *= 2; probe = Loop(count, actions[lane]); }
+        iterations[lane] = (int)Math.Clamp(Math.Ceiling(count * 50 / Math.Max(probe.Milliseconds, 0.000001)), 1, 1000000);
+    }
+    var times = Enumerable.Range(0, 4).Select(_ => new double[3]).ToArray();
+    var allocations = Enumerable.Range(0, 4).Select(_ => new double[3]).ToArray();
+    for (var sample = 0; sample < 3; sample++)
+    for (var position = 0; position < 4; position++)
+    {
+        var lane = sample % 2 == 0 ? position : 3 - position;
+        GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        var result = Loop(iterations[lane], actions[lane]); if (result.Last != expected) throw new Exception("Timed mismatch");
+        times[lane][sample] = result.Milliseconds * 1000 / iterations[lane]; allocations[lane][sample] = (double)result.Bytes / iterations[lane];
+    }
+    rows.Add(new { Name = name, Operation = operation + "Loop", Pattern = pattern, Options = options.ToString(), InputBytes = inputs.Sum(i => i.Length),
+        SampleCount = inputs.Length, InputSha256 = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('\0', texts)))),
+        Expected = expected, FiniteAndLiveToken = finite, Iterations = iterations, WarmupCalls = warmupCalls, WarmupMilliseconds = warmupMilliseconds,
+        Microseconds = times, AllocatedBytes = allocations });
+    Console.Error.WriteLine($"Completed {name}: {string.Join(" / ", times.Select(t => t.Order().ElementAt(1)))} us/loop");
+}
+Console.WriteLine(JsonSerializer.Serialize(new { Runtime = RuntimeInformation.FrameworkDescription, CpuAffinityMask = "4", ElapsedSeconds = elapsed.Elapsed.TotalSeconds,
+    CatalogSampleSha256 = identities,
+    LaneNames = new[] { "Baseline", "Candidate", "PredecodedRegex", "DecodeThenRegex" }, Baseline = Identity(before), Candidate = Identity(after), Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+static Assembly Load(string root, string name)
+{
+    var context = new AssemblyLoadContext(name);
+    context.Resolving += (ctx, n) => File.Exists(Path.Combine(root, n.Name + ".dll")) ? ctx.LoadFromAssemblyPath(Path.Combine(root, n.Name + ".dll")) : null;
+    return context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.dll"));
+}
+static string Hash(Assembly assembly) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location)));
+static object Identity(Assembly assembly) => new { Version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion, Sha256 = Hash(assembly) };
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds, long Bytes, int Last) Loop(int count, Func<int> action)
+{
+    var value = 0; var bytes = GC.GetAllocatedBytesForCurrentThread(); var start = Stopwatch.GetTimestamp();
+    for (var i = 0; i < count; i++) value = action();
+    return (Stopwatch.GetElapsedTime(start).TotalMilliseconds, GC.GetAllocatedBytesForCurrentThread() - bytes, value);
+}
+delegate int PublicCall(object owner, byte[] input, CancellationToken token);
