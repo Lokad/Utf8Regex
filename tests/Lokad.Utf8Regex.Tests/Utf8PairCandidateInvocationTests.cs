@@ -8,13 +8,22 @@ public sealed class Utf8PairCandidateInvocationTests
 {
     [Theory]
     [InlineData(0)]
+    [InlineData(1023)]
+    [InlineData(1024)]
+    [InlineData(1025)]
+    [InlineData(2042)]
+    [InlineData(2043)]
     [InlineData(2047)]
     [InlineData(2048)]
     [InlineData(2049)]
+    [InlineData(4094)]
+    [InlineData(4095)]
     public void RawPairsKeepOffsetsTailsEarliestStartsAndBranchOrder(int padding)
     {
         foreach (var pair in new[] { new[] { "target", "needle" }, ["target", "targeted"],
             ["targeted", "target"], ["a", "ab"], ["😀é", "😀"], ["éx", "中"],
+            [new string('a', 1023) + "z", new string('b', 1023) + "y"],
+            [new string('a', 1024) + "z", "b"],
             [new string('a', 4097) + "z", "b"] })
         {
             var literals = pair.Select(Encoding.UTF8.GetBytes).ToArray();
@@ -49,6 +58,23 @@ public sealed class Utf8PairCandidateInvocationTests
                 else Assert.Equal(default, match);
                 Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
             }
+        }
+    }
+
+    [Fact]
+    public void LookaheadCannotPublishAShortNeedleBeforeAnEarlierCrossingLongNeedle()
+    {
+        var longNeedle = Encoding.ASCII.GetBytes("L" + new string('a', 1022) + "z");
+        byte[] shortNeedle = [(byte)'a'];
+        byte[] input = [.. Encoding.ASCII.GetBytes(new string('x', 1025)), .. longNeedle];
+        foreach (var longFirst in new[] { false, true })
+        {
+            byte[][] literals = longFirst ? [longNeedle, shortNeedle] : [shortNeedle, longNeedle];
+            var invocation = new Utf8SliceInvocation(new(1000000, 0, 0), Regex.InfiniteMatchTimeout, default);
+            Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamilyCandidate(
+                literals, false, input, 0, input.Length, false, ref invocation, out var match, out var found));
+            Assert.True(found);
+            Assert.Equal((1025, 1024, longFirst ? 0 : 1), (match.Index, match.Length, match.LiteralId));
         }
     }
 

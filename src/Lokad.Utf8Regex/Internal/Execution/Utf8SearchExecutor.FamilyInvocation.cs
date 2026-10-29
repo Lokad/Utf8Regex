@@ -75,13 +75,36 @@ internal static partial class Utf8SearchExecutor
                 else if (!confirm && !reverse && !folded && literals.Length == 2 &&
                     literals[0].Length > 0 && literals[1].Length > 0)
                 {
-                    breach = invocation.TryChargeInputStep();
-                    if (breach != Utf8ExecutionLimitKind.None) return breach;
-                    // Raw exact pairs need one bounded union scan. Keep the
-                    // ordered full-literal verification below, including when
-                    // both literals have the same first byte.
-                    var relative = block.IndexOfAny(literals[0][0], literals[1][0]);
-                    if (relative >= 0) candidateByte = blockStart + relative;
+                    if (literals[0].Length <= 1024 && literals[1].Length <= 1024)
+                    {
+                        // Full-needle scans reserve lookahead inside the 2048-byte
+                        // bound. Full windows still advance >=1025 starts.
+                        // Later starts belong to the next window, even if a short
+                        // needle is already visible in this one's lookahead.
+                        var longest = Math.Max(literals[0].Length, literals[1].Length);
+                        count = Math.Min(2049 - longest, high - low + 1);
+                        var pairBlock = input.Slice(blockStart, Math.Min(count + longest - 1, end - blockStart));
+                        breach = invocation.TryChargeInputStep();
+                        if (breach != Utf8ExecutionLimitKind.None) return breach;
+                        var relative = pairBlock.IndexOf(literals[0]);
+                        if (relative >= count) relative = -1;
+                        if (relative != 0)
+                        {
+                            breach = invocation.TryChargeInputStep();
+                            if (breach != Utf8ExecutionLimitKind.None) return breach;
+                            var other = pairBlock.IndexOf(literals[1]);
+                            if (other >= 0 && other < count && (relative < 0 || other < relative)) relative = other;
+                        }
+                        if (relative >= 0) candidateByte = blockStart + relative;
+                    }
+                    else
+                    {
+                        // Long comparisons retain their original split checkpoints.
+                        breach = invocation.TryChargeInputStep();
+                        if (breach != Utf8ExecutionLimitKind.None) return breach;
+                        var relative = block.IndexOfAny(literals[0][0], literals[1][0]);
+                        if (relative >= 0) candidateByte = blockStart + relative;
+                    }
                 }
                 else
                 {
