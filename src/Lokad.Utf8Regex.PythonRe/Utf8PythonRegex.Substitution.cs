@@ -148,7 +148,7 @@ public sealed partial class Utf8PythonRegex
     /// <summary>Replaces matches after a byte offset and returns owned UTF-8 bytes.</summary>
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes)
     {
-        return SubnTemplateCore(input, replacement, count, startOffsetInBytes, CancellationToken.None).ResultBytes;
+        return SubnTemplateCore(input, replacement, count, startOffsetInBytes, CancellationToken.None, out _).ResultBytes;
     }
 
     /// <summary>Replaces matches after a byte offset and returns owned UTF-8 bytes, observing cancellation during validation, matching and required result processing.</summary>
@@ -161,7 +161,7 @@ public sealed partial class Utf8PythonRegex
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return SubnTemplateCore(input, replacement, count, startOffsetInBytes, cancellationToken).ResultBytes;
+        return SubnTemplateCore(input, replacement, count, startOffsetInBytes, cancellationToken, out _).ResultBytes;
     }
 
     /// <summary>Replaces all matches and returns a string.</summary>
@@ -219,12 +219,12 @@ public sealed partial class Utf8PythonRegex
         var scalarPlan = GetReplacementPlan(input, replacement, invocation, cancellationToken, out var memoryUse);
         using var planUse = memoryUse;
         if (!HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&
-            TryReplaceViaUtf8Literal(input, scalarPlan, count, startOffsetInBytes, true, ref invocation, out _, out var literalText, out var literalCount))
+            TryReplaceViaUtf8Literal(input, scalarPlan, count, startOffsetInBytes, true, ref invocation, out _, out var literalText, out var literalCount, out _))
             return new Utf8PythonSubnResult { ResultText = literalText, ReplacementCount = literalCount };
         SubstituteScalar(input, scalarPlan,
                 static (ReadOnlySpan<byte> source, PythonReReplacementPlan plan, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
                     plan.AppendToUtf8(source, ref cursor, ref writer),
-                count, startOffsetInBytes, invocation, true, false, out _, out var scalarResult);
+                count, startOffsetInBytes, invocation, true, false, out _, out var scalarResult, out _);
         return scalarResult;
     }
 
@@ -254,26 +254,41 @@ public sealed partial class Utf8PythonRegex
         ReadOnlySpan<byte> input,
         string replacement,
         int count,
-        int startOffsetInBytes) => SubnTemplateCore(input, replacement, count, startOffsetInBytes, CancellationToken.None);
+        int startOffsetInBytes) => SubnTemplateCore(input, replacement, count, startOffsetInBytes, CancellationToken.None, out _);
+
+    /// <summary>Substitutes into owned UTF-8 bytes whose charge remains reserved until the returned receipt is disposed.</summary>
+    /// <remarks>Requires caller-funded Compile. Reuses template preparation and native/scalar execution. No output copy or Release/TryReserve gap is added at publication. Dispose after retained users finish, or take over admission for byte-array aliases kept afterward. Numeric limits and the original token/deadline remain authoritative.</remarks>
+    /// <exception cref="InvalidOperationException">This expression has no caller-owned program allowance.</exception>
+    public Utf8PythonRetainedSubnResult SubnRetained(ReadOnlySpan<byte> input, string replacement,
+        int count = 0, int startOffsetInBytes = 0, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (_programMemory is null)
+            throw new InvalidOperationException("Retained substitution requires caller-funded compilation.");
+        _ = SubnTemplateCore(input, replacement, count, startOffsetInBytes, cancellationToken, out var retained, retain: true);
+        return retained!;
+    }
 
     private Utf8PythonSubnUtf8Result SubnTemplateCore(
         ReadOnlySpan<byte> input,
         string replacement,
         int count,
-        int startOffsetInBytes, CancellationToken cancellationToken)
+        int startOffsetInBytes, CancellationToken cancellationToken,
+        out Utf8PythonRetainedSubnResult? retained, bool retain = false)
     {
+        retained = null;
         using var programUse = EnterProgramUse();
         ValidateStartOffset(input, startOffsetInBytes);
         var invocation = CreateInvocation(cancellationToken);
         var scalarPlan = GetReplacementPlan(input, replacement, invocation, cancellationToken, out var memoryUse);
         using var planUse = memoryUse;
         if (!HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&
-            TryReplaceViaUtf8Literal(input, scalarPlan, count, startOffsetInBytes, false, ref invocation, out var literalBytes, out _, out var literalCount))
+            TryReplaceViaUtf8Literal(input, scalarPlan, count, startOffsetInBytes, false, ref invocation, out var literalBytes, out _, out var literalCount, out retained, retain))
             return new Utf8PythonSubnUtf8Result { ResultBytes = literalBytes, ReplacementCount = literalCount };
         SubstituteScalar(input, scalarPlan,
                 static (ReadOnlySpan<byte> source, PythonReReplacementPlan plan, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
                     plan.AppendToUtf8(source, ref cursor, ref writer),
-                count, startOffsetInBytes, invocation, false, false, out var scalarResult, out _);
+                count, startOffsetInBytes, invocation, false, false, out var scalarResult, out _, out retained, retain);
         return scalarResult;
     }
 
@@ -287,7 +302,7 @@ public sealed partial class Utf8PythonRegex
     public Utf8PythonSubnUtf8Result Subn(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return SubnTemplateCore(input, replacement, count, startOffsetInBytes, cancellationToken);
+        return SubnTemplateCore(input, replacement, count, startOffsetInBytes, cancellationToken, out _);
     }
 
     /// <summary>Replaces all matches with a stateful string evaluator and returns UTF-8 bytes.</summary>
@@ -406,7 +421,7 @@ public sealed partial class Utf8PythonRegex
                 static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonMatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
                     cursor.AppendText(ref writer, s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names))),
                 count, startOffsetInBytes, CreateInvocation(cancellationToken),
-                true, false, out _, out var scalarResult);
+                true, false, out _, out var scalarResult, out _);
         return scalarResult;
     }
 
@@ -463,7 +478,7 @@ public sealed partial class Utf8PythonRegex
                 static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonMatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
                     cursor.AppendText(ref writer, s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names))),
                 count, startOffsetInBytes, CreateInvocation(cancellationToken),
-                false, false, out var scalarResult, out _);
+                false, false, out var scalarResult, out _, out _);
         return scalarResult;
     }
 
@@ -559,7 +574,7 @@ public sealed partial class Utf8PythonRegex
                 static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonUtf8MatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
                     cursor.AppendBytes(ref writer, s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names))),
                 count, startOffsetInBytes, CreateInvocation(cancellationToken),
-                false, true, out var scalarResult, out _);
+                false, true, out var scalarResult, out _, out _);
         return scalarResult;
     }
 

@@ -208,11 +208,13 @@ public sealed partial class Utf8PythonRegex
 
     private bool TryReplaceViaUtf8Literal(
         ReadOnlySpan<byte> input, PythonReReplacementPlan plan, int count, int startOffsetInBytes,
-        bool textOutput, ref Utf8SliceInvocation invocation, out byte[] resultBytes, out string resultText, out int replacementCount)
+        bool textOutput, ref Utf8SliceInvocation invocation, out byte[] resultBytes, out string resultText, out int replacementCount,
+        out Utf8PythonRetainedSubnResult? retained, bool retain = false)
     {
         resultBytes = [];
         resultText = string.Empty;
         replacementCount = 0;
+        retained = null;
         if (_canMatchEmpty || count < 0 || startOffsetInBytes != 0 ||
             !_canUseZeroOffsetUtf8ValueFastPath || _utf8Regex is null ||
             !plan.TryGetLiteralUtf8(out var literalBytes)) return false;
@@ -233,8 +235,18 @@ public sealed partial class Utf8PythonRegex
             if (textOutput) resultText = text;
             else resultBytes = bytes;
             replacementCount = replaced;
+            if (retain)
+            {
+                var receipt = results.AllocateObject((Result: new Utf8PythonSubnUtf8Result { ResultBytes = bytes, ReplacementCount = replaced },
+                    Allowance: invocation.Ledger.MemoryAllowance!), static state => new Utf8PythonRetainedSubnResult(state.Result, state.Allowance), ref invocation);
+                Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
+                receipt.SetTransferredBytes(results.TransferSince(0, ref invocation));
+                retained = receipt;
+            }
             return true;
         }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { throw invocation.Budget.CreateResourceFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
             throw CreateMatchTimeoutException(input, Pattern);

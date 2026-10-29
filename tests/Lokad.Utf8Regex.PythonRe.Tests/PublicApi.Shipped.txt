@@ -157,6 +157,7 @@ sealed class PythonRe.Utf8PythonRegex : IDisposable
   method PythonRe.Utf8PythonMatchData[] FindAll(ReadOnlySpan<Byte> input)
   method PythonRe.Utf8PythonMatchData[] FindAll(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
   method PythonRe.Utf8PythonMatchData[] FindAll(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken)
+  method PythonRe.Utf8PythonRetainedSubnResult SubnRetained(ReadOnlySpan<Byte> input, String replacement, Int32 count = 0, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default)
   method PythonRe.Utf8PythonSplitItem[] SplitDetailed(ReadOnlySpan<Byte> input)
   method PythonRe.Utf8PythonSplitItem[] SplitDetailed(ReadOnlySpan<Byte> input, Int32 maxSplit)
   method PythonRe.Utf8PythonSplitItem[] SplitDetailed(ReadOnlySpan<Byte> input, Int32 maxSplit, Int32 startOffsetInBytes)
@@ -219,6 +220,10 @@ sealed class PythonRe.Utf8PythonRegex : IDisposable
   method static PythonRe.Utf8PythonRegex Compile(String pattern, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance)
 sealed class PythonRe.Utf8PythonRetainedRangeMatch : IDisposable
   property PythonRe.Utf8PythonRangeMatch Match { get; }
+  property UInt64 ChargedBytes { get; }
+  method Void Dispose()
+sealed class PythonRe.Utf8PythonRetainedSubnResult : IDisposable
+  property PythonRe.Utf8PythonSubnUtf8Result Result { get; }
   property UInt64 ChargedBytes { get; }
   method Void Dispose()
 readonly struct PythonRe.Utf8PythonSplitItem

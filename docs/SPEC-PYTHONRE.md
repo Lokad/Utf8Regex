@@ -146,9 +146,10 @@ or private working-byte ceiling is added. Timeout diagnostics on these bound
 invocations omit subject text, preserving Pattern, type and timeout. Incidental
 objects, borrowed input and caller-retained output remain outside these scopes.
 Ordinary output is funded through staging/publication; ownership and admission
-after return remain the caller's responsibility. The retained range API below
-can instead keep its result charge on that account. Retained text, bulk and
-substitution output transfer is not implemented. This is not exact heap/RSS or
+after return remain the caller's responsibility. The retained range and UTF-8
+template substitution APIs below can instead keep their result charges on that
+account. Retained text, bulk and callback output transfer is not implemented.
+This is not exact heap/RSS or
 a process-memory bound.
 
 Syntax/reference/lookbehind validation precedes optional native rendering.
@@ -250,8 +251,7 @@ continued retention after this explicit release is the caller's responsibility.
 Finish `Match` accesses before disposal. Disposal clears the receipt's own payload
 references; keeping its historical charge record does not keep a subject alive.
 There is no finalizer. Retaining receipts can exhaust the shared allowance;
-discarding and disposing them supports bounded-live streaming. Text/bulk/
-substitution result transfer remains outside this API.
+discarding and disposing them supports bounded-live streaming.
 
 ```csharp
 // regex was compiled with a caller-owned program allowance.
@@ -261,6 +261,25 @@ while (cursor.MoveNextRetained(out var retained, cancellationToken))
     using (retained) Consume(retained.Match);
 }
 ```
+
+`SubnRetained(input, replacement, count = 0, startOffsetInBytes = 0, token = default)`
+requires caller-funded Compile and returns `Utf8PythonRetainedSubnResult`. Its
+`Result` contains the owned UTF-8 byte array and replacement count. It uses the
+ordinary template validation, native/scalar matching and output pipeline, without
+another output copy or a Release/TryReserve gap. Invalid templates are validated
+even on no match. Count, byte offsets, strict UTF-8 validation, scalar progression,
+the original token/deadline and numeric resource limits retain their meanings.
+The receipt conservatively charges its object and final output; temporary match
+and writer storage is refunded when the operation finishes. Numeric result traffic
+includes acquisition of the receipt and is not refunded by ownership transfer.
+
+The result survives expression disposal and host waits. `ChargedBytes` reports its
+original modeled charge, including after disposal. Finish `Result` property reads
+before disposal. Dispose clears the receipt's payload references, closes later
+`Result` access and refunds once, including concurrent Dispose calls and aliases.
+Previously obtained byte arrays remain valid; the caller owns admission for
+continued retention after explicit release. No finalizer is involved. Retained
+text, bulk and callback output remain outside these two receipt APIs.
 
 `CreateMatchCursor(input, startOffsetInBytes, token, workingMemoryAllowance)`
 accepts an `IUtf8MemoryAllowance` shared directly across concurrent cursors and

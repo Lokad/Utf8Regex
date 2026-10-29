@@ -27,6 +27,8 @@ internal ref struct PythonReScalarMatchCursor
     [UnscopedRef] internal ref Utf8SliceInvocation WorkingInvocation => ref _state.WorkingInvocation;
     internal T[] AllocateResultArray<T>(int count) => _state.AllocateResultArray<T>(_input, count);
     internal void ReleaseResultsSince(ulong marker) => _state.ReleaseResultsSince(marker);
+    internal ulong TransferResultsSince(ulong marker) => _state.TransferResultsSince(marker);
+    internal Utf8PythonRetainedSubnResult RetainSubstitution(Utf8PythonSubnUtf8Result result) => _state.RetainSubstitution(_input, result);
     internal void AddResult<T>(ref Utf8InvocationResultBuffer<T> buffer, T value) => _state.AddResult(_input, ref buffer, value);
     internal T[] CompleteResults<T>(ref Utf8InvocationResultBuffer<T> buffer) => _state.CompleteResults(_input, ref buffer);
     internal void ReleaseResults<T>(ref Utf8InvocationResultBuffer<T> buffer) => _state.ReleaseResults(ref buffer);

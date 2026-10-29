@@ -122,6 +122,18 @@ internal struct PythonReScalarMatchState
         catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
     }
 
+    internal Utf8PythonRetainedSubnResult RetainSubstitution(ReadOnlySpan<byte> input, Utf8PythonSubnUtf8Result result)
+    {
+        try
+        {
+            return _results.AllocateObject((Result: result, Allowance: _invocation.Ledger.MemoryAllowance!),
+                static state => new Utf8PythonRetainedSubnResult(state.Result, state.Allowance), ref _invocation);
+        }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { throw ResourceFailure(); }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
+    }
+
     internal void AddResult<T>(ReadOnlySpan<byte> input, ref Utf8InvocationResultBuffer<T> buffer, T value)
     {
         try { buffer.Add(value, ref _invocation); }

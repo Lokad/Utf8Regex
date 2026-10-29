@@ -188,7 +188,7 @@ public sealed class PythonReRetainedRangeTests
         Assert.True(cursor.MoveNext(out var match)); Assert.Equal(0, match.Value.StartOffsetInBytes);
     }
 
-    private sealed class ObservedAccount(Allowance inner) : IUtf8MemoryAllowance
+    internal sealed class ObservedAccount(Allowance inner) : IUtf8MemoryAllowance
     {
         private int _releases;
         internal int ReleaseCalls => Volatile.Read(ref _releases);

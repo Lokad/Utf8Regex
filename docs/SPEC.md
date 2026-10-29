@@ -251,9 +251,9 @@ PythonRe's caller-funded Compile additionally funds replacement preparation,
 cache/active-plan retention and default execution/result staging through its
 program account; see its
 [lifetime contract](SPEC-PYTHONRE.md#construction-and-execution-controls). This
-does not change Core/PCRE2's ordinary cache scopes. PythonRe retained range
-receipts can explicitly take over their admitted result loan; other returned
-output remains caller-owned after publication.
+does not change Core/PCRE2's ordinary cache scopes. PythonRe retained range and
+UTF-8 template substitution receipts can explicitly take over their admitted
+result loan; other returned output remains caller-owned after publication.
 
 Caches use conservative per-program charges, separate metadata/payload caps and
 eviction; shared storage may be counted twice. Eviction/clear/shrink preserve held

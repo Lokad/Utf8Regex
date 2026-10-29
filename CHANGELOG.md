@@ -12,6 +12,8 @@
   copies and coordinate maps while retaining capture metadata and resource limits.
 - Add retained range cursor receipts that transfer admitted result charges without
   reacquisition and refund on explicit disposal, independently of cursor/program lifetime.
+- Add `SubnRetained` for caller-funded UTF-8 template substitution output, preserving
+  native/scalar execution and transferring the final result charge until explicit disposal.
 - Accept a caller-owned shared working allowance for PythonRe cursors, with
   synchronous scratch refunds and explicit admission failure.
 - Add caller-funded PythonRe compilation with explicit program disposal; active

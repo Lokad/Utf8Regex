@@ -397,10 +397,12 @@ public sealed partial class Utf8PythonRegex
     private void SubstituteScalar<TState>(ReadOnlySpan<byte> input, TState state,
         PythonReScalarReplacementAppender<TState> appendReplacement, int count, int startOffsetInBytes,
         Utf8SliceInvocation invocation, bool textOutput, bool validateOutput,
-        out Utf8PythonSubnUtf8Result bytesResult, out Utf8PythonSubnResult textResult)
+        out Utf8PythonSubnUtf8Result bytesResult, out Utf8PythonSubnResult textResult,
+        out Utf8PythonRetainedSubnResult? retained, bool retain = false)
     {
         bytesResult = default;
         textResult = default;
+        retained = null;
         ValidateScalarStartOffset(input, startOffsetInBytes);
         var cursor = new PythonReScalarMatchCursor(input, ScalarProgram,
             startOffsetInBytes, MatchTimeout, _utf8Regex, Pattern, invocation);
@@ -425,6 +427,7 @@ public sealed partial class Utf8PythonRegex
                 replaced++;
             }
             if (replaced != 0) cursor.AppendBytes(ref writer, input[last..]);
+            var publicationMarker = cursor.ResultReservation;
             byte[] completedBytes = [];
             string completedText = string.Empty;
             if (textOutput) completedText = replaced == 0 ? cursor.GetText(0, input.Length)
@@ -434,6 +437,13 @@ public sealed partial class Utf8PythonRegex
             cursor.Checkpoint();
             if (textOutput) textResult = new Utf8PythonSubnResult { ResultText = completedText, ReplacementCount = replaced };
             else bytesResult = new Utf8PythonSubnUtf8Result { ResultBytes = completedBytes, ReplacementCount = replaced };
+            if (retain)
+            {
+                var receipt = cursor.RetainSubstitution(bytesResult);
+                cursor.Checkpoint();
+                receipt.SetTransferredBytes(cursor.TransferResultsSince(publicationMarker));
+                retained = receipt;
+            }
         }
         finally { cursor.ReleaseOutput(ref writer); cursor.Dispose(); }
     }
