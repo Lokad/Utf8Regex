@@ -1,0 +1,200 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 6.8870981,
+  "LaneNames": [
+    "BaselineRange",
+    "CandidateRangeOrRetained",
+    "PredecodedRegexWithByteProjection",
+    "DecodeThenRegexWithByteProjection"
+  ],
+  "Scope": "Same public retained and legacy range operations before/after clearing disposed receipt payloads. No authority/algorithm difference. Common consumer shaping/disposal timed; checksums after timing.",
+  "Baseline": {
+    "Core": "0.5.0-dev\u002Bce857608283012bb5d681b90924712d68103cfa2 sha256=AD570525D484EBDB7FCDCCF64365DA117F94657EA24C329242480A5FD4BDBF59",
+    "Python": "0.5.0-dev\u002Bce857608283012bb5d681b90924712d68103cfa2 sha256=D97B02EA3BD926A9BCD56AE21860754487DF2151F531518AA7E6A6A07A1C01D3"
+  },
+  "Candidate": {
+    "Core": "0.5.0-dev\u002B46efb4112f2cc2930982c1bdcc18bead3fe35d18 sha256=2F6E236DD95C5F1BF8431EAE651203F73BC5A51DA42EA4066277603131F0919F",
+    "Python": "0.5.0-dev\u002B46efb4112f2cc2930982c1bdcc18bead3fe35d18 sha256=986C8182CFD2FDDD5565932C60F2ED928E402EC47D9D2CAD9AC1A2CD0AC7FC36"
+  },
+  "Rows": [
+    {
+      "Name": "funded-range-control",
+      "Pattern": "[a-z]\u002B",
+      "InputBytes": 272,
+      "Funded": true,
+      "Retained": false,
+      "Finite": false,
+      "Live": false,
+      "Operation": "Create cursor \u002B ranges \u002B copy numeric captures to consumer arrays \u002B dispose each receipt and cursor",
+      "Matches": 48,
+      "Iterations": [
+        2048,
+        2048,
+        4096,
+        2048
+      ],
+      "WarmupCalls": [
+        9488,
+        12160,
+        14848,
+        32688
+      ],
+      "Microseconds": [
+        [
+          27.586816406249998,
+          28.023291015625,
+          27.565625
+        ],
+        [
+          28.099951171875,
+          28.195703124999998,
+          27.861767578124997
+        ],
+        [
+          12.988696289062501,
+          12.7718994140625,
+          13.737890625
+        ],
+        [
+          15.1853515625,
+          14.114111328125,
+          15.003613281249999
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          7664,
+          7664,
+          7664
+        ],
+        [
+          7664,
+          7664,
+          7664
+        ],
+        [
+          16608,
+          16608,
+          16608
+        ],
+        [
+          17176,
+          17176,
+          17176
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          56.4978,
+          57.3917,
+          56.4544
+        ],
+        [
+          57.5487,
+          57.7448,
+          57.0609
+        ],
+        [
+          53.2017,
+          52.3137,
+          56.2704
+        ],
+        [
+          31.0996,
+          28.9057,
+          30.7274
+        ]
+      ]
+    },
+    {
+      "Name": "retained-ascii",
+      "Pattern": "[a-z]\u002B",
+      "InputBytes": 272,
+      "Funded": true,
+      "Retained": true,
+      "Finite": false,
+      "Live": false,
+      "Operation": "Create cursor \u002B ranges \u002B copy numeric captures to consumer arrays \u002B dispose each receipt and cursor",
+      "Matches": 48,
+      "Iterations": [
+        2048,
+        2048,
+        2048,
+        2048
+      ],
+      "WarmupCalls": [
+        13200,
+        14240,
+        35472,
+        30560
+      ],
+      "Microseconds": [
+        [
+          33.060986328125,
+          32.952685546874996,
+          32.818408203125
+        ],
+        [
+          33.298535156250004,
+          32.9306640625,
+          33.06328125
+        ],
+        [
+          12.764941406250001,
+          12.704296875,
+          12.730810546875
+        ],
+        [
+          13.89833984375,
+          14.291064453125001,
+          14.239550781250001
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          11120,
+          11120,
+          11120
+        ],
+        [
+          11120,
+          11120,
+          11120
+        ],
+        [
+          16608,
+          16608,
+          16608
+        ],
+        [
+          17176,
+          17176,
+          17176
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          67.7089,
+          67.4871,
+          67.2121
+        ],
+        [
+          68.1954,
+          67.442,
+          67.7136
+        ],
+        [
+          26.1426,
+          26.0184,
+          26.0727
+        ],
+        [
+          28.4638,
+          29.2681,
+          29.1626
+        ]
+      ]
+    }
+  ]
+}

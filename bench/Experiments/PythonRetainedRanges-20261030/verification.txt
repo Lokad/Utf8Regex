@@ -1,0 +1,15 @@
+retained-names-final
+Passed!  - Failed:     0, Passed:    11, Skipped:     0, Total:    11, Duration: 433 ms - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)
+Passed!  - Failed:     0, Passed:    11, Skipped:     0, Total:    11, Duration: 678 ms - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)
+python-full-final
+Passed!  - Failed:     0, Passed:  4145, Skipped:     0, Total:  4145, Duration: 14 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:  4145, Skipped:     0, Total:  4145, Duration: 14 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)
+core-focused
+Passed!  - Failed:     0, Passed:   715, Skipped:     0, Total:   715, Duration: 6 s - Lokad.Utf8Regex.Tests.dll (net11.0)
+Passed!  - Failed:     0, Passed:   715, Skipped:     0, Total:   715, Duration: 7 s - Lokad.Utf8Regex.Tests.dll (net10.0)
+pcre-focused
+Passed!  - Failed:     0, Passed:   727, Skipped:     0, Total:   727, Duration: 450 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:   727, Skipped:     0, Total:   727, Duration: 411 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net11.0)
+disposed receipt root cleanup
+Passed!  - Failed:     0, Passed:   224, Skipped:     0, Total:   224, Duration: 735 ms - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:   224, Skipped:     0, Total:   224, Duration: 674 ms - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)
