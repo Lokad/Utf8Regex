@@ -1,0 +1,11 @@
+CPython Unicode: 15.1.0
+InputBytes: 6839410
+InputSha256: 7b7f70c9ca999b2bede85b7ed8e37c9193edced196f4aed29651e37ef4f8e979
+NonAsciiScalars: 482693
+Matches: 92
+AtSigns: 2856
+LeadingClassRuns: 834237
+RunsBeforeAt: 278
+MaximumRunLength: 100
+ClassScalarProbesIfRetriedEveryStart: 18740331
+MatchedScalarTotal: 1638

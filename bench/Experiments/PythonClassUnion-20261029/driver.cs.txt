@@ -1,0 +1,129 @@
+using System.Diagnostics;
+using System.IO.Compression;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+const string Mail = @"[\w\.+-]+@[\w\.-]+\.[\w\.-]+";
+var before = Load(Path.GetFullPath(args[0]), "baseline");
+var after = Load(Path.GetFullPath(args[1]), "candidate");
+if (Hash(before.Python) == Hash(after.Python) ||
+    !after.Python.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion.Contains(args[2], StringComparison.Ordinal))
+    throw new Exception("Stale or unexpected candidate binary");
+using var process = Process.GetCurrentProcess(); process.ProcessorAffinity = (nint)4;
+using var gzip = new GZipStream(File.OpenRead(args[3]), CompressionMode.Decompress);
+using var reader = new StreamReader(gzip, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+var corpus = reader.ReadToEnd();
+if (Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(corpus))) != "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979")
+    throw new Exception("Unexpected corpus bytes");
+string Repeat(string value, int count) => string.Concat(Enumerable.Repeat(value, count));
+var cases = new[] {
+    new Case("mail-corpus", Mail, corpus, 92),
+    new Case("finite-mail-corpus", Mail, corpus, 92, Finite: true),
+    new Case("dense-ascii", Mail, Repeat("one.two+-@domain.example ", 128), 128),
+    new Case("dense-unicode", Mail, Repeat("é²𐐀._+-@dömain.exämple ", 96), 96),
+    new Case("finite-unicode", Mail, Repeat("é²𐐀._+-@dömain.exämple ", 96), 96, Finite: true),
+    new Case("genuine-miss-runs", Mail, Repeat("abcdefghijklmnop ", 128), 0),
+    new Case("long-word-miss", Mail, new string('x', 512), 0),
+    new Case("complement-control", @"[\W.-]+", Repeat("abc😀.- xyz😀.- ", 128), 256),
+    new Case("fold-control", @"(?i:[\wA])+", Repeat("É\u0345😀a A ", 64), 192),
+    new Case("class-program-control", @"[\w😀]+", Repeat("abc😀 é ", 128), 256),
+    new Case("multiple-predicates", @"[\w\s]+", Repeat("é alpha\t😀betä\n😀", 64), 128),
+    new Case("negated-union", @"[^\w.+-]+", Repeat("é_.😀\u0301 A😀 ", 64), 128),
+    new Case("literal-control", "alpha", new string('x', 4096), 0, DotNetComparable: true),
+    new Case("core-boundary-control", @"\b\w+\b", Repeat("alpha beta gamma ", 128), 384, Core: true, DotNetComparable: true),
+};
+var elapsed = Stopwatch.StartNew(); var preflightOnly = args.Length > 4 && args[4] == "--preflight";
+var confirmation = args.Length > 4 && args[4] == "--confirm";
+var rows = new List<object>();
+foreach (var item in cases)
+{
+    if (confirmation && item.Name is not ("mail-corpus" or "finite-unicode" or "complement-control" or "class-program-control" or "literal-control" or "core-boundary-control")) continue;
+    var input = Encoding.UTF8.GetBytes(item.Text);
+    using var cancellation = new CancellationTokenSource();
+    Func<int> Make((Assembly Core, Assembly Python) assemblies)
+    {
+        var type = item.Core ? assemblies.Core.GetType("Lokad.Utf8Regex.Utf8Regex")! : assemblies.Python.GetType("Lokad.Utf8Regex.PythonRe.Utf8PythonRegex")!;
+        object owner;
+        if (item.Finite)
+        {
+            var optionsType = assemblies.Python.GetType("Lokad.Utf8Regex.PythonRe.PythonReCompileOptions")!;
+            var policyType = assemblies.Core.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!;
+            var policy = Activator.CreateInstance(policyType)!;
+            foreach (var (key, value) in new[] { ("MaxWorkSteps", 1000000000UL), ("MaxDepth", 4096UL),
+                ("MaxWorkingBytes", 67108864UL), ("MaxResultBytes", 67108864UL) })
+            {
+                var property = policyType.GetProperty(key)!;
+                property.SetValue(policy, Convert.ChangeType(value, Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType));
+            }
+            owner = type.GetConstructor([typeof(string), optionsType, typeof(TimeSpan), policyType])!
+                .Invoke([item.Pattern, Enum.ToObject(optionsType, 0), Timeout.InfiniteTimeSpan, policy]);
+            var call = type.GetMethod("Count", [typeof(ReadOnlySpan<byte>), typeof(int), typeof(CancellationToken)])!.CreateDelegate<TokenCount>(owner);
+            return () => call(input, 0, cancellation.Token);
+        }
+        owner = type.GetConstructor([typeof(string)])!.Invoke([item.Pattern]);
+        var count = type.GetMethod("Count", [typeof(ReadOnlySpan<byte>)])!.CreateDelegate<SpanCount>(owner);
+        return () => count(input);
+    }
+    var baseline = Make(before); var candidate = Make(after);
+    var oracle = item.DotNetComparable ? new Regex(item.Pattern, RegexOptions.CultureInvariant) : null;
+    Func<int>[] actions = oracle is null ? [baseline, candidate]
+        : [baseline, candidate, () => oracle.Count(item.Text), () => oracle.Count(Encoding.UTF8.GetString(input))];
+    foreach (var action in actions) if (action() != item.Expected) throw new Exception($"Preflight mismatch: {item.Name}");
+    if (preflightOnly) { Console.Error.WriteLine($"Preflight {item.Name}: {item.Expected}, bytes={input.Length}"); continue; }
+    var lanes = actions.Length; var iterations = new int[lanes]; var warmupCalls = new int[lanes]; var warmupMilliseconds = new double[lanes];
+    for (var lane = 0; lane < lanes; lane++)
+    {
+        var warmup = Stopwatch.StartNew();
+        do { Loop(1, actions[lane]); warmupCalls[lane]++; } while (warmup.ElapsedMilliseconds < (confirmation ? 1000 : 500));
+        warmupMilliseconds[lane] = warmup.Elapsed.TotalMilliseconds;
+        var count = 1; var probe = Loop(count, actions[lane]);
+        while (probe.Milliseconds < 20 && count < 1000000) { count *= 2; probe = Loop(count, actions[lane]); }
+        iterations[lane] = (int)Math.Clamp(Math.Ceiling(count * 50 / Math.Max(probe.Milliseconds, 0.000001)), 1, 1000000);
+    }
+    var times = Enumerable.Range(0, lanes).Select(_ => new double[3]).ToArray();
+    var allocations = Enumerable.Range(0, lanes).Select(_ => new double[3]).ToArray();
+    var durations = Enumerable.Range(0, lanes).Select(_ => new double[3]).ToArray();
+    for (var sample = 0; sample < 3; sample++)
+    for (var position = 0; position < lanes; position++)
+    {
+        var lane = sample % 2 == 0 ? position : lanes - 1 - position;
+        GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        var result = Loop(iterations[lane], actions[lane]); if (result.Last != item.Expected) throw new Exception("Timed mismatch");
+        times[lane][sample] = result.Milliseconds * 1000 / iterations[lane];
+        allocations[lane][sample] = (double)result.Bytes / iterations[lane]; durations[lane][sample] = result.Milliseconds;
+    }
+    rows.Add(new { item.Name, Profile = item.Core ? "Core" : "PythonRe", Operation = "Count", item.Pattern,
+        InputBytes = input.Length, InputSha256 = Convert.ToHexString(SHA256.HashData(input)), item.Expected,
+        FiniteAndLiveToken = item.Finite, DotNetExclusion = item.DotNetComparable ? null : "Python pinned Unicode/lexical membership differs from .NET; CPython is the profile comparator.",
+        Iterations = iterations, WarmupCalls = warmupCalls, WarmupMilliseconds = warmupMilliseconds,
+        Microseconds = times, AllocatedBytes = allocations, ElapsedMilliseconds = durations });
+    Console.Error.WriteLine($"Completed {item.Name}: {string.Join(" / ", times.Select(t => t.Order().ElementAt(1)))} us/op");
+}
+Console.WriteLine(JsonSerializer.Serialize(new { Runtime = RuntimeInformation.FrameworkDescription, CpuAffinityMask = "4",
+    ElapsedSeconds = elapsed.Elapsed.TotalSeconds, Confirmation = confirmation, LaneNames = new[] { "Baseline", "Candidate", "DiagnosticPredecodedRegex", "DiagnosticDecodeThenRegex" },
+    Baseline = new { Core = Identity(before.Core), Python = Identity(before.Python) }, Candidate = new { Core = Identity(after.Core), Python = Identity(after.Python) },
+    Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+static (Assembly Core, Assembly Python) Load(string root, string name)
+{
+    var context = new AssemblyLoadContext(name);
+    context.Resolving += (ctx, n) => File.Exists(Path.Combine(root, n.Name + ".dll")) ? ctx.LoadFromAssemblyPath(Path.Combine(root, n.Name + ".dll")) : null;
+    return (context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.dll")), context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.PythonRe.dll")));
+}
+static string Hash(Assembly a) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(a.Location)));
+static object Identity(Assembly a) => new { Version = a.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion, Sha256 = Hash(a) };
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds, long Bytes, int Last) Loop(int count, Func<int> action)
+{
+    var value = 0; var bytes = GC.GetAllocatedBytesForCurrentThread(); var start = Stopwatch.GetTimestamp();
+    for (var i = 0; i < count; i++) value = action();
+    return (Stopwatch.GetElapsedTime(start).TotalMilliseconds, GC.GetAllocatedBytesForCurrentThread() - bytes, value);
+}
+record Case(string Name, string Pattern, string Text, int Expected, bool Finite = false, bool Core = false, bool DotNetComparable = false);
+delegate int SpanCount(ReadOnlySpan<byte> input);
+delegate int TokenCount(ReadOnlySpan<byte> input, int start, CancellationToken token);

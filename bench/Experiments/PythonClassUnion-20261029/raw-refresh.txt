@@ -1,0 +1,19 @@
+
+CaseId             : corpus/mail-email-count
+Pattern            : [\w\.+-]+@[\w\.-]+\.[\w\.-]+
+Options            : None
+Operation          : Count
+InputBytes         : 6839410
+Iterations         : 2
+Samples            : 5
+CheckoutCommit     : 5486db2e646b
+BenchmarkAssembly  : 1.0.0+5486db2e646b64579f3ebf57f3a2ed91ad7e42e2 sha256=AFB86C7FC992CD98D79C931D5915EFD7F5702C217C6016F5E83930DD3FAD0B78
+CoreAssembly       : 0.5.0-dev+5486db2e646b64579f3ebf57f3a2ed91ad7e42e2 sha256=59743B2D3C6D7430ED9324733B6FE24DE39D623FFD67B0FB93F1A848605D6558
+PythonReAssembly   : 0.5.0-dev+5486db2e646b64579f3ebf57f3a2ed91ad7e42e2 sha256=8E81BEA7A40CB8197C617511CFA2D66786718D10314900944EFBEF4AFE72378F
+PythonRe           : 871391.600 us/op | range=870523.800..880457.500 | alloc=3568 B/op | warmup=2 calls/1799.2 ms
+DecodeThenRegex    :   8915.920 us/op | range=8355.380..9528.540 | alloc=12389328 B/op | warmup=54 calls/1014.9 ms
+PredecodedRegex    :    484.803 us/op | range=483.343..487.487 | alloc=0 B/op | warmup=2033 calls/1000.9 ms
+CPythonDecode      : 360738.340 us/op | range=358765.186..361902.691 | iterations=1 | warmup=1 calls/358.4 ms
+CPythonPredecoded  : 352641.197 us/op | range=350697.761..353880.472 | iterations=1 | warmup=1 calls/353.1 ms
+
+Snapshot           : /home/vermorel/tmp/utf8regex-net11-memory/pilot/PythonRe.Benchmarks.json

@@ -24,17 +24,18 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-10-29T15:39:43.7556149+00:00`
-- Snapshot SHA-256: `969E6F8AAEB9EB79D20216D19EF3E59912740BC808AA5008D870F9DB8387ACF0`
+- Generated: `2026-10-29T19:16:19.8301889+00:00`
+- Snapshot SHA-256: `9568408FA40D2CB6678C81D2E474125EBA3E2FD9DAFBC371888536A7438EDAE0`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `4`
 - Scaling families: `7`
 - Public Status: `25` managed faster, `2` equivalent, `46` CPython faster, `15` inconclusive, `2` unqualified
-- Historical point measurement environments represented: `4`
+- Historical point measurement environments represented: `5`
 - Paired evidence from source `362ba340f5f5`: `1` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
-- Paired evidence from source `a40bda03c8f9`: `86` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
+- Paired evidence from source `5486db2e646b`: `1` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
+- Paired evidence from source `a40bda03c8f9`: `85` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
 - Paired evidence from source `d458c0ecf887`: `1` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
 - Paired evidence from source `f6c823f8a58e`: `2` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
@@ -203,7 +204,7 @@ Historical point rows span more than one measurement environment. Consult the JS
 
 | Case | Operation | Contract | Status | PythonRe elapsed | CPython predecoded elapsed | Rstrong | CPython + decode elapsed | .NET + decode elapsed | PythonRe alloc |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|
-| `corpus/mail-email-count` | `Count` | ScalarResult | CPython faster | 2,850,605.700 us | 359,114.109 us | 7.94x | 368,461.907 us | 9,252.983 us | 7,200 B |
+| `corpus/mail-email-count` | `Count` | ScalarResult | CPython faster | 866,056.100 us | 352,960.799 us | 2.45x | 360,738.340 us | 8,915.920 us | 3,568 B |
 | `corpus/code-log-methods` | `Count` | ScalarResult | Managed faster | 82.940 us | 581.541 us | 0.14x | 583.968 us | 41.213 us | 1,872 B |
 | `corpus/code-declarations` | `Count` | ScalarResult | Equivalent | 622.770 us | 629.927 us | 0.99x | 632.196 us | 783.156 us | 3,552 B |
 | `corpus/sherlock-ru` | `Count` | ScalarResult | Managed faster | 249.987 us | 402.356 us | 0.62x | 4,150.127 us | 5,389.840 us | 0 B |

@@ -1,0 +1,22 @@
+0.5.0-dev+5486db2e646b64579f3ebf57f3a2ed91ad7e42e2
+[\w\.+-]+@[\w\.-]+\.[\w\.-]+
+CanMatchEmpty: False
+CandidateRendering: False
+UsableCandidateRendering: False
+AsciiSubject=False: Hint=False, Bounds=-1/-1
+AsciiSubject=True: Hint=True, Bounds=43/122
+  0 RepeatGreedy         A=   3 B=   0 C=   1 D=  -1 min=1 max=9223372036854775807
+  1 CategorySet          A=   0 B=   0 C=   0 D=   0 min=0 max=0
+  2 RepeatEnd            A=   0 B=   0 C=   0 D=   0 min=0 max=0
+  3 RepeatExit           A=   0 B=   0 C=   0 D=   0 min=0 max=0
+  4 Literal              A=  64 B=   0 C=   0 D=   0 min=0 max=0
+  5 RepeatGreedy         A=   8 B=   1 C=   1 D=  -1 min=1 max=9223372036854775807
+  6 CategorySet          A=   1 B=   0 C=   0 D=   1 min=0 max=1
+  7 RepeatEnd            A=   5 B=   0 C=   0 D=   0 min=0 max=0
+  8 RepeatExit           A=   1 B=   0 C=   0 D=   0 min=0 max=0
+  9 Literal              A=  46 B=   0 C=   0 D=   0 min=0 max=0
+ 10 RepeatGreedy         A=  13 B=   2 C=   1 D=  -1 min=1 max=9223372036854775807
+ 11 CategorySet          A=   2 B=   0 C=   0 D=   2 min=0 max=2
+ 12 RepeatEnd            A=  10 B=   0 C=   0 D=   0 min=0 max=0
+ 13 RepeatExit           A=   2 B=   0 C=   0 D=   0 min=0 max=0
+ 14 Accept               A=   0 B=   0 C=   0 D=   0 min=0 max=0

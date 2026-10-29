@@ -1,0 +1,31 @@
+0.5.0-dev+ea44ad1ebac79695f8a4a73b96b869a98885c25c
+[\w\.+-]+@[\w\.-]+\.[\w\.-]+
+CanMatchEmpty: False
+CandidateRendering: False
+UsableCandidateRendering: False
+AsciiSubject=False: Hint=False, Bounds=-1/-1
+AsciiSubject=True: Hint=False, Bounds=-1/-1
+  0 RepeatGreedy         A=   6 B=   0 C=   1 D=  -1 min=1 max=9223372036854775807
+  1 Fork                 A=   4 B=   0 C=   0 D=   0 min=0 max=0
+  2 CategorySet          A=   0 B=   0 C=   0 D=   0 min=0 max=0
+  3 Jump                 A=   5 B=   0 C=   0 D=   0 min=0 max=0
+  4 Set                  A=   1 B=   0 C=   0 D=   0 min=0 max=0
+  5 RepeatEnd            A=   0 B=   0 C=   0 D=   0 min=0 max=0
+  6 RepeatExit           A=   0 B=   0 C=   0 D=   0 min=0 max=0
+  7 Literal              A=  64 B=   0 C=   0 D=   0 min=0 max=0
+  8 RepeatGreedy         A=  14 B=   1 C=   1 D=  -1 min=1 max=9223372036854775807
+  9 Fork                 A=  12 B=   0 C=   0 D=   0 min=0 max=0
+ 10 CategorySet          A=   2 B=   0 C=   0 D=   1 min=0 max=1
+ 11 Jump                 A=  13 B=   0 C=   0 D=   0 min=0 max=0
+ 12 Set                  A=   3 B=   0 C=   0 D=   0 min=0 max=0
+ 13 RepeatEnd            A=   8 B=   0 C=   0 D=   0 min=0 max=0
+ 14 RepeatExit           A=   1 B=   0 C=   0 D=   0 min=0 max=0
+ 15 Literal              A=  46 B=   0 C=   0 D=   0 min=0 max=0
+ 16 RepeatGreedy         A=  22 B=   2 C=   1 D=  -1 min=1 max=9223372036854775807
+ 17 Fork                 A=  20 B=   0 C=   0 D=   0 min=0 max=0
+ 18 CategorySet          A=   4 B=   0 C=   0 D=   2 min=0 max=2
+ 19 Jump                 A=  21 B=   0 C=   0 D=   0 min=0 max=0
+ 20 Set                  A=   5 B=   0 C=   0 D=   0 min=0 max=0
+ 21 RepeatEnd            A=  16 B=   0 C=   0 D=   0 min=0 max=0
+ 22 RepeatExit           A=   2 B=   0 C=   0 D=   0 min=0 max=0
+ 23 Accept               A=   0 B=   0 C=   0 D=   0 min=0 max=0

@@ -1,0 +1,11 @@
+3.13.2 (main, Feb 12 2025, 14:51:17) [Clang 19.1.6 ] 15.1.0
+mail-corpus 92
+dense-ascii 128
+dense-unicode 96
+genuine-miss-runs 0
+long-word-miss 0
+complement-control 256
+fold-control 192
+class-program-control 256
+multiple-predicates 128
+negated-union 128

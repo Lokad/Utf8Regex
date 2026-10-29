@@ -1,0 +1,21 @@
+import gzip, re, sys, unicodedata
+with gzip.open(sys.argv[1], 'rt', encoding='utf-8-sig') as f:
+    corpus = f.read()
+mail = r'[\w\.+-]+@[\w\.-]+\.[\w\.-]+'
+cases = [
+    ('mail-corpus', mail, corpus, 92),
+    ('dense-ascii', mail, 'one.two+-@domain.example ' * 128, 128),
+    ('dense-unicode', mail, 'é²𐐀._+-@dömain.exämple ' * 96, 96),
+    ('genuine-miss-runs', mail, 'abcdefghijklmnop ' * 128, 0),
+    ('long-word-miss', mail, 'x' * 512, 0),
+    ('complement-control', r'[\W.-]+', 'abc😀.- xyz😀.- ' * 128, 256),
+    ('fold-control', r'(?i:[\wA])+', 'É\u0345😀a A ' * 64, 192),
+    ('class-program-control', r'[\w😀]+', 'abc😀 é ' * 128, 256),
+    ('multiple-predicates', r'[\w\s]+', 'é alpha\t😀betä\n😀' * 64, 128),
+    ('negated-union', r'[^\w.+-]+', 'é_.😀\u0301 A😀 ' * 64, 128),
+]
+print(sys.version, unicodedata.unidata_version)
+for name, pattern, text, expected in cases:
+    actual = sum(1 for _ in re.finditer(pattern, text))
+    assert actual == expected, (name, actual, expected)
+    print(name, actual)

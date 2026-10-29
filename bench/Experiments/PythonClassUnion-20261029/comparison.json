@@ -1,0 +1,931 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 63.8933453,
+  "LaneNames": [
+    "Baseline",
+    "Candidate",
+    "DiagnosticPredecodedRegex",
+    "DiagnosticDecodeThenRegex"
+  ],
+  "Baseline": {
+    "Core": {
+      "Version": "0.5.0-dev\u002Bea44ad1ebac79695f8a4a73b96b869a98885c25c",
+      "Sha256": "7AE7ABB2C711C616A0F0414616478DA0E0FE74E9000FADCB69D93BD1AB97936A"
+    },
+    "Python": {
+      "Version": "0.5.0-dev\u002Bea44ad1ebac79695f8a4a73b96b869a98885c25c",
+      "Sha256": "7BDA83A0F0737DA16823403BB61F198FD4F34C856056D25494474CA2B9FC7BEE"
+    }
+  },
+  "Candidate": {
+    "Core": {
+      "Version": "0.5.0-dev\u002B5486db2e646b64579f3ebf57f3a2ed91ad7e42e2",
+      "Sha256": "59743B2D3C6D7430ED9324733B6FE24DE39D623FFD67B0FB93F1A848605D6558"
+    },
+    "Python": {
+      "Version": "0.5.0-dev\u002B5486db2e646b64579f3ebf57f3a2ed91ad7e42e2",
+      "Sha256": "8E81BEA7A40CB8197C617511CFA2D66786718D10314900944EFBEF4AFE72378F"
+    }
+  },
+  "Rows": [
+    {
+      "Name": "mail-corpus",
+      "Profile": "PythonRe",
+      "Operation": "Count",
+      "Pattern": "[\\w\\.\u002B-]\u002B@[\\w\\.-]\u002B\\.[\\w\\.-]\u002B",
+      "InputBytes": 6839410,
+      "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+      "Expected": 92,
+      "FiniteAndLiveToken": false,
+      "DotNetExclusion": "Python pinned Unicode/lexical membership differs from .NET; CPython is the profile comparator.",
+      "Iterations": [
+        1,
+        1
+      ],
+      "WarmupCalls": [
+        1,
+        1
+      ],
+      "WarmupMilliseconds": [
+        2576.059,
+        863.274
+      ],
+      "Microseconds": [
+        [
+          2527608.9000000004,
+          2509821.5,
+          2532636.7
+        ],
+        [
+          862406,
+          868405.4,
+          862142.9
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          7200,
+          7200,
+          7200
+        ],
+        [
+          3568,
+          3568,
+          3568
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          2527.6089,
+          2509.8215,
+          2532.6367
+        ],
+        [
+          862.406,
+          868.4054,
+          862.1429
+        ]
+      ]
+    },
+    {
+      "Name": "finite-mail-corpus",
+      "Profile": "PythonRe",
+      "Operation": "Count",
+      "Pattern": "[\\w\\.\u002B-]\u002B@[\\w\\.-]\u002B\\.[\\w\\.-]\u002B",
+      "InputBytes": 6839410,
+      "InputSha256": "7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979",
+      "Expected": 92,
+      "FiniteAndLiveToken": true,
+      "DotNetExclusion": "Python pinned Unicode/lexical membership differs from .NET; CPython is the profile comparator.",
+      "Iterations": [
+        1,
+        1
+      ],
+      "WarmupCalls": [
+        1,
+        1
+      ],
+      "WarmupMilliseconds": [
+        2774.9181,
+        1002.9174
+      ],
+      "Microseconds": [
+        [
+          2719169.8000000003,
+          2740288.8,
+          2750663.8
+        ],
+        [
+          1002960.7999999999,
+          1005934.3,
+          999967.8
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          7312,
+          7312,
+          7312
+        ],
+        [
+          3680,
+          3680,
+          3680
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          2719.1698,
+          2740.2888,
+          2750.6638
+        ],
+        [
+          1002.9608,
+          1005.9343,
+          999.9678
+        ]
+      ]
+    },
+    {
+      "Name": "dense-ascii",
+      "Profile": "PythonRe",
+      "Operation": "Count",
+      "Pattern": "[\\w\\.\u002B-]\u002B@[\\w\\.-]\u002B\\.[\\w\\.-]\u002B",
+      "InputBytes": 3200,
+      "InputSha256": "B994B9E94461A692A417D2E5559FC510DC7E3762A0DA5761D5CA80988664AE87",
+      "Expected": 128,
+      "FiniteAndLiveToken": false,
+      "DotNetExclusion": "Python pinned Unicode/lexical membership differs from .NET; CPython is the profile comparator.",
+      "Iterations": [
+        93,
+        308
+      ],
+      "WarmupCalls": [
+        1273,
+        1878
+      ],
+      "WarmupMilliseconds": [
+        500.2602,
+        500.1224
+      ],
+      "Microseconds": [
+        [
+          465.4193548387097,
+          324.64623655913977,
+          271.77204301075267
+        ],
+        [
+          246.5694805194805,
+          156.38181818181818,
+          154.7672077922078
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3568,
+          3568,
+          3568
+        ],
+        [
+          3568,
+          3568,
+          3568
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          43.284,
+          30.1921,
+          25.2748
+        ],
+        [
+          75.9434,
+          48.1656,
+          47.6683
+        ]
+      ]
+    },
+    {
+      "Name": "dense-unicode",
+      "Profile": "PythonRe",
+      "Operation": "Count",
+      "Pattern": "[\\w\\.\u002B-]\u002B@[\\w\\.-]\u002B\\.[\\w\\.-]\u002B",
+      "InputBytes": 2880,
+      "InputSha256": "B8B5DDF93FA0B78CA86B6E8A30B625616BC36CB1BF3CED31E330E010267CCF71",
+      "Expected": 96,
+      "FiniteAndLiveToken": false,
+      "DotNetExclusion": "Python pinned Unicode/lexical membership differs from .NET; CPython is the profile comparator.",
+      "Iterations": [
+        252,
+        363
+      ],
+      "WarmupCalls": [
+        2340,
+        3642
+      ],
+      "WarmupMilliseconds": [
+        500.0332,
+        500.0698
+      ],
+      "Microseconds": [
+        [
+          205.26309523809525,
+          202.46468253968254,
+          202.45912698412698
+        ],
+        [
+          136.53305785123968,
+          136.2581267217631,
+          134.07575757575756
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3568,
+          3568,
+          3568
+        ],
+        [
+          3568,
+          3568,
+          3568
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          51.7263,
+          51.0211,
+          51.0197
+        ],
+        [
+          49.5615,
+          49.4617,
+          48.6695
+        ]
+      ]
+    },
+    {
+      "Name": "finite-unicode",
+      "Profile": "PythonRe",
+      "Operation": "Count",
+      "Pattern": "[\\w\\.\u002B-]\u002B@[\\w\\.-]\u002B\\.[\\w\\.-]\u002B",
+      "InputBytes": 2880,
+      "InputSha256": "B8B5DDF93FA0B78CA86B6E8A30B625616BC36CB1BF3CED31E330E010267CCF71",
+      "Expected": 96,
+      "FiniteAndLiveToken": true,
+      "DotNetExclusion": "Python pinned Unicode/lexical membership differs from .NET; CPython is the profile comparator.",
+      "Iterations": [
+        104,
+        352
+      ],
+      "WarmupCalls": [
+        1479,
+        3310
+      ],
+      "WarmupMilliseconds": [
+        500.1476,
+        500.0855
+      ],
+      "Microseconds": [
+        [
+          244.04134615384615,
+          238.53653846153844,
+          234.39903846153845
+        ],
+        [
+          143.24147727272728,
+          144.62187500000002,
+          145.87982954545453
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3680,
+          3680,
+          3680
+        ],
+        [
+          3680,
+          3680,
+          3680
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          25.3803,
+          24.8078,
+          24.3775
+        ],
+        [
+          50.421,
+          50.9069,
+          51.3497
+        ]
+      ]
+    },
+    {
+      "Name": "genuine-miss-runs",
+      "Profile": "PythonRe",
+      "Operation": "Count",
+      "Pattern": "[\\w\\.\u002B-]\u002B@[\\w\\.-]\u002B\\.[\\w\\.-]\u002B",
+      "InputBytes": 2176,
+      "InputSha256": "11177E7BFC7EFDF0B435979CCD554B0D2BAF5A80C5E36498ED53B551BC2B51AE",
+      "Expected": 0,
+      "FiniteAndLiveToken": false,
+      "DotNetExclusion": "Python pinned Unicode/lexical membership differs from .NET; CPython is the profile comparator.",
+      "Iterations": [
+        29,
+        138
+      ],
+      "WarmupCalls": [
+        269,
+        1384
+      ],
+      "WarmupMilliseconds": [
+        500.1168,
+        500.1268
+      ],
+      "Microseconds": [
+        [
+          1968.1344827586204,
+          1767.3310344827585,
+          1795.1724137931035
+        ],
+        [
+          355.65579710144925,
+          361.69420289855077,
+          360.5934782608695
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3568,
+          3568,
+          3568
+        ],
+        [
+          1696,
+          1696,
+          1696
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          57.0759,
+          51.2526,
+          52.06
+        ],
+        [
+          49.0805,
+          49.9138,
+          49.7619
+        ]
+      ]
+    },
+    {
+      "Name": "long-word-miss",
+      "Profile": "PythonRe",
+      "Operation": "Count",
+      "Pattern": "[\\w\\.\u002B-]\u002B@[\\w\\.-]\u002B\\.[\\w\\.-]\u002B",
+      "InputBytes": 512,
+      "InputSha256": "64164443BB63E338EF1CFDB12A57117CD1212270CC935A798F6E8A665CDF4659",
+      "Expected": 0,
+      "FiniteAndLiveToken": false,
+      "DotNetExclusion": "Python pinned Unicode/lexical membership differs from .NET; CPython is the profile comparator.",
+      "Iterations": [
+        5,
+        57
+      ],
+      "WarmupCalls": [
+        37,
+        561
+      ],
+      "WarmupMilliseconds": [
+        509.486,
+        500.4809
+      ],
+      "Microseconds": [
+        [
+          11226.560000000001,
+          11373.04,
+          11224.679999999998
+        ],
+        [
+          896.7070175438596,
+          897.3929824561404,
+          878.7052631578947
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          39472,
+          39472,
+          39472
+        ],
+        [
+          1696,
+          1696,
+          1696
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          56.1328,
+          56.8652,
+          56.1234
+        ],
+        [
+          51.1123,
+          51.1514,
+          50.0862
+        ]
+      ]
+    },
+    {
+      "Name": "complement-control",
+      "Profile": "PythonRe",
+      "Operation": "Count",
+      "Pattern": "[\\W.-]\u002B",
+      "InputBytes": 2560,
+      "InputSha256": "31076508323BA457F3DA6B70B99A3AF462F2DDB64A76B25A47F946939BCB96B5",
+      "Expected": 256,
+      "FiniteAndLiveToken": false,
+      "DotNetExclusion": "Python pinned Unicode/lexical membership differs from .NET; CPython is the profile comparator.",
+      "Iterations": [
+        270,
+        245
+      ],
+      "WarmupCalls": [
+        2722,
+        2448
+      ],
+      "WarmupMilliseconds": [
+        500.0534,
+        500.1344
+      ],
+      "Microseconds": [
+        [
+          181.98592592592595,
+          182.3311111111111,
+          184.1888888888889
+        ],
+        [
+          200.53346938775508,
+          202.28,
+          202.28653061224492
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          3552,
+          3552,
+          3552
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          49.1362,
+          49.2294,
+          49.731
+        ],
+        [
+          49.1307,
+          49.5586,
+          49.5602
+        ]
+      ]
+    },
+    {
+      "Name": "fold-control",
+      "Profile": "PythonRe",
+      "Operation": "Count",
+      "Pattern": "(?i:[\\wA])\u002B",
+      "InputBytes": 768,
+      "InputSha256": "CDA09B43568ACC291A5474A52726AC35FA62A2B03901056F5FDD29D8DC14B47C",
+      "Expected": 192,
+      "FiniteAndLiveToken": false,
+      "DotNetExclusion": "Python pinned Unicode/lexical membership differs from .NET; CPython is the profile comparator.",
+      "Iterations": [
+        671,
+        1479
+      ],
+      "WarmupCalls": [
+        6460,
+        14864
+      ],
+      "WarmupMilliseconds": [
+        500.0545,
+        500.0044
+      ],
+      "Microseconds": [
+        [
+          73.23308494783905,
+          73.24381520119225,
+          72.98271236959762
+        ],
+        [
+          33.7790398918188,
+          33.537254901960786,
+          33.06335361730899
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          49.1394,
+          49.1466,
+          48.9714
+        ],
+        [
+          49.9592,
+          49.6016,
+          48.9007
+        ]
+      ]
+    },
+    {
+      "Name": "class-program-control",
+      "Profile": "PythonRe",
+      "Operation": "Count",
+      "Pattern": "[\\w\uD83D\uDE00]\u002B",
+      "InputBytes": 1408,
+      "InputSha256": "11C06CE0460355B971A91E11A1658AD9C9DB96DD4D2E5CDC95E0AD87EFC37803",
+      "Expected": 256,
+      "FiniteAndLiveToken": false,
+      "DotNetExclusion": "Python pinned Unicode/lexical membership differs from .NET; CPython is the profile comparator.",
+      "Iterations": [
+        436,
+        387
+      ],
+      "WarmupCalls": [
+        3977,
+        3933
+      ],
+      "WarmupMilliseconds": [
+        500.0868,
+        500.0564
+      ],
+      "Microseconds": [
+        [
+          116.04839449541284,
+          115.47316513761469,
+          116.27844036697248
+        ],
+        [
+          127.2671834625323,
+          127.34987080103359,
+          127.0139534883721
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          3552,
+          3552,
+          3552
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          50.5971,
+          50.3463,
+          50.6974
+        ],
+        [
+          49.2524,
+          49.2844,
+          49.1544
+        ]
+      ]
+    },
+    {
+      "Name": "multiple-predicates",
+      "Profile": "PythonRe",
+      "Operation": "Count",
+      "Pattern": "[\\w\\s]\u002B",
+      "InputBytes": 1472,
+      "InputSha256": "D9D3343A4AC930B8660BF2DCB5EA9FEB0CECF4818AF8C43A62E89F639A9798A8",
+      "Expected": 128,
+      "FiniteAndLiveToken": false,
+      "DotNetExclusion": "Python pinned Unicode/lexical membership differs from .NET; CPython is the profile comparator.",
+      "Iterations": [
+        577,
+        1120
+      ],
+      "WarmupCalls": [
+        4889,
+        11337
+      ],
+      "WarmupMilliseconds": [
+        500.038,
+        500.0123
+      ],
+      "Microseconds": [
+        [
+          87.82980935875216,
+          87.05112651646448,
+          87.90363951473137
+        ],
+        [
+          43.571964285714294,
+          43.75892857142857,
+          43.28678571428572
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          1680,
+          1680,
+          1680
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          50.6778,
+          50.2285,
+          50.7204
+        ],
+        [
+          48.8006,
+          49.01,
+          48.4812
+        ]
+      ]
+    },
+    {
+      "Name": "negated-union",
+      "Profile": "PythonRe",
+      "Operation": "Count",
+      "Pattern": "[^\\w.\u002B-]\u002B",
+      "InputBytes": 1088,
+      "InputSha256": "169958425A8C5545CF06AC67826A694B21E19F89B613B26C71057A3E3AC62B31",
+      "Expected": 128,
+      "FiniteAndLiveToken": false,
+      "DotNetExclusion": "Python pinned Unicode/lexical membership differs from .NET; CPython is the profile comparator.",
+      "Iterations": [
+        582,
+        1597
+      ],
+      "WarmupCalls": [
+        4621,
+        15758
+      ],
+      "WarmupMilliseconds": [
+        500.0382,
+        500.0281
+      ],
+      "Microseconds": [
+        [
+          88.34518900343643,
+          88.09209621993126,
+          88.46649484536083
+        ],
+        [
+          31.41477770820288,
+          31.430369442705068,
+          31.188478396994366
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          51.4169,
+          51.2696,
+          51.4875
+        ],
+        [
+          50.1694,
+          50.1943,
+          49.808
+        ]
+      ]
+    },
+    {
+      "Name": "literal-control",
+      "Profile": "PythonRe",
+      "Operation": "Count",
+      "Pattern": "alpha",
+      "InputBytes": 4096,
+      "InputSha256": "A2E659DACB4691E887AC0139F8893D04764EE197D70FB73D3190D56113D18E3E",
+      "Expected": 0,
+      "FiniteAndLiveToken": false,
+      "DotNetExclusion": null,
+      "Iterations": [
+        175146,
+        179091,
+        129507,
+        58093
+      ],
+      "WarmupCalls": [
+        726329,
+        1191373,
+        921899,
+        350253
+      ],
+      "WarmupMilliseconds": [
+        500.0001,
+        500,
+        500.0004,
+        500.0002
+      ],
+      "Microseconds": [
+        [
+          0.27069245086956023,
+          0.2849182967352951,
+          0.27927957247096713
+        ],
+        [
+          0.27099910101568475,
+          0.2858909716289484,
+          0.2816389433304856
+        ],
+        [
+          0.38256542117414505,
+          0.38641926691221323,
+          0.38263954844139697
+        ],
+        [
+          1.077783898232145,
+          0.8844439089046873,
+          1.158296180262682
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          8216,
+          8216,
+          8216
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          47.4107,
+          49.9023,
+          48.9147
+        ],
+        [
+          48.5335,
+          51.2005,
+          50.439
+        ],
+        [
+          49.5449,
+          50.044,
+          49.5545
+        ],
+        [
+          62.6117,
+          51.38,
+          67.2889
+        ]
+      ]
+    },
+    {
+      "Name": "core-boundary-control",
+      "Profile": "Core",
+      "Operation": "Count",
+      "Pattern": "\\b\\w\u002B\\b",
+      "InputBytes": 2176,
+      "InputSha256": "AACADD2D54A11C53090C59930EC54D0A9376E2F75BF0872A0EBB439559B44B86",
+      "Expected": 384,
+      "FiniteAndLiveToken": false,
+      "DotNetExclusion": null,
+      "Iterations": [
+        294,
+        286,
+        2222,
+        2145
+      ],
+      "WarmupCalls": [
+        2362,
+        2517,
+        13450,
+        21578
+      ],
+      "WarmupMilliseconds": [
+        500.0184,
+        500.1542,
+        500.0049,
+        500.0055
+      ],
+      "Microseconds": [
+        [
+          168.978231292517,
+          166.40816326530611,
+          167.62108843537413
+        ],
+        [
+          176.356993006993,
+          179.07132867132864,
+          175.95594405594406
+        ],
+        [
+          22.638298829882988,
+          22.85940594059406,
+          22.767686768676867
+        ],
+        [
+          23.07477855477855,
+          23.486526806526808,
+          23.275151515151514
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          4376,
+          4376,
+          4376
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          49.6796,
+          48.924,
+          49.2806
+        ],
+        [
+          50.4381,
+          51.2144,
+          50.3234
+        ],
+        [
+          50.3023,
+          50.7936,
+          50.5898
+        ],
+        [
+          49.4954,
+          50.3786,
+          49.9252
+        ]
+      ]
+    }
+  ]
+}

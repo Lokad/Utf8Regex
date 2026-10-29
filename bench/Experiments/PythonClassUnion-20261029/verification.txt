@@ -1,0 +1,5 @@
+PythonRe Release: 4024 passed on each of net10.0/net11.0, including class union/scalar/flags/capture/alias/empty/strict/budget/token tests.
+Core focused Release: 304 passed on each runtime (dependency inventory, API snapshot, work policy).
+PCRE2 focused Release: 32 passed on each runtime (API snapshot, resource policy, cancellation).
+Source-only lowering change; no public API or resource/ownership contract changes.
+Complete logs are in the immutable correctness-logs.zip; no package/platform/full catalog matrix repeated.
