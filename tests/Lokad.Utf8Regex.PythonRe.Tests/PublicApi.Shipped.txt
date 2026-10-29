@@ -6,6 +6,11 @@ sealed class PythonRe.PythonRePatternException : Exception, Runtime.Serializatio
   ctor PythonRePatternException(String message)
   ctor PythonRePatternException(String message, Int32 position)
   property Int32 Position { get; }
+readonly struct PythonRe.Utf8PythonCaptureRange
+  property Boolean Success { get; init; }
+  property Int32 EndOffsetInBytes { get; init; }
+  property Int32 Number { get; init; }
+  property Int32 StartOffsetInBytes { get; init; }
 readonly struct PythonRe.Utf8PythonDetailedMatchData
   property Boolean Success { get; }
   property Int32 CaptureSlotCount { get; }
@@ -60,6 +65,8 @@ sealed class PythonRe.Utf8PythonMatchCursor : IDisposable
   property PythonRe.Utf8PythonDetailedMatchData Current { get; }
   method Boolean MoveNext()
   method Boolean MoveNext(Threading.CancellationToken cancellationToken)
+  method Boolean MoveNext(out PythonRe.Utf8PythonRangeMatch match)
+  method Boolean MoveNext(out PythonRe.Utf8PythonRangeMatch match, Threading.CancellationToken cancellationToken)
   method Void Dispose()
 readonly struct PythonRe.Utf8PythonMatchData
   property Boolean Success { get; init; }
@@ -69,6 +76,17 @@ readonly struct PythonRe.Utf8PythonMatchData
   property Int32 StartOffsetInUtf16 { get; init; }
   property String ValueText { get; init; }
 delegate String PythonRe.Utf8PythonMatchEvaluator<TState>(TState state, PythonRe.Utf8PythonDetailedMatchData match)
+readonly struct PythonRe.Utf8PythonRangeMatch
+  property Boolean Success { get; }
+  property Nullable<Int32> LastIndex { get; }
+  property PythonRe.Utf8PythonCaptureRange Value { get; }
+  property ReadOnlySpan<PythonRe.PythonReNameEntry> NameEntries { get; }
+  property ReadOnlySpan<PythonRe.Utf8PythonCaptureRange> Groups { get; }
+  property String LastGroup { get; }
+  method Boolean TryGetFirstSetGroup(String name, out PythonRe.Utf8PythonCaptureRange group)
+  method Boolean TryGetGroup(Int32 number, out PythonRe.Utf8PythonCaptureRange group)
+  method ReadOnlyMemory<Byte> GetGroupMemory(Int32 number)
+  method ReadOnlyMemory<Byte> GetValueMemory()
 sealed class PythonRe.Utf8PythonRegex
   ctor Utf8PythonRegex(ReadOnlySpan<Byte> patternUtf8)
   ctor Utf8PythonRegex(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options)
@@ -102,6 +120,8 @@ sealed class PythonRe.Utf8PythonRegex
   method Int32 Count(ReadOnlySpan<Byte> input)
   method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
   method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken)
+  method PythonRe.Utf8PythonCaptureRange[] SplitRanges(ReadOnlySpan<Byte> input)
+  method PythonRe.Utf8PythonCaptureRange[] SplitRanges(ReadOnlySpan<Byte> input, Int32 maxSplit, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken)
   method PythonRe.Utf8PythonDetailedMatchData FullMatchDetailedData(ReadOnlySpan<Byte> input)
   method PythonRe.Utf8PythonDetailedMatchData FullMatchDetailedData(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
   method PythonRe.Utf8PythonDetailedMatchData FullMatchDetailedData(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken)

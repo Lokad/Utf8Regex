@@ -164,6 +164,32 @@ They do not refund cumulative result traffic or bound external host retention.
 Existing borrowed span/value contracts remain unchanged. A new call gets an
 independent allowance and needs independent host admission.
 
+`MoveNext(out Utf8PythonRangeMatch)` (also with a per-advance token) publishes byte
+ranges instead of text. It uses the same discovery position, captures, last-closed
+metadata, interruption and cumulative budgets. Each successful range advance
+clears the text-based `Current`; accessing it then throws. Owned advances may
+resume on that same cursor and populate `Current` normally. Existing snapshots
+remain valid across either kind of advance.
+
+Range snapshots own immutable capture/name arrays and borrow the unchanged
+`ReadOnlyMemory<byte>` subject. Their metadata survives cursor moves/disposal;
+keep its memory manager alive when accessing `GetValueMemory`/`GetGroupMemory`.
+Unmatched captures have `Success=false` and zero offsets, distinct from successful
+empty captures. Byte offsets are relative to the supplied subject memory. No
+captured text, UTF-16 conversion or whole-subject coordinate map is materialized;
+these types expose byte coordinates only. Scalar-coordinate support remains open.
+Result arrays remain admitted before acquisition under the existing result-traffic
+and working scopes; this does not introduce caller-owned shared memory funding.
+
+`SplitRanges` returns owned `Utf8PythonCaptureRange` metadata over the original
+input: number zero is an ordinary segment, positive numbers are captured
+separators, and unmatched separators retain `Success=false`. It preserves Python
+empty-match progression, suffix/start-offset behavior and maxSplit semantics
+(zero unlimited, negative no splits). The final array grows from actual output;
+a no-separator split emits one range without reserving hypothetical matches or
+copying/decoding the subject. The caller slices its unchanged input to consume
+UTF-8 bytes. Explicit tokens cover validation, discovery and result publication.
+
 ```csharp
 using var canceled = new CancellationTokenSource();
 canceled.Cancel();

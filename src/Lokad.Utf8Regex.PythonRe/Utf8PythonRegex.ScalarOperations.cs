@@ -314,6 +314,38 @@ public sealed partial class Utf8PythonRegex
         finally { cursor.ReleaseResults(ref scalars); cursor.ReleaseResults(ref tuples); cursor.Dispose(); }
     }
 
+    private Utf8PythonCaptureRange[] SplitRangesScalar(ReadOnlySpan<byte> input, int maxSplit,
+        int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
+        Utf8InvocationResultBuffer<Utf8PythonCaptureRange> parts = default;
+        try
+        {
+            var last = startOffsetInBytes;
+            var splits = 0;
+            while ((maxSplit == 0 || splits < maxSplit) && cursor.MoveNext())
+            {
+                cursor.AddResult(ref parts, new Utf8PythonCaptureRange
+                    { Success = true, StartOffsetInBytes = last, EndOffsetInBytes = cursor.StartOffsetInBytes });
+                for (var number = 1; number <= CaptureGroupCount; number++)
+                {
+                    cursor.AddResult(ref parts, cursor.TryGetCaptureByteRange(number, out var start, out var end)
+                        ? new Utf8PythonCaptureRange { Number = number, Success = true, StartOffsetInBytes = start, EndOffsetInBytes = end }
+                        : new Utf8PythonCaptureRange { Number = number });
+                    cursor.Checkpoint();
+                }
+                last = cursor.EndOffsetInBytes;
+                splits++;
+            }
+            cursor.AddResult(ref parts, new Utf8PythonCaptureRange
+                { Success = true, StartOffsetInBytes = last, EndOffsetInBytes = input.Length });
+            var completed = cursor.CompleteResults(ref parts);
+            cursor.Checkpoint();
+            return completed;
+        }
+        finally { cursor.ReleaseResults(ref parts); cursor.Dispose(); }
+    }
+
     private void SplitScalar(ReadOnlySpan<byte> input, int maxSplit, int startOffsetInBytes,
         CancellationToken cancellationToken, bool stringsOnly, out Utf8PythonSplitItem[] items, out string?[] values)
     {

@@ -483,6 +483,23 @@ internal struct PythonReScalarMatchState
         catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
     }
 
+    internal Utf8PythonRangeMatch SnapshotRanges(ReadOnlyMemory<byte> input, PythonReNameEntry[] names)
+    {
+        var bytes = input.Span;
+        var lastIndex = GetLastIndex(bytes);
+        var groups = AllocateResultArray<Utf8PythonCaptureRange>(bytes, _program.GroupCount + 1);
+        for (var number = 0; number < groups.Length; number++)
+        {
+            if ((number & 255) == 0) Checkpoint(bytes);
+            groups[number] = TryGetCaptureByteRange(number, out var start, out var end)
+                ? new Utf8PythonCaptureRange { Number = number, Success = true, StartOffsetInBytes = start, EndOffsetInBytes = end }
+                : new Utf8PythonCaptureRange { Number = number };
+        }
+        var copiedNames = SnapshotNameEntries(bytes, names);
+        Checkpoint(bytes);
+        return new Utf8PythonRangeMatch(input, groups, copiedNames, lastIndex);
+    }
+
     internal Utf8PythonDetailedMatchData SnapshotDetailed(ReadOnlySpan<byte> input, PythonReNameEntry[] names)
     {
         var lastIndex = GetLastIndex(input);

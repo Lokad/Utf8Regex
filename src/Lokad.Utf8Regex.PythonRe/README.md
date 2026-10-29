@@ -67,6 +67,15 @@ retaining it for later advances. The creation token, original deadline and
 cumulative budgets still apply. Cancellation faults the cursor and releases its
 scratch; previously returned owned snapshots remain valid.
 
+Use `cursor.MoveNext(out Utf8PythonRangeMatch match)` for capture byte ranges
+without captured strings or a whole-subject coordinate map. Range metadata stays
+valid after advances/disposal; byte memory remains borrowed and must stay unchanged
+with its manager alive. A range advance clears the text-based `Current`.
+`SplitRanges` provides ordinary segments and captured separators as byte ranges,
+including unmatched captures, without decoding or copying their text. These paths
+retain finite limits and synchronous cancellation; shared memory funding remains
+separate unfinished work.
+
 Named captures remain distinct when Unicode identifiers and names such as `g1`
 are mixed. Public names and Python opening-order numbering remain unchanged.
 Fixed finite policies omit optional unmetered Core runtime/emission storage and

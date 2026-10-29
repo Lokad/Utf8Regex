@@ -8,6 +8,8 @@
   inline directives and implicit Unicode, while retaining requested `Options`.
 - Accept a PythonRe cursor token per advance, preserving the creation token,
   absolute deadline, cumulative limits and previously returned owned snapshots.
+- Add PythonRe range cursor results and range-only split, avoiding captured-text
+  copies and coordinate maps while retaining capture metadata and resource limits.
 - Lower compatible Python Unicode character-class unions to the existing scalar
   predicate instruction, preserving pinned membership and lexical folding.
 - Reuse complete cell/range-reference proofs for bounded ASCII value Match,

@@ -22,7 +22,7 @@ public sealed class Utf8PythonMatchCursor : IDisposable
     private int _active;
     private Status _status;
 
-    private enum Status : byte { Initial, Positioned, Ended, Faulted, Disposed }
+    private enum Status : byte { Initial, Positioned, RangePositioned, Ended, Faulted, Disposed }
 
     internal Utf8PythonMatchCursor(ReadOnlyMemory<byte> input, Utf8SliceProgram program,
         PythonReNameEntry[] names, int startOffsetInBytes, TimeSpan timeout,
@@ -62,12 +62,7 @@ public sealed class Utf8PythonMatchCursor : IDisposable
     /// <exception cref="Utf8ResourceLimitExceededException">An admitted work, depth, working or result-capacity budget was exceeded.</exception>
     /// <exception cref="InvalidOperationException">The cursor previously failed or is being accessed concurrently.</exception>
     /// <exception cref="ObjectDisposedException">The cursor has been disposed.</exception>
-    public bool MoveNext()
-    {
-        Enter();
-        try { return CanAdvance() && Advance(); }
-        finally { Exit(); }
-    }
+    public bool MoveNext() => MoveNextCore(default, true, out _);
 
     /// <summary>Discovers and projects the next match under this advance's token as well as the original invocation token and deadline.</summary>
     /// <remarks>The supplied token applies only until this call completes. Cancellation faults the cursor and synchronously releases its scratch; earlier owned snapshots remain valid.</remarks>
@@ -76,13 +71,25 @@ public sealed class Utf8PythonMatchCursor : IDisposable
     /// <exception cref="Utf8ResourceLimitExceededException">An admitted work, depth, working or result-capacity budget was exceeded.</exception>
     /// <exception cref="InvalidOperationException">The cursor previously failed or is being accessed concurrently.</exception>
     /// <exception cref="ObjectDisposedException">The cursor has been disposed.</exception>
-    public bool MoveNext(CancellationToken cancellationToken)
+    public bool MoveNext(CancellationToken cancellationToken) => MoveNextCore(cancellationToken, true, out _);
+
+    /// <summary>Advances without materializing captured text or a whole-subject coordinate map.</summary>
+    /// <remarks>The returned ranges own metadata and borrow unchanged subject memory. They survive advances and disposal. This advance clears the text-based Current; use the returned range match.</remarks>
+    public bool MoveNext(out Utf8PythonRangeMatch match) => MoveNextCore(default, false, out match);
+
+    /// <summary>Advances to byte ranges under a token scoped to this synchronous advance.</summary>
+    /// <remarks>The creation token, absolute deadline and cumulative budgets remain authoritative. Range metadata survives advances/disposal; subject bytes remain borrowed. This advance clears the text-based Current.</remarks>
+    public bool MoveNext(out Utf8PythonRangeMatch match, CancellationToken cancellationToken)
+        => MoveNextCore(cancellationToken, false, out match);
+
+    private bool MoveNextCore(CancellationToken cancellationToken, bool text, out Utf8PythonRangeMatch match)
     {
-        if (!cancellationToken.CanBeCanceled) return MoveNext();
+        match = default;
         Enter();
         try
         {
             if (!CanAdvance()) return false;
+            if (!cancellationToken.CanBeCanceled) return Advance(text, out match);
             // Hold one shared invocation even if Close resets the discovery
             // state. Counters, original deadline and outstanding loans stay put.
             _discovery.WorkingInvocation.ShareStorageForCursor();
@@ -96,7 +103,7 @@ public sealed class Utf8PythonMatchCursor : IDisposable
                     linked = CancellationTokenSource.CreateLinkedTokenSource(original, cancellationToken);
                     invocation.Budget.ExchangeCancellationToken(linked.Token);
                 }
-                return Advance();
+                return Advance(text, out match);
             }
             catch (OperationCanceledException)
             {
@@ -123,9 +130,10 @@ public sealed class Utf8PythonMatchCursor : IDisposable
         return _status != Status.Ended;
     }
 
-    private bool Advance()
+    private bool Advance(bool text, out Utf8PythonRangeMatch match)
     {
         _current = default;
+        match = default;
         try
         {
             var input = _input.Span;
@@ -135,13 +143,22 @@ public sealed class Utf8PythonMatchCursor : IDisposable
                 return false;
             }
             var marker = _discovery.ResultReservation;
-            var completed = _discovery.SnapshotDetailed(input, _names);
-            _discovery.Checkpoint(input);
-            // Publication transfers independent managed values to the caller.
-            // A retained-result policy is not provided by this working loan.
-            _discovery.ReleaseResultsSince(marker);
-            _current = completed;
-            _status = Status.Positioned;
+            if (text)
+            {
+                var completed = _discovery.SnapshotDetailed(input, _names);
+                _discovery.Checkpoint(input);
+                _discovery.ReleaseResultsSince(marker);
+                _current = completed;
+                _status = Status.Positioned;
+            }
+            else
+            {
+                var completed = _discovery.SnapshotRanges(_input, _names);
+                _discovery.Checkpoint(input);
+                _discovery.ReleaseResultsSince(marker);
+                _status = Status.RangePositioned;
+                match = completed;
+            }
             return true;
         }
         catch { Close(Status.Faulted); throw; }
@@ -172,7 +189,7 @@ public sealed class Utf8PythonMatchCursor : IDisposable
 
     private void Close(Status status)
     {
-        if (_status is Status.Initial or Status.Positioned) _discovery.Dispose();
+        if (_status is Status.Initial or Status.Positioned or Status.RangePositioned) _discovery.Dispose();
         _discovery = default;
         _input = default;
         _names = [];
