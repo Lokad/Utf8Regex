@@ -39,8 +39,6 @@
   bounded metering, ordered alternatives and full VM verification.
 - Reject impossible bounded Dot tails before greedy endpoint replay, retaining
   scalar limits, captures and original resource/interruption authority.
-- Guide PCRE2 candidate searches through leading word-boundary predicates,
-  retaining full VM verification and controlled-operation metering.
 
 ## 0.4.0 — 2026-10-27
 
