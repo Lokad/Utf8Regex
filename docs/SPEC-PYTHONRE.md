@@ -135,6 +135,8 @@ explicit parameters; a host can supply the same account to both. Incidental
 objects and caller-retained output are outside these scopes. Working admission
 on other public operation families is not yet shared. This is not aggregate memory
 admission for every PythonRe operation or a process-memory bound.
+Timeout failures during funded replacement preparation omit diagnostic subject
+text, avoiding an unadmitted decode after expiry; Pattern and timeout stay.
 
 Syntax/reference/lookbehind validation precedes optional native rendering.
 The owned Python scalar program is authoritative. Optional Core preparation is

@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Allowance = Lokad.Utf8Regex.PythonRe.Tests.PythonReSharedWorkingAllowanceTests.Allowance;
 
@@ -40,6 +41,37 @@ public sealed class PythonReFundedReplacementTests
         Assert.Equal(retained, allowance.Used);
         allowance.Maximum = 4 << 20;
         Assert.Equal("a!", regex.SubnToString("a"u8, @"\g<x>!").ResultText);
+        regex.Dispose(); Assert.Equal(0UL, allowance.Used);
+    }
+
+    [Fact]
+    public void FundedPreparationTimeoutDoesNotDecodeTheDiagnosticSubject()
+    {
+        long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var allowance = new Allowance(4 << 20); using var regex = Compile(allowance, TimeSpan.FromMilliseconds(100));
+        var retained = allowance.Used;
+        allowance.AfterGrant = () => ticks = 100;
+        var subject = new byte[1 << 20]; subject.AsSpan().Fill((byte)'a');
+        var failure = Assert.Throws<RegexMatchTimeoutException>(() => regex.SubnToString(subject, @"\g<x>!"));
+        allowance.AfterGrant = null;
+        Assert.Empty(failure.Input); Assert.Equal(regex.Pattern, failure.Pattern);
+        Assert.Equal(retained, allowance.Used);
+        regex.Dispose(); Assert.Equal(0UL, allowance.Used);
+    }
+
+    [Fact]
+    public void PartialDenialOnAFullCachePreservesItsValidPlans()
+    {
+        var allowance = new Allowance(4 << 20); using var regex = Compile(allowance);
+        for (var i = 0; i < 64; i++) regex.SubnToString("a"u8, i.ToString("D4") + @"\g<x>!");
+        var retained = allowance.Used; var reservations = allowance.Reservations;
+        allowance.Maximum = retained + 1024;
+        Assert.Throws<Utf8MemoryAdmissionException>(() => regex.SubnToString("a"u8, new string('z', 65536)));
+        Assert.True(allowance.Reservations > reservations, "Denial must follow actual partial preparation admission.");
+        Assert.Equal(retained, allowance.Used);
+        reservations = allowance.Reservations;
+        Assert.Equal("0063a!", regex.SubnToString("a"u8, @"0063\g<x>!").ResultText);
+        Assert.Equal(reservations, allowance.Reservations); Assert.Equal(retained, allowance.Used);
         regex.Dispose(); Assert.Equal(0UL, allowance.Used);
     }
 
