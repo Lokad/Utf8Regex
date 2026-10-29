@@ -1967,7 +1967,7 @@ internal static class Utf8NativeExecutionAnalyzer
             using var frames = Utf8ConstructionFrames<ScanFrame>.Create(owner, new(node, 0, false));
             plan = default;
             node = UnwrapRuntimeNode(node, frames);
-            if (node.Kind is not Utf8TreeNodeKind.Loop and not Utf8TreeNodeKind.Lazyloop ||
+            if (node.Kind != Utf8TreeNodeKind.Loop ||
                 node.ChildCount != 1 ||
                 node.M <= 0 ||
                 node.N < node.M ||
@@ -1979,6 +1979,8 @@ internal static class Utf8NativeExecutionAnalyzer
             var segment = UnwrapRuntimeNode(node.Child(0), frames);
             if (segment.Kind != Utf8TreeNodeKind.Concatenate ||
                 segment.ChildCount != 3 ||
+                segment.Child(1).Kind is not (Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setloopatomic or Utf8TreeNodeKind.Loop) ||
+                segment.Child(2).Kind is not (Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setloopatomic or Utf8TreeNodeKind.Loop) ||
                 !TryGetExactAsciiSetAtom(segment.Child(0), out var leadingCharClass, out var leadingLength) ||
                 leadingLength != 1 ||
                 !TryGetSetLoop(segment.Child(1), out var trailingSetNode, out var trailingMin, out var trailingMax) ||
@@ -1988,7 +1990,9 @@ internal static class Utf8NativeExecutionAnalyzer
                 !TryGetSetLoop(segment.Child(2), out var separatorSetNode, out var separatorMin, out var separatorMax) ||
                 separatorMin < 0 ||
                 separatorMax != int.MaxValue ||
-                !TryGetAsciiSeparatorSet(separatorSetNode.ScalarClass, out var separatorSet))
+                !TryGetAsciiSeparatorSet(separatorSetNode.ScalarClass, out var separatorSet) ||
+                !leadingCharClass.IsDisjoint(trailingCharClass) ||
+                !leadingCharClass.IsDisjoint(separatorSet) || !trailingCharClass.IsDisjoint(separatorSet))
             {
                 return false;
             }

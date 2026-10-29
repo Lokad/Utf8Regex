@@ -41,6 +41,8 @@
   preserving scalar verification and bounded candidate-search admission.
 - Avoid child-VM storage for small capture-free ASCII literal assertions,
   preserving logical assertion depth and original invocation limits.
+- Require greedy, disjoint classes in native repeated-segment plans and retain
+  the previous endpoint when an additional segment fails.
 - Improve scalar Count candidate searches for exact literal pairs, retaining
   bounded metering, ordered alternatives and full VM verification.
 - Reject impossible bounded Dot tails before greedy endpoint replay, retaining

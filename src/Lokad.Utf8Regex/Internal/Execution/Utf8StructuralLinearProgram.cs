@@ -2042,12 +2042,12 @@ internal static partial class Utf8AsciiInstructionLinearExecutor
             return false;
         }
 
-        index++;
+        var position = index + 1;
 
         var tailCount = 0;
-        while ((uint)index < (uint)input.Length && trailingCharClass.Contains(input[index]))
+        while ((uint)position < (uint)input.Length && trailingCharClass.Contains(input[position]))
         {
-            index++;
+            position++;
             tailCount++;
         }
 
@@ -2056,13 +2056,16 @@ internal static partial class Utf8AsciiInstructionLinearExecutor
             return false;
         }
 
-        while ((uint)index < (uint)input.Length && MatchesSet(input[index], separatorSet))
+        while ((uint)position < (uint)input.Length && MatchesSet(input[position], separatorSet))
         {
-            index++;
+            position++;
             separatorCount++;
         }
 
-        return separatorCount >= separatorMinCount;
+        if (separatorCount < separatorMinCount) return false;
+        // A failed extra segment cannot extend an already successful repeat.
+        index = position;
+        return true;
     }
 
     private static bool MatchesSet(byte value, AsciiCharClass runtimeSet)
