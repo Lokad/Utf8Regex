@@ -1,0 +1,6 @@
+(?:[A-Z][a-z]+\s*){2,4}?; None; Count=4/4; MatchLen=6/6; DetailedLen=6
+(?:[A-Z][a-z]+\s*){2,4}?; Compiled; Count=4/4; MatchLen=6/6; DetailedLen=6
+(?:[a-z][a-z]+\s*){2,4}; None; Count=1/1; MatchLen=4/4; DetailedLen=4
+(?:[a-z][a-z]+\s*){2,4}; Compiled; Count=1/1; MatchLen=4/4; DetailedLen=4
+(?:[A-Z][a-z]+\s*){2,4}; None; Count=2/2; MatchLen=5/5; DetailedLen=5
+(?:[A-Z][a-z]+\s*){2,4}; Compiled; Count=2/2; MatchLen=5/5; DetailedLen=5

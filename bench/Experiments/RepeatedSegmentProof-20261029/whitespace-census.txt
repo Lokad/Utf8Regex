@@ -1,0 +1,5 @@
+Diagnostic census only; not a performance claim
+Corpus SHA256: 7D43CC8DFD053B083B809BD7CE7D4A074F2FD24A6B7EC38908B3966F3324FA36
+Non-ASCII scalars: 1280
+Non-ASCII whitespace scalars: 9
+Whitespace values: 160, 8232
