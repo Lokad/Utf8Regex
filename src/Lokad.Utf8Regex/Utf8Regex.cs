@@ -1856,13 +1856,14 @@ public sealed partial class Utf8Regex
             return found ? Utf8ProjectionExecutor.ProjectLiteralFamilyMatch(plan.ProjectionPlan, input,
                 plan.AlternateLiteralUtf16Lengths, 0, 0, selected, ref invocation, out _, out _) : Utf8ValueMatch.NoMatch;
         }
-        // This complete anchored grammar supplies the whole value range without
+        // These complete anchored grammars supply the whole value range without
         // capture workspace. Bound the legacy helper's scans and require complete
         // ASCII validation; detailed captures and wider subjects keep the VM.
         if (startByte == 0 && input.Length <= 2048 && validation.ByteLength == input.Length && validation.IsAscii &&
             ReferenceEquals(program, _ownedSliceProgram) && !program.RightToLeft && !program.IgnoreCase &&
             !program.IsNonBacktracking &&
-            _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredTrimmedOptionalLiteralPrefixTail)
+            _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredTrimmedOptionalLiteralPrefixTail or
+                Utf8FallbackDirectFamilyKind.AnchoredNumberPrefix)
         {
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);

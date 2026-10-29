@@ -154,8 +154,9 @@ no-match or partial success. Numerical charges depend on route/version; they are
 not byte counts, CPU instructions, elapsed time or portable per-pattern minima.
 Native shortcuts still meter bounded search, comparison and publication.
 Native counters admit their fixed scratch capacity against working bytes before
-use and record active nesting against depth. A Count shortcut can avoid capture
-workspace; a declined shortcut retains its spent work when scalar execution resumes.
+use and record active nesting against depth. A Count or value-Match shortcut can
+avoid capture workspace; a declined shortcut retains its spent work when scalar
+execution resumes.
 
 Copied value cursors have independent positions but share allowance/deadline and
 published map/table reservations; concurrent advancement is unsupported.
