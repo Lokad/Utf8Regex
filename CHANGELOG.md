@@ -29,6 +29,8 @@
   original resource limits and interruption.
 - Guide scalar Count through bounded gaps after class/whitespace prefixes,
   retaining scalar gap lengths, Unicode predicates and VM match selection.
+- Reuse complete trimmed optional-prefix ranges for bounded ASCII value Match;
+  detailed captures, Unicode subjects and long inputs retain scalar execution.
 
 ## 0.4.0 — 2026-10-27
 
