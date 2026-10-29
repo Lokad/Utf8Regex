@@ -576,9 +576,11 @@ internal static partial class Utf8SliceRunner
                 Utf8SearchKind.ExactAsciiLiteral or
                 Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals;
         byte leadingAsciiLast = 0;
+        var leadingAsciiSecond = -1;
+        byte leadingAsciiSecondLast = 0;
         var leadingAsciiFirst = !seekLiteral && !program.RightToLeft && !program.IgnoreCase &&
             !program.CanMatchEmpty && !program.HasContiguousAnchor
-            ? GetLeadingAsciiCandidate(program, out leadingAsciiLast) : -1;
+            ? GetLeadingAsciiCandidate(program, out leadingAsciiLast, out leadingAsciiSecond, out leadingAsciiSecondLast) : -1;
         var leadingClass = -1;
         var whitespaceLiteralIndex = -1;
         long whitespaceGapMaximum = 0;
@@ -601,6 +603,15 @@ internal static partial class Utf8SliceRunner
                     if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     if (position < 0)
                         return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                    if (leadingAsciiSecond >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
+                        (uint)(input[position + 1] - leadingAsciiSecond) > (uint)(leadingAsciiSecondLast - leadingAsciiSecond)))
+                    {
+                        // The first candidate is one ASCII scalar. Rejecting its
+                        // required neighbour advances exactly that scalar; the
+                        // next bounded search keeps the original work authority.
+                        position++;
+                        continue;
+                    }
                 }
                 if (whitespaceLiteral >= 0 && position > whitespaceWindowEnd)
                 {

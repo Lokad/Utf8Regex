@@ -22,6 +22,12 @@ public sealed class Utf8LeadingAsciiCandidateTests
     [InlineData(@"[A-Z]*[a-z]")]
     [InlineData(@"(?:[A-Z]?a){1,4}")]
     [InlineData(@"(?<=x)[A-Z]+a")]
+    [InlineData(@"[A-Z][a-z]")]
+    [InlineData(@"(?:[A-Z][a-z]?){2,4}")]
+    [InlineData(@"(?:[A-Z]{1,2}[a-z]){2,4}")]
+    [InlineData(@"(?:[A-Z](?:[a-z]|[0-9])){2,4}")]
+    [InlineData(@"(?<x>[A-Z])(?<y>[a-z]+)\k<y>")]
+    [InlineData(@"(?:(?i:[A-Z])[a-z]+){2,4}")]
     public void CountsPreserveScalarEnumerationCapturesAndNonzeroFloors(string pattern)
     {
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
@@ -59,6 +65,19 @@ public sealed class Utf8LeadingAsciiCandidateTests
         Assert.Equal(2, regex.Count(input));
         Assert.Equal(2, regex.Count(input, live.Token));
         Assert.Equal(1, regex.Count("Ab\u2003Cd"u8));
+        Assert.Equal(1, regex.Count(Encoding.UTF8.GetBytes("😀" + new string('x', prefixLength - 4) + "Ab Cd"), live.Token));
+    }
+
+    [Fact]
+    public void RejectedSecondScalarsAvoidVmStorageButStillConsumeBoundedWork()
+    {
+        const string pattern = @"(?:[A-Z][a-z]+\s*){2,4}";
+        var input = Encoding.UTF8.GetBytes(new string('A', 200000) + "😀A");
+        Assert.Equal(0, new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout,
+            Funded with { MaxWorkingBytes = 1 }).Count(input));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(pattern,
+                RegexOptions.None, Regex.InfiniteMatchTimeout, Funded with { MaxWorkSteps = 4096 }).Count(input)).ResourceKind);
     }
 
     [Theory]

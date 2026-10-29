@@ -7,9 +7,12 @@ internal static partial class Utf8SliceRunner
     // Capture markers and mandatory repeat entries precede the first scalar.
     // An unfolded ASCII literal/positive range proves possible starts. Other
     // instructions (including optional repeats/forks/assertions) decline.
-    private static int GetLeadingAsciiCandidate(Utf8SliceProgram program, out byte last)
+    private static int GetLeadingAsciiCandidate(Utf8SliceProgram program, out byte last,
+        out int second, out byte secondLast)
     {
         last = 0;
+        second = -1;
+        secondLast = 0;
         var code = program.Instructions.AsSpan();
         var index = 0;
         // This optional per-invocation proof stays bounded even for deeply
@@ -23,12 +26,34 @@ internal static partial class Utf8SliceRunner
             else break;
         }
         if (index >= code.Length || index >= 64) return -1;
-        if (code[index] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } literal && (uint)literal.A < 128)
+        var first = GetUnfoldedAsciiRange(program, code[index], out last);
+        if (first < 0) return first;
+        // Only straight-line mandatory entries can precede the next scalar.
+        // Repeat-end/exit, optional entries and forks stay opaque: the next
+        // instruction in storage need not be the next consumed scalar.
+        index++;
+        while (index < code.Length && index < 64)
+        {
+            var entry = code[index];
+            if (entry.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd ||
+                entry.Kind == Utf8SliceInstructionKind.RepeatGreedy && entry.RepeatMinimum > 0)
+                index++;
+            else break;
+        }
+        if (index < code.Length && index < 64)
+            second = GetUnfoldedAsciiRange(program, code[index], out secondLast);
+        return first;
+    }
+
+    private static int GetUnfoldedAsciiRange(Utf8SliceProgram program, Utf8SliceInstruction instruction, out byte last)
+    {
+        last = 0;
+        if (instruction is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } literal && (uint)literal.A < 128)
         {
             last = (byte)literal.A;
             return literal.A;
         }
-        if (code[index] is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } set) return -1;
+        if (instruction is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } set) return -1;
         var mask = program.SetMasks[set.A].AsSpan();
         if (mask.Length != 16) return -1;
         var first = -1;
