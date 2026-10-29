@@ -75,7 +75,7 @@ internal sealed partial class PythonReParser
             // Global groups accumulate with constructor flags. Validate their
             // effective union only after body syntax, as CPython does; scoped
             // overrides have already restored the outer options independently.
-            PythonReCompileValidator.Validate(options);
+            PythonReCompileValidator.Validate(options, PythonReErrorSource.Pattern);
             result = new PythonReParseResult(node, options, _groupCount,
                 Storage.NamedGroups.Freeze(Storage.Arena), _hasLookbehind, Storage.Arena.Take(Storage.GroupBodies, true));
             Storage.Arena.Complete();
@@ -494,7 +494,8 @@ internal sealed partial class PythonReParser
             'x' => CreateEscapedLiteralNode(ParseHexEscapeScalarValue(escapeStart, 2, 'x'), options),
             'u' => CreateEscapedLiteralNode(ParseHexEscapeScalarValue(escapeStart, 4, 'u'), options),
             'U' => CreateEscapedLiteralNode(ParseUnicodeScalarEscapeIntValue(escapeStart), options),
-            'N' => throw new PythonRePatternException(@"\N{...} named Unicode escapes are intentionally unsupported in PythonRe to avoid a large embedded Unicode-name table.", escapeStart),
+            'N' => throw new PythonRePatternException(@"\N{...} named Unicode escapes are intentionally unsupported in PythonRe to avoid a large embedded Unicode-name table.",
+                escapeStart, PythonReErrorSource.Pattern, PythonReErrorKind.UnsupportedFeature),
             '0' => CreateEscapedLiteralNode(ParseOctalEscapeIntValue(escapeStart, ch), options),
             >= '1' and <= '9' => ParseNumericEscapeOrBackreference(ch, escapeStart, options),
             _ when PatternBadEscapeLetters.IndexOf(ch) >= 0 => throw new PythonRePatternException($@"bad escape \{ch}", escapeStart),
@@ -621,7 +622,8 @@ internal sealed partial class PythonReParser
 
             if (escaped == 'N')
             {
-                throw new PythonRePatternException(@"\N{...} named Unicode escapes are intentionally unsupported in PythonRe to avoid a large embedded Unicode-name table.", escapeStart);
+                throw new PythonRePatternException(@"\N{...} named Unicode escapes are intentionally unsupported in PythonRe to avoid a large embedded Unicode-name table.",
+                    escapeStart, PythonReErrorSource.Pattern, PythonReErrorKind.UnsupportedFeature);
             }
 
             var escapedLiteral = ParseEscapedCharacterClassLiteralScalar(escaped, escapeStart);
@@ -817,7 +819,8 @@ internal sealed partial class PythonReParser
                 var hasAsciiOrUnicode = (options & (PythonReCompileOptions.Ascii | PythonReCompileOptions.Unicode)) != 0;
                 if (hasAsciiOrUnicode && (options & next) == 0)
                 {
-                    throw new PythonRePatternException("bad inline flags: flags 'a' and 'u' are incompatible", _position + 1);
+                    throw new PythonRePatternException("bad inline flags: flags 'a' and 'u' are incompatible",
+                        _position + 1, PythonReErrorSource.Pattern, PythonReErrorKind.InvalidOptions);
                 }
             }
 
@@ -842,8 +845,10 @@ internal sealed partial class PythonReParser
     {
         return context switch
         {
-            FlagParseContext.Removed => new PythonRePatternException("bad inline flags: cannot turn off flags 'a', 'u' and 'L'", _position + 1),
-            _ => new PythonRePatternException("bad inline flags: flags 'a', 'u' and 'L' are incompatible", _position + 1),
+            FlagParseContext.Removed => new PythonRePatternException("bad inline flags: cannot turn off flags 'a', 'u' and 'L'",
+                _position + 1, PythonReErrorSource.Pattern, PythonReErrorKind.InvalidOptions),
+            _ => new PythonRePatternException("bad inline flags: flags 'a', 'u' and 'L' are incompatible",
+                _position + 1, PythonReErrorSource.Pattern, PythonReErrorKind.InvalidOptions),
         };
     }
 

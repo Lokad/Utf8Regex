@@ -1,4 +1,6 @@
 [Flags] enum PythonRe.PythonReCompileOptions : Int32 { Ascii = 32, DotAll = 8, IgnoreCase = 1, Locale = 2, Multiline = 4, None = 0, Unicode = 64, Verbose = 16 }
+enum PythonRe.PythonReErrorKind : Int32 { InvalidOptions = 1, Syntax = 0, UnsupportedFeature = 2 }
+enum PythonRe.PythonReErrorSource : Int32 { CompileOptions = 2, Pattern = 0, Replacement = 1 }
 readonly struct PythonRe.PythonReNameEntry
   property Int32 Number { get; init; }
   property String Name { get; init; }
@@ -6,6 +8,8 @@ sealed class PythonRe.PythonRePatternException : Exception, Runtime.Serializatio
   ctor PythonRePatternException(String message)
   ctor PythonRePatternException(String message, Int32 position)
   property Int32 Position { get; }
+  property PythonRe.PythonReErrorKind ErrorKind { get; }
+  property PythonRe.PythonReErrorSource ErrorSource { get; }
 readonly struct PythonRe.Utf8PythonCaptureRange
   property Boolean Success { get; init; }
   property Int32 EndOffsetInBytes { get; init; }

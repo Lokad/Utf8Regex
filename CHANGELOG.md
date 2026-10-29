@@ -6,6 +6,8 @@
 - Use .NET 11 by default for benchmark runs; historical figures retain their measured runtime.
 - Expose PythonRe effective global flags through `EffectiveOptions`, including
   inline directives and implicit Unicode, while retaining requested `Options`.
+- Expose PythonRe error source/kind metadata and restore known replacement-template
+  positions, retaining UTF-16 coordinates and existing exception distinctions.
 - Accept a PythonRe cursor token per advance, preserving the creation token,
   absolute deadline, cumulative limits and previously returned owned snapshots.
 - Add PythonRe range cursor results and range-only split, avoiding captured-text

@@ -165,17 +165,17 @@ public sealed class PythonReReplacementPreparationAdmissionTests
 
     [Theory]
     [InlineData("\\", "bad escape (end of pattern)", 0)]
-    [InlineData(@"\q", @"bad escape \q", -1)]
-    [InlineData(@"\g", "missing <", -1)]
+    [InlineData(@"\q", @"bad escape \q", 0)]
+    [InlineData(@"\g", "missing <", 2)]
     [InlineData(@"\g<", "missing group name", 3)]
     [InlineData(@"\g<word", "missing >, unterminated name", 3)]
     [InlineData(@"\g<>", "missing group name", 3)]
     [InlineData(@"\g<a b>", "bad character in group name 'a b'", 3)]
-    [InlineData(@"\13", "invalid group reference 13", -1)]
-    [InlineData(@"\g<2147483648>", "invalid group reference 2147483648", -1)]
-    [InlineData(@"\g<0002147483648>", "invalid group reference 2147483648", -1)]
-    [InlineData(@"\g<999999999999999999>", "invalid group reference 999999999999999999", -1)]
-    [InlineData(@"\777", @"octal escape value \777 outside of range 0-0o377", -1)]
+    [InlineData(@"\13", "invalid group reference 13", 1)]
+    [InlineData(@"\g<2147483648>", "invalid group reference 2147483648", 3)]
+    [InlineData(@"\g<0002147483648>", "invalid group reference 2147483648", 3)]
+    [InlineData(@"\g<999999999999999999>", "invalid group reference 999999999999999999", 3)]
+    [InlineData(@"\777", @"octal escape value \777 outside of range 0-0o377", 0)]
     public void GrammarErrorsKeepTheirMessagePositionAndParentState(string template, string message, int position)
     {
         using var owner = Utf8ConstructionScope.Enter();

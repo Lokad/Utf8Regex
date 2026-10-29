@@ -46,7 +46,26 @@ Supported families include literals/classes/standard escapes, ordered alternativ
 greedy/lazy/possessive repetition, captures/named groups, references,
 participation conditionals, lookahead, fixed-width lookbehind, atomic groups and
 leading/scoped flags. Python replacement references include `\1` and
-`\g<name>`. Pattern error positions use UTF-16 source-string coordinates.
+`\g<name>`.
+
+`PythonRePatternException` exposes immutable `ErrorSource`, `ErrorKind` and
+`Position`, without requiring message parsing. `ErrorSource` distinguishes pattern
+text (including inline flags), replacement text and supplied compile options.
+`ErrorKind` distinguishes syntax/reference/width errors, invalid options and
+deliberately unsupported features. The existing public exception constructors
+default to pattern/syntax; messages and exception types retain their meanings.
+`Position` is a zero-based **UTF-16** source-string position, including for a
+UTF-8 pattern overload, or `-1` when unavailable. It is neither a byte position
+nor a Unicode-scalar index. Positions identify the offending template token or
+reference when known; failed deferred width validation and combined global flag
+validation may have no position. No source text or whole-source index is retained
+to manufacture one. Pattern syntax still precedes combined inline-option errors.
+
+Unknown named replacement groups retain `IndexOutOfRangeException`, identifying
+a replacement-name lookup error by type; they expose no position. Cancellation,
+deadlines, resource/admission failures and argument errors retain their existing
+distinct types and original-token guarantees. These are structured distinctions;
+diagnostic prose is not a parsing protocol.
 
 | Area | Rules and important boundaries |
 | --- | --- |
