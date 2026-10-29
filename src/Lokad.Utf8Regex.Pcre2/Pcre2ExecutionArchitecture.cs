@@ -1460,8 +1460,16 @@ internal static class Pcre2CandidateSearchAnalyzer
                 return TryCollectTokenAsciiBytes(token, request, values);
 
             case Pcre2SequenceBacktrackingNode { Children.Length: > 0 } sequence:
+                var skippedBoundaries = 0;
                 foreach (var child in sequence.Children)
                 {
+                    // The original VM still evaluates these non-consuming
+                    // predicates. Bound this optional prefix proof separately.
+                    if (IsSkippableZeroWidthPrefix(child))
+                    {
+                        if (++skippedBoundaries > 64) return false;
+                        continue;
+                    }
                     if (!TryCollectLeadingAsciiBytes(child, request, values))
                     {
                         return false;
