@@ -20,6 +20,8 @@
   searches on ASCII subjects; mixed subjects retain scalar verification.
 - Reuse the admitted dotted-decimal finder for Boolean searches with bounded
   work and original interruption, avoiding scalar capture workspace.
+- Lower Python ASCII word boundaries directly to the owned boundary primitive,
+  preserving strict ASCII membership and the non-boundary empty-subject rule.
 
 ## 0.4.0 — 2026-10-27
 

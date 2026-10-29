@@ -52,6 +52,9 @@ internal static class PythonReScalarNodeFactory
     internal static Utf8SliceNode.AnchorNode Anchor(Utf8SliceAnchorKind kind) =>
         Create(kind, static state => new Utf8SliceNode.AnchorNode(state, false));
 
+    internal static Utf8SliceNode.BoundaryNode AsciiBoundary(bool wordBoundary) =>
+        Create(wordBoundary, static state => new Utf8SliceNode.BoundaryNode(state, Utf8SliceWordKind.Ascii));
+
     internal static Utf8SliceNode.CategorySetNode Class(byte[] ascii, bool negated, Func<int, bool> predicate, Utf8ConstructionArena arena)
     {
         var members = arena.Allocate<Utf8SliceNode.CategorySetMember>(1, true);

@@ -37,6 +37,11 @@ internal static class Utf8SliceScalarClasses
             includeJoiners && scalar.Value is 0x200C or 0x200D;
     }
 
+    internal static bool IsBoundaryWord(Rune scalar, Utf8SliceWordKind kind)
+        => kind == Utf8SliceWordKind.Ascii
+            ? (uint)scalar.Value < 128 && WordCharAsciiLookup[scalar.Value] != 0
+            : IsWord(scalar, true, kind == Utf8SliceWordKind.Ecma);
+
     internal static bool MatchesShorthand(Rune scalar, Utf8SliceShorthand shorthand)
     {
         var hit = ((int)shorthand >> 1) switch

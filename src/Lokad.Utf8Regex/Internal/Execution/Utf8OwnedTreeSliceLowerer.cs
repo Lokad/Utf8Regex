@@ -217,7 +217,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                     return new Utf8SliceNode.BoundaryNode(node.Kind == Utf8TreeNodeKind.Boundary);
                 case Utf8TreeNodeKind.ECMABoundary:
                 case Utf8TreeNodeKind.NonECMABoundary:
-                    return new Utf8SliceNode.BoundaryNode(node.Kind == Utf8TreeNodeKind.ECMABoundary, true);
+                    return new Utf8SliceNode.BoundaryNode(node.Kind == Utf8TreeNodeKind.ECMABoundary, Utf8SliceWordKind.Ecma);
                 default:
                     return null;
             }

@@ -13,6 +13,10 @@ internal static partial class PythonReScalarCompiler
     {
         switch (text)
         {
+            case PythonReParser.AsciiWordBoundary:
+                return PythonReScalarNodeFactory.AsciiBoundary(true);
+            case PythonReParser.AsciiNonWordBoundary:
+                return RejectEmptySubject(PythonReScalarNodeFactory.AsciiBoundary(false), arena);
             case PythonReParser.UnicodeWordClass:
             case PythonReParser.UnicodeNonWordClass:
                 return PythonReScalarNodeFactory.Class(PythonReScalarClassData.WordAscii,
@@ -37,15 +41,20 @@ internal static partial class PythonReScalarCompiler
                     PythonReScalarNodeFactory.Lookahead(word, boundary), arena);
                 var result = PythonReScalarNodeFactory.Alternation(branches);
                 if (boundary) return result;
-                // CPython 3.13's non-boundary rejects an empty subject.
-                var empty = PythonReScalarNodeFactory.Concat(Pair(
-                    PythonReScalarNodeFactory.Anchor(Utf8SliceAnchorKind.Beginning),
-                    PythonReScalarNodeFactory.Anchor(Utf8SliceAnchorKind.VeryEnd), arena));
-                return PythonReScalarNodeFactory.Concat(Pair(
-                    PythonReScalarNodeFactory.Lookahead(empty, false), result, arena));
+                return RejectEmptySubject(result, arena);
             default:
                 return null;
         }
+    }
+
+    private static Utf8SliceNode RejectEmptySubject(Utf8SliceNode boundary, Utf8ConstructionArena arena)
+    {
+        // CPython 3.13's non-boundary rejects an empty subject.
+        var empty = PythonReScalarNodeFactory.Concat(Pair(
+            PythonReScalarNodeFactory.Anchor(Utf8SliceAnchorKind.Beginning),
+            PythonReScalarNodeFactory.Anchor(Utf8SliceAnchorKind.VeryEnd), arena));
+        return PythonReScalarNodeFactory.Concat(Pair(
+            PythonReScalarNodeFactory.Lookahead(empty, false), boundary, arena));
     }
 
     private static Utf8SliceNode? ConvertBracket(PythonReCharacterClassNode characterClass,

@@ -42,6 +42,15 @@ internal enum Utf8SliceShorthand : byte
     NonSpace = 5,
 }
 
+// Boundary instruction B stores word membership; its existing encodings stay
+// Unicode=0 and ECMA=1. Strict ASCII excludes ECMA's U+0130 member.
+internal enum Utf8SliceWordKind : byte
+{
+    Unicode,
+    Ecma,
+    Ascii,
+}
+
 /// <summary>Anchor flavors for the owned slice: line edges honor Multiline,
 /// absolute edges ignore it.</summary>
 internal enum Utf8SliceAnchorKind : byte
@@ -80,10 +89,8 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
 
     internal sealed record AnchorNode(Utf8SliceAnchorKind Anchor, bool MatchMultiline) : Utf8SliceNode(Utf8SliceNodeKind.Anchor);
 
-    internal sealed record BoundaryNode(bool IsWordBoundary, bool Ecma) : Utf8SliceNode(Utf8SliceNodeKind.Boundary)
-    {
-        internal BoundaryNode(bool isWordBoundary) : this(isWordBoundary, false) { }
-    }
+    internal sealed record BoundaryNode(bool IsWordBoundary, Utf8SliceWordKind WordKind = Utf8SliceWordKind.Unicode)
+        : Utf8SliceNode(Utf8SliceNodeKind.Boundary);
 
     internal sealed record ShorthandNode(Utf8SliceShorthand Shorthand) : Utf8SliceNode(Utf8SliceNodeKind.Shorthand);
 
@@ -1176,7 +1183,7 @@ internal static class Utf8SliceLowerer
 
                     break;
                 case Utf8SliceNode.BoundaryNode boundary:
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Boundary, boundary.IsWordBoundary ? 1 : 0, boundary.Ecma ? 1 : 0, 0, 0));
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Boundary, boundary.IsWordBoundary ? 1 : 0, (int)boundary.WordKind, 0, 0));
                     break;
                 case Utf8SliceNode.ShorthandNode shorthand:
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Shorthand, (int)shorthand.Shorthand, 0, 0, 0));

@@ -245,9 +245,9 @@ internal static partial class Utf8SliceRunner
                             break;
                         case Utf8SliceInstructionKind.Boundary:
                             var beforeWord = TryReadScalar(input, position, true, out var before, out _) &&
-                                Utf8SliceScalarClasses.IsWord(before, true, instruction.B != 0);
+                                Utf8SliceScalarClasses.IsBoundaryWord(before, (Utf8SliceWordKind)instruction.B);
                             var afterWord = TryReadScalar(input, position, false, out var after, out _) &&
-                                Utf8SliceScalarClasses.IsWord(after, true, instruction.B != 0);
+                                Utf8SliceScalarClasses.IsBoundaryWord(after, (Utf8SliceWordKind)instruction.B);
                             if ((beforeWord != afterWord) == (instruction.A != 0)) { pc++; continue; }
                             break;
                         case Utf8SliceInstructionKind.Fail:

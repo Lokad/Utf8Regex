@@ -162,8 +162,8 @@ internal sealed class Utf8NonBacktrackingSearchState
                                 Utf8SliceRunner.HoldsNonBacktrackingAnchor(instruction, input, edge);
                             break;
                         case Utf8SliceInstructionKind.Boundary:
-                            var beforeWord = boundary > 0 && Utf8SliceScalarClasses.IsWord(before, true, instruction.B != 0);
-                            var afterWord = boundary < scalars && Utf8SliceScalarClasses.IsWord(scalar, true, instruction.B != 0);
+                            var beforeWord = boundary > 0 && Utf8SliceScalarClasses.IsBoundaryWord(before, (Utf8SliceWordKind)instruction.B);
+                            var afterWord = boundary < scalars && Utf8SliceScalarClasses.IsBoundaryWord(scalar, (Utf8SliceWordKind)instruction.B);
                             viable = (singleWord ? (current & (1UL << (pc + 1))) != 0
                                 : result.CanMatch(boundary, pc + 1)) && (beforeWord != afterWord) == (instruction.A != 0);
                             break;
