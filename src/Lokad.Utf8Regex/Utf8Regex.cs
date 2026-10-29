@@ -586,6 +586,53 @@ public sealed partial class Utf8Regex
 
     private bool IsMatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
+        // Captures with Unicode atoms require scalar result projection, but
+        // existence on a fully ASCII subject can use the complete branch plan.
+        // Do not change global capture dispatch or already-qualified native lanes.
+        if (_hasCaptures && _ownedSliceProgram.HasUnicodePatternAtoms &&
+            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+            _preparedRegex.SimplePatternPlan is { Branches.Length: > 0, MinLength: > 0 } simple &&
+            !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
+            !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement &&
+            !_preparedRegex.Features.HasBackreferences && !_preparedRegex.Features.HasLookarounds &&
+            !_preparedRegex.Features.HasAtomicGroups && !_preparedRegex.Features.HasConditionals &&
+            !_ownedSliceProgram.RightToLeft && !_ownedSliceProgram.IgnoreCase && !_ownedSliceProgram.IsNonBacktracking &&
+            !_ownedSliceProgram.HasBalancing && !_ownedSliceProgram.HasSharedCaptureDeclarations &&
+            !_ownedSliceProgram.HasExplicitCaptureNumbers && !_ownedSliceProgram.HasContiguousAnchor &&
+            !_ownedSliceProgram.HasConditionalTest && !_ownedSliceProgram.UsesInterpretedLazyLoopSemantics)
+        {
+            var simpleInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+            try
+            {
+                var simpleValidation = Utf8Validation.Validate(input, ref simpleInvocation);
+                if (!simpleValidation.IsAscii)
+                    return OwnedSliceIsMatchFromByte(input, _ownedSliceProgram, 0, ref simpleInvocation);
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiSimplePattern);
+                // The existing whole-subject digit kernel can prove existence.
+                // Bound its validation/comparison loops before entering it.
+                var repeated = simple.RepeatedDigitGroupPlan;
+                if (repeated.HasValue && repeated.MaximumLength <= 32 &&
+                    input.Length >= repeated.MinimumLength && input.Length <= repeated.MaximumLength)
+                {
+                    var before = simpleInvocation.TryChargeInputStep();
+                    if (before != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref simpleInvocation);
+                    var whole = Utf8AsciiRepeatedDigitGroupExecutor.TryMatchWhole(input, repeated, out _, out _);
+                    var after = simpleInvocation.TryChargeInputStep();
+                    simpleInvocation.Budget.ThrowIfCancellationRequested();
+                    if (after != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref simpleInvocation);
+                    if (whole) return true;
+                }
+                var breach = Utf8ExecutionInterpreter.TryFindNextSimplePattern(input,
+                    _preparedRegex.SearchPlan, simple, 0, ref simpleInvocation, out var index, out _);
+                if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref simpleInvocation);
+                return index >= 0;
+            }
+            catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+                simpleInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+            {
+                throw CreateExecutionResourceFailure(ref simpleInvocation);
+            }
+        }
         if (_prioritizedBooleanFamilyKind == Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiSignedDecimalWhole &&
             (HasFiniteExecutionLimits || cancellationToken.CanBeCanceled || MatchTimeout != Regex.InfiniteMatchTimeout))
         {
