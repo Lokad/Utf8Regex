@@ -1,0 +1,32 @@
+Measuring README benchmark case: industry/boostdocs-credit-card-match (requested=1, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=603088;ElapsedMicroseconds=49813.200
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=576169;ElapsedMicroseconds=48854.500
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=310423;ElapsedMicroseconds=50291.600
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=896593;ElapsedMicroseconds=50003.200
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=279783;ElapsedMicroseconds=49976.000
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=641200;ElapsedMicroseconds=49130.900
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=603088;ElapsedMicroseconds=50086.100
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=576169;ElapsedMicroseconds=48969.400
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=310423;ElapsedMicroseconds=50923.800
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=896593;ElapsedMicroseconds=50659.800
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=279783;ElapsedMicroseconds=50124.300
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=641200;ElapsedMicroseconds=49444.700
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=603088;ElapsedMicroseconds=49645.600
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=576169;ElapsedMicroseconds=49980.700
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=310423;ElapsedMicroseconds=50618.100
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=896593;ElapsedMicroseconds=50107.100
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=279783;ElapsedMicroseconds=50427.800
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=641200;ElapsedMicroseconds=49298.900
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=603088;ElapsedMicroseconds=50389.900
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=576169;ElapsedMicroseconds=50096.400
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=310423;ElapsedMicroseconds=49405.200
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=896593;ElapsedMicroseconds=50044.000
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=279783;ElapsedMicroseconds=49846.900
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=641200;ElapsedMicroseconds=49306.300
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=603088;ElapsedMicroseconds=49795.900
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=576169;ElapsedMicroseconds=48976.500
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=310423;ElapsedMicroseconds=50770.700
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=896593;ElapsedMicroseconds=50230.300
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=279783;ElapsedMicroseconds=50365.600
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=641200;ElapsedMicroseconds=55834.500
+Updated README case: industry/boostdocs-credit-card-match

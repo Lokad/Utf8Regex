@@ -1,0 +1,21 @@
+SourceKind        : dotnet-performance-case
+Origin            : public//IsMatch
+Pattern           : (\d{4}[- ]){3}\d{3,4}
+Options           : None
+InputChars        : 18
+InputBytes        : 18
+CompiledEngine    : SimplePatternInterpreter
+ExecutionKind     : AsciiSimplePattern
+DirectFamily      : None
+OwnedScalarPlan   : True
+ScalarPrepared    : True
+SearchKind        : None
+PortfolioKind     : None
+PreparedSearcher  : None
+RequiredPrefilter : None
+WindowSearch      : None
+StructuralYield   : None
+StructuralStages  : 0
+FallbackPlans     : 0
+Verifier          : None
+FallbackReason    : <native>

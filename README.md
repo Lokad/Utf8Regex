@@ -149,7 +149,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | Case | Operation | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
 | `industry/leipzig-symbol-count` | `Count` | 1,152,702.300 us | 23,036.733 us | 30,488.150 us | 50.04x |
-| `industry/boostdocs-credit-card-match` | `IsMatch` | 1.420 us | 0.167 us | 0.188 us | 8.52x |
 | `common/ip-match` | `IsMatch` | 1.100 us | 0.177 us | 0.195 us | 6.23x |
 | `common/ip-miss` | `IsMatch` | 1.122 us | 0.190 us | 0.209 us | 5.90x |
 | `common/email-match` | `IsMatch` | 1.571 us | 0.276 us | 0.305 us | 5.68x |
@@ -168,6 +167,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/uri-match` | `IsMatch` | 0.167 us | 0.234 us | 0.270 us | 0.71x |
 | `industry/leipzig-river-window-count` | `Count` | 19,542.333 us | 32,374.150 us | 46,719.000 us | 0.60x |
 | `industry/boostdocs-date-match` | `IsMatch` | 0.050 us | 0.085 us | 0.102 us | 0.58x |
+| `industry/boostdocs-credit-card-match` | `IsMatch` | 0.083 us | 0.163 us | 0.179 us | 0.51x |
 | `industry/leipzig-name-family-count` | `Count` | 4,216.867 us | 9,795.667 us | 17,176.000 us | 0.43x |
 | `common/matches-set` | `Count` | 78.910 us | 194.124 us | 197.086 us | 0.41x |
 | `common/matches-word` | `Count` | 1.422 us | 4.262 us | 6.079 us | 0.33x |
@@ -231,7 +231,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | Case | Operation | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
 | `industry/leipzig-symbol-count` | `Count` | 1,153,094.300 us | 1,235.305 us | 6,850.600 us | 933.45x |
-| `industry/boostdocs-credit-card-match` | `IsMatch` | 1.442 us | 0.055 us | 0.078 us | 26.35x |
 | `common/ip-miss` | `IsMatch` | 1.142 us | 0.048 us | 0.070 us | 23.56x |
 | `common/ip-match` | `IsMatch` | 1.093 us | 0.047 us | 0.068 us | 23.48x |
 | `common/email-miss` | `IsMatch` | 1.937 us | 0.089 us | 0.115 us | 21.80x |
@@ -252,6 +251,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/boostdocs-date-match` | `IsMatch` | 0.055 us | 0.030 us | 0.049 us | 1.83x |
 | `industry/boostdocs-postcode-match` | `IsMatch` | 0.052 us | 0.031 us | 0.048 us | 1.67x |
 | `industry/mariomka-uri-count` | `Count` | 1,751.900 us | 1,099.909 us | 8,499.333 us | 1.59x |
+| `industry/boostdocs-credit-card-match` | `IsMatch` | 0.085 us | 0.056 us | 0.077 us | 1.52x |
 | `industry/leipzig-name-family-count` | `Count` | 4,283.100 us | 3,108.941 us | 8,415.833 us | 1.38x |
 | `industry/leipzig-twain-count` | `Count` | 1,320.782 us | 1,333.897 us | 5,548.167 us | 0.99x |
 | `common/matches-words` | `Count` | 9.540 us | 11.005 us | 14.130 us | 0.87x |
@@ -314,7 +314,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `structural/keyword-family-to-capitalized-identifier` | 74.910 us | 220.031 us | 231.281 us | 0.34x |
 | `structural/ordered-identifier-window` | 6.493 us | 29.202 us | 40.545 us | 0.22x |
 | `structural/modifier-family-to-type-pair` | 24.891 us | 135.047 us | 147.705 us | 0.18x |
-| `balancing/begin-end-blocks` | 7.333 us | 4,248.158 us | 4,248.675 us | 0.00x |
+| `balancing/begin-end-blocks` | 7.333 us | 4,248.158 us | 4,248.675 us | 0.0017x |
 <!-- END GENERATED LOKAD BENCHMARKS -->
 
 <!-- BEGIN GENERATED LOKAD_COMPILED BENCHMARKS -->
