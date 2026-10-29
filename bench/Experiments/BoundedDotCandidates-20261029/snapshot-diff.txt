@@ -1,0 +1,5 @@
+dotnet-performance/industry/rust-sherlock-holmes-window-count
+dotnet-performance/industry/leipzig-river-window-count
+dotnet-performance-compiled/industry/rust-sherlock-holmes-window-count
+dotnet-performance-compiled/industry/leipzig-river-window-count
+Only Holmes/River ordinary/compiled measurements and parity rows changed; unselected identities and evidence remain intact.

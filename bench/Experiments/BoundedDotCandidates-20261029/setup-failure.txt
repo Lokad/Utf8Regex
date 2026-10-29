@@ -1,0 +1,20 @@
+Unhandled exception. System.Reflection.TargetInvocationException: Exception has been thrown by the target of an invocation.
+ ---> System.IO.DirectoryNotFoundException: Benchmark data directory 'DotNetPerformanceReplica/Public/Data' was not found beside the executable or in the repository.
+   at Lokad.Utf8Regex.Benchmarks.BenchmarkDataFiles.GetDirectory(String relativePath) in /home/vermorel/tmp/utf8regex-net11-memory/pilot/bench/Lokad.Utf8Regex.Benchmarks/BenchmarkDataFiles.cs:line 31
+   at Lokad.Utf8Regex.Benchmarks.DotNetPerformanceRegexData.ReadGZipText(String fileName) in /home/vermorel/tmp/utf8regex-net11-memory/pilot/bench/Lokad.Utf8Regex.Benchmarks/DotNetPerformanceReplica/Public/DotNetPerformanceRegexData.cs:line 39
+   at Lokad.Utf8Regex.Benchmarks.DotNetPerformanceRegexData.<>c.<.cctor>b__14_1() in /home/vermorel/tmp/utf8regex-net11-memory/pilot/bench/Lokad.Utf8Regex.Benchmarks/DotNetPerformanceReplica/Public/DotNetPerformanceRegexData.cs:line 10
+   at System.Lazy`1.ViaFactory(LazyThreadSafetyMode mode)
+   at System.Lazy`1.ExecutionAndPublication(LazyHelper executionAndPublication, Boolean useDefaultConstructor)
+   at System.Lazy`1.CreateValue()
+   at Lokad.Utf8Regex.Benchmarks.DotNetPerformanceRegexData.get_DetectiveCorpus() in /home/vermorel/tmp/utf8regex-net11-memory/pilot/bench/Lokad.Utf8Regex.Benchmarks/DotNetPerformanceReplica/Public/DotNetPerformanceRegexData.cs:line 17
+   at Lokad.Utf8Regex.Benchmarks.LokadPublicBenchmarkContext.Resolve(String caseId) in /home/vermorel/tmp/utf8regex-net11-memory/pilot/bench/Lokad.Utf8Regex.Benchmarks/DotNetPerformanceReplica/Public/LokadPublicBenchmarkContext.cs:line 398
+   at Lokad.Utf8Regex.Benchmarks.LokadPublicBenchmarkContext..ctor(String caseId) in /home/vermorel/tmp/utf8regex-net11-memory/pilot/bench/Lokad.Utf8Regex.Benchmarks/DotNetPerformanceReplica/Public/LokadPublicBenchmarkContext.cs:line 71
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Constructor(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+   --- End of inner exception stack trace ---
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+   at System.Reflection.RuntimeConstructorInfo.Invoke(BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+   at System.RuntimeType.CreateInstanceImpl(BindingFlags bindingAttr, Binder binder, Object[] args, CultureInfo culture)
+   at Program.<Main>$(String[] args) in /home/vermorel/tmp/utf8regex-net11-memory/bounded-dot-driver/Compare.cs:line 33
+timeout: the monitored command dumped core

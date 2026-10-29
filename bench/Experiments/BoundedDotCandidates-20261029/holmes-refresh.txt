@@ -1,0 +1,32 @@
+Measuring README benchmark case: industry/rust-sherlock-holmes-window-count (requested=1, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=197;ElapsedMicroseconds=50523.500
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=196;ElapsedMicroseconds=49833.900
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=189;ElapsedMicroseconds=50571.300
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=845;ElapsedMicroseconds=49461.700
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=101;ElapsedMicroseconds=53262.900
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=199;ElapsedMicroseconds=52368.600
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=197;ElapsedMicroseconds=49809.100
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=196;ElapsedMicroseconds=49358.700
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=189;ElapsedMicroseconds=49895.700
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=845;ElapsedMicroseconds=49551.900
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=101;ElapsedMicroseconds=49565.700
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=199;ElapsedMicroseconds=50763.600
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=197;ElapsedMicroseconds=49829.100
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=196;ElapsedMicroseconds=49455.600
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=189;ElapsedMicroseconds=49678.600
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=845;ElapsedMicroseconds=49142.100
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=101;ElapsedMicroseconds=56166.300
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=199;ElapsedMicroseconds=52280.100
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=197;ElapsedMicroseconds=50140.500
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=196;ElapsedMicroseconds=50032.500
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=189;ElapsedMicroseconds=50452.000
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=845;ElapsedMicroseconds=49577.900
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=101;ElapsedMicroseconds=49087.500
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=199;ElapsedMicroseconds=55483.600
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=197;ElapsedMicroseconds=50036.700
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=196;ElapsedMicroseconds=49554.100
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=189;ElapsedMicroseconds=49780.100
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=845;ElapsedMicroseconds=49796.500
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=101;ElapsedMicroseconds=50655.600
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=199;ElapsedMicroseconds=52508.900
+Updated README case: industry/rust-sherlock-holmes-window-count

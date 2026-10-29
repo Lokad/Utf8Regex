@@ -1,0 +1,6 @@
+ascii-dense-hit: Count=128; SelectedScalar=False; Route=NativeOrderedLiteralWindow
+unicode-dense-hit: Count=128; SelectedScalar=True; Route=None
+ascii-dense-miss: Count=0; SelectedScalar=False; Route=NativeOrderedLiteralWindow
+ascii-byte-present-miss: Count=0; SelectedScalar=False; Route=NativeOrderedLiteralWindow
+ascii-newline: Count=0; SelectedScalar=False; Route=NativeOrderedLiteralWindow
+ascii-captured-gap: Count=128; SelectedScalar=False; Route=NativeOrderedLiteralWindow

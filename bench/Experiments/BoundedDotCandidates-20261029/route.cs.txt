@@ -1,0 +1,37 @@
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Text;
+using System.Text.RegularExpressions;
+
+var assembly = Assembly.LoadFrom(Path.GetFullPath(args[0]));
+var type = assembly.GetType("Lokad.Utf8Regex.Utf8Regex")!;
+var sessionType = assembly.GetType("Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession")!;
+var selector = new DynamicMethod("SelectsScalar", typeof(bool), [typeof(object), typeof(byte[])], typeof(Program).Module, true);
+var il = selector.GetILGenerator();
+il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Castclass, type); il.Emit(OpCodes.Ldarg_1);
+il.Emit(OpCodes.Newobj, typeof(ReadOnlySpan<byte>).GetConstructor([typeof(byte[])])!);
+il.Emit(OpCodes.Call, type.GetMethod("GetOwnedSliceProgram", BindingFlags.Instance | BindingFlags.NonPublic,
+    null, [typeof(ReadOnlySpan<byte>)], null)!);
+il.Emit(OpCodes.Ldnull); il.Emit(OpCodes.Cgt_Un); il.Emit(OpCodes.Ret);
+var selectsScalar = selector.CreateDelegate<Func<object, byte[], bool>>();
+foreach (var name in new[] { "ascii-dense-hit", "unicode-dense-hit", "ascii-dense-miss", "ascii-byte-present-miss", "ascii-newline", "ascii-captured-gap" })
+{
+    var pattern = @"Holmes.{0,25}Watson|Watson.{0,25}Holmes";
+    var text = "Holmes" + new string('x', 10) + "Watson" + new string(';', 26);
+    if (name == "unicode-dense-hit") text = "Holmes😀éWatson" + new string(';', 40);
+    if (name == "ascii-dense-miss") text = "Holmes" + new string('x', 128);
+    if (name == "ascii-byte-present-miss") text = "Holmes" + new string('x', 20) + "W" + new string('x', 100);
+    if (name == "ascii-newline") text = "Holmes" + new string('x', 10) + "\nWatson" + new string(';', 26);
+    if (name == "ascii-captured-gap") { pattern = @"(?<left>Holmes)(?<gap>.{8,25})(?<right>Watson)"; text = "Holmes" + new string('x', 30) + "Watson;Holmes!Watson;Holmes12345678Watson;"; }
+    var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(text, 128)));
+    var regex = type.GetConstructor([typeof(string), typeof(RegexOptions)])!.Invoke([pattern, RegexOptions.Compiled]);
+    var count = type.GetMethod("Count", [typeof(ReadOnlySpan<byte>)])!.CreateDelegate<Count>(regex);
+    var session = sessionType.GetMethod("Start", Type.EmptyTypes)!.Invoke(null, null)!;
+    try
+    {
+        var result = count(input);
+        Console.WriteLine($"{name}: Count={result}; SelectedScalar={selectsScalar(regex, input)}; Route={sessionType.GetProperty("ExecutionRoute")!.GetValue(session)}");
+    }
+    finally { sessionType.GetMethod("Complete")!.Invoke(session, null); }
+}
+delegate int Count(ReadOnlySpan<byte> input);
