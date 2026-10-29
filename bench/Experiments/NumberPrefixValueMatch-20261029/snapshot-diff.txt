@@ -1,0 +1,3 @@
+lokad/lokad/lexer/number
+lokad-compiled/lokad/lexer/number
+Corrected 30 script-operation labels; all unselected parity measurements unchanged.

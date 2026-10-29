@@ -90,6 +90,20 @@ public sealed class ReadmeBenchmarkSnapshotTests
         AssertPositiveRow(sections.GetProperty("dotnet-performance"), "common/replace-words");
         AssertPositiveRow(sections.GetProperty("dotnet-performance-compiled"), "common/split-words");
         AssertPositiveRow(sections.GetProperty("dotnet-performance-compiled"), "common/replace-words");
+
+        // Script prefix workloads aggregate public Match calls, not Count calls.
+        using var parity = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("README.Parity.json")));
+        foreach (var row in parity.RootElement.GetProperty("Rows").EnumerateArray())
+        {
+            var expectedOperation = row.GetProperty("CaseId").GetString() switch
+            {
+                "lokad/lexer/number" or "lokad/docs/inline-doc-prefix" => "MatchLoop",
+                "lokad/imports/module-imports" or "lokad/folding/region-marker" => "Count",
+                _ => null,
+            };
+            if (expectedOperation is not null)
+                Assert.Equal(expectedOperation, row.GetProperty("Operation").GetString());
+        }
     }
 
     private static void AssertPositiveRow(JsonElement section, string caseId)

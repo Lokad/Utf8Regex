@@ -184,9 +184,12 @@ internal static partial class BenchmarkInspectReporter
     }
 
     private static string GetReadmeOperation(string caseId)
-        => LokadPublicBenchmarkContext.GetAllCaseIds().Contains(caseId, StringComparer.Ordinal)
-            ? LokadPublicBenchmarkContext.GetOperation(caseId).ToString()
-            : "Count";
+    {
+        if (LokadPublicBenchmarkContext.GetAllCaseIds().Contains(caseId, StringComparer.Ordinal))
+            return LokadPublicBenchmarkContext.GetOperation(caseId).ToString();
+        return LokadReplicaScriptBenchmarkCatalog.GetAllCases().FirstOrDefault(c => c.Id == caseId)?.Model ==
+            LokadReplicaScriptBenchmarkModel.PrefixMatchLoop ? "MatchLoop" : "Count";
+    }
 
     private sealed class ReadmeParityReport
     {
