@@ -4,6 +4,8 @@
 
 - Target .NET 10 and .NET 11 across Core, PythonRe and PCRE2.
 - Use .NET 11 by default for benchmark runs; historical figures retain their measured runtime.
+- Reuse complete terminated-prefix ranges for bounded ASCII value Match, retaining
+  contiguous-anchor origins, strict validation and original interruption/resource admission.
 - Reuse scalar-aligned folded literal-family routes on mixed UTF-8 subjects and
   prune impossible leading-whitespace Count starts before scalar VM verification.
 - PCRE2 Count checks an existing required literal before allocating slice VM
