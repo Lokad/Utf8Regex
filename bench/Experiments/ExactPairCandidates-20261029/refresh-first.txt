@@ -1,0 +1,32 @@
+Measuring README benchmark case: industry/leipzig-river-window-count (requested=1, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=8;ElapsedMicroseconds=53972.400
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=8;ElapsedMicroseconds=54103.500
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=2;ElapsedMicroseconds=72224.900
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=33;ElapsedMicroseconds=53302.700
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=1;ElapsedMicroseconds=53415.200
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=3;ElapsedMicroseconds=56618.300
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=8;ElapsedMicroseconds=53935.400
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=8;ElapsedMicroseconds=55927.600
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=2;ElapsedMicroseconds=64217.900
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=33;ElapsedMicroseconds=55855.300
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=1;ElapsedMicroseconds=46812.700
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=3;ElapsedMicroseconds=51823.800
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=8;ElapsedMicroseconds=54110.300
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=8;ElapsedMicroseconds=53916.500
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=2;ElapsedMicroseconds=66230.700
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=33;ElapsedMicroseconds=52718.600
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=1;ElapsedMicroseconds=49398.700
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=3;ElapsedMicroseconds=44243.500
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=8;ElapsedMicroseconds=53999.300
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=8;ElapsedMicroseconds=55647.700
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=2;ElapsedMicroseconds=64387.900
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=33;ElapsedMicroseconds=55235.400
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=1;ElapsedMicroseconds=36184.600
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=3;ElapsedMicroseconds=19768.300
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=8;ElapsedMicroseconds=53999.000
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=8;ElapsedMicroseconds=53920.800
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=2;ElapsedMicroseconds=65423.600
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=33;ElapsedMicroseconds=52038.000
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=1;ElapsedMicroseconds=40759.400
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=3;ElapsedMicroseconds=24783.100
+Updated README case: industry/leipzig-river-window-count

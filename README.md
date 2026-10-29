@@ -172,7 +172,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/ip-match` | `IsMatch` | 0.125 us | 0.181 us | 0.201 us | 0.69x |
 | `common/email-match` | `IsMatch` | 0.179 us | 0.269 us | 0.293 us | 0.67x |
 | `common/ip-miss` | `IsMatch` | 0.124 us | 0.189 us | 0.209 us | 0.66x |
-| `industry/leipzig-river-window-count` | `Count` | 19,542.333 us | 32,374.150 us | 46,719.000 us | 0.60x |
 | `industry/boostdocs-date-match` | `IsMatch` | 0.050 us | 0.085 us | 0.102 us | 0.58x |
 | `common/email-miss` | `IsMatch` | 0.183 us | 0.346 us | 0.373 us | 0.53x |
 | `industry/boostdocs-credit-card-match` | `IsMatch` | 0.083 us | 0.163 us | 0.179 us | 0.51x |
@@ -184,6 +183,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/date-match` | `IsMatch` | 0.029 us | 0.110 us | 0.139 us | 0.26x |
 | `industry/boostdocs-postcode-match` | `IsMatch` | 0.020 us | 0.084 us | 0.100 us | 0.23x |
 | `common/backtracking` | `IsMatch` | 0.185 us | 0.849 us | 0.893 us | 0.22x |
+| `industry/leipzig-river-window-count` | `Count` | 6,648.900 us | 32,481.638 us | 39,469.387 us | 0.20x |
 | `common/split-words` | `Split` | 14.617 us | 78.730 us | 80.361 us | 0.19x |
 | `common/date-miss` | `IsMatch` | 0.099 us | 0.561 us | 0.592 us | 0.18x |
 | `industry/boostdocs-float-match` | `IsMatch` | 0.011 us | 0.078 us | 0.091 us | 0.14x |
@@ -239,10 +239,10 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | Case | Operation | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
 | `industry/leipzig-symbol-count` | `Count` | 1,153,094.300 us | 1,235.305 us | 6,850.600 us | 933.45x |
-| `industry/leipzig-river-window-count` | `Count` | 21,083.300 us | 1,584.697 us | 16,530.400 us | 13.30x |
 | `industry/rust-sherlock-holmes-window-count` | `Count` | 789.033 us | 63.330 us | 270.703 us | 12.46x |
 | `common/matches-boundary` | `Count` | 834.275 us | 106.333 us | 107.975 us | 7.85x |
 | `industry/rust-sherlock-letter-count` | `Count` | 44,934.700 us | 8,940.667 us | 9,616.660 us | 5.03x |
+| `industry/leipzig-river-window-count` | `Count` | 6,674.225 us | 1,508.074 us | 8,877.163 us | 4.43x |
 | `common/backtracking` | `IsMatch` | 0.190 us | 0.044 us | 0.075 us | 4.34x |
 | `industry/boostdocs-ftp-line-match` | `IsMatch` | 0.179 us | 0.049 us | 0.088 us | 3.67x |
 | `common/replace-words` | `Replace` | 69.116 us | 19.141 us | 20.760 us | 3.61x |

@@ -1,0 +1,1 @@
+Only river-window ordinary/compiled snapshot and parity rows changed; Holmes and all other rows remain intact.

@@ -1,0 +1,43 @@
+0.5.0-dev+aa02122396c22e58a0facad29c8142f3c5436abc
+Pattern=Holmes.{0,25}Watson|Watson.{0,25}Holmes; InputBytes=594930; IsAscii=False
+SelectedScalarProgram=True
+Kind=ExactAsciiLiterals
+Distance=0
+CanGuideFallbackStarts=True
+MinRequiredLength=12
+Literals=Holmes | Watson
+0: Fork 18 0 0 0
+1: Literal 72 0 0 0
+2: Literal 111 0 0 0
+3: Literal 108 0 0 0
+4: Literal 109 0 0 0
+5: Literal 101 0 0 0
+6: Literal 115 0 0 0
+7: RepeatGreedy 10 0 0 25
+8: Dot 0 0 0 0
+9: RepeatEnd 7 0 0 0
+10: RepeatExit 0 0 0 0
+11: Literal 87 0 0 0
+12: Literal 97 0 0 0
+13: Literal 116 0 0 0
+14: Literal 115 0 0 0
+15: Literal 111 0 0 0
+16: Literal 110 0 0 0
+17: Jump 34 0 0 0
+18: Literal 87 0 0 0
+19: Literal 97 0 0 0
+20: Literal 116 0 0 0
+21: Literal 115 0 0 0
+22: Literal 111 0 0 0
+23: Literal 110 0 0 0
+24: RepeatGreedy 27 1 0 25
+25: Dot 0 0 0 0
+26: RepeatEnd 24 0 0 0
+27: RepeatExit 1 0 0 0
+28: Literal 72 0 0 0
+29: Literal 111 0 0 0
+30: Literal 108 0 0 0
+31: Literal 109 0 0 0
+32: Literal 101 0 0 0
+33: Literal 115 0 0 0
+34: Accept 0 0 0 0

@@ -1,0 +1,35 @@
+0.5.0-dev+aa02122396c22e58a0facad29c8142f3c5436abc
+Pattern=Tom.{10,25}river|river.{10,25}Tom; InputBytes=16013977; IsAscii=False
+SelectedScalarProgram=True
+Kind=ExactAsciiLiterals
+Distance=0
+CanGuideFallbackStarts=True
+MinRequiredLength=6
+Literals=Tom | river
+0: Fork 14 0 0 0
+1: Literal 84 0 0 0
+2: Literal 111 0 0 0
+3: Literal 109 0 0 0
+4: RepeatGreedy 7 0 10 25
+5: Dot 0 0 0 0
+6: RepeatEnd 4 0 0 0
+7: RepeatExit 0 0 0 0
+8: Literal 114 0 0 0
+9: Literal 105 0 0 0
+10: Literal 118 0 0 0
+11: Literal 101 0 0 0
+12: Literal 114 0 0 0
+13: Jump 26 0 0 0
+14: Literal 114 0 0 0
+15: Literal 105 0 0 0
+16: Literal 118 0 0 0
+17: Literal 101 0 0 0
+18: Literal 114 0 0 0
+19: RepeatGreedy 22 1 10 25
+20: Dot 0 0 0 0
+21: RepeatEnd 19 0 0 0
+22: RepeatExit 1 0 0 0
+23: Literal 84 0 0 0
+24: Literal 111 0 0 0
+25: Literal 109 0 0 0
+26: Accept 0 0 0 0
