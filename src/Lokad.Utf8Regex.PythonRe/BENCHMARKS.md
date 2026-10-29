@@ -24,17 +24,18 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-10-28T17:15:04.6574962+00:00`
-- Snapshot SHA-256: `8DF34C41266A8A1070B6DEB39B23FFC2517B5222484FEA89863B290D0B514D3C`
+- Generated: `2026-10-29T10:01:08.0696560+00:00`
+- Snapshot SHA-256: `4B168BE99BB8FFC57110749649FDBF5EEFF760F48F2F0FA4043E73CC5004316E`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `4`
 - Scaling families: `7`
 - Public Status: `25` managed faster, `2` equivalent, `46` CPython faster, `15` inconclusive, `2` unqualified
-- Historical point measurement environments represented: `2`
+- Historical point measurement environments represented: `3`
 - Paired evidence from source `516057469acd`: `1` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
-- Paired evidence from source `a40bda03c8f9`: `89` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
+- Paired evidence from source `a40bda03c8f9`: `87` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
+- Paired evidence from source `f6c823f8a58e`: `2` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
 - Historical CPython point environments represented: `1`
@@ -151,7 +152,7 @@ Historical point rows span more than one measurement environment. Consult the JS
 | `findall/many-capture-utf8` | `FindAllUtf8` | EagerMaterializedResult | Managed faster | 971.227 us | 1,257.215 us | 0.77x | 1,200.289 us | 784.286 us | 262,016 B |
 | `findall/unicode-capture-utf8` | `FindAllUtf8` | EagerMaterializedResult | Managed faster | 556.505 us | 622.041 us | 0.89x | 641.924 us | 377.078 us | 132,792 B |
 | `iteration/finditer-detailed` | `FindIterDetailed` | EagerMaterializedResult | Managed faster | 298.270 us | 547.946 us | 0.55x | 531.714 us | 156.111 us | 143,184 B |
-| `zero-width/count` | `Count` | ScalarResult | CPython faster | 10,548.420 us | 1,115.604 us | 9.45x | 1,123.899 us | 1,988.742 us | 1,872 B |
+| `zero-width/count` | `Count` | ScalarResult | CPython faster | 1,669.923 us | 1,124.008 us | 1.48x | 1,038.092 us | 1,541.833 us | 0 B |
 | `count/zero` | `Count` | ScalarResult | Managed faster | 0.453 us | 91.538 us | 0.00x | 92.115 us | 1.180 us | 0 B |
 | `count/one` | `Count` | ScalarResult | Managed faster | 0.289 us | 2.019 us | 0.14x | 2.657 us | 0.708 us | 0 B |
 | `count/empty-progression` | `Count` | ScalarResult | CPython faster | 456.402 us | 379.712 us | 1.20x | 357.304 us | 76.773 us | 3,552 B |
@@ -193,7 +194,7 @@ Historical point rows span more than one measurement environment. Consult the JS
 | `split/one-separator` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 1.231 us | 12.073 us | 0.10x | 12.657 us | 0.848 us | 4,192 B |
 | `split/limited` | `SplitStringsLimited` | EagerMaterializedResult | Inconclusive | 1.482 us | 0.546 us | 2.70x | 1.275 us | 1.319 us | 6,032 B |
 | `split/optional-capture` | `SplitStrings` | EagerMaterializedResult | CPython faster | 322.613 us | 82.298 us | 3.92x | 84.352 us | 88.935 us | 39,616 B |
-| `split/zero-width` | `SplitStrings` | EagerMaterializedResult | CPython faster | 1,484.615 us | 66.876 us | 22.19x | 79.370 us | 332.045 us | 41,888 B |
+| `split/zero-width` | `SplitStrings` | EagerMaterializedResult | CPython faster | 243.238 us | 66.934 us | 3.64x | 77.572 us | 257.709 us | 40,016 B |
 | `split/unicode` | `SplitStrings` | EagerMaterializedResult | CPython faster | 147.297 us | 44.778 us | 3.29x | 42.746 us | 59.241 us | 19,512 B |
 | `split/detailed` | `SplitDetailed` | EagerMaterializedResult | Managed faster | 126.660 us | 136.536 us | 0.93x | 136.907 us | 93.964 us | 104,704 B |
 

@@ -1,0 +1,21 @@
+CaseId             : split/zero-width
+Operation          : SplitStrings
+ManagedRoute       : owned scalar VM; split; string shaping
+InputBytes         : 2176
+SplitCount         : 768
+OutputValueCount   : 769
+OutputUtf8Bytes    : 2176
+Iterations         : 2000
+Samples            : 5
+CpuPolicy          : single-least-contended-allowed-processor
+CpuAffinityMask    : 0x40
+Phase model        : cumulative controls; phase timings are not additive
+Utf8DecodeOnly     :      0.402 us/op | range=0.357..0.431 | alloc=4376 B/op | warmup=65536 calls/67.6 ms
+PredecodedDiscovery:    197.904 us/op | range=196.477..198.502 | alloc=0 B/op | warmup=1024 calls/428.0 ms
+CollectRanges      :    200.307 us/op | range=199.335..201.053 | alloc=34016 B/op | warmup=1024 calls/213.5 ms
+PreparedProjection :      7.465 us/op | range=7.204..7.653 | alloc=27680 B/op | warmup=11946 calls/100.0 ms
+StreamingProjection:    208.657 us/op | range=207.885..209.483 | alloc=44280 B/op | warmup=1024 calls/213.8 ms
+RegexSplitDirect   :    195.447 us/op | range=194.204..197.004 | alloc=44280 B/op | warmup=1024 calls/205.4 ms
+PredecodedRequired :    255.488 us/op | range=254.315..257.218 | alloc=280160 B/op | warmup=1024 calls/312.7 ms
+PythonRePublic     :   1444.495 us/op | range=1442.734..1446.263 | alloc=41888 B/op | warmup=1024 calls/1540.5 ms
+ChecksumTraversal  :      9.342 us/op | range=9.067..9.732 | alloc=27680 B/op | warmup=9000 calls/103.6 ms

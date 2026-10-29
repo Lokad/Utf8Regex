@@ -1,0 +1,39 @@
+CheckoutCommit     : f6c823f8a58e
+BenchmarkAssembly  : 1.0.0+f6c823f8a58e801586194d276acaac3ad71679ec sha256=7ED33FCC72540D45851A05E0ACC202E51796DF56047D0E350532DBF95E30B0EA
+CoreAssembly       : 0.5.0-dev+f6c823f8a58e801586194d276acaac3ad71679ec sha256=7763F96A08B860835EEA8B5D38D0B8B208FC6D12DB4F96E998749228EC9BCD41
+PythonReAssembly   : 0.5.0-dev+f6c823f8a58e801586194d276acaac3ad71679ec sha256=A562871E16545A4655DCF65B0447B059BCAEDB6EF112D60829426930894E2131
+CaseId             : split/zero-width
+Operation          : SplitStrings
+Result contract    : EagerMaterializedResult
+Protocol           : streaming v3; alternating paired samples
+CPU placement      : least-contended allowed processor (0x8; Linux efficiency class unknown)
+Worktree qualified : True
+Initial lane       : PythonRe
+Samples            : 9
+Iterations         : managed=206; CPython=758
+Warmup             : managed=4120 calls/1006.5 ms; CPython=1510 calls/106.0 ms
+PythonRe elapsed   : 243.238 us/op
+CPython elapsed    : 66.934 us/op
+Rstrong            : 3.638 [3.603, 3.646]
+Estrong            : +176.304 us/op
+Order effect       : 0.997
+IQR spread         : managed=1.003; CPython=1.003
+Harness floor      : managed=0.00 %; CPython=0.05 %
+Bound trivial call : managed=0.00 %; CPython=0.07 %
+Managed alloc      : 40016 B/op
+Process CPU/sample : managed=50.3 ms; CPython=53.3 ms (diagnostic)
+Status             : CPython faster
+Status reason      : qualified paired evidence
+Byte control       : excluded; Excluded: the first byte-control profile is limited to one-shot matching operations.
+CPython            : CPython 3.13.2; 843FCB9DA2A5D799DD48E1F518E343ECB8486D4F785F38F795C3493F3D61AADC
+Raw pairs:
+   1: ManagedFirst; managed=   243.238 us; CPython=    66.763 us; R=3.643; GC=0,0,0/0,0,0
+   2: CpythonFirst; managed=   244.145 us; CPython=    67.106 us; R=3.638; GC=0,0,0/0,0,0
+   3: ManagedFirst; managed=   240.761 us; CPython=    66.828 us; R=3.603; GC=0,0,0/0,0,0
+   4: CpythonFirst; managed=   243.073 us; CPython=    66.934 us; R=3.632; GC=0,0,0/0,0,0
+   5: ManagedFirst; managed=   243.864 us; CPython=    67.041 us; R=3.638; GC=0,0,0/0,0,0
+   6: CpythonFirst; managed=   245.253 us; CPython=    66.714 us; R=3.676; GC=1,0,0/0,0,0
+   7: ManagedFirst; managed=   241.731 us; CPython=    67.343 us; R=3.590; GC=0,0,0/0,0,0
+   8: CpythonFirst; managed=   243.630 us; CPython=    66.829 us; R=3.646; GC=0,0,0/0,0,0
+   9: ManagedFirst; managed=   243.097 us; CPython=    66.955 us; R=3.631; GC=0,0,0/0,0,0
+Snapshot           : /home/vermorel/tmp/utf8regex-net11-memory/pilot/PythonRe.Benchmarks.json

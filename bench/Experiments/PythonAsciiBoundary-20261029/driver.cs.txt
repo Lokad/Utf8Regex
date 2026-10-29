@@ -1,0 +1,148 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+const string AsciiBoundary = @"(?:(?<![A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<=[A-Za-z0-9_])(?![A-Za-z0-9_]))";
+const string AsciiNonBoundary = @"(?:(?!\A\z)(?:(?<=[A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<![A-Za-z0-9_])(?![A-Za-z0-9_])))";
+var before = Load(Path.GetFullPath(args[0]), "baseline");
+var after = Load(Path.GetFullPath(args[1]), "candidate");
+if (Hash(before.Python) == Hash(after.Python) || !Version(after.Python).Contains(args[2], StringComparison.Ordinal))
+    throw new Exception("Stale or unexpected candidate");
+using var process = Process.GetCurrentProcess(); process.ProcessorAffinity = (nint)4;
+var clock = Stopwatch.StartNew(); var rows = new List<object>();
+var corpus = string.Concat(Enumerable.Repeat("alpha beta gamma ", 128));
+foreach (var name in new[] { "split-ascii", "split-finite-token", "split-mixed", "split-nonboundary", "split-scoped",
+    "count-ascii", "unicode-control", "literal-control", "core-word-control", "core-linear-control" })
+{
+    var pattern = name == "split-nonboundary" ? @"\B" : name == "split-scoped" ? @"(?a:\b)" : @"\b";
+    var text = name == "split-mixed" ? string.Concat(Enumerable.Repeat("İıé😀 A_e\u0301 ", 128)) : corpus;
+    var ascii = name != "unicode-control";
+    if (name == "literal-control") { pattern = ","; text = string.Concat(Enumerable.Repeat("alpha,beta,gamma,", 128)); }
+    var input = Encoding.UTF8.GetBytes(text);
+    var core = name.StartsWith("core-");
+    var count = core || name == "count-ascii";
+    var finite = name == "split-finite-token";
+    var oraclePattern = !core && ascii && pattern != "," ? (name == "split-nonboundary" ? AsciiNonBoundary : AsciiBoundary) : pattern;
+    var regexOptions = name == "core-linear-control" ? RegexOptions.NonBacktracking : RegexOptions.None;
+    var oracle = new Regex(oraclePattern, regexOptions);
+    using var cancellation = new CancellationTokenSource();
+    object Owner((Assembly Core, Assembly Python) pair)
+    {
+        var type = (core ? pair.Core : pair.Python).GetType(core ? "Lokad.Utf8Regex.Utf8Regex" : "Lokad.Utf8Regex.PythonRe.Utf8PythonRegex")!;
+        if (core) return type.GetConstructor([typeof(string), typeof(RegexOptions)])!.Invoke([pattern, regexOptions]);
+        var optionsType = pair.Python.GetType("Lokad.Utf8Regex.PythonRe.PythonReCompileOptions")!;
+        var options = Enum.Parse(optionsType, ascii ? "Ascii" : "None");
+        if (!finite) return type.GetConstructor([typeof(string), optionsType])!.Invoke([pattern, options]);
+        var policyType = pair.Core.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!;
+        var policy = Activator.CreateInstance(policyType)!;
+        foreach (var (key, value) in new[] { ("MaxWorkSteps", 10000000UL), ("MaxDepth", 4096UL), ("MaxWorkingBytes", 16777216UL), ("MaxResultBytes", 16777216UL) })
+        {
+            var property = policyType.GetProperty(key)!;
+            property.SetValue(policy, Convert.ChangeType(value, Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType));
+        }
+        return type.GetConstructor([typeof(string), optionsType, typeof(TimeSpan), policyType])!.Invoke([pattern, options, Timeout.InfiniteTimeSpan, policy]);
+    }
+    var first = Owner(before); var second = Owner(after);
+    object Meta() => new { Name = name, Profile = core ? "Core" : "PythonRe", Operation = count ? "Count" : "SplitToStrings",
+        Pattern = pattern, Ascii = ascii, FiniteAndLiveToken = finite, InputBytes = input.Length,
+        InputSha256 = Convert.ToHexString(SHA256.HashData(input)), OraclePattern = oraclePattern, OracleOptions = regexOptions.ToString() };
+    if (count)
+    {
+        Func<int> Make(object owner)
+        {
+            var call = owner.GetType().GetMethod("Count", [typeof(ReadOnlySpan<byte>)])!.CreateDelegate<SpanCount>(owner);
+            return () => call(input);
+        }
+        rows.Add(Run(Meta(), new Func<int>[] { Make(first), Make(second), () => oracle.Count(text), () => oracle.Count(Encoding.UTF8.GetString(input)) }, x => (ulong)x));
+    }
+    else
+    {
+        Func<string?[]> Make(object owner)
+        {
+            if (!finite)
+            {
+                var call = owner.GetType().GetMethod("SplitToStrings", [typeof(ReadOnlySpan<byte>)])!.CreateDelegate<SpanSplit>(owner);
+                return () => call(input);
+            }
+            var controlled = owner.GetType().GetMethod("SplitToStrings", [typeof(ReadOnlySpan<byte>), typeof(int), typeof(int), typeof(CancellationToken)])!.CreateDelegate<TokenSplit>(owner);
+            return () => controlled(input, 0, 0, cancellation.Token);
+        }
+        rows.Add(Run(Meta(), new Func<string?[]>[] { Make(first), Make(second), () => oracle.Split(text), () => oracle.Split(Encoding.UTF8.GetString(input)) }, Digest));
+    }
+}
+Console.WriteLine(JsonSerializer.Serialize(new { Runtime = RuntimeInformation.FrameworkDescription, CpuAffinityMask = "4",
+    ElapsedSeconds = clock.Elapsed.TotalSeconds, LaneNames = new[] { "Baseline", "Candidate", "PredecodedRegex", "DecodeThenRegex" },
+    Baseline = Identity(before), Candidate = Identity(after), Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+
+static object Run<T>(object meta, Func<T>[] actions, Func<T, ulong> digest)
+{
+    var expected = digest(actions[2]());
+    var counts = new int[4]; var warmCalls = new int[4]; var warmMs = new double[4];
+    for (var lane = 0; lane < 4; lane++)
+    {
+        if (digest(actions[lane]()) != expected) throw new Exception("Preflight mismatch: " + JsonSerializer.Serialize(meta));
+        var warm = Stopwatch.StartNew();
+        do { Measure(1, actions[lane], digest, expected); warmCalls[lane]++; } while (warm.ElapsedMilliseconds < 1000);
+        warmMs[lane] = warm.Elapsed.TotalMilliseconds;
+        var n = 1; var p = Measure(n, actions[lane], digest, expected);
+        while (p.Milliseconds < 20 && n < 65536 && p.Bytes < 33554432) { n *= 2; p = Measure(n, actions[lane], digest, expected); }
+        var cap = p.Bytes > 0 ? Math.Min(65536, (int)Math.Max(1, 67108864L * n / p.Bytes)) : 65536;
+        counts[lane] = (int)Math.Clamp(Math.Ceiling(n * 50 / Math.Max(p.Milliseconds, 0.000001)), 1, cap);
+    }
+    var times = Enumerable.Range(0, 4).Select(_ => new double[3]).ToArray();
+    var bytes = Enumerable.Range(0, 4).Select(_ => new double[3]).ToArray();
+    for (var sample = 0; sample < 3; sample++)
+    for (var position = 0; position < 4; position++)
+    {
+        var lane = sample % 2 == 0 ? position : 3 - position;
+        GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        var result = Measure(counts[lane], actions[lane], digest, expected);
+        times[lane][sample] = result.Milliseconds * 1000 / counts[lane];
+        bytes[lane][sample] = (double)result.Bytes / counts[lane];
+    }
+    Console.Error.WriteLine(JsonSerializer.Serialize(meta) + " : " + string.Join(" / ", times.Select(x => x.Order().ElementAt(1))) + " us/op");
+    return new { Workload = meta, ExpectedDigest = expected, Iterations = counts, WarmupCalls = warmCalls,
+        WarmupMilliseconds = warmMs, Microseconds = times, AllocatedBytes = bytes };
+}
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds, long Bytes) Measure<T>(int count, Func<T> action, Func<T, ulong> digest, ulong expected)
+{
+    var retained = new T[count];
+    var bytes = GC.GetAllocatedBytesForCurrentThread(); var start = Stopwatch.GetTimestamp();
+    for (var i = 0; i < count; i++) retained[i] = action();
+    var elapsed = Stopwatch.GetElapsedTime(start); bytes = GC.GetAllocatedBytesForCurrentThread() - bytes;
+    foreach (var value in retained) if (digest(value) != expected) throw new Exception("Timed digest mismatch");
+    GC.KeepAlive(retained);
+    return (elapsed.TotalMilliseconds, bytes);
+}
+static ulong Digest(string?[] values)
+{
+    ulong hash = 14695981039346656037UL;
+    unchecked
+    {
+        foreach (var value in values)
+        {
+            hash = (hash ^ (uint)(value?.Length ?? -1)) * 1099511628211UL;
+            if (value is not null) foreach (var c in value) hash = (hash ^ c) * 1099511628211UL;
+        }
+    }
+    return hash;
+}
+static (Assembly Core, Assembly Python) Load(string root, string name)
+{
+    var context = new AssemblyLoadContext(name);
+    context.Resolving += (ctx, n) => File.Exists(Path.Combine(root, n.Name + ".dll")) ? ctx.LoadFromAssemblyPath(Path.Combine(root, n.Name + ".dll")) : null;
+    return (context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.dll")), context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.PythonRe.dll")));
+}
+static string Version(Assembly assembly) => assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
+static string Hash(Assembly assembly) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location)));
+static object Identity((Assembly Core, Assembly Python) pair) => new { Core = new { Version = Version(pair.Core), Sha256 = Hash(pair.Core) }, Python = new { Version = Version(pair.Python), Sha256 = Hash(pair.Python) } };
+delegate int SpanCount(ReadOnlySpan<byte> input);
+delegate string?[] SpanSplit(ReadOnlySpan<byte> input);
+delegate string?[] TokenSplit(ReadOnlySpan<byte> input, int maxSplit, int offset, CancellationToken token);

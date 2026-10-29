@@ -1,0 +1,803 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 49.1239077,
+  "LaneNames": [
+    "Baseline",
+    "Candidate",
+    "PredecodedRegex",
+    "DecodeThenRegex"
+  ],
+  "Baseline": {
+    "Core": {
+      "Version": "0.5.0-dev\u002Bd020df6428fb893ba8332d9313687c6ba0190327",
+      "Sha256": "6D05B43EFB74119CC77A6ECD7E955175A8D5A97CF3C71E5AF8C7D943AFF74E1F"
+    },
+    "Python": {
+      "Version": "0.5.0-dev\u002Bd020df6428fb893ba8332d9313687c6ba0190327",
+      "Sha256": "BC7D3D558919847DB61E3137B67C6341CAAE468EA36640D7785BCC96652B6BAB"
+    }
+  },
+  "Candidate": {
+    "Core": {
+      "Version": "0.5.0-dev\u002Bf6c823f8a58e801586194d276acaac3ad71679ec",
+      "Sha256": "7763F96A08B860835EEA8B5D38D0B8B208FC6D12DB4F96E998749228EC9BCD41"
+    },
+    "Python": {
+      "Version": "0.5.0-dev\u002Bf6c823f8a58e801586194d276acaac3ad71679ec",
+      "Sha256": "A562871E16545A4655DCF65B0447B059BCAEDB6EF112D60829426930894E2131"
+    }
+  },
+  "Rows": [
+    {
+      "Workload": {
+        "Name": "split-ascii",
+        "Profile": "PythonRe",
+        "Operation": "SplitToStrings",
+        "Pattern": "\\b",
+        "Ascii": true,
+        "FiniteAndLiveToken": false,
+        "InputBytes": 2176,
+        "InputSha256": "AACADD2D54A11C53090C59930EC54D0A9376E2F75BF0872A0EBB439559B44B86",
+        "OraclePattern": "(?:(?\u003C![A-Za-z0-9_])(?=[A-Za-z0-9_])|(?\u003C=[A-Za-z0-9_])(?![A-Za-z0-9_]))",
+        "OracleOptions": "None"
+      },
+      "ExpectedDigest": 8414338143732081119,
+      "Iterations": [
+        35,
+        206,
+        259,
+        256
+      ],
+      "WarmupCalls": [
+        399,
+        3304,
+        3982,
+        4902
+      ],
+      "WarmupMilliseconds": [
+        1001.0726,
+        1000.1055,
+        1000.1859,
+        1000.1513
+      ],
+      "Microseconds": [
+        [
+          1433.8085714285714,
+          1434.8857142857144,
+          1436.942857142857
+        ],
+        [
+          242.78106796116506,
+          242.0961165048544,
+          242.04902912621358
+        ],
+        [
+          195.44401544401543,
+          194.92548262548263,
+          195.54131274131277
+        ],
+        [
+          195.851953125,
+          196.78359375000002,
+          194.25234375
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          41888,
+          41888,
+          41888
+        ],
+        [
+          40016,
+          40016,
+          40016
+        ],
+        [
+          44280,
+          44280,
+          44280
+        ],
+        [
+          48656,
+          48656,
+          48656
+        ]
+      ]
+    },
+    {
+      "Workload": {
+        "Name": "split-finite-token",
+        "Profile": "PythonRe",
+        "Operation": "SplitToStrings",
+        "Pattern": "\\b",
+        "Ascii": true,
+        "FiniteAndLiveToken": true,
+        "InputBytes": 2176,
+        "InputSha256": "AACADD2D54A11C53090C59930EC54D0A9376E2F75BF0872A0EBB439559B44B86",
+        "OraclePattern": "(?:(?\u003C![A-Za-z0-9_])(?=[A-Za-z0-9_])|(?\u003C=[A-Za-z0-9_])(?![A-Za-z0-9_]))",
+        "OracleOptions": "None"
+      },
+      "ExpectedDigest": 8414338143732081119,
+      "Iterations": [
+        17,
+        162,
+        254,
+        258
+      ],
+      "WarmupCalls": [
+        495,
+        3193,
+        4970,
+        4978
+      ],
+      "WarmupMilliseconds": [
+        1000.4135,
+        1000.1737,
+        1000.0031,
+        1000.1729
+      ],
+      "Microseconds": [
+        [
+          2050.294117647059,
+          2025.1470588235295,
+          2023.0529411764708
+        ],
+        [
+          309.78456790123454,
+          307.27283950617283,
+          307.1820987654321
+        ],
+        [
+          195.68582677165352,
+          193.15393700787405,
+          196.62913385826772
+        ],
+        [
+          194.48178294573643,
+          197.19341085271319,
+          196.33372093023254
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3886368,
+          3886368,
+          3886368
+        ],
+        [
+          44216,
+          44216,
+          44216
+        ],
+        [
+          44280,
+          44280,
+          44280
+        ],
+        [
+          48656,
+          48656,
+          48656
+        ]
+      ]
+    },
+    {
+      "Workload": {
+        "Name": "split-mixed",
+        "Profile": "PythonRe",
+        "Operation": "SplitToStrings",
+        "Pattern": "\\b",
+        "Ascii": true,
+        "FiniteAndLiveToken": false,
+        "InputBytes": 2176,
+        "InputSha256": "A8AACB8395D26E6A194A2B4D5DD7F13AE1A4F10CF78799170230846E37EAE765",
+        "OraclePattern": "(?:(?\u003C![A-Za-z0-9_])(?=[A-Za-z0-9_])|(?\u003C=[A-Za-z0-9_])(?![A-Za-z0-9_]))",
+        "OracleOptions": "None"
+      },
+      "ExpectedDigest": 5276035133518374183,
+      "Iterations": [
+        64,
+        385,
+        366,
+        355
+      ],
+      "WarmupCalls": [
+        1280,
+        7430,
+        7168,
+        6944
+      ],
+      "WarmupMilliseconds": [
+        1000.1102,
+        1000.0392,
+        1000.0675,
+        1000.0033
+      ],
+      "Microseconds": [
+        [
+          780.64375,
+          778.2953124999999,
+          776.603125
+        ],
+        [
+          129.6361038961039,
+          129.21974025974026,
+          129.92753246753247
+        ],
+        [
+          137.13360655737705,
+          137.56666666666666,
+          135.94590163934424
+        ],
+        [
+          140.73774647887325,
+          141.44056338028167,
+          140.33718309859154
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          17320,
+          17320,
+          17320
+        ],
+        [
+          15448,
+          15448,
+          15448
+        ],
+        [
+          19712,
+          19712,
+          19712
+        ],
+        [
+          22552,
+          22552,
+          22552
+        ]
+      ]
+    },
+    {
+      "Workload": {
+        "Name": "split-nonboundary",
+        "Profile": "PythonRe",
+        "Operation": "SplitToStrings",
+        "Pattern": "\\B",
+        "Ascii": true,
+        "FiniteAndLiveToken": false,
+        "InputBytes": 2176,
+        "InputSha256": "AACADD2D54A11C53090C59930EC54D0A9376E2F75BF0872A0EBB439559B44B86",
+        "OraclePattern": "(?:(?!\\A\\z)(?:(?\u003C=[A-Za-z0-9_])(?=[A-Za-z0-9_])|(?\u003C![A-Za-z0-9_])(?![A-Za-z0-9_])))",
+        "OracleOptions": "None"
+      },
+      "ExpectedDigest": 3313564985426662921,
+      "Iterations": [
+        29,
+        117,
+        167,
+        209
+      ],
+      "WarmupCalls": [
+        568,
+        2199,
+        4027,
+        4033
+      ],
+      "WarmupMilliseconds": [
+        1001.1107,
+        1000.0556,
+        1000.2341,
+        1000.0085
+      ],
+      "Microseconds": [
+        [
+          1788.051724137931,
+          1770.651724137931,
+          1765.8689655172413
+        ],
+        [
+          429.3273504273504,
+          427.45470085470083,
+          429.0991452991453
+        ],
+        [
+          241.6299401197605,
+          241.311377245509,
+          244.5077844311377
+        ],
+        [
+          239.8004784688995,
+          242.36220095693778,
+          243.75263157894736
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          78808,
+          78808,
+          78808
+        ],
+        [
+          78808,
+          78808,
+          78808
+        ],
+        [
+          81200,
+          81200,
+          81200
+        ],
+        [
+          85576,
+          85576,
+          85576
+        ]
+      ]
+    },
+    {
+      "Workload": {
+        "Name": "split-scoped",
+        "Profile": "PythonRe",
+        "Operation": "SplitToStrings",
+        "Pattern": "(?a:\\b)",
+        "Ascii": true,
+        "FiniteAndLiveToken": false,
+        "InputBytes": 2176,
+        "InputSha256": "AACADD2D54A11C53090C59930EC54D0A9376E2F75BF0872A0EBB439559B44B86",
+        "OraclePattern": "(?:(?\u003C![A-Za-z0-9_])(?=[A-Za-z0-9_])|(?\u003C=[A-Za-z0-9_])(?![A-Za-z0-9_]))",
+        "OracleOptions": "None"
+      },
+      "ExpectedDigest": 8414338143732081119,
+      "Iterations": [
+        36,
+        206,
+        257,
+        251
+      ],
+      "WarmupCalls": [
+        697,
+        3998,
+        4975,
+        4981
+      ],
+      "WarmupMilliseconds": [
+        1000.9798,
+        1000.1412,
+        1000.075,
+        1000.0479
+      ],
+      "Microseconds": [
+        [
+          1441.15,
+          1438.4833333333333,
+          1432.7888888888888
+        ],
+        [
+          244.6271844660194,
+          243.33640776699028,
+          243.75631067961163
+        ],
+        [
+          195.73112840466928,
+          194.5887159533074,
+          198.3715953307393
+        ],
+        [
+          195.5593625498008,
+          195.40278884462154,
+          196.8729083665339
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          41888,
+          41888,
+          41888
+        ],
+        [
+          40016,
+          40016,
+          40016
+        ],
+        [
+          44280,
+          44280,
+          44280
+        ],
+        [
+          48656,
+          48656,
+          48656
+        ]
+      ]
+    },
+    {
+      "Workload": {
+        "Name": "count-ascii",
+        "Profile": "PythonRe",
+        "Operation": "Count",
+        "Pattern": "\\b",
+        "Ascii": true,
+        "FiniteAndLiveToken": false,
+        "InputBytes": 2176,
+        "InputSha256": "AACADD2D54A11C53090C59930EC54D0A9376E2F75BF0872A0EBB439559B44B86",
+        "OraclePattern": "(?:(?\u003C![A-Za-z0-9_])(?=[A-Za-z0-9_])|(?\u003C=[A-Za-z0-9_])(?![A-Za-z0-9_]))",
+        "OracleOptions": "None"
+      },
+      "ExpectedDigest": 768,
+      "Iterations": [
+        36,
+        236,
+        273,
+        272
+      ],
+      "WarmupCalls": [
+        685,
+        4672,
+        5333,
+        5514
+      ],
+      "WarmupMilliseconds": [
+        1000.8543,
+        1000.1677,
+        1000.148,
+        1000.1692
+      ],
+      "Microseconds": [
+        [
+          1395.4499999999998,
+          1391.3861111111112,
+          1395.7111111111112
+        ],
+        [
+          212.5949152542373,
+          214.59957627118644,
+          214.29788135593222
+        ],
+        [
+          183.16190476190476,
+          185.12893772893773,
+          181.96263736263737
+        ],
+        [
+          183.21654411764703,
+          182.0128676470588,
+          180.03014705882356
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1872,
+          1872,
+          1872
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          4376,
+          4376,
+          4376
+        ]
+      ]
+    },
+    {
+      "Workload": {
+        "Name": "unicode-control",
+        "Profile": "PythonRe",
+        "Operation": "SplitToStrings",
+        "Pattern": "\\b",
+        "Ascii": false,
+        "FiniteAndLiveToken": false,
+        "InputBytes": 2176,
+        "InputSha256": "AACADD2D54A11C53090C59930EC54D0A9376E2F75BF0872A0EBB439559B44B86",
+        "OraclePattern": "\\b",
+        "OracleOptions": "None"
+      },
+      "ExpectedDigest": 8414338143732081119,
+      "Iterations": [
+        33,
+        32,
+        680,
+        677
+      ],
+      "WarmupCalls": [
+        611,
+        522,
+        12577,
+        12782
+      ],
+      "WarmupMilliseconds": [
+        1000.6443,
+        1000.781,
+        1000.0296,
+        1000.0364
+      ],
+      "Microseconds": [
+        [
+          1525.760606060606,
+          1519.1969696969697,
+          1514.878787878788
+        ],
+        [
+          1580.225,
+          1577.45,
+          1579.3875
+        ],
+        [
+          73.88323529411764,
+          72.98455882352941,
+          74.0360294117647
+        ],
+        [
+          73.51595273264401,
+          73.01432791728213,
+          73.45214180206794
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          41888,
+          41888,
+          41888
+        ],
+        [
+          41888,
+          41888,
+          41888
+        ],
+        [
+          44280,
+          44280,
+          44280
+        ],
+        [
+          48656,
+          48656,
+          48656
+        ]
+      ]
+    },
+    {
+      "Workload": {
+        "Name": "literal-control",
+        "Profile": "PythonRe",
+        "Operation": "SplitToStrings",
+        "Pattern": ",",
+        "Ascii": true,
+        "FiniteAndLiveToken": false,
+        "InputBytes": 2176,
+        "InputSha256": "1FBB0DA5240382005BEC17E28303A78961347A73FA62968DE150ACD072249754",
+        "OraclePattern": ",",
+        "OracleOptions": "None"
+      },
+      "ExpectedDigest": 339578090867848799,
+      "Iterations": [
+        1187,
+        1134,
+        2370,
+        1341
+      ],
+      "WarmupCalls": [
+        17325,
+        18274,
+        41233,
+        40997
+      ],
+      "WarmupMilliseconds": [
+        1000.0299,
+        1000.005,
+        1000.019,
+        1000.021
+      ],
+      "Microseconds": [
+        [
+          42.735551811288964,
+          42.36975568660489,
+          42.34667228306655
+        ],
+        [
+          43.89744268077601,
+          43.77116402116402,
+          43.59867724867725
+        ],
+        [
+          20.856033755274265,
+          20.682447257383966,
+          20.833755274261602
+        ],
+        [
+          20.957494407158837,
+          20.8441461595824,
+          21.07464578672632
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          19512,
+          19512,
+          19512
+        ],
+        [
+          19512,
+          19512,
+          19512
+        ],
+        [
+          23776,
+          23776,
+          23776
+        ],
+        [
+          28152,
+          28152,
+          28152
+        ]
+      ]
+    },
+    {
+      "Workload": {
+        "Name": "core-word-control",
+        "Profile": "Core",
+        "Operation": "Count",
+        "Pattern": "\\b",
+        "Ascii": true,
+        "FiniteAndLiveToken": false,
+        "InputBytes": 2176,
+        "InputSha256": "AACADD2D54A11C53090C59930EC54D0A9376E2F75BF0872A0EBB439559B44B86",
+        "OraclePattern": "\\b",
+        "OracleOptions": "None"
+      },
+      "ExpectedDigest": 768,
+      "Iterations": [
+        327,
+        324,
+        766,
+        829
+      ],
+      "WarmupCalls": [
+        5273,
+        5539,
+        15318,
+        16490
+      ],
+      "WarmupMilliseconds": [
+        1000.0222,
+        1000.061,
+        1000.0094,
+        1000.0299
+      ],
+      "Microseconds": [
+        [
+          152.71590214067277,
+          153.19357798165137,
+          152.7308868501529
+        ],
+        [
+          154.02962962962962,
+          154.54012345679013,
+          154.2938271604938
+        ],
+        [
+          62.04986945169713,
+          61.884986945169715,
+          62.03328981723238
+        ],
+        [
+          60.22171290711701,
+          60.83980699638118,
+          60.613751507840774
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          4376,
+          4376,
+          4376
+        ]
+      ]
+    },
+    {
+      "Workload": {
+        "Name": "core-linear-control",
+        "Profile": "Core",
+        "Operation": "Count",
+        "Pattern": "\\b",
+        "Ascii": true,
+        "FiniteAndLiveToken": false,
+        "InputBytes": 2176,
+        "InputSha256": "AACADD2D54A11C53090C59930EC54D0A9376E2F75BF0872A0EBB439559B44B86",
+        "OraclePattern": "\\b",
+        "OracleOptions": "NonBacktracking"
+      },
+      "ExpectedDigest": 768,
+      "Iterations": [
+        666,
+        616,
+        1479,
+        1465
+      ],
+      "WarmupCalls": [
+        10499,
+        10438,
+        28504,
+        29287
+      ],
+      "WarmupMilliseconds": [
+        1000.0332,
+        1000.063,
+        1000.0108,
+        1000.0103
+      ],
+      "Microseconds": [
+        [
+          75.3415915915916,
+          74.71831831831832,
+          75.18393393393393
+        ],
+        [
+          81.65292207792209,
+          81.46948051948053,
+          81.6349025974026
+        ],
+        [
+          33.76950642325896,
+          33.8210953346856,
+          33.84110885733604
+        ],
+        [
+          34.05965870307167,
+          34.04423208191127,
+          34.08040955631399
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          26224,
+          26224,
+          26224
+        ],
+        [
+          26224,
+          26224,
+          26224
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          4376,
+          4376,
+          4376
+        ]
+      ]
+    }
+  ]
+}
