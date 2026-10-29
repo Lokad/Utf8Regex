@@ -145,9 +145,11 @@ program/cache storage keeps its original account. No implicit result-traffic cap
 or private working-byte ceiling is added. Timeout diagnostics on these bound
 invocations omit subject text, preserving Pattern, type and timeout. Incidental
 objects, borrowed input and caller-retained output remain outside these scopes.
-Output is funded through staging/publication; ownership and admission after
-return remain the caller's responsibility. An explicit retained-output transfer
-API is unfinished. This is not exact heap/RSS or a process-memory bound.
+Ordinary output is funded through staging/publication; ownership and admission
+after return remain the caller's responsibility. The retained range API below
+can instead keep its result charge on that account. Retained text, bulk and
+substitution output transfer is not implemented. This is not exact heap/RSS or
+a process-memory bound.
 
 Syntax/reference/lookbehind validation precedes optional native rendering.
 The owned Python scalar program is authoritative. Optional Core preparation is
@@ -224,8 +226,39 @@ Unmatched captures have `Success=false` and zero offsets, distinct from successf
 empty captures. Byte offsets are relative to the supplied subject memory. No
 captured text, UTF-16 conversion or whole-subject coordinate map is materialized;
 these types expose byte coordinates only. Scalar-coordinate support remains open.
-Result arrays remain admitted before acquisition under the existing result-traffic
-and working scopes; this does not introduce caller-owned shared memory funding.
+Result arrays are admitted before acquisition under the result-traffic/working
+scopes. Ordinary range publication releases temporary funding; it does not bound
+caller retention.
+
+`MoveNextRetained(out Utf8PythonRetainedRangeMatch, token = default)` uses that
+same range shape but transfers its already admitted charge to a disposable
+receipt. The cursor must have a caller-owned working allowance, either from
+funded Compile or its explicit factory argument. An unfunded cursor rejects this
+method before discovery and can still use ordinary advances. No Release/TryReserve
+gap occurs during transfer. `ChargedBytes` reports the modeled amount, including
+the receipt object, capture/name arrays and shared immutable name text counted
+conservatively again so it can outlive program funding. Borrowed subject storage
+remains excluded. Numeric result traffic includes
+that acquisition and is never refunded by disposal or transfer.
+
+The receipt's `Match` owns immutable range metadata and survives cursor/program
+disposal and host waits. Dispose the receipt after retained users finish, or take
+over admission for copies kept afterward. Dispose refunds exactly once, including
+concurrent calls/receipt aliases, and closes later `Match` access. Copies already
+obtained remain valid under their original borrowed-input contract; admission for
+continued retention after this explicit release is the caller's responsibility.
+There is no finalizer. Retaining receipts can exhaust the shared allowance;
+discarding and disposing them supports bounded-live streaming. Text/bulk/
+substitution result transfer remains outside this API.
+
+```csharp
+// regex was compiled with a caller-owned program allowance.
+using var cursor = regex.CreateMatchCursor(subject);
+while (cursor.MoveNextRetained(out var retained, cancellationToken))
+{
+    using (retained) Consume(retained.Match);
+}
+```
 
 `CreateMatchCursor(input, startOffsetInBytes, token, workingMemoryAllowance)`
 accepts an `IUtf8MemoryAllowance` shared directly across concurrent cursors and

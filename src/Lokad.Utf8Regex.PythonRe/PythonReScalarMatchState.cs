@@ -101,6 +101,27 @@ internal struct PythonReScalarMatchState
     internal void ReleaseResultsSince(ulong marker)
         => _results.ReleaseSince(marker, ref _invocation);
 
+    internal ulong TransferResultsSince(ulong marker)
+        => _results.TransferSince(marker, ref _invocation);
+
+    internal Utf8PythonRetainedRangeMatch RetainRanges(ReadOnlySpan<byte> input, Utf8PythonRangeMatch match)
+    {
+        try
+        {
+            var index = 0;
+            foreach (var entry in match.NameEntries)
+            {
+                if ((index++ & 255) == 0) Checkpoint(input);
+                _results.ReserveSharedStorage(Utf8ConstructionBudget.StringBytes(entry.Name.Length), ref _invocation);
+            }
+            return _results.AllocateObject((Match: match, Allowance: _invocation.Ledger.MemoryAllowance!),
+                static state => new Utf8PythonRetainedRangeMatch(state.Match, state.Allowance), ref _invocation);
+        }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { throw ResourceFailure(); }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw TimeoutFailure(input); }
+    }
+
     internal void AddResult<T>(ReadOnlySpan<byte> input, ref Utf8InvocationResultBuffer<T> buffer, T value)
     {
         try { buffer.Add(value, ref _invocation); }

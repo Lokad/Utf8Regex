@@ -32,6 +32,7 @@ internal struct Utf8StorageLedger
     internal ulong ReservedBytes => _reservedBytes;
 
     internal bool HasMemoryAllowance => _memoryAllowance is not null;
+    internal IUtf8MemoryAllowance? MemoryAllowance => _memoryAllowance;
 
     internal bool IsUnlimited => MaxLiveBytes == 0 && _memoryAllowance is null;
 
@@ -63,6 +64,15 @@ internal struct Utf8StorageLedger
 
         _reservedBytes -= bytes;
         if (bytes != 0) _memoryAllowance?.Release(bytes);
+    }
+
+    // A published receipt takes responsibility for this already admitted loan.
+    // The external account stays charged; only invocation ownership changes.
+    internal void TransferToCaller(ulong bytes)
+    {
+        if (_memoryAllowance is null || bytes > _reservedBytes)
+            throw new InvalidOperationException("Transfer requires live caller-funded storage.");
+        _reservedBytes -= bytes;
     }
 
 }

@@ -1,4 +1,5 @@
 using System.Threading;
+using System.Diagnostics.CodeAnalysis;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal;
 
@@ -65,7 +66,7 @@ public sealed class Utf8PythonMatchCursor : IDisposable
     /// <exception cref="Utf8ResourceLimitExceededException">An admitted work, depth, working or result-capacity budget was exceeded.</exception>
     /// <exception cref="InvalidOperationException">The cursor previously failed or is being accessed concurrently.</exception>
     /// <exception cref="ObjectDisposedException">The cursor has been disposed.</exception>
-    public bool MoveNext() => MoveNextCore(default, true, out _);
+    public bool MoveNext() => MoveNextCore(default, true, out _, out _);
 
     /// <summary>Discovers and projects the next match under this advance's token as well as the original invocation token and deadline.</summary>
     /// <remarks>The supplied token applies only until this call completes. Cancellation faults the cursor and synchronously releases its scratch; earlier owned snapshots remain valid.</remarks>
@@ -74,25 +75,40 @@ public sealed class Utf8PythonMatchCursor : IDisposable
     /// <exception cref="Utf8ResourceLimitExceededException">An admitted work, depth, working or result-capacity budget was exceeded.</exception>
     /// <exception cref="InvalidOperationException">The cursor previously failed or is being accessed concurrently.</exception>
     /// <exception cref="ObjectDisposedException">The cursor has been disposed.</exception>
-    public bool MoveNext(CancellationToken cancellationToken) => MoveNextCore(cancellationToken, true, out _);
+    public bool MoveNext(CancellationToken cancellationToken) => MoveNextCore(cancellationToken, true, out _, out _);
 
     /// <summary>Advances without materializing captured text or a whole-subject coordinate map.</summary>
     /// <remarks>The returned ranges own metadata and borrow unchanged subject memory. They survive advances and disposal. This advance clears the text-based Current; use the returned range match.</remarks>
-    public bool MoveNext(out Utf8PythonRangeMatch match) => MoveNextCore(default, false, out match);
+    public bool MoveNext(out Utf8PythonRangeMatch match) => MoveNextCore(default, false, out match, out _);
 
     /// <summary>Advances to byte ranges under a token scoped to this synchronous advance.</summary>
     /// <remarks>The creation token, absolute deadline and cumulative budgets remain authoritative. Range metadata survives advances/disposal; subject bytes remain borrowed. This advance clears the text-based Current.</remarks>
     public bool MoveNext(out Utf8PythonRangeMatch match, CancellationToken cancellationToken)
-        => MoveNextCore(cancellationToken, false, out match);
+        => MoveNextCore(cancellationToken, false, out match, out _);
 
-    private bool MoveNextCore(CancellationToken cancellationToken, bool text, out Utf8PythonRangeMatch match)
+    /// <summary>Advances to ranges whose admitted result charge stays reserved until the caller disposes the returned receipt.</summary>
+    /// <remarks>Requires a cursor with a caller-owned working allowance. No release/reacquisition occurs at publication. Creation/advance tokens, deadline and cumulative limits still apply; this clears text-based Current. Dispose the receipt after retained users finish or take over admission for their aliases. The receipt can outlive this cursor and expression.</remarks>
+    /// <exception cref="InvalidOperationException">The cursor has no caller-owned working allowance, previously failed, or is accessed concurrently.</exception>
+    public bool MoveNextRetained([NotNullWhen(true)] out Utf8PythonRetainedRangeMatch? match,
+        CancellationToken cancellationToken = default)
+    {
+        var advanced = MoveNextCore(cancellationToken, false, out _, out var retained, retain: true);
+        match = retained!;
+        return advanced;
+    }
+
+    private bool MoveNextCore(CancellationToken cancellationToken, bool text, out Utf8PythonRangeMatch match,
+        out Utf8PythonRetainedRangeMatch? retained, bool retain = false)
     {
         match = default;
+        retained = null;
         Enter();
         try
         {
             if (!CanAdvance()) return false;
-            if (!cancellationToken.CanBeCanceled) return Advance(text, out match);
+            if (retain && !_discovery.WorkingInvocation.Ledger.HasMemoryAllowance)
+                throw new InvalidOperationException("Retained ranges require a cursor with a caller-owned working allowance.");
+            if (!cancellationToken.CanBeCanceled) return Advance(text, out match, out retained, retain);
             // Hold one shared invocation even if Close resets the discovery
             // state. Counters, original deadline and outstanding loans stay put.
             _discovery.WorkingInvocation.ShareStorageForCursor();
@@ -106,7 +122,7 @@ public sealed class Utf8PythonMatchCursor : IDisposable
                     linked = CancellationTokenSource.CreateLinkedTokenSource(original, cancellationToken);
                     invocation.Budget.ExchangeCancellationToken(linked.Token);
                 }
-                return Advance(text, out match);
+                return Advance(text, out match, out retained, retain);
             }
             catch (OperationCanceledException)
             {
@@ -133,10 +149,11 @@ public sealed class Utf8PythonMatchCursor : IDisposable
         return _status != Status.Ended;
     }
 
-    private bool Advance(bool text, out Utf8PythonRangeMatch match)
+    private bool Advance(bool text, out Utf8PythonRangeMatch match, out Utf8PythonRetainedRangeMatch? retained, bool retain)
     {
         _current = default;
         match = default;
+        retained = null;
         try
         {
             var input = _input.Span;
@@ -157,10 +174,19 @@ public sealed class Utf8PythonMatchCursor : IDisposable
             else
             {
                 var completed = _discovery.SnapshotRanges(_input, _names);
+                var receipt = retain ? _discovery.RetainRanges(input, completed) : null;
                 _discovery.Checkpoint(input);
-                _discovery.ReleaseResultsSince(marker);
+                if (receipt is not null)
+                {
+                    receipt.SetTransferredBytes(_discovery.TransferResultsSince(marker));
+                    retained = receipt;
+                }
+                else
+                {
+                    _discovery.ReleaseResultsSince(marker);
+                    match = completed;
+                }
                 _status = Status.RangePositioned;
-                match = completed;
             }
             return true;
         }

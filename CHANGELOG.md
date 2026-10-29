@@ -10,6 +10,8 @@
   absolute deadline, cumulative limits and previously returned owned snapshots.
 - Add PythonRe range cursor results and range-only split, avoiding captured-text
   copies and coordinate maps while retaining capture metadata and resource limits.
+- Add retained range cursor receipts that transfer admitted result charges without
+  reacquisition and refund on explicit disposal, independently of cursor/program lifetime.
 - Accept a caller-owned shared working allowance for PythonRe cursors, with
   synchronous scratch refunds and explicit admission failure.
 - Add caller-funded PythonRe compilation with explicit program disposal; active

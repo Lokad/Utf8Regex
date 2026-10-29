@@ -2,14 +2,39 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 // Result graphs remain working storage until the operation publishes them.
 // Borrowed canonical values are excluded; temporary roots release their own
-// extent at the last read. Publication transfers ownership to the caller, and
-// does not implement a retained-result policy. Covered capacity traffic is
+// extent at the last read. Ordinary publication releases staging; explicit
+// retained receipts can take over its already admitted loan. Covered traffic is
 // charged cumulatively before acquisition and is independent of working release.
 internal struct Utf8InvocationResultLedger
 {
     private ulong _reservedBytes;
 
     internal readonly ulong ReservedBytes => _reservedBytes;
+
+    // Shared immutable storage is conservatively counted again when a retained
+    // result takes an independent lifetime. No copying or identity registry.
+    internal void ReserveSharedStorage(ulong bytes, ref Utf8SliceInvocation invocation)
+    {
+        Reserve(bytes, ref invocation);
+        _reservedBytes += bytes;
+    }
+
+    internal T AllocateObject<TState, T>(TState state, Func<TState, T> factory, ref Utf8SliceInvocation invocation)
+        where T : class
+    {
+        var bytes = Math.Max(128UL, Utf8ConstructionBudget.ObjectBytes<TState>());
+        Reserve(bytes, ref invocation);
+        var control = new Utf8InvocationBufferControl(ref invocation);
+        try
+        {
+            Utf8InvocationOutput.Checkpoint(control);
+            var result = factory(state);
+            Utf8InvocationOutput.Checkpoint(control);
+            _reservedBytes += bytes;
+            return result;
+        }
+        catch { control.ReleaseWorking(bytes); throw; }
+    }
 
     internal T[] AllocateArray<T>(int count, ref Utf8SliceInvocation invocation)
     {
@@ -70,6 +95,15 @@ internal struct Utf8InvocationResultLedger
     }
 
     internal void Release(ref Utf8SliceInvocation invocation) => ReleaseSince(0, ref invocation);
+
+    internal ulong TransferSince(ulong marker, ref Utf8SliceInvocation invocation)
+    {
+        if (marker > _reservedBytes) throw new InvalidOperationException("The result reservation marker is no longer live.");
+        var bytes = _reservedBytes - marker;
+        invocation.Ledger.TransferToCaller(bytes);
+        _reservedBytes = marker;
+        return bytes;
+    }
 
     private static void Reserve(ulong bytes, ref Utf8SliceInvocation invocation)
     {
