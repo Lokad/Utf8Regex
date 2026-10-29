@@ -1,0 +1,12 @@
+Preflight ordinary-ascii: 52672
+Preflight ordinary-unicode-captures: 37120
+Preflight old-live-token-control: 52672
+Preflight ranges-ascii: 52224
+Preflight ranges-unicode-captures: 53376
+Preflight finite-ranges: 52224
+Preflight large-capture-ranges: 524298
+Preflight finite-large-capture-ranges: 524298
+Preflight old-split-control: 262149
+Preflight no-separator-split-ranges: 262149
+Preflight python-count-control: 96
+Preflight core-count-control: 96

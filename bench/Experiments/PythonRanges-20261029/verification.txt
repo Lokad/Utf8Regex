@@ -1,0 +1,7 @@
+Release focused: 47 passed on each of net10.0/net11.0 (range results, advance tokens, API snapshot).
+Release complete PythonRe: 4082 passed on each runtime, matching reused binaries.
+500,000 discarded matches under 16 KiB working; separate explicit cumulative result cap denies.
+2,097,156-byte Unicode/supplementary subject: large capture and one-part range split under 16 KiB working / 4 KiB result cap, <64 KiB combined allocation, no coordinate map.
+CPython split fixtures, strict UTF-8, scalar boundaries, named/unmatched/empty/last captures, tokens/deadlines, aliases and retained results covered.
+No shared caller-owned memory guarantee, scalar-coordinate API, new parity status or package qualification is claimed.
+Full logs and exact source/DLL/PDB/driver assets remain in the immutable archives.
