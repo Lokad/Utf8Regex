@@ -89,19 +89,24 @@ internal readonly partial struct PreparedMultiLiteralSearch
         // bucket. Keep that direct route even when the original vector is large.
         if (shortest == 0)
             return new(literals, PreparedMultiLiteralKind.ExactDirect, borrowed ?? new PreparedLiteralSetSearch(literals), default, default, default, default, default);
-        // Select from borrowed literals/facts before acquiring exact buckets, anchors
-        // or a trie. Those structures have no consumer in packed/earliest routes.
-        if (literals.Length is >= 3 and < TrieThreshold && shortest >= 4 && ContainsNonAscii(literals, budget)
-            && PreparedMultiLiteralPackedSearch.TryCreate(literals, out var packed))
-            return new(literals, PreparedMultiLiteralKind.ExactPacked, default, default, default, default, packed, default);
-
+        var preferEarliest = false;
         if (literals.Length <= 3 && shortest >= 4)
         {
             ulong totalBytes = 0;
             foreach (var literal in literals) { budget.ChargeWork(1); totalBytes += (ulong)literal.Length; }
-            if (totalBytes >= 24)
-                return new(literals, PreparedMultiLiteralKind.ExactEarliest, default, default, default, new(literals), default, default);
+            preferEarliest = totalBytes >= 24;
         }
+        // Select from borrowed literals/facts before acquiring exact buckets, anchors
+        // or a trie. Those structures have no consumer in packed/earliest routes.
+        // Short triples can share the packed discriminator/anchor checks. Keep
+        // the measured long-ASCII earliest and larger-family routes unchanged.
+        if (literals.Length is >= 3 and < TrieThreshold && shortest >= 4 &&
+            (literals.Length == 3 && !preferEarliest || ContainsNonAscii(literals, budget)) &&
+            PreparedMultiLiteralPackedSearch.TryCreate(literals, out var packed))
+            return new(literals, PreparedMultiLiteralKind.ExactPacked, default, default, default, default, packed, default);
+
+        if (preferEarliest)
+            return new(literals, PreparedMultiLiteralKind.ExactEarliest, default, default, default, new(literals), default, default);
 
         if (literals.Length >= AutomatonThreshold)
         {
