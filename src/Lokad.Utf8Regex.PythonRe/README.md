@@ -30,6 +30,10 @@ profile, not complete Python `re` equivalence. See the
 
 ## Controls and lifetimes
 
+`EffectiveOptions` exposes validated global flags, including leading inline
+directives and implicit Unicode unless global ASCII is selected. Scoped flags
+stay scoped. `Options` retains the flags originally supplied by the caller.
+
 Instances accept positive nullable `Utf8ResourcePolicy.MaxWorkSteps`, `MaxDepth`,
 `MaxWorkingBytes` and `MaxResultBytes`. Null is unlimited; zero is invalid.
 **Defaults remain unlimited.** Work includes covered validation, matching and

@@ -177,6 +177,9 @@ public sealed partial class Utf8PythonRegex
 
         var parser = PythonReParser.Create(pattern);
         var parseResult = parser.Parse(options);
+        EffectiveOptions = (parseResult.Options & PythonReCompileOptions.Ascii) != 0
+            ? parseResult.Options
+            : parseResult.Options | PythonReCompileOptions.Unicode;
         _canMatchEmpty = PythonReTranslator.CanMatchEmpty(parseResult.Root, parseResult);
         _canUseUtf8IterationFastPath = PythonReTranslator.CanUseUtf8IterationFastPath(parseResult.Root);
         _optionalExactCaptureFindAllValue = !_canMatchEmpty &&
@@ -282,8 +285,13 @@ public sealed partial class Utf8PythonRegex
     /// <summary>Gets the original Python regular-expression pattern.</summary>
     public string Pattern { get; }
 
-    /// <summary>Gets the Python-compatible compile options.</summary>
+    /// <summary>Gets the compile options supplied by the caller.</summary>
+    /// <remarks>Use <see cref="EffectiveOptions"/> for validated global inline flags and implicit Unicode behavior.</remarks>
     public PythonReCompileOptions Options { get; }
+
+    /// <summary>Gets the validated global compile options, including leading inline flags and implicit Unicode behavior.</summary>
+    /// <remarks>Scoped flags do not affect this value. Unicode is included unless global ASCII behavior is selected.</remarks>
+    public PythonReCompileOptions EffectiveOptions { get; }
 
     /// <summary>Gets the maximum duration of an individual matching operation.</summary>
     public TimeSpan MatchTimeout { get; }

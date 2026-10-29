@@ -91,6 +91,12 @@ shipped.
 
 ## Construction and execution controls
 
+`Options` retains the flags supplied by the caller. `EffectiveOptions` reports
+validated global flags, including leading inline directives across allowed
+comment/verbose trivia. It includes implicit Unicode unless global ASCII is
+selected; scoped flags do not leak into this metadata. Hosts need not reparse
+pattern headers. These enum values are PythonRe's flags, not CPython integer bits.
+
 Constructors validate policy, flags and timeout before strict byte-pattern
 decoding. Explicit Compile observes pre-cancellation first and accepts separate
 construction policy/timeout/token. One owner covers decoding, parsing, semantic

@@ -77,6 +77,7 @@ sealed class PythonRe.Utf8PythonRegex
   ctor Utf8PythonRegex(String pattern, PythonRe.PythonReCompileOptions options)
   ctor Utf8PythonRegex(String pattern, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout)
   ctor Utf8PythonRegex(String pattern, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
+  property PythonRe.PythonReCompileOptions EffectiveOptions { get; }
   property PythonRe.PythonReCompileOptions Options { get; }
   property String Pattern { get; }
   property TimeSpan MatchTimeout { get; }

@@ -4,6 +4,8 @@
 
 - Target .NET 10 and .NET 11 across Core, PythonRe and PCRE2.
 - Use .NET 11 by default for benchmark runs; historical figures retain their measured runtime.
+- Expose PythonRe effective global flags through `EffectiveOptions`, including
+  inline directives and implicit Unicode, while retaining requested `Options`.
 - Lower compatible Python Unicode character-class unions to the existing scalar
   predicate instruction, preserving pinned membership and lexical folding.
 - Reuse complete cell/range-reference proofs for bounded ASCII value Match,
