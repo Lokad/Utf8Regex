@@ -1,0 +1,4 @@
+Diagnostic necessary-prefix census; not a timing or speedup claim
+Corpus SHA256: 7D43CC8DFD053B083B809BD7CE7D4A074F2FD24A6B7EC38908B3966F3324FA36
+Uppercase bytes: 275258
+Uppercase followed by lowercase: 141590

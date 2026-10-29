@@ -1,0 +1,34 @@
+Measuring README benchmark case: bounded-repeat/capitals (requested=1, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=1;ElapsedMicroseconds=130590.400
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=1;ElapsedMicroseconds=131413.700
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=2;ElapsedMicroseconds=91572.300
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=4;ElapsedMicroseconds=54549.200
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=2;ElapsedMicroseconds=108083.500
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=3;ElapsedMicroseconds=65937.400
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=1;ElapsedMicroseconds=131295.500
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=1;ElapsedMicroseconds=131310.800
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=2;ElapsedMicroseconds=91092.900
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=4;ElapsedMicroseconds=54201.000
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=2;ElapsedMicroseconds=105718.100
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=3;ElapsedMicroseconds=63317.000
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=1;ElapsedMicroseconds=130685.400
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=1;ElapsedMicroseconds=131766.100
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=2;ElapsedMicroseconds=91232.700
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=4;ElapsedMicroseconds=54417.900
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=2;ElapsedMicroseconds=108646.300
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=3;ElapsedMicroseconds=65286.100
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=1;ElapsedMicroseconds=130590.300
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=1;ElapsedMicroseconds=132100.700
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=2;ElapsedMicroseconds=91100.900
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=4;ElapsedMicroseconds=54665.500
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=2;ElapsedMicroseconds=105078.700
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=3;ElapsedMicroseconds=61829.000
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=1;ElapsedMicroseconds=130230.500
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=1;ElapsedMicroseconds=131047.100
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=2;ElapsedMicroseconds=90858.400
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=4;ElapsedMicroseconds=54598.700
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=2;ElapsedMicroseconds=108649.100
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=3;ElapsedMicroseconds=64544.600
+Updated README case: bounded-repeat/capitals
+Rewrote README.Parity.json from README.Benchmarks.json.
+Verified README.Parity.json against README.Benchmarks.json.

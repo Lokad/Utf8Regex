@@ -112,12 +112,14 @@ public sealed class Utf8LeadingAsciiCandidateTests
                 RegexOptions.None, Regex.InfiniteMatchTimeout, Funded with { MaxWorkSteps = 1 }).Count(invalid)).ResourceKind);
     }
 
-    [Fact]
-    public void EveryWorkCutoffPreservesTheOriginalScratchLoan()
+    [Theory]
+    [InlineData(@"(?<w>[A-Z]+)[a-z]\k<w>")]
+    [InlineData(@"(?:[A-Z][a-z]+\s*){2,4}")]
+    public void EveryWorkCutoffPreservesTheOriginalScratchLoan(string pattern)
     {
-        var regex = new Utf8Regex(@"(?<w>[A-Z]+)[a-z]\k<w>");
+        var regex = new Utf8Regex(pattern);
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
-        var input = "éABaB😀"u8.ToArray();
+        var input = "éABaB😀Ab CdA"u8.ToArray();
         var complete = new Utf8SliceInvocation(new(100000, 0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(complete.Ledger.TryReserve(13));
         var outcome = Utf8SliceRunner.CountFromBytes(program, input, 0, new int[program.GroupCount],
@@ -137,10 +139,11 @@ public sealed class Utf8LeadingAsciiCandidateTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void BoundedRangeSearchKeepsOriginalCancellationAndDeadline(bool expire)
+    [InlineData(false, false)] [InlineData(true, false)]
+    [InlineData(false, true)] [InlineData(true, true)]
+    public void BoundedRangeSearchKeepsOriginalCancellationAndDeadline(bool expire, bool firstOnly)
     {
-        var input = Encoding.UTF8.GetBytes(new string('x', 200000) + "😀Ab Cd");
+        var input = Encoding.UTF8.GetBytes(new string(firstOnly ? 'A' : 'x', 200000) + "😀Ab Cd");
         var calibration = new Utf8SliceInvocation(new(4000000, 0, 0), Regex.InfiniteMatchTimeout, default);
         Utf8Validation.ThrowIfInvalidOnly(input, ref calibration);
         var threshold = ((calibration.Budget.Steps / 64) + 1) * 64;

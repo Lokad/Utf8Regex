@@ -1,0 +1,62 @@
+CaseId            : bounded-repeat/capitals
+Source            : DotNetPerformance
+Pattern           : (?:[A-Z][a-z]+\s*){10,100}
+Options           : None
+Iterations        : 1
+Group             : bounded-repeat
+Origin            : curated/10-bounded-repeat.toml :: capitals
+InputBytes        : 7384531
+BaselineEngine    : StructuralLinearAutomaton
+CompiledEngine    : StructuralLinearAutomaton
+ExecutionKind     : AsciiStructuralRepeatedSegment
+CompiledExecKind  : AsciiStructuralRepeatedSegment
+BaselineResult     : 11
+BaselineRoute      : <none>
+BaselineExecKind   : AsciiStructuralRepeatedSegment
+BaselineSearchKind : None
+BaselineFallback   : Scalar
+BaselineCandidates : 0
+BaselineFixedReject: 0
+BaselineVerifierInv: 0
+BaselineVerifierHit: 0
+BaselineProbeWin   : 0
+BaselineProbeSkip  : 0
+BaselineProbeProm  : 0
+BaselineSkipBytes  : 0
+BaselinePromBytes  : 0
+BaselineDemotions  : 0
+CompiledResult     : 11
+CompiledRoute      : <none>
+CompiledExecKind   : AsciiStructuralRepeatedSegment
+CompiledSearchKind : None
+CompiledFallback   : Scalar
+CompiledCandidates : 0
+CompiledFixedReject: 0
+CompiledVerifierInv: 0
+CompiledVerifierHit: 0
+CompiledProbeWin   : 0
+CompiledProbeSkip  : 0
+CompiledProbeProm  : 0
+CompiledSkipBytes  : 0
+CompiledPromBytes  : 0
+CompiledDemotions  : 0
+CheckoutCommit    : 8a471caa873b
+BenchmarkAssembly : 1.0.0+8a471caa873b4cac8a1565b48935dc91243969e7 sha256=22277E75E8C02E394C88441099EC854AB275DB0B61AFAFE185F4AE3E948E1D6D
+CoreAssembly      : 0.5.0-dev+8a471caa873b4cac8a1565b48935dc91243969e7 sha256=5FCFC5DAD9FF4A6748F51EBF3ED12D071C8795A381A635898DABFE9D6600C36D
+Pcre2Assembly     : 0.5.0-dev+8a471caa873b4cac8a1565b48935dc91243969e7 sha256=1F6622A66F4B89BB6BE02E4BBD5408897763EFC153BF816DD56E1265C19F9EDF
+PythonReAssembly  : 0.5.0-dev+8a471caa873b4cac8a1565b48935dc91243969e7 sha256=6B501CC8B298E0930C72537AE08CD8CDB08B892495E623666B72D36A856BDFD8
+TrackedDirty      : False
+HasUntrackedFiles : False
+Runtime           : .NET 11.0.0-rc.3.26522.148
+OperatingSystem   : Ubuntu 24.04.4 LTS
+Processor         : X64
+TieredPGO         : runtime-default
+ValidationOnly    :      0.262 ms total |    262.400 us/op | sink=0 | samples=1 range=262.400..262.400 us/op | warmup=1023 calls/374.6 ms
+WellFormedOnly    :      0.289 ms total |    289.100 us/op | sink=0 | samples=1 range=289.100..289.100 us/op | warmup=511 calls/255.5 ms
+BaselineDirect    :    143.189 ms total | 143189.400 us/op | sink=0 | samples=1 range=143189.400..143189.400 us/op | warmup=3 calls/433.3 ms
+CompiledDirect    :    143.005 ms total | 143005.100 us/op | sink=0 | samples=1 range=143005.100..143005.100 us/op | warmup=3 calls/429.8 ms
+Utf8Regex         :    143.814 ms total | 143813.900 us/op | sink=0 | samples=1 range=143813.900..143813.900 us/op | warmup=3 calls/483.0 ms
+Utf8Compiled      :    143.280 ms total | 143280.300 us/op | sink=0 | samples=1 range=143280.300..143280.300 us/op | warmup=3 calls/487.2 ms
+DecodeThenRegex   :     49.799 ms total |  49798.700 us/op | sink=0 | samples=1 range=49798.700..49798.700 us/op | warmup=7 calls/585.1 ms
+PredecodedRegex   :     46.505 ms total |  46504.700 us/op | sink=0 | samples=1 range=46504.700..46504.700 us/op | warmup=7 calls/328.5 ms
+CompiledRegex     :     14.306 ms total |  14306.000 us/op | sink=0 | samples=1 range=14306.000..14306.000 us/op | warmup=31 calls/442.8 ms
