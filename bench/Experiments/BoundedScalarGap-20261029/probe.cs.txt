@@ -1,0 +1,31 @@
+using System.Reflection;
+using System.Runtime.Loader;
+using System.Text;
+using System.Text.RegularExpressions;
+var root = Path.GetFullPath(args[0]);
+AssemblyLoadContext.Default.Resolving += (_, n) => File.Exists(Path.Combine(root, n.Name + ".dll")) ? AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(root, n.Name + ".dll")) : null;
+var core = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.dll"));
+var host = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.Benchmarks.dll"));
+const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+object Get(object owner, string key) => owner.GetType().GetProperty(key, flags)?.GetValue(owner) ?? owner.GetType().GetField(key, flags)!.GetValue(owner)!;
+var definition = host.GetType("Lokad.Utf8Regex.Benchmarks.ReplicaCountBenchmarkCase")!.GetMethod("Resolve", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)!.Invoke(null, ["bounded-repeat/context"])!;
+var input = (byte[])Get(definition, "InputBytes");
+var pattern = (string)Get(definition, "Utf8Pattern");
+var regex = Activator.CreateInstance(core.GetType("Lokad.Utf8Regex.Utf8Regex")!, [pattern, RegexOptions.None])!;
+var program = Get(Get(regex, "Inspection"), "AvailableOwnedSliceProgram");
+Console.WriteLine(core.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion);
+Console.WriteLine($"Pattern={pattern}; InputBytes={input.Length}; IsAscii={input.All(b => b < 128)}");
+var selector = regex.GetType().GetMethod("GetOwnedSliceProgram", flags, null, [typeof(ReadOnlySpan<byte>)], null)!.CreateDelegate<Select>(regex);
+Console.WriteLine($"SelectedScalarProgram={ReferenceEquals(program, selector(input))}");
+var plan = Get(Get(regex, "_preparedRegex"), "SearchPlan");
+foreach (var key in new[] { "Kind", "Distance", "CanGuideFallbackStarts", "MinRequiredLength" }) Console.WriteLine(key + "=" + Get(plan, key));
+var proof = core.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner")!.GetMethod("GetLeadingWhitespaceLiteral", BindingFlags.NonPublic | BindingFlags.Static)!;
+object[] proofArgs = [program, -1, -1];
+Console.WriteLine($"WhitespaceProof={proof.Invoke(null, proofArgs)}; LeadingClass={proofArgs[1]}; LiteralIndex={proofArgs[2]}");
+var instructions = (Array)Get(program, "Instructions");
+for (var i = 0; i < Math.Min(instructions.Length, 40); i++)
+{
+    var instruction = instructions.GetValue(i)!;
+    Console.WriteLine($"{i}: {Get(instruction, "Kind")} {Get(instruction, "A")} {Get(instruction, "B")} {Get(instruction, "C")} {Get(instruction, "D")}");
+}
+delegate object? Select(ReadOnlySpan<byte> input);

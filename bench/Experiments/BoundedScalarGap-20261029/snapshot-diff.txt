@@ -1,0 +1,1 @@
+Only bounded-repeat/context ordinary/compiled snapshot and parity rows changed.

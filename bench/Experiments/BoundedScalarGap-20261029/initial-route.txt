@@ -1,0 +1,39 @@
+0.5.0-dev+3258ff250412dab0cde3fb4804516a7f0c080701
+Pattern=[A-Za-z]{10}\s+[\s\S]{0,100}Result[\s\S]{0,100}\s+[A-Za-z]{10}; InputBytes=7384531; IsAscii=False
+SelectedScalarProgram=True
+Kind=ExactAsciiLiteral
+Distance=0
+CanGuideFallbackStarts=False
+MinRequiredLength=28
+WhitespaceProof=-1; LeadingClass=-1; LiteralIndex=-1
+0: RepeatGreedy 3 0 10 10
+1: Set 0 0 0 0
+2: RepeatEnd 0 0 0 0
+3: RepeatExit 0 0 0 0
+4: RepeatGreedy 7 1 1 -1
+5: Hybrid 1 0 16 0
+6: RepeatEnd 4 0 0 0
+7: RepeatExit 1 0 0 0
+8: RepeatGreedy 11 2 0 100
+9: Dot 1 0 0 0
+10: RepeatEnd 8 0 0 0
+11: RepeatExit 2 0 0 0
+12: Literal 82 0 0 0
+13: Literal 101 0 0 0
+14: Literal 115 0 0 0
+15: Literal 117 0 0 0
+16: Literal 108 0 0 0
+17: Literal 116 0 0 0
+18: RepeatGreedy 21 3 0 100
+19: Dot 1 0 0 0
+20: RepeatEnd 18 0 0 0
+21: RepeatExit 3 0 0 0
+22: RepeatGreedy 25 4 1 -1
+23: Hybrid 2 0 16 0
+24: RepeatEnd 22 0 0 0
+25: RepeatExit 4 0 0 0
+26: RepeatGreedy 29 5 10 10
+27: Set 3 0 0 0
+28: RepeatEnd 26 0 0 0
+29: RepeatExit 5 0 0 0
+30: Accept 0 0 0 0
