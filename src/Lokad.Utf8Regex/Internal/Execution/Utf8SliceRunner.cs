@@ -580,9 +580,10 @@ internal static partial class Utf8SliceRunner
             ? GetLeadingAsciiCandidate(program, out leadingAsciiLast) : -1;
         var leadingClass = -1;
         var whitespaceLiteralIndex = -1;
+        long whitespaceGapMaximum = 0;
         var whitespaceLiteral = !seekLiteral && !program.RightToLeft && !program.IgnoreCase &&
             !program.HasContiguousAnchor && input.Length - fromByte >= 256
-            ? GetLeadingWhitespaceLiteral(program, out leadingClass, out whitespaceLiteralIndex) : -1;
+            ? GetLeadingWhitespaceLiteral(program, out leadingClass, out whitespaceLiteralIndex, out whitespaceGapMaximum) : -1;
         if (whitespaceLiteral >= 0 && leadingClass >= 0 &&
             (candidatePlan.LiteralSearch is not { IgnoreCase: false } classSearch ||
                 !LiteralStartsAtInstruction(program, whitespaceLiteralIndex, classSearch.Needle)))
@@ -612,7 +613,8 @@ internal static partial class Utf8SliceRunner
                         position = whitespaceWindowEnd;
                         if (position >= 0)
                         {
-                            seekBreach = TryRewindClassWhitespace(program, input, floor, leadingClass, ref position, ref invocation);
+                            seekBreach = TryRewindClassWhitespace(program, input, floor, leadingClass,
+                                whitespaceGapMaximum, ref position, ref invocation);
                             if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                         }
                     }

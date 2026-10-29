@@ -70,15 +70,17 @@ internal static partial class Utf8SliceRunner
     }
 
     // A whitespace repeat followed by an exact non-whitespace ASCII scalar
-    // admits a window before that scalar; one scalar-class run can precede it.
+    // admits a window before that scalar; one scalar-class run can precede it,
+    // with a finite scalar gap between whitespace and the literal.
     // Verify every start in that window with the unchanged VM: captures,
     // references and assertions may make a later start win after an earlier
     // one fails. No candidate is itself accepted by this necessary condition.
     private static int GetLeadingWhitespaceLiteral(Utf8SliceProgram program,
-        out int leadingClass, out int literalIndex)
+        out int leadingClass, out int literalIndex, out long gapMaximum)
     {
         leadingClass = -1;
         literalIndex = -1;
+        gapMaximum = 0;
         var code = program.Instructions.AsSpan();
         var index = 0;
         while (index < code.Length && index < 64 && code[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
@@ -86,7 +88,7 @@ internal static partial class Utf8SliceRunner
         // One leading scalar-class run may precede the whitespace run. Reuse
         // the actual VM predicate when rewinding: ASCII intersections are not
         // a proof of Unicode word/category membership.
-        if (IsSingleClassRepeat(code, index) && code[index].RepeatMinimum == 1)
+        if (IsSingleClassRepeat(code, index) && code[index].RepeatMinimum > 0)
         {
             leadingClass = index + 1;
             index += 4;
@@ -95,7 +97,8 @@ internal static partial class Utf8SliceRunner
         }
         if (index >= 64 || !IsSingleClassRepeat(code, index)) return -1;
         var repeat = code[index];
-        if (repeat.RepeatMinimum > (leadingClass >= 0 ? 1 : 0)) return -1;
+        if (repeat.RepeatMaximum != long.MaxValue ||
+            repeat.RepeatMinimum > (leadingClass >= 0 ? 1 : 0)) return -1;
         var body = code[index + 1];
         var whitespace = body.Kind == Utf8SliceInstructionKind.Shorthand && body.A == (int)Utf8SliceShorthand.Space ||
             body.Kind == Utf8SliceInstructionKind.Hybrid && body.B == 0 && body.D == 0 &&
@@ -105,6 +108,15 @@ internal static partial class Utf8SliceRunner
         index += 4;
         while (index < code.Length && index < 64 && code[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
             index++;
+        if (leadingClass >= 0 && index < 64 && IsSingleClassRepeat(code, index) &&
+            code[index].RepeatMaximum != long.MaxValue &&
+            code[index + 1] is { Kind: Utf8SliceInstructionKind.Dot, A: 1 })
+        {
+            gapMaximum = code[index].RepeatMaximum;
+            index += 4;
+            while (index < code.Length && index < 64 && code[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
+                index++;
+        }
         if (index >= code.Length || index >= 64 || code[index].Kind != Utf8SliceInstructionKind.Literal || code[index].B != 0 ||
             (uint)code[index].A >= 128 || Rune.IsWhiteSpace(new Rune(code[index].A)))
             return -1;
@@ -114,7 +126,7 @@ internal static partial class Utf8SliceRunner
 
     private static bool IsSingleClassRepeat(ReadOnlySpan<Utf8SliceInstruction> code, int index)
         => code.Length - index >= 4 && code[index].Kind == Utf8SliceInstructionKind.RepeatGreedy &&
-            code[index].RepeatMaximum == long.MaxValue && code[index].A == index + 3 &&
+            code[index].A == index + 3 &&
             code[index + 1].Kind is (Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Set or
                 Utf8SliceInstructionKind.Shorthand or Utf8SliceInstructionKind.Hybrid or Utf8SliceInstructionKind.CategorySet) &&
             code[index + 2].Kind == Utf8SliceInstructionKind.RepeatEnd && code[index + 2].A == index &&
@@ -135,8 +147,18 @@ internal static partial class Utf8SliceRunner
     }
 
     private static Utf8ExecutionLimitKind TryRewindClassWhitespace(Utf8SliceProgram program,
-        ReadOnlySpan<byte> input, int floor, int leadingClass, ref int position, ref Utf8SliceInvocation invocation)
+        ReadOnlySpan<byte> input, int floor, int leadingClass, long gapMaximum, ref int position, ref Utf8SliceInvocation invocation)
     {
+        // Move by scalar count, not bytes. If this lands inside a valid prefix,
+        // it lies in its class/whitespace runs; their conservative rewind then
+        // covers the earliest start. Landing before the prefix only adds starts.
+        for (long remaining = gapMaximum; remaining > 0 && position > floor; remaining--)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            if (!TryReadScalar(input, position, true, out _, out var width)) break;
+            position -= width;
+        }
         // The classes can overlap. Cover the complete whitespace/class window,
         // then let the VM test each start, rather than choosing a split here.
         while (position > floor)
@@ -146,7 +168,8 @@ internal static partial class Utf8SliceRunner
             if (!TryReadScalar(input, position, true, out var scalar, out var width) || !Rune.IsWhiteSpace(scalar)) break;
             position -= width;
         }
-        while (leadingClass >= 0 && position > floor)
+        var classMaximum = leadingClass >= 0 ? program.Instructions[leadingClass - 1].RepeatMaximum : 0;
+        for (long remaining = classMaximum; remaining > 0 && position > floor; remaining--)
         {
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
@@ -184,7 +207,7 @@ internal static partial class Utf8SliceRunner
             if (MatchesStraightAsciiPrefix(program, input, position, literalIndex))
             {
                 windowEnd = position;
-                return TryRewindClassWhitespace(program, input, floor, -1, ref position, ref invocation);
+                return TryRewindClassWhitespace(program, input, floor, -1, 0, ref position, ref invocation);
             }
             // The admitted first byte is ASCII, so the next byte is a scalar boundary.
             position++;

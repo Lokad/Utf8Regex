@@ -27,6 +27,8 @@
 - Filter mandatory ASCII literal/set prefixes after nullable whitespace before
   scalar Count verification, retaining capture-sensitive candidate windows and
   original resource limits and interruption.
+- Guide scalar Count through bounded gaps after class/whitespace prefixes,
+  retaining scalar gap lengths, Unicode predicates and VM match selection.
 
 ## 0.4.0 — 2026-10-27
 
