@@ -1750,7 +1750,10 @@ internal static partial class BenchmarkInspectReporter
     }
 
     private static string FormatReadmeRatio(double utf8, double predecoded)
-        => (utf8 / predecoded).ToString("F2", CultureInfo.InvariantCulture) + "x";
+    {
+        var ratio = utf8 / predecoded;
+        return ratio.ToString(ratio is > 0 and < 0.01 ? "G2" : "F2", CultureInfo.InvariantCulture) + "x";
+    }
 
     private static string ReplaceMarkedSection(string text, string beginMarker, string endMarker, string replacement)
     {
