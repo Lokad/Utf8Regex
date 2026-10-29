@@ -23,6 +23,13 @@ public sealed class Utf8DisjointClassRepeatTests
     [InlineData("([^0-9]+)-", "abc-def-")]
     [InlineData("([a-z]+?)-", "abc-")]
     [InlineData("(([a-z]+))-", "abc-")]
+    [InlineData("(?<outer>(?<inner>[a-z]+))-", "abc- def-")]
+    [InlineData("(?<same>(?<same>[a-z]+))-", "abc-")]
+    [InlineData("(([a-z]+))a", "baaa")]
+    [InlineData("(([^']*))'", "abc😀' é'")]
+    [InlineData("(?=(([a-z]+))-)", "abc-")]
+    [InlineData("(?<=(([a-z]+)))b", "aab")]
+    [InlineData("""^import\s+(?<shared>shared\s+)?"(?<path>(\.|[^\\"]*))".*$""", "import \"module😀.nvn\";")]
     [InlineData("([a-z])+-", "abc-")]
     public void CapturesAndFallbackKeepOverlappingBclSemantics(string pattern, string text)
     {
@@ -51,6 +58,8 @@ public sealed class Utf8DisjointClassRepeatTests
     [InlineData("([é😀]{1,2})-", "é😀-", "é😀")]
     [InlineData("([é😀]{2,3})-", "é-", null)]
     [InlineData("([é😀]*)-", "-", "")]
+    [InlineData("(([é😀]{1,2}))-", "é😀-", "é😀")]
+    [InlineData("(([é😀]{2,3}))-", "é-", null)]
     public void RepeatBoundsCountCompleteScalars(string pattern, string text, string? expected)
     {
         var match = new Utf8Regex(pattern).MatchDetailed(Encoding.UTF8.GetBytes(text));
@@ -72,24 +81,29 @@ public sealed class Utf8DisjointClassRepeatTests
         Assert.Equal("def", match.GetGroup(1).GetValueString());
     }
 
-    [Fact]
-    public void OnlyProvedUselessAlternativesLoseTheirDepthRequirement()
+    [Theory]
+    [InlineData(1)] [InlineData(2)] [InlineData(31)] [InlineData(32)] [InlineData(33)]
+    public void OnlyProvedUselessAlternativesLoseTheirDepthRequirement(int nesting)
     {
         var policy = new Utf8ResourcePolicy { MaxDepth = 1, MaxWorkSteps = 100000,
             MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
         var text = Encoding.UTF8.GetBytes(new string('a', 2048) + "-");
-        Assert.Equal(1, new Utf8Regex("([a-z]+)-", RegexOptions.CultureInvariant,
-            Timeout.InfiniteTimeSpan, policy).Count(text));
+        var disjoint = new Utf8Regex(new string('(', nesting) + "[a-z]+" + new string(')', nesting) + "-",
+            RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan, policy);
+        if (nesting <= 32) Assert.Equal(1, disjoint.Count(text));
+        else Assert.Equal(Utf8ResourceLimitKind.ExecutionDepth,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => disjoint.Count(text)).ResourceKind);
         var overlapping = new Utf8Regex("([a-z]+)a", RegexOptions.CultureInvariant,
             Timeout.InfiniteTimeSpan, policy);
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => overlapping.Count(text));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionDepth, error.ResourceKind);
     }
 
-    [Fact]
-    public void EveryWorkCutoffDeniesWithoutLeakingTheParentLoan()
+    [Theory]
+    [InlineData(1)] [InlineData(2)]
+    public void EveryWorkCutoffDeniesWithoutLeakingTheParentLoan(int nesting)
     {
-        var regex = new Utf8Regex(@"(\p{L}{2,3})-");
+        var regex = new Utf8Regex(new string('(', nesting) + @"\p{L}{2,3}" + new string(')', nesting) + "-");
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException();
         var input = "éé- AB-"u8.ToArray();
         var starts = new int[program.GroupCount];
@@ -111,10 +125,11 @@ public sealed class Utf8DisjointClassRepeatTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void OriginalInterruptionInsideScanReleasesScratch(bool timeout)
+    [InlineData(false, 1)] [InlineData(true, 1)]
+    [InlineData(false, 2)] [InlineData(true, 2)]
+    public void OriginalInterruptionInsideScanReleasesScratch(bool timeout, int nesting)
     {
-        var regex = new Utf8Regex(@"(\p{L}+)-");
+        var regex = new Utf8Regex(new string('(', nesting) + @"\p{L}+" + new string(')', nesting) + "-");
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException();
         var input = Encoding.UTF8.GetBytes(new string('é', 2048) + "-");
         using var token = new CancellationTokenSource();

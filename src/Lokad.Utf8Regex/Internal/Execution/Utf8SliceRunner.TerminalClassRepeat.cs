@@ -103,7 +103,11 @@ internal static partial class Utf8SliceRunner
                 Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid))
             return false;
         var tail = repeatIndex + 4;
-        if (instructions[tail].Kind == Utf8SliceInstructionKind.CaptureEnd) tail++;
+        // Nested capture endings do not consume input. They still execute with
+        // their original trails after the selected boundary; only this proof
+        // looks past them. Keep pathological chains bounded and decline others.
+        for (var skipped = 0; skipped < 32 && tail < instructions.Length &&
+            instructions[tail].Kind == Utf8SliceInstructionKind.CaptureEnd; skipped++) tail++;
         if (tail == instructions.Length) return false;
         var suffix = instructions[tail];
         // RunFrom can retry a child after Accept to satisfy its required end.
