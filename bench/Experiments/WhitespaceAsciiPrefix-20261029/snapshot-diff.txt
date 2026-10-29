@@ -1,0 +1,1 @@
+Only ruff-noqa/real ordinary/compiled snapshot and parity rows changed.

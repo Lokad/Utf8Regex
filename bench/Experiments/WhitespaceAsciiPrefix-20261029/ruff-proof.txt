@@ -1,0 +1,44 @@
+0.5.0-dev+7da785da9c33e8344509a529b31831e69390511d
+Pattern=(\s*)((?:# [Nn][Oo][Qq][Aa])(?::\s?(([A-Z]+[0-9]+(?:[,\s]+)?)+))?); InputBytes=32514627; HashStarts=116678
+FullPrefixStarts=20
+WhitespaceProof=35; LeadingClass=-1; LiteralIndex=7
+0: CaptureStart 0 0 0 0
+1: RepeatGreedy 4 0 0 -1
+2: Hybrid 0 0 16 0
+3: RepeatEnd 1 0 0 0
+4: RepeatExit 0 0 0 0
+5: CaptureEnd 0 0 0 0
+6: CaptureStart 1 0 0 0
+7: Literal 35 0 0 0
+8: Literal 32 0 0 0
+9: Set 1 0 0 0
+10: Set 2 0 0 0
+11: Set 3 0 0 0
+12: Set 4 0 0 0
+13: RepeatGreedy 42 1 0 1
+14: Literal 58 0 0 0
+15: RepeatGreedy 18 2 0 1
+16: Hybrid 5 0 16 0
+17: RepeatEnd 15 0 0 0
+18: RepeatExit 2 0 0 0
+19: CaptureStart 2 0 0 0
+20: RepeatGreedy 39 3 1 -1
+21: CaptureStart 3 0 0 0
+22: RepeatGreedy 25 4 1 -1
+23: Set 6 0 0 0
+24: RepeatEnd 22 0 0 0
+25: RepeatExit 4 0 0 0
+26: RepeatGreedy 29 5 1 -1
+27: Set 7 0 0 0
+28: RepeatEnd 26 0 0 0
+29: RepeatExit 5 0 0 0
+30: RepeatGreedy 36 6 0 1
+31: RepeatGreedy 34 7 1 -1
+32: Hybrid 8 0 16 0
+33: RepeatEnd 31 0 0 0
+34: RepeatExit 7 0 0 0
+35: RepeatEnd 30 0 0 0
+36: RepeatExit 6 0 0 0
+37: CaptureEnd 3 0 0 0
+38: RepeatEnd 20 0 0 0
+39: RepeatExit 3 0 0 0
