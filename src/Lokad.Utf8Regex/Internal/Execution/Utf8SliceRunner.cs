@@ -471,14 +471,6 @@ internal static partial class Utf8SliceRunner
             program.Instructions.Length > 1 &&
             program.Instructions[1] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } leading &&
             (uint)leading.A < 0x80 ? leading.A : -1;
-        var prefixLength = leadingLiteral >= 0 ? 1 : 0;
-        // Only consecutive unfolded ASCII literals have fixed byte offsets.
-        // Captures, wider scalars, folding and optional/branch entries stop this
-        // bounded necessary check; survivors still run the original VM.
-        while (prefixLength > 0 && prefixLength < 32 && prefixLength + 1 < program.Instructions.Length &&
-            program.Instructions[prefixLength + 1] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } next &&
-            (uint)next.A < 0x80)
-            prefixLength++;
         while (true)
         {
             if (position != 0 && !multiline) { position = -1; return Utf8ExecutionLimitKind.None; }
@@ -499,19 +491,13 @@ internal static partial class Utf8SliceRunner
                 { position = -1; return Utf8ExecutionLimitKind.None; }
             }
             if (leadingLiteral < 0) return Utf8ExecutionLimitKind.None;
-            // A mandatory prefix rejects this line start before VM state
+            // A mandatory first literal rejects this line start before VM state
             // acquisition. This is necessary only; survivors still run the VM.
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             invocation.Budget.ThrowIfCancellationRequested();
             if (position == input.Length) { position = -1; return Utf8ExecutionLimitKind.None; }
-            if (input[position] == leadingLiteral && input.Length - position >= prefixLength)
-            {
-                var matched = 1;
-                while (matched < prefixLength && input[position + matched] == program.Instructions[matched + 1].A)
-                    matched++;
-                if (matched == prefixLength) return Utf8ExecutionLimitKind.None;
-            }
+            if (input[position] == leadingLiteral) return Utf8ExecutionLimitKind.None;
             position = AdvancePastScalar(input, position, false);
             if (position < 0) return Utf8ExecutionLimitKind.None;
         }
