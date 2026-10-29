@@ -35,6 +35,8 @@
   execution.
 - Reuse complete query URL ranges for bounded ASCII value Match, metering prefix
   and optional-parameter retries under the original invocation.
+- Reuse the complete hex-color grammar for ASCII value Match without capture
+  workspace, retaining strict validation and original invocation limits.
 - Improve scalar Count candidate searches for exact literal pairs, retaining
   bounded metering, ordered alternatives and full VM verification.
 - Reject impossible bounded Dot tails before greedy endpoint replay, retaining

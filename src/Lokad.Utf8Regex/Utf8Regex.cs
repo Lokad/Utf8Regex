@@ -1861,10 +1861,11 @@ public sealed partial class Utf8Regex
         // ASCII validation; detailed captures and wider subjects keep the VM.
         var queryWhole = _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiDigitsQueryWhole or
             Utf8FallbackDirectFamilyKind.AnchoredAsciiHexQueryWhole;
+        var colorWhole = _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiHexColorWhole;
         if (startByte == 0 && input.Length <= 2048 && validation.ByteLength == input.Length && validation.IsAscii &&
             ReferenceEquals(program, _ownedSliceProgram) && !program.RightToLeft &&
             !program.IsNonBacktracking &&
-            (queryWhole || !program.IgnoreCase &&
+            (queryWhole || colorWhole || !program.IgnoreCase &&
                 _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredTrimmedOptionalLiteralPrefixTail or
                     Utf8FallbackDirectFamilyKind.AnchoredNumberPrefix))
         {
@@ -1876,7 +1877,10 @@ public sealed partial class Utf8Regex
             {
                 breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
-                found = Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out length);
+                // The color proof includes the folded alphabet and final-LF
+                // anchor semantics. Its loop checks at most six hex digits.
+                found = colorWhole ? Utf8AsciiHexColorExecutor.TryMatchWhole(input, out length)
+                    : Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out length);
                 breach = invocation.TryChargeInputStep();
             }
             invocation.Budget.ThrowIfCancellationRequested();
