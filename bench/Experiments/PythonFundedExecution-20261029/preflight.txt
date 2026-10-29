@@ -1,0 +1,13 @@
+Preflight unfunded-count-control
+Preflight unfunded-replacement-control
+Preflight funded-scalar-count
+Preflight funded-unicode-count
+Preflight funded-finite-live-count
+Preflight funded-replacement
+Preflight funded-finite-live-replacement
+Preflight funded-canonical-findall
+Preflight funded-family-findall
+Preflight funded-mapped-findall
+Preflight funded-default-cursor
+Preflight funded-native-count-control
+Preflight core-count-control
