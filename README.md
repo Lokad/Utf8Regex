@@ -92,6 +92,10 @@ remain unqualified; their displayed medians do not establish parity. Measurement
 describe each row's recorded implementation; selected rows are refreshed
 incrementally and do not qualify later source changes.
 
+Historical ordinary Lokad script rows used a compiled .NET comparator. New
+refreshes align compilation flags; the release refresh will replace those older
+comparisons. Compiled rows already use matching flags.
+
 Case IDs preserve upstream names: `common/ip-miss` matches a valid prefix of its
 subject, so it measures a hit.
 
