@@ -1,0 +1,11 @@
+Preflight unfunded-ascii-warm
+Preflight unfunded-unicode-warm
+Preflight unfunded-finite-live
+Preflight funded-ascii-warm
+Preflight funded-unicode-warm
+Preflight funded-finite-live
+Preflight unfunded-template-cycle
+Preflight funded-template-cycle
+Preflight core-replacement-control
+Preflight core-count-control
+Preflight funded-python-count-control
