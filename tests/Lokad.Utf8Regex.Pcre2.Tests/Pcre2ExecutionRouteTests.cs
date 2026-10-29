@@ -150,8 +150,7 @@ public sealed class Pcre2ExecutionRouteTests
 
     [Theory]
     [InlineData("a|ab", "ab a", "ExactDirectFamily", 2)]
-    [InlineData("alpha|amber|bravo", "alpha amber bravo", "ExactPackedFamily", 3)]
-    [InlineData("alpha|amber|bravo|broom", "alpha amber bravo broom", "ExactTrieFamily", 4)]
+    [InlineData("alpha|amber|bravo", "alpha amber bravo", "ExactTrieFamily", 3)]
     [InlineData("Sherlock Holmes|John Watson|Irene Adler|Inspector Lestrade|Professor Moriarty", "Sherlock Holmes x Professor Moriarty", "ExactAutomatonFamily", 2)]
     [InlineData("夏洛克·福尔摩斯|约翰华生|阿德勒|雷斯垂德|莫里亚蒂教授", "夏洛克·福尔摩斯 x 莫里亚蒂教授", "ExactPackedFamily", 2)]
     [InlineData("Task|ValueTask|IAsyncEnumerable", "Task ValueTask IAsyncEnumerable", "ExactEarliestFamily", 3)]

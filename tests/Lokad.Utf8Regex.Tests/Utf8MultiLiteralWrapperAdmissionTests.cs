@@ -44,8 +44,7 @@ public sealed class Utf8MultiLiteralWrapperAdmissionTests
         if (ignoreCase) return PreparedMultiLiteralKind.AsciiIgnoreCase;
         if (values.Length == 0 || values.Any(v => v.Length == 0)) return PreparedMultiLiteralKind.ExactDirect;
         var shortest = values.Min(v => v.Length);
-        if (values.Length is >= 3 and < 8 && shortest >= 4 &&
-            (values.Length == 3 && values.Sum(v => (long)v.Length) < 24 || values.Any(v => v.Any(b => b >= 128))) &&
+        if (values.Length is >= 3 and < 8 && shortest >= 4 && values.Any(v => v.Any(b => b >= 128)) &&
             Enumerable.Range(0, shortest).Any(offset => values.Select(v => v[offset]).Distinct().Count() == values.Length))
             return PreparedMultiLiteralKind.ExactPacked;
         if (values.Length <= 3 && shortest >= 4 && values.Sum(v => (long)v.Length) >= 24)

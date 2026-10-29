@@ -156,7 +156,7 @@ public sealed class PreparedSearchPrimitivesTests
 
         Assert.Equal(19, exact.IndexOf(exactInput));
         Assert.Equal(19, ignoreCase.IndexOf(ignoreCaseInput));
-        Assert.Equal(PreparedMultiLiteralKind.ExactPacked, exact.Kind);
+        Assert.Equal(PreparedMultiLiteralKind.ExactDirect, exact.Kind);
         Assert.Equal(PreparedMultiLiteralKind.AsciiIgnoreCase, ignoreCase.Kind);
         Assert.True(exact.TryGetMatchedLiteralLength(exactInput, 19, out var exactLength));
         Assert.True(ignoreCase.TryGetMatchedLiteralLength(ignoreCaseInput, 19, out var ignoreCaseLength));

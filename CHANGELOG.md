@@ -41,8 +41,6 @@
   preserving scalar verification and bounded candidate-search admission.
 - Avoid child-VM storage for small capture-free ASCII literal assertions,
   preserving logical assertion depth and original invocation limits.
-- Reuse packed discriminator search for short ASCII literal triples, preserving
-  existing long-literal search selection and bounded admission.
 - Improve scalar Count candidate searches for exact literal pairs, retaining
   bounded metering, ordered alternatives and full VM verification.
 - Reject impossible bounded Dot tails before greedy endpoint replay, retaining
