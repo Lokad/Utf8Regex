@@ -924,6 +924,26 @@ public sealed partial class Utf8Regex
             }
         }
         if (RejectMissingRequiredLiteral(input, program, ref invocation)) return false;
+        // The complete whole-email proof projects classes into ASCII. Keep
+        // wider aliases on the scalar VM and bound this legacy kernel's entire
+        // scan before entering it; capture/result operations stay unchanged.
+        if (startByte == 0 && input.Length <= 2048 && ReferenceEquals(program, _ownedSliceProgram) &&
+            !program.RightToLeft && !program.IgnoreCase && !program.IsNonBacktracking &&
+            _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiEmailWhole)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
+            var ascii = input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) < 0;
+            var matched = ascii && Utf8AsciiEmailWholeExecutor.TryMatchWhole(input, out _);
+            breach = invocation.TryChargeInputStep();
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
+            if (ascii)
+            {
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiAnchoredValidator);
+                return matched;
+            }
+        }
         var slots = new Utf8SliceSlots([], []);
         try
         {
