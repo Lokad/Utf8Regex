@@ -21,7 +21,7 @@ public sealed partial class Utf8PythonRegex
         Replace(input, replacement, count, 0);
 
     // replacement templates are parsed once per distinct template and shared across operations; failures are never retained.
-    private PythonReReplacementPlan GetReplacementPlan(string replacement) =>
+    private PythonReReplacementPlan GetReplacementPlan(string replacement, out Utf8FundedStorage.Use? memoryUse) =>
         _replacementPlanCache.GetOrAdd(
             replacement,
             this,
@@ -36,11 +36,12 @@ public sealed partial class Utf8PythonRegex
                 construction.Complete();
                 return plan;
             },
-            default(Utf8ConstructionTextNoControl), default(PythonReReplacementRetainedStorage));
+            default(Utf8ConstructionTextNoControl), default(PythonReReplacementRetainedStorage), out memoryUse);
 
     private PythonReReplacementPlan GetReplacementPlan(ReadOnlySpan<byte> input, string replacement,
-        Utf8SliceInvocation invocation, CancellationToken cancellationToken)
+        Utf8SliceInvocation invocation, CancellationToken cancellationToken, out Utf8FundedStorage.Use? memoryUse)
     {
+        memoryUse = null;
         var deadline = invocation.Budget.Deadline;
         var control = new PythonRePreparationInterruptionControl(deadline, cancellationToken);
         try
@@ -62,10 +63,10 @@ public sealed partial class Utf8PythonRegex
             try
             {
                 if (deadline.IsInfinite && !cancellationToken.CanBeCanceled)
-                    return GetReplacementPlan(replacement);
+                    return GetReplacementPlan(replacement, out memoryUse);
                 return _replacementPlanCache.GetOrAdd(replacement, (Self: this, Control: control),
                     static (template, state) => state.Self.PrepareReplacementPlan(template, state.Control),
-                    control, default(PythonReReplacementRetainedStorage));
+                    control, default(PythonReReplacementRetainedStorage), out memoryUse);
             }
             catch (OperationCanceledException failure) when (failure.CancellationToken != cancellationToken)
             {
@@ -73,12 +74,14 @@ public sealed partial class Utf8PythonRegex
                 // interruption is not this call's authority. Prepare once with
                 // our controls instead of entering another shared retry loop.
                 control.Check();
-                return PrepareReplacementPlan(replacement, control);
+                return _replacementPlanCache.PrepareForUse(replacement, (Self: this, Control: control),
+                    static (template, state) => state.Self.PrepareReplacementPlan(template, state.Control), control, out memoryUse);
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {
                 control.Check(); // Rethrow if our own deadline expired.
-                return PrepareReplacementPlan(replacement, control);
+                return _replacementPlanCache.PrepareForUse(replacement, (Self: this, Control: control),
+                    static (template, state) => state.Self.PrepareReplacementPlan(template, state.Control), control, out memoryUse);
             }
         }
         catch (Utf8ExecutionDeadlineExpiredException)
@@ -213,7 +216,8 @@ public sealed partial class Utf8PythonRegex
         using var programUse = EnterProgramUse();
         ValidateStartOffset(input, startOffsetInBytes);
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
-        var scalarPlan = GetReplacementPlan(input, replacement, invocation, cancellationToken);
+        var scalarPlan = GetReplacementPlan(input, replacement, invocation, cancellationToken, out var memoryUse);
+        using var planUse = memoryUse;
         if (!HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&
             TryReplaceViaUtf8Literal(input, scalarPlan, count, startOffsetInBytes, true, ref invocation, out _, out var literalText, out var literalCount))
             return new Utf8PythonSubnResult { ResultText = literalText, ReplacementCount = literalCount };
@@ -261,7 +265,8 @@ public sealed partial class Utf8PythonRegex
         using var programUse = EnterProgramUse();
         ValidateStartOffset(input, startOffsetInBytes);
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
-        var scalarPlan = GetReplacementPlan(input, replacement, invocation, cancellationToken);
+        var scalarPlan = GetReplacementPlan(input, replacement, invocation, cancellationToken, out var memoryUse);
+        using var planUse = memoryUse;
         if (!HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&
             TryReplaceViaUtf8Literal(input, scalarPlan, count, startOffsetInBytes, false, ref invocation, out var literalBytes, out _, out var literalCount))
             return new Utf8PythonSubnUtf8Result { ResultBytes = literalBytes, ReplacementCount = literalCount };

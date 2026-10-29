@@ -119,10 +119,21 @@ snapshots keep their borrowed-input contract and owned snapshots remain valid.
 Metadata remains readable. Disposal of expressions created without a program
 allowance is a no-op. Construction tokens never become later execution authority.
 
-Program funding and the cursor's shared **working** allowance are separate
-explicit parameters; a host can supply the same account to both. Replacement
-preparation/cache retention, incidental objects and caller-retained output are
-outside these funded-program/working scopes. This is not yet aggregate memory
+Funded expressions use that same account for covered replacement preparation,
+retained cache keys/entries/plans, and detached plans still used by substitutions.
+Admission precedes acquisition; failed preparation refunds its storage without
+evicting valid entries. A warm hit borrows its existing charge. Eviction or
+disposal refunds after the last preparer/waiter/active use finishes. Concurrent
+foreign interruption receives one independently controlled, funded uncached
+preparation; cached plans never retain invocation controls. Disposal stops new
+cache retention before clearing, so in-flight operations cannot repopulate it.
+Conservative completed charges can count helper/shared storage more than once;
+neither historical allocation traffic nor the private cache maximum is charged.
+
+Program/cache funding and the cursor's shared **working** allowance are separate
+explicit parameters; a host can supply the same account to both. Incidental
+objects and caller-retained output are outside these scopes. Working admission
+on other public operation families is not yet shared. This is not aggregate memory
 admission for every PythonRe operation or a process-memory bound.
 
 Syntax/reference/lookbehind validation precedes optional native rendering.

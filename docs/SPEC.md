@@ -242,10 +242,15 @@ are excluded.
 Cold replacement preparation has separate construction backstops under the
 original invocation token/deadline. Finite working bytes additionally cap covered
 cold parser/key capacity; a denial can be `ConstructionBytes` before execution.
-Warm text-key hits need no preparation scope; UTF-8 keys still fund decoding.
+Warm text-key hits skip cold parsing; funded hits only borrow the entry's charge.
+UTF-8 keys still fund decoding.
 Preliminary byte-template scans admit work before reading through the construction
 owner or fixed scan ceiling. Interrupted preparation is retryable and never
 published. This is not one combined construction/execution/retention budget.
+PythonRe's caller-funded Compile additionally funds replacement preparation and
+cache/active-plan retention through its program account; see its
+[lifetime contract](SPEC-PYTHONRE.md#construction-and-execution-controls). This
+does not change Core/PCRE2's ordinary cache scopes or fund caller-retained output.
 
 Caches use conservative per-program charges, separate metadata/payload caps and
 eviction; shared storage may be counted twice. Eviction/clear/shrink preserve held

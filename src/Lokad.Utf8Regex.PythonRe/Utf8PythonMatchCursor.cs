@@ -1,5 +1,6 @@
 using System.Threading;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
@@ -20,14 +21,14 @@ public sealed class Utf8PythonMatchCursor : IDisposable
     private PythonReScalarMatchState _discovery;
     private Utf8PythonDetailedMatchData _current;
     private int _active;
-    private PythonReProgramMemory.Use? _programUse;
+    private Utf8FundedStorage.Use? _programUse;
     private Status _status;
 
     private enum Status : byte { Initial, Positioned, RangePositioned, Ended, Faulted, Disposed }
 
     internal Utf8PythonMatchCursor(ReadOnlyMemory<byte> input, Utf8SliceProgram program,
         PythonReNameEntry[] names, int startOffsetInBytes, TimeSpan timeout,
-        string pattern, Utf8SliceInvocation invocation, Utf8Regex? candidateRegex, PythonReProgramMemory.Use? programUse = null)
+        string pattern, Utf8SliceInvocation invocation, Utf8Regex? candidateRegex, Utf8FundedStorage.Use? programUse = null)
     {
         _input = input;
         _programUse = programUse;

@@ -54,8 +54,9 @@ public sealed partial class Utf8PythonRegex
             if (programMemoryAllowance is not null)
             {
                 var owner = construction.Budget.AllocateObject(programMemoryAllowance,
-                    static allowance => new PythonReProgramMemory(allowance));
+                    static allowance => new Utf8FundedStorage(allowance, nameof(Utf8PythonRegex)));
                 construction.Budget.ChargeWork(0);
+                result._replacementPlanCache.EnableFunding(programMemoryAllowance);
                 owner.Retain(construction.Budget.TransferFundedBytes());
                 result._programMemory = owner;
             }
@@ -73,7 +74,7 @@ public sealed partial class Utf8PythonRegex
     }
 
     /// <summary>Compiles and retains an eager program under caller-owned construction/program admission.</summary>
-    /// <remarks>Dispose the expression to close new uses and refund after existing operations/cursors finish. The shared allowance covers modeled construction and a conservative completed-program charge, not construction peak. Null MaxBytes imposes no additional construction-byte cap on this overload; work/depth/instruction backstops remain. Working/result/cache-preparation and caller retention keep their separately documented scopes.</remarks>
+    /// <remarks>Dispose the expression to close new uses and refund after existing operations/cursors finish. The shared allowance covers modeled construction, a conservative completed-program charge and replacement preparation/retention, not construction peak. Null MaxBytes imposes no additional construction-byte cap on this overload; work/depth/instruction backstops remain. Working/result and caller retention keep their separately documented scopes.</remarks>
     public static Utf8PythonRegex Compile(string pattern, PythonReCompileOptions options,
         TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
         Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout,
@@ -86,7 +87,7 @@ public sealed partial class Utf8PythonRegex
     }
 
     /// <summary>Compiles strict UTF-8 pattern bytes with caller-owned construction/program funding.</summary>
-    /// <remarks>Admission precedes decoding, parsing and eager FullMatch preparation. Dispose closes matching use; existing snapshots remain valid. Working/result/cache-preparation and caller retention are separate scopes.</remarks>
+    /// <remarks>Admission precedes decoding, parsing and eager FullMatch preparation. Replacement preparation/cache retention uses the same account. Dispose closes matching use; existing snapshots remain valid. Working/result and caller retention are separate scopes.</remarks>
     public static Utf8PythonRegex Compile(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options,
         TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
         Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout,

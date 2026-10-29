@@ -25,15 +25,16 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
     private readonly ulong _maximumPayloadBytes;
     private ulong _payloadBytes;
     private readonly Utf8RetainedStorageScope _storageScope;
+    private IUtf8MemoryAllowance? _memoryAllowance;
 
     private Utf8BoundedPreparationCache(IEqualityComparer<TKey> comparer, int capacity, ulong maximumMetadataBytes,
         ulong maximumPayloadBytes, Utf8RetainedStorageScope storageScope)
     { _comparer = comparer; _capacity = capacity; _maximumMetadataBytes = maximumMetadataBytes; _maximumPayloadBytes = maximumPayloadBytes; _storageScope = storageScope; }
 
     internal static ulong ObjectBytes => Utf8ConstructionBudget.ObjectBytes<
-        (CacheEntry?, CacheEntry?, IEqualityComparer<TKey>, int, int, ulong, long, ulong, ulong, Utf8RetainedStorageScope)>();
+        (CacheEntry?, CacheEntry?, IEqualityComparer<TKey>, int, int, ulong, long, ulong, ulong, Utf8RetainedStorageScope, IUtf8MemoryAllowance?)>();
     internal static ulong EntryBytes => Utf8ConstructionBudget.ObjectBytes<
-        (TKey, ValueTuple<TValue>, Exception?, CacheEntry?, int, int, int, ulong)>();
+        (TKey, ValueTuple<TValue>, Exception?, CacheEntry?, int, int, int, ulong, Utf8FundedStorage?)>();
     private ulong BaseMetadataBytes => ObjectBytes;
 
     internal static Utf8BoundedPreparationCache<TKey, TValue> CreateRetained(int capacity, IEqualityComparer<TKey> comparer)
@@ -60,7 +61,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
         if (maximumMetadataBytes < ObjectBytes) throw new ArgumentOutOfRangeException(nameof(maximumMetadataBytes));
         using var owner = Utf8ConstructionScope.Enter();
         var result = owner.Budget.AllocateObject(
-            (First: (CacheEntry?)null, Last: (CacheEntry?)null, Comparer: comparer, Capacity: capacity, Count: 0, Maximum: maximumMetadataBytes, Generation: 0L, MaximumPayload: maximumPayloadBytes, PayloadBytes: 0UL, Scope: storageScope),
+            (First: (CacheEntry?)null, Last: (CacheEntry?)null, Comparer: comparer, Capacity: capacity, Count: 0, Maximum: maximumMetadataBytes, Generation: 0L, MaximumPayload: maximumPayloadBytes, PayloadBytes: 0UL, Scope: storageScope, Funding: (IUtf8MemoryAllowance?)null),
             static state => new Utf8BoundedPreparationCache<TKey, TValue>(state.Comparer, state.Capacity, state.Maximum, state.MaximumPayload, state.Scope));
         owner.Complete();
         return result;
@@ -71,6 +72,18 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
     internal ulong MaximumMetadataBytes => _maximumMetadataBytes;
     internal ulong PayloadBytes { get { lock (this) return _payloadBytes; } }
     internal ulong MaximumPayloadBytes => _maximumPayloadBytes;
+
+    // Set once before the containing program is published. Funded callers must
+    // acquire an explicit use so removal cannot refund an active immutable plan.
+    internal void EnableFunding(IUtf8MemoryAllowance allowance)
+    {
+        lock (this)
+        {
+            if (_memoryAllowance is not null || _count != 0)
+                throw new InvalidOperationException("Funding must be configured on an unpublished empty cache.");
+            _memoryAllowance = allowance;
+        }
+    }
     internal int Capacity
     {
         get => Volatile.Read(ref _capacity);
@@ -93,13 +106,71 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
         where TControl : struct, IUtf8ConstructionTextControl
         where TStorage : struct, IUtf8RetainedStorage<TKey, TValue>
     {
+        if (_memoryAllowance is not null)
+            throw new InvalidOperationException("Funded cache values require an explicit active use.");
+        return GetOrAdd(key, state, factory, control, storage, out _);
+    }
+
+    internal TValue GetOrAdd<TState, TControl, TStorage>(TKey key, TState state,
+        Func<TKey, TState, TValue> factory, TControl control, TStorage storage,
+        out Utf8FundedStorage.Use? memoryUse)
+        where TControl : struct, IUtf8ConstructionTextControl
+        where TStorage : struct, IUtf8RetainedStorage<TKey, TValue>
+    {
+        memoryUse = null;
+        using var funding = EnterFunding(control);
+        try
+        {
+            var value = GetOrAddCore(key, state, factory, control, storage, funding, ref memoryUse);
+            funding?.Complete();
+            return value;
+        }
+        catch { memoryUse?.Dispose(); throw; }
+    }
+
+    // A foreign pending owner's interruption must not become this caller's
+    // authority. Prepare exactly once under its own controls, without retention.
+    internal TValue PrepareForUse<TState, TControl>(TKey key, TState state,
+        Func<TKey, TState, TValue> factory, TControl control, out Utf8FundedStorage.Use? memoryUse)
+        where TControl : struct, IUtf8ConstructionTextControl
+    {
+        memoryUse = null;
+        using var funding = EnterFunding(control);
+        try
+        {
+            var value = PrepareUncached(key, state, factory, control);
+            value = Complete(null, value, funding, null, control, ref memoryUse);
+            funding?.Complete();
+            return value;
+        }
+        catch { memoryUse?.Dispose(); throw; }
+    }
+
+    private Utf8ConstructionScope? EnterFunding<TControl>(TControl control)
+        where TControl : struct, IUtf8ConstructionTextControl
+        => _memoryAllowance is { } allowance ? EnterFunding(allowance, control) : null;
+
+    private static Utf8ConstructionScope EnterFunding<TControl>(IUtf8MemoryAllowance allowance, TControl control)
+        where TControl : struct, IUtf8ConstructionTextControl
+    {
+        var scope = Utf8ConstructionScope.Enter(default, Timeout.InfiniteTimeSpan, default, allowance);
+        try { scope.Budget.CheckpointHook = _ => control.Check(); return scope; }
+        catch { scope.Dispose(); throw; }
+    }
+
+    private TValue GetOrAddCore<TState, TControl, TStorage>(TKey key, TState state,
+        Func<TKey, TState, TValue> factory, TControl control, TStorage storage,
+        Utf8ConstructionScope? funding, ref Utf8FundedStorage.Use? memoryUse)
+        where TControl : struct, IUtf8ConstructionTextControl
+        where TStorage : struct, IUtf8RetainedStorage<TKey, TValue>
+    {
         if (storage.Scope != _storageScope)
             throw new InvalidOperationException("Retention requires the owner's declared storage scope.");
         Utf8ConstructionScope? cleanup = null;
         try
         {
             control.Check();
-            if (Capacity == 0) return PrepareUncached(key, state, factory, control);
+            if (Capacity == 0) return Complete(null, PrepareUncached(key, state, factory, control), funding, null, control, ref memoryUse);
             var keyCharge = storage.GetKeyCharge(key);
             if (keyCharge > _maximumPayloadBytes)
             {
@@ -107,7 +178,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
                 // compare its text before the factory's construction admission.
                 using var oversized = Utf8ConstructionScope.Enter();
                 oversized.Budget.ChargeWork(1);
-                return Complete(oversized, PrepareUncached(key, state, factory, control));
+                return Complete(oversized, PrepareUncached(key, state, factory, control), funding, null, control, ref memoryUse);
             }
             var hash = _comparer.GetHashCode(key);
             CacheEntry? entry = null;
@@ -117,17 +188,23 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
             {
                 generation = _generation;
                 var existing = Find(key, hash, control);
-                if (existing is not null) return Read(existing, control);
+                if (existing is not null) return Read(existing, control, ref memoryUse);
                 preparation = Utf8ConstructionScope.Enter();
                 cleanup = preparation;
                 control.Check();
                 preparation.Budget.ChargeWork(1);
                 if (CanAdd())
                 {
-                    entry = Acquire(key, default, null, 0, Environment.CurrentManagedThreadId, hash, keyCharge);
-                    control.Check();
-                    if (!PublishCharge(entry, null, keyCharge, false, generation, control))
-                        entry = null;
+                    try
+                    {
+                        entry = Acquire(key, default, null, 0, Environment.CurrentManagedThreadId, hash, keyCharge, keyCharge, funding, ref memoryUse);
+                        control.Check();
+                        if (!PublishCharge(entry, null, keyCharge, false, generation, control))
+                        {
+                            entry.Memory?.Close(); memoryUse?.Dispose(); memoryUse = null; entry = null;
+                        }
+                    }
+                    catch { entry?.Memory?.Close(); throw; }
                 }
             }
             // A full cache does not evict a useful value before knowing that a new
@@ -138,40 +215,51 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
                 lock (this)
                 {
                     control.Check();
-                    if (_generation != generation) return Complete(preparation, value);
+                    if (_generation != generation) return Complete(preparation, value, funding, null, control, ref memoryUse);
                     var existing = Find(key, hash, control);
-                    if (existing is not null) return Read(existing, control);
-                    if (_capacity == 0 || EntryBytes > _maximumMetadataBytes - BaseMetadataBytes) return Complete(preparation, value);
+                    if (existing is not null) return Read(existing, control, ref memoryUse);
+                    if (_capacity == 0 || EntryBytes > _maximumMetadataBytes - BaseMetadataBytes) return Complete(preparation, value, funding, null, control, ref memoryUse);
                     CacheEntry? victim = null;
                     if (!CanAdd())
                     {
                         victim = _first;
                         while (victim is not null && victim.Status == 0) { control.Check(); victim = victim.Next; }
-                        if (victim is null) return Complete(preparation, value);
+                        if (victim is null) return Complete(preparation, value, funding, null, control, ref memoryUse);
                     }
                     var charge = CollectCharge(keyCharge, value, storage, control, out var fits);
-                    if (!fits) return Complete(preparation, value);
-                    var completed = Acquire(key, new(value), null, 1, 0, hash, charge);
-                    _ = PublishCharge(completed, null, charge, true, generation, control);
+                    if (!fits) return Complete(preparation, value, funding, null, control, ref memoryUse);
+                    var completed = Acquire(key, new(value), null, 1, 0, hash, charge, keyCharge, funding, ref memoryUse);
+                    try
+                    {
+                        Complete(preparation, value, funding, completed, control, ref memoryUse);
+                        if (!PublishCharge(completed, null, charge, true, generation, control)) completed.Memory?.Close();
+                    }
+                    catch { completed.Memory?.Close(); throw; }
                 }
-                return Complete(preparation, value);
+                preparation.Complete();
+                return value;
             }
             try
             {
                 var value = PrepareUncached(key, state, factory, control);
                 lock (this)
                 {
-                    if (Contains(entry))
+                    var present = Contains(entry);
+                    var fits = false;
+                    var charge = present ? CollectCharge(keyCharge, value, storage, control, out fits) : 0;
+                    Complete(preparation, value, funding, entry, control, ref memoryUse);
+                    if (present)
                     {
-                        var charge = CollectCharge(keyCharge, value, storage, control, out var fits);
                         if (!fits || !PublishCharge(entry, entry, charge, true, generation, control)) Remove(entry);
                     }
+                    else entry.Memory?.Close();
                     entry.Value = new(value); entry.OwnerThread = 0; entry.Status = 1;
                     // A detached generation can satisfy its existing waiters, but
                     // never repopulates the list after Clear or a capacity shrink.
                     Monitor.PulseAll(this);
                 }
-                return Complete(preparation, value);
+                preparation.Complete();
+                return value;
             }
             catch (Exception failure)
             {
@@ -179,6 +267,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
                 {
                     entry.Error = failure; entry.OwnerThread = 0; entry.Status = 2;
                     Remove(entry);
+                    entry.Memory?.Close();
                     Monitor.PulseAll(this);
                 }
                 throw;
@@ -187,8 +276,28 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
         finally { cleanup?.Dispose(); }
     }
 
-    private static TValue Complete(Utf8ConstructionScope owner, TValue value)
-    { owner.Complete(); return value; }
+    private TValue Complete<TControl>(Utf8ConstructionScope? owner, TValue value,
+        Utf8ConstructionScope? funding, CacheEntry? entry, TControl control, ref Utf8FundedStorage.Use? memoryUse)
+        where TControl : struct, IUtf8ConstructionTextControl
+    {
+        if (funding is null) { owner?.Complete(); return value; }
+        // Mark the nested scope before transferring the root's bytes: later
+        // publication interruption must not roll back to a pre-transfer checkpoint.
+        owner?.Complete();
+        var memory = entry?.Memory;
+        if (memory is null)
+        {
+            memory = NewMemory(funding.Budget);
+            memoryUse = memory.Enter();
+        }
+        control.Check();
+        memory.Retain(funding.Budget.TransferFundedBytes());
+        if (entry is null) memory.Close();
+        return value;
+    }
+
+    private Utf8FundedStorage NewMemory(Utf8ConstructionBudget budget) => budget.AllocateObject(_memoryAllowance!,
+        static allowance => new Utf8FundedStorage(allowance, "prepared storage"));
 
     private static TValue PrepareUncached<TState, TControl>(TKey key, TState state, Func<TKey, TState, TValue> factory, TControl control)
         where TControl : struct, IUtf8ConstructionTextControl
@@ -274,8 +383,13 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
         return null;
     }
 
-    private TValue Read<TControl>(CacheEntry entry, TControl control) where TControl : struct, IUtf8ConstructionTextControl
+    private TValue Read<TControl>(CacheEntry entry, TControl control, ref Utf8FundedStorage.Use? memoryUse)
+        where TControl : struct, IUtf8ConstructionTextControl
     {
+        // Acquire while still under the cache lock, including before a pending
+        // wait. Clear/eviction can then detach the entry without invalidating
+        // waiters or refunding its future completed charge ahead of its users.
+        memoryUse = entry.Memory?.Enter();
         while (entry.Status == 0)
         {
             control.Check();
@@ -290,14 +404,25 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
         return entry.Value.Item1;
     }
 
-    private static CacheEntry Acquire(TKey key, ValueTuple<TValue> value, Exception? error, int status, int ownerThread, int hash,
-        ulong charge)
+    private CacheEntry Acquire(TKey key, ValueTuple<TValue> value, Exception? error, int status, int ownerThread, int hash,
+        ulong charge, ulong keyCharge, Utf8ConstructionScope? funding, ref Utf8FundedStorage.Use? memoryUse)
     {
         using var owner = Utf8ConstructionScope.Enter();
-        var result = owner.Budget.AllocateObject((key, value, error, Next: (CacheEntry?)null, status, ownerThread, hash, charge),
-            static state => new CacheEntry(state.key, state.value, state.error, state.status, state.ownerThread, state.hash, state.charge));
-        owner.Complete();
-        return result;
+        Utf8FundedStorage? memory = null;
+        try
+        {
+            if (funding is not null)
+            {
+                owner.Budget.ReserveBytes(keyCharge);
+                memory = NewMemory(owner.Budget);
+                memoryUse = memory.Enter();
+            }
+            var result = owner.Budget.AllocateObject((key, value, error, Next: (CacheEntry?)null, status, ownerThread, hash, charge, memory),
+                static state => new CacheEntry(state.key, state.value, state.error, state.status, state.ownerThread, state.hash, state.charge, state.memory));
+            owner.Complete();
+            return result;
+        }
+        catch { memory?.Close(); throw; }
     }
 
     private void Append(CacheEntry entry)
@@ -316,6 +441,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
             if (ReferenceEquals(_last, entry)) _last = previous;
             _payloadBytes -= entry.PayloadCharge;
             entry.Next = null; entry.PayloadCharge = 0; _count--;
+            entry.Memory?.Close();
             return;
         }
     }
@@ -330,7 +456,7 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
     }
 
     private sealed class CacheEntry(TKey key, ValueTuple<TValue> value, Exception? error, int status, int ownerThread, int hash,
-        ulong charge)
+        ulong charge, Utf8FundedStorage? memory)
     {
         internal readonly TKey Key = key;
         internal ValueTuple<TValue> Value = value;
@@ -340,5 +466,6 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
         internal int OwnerThread = ownerThread;
         internal readonly int Hash = hash;
         internal ulong PayloadCharge = charge;
+        internal readonly Utf8FundedStorage? Memory = memory;
     }
 }
