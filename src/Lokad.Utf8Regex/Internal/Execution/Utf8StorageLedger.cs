@@ -31,6 +31,8 @@ internal struct Utf8StorageLedger
 
     internal ulong ReservedBytes => _reservedBytes;
 
+    internal bool HasMemoryAllowance => _memoryAllowance is not null;
+
     internal bool IsUnlimited => MaxLiveBytes == 0 && _memoryAllowance is null;
 
     internal bool TryReserve(ulong bytes)

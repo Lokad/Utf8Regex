@@ -1,4 +1,6 @@
 using System.Text;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
@@ -122,6 +124,19 @@ public sealed class PythonReSharedWorkingAllowanceTests
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
             regex.CreateMatchCursor(new byte[] { 0xff }, 0, token.Token, null!)).CancellationToken);
         Assert.Throws<ArgumentNullException>(() => regex.CreateMatchCursor("a"u8.ToArray(), 0, default, null!));
+    }
+
+    [Fact]
+    public void SharedWorkingTimeoutDoesNotDecodeAnUnadmittedDiagnosticSubject()
+    {
+        long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var allowance = new Allowance(1 << 20);
+        using var cursor = new Utf8PythonRegex("(z)", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(100))
+            .CreateMatchCursor(Encoding.UTF8.GetBytes("z" + new string('a', 262144)), 0, default, allowance);
+        Assert.True(cursor.MoveNext(out var retained)); ticks = 100;
+        var failure = Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext(out _));
+        Assert.Empty(failure.Input); Assert.Equal("(z)", failure.Pattern);
+        Assert.Equal(0UL, allowance.Used); Assert.Equal("z", Encoding.UTF8.GetString(retained.GetValueMemory().Span));
     }
 
     private sealed class Allowance(ulong maximum) : IUtf8MemoryAllowance

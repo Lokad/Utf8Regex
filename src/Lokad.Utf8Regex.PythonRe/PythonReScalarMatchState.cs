@@ -126,7 +126,8 @@ internal struct PythonReScalarMatchState
         => _invocation.Budget.CreateResourceFailure();
 
     private readonly RegexMatchTimeoutException TimeoutFailure(ReadOnlySpan<byte> input)
-        => Utf8Regex.CreateMatchTimeoutException(input, _pattern, _timeout, _invocation.Budget.Limits);
+        => Utf8Regex.CreateMatchTimeoutException(_invocation.Ledger.HasMemoryAllowance ? ReadOnlySpan<byte>.Empty : input,
+            _pattern, _timeout, _invocation.Budget.Limits);
 
     internal void Checkpoint(ReadOnlySpan<byte> input)
     {

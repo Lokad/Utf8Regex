@@ -189,6 +189,8 @@ bytes before acquisition, including old/new growth overlap. Refusal throws
 becomes no-match, an uncapped retry or a new independent allowance. Numeric
 work/depth/working/result limits, original token and deadline still apply.
 No default working-byte cap or cumulative traffic quota is imposed by this API.
+Timeout exceptions omit Input under shared admission, avoiding a subject-sized
+diagnostic decode outside the allowance after expiry.
 
 EOF, failure and cursor disposal synchronously refund exclusive working storage;
 aliases share this lifetime and cannot double-refund. Required result/staging
