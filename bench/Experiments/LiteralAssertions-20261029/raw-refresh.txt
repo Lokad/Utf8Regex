@@ -1,0 +1,19 @@
+
+CaseId             : lookbehind/search-miss
+Pattern            : (?<=foo)bar
+Options            : None
+Operation          : Search
+InputBytes         : 7
+Iterations         : 20000
+Samples            : 5
+CheckoutCommit     : 362ba340f5f5
+BenchmarkAssembly  : 1.0.0+362ba340f5f520ea0c10f3b2ff6f3452cf3926a7 sha256=B5B3DFC3B8A4E80F59248BC1664E5EB58FAA4039B7C017DBE5A30402820756A0
+CoreAssembly       : 0.5.0-dev+362ba340f5f520ea0c10f3b2ff6f3452cf3926a7 sha256=2BF225E4C41277992B138FD61C49A58994101E2FD2BD3CB183FAE77950E8D5DE
+PythonReAssembly   : 0.5.0-dev+362ba340f5f520ea0c10f3b2ff6f3452cf3926a7 sha256=F2586BD79CF4F745042A23E34B086036A21D5DD7984813B432084F691DCF2AF4
+PythonRe           :      2.228 us/op | range=2.052..2.247 | alloc=0 B/op | warmup=65551 calls/159.1 ms
+DecodeThenRegex    :      0.107 us/op | range=0.106..0.131 | alloc=40 B/op | warmup=65551 calls/17.5 ms
+PredecodedRegex    :      0.086 us/op | range=0.062..0.121 | alloc=0 B/op | warmup=65551 calls/13.4 ms
+CPythonDecode      :      0.323 us/op | range=0.322..0.323 | iterations=155132 | warmup=65536 calls/34.3 ms
+CPythonPredecoded  :      0.176 us/op | range=0.176..0.177 | iterations=283047 | warmup=65536 calls/47.2 ms
+
+Snapshot           : /home/vermorel/tmp/utf8regex-net11-memory/pilot/PythonRe.Benchmarks.json

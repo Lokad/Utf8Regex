@@ -1,0 +1,25 @@
+CaseId            : lookbehind/search-miss
+Operation         : Search
+Pattern           : (?<=foo)bar
+InputBytes        : 7
+Iterations        : 20000 (requested 20)
+Samples           : 1
+AttributionProtocol: AlternatingSearchPhasesV1
+WarmupPerLane     : at least 250 ms and 64 calls
+ExpectedResult    : 0
+ExecutionKind     : FallbackRegex
+CompiledEngine    : FallbackRegex
+EngineRuntime     : Utf8FallbackRegexCompiledEngineRuntime
+KernelLane        : unavailable for selected route (validation plus public lanes only)
+SnapshotContext   : CpythonFaster Rstrong=9.899 [9.878, 10.008] managed=2.186us cpython=0.220us order=1.004
+Runtime           : .NET 11.0.0-rc.3.26522.148
+OperatingSystem   : Ubuntu 24.04.4 LTS
+Processor         : X64
+ThrowIfInvalidOnly              : 0.369 us/op | range=0.369..0.369 | result=7 | warmupCalls=262144
+BclIsValidOnly                  : 0.017 us/op | range=0.017..0.017 | result=7 | warmupCalls=262144
+FullValidate                    : 0.085 us/op | range=0.085..0.085 | result=7 | warmupCalls=262144
+PrefilterOnly                   : 0.172 us/op | range=0.172..0.172 | result=0 | warmupCalls=262144
+CorePublic                      : 3.212 us/op | range=3.212..3.212 | result=0 | warmupCalls=30671
+AdapterPublic                   : 1.698 us/op | range=1.698..1.698 | result=0 | warmupCalls=134583
+PrefilterShare      : prefilter 0.172 of public 1.698
+CompositionNote   : independently timed phase sums are attribution ceilings, not realizable speedups

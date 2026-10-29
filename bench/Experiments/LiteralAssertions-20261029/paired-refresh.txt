@@ -1,0 +1,41 @@
+CheckoutCommit     : 362ba340f5f5
+BenchmarkAssembly  : 1.0.0+362ba340f5f520ea0c10f3b2ff6f3452cf3926a7 sha256=B5B3DFC3B8A4E80F59248BC1664E5EB58FAA4039B7C017DBE5A30402820756A0
+CoreAssembly       : 0.5.0-dev+362ba340f5f520ea0c10f3b2ff6f3452cf3926a7 sha256=2BF225E4C41277992B138FD61C49A58994101E2FD2BD3CB183FAE77950E8D5DE
+PythonReAssembly   : 0.5.0-dev+362ba340f5f520ea0c10f3b2ff6f3452cf3926a7 sha256=F2586BD79CF4F745042A23E34B086036A21D5DD7984813B432084F691DCF2AF4
+CaseId             : lookbehind/search-miss
+Operation          : Search
+Result contract    : ConsumedGroupZeroRanges
+Protocol           : streaming v3; alternating paired samples
+CPU placement      : least-contended allowed processor (0x20; Linux efficiency class unknown)
+Worktree qualified : True
+Initial lane       : PythonRe
+Samples            : 9
+Iterations         : managed=149335; CPython=228510
+Warmup             : managed=298670 calls/100.0 ms; CPython=680160 calls/149.7 ms
+PythonRe elapsed   : 0.335 us/op
+CPython elapsed    : 0.222 us/op
+Rstrong            : 1.508 [1.502, 1.512]
+Estrong            : +0.113 us/op
+Order effect       : 1.000
+IQR spread         : managed=1.005; CPython=1.003
+Harness floor      : managed=0.15 %; CPython=15.50 %
+Bound trivial call : managed=0.49 %; CPython=23.92 %
+Managed alloc      : 0 B/op
+Process CPU/sample : managed=50.8 ms; CPython=50.7 ms (diagnostic)
+Status             : CPython faster
+Status reason      : The conclusion survives the conservative harness-floor bound.
+Byte control       : eligible; Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical.
+Rbyte             : 1.418 [1.414, 1.422]
+Engine conclusion : NotApplicable; The managed byte control does not use a native UTF-8 core route.
+CPython            : CPython 3.13.2; 843FCB9DA2A5D799DD48E1F518E343ECB8486D4F785F38F795C3493F3D61AADC
+Raw pairs:
+   1: ManagedFirst; managed=     0.336 us; CPython=     0.223 us; R=1.508; bytes=     0.237 us; Rbyte=1.419; GC=0,0,0/0,0,0
+   2: CpythonFirst; managed=     0.335 us; CPython=     0.222 us; R=1.510; bytes=     0.235 us; Rbyte=1.422; GC=0,0,0/0,0,0
+   3: ManagedFirst; managed=     0.337 us; CPython=     0.222 us; R=1.517; bytes=     0.236 us; Rbyte=1.426; GC=0,0,0/0,0,0
+   4: CpythonFirst; managed=     0.336 us; CPython=     0.222 us; R=1.511; bytes=     0.236 us; Rbyte=1.422; GC=0,0,0/0,0,0
+   5: ManagedFirst; managed=     0.336 us; CPython=     0.223 us; R=1.508; bytes=     0.237 us; Rbyte=1.414; GC=0,0,0/0,0,0
+   6: CpythonFirst; managed=     0.334 us; CPython=     0.222 us; R=1.507; bytes=     0.236 us; Rbyte=1.418; GC=0,0,0/0,0,0
+   7: ManagedFirst; managed=     0.334 us; CPython=     0.222 us; R=1.502; bytes=     0.236 us; Rbyte=1.416; GC=0,0,0/0,0,0
+   8: CpythonFirst; managed=     0.334 us; CPython=     0.223 us; R=1.497; bytes=     0.236 us; Rbyte=1.417; GC=0,0,0/0,0,0
+   9: ManagedFirst; managed=     0.334 us; CPython=     0.221 us; R=1.512; bytes=     0.237 us; Rbyte=1.413; GC=0,0,0/0,0,0
+Snapshot           : /home/vermorel/tmp/utf8regex-net11-memory/pilot/PythonRe.Benchmarks.json

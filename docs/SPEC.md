@@ -144,7 +144,7 @@ unlimited and zero is invalid. Defaults and static cached calls are unlimited.
 | Policy | Covered scope | Denial kind |
 | --- | --- | --- |
 | `MaxWorkSteps` | Cumulative bounded engine/checkpoint work | `ExecutionWorkSteps` |
-| `MaxDepth` | Live backtracking/continuation/assertion frames, pending linear alternatives or native nesting records | `ExecutionDepth` |
+| `MaxDepth` | Live backtracking/continuation frames, logical assertion depth, pending linear alternatives or native nesting records | `ExecutionDepth` |
 | `MaxWorkingBytes` | Conservative major active capacities, including growth overlap | `ExecutionWorkingBytes` |
 | `MaxResultBytes` | Cumulative modeled result/staging capacity, admitted before acquisition without refunds | `ExecutionResultBytes` |
 
@@ -157,6 +157,9 @@ Native counters admit their fixed scratch capacity against working bytes before
 use and record active nesting against depth. A Count or value-Match shortcut can
 avoid capture workspace; a declined shortcut retains its spent work when scalar
 execution resumes.
+
+Bounded literal assertions can avoid child VM storage while still admitting
+their logical assertion depth under the original work, token and deadline scope.
 
 Copied value cursors have independent positions but share allowance/deadline and
 published map/table reservations; concurrent advancement is unsupported.
