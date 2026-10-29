@@ -94,6 +94,16 @@ internal static partial class Utf8SliceRunner
                             continue;
                         }
                     }
+                    if (TryRunAsciiLiteralAssertion(body, input, assertionStart,
+                        assertion.ForwardScalarCount.HasValue ? current.InputIndex : null,
+                        (uint)stacks.FrameCount + 1, ref invocation, out var matched, out var literalBreach))
+                    {
+                        if (literalBreach != Utf8ExecutionLimitKind.None)
+                            return new(false, -1, literalBreach, null, null);
+                        resumeFailure = matched != (instruction.B != 0);
+                        if (!resumeFailure) current.ProgramIndex++;
+                        continue;
+                    }
                     var nextCounts = Array.Empty<int>();
                     var nextPositions = Array.Empty<int>();
                     ulong nextReservation = 0;
@@ -200,6 +210,38 @@ internal static partial class Utf8SliceRunner
             }
             continuations.Release(ref invocation);
         }
+    }
+
+    private static bool TryRunAsciiLiteralAssertion(Utf8SliceProgram body, ReadOnlySpan<byte> input,
+        int start, int? requiredEnd, uint depth, ref Utf8SliceInvocation invocation,
+        out bool matched, out Utf8ExecutionLimitKind breach)
+    {
+        matched = false;
+        breach = Utf8ExecutionLimitKind.None;
+        var code = body.Instructions.AsSpan();
+        // A bounded, side-effect-free body needs no child cursor or trail.
+        // Capture writes, folding and every other instruction keep the VM.
+        if (code.Length is < 2 or > 33 || code[^1].Kind != Utf8SliceInstructionKind.Accept) return false;
+        var length = code.Length - 1;
+        for (var index = 0; index < length; index++)
+            if (code[index] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0 } literal || (uint)literal.A >= 128)
+                return false;
+        breach = invocation.TryChargeInputStep();
+        if (breach == Utf8ExecutionLimitKind.None) breach = invocation.Budget.TryNoteDepth(depth);
+        if (breach != Utf8ExecutionLimitKind.None) return true;
+        var reverse = body.RightToLeft;
+        if ((uint)start <= (uint)input.Length && (reverse ? start >= length : length <= input.Length - start))
+        {
+            var bytes = input.Slice(reverse ? start - length : start, length);
+            matched = true;
+            for (var index = 0; index < length; index++)
+                if (bytes[reverse ? length - 1 - index : index] != code[index].A) { matched = false; break; }
+            if (matched && requiredEnd.HasValue)
+                matched = (reverse ? start - length : start + length) == requiredEnd.Value;
+        }
+        breach = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        return true;
     }
 
     private static void RestoreAssertion(AssertionContinuation continuation, ref AssertionCursor current,
