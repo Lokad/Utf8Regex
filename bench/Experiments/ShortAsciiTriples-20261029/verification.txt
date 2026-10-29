@@ -1,0 +1,17 @@
+focused:
+Passed!  - Failed:     0, Passed:   283, Skipped:     0, Total:   283, Duration: 194 ms - Lokad.Utf8Regex.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:   283, Skipped:     0, Total:   283, Duration: 216 ms - Lokad.Utf8Regex.Tests.dll (net11.0)
+
+core-guards:
+Passed!  - Failed:     0, Passed:   426, Skipped:     0, Total:   426, Duration: 2 s - Lokad.Utf8Regex.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:   426, Skipped:     0, Total:   426, Duration: 1 s - Lokad.Utf8Regex.Tests.dll (net11.0)
+
+python-guards:
+Passed!  - Failed:     0, Passed:   211, Skipped:     0, Total:   211, Duration: 1 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:   211, Skipped:     0, Total:   211, Duration: 911 ms - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)
+
+pcre-guards:
+Passed!  - Failed:     0, Passed:   135, Skipped:     0, Total:   135, Duration: 648 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:   135, Skipped:     0, Total:   135, Duration: 600 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net11.0)
+
+be92d14a restores src/, tests/ and CHANGELOG.md to accepted a7cdf47b exactly.

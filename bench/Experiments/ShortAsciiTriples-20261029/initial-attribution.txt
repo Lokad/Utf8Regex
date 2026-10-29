@@ -1,0 +1,33 @@
+CaseId            : structural/keyword-family-to-capitalized-identifier
+Pattern           : \b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+
+CompiledPattern   : \b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+
+Options           : CultureInvariant
+Iterations        : 1
+ExecutionKind     : AsciiStructuralIdentifierFamily
+PreparedKind      : MultiLiteral
+LeadingBoundary   : Boundary
+Separator bytes  : 6
+Identifier bytes : 26
+IdentifierTailMin : 1
+IdentifierTailMax : 2147483647
+CheckoutCommit    : 362ba340f5f5
+BenchmarkAssembly : 1.0.0+362ba340f5f520ea0c10f3b2ff6f3452cf3926a7 sha256=B5B3DFC3B8A4E80F59248BC1664E5EB58FAA4039B7C017DBE5A30402820756A0
+CoreAssembly      : 0.5.0-dev+362ba340f5f520ea0c10f3b2ff6f3452cf3926a7 sha256=2BF225E4C41277992B138FD61C49A58994101E2FD2BD3CB183FAE77950E8D5DE
+Pcre2Assembly     : 0.5.0-dev+362ba340f5f520ea0c10f3b2ff6f3452cf3926a7 sha256=CB64E85E9F7065FD49BDC7130335420E94679EAA0998C587A644E2E53A2C0155
+PythonReAssembly  : 0.5.0-dev+362ba340f5f520ea0c10f3b2ff6f3452cf3926a7 sha256=F2586BD79CF4F745042A23E34B086036A21D5DD7984813B432084F691DCF2AF4
+TrackedDirty      : False
+HasUntrackedFiles : False
+Runtime           : .NET 11.0.0-rc.3.26522.148
+OperatingSystem   : Ubuntu 24.04.4 LTS
+Processor         : X64
+TieredPGO         : runtime-default
+PreparedOverlaps  :      0.125 ms total |    124.600 us/op | sink=0 | samples=1 range=124.600..124.600 us/op | warmup=2047 calls/328.7 ms
+PreparedNonOverlaps:      0.106 ms total |    106.200 us/op | sink=0 | samples=1 range=106.200..106.200 us/op | warmup=2047 calls/343.1 ms
+BoundaryFiltered  :      0.112 ms total |    112.300 us/op | sink=0 | samples=1 range=112.300..112.300 us/op | warmup=3071 calls/330.8 ms
+BoundaryFilteredNonOverlaps:      0.111 ms total |    110.500 us/op | sink=0 | samples=1 range=110.500..110.500 us/op | warmup=3071 calls/320.1 ms
+BoundaryIndexSum  :      0.126 ms total |    125.700 us/op | sink=0 | samples=1 range=125.700..125.700 us/op | warmup=3071 calls/322.2 ms
+IdentifierMatches :      0.128 ms total |    128.400 us/op | sink=0 | samples=1 range=128.400..128.400 us/op | warmup=2047 calls/259.5 ms
+IdentifierMatchesNonOverlaps:      0.123 ms total |    123.200 us/op | sink=0 | samples=1 range=123.200..123.200 us/op | warmup=3071 calls/323.8 ms
+IdentifierIndexSum:      0.109 ms total |    108.800 us/op | sink=0 | samples=1 range=108.800..108.800 us/op | warmup=3071 calls/329.0 ms
+PublicCount       :      0.109 ms total |    109.400 us/op | sink=0 | samples=1 range=109.400..109.400 us/op | warmup=2047 calls/315.0 ms
+PredecodedRegex   :      0.297 ms total |    297.100 us/op | sink=0 | samples=1 range=297.100..297.100 us/op | warmup=1023 calls/545.0 ms
