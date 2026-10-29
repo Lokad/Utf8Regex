@@ -1,0 +1,12 @@
+Preflight compile-literal-control
+Preflight compile-classes-control
+Preflight compile-funded-feature
+Preflight scalar-count-control
+Preflight unicode-count-control
+Preflight finite-live-control
+Preflight native-miss-control
+Preflight funded-scalar-feature
+Preflight funded-unicode-feature
+Preflight funded-finite-live-feature
+Preflight funded-native-miss-feature
+Preflight core-count-control
