@@ -1,0 +1,977 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 61.3221918,
+  "LaneNames": [
+    "Baseline",
+    "Candidate",
+    "DiagnosticPredecodedRegex",
+    "DiagnosticDecodeThenRegex"
+  ],
+  "Baseline": {
+    "Core": {
+      "Version": "0.5.0-dev\u002B715488c26a19bcc62a4e9293da93fe772b03c0e8",
+      "Sha256": "1F5D0EB00E23C151E1813D3DEE1FCFDCEEE86564FEA252046F5294382B9371EA"
+    },
+    "Python": {
+      "Version": "0.5.0-dev\u002B715488c26a19bcc62a4e9293da93fe772b03c0e8",
+      "Sha256": "B720035936A7BD9BA9CB2D96757EFE7C6FC70F7AAC583BC9E1C6ED46DECDEC54"
+    }
+  },
+  "Candidate": {
+    "Core": {
+      "Version": "0.5.0-dev\u002Bd458c0ecf88751b835ef2c25bd283339ee8dfea1",
+      "Sha256": "0E2668BB3AA2847C2FD268F28B13F29868E93FA9CA9A6110AD84BB973FA36AA6"
+    },
+    "Python": {
+      "Version": "0.5.0-dev\u002Bd458c0ecf88751b835ef2c25bd283339ee8dfea1",
+      "Sha256": "97989C01CA73D5ACA37ECAE00FF2AB6BE1F38D8491113BA82F662F725834AAE5"
+    }
+  },
+  "Rows": [
+    {
+      "Name": "date-miss",
+      "Profile": "PythonRe",
+      "Operation": "IsMatch",
+      "Pattern": "\\b\\d{1,2}\\/\\d{1,2}\\/\\d{2,4}\\b",
+      "InputBytes": 47,
+      "DiagnosticExclusion": null,
+      "InputSha256": "1C2ACBD374A589D0C859E3C8E71C5374170E8293CCC5BB092805C8AE9D7098FA",
+      "Expected": 0,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        4398,
+        14704,
+        88889,
+        82514
+      ],
+      "WarmupCalls": [
+        64890,
+        266892,
+        1203813,
+        1331889
+      ],
+      "WarmupMilliseconds": [
+        1000.0058,
+        1000.0029,
+        1000.0006,
+        1000.0007
+      ],
+      "Microseconds": [
+        [
+          11.405661664392907,
+          11.380195543428831,
+          11.334470213733516
+        ],
+        [
+          3.408752720348205,
+          3.398979869423286,
+          3.3780875952121874
+        ],
+        [
+          0.566287167141041,
+          0.5639887950140061,
+          0.5679049151188561
+        ],
+        [
+          0.6017899992728506,
+          0.603739971398793,
+          0.6027849819424582
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3568,
+          3568,
+          3568
+        ],
+        [
+          3568,
+          3568,
+          3568
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          120,
+          120,
+          120
+        ]
+      ]
+    },
+    {
+      "Name": "date-hit",
+      "Profile": "PythonRe",
+      "Operation": "IsMatch",
+      "Pattern": "\\b\\d{1,2}\\/\\d{1,2}\\/\\d{2,4}\\b",
+      "InputBytes": 60,
+      "DiagnosticExclusion": null,
+      "InputSha256": "70DFADE1195628F21FE9AEC2885DD2B119E41CAE934E7C54448086A3B2D53288",
+      "Expected": 1,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        3998,
+        13081,
+        69286,
+        64585
+      ],
+      "WarmupCalls": [
+        78576,
+        254493,
+        1189798,
+        1130705
+      ],
+      "WarmupMilliseconds": [
+        1000.0082,
+        1000.0043,
+        1000.0007,
+        1000.0005
+      ],
+      "Microseconds": [
+        [
+          12.469134567283641,
+          12.42663831915958,
+          12.316658329164582
+        ],
+        [
+          3.830662793364422,
+          3.8294090665851233,
+          3.8230410519073463
+        ],
+        [
+          0.7348511964899114,
+          0.7312256444303322,
+          0.7303308027595763
+        ],
+        [
+          0.7764697685221026,
+          0.7742633738484168,
+          0.7650909653944414
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3568,
+          3568,
+          3568
+        ],
+        [
+          3568,
+          3568,
+          3568
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          144,
+          144,
+          144
+        ]
+      ]
+    },
+    {
+      "Name": "finite-token",
+      "Profile": "PythonRe",
+      "Operation": "IsMatch",
+      "Pattern": "\\b\\d{1,2}\\/\\d{1,2}\\/\\d{2,4}\\b",
+      "InputBytes": 47,
+      "DiagnosticExclusion": null,
+      "InputSha256": "1C2ACBD374A589D0C859E3C8E71C5374170E8293CCC5BB092805C8AE9D7098FA",
+      "Expected": 0,
+      "FiniteAndLiveToken": true,
+      "Iterations": [
+        3486,
+        13300,
+        88970,
+        83787
+      ],
+      "WarmupCalls": [
+        67148,
+        258137,
+        1496426,
+        1409593
+      ],
+      "WarmupMilliseconds": [
+        1000.0055,
+        1000.0001,
+        1000.0001,
+        1000.0003
+      ],
+      "Microseconds": [
+        [
+          14.540590935169249,
+          14.669535283993115,
+          14.420453241537578
+        ],
+        [
+          3.769842105263158,
+          3.77018045112782,
+          3.7443759398496237
+        ],
+        [
+          0.5681724176688772,
+          0.5613836124536361,
+          0.5627661009328987
+        ],
+        [
+          0.5958334825211549,
+          0.5964946829460418,
+          0.5962034683184743
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          21936,
+          21936,
+          21936
+        ],
+        [
+          3680,
+          3680,
+          3680
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          120,
+          120,
+          120
+        ]
+      ]
+    },
+    {
+      "Name": "dense-candidates",
+      "Profile": "PythonRe",
+      "Operation": "IsMatch",
+      "Pattern": "\\b\\d{1,2}\\/\\d{1,2}\\/\\d{2,4}\\b",
+      "InputBytes": 5888,
+      "DiagnosticExclusion": null,
+      "InputSha256": "E79F1BE374038FEB6901EE1CE2FD92F6475DDA640F4277036BF32A36D76E0723",
+      "Expected": 0,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        26,
+        122,
+        484,
+        478
+      ],
+      "WarmupCalls": [
+        517,
+        2365,
+        9687,
+        9528
+      ],
+      "WarmupMilliseconds": [
+        1000.9888,
+        1000.0171,
+        1000.0708,
+        1000.0494
+      ],
+      "Microseconds": [
+        [
+          1947.8423076923077,
+          1943.573076923077,
+          1946.8384615384616
+        ],
+        [
+          411.9934426229508,
+          412.6450819672131,
+          410.72131147540983
+        ],
+        [
+          103.54028925619835,
+          114.58429752066115,
+          103.24400826446282
+        ],
+        [
+          105.24016736401674,
+          104.68577405857741,
+          104.11924686192468
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3568,
+          3568,
+          3568
+        ],
+        [
+          1696,
+          1696,
+          1696
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          11800,
+          11800,
+          11800
+        ]
+      ]
+    },
+    {
+      "Name": "unicode-hit",
+      "Profile": "PythonRe",
+      "Operation": "IsMatch",
+      "Pattern": "\\b\\d{1,2}\\/\\d{1,2}\\/\\d{2,4}\\b",
+      "InputBytes": 41,
+      "DiagnosticExclusion": null,
+      "InputSha256": "F35E95D8E2C56B7E7C2B0BC42DFDEE728CC5685E9EDBACBC3EF9CF58F5972DBD",
+      "Expected": 1,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        2595,
+        10588,
+        77860,
+        70944
+      ],
+      "WarmupCalls": [
+        42592,
+        206690,
+        1326299,
+        1241629
+      ],
+      "WarmupMilliseconds": [
+        1000.0031,
+        1000.0019,
+        1000.0004,
+        1000.0003
+      ],
+      "Microseconds": [
+        [
+          19.10393063583815,
+          19.069595375722542,
+          19.08015414258189
+        ],
+        [
+          4.678919531545145,
+          4.662939176426144,
+          4.700188893086513
+        ],
+        [
+          0.6415604931929104,
+          0.6400128435653738,
+          0.6421384536347289
+        ],
+        [
+          0.7080937077131259,
+          0.7000042286874154,
+          0.7060315178168697
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3568,
+          3568,
+          3568
+        ],
+        [
+          3568,
+          3568,
+          3568
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          104,
+          104,
+          104
+        ]
+      ]
+    },
+    {
+      "Name": "category-edge",
+      "Profile": "PythonRe",
+      "Operation": "IsMatch",
+      "Pattern": "\\b\\d{1,2}\\/\\d{1,2}\\/\\d{2,4}\\b",
+      "InputBytes": 12,
+      "DiagnosticExclusion": "Pinned Python Unicode word membership differs from .NET.",
+      "InputSha256": "999178DEA3F81D0A22100F0DE266CC74EF3E0B00CBE087244B298ABD9852DBF3",
+      "Expected": 1,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        24631,
+        44462
+      ],
+      "WarmupCalls": [
+        446807,
+        803891
+      ],
+      "WarmupMilliseconds": [
+        1000.0015,
+        1000.0008
+      ],
+      "Microseconds": [
+        [
+          1.9752019812431492,
+          2.006463399780764,
+          2.0300434411919936
+        ],
+        [
+          1.1490171382303989,
+          1.1488866897575458,
+          1.1882191534343933
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3568,
+          3568,
+          3568
+        ],
+        [
+          3568,
+          3568,
+          3568
+        ]
+      ]
+    },
+    {
+      "Name": "numeric-edge",
+      "Profile": "PythonRe",
+      "Operation": "IsMatch",
+      "Pattern": "\\b\\d{1,2}\\/\\d{1,2}\\/\\d{2,4}\\b",
+      "InputBytes": 11,
+      "DiagnosticExclusion": "Pinned Python Unicode word membership differs from .NET.",
+      "InputSha256": "3D42C29FC89DD163A15462B716A091AFC79A7E7FBEA8E3954864437E96E7CF89",
+      "Expected": 0,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        7167,
+        27973
+      ],
+      "WarmupCalls": [
+        122556,
+        524681
+      ],
+      "WarmupMilliseconds": [
+        1000.0041,
+        1000.0004
+      ],
+      "Microseconds": [
+        [
+          6.973294265383006,
+          6.945890888795869,
+          6.926859215850425
+        ],
+        [
+          1.7831980838665857,
+          1.780270260608444,
+          1.7765523898044544
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3568,
+          3568,
+          3568
+        ],
+        [
+          1696,
+          1696,
+          1696
+        ]
+      ]
+    },
+    {
+      "Name": "ascii-boundary-control",
+      "Profile": "PythonRe",
+      "Operation": "Count",
+      "Pattern": "(?a:\\b)",
+      "InputBytes": 2176,
+      "DiagnosticExclusion": "Python scoped ASCII flag is unsupported by .NET.",
+      "InputSha256": "AACADD2D54A11C53090C59930EC54D0A9376E2F75BF0872A0EBB439559B44B86",
+      "Expected": 768,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        227,
+        216
+      ],
+      "WarmupCalls": [
+        4111,
+        4274
+      ],
+      "WarmupMilliseconds": [
+        1000.0984,
+        1000.0641
+      ],
+      "Microseconds": [
+        [
+          222.21762114537444,
+          220.3955947136564,
+          219.19383259911893
+        ],
+        [
+          230.29953703703706,
+          227.7976851851852,
+          231.96666666666664
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "Name": "range-control",
+      "Profile": "PythonRe",
+      "Operation": "IsMatch",
+      "Pattern": "([a-z]\u002B)",
+      "InputBytes": 20,
+      "DiagnosticExclusion": null,
+      "InputSha256": "20D6BE4B3423037A9CC13B67E2DD6A9B6A977F4E1790B0B0BD744D1CA28BC423",
+      "Expected": 1,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        64876,
+        67676,
+        663564,
+        511242
+      ],
+      "WarmupCalls": [
+        1012850,
+        1161511,
+        5391178,
+        4846656
+      ],
+      "WarmupMilliseconds": [
+        1000.001,
+        1000.0008,
+        1000.0001,
+        1000.0002
+      ],
+      "Microseconds": [
+        [
+          0.9370830507429557,
+          0.7957549787286516,
+          0.7937419076391885
+        ],
+        [
+          0.8502644955375613,
+          0.8629854010284295,
+          0.7570807967373958
+        ],
+        [
+          0.07518988371882743,
+          0.07578997655086774,
+          0.07598724463653846
+        ],
+        [
+          0.09645256062686555,
+          0.0961401841006803,
+          0.09576854014341545
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3872,
+          3872,
+          3872
+        ],
+        [
+          3872,
+          3872,
+          3872
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          64,
+          64,
+          64
+        ]
+      ]
+    },
+    {
+      "Name": "literal-control",
+      "Profile": "PythonRe",
+      "Operation": "IsMatch",
+      "Pattern": "alpha",
+      "InputBytes": 4096,
+      "DiagnosticExclusion": null,
+      "InputSha256": "A2E659DACB4691E887AC0139F8893D04764EE197D70FB73D3190D56113D18E3E",
+      "Expected": 0,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        238150,
+        237677,
+        174055,
+        65025
+      ],
+      "WarmupCalls": [
+        2366738,
+        2760701,
+        2672424,
+        1117251
+      ],
+      "WarmupMilliseconds": [
+        1000.0003,
+        1000.0003,
+        1000.0001,
+        1000.0006
+      ],
+      "Microseconds": [
+        [
+          0.21022968717195048,
+          0.21160361116943105,
+          0.21191098047449086
+        ],
+        [
+          0.2093959449168409,
+          0.2130580577843039,
+          0.21101789403265775
+        ],
+        [
+          0.2892442044181437,
+          0.2895624946137715,
+          0.2896084570968947
+        ],
+        [
+          0.9390911188004614,
+          0.8028496732026145,
+          0.9529550173010379
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          8216,
+          8216,
+          8216
+        ]
+      ]
+    },
+    {
+      "Name": "match",
+      "Profile": "PythonRe",
+      "Operation": "Match",
+      "Pattern": "\\b\\d{1,2}\\/\\d{1,2}\\/\\d{2,4}\\b",
+      "InputBytes": 8,
+      "DiagnosticExclusion": null,
+      "InputSha256": "DD16104D0388CE2B0853CA9BE23F4484FDA613D6F4B6A8FF1B6C878837366BB9",
+      "Expected": 1,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        35134,
+        52037,
+        355102,
+        307560
+      ],
+      "WarmupCalls": [
+        567813,
+        877932,
+        3829123,
+        3715289
+      ],
+      "WarmupMilliseconds": [
+        1000.0002,
+        1000.0001,
+        1000.001,
+        1000.0001
+      ],
+      "Microseconds": [
+        [
+          1.505114703705812,
+          1.4614219844025729,
+          1.4461803381340013
+        ],
+        [
+          1.030430270768876,
+          1.040081096143129,
+          0.9873109518227414
+        ],
+        [
+          0.13391194642666052,
+          0.13494319941875854,
+          0.13427775681353527
+        ],
+        [
+          0.15737579659253478,
+          0.1558642216152946,
+          0.15879795812199246
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3568,
+          3568,
+          3568
+        ],
+        [
+          3568,
+          3568,
+          3568
+        ],
+        [
+          208,
+          208,
+          208
+        ],
+        [
+          248,
+          248,
+          248
+        ]
+      ]
+    },
+    {
+      "Name": "fullmatch",
+      "Profile": "PythonRe",
+      "Operation": "FullMatch",
+      "Pattern": "\\b\\d{1,2}\\/\\d{1,2}\\/\\d{2,4}\\b",
+      "InputBytes": 8,
+      "DiagnosticExclusion": null,
+      "InputSha256": "DD16104D0388CE2B0853CA9BE23F4484FDA613D6F4B6A8FF1B6C878837366BB9",
+      "Expected": 1,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        33325,
+        50544,
+        345503,
+        299939
+      ],
+      "WarmupCalls": [
+        594792,
+        911678,
+        4123953,
+        3682288
+      ],
+      "WarmupMilliseconds": [
+        1000.0016,
+        1000.0006,
+        1000.0004,
+        1000.0002
+      ],
+      "Microseconds": [
+        [
+          1.5363210802700673,
+          1.4672168042010503,
+          1.4468237059264817
+        ],
+        [
+          1.0390550807217473,
+          1.0525522317188984,
+          0.991579613801836
+        ],
+        [
+          0.13798693499043424,
+          0.13950993189639452,
+          0.13580084688121377
+        ],
+        [
+          0.16057231637099545,
+          0.15996019190568747,
+          0.16054264367087975
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3568,
+          3568,
+          3568
+        ],
+        [
+          3568,
+          3568,
+          3568
+        ],
+        [
+          208,
+          208,
+          208
+        ],
+        [
+          248,
+          248,
+          248
+        ]
+      ]
+    },
+    {
+      "Name": "finite-core-boundary-control",
+      "Profile": "Core",
+      "Operation": "Count",
+      "Pattern": "\\b\\w\u002B\\b",
+      "InputBytes": 2176,
+      "DiagnosticExclusion": null,
+      "InputSha256": "AACADD2D54A11C53090C59930EC54D0A9376E2F75BF0872A0EBB439559B44B86",
+      "Expected": 384,
+      "FiniteAndLiveToken": true,
+      "Iterations": [
+        267,
+        249,
+        2220,
+        2182
+      ],
+      "WarmupCalls": [
+        4584,
+        4809,
+        43797,
+        43346
+      ],
+      "WarmupMilliseconds": [
+        1000.1764,
+        1000.0162,
+        1000.0103,
+        1000.004
+      ],
+      "Microseconds": [
+        [
+          188.3116104868914,
+          187.38913857677903,
+          186.81947565543072
+        ],
+        [
+          195.8401606425703,
+          196.4887550200803,
+          196.32329317269077
+        ],
+        [
+          22.572837837837838,
+          22.462072072072072,
+          22.47954954954955
+        ],
+        [
+          22.87076076993584,
+          22.932172318973418,
+          23.05302474793767
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3664,
+          3664,
+          3664
+        ],
+        [
+          3664,
+          3664,
+          3664
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          4376,
+          4376,
+          4376
+        ]
+      ]
+    },
+    {
+      "Name": "finite-core-nonbacktracking-control",
+      "Profile": "Core",
+      "Operation": "Count",
+      "Pattern": "\\b\\w\u002B\\b",
+      "InputBytes": 2176,
+      "DiagnosticExclusion": null,
+      "InputSha256": "AACADD2D54A11C53090C59930EC54D0A9376E2F75BF0872A0EBB439559B44B86",
+      "Expected": 384,
+      "FiniteAndLiveToken": true,
+      "Iterations": [
+        188,
+        182,
+        1838,
+        1814
+      ],
+      "WarmupCalls": [
+        3060,
+        3339,
+        35193,
+        35624
+      ],
+      "WarmupMilliseconds": [
+        1000.2474,
+        1000.0838,
+        1000.0155,
+        1000.0125
+      ],
+      "Microseconds": [
+        [
+          269.0047872340425,
+          267.5643617021277,
+          264.41968085106384
+        ],
+        [
+          274.26868131868133,
+          276.29450549450553,
+          274.8478021978022
+        ],
+        [
+          27.041947769314472,
+          27.521653971708382,
+          26.740043525571277
+        ],
+        [
+          27.771058434399116,
+          27.88544652701213,
+          27.920176405733184
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          26336,
+          26336,
+          26336
+        ],
+        [
+          26336,
+          26336,
+          26336
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          4376,
+          4376,
+          4376
+        ]
+      ]
+    }
+  ]
+}

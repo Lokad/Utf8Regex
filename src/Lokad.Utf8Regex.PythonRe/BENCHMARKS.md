@@ -24,8 +24,8 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-10-29T10:01:08.0696560+00:00`
-- Snapshot SHA-256: `4B168BE99BB8FFC57110749649FDBF5EEFF760F48F2F0FA4043E73CC5004316E`
+- Generated: `2026-10-29T12:30:12.6164150+00:00`
+- Snapshot SHA-256: `278CCBCA5EFD92793394B55D515A0DA5F9247E20E0322240D634EEE05E0A76AE`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
@@ -33,8 +33,8 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 - Scaling families: `7`
 - Public Status: `25` managed faster, `2` equivalent, `46` CPython faster, `15` inconclusive, `2` unqualified
 - Historical point measurement environments represented: `3`
-- Paired evidence from source `516057469acd`: `1` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
 - Paired evidence from source `a40bda03c8f9`: `87` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
+- Paired evidence from source `d458c0ecf887`: `1` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
 - Paired evidence from source `f6c823f8a58e`: `2` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -127,7 +127,7 @@ Historical point rows span more than one measurement environment. Consult the JS
 | `unicode-category/search-miss` | `Search` | ConsumedGroupZeroRanges | CPython faster | 0.455 us | 0.214 us | 2.12x | 0.326 us | 0.047 us | 0 B |
 | `greedy/search-miss` | `Search` | ConsumedGroupZeroRanges | CPython faster | 1.601 us | 0.221 us | 7.25x | 0.328 us | 0.080 us | 3,552 B |
 | `alternation/search-miss` | `Search` | ConsumedGroupZeroRanges | Unqualified | 0.241 us | 0.238 us | 1.01x | 0.339 us | 0.115 us | 0 B |
-| `common/date-miss` | `IsMatch` | ScalarResult | CPython faster | 11.396 us | 0.865 us | 13.14x | 2.041 us | 2.920 us | 3,568 B |
+| `common/date-miss` | `IsMatch` | ScalarResult | CPython faster | 3.395 us | 0.870 us | 3.91x | 1.025 us | 3.277 us | 3,568 B |
 | `common/ip-match` | `IsMatch` | ScalarResult | Inconclusive | 1.168 us | 0.323 us | 3.60x | 0.485 us | 0.282 us | 3,568 B |
 
 ### Detailed and scalar projections
@@ -405,7 +405,7 @@ These fields prevent a composed host-language operation or a managed decode fall
 | `split/zero-width` | `_sre C Pattern.split` | `owned scalar VM; split; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `split/unicode` | `_sre C Pattern.split` | `owned scalar VM; split; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `split/detailed` | `_sre C Pattern.split + Python split-item metadata projection` | `owned scalar VM; split; item-metadata shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
-| `common/date-miss` | `_sre C Pattern.search` | `Utf8Regex/OwnedScalar; boolean result` | Rbyte 13.52x [13.42, 13.58]; CpythonFaster |
+| `common/date-miss` | `_sre C Pattern.search` | `Utf8Regex/OwnedScalar; boolean result` | Rbyte 4.01x [3.99, 4.04]; CpythonFaster |
 | `common/ip-match` | `_sre C Pattern.search` | `Utf8Regex/OwnedScalar; boolean result` | Rbyte 3.56x [3.39, 3.61]; Inconclusive |
 | `corpus/mail-email-count` | `_sre scanner + Python finditer/sum` | `owned scalar VM; byte-driven Python count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `corpus/code-log-methods` | `_sre scanner + Python finditer/sum` | `owned scalar VM; byte-driven Python count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |

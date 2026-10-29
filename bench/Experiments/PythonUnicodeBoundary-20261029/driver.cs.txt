@@ -1,0 +1,162 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+const string Date = @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b";
+const string DateMiss = "Today is 11/18/201A and tomorrow is 11/19/201A.";
+var before = Load(Path.GetFullPath(args[0]), "baseline");
+var after = Load(Path.GetFullPath(args[1]), "candidate");
+if (Hash(before.Python) == Hash(after.Python) ||
+    !after.Python.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion.Contains(args[2], StringComparison.Ordinal))
+    throw new Exception("Stale or unexpected candidate binary");
+using var process = Process.GetCurrentProcess();
+process.ProcessorAffinity = (nint)4;
+var elapsed = Stopwatch.StartNew();
+var preflightOnly = args.Length > 3 && args[3] == "--preflight";
+var rows = new List<object>();
+foreach (var name in new[] { "date-miss", "date-hit", "finite-token", "dense-candidates", "unicode-hit",
+    "category-edge", "numeric-edge", "ascii-boundary-control", "range-control", "literal-control",
+    "match", "fullmatch", "finite-core-boundary-control", "finite-core-nonbacktracking-control" })
+{
+    var pattern = Date;
+    var text = DateMiss;
+    if (name == "date-hit") text += " On 2/3/2024!";
+    if (name == "dense-candidates") text = string.Concat(Enumerable.Repeat("1a2_ 333z x4445/8/201X ", 256));
+    if (name == "unicode-hit") text = "é11/18/201A 😀11/19/201A. On 2/3/2024!";
+    if (name == "category-edge") text = "\u1c891/2/2024!";
+    if (name == "numeric-edge") text = "²1/2/2024!";
+    if (name == "ascii-boundary-control") { pattern = @"(?a:\b)"; text = string.Concat(Enumerable.Repeat("alpha beta gamma ", 128)); }
+    if (name == "range-control") { pattern = "([a-z]+)"; text = "1234 alpha 5678 beta"; }
+    if (name == "literal-control") { pattern = "alpha"; text = new string('x', 4096); }
+    var input = Encoding.UTF8.GetBytes(text);
+    var core = name.Contains("core-", StringComparison.Ordinal);
+    var options = RegexOptions.CultureInvariant | (name.Contains("nonbacktracking", StringComparison.Ordinal) ? RegexOptions.NonBacktracking : RegexOptions.None);
+    if (core) { pattern = @"\b\w+\b"; text = string.Concat(Enumerable.Repeat("alpha beta gamma ", 128)); input = Encoding.UTF8.GetBytes(text); }
+    if (name is "match" or "fullmatch") { text = "1/2/2024"; input = Encoding.UTF8.GetBytes(text); }
+    var finite = name == "finite-token" || core;
+    var operation = core || name == "ascii-boundary-control" ? "Count" : name == "match" ? "Match" : name == "fullmatch" ? "FullMatch" : "IsMatch";
+    var oraclePattern = operation == "FullMatch" ? @"\A(?:" + pattern + @")\z"
+        : operation == "Match" ? @"\A(?:" + pattern + ")" : pattern;
+    var exclusion = name switch { "category-edge" or "numeric-edge" => "Pinned Python Unicode word membership differs from .NET.",
+        "ascii-boundary-control" => "Python scoped ASCII flag is unsupported by .NET.", _ => (string?)null };
+    var oracle = exclusion is null ? new Regex(oraclePattern, options) : null;
+    int Oracle(string subject) => operation == "Count" ? oracle!.Count(subject) : (operation == "IsMatch" ? oracle!.IsMatch(subject) : oracle!.Match(subject).Success) ? 1 : 0;
+    using var cancellation = new CancellationTokenSource();
+    Func<int> Make((Assembly Core, Assembly Python) assemblies)
+    {
+        var type = core ? assemblies.Core.GetType("Lokad.Utf8Regex.Utf8Regex")! : assemblies.Python.GetType("Lokad.Utf8Regex.PythonRe.Utf8PythonRegex")!;
+        object owner;
+        if (finite)
+        {
+            var optionsType = core ? typeof(RegexOptions) : assemblies.Python.GetType("Lokad.Utf8Regex.PythonRe.PythonReCompileOptions")!;
+            var policyType = assemblies.Core.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!;
+            var policy = Activator.CreateInstance(policyType)!;
+            foreach (var (key, value) in new[] { ("MaxWorkSteps", 10000000UL), ("MaxDepth", 4096UL),
+                ("MaxWorkingBytes", 16777216UL), ("MaxResultBytes", 16777216UL) })
+            {
+                var property = policyType.GetProperty(key)!;
+                property.SetValue(policy, Convert.ChangeType(value, Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType));
+            }
+            owner = type.GetConstructor([typeof(string), optionsType, typeof(TimeSpan), policyType])!
+                .Invoke([pattern, core ? options : Enum.ToObject(optionsType, 0), Timeout.InfiniteTimeSpan, policy]);
+            if (core)
+            {
+                var count = type.GetMethod("Count", [typeof(ReadOnlySpan<byte>), typeof(CancellationToken)])!.CreateDelegate<TokenCount>(owner);
+                return () => count(input, cancellation.Token);
+            }
+            var call = type.GetMethod(operation, [typeof(ReadOnlySpan<byte>), typeof(int), typeof(CancellationToken)])!
+                .CreateDelegate<TokenBool>(owner);
+            return () => call(input, 0, cancellation.Token) ? 1 : 0;
+        }
+        owner = type.GetConstructor([typeof(string)])!.Invoke([pattern]);
+        var method = type.GetMethod(operation, [typeof(ReadOnlySpan<byte>)])!;
+        if (operation == "IsMatch")
+        {
+            var call = method.CreateDelegate<SpanBool>(owner);
+            return () => call(input) ? 1 : 0;
+        }
+        if (operation == "Count")
+        {
+            var call = method.CreateDelegate<SpanCount>(owner);
+            return () => call(input);
+        }
+        // Consume the public value result without boxing its span-based arguments.
+        var bridge = new DynamicMethod(operation + "Success", typeof(bool), [typeof(object), typeof(byte[])], typeof(Program).Module, true);
+        var il = bridge.GetILGenerator();
+        var result = il.DeclareLocal(method.ReturnType);
+        il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Castclass, type);
+        il.Emit(OpCodes.Ldarg_1); il.Emit(OpCodes.Newobj, typeof(ReadOnlySpan<byte>).GetConstructor([typeof(byte[])])!);
+        il.Emit(OpCodes.Call, method); il.Emit(OpCodes.Stloc, result);
+        il.Emit(OpCodes.Ldloca, result); il.Emit(OpCodes.Call, method.ReturnType.GetProperty("Success")!.GetMethod!);
+        il.Emit(OpCodes.Ret);
+        var valueCall = bridge.CreateDelegate<Func<object, byte[], bool>>();
+        return () => valueCall(owner, input) ? 1 : 0;
+    }
+    var baselineAction = Make(before);
+    var expected = baselineAction();
+    Func<int>[] actions = exclusion is null ? [baselineAction, Make(after), () => Oracle(text), () => Oracle(Encoding.UTF8.GetString(input))] : [baselineAction, Make(after)];
+    var laneCount = actions.Length;
+    for (var lane = 0; lane < laneCount; lane++)
+        if (actions[lane]() != expected) throw new Exception($"Preflight mismatch: {name}, lane {lane}");
+    if (preflightOnly) { Console.Error.WriteLine($"Preflight {name}: {expected}"); continue; }
+    var iterations = new int[laneCount]; var warmupCalls = new int[laneCount]; var warmupMilliseconds = new double[laneCount];
+    for (var lane = 0; lane < laneCount; lane++)
+    {
+        if (actions[lane]() != expected) throw new Exception($"Preflight mismatch: {name}, lane {lane}");
+        var warmup = Stopwatch.StartNew();
+        do { Loop(1, actions[lane]); warmupCalls[lane]++; } while (warmup.ElapsedMilliseconds < 1000);
+        warmupMilliseconds[lane] = warmup.Elapsed.TotalMilliseconds;
+        var count = 1; var probe = Loop(count, actions[lane]);
+        while (probe.Milliseconds < 20 && count < 1000000) { count *= 2; probe = Loop(count, actions[lane]); }
+        iterations[lane] = (int)Math.Clamp(Math.Ceiling(count * 50 / Math.Max(probe.Milliseconds, 0.000001)), 1, 1000000);
+    }
+    var times = Enumerable.Range(0, laneCount).Select(_ => new double[3]).ToArray();
+    var allocations = Enumerable.Range(0, laneCount).Select(_ => new double[3]).ToArray();
+    for (var sample = 0; sample < 3; sample++)
+    for (var position = 0; position < laneCount; position++)
+    {
+        var lane = sample % 2 == 0 ? position : laneCount - 1 - position;
+        GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        var result = Loop(iterations[lane], actions[lane]);
+        if (result.Last != expected) throw new Exception("Timed mismatch");
+        times[lane][sample] = result.Milliseconds * 1000 / iterations[lane];
+        allocations[lane][sample] = (double)result.Bytes / iterations[lane];
+    }
+    rows.Add(new { Name = name, Profile = core ? "Core" : "PythonRe", Operation = operation, Pattern = pattern, InputBytes = input.Length, DiagnosticExclusion = exclusion,
+        InputSha256 = Convert.ToHexString(SHA256.HashData(input)), Expected = expected, FiniteAndLiveToken = finite,
+        Iterations = iterations, WarmupCalls = warmupCalls, WarmupMilliseconds = warmupMilliseconds,
+        Microseconds = times, AllocatedBytes = allocations });
+    Console.Error.WriteLine($"Completed {name}: {string.Join(" / ", times.Select(t => t.Order().ElementAt(1)))} us/op");
+}
+Console.WriteLine(JsonSerializer.Serialize(new { Runtime = RuntimeInformation.FrameworkDescription, CpuAffinityMask = "4",
+    ElapsedSeconds = elapsed.Elapsed.TotalSeconds, LaneNames = new[] { "Baseline", "Candidate", "DiagnosticPredecodedRegex", "DiagnosticDecodeThenRegex" },
+    Baseline = new { Core = Identity(before.Core), Python = Identity(before.Python) },
+    Candidate = new { Core = Identity(after.Core), Python = Identity(after.Python) }, Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+static (Assembly Core, Assembly Python) Load(string root, string name)
+{
+    var context = new AssemblyLoadContext(name);
+    context.Resolving += (ctx, n) => File.Exists(Path.Combine(root, n.Name + ".dll")) ? ctx.LoadFromAssemblyPath(Path.Combine(root, n.Name + ".dll")) : null;
+    return (context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.dll")),
+        context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.PythonRe.dll")));
+}
+static string Hash(Assembly assembly) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location)));
+static object Identity(Assembly assembly) => new { Version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion, Sha256 = Hash(assembly) };
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds, long Bytes, int Last) Loop(int count, Func<int> action)
+{
+    var value = 0; var bytes = GC.GetAllocatedBytesForCurrentThread(); var start = Stopwatch.GetTimestamp();
+    for (var i = 0; i < count; i++) value = action();
+    var elapsed = Stopwatch.GetElapsedTime(start);
+    return (elapsed.TotalMilliseconds, GC.GetAllocatedBytesForCurrentThread() - bytes, value);
+}
+delegate bool SpanBool(ReadOnlySpan<byte> input);
+delegate bool TokenBool(ReadOnlySpan<byte> input, int start, CancellationToken token);
+delegate int SpanCount(ReadOnlySpan<byte> input);
+delegate int TokenCount(ReadOnlySpan<byte> input, CancellationToken token);
