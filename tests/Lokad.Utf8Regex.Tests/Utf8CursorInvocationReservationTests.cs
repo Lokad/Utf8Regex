@@ -143,6 +143,9 @@ public sealed class Utf8CursorInvocationReservationTests
         var flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
         Assert.Null(typeof(Utf8NonBacktrackingSearchState).GetMethod("Finalize", flags));
         Assert.Null(typeof(Utf8BoundaryMap).GetField("_storageLease", flags));
-        Assert.DoesNotContain(typeof(Utf8StorageLedger).GetFields(flags), field => !field.FieldType.IsValueType);
+        // Borrowing caller admission authority does not restore payload roots,
+        // collection-triggered refunds or a retained-object accounting graph.
+        Assert.DoesNotContain(typeof(Utf8StorageLedger).GetFields(flags), field =>
+            !field.FieldType.IsValueType && field.FieldType != typeof(IUtf8MemoryAllowance));
     }
 }
