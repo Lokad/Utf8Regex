@@ -1,0 +1,22 @@
+focused.log
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:   149, Skipped:     0, Total:   149, Duration: 535 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net11.0)
+
+Passed!  - Failed:     0, Passed:   149, Skipped:     0, Total:   149, Duration: 552 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)
+
+pcre2-full.log
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:  6220, Skipped:     0, Total:  6220, Duration: 9 s - Lokad.Utf8Regex.Pcre2.Tests.dll (net11.0)
+
+Passed!  - Failed:     0, Passed:  6220, Skipped:     0, Total:  6220, Duration: 10 s - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)
+
+final-source-guards.log
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:    13, Skipped:     0, Total:    13, Duration: 279 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)
+
+Passed!  - Failed:     0, Passed:    13, Skipped:     0, Total:    13, Duration: 254 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net11.0)
+
+Reverted at 98e18ca5; src/, tests/ and CHANGELOG.md match 14ed10d9 exactly.

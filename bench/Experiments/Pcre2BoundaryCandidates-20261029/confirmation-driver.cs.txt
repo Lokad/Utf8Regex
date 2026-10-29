@@ -1,0 +1,133 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+const string Date = @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b";
+var before = Load(Path.GetFullPath(args[0]), "baseline");
+var after = Load(Path.GetFullPath(args[1]), "candidate");
+if (Hash(before.Adapter) == Hash(after.Adapter) || !after.Adapter.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion.Contains(args[2], StringComparison.Ordinal))
+    throw new Exception("Stale or unexpected candidate");
+var preflight = args.Length > 3 && args[3] == "--preflight";
+var selected = args.Length > 3 && !preflight ? args[3].Split(',').ToHashSet(StringComparer.Ordinal) : null;
+using var process = Process.GetCurrentProcess(); process.ProcessorAffinity = (nint)4;
+var elapsed = Stopwatch.StartNew(); var rows = new List<object>();
+foreach (var name in new[] { "date-hit", "date-miss", "finite-hit", "finite-miss", "no-digit-miss", "dense-candidates",
+    "dense-count", "unicode", "captured-count", "nonword-count", "ucp-control", "candidate-control", "literal-control" })
+{
+    if (selected is not null && !selected.Contains(name)) continue;
+    var pattern = Date;
+    var text = "Today is 11/18/201A and tomorrow is 11/19/201A.";
+    if (name is "date-hit" or "finite-hit") text = "Today is 11/18/2010 and tomorrow is 11/19/201A.";
+    if (name == "no-digit-miss") text = new string('x', 4096);
+    if (name == "dense-candidates") text = string.Concat(Enumerable.Repeat("xx 11/18/201A ", 256));
+    if (name is "dense-count" or "captured-count") text = string.Concat(Enumerable.Repeat("1/2/2024! ", 128));
+    if (name == "captured-count") pattern = @"\b(?<d>\d{1,2}\/\d{1,2}\/\d{2,4})\b";
+    if (name == "unicode") text = "😀1/2/2024é 12/3/2025😀";
+    if (name == "nonword-count") { pattern = @"\B\d+"; text = string.Concat(Enumerable.Repeat("a123_ 456 ", 128)); }
+    if (name == "ucp-control") text = "é11/18/201A and 1/2/2024 😀";
+    if (name == "candidate-control") { pattern = "[a-z]+@[a-z]+"; text = "123 foo@bar tail"; }
+    if (name == "literal-control") { pattern = "alpha"; text = new string('x', 4096); }
+    var operation = name.EndsWith("count", StringComparison.Ordinal) ? "Count" : "IsMatch";
+    var finite = name.StartsWith("finite-", StringComparison.Ordinal);
+    var input = Encoding.UTF8.GetBytes(text);
+    var diagnosticExclusion = name == "unicode" ? "PCRE2 default word membership is ASCII; .NET default word membership is Unicode." : null;
+    var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
+    int Oracle(string subject) => operation == "Count" ? oracle.Count(subject) : oracle.IsMatch(subject) ? 1 : 0;
+    using var token = new CancellationTokenSource();
+    Func<int> Make((Assembly Core, Assembly Adapter) assemblies)
+    {
+        var type = assemblies.Adapter.GetType("Lokad.Utf8Regex.Pcre2.Utf8Pcre2Regex")!;
+        var optionsType = assemblies.Adapter.GetType("Lokad.Utf8Regex.Pcre2.Pcre2CompileOptions")!;
+        object owner;
+        if (finite)
+        {
+            var policyType = assemblies.Core.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!;
+            var policy = Activator.CreateInstance(policyType)!;
+            foreach (var (key, value) in new[] { ("MaxWorkSteps", 10000000UL), ("MaxDepth", 4096UL),
+                ("MaxWorkingBytes", 16777216UL), ("MaxResultBytes", 16777216UL) })
+            {
+                var property = policyType.GetProperty(key)!;
+                property.SetValue(policy, Convert.ChangeType(value, Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType));
+            }
+            var settings = assemblies.Adapter.GetType("Lokad.Utf8Regex.Pcre2.Utf8Pcre2CompileSettings")!;
+            owner = type.GetMethod("Create", [typeof(string), optionsType, settings, policyType, typeof(TimeSpan)])!
+                .Invoke(null, [pattern, Enum.ToObject(optionsType, 0), Activator.CreateInstance(settings), policy, Timeout.InfiniteTimeSpan])!;
+            var matchOptions = assemblies.Adapter.GetType("Lokad.Utf8Regex.Pcre2.Pcre2MatchOptions")!;
+            var method = type.GetMethod("IsMatch", [typeof(ReadOnlySpan<byte>), typeof(int), matchOptions, typeof(CancellationToken)])!;
+            var bridge = new DynamicMethod("PublicPcre2IsMatch", typeof(bool), [typeof(object), typeof(ReadOnlySpan<byte>), typeof(CancellationToken)]);
+            var il = bridge.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Castclass, type); il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Ldc_I4_0); il.Emit(OpCodes.Ldc_I4_0); il.Emit(OpCodes.Ldarg_2);
+            il.Emit(OpCodes.Callvirt, method); il.Emit(OpCodes.Ret);
+            var call = bridge.CreateDelegate<TokenBool>(owner);
+            return () => call(input, token.Token) ? 1 : 0;
+        }
+        owner = name == "ucp-control" ? type.GetConstructor([typeof(string), optionsType])!
+            .Invoke([pattern, Enum.Parse(optionsType, "Ucp")]) : type.GetConstructor([typeof(string)])!.Invoke([pattern]);
+        if (operation == "Count")
+        {
+            var call = type.GetMethod("Count", [typeof(ReadOnlySpan<byte>)])!.CreateDelegate<SpanCount>(owner);
+            return () => call(input);
+        }
+        var boolean = type.GetMethod("IsMatch", [typeof(ReadOnlySpan<byte>)])!.CreateDelegate<SpanBool>(owner);
+        return () => boolean(input) ? 1 : 0;
+    }
+    var baseline = Make(before); var expected = baseline();
+    Func<int>[] actions = diagnosticExclusion is null ? [baseline, Make(after), () => Oracle(text), () => Oracle(Encoding.UTF8.GetString(input))] : [baseline, Make(after)];
+    var lanes = actions.Length;
+    for (var lane = 0; lane < lanes; lane++) if (actions[lane]() != expected) throw new Exception($"Preflight mismatch: {name}, lane {lane}");
+    if (preflight) { Console.Error.WriteLine($"Preflight {name}: {expected}"); continue; }
+    var iterations = new int[lanes]; var warmupCalls = new int[lanes]; var warmupMs = new double[lanes];
+    for (var lane = 0; lane < lanes; lane++)
+    {
+        var warm = Stopwatch.StartNew();
+        do { Loop(1, actions[lane]); warmupCalls[lane]++; } while (warm.ElapsedMilliseconds < 1000);
+        warmupMs[lane] = warm.Elapsed.TotalMilliseconds;
+        var count = 1; var probe = Loop(count, actions[lane]);
+        while (probe.Milliseconds < 20 && count < 1000000) { count = Math.Min(count * 2, 1000000); probe = Loop(count, actions[lane]); }
+        iterations[lane] = (int)Math.Clamp(Math.Ceiling(count * 50 / Math.Max(probe.Milliseconds, 0.000001)), 1, 1000000);
+    }
+    var times = Enumerable.Range(0, lanes).Select(_ => new double[3]).ToArray();
+    var allocations = Enumerable.Range(0, lanes).Select(_ => new double[3]).ToArray();
+    for (var sample = 0; sample < 3; sample++)
+    for (var position = 0; position < lanes; position++)
+    {
+        var lane = sample % 2 == 0 ? position : lanes - 1 - position;
+        GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        var result = Loop(iterations[lane], actions[lane]); if (result.Last != expected) throw new Exception("Timed result mismatch");
+        times[lane][sample] = result.Milliseconds * 1000 / iterations[lane]; allocations[lane][sample] = (double)result.Bytes / iterations[lane];
+    }
+    rows.Add(new { Name = name, Operation = operation, Pattern = pattern, Options = name == "ucp-control" ? "Ucp" : "None", FiniteAndLiveToken = finite,
+        InputBytes = input.Length, InputSha256 = Convert.ToHexString(SHA256.HashData(input)), Expected = expected, DiagnosticExclusion = diagnosticExclusion,
+        Iterations = iterations, WarmupCalls = warmupCalls, WarmupMilliseconds = warmupMs, Microseconds = times, AllocatedBytes = allocations });
+    Console.Error.WriteLine($"Completed {name}: {string.Join(" / ", times.Select(t => t.Order().ElementAt(1)))} us/op");
+}
+Console.WriteLine(JsonSerializer.Serialize(new { Runtime = RuntimeInformation.FrameworkDescription, CpuAffinityMask = "4", ElapsedSeconds = elapsed.Elapsed.TotalSeconds,
+    LaneNames = new[] { "Baseline", "Candidate", "DiagnosticPredecodedRegex", "DiagnosticDecodeThenRegex" },
+    Baseline = new { Core = Identity(before.Core), Pcre2 = Identity(before.Adapter) },
+    Candidate = new { Core = Identity(after.Core), Pcre2 = Identity(after.Adapter) }, Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+static (Assembly Core, Assembly Adapter) Load(string root, string name)
+{
+    var context = new AssemblyLoadContext(name);
+    context.Resolving += (ctx, n) => File.Exists(Path.Combine(root, n.Name + ".dll")) ? ctx.LoadFromAssemblyPath(Path.Combine(root, n.Name + ".dll")) : null;
+    return (context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.dll")), context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.Pcre2.dll")));
+}
+static string Hash(Assembly a) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(a.Location)));
+static object Identity(Assembly a) => new { Version = a.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion, Sha256 = Hash(a) };
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds, long Bytes, int Last) Loop(int count, Func<int> action)
+{
+    var value = 0; var bytes = GC.GetAllocatedBytesForCurrentThread(); var start = Stopwatch.GetTimestamp();
+    for (var i = 0; i < count; i++) value = action();
+    return (Stopwatch.GetElapsedTime(start).TotalMilliseconds, GC.GetAllocatedBytesForCurrentThread() - bytes, value);
+}
+delegate bool SpanBool(ReadOnlySpan<byte> input);
+delegate bool TokenBool(ReadOnlySpan<byte> input, CancellationToken token);
+delegate int SpanCount(ReadOnlySpan<byte> input);
