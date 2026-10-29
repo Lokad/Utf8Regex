@@ -12,6 +12,7 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonDetailedMatchData[] FindIterDetailedCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         FindIterScalar(input, startOffsetInBytes, cancellationToken, out var scalarResult);
         return scalarResult;
     }

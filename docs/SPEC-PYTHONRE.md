@@ -103,6 +103,28 @@ construction policy/timeout/token. One owner covers decoding, parsing, semantic
 validation, lowering, metadata and eager FullMatch preparation. It does not
 consult static caches or retain construction authority.
 
+The `Compile` overloads ending in `programMemoryAllowance` admit covered
+construction storage through the caller's `IUtf8MemoryAllowance`, then retain a
+conservative completed-program charge. This is neither construction peak nor
+exact heap size; coarse helper charges and shared storage can be overcounted.
+Failure/cancellation refunds that compilation's discarded reservations. An
+omitted `MaxBytes` adds no private byte cap on these overloads; an explicit byte
+limit and existing instruction/work/depth backstops still apply.
+
+Dispose a funded expression when finished. Disposal closes new matching uses
+with `ObjectDisposedException` and returns its program charge once already
+active operations and cursors finish. It does not wait, cancel those operations,
+or depend on a finalizer. Dispose abandoned cursors explicitly; retained range
+snapshots keep their borrowed-input contract and owned snapshots remain valid.
+Metadata remains readable. Disposal of expressions created without a program
+allowance is a no-op. Construction tokens never become later execution authority.
+
+Program funding and the cursor's shared **working** allowance are separate
+explicit parameters; a host can supply the same account to both. Replacement
+preparation/cache retention, incidental objects and caller-retained output are
+outside these funded-program/working scopes. This is not yet aggregate memory
+admission for every PythonRe operation or a process-memory bound.
+
 Syntax/reference/lookbehind validation precedes optional native rendering.
 The owned Python scalar program is authoritative. Optional Core preparation is
 retained only for eligible shared native operations/search hints; backend presence

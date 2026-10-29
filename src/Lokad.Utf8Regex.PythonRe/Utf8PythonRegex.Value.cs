@@ -28,6 +28,7 @@ public sealed partial class Utf8PythonRegex
 
     private bool IsMatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         if (_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 &&
             !HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
             return _utf8Regex.IsMatch(input, cancellationToken);
@@ -45,6 +46,7 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonValueMatch SearchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         if (_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 &&
             !HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
         {
@@ -75,6 +77,7 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonValueMatch MatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         if (startOffsetInBytes == 0 && _asciiLiteralPrefixDigitMatchPrefix is not null &&
             !HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan)
         {
@@ -110,6 +113,7 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonValueMatch FullMatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         ValidateScalarStartOffset(input, startOffsetInBytes);
         if (CanUseLiteralFullMatch ||
             _asciiDotAllFullMatchPrefix is not null && _asciiDotAllFullMatchSuffix is not null &&
@@ -149,6 +153,7 @@ public sealed partial class Utf8PythonRegex
 
     private int CountCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         ValidateStartOffset(input, startOffsetInBytes);
         // The native rendering intentionally has exact references. Other shapes
         // keep lexical profile comparison, apart from the proven exact literal.

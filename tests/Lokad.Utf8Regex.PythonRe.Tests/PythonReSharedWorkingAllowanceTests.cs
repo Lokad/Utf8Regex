@@ -139,7 +139,7 @@ public sealed class PythonReSharedWorkingAllowanceTests
         Assert.Equal(0UL, allowance.Used); Assert.Equal("z", Encoding.UTF8.GetString(retained.GetValueMemory().Span));
     }
 
-    private sealed class Allowance(ulong maximum) : IUtf8MemoryAllowance
+    internal sealed class Allowance(ulong maximum) : IUtf8MemoryAllowance
     {
         private readonly object _gate = new();
         private ulong _maximum = maximum;

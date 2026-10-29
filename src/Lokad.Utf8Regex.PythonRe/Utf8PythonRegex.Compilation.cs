@@ -36,20 +36,30 @@ public sealed partial class Utf8PythonRegex
     private static Utf8PythonRegex Compile(Utf8ConstructionPattern pattern, PythonReCompileOptions options,
         TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
         Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, IUtf8MemoryAllowance? programMemoryAllowance = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
         constructionPolicy.Validate(nameof(constructionPolicy));
         resourcePolicy.Validate(nameof(resourcePolicy));
         Utf8MatchTimeout.Validate(constructionTimeout, nameof(constructionTimeout));
-        using var construction = Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, cancellationToken);
+        using var construction = programMemoryAllowance is null
+            ? Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, cancellationToken)
+            : Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, cancellationToken, programMemoryAllowance);
         try
         {
             var result = new Utf8PythonRegex(pattern, options, matchTimeout, resourcePolicy, checkPolicy: true);
             // Explicit compilation finishes both operation programs under this
             // one owner. Do not retain its policy/token for later invocations.
             _ = result._lazyScalarFullProgram.Value;
-            construction.Budget.ChargeWork(0);
+            if (programMemoryAllowance is not null)
+            {
+                var owner = construction.Budget.AllocateObject(programMemoryAllowance,
+                    static allowance => new PythonReProgramMemory(allowance));
+                construction.Budget.ChargeWork(0);
+                owner.Retain(construction.Budget.TransferFundedBytes());
+                result._programMemory = owner;
+            }
+            else construction.Budget.ChargeWork(0);
             construction.Complete();
             return result;
         }
@@ -60,5 +70,31 @@ public sealed partial class Utf8PythonRegex
             throw new System.Text.RegularExpressions.RegexMatchTimeoutException(string.Empty,
                 pattern.IsUtf8 ? string.Empty : pattern.Text, constructionTimeout);
         }
+    }
+
+    /// <summary>Compiles and retains an eager program under caller-owned construction/program admission.</summary>
+    /// <remarks>Dispose the expression to close new uses and refund after existing operations/cursors finish. The shared allowance covers modeled construction and a conservative completed-program charge, not construction peak. Null MaxBytes imposes no additional construction-byte cap on this overload; work/depth/instruction backstops remain. Working/result/cache-preparation and caller retention keep their separately documented scopes.</remarks>
+    public static Utf8PythonRegex Compile(string pattern, PythonReCompileOptions options,
+        TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
+        Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout,
+        CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(programMemoryAllowance);
+        return Compile(new Utf8ConstructionPattern(pattern), options, matchTimeout, resourcePolicy,
+            constructionPolicy, constructionTimeout, cancellationToken, programMemoryAllowance);
+    }
+
+    /// <summary>Compiles strict UTF-8 pattern bytes with caller-owned construction/program funding.</summary>
+    /// <remarks>Admission precedes decoding, parsing and eager FullMatch preparation. Dispose closes matching use; existing snapshots remain valid. Working/result/cache-preparation and caller retention are separate scopes.</remarks>
+    public static Utf8PythonRegex Compile(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options,
+        TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
+        Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout,
+        CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(programMemoryAllowance);
+        return Compile(new Utf8ConstructionPattern(patternUtf8), options, matchTimeout, resourcePolicy,
+            constructionPolicy, constructionTimeout, cancellationToken, programMemoryAllowance);
     }
 }

@@ -8,6 +8,7 @@ public sealed partial class Utf8PythonRegex
     private string? MatchToStringCore(ReadOnlySpan<byte> input, int startOffsetInBytes,
         int kind, CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         ValidateScalarStartOffset(input, startOffsetInBytes);
         var native = kind == 2 && CanUseLiteralFullMatch ||
             !HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&

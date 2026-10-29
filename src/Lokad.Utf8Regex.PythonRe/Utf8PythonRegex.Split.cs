@@ -14,6 +14,7 @@ public sealed partial class Utf8PythonRegex
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        using var programUse = EnterProgramUse();
         return SplitRangesScalar(input, maxSplit, startOffsetInBytes, cancellationToken);
     }
 
@@ -29,6 +30,7 @@ public sealed partial class Utf8PythonRegex
 
     private string?[] SplitToStringsCore(ReadOnlySpan<byte> input, int maxSplit, int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         SplitScalar(input, maxSplit, startOffsetInBytes, cancellationToken, true, out _, out var values);
         return values;
     }
@@ -57,6 +59,7 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonSplitItem[] SplitDetailedCore(ReadOnlySpan<byte> input, int maxSplit, int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         SplitScalar(input, maxSplit, startOffsetInBytes, cancellationToken, false, out var items, out _);
         return items;
     }

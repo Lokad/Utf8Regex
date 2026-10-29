@@ -24,10 +24,15 @@ public sealed partial class Utf8PythonRegex
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
-        ValidateScalarStartOffset(input.Span, startOffsetInBytes);
-        return new Utf8PythonMatchCursor(input, ScalarProgram,
-            _nameEntries, startOffsetInBytes, MatchTimeout, Pattern, invocation, _utf8Regex);
+        var programUse = EnterProgramUse();
+        try
+        {
+            var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+            ValidateScalarStartOffset(input.Span, startOffsetInBytes);
+            return new Utf8PythonMatchCursor(input, ScalarProgram,
+                _nameEntries, startOffsetInBytes, MatchTimeout, Pattern, invocation, _utf8Regex, programUse);
+        }
+        catch { programUse?.Dispose(); throw; }
     }
 
     /// <summary>Creates a cursor whose modeled active working storage is funded by a caller-owned allowance.</summary>
@@ -38,9 +43,14 @@ public sealed partial class Utf8PythonRegex
     {
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(workingMemoryAllowance);
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
-        ValidateScalarStartOffset(input.Span, startOffsetInBytes);
-        return new Utf8PythonMatchCursor(input, ScalarProgram,
-            _nameEntries, startOffsetInBytes, MatchTimeout, Pattern, invocation, _utf8Regex);
+        var programUse = EnterProgramUse();
+        try
+        {
+            var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
+            ValidateScalarStartOffset(input.Span, startOffsetInBytes);
+            return new Utf8PythonMatchCursor(input, ScalarProgram,
+                _nameEntries, startOffsetInBytes, MatchTimeout, Pattern, invocation, _utf8Regex, programUse);
+        }
+        catch { programUse?.Dispose(); throw; }
     }
 }

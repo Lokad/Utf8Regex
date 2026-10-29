@@ -37,6 +37,7 @@ internal sealed class Utf8ConstructionScope : IDisposable
     private bool _restrictedBytes;
     private ulong _previousByteMaximum;
     private ulong _previousBytePeak;
+    private readonly bool _ownsFunding;
 
     internal Utf8ConstructionScope(ulong maximum)
         : this(maximum, DefaultBufferBytes)
@@ -49,9 +50,16 @@ internal sealed class Utf8ConstructionScope : IDisposable
     }
 
     internal Utf8ConstructionScope(ulong maximum, ulong maximumBytes, ulong maximumWorkSteps, ulong maximumDepth)
+        : this(maximum, maximumBytes, maximumWorkSteps, maximumDepth, null)
+    {
+    }
+
+    private Utf8ConstructionScope(ulong maximum, ulong maximumBytes, ulong maximumWorkSteps, ulong maximumDepth,
+        IUtf8MemoryAllowance? memoryAllowance)
     {
         _previous = s_current;
-        Budget = _previous?.Budget ?? new Utf8ConstructionBudget(maximum, maximumBytes, maximumWorkSteps, maximumDepth);
+        Budget = _previous?.Budget ?? new Utf8ConstructionBudget(maximum, maximumBytes, maximumWorkSteps, maximumDepth, memoryAllowance);
+        _ownsFunding = _previous is null && memoryAllowance is not null;
         _checkpoint = Budget.Reserved;
         _byteCheckpoint = Budget.ReservedBytes;
         _depthCheckpoint = Budget.Depth;
@@ -86,6 +94,22 @@ internal sealed class Utf8ConstructionScope : IDisposable
         return scope;
     }
 
+    internal static Utf8ConstructionScope Enter(Utf8ConstructionPolicy policy,
+        TimeSpan timeout, CancellationToken cancellationToken, IUtf8MemoryAllowance memoryAllowance)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (s_current is not null)
+            throw new InvalidOperationException("An explicit compilation cannot replace an active construction owner.");
+        var scope = new Utf8ConstructionScope(
+            Math.Min(policy.MaxInstructionCapacity ?? DefaultInstructionCapacity, DefaultInstructionCapacity),
+            policy.MaxBytes ?? ulong.MaxValue,
+            Math.Min(policy.MaxWorkSteps ?? DefaultWorkSteps, DefaultWorkSteps),
+            Math.Min(policy.MaxDepth ?? DefaultDepth, DefaultDepth), memoryAllowance);
+        scope.Budget.CancellationToken = cancellationToken;
+        scope.Budget.Deadline = Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline.Start(timeout);
+        return scope;
+    }
+
     // PCRE2-INTEGRATION-POINT: reuse this numeric owner and its allocation
     // admissions, restoring both the parent limit and historical peak on exit.
     internal static Utf8ConstructionScope RestrictAdditionalBytes(ulong additional)
@@ -107,6 +131,7 @@ internal sealed class Utf8ConstructionScope : IDisposable
         if (!ReferenceEquals(s_current, this))
             throw new InvalidOperationException("Construction scopes must close in lexical order.");
         if (!_completed) Budget.Rollback(_checkpoint, _byteCheckpoint, _depthCheckpoint);
+        if (_ownsFunding) Budget.ReleaseBytes(Budget.ReservedBytes);
         if (_restrictedBytes) Budget.RestoreByteLimit(_previousByteMaximum, _previousBytePeak);
         s_current = _previous;
         _disposed = true;

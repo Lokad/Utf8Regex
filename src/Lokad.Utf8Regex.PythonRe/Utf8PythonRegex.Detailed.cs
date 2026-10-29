@@ -13,6 +13,7 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonMatchContext SearchDetailedCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         return MatchContextScalar(input, startOffsetInBytes, 0, cancellationToken);
     }
 
@@ -36,6 +37,7 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonMatchContext MatchDetailedCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         return MatchContextScalar(input, startOffsetInBytes, 1, cancellationToken);
     }
 
@@ -59,6 +61,7 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonMatchContext FullMatchDetailedCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         return MatchContextScalar(input, startOffsetInBytes, 2, cancellationToken);
     }
 
@@ -142,6 +145,7 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonDetailedMatchData SearchDetailedDataCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         return MatchDataScalar(input, startOffsetInBytes, 0, cancellationToken);
     }
 
@@ -165,6 +169,7 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonDetailedMatchData MatchDetailedDataCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         return MatchDataScalar(input, startOffsetInBytes, 1, cancellationToken);
     }
 
@@ -188,6 +193,7 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonDetailedMatchData FullMatchDetailedDataCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         return MatchDataScalar(input, startOffsetInBytes, 2, cancellationToken);
     }
 

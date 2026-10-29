@@ -11,19 +11,34 @@ namespace Lokad.Utf8Regex.Internal;
 /// Shared empties and borrowed payloads are excluded. Dead helpers are not rooted
 /// merely for accounting; their charges persist until scope completion/rollback.
 /// This is covered capacity, not RSS or arbitrary GC allocation traffic.</summary>
-internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, ulong maximumWorkSteps, ulong maximumDepth)
+internal sealed class Utf8ConstructionBudget
 {
+    private readonly IUtf8MemoryAllowance? _memoryAllowance;
+
+    internal Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, ulong maximumWorkSteps, ulong maximumDepth)
+        : this(maximum, maximumBytes, maximumWorkSteps, maximumDepth, null) { }
+
+    internal Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, ulong maximumWorkSteps, ulong maximumDepth,
+        IUtf8MemoryAllowance? memoryAllowance)
+    {
+        Maximum = maximum;
+        MaximumBytes = maximumBytes;
+        MaximumWorkSteps = maximumWorkSteps;
+        MaximumDepth = maximumDepth;
+        _memoryAllowance = memoryAllowance;
+    }
+
     internal Utf8ConstructionBudget(ulong maximum, ulong maximumBytes)
         : this(maximum, maximumBytes, Utf8ConstructionScope.DefaultWorkSteps, Utf8ConstructionScope.DefaultDepth) { }
 
-    internal ulong Maximum { get; } = maximum;
-    internal ulong MaximumBytes { get; private set; } = maximumBytes;
+    internal ulong Maximum { get; }
+    internal ulong MaximumBytes { get; private set; }
     internal ulong Reserved { get; private set; }
     internal ulong Peak { get; private set; }
     internal ulong ReservedBytes { get; private set; }
     internal ulong PeakBytes { get; private set; }
-    internal ulong MaximumWorkSteps { get; } = maximumWorkSteps;
-    internal ulong MaximumDepth { get; } = maximumDepth;
+    internal ulong MaximumWorkSteps { get; }
+    internal ulong MaximumDepth { get; }
     internal ulong WorkSteps { get; private set; }
     internal ulong Depth { get; private set; }
     internal ulong PeakDepth { get; private set; }
@@ -269,6 +284,8 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
     internal void ReserveBytes(ulong bytes)
     {
         CheckBytes(bytes);
+        if (bytes != 0 && _memoryAllowance is not null && !_memoryAllowance.TryReserve(bytes))
+            throw new Utf8MemoryAdmissionException(bytes);
         ReservedBytes += bytes;
         PeakBytes = Math.Max(PeakBytes, ReservedBytes);
     }
@@ -315,6 +332,7 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
     {
         if (bytes > ReservedBytes) throw new InvalidOperationException("Construction release exceeds admitted buffer capacity.");
         ReservedBytes -= bytes;
+        if (bytes != 0) _memoryAllowance?.Release(bytes);
     }
 
     internal void ReleaseArray<T>(T[] array, bool instructions)
@@ -336,7 +354,17 @@ internal sealed class Utf8ConstructionBudget(ulong maximum, ulong maximumBytes, 
         if (checkpoint > Reserved || byteCheckpoint > ReservedBytes || depthCheckpoint > Depth)
             throw new InvalidOperationException("Construction rollback exceeds admitted capacity.");
         Reserved = checkpoint;
-        ReservedBytes = byteCheckpoint;
+        ReleaseBytes(ReservedBytes - byteCheckpoint);
         Depth = depthCheckpoint;
+    }
+
+    // Successful publication transfers a covered completed-program charge to
+    // its explicit lifetime. This is not the transient construction peak.
+    internal ulong TransferFundedBytes()
+    {
+        if (_memoryAllowance is null) throw new InvalidOperationException("No caller-owned construction funding is active.");
+        var bytes = ReservedBytes;
+        ReservedBytes = 0;
+        return bytes;
     }
 }

@@ -20,6 +20,7 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonMatchData[] FindAllCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         if (((HasFiniteExecutionLimits || cancellationToken.CanBeCanceled) && !HasPreparedExactLiteralFamily) ||
             _canMatchEmpty || CaptureGroupCount > 0 || !_canUseUtf8IterationFastPath)
         {
@@ -55,6 +56,7 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonFindAllResult FindAllToStringsCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         if (((HasFiniteExecutionLimits || cancellationToken.CanBeCanceled) && !HasPreparedExactLiteralFamily) ||
             _canMatchEmpty || CaptureGroupCount > 0 || !_canUseUtf8IterationFastPath)
         {
@@ -112,6 +114,7 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonFindAllUtf8Result FindAllToUtf8Core(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         if (((HasFiniteExecutionLimits || cancellationToken.CanBeCanceled) && !HasPreparedExactLiteralFamily) ||
             _canMatchEmpty || CaptureGroupCount > 0 || !_canUseUtf8IterationFastPath)
         {

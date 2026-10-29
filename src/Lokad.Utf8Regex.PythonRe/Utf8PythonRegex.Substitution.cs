@@ -210,6 +210,7 @@ public sealed partial class Utf8PythonRegex
         int count,
         int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         ValidateStartOffset(input, startOffsetInBytes);
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
         var scalarPlan = GetReplacementPlan(input, replacement, invocation, cancellationToken);
@@ -257,6 +258,7 @@ public sealed partial class Utf8PythonRegex
         int count,
         int startOffsetInBytes, CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         ValidateStartOffset(input, startOffsetInBytes);
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
         var scalarPlan = GetReplacementPlan(input, replacement, invocation, cancellationToken);
@@ -393,6 +395,7 @@ public sealed partial class Utf8PythonRegex
         int startOffsetInBytes,
         CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         ArgumentNullException.ThrowIfNull(evaluator);
         SubstituteScalar(input, (Value: state, Evaluator: evaluator, Names: _nameEntries),
                 static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonMatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
@@ -449,6 +452,7 @@ public sealed partial class Utf8PythonRegex
         int startOffsetInBytes,
         CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         ArgumentNullException.ThrowIfNull(evaluator);
         SubstituteScalar(input, (Value: state, Evaluator: evaluator, Names: _nameEntries),
                 static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonMatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
@@ -544,6 +548,7 @@ public sealed partial class Utf8PythonRegex
         int startOffsetInBytes,
         CancellationToken cancellationToken)
     {
+        using var programUse = EnterProgramUse();
         ArgumentNullException.ThrowIfNull(evaluator);
         SubstituteScalar(input, (Value: state, Evaluator: evaluator, Names: _nameEntries),
                 static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonUtf8MatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>

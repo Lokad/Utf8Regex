@@ -87,7 +87,7 @@ readonly struct PythonRe.Utf8PythonRangeMatch
   method Boolean TryGetGroup(Int32 number, out PythonRe.Utf8PythonCaptureRange group)
   method ReadOnlyMemory<Byte> GetGroupMemory(Int32 number)
   method ReadOnlyMemory<Byte> GetValueMemory()
-sealed class PythonRe.Utf8PythonRegex
+sealed class PythonRe.Utf8PythonRegex : IDisposable
   ctor Utf8PythonRegex(ReadOnlySpan<Byte> patternUtf8)
   ctor Utf8PythonRegex(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options)
   ctor Utf8PythonRegex(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout)
@@ -211,8 +211,11 @@ sealed class PythonRe.Utf8PythonRegex
   method String[] SplitToStrings(ReadOnlySpan<Byte> input, Int32 maxSplit)
   method String[] SplitToStrings(ReadOnlySpan<Byte> input, Int32 maxSplit, Int32 startOffsetInBytes)
   method String[] SplitToStrings(ReadOnlySpan<Byte> input, Int32 maxSplit, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken)
+  method Void Dispose()
   method static PythonRe.Utf8PythonRegex Compile(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken)
+  method static PythonRe.Utf8PythonRegex Compile(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance)
   method static PythonRe.Utf8PythonRegex Compile(String pattern, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken)
+  method static PythonRe.Utf8PythonRegex Compile(String pattern, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance)
 readonly struct PythonRe.Utf8PythonSplitItem
   property Boolean IsCapture { get; init; }
   property Int32 CaptureGroupNumber { get; init; }

@@ -2,6 +2,9 @@ namespace Lokad.Utf8Regex;
 
 /// <summary>Caller-selected admission limits for covered eager pattern construction.</summary>
 /// <remarks>Null keeps the fixed construction backstop; positive values may tighten it.
+/// Entry points with a caller-owned program allowance instead use that allowance
+/// for byte admission: null MaxBytes adds no private byte cap, and a positive
+/// MaxBytes is an additional limit. Other construction backstops remain.
 /// Limits cover admitted work, traversal frames, instruction capacity and major
 /// storage, not every allocation, CLR/JIT metadata, lazy preparation, caller
 /// retention or process memory. Temporary immutable-metadata enumerable views
@@ -24,7 +27,7 @@ public readonly record struct Utf8ConstructionPolicy
     /// <summary>Gets the covered instruction-array capacity limit, or null for the fixed backstop.</summary>
     public ulong? MaxInstructionCapacity { get; init; }
 
-    /// <summary>Gets the conservative major construction-storage limit, including growth overlap, or null for the fixed backstop.</summary>
+    /// <summary>Gets the conservative major construction-storage limit, including growth overlap. Null keeps the fixed backstop except on caller-funded program entry points, where it adds no byte cap.</summary>
     public ulong? MaxBytes { get; init; }
 
     /// <summary>Gets the policy that keeps all fixed construction backstops.</summary>
