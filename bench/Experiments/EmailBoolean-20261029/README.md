@@ -51,7 +51,7 @@ boundary/resource and 16 snapshot/API/dependency checks per runtime. New coverag
 includes padded spans, 2047/2048/2049-byte boundaries, Unicode digit aliases,
 independent scalar verification, final-LF/strict anchors, excluded modes, retained
 captures, offsets, malformed tails, work/working denial and original-token
-cancellation/deadline publication. [Runtime guards](runtime-guards.log).
+cancellation/deadline publication. [Runtime guards](runtime-guards.txt).
 
 Immutable archives under `artifacts/experiments/email-boolean-20261029/`:
 
