@@ -267,9 +267,10 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
-    private static bool IsWordScalarStartingAt(ReadOnlySpan<byte> input, int index, Utf8SliceWordKind kind)
+    private static bool IsWordScalarStartingAt(Utf8SliceProgram program, in Utf8SliceInstruction instruction,
+        ReadOnlySpan<byte> input, int index)
         => TryReadScalar(input, index, false, out var scalar, out _) &&
-            Utf8SliceScalarClasses.IsBoundaryWord(scalar, kind);
+            Utf8SliceScalarClasses.IsBoundaryWord(scalar, program, instruction);
 
     internal static Utf8SliceMatchOutcome TryMatchAt(
         Utf8SliceProgram program,
@@ -1121,10 +1122,10 @@ internal static partial class Utf8SliceRunner
                                 previous--;
                             }
 
-                            beforeWord = IsWordScalarStartingAt(input, previous, (Utf8SliceWordKind)instruction.B);
+                            beforeWord = IsWordScalarStartingAt(program, instruction, input, previous);
                         }
 
-                        var afterWord = inputIndex < input.Length && IsWordScalarStartingAt(input, inputIndex, (Utf8SliceWordKind)instruction.B);
+                        var afterWord = inputIndex < input.Length && IsWordScalarStartingAt(program, instruction, input, inputIndex);
                         if ((beforeWord != afterWord) == (instruction.A != 0))
                         {
                             programIndex++;

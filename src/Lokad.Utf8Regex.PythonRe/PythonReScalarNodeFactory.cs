@@ -55,6 +55,10 @@ internal static class PythonReScalarNodeFactory
     internal static Utf8SliceNode.BoundaryNode AsciiBoundary(bool wordBoundary) =>
         Create(wordBoundary, static state => new Utf8SliceNode.BoundaryNode(state, Utf8SliceWordKind.Ascii));
 
+    internal static Utf8SliceNode.BoundaryNode UnicodeBoundary(bool wordBoundary) =>
+        Create(wordBoundary, static state => new Utf8SliceNode.BoundaryNode(state)
+            { WordPredicate = PythonReScalarClassData.IsWord });
+
     internal static Utf8SliceNode.CategorySetNode Class(byte[] ascii, bool negated, Func<int, bool> predicate, Utf8ConstructionArena arena)
     {
         var members = arena.Allocate<Utf8SliceNode.CategorySetMember>(1, true);

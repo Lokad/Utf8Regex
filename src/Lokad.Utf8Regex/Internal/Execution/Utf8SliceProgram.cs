@@ -90,7 +90,11 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
     internal sealed record AnchorNode(Utf8SliceAnchorKind Anchor, bool MatchMultiline) : Utf8SliceNode(Utf8SliceNodeKind.Anchor);
 
     internal sealed record BoundaryNode(bool IsWordBoundary, Utf8SliceWordKind WordKind = Utf8SliceWordKind.Unicode)
-        : Utf8SliceNode(Utf8SliceNodeKind.Boundary);
+        : Utf8SliceNode(Utf8SliceNodeKind.Boundary)
+    {
+        // Same fixed, bounded, invocation-free contract as scalar class predicates.
+        internal Func<int, bool>? WordPredicate { get; init; }
+    }
 
     internal sealed record ShorthandNode(Utf8SliceShorthand Shorthand) : Utf8SliceNode(Utf8SliceNodeKind.Shorthand);
 
@@ -356,6 +360,7 @@ internal sealed class Utf8SliceProgram
         {
             usesCaptureOpeningJournal |= instruction.Kind == Utf8SliceInstructionKind.Backref;
             hasUnicodePatternAtoms |= instruction.Kind == Utf8SliceInstructionKind.CategorySet ||
+                instruction.Kind == Utf8SliceInstructionKind.Boundary && instruction.C != 0 ||
                 instruction.Kind == Utf8SliceInstructionKind.Literal && instruction.A >= 128;
         }
         budget.ChargeWork((ulong)assertions.Length);
@@ -1183,7 +1188,19 @@ internal static class Utf8SliceLowerer
 
                     break;
                 case Utf8SliceNode.BoundaryNode boundary:
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Boundary, boundary.IsWordBoundary ? 1 : 0, (int)boundary.WordKind, 0, 0));
+                    var wordTable = 0;
+                    if (boundary.WordPredicate is { } wordPredicate)
+                    {
+                        // Borrow the existing category-table pool, with one-based
+                        // operand C; zero preserves the builtin boundary encoding.
+                        var members = Budget.AllocateArray<Utf8SliceNode.CategorySetMember>(1, false);
+                        members[0] = Utf8SliceNode.CategorySetMember.Create(
+                            Utf8SliceCategoryTable.ForScalarPredicate(wordPredicate), false);
+                        wordTable = CategorySetMembers.Count + 1;
+                        CategorySetMembers.Add(members);
+                    }
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Boundary, boundary.IsWordBoundary ? 1 : 0,
+                        (int)boundary.WordKind, wordTable, 0));
                     break;
                 case Utf8SliceNode.ShorthandNode shorthand:
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Shorthand, (int)shorthand.Shorthand, 0, 0, 0));

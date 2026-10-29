@@ -32,14 +32,7 @@ internal static partial class PythonReScalarCompiler
             case PythonReParser.UnicodeWordBoundary:
             case PythonReParser.UnicodeNonWordBoundary:
                 var boundary = text == PythonReParser.UnicodeWordBoundary;
-                var word = PythonReScalarNodeFactory.Class(PythonReScalarClassData.WordAscii, false,
-                    PythonReScalarClassData.IsWord, arena);
-                var branches = arena.Allocate<Utf8SliceNode[]>(2, true);
-                branches[0] = Pair(PythonReScalarNodeFactory.Lookbehind(word, true, 1),
-                    PythonReScalarNodeFactory.Lookahead(word, !boundary), arena);
-                branches[1] = Pair(PythonReScalarNodeFactory.Lookbehind(word, false, 1),
-                    PythonReScalarNodeFactory.Lookahead(word, boundary), arena);
-                var result = PythonReScalarNodeFactory.Alternation(branches);
+                var result = PythonReScalarNodeFactory.UnicodeBoundary(boundary);
                 if (boundary) return result;
                 return RejectEmptySubject(result, arena);
             default:
