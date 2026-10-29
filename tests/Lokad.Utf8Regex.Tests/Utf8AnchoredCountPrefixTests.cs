@@ -8,6 +8,10 @@ public sealed class Utf8AnchoredCountPrefixTests
 {
     [Theory]
     [InlineData("^i(?<tail>.+)$", "x\né\n😀line\ni1\r\nx\ni😀\n", RegexOptions.Multiline)]
+    [InlineData("^import(?<tail>.+)$", "if\né\n😀line\nimporx\nimport1\r\nimport😀\n", RegexOptions.Multiline)]
+    [InlineData("^im(?i:port)(?<tail>.+)$", "imPORT1\nimPort😀\n", RegexOptions.Multiline)]
+    [InlineData("^im😀(?<tail>.+)$", "imx\nim😀a\nim😀\n", RegexOptions.Multiline)]
+    [InlineData("^im\\nport(?<tail>.+)$", "im\nport1\nim\nport😀\n", RegexOptions.Multiline)]
     [InlineData("^i(?<tail>.*)$", "\n\ni\ni😀\n", RegexOptions.Multiline)]
     [InlineData(@"\Ai(?<tail>.*)$", "x\ni1", RegexOptions.None)]
     [InlineData("^i?(?<tail>.*)$", "x\n\ni\n", RegexOptions.Multiline)]
@@ -71,12 +75,43 @@ public sealed class Utf8AnchoredCountPrefixTests
         }
     }
 
-    [Fact]
-    public void EveryWorkCutoffKeepsBorrowedStorageAcrossAnchoredStarts()
+    [Theory]
+    [InlineData(31)] [InlineData(32)] [InlineData(33)]
+    public void BoundedPrefixesPreserveBoundaryTailsAndLongerVerification(int width)
     {
-        var regex = new Utf8Regex("^i.+$", RegexOptions.Multiline);
+        var prefix = new string('a', width - 1) + "Z";
+        var pattern = "^" + prefix + "(?<tail>.+)$";
+        var text = new string('x', 2047) + "\n" + prefix + "😀\r\n" + new string('a', width) + "!\n" + prefix;
+        var regex = new Utf8Regex(pattern, RegexOptions.Multiline);
+        var oracle = new Regex(pattern, RegexOptions.Multiline); var input = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(oracle.Count(text), regex.Count(input));
+        foreach (var offset in new[] { 0, 2047, 2048, 2049, text.Length })
+            Assert.Equal(oracle.Matches(text, offset).Count, regex.CountFromUtf16Offset(input, offset));
+        Assert.Equal(oracle.Match(text).Groups["tail"].Value, regex.MatchDetailed(input).GetGroup("tail").GetValueString());
+    }
+
+    [Fact]
+    public void RejectedFullPrefixesNeedNoVmWorkspaceAndSurvivorsStillNeedAdmission()
+    {
+        var regex = new Utf8Regex("^import[0-9]+$", RegexOptions.Multiline, Timeout.InfiniteTimeSpan,
+            new() { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("if false\nimporx\nim😀\n", 256)));
+        Assert.Equal(0, regex.Count(input));
+        Assert.False(regex.IsMatch(input));
+        Assert.False(regex.Match(input).Success);
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count("importwrong\n"u8)).ResourceKind);
+        byte[] malformed = [.. input, 0xff];
+        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
+    }
+
+    [Theory]
+    [InlineData("i")] [InlineData("import")]
+    public void EveryWorkCutoffKeepsBorrowedStorageAcrossAnchoredStarts(string prefix)
+    {
+        var regex = new Utf8Regex("^" + prefix + ".+$", RegexOptions.Multiline);
         var program = regex.Inspection.AvailableOwnedSliceProgram;
-        var input = Encoding.UTF8.GetBytes("x\né\n😀\ni1\r\nx\nimport");
+        var input = Encoding.UTF8.GetBytes("x\né\n😀\n" + prefix + "1\r\nx\n" + prefix + "2");
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Timeout.InfiniteTimeSpan, default);
         Assert.True(baseline.Ledger.TryReserve(13));
         var starts = new int[program.GroupCount]; var ends = new int[program.GroupCount];
