@@ -1857,18 +1857,28 @@ public sealed partial class Utf8Regex
                 plan.AlternateLiteralUtf16Lengths, 0, 0, selected, ref invocation, out _, out _) : Utf8ValueMatch.NoMatch;
         }
         // These complete anchored grammars supply the whole value range without
-        // capture workspace. Bound the legacy helper's scans and require complete
+        // capture workspace. Bound the helpers' scans and require complete
         // ASCII validation; detailed captures and wider subjects keep the VM.
+        var queryWhole = _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiDigitsQueryWhole or
+            Utf8FallbackDirectFamilyKind.AnchoredAsciiHexQueryWhole;
         if (startByte == 0 && input.Length <= 2048 && validation.ByteLength == input.Length && validation.IsAscii &&
-            ReferenceEquals(program, _ownedSliceProgram) && !program.RightToLeft && !program.IgnoreCase &&
+            ReferenceEquals(program, _ownedSliceProgram) && !program.RightToLeft &&
             !program.IsNonBacktracking &&
-            _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredTrimmedOptionalLiteralPrefixTail or
-                Utf8FallbackDirectFamilyKind.AnchoredNumberPrefix)
+            (queryWhole || !program.IgnoreCase &&
+                _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredTrimmedOptionalLiteralPrefixTail or
+                    Utf8FallbackDirectFamilyKind.AnchoredNumberPrefix))
         {
-            var breach = invocation.TryChargeInputStep();
-            if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
-            var found = Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out var length);
-            breach = invocation.TryChargeInputStep();
+            bool found; int length; Utf8ExecutionLimitKind breach;
+            if (queryWhole)
+                breach = Utf8AsciiAnchoredUrlExecutor.TryMatchWhole(input, _fallbackDirectFamily, ref invocation,
+                    out found, out length);
+            else
+            {
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
+                found = Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out length);
+                breach = invocation.TryChargeInputStep();
+            }
             invocation.Budget.ThrowIfCancellationRequested();
             if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiAnchoredValidator);

@@ -33,6 +33,8 @@
 - Reuse complete number and trimmed optional-prefix ranges for bounded ASCII
   value Match; detailed captures, Unicode subjects and long inputs retain scalar
   execution.
+- Reuse complete query URL ranges for bounded ASCII value Match, metering prefix
+  and optional-parameter retries under the original invocation.
 - Improve scalar Count candidate searches for exact literal pairs, retaining
   bounded metering, ordered alternatives and full VM verification.
 - Reject impossible bounded Dot tails before greedy endpoint replay, retaining

@@ -11,24 +11,50 @@ internal static class Utf8AsciiAnchoredUrlExecutor
 
     private static bool TryMatchWhole(ReadOnlySpan<byte> input, in Utf8FallbackDirectFamilyPlan plan, bool hex, out int matchedLength)
     {
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
+        return TryMatchWhole(input, plan, hex, ref invocation, out matchedLength);
+    }
+
+    // Owned callers admit a complete ASCII subject <=2048 bytes. Meter retries
+    // as well as the outer scan so nested parameter work stays interruptible.
+    internal static Utf8ExecutionLimitKind TryMatchWhole(ReadOnlySpan<byte> input,
+        in Utf8FallbackDirectFamilyPlan plan, ref Utf8SliceInvocation invocation,
+        out bool matched, out int matchedLength)
+    {
+        matched = false; matchedLength = 0;
+        var breach = invocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        matched = TryMatchWhole(input, plan, plan.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiHexQueryWhole,
+            ref invocation, out matchedLength);
+        breach = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        if (breach != Utf8ExecutionLimitKind.None) { matched = false; matchedLength = 0; }
+        return breach;
+    }
+
+    private static bool TryMatchWhole(ReadOnlySpan<byte> input, in Utf8FallbackDirectFamilyPlan plan,
+        bool hex, ref Utf8SliceInvocation invocation, out int matchedLength)
+    {
         matchedLength = 0;
         // A required negative value class may consume LF, including final LF.
         // Dot tails exclude LF, while the end anchor can leave one final LF.
-        if (TryPrefixes(input, plan, hex)) { matchedLength = input.Length; return true; }
-        if (!input.IsEmpty && input[^1] == (byte)'\n' && TryPrefixes(input[..^1], plan, hex))
+        if (TryPrefixes(input, plan, hex, ref invocation)) { matchedLength = input.Length; return true; }
+        if (!input.IsEmpty && input[^1] == (byte)'\n' && TryPrefixes(input[..^1], plan, hex, ref invocation))
         { matchedLength = input.Length - 1; return true; }
         return false;
     }
 
-    private static bool TryPrefixes(ReadOnlySpan<byte> input, in Utf8FallbackDirectFamilyPlan plan, bool hex)
+    private static bool TryPrefixes(ReadOnlySpan<byte> input, in Utf8FallbackDirectFamilyPlan plan,
+        bool hex, ref Utf8SliceInvocation invocation)
     {
         var dots = plan.Url.PrefixWildcards;
-        return TryPrefix(input, plan.PrimaryPrefixUtf8, dots.Primary, plan, hex) ||
-            TryPrefix(input, plan.SecondaryPrefixUtf8, dots.Secondary, plan, hex) ||
-            TryPrefix(input, plan.RelativePrefixUtf8, dots.Relative, plan, hex);
+        return TryPrefix(input, plan.PrimaryPrefixUtf8, dots.Primary, plan, hex, ref invocation) ||
+            TryPrefix(input, plan.SecondaryPrefixUtf8, dots.Secondary, plan, hex, ref invocation) ||
+            TryPrefix(input, plan.RelativePrefixUtf8, dots.Relative, plan, hex, ref invocation);
     }
 
-    private static bool TryPrefix(ReadOnlySpan<byte> input, ReadOnlySpan<byte> prefix, UInt128 dots, in Utf8FallbackDirectFamilyPlan plan, bool hex)
+    private static bool TryPrefix(ReadOnlySpan<byte> input, ReadOnlySpan<byte> prefix, UInt128 dots,
+        in Utf8FallbackDirectFamilyPlan plan, bool hex, ref Utf8SliceInvocation invocation)
     {
         if (prefix.IsEmpty || input.Length < prefix.Length) return false;
         var firstLf = input.IndexOf((byte)'\n'); var leadingEnd = firstLf < 0 ? input.Length : firstLf;
@@ -38,6 +64,7 @@ internal static class Utf8AsciiAnchoredUrlExecutor
         var searchFrom = 0;
         while (searchFrom <= input.Length - fixedWidth)
         {
+            if (invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None) return false;
             var found = AsciiSearch.IndexOfIgnoreCase(input[searchFrom..], prefix[..fixedWidth]);
             if (found < 0) return false;
             var candidate = searchFrom + found;
@@ -50,13 +77,14 @@ internal static class Utf8AsciiAnchoredUrlExecutor
                 if (((dots >> index) & 1) != 0 ? current == (byte)'\n' :
                     AsciiSearch.FoldCase(current) != AsciiSearch.FoldCase(prefix[index])) { matched = false; break; }
             }
-            if (matched && TrySuffix(input, candidate + prefix.Length, plan, hex)) return true;
+            if (matched && TrySuffix(input, candidate + prefix.Length, plan, hex, ref invocation)) return true;
             searchFrom = candidate + 1;
         }
         return false;
     }
 
-    private static bool TrySuffix(ReadOnlySpan<byte> input, int index, in Utf8FallbackDirectFamilyPlan plan, bool hex)
+    private static bool TrySuffix(ReadOnlySpan<byte> input, int index, in Utf8FallbackDirectFamilyPlan plan,
+        bool hex, ref Utf8SliceInvocation invocation)
     {
         // The optional /[A-Za-z0-9]+ must backtrack to absence if the route
         // itself begins with an alphanumeric segment. No route is hard-coded.
@@ -65,13 +93,15 @@ internal static class Utf8AsciiAnchoredUrlExecutor
         {
             var start = ++index;
             while (index < input.Length && IsLetterOrDigit(input[index])) index++;
-            if (index > start && TrySuffixCore(input, index, plan, hex)) return true;
+            if (index > start && TrySuffixCore(input, index, plan, hex, ref invocation)) return true;
         }
-        return TrySuffixCore(input, original, plan, hex);
+        return TrySuffixCore(input, original, plan, hex, ref invocation);
     }
 
-    private static bool TrySuffixCore(ReadOnlySpan<byte> input, int index, in Utf8FallbackDirectFamilyPlan plan, bool hex)
+    private static bool TrySuffixCore(ReadOnlySpan<byte> input, int index, in Utf8FallbackDirectFamilyPlan plan,
+        bool hex, ref Utf8SliceInvocation invocation)
     {
+        if (invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None) return false;
         if (!ConsumeLiteral(input, plan.RouteMarkerUtf8, ref index)) return false;
         if (!hex)
         {
@@ -79,7 +109,7 @@ internal static class Utf8AsciiAnchoredUrlExecutor
             while (index < input.Length && Utf8AsciiBytePredicates.IsDigit(input[index])) index++;
             if (index == start) return false;
             if (index < input.Length && input[index] == (byte)'/') index++;
-            return TryRequired(input, index, plan.RequiredParameterUtf8, true);
+            return TryRequired(input, index, plan.RequiredParameterUtf8, true, ref invocation);
         }
         while (index < input.Length && IsHex(input[index])) index++;
         var absent = index;
@@ -90,13 +120,15 @@ internal static class Utf8AsciiAnchoredUrlExecutor
             // '?' belongs to this value class. Greedy optional values must
             // return it to a following required ?name= marker when necessary.
             for (var end = index; end > start; end--)
-                if (TryRequired(input, end, plan.RequiredParameterUtf8, false)) return true;
+                if (TryRequired(input, end, plan.RequiredParameterUtf8, false, ref invocation)) return true;
         }
-        return TryRequired(input, absent, plan.RequiredParameterUtf8, false);
+        return TryRequired(input, absent, plan.RequiredParameterUtf8, false, ref invocation);
     }
 
-    private static bool TryRequired(ReadOnlySpan<byte> input, int index, ReadOnlySpan<byte> name, bool questionOnly)
+    private static bool TryRequired(ReadOnlySpan<byte> input, int index, ReadOnlySpan<byte> name,
+        bool questionOnly, ref Utf8SliceInvocation invocation)
     {
+        if (invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None) return false;
         if (!ConsumeParameter(input, name, questionOnly, ref index)) return false;
         var start = index;
         while (index < input.Length && input[index] != (byte)' ' && input[index] != (questionOnly ? (byte)'?' : (byte)'&')) index++;
