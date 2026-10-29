@@ -1,0 +1,24 @@
+SourceKind        : lokad-case
+Origin            : imports//Count
+Pattern           : ^import\s+(?<shared>shared\s+)?"(?<path>(\.|[^\\"]*))".*$
+Options           : Multiline
+InputChars        : 46412
+InputBytes        : 46429
+CompiledEngine    : FallbackRegex
+ExecutionKind     : FallbackRegex
+DirectFamily      : None
+OwnedScalarPlan   : True
+ScalarPrepared    : True
+SearchKind        : FixedDistanceAsciiSets
+PortfolioKind     : None
+PreparedSearcher  : None
+RequiredPrefilter : ExactLiteral
+WindowSearch      : None
+StructuralYield   : Start
+StructuralStages  : 2
+StructuralStage[0] : FindAscii
+StructuralStage[1] : YieldStart
+FallbackPlans     : 1
+FallbackPlan[0]  : Yield=Start, Stages=2
+Verifier          : None
+FallbackReason    : unsupported_loop
