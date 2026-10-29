@@ -583,10 +583,9 @@ internal static partial class Utf8SliceRunner
         var whitespaceLiteral = !seekLiteral && !program.RightToLeft && !program.IgnoreCase &&
             !program.HasContiguousAnchor && input.Length - fromByte >= 256
             ? GetLeadingWhitespaceLiteral(program, out leadingClass, out whitespaceLiteralIndex) : -1;
-        if (whitespaceLiteral >= 0 && (leadingClass >= 0
-            ? candidatePlan.LiteralSearch is not { IgnoreCase: false } classSearch ||
-                !LiteralStartsAtInstruction(program, whitespaceLiteralIndex, classSearch.Needle)
-            : !invocation.IsUnmetered || invocation.CheckpointHook is not null))
+        if (whitespaceLiteral >= 0 && leadingClass >= 0 &&
+            (candidatePlan.LiteralSearch is not { IgnoreCase: false } classSearch ||
+                !LiteralStartsAtInstruction(program, whitespaceLiteralIndex, classSearch.Needle)))
             whitespaceLiteral = -1;
         var whitespaceWindowEnd = -1;
         var workspace = new AttemptWorkspace();
@@ -617,12 +616,15 @@ internal static partial class Utf8SliceRunner
                             if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                         }
                     }
-                    else position = SeekLeadingWhitespaceLiteral(input, position, (byte)whitespaceLiteral, out whitespaceWindowEnd);
+                    else
+                    {
+                        var seekBreach = TrySeekLeadingWhitespaceLiteral(program, input, ref position,
+                            whitespaceLiteralIndex, ref invocation, out whitespaceWindowEnd);
+                        if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
+                    }
                     if (position < 0)
                     {
-                        if (leadingClass >= 0)
-                            return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
-                        break;
+                        return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
                     }
                 }
                 // A mandatory initial strict-end anchor admits only EOF, even

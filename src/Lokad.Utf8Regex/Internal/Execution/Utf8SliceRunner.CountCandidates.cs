@@ -146,7 +146,7 @@ internal static partial class Utf8SliceRunner
             if (!TryReadScalar(input, position, true, out var scalar, out var width) || !Rune.IsWhiteSpace(scalar)) break;
             position -= width;
         }
-        while (position > floor)
+        while (leadingClass >= 0 && position > floor)
         {
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
@@ -171,14 +171,51 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
-    private static int SeekLeadingWhitespaceLiteral(ReadOnlySpan<byte> input, int fromByte, byte literal, out int windowEnd)
+    private static Utf8ExecutionLimitKind TrySeekLeadingWhitespaceLiteral(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, ref int position, int literalIndex, ref Utf8SliceInvocation invocation, out int windowEnd)
     {
-        var relative = input[fromByte..].IndexOf(literal);
-        if (relative < 0) { windowEnd = -1; return -1; }
-        windowEnd = fromByte + relative;
-        var start = windowEnd;
-        while (start > fromByte && TryReadScalar(input, start, true, out var scalar, out var width) && Rune.IsWhiteSpace(scalar))
-            start -= width;
-        return start;
+        var floor = position;
+        var literal = (byte)program.Instructions[literalIndex].A;
+        windowEnd = -1;
+        while (position < input.Length)
+        {
+            var breach = TrySeekAsciiCandidate(input, ref position, literal, literal, ref invocation);
+            if (breach != Utf8ExecutionLimitKind.None || position < 0) return breach;
+            if (MatchesStraightAsciiPrefix(program, input, position, literalIndex))
+            {
+                windowEnd = position;
+                return TryRewindClassWhitespace(program, input, floor, -1, ref position, ref invocation);
+            }
+            // The admitted first byte is ASCII, so the next byte is a scalar boundary.
+            position++;
+        }
+        position = -1;
+        return Utf8ExecutionLimitKind.None;
+    }
+
+    private static bool MatchesStraightAsciiPrefix(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int position, int instructionIndex)
+    {
+        // Reject only a proven mandatory straight-line prefix. This bounded
+        // filter accepts no match; branches, wider classes and effects stop it.
+        var code = program.Instructions.AsSpan();
+        var end = Math.Min(code.Length, instructionIndex + 64);
+        for (; instructionIndex < end; instructionIndex++)
+        {
+            var entry = code[instructionIndex];
+            if (entry.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd) continue;
+            if (entry is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } && (uint)entry.A < 128)
+            {
+                if (position >= input.Length || input[position++] != entry.A) return false;
+            }
+            else if (entry is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } && program.SetMasks[entry.A].Length == 16)
+            {
+                if (position >= input.Length || input[position] >= 128) return false;
+                var value = input[position++];
+                if ((program.SetMasks[entry.A][value >> 3] & (1 << (value & 7))) == 0) return false;
+            }
+            else break;
+        }
+        return true;
     }
 }
