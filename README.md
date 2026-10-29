@@ -290,7 +290,6 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | Case | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
 | `lokad/folding/region-marker` | 5,376.030 us | 37.099 us | 60.876 us | 144.91x |
-| `lokad/lexer/doc-line` | 20.241 us | 2.157 us | 3.053 us | 9.38x |
 | `lokad/imports/module-imports` | 37.087 us | 4.439 us | 26.804 us | 8.36x |
 | `lokad/style/cell-ref` | 13.353 us | 1.749 us | 1.995 us | 7.64x |
 | `lokad/style/range-ref` | 10.809 us | 1.469 us | 1.595 us | 7.36x |
@@ -300,6 +299,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `lokad/lexer/identifier` | 106.308 us | 16.652 us | 21.048 us | 6.38x |
 | `lokad/langserv/color-short-hex` | 1.682 us | 1.104 us | 1.247 us | 1.52x |
 | `structural/keyword-to-generic-type` | 5.830 us | 4.118 us | 15.750 us | 1.42x |
+| `lokad/lexer/doc-line` | 4.420 us | 3.124 us | 3.864 us | 1.41x |
 | `lokad/langserv/identifier-validator` | 11.724 us | 9.702 us | 11.734 us | 1.21x |
 | `structural/ordered-keyword-pair` | 6.110 us | 5.521 us | 17.198 us | 1.11x |
 | `fallback/lookahead` | 6.352 us | 6.116 us | 17.564 us | 1.04x |
@@ -342,7 +342,6 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 |---|---:|---:|---:|---:|
 | `lokad/folding/region-marker` | 5,395.440 us | 37.293 us | 60.206 us | 144.68x |
 | `structural/keyword-family-to-capitalized-identifier` | 74.881 us | 7.748 us | 19.121 us | 9.67x |
-| `lokad/lexer/doc-line` | 20.079 us | 2.181 us | 3.067 us | 9.20x |
 | `lokad/imports/module-imports` | 37.317 us | 4.443 us | 26.603 us | 8.40x |
 | `lokad/style/cell-ref` | 13.998 us | 1.747 us | 1.972 us | 8.01x |
 | `lokad/style/range-ref` | 10.727 us | 1.502 us | 1.600 us | 7.14x |
@@ -352,6 +351,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `lokad/lexer/identifier` | 105.150 us | 16.647 us | 20.500 us | 6.32x |
 | `structural/modifier-family-to-type-window` | 210.581 us | 56.469 us | 69.163 us | 3.73x |
 | `structural/modifier-family-to-type-pair` | 24.921 us | 10.652 us | 21.717 us | 2.34x |
+| `lokad/lexer/doc-line` | 4.505 us | 2.366 us | 3.125 us | 1.90x |
 | `structural/keyword-to-generic-type` | 5.833 us | 3.536 us | 14.677 us | 1.65x |
 | `lokad/langserv/color-short-hex` | 1.664 us | 1.040 us | 1.260 us | 1.60x |
 | `fallback/lookahead` | 6.326 us | 4.242 us | 15.214 us | 1.49x |
