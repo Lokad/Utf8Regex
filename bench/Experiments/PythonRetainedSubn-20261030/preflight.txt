@@ -1,0 +1,7 @@
+Preflight unfunded-byte-control
+Preflight funded-byte-control
+Preflight funded-text-control
+Preflight retained-native
+Preflight retained-scalar
+Preflight retained-unicode-captures
+Preflight retained-finite-live

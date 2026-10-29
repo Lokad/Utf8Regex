@@ -1,0 +1,144 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+var before=Load(Path.GetFullPath(args[0]),"before");var after=Load(Path.GetFullPath(args[1]),"after");
+if(Hash(before.Python)==Hash(after.Python)||!Identity(after.Python).Contains(args[2]))throw new Exception("Unexpected binaries");
+using var process=Process.GetCurrentProcess();process.ProcessorAffinity=(nint)4;
+using var token=new CancellationTokenSource();var preflight=args.Length>3&&args[3]=="--preflight";
+var ascii=string.Concat(Enumerable.Repeat("alpha beta gamma ",16));var unicode=string.Concat(Enumerable.Repeat("éé 😀 aa ",16));
+var native=string.Concat(Enumerable.Repeat("cat 😀 cat ",16));
+var cases=new[]{
+    new Case("unfunded-byte-control","cat",native,"x",Funded:false),
+    new Case("funded-byte-control","cat",native,"x"),
+    new Case("funded-text-control","(?<x>[a-z]+)",ascii,@"\g<x>!",TextOutput:true),
+    new Case("retained-native","cat",native,"x",Retained:true),
+    new Case("retained-scalar","(?<x>[a-z]+)",ascii,@"\g<x>!",Retained:true),
+    new Case("retained-unicode-captures","(é+|a+)",unicode,@"\g<1>!",Retained:true),
+    new Case("retained-finite-live","(?<x>[a-z]+)",ascii,@"\g<x>!",Retained:true,Finite:true,Live:true),
+};
+var roots=new List<object>();var hosts=new List<Host>();var rows=new List<object>();var elapsed=Stopwatch.StartNew();
+foreach(var item in cases.Where(c => !c.Retained || c.Name == "retained-native"))
+{
+    var input=Encoding.UTF8.GetBytes(item.Text);var oracle=new Regex(item.Pattern,RegexOptions.CultureInvariant);
+    var template=item.Replacement.Replace(@"\g<x>","${x}").Replace(@"\g<1>","${1}");
+    Output Oracle(string text){var output=oracle.Replace(text,template);return item.TextOutput?new(null,output):new(Encoding.UTF8.GetBytes(output),null);}
+    var expected=Oracle(item.Text);var rowHosts=new List<Host>();
+    Func<Output> Make((Assembly Core,Assembly Python) assemblies,bool candidate)
+    {
+        var type=assemblies.Python.GetType("Lokad.Utf8Regex.PythonRe.Utf8PythonRegex")!;
+        var options=assemblies.Python.GetType("Lokad.Utf8Regex.PythonRe.PythonReCompileOptions")!;
+        var policyType=assemblies.Core.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!;var policy=Activator.CreateInstance(policyType)!;
+        if(item.Finite)foreach(var name in new[]{"MaxWorkSteps","MaxDepth","MaxWorkingBytes","MaxResultBytes"})
+        {var p=policyType.GetProperty(name)!;p.SetValue(policy,Convert.ChangeType(name=="MaxDepth"?4096UL:67108864UL,Nullable.GetUnderlyingType(p.PropertyType)!));}
+        var construction=assemblies.Core.GetType("Lokad.Utf8Regex.Utf8ConstructionPolicy")!;
+        var allowanceType=assemblies.Core.GetType("Lokad.Utf8Regex.IUtf8MemoryAllowance")!;
+        var host=new Host();hosts.Add(host);rowHosts.Add(host);
+        Type[] signature=[typeof(string),options,typeof(TimeSpan),policyType,construction,typeof(TimeSpan),typeof(CancellationToken)];
+        object?[] values=[item.Pattern.Replace("(?<x>","(?P<x>"),Enum.ToObject(options,0),Timeout.InfiniteTimeSpan,policy,Activator.CreateInstance(construction),Timeout.InfiniteTimeSpan,default(CancellationToken)];
+        if(item.Funded){signature=[..signature,allowanceType];values=[..values,MakeAllowance(allowanceType,host)];}
+        var root=type.GetMethod("Compile",signature)!.Invoke(null,values)!;roots.Add(root);
+        if(item.TextOutput){var bridge=TextBridge(type);return()=>new(null,bridge(root,input,item.Replacement,item.Live?token.Token:default));}
+        var bytes=ByteBridge(type,candidate&&item.Retained);
+        return()=>new(bytes(root,input,item.Replacement,item.Live?token.Token:default),null);
+    }
+    Func<Output>[] actions=[Make(before,false),Make(after,true),()=>Oracle(item.Text),()=>Oracle(Encoding.UTF8.GetString(input))];
+    foreach(var action in actions)Validate(action(),expected);
+    var balances=rowHosts.Select(h=>h.Used).ToArray();
+    if(preflight){Console.Error.WriteLine("Preflight "+item.Name);continue;}
+    var iterations=new int[4];var calls=new long[4];
+    for(var lane=0;lane<4;lane++)
+    {
+        var warm=Stopwatch.StartNew();while(warm.Elapsed.TotalMilliseconds<1000||calls[lane]<256){Loop(16,actions[lane],expected);calls[lane]+=16;}
+        iterations[lane]=1;while(Loop(iterations[lane],actions[lane],expected).Milliseconds<80)iterations[lane]=checked(iterations[lane]*2);
+    }
+    var times=Enumerable.Range(0,4).Select(_=>new double[3]).ToArray();var bytes=Enumerable.Range(0,4).Select(_=>new double[3]).ToArray();var durations=Enumerable.Range(0,4).Select(_=>new double[3]).ToArray();
+    for(var sample=0;sample<3;sample++)for(var position=0;position<4;position++)
+    {
+        var lane=sample%2==0?position:3-position;GC.Collect();GC.WaitForPendingFinalizers();GC.Collect();
+        var result=Loop(iterations[lane],actions[lane],expected);
+        times[lane][sample]=result.Milliseconds*1000/iterations[lane];bytes[lane][sample]=(double)result.Bytes/iterations[lane];durations[lane][sample]=result.Milliseconds;
+    }
+    if(!balances.SequenceEqual(rowHosts.Select(h=>h.Used)))throw new Exception("Accumulated output funding "+item.Name);
+    rows.Add(new{item.Name,item.Pattern,InputBytes=input.Length,item.Funded,item.Retained,item.Finite,item.Live,item.TextOutput,
+        Operation=item.TextOutput?"ReplaceToString":"Replace bytes; candidate retained rows use SubnRetained + Result bytes + Dispose",
+        Iterations=iterations,WarmupCalls=calls,Microseconds=times,AllocatedBytes=bytes,ElapsedMilliseconds=durations});
+    Console.Error.WriteLine("Completed "+item.Name+": "+string.Join(" / ",times.Select(a=>a.Order().ElementAt(1))));
+}
+foreach(var root in roots)(root as IDisposable)?.Dispose();if(hosts.Any(h=>h.Used!=0))throw new Exception("Final funding leak");
+Console.WriteLine(JsonSerializer.Serialize(new{Runtime=RuntimeInformation.FrameworkDescription,CpuAffinityMask="4",ElapsedSeconds=elapsed.Elapsed.TotalSeconds,
+    LaneNames=new[]{"BaselineReplace","CandidateReplaceOrRetainedSubn","PredecodedRegexReplace","DecodeThenRegexReplace"},
+    Scope="Controls call unchanged public Replace/ReplaceToString. Retained rows add a new independently funded result lifetime and dispose the receipt immediately after retrieving output bytes; escaped arrays stay valid and caller-owned. All result byte arrays/text held through timing; equality/checksums afterward. Comparators include UTF-8 output encoding on byte rows, omit count production; candidate Subn returns count but consumer does not read it. Only overlapping scalar semantics used. Feature costs, no catalog Status/parity claim.",
+    Baseline=new{Core=Identity(before.Core),Python=Identity(before.Python)},Candidate=new{Core=Identity(after.Core),Python=Identity(after.Python)},Rows=rows},new JsonSerializerOptions{WriteIndented=true}));
+static ByteReplace ByteBridge(Type type,bool retain)
+{
+    var signature=new[]{typeof(ReadOnlySpan<byte>),typeof(string),typeof(int),typeof(int),typeof(CancellationToken)};
+    var method=type.GetMethod(retain?"SubnRetained":"Replace",signature)!;
+    var dm=new DynamicMethod("PublicByteSubstitution",typeof(byte[]),[typeof(object),typeof(byte[]),typeof(string),typeof(CancellationToken)],typeof(Program).Module,true);var il=dm.GetILGenerator();
+    var result=il.DeclareLocal(typeof(byte[]));var receipt=retain?il.DeclareLocal(method.ReturnType):null;
+    if(retain)il.BeginExceptionBlock();
+    il.Emit(OpCodes.Ldarg_0);il.Emit(OpCodes.Castclass,type);il.Emit(OpCodes.Ldarg_1);il.Emit(OpCodes.Newobj,typeof(ReadOnlySpan<byte>).GetConstructor([typeof(byte[])])!);
+    il.Emit(OpCodes.Ldarg_2);il.Emit(OpCodes.Ldc_I4_0);il.Emit(OpCodes.Ldc_I4_0);il.Emit(OpCodes.Ldarg_3);il.Emit(OpCodes.Callvirt,method);
+    if(retain)
+    {
+        il.Emit(OpCodes.Stloc,receipt!);il.Emit(OpCodes.Ldloc,receipt!);var getter=method.ReturnType.GetProperty("Result")!.GetMethod!;il.Emit(OpCodes.Callvirt,getter);
+        var dto=il.DeclareLocal(getter.ReturnType);il.Emit(OpCodes.Stloc,dto);il.Emit(OpCodes.Ldloca,dto);il.Emit(OpCodes.Call,getter.ReturnType.GetProperty("ResultBytes")!.GetMethod!);
+    }
+    il.Emit(OpCodes.Stloc,result);
+    if(retain){il.BeginFinallyBlock();var done=il.DefineLabel();il.Emit(OpCodes.Ldloc,receipt!);il.Emit(OpCodes.Brfalse,done);il.Emit(OpCodes.Ldloc,receipt!);il.Emit(OpCodes.Callvirt,method.ReturnType.GetMethod("Dispose")!);il.MarkLabel(done);il.EndExceptionBlock();}
+    il.Emit(OpCodes.Ldloc,result);il.Emit(OpCodes.Ret);return dm.CreateDelegate<ByteReplace>();
+}
+static TextReplace TextBridge(Type type)
+{
+    var method=type.GetMethod("ReplaceToString",[typeof(ReadOnlySpan<byte>),typeof(string),typeof(int),typeof(int),typeof(CancellationToken)])!;
+    var dm=new DynamicMethod("PublicTextReplace",typeof(string),[typeof(object),typeof(byte[]),typeof(string),typeof(CancellationToken)],typeof(Program).Module,true);var il=dm.GetILGenerator();
+    il.Emit(OpCodes.Ldarg_0);il.Emit(OpCodes.Castclass,type);il.Emit(OpCodes.Ldarg_1);il.Emit(OpCodes.Newobj,typeof(ReadOnlySpan<byte>).GetConstructor([typeof(byte[])])!);
+    il.Emit(OpCodes.Ldarg_2);il.Emit(OpCodes.Ldc_I4_0);il.Emit(OpCodes.Ldc_I4_0);il.Emit(OpCodes.Ldarg_3);il.Emit(OpCodes.Callvirt,method);il.Emit(OpCodes.Ret);return dm.CreateDelegate<TextReplace>();
+}
+static void Validate(Output actual,Output expected)
+{if(actual.Text!=expected.Text||(actual.Bytes is null?expected.Bytes is not null:expected.Bytes is null||!actual.Bytes.AsSpan().SequenceEqual(expected.Bytes)))throw new Exception("Output mismatch");}
+static(Assembly Core,Assembly Python)Load(string root,string name)
+{
+    var context=new AssemblyLoadContext(name);context.Resolving+=(c,n)=>File.Exists(Path.Combine(root,n.Name+".dll"))?c.LoadFromAssemblyPath(Path.Combine(root,n.Name+".dll")):null;
+    return(context.LoadFromAssemblyPath(Path.Combine(root,"Lokad.Utf8Regex.dll")),context.LoadFromAssemblyPath(Path.Combine(root,"Lokad.Utf8Regex.PythonRe.dll")));
+}
+static object MakeAllowance(Type contract,Host host)
+{
+    var assembly=AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Host"+Guid.NewGuid().ToString("N")),AssemblyBuilderAccess.Run);var type=assembly.DefineDynamicModule("Host").DefineType("Provider",TypeAttributes.Public|TypeAttributes.Sealed,typeof(object),[contract]);
+    var field=type.DefineField("host",typeof(Host),FieldAttributes.Private);var ctor=type.DefineConstructor(MethodAttributes.Public,CallingConventions.Standard,[typeof(Host)]);var il=ctor.GetILGenerator();
+    il.Emit(OpCodes.Ldarg_0);il.Emit(OpCodes.Call,typeof(object).GetConstructor(Type.EmptyTypes)!);il.Emit(OpCodes.Ldarg_0);il.Emit(OpCodes.Ldarg_1);il.Emit(OpCodes.Stfld,field);il.Emit(OpCodes.Ret);
+    foreach(var declaration in contract.GetMethods())
+    {
+        var method=type.DefineMethod(declaration.Name,MethodAttributes.Public|MethodAttributes.Virtual|MethodAttributes.Final|MethodAttributes.NewSlot,declaration.ReturnType,[typeof(ulong)]);il=method.GetILGenerator();
+        il.Emit(OpCodes.Ldarg_0);il.Emit(OpCodes.Ldfld,field);il.Emit(OpCodes.Ldarg_1);il.Emit(OpCodes.Callvirt,typeof(Host).GetMethod(declaration.Name)!);il.Emit(OpCodes.Ret);type.DefineMethodOverride(method,declaration);
+    }
+    return Activator.CreateInstance(type.CreateType()!,host)!;
+}
+static string Hash(Assembly a)=>Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(a.Location)));
+static string Identity(Assembly a)=>a.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion+" sha256="+Hash(a);
+[MethodImpl(MethodImplOptions.NoInlining)]
+static(double Milliseconds,long Bytes)Loop(int count,Func<Output> action,Output expected)
+{
+    var retained=new Output[count];var startBytes=GC.GetAllocatedBytesForCurrentThread();var start=Stopwatch.GetTimestamp();
+    for(var i=0;i<count;i++)retained[i]=action();
+    var milliseconds=Stopwatch.GetElapsedTime(start).TotalMilliseconds;var bytes=GC.GetAllocatedBytesForCurrentThread()-startBytes;
+    long checksum=0;foreach(var result in retained){Validate(result,expected);checksum=unchecked(checksum+(result.Text?.GetHashCode()??result.Bytes?.Length??0));}
+    GC.KeepAlive(retained);GC.KeepAlive(checksum);return(milliseconds,bytes);
+}
+record Case(string Name,string Pattern,string Text,string Replacement,bool Funded=true,bool Retained=false,bool Finite=false,bool Live=false,bool TextOutput=false);
+readonly record struct Output(byte[]? Bytes,string? Text);
+delegate byte[] ByteReplace(object owner,byte[] input,string template,CancellationToken token);
+delegate string TextReplace(object owner,byte[] input,string template,CancellationToken token);
+public sealed class Host
+{
+    private long _used;public long Used=>Volatile.Read(ref _used);
+    public bool TryReserve(ulong bytes){if(bytes>long.MaxValue)return false;var delta=(long)bytes;while(true){var current=Volatile.Read(ref _used);if(delta>long.MaxValue-current)return false;if(Interlocked.CompareExchange(ref _used,current+delta,current)==current)return true;}}
+    public void Release(ulong bytes){if(Interlocked.Add(ref _used,-checked((long)bytes))<0)throw new Exception("Underflow");}
+}

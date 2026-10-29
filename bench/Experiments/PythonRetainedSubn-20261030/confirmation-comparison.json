@@ -1,0 +1,378 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 26.5175058,
+  "LaneNames": [
+    "BaselineReplace",
+    "CandidateReplaceOrRetainedSubn",
+    "PredecodedRegexReplace",
+    "DecodeThenRegexReplace"
+  ],
+  "Scope": "Controls call unchanged public Replace/ReplaceToString. Retained rows add a new independently funded result lifetime and dispose the receipt immediately after retrieving output bytes; escaped arrays stay valid and caller-owned. All result byte arrays/text held through timing; equality/checksums afterward. Comparators include UTF-8 output encoding on byte rows, omit count production; candidate Subn returns count but consumer does not read it. Only overlapping scalar semantics used. Feature costs, no catalog Status/parity claim.",
+  "Baseline": {
+    "Core": "0.5.0-dev\u002B46efb4112f2cc2930982c1bdcc18bead3fe35d18 sha256=2F6E236DD95C5F1BF8431EAE651203F73BC5A51DA42EA4066277603131F0919F",
+    "Python": "0.5.0-dev\u002B46efb4112f2cc2930982c1bdcc18bead3fe35d18 sha256=986C8182CFD2FDDD5565932C60F2ED928E402EC47D9D2CAD9AC1A2CD0AC7FC36"
+  },
+  "Candidate": {
+    "Core": "0.5.0-dev\u002B4cab6712ffedcfb25f24840f07ba9995385345be sha256=D54215303C98330C6F952289ED147447B78DB8A28F650B605118EB005A5B73B1",
+    "Python": "0.5.0-dev\u002B4cab6712ffedcfb25f24840f07ba9995385345be sha256=9B7EE7AD975640F32333318DB10A00E23628013916603094513E04E6EF6D2900"
+  },
+  "Rows": [
+    {
+      "Name": "unfunded-byte-control",
+      "Pattern": "cat",
+      "InputBytes": 208,
+      "Funded": false,
+      "Retained": false,
+      "Finite": false,
+      "Live": false,
+      "TextOutput": false,
+      "Operation": "Replace bytes; candidate retained rows use SubnRetained \u002B Result bytes \u002B Dispose",
+      "Iterations": [
+        32768,
+        32768,
+        65536,
+        65536
+      ],
+      "WarmupCalls": [
+        203680,
+        230512,
+        214816,
+        433216
+      ],
+      "Microseconds": [
+        [
+          1.7304168701171876,
+          1.7271484375,
+          1.7097198486328125
+        ],
+        [
+          1.861785888671875,
+          1.8639190673828125,
+          1.824859619140625
+        ],
+        [
+          1.7847885131835937,
+          1.7969696044921875,
+          1.7546768188476562
+        ],
+        [
+          1.9984786987304686,
+          1.9978683471679688,
+          1.976673889160156
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          168,
+          168,
+          168
+        ],
+        [
+          168,
+          168,
+          168
+        ],
+        [
+          416.0037841796875,
+          416.0037841796875,
+          416.0037841796875
+        ],
+        [
+          792.0037841796875,
+          792.0037841796875,
+          792.0037841796875
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          56.7023,
+          56.5952,
+          56.0241
+        ],
+        [
+          61.007,
+          61.0769,
+          59.797
+        ],
+        [
+          116.9679,
+          117.7662,
+          114.9945
+        ],
+        [
+          130.9723,
+          130.9323,
+          129.5433
+        ]
+      ]
+    },
+    {
+      "Name": "funded-byte-control",
+      "Pattern": "cat",
+      "InputBytes": 208,
+      "Funded": true,
+      "Retained": false,
+      "Finite": false,
+      "Live": false,
+      "TextOutput": false,
+      "Operation": "Replace bytes; candidate retained rows use SubnRetained \u002B Result bytes \u002B Dispose",
+      "Iterations": [
+        65536,
+        65536,
+        65536,
+        65536
+      ],
+      "WarmupCalls": [
+        431696,
+        393712,
+        541184,
+        474768
+      ],
+      "Microseconds": [
+        [
+          2.137353515625,
+          2.097161865234375,
+          2.120072937011719
+        ],
+        [
+          2.3291885375976564,
+          2.349894714355469,
+          2.336033630371094
+        ],
+        [
+          1.7402557373046876,
+          1.7410903930664063,
+          1.74173583984375
+        ],
+        [
+          1.9587738037109377,
+          1.9535430908203124,
+          1.9415817260742188
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          632,
+          632,
+          632
+        ],
+        [
+          632,
+          632,
+          632
+        ],
+        [
+          416.0037841796875,
+          416.0037841796875,
+          416.0037841796875
+        ],
+        [
+          792.0037841796875,
+          792.0037841796875,
+          792.0037841796875
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          140.0736,
+          137.4396,
+          138.9411
+        ],
+        [
+          152.6457,
+          154.0027,
+          153.0943
+        ],
+        [
+          114.0494,
+          114.1041,
+          114.1464
+        ],
+        [
+          128.3702,
+          128.0274,
+          127.2435
+        ]
+      ]
+    },
+    {
+      "Name": "funded-text-control",
+      "Pattern": "(?\u003Cx\u003E[a-z]\u002B)",
+      "InputBytes": 272,
+      "Funded": true,
+      "Retained": false,
+      "Finite": false,
+      "Live": false,
+      "TextOutput": true,
+      "Operation": "ReplaceToString",
+      "Iterations": [
+        8192,
+        8192,
+        16384,
+        16384
+      ],
+      "WarmupCalls": [
+        48144,
+        65616,
+        185632,
+        184592
+      ],
+      "Microseconds": [
+        [
+          14.666796875000001,
+          14.55233154296875,
+          14.785229492187499
+        ],
+        [
+          13.7998291015625,
+          13.72265625,
+          14.04976806640625
+        ],
+        [
+          4.9443298339843755,
+          4.889892578125,
+          4.9530273437500005
+        ],
+        [
+          4.994537353515625,
+          4.9805969238281245,
+          5.05169677734375
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          5816,
+          5816,
+          5816
+        ],
+        [
+          5816,
+          5816,
+          5816
+        ],
+        [
+          664.025390625,
+          664.025390625,
+          664.025390625
+        ],
+        [
+          1232.025390625,
+          1232.025390625,
+          1232.025390625
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          120.1504,
+          119.2127,
+          121.1206
+        ],
+        [
+          113.0482,
+          112.416,
+          115.0957
+        ],
+        [
+          81.0079,
+          80.116,
+          81.1504
+        ],
+        [
+          81.8305,
+          81.6021,
+          82.767
+        ]
+      ]
+    },
+    {
+      "Name": "retained-native",
+      "Pattern": "cat",
+      "InputBytes": 208,
+      "Funded": true,
+      "Retained": true,
+      "Finite": false,
+      "Live": false,
+      "TextOutput": false,
+      "Operation": "Replace bytes; candidate retained rows use SubnRetained \u002B Result bytes \u002B Dispose",
+      "Iterations": [
+        65536,
+        65536,
+        65536,
+        65536
+      ],
+      "WarmupCalls": [
+        459872,
+        388480,
+        559088,
+        482192
+      ],
+      "Microseconds": [
+        [
+          2.113104248046875,
+          2.1157913208007812,
+          2.1026382446289062
+        ],
+        [
+          2.407490539550781,
+          2.4114501953125,
+          2.386082458496094
+        ],
+        [
+          1.7228225708007812,
+          1.7423416137695311,
+          1.74488525390625
+        ],
+        [
+          1.9358016967773437,
+          1.9510284423828126,
+          1.9383132934570313
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          632,
+          632,
+          632
+        ],
+        [
+          680,
+          680,
+          680
+        ],
+        [
+          416.0037841796875,
+          416.0037841796875,
+          416.0037841796875
+        ],
+        [
+          792.0037841796875,
+          792.0037841796875,
+          792.0037841796875
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          138.4844,
+          138.6605,
+          137.7985
+        ],
+        [
+          157.7773,
+          158.0368,
+          156.3743
+        ],
+        [
+          112.9069,
+          114.1861,
+          114.3528
+        ],
+        [
+          126.8647,
+          127.8626,
+          127.0293
+        ]
+      ]
+    }
+  ]
+}
