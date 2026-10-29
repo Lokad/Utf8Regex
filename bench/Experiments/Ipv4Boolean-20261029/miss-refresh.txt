@@ -1,0 +1,32 @@
+Measuring README benchmark case: common/ip-miss (requested=1, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=400666;ElapsedMicroseconds=49079.800
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=413998;ElapsedMicroseconds=49953.500
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=263805;ElapsedMicroseconds=49728.900
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=997538;ElapsedMicroseconds=49857.700
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=236728;ElapsedMicroseconds=49289.700
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=705172;ElapsedMicroseconds=50308.100
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=400666;ElapsedMicroseconds=49042.400
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=413998;ElapsedMicroseconds=50134.000
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=263805;ElapsedMicroseconds=49891.800
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=997538;ElapsedMicroseconds=49569.200
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=236728;ElapsedMicroseconds=49382.800
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=705172;ElapsedMicroseconds=50476.200
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=400666;ElapsedMicroseconds=49542.800
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=413998;ElapsedMicroseconds=50006.900
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=263805;ElapsedMicroseconds=49388.500
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=997538;ElapsedMicroseconds=49665.400
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=236728;ElapsedMicroseconds=49832.300
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=705172;ElapsedMicroseconds=57122.400
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=400666;ElapsedMicroseconds=49486.800
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=413998;ElapsedMicroseconds=50486.300
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=263805;ElapsedMicroseconds=49632.900
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=997538;ElapsedMicroseconds=49335.500
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=236728;ElapsedMicroseconds=49637.500
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=705172;ElapsedMicroseconds=50601.700
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=400666;ElapsedMicroseconds=49517.800
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=413998;ElapsedMicroseconds=50198.400
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=263805;ElapsedMicroseconds=49888.800
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=997538;ElapsedMicroseconds=49711.200
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=236728;ElapsedMicroseconds=49567.000
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=705172;ElapsedMicroseconds=50113.700
+Updated README case: common/ip-miss

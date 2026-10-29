@@ -82,14 +82,18 @@ runtimes checked in Windows/Linux CI. Published 0.4.0 packages target .NET 10.
 
 ## Benchmarks
 
-The tables below were refreshed on **28 October 2026** using **.NET 11 RC3**
+The full baseline was refreshed on **28 October 2026** using **.NET 11 RC3**
 (`11.0.0-rc.3.26522.148`) on Ubuntu 24.04.4 x64, Intel Xeon Platinum 8573C.
 They measure public operations, including strict UTF-8 validation and required
 result materialization. Values come from
 [README.Benchmarks.json](README.Benchmarks.json); raw samples, binary identities
 and [qualification verdicts](README.Parity.json) are retained. Four Core rows
 remain unqualified; their displayed medians do not establish parity. Measurements
-describe the frozen implementation, not later source changes.
+describe each row's recorded implementation; selected rows are refreshed
+incrementally and do not qualify later source changes.
+
+Case IDs preserve upstream names: `common/ip-miss` matches a valid prefix of its
+subject, so it measures a hit.
 
 The complete Core/PythonRe/PCRE2 refresh took **45 minutes 37 seconds**, including
 a fresh Release build, .NET 10/11 tests, paired comparators, lifecycle/scaling
@@ -149,8 +153,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | Case | Operation | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
 | `industry/leipzig-symbol-count` | `Count` | 1,152,702.300 us | 23,036.733 us | 30,488.150 us | 50.04x |
-| `common/ip-match` | `IsMatch` | 1.100 us | 0.177 us | 0.195 us | 6.23x |
-| `common/ip-miss` | `IsMatch` | 1.122 us | 0.190 us | 0.209 us | 5.90x |
 | `common/email-match` | `IsMatch` | 1.571 us | 0.276 us | 0.305 us | 5.68x |
 | `common/email-miss` | `IsMatch` | 1.920 us | 0.348 us | 0.369 us | 5.52x |
 | `common/matches-boundary` | `Count` | 833.867 us | 164.674 us | 166.856 us | 5.06x |
@@ -165,6 +167,8 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/mariomka-uri-count` | `Count` | 1,749.428 us | 1,943.896 us | 10,451.900 us | 0.90x |
 | `common/uri-miss` | `IsMatch` | 0.166 us | 0.204 us | 0.226 us | 0.81x |
 | `common/uri-match` | `IsMatch` | 0.167 us | 0.234 us | 0.270 us | 0.71x |
+| `common/ip-match` | `IsMatch` | 0.125 us | 0.181 us | 0.201 us | 0.69x |
+| `common/ip-miss` | `IsMatch` | 0.124 us | 0.189 us | 0.209 us | 0.66x |
 | `industry/leipzig-river-window-count` | `Count` | 19,542.333 us | 32,374.150 us | 46,719.000 us | 0.60x |
 | `industry/boostdocs-date-match` | `IsMatch` | 0.050 us | 0.085 us | 0.102 us | 0.58x |
 | `industry/boostdocs-credit-card-match` | `IsMatch` | 0.083 us | 0.163 us | 0.179 us | 0.51x |
@@ -231,8 +235,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | Case | Operation | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
 | `industry/leipzig-symbol-count` | `Count` | 1,153,094.300 us | 1,235.305 us | 6,850.600 us | 933.45x |
-| `common/ip-miss` | `IsMatch` | 1.142 us | 0.048 us | 0.070 us | 23.56x |
-| `common/ip-match` | `IsMatch` | 1.093 us | 0.047 us | 0.068 us | 23.48x |
 | `common/email-miss` | `IsMatch` | 1.937 us | 0.089 us | 0.115 us | 21.80x |
 | `common/email-match` | `IsMatch` | 1.586 us | 0.107 us | 0.134 us | 14.86x |
 | `industry/leipzig-river-window-count` | `Count` | 21,083.300 us | 1,584.697 us | 16,530.400 us | 13.30x |
@@ -245,7 +247,9 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/mariomka-email-count` | `Count` | 1,529.000 us | 455.287 us | 7,853.633 us | 3.36x |
 | `industry/rust-sherlock-nonnewline-count` | `Count` | 4,784.783 us | 1,499.603 us | 1,806.293 us | 3.19x |
 | `common/uri-miss` | `IsMatch` | 0.167 us | 0.063 us | 0.085 us | 2.62x |
+| `common/ip-match` | `IsMatch` | 0.124 us | 0.049 us | 0.070 us | 2.55x |
 | `common/match-word` | `Match` | 0.203 us | 0.080 us | 0.994 us | 2.53x |
+| `common/ip-miss` | `IsMatch` | 0.121 us | 0.050 us | 0.072 us | 2.43x |
 | `common/one-node-backtracking` | `IsMatch` | 0.190 us | 0.088 us | 0.129 us | 2.15x |
 | `common/uri-match` | `IsMatch` | 0.168 us | 0.089 us | 0.120 us | 1.90x |
 | `industry/boostdocs-date-match` | `IsMatch` | 0.055 us | 0.030 us | 0.049 us | 1.83x |
