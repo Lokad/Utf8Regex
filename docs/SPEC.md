@@ -180,6 +180,13 @@ admission; immutable range/name arrays are owned and subject bytes are borrowed.
 This reduces requested output capacity, without converting result traffic into
 a live-retention bound or claiming a shared caller-owned allowance.
 
+PythonRe's explicit shared-working cursor overload accepts `IUtf8MemoryAllowance`
+from the host. The existing ledger reserves before covered acquisitions and
+refunds exclusive storage after users finish. Shared refusal is a distinct
+`Utf8MemoryAdmissionException` and cannot relax numeric controls. The interface
+does not itself add admission to Core/PCRE2 public operations, compilation,
+retained caches or caller-owned outputs; those lifetimes remain separate.
+
 ### Host admission
 
 For a Core/PythonRe instance with finite working cap W and result cap R, a host

@@ -21,10 +21,22 @@ internal struct Utf8SliceInvocation
     {
     }
 
+    internal Utf8SliceInvocation(Utf8ExecutionLimits limits, TimeSpan timeout, CancellationToken token,
+        IUtf8MemoryAllowance memoryAllowance)
+        : this(limits, Utf8ExecutionDeadline.Start(timeout), token, memoryAllowance)
+    {
+    }
+
     internal Utf8SliceInvocation(Utf8ExecutionLimits limits, Utf8ExecutionDeadline deadline, CancellationToken token)
+        : this(limits, deadline, token, null)
+    {
+    }
+
+    private Utf8SliceInvocation(Utf8ExecutionLimits limits, Utf8ExecutionDeadline deadline, CancellationToken token,
+        IUtf8MemoryAllowance? memoryAllowance)
     {
         _inlineBudget = new Utf8ExecutionBudget(limits, deadline, token);
-        _inlineLedger = new Utf8StorageLedger(limits.MaxWorkingBytes);
+        _inlineLedger = new Utf8StorageLedger(limits.MaxWorkingBytes, memoryAllowance);
         CheckpointHook = Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook;
         AnchorOriginByte = -1;
         // Create the owner at invocation entry, before validation/preparation.
@@ -33,7 +45,7 @@ internal struct Utf8SliceInvocation
         // Infinite, None-token calls with no hook keep their allocation-free
         // inline path. The fixed accounting metadata is not storage payload;
         // complete object-overhead admission remains a separate policy gate.
-        _sharedWork = !_inlineBudget.IsUnmetered || CheckpointHook is not null
+        _sharedWork = !_inlineBudget.IsUnmetered || memoryAllowance is not null || CheckpointHook is not null
             ? new SharedInvocationState(_inlineBudget, _inlineLedger)
             : null;
     }

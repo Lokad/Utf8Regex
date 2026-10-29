@@ -29,4 +29,18 @@ public sealed partial class Utf8PythonRegex
         return new Utf8PythonMatchCursor(input, ScalarProgram,
             _nameEntries, startOffsetInBytes, MatchTimeout, Pattern, invocation, _utf8Regex);
     }
+
+    /// <summary>Creates a cursor whose modeled active working storage is funded by a caller-owned allowance.</summary>
+    /// <remarks>The allowance is shared directly across callers. Existing numeric limits, creation token and deadline still apply. Reservations precede covered buffer acquisition and include growth overlap; EOF, failure and disposal refund exclusive scratch synchronously. Result arrays are funded until publication; caller retention, input/program/cache storage and incidental objects remain outside this working scope. No result-traffic cap is implied.</remarks>
+    /// <exception cref="Utf8MemoryAdmissionException">The shared allowance refused storage; no uncapped retry is performed.</exception>
+    public Utf8PythonMatchCursor CreateMatchCursor(ReadOnlyMemory<byte> input, int startOffsetInBytes,
+        CancellationToken cancellationToken, IUtf8MemoryAllowance workingMemoryAllowance)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(workingMemoryAllowance);
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
+        ValidateScalarStartOffset(input.Span, startOffsetInBytes);
+        return new Utf8PythonMatchCursor(input, ScalarProgram,
+            _nameEntries, startOffsetInBytes, MatchTimeout, Pattern, invocation, _utf8Regex);
+    }
 }

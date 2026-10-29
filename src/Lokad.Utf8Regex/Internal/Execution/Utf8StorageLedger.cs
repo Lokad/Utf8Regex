@@ -17,17 +17,21 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal struct Utf8StorageLedger
 {
     private ulong _reservedBytes;
+    private readonly IUtf8MemoryAllowance? _memoryAllowance;
 
-    internal Utf8StorageLedger(ulong maxLiveBytes)
+    internal Utf8StorageLedger(ulong maxLiveBytes) : this(maxLiveBytes, null) { }
+
+    internal Utf8StorageLedger(ulong maxLiveBytes, IUtf8MemoryAllowance? memoryAllowance)
     {
         MaxLiveBytes = maxLiveBytes;
+        _memoryAllowance = memoryAllowance;
     }
 
     internal ulong MaxLiveBytes { get; }
 
     internal ulong ReservedBytes => _reservedBytes;
 
-    internal bool IsUnlimited => MaxLiveBytes == 0;
+    internal bool IsUnlimited => MaxLiveBytes == 0 && _memoryAllowance is null;
 
     internal bool TryReserve(ulong bytes)
     {
@@ -42,6 +46,8 @@ internal struct Utf8StorageLedger
             return false;
         }
 
+        if (bytes != 0 && _memoryAllowance is not null && !_memoryAllowance.TryReserve(bytes))
+            throw new Utf8MemoryAdmissionException(bytes);
         _reservedBytes = admitted;
         return true;
     }
@@ -54,6 +60,7 @@ internal struct Utf8StorageLedger
         }
 
         _reservedBytes -= bytes;
+        if (bytes != 0) _memoryAllowance?.Release(bytes);
     }
 
 }

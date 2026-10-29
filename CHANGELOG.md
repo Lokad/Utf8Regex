@@ -10,6 +10,8 @@
   absolute deadline, cumulative limits and previously returned owned snapshots.
 - Add PythonRe range cursor results and range-only split, avoiding captured-text
   copies and coordinate maps while retaining capture metadata and resource limits.
+- Accept a caller-owned shared working allowance for PythonRe cursors, with
+  synchronous scratch refunds and explicit admission failure.
 - Lower compatible Python Unicode character-class unions to the existing scalar
   predicate instruction, preserving pinned membership and lexical folding.
 - Reuse complete cell/range-reference proofs for bounded ASCII value Match,

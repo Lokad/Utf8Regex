@@ -1,3 +1,6 @@
+interface IUtf8MemoryAllowance
+  method abstract Boolean TryReserve(UInt64 bytes)
+  method abstract Void Release(UInt64 bytes)
 delegate String Utf16MatchEvaluator<TState>(in Utf8MatchContext match, ref TState state)
 readonly ref struct Utf8CaptureContext
   property Boolean IsByteAligned { get; }
@@ -51,6 +54,9 @@ readonly ref struct Utf8MatchContext
   method Utf8GroupContext GetGroup(Int32 number)
   method Utf8GroupContext GetGroup(String name)
 delegate Void Utf8MatchEvaluator<TState>(in Utf8MatchContext match, ref Utf8ReplacementWriter writer, ref TState state)
+sealed class Utf8MemoryAdmissionException : Exception, Runtime.Serialization.ISerializable
+  ctor Utf8MemoryAdmissionException(UInt64 requestedBytes)
+  property UInt64 RequestedBytes { get; }
 sealed class Utf8Regex
   ctor Utf8Regex(String pattern)
   ctor Utf8Regex(String pattern, Text.RegularExpressions.RegexOptions options)

@@ -181,6 +181,25 @@ these types expose byte coordinates only. Scalar-coordinate support remains open
 Result arrays remain admitted before acquisition under the existing result-traffic
 and working scopes; this does not introduce caller-owned shared memory funding.
 
+`CreateMatchCursor(input, startOffsetInBytes, token, workingMemoryAllowance)`
+accepts an `IUtf8MemoryAllowance` shared directly across concurrent cursors and
+other host users. Existing working-buffer admission reserves additional modeled
+bytes before acquisition, including old/new growth overlap. Refusal throws
+`Utf8MemoryAdmissionException` with the additional requested amount; it never
+becomes no-match, an uncapped retry or a new independent allowance. Numeric
+work/depth/working/result limits, original token and deadline still apply.
+No default working-byte cap or cumulative traffic quota is imposed by this API.
+
+EOF, failure and cursor disposal synchronously refund exclusive working storage;
+aliases share this lifetime and cannot double-refund. Required result/staging
+arrays are funded until publication, then transfer to the caller's retention
+scope. Input/program/cache storage, incidental owners, callbacks, later getters
+and caller-retained results remain outside **this shared working allowance**.
+This is the first shared-admission path, not the handoff's complete aggregate
+compilation/cache/result-ownership guarantee. Implementations must be thread-safe,
+fast and non-reentrant into regex; refusal/throw leaves the allowance unchanged,
+and Release must not throw or observe cancellation.
+
 `SplitRanges` returns owned `Utf8PythonCaptureRange` metadata over the original
 input: number zero is an ordinary segment, positive numbers are captured
 separators, and unmatched separators retain `Success=false`. It preserves Python

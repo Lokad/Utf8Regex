@@ -152,6 +152,7 @@ sealed class PythonRe.Utf8PythonRegex
   method PythonRe.Utf8PythonMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input)
   method PythonRe.Utf8PythonMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Int32 startOffsetInBytes)
   method PythonRe.Utf8PythonMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken)
+  method PythonRe.Utf8PythonMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance workingMemoryAllowance)
   method PythonRe.Utf8PythonMatchData[] FindAll(ReadOnlySpan<Byte> input)
   method PythonRe.Utf8PythonMatchData[] FindAll(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
   method PythonRe.Utf8PythonMatchData[] FindAll(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken)

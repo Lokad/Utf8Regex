@@ -76,6 +76,13 @@ including unmatched captures, without decoding or copying their text. These path
 retain finite limits and synchronous cancellation; shared memory funding remains
 separate unfinished work.
 
+The four-argument `CreateMatchCursor` overload accepts a caller-owned
+`IUtf8MemoryAllowance` for shared working admission. Concurrent cursors use that
+same allowance directly; refusal throws `Utf8MemoryAdmissionException` before
+covered acquisition, and EOF/failure/disposal refund scratch synchronously.
+Numeric limits still apply. Compilation, caches and published caller-retained
+results need separate funding; this overload does not imply a total memory cap.
+
 Named captures remain distinct when Unicode identifiers and names such as `g1`
 are mixed. Public names and Python opening-order numbering remain unchanged.
 Fixed finite policies omit optional unmetered Core runtime/emission storage and
