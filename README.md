@@ -290,8 +290,6 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | Case | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
 | `lokad/folding/region-marker` | 5,376.030 us | 37.099 us | 60.876 us | 144.91x |
-| `lokad/style/cell-ref` | 13.353 us | 1.749 us | 1.995 us | 7.64x |
-| `lokad/style/range-ref` | 10.809 us | 1.469 us | 1.595 us | 7.36x |
 | `lokad/lexer/operator-run` | 13.210 us | 1.971 us | 2.578 us | 6.70x |
 | `lokad/langserv/helper-identifier` | 31.950 us | 4.882 us | 6.212 us | 6.54x |
 | `lokad/lexer/string` | 286.829 us | 44.581 us | 49.472 us | 6.43x |
@@ -311,10 +309,12 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `lokad/lexer/number` | 10.325 us | 14.391 us | 15.615 us | 0.72x |
 | `literal/call-token` | 3.050 us | 4.431 us | 15.650 us | 0.69x |
 | `structural/method-family-generic-call` | 4.440 us | 6.529 us | 17.976 us | 0.68x |
+| `lokad/style/cell-ref` | 2.004 us | 2.949 us | 3.091 us | 0.68x |
 | `literal/identifier-token` | 2.795 us | 4.393 us | 15.651 us | 0.64x |
 | `structural/method-family-call` | 4.852 us | 8.149 us | 19.027 us | 0.60x |
 | `literal-family/type-token-family` | 12.127 us | 25.124 us | 36.032 us | 0.48x |
 | `literal/identifier-token-casei` | 7.452 us | 15.546 us | 27.323 us | 0.48x |
+| `lokad/style/range-ref` | 1.192 us | 2.773 us | 2.805 us | 0.43x |
 | `structural/ordered-keyword-window` | 6.874 us | 18.003 us | 29.815 us | 0.38x |
 | `structural/ordered-modifier-pair` | 6.073 us | 17.663 us | 28.785 us | 0.34x |
 | `structural/keyword-family-to-capitalized-identifier` | 74.910 us | 220.031 us | 231.281 us | 0.34x |
@@ -342,8 +342,6 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 |---|---:|---:|---:|---:|
 | `lokad/folding/region-marker` | 5,395.440 us | 37.293 us | 60.206 us | 144.68x |
 | `structural/keyword-family-to-capitalized-identifier` | 74.881 us | 7.748 us | 19.121 us | 9.67x |
-| `lokad/style/cell-ref` | 13.998 us | 1.747 us | 1.972 us | 8.01x |
-| `lokad/style/range-ref` | 10.727 us | 1.502 us | 1.600 us | 7.14x |
 | `lokad/imports/module-imports` | 30.623 us | 4.405 us | 26.662 us | 6.95x |
 | `lokad/lexer/operator-run` | 13.443 us | 1.958 us | 2.585 us | 6.86x |
 | `lokad/lexer/string` | 294.849 us | 44.984 us | 48.666 us | 6.55x |
@@ -361,12 +359,14 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `lokad/lexer/number` | 10.320 us | 7.660 us | 9.106 us | 1.35x |
 | `lokad/langserv/identifier-validator` | 11.723 us | 9.216 us | 11.625 us | 1.27x |
 | `literal/identifier-token-casei` | 7.474 us | 5.975 us | 17.260 us | 1.25x |
+| `lokad/style/cell-ref` | 1.977 us | 1.845 us | 1.983 us | 1.07x |
 | `lokad/langserv/color-rgb-hex` | 2.083 us | 1.957 us | 2.165 us | 1.06x |
 | `literal-family/type-token-family` | 12.130 us | 11.700 us | 22.231 us | 1.04x |
 | `structural/method-family-generic-call` | 4.433 us | 4.631 us | 15.032 us | 0.96x |
 | `structural/method-family-call` | 4.847 us | 5.107 us | 15.916 us | 0.95x |
 | `literal-family/method-token-family` | 4.782 us | 5.380 us | 15.742 us | 0.89x |
 | `structural/ordered-keyword-window` | 6.885 us | 8.642 us | 20.102 us | 0.80x |
+| `lokad/style/range-ref` | 1.198 us | 1.544 us | 1.616 us | 0.78x |
 | `literal/call-token` | 3.055 us | 4.019 us | 14.705 us | 0.76x |
 | `structural/ordered-modifier-pair` | 6.042 us | 8.654 us | 19.744 us | 0.70x |
 | `structural/ordered-identifier-window` | 6.484 us | 10.777 us | 21.938 us | 0.60x |

@@ -1,0 +1,32 @@
+Measuring README benchmark case: lokad/style/range-ref (requested=1, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=40857;ElapsedMicroseconds=49066.100
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=34504;ElapsedMicroseconds=42067.200
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=17834;ElapsedMicroseconds=49547.200
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=31910;ElapsedMicroseconds=48967.600
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=18233;ElapsedMicroseconds=51144.200
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=31032;ElapsedMicroseconds=49514.800
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=40857;ElapsedMicroseconds=48508.500
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=34504;ElapsedMicroseconds=41958.300
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=17834;ElapsedMicroseconds=47646.900
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=31910;ElapsedMicroseconds=49254.800
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=18233;ElapsedMicroseconds=50462.300
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=31032;ElapsedMicroseconds=48960.300
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=40857;ElapsedMicroseconds=48718.300
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=34504;ElapsedMicroseconds=41172.600
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=17834;ElapsedMicroseconds=49653.000
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=31910;ElapsedMicroseconds=51982.000
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=18233;ElapsedMicroseconds=52030.200
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=31032;ElapsedMicroseconds=50732.000
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=40857;ElapsedMicroseconds=49013.500
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=34504;ElapsedMicroseconds=40692.400
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=17834;ElapsedMicroseconds=46762.700
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=31910;ElapsedMicroseconds=46718.600
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=18233;ElapsedMicroseconds=50630.200
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=31032;ElapsedMicroseconds=50150.600
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=40857;ElapsedMicroseconds=48340.900
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=34504;ElapsedMicroseconds=41342.300
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=17834;ElapsedMicroseconds=49451.000
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=31910;ElapsedMicroseconds=51583.600
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=18233;ElapsedMicroseconds=51866.700
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=31032;ElapsedMicroseconds=52949.500
+Updated README case: lokad/style/range-ref
