@@ -1,0 +1,6 @@
+Release PythonRe full: 4045 passed per net10.0/net11.0.
+Final focused advance-token cases: 10 passed per runtime, including the final first-move unmetered-native-search test.
+Release Core: 308 passed per runtime (work policy, deadlines, dependency inventory, API).
+Release PCRE2: 32 passed per runtime (resource policy, cancellation, API).
+All product source is identical between the full and final focused run; only tests/docs were extended.
+Complete build/test logs and exact producer/driver assets are in the immutable archives. No package/catalog matrix repeated.

@@ -1,0 +1,11 @@
+Preflight ordinary-ascii: 52672
+Preflight ordinary-unicode-captures: 37120
+Preflight old-live-token-control: 52672
+Preflight old-finite-control: 52672
+Preflight operation-only: 52672
+Preflight finite-operation: 52672
+Preflight both-tokens: 52672
+Preflight same-token: 52672
+Preflight native-miss-control: 0
+Preflight python-count-control: 96
+Preflight core-count-control: 96

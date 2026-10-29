@@ -1,0 +1,1078 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 31.7572745,
+  "LaneNames": [
+    "Baseline",
+    "Candidate",
+    "DiagnosticPredecodedRegex",
+    "DiagnosticDecodeThenRegex"
+  ],
+  "FeatureComparison": "The baseline has no per-advance API: operation-only uses its creation token; both/same use its creation token only. These are feature costs, not equivalent-authority performance claims.",
+  "Baseline": {
+    "Core": "0.5.0-dev\u002B5bb8be6a2ae06be687d612ca9c739c5901cd9734 sha256=E0B69927D88BFFCEA0A6177BCB856FEA507A920F26AA4204AC9A9D2C2500FD5C",
+    "Python": "0.5.0-dev\u002B5bb8be6a2ae06be687d612ca9c739c5901cd9734 sha256=BA13538895BC050716568FD696EB48FEDF32930A385A476C57CDB68728216B85"
+  },
+  "Candidate": {
+    "Core": "0.5.0-dev\u002B39a7fff4fd63dafb51489db1fc415fc90af06fab sha256=79E2E791ED3CB2F19FB46BDB2164E0E27EBFB88EFFA18648E15FBFBAB977BFA4",
+    "Python": "0.5.0-dev\u002B39a7fff4fd63dafb51489db1fc415fc90af06fab sha256=A5F2381DC0776A7B74DD270F6720D1C1A5F4BFCE071FF66D18361806EEEAA795"
+  },
+  "Rows": [
+    {
+      "Name": "ordinary-ascii",
+      "Operation": "CreateMatchCursor \u002B advance \u002B consume owned groups \u002B dispose",
+      "Pattern": "[a-z]\u002B",
+      "InputBytes": 544,
+      "Expected": 52672,
+      "Authority": "none",
+      "Finite": false,
+      "BaselineMove": "MoveNext()",
+      "CandidateMove": "MoveNext()",
+      "FeatureCost": false,
+      "Iterations": [
+        908,
+        1726,
+        4188,
+        4386
+      ],
+      "WarmupCalls": [
+        2423,
+        7560,
+        22439,
+        42315
+      ],
+      "WarmupMilliseconds": [
+        500.0255,
+        505.4145,
+        500.0047,
+        500.0112
+      ],
+      "Microseconds": [
+        [
+          28.720704845814975,
+          28.440969162995597,
+          27.809030837004403
+        ],
+        [
+          28.499884125144845,
+          28.12143684820394,
+          28.469003476245653
+        ],
+        [
+          12.975955109837631,
+          11.740305635148042,
+          12.415210124164279
+        ],
+        [
+          12.417168262653899,
+          11.715777473780209,
+          11.813702690378477
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          10560,
+          10560,
+          10560
+        ],
+        [
+          10560,
+          10560,
+          10560
+        ],
+        [
+          26880,
+          26880,
+          26880
+        ],
+        [
+          27992,
+          27992,
+          27992
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          26.0784,
+          25.8244,
+          25.2506
+        ],
+        [
+          49.1908,
+          48.5376,
+          49.1375
+        ],
+        [
+          54.3433,
+          49.1684,
+          51.9949
+        ],
+        [
+          54.4617,
+          51.3854,
+          51.8149
+        ]
+      ]
+    },
+    {
+      "Name": "ordinary-unicode-captures",
+      "Operation": "CreateMatchCursor \u002B advance \u002B consume owned groups \u002B dispose",
+      "Pattern": "(\u00E9\u002B|a\u002B)",
+      "InputBytes": 416,
+      "Expected": 37120,
+      "Authority": "none",
+      "Finite": false,
+      "BaselineMove": "MoveNext()",
+      "CandidateMove": "MoveNext()",
+      "FeatureCost": false,
+      "Iterations": [
+        1061,
+        1043,
+        3682,
+        3733
+      ],
+      "WarmupCalls": [
+        9004,
+        10383,
+        35681,
+        36148
+      ],
+      "WarmupMilliseconds": [
+        500.0329,
+        500.0124,
+        500.0122,
+        500.013
+      ],
+      "Microseconds": [
+        [
+          47.92912346842601,
+          47.32789820923657,
+          47.01979264844486
+        ],
+        [
+          47.39137104506232,
+          47.17727708533078,
+          46.41188878235859
+        ],
+        [
+          14.554182509505704,
+          13.508174904942965,
+          14.220749592612709
+        ],
+        [
+          14.059094562014465,
+          13.791186713099384,
+          14.065255826413072
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          15104,
+          15104,
+          15104
+        ],
+        [
+          15104,
+          15104,
+          15104
+        ],
+        [
+          28672,
+          28672,
+          28672
+        ],
+        [
+          29272,
+          29272,
+          29272
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          50.8528,
+          50.2149,
+          49.888
+        ],
+        [
+          49.4292,
+          49.2059,
+          48.4076
+        ],
+        [
+          53.5885,
+          49.7371,
+          52.3608
+        ],
+        [
+          52.4826,
+          51.4825,
+          52.5056
+        ]
+      ]
+    },
+    {
+      "Name": "old-live-token-control",
+      "Operation": "CreateMatchCursor \u002B advance \u002B consume owned groups \u002B dispose",
+      "Pattern": "[a-z]\u002B",
+      "InputBytes": 544,
+      "Expected": 52672,
+      "Authority": "creation",
+      "Finite": false,
+      "BaselineMove": "MoveNext()",
+      "CandidateMove": "MoveNext()",
+      "FeatureCost": false,
+      "Iterations": [
+        1235,
+        1306,
+        4299,
+        4247
+      ],
+      "WarmupCalls": [
+        12657,
+        13067,
+        41563,
+        42623
+      ],
+      "WarmupMilliseconds": [
+        500.0057,
+        500.0095,
+        500.0113,
+        500.0115
+      ],
+      "Microseconds": [
+        [
+          38.78882591093118,
+          39.090850202429145,
+          39.107287449392715
+        ],
+        [
+          38.22457886676876,
+          38.49234303215926,
+          38.47672281776416
+        ],
+        [
+          11.88374040474529,
+          11.495115143056525,
+          12.000581530588509
+        ],
+        [
+          11.592959736284437,
+          11.621191429244174,
+          11.943701436307983
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          10672,
+          10672,
+          10672
+        ],
+        [
+          10672,
+          10672,
+          10672
+        ],
+        [
+          26880,
+          26880,
+          26880
+        ],
+        [
+          27992,
+          27992,
+          27992
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          47.9042,
+          48.2772,
+          48.2975
+        ],
+        [
+          49.9213,
+          50.271,
+          50.2506
+        ],
+        [
+          51.0882,
+          49.4175,
+          51.5905
+        ],
+        [
+          49.2353,
+          49.3552,
+          50.7249
+        ]
+      ]
+    },
+    {
+      "Name": "old-finite-control",
+      "Operation": "CreateMatchCursor \u002B advance \u002B consume owned groups \u002B dispose",
+      "Pattern": "[a-z]\u002B",
+      "InputBytes": 544,
+      "Expected": 52672,
+      "Authority": "none",
+      "Finite": true,
+      "BaselineMove": "MoveNext()",
+      "CandidateMove": "MoveNext()",
+      "FeatureCost": false,
+      "Iterations": [
+        1304,
+        1321,
+        4191,
+        4344
+      ],
+      "WarmupCalls": [
+        12663,
+        13160,
+        41086,
+        42078
+      ],
+      "WarmupMilliseconds": [
+        500.0159,
+        500.0195,
+        500.0093,
+        500.0067
+      ],
+      "Microseconds": [
+        [
+          38.372546012269936,
+          39.06725460122699,
+          38.91909509202454
+        ],
+        [
+          37.82596517789553,
+          37.966313398940194,
+          38.15889477668433
+        ],
+        [
+          12.070579813886901,
+          11.753066094010975,
+          12.111739441660703
+        ],
+        [
+          12.00110497237569,
+          11.929396869244936,
+          12.001680478821363
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          10672,
+          10672,
+          10672
+        ],
+        [
+          10672,
+          10672,
+          10672
+        ],
+        [
+          26880,
+          26880,
+          26880
+        ],
+        [
+          27992,
+          27992,
+          27992
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          50.0378,
+          50.9437,
+          50.7505
+        ],
+        [
+          49.9681,
+          50.1535,
+          50.4079
+        ],
+        [
+          50.5878,
+          49.2571,
+          50.7603
+        ],
+        [
+          52.1328,
+          51.8213,
+          52.1353
+        ]
+      ]
+    },
+    {
+      "Name": "operation-only",
+      "Operation": "CreateMatchCursor \u002B advance \u002B consume owned groups \u002B dispose",
+      "Pattern": "[a-z]\u002B",
+      "InputBytes": 544,
+      "Expected": 52672,
+      "Authority": "operation",
+      "Finite": false,
+      "BaselineMove": "MoveNext()",
+      "CandidateMove": "MoveNext(token)",
+      "FeatureCost": true,
+      "Iterations": [
+        1261,
+        1255,
+        4241,
+        4331
+      ],
+      "WarmupCalls": [
+        12578,
+        12466,
+        40894,
+        43135
+      ],
+      "WarmupMilliseconds": [
+        500.0223,
+        500.0277,
+        500.011,
+        500.0009
+      ],
+      "Microseconds": [
+        [
+          39.36693100713719,
+          39.173909595559074,
+          39.1695479777954
+        ],
+        [
+          39.8606374501992,
+          39.88231075697212,
+          39.43386454183267
+        ],
+        [
+          12.535604810186276,
+          12.045295920773402,
+          12.574463569912755
+        ],
+        [
+          12.039528977141536,
+          11.825490648810897,
+          11.812814592472868
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          10672,
+          10672,
+          10672
+        ],
+        [
+          10672,
+          10672,
+          10672
+        ],
+        [
+          26880,
+          26880,
+          26880
+        ],
+        [
+          27992,
+          27992,
+          27992
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          49.6417,
+          49.3983,
+          49.3928
+        ],
+        [
+          50.0251,
+          50.0523,
+          49.4895
+        ],
+        [
+          53.1635,
+          51.0841,
+          53.3283
+        ],
+        [
+          52.1432,
+          51.2162,
+          51.1613
+        ]
+      ]
+    },
+    {
+      "Name": "finite-operation",
+      "Operation": "CreateMatchCursor \u002B advance \u002B consume owned groups \u002B dispose",
+      "Pattern": "[a-z]\u002B",
+      "InputBytes": 544,
+      "Expected": 52672,
+      "Authority": "operation",
+      "Finite": true,
+      "BaselineMove": "MoveNext()",
+      "CandidateMove": "MoveNext(token)",
+      "FeatureCost": true,
+      "Iterations": [
+        1160,
+        1124,
+        4281,
+        4468
+      ],
+      "WarmupCalls": [
+        11368,
+        11266,
+        40609,
+        43052
+      ],
+      "WarmupMilliseconds": [
+        500.036,
+        500.0324,
+        500.0094,
+        500.0094
+      ],
+      "Microseconds": [
+        [
+          42.97387931034483,
+          42.53534482758621,
+          42.67922413793104
+        ],
+        [
+          44.12206405693951,
+          44.2520462633452,
+          44.01725978647687
+        ],
+        [
+          12.01135248773651,
+          11.521396869890212,
+          12.32328895117963
+        ],
+        [
+          11.503737690241719,
+          11.421799462846913,
+          11.85718442256043
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          10672,
+          10672,
+          10672
+        ],
+        [
+          10672,
+          10672,
+          10672
+        ],
+        [
+          26880,
+          26880,
+          26880
+        ],
+        [
+          27992,
+          27992,
+          27992
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          49.8497,
+          49.341,
+          49.5079
+        ],
+        [
+          49.5932,
+          49.7393,
+          49.4754
+        ],
+        [
+          51.4206,
+          49.3231,
+          52.756
+        ],
+        [
+          51.3987,
+          51.0326,
+          52.9779
+        ]
+      ]
+    },
+    {
+      "Name": "both-tokens",
+      "Operation": "CreateMatchCursor \u002B advance \u002B consume owned groups \u002B dispose",
+      "Pattern": "[a-z]\u002B",
+      "InputBytes": 544,
+      "Expected": 52672,
+      "Authority": "both",
+      "Finite": false,
+      "BaselineMove": "MoveNext()",
+      "CandidateMove": "MoveNext(token)",
+      "FeatureCost": true,
+      "Iterations": [
+        1271,
+        1057,
+        4259,
+        4295
+      ],
+      "WarmupCalls": [
+        12615,
+        10348,
+        40993,
+        43056
+      ],
+      "WarmupMilliseconds": [
+        500.0142,
+        500.0377,
+        500.0048,
+        500.0095
+      ],
+      "Microseconds": [
+        [
+          39.36081825334382,
+          38.84067663257278,
+          38.55877261998427
+        ],
+        [
+          48.007000946073795,
+          47.75033112582781,
+          47.98978240302744
+        ],
+        [
+          12.308194411833764,
+          11.604648978633481,
+          12.315801831415826
+        ],
+        [
+          11.586495925494761,
+          11.38989522700815,
+          11.814970896391154
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          10672,
+          10672,
+          10672
+        ],
+        [
+          18432,
+          18432,
+          18432
+        ],
+        [
+          26880,
+          26880,
+          26880
+        ],
+        [
+          27992,
+          27992,
+          27992
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          50.0276,
+          49.3665,
+          49.0082
+        ],
+        [
+          50.7434,
+          50.4721,
+          50.7252
+        ],
+        [
+          52.4206,
+          49.4242,
+          52.453
+        ],
+        [
+          49.764,
+          48.9196,
+          50.7453
+        ]
+      ]
+    },
+    {
+      "Name": "same-token",
+      "Operation": "CreateMatchCursor \u002B advance \u002B consume owned groups \u002B dispose",
+      "Pattern": "[a-z]\u002B",
+      "InputBytes": 544,
+      "Expected": 52672,
+      "Authority": "same",
+      "Finite": false,
+      "BaselineMove": "MoveNext()",
+      "CandidateMove": "MoveNext(token)",
+      "FeatureCost": true,
+      "Iterations": [
+        1297,
+        1250,
+        4382,
+        4407
+      ],
+      "WarmupCalls": [
+        12672,
+        12593,
+        41659,
+        43724
+      ],
+      "WarmupMilliseconds": [
+        500.0021,
+        500.0011,
+        500.0089,
+        500.0062
+      ],
+      "Microseconds": [
+        [
+          39.1218966846569,
+          39.15828835774865,
+          39.146183500385504
+        ],
+        [
+          39.65048,
+          39.45352,
+          39.726560000000006
+        ],
+        [
+          12.470264719306252,
+          12.316544956640803,
+          12.527567320858056
+        ],
+        [
+          12.105945087361016,
+          11.891490810074881,
+          12.007238484229635
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          10672,
+          10672,
+          10672
+        ],
+        [
+          10672,
+          10672,
+          10672
+        ],
+        [
+          26880,
+          26880,
+          26880
+        ],
+        [
+          27992,
+          27992,
+          27992
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          50.7411,
+          50.7883,
+          50.7726
+        ],
+        [
+          49.5631,
+          49.3169,
+          49.6582
+        ],
+        [
+          54.6447,
+          53.9711,
+          54.8958
+        ],
+        [
+          53.3509,
+          52.4058,
+          52.9159
+        ]
+      ]
+    },
+    {
+      "Name": "native-miss-control",
+      "Operation": "CreateMatchCursor \u002B advance \u002B consume owned groups \u002B dispose",
+      "Pattern": "z",
+      "InputBytes": 8192,
+      "Expected": 0,
+      "Authority": "none",
+      "Finite": false,
+      "BaselineMove": "MoveNext()",
+      "CandidateMove": "MoveNext()",
+      "FeatureCost": false,
+      "Iterations": [
+        97407,
+        97114,
+        356554,
+        48881
+      ],
+      "WarmupCalls": [
+        771877,
+        812474,
+        2110492,
+        440078
+      ],
+      "WarmupMilliseconds": [
+        500.0005,
+        500.0001,
+        500.0002,
+        500.0011
+      ],
+      "Microseconds": [
+        [
+          0.48803782069050483,
+          0.4990750151426489,
+          0.4958853059841696
+        ],
+        [
+          0.49640937454949857,
+          0.5002533105422493,
+          0.49203307453096357
+        ],
+        [
+          0.14095480628460205,
+          0.14063311588146538,
+          0.1413878402710389
+        ],
+        [
+          1.1157279924715124,
+          1.0267793212086496,
+          1.135471860231992
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          432,
+          432,
+          432
+        ],
+        [
+          432,
+          432,
+          432
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          16408,
+          16408,
+          16408
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          47.5383,
+          48.6134,
+          48.3027
+        ],
+        [
+          48.2083,
+          48.5816,
+          47.7833
+        ],
+        [
+          50.258,
+          50.1433,
+          50.4124
+        ],
+        [
+          54.5379,
+          50.19,
+          55.503
+        ]
+      ]
+    },
+    {
+      "Name": "python-count-control",
+      "Operation": "Count",
+      "Pattern": "[a-z]\u002B",
+      "InputBytes": 544,
+      "Expected": 96,
+      "Authority": "none",
+      "Finite": true,
+      "BaselineMove": "MoveNext()",
+      "CandidateMove": "MoveNext()",
+      "FeatureCost": false,
+      "Iterations": [
+        3132,
+        3129,
+        10295,
+        10006
+      ],
+      "WarmupCalls": [
+        30307,
+        30816,
+        100991,
+        97877
+      ],
+      "WarmupMilliseconds": [
+        500.0018,
+        500.0017,
+        500.0025,
+        500.0014
+      ],
+      "Microseconds": [
+        [
+          16.27116858237548,
+          16.118135376756065,
+          15.91360153256705
+        ],
+        [
+          16.27858740811761,
+          16.14717162032598,
+          15.88849472674976
+        ],
+        [
+          4.83748421563866,
+          4.84517727051967,
+          5.061719281204469
+        ],
+        [
+          5.042874275434739,
+          5.070527683389966,
+          5.064951029382371
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1792,
+          1792,
+          1792
+        ],
+        [
+          1792,
+          1792,
+          1792
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          1112,
+          1112,
+          1112
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          50.9613,
+          50.482,
+          49.8414
+        ],
+        [
+          50.9357,
+          50.5245,
+          49.7151
+        ],
+        [
+          49.8019,
+          49.8811,
+          52.1104
+        ],
+        [
+          50.459,
+          50.7357,
+          50.6799
+        ]
+      ]
+    },
+    {
+      "Name": "core-count-control",
+      "Operation": "Count",
+      "Pattern": "\\b\\w\u002B\\b",
+      "InputBytes": 544,
+      "Expected": 96,
+      "Authority": "none",
+      "Finite": true,
+      "BaselineMove": "MoveNext()",
+      "CandidateMove": "MoveNext()",
+      "FeatureCost": false,
+      "Iterations": [
+        1058,
+        1026,
+        8465,
+        8475
+      ],
+      "WarmupCalls": [
+        7917,
+        10086,
+        84899,
+        82903
+      ],
+      "WarmupMilliseconds": [
+        500.0201,
+        500.0216,
+        500.003,
+        500.005
+      ],
+      "Microseconds": [
+        [
+          47.406805293005675,
+          46.66587901701323,
+          46.34017013232514
+        ],
+        [
+          47.11530214424951,
+          47.322124756335285,
+          47.39844054580897
+        ],
+        [
+          5.789852333136444,
+          5.793927938570585,
+          5.836278795038393
+        ],
+        [
+          5.919126843657817,
+          6.004389380530973,
+          5.953274336283186
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3664,
+          3664,
+          3664
+        ],
+        [
+          3664,
+          3664,
+          3664
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          1112,
+          1112,
+          1112
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          50.1564,
+          49.3725,
+          49.0279
+        ],
+        [
+          48.3403,
+          48.5525,
+          48.6308
+        ],
+        [
+          49.0111,
+          49.0456,
+          49.4041
+        ],
+        [
+          50.1646,
+          50.8872,
+          50.454
+        ]
+      ]
+    }
+  ]
+}
