@@ -2,6 +2,9 @@ using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
+using System.Buffers;
+using System.Numerics;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -359,10 +362,12 @@ internal readonly struct Utf8StructuralLinearInstruction
         AsciiCharClass secondaryCharClass,
         int secondaryMinCount,
         int auxiliaryMinCount,
-        AsciiCharClass set) =>
+        AsciiCharClass set,
+        bool hasUnicodeSeparator) =>
         new(
             Utf8StructuralLinearInstructionKind.RepeatedSegment,
-            0,
+            // This opcode has no literal; retain its separator kind in that byte.
+            hasUnicodeSeparator ? (byte)1 : (byte)0,
             charClass,
             minCount,
             maxCount,
@@ -525,7 +530,8 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
                     repeatedSegmentPlan.TrailingCharClass,
                     repeatedSegmentPlan.TrailingMinCount,
                     repeatedSegmentPlan.SeparatorMinCount,
-                    repeatedSegmentPlan.SeparatorCharClass)),
+                    repeatedSegmentPlan.SeparatorCharClass,
+                    repeatedSegmentPlan.HasUnicodeSeparator)),
             searchLiteralOffset: 0,
             searchLiterals: [],
             fixedLiteralChecks: [],
@@ -976,21 +982,7 @@ internal sealed class Utf8AsciiInstructionLinearRuntime : Utf8StructuralLinearRu
             return Utf8AsciiInstructionLinearExecutor.CountDeterministic(Program, input, budget);
         }
 
-        var count = 0;
-        var startIndex = 0;
-        while (startIndex <= input.Length)
-        {
-            var matchIndex = Utf8AsciiInstructionLinearExecutor.FindNext(Program, input, startIndex, budget, out var matchedLength);
-            if (matchIndex < 0)
-            {
-                return count;
-            }
-
-            count++;
-            startIndex = matchIndex + Math.Max(matchedLength, 1);
-        }
-
-        return count;
+        return Utf8AsciiInstructionLinearExecutor.CountNonDeterministic(Program, input, budget);
     }
 
     public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
@@ -1026,6 +1018,21 @@ internal sealed class Utf8AsciiInstructionLinearRuntime : Utf8StructuralLinearRu
 
 internal static partial class Utf8AsciiInstructionLinearExecutor
 {
+    public static int CountNonDeterministic(in Utf8StructuralLinearProgram program,
+        ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
+    {
+        var count = 0;
+        var startIndex = 0;
+        while (startIndex <= input.Length)
+        {
+            var matchIndex = FindNext(program, input, startIndex, budget, out var matchedLength);
+            if (matchIndex < 0) return count;
+            count++;
+            startIndex = matchIndex + Math.Max(matchedLength, 1);
+        }
+        return count;
+    }
+
     public static bool SupportsInput(in Utf8StructuralLinearProgram program, Utf8ValidationResult validation)
     {
         return validation.IsAscii || program.AllowsUtf8ByteSafe;
@@ -1141,13 +1148,24 @@ internal static partial class Utf8AsciiInstructionLinearExecutor
             !instructionProgram.Instructions[0].CharClass.IsEmpty)
         {
             var segmentLeading = instructionProgram.Instructions[0].CharClass;
+            var first = segmentLeading.LowMask != 0 ? BitOperations.TrailingZeroCount(segmentLeading.LowMask) :
+                64 + BitOperations.TrailingZeroCount(segmentLeading.HighMask);
+            var last = segmentLeading.HighMask != 0 ? 127 - BitOperations.LeadingZeroCount(segmentLeading.HighMask) :
+                63 - BitOperations.LeadingZeroCount(segmentLeading.LowMask);
+            var isRange = last - first + 1 == segmentLeading.Count;
             var candidateStart = startIndex;
             while (candidateStart < input.Length)
             {
-                while (candidateStart < input.Length && !segmentLeading.Contains(input[candidateStart]))
+                // A contiguous ASCII mask can use the existing checked span
+                // search; wider scalars contain no possible candidate byte.
+                if (isRange)
                 {
-                    candidateStart++;
+                    var relative = input[candidateStart..].IndexOfAnyInRange((byte)first, (byte)last);
+                    if (relative < 0) return -1;
+                    candidateStart += relative;
                 }
+                else while (candidateStart < input.Length && !segmentLeading.Contains(input[candidateStart]))
+                    candidateStart++;
 
                 if (candidateStart >= input.Length)
                 {
@@ -1791,7 +1809,7 @@ internal static partial class Utf8AsciiInstructionLinearExecutor
                 {
                     var segments = 0;
                     while (segments < instruction.MaxCount &&
-                        TryConsumeRepeatedSegment(input, ref index, instruction.CharClass, instruction.SecondaryCharClass, instruction.SecondaryMinCount, instruction.AuxiliaryMinCount, instruction.Set, out _))
+                        TryConsumeRepeatedSegment(input, ref index, instruction.CharClass, instruction.SecondaryCharClass, instruction.SecondaryMinCount, instruction.AuxiliaryMinCount, instruction.Set, instruction.Literal != 0, out _))
                     {
                         segments++;
                     }
@@ -2034,6 +2052,7 @@ internal static partial class Utf8AsciiInstructionLinearExecutor
         int trailingMinCount,
         int separatorMinCount,
         AsciiCharClass separatorSet,
+        bool hasUnicodeSeparator,
         out int separatorCount)
     {
         separatorCount = 0;
@@ -2056,9 +2075,17 @@ internal static partial class Utf8AsciiInstructionLinearExecutor
             return false;
         }
 
-        while ((uint)position < (uint)input.Length && MatchesSet(input[position], separatorSet))
+        while ((uint)position < (uint)input.Length)
         {
-            position++;
+            var width = 1;
+            if (input[position] < 0x80)
+            {
+                if (!MatchesSet(input[position], separatorSet)) break;
+            }
+            else if (!hasUnicodeSeparator ||
+                Rune.DecodeFromUtf8(input[position..], out var scalar, out width) != OperationStatus.Done ||
+                !Rune.IsWhiteSpace(scalar)) break;
+            position += width;
             separatorCount++;
         }
 
