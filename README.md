@@ -290,7 +290,6 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | Case | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
 | `lokad/folding/region-marker` | 5,376.030 us | 37.099 us | 60.876 us | 144.91x |
-| `lokad/docs/inline-doc-prefix` | 36.588 us | 2.678 us | 3.589 us | 13.66x |
 | `lokad/lexer/number` | 86.260 us | 6.887 us | 8.347 us | 12.53x |
 | `lokad/langserv/url-dashboard` | 89.317 us | 7.363 us | 7.886 us | 12.13x |
 | `lokad/langserv/url-download` | 145.917 us | 12.990 us | 13.483 us | 11.23x |
@@ -309,6 +308,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `structural/ordered-keyword-pair` | 6.110 us | 5.521 us | 17.198 us | 1.11x |
 | `fallback/lookahead` | 6.352 us | 6.116 us | 17.564 us | 1.04x |
 | `lokad/langserv/color-rgb-hex` | 2.070 us | 2.064 us | 2.219 us | 1.00x |
+| `lokad/docs/inline-doc-prefix` | 4.300 us | 4.833 us | 5.686 us | 0.89x |
 | `literal-family/method-token-family` | 8.184 us | 9.224 us | 19.857 us | 0.89x |
 | `structural/modifier-family-to-type-window` | 210.234 us | 259.023 us | 272.374 us | 0.81x |
 | `literal/call-token` | 3.050 us | 4.431 us | 15.650 us | 0.69x |
@@ -341,7 +341,6 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | Case | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
 | `lokad/folding/region-marker` | 5,395.440 us | 37.293 us | 60.206 us | 144.68x |
-| `lokad/docs/inline-doc-prefix` | 37.181 us | 2.731 us | 3.643 us | 13.61x |
 | `lokad/lexer/number` | 88.666 us | 6.987 us | 8.527 us | 12.69x |
 | `lokad/langserv/url-dashboard` | 88.801 us | 7.434 us | 8.055 us | 11.94x |
 | `lokad/style/hex-color` | 5.636 us | 0.498 us | 0.595 us | 11.31x |
@@ -360,6 +359,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `structural/keyword-to-generic-type` | 5.833 us | 3.536 us | 14.677 us | 1.65x |
 | `lokad/langserv/color-short-hex` | 1.664 us | 1.040 us | 1.260 us | 1.60x |
 | `fallback/lookahead` | 6.326 us | 4.242 us | 15.214 us | 1.49x |
+| `lokad/docs/inline-doc-prefix` | 4.300 us | 2.925 us | 3.755 us | 1.47x |
 | `structural/ordered-keyword-pair` | 6.104 us | 4.183 us | 15.261 us | 1.46x |
 | `lokad/langserv/identifier-validator` | 11.723 us | 9.216 us | 11.625 us | 1.27x |
 | `literal/identifier-token-casei` | 7.474 us | 5.975 us | 17.260 us | 1.25x |

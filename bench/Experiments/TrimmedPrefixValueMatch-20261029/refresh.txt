@@ -1,0 +1,32 @@
+Measuring README benchmark case: lokad/docs/inline-doc-prefix (requested=1, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=9773;ElapsedMicroseconds=42121.000
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=9829;ElapsedMicroseconds=42219.800
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=10170;ElapsedMicroseconds=49542.800
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=16639;ElapsedMicroseconds=48669.900
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=8962;ElapsedMicroseconds=51291.500
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=13254;ElapsedMicroseconds=50718.700
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=9773;ElapsedMicroseconds=41960.100
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=9829;ElapsedMicroseconds=42236.100
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=10170;ElapsedMicroseconds=48591.800
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=16639;ElapsedMicroseconds=48179.600
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=8962;ElapsedMicroseconds=51367.200
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=13254;ElapsedMicroseconds=51241.300
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=9773;ElapsedMicroseconds=42005.900
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=9829;ElapsedMicroseconds=42271.400
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=10170;ElapsedMicroseconds=49584.400
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=16639;ElapsedMicroseconds=50217.000
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=8962;ElapsedMicroseconds=50958.500
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=13254;ElapsedMicroseconds=49762.200
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=9773;ElapsedMicroseconds=42082.000
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=9829;ElapsedMicroseconds=42733.400
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=10170;ElapsedMicroseconds=46843.900
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=16639;ElapsedMicroseconds=45730.300
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=8962;ElapsedMicroseconds=49358.200
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=13254;ElapsedMicroseconds=48774.300
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=9773;ElapsedMicroseconds=42022.700
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=9829;ElapsedMicroseconds=42264.100
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=10170;ElapsedMicroseconds=49147.100
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=16639;ElapsedMicroseconds=49936.300
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=8962;ElapsedMicroseconds=50961.600
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=13254;ElapsedMicroseconds=49647.500
+Updated README case: lokad/docs/inline-doc-prefix

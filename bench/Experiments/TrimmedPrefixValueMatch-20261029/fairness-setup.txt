@@ -1,0 +1,72 @@
+SourceKind        : lokad-case
+Origin            : docs//PrefixMatchLoop
+Pattern           : ^\s*
+(\[\|\s*)?
+///\s?
+(?<doc>.*)$
+Options           : IgnorePatternWhitespace
+InputChars        : 1375
+InputBytes        : 0
+CompiledEngine    : FallbackRegex
+ExecutionKind     : FallbackRegex
+DirectFamily      : AnchoredTrimmedOptionalLiteralPrefixTail
+OwnedScalarPlan   : True
+ScalarPrepared    : True
+SearchKind        : ExactAsciiLiteral
+PortfolioKind     : ExactLiteral
+PreparedSearcher  : ExactLiteral
+RequiredPrefilter : ExactLiteral
+WindowSearch      : None
+StructuralYield   : Start
+StructuralStages  : 2
+StructuralStage[0] : FindLiteralFamily ExactLiteral
+StructuralStage[1] : YieldStart
+FallbackPlans     : 1
+FallbackPlan[0]  : Yield=Start, Stages=2
+Verifier          : None
+FallbackReason    : <native>
+SourceKind        : lokad-case
+Origin            : folding//Count
+Pattern           : ^\s*///(?<title>#.*)$
+Options           : Multiline, NonBacktracking
+InputChars        : 47841
+InputBytes        : 47858
+CompiledEngine    : FallbackRegex
+ExecutionKind     : FallbackRegex
+DirectFamily      : None
+OwnedScalarPlan   : True
+ScalarPrepared    : True
+SearchKind        : ExactAsciiLiteral
+PortfolioKind     : ExactLiteral
+PreparedSearcher  : ExactLiteral
+RequiredPrefilter : ExactLiteral
+WindowSearch      : None
+StructuralYield   : Start
+StructuralStages  : 2
+StructuralStage[0] : FindLiteralFamily ExactLiteral
+StructuralStage[1] : YieldStart
+FallbackPlans     : 1
+FallbackPlan[0]  : Yield=Start, Stages=2
+Verifier          : None
+FallbackReason    : unsupported_options
+SourceKind        : lokad-case
+Origin            : lexer//PrefixMatchLoop
+Pattern           : \G[a-z][a-z0-9_]*
+Options           : IgnoreCase, Multiline, CultureInvariant
+InputChars        : 1345
+InputBytes        : 0
+CompiledEngine    : FallbackRegex
+ExecutionKind     : FallbackRegex
+DirectFamily      : AnchoredIdentifierPrefix
+OwnedScalarPlan   : True
+ScalarPrepared    : True
+SearchKind        : None
+PortfolioKind     : None
+PreparedSearcher  : None
+RequiredPrefilter : None
+WindowSearch      : None
+StructuralYield   : None
+StructuralStages  : 0
+FallbackPlans     : 0
+Verifier          : None
+FallbackReason    : <native>

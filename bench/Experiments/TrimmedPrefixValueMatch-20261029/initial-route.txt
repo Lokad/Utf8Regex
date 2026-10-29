@@ -1,0 +1,27 @@
+SourceKind        : lokad-case
+Origin            : docs//PrefixMatchLoop
+Pattern           : ^\s*
+(\[\|\s*)?
+///\s?
+(?<doc>.*)$
+Options           : IgnorePatternWhitespace
+InputChars        : 1375
+InputBytes        : 0
+CompiledEngine    : FallbackRegex
+ExecutionKind     : FallbackRegex
+DirectFamily      : AnchoredTrimmedOptionalLiteralPrefixTail
+OwnedScalarPlan   : True
+ScalarPrepared    : True
+SearchKind        : ExactAsciiLiteral
+PortfolioKind     : ExactLiteral
+PreparedSearcher  : ExactLiteral
+RequiredPrefilter : ExactLiteral
+WindowSearch      : None
+StructuralYield   : Start
+StructuralStages  : 2
+StructuralStage[0] : FindLiteralFamily ExactLiteral
+StructuralStage[1] : YieldStart
+FallbackPlans     : 1
+FallbackPlan[0]  : Yield=Start, Stages=2
+Verifier          : None
+FallbackReason    : <native>
