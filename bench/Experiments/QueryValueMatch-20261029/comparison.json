@@ -1,0 +1,1193 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 78.6967816,
+  "CatalogSampleSha256": {
+    "lokad/langserv/url-dashboard": "B919800479529CCDC41E30EC7A054454EB842C849C80165130FC8421A23C5727",
+    "lokad/langserv/url-download": "D0F540D923184CC2D07169A3147FB066C4D95222A14AD7752403CA03BE9C49D4"
+  },
+  "LaneNames": [
+    "Baseline",
+    "Candidate",
+    "PredecodedRegex",
+    "DecodeThenRegex"
+  ],
+  "Baseline": {
+    "Version": "0.5.0-dev\u002Bafef0bf172c769d1ee473239b2dd6ec40ada8231",
+    "Sha256": "09CBBAEC46344A0DE085209A5D4CACA0791D5069875454A072CAF792D31AE1E1"
+  },
+  "Candidate": {
+    "Version": "0.5.0-dev\u002Bc9d9b68560c0addb842fffa6bd82c6578b070cfc",
+    "Sha256": "F81D0F957B46C67B675CBB4EC9A9AFC4F86F517F4AC938619DD35E7DAB73A80D"
+  },
+  "Rows": [
+    {
+      "Name": "dashboard-ordinary",
+      "Operation": "MatchLoop",
+      "Pattern": "^(?\u003Cbefore\u003E.*)(https://go(\\.testing)?\\.lokad.com|~)(?\u003Ctrigram\u003E/[a-zA-Z0-9]\u002B)?/d/(?\u003CtopicId\u003E\\d\u002B)/?\\?t=(?\u003Ctab\u003E[^ ?]\u002B)(?\u003Crest\u003E.*)$",
+      "Options": "IgnoreCase",
+      "InputBytes": 601,
+      "SampleCount": 12,
+      "InputSha256": "447DDFBD5CCC8378187106F15FBE0EEF5D0D25D836DC1B4BD1F5AB8EB479F655",
+      "Expected": 601,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        574,
+        16878,
+        2023,
+        2007
+      ],
+      "WarmupCalls": [
+        8629,
+        251537,
+        31913,
+        38266
+      ],
+      "WarmupMilliseconds": [
+        1000.0518,
+        1000.0015,
+        1000.0214,
+        1000.0025
+      ],
+      "Microseconds": [
+        [
+          87.89668989547037,
+          88.16271777003485,
+          87.70888501742161
+        ],
+        [
+          2.93424576371608,
+          2.916133428131295,
+          2.9410238179879133
+        ],
+        [
+          24.511171527434502,
+          24.627286208601088,
+          24.530944142362827
+        ],
+        [
+          25.101145989038365,
+          25.164125560538114,
+          24.82805181863478
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          71896,
+          71896,
+          71896
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          5824,
+          5824,
+          5824
+        ],
+        [
+          7328,
+          7328,
+          7328
+        ]
+      ]
+    },
+    {
+      "Name": "dashboard-compiled",
+      "Operation": "MatchLoop",
+      "Pattern": "^(?\u003Cbefore\u003E.*)(https://go(\\.testing)?\\.lokad.com|~)(?\u003Ctrigram\u003E/[a-zA-Z0-9]\u002B)?/d/(?\u003CtopicId\u003E\\d\u002B)/?\\?t=(?\u003Ctab\u003E[^ ?]\u002B)(?\u003Crest\u003E.*)$",
+      "Options": "IgnoreCase, Compiled",
+      "InputBytes": 601,
+      "SampleCount": 12,
+      "InputSha256": "447DDFBD5CCC8378187106F15FBE0EEF5D0D25D836DC1B4BD1F5AB8EB479F655",
+      "Expected": 601,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        568,
+        17039,
+        6513,
+        6150
+      ],
+      "WarmupCalls": [
+        11242,
+        323916,
+        128555,
+        119994
+      ],
+      "WarmupMilliseconds": [
+        1000.039,
+        1000.0023,
+        1000.0046,
+        1000.0027
+      ],
+      "Microseconds": [
+        [
+          88.2419014084507,
+          88.00862676056339,
+          87.3088028169014
+        ],
+        [
+          2.9166617759258173,
+          2.9483420388520454,
+          2.9263630494747344
+        ],
+        [
+          7.888238906801781,
+          7.827575617994779,
+          7.814893290342392
+        ],
+        [
+          8.181024390243902,
+          8.140731707317073,
+          8.164796747967479
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          71896,
+          71896,
+          71896
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          5824,
+          5824,
+          5824
+        ],
+        [
+          7328,
+          7328,
+          7328
+        ]
+      ]
+    },
+    {
+      "Name": "download-ordinary",
+      "Operation": "MatchLoop",
+      "Pattern": "^(?\u003Cbefore\u003E.*)(https://go(\\.testing)?\\.lokad.com|~)(?\u003Ctrigram\u003E/[a-zA-Z0-9]\u002B)?/gateway/BigFiles/Browse/Download\\?hash=(?\u003Chash\u003E[a-fA-F0-9]*)(?\u003CoptPath\u003E[?\u0026]path=[^\u0026 \\n]\u002B)?[?\u0026]name=(?\u003Cname\u003E[^\u0026 ]\u002B)(?\u003CoptPath2\u003E[?\u0026]path=[^\u0026 \\n]\u002B)?(?\u003Crest\u003E.*)$",
+      "Options": "IgnoreCase",
+      "InputBytes": 1163,
+      "SampleCount": 8,
+      "InputSha256": "1F68446DB19F7B740C9C969F0426797F1E6637ED58E998FE5AEAE8F450AE99CD",
+      "Expected": 1163,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        308,
+        14824,
+        1039,
+        1029
+      ],
+      "WarmupCalls": [
+        6081,
+        279504,
+        20768,
+        20554
+      ],
+      "WarmupMilliseconds": [
+        1000.0607,
+        1000.003,
+        1000.0433,
+        1000.0295
+      ],
+      "Microseconds": [
+        [
+          162.39935064935065,
+          163.26655844155843,
+          163.05
+        ],
+        [
+          3.4405626011872634,
+          3.450229357798165,
+          3.439753103076093
+        ],
+        [
+          48.18517805582291,
+          48.09566891241579,
+          47.9623676612127
+        ],
+        [
+          48.46307094266278,
+          48.37881438289601,
+          48.39008746355685
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          83448,
+          83448,
+          83448
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          4288,
+          4288,
+          4288
+        ],
+        [
+          6816,
+          6816,
+          6816
+        ]
+      ]
+    },
+    {
+      "Name": "download-compiled",
+      "Operation": "MatchLoop",
+      "Pattern": "^(?\u003Cbefore\u003E.*)(https://go(\\.testing)?\\.lokad.com|~)(?\u003Ctrigram\u003E/[a-zA-Z0-9]\u002B)?/gateway/BigFiles/Browse/Download\\?hash=(?\u003Chash\u003E[a-fA-F0-9]*)(?\u003CoptPath\u003E[?\u0026]path=[^\u0026 \\n]\u002B)?[?\u0026]name=(?\u003Cname\u003E[^\u0026 ]\u002B)(?\u003CoptPath2\u003E[?\u0026]path=[^\u0026 \\n]\u002B)?(?\u003Crest\u003E.*)$",
+      "Options": "IgnoreCase, Compiled",
+      "InputBytes": 1163,
+      "SampleCount": 8,
+      "InputSha256": "1F68446DB19F7B740C9C969F0426797F1E6637ED58E998FE5AEAE8F450AE99CD",
+      "Expected": 1163,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        310,
+        14525,
+        3773,
+        3653
+      ],
+      "WarmupCalls": [
+        6087,
+        281903,
+        75182,
+        72529
+      ],
+      "WarmupMilliseconds": [
+        1000.0127,
+        1000.0025,
+        1000.0062,
+        1000.0041
+      ],
+      "Microseconds": [
+        [
+          162.83903225806452,
+          162.33645161290323,
+          162.75290322580645
+        ],
+        [
+          3.4229810671256455,
+          3.4314836488812395,
+          3.410698795180723
+        ],
+        [
+          13.121998409753513,
+          13.160084813146037,
+          13.084336072091173
+        ],
+        [
+          13.627867506159323,
+          13.649904188338354,
+          13.719846701341362
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          83448,
+          83448,
+          83448
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          4288,
+          4288,
+          4288
+        ],
+        [
+          6816,
+          6816,
+          6816
+        ]
+      ]
+    },
+    {
+      "Name": "finite-dashboard",
+      "Operation": "MatchLoop",
+      "Pattern": "^(?\u003Cbefore\u003E.*)(https://go(\\.testing)?\\.lokad.com|~)(?\u003Ctrigram\u003E/[a-zA-Z0-9]\u002B)?/d/(?\u003CtopicId\u003E\\d\u002B)/?\\?t=(?\u003Ctab\u003E[^ ?]\u002B)(?\u003Crest\u003E.*)$",
+      "Options": "IgnoreCase, Compiled",
+      "InputBytes": 601,
+      "SampleCount": 12,
+      "InputSha256": "447DDFBD5CCC8378187106F15FBE0EEF5D0D25D836DC1B4BD1F5AB8EB479F655",
+      "Expected": 601,
+      "FiniteAndLiveToken": true,
+      "Iterations": [
+        510,
+        11800,
+        6594,
+        6069
+      ],
+      "WarmupCalls": [
+        10036,
+        229948,
+        128951,
+        120094
+      ],
+      "WarmupMilliseconds": [
+        1000.0124,
+        1000.0031,
+        1000.0053,
+        1000.002
+      ],
+      "Microseconds": [
+        [
+          96.61607843137254,
+          95.44058823529413,
+          95.99607843137255
+        ],
+        [
+          4.213703389830508,
+          4.198745762711865,
+          4.192025423728813
+        ],
+        [
+          7.479678495602062,
+          7.457992114043069,
+          7.5516681831968455
+        ],
+        [
+          8.058807052232657,
+          8.0760092272203,
+          8.094628439611139
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          73240,
+          73240,
+          73240
+        ],
+        [
+          1344,
+          1344,
+          1344
+        ],
+        [
+          5824,
+          5824,
+          5824
+        ],
+        [
+          7328,
+          7328,
+          7328
+        ]
+      ]
+    },
+    {
+      "Name": "finite-download",
+      "Operation": "MatchLoop",
+      "Pattern": "^(?\u003Cbefore\u003E.*)(https://go(\\.testing)?\\.lokad.com|~)(?\u003Ctrigram\u003E/[a-zA-Z0-9]\u002B)?/gateway/BigFiles/Browse/Download\\?hash=(?\u003Chash\u003E[a-fA-F0-9]*)(?\u003CoptPath\u003E[?\u0026]path=[^\u0026 \\n]\u002B)?[?\u0026]name=(?\u003Cname\u003E[^\u0026 ]\u002B)(?\u003CoptPath2\u003E[?\u0026]path=[^\u0026 \\n]\u002B)?(?\u003Crest\u003E.*)$",
+      "Options": "IgnoreCase, Compiled",
+      "InputBytes": 1163,
+      "SampleCount": 8,
+      "InputSha256": "1F68446DB19F7B740C9C969F0426797F1E6637ED58E998FE5AEAE8F450AE99CD",
+      "Expected": 1163,
+      "FiniteAndLiveToken": true,
+      "Iterations": [
+        279,
+        11482,
+        3793,
+        3681
+      ],
+      "WarmupCalls": [
+        5507,
+        223650,
+        75370,
+        71719
+      ],
+      "WarmupMilliseconds": [
+        1000.1176,
+        1000.0044,
+        1000.0134,
+        1000.0118
+      ],
+      "Microseconds": [
+        [
+          177.84982078853045,
+          176.77025089605735,
+          177.168458781362
+        ],
+        [
+          4.387763455843929,
+          4.3463421006793235,
+          4.337371538059571
+        ],
+        [
+          13.107382019509622,
+          13.04521486949644,
+          13.05286053255998
+        ],
+        [
+          13.606329801684323,
+          13.569899483835915,
+          13.579027438196142
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          84344,
+          84344,
+          84344
+        ],
+        [
+          896,
+          896,
+          896
+        ],
+        [
+          4288,
+          4288,
+          4288
+        ],
+        [
+          6816,
+          6816,
+          6816
+        ]
+      ]
+    },
+    {
+      "Name": "dashboard-misses",
+      "Operation": "MatchLoop",
+      "Pattern": "^(?\u003Cbefore\u003E.*)(https://go(\\.testing)?\\.lokad.com|~)(?\u003Ctrigram\u003E/[a-zA-Z0-9]\u002B)?/d/(?\u003CtopicId\u003E\\d\u002B)/?\\?t=(?\u003Ctab\u003E[^ ?]\u002B)(?\u003Crest\u003E.*)$",
+      "Options": "IgnoreCase, Compiled",
+      "InputBytes": 60,
+      "SampleCount": 5,
+      "InputSha256": "E378C9570C902C532900245CAF3B2E148F6EB56EC971DA9F499D302FA19F631C",
+      "Expected": 0,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        3959,
+        52839,
+        72562,
+        63509
+      ],
+      "WarmupCalls": [
+        69146,
+        925629,
+        1251195,
+        1111034
+      ],
+      "WarmupMilliseconds": [
+        1000.0124,
+        1000.0009,
+        1000.0004,
+        1000.0009
+      ],
+      "Microseconds": [
+        [
+          14.10444556706239,
+          13.584895175549383,
+          13.445061884314221
+        ],
+        [
+          0.9438369386248794,
+          0.9442286947141316,
+          0.9446620867162513
+        ],
+        [
+          0.6900678040847826,
+          0.6815729996416857,
+          0.6807419861635566
+        ],
+        [
+          0.791365003385347,
+          0.7852824009195547,
+          0.7825693996126534
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          29200,
+          29200,
+          29200
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          240,
+          240,
+          240
+        ]
+      ]
+    },
+    {
+      "Name": "download-misses",
+      "Operation": "MatchLoop",
+      "Pattern": "^(?\u003Cbefore\u003E.*)(https://go(\\.testing)?\\.lokad.com|~)(?\u003Ctrigram\u003E/[a-zA-Z0-9]\u002B)?/gateway/BigFiles/Browse/Download\\?hash=(?\u003Chash\u003E[a-fA-F0-9]*)(?\u003CoptPath\u003E[?\u0026]path=[^\u0026 \\n]\u002B)?[?\u0026]name=(?\u003Cname\u003E[^\u0026 ]\u002B)(?\u003CoptPath2\u003E[?\u0026]path=[^\u0026 \\n]\u002B)?(?\u003Crest\u003E.*)$",
+      "Options": "IgnoreCase, Compiled",
+      "InputBytes": 101,
+      "SampleCount": 3,
+      "InputSha256": "2672903EB55B6B5BD655A3526ACD24D8A87779230EABE99A0BC343FBCC42D401",
+      "Expected": 0,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        2930,
+        69212,
+        40742,
+        37570
+      ],
+      "WarmupCalls": [
+        53141,
+        1190638,
+        752845,
+        699314
+      ],
+      "WarmupMilliseconds": [
+        1000.0056,
+        1000.0003,
+        1000.0002,
+        1000.0012
+      ],
+      "Microseconds": [
+        [
+          17.47546075085324,
+          17.28778156996587,
+          17.236996587030713
+        ],
+        [
+          0.7145061550020226,
+          0.7211581806623129,
+          0.7224946541062243
+        ],
+        [
+          1.2238059005448922,
+          1.2239605321290068,
+          1.2267537185214274
+        ],
+        [
+          1.3062230503060954,
+          1.3188155443172744,
+          1.3140777215863721
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          17664,
+          17664,
+          17664
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          272,
+          272,
+          272
+        ]
+      ]
+    },
+    {
+      "Name": "prefix-retry",
+      "Operation": "MatchLoop",
+      "Pattern": "^(?\u003Cbefore\u003E.*)(https://go(\\.testing)?\\.lokad.com|~)(?\u003Ctrigram\u003E/[a-zA-Z0-9]\u002B)?/d/(?\u003CtopicId\u003E\\d\u002B)/?\\?t=(?\u003Ctab\u003E[^ ?]\u002B)(?\u003Crest\u003E.*)$",
+      "Options": "IgnoreCase, Compiled",
+      "InputBytes": 649,
+      "SampleCount": 1,
+      "InputSha256": "73B4B5B9B7BC4C3785D03D5B99E5532AFC049C125DA956B63A7B0A9679F184EA",
+      "Expected": 649,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        2011,
+        25171,
+        178538,
+        137017
+      ],
+      "WarmupCalls": [
+        34947,
+        475613,
+        2588036,
+        2005621
+      ],
+      "WarmupMilliseconds": [
+        1000.0082,
+        1000.0003,
+        1000.0001,
+        1000.0007
+      ],
+      "Microseconds": [
+        [
+          24.026902038786673,
+          24.840875186474392,
+          24.8269517652909
+        ],
+        [
+          1.992531087362441,
+          1.9783560446545627,
+          1.9693337571014262
+        ],
+        [
+          0.28094187231849804,
+          0.27277834410601665,
+          0.27771958910708083
+        ],
+        [
+          0.44243196099754045,
+          0.4213528248319552,
+          0.4349912784544983
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          32128,
+          32128,
+          32128
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          480,
+          480,
+          480
+        ],
+        [
+          1800,
+          1800,
+          1800
+        ]
+      ]
+    },
+    {
+      "Name": "parameter-retry",
+      "Operation": "MatchLoop",
+      "Pattern": "^(?\u003Cbefore\u003E.*)(https://go(\\.testing)?\\.lokad.com|~)(?\u003Ctrigram\u003E/[a-zA-Z0-9]\u002B)?/gateway/BigFiles/Browse/Download\\?hash=(?\u003Chash\u003E[a-fA-F0-9]*)(?\u003CoptPath\u003E[?\u0026]path=[^\u0026 \\n]\u002B)?[?\u0026]name=(?\u003Cname\u003E[^\u0026 ]\u002B)(?\u003CoptPath2\u003E[?\u0026]path=[^\u0026 \\n]\u002B)?(?\u003Crest\u003E.*)$",
+      "Options": "IgnoreCase, Compiled",
+      "InputBytes": 617,
+      "SampleCount": 1,
+      "InputSha256": "9BC6EB29CFF865F8B8130DF55193B106E7EACF77FDB6D2C17BA7917E7AEFE92C",
+      "Expected": 0,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        1,
+        1771,
+        2,
+        2
+      ],
+      "WarmupCalls": [
+        20,
+        35445,
+        30,
+        30
+      ],
+      "WarmupMilliseconds": [
+        1016.139,
+        1000.0102,
+        1001.9178,
+        1001.0744
+      ],
+      "Microseconds": [
+        [
+          51068.1,
+          50981.7,
+          50806.399999999994
+        ],
+        [
+          28.32806324110672,
+          28.635177865612643,
+          28.37108977978543
+        ],
+        [
+          33487.5,
+          33520.200000000004,
+          33487.7
+        ],
+        [
+          33395,
+          33318.75,
+          33361.15
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          28800,
+          28800,
+          28800
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          1256,
+          1256,
+          1256
+        ]
+      ]
+    },
+    {
+      "Name": "unicode-control",
+      "Operation": "MatchLoop",
+      "Pattern": "^(?\u003Cbefore\u003E.*)(https://go(\\.testing)?\\.lokad.com|~)(?\u003Ctrigram\u003E/[a-zA-Z0-9]\u002B)?/d/(?\u003CtopicId\u003E\\d\u002B)/?\\?t=(?\u003Ctab\u003E[^ ?]\u002B)(?\u003Crest\u003E.*)$",
+      "Options": "IgnoreCase, Compiled",
+      "InputBytes": 38,
+      "SampleCount": 3,
+      "InputSha256": "B6F75BC560977AF8D61E26F212B25CEA770E63F840CFA8B1A282DB117193FBAC",
+      "Expected": 22,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        7039,
+        6893,
+        85464,
+        73916
+      ],
+      "WarmupCalls": [
+        121878,
+        108980,
+        1466117,
+        1295456
+      ],
+      "WarmupMilliseconds": [
+        1000.0058,
+        1000.0065,
+        1000.0007,
+        1000.0008
+      ],
+      "Microseconds": [
+        [
+          7.251555618695838,
+          7.121508737036511,
+          7.152095468106265
+        ],
+        [
+          7.416770636877993,
+          7.330306107645437,
+          7.146728565211084
+        ],
+        [
+          0.5629539923242535,
+          0.57089066741552,
+          0.5585404380791913
+        ],
+        [
+          0.6585191298230424,
+          0.6626481411331783,
+          0.6631487093457438
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          17520,
+          17520,
+          17520
+        ],
+        [
+          17520,
+          17520,
+          17520
+        ],
+        [
+          960,
+          960,
+          960
+        ],
+        [
+          1096,
+          1096,
+          1096
+        ]
+      ]
+    },
+    {
+      "Name": "long-control",
+      "Operation": "MatchLoop",
+      "Pattern": "^(?\u003Cbefore\u003E.*)(https://go(\\.testing)?\\.lokad.com|~)(?\u003Ctrigram\u003E/[a-zA-Z0-9]\u002B)?/d/(?\u003CtopicId\u003E\\d\u002B)/?\\?t=(?\u003Ctab\u003E[^ ?]\u002B)(?\u003Crest\u003E.*)$",
+      "Options": "IgnoreCase, Compiled",
+      "InputBytes": 4105,
+      "SampleCount": 1,
+      "InputSha256": "6CDB2D88918D56EB693BA3C64E5EC77EEFA4E6D0FCC31D4FF0D7DF73F493FB5A",
+      "Expected": 4105,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        351,
+        352,
+        151938,
+        62211
+      ],
+      "WarmupCalls": [
+        6825,
+        7032,
+        2334400,
+        1083503
+      ],
+      "WarmupMilliseconds": [
+        1000.043,
+        1000.1035,
+        1000.0001,
+        1000.0005
+      ],
+      "Microseconds": [
+        [
+          141.19829059829058,
+          137.66438746438746,
+          136.65669515669515
+        ],
+        [
+          141.74573863636363,
+          134.62045454545455,
+          136.73835227272727
+        ],
+        [
+          0.32170951309086604,
+          0.304982953573168,
+          0.32015756426963626
+        ],
+        [
+          0.8892719936988636,
+          0.8074970664351963,
+          0.9182443619295622
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          175144,
+          175144,
+          175144
+        ],
+        [
+          175144,
+          175144,
+          175144
+        ],
+        [
+          480,
+          480,
+          480
+        ],
+        [
+          8712,
+          8712,
+          8712
+        ]
+      ]
+    },
+    {
+      "Name": "count-control",
+      "Operation": "CountLoop",
+      "Pattern": "^(?\u003Cbefore\u003E.*)(https://go(\\.testing)?\\.lokad.com|~)(?\u003Ctrigram\u003E/[a-zA-Z0-9]\u002B)?/d/(?\u003CtopicId\u003E\\d\u002B)/?\\?t=(?\u003Ctab\u003E[^ ?]\u002B)(?\u003Crest\u003E.*)$",
+      "Options": "IgnoreCase, Compiled",
+      "InputBytes": 601,
+      "SampleCount": 12,
+      "InputSha256": "447DDFBD5CCC8378187106F15FBE0EEF5D0D25D836DC1B4BD1F5AB8EB479F655",
+      "Expected": 12,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        646,
+        636,
+        7572,
+        7076
+      ],
+      "WarmupCalls": [
+        11434,
+        12168,
+        149853,
+        138551
+      ],
+      "WarmupMilliseconds": [
+        1000.0009,
+        1000.0247,
+        1000.0128,
+        1000.0079
+      ],
+      "Microseconds": [
+        [
+          77.3529411764706,
+          76.80743034055729,
+          77.21377708978328
+        ],
+        [
+          78.05628930817609,
+          77.94716981132075,
+          77.475
+        ],
+        [
+          6.55310353935552,
+          6.5346143687268885,
+          6.597913365029054
+        ],
+        [
+          7.00104578858112,
+          7.117877331825891,
+          7.03763425664217
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          45016,
+          45016,
+          45016
+        ],
+        [
+          45016,
+          45016,
+          45016
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          1504,
+          1504,
+          1504
+        ]
+      ]
+    },
+    {
+      "Name": "ismatch-control",
+      "Operation": "IsMatchLoop",
+      "Pattern": "^(?\u003Cbefore\u003E.*)(https://go(\\.testing)?\\.lokad.com|~)(?\u003Ctrigram\u003E/[a-zA-Z0-9]\u002B)?/d/(?\u003CtopicId\u003E\\d\u002B)/?\\?t=(?\u003Ctab\u003E[^ ?]\u002B)(?\u003Crest\u003E.*)$",
+      "Options": "IgnoreCase, Compiled",
+      "InputBytes": 601,
+      "SampleCount": 12,
+      "InputSha256": "447DDFBD5CCC8378187106F15FBE0EEF5D0D25D836DC1B4BD1F5AB8EB479F655",
+      "Expected": 12,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        560,
+        549,
+        7873,
+        7330
+      ],
+      "WarmupCalls": [
+        9430,
+        10050,
+        154557,
+        143719
+      ],
+      "WarmupMilliseconds": [
+        1000.0582,
+        1000.0456,
+        1000.0049,
+        1000.0055
+      ],
+      "Microseconds": [
+        [
+          90.35410714285715,
+          89.84785714285714,
+          89.24446428571429
+        ],
+        [
+          91.56593806921676,
+          91.77122040072858,
+          91.02003642987249
+        ],
+        [
+          6.323155087006224,
+          6.372539057538423,
+          6.346170455988823
+        ],
+        [
+          6.850723055934516,
+          6.906289222373806,
+          6.896057298772169
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          71896,
+          71896,
+          71896
+        ],
+        [
+          71896,
+          71896,
+          71896
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          1504,
+          1504,
+          1504
+        ]
+      ]
+    },
+    {
+      "Name": "number-control",
+      "Operation": "MatchLoop",
+      "Pattern": "\\G-?[0-9]\u002B(\\.[0-9]\u002B)?(e[\u002B-]?[0-9]\u002B)?",
+      "Options": "Compiled, CultureInvariant",
+      "InputBytes": 12,
+      "SampleCount": 3,
+      "InputSha256": "550D66E1D1735CD2E09963F99F84EC6C1A86A890267DBF2A24A5221A56BF9A40",
+      "Expected": 9,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        102167,
+        121954,
+        224612,
+        176147
+      ],
+      "WarmupCalls": [
+        1553029,
+        1881939,
+        2992777,
+        2600419
+      ],
+      "WarmupMilliseconds": [
+        1000.0001,
+        1000.0003,
+        1000.0003,
+        1000.0002
+      ],
+      "Microseconds": [
+        [
+          0.4792653205046639,
+          0.5104436853387101,
+          0.49243787132831535
+        ],
+        [
+          0.4107565147514637,
+          0.4123636781081391,
+          0.4102251668661954
+        ],
+        [
+          0.2272273965772087,
+          0.21332431036632057,
+          0.22911019892080567
+        ],
+        [
+          0.2845288310331711,
+          0.27746881865714434,
+          0.2882984098508632
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          528,
+          528,
+          528
+        ],
+        [
+          624,
+          624,
+          624
+        ]
+      ]
+    },
+    {
+      "Name": "literal-control",
+      "Operation": "MatchLoop",
+      "Pattern": "alpha",
+      "Options": "Compiled, CultureInvariant",
+      "InputBytes": 4096,
+      "SampleCount": 1,
+      "InputSha256": "A2E659DACB4691E887AC0139F8893D04764EE197D70FB73D3190D56113D18E3E",
+      "Expected": 0,
+      "FiniteAndLiveToken": false,
+      "Iterations": [
+        178795,
+        229725,
+        251420,
+        77657
+      ],
+      "WarmupCalls": [
+        2191505,
+        2788084,
+        3388331,
+        1287488
+      ],
+      "WarmupMilliseconds": [
+        1000.0004,
+        1000.0001,
+        1000.0002,
+        1000.0003
+      ],
+      "Microseconds": [
+        [
+          0.28823680751698877,
+          0.2788819597863475,
+          0.27339858497161557
+        ],
+        [
+          0.21915072369137012,
+          0.22283382304929808,
+          0.22303406246599194
+        ],
+        [
+          0.2008571314931191,
+          0.19374950282395992,
+          0.19370058070161483
+        ],
+        [
+          0.799401213026514,
+          0.6556137888406711,
+          0.8147237209781475
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          8216,
+          8216,
+          8216
+        ]
+      ]
+    }
+  ]
+}

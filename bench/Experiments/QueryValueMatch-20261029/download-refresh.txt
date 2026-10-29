@@ -1,0 +1,32 @@
+Measuring README benchmark case: lokad/langserv/url-download (requested=1, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=17793;ElapsedMicroseconds=50133.100
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=16622;ElapsedMicroseconds=46989.600
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=972;ElapsedMicroseconds=49705.800
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=3828;ElapsedMicroseconds=50176.400
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=951;ElapsedMicroseconds=49306.100
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=3720;ElapsedMicroseconds=50365.200
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=17793;ElapsedMicroseconds=49740.400
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=16622;ElapsedMicroseconds=46740.700
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=972;ElapsedMicroseconds=49304.700
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=3828;ElapsedMicroseconds=49770.100
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=951;ElapsedMicroseconds=48490.400
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=3720;ElapsedMicroseconds=50833.100
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=17793;ElapsedMicroseconds=49828.300
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=16622;ElapsedMicroseconds=46744.000
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=972;ElapsedMicroseconds=50049.300
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=3828;ElapsedMicroseconds=50019.300
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=951;ElapsedMicroseconds=49166.500
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=3720;ElapsedMicroseconds=50630.400
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=17793;ElapsedMicroseconds=49846.200
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=16622;ElapsedMicroseconds=46850.000
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=972;ElapsedMicroseconds=49391.500
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=3828;ElapsedMicroseconds=49649.500
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=951;ElapsedMicroseconds=48890.100
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=3720;ElapsedMicroseconds=50459.400
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=17793;ElapsedMicroseconds=49777.700
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=16622;ElapsedMicroseconds=46669.600
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=972;ElapsedMicroseconds=50149.700
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=3828;ElapsedMicroseconds=50023.300
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=951;ElapsedMicroseconds=49438.700
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=3720;ElapsedMicroseconds=50447.200
+Updated README case: lokad/langserv/url-download

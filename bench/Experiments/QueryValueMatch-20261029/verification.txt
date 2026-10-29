@@ -1,0 +1,41 @@
+focused.log
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:   100, Skipped:     0, Total:   100, Duration: 4 s - Lokad.Utf8Regex.Tests.dll (net10.0)
+
+Passed!  - Failed:     0, Passed:   100, Skipped:     0, Total:   100, Duration: 4 s - Lokad.Utf8Regex.Tests.dll (net11.0)
+
+core-guards.log
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:   620, Skipped:     0, Total:   620, Duration: 1 s - Lokad.Utf8Regex.Tests.dll (net10.0)
+
+Passed!  - Failed:     0, Passed:   620, Skipped:     0, Total:   620, Duration: 1 s - Lokad.Utf8Regex.Tests.dll (net11.0)
+
+python-guards.log
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:    46, Skipped:     0, Total:    46, Duration: 1 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)
+
+Passed!  - Failed:     0, Passed:    46, Skipped:     0, Total:    46, Duration: 1 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)
+
+pcre2-guards.log
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:   110, Skipped:     0, Total:   110, Duration: 383 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net11.0)
+
+Passed!  - Failed:     0, Passed:   110, Skipped:     0, Total:   110, Duration: 455 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)
+
+final-source-guards.log
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:    27, Skipped:     0, Total:    27, Duration: 3 s - Lokad.Utf8Regex.Tests.dll (net11.0)
+
+Passed!  - Failed:     0, Passed:    27, Skipped:     0, Total:    27, Duration: 4 s - Lokad.Utf8Regex.Tests.dll (net10.0)
+
+snapshot-guards.log
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:    16, Skipped:     0, Total:    16, Duration: 1 s - Lokad.Utf8Regex.Tests.dll (net11.0)
+
+Passed!  - Failed:     0, Passed:    16, Skipped:     0, Total:    16, Duration: 1 s - Lokad.Utf8Regex.Tests.dll (net10.0)

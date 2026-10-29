@@ -1,0 +1,32 @@
+Measuring README benchmark case: lokad/langserv/url-dashboard (requested=1, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=16828;ElapsedMicroseconds=49548.300
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=14918;ElapsedMicroseconds=44401.900
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=2022;ElapsedMicroseconds=50410.400
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=6209;ElapsedMicroseconds=49742.600
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=2003;ElapsedMicroseconds=50571.500
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=5817;ElapsedMicroseconds=49478.200
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=16828;ElapsedMicroseconds=50434.200
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=14918;ElapsedMicroseconds=44752.900
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=2022;ElapsedMicroseconds=50202.200
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=6209;ElapsedMicroseconds=49730.700
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=2003;ElapsedMicroseconds=50189.600
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=5817;ElapsedMicroseconds=49648.900
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=16828;ElapsedMicroseconds=50066.500
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=14918;ElapsedMicroseconds=44761.100
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=2022;ElapsedMicroseconds=50039.500
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=6209;ElapsedMicroseconds=49736.200
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=2003;ElapsedMicroseconds=50134.200
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=5817;ElapsedMicroseconds=49040.800
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=16828;ElapsedMicroseconds=50273.200
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=14918;ElapsedMicroseconds=44134.500
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=2022;ElapsedMicroseconds=49920.800
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=6209;ElapsedMicroseconds=49315.300
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=2003;ElapsedMicroseconds=49655.100
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=5817;ElapsedMicroseconds=49193.700
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=16828;ElapsedMicroseconds=50049.400
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=14918;ElapsedMicroseconds=44269.500
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=2022;ElapsedMicroseconds=50280.400
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=6209;ElapsedMicroseconds=49833.400
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=2003;ElapsedMicroseconds=50304.300
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=5817;ElapsedMicroseconds=51614.700
+Updated README case: lokad/langserv/url-dashboard

@@ -290,8 +290,6 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | Case | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
 | `lokad/folding/region-marker` | 5,376.030 us | 37.099 us | 60.876 us | 144.91x |
-| `lokad/langserv/url-dashboard` | 89.317 us | 7.363 us | 7.886 us | 12.13x |
-| `lokad/langserv/url-download` | 145.917 us | 12.990 us | 13.483 us | 11.23x |
 | `lokad/style/hex-color` | 5.491 us | 0.496 us | 0.613 us | 11.07x |
 | `lokad/lexer/doc-line` | 20.241 us | 2.157 us | 3.053 us | 9.38x |
 | `lokad/imports/module-imports` | 37.087 us | 4.439 us | 26.804 us | 8.36x |
@@ -322,6 +320,8 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `structural/keyword-family-to-capitalized-identifier` | 74.910 us | 220.031 us | 231.281 us | 0.34x |
 | `structural/ordered-identifier-window` | 6.493 us | 29.202 us | 40.545 us | 0.22x |
 | `structural/modifier-family-to-type-pair` | 24.891 us | 135.047 us | 147.705 us | 0.18x |
+| `lokad/langserv/url-dashboard` | 2.975 us | 24.828 us | 25.057 us | 0.12x |
+| `lokad/langserv/url-download` | 2.800 us | 51.138 us | 51.700 us | 0.05x |
 | `balancing/begin-end-blocks` | 7.333 us | 4,248.158 us | 4,248.675 us | 0.0017x |
 <!-- END GENERATED LOKAD BENCHMARKS -->
 
@@ -341,9 +341,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | Case | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
 | `lokad/folding/region-marker` | 5,395.440 us | 37.293 us | 60.206 us | 144.68x |
-| `lokad/langserv/url-dashboard` | 88.801 us | 7.434 us | 8.055 us | 11.94x |
 | `lokad/style/hex-color` | 5.636 us | 0.498 us | 0.595 us | 11.31x |
-| `lokad/langserv/url-download` | 145.706 us | 12.969 us | 13.454 us | 11.23x |
 | `structural/keyword-family-to-capitalized-identifier` | 74.881 us | 7.748 us | 19.121 us | 9.67x |
 | `lokad/lexer/doc-line` | 20.079 us | 2.181 us | 3.067 us | 9.20x |
 | `lokad/imports/module-imports` | 37.317 us | 4.443 us | 26.603 us | 8.40x |
@@ -373,5 +371,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `structural/ordered-modifier-pair` | 6.042 us | 8.654 us | 19.744 us | 0.70x |
 | `structural/ordered-identifier-window` | 6.484 us | 10.777 us | 21.938 us | 0.60x |
 | `literal/identifier-token` | 2.791 us | 4.756 us | 15.064 us | 0.59x |
+| `lokad/langserv/url-dashboard` | 2.976 us | 8.010 us | 8.506 us | 0.37x |
+| `lokad/langserv/url-download` | 2.812 us | 13.067 us | 13.564 us | 0.22x |
 | `balancing/begin-end-blocks` | 7.342 us | 467.528 us | 489.277 us | 0.02x |
 <!-- END GENERATED LOKAD_COMPILED BENCHMARKS -->
