@@ -246,9 +246,10 @@ Warm text-key hits skip cold parsing; funded hits only borrow the entry's charge
 UTF-8 keys still fund decoding.
 Preliminary byte-template scans admit work before reading through the construction
 owner or fixed scan ceiling. Interrupted preparation is retryable and never
-published. This is not one combined construction/execution/retention budget.
-PythonRe's caller-funded Compile additionally funds replacement preparation and
-cache/active-plan retention through its program account; see its
+published. Ordinary policies do not combine construction/execution/retention.
+PythonRe's caller-funded Compile additionally funds replacement preparation,
+cache/active-plan retention and default execution/result staging through its
+program account; see its
 [lifetime contract](SPEC-PYTHONRE.md#construction-and-execution-controls). This
 does not change Core/PCRE2's ordinary cache scopes or fund caller-retained output.
 

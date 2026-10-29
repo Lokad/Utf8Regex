@@ -24,7 +24,7 @@ public sealed partial class Utf8PythonRegex
 
     private int CountPreparedLiteral(Utf8Regex prepared, ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+        var invocation = CreateInvocation(cancellationToken);
         try
         {
             var count = prepared.CountForResult(input, startOffsetInBytes, ref invocation);
@@ -89,7 +89,7 @@ public sealed partial class Utf8PythonRegex
     {
         result = default;
         if (_repeatedExactFindAllString is not { } canonical || _utf8Regex is null) return false;
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, CancellationToken.None);
+        var invocation = CreateInvocation(CancellationToken.None);
         Utf8InvocationResultLedger ledger = default;
         try
         {
@@ -132,15 +132,16 @@ public sealed partial class Utf8PythonRegex
         }
 
         ranges = default;
+        var invocation = default(Utf8SliceInvocation);
         try
         {
             Utf8ValueMatchEnumerator enumerator;
-            if (startOffsetInBytes == 0 && !HasFiniteExecutionLimits &&
+            if (_programMemory is null && startOffsetInBytes == 0 && !HasFiniteExecutionLimits &&
                 !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan)
                 enumerator = _utf8Regex.EnumerateMatches(input);
             else
             {
-                var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+                invocation = CreateInvocation(cancellationToken);
                 enumerator = _utf8Regex.EnumerateMatchesForResult(input, startOffsetInBytes, ref invocation);
             }
 
@@ -168,21 +169,41 @@ public sealed partial class Utf8PythonRegex
         {
             var failure = ranges.ResourceFailure();
             ranges.Dispose();
+            ReleaseFailedCollection(ref invocation);
             ranges = default;
             throw failure;
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
             ranges.Dispose();
+            ReleaseFailedCollection(ref invocation);
             ranges = default;
+            throw CreateMatchTimeoutException(input, Pattern);
+        }
+        catch (RegexMatchTimeoutException) when (_programMemory is not null)
+        {
+            ranges.Dispose();
+            ReleaseFailedCollection(ref invocation);
+            ranges = default;
+            // Core's enumeration wrapper uses its translated pattern. Bound
+            // Python operations retain their original diagnostic authority.
             throw CreateMatchTimeoutException(input, Pattern);
         }
         catch
         {
             ranges.Dispose();
+            ReleaseFailedCollection(ref invocation);
             ranges = default;
             throw;
         }
+    }
+
+    private static void ReleaseFailedCollection(ref Utf8SliceInvocation invocation)
+    {
+        // Enumeration setup can fail before a range buffer takes the borrowed
+        // invocation. No enumerator/value alias is ever published on this path.
+        if (invocation.Ledger.HasMemoryAllowance)
+            invocation.Ledger.Release(invocation.Ledger.ReservedBytes);
     }
 
     private bool TryReplaceViaUtf8Literal(

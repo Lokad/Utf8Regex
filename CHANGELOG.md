@@ -15,7 +15,8 @@
 - Add caller-funded PythonRe compilation with explicit program disposal; active
   operations/cursors retain the program charge until they finish. Replacement
   preparation/cache storage shares that account; active evicted plans keep their
-  funding until completion. Caller-retained output remains a separate scope.
+  funding until completion. Default execution/result staging uses it too, with
+  synchronous temporary refunds. Caller-retained output remains a separate scope.
 - Lower compatible Python Unicode character-class unions to the existing scalar
   predicate instruction, preserving pinned membership and lexical folding.
 - Reuse complete cell/range-reference proofs for bounded ASCII value Match,

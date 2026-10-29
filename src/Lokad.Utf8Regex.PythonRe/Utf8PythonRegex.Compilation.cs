@@ -74,7 +74,7 @@ public sealed partial class Utf8PythonRegex
     }
 
     /// <summary>Compiles and retains an eager program under caller-owned construction/program admission.</summary>
-    /// <remarks>Dispose the expression to close new uses and refund after existing operations/cursors finish. The shared allowance covers modeled construction, a conservative completed-program charge and replacement preparation/retention, not construction peak. Null MaxBytes imposes no additional construction-byte cap on this overload; work/depth/instruction backstops remain. Working/result and caller retention keep their separately documented scopes.</remarks>
+    /// <remarks>Dispose the expression to close new uses and refund after existing operations/cursors finish. The shared allowance covers modeled construction, a conservative completed-program charge, replacement preparation/retention and default execution/result staging. Null MaxBytes adds no private construction-byte cap; work/depth/instruction backstops remain. Temporary loans refund synchronously; caller-retained output and incidental objects keep their separately documented scope.</remarks>
     public static Utf8PythonRegex Compile(string pattern, PythonReCompileOptions options,
         TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
         Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout,
@@ -87,7 +87,7 @@ public sealed partial class Utf8PythonRegex
     }
 
     /// <summary>Compiles strict UTF-8 pattern bytes with caller-owned construction/program funding.</summary>
-    /// <remarks>Admission precedes decoding, parsing and eager FullMatch preparation. Replacement preparation/cache retention uses the same account. Dispose closes matching use; existing snapshots remain valid. Working/result and caller retention are separate scopes.</remarks>
+    /// <remarks>Admission precedes decoding, parsing and eager FullMatch preparation. Replacement preparation/cache retention and default execution/result staging use the same account. Dispose closes matching use; existing snapshots remain valid. Caller-retained output and incidental objects remain separate scopes.</remarks>
     public static Utf8PythonRegex Compile(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options,
         TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
         Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout,

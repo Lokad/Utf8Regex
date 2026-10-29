@@ -9,6 +9,8 @@ internal sealed class Utf8FundedStorage(IUtf8MemoryAllowance allowance, string n
     private int _users;
     private bool _closed;
 
+    internal IUtf8MemoryAllowance Allowance => allowance;
+
     // Called once after construction transfers its reservations. A pending cache
     // entry may have been detached already; its preparer/waiters hold active uses.
     internal void Retain(ulong bytes)

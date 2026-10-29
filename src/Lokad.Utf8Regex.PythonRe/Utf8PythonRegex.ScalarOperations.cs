@@ -18,7 +18,7 @@ public sealed partial class Utf8PythonRegex
         ValidateScalarStartOffset(input, startOffsetInBytes);
         // Capture the invocation before cold full-match preparation. Preparation
         // keeps its fixed backstop, but its elapsed time cannot reset the deadline.
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+        var invocation = CreateInvocation(cancellationToken);
         var program = kind == 2 ? GetScalarFullProgram(input, invocation.Budget.Deadline, cancellationToken) : ScalarProgram;
         return new PythonReScalarMatchCursor(input, program,
             startOffsetInBytes, MatchTimeout, _utf8Regex, Pattern, invocation);
@@ -98,7 +98,7 @@ public sealed partial class Utf8PythonRegex
             !_scalarProgram.IgnoreCase && _utf8Regex?.CanFindNativeLiteralForResult == true)
         {
             ValidateScalarStartOffset(input, startOffsetInBytes);
-            var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+            var invocation = CreateInvocation(cancellationToken);
             try
             {
                 // Complete literal eligibility also covers ordinary captures;

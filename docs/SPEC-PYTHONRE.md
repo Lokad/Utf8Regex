@@ -130,13 +130,24 @@ cache retention before clearing, so in-flight operations cannot repopulate it.
 Conservative completed charges can count helper/shared storage more than once;
 neither historical allocation traffic nor the private cache maximum is charged.
 
-Program/cache funding and the cursor's shared **working** allowance are separate
-explicit parameters; a host can supply the same account to both. Incidental
-objects and caller-retained output are outside these scopes. Working admission
-on other public operation families is not yet shared. This is not aggregate memory
-admission for every PythonRe operation or a process-memory bound.
-Timeout failures during funded replacement preparation omit diagnostic subject
-text, avoiding an unadmitted decode after expiry; Pattern and timeout stay.
+Funded expressions also use that account by default for covered temporary
+execution storage and result staging across matching, detailed/text projections,
+global operations, substitution callbacks and cursor creation/advances. Covered
+growth overlap is admitted before acquisition. Synchronous completion, failure
+and cursor disposal refund exclusive temporary loans; retained program/cache
+charges remain. Exact literal boolean/Count paths need no major workspace and
+keep their storage-free native routes. Numeric limits, original tokens/deadlines
+and strict full-subject validation remain independent requirements. Bound bulk
+collection remaps nested Core timeouts to the original Python pattern.
+
+The explicit four-argument cursor factory can select a separate working account;
+program/cache storage keeps its original account. No implicit result-traffic cap
+or private working-byte ceiling is added. Timeout diagnostics on these bound
+invocations omit subject text, preserving Pattern, type and timeout. Incidental
+objects, borrowed input and caller-retained output remain outside these scopes.
+Output is funded through staging/publication; ownership and admission after
+return remain the caller's responsibility. An explicit retained-output transfer
+API is unfinished. This is not exact heap/RSS or a process-memory bound.
 
 Syntax/reference/lookbehind validation precedes optional native rendering.
 The owned Python scalar program is authoritative. Optional Core preparation is

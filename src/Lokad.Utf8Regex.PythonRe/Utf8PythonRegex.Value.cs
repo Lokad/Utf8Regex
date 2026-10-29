@@ -127,7 +127,7 @@ public sealed partial class Utf8PythonRegex
     private Utf8PythonValueMatch MatchValueNative(ReadOnlySpan<byte> input, int startOffsetInBytes,
         int kind, CancellationToken cancellationToken)
     {
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+        var invocation = CreateInvocation(cancellationToken);
         return MaterializeNativeMatchValue(input, startOffsetInBytes, kind, ref invocation);
     }
 
@@ -172,7 +172,7 @@ public sealed partial class Utf8PythonRegex
     {
         var cursor = new PythonReScalarMatchCursor(input, program,
             startOffsetInBytes, MatchTimeout, _utf8Regex, Pattern,
-            new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken));
+            CreateInvocation(cancellationToken));
         try
         {
             var count = 0;

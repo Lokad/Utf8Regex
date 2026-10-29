@@ -65,6 +65,12 @@ public sealed partial class Utf8PythonRegex
         {
             _ranges.Release(ref _invocation);
             _results.Release(ref _invocation);
+            // This private collector owns every Core enumerator copy, and only
+            // independent Python data escapes. Its remaining map/table loans
+            // cannot outlive publication. Public copied Core cursors keep their
+            // separate conservative invocation-long ownership contract.
+            if (_invocation.Ledger.HasMemoryAllowance)
+                _invocation.Ledger.Release(_invocation.Ledger.ReservedBytes);
         }
     }
 

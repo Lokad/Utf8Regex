@@ -132,7 +132,8 @@ public sealed partial class Utf8Regex
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            throw CreateMatchTimeoutException(input, Pattern, MatchTimeout, invocation.Budget.Limits);
+            throw CreateMatchTimeoutException(invocation.Ledger.HasMemoryAllowance ? default : input,
+                Pattern, MatchTimeout, invocation.Budget.Limits);
         }
         finally { if (reservation != 0) invocation.Ledger.Release(reservation); }
     }

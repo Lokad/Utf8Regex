@@ -17,7 +17,7 @@ public sealed partial class Utf8PythonRegex
              kind == 2 && _asciiDotAllFullMatchPrefix is not null && _asciiDotAllFullMatchSuffix is not null);
         if (native)
         {
-            var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+            var invocation = CreateInvocation(cancellationToken);
             Utf8InvocationResultLedger results = default;
             try { return MaterializeNativeMatchText(input, startOffsetInBytes, kind, ref invocation, ref results); }
             finally { results.Release(ref invocation); }

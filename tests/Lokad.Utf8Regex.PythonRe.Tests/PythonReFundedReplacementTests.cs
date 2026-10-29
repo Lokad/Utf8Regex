@@ -15,11 +15,13 @@ public sealed class PythonReFundedReplacementTests
     {
         var allowance = new Allowance(4 << 20); using var regex = Compile(allowance);
         var program = allowance.Used;
+        var beforeCold = allowance.Reservations;
         Assert.Equal("a!", regex.SubnToString("a"u8, @"\g<x>!").ResultText);
         var retained = allowance.Used; Assert.True(retained > program);
         var reservations = allowance.Reservations;
         Assert.Equal("a!a!", regex.SubnToString("aa"u8, @"\g<x>!").ResultText);
-        Assert.Equal(retained, allowance.Used); Assert.Equal(reservations, allowance.Reservations);
+        Assert.Equal(retained, allowance.Used);
+        Assert.True(allowance.Reservations - reservations < reservations - beforeCold);
         regex.Dispose(); Assert.Equal(0UL, allowance.Used);
     }
 
@@ -69,9 +71,10 @@ public sealed class PythonReFundedReplacementTests
         Assert.Throws<Utf8MemoryAdmissionException>(() => regex.SubnToString("a"u8, new string('z', 65536)));
         Assert.True(allowance.Reservations > reservations, "Denial must follow actual partial preparation admission.");
         Assert.Equal(retained, allowance.Used);
-        reservations = allowance.Reservations;
+        allowance.Maximum = 4 << 20;
+        var cacheCount = regex.DebugReplacementPlanCacheEntryCount;
         Assert.Equal("0063a!", regex.SubnToString("a"u8, @"0063\g<x>!").ResultText);
-        Assert.Equal(reservations, allowance.Reservations); Assert.Equal(retained, allowance.Used);
+        Assert.Equal(cacheCount, regex.DebugReplacementPlanCacheEntryCount); Assert.Equal(retained, allowance.Used);
         regex.Dispose(); Assert.Equal(0UL, allowance.Used);
     }
 

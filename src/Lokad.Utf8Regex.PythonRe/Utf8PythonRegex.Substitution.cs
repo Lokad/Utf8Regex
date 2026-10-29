@@ -215,7 +215,7 @@ public sealed partial class Utf8PythonRegex
     {
         using var programUse = EnterProgramUse();
         ValidateStartOffset(input, startOffsetInBytes);
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+        var invocation = CreateInvocation(cancellationToken);
         var scalarPlan = GetReplacementPlan(input, replacement, invocation, cancellationToken, out var memoryUse);
         using var planUse = memoryUse;
         if (!HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&
@@ -264,7 +264,7 @@ public sealed partial class Utf8PythonRegex
     {
         using var programUse = EnterProgramUse();
         ValidateStartOffset(input, startOffsetInBytes);
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+        var invocation = CreateInvocation(cancellationToken);
         var scalarPlan = GetReplacementPlan(input, replacement, invocation, cancellationToken, out var memoryUse);
         using var planUse = memoryUse;
         if (!HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&
@@ -405,7 +405,7 @@ public sealed partial class Utf8PythonRegex
         SubstituteScalar(input, (Value: state, Evaluator: evaluator, Names: _nameEntries),
                 static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonMatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
                     cursor.AppendText(ref writer, s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names))),
-                count, startOffsetInBytes, new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken),
+                count, startOffsetInBytes, CreateInvocation(cancellationToken),
                 true, false, out _, out var scalarResult);
         return scalarResult;
     }
@@ -462,7 +462,7 @@ public sealed partial class Utf8PythonRegex
         SubstituteScalar(input, (Value: state, Evaluator: evaluator, Names: _nameEntries),
                 static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonMatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
                     cursor.AppendText(ref writer, s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names))),
-                count, startOffsetInBytes, new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken),
+                count, startOffsetInBytes, CreateInvocation(cancellationToken),
                 false, false, out var scalarResult, out _);
         return scalarResult;
     }
@@ -558,7 +558,7 @@ public sealed partial class Utf8PythonRegex
         SubstituteScalar(input, (Value: state, Evaluator: evaluator, Names: _nameEntries),
                 static (ReadOnlySpan<byte> source, (TState Value, Utf8PythonUtf8MatchEvaluator<TState> Evaluator, PythonReNameEntry[] Names) s, scoped ref PythonReScalarMatchCursor cursor, scoped ref Utf8SliceOutputWriter writer) =>
                     cursor.AppendBytes(ref writer, s.Evaluator(s.Value, cursor.SnapshotDetailed(s.Names))),
-                count, startOffsetInBytes, new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken),
+                count, startOffsetInBytes, CreateInvocation(cancellationToken),
                 false, true, out var scalarResult, out _);
         return scalarResult;
     }
