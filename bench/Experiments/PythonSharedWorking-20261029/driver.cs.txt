@@ -1,0 +1,209 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+var before = Load(Path.GetFullPath(args[0]), "baseline");
+var after = Load(Path.GetFullPath(args[1]), "candidate");
+if (Hash(before.Python) == Hash(after.Python) || !Identity(after.Python).Contains(args[2], StringComparison.Ordinal)) throw new Exception("Unexpected binaries");
+using var process = Process.GetCurrentProcess(); process.ProcessorAffinity = (nint)4;
+using var creation = new CancellationTokenSource(); using var operation = new CancellationTokenSource();
+string Repeat(string value, int count) => string.Concat(Enumerable.Repeat(value, count));
+var ascii = Repeat("alpha beta gamma ", 32); var unicode = Repeat("éé 😀 aa ", 32);
+var cases = new[] {
+    new Case("ordinary-ascii", "[a-z]+", ascii),
+    new Case("ordinary-unicode-captures", "(é+|a+)", unicode),
+    new Case("old-live-token-control", "[a-z]+", ascii, Authority: "creation"),
+    new Case("old-finite-control", "[a-z]+", ascii, Finite: true),
+    new Case("shared-ascii", "[a-z]+", ascii, Shared: true),
+    new Case("shared-unicode-captures", "(é+|a+)", unicode, Shared: true),
+    new Case("shared-finite-live-token", "[a-z]+", ascii, Authority: "creation", Finite: true, Shared: true),
+    new Case("native-miss-control", "z", new string('a', 8192)),
+    new Case("python-count-control", "[a-z]+", ascii, Count: true, Finite: true),
+    new Case("core-count-control", @"\b\w+\b", ascii, Count: true, Core: true, Finite: true),
+};
+var elapsed = Stopwatch.StartNew(); var preflight = args.Length > 3 && args[3] == "--preflight";
+var rows = new List<object>();
+foreach (var item in cases)
+{
+    var input = Encoding.UTF8.GetBytes(item.Text); var oracle = new Regex(item.Pattern, RegexOptions.CultureInvariant);
+    int Oracle(string text)
+    {
+        if (item.Count) return oracle.Count(text);
+        var sum = 0;
+        for (var match = oracle.Match(text); match.Success; match = match.NextMatch())
+        for (var i = 0; i < match.Groups.Count; i++)
+        {
+            var g = match.Groups[i];
+            if (g.Success) sum += 1 + g.Index + g.Index + g.Length + g.Value.Length;
+        }
+        return sum;
+    }
+    var expected = Oracle(item.Text);
+    Func<int> Make((Assembly Core, Assembly Python) assemblies, bool candidate)
+    {
+        var type = item.Core ? assemblies.Core.GetType("Lokad.Utf8Regex.Utf8Regex")! : assemblies.Python.GetType("Lokad.Utf8Regex.PythonRe.Utf8PythonRegex")!;
+        object owner;
+        if (item.Finite)
+        {
+            var optionsType = item.Core ? typeof(RegexOptions) : assemblies.Python.GetType("Lokad.Utf8Regex.PythonRe.PythonReCompileOptions")!;
+            var policyType = assemblies.Core.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!; var policy = Activator.CreateInstance(policyType)!;
+            foreach (var (key, value) in new[] { ("MaxWorkSteps", 10000000UL), ("MaxDepth", 4096UL), ("MaxWorkingBytes", 67108864UL), ("MaxResultBytes", 67108864UL) })
+            {
+                var p = policyType.GetProperty(key)!; p.SetValue(policy, Convert.ChangeType(value, Nullable.GetUnderlyingType(p.PropertyType) ?? p.PropertyType));
+            }
+            owner = type.GetConstructor([typeof(string), optionsType, typeof(TimeSpan), policyType])!
+                .Invoke([item.Pattern, item.Core ? RegexOptions.CultureInvariant : Enum.ToObject(optionsType, 0), Timeout.InfiniteTimeSpan, policy]);
+        }
+        else owner = type.GetConstructor([typeof(string)])!.Invoke([item.Pattern]);
+        if (item.Count)
+        {
+            if (item.Core) { var count = type.GetMethod("Count", [typeof(ReadOnlySpan<byte>), typeof(CancellationToken)])!.CreateDelegate<CoreCount>(owner); return () => count(input, creation.Token); }
+            var countPython = type.GetMethod("Count", [typeof(ReadOnlySpan<byte>), typeof(int), typeof(CancellationToken)])!.CreateDelegate<PythonCount>(owner);
+            return () => countPython(input, 0, creation.Token);
+        }
+        var createToken = item.Authority switch { "creation" or "both" or "same" => creation.Token, "operation" when !candidate => operation.Token, _ => default };
+        var moveToken = item.Authority == "same" ? creation.Token : operation.Token;
+        var shared = candidate && item.Shared;
+        var host = shared ? new DriverAllowance(1 << 20) : null;
+        var interfaceType = shared ? assemblies.Core.GetType("Lokad.Utf8Regex.IUtf8MemoryAllowance")! : null;
+        var allowance = shared ? MakeAllowance(interfaceType!, host!) : null;
+        var call = Bridge(type, false, interfaceType);
+        return () =>
+        {
+            var result = call(owner, input, createToken, moveToken, allowance);
+            if (host is not null && host.Used != 0) throw new Exception("Shared funding leaked after cursor disposal");
+            return result;
+        };
+    }
+    Func<int>[] actions = [Make(before, false), Make(after, true), () => Oracle(item.Text), () => Oracle(Encoding.UTF8.GetString(input))];
+    foreach (var action in actions) if (action() != expected) throw new Exception("Preflight mismatch: " + item.Name);
+    if (preflight) { Console.Error.WriteLine($"Preflight {item.Name}: {expected}"); continue; }
+    var iterations = new int[4]; var warmupCalls = new int[4]; var warmupMilliseconds = new double[4];
+    for (var lane = 0; lane < 4; lane++)
+    {
+        var warmup = Stopwatch.StartNew();
+        do { Loop(1, actions[lane]); warmupCalls[lane]++; } while (warmup.ElapsedMilliseconds < 500);
+        warmupMilliseconds[lane] = warmup.Elapsed.TotalMilliseconds;
+        var count = 1; var probe = Loop(count, actions[lane]);
+        while (probe.Milliseconds < 20 && count < 1000000) { count *= 2; probe = Loop(count, actions[lane]); }
+        iterations[lane] = (int)Math.Clamp(Math.Ceiling(count * 50 / Math.Max(probe.Milliseconds, 0.000001)), 1, 1000000);
+    }
+    var times = Enumerable.Range(0, 4).Select(_ => new double[3]).ToArray();
+    var allocations = Enumerable.Range(0, 4).Select(_ => new double[3]).ToArray();
+    var durations = Enumerable.Range(0, 4).Select(_ => new double[3]).ToArray();
+    for (var sample = 0; sample < 3; sample++)
+    for (var position = 0; position < 4; position++)
+    {
+        var lane = sample % 2 == 0 ? position : 3 - position;
+        GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        var result = Loop(iterations[lane], actions[lane]); if (result.Last != expected) throw new Exception("Timed mismatch");
+        times[lane][sample] = result.Milliseconds * 1000 / iterations[lane]; allocations[lane][sample] = (double)result.Bytes / iterations[lane]; durations[lane][sample] = result.Milliseconds;
+    }
+    rows.Add(new { item.Name, Operation = item.Count ? "Count" : "CreateMatchCursor + advance + consume owned groups + dispose",
+        item.Pattern, InputBytes = input.Length, Expected = expected, item.Authority, item.Finite,
+        SharedWorking = item.Shared, Iterations = iterations, WarmupCalls = warmupCalls, WarmupMilliseconds = warmupMilliseconds,
+        Microseconds = times, AllocatedBytes = allocations, ElapsedMilliseconds = durations });
+    Console.Error.WriteLine($"Completed {item.Name}: {string.Join(" / ", times.Select(t => t.Order().ElementAt(1)))} us/op");
+}
+Console.WriteLine(JsonSerializer.Serialize(new { Runtime = RuntimeInformation.FrameworkDescription, CpuAffinityMask = "4", ElapsedSeconds = elapsed.Elapsed.TotalSeconds,
+    LaneNames = new[] { "Baseline", "Candidate", "DiagnosticPredecodedRegex", "DiagnosticDecodeThenRegex" },
+    FeatureComparison = "Shared rows add a caller-owned working allowance through the new cursor factory. Numeric policies/tokens are unchanged. This is additional admission authority, not an equivalent-authority speedup. Controls use unchanged factories.",
+    Baseline = new { Core = Identity(before.Core), Python = Identity(before.Python) }, Candidate = new { Core = Identity(after.Core), Python = Identity(after.Python) }, Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+static PublicLoop Bridge(Type ownerType, bool useMoveToken, Type? allowanceType)
+{
+    var factory = ownerType.GetMethod("CreateMatchCursor", allowanceType is null
+        ? [typeof(ReadOnlyMemory<byte>), typeof(int), typeof(CancellationToken)]
+        : [typeof(ReadOnlyMemory<byte>), typeof(int), typeof(CancellationToken), allowanceType])!;
+    var cursorType = factory.ReturnType; var currentGetter = cursorType.GetProperty("Current")!.GetMethod!;
+    var detailedType = currentGetter.ReturnType; var groupsGetter = detailedType.GetProperty("Groups")!.GetMethod!;
+    var arrayType = groupsGetter.ReturnType; var groupType = arrayType.GetElementType()!;
+    var method = new DynamicMethod("PublicCursorLoop", typeof(int), [typeof(object), typeof(byte[]), typeof(CancellationToken), typeof(CancellationToken), typeof(object)], typeof(Program).Module, true);
+    var il = method.GetILGenerator(); var cursor = il.DeclareLocal(cursorType); var current = il.DeclareLocal(detailedType);
+    var groups = il.DeclareLocal(arrayType); var index = il.DeclareLocal(typeof(int)); var sum = il.DeclareLocal(typeof(int));
+    il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Castclass, ownerType); il.Emit(OpCodes.Ldarg_1);
+    il.Emit(OpCodes.Newobj, typeof(ReadOnlyMemory<byte>).GetConstructor([typeof(byte[])])!); il.Emit(OpCodes.Ldc_I4_0); il.Emit(OpCodes.Ldarg_2);
+    if (allowanceType is not null) { il.Emit(OpCodes.Ldarg_S, 4); il.Emit(OpCodes.Castclass, allowanceType); }
+    il.Emit(OpCodes.Callvirt, factory); il.Emit(OpCodes.Stloc, cursor);
+    il.BeginExceptionBlock();
+    var move = il.DefineLabel(); var next = il.DefineLabel(); var groupLoop = il.DefineLabel(); var skip = il.DefineLabel();
+    il.Emit(OpCodes.Br, move); il.MarkLabel(next);
+    il.Emit(OpCodes.Ldloc, cursor); il.Emit(OpCodes.Callvirt, currentGetter); il.Emit(OpCodes.Stloc, current);
+    il.Emit(OpCodes.Ldloca, current); il.Emit(OpCodes.Call, groupsGetter); il.Emit(OpCodes.Stloc, groups);
+    il.Emit(OpCodes.Ldc_I4_0); il.Emit(OpCodes.Stloc, index); il.Emit(OpCodes.Br, groupLoop);
+    var read = il.DefineLabel(); il.MarkLabel(read);
+    void Address() { il.Emit(OpCodes.Ldloc, groups); il.Emit(OpCodes.Ldloc, index); il.Emit(OpCodes.Ldelema, groupType); }
+    Address(); il.Emit(OpCodes.Call, groupType.GetProperty("Success")!.GetMethod!); il.Emit(OpCodes.Brfalse, skip);
+    il.Emit(OpCodes.Ldloc, sum); il.Emit(OpCodes.Ldc_I4_1); il.Emit(OpCodes.Add);
+    foreach (var name in new[] { "StartOffsetInUtf16", "EndOffsetInUtf16" }) { Address(); il.Emit(OpCodes.Call, groupType.GetProperty(name)!.GetMethod!); il.Emit(OpCodes.Add); }
+    Address(); il.Emit(OpCodes.Call, groupType.GetProperty("ValueText")!.GetMethod!); il.Emit(OpCodes.Callvirt, typeof(string).GetProperty("Length")!.GetMethod!); il.Emit(OpCodes.Add); il.Emit(OpCodes.Stloc, sum);
+    il.MarkLabel(skip); il.Emit(OpCodes.Ldloc, index); il.Emit(OpCodes.Ldc_I4_1); il.Emit(OpCodes.Add); il.Emit(OpCodes.Stloc, index);
+    il.MarkLabel(groupLoop); il.Emit(OpCodes.Ldloc, index); il.Emit(OpCodes.Ldloc, groups); il.Emit(OpCodes.Ldlen); il.Emit(OpCodes.Conv_I4); il.Emit(OpCodes.Blt, read);
+    il.MarkLabel(move); il.Emit(OpCodes.Ldloc, cursor); if (useMoveToken) il.Emit(OpCodes.Ldarg_3);
+    il.Emit(OpCodes.Callvirt, cursorType.GetMethod("MoveNext", useMoveToken ? [typeof(CancellationToken)] : Type.EmptyTypes)!); il.Emit(OpCodes.Brtrue, next);
+    il.BeginFinallyBlock(); il.Emit(OpCodes.Ldloc, cursor); il.Emit(OpCodes.Callvirt, cursorType.GetMethod("Dispose")!); il.EndExceptionBlock();
+    il.Emit(OpCodes.Ldloc, sum); il.Emit(OpCodes.Ret); return method.CreateDelegate<PublicLoop>();
+}
+static object MakeAllowance(Type interfaceType, DriverAllowance host)
+{
+    var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("SharedAllowance" + Guid.NewGuid().ToString("N")), AssemblyBuilderAccess.Run);
+    var type = assembly.DefineDynamicModule("SharedAllowance").DefineType("Provider", TypeAttributes.Public | TypeAttributes.Sealed, typeof(object), [interfaceType]);
+    var field = type.DefineField("_host", typeof(DriverAllowance), FieldAttributes.Private | FieldAttributes.InitOnly);
+    var ctor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, [typeof(DriverAllowance)]);
+    var il = ctor.GetILGenerator(); il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Call, typeof(object).GetConstructor(Type.EmptyTypes)!);
+    il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Ldarg_1); il.Emit(OpCodes.Stfld, field); il.Emit(OpCodes.Ret);
+    foreach (var declaration in interfaceType.GetMethods())
+    {
+        var method = type.DefineMethod(declaration.Name, MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.NewSlot,
+            declaration.ReturnType, [typeof(ulong)]);
+        il = method.GetILGenerator(); il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Ldfld, field); il.Emit(OpCodes.Ldarg_1);
+        il.Emit(OpCodes.Callvirt, typeof(DriverAllowance).GetMethod(declaration.Name)!); il.Emit(OpCodes.Ret);
+        type.DefineMethodOverride(method, declaration);
+    }
+    return Activator.CreateInstance(type.CreateType()!, host)!;
+}
+static (Assembly Core, Assembly Python) Load(string root, string name)
+{
+    var context = new AssemblyLoadContext(name);
+    context.Resolving += (ctx, n) => File.Exists(Path.Combine(root, n.Name + ".dll")) ? ctx.LoadFromAssemblyPath(Path.Combine(root, n.Name + ".dll")) : null;
+    return (context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.dll")), context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.PythonRe.dll")));
+}
+static string Hash(Assembly a) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(a.Location)));
+static string Identity(Assembly a) => a.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion + " sha256=" + Hash(a);
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds, long Bytes, int Last) Loop(int count, Func<int> action)
+{
+    var value = 0; var bytes = GC.GetAllocatedBytesForCurrentThread(); var start = Stopwatch.GetTimestamp();
+    for (var i = 0; i < count; i++) value = action();
+    return (Stopwatch.GetElapsedTime(start).TotalMilliseconds, GC.GetAllocatedBytesForCurrentThread() - bytes, value);
+}
+record Case(string Name, string Pattern, string Text, string Authority = "none", bool Finite = false, bool Count = false, bool Core = false, bool Shared = false);
+delegate int PublicLoop(object owner, byte[] input, CancellationToken creation, CancellationToken operation, object? allowance);
+delegate int CoreCount(ReadOnlySpan<byte> input, CancellationToken token);
+delegate int PythonCount(ReadOnlySpan<byte> input, int start, CancellationToken token);
+public sealed class DriverAllowance(long maximum)
+{
+    private long _used;
+    public long Used => Volatile.Read(ref _used);
+    public bool TryReserve(ulong bytes)
+    {
+        if (bytes > long.MaxValue) return false;
+        var delta = (long)bytes;
+        while (true)
+        {
+            var current = Volatile.Read(ref _used);
+            if (delta > maximum - current) return false;
+            if (Interlocked.CompareExchange(ref _used, current + delta, current) == current) return true;
+        }
+    }
+    public void Release(ulong bytes)
+    {
+        if (Interlocked.Add(ref _used, -checked((long)bytes)) < 0) throw new Exception("Shared allowance underflow");
+    }
+}

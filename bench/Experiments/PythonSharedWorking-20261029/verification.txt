@@ -1,0 +1,7 @@
+Release complete PythonRe: 4089 passed per net10.0/net11.0.
+Final shared/API focused: ten passed per runtime (two final cases added).
+Core focused: 381 passed per runtime; PCRE2 focused: 32 passed per runtime.
+Cold timeout diagnostic fix: 32 shared/persistent/API checks passed per runtime.
+500,000 discarded ranges under shared 16 KiB funding; concurrent users, refusal/partial loans, cancellation/refunds, numeric caps, aliases/retained results covered.
+Public API snapshots and shared/profile documentation updated.
+Compilation, retained program/cache and caller-retained output funding are not complete. No package/catalog matrix repeated.
