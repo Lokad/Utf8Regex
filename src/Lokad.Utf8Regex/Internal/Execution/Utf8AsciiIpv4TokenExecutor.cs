@@ -60,6 +60,34 @@ internal static class Utf8AsciiIpv4TokenExecutor
         return count;
     }
 
+    // The caller validates the whole subject. ASCII token bytes are scalar
+    // aligned; reuse Count's admitted windows and verifier, stopping at a hit.
+    internal static Utf8ExecutionLimitKind TryIsMatchAsciiIpv4Token(ReadOnlySpan<byte> input,
+        ref Utf8SliceInvocation invocation, out bool found)
+    {
+        found = false;
+        var position = 0;
+        const int lookahead = 14;
+        while (position < input.Length)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            var starts = Math.Min(2048 - lookahead, input.Length - position);
+            var block = input.Slice(position, Math.Min(starts + lookahead, input.Length - position));
+            if (TryFindAsciiIpv4Token(block, 0, out var relative, out _) && relative < starts)
+            {
+                var publication = invocation.TryChargeInputStep();
+                invocation.Budget.ThrowIfCancellationRequested();
+                if (publication == Utf8ExecutionLimitKind.None) found = true;
+                return publication;
+            }
+            position += starts;
+        }
+        var terminal = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        return terminal;
+    }
+
     internal static Utf8ExecutionLimitKind TryCountAsciiIpv4Tokens(ReadOnlySpan<byte> input,
         ref Utf8SliceInvocation invocation, out int count)
     {

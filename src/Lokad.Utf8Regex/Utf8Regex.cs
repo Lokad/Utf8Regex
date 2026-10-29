@@ -899,6 +899,14 @@ public sealed partial class Utf8Regex
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.Utf8UriToken &&
             CanUseNativeScalarTokenSearch(program, startByte))
             return Utf8UriTokenExecutor.IsMatchWellFormed(input, ref invocation);
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount &&
+            CanUseNativeScalarTokenSearch(program, startByte))
+        {
+            var breach = Utf8AsciiIpv4TokenExecutor.TryIsMatchAsciiIpv4Token(input, ref invocation, out var found);
+            if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAsciiDottedDecimalQuad);
+            return found;
+        }
         // This complete anchored grammar needs no capture state for existence.
         // Wider leading/separator classes keep the scalar VM under this same
         // invocation; the recognized ASCII prefix permits a scalar dot tail.

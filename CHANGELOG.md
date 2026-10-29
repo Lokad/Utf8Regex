@@ -18,6 +18,8 @@
   deeper nesting retains scalar execution under the original invocation.
 - Reuse complete simple-pattern branches for captured Unicode-class Boolean
   searches on ASCII subjects; mixed subjects retain scalar verification.
+- Reuse the admitted dotted-decimal finder for Boolean searches with bounded
+  work and original interruption, avoiding scalar capture workspace.
 
 ## 0.4.0 — 2026-10-27
 
