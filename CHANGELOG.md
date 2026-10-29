@@ -35,6 +35,8 @@
   execution.
 - Improve scalar Count candidate searches for exact literal pairs, retaining
   bounded metering, ordered alternatives and full VM verification.
+- Reject impossible bounded Dot tails before greedy endpoint replay, retaining
+  scalar limits, captures and original resource/interruption authority.
 
 ## 0.4.0 — 2026-10-27
 

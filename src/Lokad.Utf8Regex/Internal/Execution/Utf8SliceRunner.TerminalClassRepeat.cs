@@ -135,7 +135,31 @@ internal static partial class Utf8SliceRunner
             outcome = new(false, -1, breach, null, null);
             return true;
         }
-        if (includesLiteral) return false;
+        if (includesLiteral)
+        {
+            if (atom.Kind != Utf8SliceInstructionKind.Dot || suffix.Kind != Utf8SliceInstructionKind.Literal ||
+                (uint)suffix.A >= 128 || repeat.RepeatMaximum is < 8 or > 511)
+                return false;
+            // A scalar consumes at most four bytes. Absence in this conservative
+            // window rules out every endpoint; presence still needs normal VM
+            // backtracking, including newline, capture and greedy-order rules.
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None)
+            {
+                outcome = new(false, -1, breach, null, null);
+                return true;
+            }
+            var length = Math.Min(input.Length - start, (int)repeat.RepeatMaximum * 4 + 1);
+            var possible = input.Slice(start, length).IndexOf((byte)suffix.A) >= 0;
+            breach = invocation.TryChargeInputStep();
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (breach != Utf8ExecutionLimitKind.None || !possible)
+            {
+                outcome = new(false, -1, breach, null, null);
+                return true;
+            }
+            return false;
+        }
         outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
         return true;
     }
