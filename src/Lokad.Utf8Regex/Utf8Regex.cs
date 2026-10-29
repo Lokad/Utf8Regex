@@ -1862,10 +1862,12 @@ public sealed partial class Utf8Regex
         var queryWhole = _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiDigitsQueryWhole or
             Utf8FallbackDirectFamilyKind.AnchoredAsciiHexQueryWhole;
         var colorWhole = _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiHexColorWhole;
+        var referenceWhole = _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiCellReferenceWhole or
+            Utf8FallbackDirectFamilyKind.AnchoredAsciiRangeReferenceWhole;
         if (startByte == 0 && input.Length <= 2048 && validation.ByteLength == input.Length && validation.IsAscii &&
             ReferenceEquals(program, _ownedSliceProgram) && !program.RightToLeft &&
             !program.IsNonBacktracking &&
-            (queryWhole || colorWhole || !program.IgnoreCase &&
+            (queryWhole || colorWhole || referenceWhole || !program.IgnoreCase &&
                 _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredTrimmedOptionalLiteralPrefixTail or
                     Utf8FallbackDirectFamilyKind.AnchoredNumberPrefix or Utf8FallbackDirectFamilyKind.AnchoredPrefixUntilByte))
         {
@@ -1877,9 +1879,10 @@ public sealed partial class Utf8Regex
             {
                 breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
-                // The color proof includes the folded alphabet and final-LF
-                // anchor semantics. Its loop checks at most six hex digits.
+                // Color/reference proofs qualify their folded ASCII alphabets
+                // and final-LF semantics. The envelope bounds reference digit scans.
                 found = colorWhole ? Utf8AsciiHexColorExecutor.TryMatchWhole(input, out length)
+                    : referenceWhole ? Utf8AsciiAnchoredWholeFamilyExecutor.TryMatchWhole(input, _fallbackDirectFamily, out length)
                     : Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out length);
                 breach = invocation.TryChargeInputStep();
             }

@@ -4,6 +4,8 @@
 
 - Target .NET 10 and .NET 11 across Core, PythonRe and PCRE2.
 - Use .NET 11 by default for benchmark runs; historical figures retain their measured runtime.
+- Reuse complete cell/range-reference proofs for bounded ASCII value Match,
+  preserving construction-culture folding, digit captures and resource controls.
 - Recognize nested capture endings in proved disjoint class repeats, avoiding
   useless backtracking while preserving capture histories and resource controls.
 - Reuse complete terminated-prefix ranges for bounded ASCII value Match, retaining
