@@ -14,7 +14,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal struct Utf8ExecutionBudget
 {
     private readonly Utf8ExecutionDeadline _deadline;
-    private readonly CancellationToken _token;
+    private CancellationToken _token;
 
     internal Utf8ExecutionBudget(Utf8ExecutionLimits limits, TimeSpan timeout, CancellationToken token)
         : this(limits, Utf8ExecutionDeadline.Start(timeout), token)
@@ -52,6 +52,15 @@ internal struct Utf8ExecutionBudget
     internal void ThrowIfCancellationRequested()
     {
         _token.ThrowIfCancellationRequested();
+    }
+
+    // A durable cursor may borrow interruption authority for one synchronous
+    // advance. Its exclusive owner must restore the prior token in finally.
+    internal CancellationToken ExchangeCancellationToken(CancellationToken token)
+    {
+        var previous = _token;
+        _token = token;
+        return previous;
     }
 
     internal bool IsUnmetered =>

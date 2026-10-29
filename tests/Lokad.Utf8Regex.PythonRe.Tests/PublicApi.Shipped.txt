@@ -59,6 +59,7 @@ readonly ref struct PythonRe.Utf8PythonMatchContext
 sealed class PythonRe.Utf8PythonMatchCursor : IDisposable
   property PythonRe.Utf8PythonDetailedMatchData Current { get; }
   method Boolean MoveNext()
+  method Boolean MoveNext(Threading.CancellationToken cancellationToken)
   method Void Dispose()
 readonly struct PythonRe.Utf8PythonMatchData
   property Boolean Success { get; init; }

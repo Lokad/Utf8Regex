@@ -65,34 +65,86 @@ public sealed class Utf8PythonMatchCursor : IDisposable
     public bool MoveNext()
     {
         Enter();
+        try { return CanAdvance() && Advance(); }
+        finally { Exit(); }
+    }
+
+    /// <summary>Discovers and projects the next match under this advance's token as well as the original invocation token and deadline.</summary>
+    /// <remarks>The supplied token applies only until this call completes. Cancellation faults the cursor and synchronously releases its scratch; earlier owned snapshots remain valid.</remarks>
+    /// <exception cref="OperationCanceledException">The original or advance token was canceled; the exception carries that caller's token.</exception>
+    /// <exception cref="System.Text.RegularExpressions.RegexMatchTimeoutException">The original invocation deadline expired.</exception>
+    /// <exception cref="Utf8ResourceLimitExceededException">An admitted work, depth, working or result-capacity budget was exceeded.</exception>
+    /// <exception cref="InvalidOperationException">The cursor previously failed or is being accessed concurrently.</exception>
+    /// <exception cref="ObjectDisposedException">The cursor has been disposed.</exception>
+    public bool MoveNext(CancellationToken cancellationToken)
+    {
+        if (!cancellationToken.CanBeCanceled) return MoveNext();
+        Enter();
         try
         {
-            ThrowIfDisposed();
-            if (_status == Status.Ended) return false;
-            if (_status == Status.Faulted)
-                throw new InvalidOperationException("The cursor cannot advance after a failed operation.");
-            _current = default;
+            if (!CanAdvance()) return false;
+            // Hold one shared invocation even if Close resets the discovery
+            // state. Counters, original deadline and outstanding loans stay put.
+            _discovery.WorkingInvocation.ShareStorageForCursor();
+            var invocation = _discovery.WorkingInvocation;
+            var original = invocation.Budget.ExchangeCancellationToken(cancellationToken);
+            CancellationTokenSource? linked = null;
             try
             {
-                var input = _input.Span;
-                if (!_discovery.MoveNext(input))
+                if (original.CanBeCanceled && original != cancellationToken)
                 {
-                    Close(Status.Ended);
-                    return false;
+                    linked = CancellationTokenSource.CreateLinkedTokenSource(original, cancellationToken);
+                    invocation.Budget.ExchangeCancellationToken(linked.Token);
                 }
-                var marker = _discovery.ResultReservation;
-                var completed = _discovery.SnapshotDetailed(input, _names);
-                _discovery.Checkpoint(input);
-                // Publication transfers independent managed values to the caller.
-                // A retained-result policy is not provided by this working loan.
-                _discovery.ReleaseResultsSince(marker);
-                _current = completed;
-                _status = Status.Positioned;
-                return true;
+                return Advance();
             }
-            catch { Close(Status.Faulted); throw; }
+            catch (OperationCanceledException)
+            {
+                // Linked tokens are implementation details, never caller-facing
+                // interruption authority. Keep original-token precedence.
+                original.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
+                throw;
+            }
+            finally
+            {
+                invocation.Budget.ExchangeCancellationToken(original);
+                linked?.Dispose();
+            }
         }
         finally { Exit(); }
+    }
+
+    private bool CanAdvance()
+    {
+        ThrowIfDisposed();
+        if (_status == Status.Faulted)
+            throw new InvalidOperationException("The cursor cannot advance after a failed operation.");
+        return _status != Status.Ended;
+    }
+
+    private bool Advance()
+    {
+        _current = default;
+        try
+        {
+            var input = _input.Span;
+            if (!_discovery.MoveNext(input))
+            {
+                Close(Status.Ended);
+                return false;
+            }
+            var marker = _discovery.ResultReservation;
+            var completed = _discovery.SnapshotDetailed(input, _names);
+            _discovery.Checkpoint(input);
+            // Publication transfers independent managed values to the caller.
+            // A retained-result policy is not provided by this working loan.
+            _discovery.ReleaseResultsSince(marker);
+            _current = completed;
+            _status = Status.Positioned;
+            return true;
+        }
+        catch { Close(Status.Faulted); throw; }
     }
 
     /// <summary>Releases cursor scratch and subject references; previously returned snapshots remain valid.</summary>

@@ -6,6 +6,8 @@
 - Use .NET 11 by default for benchmark runs; historical figures retain their measured runtime.
 - Expose PythonRe effective global flags through `EffectiveOptions`, including
   inline directives and implicit Unicode, while retaining requested `Options`.
+- Accept a PythonRe cursor token per advance, preserving the creation token,
+  absolute deadline, cumulative limits and previously returned owned snapshots.
 - Lower compatible Python Unicode character-class unions to the existing scalar
   predicate instruction, preserving pinned membership and lexical folding.
 - Reuse complete cell/range-reference proofs for bounded ASCII value Match,

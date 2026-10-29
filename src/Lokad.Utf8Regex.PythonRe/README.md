@@ -62,6 +62,11 @@ host containers retain separate documented scope. The execution token must be
 passed on each operation. See [resource contract](../../docs/SPEC.md#cancellation-deadlines-and-resource-limits)
 and [MIGRATION.md](../../docs/MIGRATION.md).
 
+`Utf8PythonMatchCursor.MoveNext(token)` accepts a token for one advance without
+retaining it for later advances. The creation token, original deadline and
+cumulative budgets still apply. Cancellation faults the cursor and releases its
+scratch; previously returned owned snapshots remain valid.
+
 Named captures remain distinct when Unicode identifiers and names such as `g1`
 are mixed. Public names and Python opening-order numbering remain unchanged.
 Fixed finite policies omit optional unmetered Core runtime/emission storage and

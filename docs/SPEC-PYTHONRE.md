@@ -148,6 +148,17 @@ concurrent/reentrant access rejects. `Current` is valid after a successful move.
 EOF, failure or Dispose synchronously release exclusive scratch/subject references;
 dispose when stopping early. There is no finalizer.
 
+`MoveNext(CancellationToken)` adds interruption authority for that synchronous
+advance, including discovery and required projection. It retains the original
+creation token/deadline and cumulative budgets. The move token is detached before
+return, so canceling it afterward cannot affect later moves. Cancellation faults
+the cursor and releases scratch; earlier owned snapshots remain valid. When both
+tokens are canceled, the original token takes precedence in the exception.
+Two distinct cancellable tokens require a temporary linked source, disposed before
+return; a sole move token or the same token needs no linked source. The ordinary
+parameterless path retains its original controls. Already-ended cursors return
+false; disposed, faulted and concurrent/reentrant access retain their failures.
+
 Independent owned snapshots remain valid after moves, denial and disposal.
 They do not refund cumulative result traffic or bound external host retention.
 Existing borrowed span/value contracts remain unchanged. A new call gets an
