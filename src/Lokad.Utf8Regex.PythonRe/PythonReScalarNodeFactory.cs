@@ -63,9 +63,12 @@ internal static class PythonReScalarNodeFactory
     {
         var members = arena.Allocate<Utf8SliceNode.CategorySetMember>(1, true);
         members[0] = Utf8SliceNode.CategorySetMember.Create(Utf8SliceCategoryTable.ForScalarPredicate(predicate), false);
-        return Create((ascii, negated, members),
-            static state => new Utf8SliceNode.CategorySetNode(state.ascii, state.negated, Array.Empty<Utf8SliceShorthand>(), state.members, false));
+        return Class(ascii, negated, members);
     }
+
+    internal static Utf8SliceNode.CategorySetNode Class(byte[] ascii, bool negated, Utf8SliceNode.CategorySetMember[] members) =>
+        Create((ascii, negated, members),
+            static state => new Utf8SliceNode.CategorySetNode(state.ascii, state.negated, Array.Empty<Utf8SliceShorthand>(), state.members, false));
 
     private static TNode Create<TState, TNode>(TState state, Func<TState, TNode> factory) where TNode : class =>
         Utf8ConstructionScope.CurrentBudget.AllocateObject(state, factory);

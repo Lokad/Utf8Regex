@@ -77,6 +77,8 @@ internal static partial class PythonReScalarCompiler
         if (branches.Count == 0) return null;
         if (literals.Count != 0)
             branches.Add(ParseLeaf(PythonReAstFactory.CharacterClass(false, arena.Take(literals, true)), options, arena));
+        if (branches.Count > 1 && TryCombineClassUnion(branches.Span, characterClass.IsNegated, arena) is { } combined)
+            return combined;
         Utf8SliceNode positive;
         if (branches.Count == 1) positive = branches[0];
         else
@@ -95,6 +97,50 @@ internal static partial class PythonReScalarCompiler
             ? PythonReScalarNodeFactory.Concat(Pair(PythonReScalarNodeFactory.Lookahead(positive, false),
                 PythonReScalarNodeFactory.Dot(), arena))
             : positive;
+    }
+
+    private static Utf8SliceNode? TryCombineClassUnion(ReadOnlySpan<Utf8SliceNode> branches,
+        bool negated, Utf8ConstructionArena arena)
+    {
+        var categoryCount = 0;
+        foreach (var branch in branches)
+        {
+            arena.Budget.ChargeWork(1);
+            if (branch is Utf8SliceNode.CategorySetNode { Negated: false, FoldCase: false, Members.Length: 0, Mask16.Length: 16 } category)
+            {
+                foreach (var member in category.Categories)
+                {
+                    arena.Budget.ChargeWork(1);
+                    // General class programs own their complete predicate and
+                    // may use a different mask contract. Borrow only the pinned
+                    // scalar predicates emitted by ConvertPredefined.
+                    if (member.Negated || member.Table.ScalarPredicate is null) return null;
+                }
+                categoryCount = checked(categoryCount + category.Categories.Length);
+            }
+            else if (branch is not Utf8SliceNode.SetNode { Negated: false, FoldCase: false, Members.Length: 0, Mask16.Length: 16 })
+                return null;
+        }
+        // Class operands consume one scalar and have no effects. Unfolded
+        // positive unions fit the existing mask/predicate instruction exactly;
+        // folding a whole union would incorrectly fold Python predicates too.
+        var ascii = arena.Allocate<byte>(16, true);
+        var categories = arena.Allocate<Utf8SliceNode.CategorySetMember>(categoryCount, true);
+        var offset = 0;
+        foreach (var branch in branches)
+        {
+            arena.Budget.ChargeWork(16);
+            var mask = branch is Utf8SliceNode.SetNode set ? set.Mask16 : ((Utf8SliceNode.CategorySetNode)branch).Mask16;
+            for (var index = 0; index < ascii.Length; index++) ascii[index] |= mask[index];
+            if (branch is Utf8SliceNode.CategorySetNode category)
+            {
+                arena.Budget.ChargeWork((ulong)category.Categories.Length);
+                category.Categories.CopyTo(categories, offset);
+                offset += category.Categories.Length;
+            }
+        }
+        // Negate the complete union, retaining the original pinned predicates.
+        return PythonReScalarNodeFactory.Class(ascii, negated, categories);
     }
 
     private static Utf8SliceNode[] Pair(Utf8SliceNode first, Utf8SliceNode second, Utf8ConstructionArena arena)
