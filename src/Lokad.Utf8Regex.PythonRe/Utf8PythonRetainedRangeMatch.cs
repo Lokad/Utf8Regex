@@ -4,7 +4,7 @@ namespace Lokad.Utf8Regex.PythonRe;
 /// <remarks>Dispose after retained users finish, or take over admission for any copies kept afterward. Copies already obtained from Match remain valid; subject bytes remain borrowed and their memory manager must stay alive. This receipt covers range/name arrays, shared name text counted conservatively again, and its object charge. Borrowed input is excluded. There is no finalizer.</remarks>
 public sealed class Utf8PythonRetainedRangeMatch : IDisposable
 {
-    private readonly Utf8PythonRangeMatch _match;
+    private Utf8PythonRangeMatch _match;
     private IUtf8MemoryAllowance? _allowance;
     private ulong _bytes;
 
@@ -15,6 +15,7 @@ public sealed class Utf8PythonRetainedRangeMatch : IDisposable
     internal void SetTransferredBytes(ulong bytes) => _bytes = bytes;
 
     /// <summary>Gets the immutable result while this receipt holds its reservation.</summary>
+    /// <remarks>Finish accesses to this property before disposing the receipt. Already copied matches are independent of disposal.</remarks>
     /// <exception cref="ObjectDisposedException">The reservation was released.</exception>
     public Utf8PythonRangeMatch Match => Volatile.Read(ref _allowance) is not null
         ? _match : throw new ObjectDisposedException(nameof(Utf8PythonRetainedRangeMatch));
@@ -27,6 +28,8 @@ public sealed class Utf8PythonRetainedRangeMatch : IDisposable
     public void Dispose()
     {
         var allowance = Interlocked.Exchange(ref _allowance, null);
-        if (allowance is not null && _bytes != 0) allowance.Release(_bytes);
+        if (allowance is null) return;
+        _match = default;
+        if (_bytes != 0) allowance.Release(_bytes);
     }
 }

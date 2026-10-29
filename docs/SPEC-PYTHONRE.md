@@ -247,6 +247,8 @@ over admission for copies kept afterward. Dispose refunds exactly once, includin
 concurrent calls/receipt aliases, and closes later `Match` access. Copies already
 obtained remain valid under their original borrowed-input contract; admission for
 continued retention after this explicit release is the caller's responsibility.
+Finish `Match` accesses before disposal. Disposal clears the receipt's own payload
+references; keeping its historical charge record does not keep a subject alive.
 There is no finalizer. Retaining receipts can exhaust the shared allowance;
 discarding and disposing them supports bounded-live streaming. Text/bulk/
 substitution result transfer remains outside this API.

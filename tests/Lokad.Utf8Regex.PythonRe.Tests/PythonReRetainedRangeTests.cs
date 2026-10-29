@@ -1,4 +1,5 @@
 using System.Text;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Allowance = Lokad.Utf8Regex.PythonRe.Tests.PythonReSharedWorkingAllowanceTests.Allowance;
@@ -31,6 +32,25 @@ public sealed class PythonReRetainedRangeTests
         Assert.Equal(13UL + second.ChargedBytes, account.Used);
         Assert.Equal("é", Encoding.UTF8.GetString(snapshot.GetValueMemory().Span));
         second.Dispose(); second.Dispose(); Assert.Equal(13UL, account.Used); account.Release(13);
+    }
+
+    [Fact]
+    public void DisposedReceiptsDoNotKeepBorrowedSubjectsAlive()
+    {
+        var (receipt, subject) = DisposedReceipt();
+        GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        Assert.False(subject.IsAlive);
+        GC.KeepAlive(receipt); // Hosts can retain the charge record after disposal.
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static (Utf8PythonRetainedRangeMatch Receipt, WeakReference Subject) DisposedReceipt()
+    {
+        var account = new Allowance(16 << 20); using var regex = Compile(".", account);
+        var input = Enumerable.Repeat((byte)'a', 1048576).ToArray(); var subject = new WeakReference(input);
+        using var cursor = regex.CreateMatchCursor(input);
+        Assert.True(cursor.MoveNextRetained(out var receipt)); receipt.Dispose();
+        return (receipt, subject);
     }
 
     [Fact]
