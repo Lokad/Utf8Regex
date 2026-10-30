@@ -17,9 +17,16 @@ internal static class Utf8OwnedTreeParser
         => TryParse(pattern, options, out _);
 
     internal static Utf8OwnedRegexTree? TryParse(string pattern, RegexOptions options, out Utf8PatternDiagnostic diagnostic)
+        => TryParse(new Utf8ConstructionPattern(pattern), options, out diagnostic);
+
+    internal static Utf8OwnedRegexTree? TryParse(ReadOnlySpan<byte> pattern, RegexOptions options, out Utf8PatternDiagnostic diagnostic)
+        => TryParse(new Utf8ConstructionPattern(pattern), options, out diagnostic);
+
+    private static Utf8OwnedRegexTree? TryParse(Utf8ConstructionPattern pattern, RegexOptions options, out Utf8PatternDiagnostic diagnostic)
     {
         diagnostic = default;
         using var construction = Utf8ConstructionScope.Enter();
+        pattern.ValidateUtf8();
         using var storage = Utf8ConstructionSession.Create(construction.Budget);
         using var frames = Utf8ConstructionFrames<OwnedParseFrame>.Create(construction.Budget,
             new(OwnedParseProduction.Alternation, 0));
@@ -48,6 +55,7 @@ internal static class Utf8OwnedTreeParser
                 diagnostic = state.Failure.Error != Utf8PatternError.None ? state.Failure
                     : new(state.Position < pattern.Length && pattern[state.Position] == ')'
                         ? Utf8PatternError.UnmatchedClosingParenthesis : Utf8PatternError.InvalidSyntax, state.Position);
+                diagnostic = diagnostic with { IsUtf8 = pattern.IsUtf8 };
                 return null;
             }
 
@@ -97,6 +105,7 @@ internal static class Utf8OwnedTreeParser
             {
                 diagnostic = state.Failure.Error != Utf8PatternError.None ? state.Failure
                     : new(Utf8PatternError.UndefinedCapture, state.Position);
+                diagnostic = diagnostic with { IsUtf8 = pattern.IsUtf8 };
                 return null;
             }
 
@@ -344,11 +353,12 @@ internal static class Utf8OwnedTreeParser
                             return false;
                         }
 
-                        if (char.IsSurrogate(escaped))
+                        if (escaped > 0xffff) { run.AppendScalar(escaped); continue; }
+                        if (escaped is >= 0xd800 and <= 0xdfff)
                         {
-                            if (char.IsHighSurrogate(escaped) && TryTakeLowSurrogate(ref state, out var low))
+                            if (char.IsHighSurrogate((char)escaped) && TryTakeLowSurrogate(ref state, out var low))
                             {
-                                run.Append(escaped).Append(low);
+                                run.Append((char)escaped).Append(low);
                                 continue;
                             }
                             FlushRun(state, children, run);
@@ -363,7 +373,7 @@ internal static class Utf8OwnedTreeParser
                         }
 
                         if ((state.Options & RegexOptions.IgnoreCase) != 0 &&
-                            Utf8OwnedCaseFold.TryGetFold(escaped, state.CaseBehavior, out var escapeLower, out var escapeUpper))
+                            Utf8OwnedCaseFold.TryGetFold((char)escaped, state.CaseBehavior, out var escapeLower, out var escapeUpper))
                         {
                             FlushRun(state, children, run);
                             var escapedAtom = FoldedSet(state.Options, escapeLower, escapeUpper);
@@ -382,15 +392,24 @@ internal static class Utf8OwnedTreeParser
                             continue;
                         }
 
-                        run.Append(escaped);
+                        run.Append((char)escaped);
                         continue;
                     }
 
                     if (IsLiteralChar(character))
                     {
+                        var nextPosition = state.Position;
+                        var scalar = state.Pattern.ReadScalar(ref nextPosition);
+                        if (scalar > 0xffff)
+                        {
+                            state.Position = nextPosition;
+                            run.AppendScalar(scalar);
+                            continue;
+                        }
+                        character = (char)scalar;
                         if (char.IsSurrogate(character))
                         {
-                            state.Position++;
+                            state.Position = nextPosition;
                             if (char.IsHighSurrogate(character) && TryTakeLowSurrogate(ref state, out var low))
                             {
                                 run.Append(character).Append(low);
@@ -411,7 +430,7 @@ internal static class Utf8OwnedTreeParser
                             Utf8OwnedCaseFold.TryGetFold(character, state.CaseBehavior, out var foldLower, out var foldUpper))
                         {
                             FlushRun(state, children, run);
-                            state.Position++;
+                            state.Position = nextPosition;
                             var foldedAtom = FoldedSet(state.Options, foldLower, foldUpper);
                             if (!ParseQuantifier(ref state, ref foldedAtom, out var decayedFolded))
                             {
@@ -429,7 +448,7 @@ internal static class Utf8OwnedTreeParser
                         }
 
                         run.Append(character);
-                        state.Position++;
+                        state.Position = nextPosition;
                         continue;
                     }
 
@@ -596,15 +615,21 @@ internal static class Utf8OwnedTreeParser
             var probe = state;
             if (probe.Pattern[probe.Position] == '\\')
             {
-                if (!DecodeEscape(ref probe, out value)) return false;
+                if (!DecodeEscape(ref probe, out var escaped) || escaped > 0xffff) return false;
+                value = (char)escaped;
             }
-            else value = probe.Pattern[probe.Position++];
+            else
+            {
+                var scalar = probe.Pattern.ReadScalar(ref probe.Position);
+                if (scalar > 0xffff) return false;
+                value = (char)scalar;
+            }
             if (!char.IsLowSurrogate(value)) return false;
             state.Position = probe.Position;
             return true;
         }
 
-        static bool DecodeEscape(ref ParserState state, out char value)
+        static bool DecodeEscape(ref ParserState state, out int value)
         {
             value = '\0';
             state.Position++;
@@ -723,15 +748,19 @@ internal static class Utf8OwnedTreeParser
                     // Other characters spell themselves; a word character
                     // without an escape meaning declines exactly like the
                     // BCL oracle (UnrecognizedEscape).
-                    if (IsWordChar(escaped) && ((state.Options & RegexOptions.ECMAScript) == 0 ||
+                    var end = state.Position;
+                    var scalar = state.Pattern.ReadScalar(ref end);
+                    // Text surrogate halves are not word characters. A native
+                    // supplementary scalar keeps that same spelling behavior.
+                    if (scalar <= 0xffff && IsWordChar((char)scalar) && ((state.Options & RegexOptions.ECMAScript) == 0 ||
                         escaped is 'p' or 'P' ||
                         escaped == 'k' && (state.Position + 1 >= state.Pattern.Length || state.Pattern[state.Position + 1] is not ('<' or '\''))))
                     {
                         return state.Fail(Utf8PatternError.InvalidEscape);
                     }
 
-                    value = escaped;
-                    state.Position++;
+                    value = scalar;
+                    state.Position = end;
                     return true;
             }
         }
@@ -1082,20 +1111,20 @@ internal static class Utf8OwnedTreeParser
             value = 0;
             isPlain = true;
             if (state.AtEnd) return false;
-            char first;
+            int first;
             if (state.Pattern[state.Position] == '\\')
             {
                 if (!DecodeClassEscape(ref state, out first, out isPlain)) return false;
             }
             else
             {
-                first = state.Pattern[state.Position++];
+                first = state.Pattern.ReadScalar(ref state.Position);
                 if (first == '[' && !state.AtEnd && state.Pattern[state.Position] is ':' or '.' or '=')
                     state.UsesLiteralClassBracketSyntax = true;
             }
             value = first;
-            if (char.IsHighSurrogate(first) && TryTakeLowSurrogate(ref state, out var second))
-                value = char.ConvertToUtf32(first, second);
+            if (first is >= 0xd800 and <= 0xdbff && TryTakeLowSurrogate(ref state, out var second))
+                value = char.ConvertToUtf32((char)first, second);
             return true;
         }
 
@@ -1136,13 +1165,14 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
-        static bool DecodeClassEscape(ref ParserState state, out char value, out bool isPlain)
+        static bool DecodeClassEscape(ref ParserState state, out int value, out bool isPlain)
         {
             isPlain = false;
             // Octal decoding applies to both class members and range bounds.
             // Outside classes the same digits may resolve as capture references.
-            if (TryTakeClassOctal(ref state, out value))
+            if (TryTakeClassOctal(ref state, out var octal))
             {
+                value = octal;
                 isPlain = true;
                 return true;
             }
@@ -1305,7 +1335,7 @@ internal static class Utf8OwnedTreeParser
                 return state.Fail(Utf8PatternError.InvalidProperty);
             }
 
-            var name = Utf8ConstructionScope.CurrentBudget.CopyText(state.Pattern.AsSpan(open + 1, close - open - 1));
+            var name = state.Pattern.CopyText(open + 1, close - open - 1);
             if (!TryResolvePropertyMembers(name, invert, ranges, categories))
             {
                 return state.Fail(Utf8PatternError.InvalidProperty);
@@ -1445,7 +1475,7 @@ internal static class Utf8OwnedTreeParser
                     return false;
                 }
 
-                var content = state.Storage.Budget.CopyText(state.Pattern.AsSpan(contentStart, state.Position - contentStart));
+                var content = state.Pattern.CopyText(contentStart, state.Position - contentStart);
                 state.Position++;
 
                 var isPop = false;
@@ -1705,7 +1735,7 @@ internal static class Utf8OwnedTreeParser
                 end++;
             }
 
-            var digits = state.Storage.Budget.CopyText(state.Pattern.AsSpan(state.Position + 1, end - state.Position - 1));
+            var digits = state.Pattern.CopyText(state.Position + 1, end - state.Position - 1);
             state.Position = end;
             return digits;
         }
@@ -1730,7 +1760,7 @@ internal static class Utf8OwnedTreeParser
                 return null;
             }
 
-            var name = state.Storage.Budget.CopyText(state.Pattern.AsSpan(state.Position + 3, end - state.Position - 3));
+            var name = state.Pattern.CopyText(state.Position + 3, end - state.Position - 3);
             // ECMAScript treats an invalid delimited reference spelling as
             // escaped 'k' followed by ordinary pattern text. Valid but
             // undefined references still fail during capture resolution.
@@ -2839,7 +2869,7 @@ internal static class Utf8OwnedTreeParser
                         Utf8ConstructionScope.ChargeWork(1);
                         state.Position++;
                     }
-                    frame.Digits = state.Storage.Budget.CopyText(state.Pattern.AsSpan(start, state.Position - start));
+                    frame.Digits = state.Pattern.CopyText(start, state.Position - start);
                     if (!TryParseGroupNumber(frame.Digits, out _) || state.AtEnd || state.Pattern[state.Position] != ')')
                     {
                         state.Fail(Utf8PatternError.InvalidConditional);
@@ -2859,7 +2889,7 @@ internal static class Utf8OwnedTreeParser
                         }
                     if (state.Position > start && !state.AtEnd && state.Pattern[state.Position] == ')')
                     {
-                        frame.Name = state.Storage.Budget.CopyText(state.Pattern.AsSpan(start, state.Position - start));
+                        frame.Name = state.Pattern.CopyText(start, state.Position - start);
                         state.Position++;
                     }
                     else
@@ -3354,7 +3384,7 @@ internal static class Utf8OwnedTreeParser
         internal Utf8ConstructionText? Run;
     }
 
-    private struct OwnedParseContext
+    private ref struct OwnedParseContext
     {
         internal ParserState State;
         internal Utf8TreeNode? Node;
@@ -3378,10 +3408,10 @@ internal static class Utf8OwnedTreeParser
         }
     }
 
-    private struct ParserState
+    private ref struct ParserState
     {
         public readonly Utf8ConstructionSession Storage;
-        public string Pattern;
+        public Utf8ConstructionPattern Pattern;
         public RegexOptions Options;
         public CultureInfo ConstructionCulture;
         public Utf8ScalarCaseBehavior CaseBehavior;
@@ -3413,7 +3443,7 @@ internal static class Utf8OwnedTreeParser
             return false;
         }
 
-        public ParserState(string pattern, RegexOptions options, Utf8ConstructionSession storage)
+        public ParserState(Utf8ConstructionPattern pattern, RegexOptions options, Utf8ConstructionSession storage)
         {
             Storage = storage;
             Pattern = pattern;

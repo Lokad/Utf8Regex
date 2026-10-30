@@ -1,8 +1,8 @@
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
-/// <summary>Owned syntax failures use offsets in the string pattern's UTF-16
-/// representation. These diagnostic coordinates do not affect scalar matching.</summary>
-internal readonly record struct Utf8PatternDiagnostic(Utf8PatternError Error, int Offset)
+/// <summary>Owned syntax failures use source offsets: bytes for native patterns,
+/// UTF-16 for text patterns. These coordinates do not affect scalar matching.</summary>
+internal readonly record struct Utf8PatternDiagnostic(Utf8PatternError Error, int Offset, bool IsUtf8 = false)
 {
     internal bool IsSyntaxError => Error != Utf8PatternError.None;
 
@@ -26,7 +26,7 @@ internal readonly record struct Utf8PatternDiagnostic(Utf8PatternError Error, in
     internal ArgumentException ToException()
     {
         if (!IsSyntaxError) throw new InvalidOperationException("Only syntax failures become pattern argument errors.");
-        return new ArgumentException($"{Description} at UTF-16 pattern offset {Offset}.", "pattern");
+        return new ArgumentException($"{Description} at {(IsUtf8 ? "UTF-8 byte" : "UTF-16")} pattern offset {Offset}.", IsUtf8 ? "patternUtf8" : "pattern");
     }
 }
 
