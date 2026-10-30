@@ -193,6 +193,27 @@ public sealed class Pcre2FundedProgramOwnerTests
         : Utf8Pcre2Regex.Compile(pattern, options, default, matchTimeout ?? Timeout.InfiniteTimeSpan,
             policy, default, Timeout.InfiniteTimeSpan, token, account);
 
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void MetadataCopyUsesCallerStorageAndRetainsValidatedCaptureCount(bool native)
+    {
+        const string pattern = "(?|(a)|(b))(?<x>😀)";
+        var encoded = Encoding.UTF8.GetBytes(pattern);
+        var root = new Root(); var account = new Account(root);
+        using var owner = Compile(pattern, account, bytes: native);
+        var held = account.Used; var destination = new byte[encoded.Length];
+        Assert.Equal(2, owner.CaptureGroupCount);
+        Assert.Equal(System.Buffers.OperationStatus.Done, owner.TryCopyPatternUtf8(destination, out var required));
+        Assert.Equal(encoded.Length, required); Assert.Equal(encoded, destination); Assert.Equal(held, account.Used);
+        using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
+        Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
+            owner.TryCopyPatternUtf8(destination, out _, cancellation.Token)).CancellationToken);
+        owner.Dispose(); Assert.Equal(0UL, account.Used);
+        Assert.Throws<ObjectDisposedException>(() => owner.TryCopyPatternUtf8(destination, out _));
+        Assert.Throws<ObjectDisposedException>(() => owner.CaptureGroupCount);
+        Assert.Equal(encoded, destination);
+    }
+
     private sealed class Root { internal readonly object Gate = new(); internal ulong Used; internal ulong Maximum = 64 << 20; }
     private sealed class Account(Root root) : IUtf8MemoryAllowance
     {

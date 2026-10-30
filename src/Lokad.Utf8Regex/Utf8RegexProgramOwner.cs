@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal;
+using System.Buffers;
 
 namespace Lokad.Utf8Regex;
 
@@ -11,6 +12,29 @@ public sealed class Utf8RegexProgramOwner : IDisposable
 
     internal Utf8RegexProgramOwner(Utf8Regex regex, Utf8FundedStorage storage)
     { _regex = regex; _storage = storage; }
+
+    /// <summary>Gets the number of defined capture slots, excluding whole-match group zero.</summary>
+    /// <remarks>Rejects access after close. Sparse numbers and shared declarations retain their validated slot identities.</remarks>
+    public int CaptureGroupCount
+    {
+        get
+        {
+            var regex = Volatile.Read(ref _regex) ?? throw new ObjectDisposedException(nameof(Utf8RegexProgramOwner));
+            using var use = _storage.Enter();
+            return regex.CaptureGroupCount;
+        }
+    }
+
+    /// <inheritdoc cref="Utf8Regex.TryCopyPatternUtf8" />
+    /// <remarks>Holds program admission during the copy and rejects calls after close. The destination belongs to the caller and remains valid after owner disposal; no borrowed program-storage alias is exposed.</remarks>
+    public OperationStatus TryCopyPatternUtf8(Span<byte> destination, out int bytesRequired,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var regex = Volatile.Read(ref _regex) ?? throw new ObjectDisposedException(nameof(Utf8RegexProgramOwner));
+        using var use = _storage.Enter();
+        return regex.TryCopyPatternUtf8(destination, out bytesRequired, cancellationToken);
+    }
 
     /// <summary>Tests for a match with caller-funded temporary storage.</summary>
     /// <remarks>Null workingMemoryAllowance uses the program allowance; otherwise working storage uses the supplied separate owner. Numeric invocation limits still apply. A refused acquisition is terminal.</remarks>

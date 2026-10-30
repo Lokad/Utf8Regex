@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal;
+using System.Buffers;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
@@ -11,6 +12,29 @@ public sealed class Utf8Pcre2RegexProgramOwner : IDisposable
 
     internal Utf8Pcre2RegexProgramOwner(Utf8Pcre2Regex regex, Utf8FundedStorage storage)
     { _regex = regex; _storage = storage; }
+
+    /// <summary>Gets the number of defined capture slots, excluding whole-match group zero.</summary>
+    /// <remarks>Rejects access after close. Branch-reset numbering and duplicate names retain the validated profile semantics.</remarks>
+    public int CaptureGroupCount
+    {
+        get
+        {
+            var regex = Volatile.Read(ref _regex) ?? throw new ObjectDisposedException(nameof(Utf8Pcre2RegexProgramOwner));
+            using var use = _storage.Enter();
+            return regex.CaptureGroupCount;
+        }
+    }
+
+    /// <inheritdoc cref="Utf8Pcre2Regex.TryCopyPatternUtf8" />
+    /// <remarks>Holds program admission during the copy and rejects calls after close. The destination belongs to the caller and remains valid after owner disposal; no borrowed program-storage alias is exposed.</remarks>
+    public OperationStatus TryCopyPatternUtf8(Span<byte> destination, out int bytesRequired,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var regex = Volatile.Read(ref _regex) ?? throw new ObjectDisposedException(nameof(Utf8Pcre2RegexProgramOwner));
+        using var use = _storage.Enter();
+        return regex.TryCopyPatternUtf8(destination, out bytesRequired, cancellationToken);
+    }
 
     /// <summary>Tests for a match with caller-funded temporary storage and the program's numeric limits.</summary>
     /// <remarks>The start is a byte coordinate in the original subject. Null working allowance uses program funding. Refused acquisition is terminal.</remarks>

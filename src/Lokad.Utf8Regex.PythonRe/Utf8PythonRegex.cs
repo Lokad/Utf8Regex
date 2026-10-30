@@ -322,8 +322,9 @@ public sealed partial class Utf8PythonRegex
     // AST, independently of residual native selectors or BCL case flags.
     private Utf8SliceProgram ScalarProgram => _scalarProgram;
 
-    // The VM counts captures only; whole-match slot zero is stored separately.
-    private int CaptureGroupCount => _scalarProgram.GroupCount;
+    /// <summary>Gets the number of capture groups, excluding whole-match group zero.</summary>
+    /// <remarks>The count comes from the validated grammar and does not depend on match participation.</remarks>
+    public int CaptureGroupCount => _scalarProgram.GroupCount;
 
     private bool HasFiniteExecutionLimits => ResourcePolicy.MaxWorkSteps.HasValue || ResourcePolicy.MaxDepth.HasValue || ResourcePolicy.MaxWorkingBytes.HasValue || ResourcePolicy.MaxResultBytes.HasValue;
 

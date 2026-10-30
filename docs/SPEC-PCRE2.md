@@ -54,6 +54,14 @@ separate PCRE2 rule.
 
 ## Captures and Unicode
 
+`CaptureGroupCount` retains the validated count independently of execution
+selection and match participation. It excludes group zero, respects branch-reset
+number reuse and counts separate slots sharing a duplicate name. Pattern source
+can be copied through `TryCopyPatternUtf8` under the
+[caller-buffer metadata contract](SPEC.md#native-pattern-metadata). The funded
+owner exposes both members and keeps admission until each access finishes;
+copied caller storage remains valid after owner close.
+
 Capture slots follow declaration order, including named groups. Names start with
 a Unicode letter or underscore, then letters/digits/underscores; numeric names
 such as `(?<100>a)` fail with InvalidAfterParensQuery before backend selection.
@@ -257,8 +265,8 @@ before working staging refunds, including conservative overlap without a funding
 gap. Shared names/mark text count again for independent retention. Refusal is
 terminal. Receipt close refunds once; copied ranges remain valid afterward, with
 continued admission then the caller's responsibility. Numeric result traffic is
-cumulative regardless of live refunds. Native UTF-8 pattern/template preparation
-and metadata access remain distinct unfinished work.
+cumulative regardless of live refunds. Native pattern compilation and source
+copying are implemented; UTF-8 templates and name lookup remain unfinished.
 
 ## Isolation and non-goals
 

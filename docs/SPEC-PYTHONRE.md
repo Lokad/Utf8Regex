@@ -35,6 +35,12 @@ still uses Python verification; tight working/depth/result limits may admit a
 scratch-free miss that formerly required VM capacity. Charges remain dependent
 on the selected route and version.
 
+`CaptureGroupCount` reports the validated group count excluding group zero,
+independently of match participation. `TryCopyPatternUtf8` follows the
+[caller-buffer metadata contract](SPEC.md#native-pattern-metadata), preserving
+original source and rejecting unpaired legacy surrogates. Funded expressions
+hold their existing program use during a copy and reject new copies after close.
+
 Captures are numbered by opening parenthesis, including named groups.
 References and conditionals use those numbers. Detailed `LastIndex` is the last
 capture to close on the successful path, not the largest participating number:

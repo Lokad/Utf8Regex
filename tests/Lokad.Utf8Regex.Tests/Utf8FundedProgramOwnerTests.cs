@@ -194,6 +194,28 @@ public sealed class Utf8FundedProgramOwnerTests
         Assert.Equal(held, account.Used);
     }
 
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void MetadataCopyUsesCallerStorageAndDoesNotOutliveProgramAdmission(bool native)
+    {
+        const string pattern = "(?<12>😀)";
+        var encoded = Encoding.UTF8.GetBytes(pattern);
+        var root = new SharedRoot(); var account = new Account(root);
+        using var owner = native ? Utf8Regex.Compile(encoded, RegexOptions.None, Timeout.InfiniteTimeSpan,
+            default, default, Timeout.InfiniteTimeSpan, default, account) : Compile(pattern, account);
+        var held = account.Used; var destination = new byte[encoded.Length];
+        Assert.Equal(1, owner.CaptureGroupCount);
+        Assert.Equal(System.Buffers.OperationStatus.Done, owner.TryCopyPatternUtf8(destination, out var required));
+        Assert.Equal(encoded.Length, required); Assert.Equal(encoded, destination); Assert.Equal(held, account.Used);
+        using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
+        Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
+            owner.TryCopyPatternUtf8(destination, out _, cancellation.Token)).CancellationToken);
+        owner.Dispose(); Assert.Equal(0UL, account.Used);
+        Assert.Throws<ObjectDisposedException>(() => owner.TryCopyPatternUtf8(destination, out _));
+        Assert.Throws<ObjectDisposedException>(() => owner.CaptureGroupCount);
+        Assert.Equal(encoded, destination);
+    }
+
     private sealed class SharedRoot
     {
         internal readonly object Gate = new();

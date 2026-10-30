@@ -85,6 +85,23 @@ and each group's last completed capture. Unsupported grammar fails before planni
 Nullable cycles and zero-width repeats must terminate without bound-sized
 expansion. This mode does not expose ordinary backtracking capture history.
 
+### Native pattern metadata
+
+`CaptureGroupCount` counts defined capture slots excluding group zero. Sparse
+numbers and repeated declarations of a shared slot do not inflate it; captures
+need not participate in a match. `GetGroupNumbers` retains sparse identities.
+
+`TryCopyPatternUtf8(destination, out bytesRequired, token)` copies exact original
+source into caller storage without allocating or exposing a program alias.
+`Done` writes `bytesRequired` bytes; `DestinationTooSmall` reports the full
+required capacity without writing. Legacy text sources with unpaired surrogates
+return `InvalidData`, zero required bytes and no writes. Cancellation preserves
+the supplied token and may leave a partial copy. This explicit metadata operation
+uses bounded token checkpoints, outside matching timeouts/numeric invocation
+budgets. Caller storage remains the caller's admission/retention responsibility.
+Funded owners expose both members, retain program funding during access and
+reject access after close; successful copies survive owner disposal.
+
 ## Case and culture
 
 `CultureInvariant` is the primary supported/performance-tested mode.
@@ -266,10 +283,9 @@ refunds exactly once; previously copied range values remain usable, with continu
 retention then the caller's admission responsibility. Borrowed input is not charged
 again. Numeric result traffic remains cumulative even when live loans refund.
 
-This completes native subject/range discovery, not a fully byte-native public
-pipeline: Core patterns and existing byte-template preparation still require
-string-backed compilation/cache paths. Native pattern/template parsing and UTF-8
-metadata access are separate unfinished work.
+Native subject/range discovery, pattern compilation and caller-buffer source
+metadata are implemented. Byte-template preparation/cache paths and native name
+lookup remain unfinished parts of the complete UTF-8 public pipeline.
 
 ### Host admission
 

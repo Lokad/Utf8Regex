@@ -28,6 +28,25 @@ public sealed class PythonReFundedProgramTests
         allowance.Release(13);
     }
 
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void MetadataCopyBelongsToCallerAndFundedCloseRejectsNewCopies(bool native)
+    {
+        const string pattern = "(?P<x>😀)";
+        var encoded = Encoding.UTF8.GetBytes(pattern);
+        var allowance = new Allowance(16 << 20);
+        using var regex = native ? Utf8PythonRegex.Compile(encoded, PythonReCompileOptions.None,
+            Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, allowance)
+            : Compile(pattern, allowance);
+        var held = allowance.Used; var destination = new byte[encoded.Length];
+        Assert.Equal(1, regex.CaptureGroupCount);
+        Assert.Equal(System.Buffers.OperationStatus.Done, regex.TryCopyPatternUtf8(destination, out var required));
+        Assert.Equal(encoded.Length, required); Assert.Equal(encoded, destination); Assert.Equal(held, allowance.Used);
+        regex.Dispose(); Assert.Equal(0UL, allowance.Used);
+        Assert.Throws<ObjectDisposedException>(() => regex.TryCopyPatternUtf8(destination, out _));
+        Assert.Equal(encoded, destination);
+    }
+
     [Fact]
     public void FailedAndCanceledCompilationRefundsOnlyItsOwnReservations()
     {

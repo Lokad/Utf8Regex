@@ -13,6 +13,8 @@
 - Parse PCRE2 byte patterns directly with owned source storage and on-demand
   pattern text, preserving profile grammar, native selectors and construction controls.
 - Quote complete Unicode scalars in PCRE2 character classes, including escaped emoji.
+- Expose validated capture counts and UTF-8 pattern copies into caller-owned
+  buffers, including funded Core/PCRE2 owners without borrowed storage aliases.
 - Add caller-funded Core Boolean/count operations and a disposable compiled
   program owner with separate working admission and deterministic close/refunds.
 - Add Core memory cursors with byte-range capture histories, per-advance tokens,

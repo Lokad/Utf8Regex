@@ -519,7 +519,8 @@ internal sealed class Pcre2CompiledProgram
         Pcre2PartialProbeProgram partialProbe,
         IPcre2BacktrackingNode? probeRoot,
         bool usesBranchReset,
-        Pcre2NameEntry[] nameEntries)
+        Pcre2NameEntry[] nameEntries,
+        int captureGroupCount)
     {
         Request = request;
         PrimaryUtf8 = primaryUtf8;
@@ -531,6 +532,7 @@ internal sealed class Pcre2CompiledProgram
         // All producers transfer their internal immutable table. Public views
         // expose entries by copying, so the VM and compiled root can share it.
         NameEntries = nameEntries;
+        CaptureGroupCount = captureGroupCount;
     }
 
     internal Pcre2CompileRequest Request { get; }
@@ -554,6 +556,8 @@ internal sealed class Pcre2CompiledProgram
     internal bool UsesBranchReset { get; }
 
     internal Pcre2NameEntry[] NameEntries { get; }
+
+    internal int CaptureGroupCount { get; }
 }
 
 internal static class Pcre2CompiledProgramOverlay
@@ -572,7 +576,8 @@ internal static class Pcre2CompiledProgramOverlay
             Pcre2PartialProbeProgram.None,
             null,
             false,
-            []);
+            [],
+            0);
     }
 
     internal static Pcre2CompiledProgram CreateCharacter(
@@ -589,7 +594,8 @@ internal static class Pcre2CompiledProgramOverlay
             Pcre2PartialProbeCompiler.Compile(characterProgram, request),
             null,
             false,
-            []);
+            [],
+            0);
     }
 
     internal static Pcre2CompiledProgram CreateBacktracking(
@@ -796,7 +802,8 @@ internal static class Pcre2CompiledProgramOverlay
             partialProbe,
             partialProbe.Kind == Pcre2PartialProbeProgramKind.None ? null : root,
             usesBranchReset,
-            backtrackingProgram.NameEntries);
+            backtrackingProgram.NameEntries,
+            backtrackingProgram.CaptureSlotCount - 1);
     }
 
     // Shared slice eligibility preserves PCRE2 option, class, capture and

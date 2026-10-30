@@ -115,6 +115,7 @@ sealed class Utf8Pcre2Regex
   ctor Utf8Pcre2Regex(String pattern)
   ctor Utf8Pcre2Regex(String pattern, Pcre2CompileOptions options)
   ctor Utf8Pcre2Regex(String pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout)
+  property Int32 CaptureGroupCount { get; }
   property Int32 NameEntryCount { get; }
   property Pcre2CompileOptions Options { get; }
   property String Pattern { get; }
@@ -130,6 +131,7 @@ sealed class Utf8Pcre2Regex
   method Boolean TryGetFirstSetGroup(ReadOnlySpan<Byte> input, String name, out Utf8Pcre2GroupContext group)
   method Boolean TryGetFirstSetGroup(ReadOnlySpan<Byte> input, String name, out Utf8Pcre2GroupContext group, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions)
   method Boolean TryGetFirstSetGroup(ReadOnlySpan<Byte> input, String name, out Utf8Pcre2GroupContext group, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions, Threading.CancellationToken cancellationToken)
+  method Buffers.OperationStatus TryCopyPatternUtf8(Span<Byte> destination, out Int32 bytesRequired, Threading.CancellationToken cancellationToken = default)
   method Buffers.OperationStatus TryReplace(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementPatternUtf8, Span<Byte> destination, out Int32 bytesWritten)
   method Buffers.OperationStatus TryReplace(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementPatternUtf8, Span<Byte> destination, out Int32 bytesWritten, Int32 startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions)
   method Buffers.OperationStatus TryReplace(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementPatternUtf8, Span<Byte> destination, out Int32 bytesWritten, Int32 startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions, Threading.CancellationToken cancellationToken)
@@ -203,7 +205,9 @@ sealed class Utf8Pcre2Regex
   method static Utf8Pcre2ValueMatch Match(ReadOnlySpan<Byte> input, String pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, Int32 startOffsetInBytes)
   method static Utf8Pcre2ValueMatch Match(ReadOnlySpan<Byte> input, String pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken)
 sealed class Utf8Pcre2RegexProgramOwner : IDisposable
+  property Int32 CaptureGroupCount { get; }
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
+  method Buffers.OperationStatus TryCopyPatternUtf8(Span<Byte> destination, out Int32 bytesRequired, Threading.CancellationToken cancellationToken = default)
   method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Utf8Pcre2MatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Void Dispose()

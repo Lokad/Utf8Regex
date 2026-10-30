@@ -26,6 +26,14 @@ exception's pattern text empty. The added span overloads make a bare `null` at
 some `Compile` call sites ambiguous: use a typed string or named `pattern:` when
 testing text-null errors. Existing string constructors remain available.
 
+All three profiles expose `CaptureGroupCount` excluding group zero and
+`TryCopyPatternUtf8(destination, out bytesRequired, token)`. A zero-length
+destination obtains the required capacity; `Done` copies exact source bytes.
+The caller owns the destination, including its admission and retained lifetime.
+Funded Core/PCRE2 owners expose these members without revealing program storage.
+See the [metadata contract](SPEC.md#native-pattern-metadata) for capacity,
+unrepresentable legacy text and cancellation outcomes.
+
 ## 0.4.0: Unicode scalars
 
 Version **0.4.0** changes matching from UTF-16 units to Unicode scalars.
