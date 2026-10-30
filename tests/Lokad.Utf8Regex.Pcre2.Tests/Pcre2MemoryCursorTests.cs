@@ -23,6 +23,9 @@ public sealed class Pcre2MemoryCursorTests
     [InlineData("a|aa", "xaa", Pcre2CompileOptions.None, 1, Pcre2MatchOptions.Anchored)]
     [InlineData(@"([a-z]+)-\K([0-9]+)", "foo-123 bar-45", Pcre2CompileOptions.None, 0, Pcre2MatchOptions.None)]
     [InlineData(@"a\K(?=b)", "ab ab", Pcre2CompileOptions.None, 0, Pcre2MatchOptions.None)]
+    [InlineData("(?<=(?<prefix>é))(?<value>😀)", "é😀 é😀", Pcre2CompileOptions.None, 0, Pcre2MatchOptions.None)]
+    [InlineData(@"\G(a?)|b", "aa ba", Pcre2CompileOptions.None, 0, Pcre2MatchOptions.None)]
+    [InlineData("(?<x>.\0)+?", "é\0😀\0", Pcre2CompileOptions.None, 0, Pcre2MatchOptions.None)]
     public void PublicRangesPreserveProfileProgressionAndFirstCaptureSlots(string pattern, string text,
         Pcre2CompileOptions options, int start, Pcre2MatchOptions matchOptions)
     {

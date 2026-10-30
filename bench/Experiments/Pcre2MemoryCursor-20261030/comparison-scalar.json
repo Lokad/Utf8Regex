@@ -1,0 +1,2593 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 29.2303602,
+  "Scope": "Equal-byte-range/participation public capture flows; destinations preallocated and witnesses/checksums consumed after timing. Before/after Count controls are not capture comparators. Existing repeated detailed calls validate/project per call; memory cursors validate once. Separate before/after public Replace controls cover the changed production progress helper. Funding features have additional guarantees. No catalog/package qualification.",
+  "Baseline": "0.5.0-dev\u002B84f21325da5a8141733003dba1f0a135c12b8dce sha256=E0C801E8347B2914DD65E454935D5D004CD8793B294C1403AD5944C650E1EAA7",
+  "Candidate": "0.5.0-dev\u002B27e28db0b13570b94a163770599549a28ccc15e7 sha256=FE8AD7E9C1B8E625C92393F0EF38DAEA228A8B5EF54CB1268009BCDE621BBD57",
+  "Rows": [
+    {
+      "Name": "captures",
+      "Pattern": "(?\u003C=foo)(?\u003Cword\u003E[a-z]\u002B)-([0-9]\u002B)",
+      "Finite": false,
+      "Kind": "CaptureFlowsAndCountControls",
+      "InputBytes": 368,
+      "InputSha256": "A461FE9B331A1A9E6FCF688974A8E77BFC171E9489B07E56F53145076BCA1450",
+      "ExpectedCount": 32,
+      "Expected": [
+        {
+          "Number": 0,
+          "Start": 3,
+          "End": 12,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 3,
+          "End": 8,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 9,
+          "End": 12,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 16,
+          "End": 22,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 16,
+          "End": 19,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 20,
+          "End": 22,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 26,
+          "End": 35,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 26,
+          "End": 31,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 32,
+          "End": 35,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 39,
+          "End": 45,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 39,
+          "End": 42,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 43,
+          "End": 45,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 49,
+          "End": 58,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 49,
+          "End": 54,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 55,
+          "End": 58,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 62,
+          "End": 68,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 62,
+          "End": 65,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 66,
+          "End": 68,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 72,
+          "End": 81,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 72,
+          "End": 77,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 78,
+          "End": 81,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 85,
+          "End": 91,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 85,
+          "End": 88,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 89,
+          "End": 91,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 95,
+          "End": 104,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 95,
+          "End": 100,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 101,
+          "End": 104,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 108,
+          "End": 114,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 108,
+          "End": 111,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 112,
+          "End": 114,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 118,
+          "End": 127,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 118,
+          "End": 123,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 124,
+          "End": 127,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 131,
+          "End": 137,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 131,
+          "End": 134,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 135,
+          "End": 137,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 141,
+          "End": 150,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 141,
+          "End": 146,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 147,
+          "End": 150,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 154,
+          "End": 160,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 154,
+          "End": 157,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 158,
+          "End": 160,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 164,
+          "End": 173,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 164,
+          "End": 169,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 170,
+          "End": 173,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 177,
+          "End": 183,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 177,
+          "End": 180,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 181,
+          "End": 183,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 187,
+          "End": 196,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 187,
+          "End": 192,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 193,
+          "End": 196,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 200,
+          "End": 206,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 200,
+          "End": 203,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 204,
+          "End": 206,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 210,
+          "End": 219,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 210,
+          "End": 215,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 216,
+          "End": 219,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 223,
+          "End": 229,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 223,
+          "End": 226,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 227,
+          "End": 229,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 233,
+          "End": 242,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 233,
+          "End": 238,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 239,
+          "End": 242,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 246,
+          "End": 252,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 246,
+          "End": 249,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 250,
+          "End": 252,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 256,
+          "End": 265,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 256,
+          "End": 261,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 262,
+          "End": 265,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 269,
+          "End": 275,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 269,
+          "End": 272,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 273,
+          "End": 275,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 279,
+          "End": 288,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 279,
+          "End": 284,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 285,
+          "End": 288,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 292,
+          "End": 298,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 292,
+          "End": 295,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 296,
+          "End": 298,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 302,
+          "End": 311,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 302,
+          "End": 307,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 308,
+          "End": 311,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 315,
+          "End": 321,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 315,
+          "End": 318,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 319,
+          "End": 321,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 325,
+          "End": 334,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 325,
+          "End": 330,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 331,
+          "End": 334,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 338,
+          "End": 344,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 338,
+          "End": 341,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 342,
+          "End": 344,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 348,
+          "End": 357,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 348,
+          "End": 353,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 354,
+          "End": 357,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 361,
+          "End": 367,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 361,
+          "End": 364,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 365,
+          "End": 367,
+          "Success": true,
+          "WellFormed": true
+        }
+      ],
+      "Measurement": {
+        "Lanes": [
+          "BeforeCountControl",
+          "AfterCountControl",
+          "ExistingRepeatedDetailed",
+          "MemoryRanges",
+          "MemoryRangesWorking",
+          "ProgramRangesDefault",
+          "ProgramRetainedSeparateResult"
+        ],
+        "Iterations": [
+          1024,
+          1024,
+          512,
+          512,
+          1024,
+          1024,
+          1024
+        ],
+        "WarmupCalls": [
+          4399,
+          5588,
+          3351,
+          3587,
+          3487,
+          6016,
+          3438
+        ],
+        "Microseconds": [
+          [
+            50.427539062499996,
+            87.81816406249999,
+            87.9169921875
+          ],
+          [
+            51.038476562499994,
+            87.51708984375,
+            88.0294921875
+          ],
+          [
+            101.701171875,
+            170.90976562499998,
+            171.8650390625
+          ],
+          [
+            95.2123046875,
+            165.05703125000002,
+            165.2572265625
+          ],
+          [
+            100.49267578125,
+            104.27080078125,
+            167.13193359375
+          ],
+          [
+            99.99697265625001,
+            99.77392578125,
+            168.0806640625
+          ],
+          [
+            107.0849609375,
+            105.89599609375,
+            177.9619140625
+          ]
+        ],
+        "AllocatedBytes": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            1.4453125,
+            0,
+            0
+          ],
+          [
+            3585.140625,
+            3584,
+            3584
+          ],
+          [
+            3328,
+            3332.03125,
+            3328
+          ],
+          [
+            80285.984375,
+            80288,
+            80285.984375
+          ],
+          [
+            80312,
+            80312,
+            80312
+          ],
+          [
+            82616,
+            82616,
+            82616
+          ]
+        ],
+        "ElapsedMilliseconds": [
+          [
+            51.6378,
+            89.9258,
+            90.027
+          ],
+          [
+            52.2634,
+            89.6175,
+            90.1422
+          ],
+          [
+            52.071,
+            87.5058,
+            87.9949
+          ],
+          [
+            48.7487,
+            84.5092,
+            84.6117
+          ],
+          [
+            102.9045,
+            106.7733,
+            171.1431
+          ],
+          [
+            102.3969,
+            102.1685,
+            172.1146
+          ],
+          [
+            109.655,
+            108.4375,
+            182.233
+          ]
+        ]
+      }
+    },
+    {
+      "Name": "captures",
+      "Pattern": "(?\u003C=foo)(?\u003Cword\u003E[a-z]\u002B)-([0-9]\u002B)",
+      "Kind": "ChangedProductionReplacementControls",
+      "OutputBytes": 432,
+      "OutputSha256": "A899AA958D1BD36F1E1750F8BD84CA2794892DA2B339D1EBBE746D66527A4910",
+      "Measurement": {
+        "Lanes": [
+          "BeforeReplace",
+          "AfterReplace"
+        ],
+        "Iterations": [
+          1024,
+          1024
+        ],
+        "WarmupCalls": [
+          4660,
+          7982
+        ],
+        "Microseconds": [
+          [
+            111.86142578124999,
+            111.7138671875,
+            112.1484375
+          ],
+          [
+            112.3052734375,
+            112.29023437500001,
+            112.43935546875001
+          ]
+        ],
+        "AllocatedBytes": [
+          [
+            456,
+            456,
+            456
+          ],
+          [
+            456,
+            456,
+            456
+          ]
+        ],
+        "ElapsedMilliseconds": [
+          [
+            114.5461,
+            114.395,
+            114.84
+          ],
+          [
+            115.0006,
+            114.9852,
+            115.1379
+          ]
+        ]
+      }
+    },
+    {
+      "Name": "reset",
+      "Pattern": "([a-z]\u002B)-\\K([0-9]\u002B)",
+      "Finite": false,
+      "Kind": "CaptureFlowsAndCountControls",
+      "InputBytes": 240,
+      "InputSha256": "E34D1C4695E34239657D79522DB8A5165A53CD3AD49570D3038D00635D996012",
+      "ExpectedCount": 32,
+      "Expected": [
+        {
+          "Number": 0,
+          "Start": 4,
+          "End": 7,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 0,
+          "End": 3,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 4,
+          "End": 7,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 12,
+          "End": 14,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 8,
+          "End": 11,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 12,
+          "End": 14,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 19,
+          "End": 22,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 15,
+          "End": 18,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 19,
+          "End": 22,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 27,
+          "End": 29,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 23,
+          "End": 26,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 27,
+          "End": 29,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 34,
+          "End": 37,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 30,
+          "End": 33,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 34,
+          "End": 37,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 42,
+          "End": 44,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 38,
+          "End": 41,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 42,
+          "End": 44,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 49,
+          "End": 52,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 45,
+          "End": 48,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 49,
+          "End": 52,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 57,
+          "End": 59,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 53,
+          "End": 56,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 57,
+          "End": 59,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 64,
+          "End": 67,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 60,
+          "End": 63,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 64,
+          "End": 67,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 72,
+          "End": 74,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 68,
+          "End": 71,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 72,
+          "End": 74,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 79,
+          "End": 82,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 75,
+          "End": 78,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 79,
+          "End": 82,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 87,
+          "End": 89,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 83,
+          "End": 86,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 87,
+          "End": 89,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 94,
+          "End": 97,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 90,
+          "End": 93,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 94,
+          "End": 97,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 102,
+          "End": 104,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 98,
+          "End": 101,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 102,
+          "End": 104,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 109,
+          "End": 112,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 105,
+          "End": 108,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 109,
+          "End": 112,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 117,
+          "End": 119,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 113,
+          "End": 116,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 117,
+          "End": 119,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 124,
+          "End": 127,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 120,
+          "End": 123,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 124,
+          "End": 127,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 132,
+          "End": 134,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 128,
+          "End": 131,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 132,
+          "End": 134,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 139,
+          "End": 142,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 135,
+          "End": 138,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 139,
+          "End": 142,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 147,
+          "End": 149,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 143,
+          "End": 146,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 147,
+          "End": 149,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 154,
+          "End": 157,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 150,
+          "End": 153,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 154,
+          "End": 157,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 162,
+          "End": 164,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 158,
+          "End": 161,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 162,
+          "End": 164,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 169,
+          "End": 172,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 165,
+          "End": 168,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 169,
+          "End": 172,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 177,
+          "End": 179,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 173,
+          "End": 176,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 177,
+          "End": 179,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 184,
+          "End": 187,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 180,
+          "End": 183,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 184,
+          "End": 187,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 192,
+          "End": 194,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 188,
+          "End": 191,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 192,
+          "End": 194,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 199,
+          "End": 202,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 195,
+          "End": 198,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 199,
+          "End": 202,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 207,
+          "End": 209,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 203,
+          "End": 206,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 207,
+          "End": 209,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 214,
+          "End": 217,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 210,
+          "End": 213,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 214,
+          "End": 217,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 222,
+          "End": 224,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 218,
+          "End": 221,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 222,
+          "End": 224,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 229,
+          "End": 232,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 225,
+          "End": 228,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 229,
+          "End": 232,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 237,
+          "End": 239,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 233,
+          "End": 236,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 237,
+          "End": 239,
+          "Success": true,
+          "WellFormed": true
+        }
+      ],
+      "Measurement": {
+        "Lanes": [
+          "BeforeCountControl",
+          "AfterCountControl",
+          "ExistingRepeatedDetailed",
+          "MemoryRanges",
+          "MemoryRangesWorking",
+          "ProgramRangesDefault",
+          "ProgramRetainedSeparateResult"
+        ],
+        "Iterations": [
+          4096,
+          4096,
+          1024,
+          1024,
+          1024,
+          2048,
+          1024
+        ],
+        "WarmupCalls": [
+          22886,
+          22875,
+          7509,
+          7715,
+          7207,
+          7897,
+          7368
+        ],
+        "Microseconds": [
+          [
+            26.3887451171875,
+            25.93291015625,
+            25.891455078125
+          ],
+          [
+            26.4247314453125,
+            26.0983642578125,
+            26.0487060546875
+          ],
+          [
+            77.6755859375,
+            77.2818359375,
+            77.52656250000001
+          ],
+          [
+            67.661328125,
+            67.76025390625,
+            67.201171875
+          ],
+          [
+            73.80283203125,
+            73.11162109374999,
+            77.68222656249999
+          ],
+          [
+            83.373193359375,
+            82.018505859375,
+            85.7390625
+          ],
+          [
+            80.51767578125,
+            80.39267578125,
+            84.57900390625001
+          ]
+        ],
+        "AllocatedBytes": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0.361328125,
+            0,
+            0
+          ],
+          [
+            3584.484375,
+            3584,
+            3584
+          ],
+          [
+            3328,
+            3329.9296875,
+            3328
+          ],
+          [
+            66558.0703125,
+            66560,
+            66558.0703125
+          ],
+          [
+            66584,
+            66584,
+            66584
+          ],
+          [
+            68888,
+            68888,
+            68888
+          ]
+        ],
+        "ElapsedMilliseconds": [
+          [
+            108.0883,
+            106.2212,
+            106.0514
+          ],
+          [
+            108.2357,
+            106.8989,
+            106.6955
+          ],
+          [
+            79.5398,
+            79.1366,
+            79.3872
+          ],
+          [
+            69.2852,
+            69.3865,
+            68.814
+          ],
+          [
+            75.5741,
+            74.8663,
+            79.5466
+          ],
+          [
+            170.7483,
+            167.9739,
+            175.5936
+          ],
+          [
+            82.4501,
+            82.3221,
+            86.6089
+          ]
+        ]
+      }
+    },
+    {
+      "Name": "reset",
+      "Pattern": "([a-z]\u002B)-\\K([0-9]\u002B)",
+      "Kind": "ChangedProductionReplacementControls",
+      "OutputBytes": 304,
+      "OutputSha256": "9A9CC4871D647DDAE6BB2DDABD060CFA7BBF93FC25C15D6D7167CAE0726397F6",
+      "Measurement": {
+        "Lanes": [
+          "BeforeReplace",
+          "AfterReplace"
+        ],
+        "Iterations": [
+          2048,
+          2048
+        ],
+        "WarmupCalls": [
+          12261,
+          12169
+        ],
+        "Microseconds": [
+          [
+            48.4521484375,
+            48.204833984375,
+            48.306787109375
+          ],
+          [
+            48.707666015625,
+            48.551464843750004,
+            48.722900390625
+          ]
+        ],
+        "AllocatedBytes": [
+          [
+            328,
+            328,
+            328
+          ],
+          [
+            328,
+            328,
+            328
+          ]
+        ],
+        "ElapsedMilliseconds": [
+          [
+            99.23,
+            98.7235,
+            98.9323
+          ],
+          [
+            99.7533,
+            99.4334,
+            99.7845
+          ]
+        ]
+      }
+    },
+    {
+      "Name": "finite-live",
+      "Pattern": "(?\u003C=foo)(?\u003Cword\u003E[a-z]\u002B)-([0-9]\u002B)",
+      "Finite": true,
+      "Kind": "CaptureFlowsAndCountControls",
+      "InputBytes": 368,
+      "InputSha256": "A461FE9B331A1A9E6FCF688974A8E77BFC171E9489B07E56F53145076BCA1450",
+      "ExpectedCount": 32,
+      "Expected": [
+        {
+          "Number": 0,
+          "Start": 3,
+          "End": 12,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 3,
+          "End": 8,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 9,
+          "End": 12,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 16,
+          "End": 22,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 16,
+          "End": 19,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 20,
+          "End": 22,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 26,
+          "End": 35,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 26,
+          "End": 31,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 32,
+          "End": 35,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 39,
+          "End": 45,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 39,
+          "End": 42,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 43,
+          "End": 45,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 49,
+          "End": 58,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 49,
+          "End": 54,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 55,
+          "End": 58,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 62,
+          "End": 68,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 62,
+          "End": 65,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 66,
+          "End": 68,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 72,
+          "End": 81,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 72,
+          "End": 77,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 78,
+          "End": 81,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 85,
+          "End": 91,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 85,
+          "End": 88,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 89,
+          "End": 91,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 95,
+          "End": 104,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 95,
+          "End": 100,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 101,
+          "End": 104,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 108,
+          "End": 114,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 108,
+          "End": 111,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 112,
+          "End": 114,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 118,
+          "End": 127,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 118,
+          "End": 123,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 124,
+          "End": 127,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 131,
+          "End": 137,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 131,
+          "End": 134,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 135,
+          "End": 137,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 141,
+          "End": 150,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 141,
+          "End": 146,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 147,
+          "End": 150,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 154,
+          "End": 160,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 154,
+          "End": 157,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 158,
+          "End": 160,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 164,
+          "End": 173,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 164,
+          "End": 169,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 170,
+          "End": 173,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 177,
+          "End": 183,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 177,
+          "End": 180,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 181,
+          "End": 183,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 187,
+          "End": 196,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 187,
+          "End": 192,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 193,
+          "End": 196,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 200,
+          "End": 206,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 200,
+          "End": 203,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 204,
+          "End": 206,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 210,
+          "End": 219,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 210,
+          "End": 215,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 216,
+          "End": 219,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 223,
+          "End": 229,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 223,
+          "End": 226,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 227,
+          "End": 229,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 233,
+          "End": 242,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 233,
+          "End": 238,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 239,
+          "End": 242,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 246,
+          "End": 252,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 246,
+          "End": 249,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 250,
+          "End": 252,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 256,
+          "End": 265,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 256,
+          "End": 261,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 262,
+          "End": 265,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 269,
+          "End": 275,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 269,
+          "End": 272,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 273,
+          "End": 275,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 279,
+          "End": 288,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 279,
+          "End": 284,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 285,
+          "End": 288,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 292,
+          "End": 298,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 292,
+          "End": 295,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 296,
+          "End": 298,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 302,
+          "End": 311,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 302,
+          "End": 307,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 308,
+          "End": 311,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 315,
+          "End": 321,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 315,
+          "End": 318,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 319,
+          "End": 321,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 325,
+          "End": 334,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 325,
+          "End": 330,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 331,
+          "End": 334,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 338,
+          "End": 344,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 338,
+          "End": 341,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 342,
+          "End": 344,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 348,
+          "End": 357,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 348,
+          "End": 353,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 354,
+          "End": 357,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 0,
+          "Start": 361,
+          "End": 367,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 1,
+          "Start": 361,
+          "End": 364,
+          "Success": true,
+          "WellFormed": true
+        },
+        {
+          "Number": 2,
+          "Start": 365,
+          "End": 367,
+          "Success": true,
+          "WellFormed": true
+        }
+      ],
+      "Measurement": {
+        "Lanes": [
+          "BeforeCountControl",
+          "AfterCountControl",
+          "ExistingRepeatedDetailed",
+          "MemoryRanges",
+          "MemoryRangesWorking",
+          "ProgramRangesDefault",
+          "ProgramRetainedSeparateResult"
+        ],
+        "Iterations": [
+          1024,
+          1024,
+          512,
+          512,
+          512,
+          512,
+          512
+        ],
+        "WarmupCalls": [
+          3532,
+          4696,
+          2567,
+          2901,
+          2772,
+          2861,
+          2704
+        ],
+        "Microseconds": [
+          [
+            125.7486328125,
+            125.80009765625,
+            125.69658203125
+          ],
+          [
+            127.26650390625,
+            127.04404296874999,
+            127.24628906249998
+          ],
+          [
+            233.405859375,
+            232.5083984375,
+            234.12421875
+          ],
+          [
+            206.7185546875,
+            206.63789062499998,
+            206.8572265625
+          ],
+          [
+            210.0642578125,
+            209.93125,
+            211.0720703125
+          ],
+          [
+            210.42031250000002,
+            211.29746093749998,
+            210.30390625
+          ],
+          [
+            221.21855468750002,
+            221.6060546875,
+            220.3408203125
+          ]
+        ],
+        "AllocatedBytes": [
+          [
+            1600,
+            1600,
+            1600
+          ],
+          [
+            1600,
+            1600,
+            1600
+          ],
+          [
+            84504,
+            84504,
+            84504
+          ],
+          [
+            80288,
+            80288,
+            80288
+          ],
+          [
+            80288,
+            80288,
+            80288
+          ],
+          [
+            80312,
+            80312,
+            80312
+          ],
+          [
+            82616,
+            82616,
+            82616
+          ]
+        ],
+        "ElapsedMilliseconds": [
+          [
+            128.7666,
+            128.8193,
+            128.7133
+          ],
+          [
+            130.3209,
+            130.0931,
+            130.3002
+          ],
+          [
+            119.5038,
+            119.0443,
+            119.8716
+          ],
+          [
+            105.8399,
+            105.7986,
+            105.9109
+          ],
+          [
+            107.5529,
+            107.4848,
+            108.0689
+          ],
+          [
+            107.7352,
+            108.1843,
+            107.6756
+          ],
+          [
+            113.2639,
+            113.4623,
+            112.8145
+          ]
+        ]
+      }
+    }
+  ]
+}

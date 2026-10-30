@@ -1,0 +1,169 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Pcre2;
+
+var context = new AssemblyLoadContext("before"); var beforeRoot = Path.GetFullPath(args[0]);
+context.LoadFromAssemblyPath(Path.Combine(beforeRoot, "Lokad.Utf8Regex.dll"));
+var before = context.LoadFromAssemblyPath(Path.Combine(beforeRoot, "Lokad.Utf8Regex.Pcre2.dll")); var after = typeof(Utf8Pcre2Regex).Assembly;
+if (Hash(before) == Hash(after) || !Identity(after).Contains(args[1])) throw new Exception("Unexpected binaries");
+using var process = Process.GetCurrentProcess(); process.ProcessorAffinity = (nint)4;
+var preflight = args.Length > 2 && args[2] == "--preflight"; var elapsed = Stopwatch.StartNew(); var rows = new List<object>();
+var cases = new[] {
+    new Case("literal", "needle", string.Concat(Enumerable.Repeat("prefix needle tail ",32))),
+    new Case("captures", @"(?<=foo)(?<word>[a-z]+)-([0-9]+)", string.Concat(Enumerable.Repeat("fooalpha-123 foofoo-45 ",16))),
+    new Case("unicode", "(?<x>😀|é)+", string.Concat(Enumerable.Repeat("z😀é😀 qé ",16))),
+    new Case("reset", @"([a-z]+)-\K([0-9]+)", string.Concat(Enumerable.Repeat("foo-123 bar-45 ",16))),
+    new Case("finite-live", @"(?<=foo)(?<word>[a-z]+)-([0-9]+)", string.Concat(Enumerable.Repeat("fooalpha-123 foofoo-45 ",16)), true)
+};
+cases = cases.Where(item => item.Name is "captures" or "finite-live" or "reset").ToArray();
+foreach (var item in cases)
+{
+    using var live = new CancellationTokenSource(); var token = item.Finite ? live.Token : default;
+    var policy = item.Finite ? new Utf8ResourcePolicy { MaxWorkSteps = 16_000_000, MaxDepth = 4096, MaxWorkingBytes = 4 << 20, MaxResultBytes = 4 << 20 } : default;
+    var input = Encoding.UTF8.GetBytes(item.Text); var regex = Utf8Pcre2Regex.Create(item.Pattern, default, default, policy, Timeout.InfiniteTimeSpan);
+    var program = new Account(); var working = new Account(); var result = new Account();
+    using var owner = Utf8Pcre2Regex.Compile(item.Pattern, default, default, Timeout.InfiniteTimeSpan, policy, default, Timeout.InfiniteTimeSpan, default, program);
+    var held = program.Used;
+    void Balances() { if (working.Used != 0 || result.Used != 0 || program.Used != held) throw new Exception("Funding balance changed"); }
+    var old = BeforeInstance(before, item.Pattern, policy); var oldCount = BeforeCounter(old); var expectedCount = regex.Count(input, 0, default, token);
+    var expected = Collect(regex, input, token); var slots = expected.Length;
+    CaptureRun[] captures = [destination => Detailed(regex,input,token,destination),
+        destination => Ranges(regex.CreateMatchCursor(input,cancellationToken:token),token,destination),
+        destination => Ranges(regex.CreateMatchCursor(input,cancellationToken:token,workingMemoryAllowance:working),token,destination),
+        destination => Ranges(owner.CreateMatchCursor(input,cancellationToken:token),token,destination),
+        destination => Ranges(owner.CreateMatchCursor(input,cancellationToken:token,workingMemoryAllowance:working),token,destination,result)];
+    var lanes = new[] { "BeforeCountControl", "AfterCountControl", "ExistingRepeatedDetailed", "MemoryRanges", "MemoryRangesWorking", "ProgramRangesDefault", "ProgramRetainedSeparateResult" };
+    Func<int, Sample>[] runners = [n=>CountLoop(n,()=>oldCount(input,token),expectedCount),n=>CountLoop(n,()=>regex.Count(input,0,default,token),expectedCount),
+        ..captures.Select<CaptureRun,Func<int,Sample>>(run=>n=>CaptureLoop(n,run,expected))];
+    foreach (var run in runners) { _ = run(1); Balances(); }
+    if (!preflight) rows.Add(new { item.Name, item.Pattern, item.Finite, Kind="CaptureFlowsAndCountControls", InputBytes=input.Length,
+        InputSha256=Convert.ToHexString(SHA256.HashData(input)), ExpectedCount=expectedCount, Expected=expected,
+        Measurement=Measure(lanes,runners,Balances) });
+    if (item.Name is "captures" or "reset")
+    {
+        var oldReplace=old.GetType().GetMethod("Replace",[typeof(ReadOnlySpan<byte>),typeof(string)])!.CreateDelegate<Replacer>(old);
+        var expectedBytes=regex.Replace(input,"<$0>");
+        Func<int,Sample>[] replacements=[n=>ReplaceLoop(n,()=>oldReplace(input,"<$0>"),expectedBytes),n=>ReplaceLoop(n,()=>regex.Replace(input,"<$0>"),expectedBytes)];
+        foreach(var run in replacements)_=run(1);
+        if(!preflight)rows.Add(new { item.Name,item.Pattern,Kind="ChangedProductionReplacementControls",OutputBytes=expectedBytes.Length,
+            OutputSha256=Convert.ToHexString(SHA256.HashData(expectedBytes)),Measurement=Measure(["BeforeReplace","AfterReplace"],replacements,Balances) });
+    }
+    Console.Error.WriteLine((preflight?"Preflight ":"Completed ")+item.Name+": "+expectedCount+" matches / "+slots+" capture slots");
+    owner.Dispose(); if(program.Used!=0||working.Used!=0||result.Used!=0)throw new Exception("Final funding leak");
+}
+Console.WriteLine(JsonSerializer.Serialize(new {Runtime=RuntimeInformation.FrameworkDescription,CpuAffinityMask="4",ElapsedSeconds=elapsed.Elapsed.TotalSeconds,
+    Scope="Equal-byte-range/participation public capture flows; destinations preallocated and witnesses/checksums consumed after timing. Before/after Count controls are not capture comparators. Existing repeated detailed calls validate/project per call; memory cursors validate once. Separate before/after public Replace controls cover the changed production progress helper. Funding features have additional guarantees. No catalog/package qualification.",
+    Baseline=Identity(before),Candidate=Identity(after),Rows=rows},new JsonSerializerOptions { WriteIndented=true }));
+
+static object Measure(string[] lanes,Func<int,Sample>[] runs,Action balances)
+{
+    var iterations=new int[runs.Length];var warmCalls=new int[runs.Length];
+    for(var lane=0;lane<runs.Length;lane++)
+    {
+        var warm=Stopwatch.StartNew();do{_=runs[lane](1);warmCalls[lane]++;}while(warm.Elapsed.TotalMilliseconds<600);
+        iterations[lane]=1;while(runs[lane](iterations[lane]).Milliseconds<80)iterations[lane]=checked(iterations[lane]*2);
+    }
+    var times=runs.Select(_=>new double[3]).ToArray();var bytes=runs.Select(_=>new double[3]).ToArray();var durations=runs.Select(_=>new double[3]).ToArray();
+    for(var sample=0;sample<3;sample++)for(var position=0;position<runs.Length;position++)
+    {
+        var lane=sample%2==0?position:runs.Length-1-position;GC.Collect();GC.WaitForPendingFinalizers();GC.Collect();var value=runs[lane](iterations[lane]);
+        times[lane][sample]=value.Milliseconds*1000/iterations[lane];bytes[lane][sample]=(double)value.Bytes/iterations[lane];durations[lane][sample]=value.Milliseconds;balances();
+    }
+    Console.Error.WriteLine(string.Join(" / ",times.Select(a=>a.Order().ElementAt(1))));
+    return new {Lanes=lanes,Iterations=iterations,WarmupCalls=warmCalls,Microseconds=times,AllocatedBytes=bytes,ElapsedMilliseconds=durations};
+}
+static Witness[] Collect(Utf8Pcre2Regex regex,byte[] input,CancellationToken token)
+{
+    var buffer=new Witness[4096];var written=Detailed(regex,input,token,buffer);return buffer[..written];
+}
+static int Detailed(Utf8Pcre2Regex regex,byte[] input,CancellationToken token,Span<Witness> destination)
+{
+    var floor=0;var written=0;
+    while(floor<=input.Length)
+    {
+        var match=regex.MatchDetailed(input,floor,default,token);if(!match.Success)break;
+        for(var slot=0;slot<match.CaptureSlotCount;slot++)
+        {var group=match.GetGroup(slot);destination[written++]=new(slot,group.StartOffsetInBytes,group.EndOffsetInBytes,group.Success,group.IsUtf8SliceWellFormed);}
+        if(match.Value.StartOffsetInBytes==match.Value.EndOffsetInBytes)throw new Exception("Pilot requires nonempty matches");
+        floor=match.Value.EndOffsetInBytes;
+    }
+    return written;
+}
+static int Ranges(Utf8Pcre2MatchCursor cursor,CancellationToken token,Span<Witness> destination,Account? result=null)
+{
+    using(cursor)
+    {
+        var written=0;
+        if(result is null)while(cursor.MoveNext(out var match,token))written=Write(match,destination,written);
+        else while(cursor.MoveNextRetained(out var receipt,token,result)){using(receipt)written=Write(receipt.Match,destination,written);}
+        return written;
+    }
+}
+static int Write(Utf8Pcre2RangeMatch match,Span<Witness> destination,int written)
+{
+    foreach(var group in match.Groups)destination[written++]=new(group.Number,group.StartOffsetInBytes,group.EndOffsetInBytes,group.Success,group.IsUtf8SliceWellFormed);
+    return written;
+}
+static Sample CaptureLoop(int count,CaptureRun run,Witness[] expected)
+{
+    var values=new Witness[checked(count*expected.Length)];var written=new int[count];var allocation=GC.GetAllocatedBytesForCurrentThread();var start=Stopwatch.GetTimestamp();
+    for(var index=0;index<count;index++)written[index]=run(values.AsSpan(index*expected.Length,expected.Length));
+    var elapsed=Stopwatch.GetElapsedTime(start).TotalMilliseconds;var bytes=GC.GetAllocatedBytesForCurrentThread()-allocation;
+    long checksum=0;for(var index=0;index<count;index++)
+    {
+        if(written[index]!=expected.Length)throw new Exception("Capture count mismatch");
+        for(var slot=0;slot<expected.Length;slot++){var value=values[index*expected.Length+slot];if(value!=expected[slot])throw new Exception("Capture range mismatch");checksum+=value.Start+value.End;}
+    }
+    GC.KeepAlive(checksum);return new(elapsed,bytes);
+}
+static Sample CountLoop(int count,Func<int> run,int expected)
+{
+    var values=new int[count];var allocation=GC.GetAllocatedBytesForCurrentThread();var start=Stopwatch.GetTimestamp();
+    for(var index=0;index<count;index++)values[index]=run();
+    var elapsed=Stopwatch.GetElapsedTime(start).TotalMilliseconds;var bytes=GC.GetAllocatedBytesForCurrentThread()-allocation;
+    long checksum=0;foreach(var value in values){if(value!=expected)throw new Exception("Count mismatch");checksum+=value;}GC.KeepAlive(checksum);return new(elapsed,bytes);
+}
+static Sample ReplaceLoop(int count,Func<byte[]> run,byte[] expected)
+{
+    var values=new byte[count][];var allocation=GC.GetAllocatedBytesForCurrentThread();var start=Stopwatch.GetTimestamp();
+    for(var index=0;index<count;index++)values[index]=run();
+    var elapsed=Stopwatch.GetElapsedTime(start).TotalMilliseconds;var bytes=GC.GetAllocatedBytesForCurrentThread()-allocation;
+    long checksum=0;foreach(var value in values){if(!value.AsSpan().SequenceEqual(expected))throw new Exception("Replacement mismatch");foreach(var part in value)checksum+=part;}
+    GC.KeepAlive(checksum);return new(elapsed,bytes);
+}
+static object BeforeInstance(Assembly assembly,string pattern,Utf8ResourcePolicy policy)
+{
+    var type=assembly.GetType("Lokad.Utf8Regex.Pcre2.Utf8Pcre2Regex")!;var factory=type.GetMethods().Single(m=>m.Name=="Create"&&m.GetParameters()[0].ParameterType==typeof(string));
+    var parameters=factory.GetParameters();var oldPolicy=Activator.CreateInstance(parameters[3].ParameterType)!;
+    foreach(var property in typeof(Utf8ResourcePolicy).GetProperties().Where(p=>p.GetMethod is {IsStatic:false}))oldPolicy.GetType().GetProperty(property.Name)!.SetValue(oldPolicy,property.GetValue(policy));
+    return factory.Invoke(null,[pattern,Enum.ToObject(parameters[1].ParameterType,0),Activator.CreateInstance(parameters[2].ParameterType),oldPolicy,Timeout.InfiniteTimeSpan])!;
+}
+static Counter BeforeCounter(object regex)
+{
+    var type=regex.GetType();var method=type.GetMethods().Single(m=>m.Name=="Count"&&!m.IsStatic&&m.GetParameters().Length==4);
+    var bridge=new DynamicMethod("BeforePublicCount",typeof(int),[typeof(object),typeof(byte[]),typeof(CancellationToken)],typeof(Program).Module,true);var il=bridge.GetILGenerator();
+    il.Emit(OpCodes.Ldarg_0);il.Emit(OpCodes.Castclass,type);il.Emit(OpCodes.Ldarg_1);il.Emit(OpCodes.Call,typeof(ReadOnlySpan<byte>).GetMethod("op_Implicit",[typeof(byte[])])!);
+    il.Emit(OpCodes.Ldc_I4_0);il.Emit(OpCodes.Ldc_I4_0);il.Emit(OpCodes.Ldarg_2);il.Emit(OpCodes.Call,method);il.Emit(OpCodes.Ret);return bridge.CreateDelegate<Counter>(regex);
+}
+static string Hash(Assembly assembly)=>Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location)));
+static string Identity(Assembly assembly)=>assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion+" sha256="+Hash(assembly);
+delegate int CaptureRun(Span<Witness> destination);
+delegate int Counter(byte[] input,CancellationToken token);
+delegate byte[] Replacer(ReadOnlySpan<byte> input,string replacement);
+readonly record struct Witness(int Number,int Start,int End,bool Success,bool WellFormed);
+readonly record struct Sample(double Milliseconds,long Bytes);
+record Case(string Name,string Pattern,string Text,bool Finite=false);
+public sealed class Account:IUtf8MemoryAllowance
+{
+    private long _used;
+    public ulong Used=>(ulong)Interlocked.Read(ref _used);
+    public bool TryReserve(ulong bytes){Interlocked.Add(ref _used,checked((long)bytes));return true;}
+    public void Release(ulong bytes){if(Interlocked.Add(ref _used,-checked((long)bytes))<0)throw new Exception("Unfunded release");}
+}
