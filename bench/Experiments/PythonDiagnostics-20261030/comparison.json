@@ -1,0 +1,285 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 13.9854727,
+  "LaneNames": [
+    "Baseline",
+    "Candidate"
+  ],
+  "Scope": "Equal public template operations. Invalid templates have intentionally improved positions and new immutable classification; exact messages/types and cache/account cleanup preserved. Valid churn reaches numeric-reference preparation; warm control reuses its cached plan. All output strings/exceptions retained through timing, equality/metadata/checksums afterward. No comparator/parity/catalog Status claim.",
+  "Baseline": {
+    "Core": "0.5.0-dev\u002B4cab6712ffedcfb25f24840f07ba9995385345be sha256=D54215303C98330C6F952289ED147447B78DB8A28F650B605118EB005A5B73B1",
+    "Python": "0.5.0-dev\u002B4cab6712ffedcfb25f24840f07ba9995385345be sha256=9B7EE7AD975640F32333318DB10A00E23628013916603094513E04E6EF6D2900"
+  },
+  "Candidate": {
+    "Core": "0.5.0-dev\u002B0128afc2b927c073e0d8293cbf41026332d8b610 sha256=6FB382A5F37F397F276ED23AA1AF1819CEEE713B13B55EF0400C2962C7352442",
+    "Python": "0.5.0-dev\u002B0128afc2b927c073e0d8293cbf41026332d8b610 sha256=5DB6C7D1420BD520C8CD1406FE6A4AB454A3389CA64ABB7CCA1DF019F0DA5D29"
+  },
+  "Rows": [
+    {
+      "Name": "warm-template-control",
+      "Funded": false,
+      "Cycle": false,
+      "Invalid": false,
+      "InputBytes": 1,
+      "TemplateCount": 1,
+      "Operation": "SubnToString on reused compiled (a); own output or catch template error",
+      "Iterations": [
+        131072,
+        131072
+      ],
+      "WarmupCalls": [
+        128624,
+        698576
+      ],
+      "Microseconds": [
+        [
+          1.0429489135742187,
+          1.0508033752441406,
+          1.0269599914550782
+        ],
+        [
+          1.1108833312988282,
+          1.098907470703125,
+          1.064820098876953
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          2504,
+          2504,
+          2504
+        ],
+        [
+          2504,
+          2504,
+          2504
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          136.7014,
+          137.7309,
+          134.6057
+        ],
+        [
+          145.6057,
+          144.036,
+          139.5681
+        ]
+      ]
+    },
+    {
+      "Name": "numeric-template-churn",
+      "Funded": false,
+      "Cycle": true,
+      "Invalid": false,
+      "InputBytes": 1,
+      "TemplateCount": 64,
+      "Operation": "SubnToString on reused compiled (a); own output or catch template error",
+      "Iterations": [
+        65536,
+        65536
+      ],
+      "WarmupCalls": [
+        262800,
+        307344
+      ],
+      "Microseconds": [
+        [
+          1.8736557006835937,
+          2.0978240966796875,
+          1.8608154296875001
+        ],
+        [
+          1.886962890625,
+          1.873583984375,
+          1.8898696899414062
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3704,
+          3704,
+          3704
+        ],
+        [
+          3704,
+          3704,
+          3704
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          122.7919,
+          137.483,
+          121.9504
+        ],
+        [
+          123.664,
+          122.7872,
+          123.8545
+        ]
+      ]
+    },
+    {
+      "Name": "funded-numeric-template-churn",
+      "Funded": true,
+      "Cycle": true,
+      "Invalid": false,
+      "InputBytes": 1,
+      "TemplateCount": 64,
+      "Operation": "SubnToString on reused compiled (a); own output or catch template error",
+      "Iterations": [
+        32768,
+        32768
+      ],
+      "WarmupCalls": [
+        247760,
+        249808
+      ],
+      "Microseconds": [
+        [
+          2.673471069335937,
+          2.6746337890625,
+          2.675531005859375
+        ],
+        [
+          2.7143798828125,
+          2.7102630615234373,
+          2.815411376953125
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          4112,
+          4112,
+          4112
+        ],
+        [
+          4112,
+          4112,
+          4112
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          87.6043,
+          87.6424,
+          87.6718
+        ],
+        [
+          88.9448,
+          88.8099,
+          92.2554
+        ]
+      ]
+    },
+    {
+      "Name": "invalid-template",
+      "Funded": false,
+      "Cycle": false,
+      "Invalid": true,
+      "InputBytes": 0,
+      "TemplateCount": 1,
+      "Operation": "SubnToString on reused compiled (a); own output or catch template error",
+      "Iterations": [
+        8192,
+        8192
+      ],
+      "WarmupCalls": [
+        57472,
+        58880
+      ],
+      "Microseconds": [
+        [
+          12.1030517578125,
+          11.8922119140625,
+          11.88375244140625
+        ],
+        [
+          12.3554443359375,
+          11.838452148437499,
+          11.8970458984375
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          4176,
+          4176,
+          4176
+        ],
+        [
+          4184,
+          4184,
+          4184
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          99.1482,
+          97.421,
+          97.3517
+        ],
+        [
+          101.2158,
+          96.9806,
+          97.4606
+        ]
+      ]
+    },
+    {
+      "Name": "funded-invalid-template",
+      "Funded": true,
+      "Cycle": false,
+      "Invalid": true,
+      "InputBytes": 0,
+      "TemplateCount": 1,
+      "Operation": "SubnToString on reused compiled (a); own output or catch template error",
+      "Iterations": [
+        8192,
+        8192
+      ],
+      "WarmupCalls": [
+        51376,
+        53024
+      ],
+      "Microseconds": [
+        [
+          13.660241699218751,
+          13.7125244140625,
+          13.798828125
+        ],
+        [
+          13.79669189453125,
+          13.8398193359375,
+          13.79736328125
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          4584,
+          4584,
+          4584
+        ],
+        [
+          4592,
+          4592,
+          4592
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          111.9047,
+          112.333,
+          113.04
+        ],
+        [
+          113.0225,
+          113.3758,
+          113.028
+        ]
+      ]
+    }
+  ]
+}

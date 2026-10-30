@@ -1,0 +1,10 @@
+using System.Text.Json;
+using Lokad.Utf8Regex.PythonRe;
+using var regex = new Utf8PythonRegex("(a)");
+foreach (var suffix in new[] { @"\q", @"\g", @"\gX", @"\g<", @"\g<>", @"\g<2>", @"\2", @"\777", @"\g<missing>", @"\g<-1>", @"\g<99999999999999999999>" })
+{
+    var template = "\U0001f600" + suffix;
+    try { _ = regex.Subn(ReadOnlySpan<byte>.Empty, template); throw new Exception("Expected template failure"); }
+    catch (Exception error) { Console.WriteLine(JsonSerializer.Serialize(new { Template = template, Type = error.GetType().Name, Utf16Position = (error as PythonRePatternException)?.Position,
+        ErrorSource = (error as PythonRePatternException)?.ErrorSource.ToString(), ErrorKind = (error as PythonRePatternException)?.ErrorKind.ToString(), error.Message })); }
+}

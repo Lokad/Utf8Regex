@@ -1,0 +1,11 @@
+{"Template": "\ud83d\ude00\\q", "Type": "PatternError", "ScalarPosition": 1, "Utf16Position": 2, "Message": "bad escape \\q at position 1"}
+{"Template": "\ud83d\ude00\\g", "Type": "PatternError", "ScalarPosition": 3, "Utf16Position": 4, "Message": "missing < at position 3"}
+{"Template": "\ud83d\ude00\\gX", "Type": "PatternError", "ScalarPosition": 3, "Utf16Position": 4, "Message": "missing < at position 3"}
+{"Template": "\ud83d\ude00\\g<", "Type": "PatternError", "ScalarPosition": 4, "Utf16Position": 5, "Message": "missing group name at position 4"}
+{"Template": "\ud83d\ude00\\g<>", "Type": "PatternError", "ScalarPosition": 4, "Utf16Position": 5, "Message": "missing group name at position 4"}
+{"Template": "\ud83d\ude00\\g<2>", "Type": "PatternError", "ScalarPosition": 4, "Utf16Position": 5, "Message": "invalid group reference 2 at position 4"}
+{"Template": "\ud83d\ude00\\2", "Type": "PatternError", "ScalarPosition": 2, "Utf16Position": 3, "Message": "invalid group reference 2 at position 2"}
+{"Template": "\ud83d\ude00\\777", "Type": "PatternError", "ScalarPosition": 1, "Utf16Position": 2, "Message": "octal escape value \\777 outside of range 0-0o377 at position 1"}
+{"Template": "\ud83d\ude00\\g<missing>", "Type": "IndexError", "ScalarPosition": null, "Utf16Position": null, "Message": "unknown group name 'missing'"}
+{"Template": "\ud83d\ude00\\g<-1>", "Type": "PatternError", "ScalarPosition": 4, "Utf16Position": 5, "Message": "bad character in group name '-1' at position 4"}
+{"Template": "\ud83d\ude00\\g<99999999999999999999>", "Type": "PatternError", "ScalarPosition": 4, "Utf16Position": 5, "Message": "invalid group reference 99999999999999999999 at position 4"}

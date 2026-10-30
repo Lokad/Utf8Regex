@@ -1,0 +1,5 @@
+Completed warm-template-control: 1.0429489135742187 / 1.098907470703125
+Completed numeric-template-churn: 1.8736557006835937 / 1.886962890625
+Completed funded-numeric-template-churn: 2.6746337890625 / 2.7143798828125
+Completed invalid-template: 11.8922119140625 / 11.8970458984375
+Completed funded-invalid-template: 13.7125244140625 / 13.79736328125

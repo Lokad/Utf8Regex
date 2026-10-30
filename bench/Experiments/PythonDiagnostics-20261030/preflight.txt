@@ -1,0 +1,5 @@
+Preflight warm-template-control
+Preflight numeric-template-churn
+Preflight funded-numeric-template-churn
+Preflight invalid-template
+Preflight funded-invalid-template

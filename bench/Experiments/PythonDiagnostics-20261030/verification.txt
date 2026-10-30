@@ -1,0 +1,6 @@
+Focused diagnostics/preparation/funded replacement Release.
+Passed!  - Failed:     0, Passed:    99, Skipped:     0, Total:    99, Duration: 167 ms - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:    99, Skipped:     0, Total:    99, Duration: 160 ms - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)
+Full PythonRe Release, including API/source checks.
+Passed!  - Failed:     0, Passed:  4198, Skipped:     0, Total:  4198, Duration: 13 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:  4198, Skipped:     0, Total:  4198, Duration: 13 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)

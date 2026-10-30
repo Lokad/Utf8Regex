@@ -1,0 +1,12 @@
+import json, re, sys
+print(sys.version, file=sys.stderr)
+regex = re.compile('(a)')
+for suffix in [r'\q', r'\g', r'\gX', r'\g<', r'\g<>', r'\g<2>', r'\2', r'\777', r'\g<missing>', r'\g<-1>', r'\g<99999999999999999999>']:
+    template = '\U0001f600' + suffix
+    try:
+        regex.sub(template, '')
+        raise Exception('Expected template failure')
+    except Exception as error:
+        position = getattr(error, 'pos', None)
+        utf16_position = len(template[:position].encode('utf-16-le')) // 2 if position is not None else None
+        print(json.dumps(dict(Template=template, Type=type(error).__name__, ScalarPosition=position, Utf16Position=utf16_position, Message=str(error))))
