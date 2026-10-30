@@ -1010,6 +1010,29 @@ public sealed partial class Utf8Regex
 
     private int CountCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
+        // The existing whole-pattern proof counts complete word runs on ASCII.
+        // Keep one invocation through validation, native work or wider-scalar
+        // continuation; resource controls never select an unmetered substitute.
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiWordBoundedCount &&
+            _fallbackDirectFamily.MinCount > 0 && !UsesRightToLeft() &&
+            (Options & (RegexOptions.NonBacktracking | RegexOptions.ECMAScript)) == 0)
+        {
+            var wordInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+            try
+            {
+                var wordValidation = Utf8Validation.Validate(input, ref wordInvocation);
+                if (!wordValidation.IsAscii)
+                    return OwnedSliceCountFromByte(input, _ownedSliceProgram, 0, ref wordInvocation);
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAsciiWordBounded);
+                var breach = Utf8AsciiDirectFamilyCountExecutor.TryCountWordRunsValidatedAscii(input,
+                    _fallbackDirectFamily.MinCount, ref wordInvocation, out var wordCount);
+                if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref wordInvocation);
+                return wordCount;
+            }
+            catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+                wordInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+            { throw CreateExecutionResourceFailure(ref wordInvocation); }
+        }
         if (HasFiniteExecutionLimits) return OwnedSliceCount(input, _ownedSliceProgram, cancellationToken);
         // This prepared Unicode strategy cannot use the ASCII structural or
         // metered literal routes. Dispatch it before those ineligible probes;

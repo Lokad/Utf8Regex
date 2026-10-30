@@ -158,6 +158,16 @@ use and record active nesting against depth. A Count or value-Match shortcut can
 avoid capture workspace; a declined shortcut retains its spent work when scalar
 execution resumes.
 
+Greedy unbounded word repeats with a positive minimum, optionally enclosed by
+word boundaries and ordinary captures, can Count fully validated ASCII through their existing whole-pattern
+proof. That counter needs no capture workspace and admits one work unit before
+each bounded 32-byte scan plus publication; the original token/deadline cover
+validation and counting. Mixed UTF-8 retains scalar membership and the same spent
+invocation authority. Lazy/finite-repeat and extended-class shapes, RTL,
+NonBacktracking and ECMAScript retain their admitted owned paths. Tight working/depth/result policies can
+therefore admit a constant-space count that formerly required VM scratch; this
+changes route-dependent resource costs, not matching semantics.
+
 Bounded literal assertions can avoid child VM storage while still admitting
 their logical assertion depth under the original work, token and deadline scope.
 

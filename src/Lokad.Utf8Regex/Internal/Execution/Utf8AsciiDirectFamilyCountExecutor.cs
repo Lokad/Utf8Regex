@@ -43,11 +43,6 @@ internal static class Utf8AsciiDirectFamilyCountExecutor
                 count = Utf8WordDelimitedTokenExecutor.CountWellFormed(input);
                 return true;
 
-            case Utf8FallbackDirectFamilyKind.AsciiWordBoundedCount when isAscii && plan.MinCount > 0:
-                diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectAsciiWordBounded;
-                count = CountAsciiWordRuns(input, plan.MinCount);
-                return true;
-
             case Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount:
                 diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectAsciiDottedDecimalQuad;
                 count = Utf8AsciiIpv4TokenExecutor.CountAsciiIpv4Tokens(input);
@@ -97,30 +92,35 @@ internal static class Utf8AsciiDirectFamilyCountExecutor
         return false;
     }
 
-    private static int CountAsciiWordRuns(ReadOnlySpan<byte> input, int minCount)
+    // Only the whole-pattern word proof and a fully validated ASCII subject
+    // admit this counter. It keeps the existing run algorithm while carrying
+    // work/interruption through bounded blocks instead of a dormant raw loop.
+    internal static Utf8ExecutionLimitKind TryCountWordRunsValidatedAscii(ReadOnlySpan<byte> input, int minCount,
+        ref Utf8SliceInvocation invocation, out int count)
     {
         var lookup = Utf8SliceScalarClasses.WordCharAsciiLookup;
-        var count = 0;
-        var index = 0;
-        while (index < input.Length)
+        count = 0;
+        var runLength = 0;
+        for (var offset = 0; offset < input.Length;)
         {
-            while (index < input.Length && lookup[input[index]] == 0)
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            invocation.Budget.ThrowIfCancellationRequested();
+            var block = input.Slice(offset, Math.Min(32, input.Length - offset));
+            foreach (var value in block)
             {
-                index++;
+                if (lookup[value] != 0) runLength++;
+                else
+                {
+                    if (runLength >= minCount) count++;
+                    runLength = 0;
+                }
             }
-
-            var start = index;
-            while (index < input.Length && lookup[input[index]] != 0)
-            {
-                index++;
-            }
-
-            if (index - start >= minCount)
-            {
-                count++;
-            }
+            offset += block.Length;
         }
-
-        return count;
+        if (runLength >= minCount) count++;
+        var finalBreach = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        return finalBreach;
     }
 }
