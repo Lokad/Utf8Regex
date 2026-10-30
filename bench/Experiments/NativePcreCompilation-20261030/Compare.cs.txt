@@ -1,0 +1,188 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+var before = Load(Path.GetFullPath(args[0]), "before");
+var after = Load(Path.GetFullPath(args[1]), "after");
+if (!Identity(before.Core).Contains("d203d93f") || !Identity(after.Core).Contains("2f70e6db"))
+    throw new Exception("Unexpected frozen binaries");
+using var process = Process.GetCurrentProcess(); process.ProcessorAffinity = (nint)4;
+var preflight = args.Contains("--preflight");
+var elapsed = Stopwatch.StartNew(); var rows = new List<object>();
+var roots = new List<IDisposable>(); var hosts = new List<Host>();
+var unicodePattern = "[ab](😀|\ue000)|[cd](😀|\ue000)";
+var unicodeText = string.Concat(Enumerable.Repeat("a😀 b\ue000 c😀 d\ue000 ", 64));
+var cases = new[] {
+    new Case("core-literal-count-control", "needle", new string('x', 8192) + "needle", Core: true),
+    new Case("pcre-literal-compilation", "é😀needle", "", Construction: true),
+    new Case("pcre-capture-compilation", @"(?<word>[ab]+)(?:😀|é)\k<word>", "", Construction: true, Funded: true),
+    new Case("pcre-property-compilation", @"[\p{L}😀]+", "", Construction: true, Options: "Ucp"),
+    new Case("pcre-literal-count", "é😀needle", string.Concat(Enumerable.Repeat("xé😀needle! ", 64))),
+    new Case("pcre-guided-count", "(?:ab|cd)+", string.Concat(Enumerable.Repeat("xxabcdcd! ", 64))),
+    new Case("pcre-unicode-count", unicodePattern, unicodeText),
+    new Case("pcre-finite-count", @"(?<=foo)([a-z]+)-([0-9]+)", string.Concat(Enumerable.Repeat("fooalpha-123 foofoo-45 ", 64)), Finite: true),
+    new Case("pcre-funded-finite-count", @"(?<=foo)([a-z]+)-([0-9]+)", string.Concat(Enumerable.Repeat("fooalpha-123 foofoo-45 ", 64)), Finite: true, Funded: true)
+};
+foreach (var item in cases)
+{
+    var input = Encoding.UTF8.GetBytes(item.Text); var sourceBytes = Encoding.UTF8.GetBytes(item.Pattern);
+    var oracle = item.Construction ? null : new Regex(item.Pattern);
+    var expected = item.Construction ? 1 : oracle!.Count(item.Text);
+    var actions = new List<Func<int>>(); var lanes = new List<string>(); var plans = new List<string>();
+    void Add(Pair pair, string label, bool native, bool funded)
+    {
+        var programHost = new Host(); hosts.Add(programHost);
+        var account = funded ? MakeAllowance(pair.Core.GetType("Lokad.Utf8Regex.IUtf8MemoryAllowance")!, programHost) : null;
+        var assembly = item.Core ? pair.Core : pair.Pcre;
+        var type = assembly.GetType(item.Core ? "Lokad.Utf8Regex.Utf8Regex" : "Lokad.Utf8Regex.Pcre2.Utf8Pcre2Regex")!;
+        var compile = CompileBridge(type, pair.Core, native, funded, item.Options);
+        var policy = Policy(pair.Core, item.Finite);
+        var construction = Activator.CreateInstance(pair.Core.GetType("Lokad.Utf8Regex.Utf8ConstructionPolicy")!)!;
+        var source = native ? (object)sourceBytes : item.Pattern;
+        lanes.Add(label);
+        if (item.Construction)
+        {
+            plans.Add("compilation");
+            actions.Add(() => { var program = compile(source, policy, construction, account); (program as IDisposable)?.Dispose(); return 1; });
+            return;
+        }
+        var regex = compile(source, policy, construction, account);
+        if (regex is IDisposable disposable) roots.Add(disposable);
+        var implementation = funded ? regex.GetType().GetField("_regex", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)! : regex;
+        if (!item.Core)
+        {
+            var program = Read(implementation, "DebugCompiledProgram");
+            var operations = Read(program, "Operations");
+            plans.Add(Read(Read(operations, "IsMatch"), "Kind") + " / " + Read(Read(operations, "Count"), "Kind"));
+        }
+        else plans.Add("unchanged Core literal");
+        var count = CountBridge(regex); actions.Add(() => count(input));
+    }
+    if (item.Core) { Add(before, "BeforeText", false, false); Add(after, "AfterText", false, false); }
+    else if (item.Funded && !item.Construction) { Add(before, "BeforeFundedNative", true, true); Add(after, "AfterFundedNative", true, true); }
+    else
+    {
+        Add(before, "BeforeText", false, false); Add(before, "BeforeNative", true, false);
+        Add(after, "AfterText", false, false); Add(after, "AfterNative", true, false);
+        if (item.Funded) { Add(before, "BeforeFundedNative", true, true); Add(after, "AfterFundedNative", true, true); }
+    }
+    foreach (var action in actions) if (action() != expected) throw new Exception("Preflight mismatch: " + item.Name);
+    if (!item.Construction && plans.Distinct().Count() != 1) throw new Exception("Public selector changed: " + item.Name + " " + string.Join(" / ", plans));
+    var held = hosts.Select(host => host.Used).ToArray();
+    if (preflight) { Console.Error.WriteLine("Preflight " + item.Name + ": " + expected); continue; }
+    var n = actions.Count; var iterations = new int[n]; var warmCalls = new long[n];
+    for (var lane = 0; lane < n; lane++)
+    {
+        var warm = Stopwatch.StartNew(); do { Loop(1, actions[lane], expected); warmCalls[lane]++; } while (warm.Elapsed.TotalMilliseconds < 2000);
+        iterations[lane] = 1;
+        while (Loop(iterations[lane], actions[lane], expected).Milliseconds < 80) iterations[lane] = checked(iterations[lane] * 2);
+    }
+    var times = Enumerable.Range(0, n).Select(_ => new double[3]).ToArray();
+    var bytes = Enumerable.Range(0, n).Select(_ => new double[3]).ToArray();
+    var durations = Enumerable.Range(0, n).Select(_ => new double[3]).ToArray();
+    for (var sample = 0; sample < 3; sample++) for (var position = 0; position < n; position++)
+    {
+        var lane = sample % 2 == 0 ? position : n - 1 - position;
+        GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        var measured = Loop(iterations[lane], actions[lane], expected);
+        times[lane][sample] = measured.Milliseconds * 1000 / iterations[lane];
+        bytes[lane][sample] = (double)measured.Bytes / iterations[lane]; durations[lane][sample] = measured.Milliseconds;
+        if (!hosts.Select(host => host.Used).SequenceEqual(held)) throw new Exception("Funding balance changed");
+    }
+    rows.Add(new { item.Name, item.Pattern, item.Construction, item.Options, item.Finite, item.Funded, InputBytes = input.Length,
+        InputSha256 = Convert.ToHexString(SHA256.HashData(input)), Expected = expected, Lanes = lanes, Plans = plans,
+        Iterations = iterations, WarmupCalls = warmCalls, Microseconds = times, AllocatedBytes = bytes, ElapsedMilliseconds = durations });
+    Console.Error.WriteLine("Completed " + item.Name + ": " + string.Join(" / ", times.Select(a => a.Order().ElementAt(1))));
+}
+foreach (var owner in roots) owner.Dispose();
+if (hosts.Any(host => host.Used != 0)) throw new Exception("Final funding leak");
+Console.WriteLine(JsonSerializer.Serialize(new { Runtime = RuntimeInformation.FrameworkDescription, CpuAffinityMask = "4", ElapsedSeconds = elapsed.Elapsed.TotalSeconds,
+    Scope = "Equal-result public PCRE2 text/native compilation and Count, including finite limits and funded compile+close/Count, plus unchanged Core literal Count control. Fixed d203d93f baseline vs 2f70e6db. Nine cases, 34 lanes, 2s warmup/lane, independent 80ms calibration, three alternating samples. Checksums/funding balances consumed after timing, production selectors compared at preflight. One 120s outer cap and at most one focused noise confirmation. No catalog Status, cumulative release-baseline or package claim.",
+    BaselineCore = Identity(before.Core), CandidateCore = Identity(after.Core), BaselinePcre = Identity(before.Pcre), CandidatePcre = Identity(after.Pcre), Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+
+static Pair Load(string root, string name)
+{
+    var context = new AssemblyLoadContext(name);
+    var core = context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.dll"));
+    var pcre = context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.Pcre2.dll"));
+    return new(core, pcre);
+}
+static object Policy(Assembly assembly, bool finite)
+{
+    var type = assembly.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!; var value = Activator.CreateInstance(type)!;
+    if (finite) { type.GetProperty("MaxWorkSteps")!.SetValue(value, 16_000_000UL); type.GetProperty("MaxDepth")!.SetValue(value, 4096U);
+        type.GetProperty("MaxWorkingBytes")!.SetValue(value, 4UL << 20); type.GetProperty("MaxResultBytes")!.SetValue(value, 4UL << 20); }
+    return value;
+}
+static Compiler CompileBridge(Type type, Assembly core, bool native, bool funded, string options)
+{
+    var isPcre = type.Name == "Utf8Pcre2Regex";
+    var method = type.GetMethods().Single(m => m.Name == "Compile" && m.GetParameters().Length == (isPcre ? (funded ? 9 : 8) : (funded ? 8 : 7)) && m.GetParameters()[0].ParameterType == (native ? typeof(ReadOnlySpan<byte>) : typeof(string)));
+    var bridge = new DynamicMethod("CompilePublic", typeof(object), [typeof(object), typeof(object), typeof(object), typeof(object)], typeof(Program).Module, true);
+    var il = bridge.GetILGenerator(); var token = il.DeclareLocal(typeof(CancellationToken));
+    il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Castclass, native ? typeof(byte[]) : typeof(string));
+    if (native) il.Emit(OpCodes.Call, typeof(ReadOnlySpan<byte>).GetMethod("op_Implicit", [typeof(byte[])])!);
+    il.Emit(OpCodes.Ldc_I4, Convert.ToInt32(Enum.Parse(method.GetParameters()[1].ParameterType, options)));
+    if (isPcre) il.Emit(OpCodes.Ldloc, il.DeclareLocal(method.GetParameters()[2].ParameterType));
+    il.Emit(OpCodes.Ldsfld, typeof(Timeout).GetField("InfiniteTimeSpan")!);
+    il.Emit(OpCodes.Ldarg_1); il.Emit(OpCodes.Unbox_Any, core.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!);
+    il.Emit(OpCodes.Ldarg_2); il.Emit(OpCodes.Unbox_Any, core.GetType("Lokad.Utf8Regex.Utf8ConstructionPolicy")!);
+    il.Emit(OpCodes.Ldsfld, typeof(Timeout).GetField("InfiniteTimeSpan")!); il.Emit(OpCodes.Ldloc, token);
+    if (funded) { il.Emit(OpCodes.Ldarg_3); il.Emit(OpCodes.Castclass, core.GetType("Lokad.Utf8Regex.IUtf8MemoryAllowance")!); }
+    il.Emit(OpCodes.Call, method); il.Emit(OpCodes.Ret); return bridge.CreateDelegate<Compiler>();
+}
+static object Read(object instance, string name)
+    => instance.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!.GetValue(instance)!;
+static SpanCount CountBridge(object regex)
+{
+    var type = regex.GetType(); var method = type.GetMethod("Count", [typeof(ReadOnlySpan<byte>)]);
+    if (method is not null) return method.CreateDelegate<SpanCount>(regex);
+    method = type.GetMethods().Single(m => m.Name == "Count");
+    var bridge = new DynamicMethod("PublicFundedCount", typeof(int), [typeof(object), typeof(ReadOnlySpan<byte>)], typeof(Program).Module, true);
+    var il = bridge.GetILGenerator(); il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Castclass, type); il.Emit(OpCodes.Ldarg_1);
+    foreach (var parameter in method.GetParameters().Skip(1))
+    {
+        if (parameter.ParameterType == typeof(CancellationToken)) il.Emit(OpCodes.Ldloc, il.DeclareLocal(typeof(CancellationToken)));
+        else if (parameter.ParameterType.IsValueType) il.Emit(OpCodes.Ldc_I4_0);
+        else il.Emit(OpCodes.Ldnull);
+    }
+    il.Emit(OpCodes.Call, method); il.Emit(OpCodes.Ret);
+    return bridge.CreateDelegate<SpanCount>(regex);
+}
+static object MakeAllowance(Type contract, Host host)
+{
+    var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Host" + Guid.NewGuid().ToString("N")), AssemblyBuilderAccess.Run);
+    var type = assembly.DefineDynamicModule("Host").DefineType("Provider", TypeAttributes.Public | TypeAttributes.Sealed, typeof(object), [contract]);
+    var field = type.DefineField("host", typeof(Host), FieldAttributes.Private); var ctor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, [typeof(Host)]);
+    var il = ctor.GetILGenerator(); il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Call, typeof(object).GetConstructor(Type.EmptyTypes)!); il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Ldarg_1); il.Emit(OpCodes.Stfld, field); il.Emit(OpCodes.Ret);
+    foreach (var declaration in contract.GetMethods()) { var method = type.DefineMethod(declaration.Name, MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.NewSlot, declaration.ReturnType, [typeof(ulong)]);
+        il = method.GetILGenerator(); il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Ldfld, field); il.Emit(OpCodes.Ldarg_1); il.Emit(OpCodes.Callvirt, typeof(Host).GetMethod(declaration.Name)!); il.Emit(OpCodes.Ret); type.DefineMethodOverride(method, declaration); }
+    return Activator.CreateInstance(type.CreateType()!, host)!;
+}
+static string Identity(Assembly assembly) => assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion + " sha256=" + Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location)));
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds, long Bytes) Loop(int count, Func<int> action, int expected)
+{
+    var output = new int[count]; var allocated = GC.GetAllocatedBytesForCurrentThread(); var start = Stopwatch.GetTimestamp();
+    for (var i = 0; i < count; i++) output[i] = action();
+    var elapsed = Stopwatch.GetElapsedTime(start).TotalMilliseconds; var bytes = GC.GetAllocatedBytesForCurrentThread() - allocated;
+    long checksum = 0; foreach (var value in output) { if (value != expected) throw new Exception("Timed mismatch"); checksum = unchecked(checksum + value); }
+    GC.KeepAlive(output); GC.KeepAlive(checksum); return (elapsed, bytes);
+}
+record Pair(Assembly Core, Assembly Pcre);
+record Case(string Name, string Pattern, string Text, bool Core = false, bool Construction = false, bool Finite = false, bool Funded = false, string Options = "None");
+delegate int SpanCount(ReadOnlySpan<byte> input);
+delegate object Compiler(object pattern, object policy, object construction, object? allowance);
+public sealed class Host
+{
+    private long _used; public long Used => Volatile.Read(ref _used);
+    public bool TryReserve(ulong bytes) { if (bytes > long.MaxValue) return false; var delta = (long)bytes; while (true) { var current = Volatile.Read(ref _used); if (delta > long.MaxValue - current) return false; if (Interlocked.CompareExchange(ref _used, current + delta, current) == current) return true; } }
+    public void Release(ulong bytes) { if (Interlocked.Add(ref _used, -checked((long)bytes)) < 0) throw new Exception("Underflow"); }
+}

@@ -1,0 +1,883 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 90.8070068,
+  "Scope": "Equal-result public PCRE2 text/native compilation and Count, including finite limits and funded compile\u002Bclose/Count, plus unchanged Core literal Count control. Fixed d203d93f baseline vs 2f70e6db. Nine cases, 34 lanes, 2s warmup/lane, independent 80ms calibration, three alternating samples. Checksums/funding balances consumed after timing, production selectors compared at preflight. One 120s outer cap and at most one focused noise confirmation. No catalog Status, cumulative release-baseline or package claim.",
+  "BaselineCore": "0.5.0-dev\u002Bd203d93f05c428154e48d220dbf4023456807808 sha256=F7514F8AD204D5010E3A356F393F6B1388689DD3025B3CDAB4F8EA651A2A9D1E",
+  "CandidateCore": "0.5.0-dev\u002B2f70e6db4fadc9175e8a92eb47dcdaa50800f406 sha256=CFC3027DD4B6C58B01B3231BC29F58306A6F76BD7273603C65E6E9FC9F2D87F0",
+  "BaselinePcre": "0.5.0-dev\u002Bd203d93f05c428154e48d220dbf4023456807808 sha256=88C62BBBB98B0A75B5D64355316AACC31E3E3EFA9DBD780FFB85FD8D7C64C49E",
+  "CandidatePcre": "0.5.0-dev\u002B2f70e6db4fadc9175e8a92eb47dcdaa50800f406 sha256=2D22A1E6158FFB25C1EACDE6181EDADA9D0325ACBC75E2A4A54D039D732DB891",
+  "Rows": [
+    {
+      "Name": "core-literal-count-control",
+      "Pattern": "needle",
+      "Construction": false,
+      "Options": "None",
+      "Finite": false,
+      "Funded": false,
+      "InputBytes": 8198,
+      "InputSha256": "8DA47E1CAE661B34F429302D624E9EA43B01F9729C6A36BB3E1D2297395FF58B",
+      "Expected": 1,
+      "Lanes": [
+        "BeforeText",
+        "AfterText"
+      ],
+      "Plans": [
+        "unchanged Core literal",
+        "unchanged Core literal"
+      ],
+      "Iterations": [
+        262144,
+        262144
+      ],
+      "WarmupCalls": [
+        2558350,
+        2801902
+      ],
+      "Microseconds": [
+        [
+          0.5574085235595703,
+          0.5583183288574219,
+          0.5579326629638672
+        ],
+        [
+          0.5676120758056641,
+          0.5674312591552735,
+          0.5675933837890625
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          146.1213,
+          146.3598,
+          146.2587
+        ],
+        [
+          148.7961,
+          148.7487,
+          148.7912
+        ]
+      ]
+    },
+    {
+      "Name": "pcre-literal-compilation",
+      "Pattern": "\u00E9\uD83D\uDE00needle",
+      "Construction": true,
+      "Options": "None",
+      "Finite": false,
+      "Funded": false,
+      "InputBytes": 0,
+      "InputSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "Expected": 1,
+      "Lanes": [
+        "BeforeText",
+        "BeforeNative",
+        "AfterText",
+        "AfterNative"
+      ],
+      "Plans": [
+        "compilation",
+        "compilation",
+        "compilation",
+        "compilation"
+      ],
+      "Iterations": [
+        65536,
+        65536,
+        131072,
+        65536
+      ],
+      "WarmupCalls": [
+        1244733,
+        1114183,
+        1516793,
+        1239048
+      ],
+      "Microseconds": [
+        [
+          1.268116760253906,
+          1.2217315673828126,
+          1.2139144897460936
+        ],
+        [
+          1.4050994873046874,
+          1.25950927734375,
+          1.3829559326171874
+        ],
+        [
+          1.4414466857910155,
+          1.4568885803222658,
+          1.4533226013183593
+        ],
+        [
+          1.6058151245117187,
+          1.6146942138671876,
+          1.6219818115234375
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1840,
+          1840,
+          1840
+        ],
+        [
+          1880,
+          1880,
+          1880
+        ],
+        [
+          1840,
+          1840,
+          1840
+        ],
+        [
+          1880,
+          1880,
+          1880
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          83.1073,
+          80.0674,
+          79.5551
+        ],
+        [
+          92.0846,
+          82.5432,
+          90.6334
+        ],
+        [
+          188.9333,
+          190.9573,
+          190.4899
+        ],
+        [
+          105.2387,
+          105.8206,
+          106.2982
+        ]
+      ]
+    },
+    {
+      "Name": "pcre-capture-compilation",
+      "Pattern": "(?\u003Cword\u003E[ab]\u002B)(?:\uD83D\uDE00|\u00E9)\\k\u003Cword\u003E",
+      "Construction": true,
+      "Options": "None",
+      "Finite": false,
+      "Funded": true,
+      "InputBytes": 0,
+      "InputSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "Expected": 1,
+      "Lanes": [
+        "BeforeText",
+        "BeforeNative",
+        "AfterText",
+        "AfterNative",
+        "BeforeFundedNative",
+        "AfterFundedNative"
+      ],
+      "Plans": [
+        "compilation",
+        "compilation",
+        "compilation",
+        "compilation",
+        "compilation",
+        "compilation"
+      ],
+      "Iterations": [
+        1024,
+        2048,
+        1024,
+        1024,
+        2048,
+        1024
+      ],
+      "WarmupCalls": [
+        8005,
+        27377,
+        11769,
+        22387,
+        25907,
+        14198
+      ],
+      "Microseconds": [
+        [
+          128.5306640625,
+          126.038671875,
+          125.57275390625
+        ],
+        [
+          126.69907226562499,
+          126.23603515625001,
+          126.38286132812502
+        ],
+        [
+          132.21337890625,
+          131.87451171875,
+          132.21933593749998
+        ],
+        [
+          140.08427734375002,
+          139.70078124999998,
+          139.486328125
+        ],
+        [
+          138.24619140625,
+          139.017236328125,
+          137.502197265625
+        ],
+        [
+          150.1984375,
+          150.6435546875,
+          150.92734375
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          65704,
+          65704,
+          65704
+        ],
+        [
+          65792,
+          65792,
+          65792
+        ],
+        [
+          65608,
+          65608,
+          65608
+        ],
+        [
+          65424,
+          65424,
+          65424
+        ],
+        [
+          65904,
+          65904,
+          65904
+        ],
+        [
+          65536,
+          65536,
+          65536
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          131.6154,
+          129.0636,
+          128.5865
+        ],
+        [
+          259.4797,
+          258.5314,
+          258.8321
+        ],
+        [
+          135.3865,
+          135.0395,
+          135.3926
+        ],
+        [
+          143.4463,
+          143.0536,
+          142.834
+        ],
+        [
+          283.1282,
+          284.7073,
+          281.6045
+        ],
+        [
+          153.8032,
+          154.259,
+          154.5496
+        ]
+      ]
+    },
+    {
+      "Name": "pcre-property-compilation",
+      "Pattern": "[\\p{L}\uD83D\uDE00]\u002B",
+      "Construction": true,
+      "Options": "Ucp",
+      "Finite": false,
+      "Funded": false,
+      "InputBytes": 0,
+      "InputSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "Expected": 1,
+      "Lanes": [
+        "BeforeText",
+        "BeforeNative",
+        "AfterText",
+        "AfterNative"
+      ],
+      "Plans": [
+        "compilation",
+        "compilation",
+        "compilation",
+        "compilation"
+      ],
+      "Iterations": [
+        4096,
+        2048,
+        4096,
+        2048
+      ],
+      "WarmupCalls": [
+        43414,
+        35188,
+        54724,
+        38568
+      ],
+      "Microseconds": [
+        [
+          62.466479492187496,
+          61.485205078125,
+          61.4421630859375
+        ],
+        [
+          61.566210937499996,
+          61.97890625,
+          61.45703125
+        ],
+        [
+          64.19052734374999,
+          63.018505859375004,
+          63.6723388671875
+        ],
+        [
+          66.51962890625,
+          66.436181640625,
+          66.152587890625
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          34696,
+          34696,
+          34696
+        ],
+        [
+          34744,
+          34744,
+          34744
+        ],
+        [
+          34560,
+          34560,
+          34560
+        ],
+        [
+          34496,
+          34496,
+          34496
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          255.8627,
+          251.8434,
+          251.6671
+        ],
+        [
+          126.0876,
+          126.9328,
+          125.864
+        ],
+        [
+          262.9244,
+          258.1238,
+          260.8019
+        ],
+        [
+          136.2322,
+          136.0613,
+          135.4805
+        ]
+      ]
+    },
+    {
+      "Name": "pcre-literal-count",
+      "Pattern": "\u00E9\uD83D\uDE00needle",
+      "Construction": false,
+      "Options": "None",
+      "Finite": false,
+      "Funded": false,
+      "InputBytes": 960,
+      "InputSha256": "80DB1FCBD4DBD47A7D564C19E0AE64998A74151C68483E80FBAD7067DAEF386C",
+      "Expected": 64,
+      "Lanes": [
+        "BeforeText",
+        "BeforeNative",
+        "AfterText",
+        "AfterNative"
+      ],
+      "Plans": [
+        "Pcre2Literal / Pcre2Literal",
+        "Pcre2Literal / Pcre2Literal",
+        "Pcre2Literal / Pcre2Literal",
+        "Pcre2Literal / Pcre2Literal"
+      ],
+      "Iterations": [
+        8192,
+        8192,
+        16384,
+        16384
+      ],
+      "WarmupCalls": [
+        146811,
+        210913,
+        184268,
+        200937
+      ],
+      "Microseconds": [
+        [
+          9.64005126953125,
+          8.3630126953125,
+          9.99801025390625
+        ],
+        [
+          9.862939453125,
+          9.7243408203125,
+          10.0904052734375
+        ],
+        [
+          9.939093017578124,
+          9.922662353515625,
+          9.351885986328126
+        ],
+        [
+          9.9679443359375,
+          9.958880615234376,
+          6.119482421875
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          78.9713,
+          68.5098,
+          81.9037
+        ],
+        [
+          80.7972,
+          79.6618,
+          82.6606
+        ],
+        [
+          162.8421,
+          162.5729,
+          153.2213
+        ],
+        [
+          163.3148,
+          163.1663,
+          100.2616
+        ]
+      ]
+    },
+    {
+      "Name": "pcre-guided-count",
+      "Pattern": "(?:ab|cd)\u002B",
+      "Construction": false,
+      "Options": "None",
+      "Finite": false,
+      "Funded": false,
+      "InputBytes": 640,
+      "InputSha256": "1CE8A5362718BB952524BE84A481F32B0FEB1C7EFD796809ED839AADF17D2DBA",
+      "Expected": 64,
+      "Lanes": [
+        "BeforeText",
+        "BeforeNative",
+        "AfterText",
+        "AfterNative"
+      ],
+      "Plans": [
+        "Pcre2Slice / Pcre2Slice",
+        "Pcre2Slice / Pcre2Slice",
+        "Pcre2Slice / Pcre2Slice",
+        "Pcre2Slice / Pcre2Slice"
+      ],
+      "Iterations": [
+        2048,
+        2048,
+        1024,
+        2048
+      ],
+      "WarmupCalls": [
+        23960,
+        26932,
+        28926,
+        27466
+      ],
+      "Microseconds": [
+        [
+          72.83852539062501,
+          78.054052734375,
+          78.003662109375
+        ],
+        [
+          75.562353515625,
+          78.31533203125001,
+          78.39980468750001
+        ],
+        [
+          74.0853515625,
+          79.15996093749999,
+          79.159375
+        ],
+        [
+          73.826123046875,
+          77.9111328125,
+          78.989111328125
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          3552,
+          3552,
+          3552
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          149.1733,
+          159.8547,
+          159.7515
+        ],
+        [
+          154.7517,
+          160.3898,
+          160.5628
+        ],
+        [
+          75.8634,
+          81.0598,
+          81.0592
+        ],
+        [
+          151.1959,
+          159.562,
+          161.7697
+        ]
+      ]
+    },
+    {
+      "Name": "pcre-unicode-count",
+      "Pattern": "[ab](\uD83D\uDE00|\uE000)|[cd](\uD83D\uDE00|\uE000)",
+      "Construction": false,
+      "Options": "None",
+      "Finite": false,
+      "Funded": false,
+      "InputBytes": 1408,
+      "InputSha256": "5F69AF539265A6E39ED24AC37F605EB396CE92A0D23BC2FDD2BB6398BC4DC4F4",
+      "Expected": 256,
+      "Lanes": [
+        "BeforeText",
+        "BeforeNative",
+        "AfterText",
+        "AfterNative"
+      ],
+      "Plans": [
+        "Pcre2Slice / Pcre2Slice",
+        "Pcre2Slice / Pcre2Slice",
+        "Pcre2Slice / Pcre2Slice",
+        "Pcre2Slice / Pcre2Slice"
+      ],
+      "Iterations": [
+        1024,
+        1024,
+        1024,
+        1024
+      ],
+      "WarmupCalls": [
+        19644,
+        18307,
+        21531,
+        19115
+      ],
+      "Microseconds": [
+        [
+          104.17148437499999,
+          103.91689453125,
+          106.74384765625
+        ],
+        [
+          104.40400390625,
+          104.58994140624999,
+          109.49267578125
+        ],
+        [
+          103.18886718750001,
+          103.58916015625,
+          108.7119140625
+        ],
+        [
+          103.53466796875,
+          103.70380859375,
+          108.6458984375
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          4064,
+          4064,
+          4064
+        ],
+        [
+          4064,
+          4064,
+          4064
+        ],
+        [
+          4064,
+          4064,
+          4064
+        ],
+        [
+          4064,
+          4064,
+          4064
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          106.6716,
+          106.4109,
+          109.3057
+        ],
+        [
+          106.9097,
+          107.1001,
+          112.1205
+        ],
+        [
+          105.6654,
+          106.0753,
+          111.321
+        ],
+        [
+          106.0195,
+          106.1927,
+          111.2534
+        ]
+      ]
+    },
+    {
+      "Name": "pcre-finite-count",
+      "Pattern": "(?\u003C=foo)([a-z]\u002B)-([0-9]\u002B)",
+      "Construction": false,
+      "Options": "None",
+      "Finite": true,
+      "Funded": false,
+      "InputBytes": 1472,
+      "InputSha256": "6705C624814489C37A70DC5570A55118A620748487C179368430817A0D4AD545",
+      "Expected": 128,
+      "Lanes": [
+        "BeforeText",
+        "BeforeNative",
+        "AfterText",
+        "AfterNative"
+      ],
+      "Plans": [
+        "Pcre2Slice / Pcre2Slice",
+        "Pcre2Slice / Pcre2Slice",
+        "Pcre2Slice / Pcre2Slice",
+        "Pcre2Slice / Pcre2Slice"
+      ],
+      "Iterations": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "WarmupCalls": [
+        15604,
+        12788,
+        11912,
+        15869
+      ],
+      "Microseconds": [
+        [
+          164.3775390625,
+          164.358203125,
+          165.7115234375
+        ],
+        [
+          164.84121093750002,
+          165.0078125,
+          165.29921875
+        ],
+        [
+          166.535546875,
+          167.6162109375,
+          164.72285156249998
+        ],
+        [
+          166.62578125,
+          166.391015625,
+          165.91054687500002
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3992,
+          3992,
+          3992
+        ],
+        [
+          3992,
+          3992,
+          3992
+        ],
+        [
+          3992,
+          3992,
+          3992
+        ],
+        [
+          3992,
+          3992,
+          3992
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          84.1613,
+          84.1514,
+          84.8443
+        ],
+        [
+          84.3987,
+          84.484,
+          84.6332
+        ],
+        [
+          85.2662,
+          85.8195,
+          84.3381
+        ],
+        [
+          85.3124,
+          85.1922,
+          84.9462
+        ]
+      ]
+    },
+    {
+      "Name": "pcre-funded-finite-count",
+      "Pattern": "(?\u003C=foo)([a-z]\u002B)-([0-9]\u002B)",
+      "Construction": false,
+      "Options": "None",
+      "Finite": true,
+      "Funded": true,
+      "InputBytes": 1472,
+      "InputSha256": "6705C624814489C37A70DC5570A55118A620748487C179368430817A0D4AD545",
+      "Expected": 128,
+      "Lanes": [
+        "BeforeFundedNative",
+        "AfterFundedNative"
+      ],
+      "Plans": [
+        "Pcre2Slice / Pcre2Slice",
+        "Pcre2Slice / Pcre2Slice"
+      ],
+      "Iterations": [
+        512,
+        512
+      ],
+      "WarmupCalls": [
+        11844,
+        11909
+      ],
+      "Microseconds": [
+        [
+          163.93281249999998,
+          163.68730468750002,
+          164.27187500000002
+        ],
+        [
+          166.541015625,
+          166.1451171875,
+          168.2697265625
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          4016,
+          4016,
+          4016
+        ],
+        [
+          4016,
+          4016,
+          4016
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          83.9336,
+          83.8079,
+          84.1072
+        ],
+        [
+          85.269,
+          85.0663,
+          86.1541
+        ]
+      ]
+    }
+  ]
+}
