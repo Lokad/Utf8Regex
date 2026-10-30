@@ -92,7 +92,8 @@ numbers and repeated declarations of a shared slot do not inflate it; captures
 need not participate in a match. `GetGroupNumbers` retains sparse identities.
 
 `TryCopyPatternUtf8(destination, out bytesRequired, token)` copies exact original
-source into caller storage without allocating or exposing a program alias.
+source into caller storage without creating a source string/output buffer or
+exposing a program alias.
 `Done` writes `bytesRequired` bytes; `DestinationTooSmall` reports the full
 required capacity without writing. Legacy text sources with unpaired surrogates
 return `InvalidData`, zero required bytes and no writes. Cancellation preserves
@@ -100,7 +101,9 @@ the supplied token and may leave a partial copy. This explicit metadata operatio
 uses bounded token checkpoints, outside matching timeouts/numeric invocation
 budgets. Caller storage remains the caller's admission/retention responsibility.
 Funded owners expose both members, retain program funding during access and
-reject access after close; successful copies survive owner disposal.
+reject access after close; successful copies survive owner disposal. Funded
+metadata access allocates the existing managed use lease. Zero-allocation
+measurements for ordinary expressions do not include that funded lease.
 
 `GroupNumberFromUtf8Name(name, token)` validates the entire UTF-8 name and
 returns its exact ordinal slot, or -1. Dense numeric-only catalogs preserve

@@ -36,7 +36,7 @@ public sealed class Utf8RegexProgramOwner : IDisposable
     }
 
     /// <inheritdoc cref="Utf8Regex.TryCopyPatternUtf8" />
-    /// <remarks>Holds program admission during the copy and rejects calls after close. The destination belongs to the caller and remains valid after owner disposal; no borrowed program-storage alias is exposed.</remarks>
+    /// <remarks>Holds program admission during the copy and rejects calls after close. The destination belongs to the caller and remains valid after owner disposal; no borrowed program-storage alias is exposed. Access uses the existing managed use lease; it allocates no source/output buffer.</remarks>
     public OperationStatus TryCopyPatternUtf8(Span<byte> destination, out int bytesRequired,
         CancellationToken cancellationToken = default)
     {

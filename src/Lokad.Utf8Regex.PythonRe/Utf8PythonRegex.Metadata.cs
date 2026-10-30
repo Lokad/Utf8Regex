@@ -29,7 +29,7 @@ public sealed partial class Utf8PythonRegex
     /// <param name="bytesRequired">The complete UTF-8 length on Done or DestinationTooSmall; zero on InvalidData.</param>
     /// <param name="cancellationToken">Observed synchronously at bounded copy/conversion checkpoints.</param>
     /// <returns>Done, DestinationTooSmall, or InvalidData for an unrepresentable legacy UTF-16 source.</returns>
-    /// <remarks>No storage is allocated or retained. InvalidData and DestinationTooSmall leave the destination unchanged; cancellation may leave a partial copy. Funded expressions retain program admission during the call and reject calls after close. This explicit metadata operation uses the supplied token independently of matching timeouts and numeric invocation budgets.</remarks>
+    /// <remarks>No source string or buffer is allocated or retained; funded access uses the existing managed program-use lease. InvalidData and DestinationTooSmall leave the destination unchanged; cancellation may leave a partial copy. Funded expressions retain program admission during the call and reject calls after close. This explicit metadata operation uses the supplied token independently of matching timeouts and numeric invocation budgets.</remarks>
     public OperationStatus TryCopyPatternUtf8(Span<byte> destination, out int bytesRequired,
         CancellationToken cancellationToken = default)
     {

@@ -21,7 +21,7 @@ five alternating samples. It addresses observed PCRE2 compilation/Python string-
 export variability, retaining literal and finite/live-token matching controls.
 All statistics below are medians calculated from raw JSON. The confirmation
 driver's stderr progress print retains the original three-sample order statistic;
-it is not the five-sample summary. No additional runs are authorized by this receipt.
+it is not the five-sample summary. This closes the bounded experiment.
 
 ## Public metadata costs (initial run)
 
@@ -81,7 +81,10 @@ catalog or cumulative release-baseline claim follows from these selected control
   Caller destinations need no new program alias/lease and survive owner close.
 - Complete strict UTF-8 name validation precedes lookup/writes. Encoded key
   vectors compare ordinal bytes without normalization or temporary strings.
-  Lookups are linear and interruptible. Funded owners hold existing program uses.
+  Lookups are linear and interruptible. Funded owners hold existing program uses;
+  those leases allocate. Zero-allocation rows above use ordinary expressions,
+  rather than funded metadata calls. No source/output buffer is allocated by the
+  funded copy, but its existing lease cost remains.
 - Explicit metadata copies/lookups use their token, independently of matching
   timeout/numeric invocation budgets, like existing standalone getters. Retained
   keys are admitted during compilation; caller destinations stay caller-owned.
@@ -103,7 +106,8 @@ catalog or cumulative release-baseline claim follows from these selected control
   `artifacts/experiments/native-metadata-20261030/utf8regex-native-metadata-03ce3861.tar.gz`.
   SHA-256: `590C61DBBAD15D747B581BB53EB75F765596D2E0184897D17DA3A878B0B811A0`.
 - Companion `correctness-source-logs.zip` preserves source bundles, focused/full
-  source test logs, intermediate failures and VM identity.
+  source test logs, intermediate failures and VM identity. SHA-256:
+  `77C7AD61E055E1F6575B37634E95BC1C16339D4B999D6CE59311B95642665EEE`.
 
 No package bytes, published benchmark catalogs or historical evidence changed.
 Native template parsing/cache keys, funded replacements, final immutable
