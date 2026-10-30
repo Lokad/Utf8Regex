@@ -185,4 +185,31 @@ public sealed class Utf8NativePreparationTests
         Assert.False(diagnostic.IsSyntaxError, diagnostic.ToString());
         return Assert.IsType<Utf8OwnedRegexTree>(tree);
     }
+
+    [Theory]
+    [InlineData("(?:😀é){3}x|a🙏")]
+    [InlineData("(ab|cd)+")]
+    [InlineData("(?:😀é){100}x")]
+    [InlineData("x(?i:ab)é|y🙏")]
+    public void NativeCoveringPrefixesPreserveScalarClippingAndBranchCoverage(string pattern)
+    {
+        const RegexOptions options = RegexOptions.CultureInvariant;
+        var native = Parse(pattern, options);
+        var text = Assert.IsType<Utf8OwnedRegexTree>(Utf8OwnedTreeParser.TryParse(pattern, options));
+        var expected = Utf8OwnedFindOptimizations.FindAlternatePrefixes(text.Root, options);
+        var actual = Utf8OwnedFindOptimizations.FindAlternatePrefixes(native.Root, options);
+        Assert.NotNull(expected); Assert.NotNull(actual);
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void MixedSourceRopesEmitOneCompleteUtf8Prefix()
+    {
+        var root = Utf8TreeNode.Create(Utf8TreeNodeKind.Concatenate, RegexOptions.CultureInvariant);
+        root.WithChild(Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'x'));
+        root.WithChild(Utf8TreeNode.CreateUtf8Literal(RegexOptions.CultureInvariant, "é😀"u8.ToArray()));
+        root.WithChild(Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, "yz"));
+        Assert.Equal(new[] { "xé😀yz"u8.ToArray() },
+            Utf8OwnedFindOptimizations.FindAlternatePrefixes(root, RegexOptions.CultureInvariant));
+    }
 }

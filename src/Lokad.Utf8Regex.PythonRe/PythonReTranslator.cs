@@ -1,3 +1,4 @@
+using ByteBuilder = Lokad.Utf8Regex.Internal.Utf8ConstructionBuffer<byte>;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using System.Text.RegularExpressions;
 
@@ -24,12 +25,12 @@ internal static partial class PythonReTranslator
     // FindAllCanUseUtf8RegexBackendForPrefixFreeLiteralAlternation.
     public static bool CanUseUtf8IterationFastPath(PythonReNode node) => IsUtf8IterationSafe(node);
 
-    public static bool IsExactLiteral(PythonReNode node) => TryGetExactLiteral(node, out _);
+    public static bool IsExactLiteral(PythonReNode node) => InspectSelection(node, InspectionKind.Literal);
 
     public static bool TryGetCaseSensitiveExactLiteral(
         PythonReNode node,
         PythonReCompileOptions options,
-        out string literal)
+        out byte[] literal)
     {
         if ((options & PythonReCompileOptions.IgnoreCase) == 0 &&
             TryGetExactLiteral(node, out literal))
@@ -37,16 +38,17 @@ internal static partial class PythonReTranslator
             return true;
         }
 
-        literal = string.Empty;
+        literal = [];
         return false;
     }
 
-    public static bool TryGetOptionalExactCaptureFindAllPlan(
+    public static bool CanUseOptionalExactCaptureFindAll(
         PythonReNode node,
-        PythonReCompileOptions options,
-        out string captureValue)
+        PythonReCompileOptions options)
     {
-        captureValue = string.Empty;
+        // Only a Boolean proof escapes. All literal/continuation acquisitions
+        // are scratch; leave their capacity with neither the AST nor facade.
+        using var scratch = Utf8ConstructionScope.Enter();
         if ((options & PythonReCompileOptions.IgnoreCase) != 0 ||
             node is not PythonReSequenceNode sequence)
         {
@@ -77,7 +79,6 @@ internal static partial class PythonReTranslator
                 }
 
                 optionalCaptureIndex = index;
-                captureValue = literal;
             }
         }
 
@@ -135,7 +136,7 @@ internal static partial class PythonReTranslator
         }
 
         using var construction = Utf8ConstructionScope.Enter();
-        using var literal = Utf8ConstructionText.Create();
+        using var literal = ByteBuilder.Create(construction.Budget);
         for (var index = 0; index < sequence.Elements.Count - 1; index++)
         {
             Utf8ConstructionScope.ChargeWork(1);
@@ -145,15 +146,15 @@ internal static partial class PythonReTranslator
                 return false;
             }
 
-            literal.Append(segment);
+            literal.AddRange(segment);
         }
 
-        if (literal.Length == 0)
+        if (literal.Count == 0)
         {
             return false;
         }
 
-        prefixUtf8 = literal.ToAscii();
+        prefixUtf8 = literal.Take();
         construction.Complete();
         return true;
     }
@@ -200,8 +201,8 @@ internal static partial class PythonReTranslator
         }
 
         using var construction = Utf8ConstructionScope.Enter();
-        using var prefix = Utf8ConstructionText.Create();
-        using var suffix = Utf8ConstructionText.Create();
+        using var prefix = ByteBuilder.Create(construction.Budget);
+        using var suffix = ByteBuilder.Create(construction.Budget);
         for (var index = 0; index < sequence.Elements.Count; index++)
         {
             Utf8ConstructionScope.ChargeWork(1);
@@ -216,16 +217,16 @@ internal static partial class PythonReTranslator
                 return false;
             }
 
-            (index < wildcardIndex ? prefix : suffix).Append(segment);
+            (index < wildcardIndex ? prefix : suffix).AddRange(segment);
         }
 
-        if (prefix.Length == 0 || suffix.Length == 0)
+        if (prefix.Count == 0 || suffix.Count == 0)
         {
             return false;
         }
 
-        prefixUtf8 = prefix.ToAscii();
-        suffixUtf8 = suffix.ToAscii();
+        prefixUtf8 = prefix.Take();
+        suffixUtf8 = suffix.Take();
         construction.Complete();
         return true;
     }
@@ -244,11 +245,11 @@ internal static partial class PythonReTranslator
         if (!renderNativePattern)
         {
             construction.Complete();
-            return new PythonReTranslation(string.Empty, ToNativeRegexOptions(parseResult.Options));
+            return new PythonReTranslation([], ToNativeRegexOptions(parseResult.Options));
         }
         using var arena = Utf8ConstructionArena.Create(construction.Budget);
-        using var builder = Utf8ConstructionText.Create();
-        // Core text numbers unnamed groups before named groups; Python numbers by
+        using var builder = ByteBuilder.Create(construction.Budget);
+        // Core numbers unnamed groups before named groups; Python numbers by
         // opening order. This temporary permutation serves text rendering only.
         // The owned Python scalar program uses Python numbers directly.
         var coreNumbersByPython = arena.Allocate<int>(checked(parseResult.CaptureGroupCount + 1), false);
@@ -277,15 +278,9 @@ internal static partial class PythonReTranslator
             }
         }
 
-        AppendTree(parseResult.Root, builder, parseResult.NamedGroups, coreNumbersByPython);
-        var nativePattern = builder.ToText();
-        if ((parseResult.Options & PythonReCompileOptions.Verbose) == 0)
-        {
-            // Owned scalar escaping protects spaces for IgnorePatternWhitespace. Outside
-            // verbose mode a raw space is equivalent and keeps exact literals
-            // visible to the UTF-8 planner instead of forcing fallback.
-            nativePattern = Utf8ConstructionText.Replace(nativePattern, @"\ ", " ");
-        }
+        AppendTree(parseResult.Root, builder, parseResult.NamedGroups, coreNumbersByPython,
+            (parseResult.Options & PythonReCompileOptions.Verbose) != 0);
+        var nativePattern = builder.Take();
 
         var result = new PythonReTranslation(nativePattern, ToNativeRegexOptions(parseResult.Options));
         arena.Complete();
@@ -322,17 +317,17 @@ internal static partial class PythonReTranslator
         }
     }
 
-    internal static string RenderNativeAtom(PythonReNode node)
+    internal static byte[] RenderNativeAtom(PythonReNode node)
     {
         using var construction = Utf8ConstructionScope.Enter();
-        using var builder = Utf8ConstructionText.Create();
+        using var builder = ByteBuilder.Create(construction.Budget);
         AppendTree(node, builder, Utf8ConstructionReadOnlyMap<string, int>.Empty, []);
-        var result = builder.ToText();
+        var result = builder.Take();
         construction.Complete();
         return result;
     }
 
-    private static void AppendInlineFlags(PythonReCompileOptions options, Utf8ConstructionText builder)
+    private static void AppendInlineFlags(PythonReCompileOptions options, ByteBuilder builder)
     {
         if ((options & PythonReCompileOptions.Multiline) != 0)
         {
@@ -405,7 +400,7 @@ internal static partial class PythonReTranslator
     private static bool IsPrefixFreeExactLiteralAlternation(PythonReAlternationNode alternation)
     {
         using var construction = Utf8ConstructionScope.Enter();
-        using var literals = Utf8ConstructionBuffer<string>.Create(construction.Budget);
+        using var literals = Utf8ConstructionBuffer<byte[]>.Create(construction.Budget);
         for (var branchIndex = 0; branchIndex < alternation.Branches.Count; branchIndex++)
         {
             var branch = alternation.Branches[branchIndex];
@@ -429,7 +424,7 @@ internal static partial class PythonReTranslator
                 }
 
                 Utf8ConstructionScope.ChargeWork((ulong)literals[i].Length);
-                if (literals[j].StartsWith(literals[i], StringComparison.Ordinal))
+                if (literals[j].AsSpan().StartsWith(literals[i]))
                 {
                     return false;
                 }
@@ -439,17 +434,17 @@ internal static partial class PythonReTranslator
         return true;
     }
 
-    private static bool TryGetExactLiteral(PythonReNode node, out string literal)
+    private static bool TryGetExactLiteral(PythonReNode node, out byte[] literal)
     {
         using var construction = Utf8ConstructionScope.Enter();
-        using var builder = Utf8ConstructionText.Create();
+        using var builder = ByteBuilder.Create(construction.Budget);
         var complete = Inspect(node, InspectionKind.Literal, default, null, builder);
-        literal = complete ? builder.ToText() : string.Empty;
+        literal = complete ? builder.Take() : [];
         if (complete) construction.Complete();
         return complete;
     }
 
-    private static void AppendCharacterClass(PythonReCharacterClassNode node, Utf8ConstructionText builder)
+    private static void AppendCharacterClass(PythonReCharacterClassNode node, ByteBuilder builder)
     {
         var complete = false;
         for (var index = 0; index < node.Items.Count; index++)
@@ -458,17 +453,13 @@ internal static partial class PythonReTranslator
             if (node.Items[index] is PythonReCharacterClassRangeItem { StartScalar: 0, EndScalar: 0x10ffff })
             { complete = true; break; }
         }
-        var positiveAtom = complete ? NativeScalarPattern : BuildScalarCharacterClassAtom(node.Items);
-        if (!node.IsNegated)
-        {
-            builder.Append(positiveAtom);
-            return;
-        }
-
-        builder.Append("(?:(?!").Append(positiveAtom).Append(')').Append(NativeScalarPattern).Append(')');
+        if (node.IsNegated) builder.Append("(?:(?!");
+        if (complete) builder.Append(NativeScalarPattern);
+        else AppendScalarCharacterClassAtom(node.Items, builder);
+        if (node.IsNegated) builder.Append(')').Append(NativeScalarPattern).Append(')');
     }
 
-    private static string BuildScalarCharacterClassAtom(IReadOnlyList<PythonReCharacterClassItem> items)
+    private static void AppendScalarCharacterClassAtom(IReadOnlyList<PythonReCharacterClassItem> items, ByteBuilder builder)
     {
         using var ranges = Utf8ConstructionBuffer<(int Start, int End)>.Create(Utf8ConstructionScope.CurrentBudget);
         using var fragments = Utf8ConstructionBuffer<string>.Create(Utf8ConstructionScope.CurrentBudget);
@@ -491,8 +482,18 @@ internal static partial class PythonReTranslator
                     break;
             }
         }
-        var rangeClass = BuildRangeCharacterClass(ranges, fragments);
-        return JoinClassBranches(rangeClass, branches.Span);
+        var hasRanges = ranges.Count != 0 || fragments.Count != 0;
+        var count = (hasRanges ? 1 : 0) + branches.Count;
+        if (count == 0) { builder.Append("(?!)"); return; }
+        if (count > 1) builder.Append("(?:");
+        if (hasRanges) AppendRangeCharacterClass(ranges, fragments, builder);
+        for (var index = 0; index < branches.Count; index++)
+        {
+            Utf8ConstructionScope.ChargeWork(1);
+            if (hasRanges || index != 0) builder.Append('|');
+            builder.Append(branches[index]);
+        }
+        if (count > 1) builder.Append(')');
     }
 
     private static void AddScalarRange(Utf8ConstructionBuffer<(int Start, int End)> ranges, int start, int end)
@@ -501,31 +502,9 @@ internal static partial class PythonReTranslator
         if (end >= 0xE000) ranges.Add((Math.Max(start, 0xE000), end));
     }
 
-    private static string JoinClassBranches(string leading, ReadOnlySpan<string> branches)
+    private static void AppendRangeCharacterClass(Utf8ConstructionBuffer<(int Start, int End)> ranges,
+        Utf8ConstructionBuffer<string> fragments, ByteBuilder builder)
     {
-        var count = (leading.Length == 0 ? 0 : 1) + branches.Length;
-        if (count == 0) return "(?!)";
-        if (count == 1) return leading.Length != 0 ? leading : branches[0];
-        using var builder = Utf8ConstructionText.Create();
-        builder.Append("(?:");
-        var first = true;
-        if (leading.Length != 0) { builder.Append(leading); first = false; }
-        foreach (var branch in branches)
-        {
-            if (!first) builder.Append('|');
-            builder.Append(branch); first = false;
-        }
-        return builder.Append(')').ToText();
-    }
-
-    private static string BuildRangeCharacterClass(Utf8ConstructionBuffer<(int Start, int End)> ranges, Utf8ConstructionBuffer<string> fragments)
-    {
-        if (ranges.Count == 0 && fragments.Count == 0)
-        {
-            return string.Empty;
-        }
-
-        using var builder = Utf8ConstructionText.Create();
         builder.Append('[');
         foreach (var fragment in fragments)
         {
@@ -551,10 +530,10 @@ internal static partial class PythonReTranslator
             }
             AppendClassRange(builder, currentStart, currentEnd);
         }
-        return builder.Append(']').ToText();
+        builder.Append(']');
     }
 
-    private static void AppendClassRange(Utf8ConstructionText builder, int start, int end)
+    private static void AppendClassRange(ByteBuilder builder, int start, int end)
     {
         if (start == end)
         {
@@ -567,7 +546,7 @@ internal static partial class PythonReTranslator
         AppendClassChar(builder, end);
     }
 
-    private static void AppendClassChar(Utf8ConstructionText builder, int scalar)
+    private static void AppendClassChar(ByteBuilder builder, int scalar)
     {
         if (scalar > 0xFFFF)
         {
@@ -595,5 +574,5 @@ internal static partial class PythonReTranslator
 }
 
 internal readonly record struct PythonReTranslation(
-    string NativePattern,
+    byte[] NativePatternUtf8,
     RegexOptions NativeRegexOptions);

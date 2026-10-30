@@ -26,7 +26,7 @@ public sealed class Utf8NullPatternTests
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex(null!, default, TimeSpan.Zero));
         Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex(null!, (System.Text.RegularExpressions.RegexOptions)(1 << 30)));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex(null!, default, Timeout.InfiniteTimeSpan, new Utf8ResourcePolicy { MaxWorkSteps = 0 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex((string)null!, default, Timeout.InfiniteTimeSpan, new Utf8ResourcePolicy { MaxWorkSteps = 0 }));
         Assert.Throws<ArgumentOutOfRangeException>(() => Compile(construction: new Utf8ConstructionPolicy { MaxBytes = 0 }));
         Assert.Throws<ArgumentOutOfRangeException>(() => Compile(constructionTimeout: TimeSpan.Zero));
         using var cancellation = new CancellationTokenSource();

@@ -7,6 +7,9 @@
   with owned source bytes, strict validation and byte-coordinate syntax errors.
 - Parse PythonRe UTF-8 pattern sources directly, retaining owned bytes and
   preserving the existing UTF-16 diagnostic-position contract.
+- Emit PythonRe Core patterns, scalar leaves and literal preparation as UTF-8;
+  defer canonical string output and timeout pattern text until requested.
+- Preserve literal spaces inside scoped Python verbose groups in Core guidance.
 - Add caller-funded Core Boolean/count operations and a disposable compiled
   program owner with separate working admission and deterministic close/refunds.
 - Add Core memory cursors with byte-range capture histories, per-advance tokens,

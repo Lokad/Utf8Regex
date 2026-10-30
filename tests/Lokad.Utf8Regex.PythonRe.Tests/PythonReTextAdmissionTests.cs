@@ -24,7 +24,7 @@ public sealed class PythonReTextAdmissionTests
         var allowance = 128ul * (ulong)count;
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, allowance, ulong.MaxValue);
         var result = PythonReTranslator.Translate(parse, true);
-        Assert.Equal(new string(' ', count), result.NativePattern);
+        Assert.Equal(Enumerable.Repeat((byte)' ', count).ToArray(), result.NativePatternUtf8);
         Assert.InRange(owner.Budget.WorkSteps, (ulong)count, allowance);
     }
 
@@ -62,13 +62,13 @@ public sealed class PythonReTextAdmissionTests
     }
 
     [Fact]
-    public void TranslationRetainsNativeTextWithOrdinalNames()
+    public void TranslationRetainsNativeBytesWithOrdinalNames()
     {
         var parse = new PythonReParser("(?P<é>a)(b)(?P=é)").Parse(PythonReCompileOptions.None);
         using var owner = Utf8ConstructionScope.Enter();
         var result = PythonReTranslator.Translate(parse, true);
-        Assert.Equal("(?<g1>a)(b)\\k<g1>", result.NativePattern);
-        Assert.True(owner.Budget.ReservedBytes >= Utf8ConstructionBudget.StringBytes(result.NativePattern.Length));
+        Assert.Equal("(?<g1>a)(b)\\k<g1>"u8.ToArray(), result.NativePatternUtf8);
+        Assert.True(owner.Budget.ReservedBytes >= Utf8ConstructionBudget.ArrayBytes<byte>(result.NativePatternUtf8.Length));
     }
 
     [Theory]

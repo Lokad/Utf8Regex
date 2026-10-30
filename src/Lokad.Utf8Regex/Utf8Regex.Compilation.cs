@@ -7,6 +7,11 @@ namespace Lokad.Utf8Regex;
 /// <inheritdoc />
 public sealed partial class Utf8Regex
 {
+    // Adapter construction already owns its synchronous scope. Reuse it rather
+    // than entering a second public policy/token owner through Compile.
+    internal Utf8Regex(ReadOnlySpan<byte> patternUtf8, RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
+        : this(new Utf8ConstructionPattern(patternUtf8), options, matchTimeout, resourcePolicy, true) { }
+
     /// <summary>Compiles a strict UTF-8 pattern directly with the owned scalar grammar.</summary>
     /// <remarks>The span is borrowed only during this call. Retained source and literal bytes are owned by the expression. Pattern text is projected only by explicit string interoperability or diagnostics.</remarks>
     public static Utf8Regex Compile(ReadOnlySpan<byte> patternUtf8, RegexOptions options = RegexOptions.None)

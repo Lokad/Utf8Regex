@@ -30,7 +30,7 @@ public sealed partial class Utf8PythonRegex
             var invocation = CreateInvocation(cancellationToken);
             ValidateScalarStartOffset(input.Span, startOffsetInBytes);
             return new Utf8PythonMatchCursor(input, ScalarProgram,
-                _nameEntries, startOffsetInBytes, MatchTimeout, Pattern, invocation, _utf8Regex, programUse);
+                _nameEntries, startOffsetInBytes, MatchTimeout, this, invocation, _utf8Regex, programUse);
         }
         catch { programUse?.Dispose(); throw; }
     }
@@ -49,7 +49,7 @@ public sealed partial class Utf8PythonRegex
             var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
             ValidateScalarStartOffset(input.Span, startOffsetInBytes);
             return new Utf8PythonMatchCursor(input, ScalarProgram,
-                _nameEntries, startOffsetInBytes, MatchTimeout, Pattern, invocation, _utf8Regex, programUse);
+                _nameEntries, startOffsetInBytes, MatchTimeout, this, invocation, _utf8Regex, programUse);
         }
         catch { programUse?.Dispose(); throw; }
     }

@@ -986,7 +986,8 @@ internal static partial class PythonReBenchmarkReporter
         var fullMatchInputUtf8 = Encoding.UTF8.GetBytes(fullMatchInput);
         var fullMatchMissUtf8 = "__pythonre_fullmatch_miss__"u8.ToArray();
         var prepared = new Utf8PythonRegex(pattern, options);
-        var coreFullPattern = $@"\A(?:{translation.NativePattern})\z";
+        var nativePatternText = Encoding.UTF8.GetString(translation.NativePatternUtf8);
+        var coreFullPattern = $@"\A(?:{nativePatternText})\z";
         var preparedCoreFull = new Utf8Regex(coreFullPattern, translation.NativeRegexOptions);
         var lazyCoreFull = new Lazy<Utf8Regex>(
             () => new Utf8Regex(coreFullPattern, translation.NativeRegexOptions),
@@ -995,7 +996,7 @@ internal static partial class PythonReBenchmarkReporter
         var reuseIterations = Math.Max(iterations, 5_000);
 
         Console.WriteLine($"Pattern            : {pattern}");
-        Console.WriteLine($"NativePattern      : {translation.NativePattern}");
+        Console.WriteLine($"NativePattern      : {nativePatternText}");
         Console.WriteLine($"InputBytes         : {input.Length}");
         Console.WriteLine($"FullMatchInputBytes: {fullMatchInputUtf8.Length}");
         Console.WriteLine($"Iterations         : {iterations} (fixed, capped at 512)");
@@ -1005,7 +1006,7 @@ internal static partial class PythonReBenchmarkReporter
             () =>
             {
                 var parsed = new PythonReParser(pattern).Parse(options);
-                return PythonReTranslator.Translate(parsed, true).NativePattern.Length;
+                return PythonReTranslator.Translate(parsed, true).NativePatternUtf8.Length;
             },
             iterations,
             samples));
@@ -1018,11 +1019,11 @@ internal static partial class PythonReBenchmarkReporter
             iterations,
             samples));
         PrintOperation("CoreSearch", MeasureOperation(
-            () => new Utf8Regex(translation.NativePattern, translation.NativeRegexOptions).GetHashCode(),
+            () => new Utf8Regex(translation.NativePatternUtf8, translation.NativeRegexOptions, Timeout.InfiniteTimeSpan, default).GetHashCode(),
             iterations,
             samples));
         PrintOperation("CoreFull", MeasureOperation(
-            () => new Utf8Regex($@"\A(?:{translation.NativePattern})\z", translation.NativeRegexOptions).GetHashCode(),
+            () => new Utf8Regex($@"\A(?:{nativePatternText})\z", translation.NativeRegexOptions).GetHashCode(),
             iterations,
             samples));
         PrintOperation("PythonReConstruct", MeasureOperation(
@@ -1942,7 +1943,7 @@ internal sealed class PythonReBenchmarkContext
                 PythonReBenchmarkOperation.FindAllUtf8 &&
             _captureCount == 0)
         {
-            _coreFindAllRegex = new Utf8Regex(translation.NativePattern, translation.NativeRegexOptions);
+            _coreFindAllRegex = new Utf8Regex(translation.NativePatternUtf8, translation.NativeRegexOptions, Timeout.InfiniteTimeSpan, default);
             _preparedCoreRanges = CollectCoreRanges().ToArray();
             _preparedCoreStrings = ProjectCoreRangeStrings(_preparedCoreRanges);
             _preparedCoreUtf8 = ProjectCoreRangeUtf8(_preparedCoreRanges);
@@ -2144,7 +2145,7 @@ internal sealed class PythonReBenchmarkContext
                 plan.Tokens.Select(PythonReBenchmarkReplacementFormatting.GetLiteralText));
             _preparedLiteralReplacementUtf8 = s_strictUtf8.GetBytes(_preparedLiteralReplacement);
             _preparedExactReplacementPatternUtf8 = hasExactReplacementPattern
-                ? s_strictUtf8.GetBytes(exactReplacementPattern)
+                ? exactReplacementPattern
                 : [];
             _preparedReplacementResult = _supportsReplacementPhases
                 ? ExecutePredecodedRequiredReplacement()

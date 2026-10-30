@@ -205,7 +205,7 @@ public sealed class Utf8FindByteFactsTests
         {
             var tree = Utf8OwnedTreeParser.TryParse(row.Pattern, options);
             Assert.NotNull(tree);
-            var prefixes = Utf8OwnedFindOptimizations.FindAlternatePrefixes(tree.Root, options);
+            var prefixes = Utf8OwnedFindOptimizations.FindAlternatePrefixes(tree.Root, options)?.Select(Encoding.UTF8.GetString).ToArray();
             Assert.NotNull(prefixes);
             var input = Encoding.UTF8.GetBytes(row.Subject);
             var regex = new Utf8Regex(row.Pattern, options);
@@ -242,7 +242,7 @@ public sealed class Utf8FindByteFactsTests
             var options = Assert.IsType<RegexOptions>(row[1]);
             var tree = Utf8OwnedTreeParser.TryParse(pattern, options);
             Assert.NotNull(tree);
-            var prefixes = Utf8OwnedFindOptimizations.FindAlternatePrefixes(tree.Root, options);
+            var prefixes = Utf8OwnedFindOptimizations.FindAlternatePrefixes(tree.Root, options)?.Select(Encoding.UTF8.GetString).ToArray();
             if (prefixes is null) continue;
             var program = Utf8OwnedTreeSliceLowerer.TryLower(tree, options);
             Assert.NotNull(program);
@@ -333,7 +333,7 @@ public sealed class Utf8FindByteFactsTests
         using var recovery = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var held = recovery.Budget.AllocateObject(17, static value => new ParentValue(value));
         var heldCheckpoint = recovery.Budget.ReservedBytes;
-        Assert.Null(Utf8OwnedFindOptimizations.FindAlternatePrefixes(declined.Root, declined.Options));
+        Assert.Null(Utf8OwnedFindOptimizations.FindAlternatePrefixes(declined.Root, declined.Options)?.Select(Encoding.UTF8.GetString).ToArray());
         Assert.Equal(128ul, recovery.Budget.ReservedBytes);
         Assert.Equal(heldCheckpoint, recovery.Budget.ReservedBytes);
         Assert.Equal(0ul, recovery.Budget.Depth);
@@ -341,7 +341,7 @@ public sealed class Utf8FindByteFactsTests
         Assert.Equal(17, held.Value);
 
         static object? Produce(Utf8OwnedRegexTree tree, bool facts) => facts
-            ? Utf8OwnedFindFacts.FromTree(tree) : Utf8OwnedFindOptimizations.FindAlternatePrefixes(tree.Root, tree.Options);
+            ? Utf8OwnedFindFacts.FromTree(tree) : Utf8OwnedFindOptimizations.FindAlternatePrefixes(tree.Root, tree.Options)?.Select(Encoding.UTF8.GetString).ToArray();
     }
 
     [Fact]
@@ -361,7 +361,7 @@ public sealed class Utf8FindByteFactsTests
             var tree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
             Assert.NotNull(tree);
             using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-            var prefixes = Utf8OwnedFindOptimizations.FindAlternatePrefixes(tree.Root, tree.Options);
+            var prefixes = Utf8OwnedFindOptimizations.FindAlternatePrefixes(tree.Root, tree.Options)?.Select(Encoding.UTF8.GetString).ToArray();
             Assert.NotNull(prefixes);
             Assert.All(prefixes, prefix => Assert.Equal("a", prefix));
             return (owner.Budget.WorkSteps, owner.Budget.PeakBytes, prefixes.Length);
@@ -373,10 +373,10 @@ public sealed class Utf8FindByteFactsTests
     {
         var folded = Utf8OwnedTreeParser.TryParse("x[ab]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
         Assert.NotNull(folded);
-        Assert.Equal(new[] { "xa", "xb" }, Utf8OwnedFindOptimizations.FindAlternatePrefixes(folded.Root, folded.Options));
+        Assert.Equal(new[] { "xa", "xb" }, Utf8OwnedFindOptimizations.FindAlternatePrefixes(folded.Root, folded.Options)?.Select(Encoding.UTF8.GetString).ToArray());
         var supplementary = Utf8OwnedTreeParser.TryParse("x[😀🙏]", RegexOptions.CultureInvariant);
         Assert.NotNull(supplementary);
-        Assert.Equal(new[] { "x😀", "x🙏" }, Utf8OwnedFindOptimizations.FindAlternatePrefixes(supplementary.Root, supplementary.Options));
+        Assert.Equal(new[] { "x😀", "x🙏" }, Utf8OwnedFindOptimizations.FindAlternatePrefixes(supplementary.Root, supplementary.Options)?.Select(Encoding.UTF8.GetString).ToArray());
         var scalar = Utf8OwnedTreeParser.TryParse("[😀]", RegexOptions.CultureInvariant);
         Assert.NotNull(scalar);
         var repeat = Utf8TreeNode.CreateSetRepeat(scalar.Root.Child(0), RegexOptions.CultureInvariant, 9, 9, false);
@@ -385,7 +385,7 @@ public sealed class Utf8FindByteFactsTests
         concat.WithChild(repeat);
         concat.WithChild(Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'y'));
         Assert.Equal(new[] { "x" + string.Concat(Enumerable.Repeat("😀", 7)) },
-            Utf8OwnedFindOptimizations.FindAlternatePrefixes(concat, RegexOptions.CultureInvariant));
+            Utf8OwnedFindOptimizations.FindAlternatePrefixes(concat, RegexOptions.CultureInvariant)?.Select(Encoding.UTF8.GetString).ToArray());
 
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled,
             RegexOptions.CultureInvariant | RegexOptions.RightToLeft,

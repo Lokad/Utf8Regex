@@ -243,12 +243,16 @@ internal static partial class PythonReScalarCompiler
     private static Utf8SliceNode ParseLeaf(PythonReNode node, RegexOptions options, Utf8ConstructionArena arena)
     {
         var fragment = PythonReTranslator.RenderNativeAtom(node);
-        var tree = Utf8OwnedTreeParser.TryParse(fragment, options);
-        if (tree?.CaptureCatalog is not { } catalog)
-            throw new InvalidOperationException("The validated Python atom has no owned scalar tree: " + fragment);
-        var balancing = false;
-        var lazyCaptures = false;
-        return Utf8OwnedTreeSliceLowerer.TryConvertRoot(tree.Root, catalog, arena, ref balancing, ref lazyCaptures)
-            ?? throw new InvalidOperationException("The validated Python atom has no owned scalar lowering: " + fragment);
+        try
+        {
+            var tree = Utf8OwnedTreeParser.TryParse(fragment, options, out _);
+            if (tree?.CaptureCatalog is not { } catalog)
+                throw new InvalidOperationException("The validated Python atom has no owned scalar tree.");
+            var balancing = false;
+            var lazyCaptures = false;
+            return Utf8OwnedTreeSliceLowerer.TryConvertRoot(tree.Root, catalog, arena, ref balancing, ref lazyCaptures)
+                ?? throw new InvalidOperationException("The validated Python atom has no owned scalar lowering.");
+        }
+        finally { arena.Budget.ReleaseArray(fragment, false); }
     }
 }

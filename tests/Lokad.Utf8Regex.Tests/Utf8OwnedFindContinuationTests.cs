@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
@@ -85,7 +86,7 @@ public sealed class Utf8OwnedFindContinuationTests
         Assert.Null(Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(body));
         Assert.Equal("b", Utf8OwnedFindOptimizations.TryExtractLongestLiteral(body));
         Assert.Equal(new[] { "a" + new string('b', depth) },
-            Utf8OwnedFindOptimizations.FindAlternatePrefixes(body, RegexOptions.CultureInvariant));
+            Utf8OwnedFindOptimizations.FindAlternatePrefixes(body, RegexOptions.CultureInvariant)?.Select(Encoding.UTF8.GetString).ToArray());
         Assert.Equal(((string Literal, int Distance)?)("b", depth),
             Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(body));
         Assert.Null(Utf8OwnedFindOptimizations.FindFixedDistanceSets(body));
@@ -108,7 +109,7 @@ public sealed class Utf8OwnedFindContinuationTests
         Assert.Null(Utf8OwnedFindOptimizations.ComputeByteWidth(body).Maximum);
         Assert.Null(Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(body));
         Assert.Null(Utf8OwnedFindOptimizations.TryExtractLongestLiteral(body));
-        Assert.Equal(new[] { "abababab" }, Utf8OwnedFindOptimizations.FindAlternatePrefixes(body, RegexOptions.CultureInvariant));
+        Assert.Equal(new[] { "abababab" }, Utf8OwnedFindOptimizations.FindAlternatePrefixes(body, RegexOptions.CultureInvariant)?.Select(Encoding.UTF8.GetString).ToArray());
         Assert.Null(Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(body));
         Assert.Null(Utf8OwnedFindOptimizations.FindFixedDistanceSets(body));
     }
@@ -123,14 +124,14 @@ public sealed class Utf8OwnedFindContinuationTests
         var expected = pattern.StartsWith("a|", StringComparison.Ordinal)
             ? new[] { "a", "bc", "de" } : new[] { "ab", "cd", "ef" };
         Assert.Equal(prefix, expected[0]);
-        Assert.Equal(expected, Utf8OwnedFindOptimizations.FindAlternatePrefixes(tree.Root, tree.Options));
+        Assert.Equal(expected, Utf8OwnedFindOptimizations.FindAlternatePrefixes(tree.Root, tree.Options)?.Select(Encoding.UTF8.GetString).ToArray());
     }
 
     [Fact]
     public void StoppedFirstAlternativeKeepsItsPrefixAndLaterBranches()
     {
         var tree = Wrapped(@"^ab\d|cd", RegexOptions.CultureInvariant, Utf8TreeNodeKind.Group, 16385);
-        var prefixes = Utf8OwnedFindOptimizations.FindAlternatePrefixes(tree.Root, tree.Options);
+        var prefixes = Utf8OwnedFindOptimizations.FindAlternatePrefixes(tree.Root, tree.Options)?.Select(Encoding.UTF8.GetString).ToArray();
         Assert.NotNull(prefixes);
         Assert.Equal(new[] { "ab", "cd" }, prefixes);
     }

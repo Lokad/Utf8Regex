@@ -568,7 +568,7 @@ public sealed class Utf8OwnedFindOptimizationsTests
     {
         var ownedTree = Utf8OwnedTreeParser.TryParse(pattern, options);
         Assert.NotNull(ownedTree);
-        Assert.Equal(expected, Utf8OwnedFindOptimizations.FindAlternatePrefixes(ownedTree.Root, options));
+        Assert.Equal(expected, Utf8OwnedFindOptimizations.FindAlternatePrefixes(ownedTree.Root, options)?.Select(Encoding.UTF8.GetString).ToArray());
     }
 
     public static IEnumerable<object?[]> FdlCases()

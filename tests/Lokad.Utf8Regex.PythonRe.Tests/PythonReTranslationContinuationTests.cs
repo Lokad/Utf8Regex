@@ -67,7 +67,7 @@ public sealed class PythonReTranslationContinuationTests
         var pattern = string.Concat(Enumerable.Repeat("(?:", depth)) + "éab" + new string(')', depth);
         var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
         Assert.True(PythonReTranslator.TryGetCaseSensitiveExactLiteral(parse.Root, parse.Options, out var literal));
-        Assert.Equal("éab", literal);
+        Assert.Equal("éab"u8.ToArray(), literal);
         Assert.True(PythonReTranslator.CanUseUtf8IterationFastPath(parse.Root));
         var regex = new Utf8PythonRegex(pattern);
         Assert.Equal("éab", regex.SearchToString("xéabz"u8));
@@ -204,8 +204,8 @@ public sealed class PythonReTranslationContinuationTests
         var parse = new PythonReParser("a{2147483647}|b{2147483647}").Parse(PythonReCompileOptions.None);
         Assert.False(PythonReTranslator.CanMatchEmpty(parse.Root, parse));
         Assert.True(PythonReTranslator.GetWidth(parse.Root, parse).Max > 0);
-        Assert.Equal("(?<=a{2147483647}|b{2147483647})", PythonReTranslator.Translate(
-            new PythonReParser("(?<=a{2147483647}|b{2147483647})").Parse(PythonReCompileOptions.None), true).NativePattern);
+        Assert.Equal("(?<=a{2147483647}|b{2147483647})"u8.ToArray(), PythonReTranslator.Translate(
+            new PythonReParser("(?<=a{2147483647}|b{2147483647})").Parse(PythonReCompileOptions.None), true).NativePatternUtf8);
     }
 
     [Theory]
@@ -221,8 +221,8 @@ public sealed class PythonReTranslationContinuationTests
         var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
         if (error is null)
         {
-            var native = PythonReTranslator.Translate(parse, true).NativePattern;
-            Assert.EndsWith(")x", native);
+            var native = PythonReTranslator.Translate(parse, true).NativePatternUtf8;
+            Assert.True(native.AsSpan().EndsWith(")x"u8));
         }
         else Assert.StartsWith(error, Assert.Throws<PythonRePatternException>(() => PythonReTranslator.Translate(parse, true)).Message);
     }

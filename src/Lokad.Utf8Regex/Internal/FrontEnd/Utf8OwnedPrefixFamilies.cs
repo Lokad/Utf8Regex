@@ -7,17 +7,17 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 /// Complete means the family also spells the entire consumed fragment: only
 /// complete fragments can acquire a following concatenated suffix. Alternation
 /// retains every branch, including stopped branches. Trees remain in logical
-/// subject order for both execution directions. Indexed pattern ropes avoid
-/// repeated intermediate string copies; only final strings are materialized.</summary>
+/// subject order for both execution directions. Indexed pattern ropes borrow text or byte literals; only final UTF-8
+/// prefixes are materialized, without an intermediate UTF-16 prefix.</summary>
 internal static class Utf8OwnedPrefixFamilies
 {
     private readonly record struct Family(int Start, int Count, bool Complete);
-    private readonly record struct Part(int Left, int Right, string? Text, int Scalar,
-        int TextLength, int ScalarLength);
+    private readonly record struct Part(int Left, int Right, object? Source, int Scalar,
+        int ByteLength, int ScalarLength, int SourceLength = 0);
     private readonly record struct Frame(Utf8TreeNode Node, int Next, Family Accumulated, int BaseScalars,
         Utf8ConstructionBuffer<int>? UnionMembers);
 
-    internal static string[]? Find(Utf8TreeNode root, RegexOptions options)
+    internal static byte[][]? Find(Utf8TreeNode root, RegexOptions options)
     {
         using var scope = Utf8ConstructionScope.Enter();
         using var frames = Utf8ConstructionFrames<Frame>.Create(scope.Budget, new(root, -1, default, 0, null));
@@ -102,7 +102,7 @@ internal static class Utf8OwnedPrefixFamilies
                 scope.Budget.ChargeWork(1);
                 if (parts[families[result.Start + index]].ScalarLength < minimum) return null;
             }
-            var output = scope.Budget.AllocateArray<string>(result.Count, false);
+            var output = scope.Budget.AllocateArray<byte[]>(result.Count, false);
             for (var index = 0; index < result.Count; index++)
             {
                 scope.Budget.ChargeWork(1);
@@ -154,15 +154,15 @@ internal static class Utf8OwnedPrefixFamilies
         {
             scope.Budget.ChargeWork(1);
             var result = parts.Count;
-            parts.Add(new(0, 0, null, scalar, new Rune(scalar).Utf16SequenceLength, 1));
+            parts.Add(new(0, 0, null, scalar, new Rune(scalar).Utf8SequenceLength, 1));
             return result;
         }
 
-        int TextPart(string text, int textLength, int scalarLength)
+        int SourcePart(object source, int sourceLength, int scalarLength, int byteLength)
         {
             scope.Budget.ChargeWork(1);
             var result = parts.Count;
-            parts.Add(new(0, 0, text, 0, textLength, scalarLength));
+            parts.Add(new(0, 0, source, 0, byteLength, scalarLength, sourceLength));
             return result;
         }
 
@@ -172,11 +172,11 @@ internal static class Utf8OwnedPrefixFamilies
             if (left == 0) return right;
             if (right == 0) return left;
             var scalarLength = (long)parts[left].ScalarLength + parts[right].ScalarLength;
-            var textLength = (long)parts[left].TextLength + parts[right].TextLength;
+            var byteLength = (long)parts[left].ByteLength + parts[right].ByteLength;
             // An unrepresentable optional proof must not replace the owned VM.
-            if (textLength > int.MaxValue || scalarLength > int.MaxValue) { unrepresentable = true; return 0; }
+            if (byteLength > int.MaxValue || scalarLength > int.MaxValue) { unrepresentable = true; return 0; }
             var result = parts.Count;
-            parts.Add(new(left, right, null, 0, (int)textLength, (int)scalarLength));
+            parts.Add(new(left, right, null, 0, (int)byteLength, (int)scalarLength));
             return result;
         }
 
@@ -301,24 +301,32 @@ internal static class Utf8OwnedPrefixFamilies
 
         Family Text(Utf8TreeNode node)
         {
-            // A byte literal is consumed text, never an empty fragment. Until
-            // this text-only proof carries byte ropes, stop at that boundary.
-            if (node.LiteralUtf8 is { Length: > 0 }) return empty with { Complete = false };
-            if (node.Str is not { Length: > 0 } text) return empty;
+            var native = node.LiteralUtf8;
+            var text = node.Str;
+            var length = native?.Length ?? text?.Length ?? 0;
+            if (length == 0) return empty;
             var scalars = 0;
-            for (var offset = 0; offset < text.Length; scalars++)
+            var bytes = 0;
+            for (var offset = 0; offset < length; scalars++)
             {
                 scope.Budget.ChargeWork(1);
-                if (Rune.DecodeFromUtf16(text.AsSpan(offset), out var scalar, out var consumed) != System.Buffers.OperationStatus.Done ||
+                Rune scalar; int consumed;
+                var status = native is not null
+                    ? Rune.DecodeFromUtf8(native.AsSpan(offset), out scalar, out consumed)
+                    : Rune.DecodeFromUtf16(text.AsSpan(offset), out scalar, out consumed);
+                if (status != System.Buffers.OperationStatus.Done ||
                     node.MatchCaseInsensitive && !AsciiFiber(scalar.Value, node.Options)) return empty with { Complete = false };
                 offset += consumed;
+                bytes = checked(bytes + scalar.Utf8SequenceLength);
             }
-            if (!node.MatchCaseInsensitive || topFold) return One(TextPart(text, text.Length, scalars));
+            if (!node.MatchCaseInsensitive || topFold)
+                return One(SourcePart((object?)native ?? text!, length, scalars, bytes));
             var result = empty;
-            foreach (var value in text)
+            // Fiber admission above proved every folded source scalar ASCII.
+            for (var offset = 0; offset < length; offset++)
             {
                 scope.Budget.ChargeWork(1);
-                result = Product(result, Literal(value, true, node.Options));
+                result = Product(result, Literal(native is not null ? native[offset] : text![offset], true, node.Options));
                 if (!result.Complete) break;
             }
             return result;
@@ -339,16 +347,20 @@ internal static class Utf8OwnedPrefixFamilies
                 {
                     pending.Push(part.Right); pending.Push(part.Left); continue;
                 }
-                if (part.ScalarLength > maximum && part.Text is { } text)
+                if (part.ScalarLength > maximum && part.Source is { } source)
                 {
                     var offset = 0;
+                    var bytes = 0;
                     for (var index = 0; index < maximum; index++)
                     {
                         scope.Budget.ChargeWork(1);
-                        _ = Rune.DecodeFromUtf16(text.AsSpan(offset), out _, out var consumed);
+                        Rune scalar; int consumed;
+                        if (source is byte[] native) _ = Rune.DecodeFromUtf8(native.AsSpan(offset), out scalar, out consumed);
+                        else _ = Rune.DecodeFromUtf16(((string)source).AsSpan(offset), out scalar, out consumed);
                         offset += consumed;
+                        bytes += scalar.Utf8SequenceLength;
                     }
-                    id = TextPart(text, offset, maximum);
+                    id = SourcePart(source, offset, maximum, bytes);
                     part = parts[id];
                 }
                 result = Join(result, id);
@@ -400,30 +412,27 @@ internal static class Utf8OwnedPrefixFamilies
             _ => empty with { Complete = false },
         };
 
-        string Render(int rootPart)
+        byte[] Render(int rootPart)
         {
-            var chars = scope.Budget.AllocateArray<char>(parts[rootPart].TextLength, false);
-            try
+            var bytes = scope.Budget.AllocateArray<byte>(parts[rootPart].ByteLength, false);
+            using var pending = Utf8ConstructionFrames<int>.Create(scope.Budget, rootPart);
+            var offset = 0;
+            while (pending.Count != 0)
             {
-                using var pending = Utf8ConstructionFrames<int>.Create(scope.Budget, rootPart);
-                var offset = 0;
-                while (pending.Count != 0)
+                scope.Budget.ChargeWork(1);
+                var part = parts[pending[pending.Count - 1]];
+                pending.Pop();
+                if (part.Left != 0 || part.Right != 0)
                 {
-                    scope.Budget.ChargeWork(1);
-                    var part = parts[pending[pending.Count - 1]];
-                    pending.Pop();
-                    if (part.Left != 0 || part.Right != 0)
-                    {
-                        pending.Push(part.Right); pending.Push(part.Left); continue;
-                    }
-                    scope.Budget.ChargeWork((ulong)part.TextLength);
-                    if (part.Text is { } text) text.AsSpan(0, part.TextLength).CopyTo(chars.AsSpan(offset));
-                    else if (part.ScalarLength != 0) _ = new Rune(part.Scalar).EncodeToUtf16(chars.AsSpan(offset));
-                    offset += part.TextLength;
+                    pending.Push(part.Right); pending.Push(part.Left); continue;
                 }
-                return scope.Budget.CopyText(chars);
+                scope.Budget.ChargeWork((ulong)part.ByteLength);
+                if (part.Source is byte[] native) native.AsSpan(0, part.SourceLength).CopyTo(bytes.AsSpan(offset));
+                else if (part.Source is string text) _ = Encoding.UTF8.GetBytes(text.AsSpan(0, part.SourceLength), bytes.AsSpan(offset));
+                else if (part.ScalarLength != 0) _ = new Rune(part.Scalar).EncodeToUtf8(bytes.AsSpan(offset));
+                offset += part.ByteLength;
             }
-            finally { scope.Budget.ReleaseArray(chars, false); }
+            return bytes;
         }
     }
 

@@ -6,6 +6,17 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReTranslationLifetimeTests
 {
     [Theory]
+    [InlineData("distinct_native_literal_abc123")]
+    [InlineData("(?P<nomé>é😀)+")]
+    [InlineData("(?#owned source only)alpha|omega")]
+    public void NativeCompilationAndExplicitPatternProjectionDoNotRetainWholePatternText(string pattern)
+    {
+        using var regex = new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern));
+        Assert.Equal(pattern, regex.Pattern);
+        Assert.DoesNotContain(ReachableStrings(regex), text => text == pattern);
+    }
+
+    [Theory]
     [InlineData(@"\w+", "alpha")]
     [InlineData(@"(?P<word>\w+)", "alpha")]
     [InlineData(@"\d+", "123")]
@@ -92,7 +103,7 @@ public sealed class PythonReTranslationLifetimeTests
     {
         const string pattern = "(?P<α>a)?(?(α)b|)";
         var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
-        var rendered = PythonReTranslator.Translate(parse, true).NativePattern;
+        var rendered = Encoding.UTF8.GetString(PythonReTranslator.Translate(parse, true).NativePatternUtf8);
         Assert.NotEqual(pattern, rendered);
         foreach (var regex in new[] { new Utf8PythonRegex(pattern), new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern)) })
         {
@@ -123,19 +134,19 @@ public sealed class PythonReTranslationLifetimeTests
         const string pattern = "(?P<α>a)?(?(α)b|)";
         var rendered = Translate(true);
         var scalar = Translate(false);
-        Assert.Equal(string.Empty, scalar.Pattern);
+        Assert.Empty(scalar.Pattern);
         Assert.Equal(rendered.Name, scalar.Name);
         Assert.Equal("α", scalar.Name);
         Assert.True(scalar.Work < rendered.Work);
         Assert.True(scalar.PeakBytes < rendered.PeakBytes);
 
-        static (string Pattern, string Name, ulong Work, ulong PeakBytes) Translate(bool render)
+        static (byte[] Pattern, string Name, ulong Work, ulong PeakBytes) Translate(bool render)
         {
             using var scope = Utf8ConstructionScope.Enter();
             var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
             var translation = PythonReTranslator.Translate(parse, render);
             var name = PythonReScalarCompiler.Compile(parse).GroupNames[1];
-            return (translation.NativePattern, name, scope.Budget.WorkSteps, scope.Budget.PeakBytes);
+            return (translation.NativePatternUtf8, name, scope.Budget.WorkSteps, scope.Budget.PeakBytes);
         }
     }
 

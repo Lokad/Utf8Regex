@@ -21,7 +21,7 @@ public sealed partial class Utf8PythonRegex
         var invocation = CreateInvocation(cancellationToken);
         var program = kind == 2 ? GetScalarFullProgram(input, invocation.Budget.Deadline, cancellationToken) : ScalarProgram;
         return new PythonReScalarMatchCursor(input, program,
-            startOffsetInBytes, MatchTimeout, _utf8Regex, Pattern, invocation);
+            startOffsetInBytes, MatchTimeout, _utf8Regex, this, invocation);
     }
 
     private Utf8SliceProgram GetScalarFullProgram(ReadOnlySpan<byte> input,
@@ -235,6 +235,7 @@ public sealed partial class Utf8PythonRegex
         var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
         Utf8InvocationResultBuffer<string> scalars = default;
         Utf8InvocationResultBuffer<string[]> tuples = default;
+        string? canonical = null;
         try
         {
             var count = CaptureGroupCount;
@@ -243,8 +244,8 @@ public sealed partial class Utf8PythonRegex
                 if (count <= 1)
                 {
                     var success = cursor.TryGetCaptureByteRange(count, out var start, out var end);
-                    cursor.AddResult(ref scalars, !success ? string.Empty : count == 1 && _optionalExactCaptureFindAllValue is { } exact
-                        ? exact : cursor.GetText(start, end));
+                    cursor.AddResult(ref scalars, !success ? string.Empty : count == 1 && _canUseOptionalExactCaptureFindAll
+                        ? canonical ??= cursor.GetText(start, end) : cursor.GetText(start, end));
                 }
                 else
                 {
@@ -405,7 +406,7 @@ public sealed partial class Utf8PythonRegex
         retained = null;
         ValidateScalarStartOffset(input, startOffsetInBytes);
         var cursor = new PythonReScalarMatchCursor(input, ScalarProgram,
-            startOffsetInBytes, MatchTimeout, _utf8Regex, Pattern, invocation);
+            startOffsetInBytes, MatchTimeout, _utf8Regex, this, invocation);
         Utf8SliceOutputWriter writer = default;
         try
         {

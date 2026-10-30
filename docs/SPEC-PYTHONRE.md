@@ -53,8 +53,17 @@ UTF-8 pattern overloads validate strict input and parse scalars directly through
 the same Python grammar. Retained source owns an admitted byte copy; caller
 buffer reuse after compilation cannot alter the expression. `Pattern` explicitly
 projects an uncached string for byte-compiled expressions. Name/escape diagnostics
-may project selected lexemes. Optional Core preparation still renders translated
-pattern text; its native-output migration remains unfinished.
+may project selected lexemes. Core preparation and scalar leaves emit admitted
+UTF-8 directly, preserving lexical flag scopes. Exact literal preparation and
+prefix proofs also retain bytes. Scalar/cursor setup borrows its expression for
+timeout diagnostics; successful operations do not implicitly request `Pattern`.
+
+Canonical `FindAllToStrings` values are decoded only when that string output is
+requested. Repeated exact values share one string within an invocation; it is
+admitted as result/working capacity rather than borrowed from a prepared string.
+This can change covered capacity/work compared with earlier development builds.
+No-match operations acquire no canonical output string. Borrowed UTF-8/range
+results and retained-result lifetimes keep their existing contracts.
 
 Supported families include literals/classes/standard escapes, ordered alternatives,
 greedy/lazy/possessive repetition, captures/named groups, references,

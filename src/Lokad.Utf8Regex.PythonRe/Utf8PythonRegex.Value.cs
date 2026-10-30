@@ -171,7 +171,7 @@ public sealed partial class Utf8PythonRegex
         Utf8SliceProgram program, CancellationToken cancellationToken)
     {
         var cursor = new PythonReScalarMatchCursor(input, program,
-            startOffsetInBytes, MatchTimeout, _utf8Regex, Pattern,
+            startOffsetInBytes, MatchTimeout, _utf8Regex, this,
             CreateInvocation(cancellationToken));
         try
         {

@@ -64,7 +64,7 @@ public sealed class PythonReGroupNumberingOwnershipTests
             expected[pair.Value] = nextNamed++;
             var alias = "g" + pair.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
             Assert.Equal(expected[pair.Value], managed.GroupNumberFromName(alias));
-            Assert.Equal(expected[pair.Value], new Utf8Regex(translation.NativePattern, translation.NativeRegexOptions).GroupNumberFromName(alias));
+            Assert.Equal(expected[pair.Value], new Utf8Regex(translation.NativePatternUtf8, translation.NativeRegexOptions, Timeout.InfiniteTimeSpan, default).GroupNumberFromName(alias));
         }
 
         var program = PythonReScalarCompiler.Compile(parseResult);

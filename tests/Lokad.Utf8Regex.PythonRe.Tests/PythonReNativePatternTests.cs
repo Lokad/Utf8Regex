@@ -89,6 +89,49 @@ public sealed class PythonReNativePatternTests
     }
 
     [Fact]
+    public void NativeWarmCallsAndCursorCreationDoNotProjectWholePatternText()
+    {
+        var pattern = "(?#" + string.Concat(Enumerable.Repeat("😀é", 16384)) + ")(?P<word>é)+";
+        using var regex = new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern));
+        var input = "éé"u8.ToArray();
+        for (var i = 0; i < 16; i++)
+        {
+            _ = regex.Count(input);
+            using var cursor = regex.CreateMatchCursor(input);
+            _ = cursor.MoveNext(out _);
+        }
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var count = 0;
+        for (var i = 0; i < 8; i++)
+        {
+            count += regex.Count(input);
+            using var cursor = regex.CreateMatchCursor(input);
+            if (cursor.MoveNext(out _)) count++;
+        }
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.Equal(16, count);
+        // Sixteen public operations allocate less than one complete source-text
+        // copy. Their small VM/result metadata remains intentionally allowed.
+        Assert.True(allocated < pattern.Length * 2L, $"Allocated {allocated} bytes for native operations.");
+    }
+
+    [Theory]
+    [InlineData("(?x:a\\ b)", "a b", "ab")]
+    [InlineData("(?x:a\\ b)|c", "a b", "ab")]
+    [InlineData("(?x:a(?-x: )b)", "a b", "ab")]
+    public void ScopedVerboseLiteralSpacesKeepTheirMeaning(string pattern, string hit, string miss)
+    {
+        foreach (var regex in new[] { new Utf8PythonRegex(pattern), new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern)) })
+        {
+            using (regex)
+            {
+                Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(hit)));
+                Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(miss)));
+            }
+        }
+    }
+
+    [Fact]
     public void FailedNativeDiagnosticProjectionCanBeInterruptedWithoutPublishingAProgram()
     {
         var pattern = Encoding.UTF8.GetBytes(new string('é', 512) + ")");

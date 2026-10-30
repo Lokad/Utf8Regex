@@ -10,7 +10,7 @@ internal sealed class Utf8OwnedFindFacts
 {
     private readonly record struct ConstructionState(bool IsFixedLength, int MinRequiredLength,
         int? MaxPossibleLength, Utf8TreeNodeKind TrailingAnchor, string? LeadingLiteral,
-        string? LongestLiteral, string[]? AlternatePrefixes, (string Literal, int Distance)? FixedDistanceLiteral,
+        string? LongestLiteral, byte[][]? AlternatePrefixes, (string Literal, int Distance)? FixedDistanceLiteral,
         Utf8OwnedFindOptimizations.OwnedSet[]? FixedDistanceSets);
 
     private Utf8OwnedFindFacts(ConstructionState state)
@@ -55,7 +55,7 @@ internal sealed class Utf8OwnedFindFacts
 
     public string? LongestLiteral { get; }
 
-    public string[]? AlternatePrefixes { get; }
+    public byte[][]? AlternatePrefixes { get; }
 
     public (string Literal, int Distance)? FixedDistanceLiteral { get; }
 

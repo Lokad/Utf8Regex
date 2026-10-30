@@ -19,7 +19,9 @@ internal struct PythonReScalarMatchState
     private readonly Utf8Regex? _candidateRegex;
     private readonly int _leadingAsciiLow;
     private readonly int _leadingAsciiHigh;
-    private readonly string _pattern;
+    // Production retains the expression for lazy diagnostics. Standalone
+    // diagnostic/test cursors can supply text without constructing a facade.
+    private readonly object _timeoutSource;
     private readonly TimeSpan _timeout;
     private Utf8SliceInvocation _invocation;
     private Utf8InvocationResultLedger _results;
@@ -34,13 +36,13 @@ internal struct PythonReScalarMatchState
     private int _position;
 
     internal PythonReScalarMatchState(ReadOnlySpan<byte> input, Utf8SliceProgram program,
-        int startOffsetInBytes, TimeSpan timeout, string pattern,
+        int startOffsetInBytes, TimeSpan timeout, object pattern,
         Utf8SliceInvocation invocation, Utf8Regex? candidateRegex)
     {
         this = default;
         _program = program;
         _leadingAsciiLow = _leadingAsciiHigh = -1;
-        _pattern = pattern;
+        _timeoutSource = pattern;
         _timeout = timeout;
         _position = startOffsetInBytes;
         _slots = new Utf8SliceSlots([], []);
@@ -171,7 +173,8 @@ internal struct PythonReScalarMatchState
 
     internal readonly RegexMatchTimeoutException TimeoutFailure(ReadOnlySpan<byte> input)
         => Utf8Regex.CreateMatchTimeoutException(_invocation.Ledger.HasMemoryAllowance ? ReadOnlySpan<byte>.Empty : input,
-            _pattern, _timeout, _invocation.Budget.Limits);
+            _timeoutSource is Utf8PythonRegex regex ? regex.Pattern : (string)_timeoutSource,
+            _timeout, _invocation.Budget.Limits);
 
     internal void Checkpoint(ReadOnlySpan<byte> input)
     {

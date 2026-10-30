@@ -12,7 +12,7 @@ internal ref struct PythonReScalarMatchCursor
 
     internal PythonReScalarMatchCursor(ReadOnlySpan<byte> input, Utf8SliceProgram program,
         int startOffsetInBytes, TimeSpan timeout, Utf8Regex? candidateRegex,
-        string pattern, Utf8SliceInvocation invocation)
+        object pattern, Utf8SliceInvocation invocation)
     {
         _input = input;
         _state = new PythonReScalarMatchState(input, program, startOffsetInBytes, timeout, pattern, invocation, candidateRegex);

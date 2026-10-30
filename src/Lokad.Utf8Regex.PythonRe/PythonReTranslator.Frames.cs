@@ -1,3 +1,4 @@
+using ByteBuilder = Lokad.Utf8Regex.Internal.Utf8ConstructionBuffer<byte>;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.PythonRe;
@@ -24,7 +25,7 @@ internal static partial class PythonReTranslator
     private static bool Inspect(PythonReNode node, InspectionKind kind,
         PythonReParseResult parseResult,
         Utf8ConstructionMap<PythonReNode, PythonReWidth>? widths,
-        Utf8ConstructionText? builder)
+        ByteBuilder? builder)
     {
         // Translation owns the width map across this walk. Roll it back only
         // after its arrays are disposed by Translate, never in a nested scope.
@@ -78,7 +79,10 @@ internal static partial class PythonReTranslator
                 else if (kind == InspectionKind.Literal)
                 {
                     if (current is PythonReLiteralNode literal)
-                        (builder ?? throw new InvalidOperationException("Literal text storage is missing.")).Append(literal.Value);
+                    {
+                        if (char.IsSurrogate(literal.Value)) return false;
+                        builder?.Append(literal.Value);
+                    }
                     else if (current is not PythonReSequenceNode and not PythonReGroupNode { Kind: PythonReGroupKind.NonCapturing })
                         return false;
                 }
@@ -210,13 +214,14 @@ internal static partial class PythonReTranslator
         internal readonly RenderKind Kind = kind;
         internal readonly PythonReQuantifierFlavor Flavor = flavor;
         internal int Stage;
+        internal bool Verbose;
     }
 
-    private static void AppendTree(PythonReNode node, Utf8ConstructionText builder,
-        IReadOnlyDictionary<string, int> pythonGroupNumbers, int[] coreNumbersByPython)
+    private static void AppendTree(PythonReNode node, ByteBuilder builder,
+        IReadOnlyDictionary<string, int> pythonGroupNumbers, int[] coreNumbersByPython, bool verbose = false)
     {
         var budget = Utf8ConstructionScope.CurrentBudget;
-        using var frames = Utf8ConstructionFrames<RenderFrame>.Create(budget, new(node));
+        using var frames = Utf8ConstructionFrames<RenderFrame>.Create(budget, new(node) { Verbose = verbose });
         while (frames.Count != 0)
         {
             budget.ChargeWork(1);
@@ -225,11 +230,18 @@ internal static partial class PythonReTranslator
             var complete = ResumeRender(ref frame, builder, pythonGroupNumbers, coreNumbersByPython, out var child);
             frames[index] = frame;
             if (complete) frames.Pop();
-            else frames.Push(child);
+            else
+            {
+                child.Verbose = frame.Verbose;
+                if (frame.Kind == RenderKind.Group && frame.Node is PythonReGroupNode { Kind: PythonReGroupKind.ScopedFlags } scoped)
+                    child.Verbose = (scoped.AddOptions & PythonReCompileOptions.Verbose) != 0 ||
+                        frame.Verbose && (scoped.RemoveOptions & PythonReCompileOptions.Verbose) == 0;
+                frames.Push(child);
+            }
         }
     }
 
-    private static bool ResumeRender(ref RenderFrame frame, Utf8ConstructionText builder,
+    private static bool ResumeRender(ref RenderFrame frame, ByteBuilder builder,
         IReadOnlyDictionary<string, int> names, int[] numbers, out RenderFrame child)
     {
         child = default;
@@ -303,7 +315,7 @@ internal static partial class PythonReTranslator
         }
     }
 
-    private static bool ResumeRenderedNode(ref RenderFrame frame, Utf8ConstructionText builder,
+    private static bool ResumeRenderedNode(ref RenderFrame frame, ByteBuilder builder,
         IReadOnlyDictionary<string, int> names, int[] numbers, out RenderFrame child)
     {
         child = default;
@@ -322,14 +334,15 @@ internal static partial class PythonReTranslator
                 return false;
             case PythonReLiteralNode literal:
                 if (char.IsSurrogate(literal.Value)) builder.Append("(?!)");
-                else builder.AppendEscaped(literal.Value);
+                else builder.AppendEscaped(literal.Value, frame.Verbose);
                 return true;
             case PythonReCharacterClassNode characterClass:
                 AppendCharacterClass(characterClass, builder);
                 return true;
             case PythonReRawNode raw:
                 Utf8ConstructionScope.ChargeWork((ulong)raw.Text.Length);
-                builder.Append(raw.Text);
+                if (raw.Text == @"\ " && !frame.Verbose) builder.Append(' ');
+                else builder.Append(raw.Text);
                 return true;
             case PythonReNamedBackreferenceNode named:
                 builder.Append(@"\k<g").Append(names[named.Name]).Append('>');
@@ -347,7 +360,7 @@ internal static partial class PythonReTranslator
         }
     }
 
-    private static void AppendGroupPrefix(PythonReGroupNode node, Utf8ConstructionText builder)
+    private static void AppendGroupPrefix(PythonReGroupNode node, ByteBuilder builder)
     {
         if (node.Kind == PythonReGroupKind.NamedCapturing)
         {
@@ -373,7 +386,7 @@ internal static partial class PythonReTranslator
         });
     }
 
-    private static void AppendConditionalPrefix(PythonReConditionalNode node, Utf8ConstructionText builder,
+    private static void AppendConditionalPrefix(PythonReConditionalNode node, ByteBuilder builder,
         IReadOnlyDictionary<string, int> names, int[] numbers)
     {
         builder.Append("(?(");
@@ -389,7 +402,7 @@ internal static partial class PythonReTranslator
         builder.Append(')');
     }
 
-    private static void AppendQuantifierSuffix(PythonReQuantifierNode node, Utf8ConstructionText builder, PythonReQuantifierFlavor flavor)
+    private static void AppendQuantifierSuffix(PythonReQuantifierNode node, ByteBuilder builder, PythonReQuantifierFlavor flavor)
     {
         if (node.Min == 0 && node.Max is null) builder.Append('*');
         else if (node.Min == 1 && node.Max is null) builder.Append('+');

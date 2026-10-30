@@ -59,7 +59,7 @@ public sealed class Utf8NativeEncodingPreparationTests
         {
             0 => "TryExtractSingleCapturedLiteralPattern", 1 => "TryExtractPlainAsciiLiteralAlternationPattern",
             2 => "TryExtractLiteralPrefixWithPositiveLiteralLookahead", 3 => "TryExtractPositiveLiteralLookahead",
-            4 => "TryUnwrapLiteralAlternation", 5 => "TryGetLiteralBranchText",
+            4 => "TryUnwrapLiteralAlternation", 5 => "TryGetLiteralBranchUtf8",
             6 => "TryUnwrapLiteralAlternationWithBoundaries", 7 => "TryExtractBoundaryWrappedLiteral",
             8 => "TryExtractUtf8LiteralAlternationTree", 9 => "TryExtractLiteralWithPositiveLiteralLookaheadTree",
             10 => "TryExtractLiteralAlternationWithPositiveLiteralLookaheadTree", _ => "TryAnalyzeLiteralTree",
@@ -78,13 +78,14 @@ public sealed class Utf8NativeEncodingPreparationTests
         {
             case 0: Assert.Equal("é😀", args[1]); break;
             case 1: Assert.Equal(new[] { "call", "invoke" }, Assert.IsType<byte[][]>(args[1]).Select(Encoding.UTF8.GetString)); break;
-            case 2: Assert.Equal("é😀", args[2]); Assert.Equal("x", args[3]); break;
-            case 3: Assert.Same(root.Child(0), args[2]); Assert.Equal("x", args[3]); break;
-            case 4: Assert.Equal(new[] { "a", "😀" }, Assert.IsType<string[]>(args[1])); break;
-            case 5 or 7: Assert.Equal("é", args[1]); break;
-            case 6: Assert.Equal(new[] { "a", "😀" }, Assert.IsType<string[]>(args[1])); break;
+            case 2: Assert.Equal("é😀"u8.ToArray(), args[2]); Assert.Equal("x"u8.ToArray(), args[3]); break;
+            case 3: Assert.Same(root.Child(0), args[2]); Assert.Equal("x"u8.ToArray(), args[3]); break;
+            case 4: Assert.Equal(new[] { "a", "😀" }, Assert.IsType<byte[][]>(args[1]).Select(Encoding.UTF8.GetString)); break;
+            case 5: Assert.Equal("é"u8.ToArray(), args[1]); break;
+            case 7: Assert.Equal("é", args[1]); break;
+            case 6: Assert.Equal(new[] { "a", "😀" }, Assert.IsType<byte[][]>(args[1]).Select(Encoding.UTF8.GetString)); break;
             case 8: Assert.Equal(new[] { "a", "😀" }, Assert.IsType<byte[][]>(args[1]).Select(Encoding.UTF8.GetString)); break;
-            case 9: Assert.Equal("é😀", args[1]); Assert.Equal("x", Encoding.UTF8.GetString(Assert.IsType<byte[]>(args[2]))); break;
+            case 9: Assert.Equal("é😀"u8.ToArray(), args[1]); Assert.Equal("x", Encoding.UTF8.GetString(Assert.IsType<byte[]>(args[2]))); break;
             case 10: Assert.Equal(new[] { "a", "😀" }, Assert.IsType<byte[][]>(args[2]).Select(Encoding.UTF8.GetString)); break;
             default:
                 var analysis = Assert.IsType<Utf8RegexAnalysis>(args[3]); Assert.NotNull(analysis.LiteralUtf8);

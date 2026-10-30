@@ -29,7 +29,7 @@ public sealed partial class Utf8PythonMatchCursor : IDisposable
 
     internal Utf8PythonMatchCursor(ReadOnlyMemory<byte> input, Utf8SliceProgram program,
         PythonReNameEntry[] names, int startOffsetInBytes, TimeSpan timeout,
-        string pattern, Utf8SliceInvocation invocation, Utf8Regex? candidateRegex, Utf8FundedStorage.Use? programUse = null)
+        object pattern, Utf8SliceInvocation invocation, Utf8Regex? candidateRegex, Utf8FundedStorage.Use? programUse = null)
     {
         _input = input;
         _programUse = programUse;
@@ -223,13 +223,14 @@ public sealed partial class Utf8PythonMatchCursor : IDisposable
             ReleaseScalarPrefixes();
             _discovery.Dispose();
         }
-        _programUse?.Dispose();
+        var programUse = _programUse;
         _programUse = null;
         _discovery = default;
         _input = default;
         _names = [];
         _current = default;
         _status = status;
+        programUse?.Dispose();
     }
 
     internal ref Utf8SliceInvocation WorkingInvocation => ref _discovery.WorkingInvocation;

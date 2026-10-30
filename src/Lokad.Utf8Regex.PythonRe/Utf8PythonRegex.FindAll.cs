@@ -64,16 +64,18 @@ public sealed partial class Utf8PythonRegex
             return scalarResult;
         }
         ValidateStartOffset(input, startOffsetInBytes);
-        if (TryFindAllCanonicalLiteral(input, startOffsetInBytes, out var canonicalResult)) return canonicalResult;
+        if (TryFindAllCanonicalLiteral(input, startOffsetInBytes, cancellationToken, out var canonicalResult)) return canonicalResult;
         if (TryCollectUtf8MatchRanges(input, startOffsetInBytes, cancellationToken, out var ranges))
         {
             try
             {
                 var values = ranges.AllocateResultArray<string>(ranges.Count);
+                string? canonical = null;
                 for (var i = 0; i < values.Length; i++)
                 {
                     if ((i & 255) == 0) ranges.Checkpoint();
-                    values[i] = _repeatedExactFindAllString ?? ranges.GetText(input, ranges[i]);
+                    values[i] = _repeatedExactFindAllUtf8 is not null
+                        ? canonical ??= ranges.GetText(input, ranges[i]) : ranges.GetText(input, ranges[i]);
                 }
                 ranges.Checkpoint();
                 return new Utf8PythonFindAllResult

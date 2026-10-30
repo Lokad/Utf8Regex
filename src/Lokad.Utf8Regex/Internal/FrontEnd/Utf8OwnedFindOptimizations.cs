@@ -421,7 +421,7 @@ internal static class Utf8OwnedFindOptimizations
 
     // A covering family is proved from the canonical logical tree. Partial
     // prefixes cover every alternative and never authorize a following suffix.
-    public static string[]? FindAlternatePrefixes(Utf8TreeNode node, RegexOptions options)
+    public static byte[][]? FindAlternatePrefixes(Utf8TreeNode node, RegexOptions options)
         => Utf8OwnedPrefixFamilies.Find(node, options);
 
     // A candidate is mandatory at this byte offset only while its entire

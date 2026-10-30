@@ -203,7 +203,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                        searchKind,
                        new Utf8SearchFactData
                        {
-                           LiteralUtf8 = EncodeLiteral(candidate),
+                           LiteralUtf8 = candidate,
                            RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
                            RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
                            RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
@@ -525,8 +525,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         }
 
         if (!simplePatternPlan.IgnoreCase &&
-            simplePatternFacts?.AlternatePrefixes is { Length: > 1 } simplePatternAlternatePrefixes &&
-            TryEncodeAlternates(simplePatternAlternatePrefixes, out var alternateLiterals))
+            simplePatternFacts?.AlternatePrefixes is { Length: > 1 } alternateLiterals)
         {
             var searchKind = alternateLiterals.Any(static literal => literal.Any(static b => b > 0x7F))
                 ? Utf8SearchKind.ExactUtf8Literals
@@ -555,7 +554,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                            simplePatternPlan.IgnoreCase ? Utf8SearchKind.AsciiFoldedByteLiteral : Utf8SearchKind.ExactAsciiLiteral,
                            new Utf8SearchFactData
                            {
-                               LiteralUtf8 = EncodeLiteral(literalPrefix),
+                               LiteralUtf8 = literalPrefix,
                                CanGuideFallbackStarts = !simplePatternPlan.IgnoreCase &&
                                    CanGuideFallbackStarts(semanticRegex.ExecutionOptions),
                                ExactRequiredLength = exactRequiredLength,
@@ -593,7 +592,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                    });
     }
 
-    private static bool TrySelectCandidateLiteral(Utf8OwnedFindFacts findOptimizations, out string candidate)
+    private static bool TrySelectCandidateLiteral(Utf8OwnedFindFacts findOptimizations, out byte[] candidate)
     {
         if (findOptimizations.AlternatePrefixes is { Length: 1 } alternatePrefixes)
         {
@@ -606,17 +605,17 @@ internal static class Utf8FrontEndSearchAnalyzer
 
         if (!string.IsNullOrEmpty(findOptimizations.LongestLiteral))
         {
-            candidate = findOptimizations.LongestLiteral;
+            candidate = EncodeLiteral(findOptimizations.LongestLiteral);
             return true;
         }
 
         if (!string.IsNullOrEmpty(findOptimizations.LeadingLiteral))
         {
-            candidate = findOptimizations.LeadingLiteral;
+            candidate = EncodeLiteral(findOptimizations.LeadingLiteral);
             return true;
         }
 
-        candidate = string.Empty;
+        candidate = [];
         return false;
     }
 
@@ -875,9 +874,9 @@ internal static class Utf8FrontEndSearchAnalyzer
     private static bool TrySelectOrderedWindowLeadingLiterals(Utf8OwnedFindFacts findOptimizations, out byte[][] leadingLiteralsUtf8)
     {
         if (findOptimizations.AlternatePrefixes is { Length: > 0 } alternatePrefixes &&
-            alternatePrefixes.All(IsAscii) &&
-            TryEncodeAlternates(alternatePrefixes, out leadingLiteralsUtf8))
+            alternatePrefixes.All(IsAscii))
         {
+            leadingLiteralsUtf8 = alternatePrefixes;
             return true;
         }
 
@@ -1301,7 +1300,8 @@ internal static class Utf8FrontEndSearchAnalyzer
             return false;
         }
 
-        return TryEncodeAlternates(alternatePrefixes, out alternateLiterals);
+        alternateLiterals = alternatePrefixes;
+        return true;
     }
 
     private static bool TrySelectTrailingFixedLengthAnchor(Utf8OwnedFindFacts findOptimizations, out Utf8SearchKind kind, out int minRequiredLength)
@@ -1681,6 +1681,16 @@ internal static class Utf8FrontEndSearchAnalyzer
         var result = construction.Budget.EncodeUtf8(literal);
         construction.Complete();
         return result;
+    }
+
+    private static bool IsAscii(byte[] value)
+    {
+        foreach (var item in value)
+        {
+            Utf8ConstructionScope.ChargeWork(1);
+            if (item > 0x7f) return false;
+        }
+        return true;
     }
 
     private static bool IsAscii(string value)
