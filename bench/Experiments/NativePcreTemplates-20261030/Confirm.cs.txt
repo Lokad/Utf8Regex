@@ -1,0 +1,131 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+
+var before = Load(Path.GetFullPath(args[0]), "before"); var after = Load(Path.GetFullPath(args[1]), "after");
+if (!Identity(before.Pcre).Contains("dfcc96ad") || !Identity(after.Pcre).Contains("78f19fd4")) throw new Exception("Unexpected source");
+using var process = Process.GetCurrentProcess(); process.ProcessorAffinity = (nint)4;
+using var live = new CancellationTokenSource(); var preflight = args.Contains("--preflight");
+var watch = Stopwatch.StartNew(); var rows = new List<object>();
+var cases = new[] {
+    new Case("Core-literal-count-control", Count: true, Core: true),
+    new Case("Pcre-literal-count-control", Count: true),
+    new Case("text-warm-simple", Simple: true),
+    new Case("text-cold-capture", Cold: true),
+    new Case("text-cold-Unicode-2KiB", Cold: true, Large: true),
+    new Case("native-warm-simple", Native: true, Simple: true),
+    new Case("native-warm-capture", Native: true),
+    new Case("native-cold-capture", Native: true, Cold: true),
+    new Case("native-cold-Unicode-2KiB", Native: true, Cold: true, Large: true),
+    new Case("native-warm-extended", Native: true, Extended: true),
+    new Case("native-warm-finite-live", Native: true, Finite: true),
+    new Case("native-destination-simple", Native: true, Simple: true, Destination: true)
+};
+foreach (var item in cases.Where(item => new[] { "Core-literal-count-control", "Pcre-literal-count-control", "text-warm-simple", "native-cold-Unicode-2KiB", "native-warm-extended", "native-warm-finite-live" }.Contains(item.Name)))
+{
+    var pattern = item.Count ? "needle" : item.Simple ? "a" : "(?<x>a+)(😀)";
+    var inputText = item.Count ? new string('x', 8192) + "needle" : item.Simple ? "aa/a" : "aa😀/a😀";
+    var input = Encoding.UTF8.GetBytes(inputText);
+    var prefix = item.Large ? string.Concat(Enumerable.Repeat("é😀", 340)) : "é";
+    var prefixes = Enumerable.Range(0, item.Cold ? 32 : 1).Select(index => index.ToString("D2") + prefix).ToArray();
+    var templates = prefixes.Select(value => value + (item.Simple ? "[$0]" : item.Extended ? @"\U${x}\E😀" : "[${x}]")).ToArray();
+    var encoded = templates.Select(Encoding.UTF8.GetBytes).ToArray();
+    var expected = prefixes.Select(value => Encoding.UTF8.GetBytes(item.Simple ? inputText.Replace("a", value + "[a]") :
+        item.Extended ? value + "AA😀/" + value + "A😀" : value + "[aa]/" + value + "[a]")).ToArray();
+    var lanes = new[] { "Before", "After" }; var actions = new List<Func<Output>>();
+    foreach (var pair in new[] { before, after })
+    {
+        var type = item.Core ? pair.Core.GetType("Lokad.Utf8Regex.Utf8Regex")! : pair.Pcre.GetType("Lokad.Utf8Regex.Pcre2.Utf8Pcre2Regex")!;
+        object regex;
+        if (item.Core) regex = Activator.CreateInstance(type, [pattern])!;
+        else {
+            var create = type.GetMethods().Single(method => method.Name == "Create" && method.GetParameters().Length == 5 && method.GetParameters()[0].ParameterType == typeof(string));
+            var options = Activator.CreateInstance(create.GetParameters()[1].ParameterType)!;
+            var settings = Activator.CreateInstance(create.GetParameters()[2].ParameterType)!;
+            regex = create.Invoke(null, [pattern, options, settings, Policy(pair.Core, item.Finite), Timeout.InfiniteTimeSpan])!;
+        }
+        if (item.Count) { var count = CountBridge(type); actions.Add(() => new([], count(regex, input), 0)); continue; }
+        if (item.Destination) {
+            var destination = new byte[expected[0].Length]; var call = DestinationBridge(type);
+            actions.Add(() => new(destination, call(regex, input, encoded[0], destination), 0)); continue;
+        }
+        var replace = ReplaceBridge(type, item.Native); var templateIndex = 0;
+        var flagType = type.Assembly.GetType("Lokad.Utf8Regex.Pcre2.Pcre2SubstitutionOptions")!;
+        var flags = Convert.ToInt32(Enum.Parse(flagType, item.Extended ? "Extended" : "None"));
+        actions.Add(() => {
+            var selected = templateIndex++ & (templates.Length - 1);
+            var output = replace(regex, input, item.Native ? encoded[selected] : templates[selected], flags, item.Finite ? live.Token : default);
+            return new(output, output.Length, selected);
+        });
+    }
+    void Check(Output value) {
+        if (value.Size != (item.Count ? 1 : expected[value.Template].Length) ||
+            (!item.Count && !value.Bytes.AsSpan(0, value.Size).SequenceEqual(expected[value.Template]))) throw new Exception("Result mismatch " + item.Name);
+    }
+    foreach (var action in actions) for (var index = 0; index < templates.Length; index++) Check(action());
+    if (preflight) { Console.Error.WriteLine("Preflight " + item.Name); continue; }
+    var n = actions.Count; var iterations = new int[n]; var warmCalls = new long[n];
+    for (var lane = 0; lane < n; lane++) {
+        var warm = Stopwatch.StartNew(); do { Check(actions[lane]()); warmCalls[lane]++; } while (warm.Elapsed.TotalMilliseconds < 2500 || warmCalls[lane] < 1000);
+        iterations[lane] = 1; while (Loop(iterations[lane], actions[lane], Check).Milliseconds < 150) iterations[lane] = checked(iterations[lane] * 2);
+    }
+    var times = Enumerable.Range(0, n).Select(_ => new double[5]).ToArray(); var allocations = Enumerable.Range(0, n).Select(_ => new double[5]).ToArray(); var durations = Enumerable.Range(0, n).Select(_ => new double[5]).ToArray();
+    for (var sample = 0; sample < 5; sample++) for (var position = 0; position < n; position++) {
+        var lane = sample % 2 == 0 ? position : n - 1 - position; GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        var result = Loop(iterations[lane], actions[lane], Check); if (result.Milliseconds < 20) throw new Exception("Sample below20ms");
+        times[lane][sample] = result.Milliseconds * 1000 / iterations[lane]; allocations[lane][sample] = (double)result.Bytes / iterations[lane]; durations[lane][sample] = result.Milliseconds;
+    }
+    rows.Add(new { item.Name, item.Native, item.Cold, item.Large, item.Extended, item.Finite, item.Destination, Pattern = pattern, InputBytes = input.Length,
+        InputSha256 = Convert.ToHexString(SHA256.HashData(input)), TemplateBytes = encoded[0].Length, TemplateCount = templates.Length,
+        Lanes = lanes, Iterations = iterations, WarmupCalls = warmCalls, Microseconds = times, AllocatedBytes = allocations, ElapsedMilliseconds = durations });
+    Console.Error.WriteLine(item.Name + ": " + string.Join(" / ", times.Select(values => values.Order().ElementAt(2))));
+}
+Console.WriteLine(JsonSerializer.Serialize(new { Runtime = RuntimeInformation.FrameworkDescription, CpuAffinityMask = "4", ElapsedSeconds = watch.Elapsed.TotalSeconds,
+    Scope = "Fixed dfcc96ad ->78f19fd4. Sole focused confirmation, six equal-result public Core/PCRE2 Count, PCRE2 text/native Replace and caller-destination TryReplace cases. Existing byte-template APIs in both sources, with no host conversion added. Warm one template; cold32 same-size templates exceed16entry cache. Complete operation including native first preparation and finite/live-token policy. Setup outside timing. Complete output batches checked after timing; destination case reuses one fixed caller buffer with invariant output. Warm2.5s/min1000calls/lane,independent150ms calibration,5alternating samples,all>=20ms. One90s cap. Experiment closes after this confirmation. No catalog/cumulative/package/funded-replacement claim.",
+    Before = new { Core = Identity(before.Core), Pcre = Identity(before.Pcre) }, After = new { Core = Identity(after.Core), Pcre = Identity(after.Pcre) }, Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+
+static Pair Load(string root, string name) { var context = new AssemblyLoadContext(name); return new(context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.dll")), context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.Pcre2.dll"))); }
+static Func<object, byte[], int> CountBridge(Type type) {
+    var bridge = new DynamicMethod("PublicCount", typeof(int), [typeof(object), typeof(byte[])], typeof(Program).Module, true); var il = bridge.GetILGenerator();
+    il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Castclass, type); ReadSpan(il, 1); il.Emit(OpCodes.Call, type.GetMethod("Count", [typeof(ReadOnlySpan<byte>)])!); il.Emit(OpCodes.Ret);
+    return bridge.CreateDelegate<Func<object, byte[], int>>();
+}
+static Func<object, byte[], object, int, CancellationToken, byte[]> ReplaceBridge(Type type, bool native) {
+    var method = type.GetMethods().Single(m => m.Name == "Replace" && !m.IsGenericMethod && !m.IsStatic && m.GetParameters().Length == 6 && m.GetParameters()[1].ParameterType == (native ? typeof(ReadOnlySpan<byte>) : typeof(string)));
+    var bridge = new DynamicMethod("PublicReplace", typeof(byte[]), [typeof(object), typeof(byte[]), typeof(object), typeof(int), typeof(CancellationToken)], typeof(Program).Module, true); var il = bridge.GetILGenerator();
+    il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Castclass, type); ReadSpan(il, 1); il.Emit(OpCodes.Ldarg_2); il.Emit(OpCodes.Castclass, native ? typeof(byte[]) : typeof(string));
+    if (native) il.Emit(OpCodes.Call, typeof(ReadOnlySpan<byte>).GetMethod("op_Implicit", [typeof(byte[])])!);
+    il.Emit(OpCodes.Ldc_I4_0); il.Emit(OpCodes.Ldarg_3); il.Emit(OpCodes.Ldc_I4_0); il.Emit(OpCodes.Ldarg, (short)4); il.Emit(OpCodes.Call, method); il.Emit(OpCodes.Ret);
+    return bridge.CreateDelegate<Func<object, byte[], object, int, CancellationToken, byte[]>>();
+}
+static Func<object, byte[], byte[], byte[], int> DestinationBridge(Type type) {
+    var method = type.GetMethods().Single(m => m.Name == "TryReplace" && m.GetParameters().Length == 8);
+    var bridge = new DynamicMethod("PublicTryReplace", typeof(int), [typeof(object), typeof(byte[]), typeof(byte[]), typeof(byte[])], typeof(Program).Module, true); var il = bridge.GetILGenerator();
+    var written = il.DeclareLocal(typeof(int)); var done = il.DefineLabel();
+    il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Castclass, type); ReadSpan(il, 1); ReadSpan(il, 2);
+    il.Emit(OpCodes.Ldarg_3); il.Emit(OpCodes.Call, typeof(Span<byte>).GetMethod("op_Implicit", [typeof(byte[])])!); il.Emit(OpCodes.Ldloca, written);
+    il.Emit(OpCodes.Ldc_I4_0); il.Emit(OpCodes.Ldc_I4_0); il.Emit(OpCodes.Ldc_I4_0); il.Emit(OpCodes.Ldloc, il.DeclareLocal(typeof(CancellationToken)));
+    il.Emit(OpCodes.Call, method); il.Emit(OpCodes.Brfalse, done); il.Emit(OpCodes.Ldc_I4_M1); il.Emit(OpCodes.Ret); il.MarkLabel(done); il.Emit(OpCodes.Ldloc, written); il.Emit(OpCodes.Ret);
+    return bridge.CreateDelegate<Func<object, byte[], byte[], byte[], int>>();
+}
+static void ReadSpan(ILGenerator il, short index) { il.Emit(OpCodes.Ldarg, index); il.Emit(OpCodes.Call, typeof(ReadOnlySpan<byte>).GetMethod("op_Implicit", [typeof(byte[])])!); }
+static object Policy(Assembly core, bool finite) {
+    var type = core.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!; var value = Activator.CreateInstance(type)!;
+    if (finite) { type.GetProperty("MaxWorkSteps")!.SetValue(value, 16_000_000UL); type.GetProperty("MaxDepth")!.SetValue(value, 4096U); type.GetProperty("MaxWorkingBytes")!.SetValue(value, 4UL << 20); type.GetProperty("MaxResultBytes")!.SetValue(value, 4UL << 20); } return value;
+}
+static string Identity(Assembly assembly) => assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion + " sha256=" + Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location)));
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds, long Bytes) Loop(int count, Func<Output> action, Action<Output> check) {
+    var output = new Output[count]; var bytes = GC.GetAllocatedBytesForCurrentThread(); var start = Stopwatch.GetTimestamp(); for (var i = 0; i < count; i++) output[i] = action();
+    var elapsed = Stopwatch.GetElapsedTime(start).TotalMilliseconds; bytes = GC.GetAllocatedBytesForCurrentThread() - bytes;
+    foreach (var value in output) check(value); GC.KeepAlive(output); return (elapsed, bytes);
+}
+record Pair(Assembly Core, Assembly Pcre);
+record Case(string Name, bool Count = false, bool Core = false, bool Native = false, bool Simple = false, bool Cold = false, bool Large = false, bool Extended = false, bool Finite = false, bool Destination = false);
+readonly record struct Output(byte[] Bytes, int Size, int Template);

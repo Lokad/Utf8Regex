@@ -1,0 +1,460 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 48.4956589,
+  "Scope": "Fixed dfcc96ad -\u003E78f19fd4. Sole focused confirmation, six equal-result public Core/PCRE2 Count, PCRE2 text/native Replace and caller-destination TryReplace cases. Existing byte-template APIs in both sources, with no host conversion added. Warm one template; cold32 same-size templates exceed16entry cache. Complete operation including native first preparation and finite/live-token policy. Setup outside timing. Complete output batches checked after timing; destination case reuses one fixed caller buffer with invariant output. Warm2.5s/min1000calls/lane,independent150ms calibration,5alternating samples,all\u003E=20ms. One90s cap. Experiment closes after this confirmation. No catalog/cumulative/package/funded-replacement claim.",
+  "Before": {
+    "Core": "0.5.0-dev\u002Bdfcc96addb175e9c8c2de51b6f957034fc5a6333 sha256=5AF3525430F7029FA6C6FEE2BE418F239940E5D50BF211C187689AAF7AEC9ADB",
+    "Pcre": "0.5.0-dev\u002Bdfcc96addb175e9c8c2de51b6f957034fc5a6333 sha256=9AD22A021B7D44AC3EB559F6A30A19BD746AA35D818B99F0DC8466FEDBE2422B"
+  },
+  "After": {
+    "Core": "0.5.0-dev\u002B78f19fd4b6082b85aa8d0338b84e154f136944e6 sha256=8A25B15CB94E1B43AD17DCE5CF9693A2C29E7C0618CC28DF8908CC9DAECA2F65",
+    "Pcre": "0.5.0-dev\u002B78f19fd4b6082b85aa8d0338b84e154f136944e6 sha256=E0BC14041928670D92628E0887760ECFD79796326ECDFE62A1E288AB5A6D6312"
+  },
+  "Rows": [
+    {
+      "Name": "Core-literal-count-control",
+      "Native": false,
+      "Cold": false,
+      "Large": false,
+      "Extended": false,
+      "Finite": false,
+      "Destination": false,
+      "Pattern": "needle",
+      "InputBytes": 8198,
+      "InputSha256": "8DA47E1CAE661B34F429302D624E9EA43B01F9729C6A36BB3E1D2297395FF58B",
+      "TemplateBytes": 10,
+      "TemplateCount": 1,
+      "Lanes": [
+        "Before",
+        "After"
+      ],
+      "Iterations": [
+        262144,
+        262144
+      ],
+      "WarmupCalls": [
+        3869273,
+        4025391
+      ],
+      "Microseconds": [
+        [
+          0.5619281768798827,
+          0.563201904296875,
+          0.56146240234375,
+          0.5590503692626954,
+          0.5624469757080078
+        ],
+        [
+          0.5606533050537109,
+          0.5609809875488281,
+          0.5582099914550781,
+          0.5603382110595703,
+          0.5615409851074219
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          147.3061,
+          147.64,
+          147.184,
+          146.5517,
+          147.4421
+        ],
+        [
+          146.9719,
+          147.0578,
+          146.3314,
+          146.8893,
+          147.2046
+        ]
+      ]
+    },
+    {
+      "Name": "Pcre-literal-count-control",
+      "Native": false,
+      "Cold": false,
+      "Large": false,
+      "Extended": false,
+      "Finite": false,
+      "Destination": false,
+      "Pattern": "needle",
+      "InputBytes": 8198,
+      "InputSha256": "8DA47E1CAE661B34F429302D624E9EA43B01F9729C6A36BB3E1D2297395FF58B",
+      "TemplateBytes": 10,
+      "TemplateCount": 1,
+      "Lanes": [
+        "Before",
+        "After"
+      ],
+      "Iterations": [
+        524288,
+        524288
+      ],
+      "WarmupCalls": [
+        4054726,
+        4272970
+      ],
+      "Microseconds": [
+        [
+          0.543056297302246,
+          0.5470092773437499,
+          0.5498968124389648,
+          0.5448257446289062,
+          0.5459064483642578
+        ],
+        [
+          0.5336692810058594,
+          0.5377399444580079,
+          0.5430953979492188,
+          0.541893196105957,
+          0.5411914825439453
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          284.7179,
+          286.7904,
+          288.3043,
+          285.6456,
+          286.2122
+        ],
+        [
+          279.7964,
+          281.9306,
+          284.7384,
+          284.1081,
+          283.7402
+        ]
+      ]
+    },
+    {
+      "Name": "text-warm-simple",
+      "Native": false,
+      "Cold": false,
+      "Large": false,
+      "Extended": false,
+      "Finite": false,
+      "Destination": false,
+      "Pattern": "a",
+      "InputBytes": 4,
+      "InputSha256": "0ABE81E7382331DD7B85D5FD1F0712D0F7180C49A4C65B5F467BBD937D2F4FA4",
+      "TemplateBytes": 8,
+      "TemplateCount": 1,
+      "Lanes": [
+        "Before",
+        "After"
+      ],
+      "Iterations": [
+        131072,
+        131072
+      ],
+      "WarmupCalls": [
+        1085238,
+        1155965
+      ],
+      "Microseconds": [
+        [
+          1.1958961486816406,
+          1.7219139099121095,
+          1.842333984375,
+          1.0163734436035157,
+          1.0196739196777345
+        ],
+        [
+          1.7999954223632812,
+          1.788538360595703,
+          1.2194732666015624,
+          1.0902175903320312,
+          1.089899444580078
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          48,
+          48,
+          48,
+          48,
+          48
+        ],
+        [
+          48,
+          48,
+          48,
+          48,
+          48
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          156.7485,
+          225.6947,
+          241.4784,
+          133.2181,
+          133.6507
+        ],
+        [
+          235.929,
+          234.4273,
+          159.8388,
+          142.897,
+          142.8553
+        ]
+      ]
+    },
+    {
+      "Name": "native-cold-Unicode-2KiB",
+      "Native": true,
+      "Cold": true,
+      "Large": true,
+      "Extended": false,
+      "Finite": false,
+      "Destination": false,
+      "Pattern": "(?\u003Cx\u003Ea\u002B)(\uD83D\uDE00)",
+      "InputBytes": 12,
+      "InputSha256": "D640405A7F84E3D780ED41A90C32B10A14A27EB5E83A145251D32A93C9B8E817",
+      "TemplateBytes": 2048,
+      "TemplateCount": 32,
+      "Lanes": [
+        "Before",
+        "After"
+      ],
+      "Iterations": [
+        2048,
+        2048
+      ],
+      "WarmupCalls": [
+        24760,
+        30783
+      ],
+      "Microseconds": [
+        [
+          97.27797851562501,
+          97.0046875,
+          96.88447265625,
+          95.583056640625,
+          96.809326171875
+        ],
+        [
+          81.81625976562499,
+          81.7822265625,
+          81.49638671874999,
+          80.69589843749999,
+          81.894287109375
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          35584,
+          35584,
+          35584,
+          35584,
+          35584
+        ],
+        [
+          43944,
+          43944,
+          43944,
+          43944,
+          43944
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          199.2253,
+          198.6656,
+          198.4194,
+          195.7541,
+          198.2655
+        ],
+        [
+          167.5597,
+          167.49,
+          166.9046,
+          165.2652,
+          167.7195
+        ]
+      ]
+    },
+    {
+      "Name": "native-warm-extended",
+      "Native": true,
+      "Cold": false,
+      "Large": false,
+      "Extended": true,
+      "Finite": false,
+      "Destination": false,
+      "Pattern": "(?\u003Cx\u003Ea\u002B)(\uD83D\uDE00)",
+      "InputBytes": 12,
+      "InputSha256": "D640405A7F84E3D780ED41A90C32B10A14A27EB5E83A145251D32A93C9B8E817",
+      "TemplateBytes": 16,
+      "TemplateCount": 1,
+      "Lanes": [
+        "Before",
+        "After"
+      ],
+      "Iterations": [
+        32768,
+        32768
+      ],
+      "WarmupCalls": [
+        519670,
+        517158
+      ],
+      "Microseconds": [
+        [
+          4.726937866210938,
+          4.667553710937501,
+          4.634710693359375,
+          4.6506591796875,
+          4.6492156982421875
+        ],
+        [
+          4.6654052734375,
+          4.6561828613281255,
+          4.68538818359375,
+          4.648431396484375,
+          4.663687133789063
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          528,
+          528,
+          528,
+          528,
+          528
+        ],
+        [
+          480,
+          480,
+          480,
+          480,
+          480
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          154.8923,
+          152.9464,
+          151.8702,
+          152.3928,
+          152.3455
+        ],
+        [
+          152.876,
+          152.5738,
+          153.5308,
+          152.3198,
+          152.8197
+        ]
+      ]
+    },
+    {
+      "Name": "native-warm-finite-live",
+      "Native": true,
+      "Cold": false,
+      "Large": false,
+      "Extended": false,
+      "Finite": true,
+      "Destination": false,
+      "Pattern": "(?\u003Cx\u003Ea\u002B)(\uD83D\uDE00)",
+      "InputBytes": 12,
+      "InputSha256": "D640405A7F84E3D780ED41A90C32B10A14A27EB5E83A145251D32A93C9B8E817",
+      "TemplateBytes": 10,
+      "TemplateCount": 1,
+      "Lanes": [
+        "Before",
+        "After"
+      ],
+      "Iterations": [
+        32768,
+        32768
+      ],
+      "WarmupCalls": [
+        277571,
+        290656
+      ],
+      "Microseconds": [
+        [
+          8.654953002929688,
+          8.654611206054687,
+          8.644454956054688,
+          8.715811157226563,
+          8.947146606445312
+        ],
+        [
+          8.590499877929688,
+          8.59576416015625,
+          8.651400756835939,
+          8.658642578125,
+          8.60281982421875
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          4056,
+          4056,
+          4056,
+          4056,
+          4056
+        ],
+        [
+          4016,
+          4016,
+          4016,
+          4016,
+          4016
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          283.6055,
+          283.5943,
+          283.2615,
+          285.5997,
+          293.1801
+        ],
+        [
+          281.4935,
+          281.666,
+          283.4891,
+          283.7264,
+          281.8972
+        ]
+      ]
+    }
+  ]
+}
