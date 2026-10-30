@@ -1,0 +1,28 @@
+File: build.txt
+D:\code\utf8regex\src\Lokad.Utf8Regex\Internal\FrontEnd\Utf8OwnedTreeParser.cs(376,58): error CS1503: Argument 1: cannot convert from 'int' to 'char' [D:\code\utf8regex\src\Lokad.Utf8Regex\Lokad.Utf8Regex.csproj::TargetFramework=net10.0]
+D:\code\utf8regex\src\Lokad.Utf8Regex\Internal\FrontEnd\Utf8OwnedTreeParser.cs(376,58): error CS1503: Argument 1: cannot convert from 'int' to 'char' [D:\code\utf8regex\src\Lokad.Utf8Regex\Lokad.Utf8Regex.csproj::TargetFramework=net11.0]
+D:\code\utf8regex\src\Lokad.Utf8Regex\Internal\FrontEnd\Utf8OwnedTreeParser.cs(376,58): error CS1503: Argument 1: cannot convert from 'int' to 'char' [D:\code\utf8regex\src\Lokad.Utf8Regex\Lokad.Utf8Regex.csproj::TargetFramework=net10.0]
+D:\code\utf8regex\src\Lokad.Utf8Regex\Internal\FrontEnd\Utf8OwnedTreeParser.cs(376,58): error CS1503: Argument 1: cannot convert from 'int' to 'char' [D:\code\utf8regex\src\Lokad.Utf8Regex\Lokad.Utf8Regex.csproj::TargetFramework=net11.0]
+File: focused-text.txt
+Passed!  - Failed:     0, Passed:  2491, Skipped:     0, Total:  2491, Duration: 5 s - Lokad.Utf8Regex.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:  2491, Skipped:     0, Total:  2491, Duration: 5 s - Lokad.Utf8Regex.Tests.dll (net11.0)
+File: native-focused.txt
+D:\code\utf8regex\tests\Lokad.Utf8Regex.Tests\Utf8OwnedTreeUtf8Tests.cs(121,75): error CS1061: 'Utf8ResourceLimitExceededException' does not contain a definition for 'Kind' and no accessible extension method 'Kind' accepting a first argument of type 'Utf8ResourceLimitExceededException' could be found (are you missing a using directive or an assembly reference?) [D:\code\utf8regex\tests\Lokad.Utf8Regex.Tests\Lokad.Utf8Regex.Tests.csproj::TargetFramework=net10.0]
+D:\code\utf8regex\tests\Lokad.Utf8Regex.Tests\Utf8OwnedTreeUtf8Tests.cs(121,75): error CS1061: 'Utf8ResourceLimitExceededException' does not contain a definition for 'Kind' and no accessible extension method 'Kind' accepting a first argument of type 'Utf8ResourceLimitExceededException' could be found (are you missing a using directive or an assembly reference?) [D:\code\utf8regex\tests\Lokad.Utf8Regex.Tests\Lokad.Utf8Regex.Tests.csproj::TargetFramework=net11.0]
+D:\code\utf8regex\tests\Lokad.Utf8Regex.Tests\Utf8OwnedTreeUtf8Tests.cs(121,75): error CS1061: 'Utf8ResourceLimitExceededException' does not contain a definition for 'Kind' and no accessible extension method 'Kind' accepting a first argument of type 'Utf8ResourceLimitExceededException' could be found (are you missing a using directive or an assembly reference?) [D:\code\utf8regex\tests\Lokad.Utf8Regex.Tests\Lokad.Utf8Regex.Tests.csproj::TargetFramework=net10.0]
+D:\code\utf8regex\tests\Lokad.Utf8Regex.Tests\Utf8OwnedTreeUtf8Tests.cs(121,75): error CS1061: 'Utf8ResourceLimitExceededException' does not contain a definition for 'Kind' and no accessible extension method 'Kind' accepting a first argument of type 'Utf8ResourceLimitExceededException' could be found (are you missing a using directive or an assembly reference?) [D:\code\utf8regex\tests\Lokad.Utf8Regex.Tests\Lokad.Utf8Regex.Tests.csproj::TargetFramework=net11.0]
+File: native-focused-fixed.txt
+Passed!  - Failed:     0, Passed:   186, Skipped:     0, Total:   186, Duration: 206 ms - Lokad.Utf8Regex.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:   186, Skipped:     0, Total:   186, Duration: 184 ms - Lokad.Utf8Regex.Tests.dll (net11.0)
+File: core-full.txt
+Passed!  - Failed:     0, Passed: 40353, Skipped:     0, Total: 40353, Duration: 1 m 10 s - Lokad.Utf8Regex.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed: 40353, Skipped:     0, Total: 40353, Duration: 1 m 9 s - Lokad.Utf8Regex.Tests.dll (net11.0)
+File: pcre2-affected.txt
+Passed!  - Failed:     0, Passed:   270, Skipped:     0, Total:   270, Duration: 1 s - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:   270, Skipped:     0, Total:   270, Duration: 1 s - Lokad.Utf8Regex.Pcre2.Tests.dll (net11.0)
+File: python-affected.txt
+Passed!  - Failed:     0, Passed:   289, Skipped:     0, Total:   289, Duration: 430 ms - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:   289, Skipped:     0, Total:   289, Duration: 386 ms - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)
+File: final-focused.txt
+Passed!  - Failed:     0, Passed:   236, Skipped:     0, Total:   236, Duration: 866 ms - Lokad.Utf8Regex.Tests.dll (net11.0)
+Passed!  - Failed:     0, Passed:   236, Skipped:     0, Total:   236, Duration: 1 s - Lokad.Utf8Regex.Tests.dll (net10.0)
