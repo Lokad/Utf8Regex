@@ -26,6 +26,28 @@ internal static class Utf8UnicodeCategoryExecutor
     ];
     private static readonly PreparedByteSetState s_asciiMathSymbols = PreparedByteSetState.FromValues("+<=>|~"u8);
 
+    // Only the whole-pattern single-category proof may enter this route. Each
+    // admitted primitive sees at most 4096 bytes, ending on a validated scalar
+    // boundary. Keep the existing SIMD algorithm and charge even unlimited calls.
+    internal static Utf8ExecutionLimitKind TryCountValidated(ReadOnlySpan<byte> input,
+        bool containsSupplementaryScalars, UnicodeCategory category,
+        ref Utf8SliceInvocation invocation, out int count)
+    {
+        count = 0;
+        for (var offset = 0; offset < input.Length;)
+        {
+            var breach = invocation.TryChargeInputStep();
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            var length = Utf8SliceBufferWork.Utf8BlockLength(input[offset..]);
+            count += CountCategory(input.Slice(offset, length), containsSupplementaryScalars, category);
+            offset += length;
+        }
+        var publication = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        return publication;
+    }
+
     public static int CountCategory(
         ReadOnlySpan<byte> input,
         bool containsSupplementaryScalars,

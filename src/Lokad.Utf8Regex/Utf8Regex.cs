@@ -1010,6 +1010,27 @@ public sealed partial class Utf8Regex
 
     private int CountCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
+        // A complete single-category proof needs no captures or VM workspace.
+        // Validate the whole subject first, then reuse the shared scalar counter
+        // in bounded blocks under this same interruption/resource authority.
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.UnicodeCategoryCount &&
+            !UsesRightToLeft() && (Options & (RegexOptions.NonBacktracking | RegexOptions.ECMAScript)) == 0)
+        {
+            var categoryInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+            try
+            {
+                var categoryValidation = Utf8Validation.Validate(input, ref categoryInvocation);
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectUnicodeCategory);
+                var breach = Utf8UnicodeCategoryExecutor.TryCountValidated(input,
+                    categoryValidation.ContainsSupplementaryScalars, _fallbackDirectFamily.UnicodeCategory,
+                    ref categoryInvocation, out var categoryCount);
+                if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref categoryInvocation);
+                return categoryCount;
+            }
+            catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+                categoryInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+            { throw CreateExecutionResourceFailure(ref categoryInvocation); }
+        }
         // The existing whole-pattern proof counts complete word runs on ASCII.
         // Keep one invocation through validation, native work or wider-scalar
         // continuation; resource controls never select an unmetered substitute.

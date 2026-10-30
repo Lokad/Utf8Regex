@@ -168,6 +168,14 @@ NonBacktracking and ECMAScript retain their admitted owned paths. Tight working/
 therefore admit a constant-space count that formerly required VM scratch; this
 changes route-dependent resource costs, not matching semantics.
 
+A complete case-sensitive single-category expression can Count using the shared
+Unicode-category kernel after full strict validation. One work unit admits at
+most 4096 bytes ending on a scalar boundary; publication has its own checkpoint.
+The original token/deadline cover validation and counting, including supplementary
+scalars. This constant-space route needs no capture workspace or nesting records;
+tight working/depth/result limits can therefore admit it. RTL, NonBacktracking,
+ECMAScript, case-folded and compound expressions retain their owned routes.
+
 Bounded literal assertions can avoid child VM storage while still admitting
 their logical assertion depth under the original work, token and deadline scope.
 

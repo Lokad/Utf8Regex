@@ -68,6 +68,8 @@
   workspace, retaining strict validation and original invocation limits.
 - Reuse the proved word-repeat Count kernel on validated ASCII with bounded work
   metering, finite policies and original cancellation/deadlines.
+- Reuse the proved single-Unicode-category counter with bounded scalar-aligned
+  work admission, strict validation and original cancellation/deadlines.
 - Check a second proved mandatory ASCII scalar before Count's VM attempts,
   preserving scalar verification and bounded candidate-search admission.
 - Avoid child-VM storage for small capture-free ASCII literal assertions,
