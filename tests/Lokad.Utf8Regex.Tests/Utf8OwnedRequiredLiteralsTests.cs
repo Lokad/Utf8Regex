@@ -26,7 +26,7 @@ public sealed class Utf8OwnedRequiredLiteralsTests
         {
             var tree = Utf8OwnedTreeParser.TryParse(row.Pattern, options);
             Assert.NotNull(tree);
-            Assert.Equal(row.Family, Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(tree.Root));
+            Assert.Equal(row.Family?.Select(Encoding.UTF8.GetBytes).ToArray(), Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(tree.Root));
         }
         foreach (var text in new[] { "\ud800", "a\udfff", "ab", "K", "😀" })
         {
@@ -36,7 +36,7 @@ public sealed class Utf8OwnedRequiredLiteralsTests
         var invalid = Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, '\ud800');
         Assert.Null(Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(invalid));
         var identity = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.IgnoreCase, "123!");
-        Assert.Equal(["123!"], Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(identity));
+        Assert.Equal(new[] { "123!"u8.ToArray() }, Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(identity));
     }
 
     [Fact]
@@ -59,9 +59,11 @@ public sealed class Utf8OwnedRequiredLiteralsTests
         var observed = 0;
         foreach (var row in cases)
         foreach (var rtl in new[] { RegexOptions.None, RegexOptions.RightToLeft })
+        foreach (var native in new[] { false, true })
         {
             var options = row.Options | rtl;
-            var tree = Utf8OwnedTreeParser.TryParse(row.Pattern, options);
+            var tree = native ? Utf8OwnedTreeParser.TryParse(Encoding.UTF8.GetBytes(row.Pattern), options, out _)
+                : Utf8OwnedTreeParser.TryParse(row.Pattern, options);
             Assert.NotNull(tree);
             var family = Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(tree.Root);
             if (family is null) continue;
@@ -80,8 +82,10 @@ public sealed class Utf8OwnedRequiredLiteralsTests
                 Assert.Equal(Utf8ExecutionLimitKind.None, match.Breach);
                 if (!match.IsMatch) continue;
                 observed++;
-                var value = Encoding.UTF8.GetString(input.AsSpan(Math.Min(boundary, match.EndIndex), Math.Abs(boundary - match.EndIndex)));
-                Assert.True(family.Any(member => value.Contains(member, StringComparison.Ordinal)), $"Uncovered required family: {row.Pattern} / {options}: {value}");
+                var value = input.AsSpan(Math.Min(boundary, match.EndIndex), Math.Abs(boundary - match.EndIndex));
+                var covered = false;
+                foreach (var member in family) if (value.IndexOf(member) >= 0) { covered = true; break; }
+                Assert.True(covered, $"Uncovered required family: {row.Pattern} / {options}: {Encoding.UTF8.GetString(value)}");
             }
         }
         Assert.True(observed > 100);
@@ -264,6 +268,6 @@ public sealed class Utf8OwnedRequiredLiteralsTests
     {
         var parsed = Utf8OwnedTreeParser.TryParse(pattern, options);
         Assert.NotNull(parsed);
-        Assert.Equal(expected, Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(parsed.Root));
+        Assert.Equal(expected?.Select(Encoding.UTF8.GetBytes).ToArray(), Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(parsed.Root));
     }
 }

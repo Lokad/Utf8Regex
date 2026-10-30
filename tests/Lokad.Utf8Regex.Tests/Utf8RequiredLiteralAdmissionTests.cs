@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Text;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -12,7 +13,7 @@ public sealed class Utf8RequiredLiteralAdmissionTests
         {
             var tree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
             Assert.NotNull(tree);
-            string[]? expected;
+            byte[][]? expected;
             ulong work;
             using (var measured = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
             {
@@ -69,7 +70,8 @@ public sealed class Utf8RequiredLiteralAdmissionTests
         };
     }
 
-    private static string[] Expected(int route) => route == 1 ? ["other", "shared"] : ["shared"];
+    private static byte[][] Expected(int route) => route == 1
+        ? ["other"u8.ToArray(), "shared"u8.ToArray()] : ["shared"u8.ToArray()];
 
     [Theory]
     [InlineData(0, 0)] [InlineData(0, 1)] [InlineData(0, 2)]
@@ -201,19 +203,20 @@ public sealed class Utf8RequiredLiteralAdmissionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void OutputTransfersArrayAndAcquiredTextWhileBorrowedTextStaysBorrowed(bool one)
+    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    public void OutputTransfersOwnedBytesAndBorrowsNativePayload(int kind)
     {
         var text = new string('x', 1000);
-        var input = one ? Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'x') : Node(Utf8TreeNodeKind.Multi, text);
+        var native = Encoding.UTF8.GetBytes(text);
+        var input = kind == 0 ? Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.None, 'x')
+            : kind == 1 ? Node(Utf8TreeNodeKind.Multi, text) : Utf8TreeNode.CreateUtf8Literal(RegexOptions.None, native);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var result = Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(input);
         Assert.NotNull(result);
-        Assert.Equal(one ? "x" : text, Assert.Single(result));
-        if (!one) Assert.Same(text, result[0]);
-        Assert.True(owner.Budget.ReservedBytes >= Utf8ConstructionBudget.ArrayBytes<string>(1) +
-            (one ? Utf8ConstructionBudget.StringBytes(result[0].Length) : 0ul));
-        Assert.True(owner.Budget.ReservedBytes >= Utf8ConstructionBudget.ArrayBytes<string>(1));
+        Assert.Equal(kind == 0 ? "x"u8.ToArray() : native, Assert.Single(result));
+        if (kind == 2) Assert.Same(native, result[0]);
+        Assert.True(owner.Budget.ReservedBytes >= Utf8ConstructionBudget.ArrayBytes<byte[]>(1) +
+            (kind == 2 ? 0ul : Utf8ConstructionBudget.ArrayBytes<byte>(result[0].Length)));
         Assert.Equal(0ul, owner.Budget.Reserved);
         Assert.Equal(0ul, owner.Budget.Depth);
     }
@@ -232,7 +235,7 @@ public sealed class Utf8RequiredLiteralAdmissionTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void LongComparisonAndHashingAdmitTextWorkBeforeScanning(bool dirty)
+    public void LongComparisonsAdmitSourceAndByteWorkBeforeScanning(bool dirty)
     {
         var prefix = new string('x', 1_000_000);
         var left = Node(Utf8TreeNodeKind.Multi, prefix + 'a');

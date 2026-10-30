@@ -100,6 +100,28 @@ public sealed class Utf8NativePreparationTests
         Assert.Equal("-42"u8.ToArray(), tail);
     }
 
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void RequiredFamiliesUseByteOrderAndByteScoresWithoutChangingMatches(bool native)
+    {
+        static Utf8OwnedRegexTree Tree(string pattern, bool bytes) => bytes ? Parse(pattern)
+            : Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant)!;
+        var alternatives = Tree("[ab](😀|\ue000)|[cd](😀|\ue000)", native);
+        var family = Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(alternatives.Root);
+        Assert.Equal(new[] { "\ue000"u8.ToArray(), "😀"u8.ToArray() }, family);
+        var scored = Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(Tree("abc[0]😀", native).Root);
+        Assert.Equal(new[] { "😀"u8.ToArray() }, scored);
+
+        var expression = new Utf8Regex("[ab](😀|\ue000)|[cd](😀|\ue000)", RegexOptions.CultureInvariant);
+        var input = "a😀 b\ue000 c😀 d\ue000"u8.ToArray();
+        Assert.Equal(4, expression.Count(input));
+        using var cursor = expression.CreateMatchCursor(input);
+        var ranges = new List<(int, int)>();
+        while (cursor.MoveNext(out var match)) ranges.Add((match.Value.StartOffsetInBytes,
+            match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes));
+        Assert.Equal(new[] { (0, 5), (6, 4), (11, 5), (17, 4) }, ranges);
+    }
+
     private static Utf8OwnedRegexTree Parse(string pattern, RegexOptions options = RegexOptions.CultureInvariant)
     {
         var tree = Utf8OwnedTreeParser.TryParse(Encoding.UTF8.GetBytes(pattern), options, out var diagnostic);

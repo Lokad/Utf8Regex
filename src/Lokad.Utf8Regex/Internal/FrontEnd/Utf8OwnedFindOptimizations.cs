@@ -222,7 +222,19 @@ internal static class Utf8OwnedFindOptimizations
     internal static bool IsExactLiteral(Utf8TreeNode node)
     {
         if (node.Kind == Utf8TreeNodeKind.One) return ExactScalar(node.Ch, node);
-        if (node.Kind != Utf8TreeNodeKind.Multi || node.Str is not { Length: > 0 } text) return false;
+        if (node.Kind != Utf8TreeNodeKind.Multi) return false;
+        if (node.LiteralUtf8 is { Length: > 0 } native)
+        {
+            Utf8ConstructionScope.ChargeWork((ulong)native.Length);
+            for (var offset = 0; offset < native.Length;)
+            {
+                if (Rune.DecodeFromUtf8(native.AsSpan(offset), out var scalar, out var consumed) != System.Buffers.OperationStatus.Done ||
+                    !ExactScalar(scalar.Value, node)) return false;
+                offset += consumed;
+            }
+            return true;
+        }
+        if (node.Str is not { Length: > 0 } text) return false;
         // Admit the bounded pattern-text scan before it runs. Supplementary
         // pairs are text interoperability storage, not matching coordinates.
         Utf8ConstructionScope.ChargeWork((ulong)text.Length);

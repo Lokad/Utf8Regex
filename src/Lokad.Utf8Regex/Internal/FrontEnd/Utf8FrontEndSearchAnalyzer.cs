@@ -1367,14 +1367,15 @@ internal static class Utf8FrontEndSearchAnalyzer
         }
 
         // The producer proves whole-family coverage and complete exact scalars.
-        // Strict admitted encoding retains that proof; no replacement encoding.
+        // Its admitted UTF-8 payloads retain that proof without re-encoding.
         if (requiredFamily.Length == 1)
         {
-            literalUtf8 = EncodeLiteral(requiredFamily[0]);
+            literalUtf8 = requiredFamily[0];
             return literalUtf8.Length > 0;
         }
 
-        return TryEncodeAlternates(requiredFamily, out alternateLiteralsUtf8);
+        alternateLiteralsUtf8 = requiredFamily;
+        return true;
     }
 
     private static bool TrySelectDeterministicPrefixSets(
