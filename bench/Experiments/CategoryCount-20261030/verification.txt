@@ -1,0 +1,13 @@
+Core focused categories/boundaries/storage:
+Passed!  - Failed:     0, Passed:    75, Skipped:     0, Total:    75, Duration: 181 ms - Lokad.Utf8Regex.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:    75, Skipped:     0, Total:    75, Duration: 178 ms - Lokad.Utf8Regex.Tests.dll (net11.0)
+Core full:
+Passed!  - Failed:     0, Passed: 40107, Skipped:     0, Total: 40107, Duration: 1 m 37 s - Lokad.Utf8Regex.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed: 40107, Skipped:     0, Total: 40107, Duration: 1 m 40 s - Lokad.Utf8Regex.Tests.dll (net11.0)
+PythonRe affected:
+Passed!  - Failed:     0, Passed:   124, Skipped:     0, Total:   124, Duration: 1 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:   124, Skipped:     0, Total:   124, Duration: 1 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)
+PCRE2 affected:
+Passed!  - Failed:     0, Passed:   163, Skipped:     0, Total:   163, Duration: 241 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:   163, Skipped:     0, Total:   163, Duration: 217 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net11.0)
+VM: existing --verify-readme-parity-report passed; exactly the ordinary/compiled symbol Count snapshot records changed.

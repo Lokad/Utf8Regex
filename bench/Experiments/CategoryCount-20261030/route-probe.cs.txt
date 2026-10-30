@@ -1,0 +1,10 @@
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+foreach(var pattern in new[]{@"\p{Sm}",@"(\p{Sm})",@"\p{Lu}",@"(?i:\p{Lu})",@"\p{Sm}+"})
+foreach(var options in new[]{RegexOptions.None,RegexOptions.Compiled,RegexOptions.NonBacktracking,RegexOptions.RightToLeft})
+{
+    var regex=new Utf8Regex(pattern,options);var result=regex.CollectCountDiagnostics(Encoding.UTF8.GetBytes("Aa +<=>|~é∑𝛁😀"));
+    Console.WriteLine(JsonSerializer.Serialize(new{Pattern=pattern,Options=options.ToString(),Family=regex.Inspection.DebugFallbackDirectFamilyKind,result.ExecutionRoute,result.Result}));
+}

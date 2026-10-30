@@ -1,0 +1,6 @@
+Preflight industry/leipzig-symbol-count: 69
+Preflight finite-live-symbol-count: 69
+Preflight dense-bmp-symbols: 14336
+Preflight folded-category-control: 6576
+Preflight literal-control: 48
+Preflight word-count-control: 0

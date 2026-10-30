@@ -156,7 +156,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 
 | Case | Operation | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
-| `industry/leipzig-symbol-count` | `Count` | 1,073,823.120 us | 23,035.200 us | 29,987.200 us | 46.62x |
 | `industry/rust-sherlock-nonnewline-count` | `Count` | 4,808.973 us | 979.187 us | 1,276.603 us | 4.91x |
 | `industry/mariomka-email-count` | `Count` | 1,525.918 us | 492.350 us | 9,040.367 us | 3.10x |
 | `industry/rust-sherlock-letter-count` | `Count` | 46,658.450 us | 19,592.933 us | 20,452.233 us | 2.38x |
@@ -186,6 +185,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/date-miss` | `IsMatch` | 0.099 us | 0.561 us | 0.592 us | 0.18x |
 | `industry/boostdocs-float-match` | `IsMatch` | 0.011 us | 0.078 us | 0.091 us | 0.14x |
 | `common/matches-words` | `Count` | 9.542 us | 69.688 us | 71.353 us | 0.14x |
+| `industry/leipzig-symbol-count` | `Count` | 1,768.707 us | 22,607.200 us | 29,160.460 us | 0.08x |
 | `industry/rust-sherlock-word-holmes-count` | `Count` | 522.382 us | 8,730.300 us | 9,193.533 us | 0.06x |
 | `common/matches-boundary` | `Count` | 7.002 us | 163.076 us | 166.566 us | 0.04x |
 | `common/matches-set` | `Count` | 7.892 us | 199.831 us | 201.207 us | 0.04x |
@@ -238,7 +238,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 
 | Case | Operation | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
-| `industry/leipzig-symbol-count` | `Count` | 1,076,351.380 us | 1,286.967 us | 6,732.140 us | 836.35x |
 | `industry/rust-sherlock-letter-count` | `Count` | 44,934.700 us | 8,940.667 us | 9,616.660 us | 5.03x |
 | `common/backtracking` | `IsMatch` | 0.190 us | 0.044 us | 0.075 us | 4.34x |
 | `industry/rust-sherlock-holmes-window-count` | `Count` | 252.827 us | 58.641 us | 263.159 us | 4.31x |
@@ -259,6 +258,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/boostdocs-postcode-match` | `IsMatch` | 0.052 us | 0.031 us | 0.048 us | 1.67x |
 | `industry/mariomka-uri-count` | `Count` | 1,751.900 us | 1,099.909 us | 8,499.333 us | 1.59x |
 | `industry/boostdocs-credit-card-match` | `IsMatch` | 0.085 us | 0.056 us | 0.077 us | 1.52x |
+| `industry/leipzig-symbol-count` | `Count` | 1,764.914 us | 1,195.565 us | 6,162.680 us | 1.48x |
 | `industry/leipzig-name-family-count` | `Count` | 4,283.100 us | 3,108.941 us | 8,415.833 us | 1.38x |
 | `industry/leipzig-twain-count` | `Count` | 1,320.782 us | 1,333.897 us | 5,548.167 us | 0.99x |
 | `common/matches-words` | `Count` | 9.540 us | 11.005 us | 14.130 us | 0.87x |
