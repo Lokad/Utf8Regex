@@ -40,6 +40,9 @@ internal sealed class Utf8TreeNode
     internal static Utf8TreeNode Create(Utf8TreeNodeKind kind, RegexOptions options, Utf8ScalarClass scalarClass) =>
         CreatePayload(kind, options, '\0', scalarClass, 0, 0, null, null, (options & RegexOptions.IgnoreCase) != 0);
 
+    internal static Utf8TreeNode CreateUtf8Literal(RegexOptions options, byte[] literal) =>
+        CreatePayload(Utf8TreeNodeKind.Multi, options & ~RegexOptions.IgnoreCase, '\0', literal, 0, 0, null, null, (options & RegexOptions.IgnoreCase) != 0);
+
     // Quantification borrows the original canonical class and lexical fold flag.
     internal static Utf8TreeNode CreateSetRepeat(Utf8TreeNode atom, RegexOptions options, int minimum, int maximum, bool lazy) =>
         CreatePayload(lazy ? Utf8TreeNodeKind.Setlazy : Utf8TreeNodeKind.Setloop,
@@ -75,6 +78,7 @@ internal sealed class Utf8TreeNode
 
     private object? _payload;
     internal Utf8ScalarClass? ScalarClass => _payload as Utf8ScalarClass;
+    internal byte[]? LiteralUtf8 => _payload as byte[];
     public string? Str
     {
         get => _payload as string;

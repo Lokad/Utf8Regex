@@ -86,6 +86,26 @@ internal static class Utf8OwnedTreeSliceLowerer
                 case Utf8TreeNodeKind.Set:
                     return node.ScalarClass is { } set ? DecodeClass(set, foldCase, arena) : null;
                 case Utf8TreeNodeKind.Multi:
+                    if (node.LiteralUtf8 is { } utf8)
+                    {
+                        var nativeCount = 0;
+                        foreach (var value in utf8)
+                        {
+                            Utf8ConstructionScope.ChargeWork(1);
+                            if ((value & 0xc0) != 0x80) nativeCount++;
+                        }
+                        var nativeLiterals = arena.Allocate<Utf8SliceNode>(nativeCount, false);
+                        var nativeNext = 0;
+                        for (var offset = 0; offset < utf8.Length;)
+                        {
+                            Utf8ConstructionScope.ChargeWork(1);
+                            if (System.Text.Rune.DecodeFromUtf8(utf8.AsSpan(offset), out var scalar, out var consumed) != System.Buffers.OperationStatus.Done)
+                                return null;
+                            nativeLiterals[rightToLeft ? nativeCount - 1 - nativeNext : nativeNext] = new Utf8SliceNode.LiteralNode(scalar.Value, foldCase);
+                            nativeNext++; offset += consumed;
+                        }
+                        return new Utf8SliceNode.ConcatNode(nativeLiterals);
+                    }
                     if (node.Str is not { } text) return null;
                     var count = 0;
                     for (var index = 0; index < text.Length; count++)

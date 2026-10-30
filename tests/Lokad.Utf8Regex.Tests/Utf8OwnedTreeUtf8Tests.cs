@@ -24,6 +24,9 @@ public sealed class Utf8OwnedTreeUtf8Tests
         yield return ["(?i:é|K|k)+", RegexOptions.CultureInvariant];
         yield return ["(?<x>😀|é)+", RegexOptions.CultureInvariant | RegexOptions.RightToLeft];
         yield return ["(?:😀|é)+", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking];
+        yield return ["a{1}é{1}😀{1}b", RegexOptions.CultureInvariant];
+        yield return ["(?i:\\É\\u0041😀)+", RegexOptions.CultureInvariant | RegexOptions.ECMAScript];
+        yield return ["(?(xyz)é|😀)", RegexOptions.CultureInvariant];
     }
 
     [Theory]
@@ -158,5 +161,23 @@ public sealed class Utf8OwnedTreeUtf8Tests
         var small = Peak("(?#comment)x"u8.ToArray());
         var large = Peak(Encoding.UTF8.GetBytes("(?#" + string.Concat(Enumerable.Repeat("😀é", 8192)) + ")x"));
         Assert.Equal(small, large);
+    }
+
+    [Theory]
+    [InlineData("plainascii")]
+    [InlineData("é😀e\u0301\0🙏")]
+    [InlineData("é{1}😀{1}x")]
+    public void NativeLiteralPayloadsOwnUtf8WithoutRetainedLiteralText(string pattern)
+    {
+        var input = Encoding.UTF8.GetBytes(pattern);
+        var tree = Utf8OwnedTreeParser.TryParse(input, RegexOptions.CultureInvariant, out _);
+        Assert.NotNull(tree);
+        var literal = tree.Root.Child(0);
+        Assert.Equal(Utf8TreeNodeKind.Multi, literal.Kind);
+        Assert.Null(literal.Str);
+        var expected = Encoding.UTF8.GetBytes(pattern.Replace("{1}", "", StringComparison.Ordinal));
+        Assert.Equal(expected, literal.LiteralUtf8);
+        Array.Fill(input, (byte)0xff);
+        Assert.Equal(expected, literal.LiteralUtf8);
     }
 }
