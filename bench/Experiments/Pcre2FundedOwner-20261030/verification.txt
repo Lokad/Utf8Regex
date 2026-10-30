@@ -1,0 +1,36 @@
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.13
+Test run for D:\code\utf8regex\tests\Lokad.Utf8Regex.Pcre2.Tests\bin\Release\net10.0\Lokad.Utf8Regex.Pcre2.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+Test run for D:\code\utf8regex\tests\Lokad.Utf8Regex.Pcre2.Tests\bin\Release\net11.0\Lokad.Utf8Regex.Pcre2.Tests.dll (.NETCoreApp,Version=v11.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:  6229, Skipped:     0, Total:  6229, Duration: 17 s - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)
+
+Passed!  - Failed:     0, Passed:  6229, Skipped:     0, Total:  6229, Duration: 18 s - Lokad.Utf8Regex.Pcre2.Tests.dll (net11.0)
+D:\code\utf8regex\tests\Lokad.Utf8Regex.Pcre2.Tests\Pcre2ValueInvocationAuthorityTests.cs(44,97): warning xUnit1026: Theory method 'InitialValidationCannotReachMalformedTailAfterWorkDenial' on test class 'Pcre2ValueInvocationAuthorityTests' does not use parameter 'text'. Use the parameter, or remove the parameter and associated data. (https://xunit.net/xunit.analyzers/rules/xUnit1026) [D:\code\utf8regex\tests\Lokad.Utf8Regex.Pcre2.Tests\Lokad.Utf8Regex.Pcre2.Tests.csproj::TargetFramework=net11.0]
+D:\code\utf8regex\tests\Lokad.Utf8Regex.Pcre2.Tests\Pcre2TryReplaceInvocationTests.cs(21,119): warning xUnit1026: Theory method 'EntryDiscoveryAndPublicationObserveOriginalToken' on test class 'Pcre2TryReplaceInvocationTests' does not use parameter 'expected'. Use the parameter, or remove the parameter and associated data. (https://xunit.net/xunit.analyzers/rules/xUnit1026) [D:\code\utf8regex\tests\Lokad.Utf8Regex.Pcre2.Tests\Lokad.Utf8Regex.Pcre2.Tests.csproj::TargetFramework=net11.0]
+    48 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.55
+Test run for D:\code\utf8regex\tests\Lokad.Utf8Regex.Pcre2.Tests\bin\Release\net10.0\Lokad.Utf8Regex.Pcre2.Tests.dll (.NETCoreApp,Version=v10.0)
+Test run for D:\code\utf8regex\tests\Lokad.Utf8Regex.Pcre2.Tests\bin\Release\net11.0\Lokad.Utf8Regex.Pcre2.Tests.dll (.NETCoreApp,Version=v11.0)
+A total of 1 test files matched the specified pattern.
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:    76, Skipped:     0, Total:    76, Duration: 339 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)
+
+Passed!  - Failed:     0, Passed:    76, Skipped:     0, Total:    76, Duration: 302 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net11.0)
+Preflight literal-count: 1
+Preflight scalar-count: 128
+Preflight ucp-count: 256
+Preflight finite-live-count: 128
+Preflight literal-existence: 1
+Preflight scalar-existence: 1
+Preflight literal-compilation: 1
+Preflight scalar-compilation: 1

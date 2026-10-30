@@ -1,0 +1,131 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Pcre2;
+
+var context = new AssemblyLoadContext("before"); var beforeRoot = Path.GetFullPath(args[0]);
+context.LoadFromAssemblyPath(Path.Combine(beforeRoot, "Lokad.Utf8Regex.dll"));
+var before = context.LoadFromAssemblyPath(Path.Combine(beforeRoot, "Lokad.Utf8Regex.Pcre2.dll")); var after = typeof(Utf8Pcre2Regex).Assembly;
+if (Hash(before) == Hash(after) || !Identity(after).Contains(args[1])) throw new Exception("Unexpected binaries");
+using var process = Process.GetCurrentProcess(); process.ProcessorAffinity = (nint)4;
+var preflight = args.Length > 2 && args[2] == "--preflight"; var elapsed = Stopwatch.StartNew(); var rows = new List<object>();
+var text = string.Concat(Enumerable.Repeat("fooalpha-123 foofoo-45 ", 64));
+var cases = new[] {
+    new Case("literal-count", "needle", new string('x', 8192) + "needle"),
+    new Case("scalar-count", @"(?<=foo)([a-z]+)-([0-9]+)", text),
+    new Case("ucp-count", @"\b\w+\b", string.Concat(Enumerable.Repeat("café tea ", 128)), Pcre2CompileOptions.Ucp),
+    new Case("finite-live-count", @"(?<=foo)([a-z]+)-([0-9]+)", text, Finite: true),
+    new Case("literal-existence", "needle", new string('x', 8192) + "needle", Exists: true),
+    new Case("scalar-existence", @"(?<=foo)([a-z]+)-([0-9]+)", text, Exists: true),
+    new Case("literal-compilation", "needle", "", Construction: true),
+    new Case("scalar-compilation", @"(?<=foo)([a-z]+)-([0-9]+)", "", Construction: true)
+};
+foreach (var item in cases)
+{
+    var input = Encoding.UTF8.GetBytes(item.Text); var program = new Account(); var working = new Account();
+    using var live = new CancellationTokenSource(); var token = item.Finite ? live.Token : default;
+    var policy = item.Finite ? new Utf8ResourcePolicy { MaxWorkSteps = 16_000_000, MaxDepth = 4096, MaxWorkingBytes = 4 << 20, MaxResultBytes = 4 << 20 } : default;
+    var raw = Utf8Pcre2Regex.Create(item.Pattern, item.Options, default, policy, Timeout.InfiniteTimeSpan);
+    var expected = item.Construction ? 1 : item.Exists ? raw.IsMatch(input, 0, default, token) ? 1 : 0 : raw.Count(input, 0, default, token);
+    using var owner = Utf8Pcre2Regex.Compile(item.Pattern, item.Options, default, Timeout.InfiniteTimeSpan, policy, default, Timeout.InfiniteTimeSpan, default, program);
+    var held = program.Used; Func<int>[] actions; string[] lanes;
+    if (item.Construction)
+    {
+        var compile = BeforeCompiler(before);
+        actions = [() => { _ = compile(item.Pattern); return 1; },
+            () => { _ = Utf8Pcre2Regex.Compile(item.Pattern, item.Options, default, Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default); return 1; },
+            () => { using var owned = Utf8Pcre2Regex.Compile(item.Pattern, item.Options, default, Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, program); return 1; }];
+        lanes = ["BeforeCompile", "AfterCompile", "AfterFundedCompileAndClose"];
+    }
+    else
+    {
+        var old = BeforeMatcher(before, item, policy);
+        actions = [() => old(input, token), () => item.Exists ? raw.IsMatch(input, 0, default, token) ? 1 : 0 : raw.Count(input, 0, default, token),
+            () => item.Exists ? raw.IsMatch(input, 0, default, token, working) ? 1 : 0 : raw.Count(input, 0, default, token, working),
+            () => item.Exists ? owner.IsMatch(input, cancellationToken: token) ? 1 : 0 : owner.Count(input, cancellationToken: token),
+            () => item.Exists ? owner.IsMatch(input, cancellationToken: token, workingMemoryAllowance: working) ? 1 : 0 : owner.Count(input, cancellationToken: token, workingMemoryAllowance: working)];
+        lanes = ["BeforeUnfunded", "AfterUnfunded", "AfterWorkingAdmission", "AfterProgramDefaultWorking", "AfterProgramSeparateWorking"];
+    }
+    foreach (var action in actions) if (action() != expected) throw new Exception("Preflight mismatch: " + item.Name);
+    if (preflight) { Console.Error.WriteLine("Preflight " + item.Name + ": " + expected); continue; }
+    var iterations = new int[actions.Length]; var warmCalls = new long[actions.Length];
+    for (var lane = 0; lane < actions.Length; lane++)
+    {
+        var warm = Stopwatch.StartNew(); do { Loop(1, actions[lane], expected); warmCalls[lane]++; } while (warm.Elapsed.TotalMilliseconds < 600);
+        iterations[lane] = 1; while (Loop(iterations[lane], actions[lane], expected).Milliseconds < 80) iterations[lane] = checked(iterations[lane] * 2);
+    }
+    var times = actions.Select(_ => new double[3]).ToArray(); var bytes = actions.Select(_ => new double[3]).ToArray(); var durations = actions.Select(_ => new double[3]).ToArray();
+    for (var sample = 0; sample < 3; sample++) for (var position = 0; position < actions.Length; position++)
+    {
+        var lane = sample % 2 == 0 ? position : actions.Length - 1 - position;
+        GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); var measured = Loop(iterations[lane], actions[lane], expected);
+        times[lane][sample] = measured.Milliseconds * 1000 / iterations[lane]; bytes[lane][sample] = (double)measured.Bytes / iterations[lane]; durations[lane][sample] = measured.Milliseconds;
+        if (working.Used != 0 || program.Used != held) throw new Exception("Funding balance changed");
+    }
+    rows.Add(new { item.Name, item.Pattern, item.Options, item.Finite, item.Construction, item.Exists, InputBytes = input.Length, InputSha256 = Convert.ToHexString(SHA256.HashData(input)), Expected = expected, Lanes = lanes, Iterations = iterations, WarmupCalls = warmCalls, Microseconds = times, AllocatedBytes = bytes, ElapsedMilliseconds = durations, PeakWorking = working.Peak });
+    Console.Error.WriteLine(item.Name + ": " + string.Join(" / ", times.Select(a => a.Order().ElementAt(1))));
+    owner.Dispose(); if (program.Used != 0 || working.Used != 0) throw new Exception("Final funding leak");
+}
+Console.WriteLine(JsonSerializer.Serialize(new { Runtime = RuntimeInformation.FrameworkDescription, CpuAffinityMask = "4", ElapsedSeconds = elapsed.Elapsed.TotalSeconds,
+    Scope = "Equal-result public PCRE2 Count/IsMatch before/after unfunded controls and new working/program funding feature costs. Eager compilation includes explicit close for the funded feature. Results checked after timing; caller loans checked between samples/final close. No catalog or comparator Status.",
+    Baseline = Identity(before), Candidate = Identity(after), Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+
+static Matcher BeforeMatcher(Assembly assembly, Case item, Utf8ResourcePolicy policy)
+{
+    var type = assembly.GetType("Lokad.Utf8Regex.Pcre2.Utf8Pcre2Regex")!; var options = assembly.GetType("Lokad.Utf8Regex.Pcre2.Pcre2CompileOptions")!;
+    var settings = assembly.GetType("Lokad.Utf8Regex.Pcre2.Utf8Pcre2CompileSettings")!; var factory = type.GetMethods().Single(m => m.Name == "Create" && m.GetParameters()[0].ParameterType == typeof(string));
+    var oldPolicy = Activator.CreateInstance(factory.GetParameters()[3].ParameterType)!;
+    foreach (var property in typeof(Utf8ResourcePolicy).GetProperties().Where(p => p.GetMethod is { IsStatic: false }))
+        oldPolicy.GetType().GetProperty(property.Name)!.SetValue(oldPolicy, property.GetValue(policy));
+    var regex = factory.Invoke(null, [item.Pattern, Enum.ToObject(options, (int)item.Options), Activator.CreateInstance(settings), oldPolicy, Timeout.InfiniteTimeSpan])!;
+    var method = type.GetMethods().Single(m => m.Name == (item.Exists ? "IsMatch" : "Count") && !m.IsStatic && m.GetParameters().Length == 4);
+    var bridge = new DynamicMethod("BeforePublicOperation", typeof(int), [typeof(object), typeof(byte[]), typeof(CancellationToken)], typeof(Program).Module, true);
+    var il = bridge.GetILGenerator(); il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Castclass, type); il.Emit(OpCodes.Ldarg_1);
+    il.Emit(OpCodes.Call, typeof(ReadOnlySpan<byte>).GetMethod("op_Implicit", [typeof(byte[])])!); il.Emit(OpCodes.Ldc_I4_0); il.Emit(OpCodes.Ldc_I4_0); il.Emit(OpCodes.Ldarg_2); il.Emit(OpCodes.Call, method); il.Emit(OpCodes.Ret);
+    return bridge.CreateDelegate<Matcher>(regex);
+}
+static Func<string, object> BeforeCompiler(Assembly assembly)
+{
+    var type = assembly.GetType("Lokad.Utf8Regex.Pcre2.Utf8Pcre2Regex")!;
+    var method = type.GetMethods().Single(m => m.Name == "Compile" && m.GetParameters().Length == 8 && m.GetParameters()[0].ParameterType == typeof(string));
+    var bridge = new DynamicMethod("BeforeCompile", typeof(object), [typeof(string)], typeof(Program).Module, true); var il = bridge.GetILGenerator();
+    il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Ldc_I4_0);
+    for (var index = 2; index < 8; index++)
+    {
+        var parameter = method.GetParameters()[index].ParameterType;
+        if (parameter == typeof(TimeSpan)) il.Emit(OpCodes.Ldsfld, typeof(Timeout).GetField("InfiniteTimeSpan")!);
+        else { var value = il.DeclareLocal(parameter); il.Emit(OpCodes.Ldloc, value); }
+    }
+    il.Emit(OpCodes.Call, method); il.Emit(OpCodes.Ret); return bridge.CreateDelegate<Func<string, object>>();
+}
+static (double Milliseconds, long Bytes) Loop(int iterations, Func<int> action, int expected)
+{
+    var values = new int[iterations]; var allocated = GC.GetAllocatedBytesForCurrentThread(); var start = Stopwatch.GetTimestamp();
+    for (var i = 0; i < iterations; i++) values[i] = action();
+    var elapsed = Stopwatch.GetElapsedTime(start).TotalMilliseconds; var bytes = GC.GetAllocatedBytesForCurrentThread() - allocated;
+    long checksum = 0; foreach (var value in values) { if (value != expected) throw new Exception("Timed result mismatch"); checksum += value; }
+    GC.KeepAlive(checksum); return (elapsed, bytes);
+}
+static string Hash(Assembly assembly) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location)));
+static string Identity(Assembly assembly) => assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion + " sha256=" + Hash(assembly);
+delegate int Matcher(byte[] input, CancellationToken token);
+record Case(string Name, string Pattern, string Text, Pcre2CompileOptions Options = Pcre2CompileOptions.None, bool Exists = false, bool Construction = false, bool Finite = false);
+public sealed class Account : IUtf8MemoryAllowance
+{
+    private long _used, _peak;
+    public ulong Used => (ulong)Interlocked.Read(ref _used);
+    public ulong Peak => (ulong)Interlocked.Read(ref _peak);
+    public bool TryReserve(ulong bytes)
+    {
+        var used = Interlocked.Add(ref _used, checked((long)bytes));
+        long old; do { old = Interlocked.Read(ref _peak); if (used <= old) break; } while (Interlocked.CompareExchange(ref _peak, used, old) != old);
+        return true;
+    }
+    public void Release(ulong bytes) { if (Interlocked.Add(ref _used, -checked((long)bytes)) < 0) throw new Exception("Unfunded release"); }
+}
