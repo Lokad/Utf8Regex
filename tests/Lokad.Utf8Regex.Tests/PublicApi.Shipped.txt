@@ -69,6 +69,7 @@ sealed class Utf8Regex
   property static TimeSpan DefaultMatchTimeout { get; set; }
   method Boolean IsMatch(ReadOnlySpan<Byte> input)
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken)
+  method Boolean IsMatch(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance workingMemoryAllowance)
   method Boolean IsMatchFromUtf16Offset(ReadOnlySpan<Byte> input, Int32 utf16Offset)
   method Boolean IsMatchFromUtf16Offset(ReadOnlySpan<Byte> input, Int32 utf16Offset, Threading.CancellationToken cancellationToken)
   method Buffers.OperationStatus TryReplace(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementPatternUtf8, Span<Byte> destination, out Int32 bytesWritten)
@@ -83,6 +84,7 @@ sealed class Utf8Regex
   method Byte[] Replace<TState>(ReadOnlySpan<Byte> input, TState state, Utf8MatchEvaluator<TState> evaluator, Threading.CancellationToken cancellationToken)
   method Int32 Count(ReadOnlySpan<Byte> input)
   method Int32 Count(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken)
+  method Int32 Count(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance workingMemoryAllowance)
   method Int32 CountFromUtf16Offset(ReadOnlySpan<Byte> input, Int32 utf16Offset)
   method Int32 CountFromUtf16Offset(ReadOnlySpan<Byte> input, Int32 utf16Offset, Threading.CancellationToken cancellationToken)
   method Int32 GroupNumberFromName(String name)
@@ -122,6 +124,7 @@ sealed class Utf8Regex
   method static Utf8MatchContext MatchDetailed(ReadOnlySpan<Byte> input, String pattern, Text.RegularExpressions.RegexOptions options)
   method static Utf8MatchContext MatchDetailed(ReadOnlySpan<Byte> input, String pattern, Text.RegularExpressions.RegexOptions options, TimeSpan matchTimeout)
   method static Utf8Regex Compile(String pattern, Text.RegularExpressions.RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken)
+  method static Utf8RegexProgramOwner Compile(String pattern, Text.RegularExpressions.RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance)
   method static Utf8ValueMatch Match(ReadOnlySpan<Byte> input, String pattern)
   method static Utf8ValueMatch Match(ReadOnlySpan<Byte> input, String pattern, Text.RegularExpressions.RegexOptions options)
   method static Utf8ValueMatch Match(ReadOnlySpan<Byte> input, String pattern, Text.RegularExpressions.RegexOptions options, TimeSpan matchTimeout)
@@ -132,6 +135,10 @@ sealed class Utf8Regex
   method static Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<Byte> input, String pattern, Int32 count)
   method static Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<Byte> input, String pattern, Int32 count, Text.RegularExpressions.RegexOptions options)
   method static Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<Byte> input, String pattern, Int32 count, Text.RegularExpressions.RegexOptions options, TimeSpan matchTimeout)
+sealed class Utf8RegexProgramOwner : IDisposable
+  method Boolean IsMatch(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
+  method Int32 Count(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
+  method Void Dispose()
 ref struct Utf8ReplacementWriter
   method Void Append(Text.Rune value)
   method Void Append(scoped ReadOnlySpan<Byte> utf8)

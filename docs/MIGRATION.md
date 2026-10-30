@@ -73,6 +73,25 @@ program/cache retention, standalone getters, callback allocations and host stora
 have separate scope. See [resource controls](SPEC.md#cancellation-deadlines-and-resource-limits)
 and [host admission](SPEC.md#host-admission) for the Core/PythonRe W+R recipe.
 
+### Core caller-funded Boolean/count operations
+
+Core's funded Compile overload returns `Utf8RegexProgramOwner`. Close it explicitly;
+compilation remains funded through any active calls. The optional working allowance
+lets a host use different children of one shared reservation for program and work:
+
+```csharp
+using var program = Utf8Regex.Compile(pattern, RegexOptions.None,
+    matchTimeout, resourcePolicy, constructionPolicy, constructionTimeout,
+    compileToken, programMemoryAllowance);
+int count = program.Count(subject.Span, callToken, workingMemoryAllowance);
+```
+
+Boolean/count calls refund temporary loans synchronously, retain numeric limits
+and never retry a refusal under another allowance. This first Core owner covers
+these operations; funded cursor/capture/replacement and PCRE2 ownership flows remain
+unfinished. The [resource contract](SPEC.md#cancellation-deadlines-and-resource-limits)
+distinguishes modeled live admission from cumulative work/result traffic.
+
 ## Respect lifetime and default-result rules
 
 Borrowed subjects/views require unchanged bytes and a live owner. Owned snapshots

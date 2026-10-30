@@ -202,8 +202,28 @@ PythonRe's explicit shared-working cursor overload accepts `IUtf8MemoryAllowance
 from the host. The existing ledger reserves before covered acquisitions and
 refunds exclusive storage after users finish. Shared refusal is a distinct
 `Utf8MemoryAdmissionException` and cannot relax numeric controls. The interface
-does not itself add admission to Core/PCRE2 public operations, compilation,
-retained caches or caller-owned outputs; those lifetimes remain separate.
+alone does not fund other API families or caller-owned output retention; each
+accepting API defines its covered lifetime.
+
+Core `IsMatch(input, token, workingMemoryAllowance)` and
+`Count(input, token, workingMemoryAllowance)` admit modeled temporary matching
+storage through that allowance. Strict whole-subject validation and the original
+token/deadline precede matching; covered loans refund on completion or failure.
+Numeric work/depth/working/result limits remain independently enforceable. Fixed
+invocation metadata, borrowed input and the compiled expression are separate.
+Funded timeout diagnostics omit subject text rather than decoding it without
+admission. Native literal, word and category counters keep bounded metering.
+
+Core's `Compile(..., token, programMemoryAllowance)` returns a disposable
+`Utf8RegexProgramOwner`. It admits conservative compilation capacities before
+acquisition and transfers their charge to explicit ownership. The owner offers
+Boolean matching and Count, using its program allowance for working storage by
+default; the optional working allowance selects a separate host child account.
+The private expression cannot escape the owner. Dispose rejects new calls and
+refunds compilation after the final active call; active calls retain their local
+program reference and finish under their original controls. This new owner keeps
+legacy copied span-enumerator lifetimes separate. Funded capture/iteration/
+replacement flows and PCRE2 program admission remain unfinished.
 
 ### Host admission
 
@@ -233,7 +253,7 @@ Explicit `Compile` accepts separate construction policy, timeout and token;
 pre-cancellation wins, nested preparation shares the owner, and authority is not
 retained for execution. It does not consult static caches. Ordinary constructors
 keep fixed backstops; positive construction values tighten them, null keeps them.
-The PythonRe caller-funded program overloads instead delegate byte admission to
+The Core/PythonRe caller-funded program overloads instead delegate byte admission to
 their shared allowance, with an optional additional `MaxBytes`; the other
 backstops below remain. See [program lifetime](SPEC-PYTHONRE.md#construction-and-execution-controls).
 
