@@ -1,0 +1,120 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+var before=Load(Path.GetFullPath(args[0]),"before");var after=Load(Path.GetFullPath(args[1]),"after");
+if(Hash(before)==Hash(after)||!Identity(after).Contains(args[2]))throw new Exception("Unexpected binaries");
+using var process=Process.GetCurrentProcess();process.ProcessorAffinity=(nint)4;
+var preflight=args.Length>3&&args[3]=="--preflight";var roots=new List<IDisposable>();var hosts=new List<Host>();var rows=new List<object>();var elapsed=Stopwatch.StartNew();
+var scalarText=string.Concat(Enumerable.Repeat("fooalpha-123 foofoo-45 ",64));
+var cases=new[]{new Case("literal-count","needle",new string('x',8192)+"needle"),
+    new Case("category-count",@"\p{Sm}",new string('x',8192)+"∑+"),
+    new Case("word-count",@"\b\w{10,}\b",string.Concat(Enumerable.Repeat("short abcdefghijkl ",512))),
+    new Case("scalar-count",@"(?<=foo)([a-z]+)-([0-9]+)",scalarText),
+    new Case("literal-existence","needle",new string('x',8192)+"needle",Exists:true),
+    new Case("scalar-existence",@"(?<=foo)([a-z]+)-([0-9]+)",scalarText,Exists:true),
+    new Case("literal-compilation","needle","",Construction:true),new Case("scalar-compilation",@"(?<=foo)([a-z]+)-([0-9]+)","",Construction:true)};
+foreach(var item in cases)
+{
+    var input=Encoding.UTF8.GetBytes(item.Text);var oracle=new Regex(item.Pattern);var expected=item.Construction?1:item.Exists?(oracle.IsMatch(item.Text)?1:0):oracle.Count(item.Text);
+    Func<int> Raw(Assembly assembly)
+    {
+        var type=assembly.GetType("Lokad.Utf8Regex.Utf8Regex")!;
+        var regex=type.GetConstructor([typeof(string)])!.Invoke([item.Pattern]);
+        if(item.Exists){var call=type.GetMethod("IsMatch",[typeof(ReadOnlySpan<byte>)])!.CreateDelegate<SpanExists>(regex);return()=>call(input)?1:0;}
+        var count=type.GetMethod("Count",[typeof(ReadOnlySpan<byte>)])!.CreateDelegate<SpanCount>(regex);return()=>count(input);
+    }
+    var type=after.GetType("Lokad.Utf8Regex.Utf8Regex")!;var policyType=after.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!;
+    var constructionType=after.GetType("Lokad.Utf8Regex.Utf8ConstructionPolicy")!;var allowanceType=after.GetType("Lokad.Utf8Regex.IUtf8MemoryAllowance")!;
+    var programHost=new Host();var workingHost=new Host();hosts.Add(programHost);hosts.Add(workingHost);
+    var programAccount=MakeAllowance(allowanceType,programHost);var workingAccount=MakeAllowance(allowanceType,workingHost);
+    Func<int>[] actions;string[] lanes;
+    if(item.Construction)
+    {
+        Func<int> Constructor(Assembly assembly,bool funded)
+        {
+            var factory=CompileBridge(assembly,funded);var policy=Activator.CreateInstance(assembly.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!)!;
+            var construction=Activator.CreateInstance(assembly.GetType("Lokad.Utf8Regex.Utf8ConstructionPolicy")!)!;
+            return()=>{var owner=factory(item.Pattern,policy,construction,funded?programAccount:null);(owner as IDisposable)?.Dispose();return 1;};
+        }
+        actions=[Constructor(before,false),Constructor(after,false),Constructor(after,true)];
+        lanes=["BeforeCompile","AfterCompile","AfterFundedCompileAndClose"];
+    }
+    else
+    {
+        var methodName=item.Exists?"IsMatch":"Count";
+        var raw=type.GetConstructor([typeof(string)])!.Invoke([item.Pattern]);
+        var owner=type.GetMethod("Compile",[typeof(string),typeof(RegexOptions),typeof(TimeSpan),policyType,constructionType,typeof(TimeSpan),typeof(CancellationToken),allowanceType])!
+            .Invoke(null,[item.Pattern,RegexOptions.None,Timeout.InfiniteTimeSpan,Activator.CreateInstance(policyType),Activator.CreateInstance(constructionType),Timeout.InfiniteTimeSpan,default(CancellationToken),programAccount])!;
+        roots.Add((IDisposable)owner);
+        var workingCall=MatchBridge(type.GetMethod(methodName,[typeof(ReadOnlySpan<byte>),typeof(CancellationToken),allowanceType])!,allowanceType);
+        var ownerCall=MatchBridge(owner.GetType().GetMethod(methodName)!,allowanceType);
+        actions=[Raw(before),Raw(after),()=>workingCall(raw,input,workingAccount),()=>ownerCall(owner,input,null),()=>ownerCall(owner,input,workingAccount)];
+        lanes=["BeforeUnfunded","AfterUnfunded","AfterWorkingAdmission","AfterProgramDefaultWorking","AfterProgramSeparateWorking"];
+    }
+    foreach(var action in actions)if(action()!=expected)throw new Exception("Preflight mismatch "+item.Name);
+    var held=programHost.Used;
+    if(preflight){Console.Error.WriteLine("Preflight "+item.Name+": "+expected);continue;}
+    var n=actions.Length;var iterations=new int[n];var warmCalls=new long[n];
+    for(var lane=0;lane<n;lane++)
+    {
+        var warm=Stopwatch.StartNew();do{Loop(1,actions[lane],expected);warmCalls[lane]++;}while(warm.Elapsed.TotalMilliseconds<750);
+        iterations[lane]=1;while(Loop(iterations[lane],actions[lane],expected).Milliseconds<80)iterations[lane]=checked(iterations[lane]*2);
+    }
+    var times=Enumerable.Range(0,n).Select(_=>new double[3]).ToArray();var bytes=Enumerable.Range(0,n).Select(_=>new double[3]).ToArray();var durations=Enumerable.Range(0,n).Select(_=>new double[3]).ToArray();
+    for(var sample=0;sample<3;sample++)for(var position=0;position<n;position++)
+    {
+        var lane=sample%2==0?position:n-1-position;GC.Collect();GC.WaitForPendingFinalizers();GC.Collect();var measured=Loop(iterations[lane],actions[lane],expected);
+        times[lane][sample]=measured.Milliseconds*1000/iterations[lane];bytes[lane][sample]=(double)measured.Bytes/iterations[lane];durations[lane][sample]=measured.Milliseconds;
+        if(workingHost.Used!=0||programHost.Used!=held)throw new Exception("Funding balance changed");
+    }
+    rows.Add(new{item.Name,item.Pattern,item.Construction,item.Exists,InputBytes=input.Length,InputSha256=Convert.ToHexString(SHA256.HashData(input)),Expected=expected,Lanes=lanes,
+        Iterations=iterations,WarmupCalls=warmCalls,Microseconds=times,AllocatedBytes=bytes,ElapsedMilliseconds=durations});
+    Console.Error.WriteLine("Completed "+item.Name+": "+string.Join(" / ",times.Select(a=>a.Order().ElementAt(1))));
+}
+foreach(var owner in roots)owner.Dispose();if(hosts.Any(host=>host.Used!=0))throw new Exception("Final funding leak");
+Console.WriteLine(JsonSerializer.Serialize(new{Runtime=RuntimeInformation.FrameworkDescription,CpuAffinityMask="4",ElapsedSeconds=elapsed.Elapsed.TotalSeconds,
+    Scope="Equal-result public Core Count/IsMatch. Before/after unfunded controls are distinct from new working/program admission costs. Compilation lanes create/close one expression. No claim of funding equivalence or benchmark Status. Results/checksums checked after timing and all caller loans verified.",
+    Baseline=Identity(before),Candidate=Identity(after),Rows=rows},new JsonSerializerOptions{WriteIndented=true}));
+static Assembly Load(string root,string name){var context=new AssemblyLoadContext(name);return context.LoadFromAssemblyPath(Path.Combine(root,"Lokad.Utf8Regex.dll"));}
+static Matcher MatchBridge(MethodInfo method,Type allowance)
+{
+    var bridge=new DynamicMethod("PublicFundedOperation",typeof(int),[typeof(object),typeof(byte[]),typeof(object)],typeof(Program).Module,true);var il=bridge.GetILGenerator();var token=il.DeclareLocal(typeof(CancellationToken));
+    il.Emit(OpCodes.Ldarg_0);il.Emit(OpCodes.Castclass,method.DeclaringType!);il.Emit(OpCodes.Ldarg_1);il.Emit(OpCodes.Call,typeof(ReadOnlySpan<byte>).GetMethod("op_Implicit",[typeof(byte[])])!);
+    il.Emit(OpCodes.Ldloc,token);il.Emit(OpCodes.Ldarg_2);il.Emit(OpCodes.Castclass,allowance);il.Emit(OpCodes.Call,method);il.Emit(OpCodes.Ret);return bridge.CreateDelegate<Matcher>();
+}
+static Compiler CompileBridge(Assembly assembly,bool funded)
+{
+    var type=assembly.GetType("Lokad.Utf8Regex.Utf8Regex")!;var policy=assembly.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!;var construction=assembly.GetType("Lokad.Utf8Regex.Utf8ConstructionPolicy")!;
+    var method=type.GetMethods().Single(m=>m.Name=="Compile"&&m.GetParameters().Length==(funded?8:7)&&m.GetParameters()[0].ParameterType==typeof(string));
+    var bridge=new DynamicMethod("CompilePublic",typeof(object),[typeof(string),typeof(object),typeof(object),typeof(object)],typeof(Program).Module,true);var il=bridge.GetILGenerator();var token=il.DeclareLocal(typeof(CancellationToken));
+    il.Emit(OpCodes.Ldarg_0);il.Emit(OpCodes.Ldc_I4_0);il.Emit(OpCodes.Ldsfld,typeof(Timeout).GetField("InfiniteTimeSpan")!);
+    il.Emit(OpCodes.Ldarg_1);il.Emit(OpCodes.Unbox_Any,policy);il.Emit(OpCodes.Ldarg_2);il.Emit(OpCodes.Unbox_Any,construction);il.Emit(OpCodes.Ldsfld,typeof(Timeout).GetField("InfiniteTimeSpan")!);il.Emit(OpCodes.Ldloc,token);
+    if(funded){il.Emit(OpCodes.Ldarg_3);il.Emit(OpCodes.Castclass,assembly.GetType("Lokad.Utf8Regex.IUtf8MemoryAllowance")!);}
+    il.Emit(OpCodes.Call,method);il.Emit(OpCodes.Ret);return bridge.CreateDelegate<Compiler>();
+}
+static object MakeAllowance(Type contract,Host host)
+{
+    var assembly=AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Host"+Guid.NewGuid().ToString("N")),AssemblyBuilderAccess.Run);
+    var type=assembly.DefineDynamicModule("Host").DefineType("Provider",TypeAttributes.Public|TypeAttributes.Sealed,typeof(object),[contract]);var field=type.DefineField("host",typeof(Host),FieldAttributes.Private);
+    var ctor=type.DefineConstructor(MethodAttributes.Public,CallingConventions.Standard,[typeof(Host)]);var il=ctor.GetILGenerator();il.Emit(OpCodes.Ldarg_0);il.Emit(OpCodes.Call,typeof(object).GetConstructor(Type.EmptyTypes)!);il.Emit(OpCodes.Ldarg_0);il.Emit(OpCodes.Ldarg_1);il.Emit(OpCodes.Stfld,field);il.Emit(OpCodes.Ret);
+    foreach(var declaration in contract.GetMethods()){var method=type.DefineMethod(declaration.Name,MethodAttributes.Public|MethodAttributes.Virtual|MethodAttributes.Final|MethodAttributes.NewSlot,declaration.ReturnType,[typeof(ulong)]);il=method.GetILGenerator();il.Emit(OpCodes.Ldarg_0);il.Emit(OpCodes.Ldfld,field);il.Emit(OpCodes.Ldarg_1);il.Emit(OpCodes.Callvirt,typeof(Host).GetMethod(declaration.Name)!);il.Emit(OpCodes.Ret);type.DefineMethodOverride(method,declaration);}
+    return Activator.CreateInstance(type.CreateType()!,host)!;
+}
+static string Hash(Assembly a)=>Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(a.Location)));
+static string Identity(Assembly a)=>a.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion+" sha256="+Hash(a);
+[MethodImpl(MethodImplOptions.NoInlining)]
+static(double Milliseconds,long Bytes)Loop(int count,Func<int> action,int expected){var output=new int[count];var allocated=GC.GetAllocatedBytesForCurrentThread();var start=Stopwatch.GetTimestamp();for(var i=0;i<count;i++)output[i]=action();var elapsed=Stopwatch.GetElapsedTime(start).TotalMilliseconds;var bytes=GC.GetAllocatedBytesForCurrentThread()-allocated;long checksum=0;foreach(var value in output){if(value!=expected)throw new Exception("Timed mismatch");checksum=unchecked(checksum+value);}GC.KeepAlive(output);GC.KeepAlive(checksum);return(elapsed,bytes);}
+record Case(string Name,string Pattern,string Text,bool Exists=false,bool Construction=false);
+delegate int SpanCount(ReadOnlySpan<byte> input);
+delegate bool SpanExists(ReadOnlySpan<byte> input);
+delegate int Matcher(object owner,byte[] input,object? allowance);
+delegate object Compiler(string pattern,object policy,object construction,object? allowance);
+public sealed class Host{private long _used;public long Used=>Volatile.Read(ref _used);public bool TryReserve(ulong bytes){if(bytes>long.MaxValue)return false;var delta=(long)bytes;while(true){var current=Volatile.Read(ref _used);if(delta>long.MaxValue-current)return false;if(Interlocked.CompareExchange(ref _used,current+delta,current)==current)return true;}}public void Release(ulong bytes){if(Interlocked.Add(ref _used,-checked((long)bytes))<0)throw new Exception("Underflow");}}
