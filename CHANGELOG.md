@@ -15,6 +15,9 @@
 - Quote complete Unicode scalars in PCRE2 character classes, including escaped emoji.
 - Expose validated capture counts and UTF-8 pattern copies into caller-owned
   buffers, including funded Core/PCRE2 owners without borrowed storage aliases.
+- Add strict UTF-8 capture-name lookup using admitted native keys, preserving
+  Core sparse/numeric identities, Python names and PCRE2 duplicate slots.
+
 - Add caller-funded Core Boolean/count operations and a disposable compiled
   program owner with separate working admission and deterministic close/refunds.
 - Add Core memory cursors with byte-range capture histories, per-advance tokens,

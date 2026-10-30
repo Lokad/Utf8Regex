@@ -25,6 +25,16 @@ public sealed class Utf8RegexProgramOwner : IDisposable
         }
     }
 
+    /// <inheritdoc cref="Utf8Regex.GroupNumberFromUtf8Name" />
+    /// <remarks>Retains program admission during access and rejects calls after close.</remarks>
+    public int GroupNumberFromUtf8Name(ReadOnlySpan<byte> nameUtf8, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var regex = Volatile.Read(ref _regex) ?? throw new ObjectDisposedException(nameof(Utf8RegexProgramOwner));
+        using var use = _storage.Enter();
+        return regex.GroupNumberFromUtf8Name(nameUtf8, cancellationToken);
+    }
+
     /// <inheritdoc cref="Utf8Regex.TryCopyPatternUtf8" />
     /// <remarks>Holds program admission during the copy and rejects calls after close. The destination belongs to the caller and remains valid after owner disposal; no borrowed program-storage alias is exposed.</remarks>
     public OperationStatus TryCopyPatternUtf8(Span<byte> destination, out int bytesRequired,

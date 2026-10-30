@@ -12,7 +12,8 @@ internal sealed class Utf8CaptureCatalog
         int[] DefinitionNumbers, int[] GroupNumbers, string[] GroupNames,
         Utf8ConstructionReadOnlyMap<string, int>? NameToNumber,
         Utf8ConstructionReadOnlyMap<int, int>? SparseMapping,
-        bool HasSharedCaptureDeclarations, bool HasExplicitCaptureNumbers);
+        bool HasSharedCaptureDeclarations, bool HasExplicitCaptureNumbers,
+        KeyValuePair<byte[], int>[]? Utf8Names);
 
     private readonly record struct AutomaticDefinition(int Index, int OpenPosition);
 
@@ -25,6 +26,7 @@ internal sealed class Utf8CaptureCatalog
         SparseMapping = state.SparseMapping;
         HasSharedCaptureDeclarations = state.HasSharedCaptureDeclarations;
         HasExplicitCaptureNumbers = state.HasExplicitCaptureNumbers;
+        Utf8Names = state.Utf8Names;
     }
 
     internal static Utf8CaptureCatalog Create(int unnamedCount, ReadOnlySpan<Utf8CaptureDefinition> definitions,
@@ -47,7 +49,7 @@ internal sealed class Utf8CaptureCatalog
                     names[slot] = NumberName(slot, budget);
                 }
                 var dense = budget.AllocateObject(new ConstructionState([], numbers, names, null, null,
-                    hasReferencedCaptures, false), static state => new Utf8CaptureCatalog(state));
+                    hasReferencedCaptures, false, null), static state => new Utf8CaptureCatalog(state));
                 scope.Complete();
                 return dense;
             }
@@ -143,9 +145,22 @@ internal sealed class Utf8CaptureCatalog
                 nameToNumber = names.Freeze(arena);
             }
 
+            // Encode the validated lookup keys once, under the same program
+            // owner. Dense numeric-only catalogs need no retained UTF-8 keys.
+            KeyValuePair<byte[], int>[]? utf8Names = null;
+            if (nameToNumber is not null)
+            {
+                utf8Names = budget.AllocateArray<KeyValuePair<byte[], int>>(nameToNumber.Count, false);
+                var index = 0;
+                foreach (var entry in nameToNumber)
+                {
+                    budget.ChargeWork(1);
+                    utf8Names[index++] = new(budget.EncodeUtf8(entry.Key.AsSpan()), entry.Value);
+                }
+            }
             var catalog = budget.AllocateObject(new ConstructionState(definitionNumbers, groupNumbers, groupNames,
                 nameToNumber, sparseMapping, definitions.Length + unnamedCount > unique - 1 || hasReferencedCaptures,
-                explicitNumbers), static state => new Utf8CaptureCatalog(state));
+                explicitNumbers, utf8Names), static state => new Utf8CaptureCatalog(state));
             arena.Complete();
             scope.Complete();
             return catalog;
@@ -227,6 +242,32 @@ internal sealed class Utf8CaptureCatalog
     internal Utf8ConstructionReadOnlyMap<int, int>? SparseMapping { get; }
     internal bool HasSharedCaptureDeclarations { get; }
     internal bool HasExplicitCaptureNumbers { get; }
+    private KeyValuePair<byte[], int>[]? Utf8Names { get; }
+
+    internal int GroupNumberFromUtf8Name(ReadOnlySpan<byte> name, CancellationToken cancellationToken)
+    {
+        Utf8PatternMetadata.ValidateName(name, cancellationToken);
+        if (name.IsEmpty) return -1;
+        if (Utf8Names is { } names)
+        {
+            foreach (var entry in names)
+                if (Utf8PatternMetadata.NameEquals(entry.Key, name, cancellationToken)) return entry.Value;
+            cancellationToken.ThrowIfCancellationRequested();
+            return -1;
+        }
+        // Match the existing dense numeric parser, including leading zeros,
+        // with bounded cancellation even for an arbitrarily long zero prefix.
+        uint numeric = 0;
+        for (var index = 0; index < name.Length; index++)
+        {
+            if ((index & 2047) == 0) cancellationToken.ThrowIfCancellationRequested();
+            var digit = (uint)(name[index] - '0');
+            if (digit > 9 || numeric > (uint.MaxValue - digit) / 10) return -1;
+            numeric = numeric * 10 + digit;
+        }
+        cancellationToken.ThrowIfCancellationRequested();
+        return numeric < GroupNumbers.Length ? (int)numeric : -1;
+    }
 
     internal string GroupNameFromNumber(int number)
     {

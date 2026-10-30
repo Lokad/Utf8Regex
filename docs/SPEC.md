@@ -102,6 +102,16 @@ budgets. Caller storage remains the caller's admission/retention responsibility.
 Funded owners expose both members, retain program funding during access and
 reject access after close; successful copies survive owner disposal.
 
+`GroupNumberFromUtf8Name(name, token)` validates the entire UTF-8 name and
+returns its exact ordinal slot, or -1. Dense numeric-only catalogs preserve
+leading-zero numeric lookup; named/sparse catalogs preserve their existing exact
+keys. No normalization occurs. Keys are encoded and admitted once at compilation;
+lookup scans the immutable key vector without allocating strings. Work is linear
+in retained keys/compared bytes, with bounded token checkpoints. The funded owner
+exposes the same lookup under its existing program use. Malformed names report
+ArgumentException with a byte offset, even when a preceding prefix is unknown.
+This explicit metadata work remains outside matching timeout/numeric budgets.
+
 ## Case and culture
 
 `CultureInvariant` is the primary supported/performance-tested mode.
@@ -284,8 +294,8 @@ retention then the caller's admission responsibility. Borrowed input is not char
 again. Numeric result traffic remains cumulative even when live loans refund.
 
 Native subject/range discovery, pattern compilation and caller-buffer source
-metadata are implemented. Byte-template preparation/cache paths and native name
-lookup remain unfinished parts of the complete UTF-8 public pipeline.
+metadata are implemented. Byte-template preparation/cache paths remain unfinished parts of the complete
+UTF-8 public pipeline; native name lookup is implemented.
 
 ### Host admission
 

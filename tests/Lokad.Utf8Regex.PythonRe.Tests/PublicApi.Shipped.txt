@@ -112,6 +112,7 @@ sealed class PythonRe.Utf8PythonRegex : IDisposable
   method Boolean IsMatch(ReadOnlySpan<Byte> input)
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken)
+  method Boolean TryGetGroupNumber(ReadOnlySpan<Byte> nameUtf8, out Int32 number, Threading.CancellationToken cancellationToken = default)
   method Buffers.OperationStatus TryCopyPatternUtf8(Span<Byte> destination, out Int32 bytesRequired, Threading.CancellationToken cancellationToken = default)
   method Byte[] Replace(ReadOnlySpan<Byte> input, String replacement)
   method Byte[] Replace(ReadOnlySpan<Byte> input, String replacement, Int32 count)

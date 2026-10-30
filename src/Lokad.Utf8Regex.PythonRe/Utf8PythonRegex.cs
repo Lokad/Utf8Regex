@@ -79,6 +79,7 @@ public sealed partial class Utf8PythonRegex
     private readonly Lazy<Utf8SliceProgram> _lazyScalarFullProgram;
     private readonly Utf8Regex? _utf8Regex;
     private readonly PythonReNameEntry[] _nameEntries;
+    private readonly byte[][] _nameEntriesUtf8;
     private readonly IReadOnlyDictionary<string, int> _namedGroups;
     private readonly bool _canMatchEmpty;
     private readonly bool _canUseUtf8IterationFastPath;
@@ -236,6 +237,12 @@ public sealed partial class Utf8PythonRegex
 
         _groupNames = GetPublicGroupNames(parseResult.CaptureGroupCount, parseResult.NamedGroups);
         _nameEntries = GetPythonNameEntries(parseResult.NamedGroups);
+        _nameEntriesUtf8 = construction.Budget.AllocateArray<byte[]>(_nameEntries.Length, false);
+        for (var index = 0; index < _nameEntries.Length; index++)
+        {
+            construction.Budget.ChargeWork(1);
+            _nameEntriesUtf8[index] = construction.Budget.EncodeUtf8(_nameEntries[index].Name.AsSpan());
+        }
         // Transfer the parser's admitted immutable name map for replacement
         // lookup without retaining the rest of the parse tree.
         _namedGroups = parseResult.NamedGroups;

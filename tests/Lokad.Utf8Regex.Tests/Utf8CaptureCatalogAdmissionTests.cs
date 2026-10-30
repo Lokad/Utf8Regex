@@ -101,14 +101,14 @@ public sealed class Utf8CaptureCatalogAdmissionTests
     }
 
     [Fact]
-    public void TheOnlyConstructorAdmitsAllSevenFieldsBeforeAcquiringTheCatalog()
+    public void TheOnlyConstructorAdmitsTheFullStateBeforeAcquiringTheCatalog()
     {
         var type = typeof(Utf8CaptureCatalog);
         var constructor = Assert.Single(type.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance));
         var state = Assert.Single(constructor.GetParameters()).ParameterType;
         var fields = type.GetFields(BindingFlags.Instance | BindingFlags.NonPublic);
         var stateFields = state.GetFields(BindingFlags.Instance | BindingFlags.NonPublic);
-        Assert.Equal(7, fields.Length);
+        Assert.Equal(8, fields.Length);
         Assert.Equal(fields.Select(field => field.FieldType), stateFields.Select(field => field.FieldType));
         using var owner = Utf8ConstructionScope.Enter();
         var catalog = Utf8CaptureCatalog.Create(0, [], false);

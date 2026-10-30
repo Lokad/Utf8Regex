@@ -5,6 +5,32 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 public sealed class Pcre2PatternMetadataTests
 {
+    [Fact]
+    public void NativeLookupPreservesDuplicateNumbersAndCallerCapacity()
+    {
+        var regex = new Utf8Pcre2Regex("(?J)(?<名>a)|(?<名>b)|(?<é>c)"u8);
+        var numbers = new int[3];
+        Assert.Equal(1, regex.CopyNumbersForUtf8Name("名"u8, numbers.AsSpan(1, 1), out var more));
+        Assert.True(more); Assert.Equal(new[] { 0, 1, 0 }, numbers);
+        Assert.Equal(2, regex.CopyNumbersForUtf8Name("名"u8, numbers, out more));
+        Assert.False(more); Assert.Equal(new[] { 1, 2, 0 }, numbers);
+        Assert.Equal(1, regex.CopyNumbersForUtf8Name("é"u8, numbers, out more)); Assert.Equal(3, numbers[0]);
+        Assert.Equal(0, regex.CopyNumbersForUtf8Name("e\u0301"u8, numbers, out more)); Assert.False(more);
+        Assert.Equal(0, regex.CopyNumbersForUtf8Name("0"u8, numbers, out more)); Assert.False(more);
+        Assert.Equal(0, regex.CopyNumbersForUtf8Name("名"u8, [], out more)); Assert.True(more);
+        var snapshot = (int[])numbers.Clone();
+        Assert.Throws<ArgumentException>(() => regex.CopyNumbersForUtf8Name(new byte[] { (byte)'z', 0xff }, numbers, out _));
+        Assert.Equal(snapshot, numbers);
+        using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
+        Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
+            regex.CopyNumbersForUtf8Name("名"u8, numbers, out _, cancellation.Token)).CancellationToken);
+        for (var i = 0; i < 16; i++) regex.CopyNumbersForUtf8Name("名"u8, numbers, out _);
+        var allocated = GC.GetAllocatedBytesForCurrentThread();
+        var checksum = 0;
+        for (var i = 0; i < 64; i++) checksum += regex.CopyNumbersForUtf8Name("名"u8, numbers, out _);
+        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - allocated); Assert.Equal(128, checksum);
+    }
+
     [Theory]
     [InlineData("literal", 0)]
     [InlineData("[abc]+", 0)]

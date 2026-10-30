@@ -205,6 +205,7 @@ public sealed class Utf8FundedProgramOwnerTests
             default, default, Timeout.InfiniteTimeSpan, default, account) : Compile(pattern, account);
         var held = account.Used; var destination = new byte[encoded.Length];
         Assert.Equal(1, owner.CaptureGroupCount);
+        Assert.Equal(12, owner.GroupNumberFromUtf8Name("12"u8));
         Assert.Equal(System.Buffers.OperationStatus.Done, owner.TryCopyPatternUtf8(destination, out var required));
         Assert.Equal(encoded.Length, required); Assert.Equal(encoded, destination); Assert.Equal(held, account.Used);
         using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
@@ -213,6 +214,7 @@ public sealed class Utf8FundedProgramOwnerTests
         owner.Dispose(); Assert.Equal(0UL, account.Used);
         Assert.Throws<ObjectDisposedException>(() => owner.TryCopyPatternUtf8(destination, out _));
         Assert.Throws<ObjectDisposedException>(() => owner.CaptureGroupCount);
+        Assert.Throws<ObjectDisposedException>(() => owner.GroupNumberFromUtf8Name("12"u8));
         Assert.Equal(encoded, destination);
     }
 

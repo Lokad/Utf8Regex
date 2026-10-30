@@ -40,10 +40,12 @@ public sealed class PythonReFundedProgramTests
             : Compile(pattern, allowance);
         var held = allowance.Used; var destination = new byte[encoded.Length];
         Assert.Equal(1, regex.CaptureGroupCount);
+        Assert.True(regex.TryGetGroupNumber("x"u8, out var number)); Assert.Equal(1, number);
         Assert.Equal(System.Buffers.OperationStatus.Done, regex.TryCopyPatternUtf8(destination, out var required));
         Assert.Equal(encoded.Length, required); Assert.Equal(encoded, destination); Assert.Equal(held, allowance.Used);
         regex.Dispose(); Assert.Equal(0UL, allowance.Used);
         Assert.Throws<ObjectDisposedException>(() => regex.TryCopyPatternUtf8(destination, out _));
+        Assert.Throws<ObjectDisposedException>(() => regex.TryGetGroupNumber("x"u8, out _));
         Assert.Equal(encoded, destination);
     }
 

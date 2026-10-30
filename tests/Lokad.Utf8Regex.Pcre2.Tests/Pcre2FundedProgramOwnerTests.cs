@@ -203,6 +203,9 @@ public sealed class Pcre2FundedProgramOwnerTests
         using var owner = Compile(pattern, account, bytes: native);
         var held = account.Used; var destination = new byte[encoded.Length];
         Assert.Equal(2, owner.CaptureGroupCount);
+        var numbers = new int[1];
+        Assert.Equal(1, owner.CopyNumbersForUtf8Name("x"u8, numbers, out var more));
+        Assert.False(more); Assert.Equal(2, numbers[0]);
         Assert.Equal(System.Buffers.OperationStatus.Done, owner.TryCopyPatternUtf8(destination, out var required));
         Assert.Equal(encoded.Length, required); Assert.Equal(encoded, destination); Assert.Equal(held, account.Used);
         using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
@@ -211,6 +214,7 @@ public sealed class Pcre2FundedProgramOwnerTests
         owner.Dispose(); Assert.Equal(0UL, account.Used);
         Assert.Throws<ObjectDisposedException>(() => owner.TryCopyPatternUtf8(destination, out _));
         Assert.Throws<ObjectDisposedException>(() => owner.CaptureGroupCount);
+        Assert.Throws<ObjectDisposedException>(() => owner.CopyNumbersForUtf8Name("x"u8, numbers, out _));
         Assert.Equal(encoded, destination);
     }
 

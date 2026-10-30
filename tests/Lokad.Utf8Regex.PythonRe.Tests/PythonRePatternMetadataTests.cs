@@ -5,6 +5,27 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonRePatternMetadataTests
 {
+    [Fact]
+    public void NativeLookupUsesValidatedNamesWithoutNumericOrNormalizationAliases()
+    {
+        var regex = new Utf8PythonRegex("(?P<名>a)(b)(?P<é>c)"u8);
+        Assert.True(regex.TryGetGroupNumber("名"u8, out var number)); Assert.Equal(1, number);
+        Assert.True(regex.TryGetGroupNumber("é"u8, out number)); Assert.Equal(3, number);
+        Assert.False(regex.TryGetGroupNumber("e\u0301"u8, out number)); Assert.Equal(0, number);
+        Assert.False(regex.TryGetGroupNumber("1"u8, out _));
+        Assert.False(regex.TryGetGroupNumber("0"u8, out _));
+        Assert.False(regex.TryGetGroupNumber([], out _));
+        Assert.Throws<ArgumentException>(() => regex.TryGetGroupNumber(new byte[] { (byte)'z', 0xff }, out _));
+        using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
+        Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
+            regex.TryGetGroupNumber("名"u8, out _, cancellation.Token)).CancellationToken);
+        for (var i = 0; i < 16; i++) regex.TryGetGroupNumber("名"u8, out _);
+        var allocated = GC.GetAllocatedBytesForCurrentThread();
+        var checksum = 0;
+        for (var i = 0; i < 64; i++) { regex.TryGetGroupNumber("名"u8, out number); checksum += number; }
+        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - allocated); Assert.Equal(64, checksum);
+    }
+
     [Theory]
     [InlineData("", 0)]
     [InlineData("(?:a)", 0)]

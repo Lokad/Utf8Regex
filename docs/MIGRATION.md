@@ -33,6 +33,11 @@ The caller owns the destination, including its admission and retained lifetime.
 Funded Core/PCRE2 owners expose these members without revealing program storage.
 See the [metadata contract](SPEC.md#native-pattern-metadata) for capacity,
 unrepresentable legacy text and cancellation outcomes.
+Native named lookup is profile-specific: Core `GroupNumberFromUtf8Name`, PythonRe
+`TryGetGroupNumber`, PCRE2 `CopyNumbersForUtf8Name` (preserving duplicate numbers).
+Each validates strict UTF-8, compares ordinal keys without normalization or
+allocating temporary strings, and accepts a current-call token. Core and PCRE2
+funded owners expose those lookups while retaining program admission.
 
 ## 0.4.0: Unicode scalars
 

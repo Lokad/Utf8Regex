@@ -25,6 +25,17 @@ public sealed class Utf8Pcre2RegexProgramOwner : IDisposable
         }
     }
 
+    /// <inheritdoc cref="Utf8Pcre2Regex.CopyNumbersForUtf8Name" />
+    /// <remarks>Retains program admission during access and rejects calls after close; copied numbers belong to the caller.</remarks>
+    public int CopyNumbersForUtf8Name(ReadOnlySpan<byte> nameUtf8, Span<int> destination, out bool isMore,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var regex = Volatile.Read(ref _regex) ?? throw new ObjectDisposedException(nameof(Utf8Pcre2RegexProgramOwner));
+        using var use = _storage.Enter();
+        return regex.CopyNumbersForUtf8Name(nameUtf8, destination, out isMore, cancellationToken);
+    }
+
     /// <inheritdoc cref="Utf8Pcre2Regex.TryCopyPatternUtf8" />
     /// <remarks>Holds program admission during the copy and rejects calls after close. The destination belongs to the caller and remains valid after owner disposal; no borrowed program-storage alias is exposed.</remarks>
     public OperationStatus TryCopyPatternUtf8(Span<byte> destination, out int bytesRequired,

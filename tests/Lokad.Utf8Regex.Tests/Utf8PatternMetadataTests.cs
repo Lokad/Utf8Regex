@@ -6,6 +6,43 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8PatternMetadataTests
 {
     [Theory]
+    [InlineData("(a)(b)", "01")]
+    [InlineData("(a)(b)", "0000000000000000000000000000000000000000002")]
+    [InlineData("(a)(b)", "4294967296")]
+    [InlineData("(a)(b)", "+1")]
+    [InlineData("(a)(b)", "")]
+    [InlineData("(?<名>a)(?<é>b)", "名")]
+    [InlineData("(?<名>a)(?<é>b)", "é")]
+    [InlineData("(?<名>a)(?<é>b)", "e\u0301")]
+    [InlineData("(?<名>a)(?<é>b)", "01")]
+    [InlineData("(?<12>a)(b)", "12")]
+    [InlineData("(?<12>a)(b)", "012")]
+    [InlineData("(?<12>a)(b)", "1")]
+    [InlineData("(?<same>a)(?<same>b)", "same")]
+    public void NativeLookupPreservesTheExistingNameAndNumericContract(string pattern, string name)
+    {
+        var regex = Utf8Regex.Compile(Encoding.UTF8.GetBytes(pattern));
+        Assert.Equal(regex.GroupNumberFromName(name), regex.GroupNumberFromUtf8Name(Encoding.UTF8.GetBytes(name)));
+    }
+
+    [Fact]
+    public void NativeLookupValidatesTheWholeNameAndDoesNotAllocateAKeyString()
+    {
+        var regex = Utf8Regex.Compile("(?<名>a)"u8);
+        var malformed = new byte[] { (byte)'z', 0xff };
+        var failure = Assert.Throws<ArgumentException>(() => regex.GroupNumberFromUtf8Name(malformed));
+        Assert.Equal("byteOffset", failure.ParamName); Assert.Contains("byte offset 1", failure.Message);
+        using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
+        Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
+            regex.GroupNumberFromUtf8Name(malformed, cancellation.Token)).CancellationToken);
+        for (var i = 0; i < 16; i++) regex.GroupNumberFromUtf8Name("名"u8);
+        var allocated = GC.GetAllocatedBytesForCurrentThread();
+        var checksum = 0;
+        for (var i = 0; i < 64; i++) checksum += regex.GroupNumberFromUtf8Name("名"u8);
+        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - allocated); Assert.Equal(64, checksum);
+    }
+
+    [Theory]
     [InlineData("", 0)]
     [InlineData("(?:a)", 0)]
     [InlineData("(a)(b)", 2)]

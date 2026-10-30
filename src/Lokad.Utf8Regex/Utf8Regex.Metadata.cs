@@ -9,6 +9,11 @@ public sealed partial class Utf8Regex
     /// <remarks>Sparse numbers and repeated declarations of a shared slot do not add slots. Match participation does not affect this count.</remarks>
     public int CaptureGroupCount => _program.CaptureCatalog.GroupNumbers.Length - 1;
 
+    /// <summary>Finds a defined capture number from a strict UTF-8 group name, returning -1 when undefined.</summary>
+    /// <remarks>Matches the existing ordinal name/numeric lookup, without decoding or allocating a key string. Validates the complete name. This explicit metadata lookup uses the supplied token independently of matching limits.</remarks>
+    public int GroupNumberFromUtf8Name(ReadOnlySpan<byte> nameUtf8, CancellationToken cancellationToken = default)
+        => _program.CaptureCatalog.GroupNumberFromUtf8Name(nameUtf8, cancellationToken);
+
     /// <summary>Copies the original pattern as strict UTF-8 into caller-owned storage.</summary>
     /// <param name="destination">Receives the complete original source on success.</param>
     /// <param name="bytesRequired">The complete UTF-8 length on Done or DestinationTooSmall; zero on InvalidData.</param>

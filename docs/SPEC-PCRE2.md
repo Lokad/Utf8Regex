@@ -61,6 +61,14 @@ can be copied through `TryCopyPatternUtf8` under the
 [caller-buffer metadata contract](SPEC.md#native-pattern-metadata). The funded
 owner exposes both members and keeps admission until each access finishes;
 copied caller storage remains valid after owner close.
+`CopyNumbersForUtf8Name(nameUtf8, destination, out isMore, token)` copies all
+matching slot numbers from the duplicate-preserving name table, in table order.
+It reports how many fit and whether additional numbers remain. Complete strict
+UTF-8 validation precedes writes; unknown names copy zero, malformed bytes throw
+with a byte offset. Keys are admitted/encoded once and compared ordinally without
+normalization or key strings. Vector lookup is linear with bounded token checks;
+matching timeout/numeric limits do not govern this explicit metadata operation.
+The funded owner retains its existing use during access. No key alias escapes.
 
 Capture slots follow declaration order, including named groups. Names start with
 a Unicode letter or underscore, then letters/digits/underscores; numeric names
@@ -266,7 +274,7 @@ gap. Shared names/mark text count again for independent retention. Refusal is
 terminal. Receipt close refunds once; copied ranges remain valid afterward, with
 continued admission then the caller's responsibility. Numeric result traffic is
 cumulative regardless of live refunds. Native pattern compilation and source
-copying are implemented; UTF-8 templates and name lookup remain unfinished.
+copying are implemented; UTF-8 template preparation remains unfinished.
 
 ## Isolation and non-goals
 

@@ -40,6 +40,12 @@ independently of match participation. `TryCopyPatternUtf8` follows the
 [caller-buffer metadata contract](SPEC.md#native-pattern-metadata), preserving
 original source and rejecting unpaired legacy surrogates. Funded expressions
 hold their existing program use during a copy and reject new copies after close.
+`TryGetGroupNumber(nameUtf8, out number, token)` validates a complete UTF-8 name
+and looks up named captures only; numeric strings do not alias slots. Unknown
+names return false/zero, malformed bytes throw with their byte offset. Admitted
+UTF-8 keys are compared ordinally without normalization or temporary strings.
+The immutable vector lookup is linear, uses bounded token checkpoints and holds
+funded program use. It is explicit metadata outside matching limits.
 
 Captures are numbered by opening parenthesis, including named groups.
 References and conditionals use those numbers. Detailed `LastIndex` is the last

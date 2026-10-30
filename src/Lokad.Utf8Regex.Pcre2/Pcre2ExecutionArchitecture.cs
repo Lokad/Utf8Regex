@@ -533,6 +533,13 @@ internal sealed class Pcre2CompiledProgram
         // expose entries by copying, so the VM and compiled root can share it.
         NameEntries = nameEntries;
         CaptureGroupCount = captureGroupCount;
+        var budget = Utf8ConstructionScope.CurrentBudget;
+        NameEntriesUtf8 = budget.AllocateArray<byte[]>(nameEntries.Length, false);
+        for (var index = 0; index < nameEntries.Length; index++)
+        {
+            budget.ChargeWork(1);
+            NameEntriesUtf8[index] = budget.EncodeUtf8(nameEntries[index].Name.AsSpan());
+        }
     }
 
     internal Pcre2CompileRequest Request { get; }
@@ -558,6 +565,8 @@ internal sealed class Pcre2CompiledProgram
     internal Pcre2NameEntry[] NameEntries { get; }
 
     internal int CaptureGroupCount { get; }
+
+    internal byte[][] NameEntriesUtf8 { get; }
 }
 
 internal static class Pcre2CompiledProgramOverlay
