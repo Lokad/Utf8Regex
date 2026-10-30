@@ -15,7 +15,7 @@ namespace Lokad.Utf8Regex.PythonRe;
 /// Work and modeled result capacity remain cumulative through validation, moves and snapshot publication. Working release never refunds result traffic; caller-retained live memory has separate scope.
 /// Exclusive VM scratch is reused and stays charged while positioned, including during projection and host waits. EOF, failure and disposal release it synchronously. Scratch and publication overlap can require a higher working cap.
 /// </remarks>
-public sealed class Utf8PythonMatchCursor : IDisposable
+public sealed partial class Utf8PythonMatchCursor : IDisposable
 {
     private ReadOnlyMemory<byte> _input;
     private PythonReNameEntry[] _names;
@@ -218,7 +218,11 @@ public sealed class Utf8PythonMatchCursor : IDisposable
 
     private void Close(Status status)
     {
-        if (_status is Status.Initial or Status.Positioned or Status.RangePositioned) _discovery.Dispose();
+        if (_status is Status.Initial or Status.Positioned or Status.RangePositioned)
+        {
+            ReleaseScalarPrefixes();
+            _discovery.Dispose();
+        }
         _programUse?.Dispose();
         _programUse = null;
         _discovery = default;

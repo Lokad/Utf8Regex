@@ -72,6 +72,7 @@ sealed class PythonRe.Utf8PythonMatchCursor : IDisposable
   method Boolean MoveNext(out PythonRe.Utf8PythonRangeMatch match)
   method Boolean MoveNext(out PythonRe.Utf8PythonRangeMatch match, Threading.CancellationToken cancellationToken)
   method Boolean MoveNextRetained(out PythonRe.Utf8PythonRetainedRangeMatch match, Threading.CancellationToken cancellationToken = default)
+  method Boolean TryGetScalarRange(Int32 groupNumber, out Int32 startOffsetInScalars, out Int32 endOffsetInScalars, Threading.CancellationToken cancellationToken = default)
   method Void Dispose()
 readonly struct PythonRe.Utf8PythonMatchData
   property Boolean Success { get; init; }

@@ -88,6 +88,7 @@ internal struct PythonReScalarMatchState
     internal readonly ulong ReservedBytes => _invocation.Ledger.ReservedBytes;
     internal readonly ulong ResultReservation => _results.ReservedBytes;
     internal readonly bool HasCoordinateMap => _hasMap;
+    internal readonly bool IsAscii => _validation.IsAscii;
     [UnscopedRef] internal ref Utf8SliceInvocation WorkingInvocation => ref _invocation;
 
     internal T[] AllocateResultArray<T>(ReadOnlySpan<byte> input, int count)
@@ -158,7 +159,7 @@ internal struct PythonReScalarMatchState
     private readonly Utf8ResourceLimitExceededException ResourceFailure()
         => _invocation.Budget.CreateResourceFailure();
 
-    private readonly RegexMatchTimeoutException TimeoutFailure(ReadOnlySpan<byte> input)
+    internal readonly RegexMatchTimeoutException TimeoutFailure(ReadOnlySpan<byte> input)
         => Utf8Regex.CreateMatchTimeoutException(_invocation.Ledger.HasMemoryAllowance ? ReadOnlySpan<byte>.Empty : input,
             _pattern, _timeout, _invocation.Budget.Limits);
 

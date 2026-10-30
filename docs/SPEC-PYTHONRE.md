@@ -300,6 +300,34 @@ Previously obtained byte arrays remain valid; the caller owns admission for
 continued retention after explicit release. No finalizer is involved. Retained
 text, bulk and callback output remain outside these two receipt APIs.
 
+`TryGetScalarRange(groupNumber, out startOffsetInScalars, out endOffsetInScalars,
+token = default)` queries the current capture after a detailed, range-only or
+retained range advance. It returns true for a participating capture, including
+empty; absent/unmatched groups return false and both positions are `-1`. Positions
+are zero-based Unicode-scalar offsets from the whole subject's beginning,
+including before a match's start for lookbehind captures. They are not grapheme,
+UTF-16 or byte positions. Existing byte and UTF-16 coordinates retain their meanings.
+The integers remain valid after advance/disposal; querying a cursor without a
+current match fails explicitly.
+
+Byte-only advances do no extra coordinate preparation. The first mixed-input
+query lazily admits one compact working array (one prefix count per 256 UTF-8
+bytes); ASCII and subjects shorter than 256 bytes need no such allocation. It
+counts scalar starts over already validated bytes, including blocks cutting
+through scalars, with bounded scans inside the selected block on later queries.
+No text or full UTF-16 coordinate map is created for this query. The array stays
+charged until cursor EOF, failure or disposal; repeated queries reuse it. Index
+storage is working memory, not cumulative result traffic. Each bounded 32-byte
+scan unit and query checkpoints consume the original cumulative work budget;
+depth/result limits retain their existing meaning.
+
+The creation token, original deadline and optional current-query token cover
+preparation and lookup. Completed query/advance tokens have no authority over
+later calls. A projection interruption or admission/work denial faults the cursor
+and synchronously refunds its temporary storage; earlier snapshots and copied
+integers stay valid. Concurrent/reentrant access remains rejected. Keep the
+borrowed subject unchanged and its owner alive under the existing cursor contract.
+
 `CreateMatchCursor(input, startOffsetInBytes, token, workingMemoryAllowance)`
 accepts an `IUtf8MemoryAllowance` shared directly across concurrent cursors and
 other host users. Existing working-buffer admission reserves additional modeled

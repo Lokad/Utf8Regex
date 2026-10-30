@@ -12,6 +12,8 @@
   absolute deadline, cumulative limits and previously returned owned snapshots.
 - Add PythonRe range cursor results and range-only split, avoiding captured-text
   copies and coordinate maps while retaining capture metadata and resource limits.
+- Add current-capture Unicode-scalar coordinate queries with lazy compact UTF-8
+  indexing, caller admission and call-scoped cancellation.
 - Add retained range cursor receipts that transfer admitted result charges without
   reacquisition and refund on explicit disposal, independently of cursor/program lifetime.
 - Add `SubnRetained` for caller-funded UTF-8 template substitution output, preserving
