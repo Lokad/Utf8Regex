@@ -95,10 +95,12 @@ public sealed class Utf8FundedProgramOwnerTests
     public async Task CloseDuringActiveWorkDefersProgramRefundAndRejectsNewCalls()
     {
         var root = new SharedRoot(); var programs = new Account(root); var working = new Account(root);
-        var owner = Compile("needle", programs); var held = programs.Used;
+        using var owner = Compile("needle", programs); var held = programs.Used;
         var input = Encoding.UTF8.GetBytes(new string('x', 262144) + "needle");
         using var entered = new ManualResetEventSlim(); using var resume = new ManualResetEventSlim();
-        var task = Task.Run(() =>
+        // The worker deliberately blocks inside production execution. A dedicated
+        // thread avoids starving it behind synchronous test-runner pool work.
+        var task = Task.Factory.StartNew(() =>
         {
             var paused = false;
             var session = Utf8SearchDiagnosticsSession.Start(_ =>
@@ -107,15 +109,15 @@ public sealed class Utf8FundedProgramOwnerTests
                 if (!resume.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException("Host did not resume the active call.");
             });
             try { return owner.Count(input, workingMemoryAllowance: working); } finally { session.Complete(); }
-        });
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         try
         {
             Assert.True(entered.Wait(TimeSpan.FromSeconds(10))); owner.Dispose();
             Assert.Equal(held, programs.Used);
             Assert.Throws<ObjectDisposedException>(() => owner.IsMatch(input));
         }
-        finally { resume.Set(); }
-        Assert.Equal(1, await task); Assert.Equal(0UL, root.Used);
+        finally { resume.Set(); await task; }
+        Assert.Equal(1, task.Result); Assert.Equal(0UL, root.Used);
     }
 
     [Fact]
