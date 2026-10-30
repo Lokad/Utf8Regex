@@ -22,7 +22,7 @@ public sealed partial class Utf8PythonRegex
             constructionPolicy, constructionTimeout, cancellationToken);
 
     /// <summary>Compiles strict UTF-8 pattern bytes under explicit eager construction and execution policies.</summary>
-    /// <remarks>Admission and interruption include strict decoding before parsing.
+    /// <remarks>Admission and interruption include strict validation and direct scalar parsing.
     /// The construction timeout is separate from the returned expression's match
     /// timeout. The derived FullMatch program is prepared before publication;
     /// replacement preparation and unmodeled metadata retain separate scope.</remarks>
@@ -87,7 +87,7 @@ public sealed partial class Utf8PythonRegex
     }
 
     /// <summary>Compiles strict UTF-8 pattern bytes with caller-owned construction/program funding.</summary>
-    /// <remarks>Admission precedes decoding, parsing and eager FullMatch preparation. Replacement preparation/cache retention and default execution/result staging use the same account. Dispose closes matching use; existing snapshots remain valid. Caller-retained output and incidental objects remain separate scopes.</remarks>
+    /// <remarks>Admission precedes source storage, direct parsing and eager FullMatch preparation. Replacement preparation/cache retention and default execution/result staging use the same account. Dispose closes matching use; existing snapshots remain valid. Caller-retained output and incidental objects remain separate scopes.</remarks>
     public static Utf8PythonRegex Compile(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options,
         TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
         Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout,

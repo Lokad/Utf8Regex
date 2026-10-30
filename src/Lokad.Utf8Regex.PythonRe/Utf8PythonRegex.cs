@@ -74,7 +74,6 @@ public sealed partial class Utf8PythonRegex
         }
     }
 
-    private static readonly UTF8Encoding s_strictUtf8Encoding = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
     private static TimeSpan s_defaultMatchTimeout = Timeout.InfiniteTimeSpan;
     private readonly Utf8SliceProgram _scalarProgram;
     private readonly Lazy<Utf8SliceProgram> _lazyScalarFullProgram;
@@ -92,6 +91,7 @@ public sealed partial class Utf8PythonRegex
     private readonly bool _canUseZeroOffsetUtf8ValueFastPath;
     private const int ReplacementPlanCacheCapacity = 16;
     private readonly Utf8BoundedPreparationCache<string, PythonReReplacementPlan> _replacementPlanCache;
+    private readonly object _patternSource;
 
     /// <summary>Creates a Python-compatible expression from UTF-16 text with default options and timeout.</summary>
     public Utf8PythonRegex(string pattern)
@@ -167,21 +167,21 @@ public sealed partial class Utf8PythonRegex
         MatchTimeout = Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
         ArgumentNullException.ThrowIfNull(patternSource.Text, "pattern");
         using var construction = Utf8ConstructionScope.Enter();
-        var pattern = patternSource.Text;
         if (patternSource.IsUtf8)
         {
-            try { pattern = construction.Budget.DecodeUtf8(patternSource.Utf8, s_strictUtf8Encoding); }
-            catch (DecoderFallbackException exception)
-            {
-                throw new ArgumentException("The input must be valid UTF-8.", "patternUtf8", exception);
-            }
+            PythonReParser.ValidateNativeSource(patternSource.Utf8, construction.Budget);
+            // This retained copy also supplies the parser's borrow. Admission
+            // precedes allocation; caller reuse after compilation is harmless.
+            var bytes = construction.Budget.AllocateArray<byte>(patternSource.Length, false);
+            construction.Budget.ChargeWork((ulong)bytes.Length);
+            patternSource.Utf8.CopyTo(bytes);
+            _patternSource = bytes;
         }
-
-        Pattern = pattern;
+        else _patternSource = patternSource.Text;
         Options = options;
         ResourcePolicy = resourcePolicy;
 
-        var parser = PythonReParser.Create(pattern);
+        var parser = PythonReParser.Create(_patternSource);
         var parseResult = parser.Parse(options);
         EffectiveOptions = (parseResult.Options & PythonReCompileOptions.Ascii) != 0
             ? parseResult.Options
@@ -289,7 +289,8 @@ public sealed partial class Utf8PythonRegex
     private readonly string[] _groupNames;
 
     /// <summary>Gets the original Python regular-expression pattern.</summary>
-    public string Pattern { get; }
+    /// <remarks>Byte compilation owns UTF-8 source. This explicit text projection allocates independently on each native request; the string is not retained by the program.</remarks>
+    public string Pattern => _patternSource is string text ? text : Encoding.UTF8.GetString((byte[])_patternSource);
 
     /// <summary>Gets the compile options supplied by the caller.</summary>
     /// <remarks>Use <see cref="EffectiveOptions"/> for validated global inline flags and implicit Unicode behavior.</remarks>

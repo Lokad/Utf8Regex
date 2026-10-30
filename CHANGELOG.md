@@ -5,6 +5,8 @@
 - Target .NET 10 and .NET 11 across Core, PythonRe and PCRE2.
 - Compile Core UTF-8 pattern spans directly, including caller-funded programs,
   with owned source bytes, strict validation and byte-coordinate syntax errors.
+- Parse PythonRe UTF-8 pattern sources directly, retaining owned bytes and
+  preserving the existing UTF-16 diagnostic-position contract.
 - Add caller-funded Core Boolean/count operations and a disposable compiled
   program owner with separate working admission and deterministic close/refunds.
 - Add Core memory cursors with byte-range capture histories, per-advance tokens,

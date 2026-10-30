@@ -49,6 +49,13 @@ retain supplied arrays and their owned values across later calls/disposal.
 
 ## Grammar and parsing
 
+UTF-8 pattern overloads validate strict input and parse scalars directly through
+the same Python grammar. Retained source owns an admitted byte copy; caller
+buffer reuse after compilation cannot alter the expression. `Pattern` explicitly
+projects an uncached string for byte-compiled expressions. Name/escape diagnostics
+may project selected lexemes. Optional Core preparation still renders translated
+pattern text; its native-output migration remains unfinished.
+
 Supported families include literals/classes/standard escapes, ordered alternatives,
 greedy/lazy/possessive repetition, captures/named groups, references,
 participation conditionals, lookahead, fixed-width lookbehind, atomic groups and
@@ -67,6 +74,10 @@ nor a Unicode-scalar index. Positions identify the offending template token or
 reference when known; failed deferred width validation and combined global flag
 validation may have no position. No source text or whole-source index is retained
 to manufacture one. Pattern syntax still precedes combined inline-option errors.
+For byte sources, a known failed prefix is counted with construction interruption
+to derive that legacy position, without decoding the whole source or building an
+index. Strict validation precedes source acquisition; storage is admitted before
+copying, and covered work units remain version-dependent.
 
 Unknown named replacement groups retain `IndexOutOfRangeException`, identifying
 a replacement-name lookup error by type; they expose no position. Cancellation,

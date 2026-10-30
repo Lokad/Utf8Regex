@@ -245,7 +245,7 @@ internal sealed partial class PythonReParser
                     if (IsAtEnd) throw new PythonRePatternException("missing -, : or )", _position);
                     if (Current == 'P')
                     {
-                        if (_position + 1 >= _pattern.Length)
+                        if (_position + 1 >= Pattern.Length)
                             throw new PythonRePatternException("unexpected end of pattern", _position + 1);
                         throw new PythonRePatternException(GetUnknownExtensionMessage(), _position - 1);
                     }
@@ -253,11 +253,11 @@ internal sealed partial class PythonReParser
                         throw new PythonRePatternException("unknown extension ?" + Current, _position - 1);
                     if (Current == '<')
                     {
-                        if (_position + 1 >= _pattern.Length)
+                        if (_position + 1 >= Pattern.Length)
                             throw new PythonRePatternException("unexpected end of pattern", _position + 1);
-                        if (_pattern[_position + 1] == '>')
+                        if (Pattern[_position + 1] == '>')
                             throw new PythonRePatternException("unknown extension ?<>", _position - 1);
-                        throw new PythonRePatternException("unknown extension ?<" + _pattern[_position + 1], _position - 1);
+                        throw new PythonRePatternException("unknown extension ?<" + SourceCharacterText(_position + 1), _position - 1);
                     }
                     frame.AddOptions = ParseFlagSet(allowEmpty: false, context: FlagParseContext.Added);
                     if (!IsAtEnd && Current != ':' && Current != ')' && Current != '-' && !char.IsAsciiLetter(Current))

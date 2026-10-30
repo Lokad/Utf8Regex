@@ -1,4 +1,6 @@
 using Lokad.Utf8Regex.Internal.FrontEnd;
+using System.Buffers;
+using System.Text;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
@@ -36,7 +38,11 @@ internal sealed partial class PythonReParser
     private const string UnicodeScalarDot = "(?-s:.)";
     private const string OctalDigits = "01234567";
     private const string HexDigits = "0123456789abcdefABCDEF";
-    private readonly string _pattern;
+    // Text is borrowed from the string caller; native bytes are borrowed from
+    // the facade's admitted source array. Neither branch decodes a whole source.
+    private readonly object _source;
+    private Utf8ConstructionPattern Pattern => _source is byte[] bytes
+        ? new Utf8ConstructionPattern(bytes) : new Utf8ConstructionPattern((string)_source);
     private PythonReParserStorage? _storage;
     private PythonReParserStorage Storage => _storage ?? throw new InvalidOperationException("Parser storage is not initialized.");
     private bool _hasLookbehind;
@@ -48,14 +54,17 @@ internal sealed partial class PythonReParser
     private int _groupCount;
     private int _lookbehindGroupStart;
 
-    internal static PythonReParser Create(string pattern) =>
+    internal static PythonReParser Create(object pattern) =>
         Utf8ConstructionScope.CurrentBudget.AllocateObject(
             (pattern, (PythonReParserStorage?)null, false, PythonReAstFactory.Empty, 0, 0, 0),
             static state => new PythonReParser(state.pattern));
 
     public PythonReParser(string pattern)
+        : this((object)pattern) { }
+
+    private PythonReParser(object pattern)
     {
-        _pattern = pattern;
+        _source = pattern;
     }
 
     public PythonReParseResult Parse(PythonReCompileOptions options)
@@ -79,6 +88,11 @@ internal sealed partial class PythonReParser
             result = new PythonReParseResult(node, options, _groupCount,
                 Storage.NamedGroups.Freeze(Storage.Arena), _hasLookbehind, Storage.Arena.Take(Storage.GroupBodies, true));
             Storage.Arena.Complete();
+        }
+        catch (PythonRePatternException error) when (Pattern.IsUtf8 && error.Position >= 0)
+        {
+            _parsedNode = PythonReAstFactory.Empty;
+            throw ProjectTextErrorPosition(error, construction.Budget);
         }
         catch
         {
@@ -108,24 +122,24 @@ internal sealed partial class PythonReParser
     private bool TryConsumeLeadingInlineFlagGroup(out PythonReCompileOptions add)
     {
         add = PythonReCompileOptions.None;
-        if (!_pattern.AsSpan(_position).StartsWith("(?", StringComparison.Ordinal))
+        if (!StartsWithAscii("(?"))
         {
             return false;
         }
 
         var probe = _position + 2;
-        if (probe >= _pattern.Length || !IsInlineFlagChar(_pattern[probe]))
+        if (probe >= Pattern.Length || !IsInlineFlagChar(Pattern[probe]))
         {
             return false;
         }
 
-        while (probe < _pattern.Length && IsInlineFlagChar(_pattern[probe]))
+        while (probe < Pattern.Length && IsInlineFlagChar(Pattern[probe]))
         {
             Utf8ConstructionScope.ChargeWork(1);
             probe++;
         }
 
-        if (probe >= _pattern.Length || _pattern[probe] != ')')
+        if (probe >= Pattern.Length || Pattern[probe] != ')')
         {
             return false;
         }
@@ -289,7 +303,7 @@ internal sealed partial class PythonReParser
                     _position++;
                 }
 
-                var invalidName = Storage.Arena.Budget.CopyText(_pattern.AsSpan(referenceStart, _position - referenceStart));
+                var invalidName = Pattern.CopyText(referenceStart, _position - referenceStart);
                 throw new PythonRePatternException($"bad character in group name '{invalidName}'", referenceStart);
             }
 
@@ -297,7 +311,8 @@ internal sealed partial class PythonReParser
             {
                 using var message = Utf8ConstructionText.Create();
                 throw new PythonRePatternException(message.Append("invalid group reference ")
-                    .Append(_pattern.AsSpan(referenceStart, _position - referenceStart).TrimStart('0')).ToText(), referenceStart);
+                    .Append((Pattern.IsUtf8 ? Pattern.CopyText(referenceStart, _position - referenceStart).AsSpan()
+                        : Pattern.Text.AsSpan(referenceStart, _position - referenceStart)).TrimStart('0')).ToText(), referenceStart);
             }
             return PythonReConditionalReference.ForGroupNumber(number);
         }
@@ -314,7 +329,7 @@ internal sealed partial class PythonReParser
             throw Error("missing group name");
         }
 
-        var name = Storage.Arena.Budget.CopyText(_pattern.AsSpan(start, _position - start));
+        var name = Pattern.CopyText(start, _position - start);
         if (!PythonReGroupNameValidator.IsValid(name))
         {
             throw new PythonRePatternException($"bad character in group name '{name}'", start);
@@ -352,8 +367,8 @@ internal sealed partial class PythonReParser
             if (item is PythonReCharacterClassLiteralItem literal &&
                 !IsAtEnd &&
                 Current == '-' &&
-                _position + 1 < _pattern.Length &&
-                _pattern[_position + 1] != ']')
+                _position + 1 < Pattern.Length &&
+                Pattern[_position + 1] != ']')
             {
                 _position++;
                 var endParsedItem = ParseCharacterClassItem(options);
@@ -375,8 +390,8 @@ internal sealed partial class PythonReParser
             if (item is not PythonReCharacterClassLiteralItem &&
                 !IsAtEnd &&
                 Current == '-' &&
-                _position + 1 < _pattern.Length &&
-                _pattern[_position + 1] != ']')
+                _position + 1 < Pattern.Length &&
+                Pattern[_position + 1] != ']')
             {
                 _position++;
                 _ = ParseCharacterClassItem(options);
@@ -490,7 +505,7 @@ internal sealed partial class PythonReParser
             'B' when !IsAsciiMode(options) => PythonReAstFactory.Raw(UnicodeNonWordBoundary, PythonReRawKind.Escape),
             'Z' => PythonReAstFactory.Raw(@"\z", PythonReRawKind.Escape),
             'A' or 'b' or 'B' or 'd' or 'D' or 's' or 'S' or 'w' or 'W' or '\\' or '.' or '^' or '$' or '*' or '+' or '?' or '{' or '}' or '[' or ']' or '(' or ')' or '|' =>
-                PythonReAstFactory.Raw(Storage.Arena.Budget.CopyText(_pattern.AsSpan(escapeStart, 2)), PythonReRawKind.Escape),
+                PythonReAstFactory.Raw(Pattern.CopyText(escapeStart, 2), PythonReRawKind.Escape),
             'x' => CreateEscapedLiteralNode(ParseHexEscapeScalarValue(escapeStart, 2, 'x'), options),
             'u' => CreateEscapedLiteralNode(ParseHexEscapeScalarValue(escapeStart, 4, 'u'), options),
             'U' => CreateEscapedLiteralNode(ParseUnicodeScalarEscapeIntValue(escapeStart), options),
@@ -500,7 +515,7 @@ internal sealed partial class PythonReParser
             >= '1' and <= '9' => ParseNumericEscapeOrBackreference(ch, escapeStart, options),
             _ when PatternBadEscapeLetters.IndexOf(ch) >= 0 => throw new PythonRePatternException($@"bad escape \{ch}", escapeStart),
             _ when !char.IsAscii(ch) => CreateEscapedLiteralNode(ReadRawPatternScalar(ch), options),
-            _ => PythonReAstFactory.Raw(Storage.Arena.Budget.CopyText(_pattern.AsSpan(escapeStart, 2)), PythonReRawKind.Escape),
+            _ => PythonReAstFactory.Raw(Pattern.CopyText(escapeStart, 2), PythonReRawKind.Escape),
         };
     }
 
@@ -600,8 +615,18 @@ internal sealed partial class PythonReParser
 
     // Only adjacent raw source code units form a scalar here. Explicit \u
     // surrogate escapes have already taken their separate semantic-atom path.
-    private int ReadRawPatternScalar(char first) => char.IsHighSurrogate(first) &&
-        !IsAtEnd && char.IsLowSurrogate(Current) ? char.ConvertToUtf32(first, Consume()) : first;
+    private int ReadRawPatternScalar(char first)
+    {
+        if (Pattern.IsUtf8 && first > 0x7f)
+        {
+            // Consume read the syntax byte. Rewind to that scalar's lead byte;
+            // validation has already proved this complete source well formed.
+            _position--;
+            return Pattern.ReadScalar(ref _position);
+        }
+        return char.IsHighSurrogate(first) && !IsAtEnd && char.IsLowSurrogate(Current)
+            ? char.ConvertToUtf32(first, Consume()) : first;
+    }
 
     private PythonReParsedCharacterClassItem ParseCharacterClassItem(PythonReCompileOptions options)
     {
@@ -675,34 +700,33 @@ internal sealed partial class PythonReParser
     }
 
     private int ParseHexEscapeScalarValue(int escapeStart, int digits, char kind)
-    {
-        var hex = ReadHexDigits(escapeStart, digits, kind);
-        Utf8ConstructionScope.ChargeWork((ulong)hex.Length);
-        return int.Parse(hex, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture);
-    }
+        => ReadHexDigits(escapeStart, digits, kind);
 
     private int ParseUnicodeScalarEscapeIntValue(int escapeStart)
     {
-        var hex = ReadHexDigits(escapeStart, 8, 'U');
-        Utf8ConstructionScope.ChargeWork((ulong)hex.Length);
-        var scalar = int.Parse(hex, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture);
+        var start = _position;
+        var scalar = ReadHexDigits(escapeStart, 8, 'U');
         if ((uint)scalar > 0x10FFFF)
-            throw new PythonRePatternException($@"bad escape \U{Storage.Arena.Budget.CopyText(hex)}", escapeStart);
+            throw new PythonRePatternException($@"bad escape \U{Pattern.CopyText(start, 8)}", escapeStart);
         return scalar;
     }
 
-    private ReadOnlySpan<char> ReadHexDigits(int escapeStart, int digits, char kind)
+    private int ReadHexDigits(int escapeStart, int digits, char kind)
     {
         var start = _position;
+        var scalar = 0;
         while (_position - start < digits && !IsAtEnd && HexDigits.IndexOf(Current) >= 0)
         {
             Utf8ConstructionScope.ChargeWork(1);
+            var value = Current;
+            var digit = value <= '9' ? value - '0' : (value | 32) - 'a' + 10;
+            scalar = unchecked(scalar * 16 + digit);
             _position++;
         }
-        var hex = _pattern.AsSpan(start, _position - start);
-        if (hex.Length != digits)
-            throw new PythonRePatternException($@"incomplete escape \{kind}{Storage.Arena.Budget.CopyText(hex)}", escapeStart);
-        return hex;
+        if (_position - start != digits)
+            throw new PythonRePatternException($@"incomplete escape \{kind}{Pattern.CopyText(start, _position - start)}", escapeStart);
+        Utf8ConstructionScope.ChargeWork((ulong)digits);
+        return scalar;
     }
 
     private int ParseOctalEscapeIntValue(int escapeStart, char firstDigit)
@@ -729,7 +753,7 @@ internal sealed partial class PythonReParser
         Utf8ConstructionScope.ChargeWork(3);
         var value = ((firstDigit - '0') * 8 + secondDigit - '0') * 8 + thirdDigit - '0';
         if (value > 0xFF)
-            throw new PythonRePatternException($@"octal escape value \{Storage.Arena.Budget.CopyText(_pattern.AsSpan(_position - 3, 3))} outside of range 0-0o377", escapeStart);
+            throw new PythonRePatternException($@"octal escape value \{Pattern.CopyText(_position - 3, 3)} outside of range 0-0o377", escapeStart);
         return value;
     }
 
@@ -769,7 +793,7 @@ internal sealed partial class PythonReParser
             throw new PythonRePatternException(unterminatedMessage, start);
         }
 
-        var name = Storage.Arena.Budget.CopyText(_pattern.AsSpan(start, _position - start));
+        var name = Pattern.CopyText(start, _position - start);
         _position++;
         if (name.Length == 0)
         {
@@ -854,18 +878,18 @@ internal sealed partial class PythonReParser
 
     private string GetUnknownExtensionMessage()
     {
-        if (_position >= _pattern.Length)
+        if (_position >= Pattern.Length)
         {
             return "unexpected end of pattern";
         }
 
-        if (_position < _pattern.Length && _pattern[_position] == 'P')
+        if (_position < Pattern.Length && Pattern[_position] == 'P')
         {
-            var suffix = _position + 1 < _pattern.Length ? _pattern[_position + 1].ToString() : string.Empty;
+            var suffix = _position + 1 < Pattern.Length ? SourceCharacterText(_position + 1) : string.Empty;
             return "unknown extension ?P" + suffix;
         }
 
-        return "unknown extension ?" + _pattern[_position];
+        return "unknown extension ?" + SourceCharacterText(_position);
     }
 
     private static bool IsInlineFlagChar(char ch) => ch is 'i' or 'm' or 's' or 'x' or 'a' or 'L' or 'u';
@@ -880,7 +904,7 @@ internal sealed partial class PythonReParser
             // Group comments are trivia in every option scope. Skip them before
             // atom/repeat/leading-flag decisions, without creating an empty AST
             // atom that could steal a following quantifier.
-            if (_pattern.AsSpan(_position).StartsWith("(?#", StringComparison.Ordinal))
+            if (StartsWithAscii("(?#"))
             {
                 SkipGroupComment();
                 continue;
@@ -900,7 +924,7 @@ internal sealed partial class PythonReParser
                 while (!IsAtEnd && Current != '\n')
                 {
                     Utf8ConstructionScope.ChargeWork(1);
-                    if (_pattern[_position++] == '\\') SkipEscapedCommentCharacter();
+                    if (Pattern[_position++] == '\\') SkipEscapedCommentCharacter();
                 }
 
                 continue;
@@ -918,7 +942,7 @@ internal sealed partial class PythonReParser
         while (!IsAtEnd)
         {
             Utf8ConstructionScope.ChargeWork(1);
-            var character = _pattern[_position++];
+            var character = Pattern[_position++];
             if (character == ')') return;
             if (character == '\\') SkipEscapedCommentCharacter();
         }
@@ -1010,22 +1034,22 @@ internal sealed partial class PythonReParser
         Utf8ConstructionScope.ChargeWork(1);
         var index = _position + 1;
         var minimumStart = index;
-        while (index < _pattern.Length && char.IsAsciiDigit(_pattern[index]))
+        while (index < Pattern.Length && char.IsAsciiDigit(Pattern[index]))
         {
             Utf8ConstructionScope.ChargeWork(1);
             index++;
         }
-        if (index < _pattern.Length && _pattern[index] == ',')
+        if (index < Pattern.Length && Pattern[index] == ',')
         {
             index++;
-            while (index < _pattern.Length && char.IsAsciiDigit(_pattern[index]))
+            while (index < Pattern.Length && char.IsAsciiDigit(Pattern[index]))
             {
                 Utf8ConstructionScope.ChargeWork(1);
                 index++;
             }
         }
         else if (index == minimumStart) return false;
-        return index < _pattern.Length && _pattern[index] == '}';
+        return index < Pattern.Length && Pattern[index] == '}';
     }
 
     private uint ParseNumber()
@@ -1052,11 +1076,11 @@ internal sealed partial class PythonReParser
 
     private bool TryPeekDigit() => !IsAtEnd && char.IsAsciiDigit(Current);
 
-    private bool IsAtEnd => _position >= _pattern.Length;
+    private bool IsAtEnd => _position >= Pattern.Length;
 
-    private char Current => _pattern[_position];
+    private char Current => Pattern[_position];
 
-    private char Consume() => _pattern[_position++];
+    private char Consume() => Pattern[_position++];
 
     private void ExpectGroupEnd(int groupStart, string message)
     {
@@ -1080,17 +1104,70 @@ internal sealed partial class PythonReParser
     // Preserve source escapes directly instead of reconstructing them from
     // expanded class payloads (which loses control escapes and flag context).
     private PythonRePatternException BadCharacterRange(int start) =>
-        new($"bad character range {_pattern.AsSpan(start, _position - start)}", start);
+        new($"bad character range {Pattern.CopyText(start, _position - start)}", start);
 
     private bool TryConsumeExact(string text)
     {
-        if (_pattern.AsSpan(_position).StartsWith(text, StringComparison.Ordinal))
+        if (StartsWithAscii(text))
         {
             _position += text.Length;
             return true;
         }
 
         return false;
+    }
+
+    private bool StartsWithAscii(string text)
+    {
+        var pattern = Pattern;
+        if (pattern.Length - _position < text.Length) return false;
+        for (var i = 0; i < text.Length; i++)
+            if (pattern[_position + i] != text[i]) return false;
+        return true;
+    }
+
+    internal static void ValidateNativeSource(ReadOnlySpan<byte> input, Utf8ConstructionBudget budget)
+    {
+        for (var offset = 0; offset < input.Length;)
+        {
+            budget.ChargeWork(1);
+            if (Rune.DecodeFromUtf8(input[offset..], out _, out var consumed) != OperationStatus.Done)
+            {
+                // Preserve the existing byte overload's failure vocabulary and
+                // decoder Index, without decoding any valid source prefix.
+                var decoder = new DecoderFallbackException("Invalid UTF-8 pattern data.", [input[offset]], offset);
+                throw new ArgumentException("The input must be valid UTF-8.", "patternUtf8", decoder);
+            }
+            offset += consumed;
+        }
+        budget.ChargeWork(0);
+    }
+
+    private string SourceCharacterText(int offset)
+    {
+        var pattern = Pattern;
+        if (!pattern.IsUtf8) return pattern.Text[offset].ToString();
+        var end = offset;
+        _ = pattern.ReadScalar(ref end);
+        return pattern.CopyText(offset, end - offset);
+    }
+
+    private PythonRePatternException ProjectTextErrorPosition(PythonRePatternException error, Utf8ConstructionBudget budget)
+    {
+        // Position is a published UTF-16 coordinate even for byte compilation.
+        // Derive only that failed prefix, with interruption and no index/string.
+        var input = Pattern.Utf8;
+        var end = Math.Min(error.Position, input.Length);
+        var textPosition = 0;
+        for (var offset = 0; offset < end;)
+        {
+            budget.ChargeWork(1);
+            _ = Rune.DecodeFromUtf8(input[offset..], out var scalar, out var consumed);
+            if (offset + consumed > end) break;
+            offset += consumed;
+            textPosition += scalar.Utf16SequenceLength;
+        }
+        return new PythonRePatternException(error.Message, textPosition, error.ErrorSource, error.ErrorKind);
     }
 
     private PythonRePatternException Error(string message) => new(message, _position);

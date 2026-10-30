@@ -60,7 +60,7 @@ public sealed class PythonReConstructionAdmissionTests
     }
 
     [Fact]
-    public void BytePatternWorkAdmissionPrecedesValidationAndDecode()
+    public void BytePatternWorkAdmissionPrecedesValidationAndSourceAcquisition()
     {
         using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 0, ulong.MaxValue);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8PythonRegex(new byte[] { 0xff }));
@@ -72,7 +72,7 @@ public sealed class PythonReConstructionAdmissionTests
             new Utf8PythonRegex("cat"u8, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
                 new Utf8ResourcePolicy { MaxWorkingBytes = 1 }));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, working.ResourceKind);
-        Assert.Equal(3UL, working.Requested);
+        Assert.Equal(1UL, working.Requested);
         Assert.Equal(0ul, scope.Budget.WorkSteps);
         var acceptedPolicy = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             new Utf8PythonRegex("cat"u8, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
@@ -114,12 +114,12 @@ public sealed class PythonReConstructionAdmissionTests
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
-    public void EveryBytePatternEntryAdmitsDecodedTextBeforeParsing(int entry)
+    public void EveryBytePatternEntryAdmitsOwnedSourceBytesBeforeParsing(int entry)
     {
         // Valid UTF-8, deliberately invalid grammar: admission must precede parsing.
         var encoded = System.Text.Encoding.UTF8.GetBytes(new string('(', 256));
-        var decodedBytes = Utf8ConstructionBudget.StringBytes(256);
-        using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, decodedBytes + 47);
+        var sourceBytes = Utf8ConstructionBudget.ArrayBytes<byte>(encoded.Length);
+        using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, sourceBytes + 47);
         var parent = scope.Budget.AllocateArray<byte>(1, false);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
@@ -132,7 +132,7 @@ public sealed class PythonReConstructionAdmissionTests
             };
         });
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
-        Assert.Equal(decodedBytes + 48, failure.Requested);
+        Assert.Equal(sourceBytes + 48, failure.Requested);
         Assert.Equal(48ul, scope.Budget.ReservedBytes);
         Assert.Equal(48ul, scope.Budget.PeakBytes);
         Assert.Equal(0ul, scope.Budget.Peak);
@@ -142,7 +142,7 @@ public sealed class PythonReConstructionAdmissionTests
     [Theory]
     [InlineData("")] [InlineData("cat")] [InlineData("é")]
     [InlineData("😀")] [InlineData("a😀é中")]
-    public void RetainedDecodedPatternSharesTheCompilationLoanWithoutChargingBorrowedText(string pattern)
+    public void RetainedNativePatternSharesTheCompilationLoanWithoutChargingBorrowedText(string pattern)
     {
         ulong held;
         ulong peak;
@@ -156,19 +156,19 @@ public sealed class PythonReConstructionAdmissionTests
             slots = borrowed.Budget.Reserved;
         }
         var encoded = System.Text.Encoding.UTF8.GetBytes(pattern);
-        using var decoded = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity);
+        using var native = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity);
         var owned = new Utf8PythonRegex(encoded);
         Assert.Equal(pattern, owned.Pattern);
         Assert.True(owned.IsMatch(encoded));
-        Assert.Equal(held + Utf8ConstructionBudget.StringBytes(pattern.Length), decoded.Budget.ReservedBytes);
-        Assert.Equal(peak + Utf8ConstructionBudget.StringBytes(pattern.Length), decoded.Budget.PeakBytes);
-        Assert.Equal(slots, decoded.Budget.Reserved);
+        Assert.Equal(held + Utf8ConstructionBudget.ArrayBytes<byte>(encoded.Length), native.Budget.ReservedBytes);
+        Assert.Equal(peak + Utf8ConstructionBudget.ArrayBytes<byte>(encoded.Length), native.Budget.PeakBytes);
+        Assert.Equal(slots, native.Budget.Reserved);
         if (encoded.Length > 0) encoded[0] = (byte)'z';
         Assert.Equal(pattern, owned.Pattern);
     }
 
     [Fact]
-    public void PolicyAndUtf8ErrorsPrecedeDecodeAdmissionAndFailedParsingRestoresParent()
+    public void PolicyAndUtf8ErrorsPrecedeSourceAdmissionAndFailedParsingRestoresParent()
     {
         // Core scalar/prepared/cursor plan objects share the compiler/AST/IR loan. The original "cat"
         // retry retains the bounded 48-KiB variable envelope plus the core's
