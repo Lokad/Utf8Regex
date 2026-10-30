@@ -32,9 +32,65 @@ internal static partial class Utf8SearchExecutor
         bool reverse, ref Utf8SliceInvocation invocation, out PreparedSearchMatch match, out bool found)
         // Candidate searches have no union or confirmation predicates. Passing
         // these facts directly avoids materializing a large empty search plan.
-        => TryFindLiteralFamilyCore(literals, folded, false, null,
+        => !folded && !reverse && literals.Length is >= 3 and <= 8
+            ? TryFindSmallExactFamilyCandidate(literals, input, start, end, ref invocation, out match, out found)
+            : TryFindLiteralFamilyCore(literals, folded, false, null,
             Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None, null,
             input, start, end, reverse, ref invocation, out match, out found);
+
+    // Keep the qualified pair/confirmed loops intact. Small raw exact families
+    // can search complete needles in bounded spans without prepared storage or
+    // per-byte false-candidate replay. The caller still verifies the full regex.
+    private static Utf8ExecutionLimitKind TryFindSmallExactFamilyCandidate(byte[][] literals,
+        ReadOnlySpan<byte> input, int start, int end, ref Utf8SliceInvocation invocation,
+        out PreparedSearchMatch match, out bool found)
+    {
+        match = default; found = false;
+        ArgumentOutOfRangeException.ThrowIfNegative(start);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(end, input.Length);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(start, end);
+        var longest = 0;
+        foreach (var literal in literals)
+        {
+            var eligibility = invocation.TryChargeInputStep();
+            if (eligibility != Utf8ExecutionLimitKind.None) return eligibility;
+            if (literal.Length is 0 or > 1024)
+                return TryFindLiteralFamilyCore(literals, false, false, null,
+                    Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None, null,
+                    input, start, end, false, ref invocation, out match, out found);
+            longest = Math.Max(longest, literal.Length);
+        }
+        for (var low = start; low < end;)
+        {
+            // Complete-needle lookahead fits in 2048 bytes. Later starts belong
+            // to the next window; a full window advances at least 1025 starts.
+            var starts = Math.Min(2049 - longest, end - low);
+            var block = input.Slice(low, Math.Min(starts + longest - 1, end - low));
+            var best = -1; var ordinal = -1;
+            for (var id = 0; id < literals.Length; id++)
+            {
+                var breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                var relative = block.IndexOf(literals[id]);
+                if (relative >= 0 && relative < starts && (best < 0 || relative < best))
+                { best = relative; ordinal = id; }
+                if (best == 0) break;
+            }
+            if (best >= 0)
+            {
+                var publication = invocation.TryChargeInputStep();
+                invocation.Budget.ThrowIfCancellationRequested();
+                if (publication != Utf8ExecutionLimitKind.None) return publication;
+                match = new PreparedSearchMatch(low + best, literals[ordinal].Length, ordinal);
+                found = true;
+                return Utf8ExecutionLimitKind.None;
+            }
+            low += starts;
+        }
+        var completion = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        return completion;
+    }
 
     private static Utf8ExecutionLimitKind TryFindLiteralFamilyCore(
         byte[][] literals, bool folded, bool confirm, PreparedByteSearch? firstByteSearch,
@@ -50,20 +106,6 @@ internal static partial class Utf8SearchExecutor
         ArgumentOutOfRangeException.ThrowIfGreaterThan(start, end);
         var breach = invocation.TryChargeInputStep();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
-        // Reuse bounded full-needle search for small exact candidate families.
-        // This needs no prepared storage; large/long/folded/RTL families retain
-        // their existing discovery. Admit the bounded eligibility scan too.
-        var smallFamilyMaximum = 0;
-        if (!confirm && !reverse && !folded && literals.Length is >= 2 and <= 8)
-        {
-            foreach (var literal in literals)
-            {
-                breach = invocation.TryChargeInputStep();
-                if (breach != Utf8ExecutionLimitKind.None) return breach;
-                if (literal.Length is 0 or > 1024) { smallFamilyMaximum = 0; break; }
-                smallFamilyMaximum = Math.Max(smallFamilyMaximum, literal.Length);
-            }
-        }
         var low = start;
         var high = end - 1;
         if (literals.Length > 0)
@@ -86,32 +128,39 @@ internal static partial class Utf8SearchExecutor
                     var relative = search.IndexOf(block);
                     if (relative >= 0) candidateByte = blockStart + relative;
                 }
-                else if (smallFamilyMaximum > 0)
-                {
-                    // Lookahead stays inside the 2048-byte primitive. A full
-                    // window advances >=1025 starts; starts in its lookahead
-                    // remain owned by the next window, even for shorter needles.
-                    count = Math.Min(2049 - smallFamilyMaximum, high - low + 1);
-                    var familyBlock = input.Slice(blockStart, Math.Min(count + smallFamilyMaximum - 1, end - blockStart));
-                    var relative = -1;
-                    foreach (var literal in literals)
-                    {
-                        breach = invocation.TryChargeInputStep();
-                        if (breach != Utf8ExecutionLimitKind.None) return breach;
-                        var other = familyBlock.IndexOf(literal);
-                        if (other >= 0 && other < count && (relative < 0 || other < relative)) relative = other;
-                        if (relative == 0) break;
-                    }
-                    if (relative >= 0) candidateByte = blockStart + relative;
-                }
                 else if (!confirm && !reverse && !folded && literals.Length == 2 &&
                     literals[0].Length > 0 && literals[1].Length > 0)
                 {
-                    // Long comparisons retain their original split checkpoints.
-                    breach = invocation.TryChargeInputStep();
-                    if (breach != Utf8ExecutionLimitKind.None) return breach;
-                    var relative = block.IndexOfAny(literals[0][0], literals[1][0]);
-                    if (relative >= 0) candidateByte = blockStart + relative;
+                    if (literals[0].Length <= 1024 && literals[1].Length <= 1024)
+                    {
+                        // Full-needle scans reserve lookahead inside the 2048-byte
+                        // bound. Full windows still advance >=1025 starts.
+                        // Later starts belong to the next window, even if a short
+                        // needle is already visible in this one's lookahead.
+                        var longest = Math.Max(literals[0].Length, literals[1].Length);
+                        count = Math.Min(2049 - longest, high - low + 1);
+                        var pairBlock = input.Slice(blockStart, Math.Min(count + longest - 1, end - blockStart));
+                        breach = invocation.TryChargeInputStep();
+                        if (breach != Utf8ExecutionLimitKind.None) return breach;
+                        var relative = pairBlock.IndexOf(literals[0]);
+                        if (relative >= count) relative = -1;
+                        if (relative != 0)
+                        {
+                            breach = invocation.TryChargeInputStep();
+                            if (breach != Utf8ExecutionLimitKind.None) return breach;
+                            var other = pairBlock.IndexOf(literals[1]);
+                            if (other >= 0 && other < count && (relative < 0 || other < relative)) relative = other;
+                        }
+                        if (relative >= 0) candidateByte = blockStart + relative;
+                    }
+                    else
+                    {
+                        // Long comparisons retain their original split checkpoints.
+                        breach = invocation.TryChargeInputStep();
+                        if (breach != Utf8ExecutionLimitKind.None) return breach;
+                        var relative = block.IndexOfAny(literals[0][0], literals[1][0]);
+                        if (relative >= 0) candidateByte = blockStart + relative;
+                    }
                 }
                 else
                 {
