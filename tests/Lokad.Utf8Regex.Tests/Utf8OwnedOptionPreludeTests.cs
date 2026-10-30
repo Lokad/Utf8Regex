@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
@@ -12,6 +13,21 @@ namespace Lokad.Utf8Regex.Tests;
 // and unterminated groups, dash runs, colon groups, non-leading groups).
 public sealed class Utf8OwnedOptionPreludeTests
 {
+    [Theory]
+    [MemberData(nameof(NormalizeCases))]
+    [InlineData("(?i)😀é", 512, "😀é", 513)]
+    [InlineData("(?m)(?-i)é\0😀", 513, "é\0😀", 514)]
+    public void NativePreludeBorrowsSuffixAndKeepsTheSameOptionRules(string pattern, int initial, string suffix, int expected)
+    {
+        var input = Encoding.UTF8.GetBytes(pattern);
+        var options = (RegexOptions)initial;
+        using var scope = Utf8ConstructionScope.Enter();
+        var consumed = Utf8OwnedOptionPrelude.ConsumeLeadingGlobalOptions(new Utf8ConstructionPattern(input), ref options);
+        Assert.Equal(Encoding.UTF8.GetBytes(suffix), input.AsSpan(consumed).ToArray());
+        Assert.Equal((RegexOptions)expected, options);
+        Assert.Equal(0UL, scope.Budget.PeakBytes);
+    }
+
     public static IEnumerable<object?[]> NormalizeCases()
     {
         yield return new object?[] { "", 512, "", 512 };

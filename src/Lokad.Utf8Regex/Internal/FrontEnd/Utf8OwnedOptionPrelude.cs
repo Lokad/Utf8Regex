@@ -2,9 +2,7 @@ using System.Globalization;
 
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
-// Owned construction prelude: resolves the effective construction culture and
-// strips leading global option groups. Both mirror the fork observable behavior
-// without referencing its sources, probed black-box: CultureInvariant selects
+// Construction culture and leading global option groups. CultureInvariant selects
 // the invariant culture and anything else the ambient current culture; leading
 // (?flags) runs fold into the options and are consumed, stopping at the first
 // colon group, unknown letter, bare (?) or unterminated group. Dashes only select
@@ -21,25 +19,35 @@ internal static class Utf8OwnedOptionPrelude
     public static string NormalizeLeadingGlobalOptions(string pattern, ref RegexOptions options)
     {
         using var owner = Utf8ConstructionScope.Enter();
+        var consumed = ConsumeLeadingGlobalOptions(new Utf8ConstructionPattern(pattern), ref options);
+        var result = consumed == 0 ? pattern : owner.Budget.CopyText(pattern.AsSpan(consumed));
+        owner.Complete();
+        return result;
+    }
+
+    // The caller's construction scope owns interruption/work. ASCII option
+    // spelling has identical source extents in text and UTF-8; native callers
+    // keep the suffix borrowed instead of materializing a normalized string.
+    internal static int ConsumeLeadingGlobalOptions(Utf8ConstructionPattern pattern, ref RegexOptions options)
+    {
+        var budget = Utf8ConstructionScope.CurrentBudget;
         var stagedOptions = options;
         var index = 0;
         var consumed = 0;
         while (pattern.Length - index > 3 &&
                pattern[index] == '(' &&
                pattern[index + 1] == '?' &&
-               TryConsumeLeadingGlobalOptionsGroup(owner.Budget, pattern, ref index, ref stagedOptions))
+               TryConsumeLeadingGlobalOptionsGroup(budget, pattern, ref index, ref stagedOptions))
         {
-            owner.Budget.ChargeWork(1);
+            budget.ChargeWork(1);
             consumed = index;
         }
 
-        owner.Budget.ChargeWork(1);
-        var result = consumed == 0 ? pattern : owner.Budget.CopyText(pattern.AsSpan(consumed));
+        budget.ChargeWork(1);
         options = stagedOptions;
-        owner.Complete();
-        return result;
+        return consumed;
 
-        static bool TryConsumeLeadingGlobalOptionsGroup(Utf8ConstructionBudget budget, string pattern, ref int index, ref RegexOptions options)
+        static bool TryConsumeLeadingGlobalOptionsGroup(Utf8ConstructionBudget budget, Utf8ConstructionPattern pattern, ref int index, ref RegexOptions options)
         {
             var scan = index + 2;
             var enable = true;
