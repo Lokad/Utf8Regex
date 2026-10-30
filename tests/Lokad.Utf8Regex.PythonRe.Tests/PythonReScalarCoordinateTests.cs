@@ -197,4 +197,38 @@ public sealed class PythonReScalarCoordinateTests
         Assert.True(cursor.TryGetScalarRange(1, out var start, out var end));
         Assert.True(rejected); Assert.Equal(0, start); Assert.Equal(1, end);
     }
+
+    [Fact]
+    public async Task SharedHostLifetimesComposeAcrossWaitsAndProgramClosure()
+    {
+        var account = new Allowance(8 << 20); Assert.True(account.TryReserve(17));
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 10_000_000, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
+        Utf8PythonRegex Compile(string pattern) => Utf8PythonRegex.Compile(pattern, default, Timeout.InfiniteTimeSpan,
+            policy, default, Timeout.InfiniteTimeSpan, default, account);
+        using var first = Compile("(?i)(?P<x>é+|a+)"); using var second = Compile("(?P<d>[0-9]+)");
+        Assert.Equal(PythonReCompileOptions.IgnoreCase | PythonReCompileOptions.Unicode, first.EffectiveOptions);
+        Assert.Equal("éé!", first.SubnToString("éé"u8, @"\g<x>!").ResultText);
+        var held = account.Used;
+        Assert.Equal(PythonReErrorSource.Pattern, Assert.Throws<PythonRePatternException>(() => Compile("😀[")).ErrorSource);
+        Assert.Equal(PythonReErrorSource.Replacement, Assert.Throws<PythonRePatternException>(() => first.Subn(""u8, @"bad\q")).ErrorSource);
+        Assert.Equal(held, account.Used); Assert.Equal("éé!", first.SubnToString("éé"u8, @"\g<x>!").ResultText);
+        using var advance = new CancellationTokenSource(); using var query = new CancellationTokenSource();
+        using var a = first.CreateMatchCursor(Encoding.UTF8.GetBytes(new string('x', 300) + "😀 éé AA"));
+        using var b = second.CreateMatchCursor("😀 12"u8.ToArray());
+        Assert.True(a.MoveNextRetained(out var retained, advance.Token)); using var rangeReceipt = retained!;
+        Assert.True(b.MoveNext(out _)); advance.Cancel(); await Task.Yield();
+        first.Dispose(); Assert.True(a.TryGetScalarRange(1, out var start, out var end, query.Token));
+        Assert.Equal(302, start); Assert.Equal(304, end); Assert.Equal("x", rangeReceipt.Match.LastGroup);
+        using var output = second.SubnRetained("12"u8, @"[\g<d>]"); var escaped = output.Result;
+        second.Dispose(); Assert.True(b.TryGetScalarRange(1, out var otherStart, out var otherEnd));
+        Assert.Equal(2, otherStart); Assert.Equal(4, otherEnd); query.Cancel(); await Task.Yield();
+        Assert.True(a.MoveNext(out _)); Assert.True(a.TryGetScalarRange(1, out var nextStart, out var nextEnd));
+        Assert.Equal(305, nextStart); Assert.Equal(307, nextEnd);
+        Assert.False(a.MoveNext(out _)); Assert.False(b.MoveNext(out _));
+        Assert.Equal(17UL + rangeReceipt.ChargedBytes + output.ChargedBytes, account.Used);
+        Assert.Equal("éé", Encoding.UTF8.GetString(rangeReceipt.Match.GetGroupMemory(1).Span));
+        output.Dispose(); rangeReceipt.Dispose(); Assert.Equal(17UL, account.Used);
+        Assert.Equal("[12]", Encoding.UTF8.GetString(escaped.ResultBytes)); Assert.Equal(302, start);
+        account.Release(17);
+    }
 }

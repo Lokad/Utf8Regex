@@ -1,0 +1,344 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 16.4080983,
+  "LaneNames": [
+    "BaselineByteRanges",
+    "CandidateByteOrScalarRanges"
+  ],
+  "Scope": "Controls perform equal byte-range public operations. Scalar rows additionally query every numbered capture: baseline yields bytes, candidate yields scalars. Each lane is checked against its independent expected units; feature-cost observations, no equal-unit speedup/parity/catalog Status claim. Full cursor/consumer-array/disposal costs timed; all checksums/equality after timing.",
+  "Baseline": {
+    "Core": "0.5.0-dev\u002B0128afc2b927c073e0d8293cbf41026332d8b610 sha256=6FB382A5F37F397F276ED23AA1AF1819CEEE713B13B55EF0400C2962C7352442",
+    "Python": "0.5.0-dev\u002B0128afc2b927c073e0d8293cbf41026332d8b610 sha256=5DB6C7D1420BD520C8CD1406FE6A4AB454A3389CA64ABB7CCA1DF019F0DA5D29"
+  },
+  "Candidate": {
+    "Core": "0.5.0-dev\u002B5a91f9c4c5e973258af511d6479c16ab6b57e7cb sha256=0ADB6D99A224A4F8872D626270502E3FC27B9A425379981CEBF41F1CFC0F3949",
+    "Python": "0.5.0-dev\u002B5a91f9c4c5e973258af511d6479c16ab6b57e7cb sha256=851BA61E70806D25AFAC0861FC5CFBE78101790D20C470DF4FBD3A1F81139858"
+  },
+  "Rows": [
+    {
+      "Name": "byte-ascii-control",
+      "Pattern": "[a-z]\u002B",
+      "InputBytes": 272,
+      "Scalar": false,
+      "Finite": false,
+      "Live": false,
+      "Matches": 48,
+      "Operation": "Create funded cursor \u002B range snapshots \u002B consumer numeric arrays \u002B dispose; scalar candidate queries every group",
+      "Iterations": [
+        8192,
+        8192
+      ],
+      "WarmupCalls": [
+        32992,
+        46016
+      ],
+      "Microseconds": [
+        [
+          14.703503417968749,
+          14.7501220703125,
+          14.61578369140625
+        ],
+        [
+          14.80328369140625,
+          14.644482421875,
+          14.516943359374999
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          7664,
+          7664,
+          7664
+        ],
+        [
+          7680,
+          7680,
+          7680
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          120.4511,
+          120.833,
+          119.7325
+        ],
+        [
+          121.2685,
+          119.9676,
+          118.9228
+        ]
+      ]
+    },
+    {
+      "Name": "byte-unicode-control",
+      "Pattern": "(\u00E9\u002B|a\u002B)",
+      "InputBytes": 208,
+      "Scalar": false,
+      "Finite": false,
+      "Live": false,
+      "Matches": 32,
+      "Operation": "Create funded cursor \u002B range snapshots \u002B consumer numeric arrays \u002B dispose; scalar candidate queries every group",
+      "Iterations": [
+        4096,
+        4096
+      ],
+      "WarmupCalls": [
+        32816,
+        36048
+      ],
+      "Microseconds": [
+        [
+          19.612329101562498,
+          19.5913818359375,
+          19.940991210937497
+        ],
+        [
+          19.9374755859375,
+          20.1532958984375,
+          20.086083984374998
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          10808,
+          10808,
+          10808
+        ],
+        [
+          10824,
+          10824,
+          10824
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          80.3321,
+          80.2463,
+          81.6783
+        ],
+        [
+          81.6639,
+          82.5479,
+          82.2726
+        ]
+      ]
+    },
+    {
+      "Name": "scalar-ascii",
+      "Pattern": "(?\u003Cx\u003E[a-z]\u002B)",
+      "InputBytes": 272,
+      "Scalar": true,
+      "Finite": false,
+      "Live": false,
+      "Matches": 48,
+      "Operation": "Create funded cursor \u002B range snapshots \u002B consumer numeric arrays \u002B dispose; scalar candidate queries every group",
+      "Iterations": [
+        8192,
+        4096
+      ],
+      "WarmupCalls": [
+        37888,
+        34304
+      ],
+      "Microseconds": [
+        [
+          22.23106689453125,
+          21.66983642578125,
+          21.3280029296875
+        ],
+        [
+          20.5154541015625,
+          20.612890625000002,
+          20.63544921875
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          13312,
+          13312,
+          13312
+        ],
+        [
+          13328,
+          13328,
+          13328
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          182.1169,
+          177.5193,
+          174.719
+        ],
+        [
+          84.0313,
+          84.4304,
+          84.5228
+        ]
+      ]
+    },
+    {
+      "Name": "scalar-unicode",
+      "Pattern": "(\u00E9\u002B)|(a\u002B)",
+      "InputBytes": 208,
+      "Scalar": true,
+      "Finite": false,
+      "Live": false,
+      "Matches": 32,
+      "Operation": "Create funded cursor \u002B range snapshots \u002B consumer numeric arrays \u002B dispose; scalar candidate queries every group",
+      "Iterations": [
+        4096,
+        4096
+      ],
+      "WarmupCalls": [
+        35568,
+        20464
+      ],
+      "Microseconds": [
+        [
+          20.503930664062498,
+          20.347802734375,
+          20.598876953125
+        ],
+        [
+          36.081591796875,
+          35.9866943359375,
+          35.8345703125
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          11832,
+          11832,
+          11832
+        ],
+        [
+          11848,
+          11848,
+          11848
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          83.9841,
+          83.3446,
+          84.373
+        ],
+        [
+          147.7902,
+          147.4015,
+          146.7784
+        ]
+      ]
+    },
+    {
+      "Name": "scalar-unicode-document",
+      "Pattern": "(\u00E9\u002B|a\u002B)",
+      "InputBytes": 3328,
+      "Scalar": true,
+      "Finite": false,
+      "Live": false,
+      "Matches": 512,
+      "Operation": "Create funded cursor \u002B range snapshots \u002B consumer numeric arrays \u002B dispose; scalar candidate queries every group",
+      "Iterations": [
+        512,
+        128
+      ],
+      "WarmupCalls": [
+        2464,
+        1200
+      ],
+      "Microseconds": [
+        [
+          295.52128906250005,
+          296.5712890625,
+          297.19921875
+        ],
+        [
+          620.91953125,
+          624.31640625,
+          621.0148437500001
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          76184,
+          76184,
+          76184
+        ],
+        [
+          76280,
+          76280,
+          76280
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          151.3069,
+          151.8445,
+          152.166
+        ],
+        [
+          79.4777,
+          79.9125,
+          79.4899
+        ]
+      ]
+    },
+    {
+      "Name": "scalar-finite-live",
+      "Pattern": "(\u00E9\u002B|a\u002B)",
+      "InputBytes": 208,
+      "Scalar": true,
+      "Finite": true,
+      "Live": true,
+      "Matches": 32,
+      "Operation": "Create funded cursor \u002B range snapshots \u002B consumer numeric arrays \u002B dispose; scalar candidate queries every group",
+      "Iterations": [
+        4096,
+        2048
+      ],
+      "WarmupCalls": [
+        32464,
+        18512
+      ],
+      "Microseconds": [
+        [
+          22.6937255859375,
+          22.652685546875,
+          22.5923828125
+        ],
+        [
+          40.381640625,
+          40.444091796875,
+          39.923681640625
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          10808,
+          10808,
+          10808
+        ],
+        [
+          10824,
+          10824,
+          10824
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          92.9535,
+          92.7854,
+          92.5384
+        ],
+        [
+          82.7016,
+          82.8295,
+          81.7637
+        ]
+      ]
+    }
+  ]
+}

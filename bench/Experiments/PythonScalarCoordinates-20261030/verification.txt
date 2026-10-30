@@ -1,0 +1,9 @@
+Initial focused scalar-coordinate Release.
+Passed!  - Failed:     0, Passed:    22, Skipped:     0, Total:    22, Duration: 685 ms - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)
+Passed!  - Failed:     0, Passed:    22, Skipped:     0, Total:    22, Duration: 1 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)
+Full PythonRe Release with 25 new coordinate cases, including API/source checks.
+Passed!  - Failed:     0, Passed:  4223, Skipped:     0, Total:  4223, Duration: 19 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:  4223, Skipped:     0, Total:  4223, Duration: 19 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)
+Additional combined public hosting lifetime case; production unchanged.
+Passed!  - Failed:     0, Passed:     1, Skipped:     0, Total:     1, Duration: 167 ms - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:     1, Skipped:     0, Total:     1, Duration: 160 ms - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)

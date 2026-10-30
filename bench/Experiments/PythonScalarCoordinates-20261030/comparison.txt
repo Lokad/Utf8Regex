@@ -1,0 +1,6 @@
+Completed byte-ascii-control: 14.703503417968749 / 14.644482421875
+Completed byte-unicode-control: 19.612329101562498 / 20.086083984374998
+Completed scalar-ascii: 21.66983642578125 / 20.612890625000002
+Completed scalar-unicode: 20.503930664062498 / 35.9866943359375
+Completed scalar-unicode-document: 296.5712890625 / 621.0148437500001
+Completed scalar-finite-live: 22.652685546875 / 40.381640625

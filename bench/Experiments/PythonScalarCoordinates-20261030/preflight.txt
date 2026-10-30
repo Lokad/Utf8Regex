@@ -1,0 +1,6 @@
+Preflight byte-ascii-control
+Preflight byte-unicode-control
+Preflight scalar-ascii
+Preflight scalar-unicode
+Preflight scalar-unicode-document
+Preflight scalar-finite-live
