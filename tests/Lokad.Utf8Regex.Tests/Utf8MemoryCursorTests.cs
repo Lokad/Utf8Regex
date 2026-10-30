@@ -275,15 +275,19 @@ public sealed class Utf8MemoryCursorTests
         using (cursor)
         {
             armed = true;
-            var advance = Task.Run(() => cursor.MoveNext(out _));
+            // The test thread blocks on this handoff. A dedicated worker avoids
+            // thread-pool starvation when the full suite runs concurrently.
+            var advance = Task.Factory.StartNew(() => cursor.MoveNext(out _),
+                CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            var matched = false;
             try
             {
                 Assert.True(entered.Wait(TimeSpan.FromSeconds(10)));
                 Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
                 Assert.Throws<InvalidOperationException>(cursor.Dispose);
             }
-            finally { resume.Set(); }
-            Assert.True(await advance);
+            finally { resume.Set(); matched = await advance; }
+            Assert.True(matched);
         }
     }
 
