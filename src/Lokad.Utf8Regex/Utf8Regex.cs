@@ -957,6 +957,19 @@ public sealed partial class Utf8Regex
         finally { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }
     }
 
+    // Adapters may borrow a necessary exact literal from their existing native
+    // rendering. They validate the complete subject and keep their own verifier;
+    // finding this literal never proves a regex match or a candidate start.
+    internal bool RejectMissingExactRequiredLiteral(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)
+    {
+        var prefilter = _preparedRegex.SearchPlan.RequiredPrefilterSearcher;
+        if (prefilter.Kind != PreparedSearcherKind.ExactLiteral) return false;
+        var breach = prefilter.TryFindMatch(input, 0, input.Length, false, ref invocation, out _, out var found);
+        if (breach != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException("Required literal screening breached the invocation budget.");
+        return !found;
+    }
+
     private bool RejectMissingRequiredLiteral(ReadOnlySpan<byte> input, Utf8SliceProgram program,
         ref Utf8SliceInvocation invocation)
     {

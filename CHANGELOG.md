@@ -27,6 +27,8 @@
   synchronous temporary refunds. Caller-retained output remains a separate scope.
 - Lower compatible Python Unicode character-class unions to the existing scalar
   predicate instruction, preserving pinned membership and lexical folding.
+- Reject missing mandatory exact literals before acquiring Python scalar scratch,
+  preserving full UTF-8 validation and original interruption/resource admission.
 - Reuse complete cell/range-reference proofs for bounded ASCII value Match,
   preserving construction-culture folding, digit captures and resource controls.
 - Recognize nested capture endings in proved disjoint class repeats, avoiding

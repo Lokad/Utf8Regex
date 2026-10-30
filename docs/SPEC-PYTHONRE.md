@@ -28,6 +28,13 @@ after the floor, while anchors, boundaries and lookarounds retain complete prefi
 and suffix context. FullMatch covers [pos,end). There is no `endpos` parameter.
 The whole subject is validated even when discovery starts later or returns early.
 
+Nonempty scalar programs can reject an absent mandatory exact literal, proved by
+their existing native rendering, before acquiring VM scratch. The search observes
+the same work budget, token and deadline as validation and matching. Presence
+still uses Python verification; tight working/depth/result limits may admit a
+scratch-free miss that formerly required VM capacity. Charges remain dependent
+on the selected route and version.
+
 Captures are numbered by opening parenthesis, including named groups.
 References and conditionals use those numbers. Detailed `LastIndex` is the last
 capture to close on the successful path, not the largest participating number:

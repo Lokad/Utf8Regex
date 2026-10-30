@@ -39,7 +39,6 @@ internal struct PythonReScalarMatchState
     {
         this = default;
         _program = program;
-        if (CanUseCandidateRegex(program, candidateRegex)) _candidateRegex = candidateRegex;
         _leadingAsciiLow = _leadingAsciiHigh = -1;
         _pattern = pattern;
         _timeout = timeout;
@@ -50,6 +49,17 @@ internal struct PythonReScalarMatchState
         try
         {
             _validation = Utf8Validation.Validate(input, ref _invocation);
+            // The native rendering proves only necessity. A missing exact
+            // literal can finish before acquiring scalar scratch; a present
+            // literal retains the original Python VM and capture semantics.
+            if (!program.CanMatchEmpty && !program.IgnoreCase && candidateRegex is { } required &&
+                required.RejectMissingExactRequiredLiteral(input, ref _invocation))
+            {
+                Checkpoint(input);
+                _finished = true;
+                return;
+            }
+            if (CanUseCandidateRegex(program, candidateRegex)) _candidateRegex = candidateRegex;
             if (_candidateRegex is null && TryGetLeadingAsciiRange(program, _validation.IsAscii, out var low, out var high))
             {
                 _leadingAsciiLow = low;
