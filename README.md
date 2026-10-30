@@ -156,7 +156,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 
 | Case | Operation | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
-| `industry/leipzig-symbol-count` | `Count` | 1,152,702.300 us | 23,036.733 us | 30,488.150 us | 50.04x |
+| `industry/leipzig-symbol-count` | `Count` | 1,073,823.120 us | 23,035.200 us | 29,987.200 us | 46.62x |
 | `industry/rust-sherlock-nonnewline-count` | `Count` | 4,808.973 us | 979.187 us | 1,276.603 us | 4.91x |
 | `industry/mariomka-email-count` | `Count` | 1,525.918 us | 492.350 us | 9,040.367 us | 3.10x |
 | `industry/rust-sherlock-letter-count` | `Count` | 46,658.450 us | 19,592.933 us | 20,452.233 us | 2.38x |
@@ -238,7 +238,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 
 | Case | Operation | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
-| `industry/leipzig-symbol-count` | `Count` | 1,153,094.300 us | 1,235.305 us | 6,850.600 us | 933.45x |
+| `industry/leipzig-symbol-count` | `Count` | 1,076,351.380 us | 1,286.967 us | 6,732.140 us | 836.35x |
 | `industry/rust-sherlock-letter-count` | `Count` | 44,934.700 us | 8,940.667 us | 9,616.660 us | 5.03x |
 | `common/backtracking` | `IsMatch` | 0.190 us | 0.044 us | 0.075 us | 4.34x |
 | `industry/rust-sherlock-holmes-window-count` | `Count` | 252.827 us | 58.641 us | 263.159 us | 4.31x |

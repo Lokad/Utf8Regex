@@ -1,0 +1,1 @@
+{"Case":"industry/leipzig-symbol-count","Pattern":"\\p{Sm}","Utf16Length":16013973,"Utf8Bytes":16013977,"SubjectSha256":"F2AA28234E7A8212C9E009FA9C67D1960D2D063D076765DE46B0FAED5FE44AD8","Counts":{"ExecuteUtf8Regex":69,"ExecuteUtf8Compiled":69,"ExecutePredecodedRegex":69,"ExecutePredecodedCompiledRegex":69},"Benchmark":"1.0.0\u002Bdab878a6d49247a127c8ac638c5b3476d3236773"}

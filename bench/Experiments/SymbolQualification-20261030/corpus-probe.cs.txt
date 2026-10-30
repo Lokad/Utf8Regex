@@ -1,0 +1,16 @@
+using System.Reflection;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+var root=Path.GetFullPath(args[0]);var context=new AssemblyLoadContext("corpus");
+context.Resolving+=(c,n)=>File.Exists(Path.Combine(root,n.Name+".dll"))?c.LoadFromAssemblyPath(Path.Combine(root,n.Name+".dll")):null;
+var assembly=context.LoadFromAssemblyPath(Path.Combine(root,"Lokad.Utf8Regex.Benchmarks.dll"));
+var type=assembly.GetType("Lokad.Utf8Regex.Benchmarks.LokadPublicBenchmarkContext",throwOnError:true)!;
+var fixture=Activator.CreateInstance(type,args[1])!;var input=(string)type.GetProperty("InputString")!.GetValue(fixture)!;
+var counts=new Dictionary<string,int>();foreach(var name in new[]{"ExecuteUtf8Regex","ExecuteUtf8Compiled","ExecutePredecodedRegex","ExecutePredecodedCompiledRegex"})
+    counts[name]=(int)type.GetMethod(name)!.Invoke(fixture,null)!;
+if(counts.Values.Distinct().Count()!=1)throw new Exception("Public operation results differ: "+JsonSerializer.Serialize(counts));
+Console.WriteLine(JsonSerializer.Serialize(new{Case=args[1],Pattern=type.GetProperty("Pattern")!.GetValue(fixture),Utf16Length=input.Length,
+    Utf8Bytes=Encoding.UTF8.GetByteCount(input),SubjectSha256=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(input))),Counts=counts,
+    Benchmark=assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion}));
