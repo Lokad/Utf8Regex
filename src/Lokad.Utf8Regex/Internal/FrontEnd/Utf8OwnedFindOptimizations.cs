@@ -305,9 +305,9 @@ internal static class Utf8OwnedFindOptimizations
                 {
                     run.Append(child.Ch);
                 }
-                else if (child.Kind == Utf8TreeNodeKind.Multi && IsExactLiteral(child))
+                else if (child.Kind == Utf8TreeNodeKind.Multi && child.Str is { } text && IsExactLiteral(child))
                 {
-                    run.Append(child.Str);
+                    run.Append(text);
                 }
                 else if (child.Kind == Utf8TreeNodeKind.Empty)
                 {
@@ -364,9 +364,9 @@ internal static class Utf8OwnedFindOptimizations
                     {
                         run.Append(child.Ch);
                     }
-                    else if (child.Kind == Utf8TreeNodeKind.Multi && IsExactLiteral(child))
+                    else if (child.Kind == Utf8TreeNodeKind.Multi && child.Str is { } text && IsExactLiteral(child))
                     {
-                        run.Append(child.Str);
+                        run.Append(text);
                     }
                     else if (child.Kind == Utf8TreeNodeKind.Empty)
                     {

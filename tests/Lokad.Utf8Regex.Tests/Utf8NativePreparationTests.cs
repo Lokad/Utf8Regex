@@ -167,6 +167,18 @@ public sealed class Utf8NativePreparationTests
     private static Utf8ExecutionTree ExecutionTree(Utf8OwnedRegexTree tree, RegexOptions options)
         => Utf8ExecutionTreeLowerer.Lower(new Utf8SemanticRegex(string.Empty, options, string.Empty, options, tree))!;
 
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void TextFactsCannotSilentlyJoinAcrossAnUnrepresentedNativeFragment(bool leadingAscii)
+    {
+        var root = Utf8TreeNode.Create(Utf8TreeNodeKind.Concatenate, RegexOptions.CultureInvariant);
+        if (leadingAscii) root.WithChild(Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'x'));
+        root.WithChild(Utf8TreeNode.CreateUtf8Literal(RegexOptions.CultureInvariant, "é"u8.ToArray()));
+        root.WithChild(Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'y'));
+        Assert.Equal(leadingAscii ? "x" : null, Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(root));
+        Assert.Equal(leadingAscii ? "x" : "y", Utf8OwnedFindOptimizations.TryExtractLongestLiteral(root));
+    }
+
     private static Utf8OwnedRegexTree Parse(string pattern, RegexOptions options = RegexOptions.CultureInvariant)
     {
         var tree = Utf8OwnedTreeParser.TryParse(Encoding.UTF8.GetBytes(pattern), options, out var diagnostic);
