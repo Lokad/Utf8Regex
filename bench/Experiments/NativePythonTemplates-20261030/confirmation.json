@@ -1,0 +1,607 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 60.6724163,
+  "Scope": "Sole focused confirmation: fixed505bc140 -\u003Einitial47d7273e -\u003Efinal1a4b4ea5 public PythonRe Subn/retained template operations, text compatibility and unchanged Count controls. Native source bridge decodes the full template per call in both old/new controls; the new overload takes the same UTF-8 bytes. Final candidate batches bounded literal runs to recover demonstrated initial text preparation cost. Cold cycles 32 same-size templates through the existing 16-entry cache; warm reuses one. Regex/template/subject setup outside timing. Funded lanes include receipt access/disposal; caller byte aliases remain valid. Complete output batches are compared after timing; original live token and all four finite controls included. Warmup2s/minimum1000 calls/lane,independent150ms calibration,5alternating samples,all\u003E=20ms. One90s cap. Experiment closes after this confirmation. No catalog/cumulative/package claim.",
+  "Initial": {
+    "Core": "0.5.0-dev\u002B47d7273eab17b72cf68a31973022eefdadf6b57b sha256=37C284B62FB1BE2EA707ED607E21A508CBB4DF517B9C846757DCCFBB9B99D699",
+    "Python": "0.5.0-dev\u002B47d7273eab17b72cf68a31973022eefdadf6b57b sha256=A4174451FA272947A469E5D39932DB48267C16E2206E6A2748A0B245D1E433A4"
+  },
+  "Before": {
+    "Core": "0.5.0-dev\u002B505bc1405e84b40fdda7b446ce0f82a957ef17d2 sha256=E84C36454D24F3D79B29C58C21C60BC09B6AC644AB4327BD8DB4A29760D25427",
+    "Python": "0.5.0-dev\u002B505bc1405e84b40fdda7b446ce0f82a957ef17d2 sha256=7D5F44585F5DE7675C7B2241C85886BA898F6521D1B21E2659B59773835CA245"
+  },
+  "After": {
+    "Core": "0.5.0-dev\u002B1a4b4ea5c4e30cf88ec85bfac7f93ec31418884d sha256=C5250532C4522D330583CF56840313AB7FE861B887853FBCAFBF69F469F96031",
+    "Python": "0.5.0-dev\u002B1a4b4ea5c4e30cf88ec85bfac7f93ec31418884d sha256=DF259D80A7D1313C0A010D20A3638E2D2D8A95CD32C5FCE3D18BE0FE336F84CF"
+  },
+  "Rows": [
+    {
+      "Name": "literal-count-control",
+      "Cold": false,
+      "Large": false,
+      "Native": false,
+      "Finite": false,
+      "Funded": false,
+      "Pattern": "needle",
+      "InputBytes": 8198,
+      "InputSha256": "8DA47E1CAE661B34F429302D624E9EA43B01F9729C6A36BB3E1D2297395FF58B",
+      "TemplateBytes": 11,
+      "TemplateCount": 1,
+      "Lanes": [
+        "BeforeText",
+        "FinalText"
+      ],
+      "Iterations": [
+        524288,
+        524288
+      ],
+      "WarmupCalls": [
+        3777595,
+        3303728
+      ],
+      "Microseconds": [
+        [
+          0.5263330459594727,
+          0.43218421936035156,
+          0.4139751434326172,
+          0.3886035919189453,
+          0.38176918029785156
+        ],
+        [
+          0.5223396301269532,
+          0.3948068618774414,
+          0.38100128173828124,
+          0.3803047180175781,
+          0.38044071197509766
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          275.9501,
+          226.589,
+          217.0422,
+          203.7402,
+          200.157
+        ],
+        [
+          273.8564,
+          206.9925,
+          199.7544,
+          199.3892,
+          199.4605
+        ]
+      ],
+      "RetainedFundingBytes": [
+        0,
+        0
+      ]
+    },
+    {
+      "Name": "text-warm-capture",
+      "Cold": false,
+      "Large": false,
+      "Native": false,
+      "Finite": false,
+      "Funded": false,
+      "Pattern": "(?P\u003Cx\u003Ea\u002B)(\uD83D\uDE00)",
+      "InputBytes": 12,
+      "InputSha256": "D640405A7F84E3D780ED41A90C32B10A14A27EB5E83A145251D32A93C9B8E817",
+      "TemplateBytes": 11,
+      "TemplateCount": 1,
+      "Lanes": [
+        "BeforeText",
+        "InitialText",
+        "FinalText"
+      ],
+      "Iterations": [
+        131072,
+        65536,
+        65536
+      ],
+      "WarmupCalls": [
+        762099,
+        558358,
+        537050
+      ],
+      "Microseconds": [
+        [
+          3.277507019042969,
+          2.739823150634766,
+          3.030340576171875,
+          2.0186447143554687,
+          2.0086715698242186
+        ],
+        [
+          1.9582153320312499,
+          3.229421997070313,
+          3.1236251831054687,
+          2.4197097778320313,
+          1.896502685546875
+        ],
+        [
+          2.646067810058594,
+          3.1850784301757815,
+          3.230241394042969,
+          2.8590820312500003,
+          1.9767425537109373
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          6064,
+          6064,
+          6064,
+          6064,
+          6064
+        ],
+        [
+          6064,
+          6064,
+          6064,
+          6064,
+          6064
+        ],
+        [
+          6064,
+          6064,
+          6064,
+          6064,
+          6064
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          429.5894,
+          359.1141,
+          397.1928,
+          264.5878,
+          263.2806
+        ],
+        [
+          128.3336,
+          211.6434,
+          204.7099,
+          158.5781,
+          124.2892
+        ],
+        [
+          173.4127,
+          208.7373,
+          211.6971,
+          187.3728,
+          129.5478
+        ]
+      ],
+      "RetainedFundingBytes": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Name": "text-cold-Unicode-2KiB",
+      "Cold": true,
+      "Large": true,
+      "Native": false,
+      "Finite": false,
+      "Funded": false,
+      "Pattern": "(?P\u003Cx\u003Ea\u002B)(\uD83D\uDE00)",
+      "InputBytes": 12,
+      "InputSha256": "D640405A7F84E3D780ED41A90C32B10A14A27EB5E83A145251D32A93C9B8E817",
+      "TemplateBytes": 2049,
+      "TemplateCount": 32,
+      "Lanes": [
+        "BeforeText",
+        "InitialText",
+        "FinalText"
+      ],
+      "Iterations": [
+        8192,
+        8192,
+        8192
+      ],
+      "WarmupCalls": [
+        64721,
+        54571,
+        102997
+      ],
+      "Microseconds": [
+        [
+          34.03759765625,
+          34.977673339843754,
+          35.197729492187506,
+          35.36522216796875,
+          35.13883056640625
+        ],
+        [
+          29.8172607421875,
+          27.991796875,
+          37.3718505859375,
+          37.8283935546875,
+          35.76771240234375
+        ],
+        [
+          23.7966796875,
+          23.4818359375,
+          23.68624267578125,
+          22.85526123046875,
+          22.745471191406253
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          32056.2705078125,
+          32056.2705078125,
+          32056.2705078125,
+          32056.431640625,
+          32056.2705078125
+        ],
+        [
+          32056.3974609375,
+          32056.3974609375,
+          32056.2705078125,
+          32056.0205078125,
+          32056.2705078125
+        ],
+        [
+          29760,
+          29760,
+          29760,
+          29760,
+          29760
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          278.836,
+          286.5371,
+          288.3398,
+          289.7119,
+          287.8573
+        ],
+        [
+          244.263,
+          229.3088,
+          306.1502,
+          309.8902,
+          293.0091
+        ],
+        [
+          194.9424,
+          192.3632,
+          194.0377,
+          187.2303,
+          186.3309
+        ]
+      ],
+      "RetainedFundingBytes": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Name": "native-cold-Unicode-2KiB",
+      "Cold": true,
+      "Large": true,
+      "Native": true,
+      "Finite": false,
+      "Funded": false,
+      "Pattern": "(?P\u003Cx\u003Ea\u002B)(\uD83D\uDE00)",
+      "InputBytes": 12,
+      "InputSha256": "D640405A7F84E3D780ED41A90C32B10A14A27EB5E83A145251D32A93C9B8E817",
+      "TemplateBytes": 2049,
+      "TemplateCount": 32,
+      "Lanes": [
+        "BeforeStringInterop",
+        "InitialNative",
+        "FinalNative"
+      ],
+      "Iterations": [
+        4096,
+        8192,
+        8192
+      ],
+      "WarmupCalls": [
+        42546,
+        65231,
+        159618
+      ],
+      "Microseconds": [
+        [
+          41.078955078125,
+          41.242431640625,
+          40.7752685546875,
+          40.9168701171875,
+          39.92138671875
+        ],
+        [
+          38.61964111328125,
+          38.569091796875,
+          38.79005126953125,
+          38.645275878906254,
+          37.423828125
+        ],
+        [
+          19.02066650390625,
+          17.389074707031252,
+          17.919775390625,
+          17.79237060546875,
+          17.17012939453125
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          34136,
+          34136,
+          34136,
+          34136,
+          34136
+        ],
+        [
+          34216.181640625,
+          34216.181640625,
+          34216.181640625,
+          34216.181640625,
+          34216.181640625
+        ],
+        [
+          31888.00390625,
+          31888.00390625,
+          31888.00390625,
+          31888.00390625,
+          31888.00390625
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          168.2594,
+          168.929,
+          167.0155,
+          167.5955,
+          163.518
+        ],
+        [
+          316.3721,
+          315.958,
+          317.7681,
+          316.5821,
+          306.576
+        ],
+        [
+          155.8173,
+          142.4513,
+          146.7988,
+          145.7551,
+          140.6577
+        ]
+      ],
+      "RetainedFundingBytes": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Name": "native-warm-finite-live",
+      "Cold": false,
+      "Large": false,
+      "Native": true,
+      "Finite": true,
+      "Funded": false,
+      "Pattern": "(?P\u003Cx\u003Ea\u002B)(\uD83D\uDE00)",
+      "InputBytes": 12,
+      "InputSha256": "D640405A7F84E3D780ED41A90C32B10A14A27EB5E83A145251D32A93C9B8E817",
+      "TemplateBytes": 11,
+      "TemplateCount": 1,
+      "Lanes": [
+        "BeforeStringInterop",
+        "InitialNative",
+        "FinalNative"
+      ],
+      "Iterations": [
+        65536,
+        65536,
+        65536
+      ],
+      "WarmupCalls": [
+        497445,
+        837209,
+        776821
+      ],
+      "Microseconds": [
+        [
+          2.5054931640625,
+          2.475093078613281,
+          2.473260498046875,
+          2.3972259521484376,
+          2.4001068115234374
+        ],
+        [
+          2.391641235351562,
+          2.3621688842773434,
+          2.367704772949219,
+          2.4193313598632815,
+          2.380389404296875
+        ],
+        [
+          2.3679687499999997,
+          2.370927429199219,
+          2.381732177734375,
+          2.3775482177734375,
+          2.4020126342773436
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          6232,
+          6232,
+          6232,
+          6232,
+          6232
+        ],
+        [
+          6184,
+          6184,
+          6184,
+          6184,
+          6184
+        ],
+        [
+          6184,
+          6184,
+          6184,
+          6184,
+          6184
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          164.2,
+          162.2077,
+          162.0876,
+          157.1046,
+          157.2934
+        ],
+        [
+          156.7386,
+          154.8071,
+          155.1699,
+          158.5533,
+          156.0012
+        ],
+        [
+          155.1872,
+          155.3811,
+          156.0892,
+          155.815,
+          157.4183
+        ]
+      ],
+      "RetainedFundingBytes": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Name": "native-funded-retained-cold",
+      "Cold": true,
+      "Large": false,
+      "Native": true,
+      "Finite": false,
+      "Funded": true,
+      "Pattern": "(?P\u003Cx\u003Ea\u002B)(\uD83D\uDE00)",
+      "InputBytes": 12,
+      "InputSha256": "D640405A7F84E3D780ED41A90C32B10A14A27EB5E83A145251D32A93C9B8E817",
+      "TemplateBytes": 11,
+      "TemplateCount": 32,
+      "Lanes": [
+        "BeforeStringInterop",
+        "InitialNative",
+        "FinalNative"
+      ],
+      "Iterations": [
+        65536,
+        32768,
+        32768
+      ],
+      "WarmupCalls": [
+        459846,
+        301181,
+        487593
+      ],
+      "Microseconds": [
+        [
+          4.095883178710937,
+          4.203240966796875,
+          4.261891174316406,
+          4.144914245605468,
+          4.115650939941406
+        ],
+        [
+          4.333010864257813,
+          4.269290161132812,
+          4.448272705078125,
+          4.392742919921875,
+          4.4600372314453125
+        ],
+        [
+          4.180532836914062,
+          4.13873291015625,
+          4.358404541015625,
+          4.286297607421875,
+          4.413302612304688
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          7784,
+          7784,
+          7784,
+          7784,
+          7784
+        ],
+        [
+          7864,
+          7864,
+          7864,
+          7864,
+          7864
+        ],
+        [
+          7768,
+          7768,
+          7768,
+          7768,
+          7768
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          268.4278,
+          275.4636,
+          279.3073,
+          271.6411,
+          269.7233
+        ],
+        [
+          141.9841,
+          139.8961,
+          145.761,
+          143.9414,
+          146.1465
+        ],
+        [
+          136.9877,
+          135.618,
+          142.8162,
+          140.4534,
+          144.6151
+        ]
+      ],
+      "RetainedFundingBytes": [
+        66176,
+        63872,
+        63872
+      ]
+    }
+  ]
+}

@@ -1,0 +1,168 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+
+var before = Load(Path.GetFullPath(args[0]), "before"); var after = Load(Path.GetFullPath(args[1]), "after");
+if (!Identity(before.Core).Contains("505bc140") || !Identity(after.Core).Contains("47d7273e")) throw new Exception("Unexpected binaries");
+using var process = Process.GetCurrentProcess(); process.ProcessorAffinity = (nint)4;
+using var live = new CancellationTokenSource(); var preflight = args.Contains("--preflight");
+var watch = Stopwatch.StartNew(); var rows = new List<object>();
+var cases = new[] {
+    new Case("literal-count-control", Count: true),
+    new Case("Python-count-control", Count: true, Python: true),
+    new Case("text-warm-capture"), new Case("text-cold-capture", Cold: true),
+    new Case("text-cold-Unicode-2KiB", Cold: true, Large: true),
+    new Case("native-warm-capture", Native: true),
+    new Case("native-cold-capture", Native: true, Cold: true),
+    new Case("native-cold-Unicode-2KiB", Native: true, Cold: true, Large: true),
+    new Case("native-warm-finite-live", Native: true, Finite: true),
+    new Case("native-funded-retained-warm", Native: true, Funded: true),
+    new Case("native-funded-retained-cold", Native: true, Funded: true, Cold: true)
+};
+foreach (var item in cases)
+{
+    var pattern = item.Count ? "needle" : "(?P<x>a+)(😀)";
+    var source = Encoding.UTF8.GetBytes(pattern);
+    var input = Encoding.UTF8.GetBytes(item.Count ? new string('x', 8192) + "needle" : "aa😀/a😀");
+    var prefix = item.Large ? string.Concat(Enumerable.Repeat("é😀", 340)) : "é";
+    var templates = Enumerable.Range(0, item.Cold ? 32 : 1).Select(index => index.ToString("D2") + prefix + @"[\g<x>]").ToArray();
+    var encoded = templates.Select(Encoding.UTF8.GetBytes).ToArray();
+    var expected = templates.Select((_, index) => Encoding.UTF8.GetBytes(index.ToString("D2") + prefix + "[aa]/" + index.ToString("D2") + prefix + "[a]")).ToArray();
+    var lanes = new List<string>(); var actions = new List<Func<Output>>(); var roots = new List<object>(); var hosts = new List<Host>();
+    void Add(Pair pair, string lane, bool native = false)
+    {
+        var type = item.Count && !item.Python ? pair.Core.GetType("Lokad.Utf8Regex.Utf8Regex")! : pair.Python.GetType("Lokad.Utf8Regex.PythonRe.Utf8PythonRegex")!;
+        var policy = Policy(pair.Core, item.Finite); var construction = Activator.CreateInstance(pair.Core.GetType("Lokad.Utf8Regex.Utf8ConstructionPolicy")!)!;
+        var host = new Host(); hosts.Add(host);
+        var account = item.Funded ? MakeAllowance(pair.Core.GetType("Lokad.Utf8Regex.IUtf8MemoryAllowance")!, host) : null;
+        var regex = CompileBridge(type, pair.Core, item.Funded)(source, policy, construction, account); roots.Add(regex); lanes.Add(lane);
+        if (item.Count)
+        {
+            var count = CountBridge(type); actions.Add(() => new(new([], count(regex, input)), 0)); return;
+        }
+        var call = SubnBridge(type, native, item.Funded); var index = 0;
+        actions.Add(() => {
+            var selected = index++ & (templates.Length - 1);
+            object template = native ? encoded[selected] : item.Native ? Encoding.UTF8.GetString(encoded[selected]) : templates[selected];
+            return new(call(regex, input, template, item.Finite ? live.Token : default), selected);
+        });
+    }
+    Add(before, item.Native ? "BeforeStringInterop" : "BeforeText");
+    Add(after, item.Native ? "AfterStringInterop" : "AfterText");
+    if (item.Native) Add(after, "AfterNative", true);
+    void Check(Output output)
+    {
+        if (output.Value.Count != (item.Count ? 1 : 2) || (!item.Count && !output.Value.Bytes.AsSpan().SequenceEqual(expected[output.Template])))
+            throw new Exception("Result mismatch: " + item.Name);
+    }
+    foreach (var action in actions) for (var i = 0; i < templates.Length; i++) Check(action());
+    if (preflight) { Console.Error.WriteLine("Preflight " + item.Name); foreach (var root in roots) (root as IDisposable)?.Dispose(); if (hosts.Any(h => h.Used != 0)) throw new Exception("Preflight leak"); continue; }
+    var n = actions.Count; var iterations = new int[n]; var warmCalls = new long[n];
+    for (var lane = 0; lane < n; lane++)
+    {
+        var warm = Stopwatch.StartNew(); do { Check(actions[lane]()); warmCalls[lane]++; } while (warm.Elapsed.TotalMilliseconds < 1500 || warmCalls[lane] < 1000);
+        iterations[lane] = 1; while (Loop(iterations[lane], actions[lane], Check).Milliseconds < 80) iterations[lane] = checked(iterations[lane] * 2);
+    }
+    var held = hosts.Select(host => host.Used).ToArray();
+    var times = Enumerable.Range(0, n).Select(_ => new double[3]).ToArray(); var allocations = Enumerable.Range(0, n).Select(_ => new double[3]).ToArray(); var durations = Enumerable.Range(0, n).Select(_ => new double[3]).ToArray();
+    for (var sample = 0; sample < 3; sample++) for (var position = 0; position < n; position++)
+    {
+        var lane = sample % 2 == 0 ? position : n - 1 - position; GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        var result = Loop(iterations[lane], actions[lane], Check);
+        if (result.Milliseconds < 20) throw new Exception("Sample below 20ms");
+        times[lane][sample] = result.Milliseconds * 1000 / iterations[lane]; allocations[lane][sample] = (double)result.Bytes / iterations[lane]; durations[lane][sample] = result.Milliseconds;
+        for (var h = 0; h < hosts.Count; h++) if (hosts[h].Used != held[h]) throw new Exception("Working/result funding leak");
+    }
+    foreach (var root in roots) (root as IDisposable)?.Dispose(); if (hosts.Any(host => host.Used != 0)) throw new Exception("Final funding leak");
+    rows.Add(new { item.Name, item.Cold, item.Large, item.Native, item.Finite, item.Funded, Pattern = pattern, InputBytes = input.Length, InputSha256 = Convert.ToHexString(SHA256.HashData(input)), TemplateBytes = encoded[0].Length, TemplateCount = templates.Length,
+        Lanes = lanes, Iterations = iterations, WarmupCalls = warmCalls, Microseconds = times, AllocatedBytes = allocations, ElapsedMilliseconds = durations, RetainedFundingBytes = held });
+    Console.Error.WriteLine(item.Name + ": " + string.Join(" / ", times.Select(values => values.Order().ElementAt(1))));
+}
+Console.WriteLine(JsonSerializer.Serialize(new { Runtime = RuntimeInformation.FrameworkDescription, CpuAffinityMask = "4", ElapsedSeconds = watch.Elapsed.TotalSeconds,
+    Scope = "Fixed 505bc140 -> 47d7273e public PythonRe Subn/retained template operations, text compatibility and unchanged Count controls. Native source bridge decodes the full template per call in both old/new controls; the new overload takes the same UTF-8 bytes. Cold cycles 32 same-size templates through the existing 16-entry cache; warm reuses one. Regex/template/subject setup outside timing. Funded lanes include receipt access/disposal; caller byte aliases remain valid. Complete output batches are compared after timing; original live token and all four finite controls included. Warmup 1.5s/minimum1000 calls/lane, independent80ms calibration,3alternating samples,all>=20ms. One120s cap,at most one focused confirmation. No catalog/cumulative/package claim.",
+    Before = new { Core = Identity(before.Core), Python = Identity(before.Python) }, After = new { Core = Identity(after.Core), Python = Identity(after.Python) }, Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+
+static Pair Load(string root, string name)
+{
+    var context = new AssemblyLoadContext(name);
+    return new(context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.dll")), context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.PythonRe.dll")));
+}
+static Func<object, byte[], int> CountBridge(Type type)
+{
+    var method = type.GetMethod("Count", [typeof(ReadOnlySpan<byte>)])!;
+    var bridge = new DynamicMethod("CountPublic", typeof(int), [typeof(object), typeof(byte[])], typeof(Program).Module, true); var il = bridge.GetILGenerator();
+    il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Castclass, type); ReadSpan(il, 1); il.Emit(OpCodes.Call, method); il.Emit(OpCodes.Ret);
+    return bridge.CreateDelegate<Func<object, byte[], int>>();
+}
+static Func<object, byte[], object, CancellationToken, Data> SubnBridge(Type type, bool native, bool retained)
+{
+    var method = type.GetMethods().Single(m => m.Name == (retained ? "SubnRetained" : "Subn") && !m.IsGenericMethod && m.GetParameters().Length == 5 && m.GetParameters()[1].ParameterType == (native ? typeof(ReadOnlySpan<byte>) : typeof(string)));
+    var resultType = type.Assembly.GetType("Lokad.Utf8Regex.PythonRe.Utf8PythonSubnUtf8Result")!;
+    var bridge = new DynamicMethod("SubnPublic", typeof(Data), [typeof(object), typeof(byte[]), typeof(object), typeof(CancellationToken)], typeof(Program).Module, true); var il = bridge.GetILGenerator();
+    var result = il.DeclareLocal(resultType); var receipt = retained ? il.DeclareLocal(method.ReturnType) : null;
+    il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Castclass, type); ReadSpan(il, 1);
+    il.Emit(OpCodes.Ldarg_2); il.Emit(OpCodes.Castclass, native ? typeof(byte[]) : typeof(string));
+    if (native) il.Emit(OpCodes.Call, typeof(ReadOnlySpan<byte>).GetMethod("op_Implicit", [typeof(byte[])])!);
+    il.Emit(OpCodes.Ldc_I4_0); il.Emit(OpCodes.Ldc_I4_0); il.Emit(OpCodes.Ldarg_3); il.Emit(OpCodes.Call, method);
+    if (retained) { il.Emit(OpCodes.Stloc, receipt!); il.Emit(OpCodes.Ldloc, receipt!); il.Emit(OpCodes.Callvirt, method.ReturnType.GetProperty("Result")!.GetMethod!); }
+    il.Emit(OpCodes.Stloc, result);
+    il.Emit(OpCodes.Ldloca, result); il.Emit(OpCodes.Call, resultType.GetProperty("ResultBytes")!.GetMethod!);
+    il.Emit(OpCodes.Ldloca, result); il.Emit(OpCodes.Call, resultType.GetProperty("ReplacementCount")!.GetMethod!);
+    il.Emit(OpCodes.Newobj, typeof(Data).GetConstructor([typeof(byte[]), typeof(int)])!);
+    if (retained) { var data = il.DeclareLocal(typeof(Data)); il.Emit(OpCodes.Stloc, data); il.Emit(OpCodes.Ldloc, receipt!); il.Emit(OpCodes.Callvirt, method.ReturnType.GetMethod("Dispose")!); il.Emit(OpCodes.Ldloc, data); }
+    il.Emit(OpCodes.Ret); return bridge.CreateDelegate<Func<object, byte[], object, CancellationToken, Data>>();
+}
+static void ReadSpan(ILGenerator il, short arg) { il.Emit(OpCodes.Ldarg, arg); il.Emit(OpCodes.Call, typeof(ReadOnlySpan<byte>).GetMethod("op_Implicit", [typeof(byte[])])!); }
+static object Policy(Assembly core, bool finite)
+{
+    var type = core.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!; var value = Activator.CreateInstance(type)!;
+    if (finite) { type.GetProperty("MaxWorkSteps")!.SetValue(value, 16_000_000UL); type.GetProperty("MaxDepth")!.SetValue(value, 4096U); type.GetProperty("MaxWorkingBytes")!.SetValue(value, 4UL << 20); type.GetProperty("MaxResultBytes")!.SetValue(value, 4UL << 20); }
+    return value;
+}
+static Compiler CompileBridge(Type type, Assembly core, bool funded)
+{
+    var method = type.GetMethods().Single(m => m.Name == "Compile" && m.GetParameters().Length == (funded ? 8 : 7) && m.GetParameters()[0].ParameterType == typeof(ReadOnlySpan<byte>));
+    var bridge = new DynamicMethod("CompilePublic", typeof(object), [typeof(byte[]), typeof(object), typeof(object), typeof(object)], typeof(Program).Module, true); var il = bridge.GetILGenerator();
+    ReadSpan(il, 0); il.Emit(OpCodes.Ldc_I4_0); il.Emit(OpCodes.Ldsfld, typeof(Timeout).GetField("InfiniteTimeSpan")!);
+    il.Emit(OpCodes.Ldarg_1); il.Emit(OpCodes.Unbox_Any, core.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!);
+    il.Emit(OpCodes.Ldarg_2); il.Emit(OpCodes.Unbox_Any, core.GetType("Lokad.Utf8Regex.Utf8ConstructionPolicy")!);
+    il.Emit(OpCodes.Ldsfld, typeof(Timeout).GetField("InfiniteTimeSpan")!); il.Emit(OpCodes.Ldloc, il.DeclareLocal(typeof(CancellationToken)));
+    if (funded) { il.Emit(OpCodes.Ldarg_3); il.Emit(OpCodes.Castclass, core.GetType("Lokad.Utf8Regex.IUtf8MemoryAllowance")!); }
+    il.Emit(OpCodes.Call, method); il.Emit(OpCodes.Ret); return bridge.CreateDelegate<Compiler>();
+}
+static object MakeAllowance(Type contract, Host host)
+{
+    var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Host" + Guid.NewGuid().ToString("N")), AssemblyBuilderAccess.Run);
+    var type = assembly.DefineDynamicModule("Host").DefineType("Provider", TypeAttributes.Public | TypeAttributes.Sealed, typeof(object), [contract]);
+    var field = type.DefineField("host", typeof(Host), FieldAttributes.Private); var ctor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, [typeof(Host)]);
+    var il = ctor.GetILGenerator(); il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Call, typeof(object).GetConstructor(Type.EmptyTypes)!); il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Ldarg_1); il.Emit(OpCodes.Stfld, field); il.Emit(OpCodes.Ret);
+    foreach (var declaration in contract.GetMethods()) { var method = type.DefineMethod(declaration.Name, MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.NewSlot, declaration.ReturnType, [typeof(ulong)]);
+        il = method.GetILGenerator(); il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Ldfld, field); il.Emit(OpCodes.Ldarg_1); il.Emit(OpCodes.Callvirt, typeof(Host).GetMethod(declaration.Name)!); il.Emit(OpCodes.Ret); type.DefineMethodOverride(method, declaration); }
+    return Activator.CreateInstance(type.CreateType()!, host)!;
+}
+static string Identity(Assembly assembly) => assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion + " sha256=" + Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location)));
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds, long Bytes) Loop(int count, Func<Output> action, Action<Output> check)
+{
+    var output = new Output[count]; var allocated = GC.GetAllocatedBytesForCurrentThread(); var start = Stopwatch.GetTimestamp();
+    for (var i = 0; i < count; i++) output[i] = action();
+    var elapsed = Stopwatch.GetElapsedTime(start).TotalMilliseconds; var bytes = GC.GetAllocatedBytesForCurrentThread() - allocated;
+    foreach (var value in output) check(value); GC.KeepAlive(output); return (elapsed, bytes);
+}
+record Pair(Assembly Core, Assembly Python);
+record Case(string Name, bool Count = false, bool Python = false, bool Native = false, bool Cold = false, bool Large = false, bool Finite = false, bool Funded = false);
+public readonly record struct Data(byte[] Bytes, int Count);
+readonly record struct Output(Data Value, int Template);
+delegate object Compiler(byte[] pattern, object policy, object construction, object? allowance);
+public sealed class Host
+{
+    private long _used; public long Used => Volatile.Read(ref _used);
+    public bool TryReserve(ulong bytes) { if (bytes > long.MaxValue) return false; var delta = (long)bytes; while (true) { var current = Volatile.Read(ref _used); if (delta > long.MaxValue - current) return false; if (Interlocked.CompareExchange(ref _used, current + delta, current) == current) return true; } }
+    public void Release(ulong bytes) { if (Interlocked.Add(ref _used, -checked((long)bytes)) < 0) throw new Exception("Underflow"); }
+}
