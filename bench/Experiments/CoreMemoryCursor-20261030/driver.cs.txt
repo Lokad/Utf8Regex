@@ -1,0 +1,131 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+
+var before = new AssemblyLoadContext("before").LoadFromAssemblyPath(Path.Combine(Path.GetFullPath(args[0]), "Lokad.Utf8Regex.dll"));
+var after = typeof(Utf8Regex).Assembly;
+if (Hash(before) == Hash(after) || !Identity(after).Contains(args[1])) throw new Exception("Unexpected binaries");
+using var process = Process.GetCurrentProcess(); process.ProcessorAffinity = (nint)4;
+var timer = Stopwatch.StartNew(); var rows = new List<object>(); var preflight = args.Length > 2 && args[2] == "--preflight";
+var cases = new[] {
+    new Case("literal", "needle", string.Concat(Enumerable.Repeat("prefix needle tail ", 32)), RegexOptions.None),
+    new Case("captures", @"(?<=foo)(?<word>[a-z]+)-([0-9]+)", string.Concat(Enumerable.Repeat("fooalpha-123 foofoo-45 ", 16)), RegexOptions.None),
+    new Case("unicode-captures", "(?<x>😀|é)+", string.Concat(Enumerable.Repeat("z😀é😀 qé ", 16)), RegexOptions.None),
+    new Case("nonbacktracking", "(?<x>a|ab)+", string.Concat(Enumerable.Repeat("aba abba ", 16)), RegexOptions.NonBacktracking),
+    new Case("finite-live-captures", @"(?<=foo)(?<word>[a-z]+)-([0-9]+)", string.Concat(Enumerable.Repeat("fooalpha-123 foofoo-45 ", 16)), RegexOptions.None, true)
+};
+foreach (var item in cases)
+{
+    using var live = new CancellationTokenSource(); var token = item.Finite ? live.Token : default;
+    var policy = item.Finite ? new Utf8ResourcePolicy { MaxWorkSteps = 8_000_000, MaxWorkingBytes = 4 << 20, MaxResultBytes = 4 << 20, MaxDepth = 4096 } : default;
+    var input = Encoding.UTF8.GetBytes(item.Text); var regex = new Utf8Regex(item.Pattern, item.Options, Timeout.InfiniteTimeSpan, policy);
+    var numbers = regex.GetGroupNumbers(); var program = new Account(); var working = new Account(); var result = new Account();
+    using var owner = Utf8Regex.Compile(item.Pattern, item.Options, Timeout.InfiniteTimeSpan, policy, default, Timeout.InfiniteTimeSpan, default, program);
+    var held = program.Used;
+    var oldType = before.GetType("Lokad.Utf8Regex.Utf8Regex")!; var oldPolicy = Activator.CreateInstance(before.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!)!;
+    if (item.Finite) foreach (var name in new[] { "MaxWorkSteps", "MaxWorkingBytes", "MaxResultBytes", "MaxDepth" })
+        oldPolicy.GetType().GetProperty(name)!.SetValue(oldPolicy, typeof(Utf8ResourcePolicy).GetProperty(name)!.GetValue(policy));
+    var old = oldType.GetConstructor([typeof(string), typeof(RegexOptions), typeof(TimeSpan), oldPolicy.GetType()])!
+        .Invoke([item.Pattern, item.Options, Timeout.InfiniteTimeSpan, oldPolicy]);
+    var oldCount = oldType.GetMethod("Count", [typeof(ReadOnlySpan<byte>), typeof(CancellationToken)])!.CreateDelegate<Counter>(old);
+    var expectedCount = regex.Count(input, token); var expectedRanges = Detailed(regex, input, numbers, token);
+    Func<long>[] actions = [() => oldCount(input, token), () => regex.Count(input, token),
+        () => Detailed(regex, input, numbers, token), () => Ranges(regex.CreateMatchCursor(input, cancellationToken: token)),
+        () => Ranges(regex.CreateMatchCursor(input, cancellationToken: token, workingMemoryAllowance: working)),
+        () => Ranges(owner.CreateMatchCursor(input, cancellationToken: token)),
+        () => Ranges(owner.CreateMatchCursor(input, cancellationToken: token, workingMemoryAllowance: working), working),
+        () => Ranges(owner.CreateMatchCursor(input, cancellationToken: token, workingMemoryAllowance: working), result)];
+    string[] lanes = ["BeforeCountControl", "AfterCountControl", "ExistingRepeatedDetailed", "MemoryRanges", "MemoryRangesWorking", "ProgramRangesDefault", "ProgramRetainedSameWorking", "ProgramRetainedSeparateResult"];
+    var expected = Enumerable.Range(0, actions.Length).Select(i => i < 2 ? (long)expectedCount : expectedRanges).ToArray();
+    for (var lane = 0; lane < actions.Length; lane++) if (actions[lane]() != expected[lane]) throw new Exception("Preflight mismatch: " + item.Name + "/" + lanes[lane]);
+    if (preflight) { Console.Error.WriteLine("Preflight " + item.Name + ": " + expectedCount + " / " + expectedRanges); continue; }
+    var iterations = new int[actions.Length]; var warmCalls = new long[actions.Length];
+    for (var lane = 0; lane < actions.Length; lane++)
+    {
+        var warm = Stopwatch.StartNew(); do { Loop(1, actions[lane], expected[lane]); warmCalls[lane]++; } while (warm.Elapsed.TotalMilliseconds < 600);
+        iterations[lane] = 1;
+        while (Loop(iterations[lane], actions[lane], expected[lane]).Milliseconds < 80) iterations[lane] = checked(iterations[lane] * 2);
+    }
+    var times = actions.Select(_ => new double[3]).ToArray(); var bytes = actions.Select(_ => new double[3]).ToArray(); var durations = actions.Select(_ => new double[3]).ToArray();
+    for (var sample = 0; sample < 3; sample++) for (var position = 0; position < actions.Length; position++)
+    {
+        var lane = sample % 2 == 0 ? position : actions.Length - 1 - position;
+        GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); var measured = Loop(iterations[lane], actions[lane], expected[lane]);
+        times[lane][sample] = measured.Milliseconds * 1000 / iterations[lane]; bytes[lane][sample] = (double)measured.Bytes / iterations[lane]; durations[lane][sample] = measured.Milliseconds;
+        if (working.Used != 0 || result.Used != 0 || program.Used != held) throw new Exception("Funding balance changed");
+    }
+    rows.Add(new { item.Name, item.Pattern, item.Options, item.Finite, InputBytes = input.Length, InputSha256 = Convert.ToHexString(SHA256.HashData(input)), ExpectedCount = expectedCount, ExpectedRangeDigest = expectedRanges, Lanes = lanes, Iterations = iterations, WarmupCalls = warmCalls, Microseconds = times, AllocatedBytes = bytes, ElapsedMilliseconds = durations, PeakWorking = working.Peak, PeakResult = result.Peak });
+    Console.Error.WriteLine(item.Name + ": " + string.Join(" / ", times.Select(a => a.Order().ElementAt(1))));
+    owner.Dispose(); if (program.Used != 0 || working.Used != 0 || result.Used != 0) throw new Exception("Final funding leak");
+}
+Console.WriteLine(JsonSerializer.Serialize(new { Runtime = RuntimeInformation.FrameworkDescription, CpuAffinityMask = "4", ElapsedSeconds = timer.Elapsed.TotalSeconds,
+    Scope = "Unchanged before/after public Count controls; existing repeated detailed capture flow versus new memory cursor. Capture lanes check equal byte-range/history digests. Counts are separate controls, not capture throughput comparators. Retained/funded paths have additional guarantees. No comparator Status or package qualification.",
+    Baseline = Identity(before), Candidate = Identity(after), Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+
+static long Detailed(Utf8Regex regex, byte[] input, int[] numbers, CancellationToken token)
+{
+    var floor = 0; long digest = 17;
+    while (floor <= input.Length)
+    {
+        var match = regex.MatchDetailedFromUtf16Offset(input, floor, token); if (!match.Success) break;
+        foreach (var number in numbers)
+        {
+            var group = match.GetGroup(number); digest = Mix(Mix(digest, number), group.CaptureCount);
+            for (var i = 0; i < group.CaptureCount; i++) { var capture = group.GetCapture(i); digest = Mix(Mix(digest, capture.IndexInBytes), capture.IndexInBytes + capture.LengthInBytes); }
+        }
+        if (match.LengthInUtf16 == 0) throw new Exception("This bounded pilot requires nonempty patterns");
+        floor = match.IndexInUtf16 + match.LengthInUtf16;
+    }
+    return digest;
+}
+static long Ranges(Utf8RegexMatchCursor cursor, Account? result = null)
+{
+    using (cursor)
+    {
+        long digest = 17;
+        if (result is null) while (cursor.MoveNext(out var match)) digest = Digest(digest, match);
+        else while (cursor.MoveNextRetained(out var receipt, resultMemoryAllowance: result)) { using (receipt) digest = Digest(digest, receipt.Match); }
+        return digest;
+    }
+}
+static long Digest(long digest, Utf8RangeMatch match)
+{
+    foreach (var number in match.GroupNumbers)
+    {
+        var captures = match.GetCaptures(number); digest = Mix(Mix(digest, number), captures.Length);
+        foreach (var capture in captures) digest = Mix(Mix(digest, capture.StartOffsetInBytes), capture.EndOffsetInBytes);
+    }
+    return digest;
+}
+static long Mix(long digest, int value) => unchecked((digest * 31) ^ value);
+static (double Milliseconds, long Bytes) Loop(int iterations, Func<long> action, long expected)
+{
+    var values = new long[iterations]; var allocated = GC.GetAllocatedBytesForCurrentThread(); var start = Stopwatch.GetTimestamp();
+    for (var i = 0; i < iterations; i++) values[i] = action();
+    var elapsed = Stopwatch.GetElapsedTime(start).TotalMilliseconds; var bytes = GC.GetAllocatedBytesForCurrentThread() - allocated;
+    long checksum = 0; foreach (var value in values) { if (value != expected) throw new Exception("Timed result mismatch"); checksum ^= value; }
+    GC.KeepAlive(checksum); return (elapsed, bytes);
+}
+static string Hash(Assembly assembly) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location)));
+static string Identity(Assembly assembly) => assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion + " sha256=" + Hash(assembly);
+delegate int Counter(ReadOnlySpan<byte> input, CancellationToken token);
+record Case(string Name, string Pattern, string Text, RegexOptions Options, bool Finite = false);
+public sealed class Account : IUtf8MemoryAllowance
+{
+    private long _used, _peak;
+    public ulong Used => (ulong)Interlocked.Read(ref _used);
+    public ulong Peak => (ulong)Interlocked.Read(ref _peak);
+    public bool TryReserve(ulong bytes)
+    {
+        var used = Interlocked.Add(ref _used, checked((long)bytes));
+        long old; do { old = Interlocked.Read(ref _peak); if (used <= old) break; } while (Interlocked.CompareExchange(ref _peak, used, old) != old);
+        return true;
+    }
+    public void Release(ulong bytes) { if (Interlocked.Add(ref _used, -checked((long)bytes)) < 0) throw new Exception("Unfunded release"); }
+}

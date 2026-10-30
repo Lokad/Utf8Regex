@@ -1,0 +1,27 @@
+D:\code\utf8regex\tests\Lokad.Utf8Regex.Tests\Utf8LinearProgramConstructionTests.cs(92,41): warning xUnit2013: Do not use Assert.Equal() to check for collection size. Use Assert.Single instead. (https://xunit.net/xunit.analyzers/rules/xUnit2013) [D:\code\utf8regex\tests\Lokad.Utf8Regex.Tests\Lokad.Utf8Regex.Tests.csproj::TargetFramework=net11.0]
+D:\code\utf8regex\tests\Lokad.Utf8Regex.Tests\Utf8FixedByteSetStorageTests.cs(83,36): warning CA2014: Potential stack overflow. Move the stackalloc out of the loop. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca2014) [D:\code\utf8regex\tests\Lokad.Utf8Regex.Tests\Lokad.Utf8Regex.Tests.csproj::TargetFramework=net11.0]
+    76 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:08.97
+Test run for D:\code\utf8regex\tests\Lokad.Utf8Regex.Tests\bin\Release\net10.0\Lokad.Utf8Regex.Tests.dll (.NETCoreApp,Version=v10.0)
+Test run for D:\code\utf8regex\tests\Lokad.Utf8Regex.Tests\bin\Release\net11.0\Lokad.Utf8Regex.Tests.dll (.NETCoreApp,Version=v11.0)
+A total of 1 test files matched the specified pattern.
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:    60, Skipped:     0, Total:    60, Duration: 2 s - Lokad.Utf8Regex.Tests.dll (net10.0)
+
+Passed!  - Failed:     0, Passed:    60, Skipped:     0, Total:    60, Duration: 1 s - Lokad.Utf8Regex.Tests.dll (net11.0)
+Test run for D:\code\utf8regex\tests\Lokad.Utf8Regex.Tests\bin\Release\net10.0\Lokad.Utf8Regex.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+Test run for D:\code\utf8regex\tests\Lokad.Utf8Regex.Tests\bin\Release\net11.0\Lokad.Utf8Regex.Tests.dll (.NETCoreApp,Version=v11.0)
+A total of 1 test files matched the specified pattern.
+
+
+Passed!  - Failed:     0, Passed: 40167, Skipped:     0, Total: 40167, Duration: 2 m 23 s - Lokad.Utf8Regex.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed: 40167, Skipped:     0, Total: 40167, Duration: 2 m 22 s - Lokad.Utf8Regex.Tests.dll (net11.0)
+Preflight literal: 32 / 5788618986979469617
+Preflight captures: 32 / -763155126751481711
+Preflight unicode-captures: 32 / 2043689480919454417
+Preflight nonbacktracking: 64 / 5576416575414016881
+Preflight finite-live-captures: 32 / -763155126751481711
