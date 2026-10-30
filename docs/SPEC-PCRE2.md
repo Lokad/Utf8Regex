@@ -223,14 +223,18 @@ prefix/lookbehind/anchor context remains the original subject. Sequential advanc
 can cross awaits under the creation token, absolute deadline and cumulative limits.
 An advance token applies only to that synchronous call; if both cancel, the
 original token wins. Aliases share position/disposal and reject concurrent or
-reentrant access. Dispose early abandonment; there is no finalizer. Per-advance VM
-scratch refunds before suspension. EOF, failure and Dispose release the program
-use and remaining exclusive loans synchronously.
+reentrant access. Dispose early abandonment; there is no finalizer. Scalar slots/
+workspace retain their admitted high-water capacity while positioned, including
+across host waits; other lexical VM scratch releases per advance. This can retain
+working admission longer than standalone calls. EOF, failure and Dispose drop
+exclusive roots and release all remaining loans/program use synchronously.
 
 `MoveNext(out Utf8Pcre2RangeMatch)` returns immutable last-capture byte slots,
 duplicate-preserving names and Mark, without captured text or mandatory UTF-16
 projection. Existing native literal/character/repeat finders remain eligible;
-captured and flagged cases use the existing PCRE2 capture VM's byte result shape.
+captured cases use existing scalar or PCRE2 VMs with a final byte result shape.
+PCRE2 flags retain their existing admitted VM route; empty retries can borrow
+the scalar runner's anchored nonempty attempt under the original anchor origin.
 Global progression uses consumed ranges, preserving `\K`, same-position nonempty
 retry and CRLF/Anchored behavior. Non-monotone iteration remains unsupported.
 Opted-in `\C` may return scalar fragments: inspect `IsUtf8SliceWellFormed` before

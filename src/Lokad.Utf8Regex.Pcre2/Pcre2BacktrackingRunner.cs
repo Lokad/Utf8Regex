@@ -2515,7 +2515,7 @@ internal static class Pcre2BacktrackingRunner
 
     internal static Utf8Pcre2CaptureRange[] MaterializeByteGroups(int count, int matchStart, int matchEnd,
         ReadOnlySpan<int> captureStarts, ReadOnlySpan<int> captureEnds, ReadOnlySpan<byte> input,
-        ref Pcre2ResourceBudget budget)
+        ref Pcre2ResourceBudget budget, int slotOffset = 0, bool normalizeDirection = false)
     {
         var bytes = Utf8ConstructionBudget.ArrayBytes<Utf8Pcre2CaptureRange>(count);
         var control = new Pcre2CaptureProjectionBudget(ref budget);
@@ -2528,8 +2528,9 @@ internal static class Pcre2BacktrackingRunner
             for (var slot = 0; slot < count; slot++)
             {
                 if ((slot & 63) == 0) control.ChargeWorkspaceStep();
-                var start = slot == 0 ? matchStart : captureStarts[slot];
-                var end = slot == 0 ? matchEnd : captureEnds[slot];
+                var start = slot == 0 ? matchStart : captureStarts[slot + slotOffset];
+                var end = slot == 0 ? matchEnd : captureEnds[slot + slotOffset];
+                if (normalizeDirection && start >= 0 && end >= 0 && start > end) (start, end) = (end, start);
                 var success = slot == 0 || start >= 0 && end >= start;
                 var wellFormed = success && start <= end &&
                     Pcre2SliceDriver.IsScalarAligned(input, start) && Pcre2SliceDriver.IsScalarAligned(input, end);

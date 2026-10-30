@@ -14,6 +14,8 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
     private readonly Pcre2MatchOptions _options;
     private Pcre2ResourceBudget _budget;
     private Pcre2GlobalProgress _progress;
+    private Utf8SliceSlots _sliceSlots = new([], []);
+    private Utf8SliceRunner.AttemptWorkspace _sliceWorkspace = new();
     private Utf8FundedStorage.Use? _programUse;
     private int _active;
     private Pcre2CursorStatus _status;
@@ -100,7 +102,8 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
             try
             {
                 _progress.GetAttempt(_options, out var restart, out var firstMatchingPosition, out var options);
-                var outcome = Pcre2Runner.MatchByteRanges(_program!, ref subject, restart, firstMatchingPosition, options, ref _budget);
+                var outcome = Pcre2Runner.MatchByteRanges(_program!, ref subject, restart, firstMatchingPosition, options,
+                    ref _budget, ref _sliceSlots, ref _sliceWorkspace);
                 var groups = outcome.CaptureResult.ByteGroups;
                 if (outcome.Success) captureBytes = Utf8ConstructionBudget.ArrayBytes<Utf8Pcre2CaptureRange>(groups.Length);
                 Checkpoint();
@@ -179,6 +182,7 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
     private void Close(Pcre2CursorStatus status)
     {
         _status = status; _input = default; _program = null; _progress = default;
+        _sliceSlots = new([], []); _sliceWorkspace = new();
         _budget.WorkingInvocation.Ledger.Release(_budget.WorkingInvocation.Ledger.ReservedBytes);
         var use = _programUse; _programUse = null; use?.Dispose();
     }

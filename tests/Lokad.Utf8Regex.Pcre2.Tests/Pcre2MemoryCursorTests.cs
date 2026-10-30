@@ -117,11 +117,11 @@ public sealed class Pcre2MemoryCursorTests
         var owner = Compile("(?<x>😀)+", programs); var held = programs.Used;
         var cursor = owner.CreateMatchCursor("😀😀 😀"u8.ToArray(), workingMemoryAllowance: working); var alias = cursor;
         Assert.True(cursor.MoveNextRetained(out var receipt, resultMemoryAllowance: results)); var copied = receipt.Match;
-        Assert.Equal(4, copied.Groups[1].StartOffsetInBytes); Assert.Equal(0UL, working.Used); Assert.True(results.Used > 0);
+        Assert.Equal(4, copied.Groups[1].StartOffsetInBytes); Assert.True(working.Used > 0); Assert.True(results.Used > 0);
         owner.Dispose(); Assert.Equal(held, programs.Used); await Task.Yield();
         Assert.Throws<ObjectDisposedException>(() => owner.CreateMatchCursor("😀"u8.ToArray()));
         Assert.True(alias.MoveNext(out _)); Assert.False(cursor.MoveNext(out _)); Assert.Equal(0UL, programs.Used);
-        Assert.Equal(receipt.ChargedBytes, root.Used); cursor.Dispose(); Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
+        Assert.Equal(0UL, working.Used); Assert.Equal(receipt.ChargedBytes, root.Used); cursor.Dispose(); Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
         receipt.Dispose(); receipt.Dispose(); Assert.Equal(0UL, root.Used);
         Assert.Equal("😀😀"u8.ToArray(), copied.GetValueMemory().ToArray()); Assert.Throws<ObjectDisposedException>(() => receipt.Match);
     }
@@ -244,7 +244,7 @@ public sealed class Pcre2MemoryCursorTests
             Assert.Throws<InvalidOperationException>(cursor.Dispose);
         }
         finally { resume.Set(); }
-        Assert.True(await advance); Assert.Equal(0UL, root.Used);
+        Assert.True(await advance); cursor.Dispose(); Assert.Equal(0UL, root.Used);
     }
 
     [Fact]
