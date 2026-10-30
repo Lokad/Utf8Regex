@@ -169,7 +169,8 @@ public sealed class Utf8MemoryCursorTests
         using var cursor = new Utf8Regex("(?<x>a)+", RegexOptions.None, TimeSpan.FromMilliseconds(250))
             .CreateMatchCursor("aaa aaa"u8.ToArray(), workingMemoryAllowance: working);
         Assert.True(cursor.MoveNext(out var first)); await Task.Delay(350);
-        Assert.Empty(Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext(out _)).Input);
+        var failure = Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext(out _));
+        Assert.Empty(failure.Input); Assert.Equal("(?<x>a)+", failure.Pattern);
         Assert.Equal(0UL, root.Used); Assert.Equal("aaa"u8.ToArray(), first.GetValueMemory().ToArray());
     }
 

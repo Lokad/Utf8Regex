@@ -19,7 +19,6 @@ public sealed class Utf8RegexMatchCursor : IDisposable
     private Utf8SliceRunner.AttemptWorkspace _workspace = new();
     private Utf8NonBacktrackingSearchState? _nonBacktracking;
     private Utf8FundedStorage.Use? _programUse;
-    private string _pattern;
     private readonly TimeSpan _timeout;
     private int _position;
     private int _origin;
@@ -32,7 +31,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
         Utf8CaptureCatalog catalog, int start, Utf8SliceInvocation invocation)
     {
         _input = input; _regex = regex; _program = program; _catalog = catalog;
-        _pattern = regex.Pattern; _timeout = regex.MatchTimeout; _invocation = invocation;
+        _timeout = regex.MatchTimeout; _invocation = invocation;
         _invocation.ShareStorageForCursor();
         try
         {
@@ -222,7 +221,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
     }
 
     private System.Text.RegularExpressions.RegexMatchTimeoutException TimeoutFailure()
-        => Utf8Regex.CreateMatchTimeoutException(default, _pattern, _timeout, _invocation.Budget.Limits);
+        => Utf8Regex.CreateMatchTimeoutException(default, _regex?.Pattern ?? string.Empty, _timeout, _invocation.Budget.Limits);
 
     /// <summary>Closes every alias and refunds exclusive storage synchronously; previously returned ranges remain valid.</summary>
     public void Dispose()
@@ -244,7 +243,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
         // This class exclusively owns the invocation's remaining loans. No
         // copied span cursor or result receipt retains them after transfer.
         _status = status;
-        _input = default; _regex = null; _program = null; _catalog = null; _pattern = string.Empty;
+        _input = default; _regex = null; _program = null; _catalog = null;
         _slots = new([], []); _workspace = new(); _nonBacktracking = null;
         _invocation.Ledger.Release(_invocation.Ledger.ReservedBytes);
         var use = _programUse; _programUse = null; use?.Dispose();
