@@ -20,8 +20,9 @@ internal static class Utf8ReplacementPlanLowerer
     {
         return token.Kind switch
         {
-            Utf8ReplacementTokenKind.Literal => Utf8ReplacementInstruction.Literal(
-                storage, token.Literal ?? string.Empty),
+            Utf8ReplacementTokenKind.Literal => token.LiteralPayload is byte[] native
+                ? Utf8ReplacementInstruction.Literal(native)
+                : Utf8ReplacementInstruction.Literal(storage, token.Literal ?? string.Empty),
             Utf8ReplacementTokenKind.Group => Utf8ReplacementInstruction.Group(
                 token.GroupNumber),
             Utf8ReplacementTokenKind.WholeMatch => Utf8ReplacementInstruction.WholeMatch(),

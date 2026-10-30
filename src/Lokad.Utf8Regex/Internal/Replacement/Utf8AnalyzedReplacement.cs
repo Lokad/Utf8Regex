@@ -3,22 +3,19 @@ namespace Lokad.Utf8Regex.Internal.Replacement;
 internal readonly struct Utf8AnalyzedReplacement
 {
     private Utf8AnalyzedReplacement(
-        string originalText,
         Utf8ReplacementPattern pattern,
         Utf8ReplacementPlan plan,
         byte[] literalUtf8,
         bool isLiteral)
     {
-        OriginalText = originalText;
-        Pattern = pattern;
         Plan = plan;
         LiteralUtf8 = literalUtf8;
         IsLiteral = isLiteral;
+        ContainsSubstitutions = pattern.ContainsSubstitutions;
+        ContainsGroupReferences = pattern.ContainsGroupReferences;
+        ContainsNamedGroups = pattern.ContainsNamedGroups;
+        ContainsSpecialSubstitutions = pattern.ContainsSpecialSubstitutions;
     }
-
-    public string OriginalText { get; }
-
-    public Utf8ReplacementPattern Pattern { get; }
 
     public Utf8ReplacementPlan Plan { get; }
 
@@ -26,24 +23,22 @@ internal readonly struct Utf8AnalyzedReplacement
 
     public bool IsLiteral { get; }
 
-    public bool ContainsSubstitutions => Pattern.ContainsSubstitutions;
+    public bool ContainsSubstitutions { get; }
 
-    public bool ContainsGroupReferences => Pattern.ContainsGroupReferences;
+    public bool ContainsGroupReferences { get; }
 
-    public bool ContainsNamedGroups => Pattern.ContainsNamedGroups;
+    public bool ContainsNamedGroups { get; }
 
-    public bool ContainsSpecialSubstitutions => Pattern.ContainsSpecialSubstitutions;
+    public bool ContainsSpecialSubstitutions { get; }
 
     public static Utf8AnalyzedReplacement Literal(
-        string originalText,
         Utf8ReplacementPattern pattern,
         Utf8ReplacementPlan plan,
         byte[] literalUtf8) =>
-        new(originalText, pattern, plan, literalUtf8, isLiteral: true);
+        new(pattern, plan, literalUtf8, isLiteral: true);
 
     public static Utf8AnalyzedReplacement Structured(
-        string originalText,
         Utf8ReplacementPattern pattern,
         Utf8ReplacementPlan plan) =>
-        new(originalText, pattern, plan, [], isLiteral: false);
+        new(pattern, plan, [], isLiteral: false);
 }

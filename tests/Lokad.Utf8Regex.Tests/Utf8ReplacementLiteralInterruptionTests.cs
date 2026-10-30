@@ -9,7 +9,6 @@ public sealed class Utf8ReplacementLiteralInterruptionTests
     [Theory]
     [InlineData(0, false)] [InlineData(0, true)]
     [InlineData(1, false)] [InlineData(1, true)]
-    [InlineData(2, false)] [InlineData(2, true)]
     public void EachLiteralPassObservesOriginalInterruptionAndRestoresParent(int pass, bool timeout)
     {
         var text = new string('a', 2047) + "😀" + new string('é', 5000);
@@ -61,7 +60,6 @@ public sealed class Utf8ReplacementLiteralInterruptionTests
             using var storage = Utf8ConstructionSession.Create(owner.Budget);
             var result = Utf8ReplacementInstruction.Literal(storage, text);
             Assert.Equal(Encoding.UTF8.GetBytes(text), result.LiteralUtf8);
-            Assert.Same(text, result.LiteralText);
         }
         Assert.True(owner.Budget.WorkSteps > spentAfterFailure);
         Assert.Equal(held, owner.Budget.ReservedBytes);
@@ -73,24 +71,20 @@ public sealed class Utf8ReplacementLiteralInterruptionTests
     [InlineData(4095, false)] [InlineData(4096, false)]
     [InlineData(2046, true)] [InlineData(2047, true)] [InlineData(2048, true)]
     [InlineData(4095, true)] [InlineData(4096, true)]
-    public void BoundaryPairsAndRepairsKeepBytesTextAndSuccessfulCharges(int prefix, bool invalid)
+    public void BoundaryPairsAndRepairsKeepBytesAndAdmitOnlyTheirPayload(int prefix, bool invalid)
     {
         var tail = invalid ? "😀\ud83dX\ude00\0" : "😀é\0";
         var text = new string('a', prefix) + tail + new string('é', 4200);
         var bytes = Encoding.UTF8.GetBytes(text);
-        var repaired = Encoding.UTF8.GetString(bytes);
         using var owner = Utf8ConstructionScope.Enter();
         using var storage = Utf8ConstructionSession.Create(owner.Budget);
         var spent = owner.Budget.WorkSteps;
         var held = owner.Budget.ReservedBytes;
         var result = Utf8ReplacementInstruction.Literal(storage, text);
         Assert.Equal(bytes, result.LiteralUtf8);
-        Assert.Equal(repaired, result.LiteralText);
-        if (!invalid) Assert.Same(text, result.LiteralText);
-        Assert.Equal(3UL * (ulong)text.Length + (invalid ? 4UL : 2UL) * (ulong)bytes.Length,
+        Assert.Equal(2UL * (ulong)text.Length + 2UL * (ulong)bytes.Length,
             owner.Budget.WorkSteps - spent);
-        Assert.Equal(Utf8ConstructionBudget.ArrayBytes<byte>(bytes.Length) +
-            (invalid ? Utf8ConstructionBudget.StringBytes(repaired.Length) : 0UL),
+        Assert.Equal(Utf8ConstructionBudget.ArrayBytes<byte>(bytes.Length),
             owner.Budget.ReservedBytes - held);
     }
 
@@ -130,7 +124,6 @@ public sealed class Utf8ReplacementLiteralInterruptionTests
             var result = Utf8ReplacementInstruction.Literal(storage, text);
             var expected = Encoding.UTF8.GetBytes(text);
             Assert.Equal(expected, result.LiteralUtf8);
-            Assert.Equal(Encoding.UTF8.GetString(expected), result.LiteralText);
         }
     }
 }

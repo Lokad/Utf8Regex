@@ -148,10 +148,19 @@ captures as extra elements.
 
 Replacement uses .NET-style `$1`, `${name}`, `$&`, prefix/suffix, `$+`,
 `$_` and `$$` forms with the supported numeric parsing rules. RTL discovery
-assembles output in subject order. UTF-8 template overloads parse replacement
-syntax. Each string literal/callback return is encoded independently: an unpaired
+assembles output in subject order. UTF-8 template overloads parse/cache source
+bytes directly; no whole-template string is required. Selected capture-name
+lexemes may project text under the existing name grammar. Prepared instructions
+retain byte literals and original syntax flags, without retaining parser tokens,
+literal text or a duplicate source. Each string literal/callback return is encoded independently: an unpaired
 surrogate becomes U+FFFD and cannot join a fragment from another substitution.
 Subject/template bytes and completed byte-callback output remain strict.
+
+Native discovery/capture-map eligibility is preserved. Grouped template expansion
+splices original byte views through the admitted output writer; text results
+decode only the final output. Scalar fall-throughs likewise emit the requested
+byte/destination form directly. Existing derived coordinate maps remain where
+native capture shaping requires them; this does not make UTF-16 the matching unit.
 
 Evaluators must be non-null even on misses; failure names `evaluator`.
 Pre-cancellation takes precedence. `Utf8ReplacementWriter` is callback-scoped;
@@ -296,9 +305,10 @@ refunds exactly once; previously copied range values remain usable, with continu
 retention then the caller's admission responsibility. Borrowed input is not charged
 again. Numeric result traffic remains cumulative even when live loans refund.
 
-Native subject/range discovery, pattern compilation and caller-buffer source
-metadata are implemented. Byte-template preparation/cache paths remain unfinished parts of the complete
-UTF-8 public pipeline; native name lookup is implemented.
+Native subject/range discovery, pattern compilation, caller-buffer source/name
+metadata and byte-template preparation/cache paths are implemented. Core/PCRE2
+funded replacement/output receipts and final package/consumer acceptance remain
+separate parts of the complete UTF-8 public pipeline.
 
 ### Host admission
 
@@ -355,8 +365,16 @@ are excluded.
 Cold replacement preparation has separate construction backstops under the
 original invocation token/deadline. Finite working bytes additionally cap covered
 cold parser/key capacity; a denial can be `ConstructionBytes` before execution.
-Warm text-key hits skip cold parsing; funded hits only borrow the entry's charge.
-UTF-8 keys still fund decoding.
+Warm text and byte keys skip cold parsing. Native hits borrow the caller span;
+misses admit/copy immutable byte keys under the same construction owner as parser
+capacity. Text/native entries share one bounded cache with independent keys,
+allowing earlier eviction. Retained values contain only the lowered byte plan,
+literal payload and original flags. Shared payload slots still count again in
+conservative cache charges; no identity collector is needed. Construction remains
+a conservative capacity backstop, including discarded intermediate storage.
+Native source extents use bytes, so admission/work requirements may differ from
+legacy decoded-key charges. PythonRe funded hits keep their existing active uses;
+Core program owners retain their existing conservative cache-capacity reservation.
 Preliminary byte-template scans admit work before reading through the construction
 owner or fixed scan ceiling. Interrupted preparation is retryable and never
 published. Ordinary policies do not combine construction/execution/retention.

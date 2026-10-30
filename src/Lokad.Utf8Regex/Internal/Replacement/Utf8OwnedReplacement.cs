@@ -28,15 +28,15 @@ internal enum Utf8ReplacementTokenKind : byte
 
 internal readonly struct Utf8ReplacementToken
 {
-    public Utf8ReplacementToken(Utf8ReplacementTokenKind kind, string? literal, int groupNumber, bool isBraceEnclosed)
+    public Utf8ReplacementToken(Utf8ReplacementTokenKind kind, object? literal, int groupNumber, bool isBraceEnclosed)
         : this(kind, literal, groupNumber, isBraceEnclosed, null)
     {
     }
 
-    public Utf8ReplacementToken(Utf8ReplacementTokenKind kind, string? literal, int groupNumber, bool isBraceEnclosed, string? referenceText)
+    public Utf8ReplacementToken(Utf8ReplacementTokenKind kind, object? literal, int groupNumber, bool isBraceEnclosed, object? referenceText)
     {
         Kind = kind;
-        Literal = literal;
+        LiteralPayload = literal;
         GroupNumber = groupNumber;
         IsBraceEnclosed = isBraceEnclosed;
         ReferenceText = referenceText;
@@ -44,14 +44,15 @@ internal readonly struct Utf8ReplacementToken
 
     public Utf8ReplacementTokenKind Kind { get; }
 
-    public string? Literal { get; }
+    public object? LiteralPayload { get; }
+    public string? Literal => LiteralPayload as string;
 
     public int GroupNumber { get; }
 
     public bool IsBraceEnclosed { get; }
 
     // Undefined numeric references remain literal, including their leading zeros.
-    public string? ReferenceText { get; }
+    public object? ReferenceText { get; }
 
 }
 
@@ -105,42 +106,87 @@ internal sealed class Utf8ReplacementPattern
 
     internal static Utf8ReplacementPattern Parse(Utf8ConstructionSession storage, string replacement,
         ReadOnlySpan<int> validGroupNumbers, bool ecma)
+        => Parse(storage, new Utf8ConstructionPattern(replacement), validGroupNumbers, ecma);
+
+    // Native callers validate the complete source before route selection.
+    internal static Utf8ReplacementPattern Parse(Utf8ConstructionSession storage, Utf8ConstructionPattern replacement,
+        ReadOnlySpan<int> validGroupNumbers, bool ecma)
     {
         var tokens = storage.Buffer<Utf8ReplacementToken>();
-        var literal = storage.Text();
+        var literal = replacement.IsUtf8 ? null : storage.Text();
+        var nativeLiteral = replacement.IsUtf8 ? storage.Buffer<byte>() : null;
         var position = 0;
         while (position < replacement.Length)
         {
             storage.Budget.ChargeWork(1);
             var current = replacement[position];
-            if (current != '$') { literal.Append(current); position++; continue; }
-            if (position + 1 >= replacement.Length) { literal.Append('$'); position++; continue; }
+            if (current != '$')
+            {
+                var maximum = Math.Min(2048, replacement.Length - position);
+                var dollar = replacement.IndexOf('$', position, maximum);
+                var length = dollar < 0 ? maximum : dollar - position;
+                storage.Budget.ChargeWork((ulong)(length - 1));
+                AppendLiteralRange(replacement, position, length, literal, nativeLiteral);
+                position += length; continue;
+            }
+            if (position + 1 >= replacement.Length) { AppendAscii('$', literal, nativeLiteral); position++; continue; }
             var next = replacement[position + 1];
-            if (next == '$') { literal.Append('$'); position += 2; continue; }
+            if (next == '$') { AppendAscii('$', literal, nativeLiteral); position += 2; continue; }
             if (TryScanSpecial(next, out var special))
             {
-                FlushLiteral(tokens, literal); tokens.Add(special); position += 2; continue;
+                FlushLiteral(storage, tokens, literal, nativeLiteral); tokens.Add(special); position += 2; continue;
             }
             if (IsAsciiDigit(next))
             {
-                position = AppendNumberedGroup(storage, replacement, position, tokens, literal, validGroupNumbers, ecma);
+                position = AppendNumberedGroup(storage, replacement, position, tokens, literal, nativeLiteral, validGroupNumbers, ecma);
                 continue;
             }
             if (next == '{')
             {
-                position = AppendBracedGroup(storage, replacement, position, tokens, literal); continue;
+                position = AppendBracedGroup(storage, replacement, position, tokens, literal, nativeLiteral); continue;
             }
-            literal.Append('$'); position++;
+            AppendAscii('$', literal, nativeLiteral); position++;
         }
-        FlushLiteral(tokens, literal);
+        FlushLiteral(storage, tokens, literal, nativeLiteral);
         return Create(storage, storage.Copy(tokens, true));
     }
 
-    private static void FlushLiteral(Utf8ConstructionBuffer<Utf8ReplacementToken> tokens, Utf8ConstructionText literal)
+    private static void FlushLiteral(Utf8ConstructionSession storage, Utf8ConstructionBuffer<Utf8ReplacementToken> tokens,
+        Utf8ConstructionText? literal, Utf8ConstructionBuffer<byte>? nativeLiteral)
     {
-        if (literal.Length == 0) return;
-        tokens.Add(new Utf8ReplacementToken(Utf8ReplacementTokenKind.Literal, literal.ToText(), -1, false));
-        literal.Clear();
+        if (nativeLiteral is not null)
+        {
+            if (nativeLiteral.Count == 0) return;
+            tokens.Add(new(Utf8ReplacementTokenKind.Literal, storage.Copy(nativeLiteral), -1, false));
+            nativeLiteral.Clear();
+        }
+        else if (literal is { Length: > 0 })
+        {
+            tokens.Add(new(Utf8ReplacementTokenKind.Literal, literal.ToText(), -1, false)); literal.Clear();
+        }
+    }
+
+    private static void AppendAscii(char value, Utf8ConstructionText? literal, Utf8ConstructionBuffer<byte>? nativeLiteral)
+    { if (nativeLiteral is not null) nativeLiteral.Add((byte)value); else literal!.Append(value); }
+
+    private static void AppendLiteralRange(Utf8ConstructionPattern source, int start, int length,
+        Utf8ConstructionText? literal, Utf8ConstructionBuffer<byte>? nativeLiteral)
+    {
+        if (nativeLiteral is not null) nativeLiteral.AddRange(source.Utf8.Slice(start, length));
+        else literal!.Append(source.Text.AsSpan(start, length));
+    }
+
+    private static object CopySource(Utf8ConstructionSession storage, Utf8ConstructionPattern source, int start, int length)
+    {
+        if (!source.IsUtf8) return source.CopyText(start, length);
+        var result = storage.Allocate<byte>(length);
+        for (var offset = 0; offset < length;)
+        {
+            var count = Math.Min(2048, length - offset);
+            storage.Budget.ChargeWork((ulong)count);
+            source.Utf8.Slice(start + offset, count).CopyTo(result.AsSpan(offset, count)); offset += count;
+        }
+        return result;
     }
 
     private static bool TryScanSpecial(char next, out Utf8ReplacementToken special)
@@ -160,8 +206,8 @@ internal sealed class Utf8ReplacementPattern
 
     private static bool IsAsciiDigit(char value) => value >= '0' && value <= '9';
 
-    private static int AppendNumberedGroup(Utf8ConstructionSession storage, string replacement, int position,
-        Utf8ConstructionBuffer<Utf8ReplacementToken> tokens, Utf8ConstructionText literal,
+    private static int AppendNumberedGroup(Utf8ConstructionSession storage, Utf8ConstructionPattern replacement, int position,
+        Utf8ConstructionBuffer<Utf8ReplacementToken> tokens, Utf8ConstructionText? literal, Utf8ConstructionBuffer<byte>? nativeLiteral,
         ReadOnlySpan<int> validGroupNumbers, bool ecma)
     {
         var value = 0L;
@@ -175,7 +221,7 @@ internal sealed class Utf8ReplacementPattern
             if (value > int.MaxValue)
             {
                 if (ecma) break;
-                literal.Append('$'); return position + 1;
+                AppendAscii('$', literal, nativeLiteral); return position + 1;
             }
             end++;
             if (ecma && ContainsNumber(storage.Budget, validGroupNumbers, (int)value))
@@ -183,17 +229,17 @@ internal sealed class Utf8ReplacementPattern
         }
         if (ecma)
         {
-            if (matchedEnd < 0) { literal.Append('$'); return position + 1; }
+            if (matchedEnd < 0) { AppendAscii('$', literal, nativeLiteral); return position + 1; }
             value = matchedNumber; end = matchedEnd;
         }
-        FlushLiteral(tokens, literal);
+        FlushLiteral(storage, tokens, literal, nativeLiteral);
         tokens.Add(new Utf8ReplacementToken(Utf8ReplacementTokenKind.Group, null, (int)value, false,
-            storage.Budget.CopyText(replacement.AsSpan(position, end - position))));
+            CopySource(storage, replacement, position, end - position)));
         return end;
     }
 
-    private static int AppendBracedGroup(Utf8ConstructionSession storage, string replacement, int position,
-        Utf8ConstructionBuffer<Utf8ReplacementToken> tokens, Utf8ConstructionText literal)
+    private static int AppendBracedGroup(Utf8ConstructionSession storage, Utf8ConstructionPattern replacement, int position,
+        Utf8ConstructionBuffer<Utf8ReplacementToken> tokens, Utf8ConstructionText? literal, Utf8ConstructionBuffer<byte>? nativeLiteral)
     {
         var close = position + 2;
         while (close < replacement.Length)
@@ -202,33 +248,45 @@ internal sealed class Utf8ReplacementPattern
             if (replacement[close] == '}') break;
             close++;
         }
-        if (close == replacement.Length) { literal.Append('$').Append('{'); return position + 2; }
-        var content = replacement.AsSpan(position + 2, close - position - 2);
-        if (TryParseGroupNumber(storage.Budget, content, out var number))
+        if (close == replacement.Length)
+        { AppendAscii('$', literal, nativeLiteral); AppendAscii('{', literal, nativeLiteral); return position + 2; }
+        var start = position + 2; var length = close - start;
+        if (TryParseGroupNumber(storage.Budget, replacement, start, length, out var number))
         {
-            FlushLiteral(tokens, literal);
+            FlushLiteral(storage, tokens, literal, nativeLiteral);
             tokens.Add(new Utf8ReplacementToken(Utf8ReplacementTokenKind.Group, null, number, true,
-                storage.Budget.CopyText(replacement.AsSpan(position, close - position + 1))));
+                CopySource(storage, replacement, position, close - position + 1)));
             return close + 1;
         }
-        if (content.Length > 0 && IsWordStart(content[0]))
+        // The capture-name grammar retains its existing UTF-16 head rule. Only
+        // the selected name lexeme projects text; native literals never do.
+        var head = length == 0 ? '\0' : replacement[start];
+        if (replacement.IsUtf8 && length > 0)
         {
-            FlushLiteral(tokens, literal);
-            tokens.Add(new Utf8ReplacementToken(Utf8ReplacementTokenKind.Group, storage.Budget.CopyText(content), -1, true));
+            _ = replacement.DecodeScalar(start, out var scalar, out _);
+            head = scalar.IsBmp ? (char)scalar.Value : '\ud800';
+        }
+        if (length > 0 && IsWordStart(head))
+        {
+            FlushLiteral(storage, tokens, literal, nativeLiteral);
+            tokens.Add(new Utf8ReplacementToken(Utf8ReplacementTokenKind.Group, replacement.CopyText(start, length), -1, true,
+                replacement.IsUtf8 ? CopySource(storage, replacement, position, close - position + 1) : null));
             return close + 1;
         }
-        literal.Append(replacement.AsSpan(position, close - position + 1));
+        AppendLiteralRange(replacement, position, close - position + 1, literal, nativeLiteral);
         return close + 1;
     }
 
-    private static bool TryParseGroupNumber(Utf8ConstructionBudget budget, ReadOnlySpan<char> content, out int number)
+    private static bool TryParseGroupNumber(Utf8ConstructionBudget budget, Utf8ConstructionPattern source,
+        int start, int length, out int number)
     {
         number = 0;
-        if (content.IsEmpty) return false;
+        if (length == 0) return false;
         var value = 0L;
-        foreach (var c in content)
+        for (var index = start; index < start + length; index++)
         {
             budget.ChargeWork(1);
+            var c = source[index];
             if (!IsAsciiDigit(c)) return false;
             value = value * 10 + (c - '0');
             if (value > int.MaxValue) return false;
@@ -259,6 +317,7 @@ internal sealed class Utf8ReplacementPattern
         var resolved = storage.Buffer<Utf8ReplacementToken>();
         Utf8ReplacementToken? pending = null;
         Utf8ConstructionText? merged = null;
+        Utf8ConstructionBuffer<byte>? mergedNative = null;
         foreach (var token in Tokens)
         {
             storage.Budget.ChargeWork(1);
@@ -267,33 +326,39 @@ internal sealed class Utf8ReplacementPattern
             {
                 if (pending is { } previous)
                 {
-                    if (merged is null)
+                    if (previous.LiteralPayload is byte[] bytes)
                     {
-                        merged = storage.Text(); merged.Append(previous.Literal ?? string.Empty);
+                        if (mergedNative is null) { mergedNative = storage.Buffer<byte>(); mergedNative.AddRange(bytes); }
+                        mergedNative.AddRange((byte[])normalized.LiteralPayload!);
                     }
-                    merged.Append(normalized.Literal ?? string.Empty);
+                    else
+                    {
+                        if (merged is null) { merged = storage.Text(); merged.Append(previous.Literal ?? string.Empty); }
+                        merged.Append(normalized.Literal ?? string.Empty);
+                    }
                 }
                 else pending = normalized;
             }
             else
             {
-                FlushPending(storage, resolved, ref pending, ref merged); resolved.Add(normalized);
+                FlushPending(storage, resolved, ref pending, ref merged, ref mergedNative); resolved.Add(normalized);
             }
         }
-        FlushPending(storage, resolved, ref pending, ref merged);
+        FlushPending(storage, resolved, ref pending, ref merged, ref mergedNative);
         return resolved;
 
     }
 
     private static void FlushPending(Utf8ConstructionSession storage, Utf8ConstructionBuffer<Utf8ReplacementToken> resolved,
-        ref Utf8ReplacementToken? pending, ref Utf8ConstructionText? merged)
+        ref Utf8ReplacementToken? pending, ref Utf8ConstructionText? merged, ref Utf8ConstructionBuffer<byte>? mergedNative)
     {
         if (pending is not { } literal) return;
         storage.Budget.ChargeWork(1);
-        resolved.Add(merged is null ? literal :
-            new Utf8ReplacementToken(Utf8ReplacementTokenKind.Literal, merged.ToText(), -1, false));
+        resolved.Add(mergedNative is not null ? new(Utf8ReplacementTokenKind.Literal, storage.Copy(mergedNative), -1, false)
+            : merged is null ? literal : new(Utf8ReplacementTokenKind.Literal, merged.ToText(), -1, false));
         pending = null;
         if (merged is not null) { merged.Clear(); merged = null; }
+        if (mergedNative is not null) { mergedNative.Clear(); mergedNative = null; }
     }
 
     private static Utf8ReplacementToken NormalizeGroupReference(Utf8ConstructionSession storage, Utf8ReplacementToken token,
@@ -320,6 +385,8 @@ internal sealed class Utf8ReplacementPattern
             if (string.Equals(validGroupNames[i], token.Literal, StringComparison.Ordinal))
                 return new Utf8ReplacementToken(Utf8ReplacementTokenKind.Group, null, validGroupNumbers[i], token.IsBraceEnclosed);
         }
+        if (token.ReferenceText is byte[] original)
+            return new(Utf8ReplacementTokenKind.Literal, original, -1, true);
         var name = storage.Text().Append("${").Append(token.Literal).Append('}').ToText();
         return new Utf8ReplacementToken(Utf8ReplacementTokenKind.Literal, name, -1, true);
     }

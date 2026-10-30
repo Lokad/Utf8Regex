@@ -3,7 +3,6 @@ using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Replacement;
-using System.Text;
 
 namespace Lokad.Utf8Regex;
 
@@ -42,12 +41,22 @@ public sealed partial class Utf8Regex
         }
     }
 
-    private Utf8AnalyzedReplacement PrepareReplacement(string replacement, ReplacementPreparationControl control)
+    private Utf8AnalyzedReplacement PrepareReplacement(object replacement, ReplacementPreparationControl control)
+        => PrepareBorrowedReplacement(replacement is byte[] bytes ? new Utf8ConstructionPattern(bytes)
+            : new Utf8ConstructionPattern((string)replacement), control);
+
+    private Utf8AnalyzedReplacement PrepareBorrowedReplacement(Utf8ConstructionPattern replacement, ReplacementPreparationControl control)
     {
         using var construction = ResourcePolicy.MaxWorkingBytes is { } maximumBytes
             ? Utf8ConstructionScope.RestrictAdditionalBytes(maximumBytes)
             : Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
+        if (control.IsUncontrolled)
+        {
+            var prepared = Utf8FrontEndReplacementAnalyzer.Analyze(replacement, _groupNumbers, _groupNames,
+                (Options & System.Text.RegularExpressions.RegexOptions.ECMAScript) != 0);
+            construction.Complete(); return prepared;
+        }
         var previousToken = budget.CancellationToken;
         var previousDeadline = budget.Deadline;
         var previousHook = budget.CheckpointHook;
@@ -112,13 +121,33 @@ public sealed partial class Utf8Regex
 
     private Utf8AnalyzedReplacement GetParsedReplacement(ReadOnlySpan<byte> validatedTemplate, ReplacementPreparationControl control)
     {
+        try
+        {
+            if (_replacementCache.TryGet(validatedTemplate, control, out var cached)) return cached;
+            return PrepareNativeReplacement(validatedTemplate, control);
+        }
+        catch (OperationCanceledException failure) when (failure.CancellationToken != control.Token)
+        {
+            control.Check();
+            return PrepareBorrowedReplacement(new Utf8ConstructionPattern(validatedTemplate), control);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            control.Check();
+            return PrepareBorrowedReplacement(new Utf8ConstructionPattern(validatedTemplate), control);
+        }
+    }
+
+    private Utf8AnalyzedReplacement PrepareNativeReplacement(ReadOnlySpan<byte> validatedTemplate, ReplacementPreparationControl control)
+    {
         using var construction = ResourcePolicy.MaxWorkingBytes is { } maximumBytes
             ? Utf8ConstructionScope.RestrictAdditionalBytes(maximumBytes)
             : Utf8ConstructionScope.Enter();
         if (control.IsUncontrolled)
         {
-            var text = construction.Budget.DecodeUtf8(validatedTemplate, Encoding.UTF8);
-            var result = GetParsedReplacement(text, control);
+            var key = FreezeNativeReplacement(validatedTemplate, construction.Budget, control);
+            var result = _replacementCache.GetOrAdd(key, (Self: this, Control: control),
+                static (source, state) => state.Self.PrepareReplacement(source, state.Control), control);
             construction.Complete();
             return result;
         }
@@ -145,10 +174,11 @@ public sealed partial class Utf8Regex
             try
             {
                 control.Check();
-                // The template was validated before route selection. Admit its
-                // decoded key and any nested parser overlap before acquisition.
-                var text = construction.Budget.DecodeUtf8(validatedTemplate, Encoding.UTF8);
-                var result = GetParsedReplacement(text, control);
+                // Source was validated before route selection. The major key
+                // array and nested parser overlap share this admission owner.
+                var key = FreezeNativeReplacement(validatedTemplate, budget, control);
+                var result = _replacementCache.GetOrAdd(key, (Self: this, Control: control),
+                    static (source, state) => state.Self.PrepareReplacement(source, state.Control), control);
                 control.Check();
                 construction.Complete();
                 return result;
@@ -160,5 +190,20 @@ public sealed partial class Utf8Regex
                 budget.Deadline = previousDeadline;
             }
         }
+    }
+
+    private static byte[] FreezeNativeReplacement(ReadOnlySpan<byte> source, Utf8ConstructionBudget budget,
+        ReplacementPreparationControl control)
+    {
+        control.Check();
+        var result = budget.AllocateArray<byte>(source.Length, false);
+        for (var offset = 0; offset < source.Length;)
+        {
+            control.Check();
+            var count = Math.Min(2048, source.Length - offset);
+            budget.ChargeWork((ulong)count);
+            source.Slice(offset, count).CopyTo(result.AsSpan(offset, count)); offset += count;
+        }
+        control.Check(); return result;
     }
 }

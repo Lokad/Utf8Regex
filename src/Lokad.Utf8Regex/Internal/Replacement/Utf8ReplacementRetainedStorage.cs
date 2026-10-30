@@ -2,10 +2,11 @@ using Lokad.Utf8Regex.Internal.Caching;
 
 namespace Lokad.Utf8Regex.Internal.Replacement;
 
-internal readonly struct Utf8ReplacementRetainedStorage : IUtf8RetainedStorage<string, Utf8AnalyzedReplacement>
+internal readonly struct Utf8ReplacementRetainedStorage : IUtf8RetainedStorage<object, Utf8AnalyzedReplacement>
 {
     public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
-    public ulong GetKeyCharge(string key) => Utf8ConstructionBudget.StringBytes(key.Length);
+    public ulong GetKeyCharge(object key) => key is byte[] bytes
+        ? Utf8ConstructionBudget.ArrayBytes<byte>(bytes.Length) : Utf8ConstructionBudget.StringBytes(((string)key).Length);
 
     public bool TryGetValueCharge<TControl>(Utf8AnalyzedReplacement value, ulong maximum, TControl control, out ulong charge)
         where TControl : struct, IUtf8ConstructionTextControl
@@ -15,20 +16,13 @@ internal readonly struct Utf8ReplacementRetainedStorage : IUtf8RetainedStorage<s
         charge = 0;
         // This closed program has no recursive storage. Each slot contributes
         // independently; shared literals intentionally receive no discount.
-        if (!Add(Utf8ConstructionBudget.StringBytes(value.OriginalText.Length)
-            + Utf8ConstructionBudget.ArrayBytes<byte>(value.LiteralUtf8.Length)
-            + Utf8ConstructionBudget.ObjectBytes<(Utf8ReplacementToken[], bool, bool, bool, bool)>()
-            + Utf8ConstructionBudget.ArrayBytes<Utf8ReplacementToken>(value.Pattern.Tokens.Length)
+        if (!Add(Utf8ConstructionBudget.ArrayBytes<byte>(value.LiteralUtf8.Length)
             + Utf8ConstructionBudget.ObjectBytes<IReadOnlyList<Utf8ReplacementInstruction>>()
             + Utf8ConstructionBudget.ArrayBytes<Utf8ReplacementInstruction>(value.Plan.Instructions.Count))) return false;
-        foreach (var token in value.Pattern.Tokens)
-            if (!Add(Utf8ConstructionBudget.StringBytes(token.Literal?.Length ?? 0)
-                + Utf8ConstructionBudget.StringBytes(token.ReferenceText?.Length ?? 0))) return false;
         for (var index = 0; index < value.Plan.Instructions.Count; index++)
         {
             var instruction = value.Plan.Instructions[index];
-            if (!Add(Utf8ConstructionBudget.ArrayBytes<byte>(instruction.LiteralUtf8?.Length ?? 0)
-                + Utf8ConstructionBudget.StringBytes(instruction.LiteralText?.Length ?? 0))) return false;
+            if (!Add(Utf8ConstructionBudget.ArrayBytes<byte>(instruction.LiteralUtf8?.Length ?? 0))) return false;
         }
         charge = total;
         return true;

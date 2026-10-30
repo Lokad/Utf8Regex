@@ -5,20 +5,16 @@ internal readonly struct Utf8ReplacementInstruction
     private Utf8ReplacementInstruction(
         Utf8ReplacementInstructionKind kind,
         byte[] literalUtf8,
-        string literalText,
         int groupNumber)
     {
         Kind = kind;
         LiteralUtf8 = literalUtf8;
-        LiteralText = literalText;
         GroupNumber = groupNumber;
     }
 
     public Utf8ReplacementInstructionKind Kind { get; }
 
     public byte[] LiteralUtf8 { get; }
-
-    public string LiteralText { get; }
 
     public int GroupNumber { get; }
 
@@ -45,23 +41,11 @@ internal readonly struct Utf8ReplacementInstruction
             written += Encoding.UTF8.GetBytes(literalText.AsSpan(offset, length), bytes.AsSpan(written));
             offset += length;
         }
-        var valid = true;
-        storage.Budget.ChargeWork((ulong)literalText.Length);
-        var checkpoint = 2048;
-        for (var offset = 0; offset < literalText.Length;)
-        {
-            if (offset >= checkpoint)
-            {
-                storage.Budget.ChargeWork(0);
-                checkpoint = offset + Math.Min(2048, literalText.Length - offset);
-            }
-            if (Rune.DecodeFromUtf16(literalText.AsSpan(offset), out _, out var width) != System.Buffers.OperationStatus.Done)
-            { valid = false; break; }
-            offset += width;
-        }
-        return new Utf8ReplacementInstruction(Utf8ReplacementInstructionKind.Literal, bytes,
-            valid ? literalText : DecodeLiteral(storage, bytes), -1);
+        return Literal(bytes);
     }
+
+    internal static Utf8ReplacementInstruction Literal(byte[] admittedUtf8)
+        => new(Utf8ReplacementInstructionKind.Literal, admittedUtf8, -1);
 
     private static int LiteralChunkLength(ReadOnlySpan<char> text)
     {
@@ -73,24 +57,21 @@ internal readonly struct Utf8ReplacementInstruction
         return length;
     }
 
-    private static string DecodeLiteral(Utf8ConstructionSession storage, byte[] bytes)
-        => storage.Budget.DecodeUtf8(bytes, Encoding.UTF8);
-
     public static Utf8ReplacementInstruction Group(int groupNumber) =>
-        new(Utf8ReplacementInstructionKind.Group, [], string.Empty, groupNumber);
+        new(Utf8ReplacementInstructionKind.Group, [], groupNumber);
 
     public static Utf8ReplacementInstruction WholeMatch() =>
-        new(Utf8ReplacementInstructionKind.WholeMatch, [], string.Empty, -1);
+        new(Utf8ReplacementInstructionKind.WholeMatch, [], -1);
 
     public static Utf8ReplacementInstruction LeftPortion() =>
-        new(Utf8ReplacementInstructionKind.LeftPortion, [], string.Empty, -1);
+        new(Utf8ReplacementInstructionKind.LeftPortion, [], -1);
 
     public static Utf8ReplacementInstruction RightPortion() =>
-        new(Utf8ReplacementInstructionKind.RightPortion, [], string.Empty, -1);
+        new(Utf8ReplacementInstructionKind.RightPortion, [], -1);
 
     public static Utf8ReplacementInstruction LastGroup() =>
-        new(Utf8ReplacementInstructionKind.LastGroup, [], string.Empty, -1);
+        new(Utf8ReplacementInstructionKind.LastGroup, [], -1);
 
     public static Utf8ReplacementInstruction WholeString() =>
-        new(Utf8ReplacementInstructionKind.WholeString, [], string.Empty, -1);
+        new(Utf8ReplacementInstructionKind.WholeString, [], -1);
 }

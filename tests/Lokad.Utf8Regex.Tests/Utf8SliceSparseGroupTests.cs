@@ -242,17 +242,15 @@ public sealed class Utf8SliceSparseGroupTests
     [InlineData("(?<2147483647>a)(?<x>b)", "ab")]
     [InlineData("(?<12>a)(?<5>b)?", "a")]
     [InlineData("ab", "ab")]
-    public void OwnedReplacementInterpreterAndPublicTemplatesRetainPublicNumbersAndLastOrdinal(string pattern, string text)
+    public void PublicTemplatesRetainPublicNumbersAndLastOrdinal(string pattern, string text)
     {
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
         var match = oracle.Match(text);
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        var context = regex.MatchDetailed(Encoding.UTF8.GetBytes(text));
         foreach (var template in new[] { "$+", "$12|$5|$2147483647", "$00|$01|$" + "{012}" })
         {
-            var plan = Utf8FrontEndReplacementAnalyzer.Analyze(template, oracle.GetGroupNumbers(), oracle.GetGroupNames()).Plan;
             Assert.Equal(match.Result(template), regex.ReplaceToString(Encoding.UTF8.GetBytes(text), template));
-            Assert.Equal(match.Result(template), Utf8ReplacementPlanInterpreter.ApplyOwned(plan, text, in context));
+            Assert.Equal(Encoding.UTF8.GetBytes(match.Result(template)), regex.Replace(Encoding.UTF8.GetBytes(text), Encoding.UTF8.GetBytes(template)));
         }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }

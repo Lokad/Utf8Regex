@@ -3076,9 +3076,10 @@ public sealed partial class Utf8Regex
                 Utf8SliceReplacementResultKind.Bytes, default, cancellationToken, deadline).Bytes;
         var budget = deadline;
         if (UsesOwnedTemplateBeforeNativePlan() &&
-            TryReplaceTemplateWithOwnedGroups(input, replacementPattern, out var ownedTemplate))
+            TryReplaceTemplateWithOwnedGroups(input, validation, replacementPattern, Utf8SliceReplacementResultKind.Bytes,
+                default, cancellationToken, deadline, out var ownedTemplate))
         {
-            return Encoding.UTF8.GetBytes(ownedTemplate);
+            return ownedTemplate.Bytes;
         }
 
         if (TryGetExactLiteralReplacementBytes(replacementPattern, out var exactLiteralReplacementBytes))
@@ -3093,7 +3094,8 @@ public sealed partial class Utf8Regex
 
         if (!TryGetNativeReplacementBytes(replacementPattern, out var replacementBytes))
         {
-            return Encoding.UTF8.GetBytes(ReplaceWithScalarProgram(input, replacementPattern, cancellationToken, deadline));
+            return OwnedSliceReplace(input, _ownedSliceProgram, replacementPattern, Utf8SliceReplacementResultKind.Bytes,
+                default, cancellationToken, deadline).Bytes;
         }
 
         return ReplaceLiteralBytesCore(input, validation, replacementBytes, deadline);

@@ -33,10 +33,8 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
     {
         using var owner = Utf8ConstructionScope.Enter();
         var result = Utf8FrontEndReplacementAnalyzer.Analyze("a${missing}$1$1z", [0, 1], ["zero", "one"]);
-        Assert.NotEmpty(result.Pattern.Tokens);
         Assert.NotEmpty(result.Plan.Instructions);
         Assert.True(owner.Budget.ReservedBytes >= 256ul +
-            Utf8ConstructionBudget.ArrayBytes<Utf8ReplacementToken>(result.Pattern.Tokens.Length) +
             Utf8ConstructionBudget.ArrayBytes<Utf8ReplacementInstruction>(result.Plan.Instructions.Count));
     }
 

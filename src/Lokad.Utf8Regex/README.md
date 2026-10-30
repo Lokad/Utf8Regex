@@ -28,6 +28,13 @@ Replacement callbacks can pass local stack buffers and formatting slices to
 `Utf8ReplacementWriter.Append`. Its scoped byte/char span inputs are copied or
 encoded before returning; the writer remains valid only during the callback.
 
+UTF-8 replacement templates parse/cache directly as bytes. Warm queries borrow
+the supplied span; cold keys are copied after admission. Prepared plans retain
+byte literals and syntax flags rather than parser/text graphs. Native capture
+discovery stays eligible, with byte output through the existing writer and only
+final text results decoded. String templates retain their fragment-local
+surrogate repair and .NET-style reference grammar.
+
 Instances support finite `Utf8ResourcePolicy` work, depth, working-capacity and
 result-capacity limits. **Defaults and static cached calls are unlimited.**
 Original cancellation and absolute deadlines cover validation, matching, required
@@ -41,7 +48,7 @@ valid after advance/failure/disposal. Copied value cursors retain independent
 positions while sharing allowance/deadline. A host must separately account for
 retained results and its own storage.
 
-Optional `Lokad.Utf8Regex.PythonRe` and `Lokad.Utf8Regex.Pcre2` **0.4.0**
+Optional `Lokad.Utf8Regex.PythonRe` and `Lokad.Utf8Regex.Pcre2` **0.5.0-dev**
 require exactly this Core version. Both are managed profile adapters with explicit
 compatibility boundaries; no native PCRE2 binary is shipped.
 

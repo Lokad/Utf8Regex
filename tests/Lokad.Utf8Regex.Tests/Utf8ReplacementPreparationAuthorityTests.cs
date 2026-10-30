@@ -25,11 +25,13 @@ public sealed class Utf8ReplacementPreparationAuthorityTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void ForeignPreparationInterruptionDoesNotBecomeTheUncontrolledCallersFailure(bool deadline)
+    [InlineData(false, false)] [InlineData(true, false)]
+    [InlineData(false, true)] [InlineData(true, true)]
+    public void ForeignPreparationInterruptionDoesNotBecomeTheUncontrolledCallersFailure(bool deadline, bool native)
     {
         var regex = new Utf8Regex("(a)", RegexOptions.CultureInvariant);
         var template = string.Concat(Enumerable.Repeat("$1", 64));
+        var templateBytes = Encoding.UTF8.GetBytes(template);
         using var foreign = new CancellationTokenSource();
         foreign.Cancel();
         using var parent = Utf8ConstructionScope.Enter();
@@ -40,10 +42,10 @@ public sealed class Utf8ReplacementPreparationAuthorityTests
             if (deadline) throw new Utf8ExecutionDeadlineExpiredException();
             throw new OperationCanceledException(foreign.Token);
         };
-        Assert.Equal(new string('a', 64), Encoding.UTF8.GetString(regex.Replace("a"u8, template)));
+        Assert.Equal(new string('a', 64), Encoding.UTF8.GetString(native ? regex.Replace("a"u8, templateBytes) : regex.Replace("a"u8, template)));
         Assert.Equal(0, CacheCount(regex)); // The independent retry is not a shared publication.
         parent.Budget.CheckpointHook = null;
-        Assert.Equal(new string('a', 64), Encoding.UTF8.GetString(regex.Replace("a"u8, template)));
+        Assert.Equal(new string('a', 64), Encoding.UTF8.GetString(native ? regex.Replace("a"u8, templateBytes) : regex.Replace("a"u8, template)));
         Assert.Equal(1, CacheCount(regex));
     }
 
@@ -110,7 +112,7 @@ public sealed class Utf8ReplacementPreparationAuthorityTests
 
     [Theory]
     [InlineData(3)] [InlineData(4)]
-    public void Utf8TemplateTextIsAdmittedBeforeItsMajorAllocation(int route)
+    public void Utf8TemplateKeyIsAdmittedBeforeItsMajorAllocation(int route)
     {
         var regex = new Utf8Regex("(a)", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
             new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000 });
@@ -119,16 +121,16 @@ public sealed class Utf8ReplacementPreparationAuthorityTests
         var bytes = Encoding.UTF8.GetBytes(template);
         var input = "a"u8.ToArray();
         var destination = new byte[16];
-        var textBytes = Utf8ConstructionBudget.StringBytes(template.Length);
+        var keyBytes = Utf8ConstructionBudget.ArrayBytes<byte>(bytes.Length);
         var parentBytes = Utf8ConstructionBudget.ArrayBytes<byte>(1);
-        using var parent = new Utf8ConstructionScope(ulong.MaxValue, parentBytes + textBytes - 1);
+        using var parent = new Utf8ConstructionScope(ulong.MaxValue, parentBytes + keyBytes - 1);
         var payload = parent.Budget.AllocateArray<byte>(1, false);
         var before = GC.GetAllocatedBytesForCurrentThread();
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Replace(regex, route, input, template, bytes,
             destination, CancellationToken.None));
         var allocated = (ulong)(GC.GetAllocatedBytesForCurrentThread() - before);
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
-        Assert.True(allocated < textBytes, $"Denied template acquired {allocated} bytes before refusal.");
+        Assert.True(allocated < keyBytes, $"Denied template acquired {allocated} bytes before refusal.");
         Assert.Equal(parentBytes, parent.Budget.ReservedBytes);
         Assert.Equal(1, CacheCount(regex)); // Only the earlier small template exists.
         GC.KeepAlive(payload);
