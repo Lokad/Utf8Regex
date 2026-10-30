@@ -73,7 +73,7 @@ program/cache retention, standalone getters, callback allocations and host stora
 have separate scope. See [resource controls](SPEC.md#cancellation-deadlines-and-resource-limits)
 and [host admission](SPEC.md#host-admission) for the Core/PythonRe W+R recipe.
 
-### Core caller-funded Boolean/count operations
+### Core caller-funded operations and memory cursors
 
 Core's funded Compile overload returns `Utf8RegexProgramOwner`. Close it explicitly;
 compilation remains funded through any active calls. The optional working allowance
@@ -87,9 +87,32 @@ int count = program.Count(subject.Span, callToken, workingMemoryAllowance);
 ```
 
 Boolean/count calls refund temporary loans synchronously, retain numeric limits
-and never retry a refusal under another allowance. This first Core owner covers
-these operations; funded cursor/capture/replacement and PCRE2 ownership flows remain
-unfinished. The [resource contract](SPEC.md#cancellation-deadlines-and-resource-limits)
+and never retry a refusal under another allowance. For repeated captures across
+host calls or awaits, use the separate memory cursor:
+
+```csharp
+using var cursor = program.CreateMatchCursor(subject, startOffsetInBytes: 0,
+    cancellationToken: lifetimeToken, workingMemoryAllowance: workingMemoryAllowance);
+while (cursor.MoveNextRetained(out var result, currentCallToken, resultMemoryAllowance))
+{
+    using (result)
+    {
+        ReadOnlyMemory<byte> bytes = result.Match.GetValueMemory();
+        // Consume bytes while the unchanged subject and its memory manager live.
+    }
+}
+```
+
+Each advance's token ends with that call; the creation token and absolute deadline
+still apply across waits. Dispose abandoned cursors. Closing the program rejects
+new operations but lets its existing cursors finish. Result receipts may outlive
+both; copies stay valid after receipt disposal, with further admission owned by
+the caller. `MoveNext(out Utf8RangeMatch)` omits retained funding when the host takes
+over retention directly. Both paths avoid captured strings and whole-subject
+UTF-16 maps, retaining Core capture histories and sparse slot identities. Existing
+span cursors keep their independent-copy contract. Native UTF-8 pattern/template
+parsing, funded replacement and PCRE2 ownership remain unfinished.
+The [resource contract](SPEC.md#cancellation-deadlines-and-resource-limits)
 distinguishes modeled live admission from cumulative work/result traffic.
 
 ## Respect lifetime and default-result rules

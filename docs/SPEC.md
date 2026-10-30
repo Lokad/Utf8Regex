@@ -217,13 +217,46 @@ admission. Native literal, word and category counters keep bounded metering.
 Core's `Compile(..., token, programMemoryAllowance)` returns a disposable
 `Utf8RegexProgramOwner`. It admits conservative compilation capacities before
 acquisition and transfers their charge to explicit ownership. The owner offers
-Boolean matching and Count, using its program allowance for working storage by
+Boolean matching, Count and persistent range cursors, using its program allowance for working storage by
 default; the optional working allowance selects a separate host child account.
 The private expression cannot escape the owner. Dispose rejects new calls and
-refunds compilation after the final active call; active calls retain their local
+refunds compilation after the final active call/cursor; active users retain their
 program reference and finish under their original controls. This new owner keeps
-legacy copied span-enumerator lifetimes separate. Funded capture/iteration/
-replacement flows and PCRE2 program admission remain unfinished.
+legacy copied span-enumerator lifetimes separate. Funded replacement flows and
+PCRE2 program admission remain unfinished.
+
+`CreateMatchCursor(ReadOnlyMemory<byte>, startOffsetInBytes, token, workingAllowance)`
+on Core expressions and program owners returns `Utf8RegexMatchCursor`. Null start
+selects zero for LTR or the subject end for RTL; explicit starts are scalar-aligned
+bytes within the original subject, preserving assertion context. The cursor
+validates the entire unchanged subject once. Byte discovery and capture histories
+need neither captured strings nor a whole-subject UTF-16 map. NonBacktracking
+retains its existing scalar viability table and last-capture semantics; other
+Core paths preserve all capture histories, sparse numbers and repeated names.
+Sequential calls can cross awaits, under one absolute deadline and cumulative
+work/result traffic. Each MoveNext accepts an additional current-call token;
+original-token cancellation wins if both are canceled. Completed advance tokens
+are not retained. Aliases share position and disposal; concurrent/reentrant access
+is rejected. EOF, failure and explicit Dispose drop exclusive scratch/program
+roots and refund their loans synchronously. Dispose early abandonment; no finalizer.
+
+`MoveNext(out Utf8RangeMatch)` publishes immutable ranges, histories and shared
+name/number metadata. Metadata survives later advances and cursor/program close;
+subject bytes and their memory manager remain borrowed. Ordinary publication ends
+working admission for the result: continued caller retention has separate scope.
+`MoveNextRetained` instead returns `Utf8RetainedRangeMatch`, requiring shared working
+funding. It conservatively charges shared metadata/name text again for an independent
+lifetime. By default the already admitted staging loan transfers unchanged. A
+separate result allowance reserves before staging is refunded, so that handoff
+admits overlap without an accounting gap. Refusal is terminal. Closing a receipt
+refunds exactly once; previously copied range values remain usable, with continued
+retention then the caller's admission responsibility. Borrowed input is not charged
+again. Numeric result traffic remains cumulative even when live loans refund.
+
+This completes native subject/range discovery, not a fully byte-native public
+pipeline: Core patterns and existing byte-template preparation still require
+string-backed compilation/cache paths. Native pattern/template parsing and UTF-8
+metadata access are separate unfinished work.
 
 ### Host admission
 

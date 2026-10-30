@@ -2,7 +2,7 @@ using Lokad.Utf8Regex.Internal;
 
 namespace Lokad.Utf8Regex;
 
-/// <summary>Owns caller-funded Core compilation and reusable existence/count operations.</summary>
+/// <summary>Owns caller-funded Core compilation, existence/count calls and persistent range cursors.</summary>
 /// <remarks>Dispose closes new operations and refunds compilation after active calls finish. The underlying expression stays private. Temporary matching storage uses the program allowance unless a separate working allowance is supplied. Borrowed input and fixed invocation metadata remain outside modeled storage.</remarks>
 public sealed class Utf8RegexProgramOwner : IDisposable
 {
@@ -34,6 +34,24 @@ public sealed class Utf8RegexProgramOwner : IDisposable
         var regex = Volatile.Read(ref _regex) ?? throw new ObjectDisposedException(nameof(Utf8RegexProgramOwner));
         using var use = _storage.Enter();
         return regex.Count(input, cancellationToken, workingMemoryAllowance ?? _storage.Allowance);
+    }
+
+    /// <summary>Creates a persistent range cursor, retaining program admission until its EOF, failure or disposal.</summary>
+    /// <remarks>The cursor borrows unchanged memory and survives awaits. Null start selects the direction's default; null working allowance uses program funding. Closing this owner rejects new cursors but existing cursors remain usable.</remarks>
+    public Utf8RegexMatchCursor CreateMatchCursor(ReadOnlyMemory<byte> input, int? startOffsetInBytes = null,
+        CancellationToken cancellationToken = default, IUtf8MemoryAllowance? workingMemoryAllowance = null)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var regex = Volatile.Read(ref _regex) ?? throw new ObjectDisposedException(nameof(Utf8RegexProgramOwner));
+        var use = _storage.Enter();
+        try
+        {
+            var cursor = regex.CreateMatchCursor(input, startOffsetInBytes, cancellationToken,
+                workingMemoryAllowance ?? _storage.Allowance);
+            cursor.AttachProgramUse(use);
+            return cursor;
+        }
+        catch { use.Dispose(); throw; }
     }
 
     /// <summary>Closes new uses and releases compilation after its last active call finishes.</summary>

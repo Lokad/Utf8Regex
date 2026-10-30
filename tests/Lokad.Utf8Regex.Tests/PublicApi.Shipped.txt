@@ -13,6 +13,10 @@ readonly ref struct Utf8CaptureContext
   method Boolean TryGetValueBytes(out ReadOnlySpan<Byte> valueBytes)
   method ReadOnlySpan<Byte> GetValueBytes()
   method String GetValueString()
+readonly struct Utf8CaptureRange
+  property Boolean Success { get; }
+  property Int32 EndOffsetInBytes { get; }
+  property Int32 StartOffsetInBytes { get; }
 readonly struct Utf8ConstructionPolicy : IEquatable<Utf8ConstructionPolicy>
   property Nullable<UInt32> MaxDepth { get; init; }
   property Nullable<UInt64> MaxBytes { get; init; }
@@ -57,6 +61,16 @@ delegate Void Utf8MatchEvaluator<TState>(in Utf8MatchContext match, ref Utf8Repl
 sealed class Utf8MemoryAdmissionException : Exception, Runtime.Serialization.ISerializable
   ctor Utf8MemoryAdmissionException(UInt64 requestedBytes)
   property UInt64 RequestedBytes { get; }
+readonly struct Utf8RangeMatch
+  property Boolean Success { get; }
+  property ReadOnlySpan<Int32> GroupNumbers { get; }
+  property ReadOnlySpan<String> GroupNames { get; }
+  property Utf8CaptureRange Value { get; }
+  method Boolean TryGetGroup(Int32 number, out Utf8CaptureRange group)
+  method Boolean TryGetGroup(String name, out Utf8CaptureRange group)
+  method ReadOnlyMemory<Byte> GetGroupMemory(Int32 number)
+  method ReadOnlyMemory<Byte> GetValueMemory()
+  method ReadOnlySpan<Utf8CaptureRange> GetCaptures(Int32 number)
 sealed class Utf8Regex
   ctor Utf8Regex(String pattern)
   ctor Utf8Regex(String pattern, Text.RegularExpressions.RegexOptions options)
@@ -99,6 +113,7 @@ sealed class Utf8Regex
   method Utf8MatchContext MatchDetailed(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken)
   method Utf8MatchContext MatchDetailedFromUtf16Offset(ReadOnlySpan<Byte> input, Int32 utf16Offset)
   method Utf8MatchContext MatchDetailedFromUtf16Offset(ReadOnlySpan<Byte> input, Int32 utf16Offset, Threading.CancellationToken cancellationToken)
+  method Utf8RegexMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Nullable<Int32> startOffsetInBytes = null, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Utf8ValueMatch Match(ReadOnlySpan<Byte> input)
   method Utf8ValueMatch Match(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken)
   method Utf8ValueMatch MatchFromUtf16Offset(ReadOnlySpan<Byte> input, Int32 utf16Offset)
@@ -135,9 +150,14 @@ sealed class Utf8Regex
   method static Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<Byte> input, String pattern, Int32 count)
   method static Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<Byte> input, String pattern, Int32 count, Text.RegularExpressions.RegexOptions options)
   method static Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<Byte> input, String pattern, Int32 count, Text.RegularExpressions.RegexOptions options, TimeSpan matchTimeout)
+sealed class Utf8RegexMatchCursor : IDisposable
+  method Boolean MoveNext(out Utf8RangeMatch match, Threading.CancellationToken cancellationToken = default)
+  method Boolean MoveNextRetained(out Utf8RetainedRangeMatch match, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance resultMemoryAllowance = null)
+  method Void Dispose()
 sealed class Utf8RegexProgramOwner : IDisposable
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Int32 Count(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
+  method Utf8RegexMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Nullable<Int32> startOffsetInBytes = null, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Void Dispose()
 ref struct Utf8ReplacementWriter
   method Void Append(Text.Rune value)
@@ -161,6 +181,10 @@ readonly struct Utf8ResourcePolicy : IEquatable<Utf8ResourcePolicy>
   method virtual Boolean Equals(Object obj)
   method virtual Int32 GetHashCode()
   method virtual String ToString()
+sealed class Utf8RetainedRangeMatch : IDisposable
+  property UInt64 ChargedBytes { get; }
+  property Utf8RangeMatch Match { get; }
+  method Void Dispose()
 readonly struct Utf8ValueMatch
   ctor Utf8ValueMatch(Boolean success, Boolean isByteAligned, Int32 indexInUtf16, Int32 lengthInUtf16)
   ctor Utf8ValueMatch(Boolean success, Boolean isByteAligned, Int32 indexInUtf16, Int32 lengthInUtf16, Int32 indexInBytes, Int32 lengthInBytes)

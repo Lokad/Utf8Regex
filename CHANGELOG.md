@@ -5,6 +5,8 @@
 - Target .NET 10 and .NET 11 across Core, PythonRe and PCRE2.
 - Add caller-funded Core Boolean/count operations and a disposable compiled
   program owner with separate working admission and deterministic close/refunds.
+- Add Core memory cursors with byte-range capture histories, per-advance tokens,
+  deterministic scratch release and retained results with separate result funding.
 - Use .NET 11 by default for benchmark runs; historical figures retain their measured runtime.
 - Expose PythonRe effective global flags through `EffectiveOptions`, including
   inline directives and implicit Unicode, while retaining requested `Options`.

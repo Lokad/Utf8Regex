@@ -6,7 +6,7 @@ namespace Lokad.Utf8Regex;
 /// <inheritdoc />
 public sealed partial class Utf8Regex
 {
-    /// <summary>Compiles a reusable existence/count program under caller-owned storage admission.</summary>
+    /// <summary>Compiles a reusable program under caller-owned storage admission.</summary>
     /// <remarks>Reservations precede substantial compilation acquisition. The returned owner keeps compilation funded until explicit close and the last active call; it does not expose the underlying expression. Matching uses independent cancellation/deadlines and can use a separate working allowance. Null MaxBytes adds no private construction-byte cap; work/depth/instruction backstops remain.</remarks>
     public static Utf8RegexProgramOwner Compile(string pattern, RegexOptions options,
         TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy,
