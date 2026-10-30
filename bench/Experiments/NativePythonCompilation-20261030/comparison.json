@@ -1,0 +1,854 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 86.767441,
+  "Scope": "Equal-result public Core text compilation/Count and PythonRe text/native compilation/Count/string FindAll, including finite limits and funded compile\u002Bclose/Count. Fixed c4bb82d7 baseline vs c0361d44. Ten cases, 34 lanes, 2s warmup/lane, independent 80ms calibration, three alternating samples. Checksums and funding balances consumed after timing; string content preflighted. One 120s outer cap, at most one focused noise confirmation. No catalog Status, cumulative release-baseline or package claim.",
+  "BaselineCore": "0.5.0-dev\u002Bc4bb82d717375109833d99d7099578adc5b56aa1 sha256=3892D53A300240640190EA95A1EFCE88862E7990E6066E3E7179232A3DC8E3CD",
+  "CandidateCore": "0.5.0-dev\u002Bc0361d446ac2c56679c57068190ee26a9643acb3 sha256=8AB5FF0E6A5FABC10C2B5B75AC3D210F8FD076D74AA8A6C4E109D79196DFF7CE",
+  "BaselinePython": "0.5.0-dev\u002Bc4bb82d717375109833d99d7099578adc5b56aa1 sha256=ECC24502E4AFC3CFB219E34C30347ABA5AA27A017280F2FE9B3447D20681826A",
+  "CandidatePython": "0.5.0-dev\u002Bc0361d446ac2c56679c57068190ee26a9643acb3 sha256=C27055807419A0113E3D6C9E0867C3AA150E4875F00E5C2CEE2E3E301425AF8B",
+  "Rows": [
+    {
+      "Name": "core-literal-count-control",
+      "Pattern": "needle",
+      "Construction": false,
+      "Strings": false,
+      "Finite": false,
+      "Funded": false,
+      "InputBytes": 8198,
+      "InputSha256": "8DA47E1CAE661B34F429302D624E9EA43B01F9729C6A36BB3E1D2297395FF58B",
+      "Expected": 1,
+      "Lanes": [
+        "BeforeText",
+        "AfterText"
+      ],
+      "Iterations": [
+        262144,
+        262144
+      ],
+      "WarmupCalls": [
+        2868390,
+        3001279
+      ],
+      "Microseconds": [
+        [
+          0.5124069213867187,
+          0.5150104522705078,
+          0.5165786743164062
+        ],
+        [
+          0.5131721496582031,
+          0.5131301879882812,
+          0.5162734985351562
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          134.3244,
+          135.0069,
+          135.418
+        ],
+        [
+          134.525,
+          134.514,
+          135.338
+        ]
+      ]
+    },
+    {
+      "Name": "core-prefix-compilation",
+      "Pattern": "[ab](\uD83D\uDE00|\uE000)|[cd](\uD83D\uDE00|\uE000)",
+      "Construction": true,
+      "Strings": false,
+      "Finite": false,
+      "Funded": false,
+      "InputBytes": 0,
+      "InputSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "Expected": 1,
+      "Lanes": [
+        "BeforeText",
+        "AfterText"
+      ],
+      "Iterations": [
+        512,
+        512
+      ],
+      "WarmupCalls": [
+        6244,
+        8247
+      ],
+      "Microseconds": [
+        [
+          160.99277343749998,
+          163.706640625,
+          161.94355468749998
+        ],
+        [
+          181.815625,
+          169.8064453125,
+          160.1806640625
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          253824,
+          253824,
+          253824
+        ],
+        [
+          253144,
+          253144,
+          253144
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          82.4283,
+          83.8178,
+          82.9151
+        ],
+        [
+          93.0896,
+          86.9409,
+          82.0125
+        ]
+      ]
+    },
+    {
+      "Name": "core-prefix-count",
+      "Pattern": "[ab](\uD83D\uDE00|\uE000)|[cd](\uD83D\uDE00|\uE000)",
+      "Construction": false,
+      "Strings": false,
+      "Finite": false,
+      "Funded": false,
+      "InputBytes": 1408,
+      "InputSha256": "5F69AF539265A6E39ED24AC37F605EB396CE92A0D23BC2FDD2BB6398BC4DC4F4",
+      "Expected": 256,
+      "Lanes": [
+        "BeforeText",
+        "AfterText"
+      ],
+      "Iterations": [
+        1024,
+        1024
+      ],
+      "WarmupCalls": [
+        17281,
+        17179
+      ],
+      "Microseconds": [
+        [
+          115.77939453124999,
+          116.393359375,
+          116.20400390625001
+        ],
+        [
+          113.1638671875,
+          113.31689453125,
+          114.0408203125
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1872,
+          1872,
+          1872
+        ],
+        [
+          1872,
+          1872,
+          1872
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          118.5581,
+          119.1868,
+          118.9929
+        ],
+        [
+          115.8798,
+          116.0365,
+          116.7778
+        ]
+      ]
+    },
+    {
+      "Name": "python-unicode-compilation",
+      "Pattern": "(?P\u003Cword\u003E[ab]\u002B)(?:\uD83D\uDE00|\\ue000)(?P=word)",
+      "Construction": true,
+      "Strings": false,
+      "Finite": false,
+      "Funded": true,
+      "InputBytes": 0,
+      "InputSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "Expected": 1,
+      "Lanes": [
+        "BeforeText",
+        "BeforeNative",
+        "AfterText",
+        "AfterNative",
+        "BeforeFundedNative",
+        "AfterFundedNative"
+      ],
+      "Iterations": [
+        512,
+        512,
+        512,
+        512,
+        512,
+        512
+      ],
+      "WarmupCalls": [
+        11066,
+        12775,
+        11585,
+        18566,
+        14010,
+        10918
+      ],
+      "Microseconds": [
+        [
+          160.23417968750002,
+          158.3060546875,
+          158.98183593750002
+        ],
+        [
+          159.57890625000002,
+          160.005859375,
+          159.03105468750002
+        ],
+        [
+          163.75625,
+          162.46425781250002,
+          163.3318359375
+        ],
+        [
+          167.681640625,
+          169.655859375,
+          167.87871093750002
+        ],
+        [
+          174.2427734375,
+          174.0021484375,
+          173.71875
+        ],
+        [
+          183.21210937499998,
+          181.938671875,
+          183.0412109375
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          85584,
+          85584,
+          85584
+        ],
+        [
+          85680,
+          85680,
+          85680
+        ],
+        [
+          84736,
+          84736,
+          84736
+        ],
+        [
+          84800,
+          84800,
+          84800
+        ],
+        [
+          85760,
+          85760,
+          85760
+        ],
+        [
+          84880,
+          84880,
+          84880
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          82.0399,
+          81.0527,
+          81.3987
+        ],
+        [
+          81.7044,
+          81.923,
+          81.4239
+        ],
+        [
+          83.8432,
+          83.1817,
+          83.6259
+        ],
+        [
+          85.853,
+          86.8638,
+          85.9539
+        ],
+        [
+          89.2123,
+          89.0891,
+          88.944
+        ],
+        [
+          93.8046,
+          93.1526,
+          93.7171
+        ]
+      ]
+    },
+    {
+      "Name": "python-guided-count",
+      "Pattern": "(?:ab|cd)\u002B",
+      "Construction": false,
+      "Strings": false,
+      "Finite": false,
+      "Funded": false,
+      "InputBytes": 640,
+      "InputSha256": "1CE8A5362718BB952524BE84A481F32B0FEB1C7EFD796809ED839AADF17D2DBA",
+      "Expected": 64,
+      "Lanes": [
+        "BeforeText",
+        "BeforeNative",
+        "AfterText",
+        "AfterNative"
+      ],
+      "Iterations": [
+        2048,
+        4096,
+        4096,
+        4096
+      ],
+      "WarmupCalls": [
+        37921,
+        68470,
+        68512,
+        67275
+      ],
+      "Microseconds": [
+        [
+          27.8037109375,
+          27.69453125,
+          27.499218749999997
+        ],
+        [
+          28.0835693359375,
+          27.902587890625,
+          27.822412109375
+        ],
+        [
+          27.98388671875,
+          27.6830078125,
+          27.8187255859375
+        ],
+        [
+          27.8577392578125,
+          27.6243408203125,
+          27.6824462890625
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          3552,
+          3552,
+          3552
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          56.942,
+          56.7184,
+          56.3184
+        ],
+        [
+          115.0303,
+          114.289,
+          113.9606
+        ],
+        [
+          114.622,
+          113.3896,
+          113.9455
+        ],
+        [
+          114.1053,
+          113.1493,
+          113.3873
+        ]
+      ]
+    },
+    {
+      "Name": "python-unicode-count",
+      "Pattern": "[ab](\uD83D\uDE00|\uE000)|[cd](\uD83D\uDE00|\uE000)",
+      "Construction": false,
+      "Strings": false,
+      "Finite": false,
+      "Funded": false,
+      "InputBytes": 1408,
+      "InputSha256": "5F69AF539265A6E39ED24AC37F605EB396CE92A0D23BC2FDD2BB6398BC4DC4F4",
+      "Expected": 256,
+      "Lanes": [
+        "BeforeText",
+        "BeforeNative",
+        "AfterText",
+        "AfterNative"
+      ],
+      "Iterations": [
+        512,
+        1024,
+        1024,
+        1024
+      ],
+      "WarmupCalls": [
+        16678,
+        13620,
+        17796,
+        15184
+      ],
+      "Microseconds": [
+        [
+          147.678125,
+          163.35898437499998,
+          161.08671875
+        ],
+        [
+          147.6958984375,
+          154.78388671875,
+          161.48017578125
+        ],
+        [
+          147.37089843750002,
+          110.6318359375,
+          164.1373046875
+        ],
+        [
+          140.54609374999998,
+          155.59716796875,
+          163.96640625
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          4064,
+          4064,
+          4064
+        ],
+        [
+          4064,
+          4064,
+          4064
+        ],
+        [
+          4064,
+          4064,
+          4064
+        ],
+        [
+          4064,
+          4064,
+          4064
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          75.6112,
+          83.6398,
+          82.4764
+        ],
+        [
+          151.2406,
+          158.4987,
+          165.3557
+        ],
+        [
+          150.9078,
+          113.287,
+          168.0766
+        ],
+        [
+          143.9192,
+          159.3315,
+          167.9016
+        ]
+      ]
+    },
+    {
+      "Name": "python-finite-count",
+      "Pattern": "(?\u003C=foo)([a-z]\u002B)-([0-9]\u002B)",
+      "Construction": false,
+      "Strings": false,
+      "Finite": true,
+      "Funded": false,
+      "InputBytes": 1472,
+      "InputSha256": "6705C624814489C37A70DC5570A55118A620748487C179368430817A0D4AD545",
+      "Expected": 128,
+      "Lanes": [
+        "BeforeText",
+        "BeforeNative",
+        "AfterText",
+        "AfterNative"
+      ],
+      "Iterations": [
+        1024,
+        512,
+        512,
+        512
+      ],
+      "WarmupCalls": [
+        16834,
+        16452,
+        10009,
+        9819
+      ],
+      "Microseconds": [
+        [
+          206.303515625,
+          207.55996093750002,
+          207.026171875
+        ],
+        [
+          206.315234375,
+          206.5927734375,
+          206.8728515625
+        ],
+        [
+          214.9798828125,
+          203.1626953125,
+          204.04667968750002
+        ],
+        [
+          204.6626953125,
+          203.5384765625,
+          203.9978515625
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3992,
+          3992,
+          3992
+        ],
+        [
+          3992,
+          3992,
+          3992
+        ],
+        [
+          3992,
+          3992,
+          3992
+        ],
+        [
+          3992,
+          3992,
+          3992
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          211.2548,
+          212.5414,
+          211.9948
+        ],
+        [
+          105.6334,
+          105.7755,
+          105.9189
+        ],
+        [
+          110.0697,
+          104.0193,
+          104.4719
+        ],
+        [
+          104.7873,
+          104.2117,
+          104.4469
+        ]
+      ]
+    },
+    {
+      "Name": "python-literal-string-findall",
+      "Pattern": "hello",
+      "Construction": false,
+      "Strings": true,
+      "Finite": false,
+      "Funded": false,
+      "InputBytes": 448,
+      "InputSha256": "1246C47C047FBAB918855E24D440A5FDA5AC9CDFAB12E86671D80716DCF59862",
+      "Expected": 64,
+      "Lanes": [
+        "BeforeText",
+        "BeforeNative",
+        "AfterText",
+        "AfterNative"
+      ],
+      "Iterations": [
+        16384,
+        16384,
+        16384,
+        16384
+      ],
+      "WarmupCalls": [
+        316541,
+        390466,
+        353731,
+        386232
+      ],
+      "Microseconds": [
+        [
+          4.927288818359375,
+          4.94407958984375,
+          4.9463623046875
+        ],
+        [
+          4.924755859375,
+          4.96309814453125,
+          4.948742675781251
+        ],
+        [
+          5.007379150390625,
+          5.008734130859375,
+          5.03582763671875
+        ],
+        [
+          5.000006103515625,
+          5.006707763671875,
+          5.037921142578125
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          536,
+          536,
+          536
+        ],
+        [
+          536,
+          536,
+          536
+        ],
+        [
+          568,
+          568,
+          568
+        ],
+        [
+          568,
+          568,
+          568
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          80.7287,
+          81.0038,
+          81.0412
+        ],
+        [
+          80.6872,
+          81.3154,
+          81.0802
+        ],
+        [
+          82.0409,
+          82.0631,
+          82.507
+        ],
+        [
+          81.9201,
+          82.0299,
+          82.5413
+        ]
+      ]
+    },
+    {
+      "Name": "python-comment-count",
+      "Pattern": "(?#xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx)(?:ab|cd)\u002B",
+      "Construction": false,
+      "Strings": false,
+      "Finite": false,
+      "Funded": false,
+      "InputBytes": 640,
+      "InputSha256": "1CE8A5362718BB952524BE84A481F32B0FEB1C7EFD796809ED839AADF17D2DBA",
+      "Expected": 64,
+      "Lanes": [
+        "BeforeText",
+        "BeforeNative",
+        "AfterText",
+        "AfterNative"
+      ],
+      "Iterations": [
+        2048,
+        2048,
+        4096,
+        4096
+      ],
+      "WarmupCalls": [
+        37173,
+        38350,
+        57931,
+        71056
+      ],
+      "Microseconds": [
+        [
+          28.043505859375003,
+          27.8322265625,
+          27.780810546875
+        ],
+        [
+          27.785693359375,
+          27.678271484375,
+          29.3806640625
+        ],
+        [
+          27.6599365234375,
+          27.5340576171875,
+          27.5957275390625
+        ],
+        [
+          28.045703125000003,
+          27.9458740234375,
+          27.8923583984375
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          3552,
+          3552,
+          3552
+        ],
+        [
+          3552,
+          3552,
+          3552
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          57.4331,
+          57.0004,
+          56.8951
+        ],
+        [
+          56.9051,
+          56.6851,
+          60.1716
+        ],
+        [
+          113.2951,
+          112.7795,
+          113.0321
+        ],
+        [
+          114.8752,
+          114.4663,
+          114.2471
+        ]
+      ]
+    },
+    {
+      "Name": "python-funded-finite-count",
+      "Pattern": "(?\u003C=foo)([a-z]\u002B)-([0-9]\u002B)",
+      "Construction": false,
+      "Strings": false,
+      "Finite": true,
+      "Funded": true,
+      "InputBytes": 1472,
+      "InputSha256": "6705C624814489C37A70DC5570A55118A620748487C179368430817A0D4AD545",
+      "Expected": 128,
+      "Lanes": [
+        "BeforeFundedNative",
+        "AfterFundedNative"
+      ],
+      "Iterations": [
+        1024,
+        1024
+      ],
+      "WarmupCalls": [
+        18421,
+        19328
+      ],
+      "Microseconds": [
+        [
+          106.663671875,
+          105.87431640625,
+          105.02529296875001
+        ],
+        [
+          103.65498046875001,
+          103.63251953125,
+          103.1453125
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          4016,
+          4016,
+          4016
+        ],
+        [
+          4016,
+          4016,
+          4016
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          109.2236,
+          108.4153,
+          107.5459
+        ],
+        [
+          106.1427,
+          106.1197,
+          105.6208
+        ]
+      ]
+    }
+  ]
+}
