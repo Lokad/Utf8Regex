@@ -21,6 +21,29 @@ internal ref struct Utf8ValidatedInput
         _boundaryMap = null;
     }
 
+    // PCRE2-INTEGRATION-POINT: durable strict validation authority for unchanged
+    // borrowed memory. Only this validating factory can set its metadata; each
+    // synchronous borrower gets the same subject, without a public revalidation bypass.
+    internal readonly struct Memory
+    {
+        private readonly ReadOnlyMemory<byte> _bytes;
+        private readonly Utf8ValidationResult _validation;
+
+        private Memory(ReadOnlyMemory<byte> bytes, Utf8ValidationResult validation)
+        { _bytes = bytes; _validation = validation; }
+
+        internal ReadOnlyMemory<byte> Bytes => _bytes;
+        internal Utf8ValidatedInput Borrow() => new(_bytes.Span, _validation);
+
+        internal static Utf8ExecutionLimitKind TryCreate(ReadOnlyMemory<byte> bytes,
+            scoped ref Utf8SliceInvocation invocation, out Memory memory)
+        {
+            var breach = Utf8Validation.TryValidate(bytes.Span, ref invocation, out var validation);
+            memory = breach == Utf8ExecutionLimitKind.None ? new(bytes, validation) : default;
+            return breach;
+        }
+    }
+
     public ReadOnlySpan<byte> Bytes => _bytes;
 
     public Utf8ValidationResult Validation => _validation;

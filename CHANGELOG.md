@@ -9,6 +9,8 @@
   deterministic scratch release and retained results with separate result funding.
 - Add a caller-funded PCRE2 program owner and shared working admission for
   Boolean/count calls, preserving profile limits and deterministic close/refunds.
+- Add PCRE2 memory cursors and retained byte-range captures, preserving empty
+  retry, duplicate names, reset-start progression and explicit `\C` slice validity.
 - Use .NET 11 by default for benchmark runs; historical figures retain their measured runtime.
 - Expose PythonRe effective global flags through `EffectiveOptions`, including
   inline directives and implicit Unicode, while retaining requested `Options`.

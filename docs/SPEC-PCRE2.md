@@ -212,9 +212,43 @@ input, fixed invocation metadata and caller retention are separate scopes.
 Program Dispose rejects new calls and drops the expression root before the final
 refund; active calls keep their local root and charge until they finish. It does
 not wait, force cancellation or reclaim through GC. The underlying expression
-cannot escape. This first owner covers Boolean/count calls; funded replacement,
-persistent cursors and retained results are still open. Existing copied span
-cursors keep their independent-position/alias contract.
+cannot escape. The owner also creates persistent range cursors; funded replacement
+remains unfinished. Existing copied span cursors keep their independent-position/
+alias contract.
+
+`CreateMatchCursor(ReadOnlyMemory<byte>, byteStart, matchOptions, token, workingAllowance)`
+on expressions and program owners returns `Utf8Pcre2MatchCursor`. The entire
+unchanged subject is validated once. Explicit starts are scalar-aligned bytes;
+prefix/lookbehind/anchor context remains the original subject. Sequential advances
+can cross awaits under the creation token, absolute deadline and cumulative limits.
+An advance token applies only to that synchronous call; if both cancel, the
+original token wins. Aliases share position/disposal and reject concurrent or
+reentrant access. Dispose early abandonment; there is no finalizer. Per-advance VM
+scratch refunds before suspension. EOF, failure and Dispose release the program
+use and remaining exclusive loans synchronously.
+
+`MoveNext(out Utf8Pcre2RangeMatch)` returns immutable last-capture byte slots,
+duplicate-preserving names and Mark, without captured text or mandatory UTF-16
+projection. Existing native literal/character/repeat finders remain eligible;
+captured and flagged cases use the existing PCRE2 capture VM's byte result shape.
+Global progression uses consumed ranges, preserving `\K`, same-position nonempty
+retry and CRLF/Anchored behavior. Non-monotone iteration remains unsupported.
+Opted-in `\C` may return scalar fragments: inspect `IsUtf8SliceWellFormed` before
+decoding; byte access itself remains available. No full capture history is added.
+Optional reusable scalar-coordinate projection remains unfinished.
+
+Range metadata survives later advances and cursor/program close. Subject bytes
+and their memory manager remain borrowed. Ordinary publication ends producer
+working admission for results; continued host retention has separate scope.
+`MoveNextRetained` requires shared working funding and returns a disposable
+`Utf8Pcre2RetainedRangeMatch`. Default publication transfers the existing capture/
+metadata loan without reacquisition. A separate result account admits its charge
+before working staging refunds, including conservative overlap without a funding
+gap. Shared names/mark text count again for independent retention. Refusal is
+terminal. Receipt close refunds once; copied ranges remain valid afterward, with
+continued admission then the caller's responsibility. Numeric result traffic is
+cumulative regardless of live refunds. Native UTF-8 pattern/template preparation
+and metadata access remain distinct unfinished work.
 
 ## Isolation and non-goals
 

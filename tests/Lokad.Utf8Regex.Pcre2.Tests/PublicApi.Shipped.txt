@@ -32,6 +32,12 @@ readonly struct Utf8Pcre2Analysis
   property Boolean UsesBranchReset { get; init; }
   property Boolean UsesRecursion { get; init; }
   property Int32 MinRequiredLengthInBytes { get; init; }
+readonly struct Utf8Pcre2CaptureRange
+  property Boolean IsUtf8SliceWellFormed { get; }
+  property Boolean Success { get; }
+  property Int32 EndOffsetInBytes { get; }
+  property Int32 Number { get; }
+  property Int32 StartOffsetInBytes { get; }
 readonly struct Utf8Pcre2CompileSettings
   property Boolean AllowDuplicateNames { get; init; }
   property Boolean AllowLookaroundBackslashK { get; init; }
@@ -67,6 +73,10 @@ readonly ref struct Utf8Pcre2MatchContext
   method Int32 CopyNumbersForName(String name, Span<Int32> destination, out Boolean isMore)
   method String GetValueString()
   method Utf8Pcre2GroupContext GetGroup(Int32 number)
+sealed class Utf8Pcre2MatchCursor : IDisposable
+  method Boolean MoveNext(out Utf8Pcre2RangeMatch match, Threading.CancellationToken cancellationToken = default)
+  method Boolean MoveNextRetained(out Utf8Pcre2RetainedRangeMatch match, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance resultMemoryAllowance = null)
+  method Void Dispose()
 readonly struct Utf8Pcre2MatchData
   property Boolean HasContiguousByteRange { get; init; }
   property Boolean HasUtf16Projection { get; init; }
@@ -88,6 +98,16 @@ readonly ref struct Utf8Pcre2ProbeResult
   property Utf8Pcre2ValueMatch Value { get; }
   method Utf8Pcre2MatchContext GetMatch()
   method Utf8Pcre2PartialMatchContext GetPartial()
+readonly struct Utf8Pcre2RangeMatch
+  property Boolean Success { get; }
+  property ReadOnlySpan<Pcre2NameEntry> NameEntries { get; }
+  property ReadOnlySpan<Utf8Pcre2CaptureRange> Groups { get; }
+  property String Mark { get; }
+  property Utf8Pcre2CaptureRange Value { get; }
+  method Boolean TryGetFirstSetGroup(String name, out Utf8Pcre2CaptureRange group)
+  method Boolean TryGetGroup(Int32 number, out Utf8Pcre2CaptureRange group)
+  method ReadOnlyMemory<Byte> GetGroupMemory(Int32 number)
+  method ReadOnlyMemory<Byte> GetValueMemory()
 sealed class Utf8Pcre2Regex
   ctor Utf8Pcre2Regex(ReadOnlySpan<Byte> patternUtf8)
   ctor Utf8Pcre2Regex(ReadOnlySpan<Byte> patternUtf8, Pcre2CompileOptions options)
@@ -151,6 +171,7 @@ sealed class Utf8Pcre2Regex
   method Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
   method Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions)
   method Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions, Threading.CancellationToken cancellationToken)
+  method Utf8Pcre2MatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Utf8Pcre2ProbeResult Probe(ReadOnlySpan<Byte> input, Pcre2PartialMode partialMode)
   method Utf8Pcre2ProbeResult Probe(ReadOnlySpan<Byte> input, Pcre2PartialMode partialMode, Int32 startOffsetInBytes)
   method Utf8Pcre2ProbeResult Probe(ReadOnlySpan<Byte> input, Pcre2PartialMode partialMode, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions)
@@ -184,6 +205,11 @@ sealed class Utf8Pcre2Regex
 sealed class Utf8Pcre2RegexProgramOwner : IDisposable
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
+  method Utf8Pcre2MatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
+  method Void Dispose()
+sealed class Utf8Pcre2RetainedRangeMatch : IDisposable
+  property UInt64 ChargedBytes { get; }
+  property Utf8Pcre2RangeMatch Match { get; }
   method Void Dispose()
 readonly ref struct Utf8Pcre2ValueMatch
   property Boolean HasContiguousByteRange { get; }

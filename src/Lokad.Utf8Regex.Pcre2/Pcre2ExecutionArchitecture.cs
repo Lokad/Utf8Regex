@@ -3340,9 +3340,7 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
     private readonly Pcre2CompileRequest _request;
     private readonly Pcre2MatchOptions _matchOptions;
     private Pcre2ResourceBudget _budget;
-    private Utf8BytePosition _restartPosition;
-    private Utf8BytePosition _firstMatchingPosition;
-    private Pcre2GlobalRetryState _retryState;
+    private Pcre2GlobalProgress _progress;
 
     internal Pcre2BacktrackingDetailedGlobalMatchCursor(
         Pcre2BacktrackingProgram program,
@@ -3371,9 +3369,7 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
         _request = request;
         _matchOptions = matchOptions;
         _budget = budget;
-        _restartPosition = start;
-        _firstMatchingPosition = start;
-        _retryState = Pcre2GlobalRetryState.Search;
+        _progress = new(start);
         Current = default;
     }
 
@@ -3386,12 +3382,9 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
 
     internal bool MoveNext()
     {
-        while (_retryState != Pcre2GlobalRetryState.Finished)
+        while (!_progress.Finished)
         {
-            var retryingEmptyAtSamePosition = _retryState == Pcre2GlobalRetryState.EmptyAtSamePosition;
-            var options = retryingEmptyAtSamePosition
-                ? _matchOptions | Pcre2MatchOptions.Anchored | Pcre2MatchOptions.NotEmptyAtStart
-                : _matchOptions;
+            _progress.GetAttempt(_matchOptions, out var restart, out var firstMatchingPosition, out var options);
 
             Pcre2BacktrackingMatch match;
             try
@@ -3400,8 +3393,8 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
                     _program,
                     _candidateSearch.Program,
                     ref _input,
-                    _restartPosition,
-                    _firstMatchingPosition,
+                    restart,
+                    firstMatchingPosition,
                     options,
                     ref _budget);
             }
@@ -3414,29 +3407,17 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
 
             if (match.Success)
             {
-                if (match.StartOffsetInBytes > match.EndOffsetInBytes)
-                {
-                    throw new NotSupportedException("SPEC-PCRE2 rejects non-monotone iterative matches.");
-                }
-
+                _progress.Accept(match.StartOffsetInBytes, match.EndOffsetInBytes,
+                    match.ConsumedStartOffsetInBytes, match.ConsumedEndOffsetInBytes);
                 Current = match;
-                _restartPosition = new Utf8BytePosition(match.ConsumedEndOffsetInBytes);
-                _firstMatchingPosition = _restartPosition;
-                _retryState = match.ConsumedStartOffsetInBytes == match.ConsumedEndOffsetInBytes
-                    ? Pcre2GlobalRetryState.EmptyAtSamePosition
-                    : Pcre2GlobalRetryState.Search;
                 return true;
             }
 
-            if (!retryingEmptyAtSamePosition ||
-                !Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(ref _input, _request, _matchOptions, _restartPosition, out _restartPosition))
+            if (!_progress.AfterMiss(ref _input, _request, _matchOptions))
             {
-                _retryState = Pcre2GlobalRetryState.Finished;
                 Current = default;
                 return false;
             }
-
-            _retryState = Pcre2GlobalRetryState.Search;
         }
 
         Current = default;

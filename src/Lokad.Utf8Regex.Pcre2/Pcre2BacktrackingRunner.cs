@@ -106,6 +106,9 @@ internal readonly struct Pcre2BacktrackingCaptureResult
     internal static Pcre2BacktrackingCaptureResult FromProjectedGroups(Pcre2GroupData[] groups) =>
         new(groups);
 
+    internal static Pcre2BacktrackingCaptureResult FromByteGroups(Utf8Pcre2CaptureRange[] groups) => new(groups);
+    internal Utf8Pcre2CaptureRange[] ByteGroups => _value as Utf8Pcre2CaptureRange[] ?? [];
+
     internal Pcre2CaptureByteRange[] AssertionRanges => _value as Pcre2CaptureByteRange[] ?? [];
 
     internal Pcre2GroupData[] ProjectedGroups => _value as Pcre2GroupData[] ?? [];
@@ -124,6 +127,7 @@ internal enum Pcre2CaptureMaterialization : byte
     None = 0,
     AssertionRanges = 1,
     ProjectedFinalSlots = 2,
+    ByteFinalSlots = 3,
 }
 
 internal readonly record struct Pcre2BacktrackingMatch(
@@ -217,6 +221,13 @@ internal static class Pcre2BacktrackingRunner
             matchOptions,
             Pcre2CaptureMaterialization.ProjectedFinalSlots,
             ref budget);
+
+    internal static Pcre2BacktrackingMatch MatchByteRanges(Pcre2BacktrackingProgram program,
+        Pcre2CandidateSearchProgram candidateSearch, ref Utf8ValidatedInput input,
+        Utf8BytePosition start, Utf8BytePosition firstMatchingPosition, Pcre2MatchOptions options,
+        ref Pcre2ResourceBudget budget)
+        => MatchCore(program, candidateSearch, ref input, start, firstMatchingPosition,
+            options, Pcre2CaptureMaterialization.ByteFinalSlots, ref budget);
 
     private static Pcre2BacktrackingMatch MatchCore(
         Pcre2BacktrackingProgram program,
@@ -2496,6 +2507,36 @@ internal static class Pcre2BacktrackingRunner
                         captureStarts,
                         captureEnds,
                         ref input, ref budget)),
+            Pcre2CaptureMaterialization.ByteFinalSlots =>
+                Pcre2BacktrackingCaptureResult.FromByteGroups(MaterializeByteGroups(captureSlotCount,
+                    matchStart, matchEnd, captureStarts, captureEnds, input.Bytes, ref budget)),
             _ => default,
         };
+
+    internal static Utf8Pcre2CaptureRange[] MaterializeByteGroups(int count, int matchStart, int matchEnd,
+        ReadOnlySpan<int> captureStarts, ReadOnlySpan<int> captureEnds, ReadOnlySpan<byte> input,
+        ref Pcre2ResourceBudget budget)
+    {
+        var bytes = Utf8ConstructionBudget.ArrayBytes<Utf8Pcre2CaptureRange>(count);
+        var control = new Pcre2CaptureProjectionBudget(ref budget);
+        control.TryChargeResultBytes(bytes);
+        control.ReserveWorking(bytes);
+        try
+        {
+            control.ChargeWorkspaceStep();
+            var groups = new Utf8Pcre2CaptureRange[count];
+            for (var slot = 0; slot < count; slot++)
+            {
+                if ((slot & 63) == 0) control.ChargeWorkspaceStep();
+                var start = slot == 0 ? matchStart : captureStarts[slot];
+                var end = slot == 0 ? matchEnd : captureEnds[slot];
+                var success = slot == 0 || start >= 0 && end >= start;
+                var wellFormed = success && start <= end &&
+                    Pcre2SliceDriver.IsScalarAligned(input, start) && Pcre2SliceDriver.IsScalarAligned(input, end);
+                groups[slot] = new(slot, success, success ? start : 0, success ? end : 0, wellFormed);
+            }
+            return groups;
+        }
+        catch { control.ReleaseWorking(bytes); throw; }
+    }
 }

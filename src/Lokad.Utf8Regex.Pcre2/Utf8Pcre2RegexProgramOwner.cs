@@ -2,7 +2,7 @@ using Lokad.Utf8Regex.Internal;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
-/// <summary>Owns caller-funded PCRE2 compilation and reusable Boolean/count operations.</summary>
+/// <summary>Owns caller-funded PCRE2 compilation, Boolean/count calls and persistent range cursors.</summary>
 /// <remarks>Dispose closes new calls and refunds compilation after active calls finish. Temporary matching storage uses the program allowance unless a separate working account is supplied. Borrowed input and fixed invocation metadata are outside modeled buffer storage.</remarks>
 public sealed class Utf8Pcre2RegexProgramOwner : IDisposable
 {
@@ -36,6 +36,24 @@ public sealed class Utf8Pcre2RegexProgramOwner : IDisposable
         using var use = _storage.Enter();
         return regex.Count(input, startOffsetInBytes, matchOptions, cancellationToken,
             workingMemoryAllowance ?? _storage.Allowance);
+    }
+
+    /// <summary>Creates a persistent range cursor retaining program admission until EOF, failure or disposal.</summary>
+    /// <remarks>Null working allowance uses program funding. Closing this owner rejects new cursors; existing cursors remain valid under their original controls.</remarks>
+    public Utf8Pcre2MatchCursor CreateMatchCursor(ReadOnlyMemory<byte> input, int startOffsetInBytes = 0,
+        Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None, CancellationToken cancellationToken = default,
+        IUtf8MemoryAllowance? workingMemoryAllowance = null)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var regex = Volatile.Read(ref _regex) ?? throw new ObjectDisposedException(nameof(Utf8Pcre2RegexProgramOwner));
+        var use = _storage.Enter();
+        try
+        {
+            var cursor = regex.CreateMatchCursor(input, startOffsetInBytes, matchOptions, cancellationToken,
+                workingMemoryAllowance ?? _storage.Allowance);
+            cursor.AttachProgramUse(use); return cursor;
+        }
+        catch { use.Dispose(); throw; }
     }
 
     /// <summary>Rejects new calls and refunds compilation after the final active use.</summary>

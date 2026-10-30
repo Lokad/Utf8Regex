@@ -223,8 +223,8 @@ The private expression cannot escape the owner. Dispose rejects new calls and
 refunds compilation after the final active call/cursor; active users retain their
 program reference and finish under their original controls. This new owner keeps
 legacy copied span-enumerator lifetimes separate. Funded replacement remains
-unfinished. PCRE2 now has its own funded Boolean/count program owner; its cursor/
-retained-result flows remain open under the [profile contract](SPEC-PCRE2.md).
+unfinished. PCRE2 now has its own funded program owner, byte-range memory cursor
+and retained receipts under the [profile contract](SPEC-PCRE2.md).
 
 `CreateMatchCursor(ReadOnlyMemory<byte>, startOffsetInBytes, token, workingAllowance)`
 on Core expressions and program owners returns `Utf8RegexMatchCursor`. Null start
@@ -287,7 +287,7 @@ Explicit `Compile` accepts separate construction policy, timeout and token;
 pre-cancellation wins, nested preparation shares the owner, and authority is not
 retained for execution. It does not consult static caches. Ordinary constructors
 keep fixed backstops; positive construction values tighten them, null keeps them.
-The Core/PythonRe caller-funded program overloads instead delegate byte admission to
+The three profiles' caller-funded program overloads instead delegate byte admission to
 their shared allowance, with an optional additional `MaxBytes`; the other
 backstops below remain. See [program lifetime](SPEC-PYTHONRE.md#construction-and-execution-controls).
 

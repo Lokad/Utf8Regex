@@ -112,9 +112,12 @@ over retention directly. Both paths avoid captured strings and whole-subject
 UTF-16 maps, retaining Core capture histories and sparse slot identities. Existing
 span cursors keep their independent-copy contract. PCRE2 offers its own
 `Utf8Pcre2RegexProgramOwner` through the funded Compile overload, with byte starts,
-match flags and separate working admission for Boolean/count calls. It follows the
-same close/in-flight lifetime rule. PCRE2 persistent cursors/retained results,
-native UTF-8 pattern/template parsing and funded replacement remain unfinished.
+match flags and separate working admission. Its `CreateMatchCursor` and
+`MoveNextRetained` follow the same explicit lifetime rule with PCRE2 last-capture
+ranges, duplicate names and consumed-range progression. Opted-in `\C` values may
+be scalar fragments; inspect the range's `IsUtf8SliceWellFormed` before decoding.
+PCRE2 scalar-coordinate queries, native UTF-8 pattern/template parsing and funded
+replacement remain unfinished.
 The [resource contract](SPEC.md#cancellation-deadlines-and-resource-limits)
 distinguishes modeled live admission from cumulative work/result traffic.
 
