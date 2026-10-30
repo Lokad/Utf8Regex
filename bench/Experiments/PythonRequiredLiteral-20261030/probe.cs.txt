@@ -1,0 +1,21 @@
+using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.PythonRe;
+using Lokad.Utf8Regex.Internal;
+using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.FrontEnd;
+using Lokad.Utf8Regex.Internal.Search;
+foreach(var pattern in new[]{"a+b","a++a","(?>ab+)c","a++b","(?>a+)b","(a+)b","(?i:a+)b","a*b?","a+(?<=ab)","é+😀"})
+{
+    using var scope=Utf8ConstructionScope.Enter();
+    var parsed=new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
+    var translation=PythonReTranslator.Translate(parsed,true);
+    var core=new Utf8Regex(translation.NativePattern,translation.NativeRegexOptions);
+    var python=new Utf8PythonRegex(pattern);var program=(Utf8SliceProgram)typeof(Utf8PythonRegex).GetField("_scalarProgram",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(python)!;
+    var search=core.Inspection.SearchPlan.RequiredPrefilterSearcher;
+    Console.WriteLine(JsonSerializer.Serialize(new{Pattern=pattern,translation.NativePattern,CoreRetained=typeof(Utf8PythonRegex).GetField("_utf8Regex",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(python)!=null,
+        RequiredKind=search.Kind.ToString(),Required=search.Kind==PreparedSearcherKind.ExactLiteral?Encoding.UTF8.GetString(search.LiteralSearch.Needle):null,
+        program.CanMatchEmpty,program.IgnoreCase,CanGuideStarts=PythonReScalarMatchState.CanUseCandidateRegex(program,core)}));
+}

@@ -1,0 +1,95 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+var before=Load(Path.GetFullPath(args[0]),"before");var after=Load(Path.GetFullPath(args[1]),"after");
+if(Hash(before.Python)==Hash(after.Python)||!Version(after.Python).Contains(args[2]))throw new Exception("Unexpected binaries");
+using var process=Process.GetCurrentProcess();process.ProcessorAffinity=(nint)4;
+using var token=new CancellationTokenSource();var preflight=args.Length>3&&args[3]=="--preflight";
+var cases=new[]{new Case("greedy-miss","a+b","aaaa"),new Case("possessive-miss","a++b","aaaa"),new Case("atomic-miss","(?>a+)b","aaaa"),
+    new Case("greedy-hit","a+b","xxaaaabzz"),new Case("tail-present-miss","a+b","baaaa"),new Case("capture-hit","(a+)b","xxaaaabzz"),
+    new Case("folded-control","(?i:a+b)","xxAAAABzz"),new Case("unicode-hit","é+😀","xxéé😀zz"),
+    new Case("literal-control","alpha","xxalphazz"),new Case("finite-live-miss","a+b","aaaa",true),new Case("finite-live-hit","a+b","xxaaaabzz",true)};
+var roots=new List<object>();var rows=new List<object>();var elapsed=Stopwatch.StartNew();
+foreach(var item in cases)
+{
+    var input=Encoding.UTF8.GetBytes(item.Text);var oracle=new Regex(item.Pattern.Replace("a++","(?>a+)"),RegexOptions.Compiled|RegexOptions.CultureInvariant);
+    int Oracle(string text){var match=oracle.Match(text);return match.Success?1+match.Index+match.Index+match.Length:0;}
+    var expected=Oracle(item.Text);
+    Func<int> Make((Assembly Core,Assembly Python) assemblies)
+    {
+        var type=assemblies.Python.GetType("Lokad.Utf8Regex.PythonRe.Utf8PythonRegex")!;object owner;
+        if(item.Finite)
+        {
+            var options=assemblies.Python.GetType("Lokad.Utf8Regex.PythonRe.PythonReCompileOptions")!;
+            var policyType=assemblies.Core.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!;var policy=Activator.CreateInstance(policyType)!;
+            foreach(var name in new[]{"MaxWorkSteps","MaxDepth","MaxWorkingBytes","MaxResultBytes"})
+            {var property=policyType.GetProperty(name)!;property.SetValue(policy,Convert.ChangeType(name=="MaxDepth"?4096UL:16777216UL,Nullable.GetUnderlyingType(property.PropertyType)!));}
+            owner=type.GetConstructor([typeof(string),options,typeof(TimeSpan),policyType])!.Invoke([item.Pattern,Enum.ToObject(options,0),Timeout.InfiniteTimeSpan,policy]);
+        }
+        else owner=type.GetConstructor([typeof(string)])!.Invoke([item.Pattern]);
+        roots.Add(owner);
+        var method=type.GetMethod("Search",item.Finite?[typeof(ReadOnlySpan<byte>),typeof(int),typeof(CancellationToken)]:[typeof(ReadOnlySpan<byte>)])!;
+        var bridge=new DynamicMethod("PublicSearchRange",typeof(int),[typeof(object),typeof(byte[]),typeof(CancellationToken)],typeof(Program).Module,true);
+        var il=bridge.GetILGenerator();var result=il.DeclareLocal(method.ReturnType);var hit=il.DefineLabel();
+        il.Emit(OpCodes.Ldarg_0);il.Emit(OpCodes.Castclass,type);il.Emit(OpCodes.Ldarg_1);
+        il.Emit(OpCodes.Call,typeof(ReadOnlySpan<byte>).GetMethod("op_Implicit",[typeof(byte[])])!);
+        if(item.Finite){il.Emit(OpCodes.Ldc_I4_0);il.Emit(OpCodes.Ldarg_2);}
+        il.Emit(OpCodes.Call,method);il.Emit(OpCodes.Stloc,result);
+        il.Emit(OpCodes.Ldloca,result);il.Emit(OpCodes.Call,method.ReturnType.GetProperty("Success")!.GetMethod!);
+        il.Emit(OpCodes.Brtrue_S,hit);il.Emit(OpCodes.Ldc_I4_0);il.Emit(OpCodes.Ret);il.MarkLabel(hit);
+        il.Emit(OpCodes.Ldc_I4_1);
+        foreach(var name in new[]{"StartOffsetInUtf16","EndOffsetInUtf16"})
+        {il.Emit(OpCodes.Ldloca,result);il.Emit(OpCodes.Call,method.ReturnType.GetProperty(name)!.GetMethod!);il.Emit(OpCodes.Add);}
+        il.Emit(OpCodes.Ret);var call=bridge.CreateDelegate<PublicSearch>();return()=>call(owner,input,item.Finite?token.Token:default);
+    }
+    Func<int>[] actions=[Make(before),Make(after),()=>Oracle(item.Text),()=>Oracle(Encoding.UTF8.GetString(input))];
+    foreach(var action in actions)if(action()!=expected)throw new Exception("Preflight mismatch "+item.Name);
+    if(preflight){Console.Error.WriteLine("Preflight "+item.Name+": "+expected);continue;}
+    var iterations=new int[4];var calls=new long[4];
+    for(var lane=0;lane<4;lane++)
+    {
+        var warm=Stopwatch.StartNew();do{Loop(1,actions[lane],expected);calls[lane]++;}while(warm.Elapsed.TotalMilliseconds<750);
+        iterations[lane]=1;while(Loop(iterations[lane],actions[lane],expected).Milliseconds<80)iterations[lane]=checked(iterations[lane]*2);
+    }
+    var times=Enumerable.Range(0,4).Select(_=>new double[3]).ToArray();var bytes=Enumerable.Range(0,4).Select(_=>new double[3]).ToArray();var durations=Enumerable.Range(0,4).Select(_=>new double[3]).ToArray();
+    for(var sample=0;sample<3;sample++)for(var position=0;position<4;position++)
+    {
+        var lane=sample%2==0?position:3-position;GC.Collect();GC.WaitForPendingFinalizers();GC.Collect();var value=Loop(iterations[lane],actions[lane],expected);
+        times[lane][sample]=value.Milliseconds*1000/iterations[lane];bytes[lane][sample]=(double)value.Bytes/iterations[lane];durations[lane][sample]=value.Milliseconds;
+    }
+    rows.Add(new{item.Name,item.Pattern,InputBytes=input.Length,SubjectSha256=Convert.ToHexString(SHA256.HashData(input)),item.Finite,ExpectedDigest=expected,
+        Iterations=iterations,WarmupCalls=calls,Microseconds=times,AllocatedBytes=bytes,ElapsedMilliseconds=durations});
+    Console.Error.WriteLine("Completed "+item.Name+": "+string.Join(" / ",times.Select(a=>a.Order().ElementAt(1))));
+}
+GC.KeepAlive(roots);
+Console.WriteLine(JsonSerializer.Serialize(new{Runtime=RuntimeInformation.FrameworkDescription,CpuAffinityMask="4",ElapsedSeconds=elapsed.Elapsed.TotalSeconds,
+    LaneNames=new[]{"BeforePythonRe","AfterPythonRe","DiagnosticPredecodedCompiledRegex","DiagnosticDecodeThenCompiledRegex"},
+    Scope="Equal-result public PythonRe Search. Range digest retained/checked after timing. BCL compares overlapping semantics only; possessive a++ renders as equivalent atomic a+ for this catalog. Finite/live producer controls are not emulated by BCL. Official CPython qualification is separate; this pilot sets no benchmark Status.",
+    Baseline=new{Core=Identity(before.Core),Python=Identity(before.Python)},Candidate=new{Core=Identity(after.Core),Python=Identity(after.Python)},Rows=rows},new JsonSerializerOptions{WriteIndented=true}));
+static(Assembly Core,Assembly Python)Load(string root,string name)
+{
+    var context=new AssemblyLoadContext(name);context.Resolving+=(c,n)=>File.Exists(Path.Combine(root,n.Name+".dll"))?c.LoadFromAssemblyPath(Path.Combine(root,n.Name+".dll")):null;
+    return(context.LoadFromAssemblyPath(Path.Combine(root,"Lokad.Utf8Regex.dll")),context.LoadFromAssemblyPath(Path.Combine(root,"Lokad.Utf8Regex.PythonRe.dll")));
+}
+static string Version(Assembly assembly)=>assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
+static string Hash(Assembly assembly)=>Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location)));
+static object Identity(Assembly assembly)=>new{InformationalVersion=Version(assembly),Sha256=Hash(assembly)};
+[MethodImpl(MethodImplOptions.NoInlining)]
+static(double Milliseconds,long Bytes)Loop(int count,Func<int> action,int expected)
+{
+    var output=new int[count];var allocated=GC.GetAllocatedBytesForCurrentThread();var start=Stopwatch.GetTimestamp();
+    for(var i=0;i<count;i++)output[i]=action();
+    var elapsed=Stopwatch.GetElapsedTime(start).TotalMilliseconds;var bytes=GC.GetAllocatedBytesForCurrentThread()-allocated;long checksum=0;
+    foreach(var value in output){if(value!=expected)throw new Exception("Timed result mismatch");checksum=unchecked(checksum+value);}
+    GC.KeepAlive(output);GC.KeepAlive(checksum);return(elapsed,bytes);
+}
+record Case(string Name,string Pattern,string Text,bool Finite=false);
+delegate int PublicSearch(object owner,byte[] input,CancellationToken token);

@@ -1,0 +1,13 @@
+Full PythonRe on producer:
+Passed!  - Failed:     0, Passed:  4249, Skipped:     0, Total:  4249, Duration: 13 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)
+Passed!  - Failed:     0, Passed:  4249, Skipped:     0, Total:  4249, Duration: 14 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)
+Final actual-catalog regression witnesses (test-only additions):
+Passed!  - Failed:     0, Passed:    28, Skipped:     0, Total:    28, Duration: 255 ms - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:    28, Skipped:     0, Total:    28, Duration: 240 ms - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)
+Affected Core:
+Passed!  - Failed:     0, Passed:   487, Skipped:     0, Total:   487, Duration: 3 s - Lokad.Utf8Regex.Tests.dll (net11.0)
+Passed!  - Failed:     0, Passed:   487, Skipped:     0, Total:   487, Duration: 3 s - Lokad.Utf8Regex.Tests.dll (net10.0)
+Affected PCRE2:
+Passed!  - Failed:     0, Passed:    13, Skipped:     0, Total:    13, Duration: 217 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net11.0)
+Passed!  - Failed:     0, Passed:    13, Skipped:     0, Total:    13, Duration: 215 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)
+Snapshot semantic comparison: exactly three diagnosed miss cases changed; every other top-level field except GeneratedAtUtc and Cases is identical, including lifecycle/scaling. Generated Markdown verification passed.

@@ -1,0 +1,8 @@
+{"Pattern":"a\u002Bb","NativePattern":"a\u002Bb","CoreRetained":true,"RequiredKind":"ExactLiteral","Required":"b","CanMatchEmpty":false,"IgnoreCase":false,"CanGuideStarts":false}
+{"Pattern":"a\u002B\u002Bb","NativePattern":"(?\u003Ea\u002B)b","CoreRetained":true,"RequiredKind":"ExactLiteral","Required":"b","CanMatchEmpty":false,"IgnoreCase":false,"CanGuideStarts":false}
+{"Pattern":"(?\u003Ea\u002B)b","NativePattern":"(?\u003Ea\u002B)b","CoreRetained":true,"RequiredKind":"ExactLiteral","Required":"b","CanMatchEmpty":false,"IgnoreCase":false,"CanGuideStarts":false}
+{"Pattern":"(a\u002B)b","NativePattern":"(a\u002B)b","CoreRetained":true,"RequiredKind":"ExactLiteral","Required":"b","CanMatchEmpty":false,"IgnoreCase":false,"CanGuideStarts":false}
+{"Pattern":"(?i:a\u002B)b","NativePattern":"(?:(?:[Aa])\u002B)b","CoreRetained":true,"RequiredKind":"ExactLiteral","Required":"b","CanMatchEmpty":false,"IgnoreCase":false,"CanGuideStarts":false}
+{"Pattern":"a*b?","NativePattern":"a*b?","CoreRetained":true,"RequiredKind":"None","Required":null,"CanMatchEmpty":true,"IgnoreCase":false,"CanGuideStarts":false}
+{"Pattern":"a\u002B(?\u003C=ab)","NativePattern":"a\u002B(?\u003C=ab)","CoreRetained":true,"RequiredKind":"None","Required":null,"CanMatchEmpty":false,"IgnoreCase":false,"CanGuideStarts":false}
+{"Pattern":"\u00E9\u002B\uD83D\uDE00","NativePattern":"\u00E9\u002B\uD83D\uDE00","CoreRetained":true,"RequiredKind":"ExactLiteral","Required":"\uD83D\uDE00","CanMatchEmpty":false,"IgnoreCase":false,"CanGuideStarts":false}

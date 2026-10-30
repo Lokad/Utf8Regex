@@ -1,0 +1,11 @@
+Preflight greedy-miss: 0
+Preflight possessive-miss: 0
+Preflight atomic-miss: 0
+Preflight greedy-hit: 10
+Preflight tail-present-miss: 0
+Preflight capture-hit: 10
+Preflight folded-control: 10
+Preflight unicode-hit: 9
+Preflight literal-control: 10
+Preflight finite-live-miss: 0
+Preflight finite-live-hit: 10
