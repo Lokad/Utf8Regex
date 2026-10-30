@@ -61,7 +61,7 @@ internal static class Utf8ExecutionPrefixFacts
             if (node.Kind is Utf8ExecutionNodeKind.Loop or Utf8ExecutionNodeKind.LazyLoop)
             {
                 var body = node.Children.Count == 1 ? widths[node.Children[0]] : node.ScalarClass is not null ? Class(node) :
-                    node.Text.Length != 0 ? Text(node) : Scalar(node.Ch, node);
+                    node.LiteralUtf8 is not null || node.Text.Length != 0 ? Text(node) : Scalar(node.Ch, node);
                 if (node.Min < 0 || node.Max < node.Min) return new(0, null);
                 return new(Cap((long)body.Minimum * node.Min), node.Max == 0 || body.Maximum == 0 ? 0 :
                     node.Max == int.MaxValue || body.Maximum is null ? null : Upper((long)body.Maximum.Value * node.Max));
@@ -81,6 +81,19 @@ internal static class Utf8ExecutionPrefixFacts
         }
         Utf8OwnedFindOptimizations.ByteWidth Text(Utf8ExecutionNode node)
         {
+            if (node.LiteralUtf8 is { } bytes)
+            {
+                scope.Budget.ChargeWork((ulong)bytes.Length);
+                long nativeLow = 0, nativeHigh = 0;
+                for (var offset = 0; offset < bytes.Length;)
+                {
+                    if (Rune.DecodeFromUtf8(bytes.AsSpan(offset), out var rune, out var consumed) != System.Buffers.OperationStatus.Done)
+                        return new(0, null);
+                    var width = Scalar(rune.Value, node);
+                    nativeLow += width.Minimum; nativeHigh += width.Maximum.GetValueOrDefault(); offset += consumed;
+                }
+                return new(Cap(nativeLow), Upper(nativeHigh));
+            }
             scope.Budget.ChargeWork((ulong)node.Text.Length);
             long low = 0, high = 0;
             for (var offset = 0; offset < node.Text.Length;)

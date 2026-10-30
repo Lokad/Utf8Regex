@@ -169,6 +169,18 @@ internal readonly struct Utf8DeterministicVerifierGuards
             if (atom.Kind == Utf8ExecutionNodeKind.One) return Scalar(atom.Ch, atom);
             if (atom.Kind == Utf8ExecutionNodeKind.Multi)
             {
+                if (atom.LiteralUtf8 is { } bytes)
+                {
+                    budget.ChargeWork((ulong)bytes.Length);
+                    for (var offset = 0; offset < bytes.Length;)
+                    {
+                        if (guards.Count == MaxPrefixGuards) return false;
+                        if (Rune.DecodeFromUtf8(bytes.AsSpan(offset), out var scalar, out var consumed) != System.Buffers.OperationStatus.Done ||
+                            !Scalar(scalar.Value, atom)) return false;
+                        offset += consumed;
+                    }
+                    return true;
+                }
                 budget.ChargeWork((ulong)atom.Text.Length);
                 for (var offset = 0; offset < atom.Text.Length;)
                 {

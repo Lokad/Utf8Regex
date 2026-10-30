@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -121,6 +122,50 @@ public sealed class Utf8NativePreparationTests
             match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes));
         Assert.Equal(new[] { (0, 5), (6, 4), (11, 5), (17, 4) }, ranges);
     }
+
+    [Theory]
+    [InlineData("é😀x", 7, 7)]
+    [InlineData("(?i:k)x", 2, 4)]
+    [InlineData("(?:😀|é){2}x", 5, 9)]
+    public void ExecutionTreeWidthRetainsNativeLiteralPayloads(string pattern, int minimum, int maximum)
+    {
+        var options = RegexOptions.CultureInvariant;
+        var native = ExecutionTree(Parse(pattern, options), options);
+        var text = ExecutionTree(Utf8OwnedTreeParser.TryParse(pattern, options)!, options);
+        var width = Utf8ExecutionPrefixFacts.Width(native.Root);
+        Assert.Equal(Utf8ExecutionPrefixFacts.Width(text.Root), width);
+        Assert.Equal(minimum, width.Minimum); Assert.Equal(maximum, width.Maximum);
+    }
+
+    [Fact]
+    public void NativeUnicodePrefixGuardsUseActualByteDistances()
+    {
+        var source = Parse("é😀x");
+        var tree = ExecutionTree(source, RegexOptions.CultureInvariant);
+        Assert.Same(source.Root.Child(0).LiteralUtf8, tree.Root.Children[0].LiteralUtf8);
+        var plan = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(Utf8SearchKind.None));
+        var guards = Utf8DeterministicVerifierGuards.Create(tree, plan);
+        Assert.True(guards.HasValue); Assert.Single(guards.PrefixGuards!);
+        Assert.True(guards.Matches("é😀x"u8, 0));
+        Assert.True(guards.Matches("aé😀x"u8, 1));
+        Assert.False(guards.Matches("é😀y"u8, 0));
+        Assert.False(guards.Matches("éx"u8, 0));
+    }
+
+    [Theory]
+    [InlineData("(?i:k)x", "Kx")]
+    [InlineData("(?i:😀)x", "😀x")]
+    [InlineData("(?:é|😀)x", "😀x")]
+    public void VariableNativeWidthCannotInventAConflictingFixedGuard(string pattern, string subject)
+    {
+        var tree = ExecutionTree(Parse(pattern), RegexOptions.CultureInvariant);
+        var plan = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(Utf8SearchKind.None));
+        var guards = Utf8DeterministicVerifierGuards.Create(tree, plan);
+        Assert.True(guards.Matches(Encoding.UTF8.GetBytes(subject), 0));
+    }
+
+    private static Utf8ExecutionTree ExecutionTree(Utf8OwnedRegexTree tree, RegexOptions options)
+        => Utf8ExecutionTreeLowerer.Lower(new Utf8SemanticRegex(string.Empty, options, string.Empty, options, tree))!;
 
     private static Utf8OwnedRegexTree Parse(string pattern, RegexOptions options = RegexOptions.CultureInvariant)
     {

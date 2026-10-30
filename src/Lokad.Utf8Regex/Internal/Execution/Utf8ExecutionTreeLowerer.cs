@@ -35,7 +35,7 @@ internal static class Utf8ExecutionTreeLowerer
             nodes[node] = budget.AllocateObject(
                 (Kind: MapKind(node.Kind), Options: node.MatchCaseInsensitive ? node.Options | RegexOptions.IgnoreCase : node.Options & ~RegexOptions.IgnoreCase,
                     Children: (IReadOnlyList<Utf8ExecutionNode>)children,
-                    Payload: (object?)node.ScalarClass ?? node.Str ?? string.Empty, node.Ch, Capture: GetCaptureNumber(node), node.M, node.N),
+                    Payload: (object?)node.ScalarClass ?? (object?)node.LiteralUtf8 ?? node.Str ?? string.Empty, node.Ch, Capture: GetCaptureNumber(node), node.M, node.N),
                 static state => new Utf8ExecutionNode(state.Kind, state.Options, state.Children,
                     state.Payload, state.Ch, state.Capture, state.M, state.N));
             frames.Pop();

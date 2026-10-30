@@ -30,11 +30,13 @@ internal sealed class Utf8ExecutionNode
 
     public IReadOnlyList<Utf8ExecutionNode> Children { get; }
 
-    // Literal text and canonical scalar classes borrow one payload slot. A class
+    // Literal bytes/text and canonical scalar classes borrow one payload slot. A class
     // never exposes its temporary wire projection through the literal getter.
     public object Payload { get; }
 
     public string Text => Payload as string ?? string.Empty;
+
+    internal byte[]? LiteralUtf8 => Payload as byte[];
 
     public Utf8ScalarClass? ScalarClass => Payload as Utf8ScalarClass;
 
