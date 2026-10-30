@@ -1,5 +1,6 @@
 using System.Text;
 using Lokad.Utf8Regex.Internal;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
@@ -9,6 +10,9 @@ internal static class Pcre2CaptureNameValidator
     // UTF-16 metadata path must not loosen the selected UTF-8 name limits or
     // admit explicit numeric definitions. Names alias ordinary capture slots.
     internal static void Validate(string pattern, Pcre2CompileOptions options, Pcre2NewlineConvention newline)
+        => Validate(new Utf8ConstructionPattern(pattern), options, newline);
+
+    internal static void Validate(Utf8ConstructionPattern pattern, Pcre2CompileOptions options, Pcre2NewlineConvention newline)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
@@ -58,8 +62,7 @@ internal static class Pcre2CaptureNameValidator
             if (character == ')') { if (scopes.Count != 0) extended = scopes.Pop(); continue; }
             if (character != '(') continue;
             var groupStart = offset;
-            var tail = pattern.AsSpan(offset);
-            if (tail.StartsWith("(?#", StringComparison.Ordinal))
+            if (pattern.StartsWithAscii(offset, "(?#"))
             {
                 var end = Pcre2PatternCodeScan.FindClosingParenthesis(pattern, offset + 3);
                 if (end < 0) return; // The structural validator owns this error.
@@ -68,26 +71,26 @@ internal static class Pcre2CaptureNameValidator
             }
             if (Pcre2PatternCodeScan.TrySkipControlVerbLabel(pattern, ref offset))
             {
-                var content = pattern.AsSpan(groupStart + 2, offset - groupStart - 2);
-                var colon = content.IndexOf(':');
-                if (colon >= 0 && !FitsUtf8Limit(content[(colon + 1)..], 255))
+                var start = groupStart + 2;
+                var colon = pattern.IndexOf(':', start, offset - start);
+                if (colon >= 0 && !FitsUtf8Limit(pattern, colon + 1, offset - colon - 1, 255))
                     throw new Pcre2CompileException("PCRE2 verb labels cannot exceed 255 UTF-8 bytes.",
                         Pcre2ErrorKind.InvalidAfterParensQuery);
                 continue;
             }
-            var nameStart = tail.StartsWith("(?P<", StringComparison.Ordinal) ? offset + 4
-                : tail.StartsWith("(?'", StringComparison.Ordinal) ||
-                  tail.StartsWith("(?<", StringComparison.Ordinal) && tail.Length > 3 && tail[3] is not ('=' or '!') ? offset + 3 : -1;
-            if (nameStart >= 0 && nameStart < pattern.Length && Rune.TryGetRuneAt(pattern, nameStart, out var first) && Rune.IsDigit(first))
+            var nameStart = pattern.StartsWithAscii(offset, "(?P<") ? offset + 4
+                : pattern.StartsWithAscii(offset, "(?'") ||
+                  pattern.StartsWithAscii(offset, "(?<") && pattern.Length - offset > 3 && pattern[offset + 3] is not ('=' or '!') ? offset + 3 : -1;
+            if (nameStart >= 0 && nameStart < pattern.Length && pattern.DecodeScalar(nameStart, out var first, out _) == System.Buffers.OperationStatus.Done && Rune.IsDigit(first))
                 throw new Pcre2CompileException("PCRE2 capture names must start with a non-digit.", Pcre2ErrorKind.InvalidAfterParensQuery);
             if (nameStart >= 0)
             {
-                // At most 129 UTF-16 units suffice to prove an overlong UTF-8
-                // name. Never rescan an unbounded suffix for a missing delimiter.
-                var name = pattern.AsSpan(nameStart, Math.Min(129, pattern.Length - nameStart));
-                Utf8ConstructionScope.ChargeWork((ulong)name.Length);
-                var end = name.IndexOf(pattern[nameStart - 1] == '\'' ? '\'' : '>');
-                if (end >= 0 ? !FitsUtf8Limit(name[..end], 128) : name.Length == 129)
+                // At most 129 source units prove an overlong UTF-8 name.
+                // Native units are bytes; never decode or rescan the suffix.
+                var count = Math.Min(129, pattern.Length - nameStart);
+                Utf8ConstructionScope.ChargeWork((ulong)count);
+                var end = pattern.IndexOf(pattern[nameStart - 1] == '\'' ? '\'' : '>', nameStart, count);
+                if (end >= 0 ? !FitsUtf8Limit(pattern, nameStart, end - nameStart, 128) : count == 129)
                     throw new Pcre2CompileException("PCRE2 capture names cannot exceed 128 UTF-8 bytes.",
                         Pcre2ErrorKind.InvalidAfterParensQuery);
             }
@@ -95,6 +98,9 @@ internal static class Pcre2CaptureNameValidator
             Pcre2PatternCodeScan.EnterExtendedGroup(pattern, ref offset, ref extended, scopes);
         }
     }
+
+    private static bool FitsUtf8Limit(Utf8ConstructionPattern pattern, int start, int length, int maximumBytes)
+        => pattern.IsUtf8 ? length <= maximumBytes : FitsUtf8Limit(pattern.Text.AsSpan(start, length), maximumBytes);
 
     // Strict decoding precedes validation. UTF-16 length is only a cheap lower
     // bound; the selected eight-bit PCRE2 profile limits UTF-8 code units.

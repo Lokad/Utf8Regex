@@ -1,6 +1,7 @@
 using System.Text;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
@@ -104,7 +105,7 @@ public sealed class Pcre2ControlVerbLabelTests
         };
         var pattern = "(*MARK:" + new string('a', 4096) + "(?<100>a)";
         var offset = 0;
-        var failure = Record.Exception(() => Pcre2PatternCodeScan.TrySkipControlVerbLabel(pattern, ref offset));
+        var failure = Record.Exception(() => Pcre2PatternCodeScan.TrySkipControlVerbLabel(new Utf8ConstructionPattern(pattern), ref offset));
         if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
         else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         Assert.Same(deadline, owner.Budget.Deadline);

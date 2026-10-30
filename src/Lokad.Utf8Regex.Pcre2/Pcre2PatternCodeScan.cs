@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
@@ -9,6 +10,10 @@ namespace Lokad.Utf8Regex.Pcre2;
 internal static class Pcre2PatternCodeScan
 {
     public static bool ContainsCodeText(string pattern, string text,
+        Pcre2CompileOptions options, Pcre2NewlineConvention newline)
+        => ContainsCodeText(new Utf8ConstructionPattern(pattern), text, options, newline);
+
+    public static bool ContainsCodeText(Utf8ConstructionPattern pattern, string text,
         Pcre2CompileOptions options, Pcre2NewlineConvention newline)
     {
         // Admit the full lexical extent, including skipped quotes/comments.
@@ -78,7 +83,7 @@ internal static class Pcre2PatternCodeScan
 
             if (character == '\\')
             {
-                if (pattern.AsSpan(offset).StartsWith(text, StringComparison.Ordinal))
+                if (pattern.StartsWithAscii(offset, text))
                 {
                     return true;
                 }
@@ -100,7 +105,7 @@ internal static class Pcre2PatternCodeScan
 
             if (character == '[')
             {
-                if (pattern.AsSpan(offset).StartsWith(text, StringComparison.Ordinal))
+                if (pattern.StartsWithAscii(offset, text))
                 {
                     return true;
                 }
@@ -111,7 +116,7 @@ internal static class Pcre2PatternCodeScan
                 continue;
             }
 
-            if (character == '(' && pattern.AsSpan(offset).StartsWith("(?#", StringComparison.Ordinal))
+            if (character == '(' && pattern.StartsWithAscii(offset, "(?#"))
             {
                 var commentEnd = Pcre2PatternCodeScan.FindClosingParenthesis(pattern, offset + 3);
                 if (commentEnd < 0)
@@ -128,7 +133,7 @@ internal static class Pcre2PatternCodeScan
                 continue;
             }
 
-            if (pattern.AsSpan(offset).StartsWith(text, StringComparison.Ordinal))
+            if (pattern.StartsWithAscii(offset, text))
             {
                 return true;
             }
@@ -143,7 +148,7 @@ internal static class Pcre2PatternCodeScan
     // Offset points at the escape letter, and leaves at the last operand unit.
     // Quotes are handled by the caller; payload characters never become regex
     // syntax. The actual parser still validates the operand's meaning.
-    internal static void SkipEscapeOperand(string pattern, ref int offset, char escape)
+    internal static void SkipEscapeOperand(Utf8ConstructionPattern pattern, ref int offset, char escape)
     {
         if (escape == 'c' && offset + 1 < pattern.Length) { offset++; return; }
         if (escape is not ('x' or 'o' or 'g' or 'k' or 'p' or 'P' or 'N') || offset + 1 >= pattern.Length) return;
@@ -157,8 +162,8 @@ internal static class Pcre2PatternCodeScan
         {
             var count = Math.Min(2048, pattern.Length - cursor);
             Utf8ConstructionScope.ChargeWork((ulong)count);
-            var end = pattern.AsSpan(cursor, count).IndexOf(closing);
-            if (end >= 0) { offset = cursor + end; return; }
+            var end = pattern.IndexOf(closing, cursor, count);
+            if (end >= 0) { offset = end; return; }
             cursor += count;
         }
     }
@@ -166,7 +171,7 @@ internal static class Pcre2PatternCodeScan
     // Call outside classes, quotes, escapes and literal verb labels. Leave the
     // last consumed character to the caller; no comment or terminating newline
     // contents become syntax. Callers advance once after a successful skip.
-    internal static bool TrySkipExtendedComment(string pattern, ref int offset, bool extended, Pcre2NewlineConvention newline)
+    internal static bool TrySkipExtendedComment(Utf8ConstructionPattern pattern, ref int offset, bool extended, Pcre2NewlineConvention newline)
     {
         if (!extended || pattern[offset] != '#') return false;
         var start = offset;
@@ -174,7 +179,16 @@ internal static class Pcre2PatternCodeScan
         {
             if (((offset - start) & 2047) == 0)
                 Utf8ConstructionScope.ChargeWork((ulong)Math.Min(2048, pattern.Length - offset));
-            var character = pattern[offset];
+            var character = (int)pattern[offset];
+            var scalarBytes = 1;
+            if (pattern.IsUtf8 && newline == Pcre2NewlineConvention.Any && character >= 0x80)
+            {
+                // Continuation bytes, including 0x85, are not newlines. The
+                // only non-ASCII separators start with C2 (NEL) or E2 (LS/PS).
+                character = character is 0xc2 or 0xe2 &&
+                    pattern.DecodeScalar(offset, out var scalar, out scalarBytes) == System.Buffers.OperationStatus.Done
+                    ? scalar.Value : -1;
+            }
             var atNewline = newline switch
             {
                 Pcre2NewlineConvention.Cr => character == '\r',
@@ -185,6 +199,7 @@ internal static class Pcre2PatternCodeScan
                 _ => character == '\n',
             };
             if (!atNewline) continue;
+            offset += scalarBytes - 1;
             if (character == '\r' && offset + 1 < pattern.Length && pattern[offset + 1] == '\n' &&
                 newline is Pcre2NewlineConvention.Crlf or Pcre2NewlineConvention.Any or Pcre2NewlineConvention.AnyCrlf)
                 offset++;
@@ -197,7 +212,7 @@ internal static class Pcre2PatternCodeScan
     // Mode 0 disables extended syntax, 1 is x, 2 is xx (also ignores horizontal
     // class whitespace). Return true for a global directive, which opens no group. Scoped
     // directives and ordinary groups save the inherited mode for their ')'.
-    internal static bool EnterExtendedGroup(string pattern, ref int offset, ref byte extended, Utf8ConstructionBuffer<byte> scopes)
+    internal static bool EnterExtendedGroup(Utf8ConstructionPattern pattern, ref int offset, ref byte extended, Utf8ConstructionBuffer<byte> scopes)
     {
         var budget = Utf8ConstructionScope.CurrentBudget;
         var maximum = Math.Min(budget.MaximumDepth, Pcre2BacktrackingCompiler.MaximumRecursiveDepth);
@@ -210,7 +225,7 @@ internal static class Pcre2PatternCodeScan
             if (prospective > maximum)
                 throw new Utf8ResourceLimitExceededException(Utf8ResourceLimitKind.ConstructionDepth, maximum, prospective);
         }
-        if (pattern.AsSpan(offset).StartsWith("(?", StringComparison.Ordinal))
+        if (pattern.StartsWithAscii(offset, "(?"))
         {
             var end = offset + 2;
             var next = extended;
@@ -258,7 +273,7 @@ internal static class Pcre2PatternCodeScan
         return false;
     }
 
-    internal static bool TrySkipPosixClassToken(string pattern, ref int offset)
+    internal static bool TrySkipPosixClassToken(Utf8ConstructionPattern pattern, ref int offset)
     {
         if (pattern[offset] != '[' || offset + 1 >= pattern.Length || pattern[offset + 1] is not (':' or '.' or '=')) return false;
         var marker = pattern[offset + 1];
@@ -274,25 +289,28 @@ internal static class Pcre2PatternCodeScan
     // Offset enters at '(' and, on success, leaves at the closing ')'. The
     // selected profile has no ALT_VERBNAMES: a label is unprocessed text. Do not
     // skip regex-body spellings such as (*atomic:...), even if unserved elsewhere.
-    internal static bool TrySkipControlVerbLabel(string pattern, ref int offset)
+    internal static bool TrySkipControlVerbLabel(Utf8ConstructionPattern pattern, ref int offset)
     {
-        if (!pattern.AsSpan(offset).StartsWith("(*", StringComparison.Ordinal)) return false;
+        if (!pattern.StartsWithAscii(offset, "(*")) return false;
         var end = FindClosingParenthesis(pattern, offset + 2);
         if (end < 0) return false;
-        var content = pattern.AsSpan(offset + 2, end - offset - 2);
-        Utf8ConstructionScope.ChargeWork((ulong)content.Length);
-        var colon = content.IndexOf(':');
-        var verb = colon < 0 ? content : content[..colon];
-        if (!verb.IsEmpty && !verb.Equals("MARK", StringComparison.OrdinalIgnoreCase) &&
-            !verb.Equals("PRUNE", StringComparison.OrdinalIgnoreCase) && !verb.Equals("THEN", StringComparison.OrdinalIgnoreCase) &&
-            !verb.Equals("SKIP", StringComparison.OrdinalIgnoreCase) && !verb.Equals("COMMIT", StringComparison.OrdinalIgnoreCase) &&
-            !verb.Equals("FAIL", StringComparison.OrdinalIgnoreCase) && !verb.Equals("F", StringComparison.OrdinalIgnoreCase) &&
-            !verb.Equals("ACCEPT", StringComparison.OrdinalIgnoreCase)) return false;
+        var start = offset + 2;
+        Utf8ConstructionScope.ChargeWork((ulong)(end - start));
+        var colon = pattern.IndexOf(':', start, end - start);
+        var length = (colon < 0 ? end : colon) - start;
+        if (length != 0 && !IsVerb(pattern, start, length, "MARK") &&
+            !IsVerb(pattern, start, length, "PRUNE") && !IsVerb(pattern, start, length, "THEN") &&
+            !IsVerb(pattern, start, length, "SKIP") && !IsVerb(pattern, start, length, "COMMIT") &&
+            !IsVerb(pattern, start, length, "FAIL") && !IsVerb(pattern, start, length, "F") &&
+            !IsVerb(pattern, start, length, "ACCEPT")) return false;
         offset = end;
         return true;
     }
 
-    internal static int FindClosingParenthesis(string pattern, int start)
+    private static bool IsVerb(Utf8ConstructionPattern pattern, int start, int length, string verb)
+        => length == verb.Length && pattern.StartsWithAscii(start, verb, ignoreCase: true);
+
+    internal static int FindClosingParenthesis(Utf8ConstructionPattern pattern, int start)
     {
         // Unknown or unterminated verbs can revisit suffixes. Bound each search
         // under the original construction owner while keeping SIMD IndexOf.
@@ -300,8 +318,8 @@ internal static class Pcre2PatternCodeScan
         {
             var count = Math.Min(2048, pattern.Length - offset);
             Utf8ConstructionScope.ChargeWork((ulong)count);
-            var end = pattern.AsSpan(offset, count).IndexOf(')');
-            if (end >= 0) return offset + end;
+            var end = pattern.IndexOf(')', offset, count);
+            if (end >= 0) return end;
             offset += count;
         }
         return -1;

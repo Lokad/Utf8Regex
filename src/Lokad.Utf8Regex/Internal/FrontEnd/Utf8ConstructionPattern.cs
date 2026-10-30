@@ -58,12 +58,37 @@ internal readonly ref struct Utf8ConstructionPattern
     }
 
     internal int IndexOf(char character, int start)
+        => IndexOf(character, start, Length - start);
+
+    internal int IndexOf(char character, int start, int length)
     {
-        if (!IsUtf8) return Text.IndexOf(character, start);
+        if (!IsUtf8) return Text.IndexOf(character, start, length);
         if (character > 0x7f) throw new ArgumentOutOfRangeException(nameof(character));
-        var offset = Utf8[start..].IndexOf((byte)character);
+        var offset = Utf8.Slice(start, length).IndexOf((byte)character);
         return offset < 0 ? -1 : start + offset;
     }
+
+    // Grammar spellings are short ASCII tokens, not projected source text.
+    internal bool StartsWithAscii(int position, ReadOnlySpan<char> value, bool ignoreCase = false)
+    {
+        if (!IsUtf8) return Text.AsSpan(position).StartsWith(value,
+            ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+        var source = Utf8[position..];
+        if (value.Length > source.Length) return false;
+        for (var index = 0; index < value.Length; index++)
+        {
+            var left = source[index];
+            var right = value[index];
+            if (left == right) continue;
+            if (!ignoreCase || (uint)((left | 32) - 'a') > 25 ||
+                (left | 32) != (right | 32)) return false;
+        }
+        return true;
+    }
+
+    internal OperationStatus DecodeScalar(int position, out Rune scalar, out int consumed)
+        => IsUtf8 ? Rune.DecodeFromUtf8(Utf8[position..], out scalar, out consumed)
+            : Rune.DecodeFromUtf16(Text.AsSpan(position), out scalar, out consumed);
 
     internal string CopyText(int start, int length)
     {

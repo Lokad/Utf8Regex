@@ -1,5 +1,6 @@
 using System.Buffers;
 using Lokad.Utf8Regex.Internal;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 using System.Text;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
@@ -1570,7 +1571,7 @@ internal sealed class Pcre2BacktrackingParser
                 return;
             }
 
-            Pcre2PatternCodeScan.TrySkipExtendedComment(_pattern, ref _offset, true, _request.Settings.Newline);
+            Pcre2PatternCodeScan.TrySkipExtendedComment(new Utf8ConstructionPattern(_pattern), ref _offset, true, _request.Settings.Newline);
             _offset++;
         }
     }

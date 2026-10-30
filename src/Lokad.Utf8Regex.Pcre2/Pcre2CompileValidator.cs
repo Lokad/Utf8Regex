@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
@@ -7,8 +8,11 @@ internal static class Pcre2CompileValidator
     // Call only between pattern items, outside classes, quoted text and escapes.
     // A comment ends at the first ')'; it contributes no atom or capture slot.
     internal static bool TrySkipParenthesizedComment(string pattern, ref int offset)
+        => TrySkipParenthesizedComment(new Utf8ConstructionPattern(pattern), ref offset);
+
+    internal static bool TrySkipParenthesizedComment(Utf8ConstructionPattern pattern, ref int offset)
     {
-        if (!pattern.AsSpan(offset).StartsWith("(?#", StringComparison.Ordinal)) return false;
+        if (!pattern.StartsWithAscii(offset, "(?#")) return false;
         var end = Pcre2PatternCodeScan.FindClosingParenthesis(pattern, offset + 3);
         if (end < 0) throw new Pcre2CompileException("Missing ) after comment.", Pcre2ErrorKind.MissingCommentClosing);
         offset = end + 1;
@@ -67,8 +71,11 @@ internal static class Pcre2CompileValidator
 
     }
 
-    // Pattern-dependent scans stay behind strict decoding/construction admission.
+    // Pattern-dependent scans stay behind strict validation/construction admission.
     internal static void ValidatePattern(string pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings)
+        => ValidatePattern(new Utf8ConstructionPattern(pattern), options, compileSettings);
+
+    internal static void ValidatePattern(Utf8ConstructionPattern pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
@@ -80,9 +87,19 @@ internal static class Pcre2CompileValidator
         for (var offset = 0; offset < pattern.Length; offset += 2048)
         {
             budget.ChargeWork(0);
-            var block = pattern.AsSpan(offset, Math.Min(2048, pattern.Length - offset));
-            hasEscape |= block.Contains('\\');
-            hasGroupSyntax |= block.IndexOfAny('?', '*') >= 0;
+            var count = Math.Min(2048, pattern.Length - offset);
+            if (pattern.IsUtf8)
+            {
+                var block = pattern.Utf8.Slice(offset, count);
+                hasEscape |= block.Contains((byte)'\\');
+                hasGroupSyntax |= block.IndexOfAny((byte)'?', (byte)'*') >= 0;
+            }
+            else
+            {
+                var block = pattern.Text.AsSpan(offset, count);
+                hasEscape |= block.Contains('\\');
+                hasGroupSyntax |= block.IndexOfAny('?', '*') >= 0;
+            }
         }
         if (hasGroupSyntax && Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?C", options, compileSettings.Newline))
         {
@@ -114,7 +131,7 @@ internal static class Pcre2CompileValidator
         ValidateStructure(pattern, options, compileSettings.Newline);
     }
 
-    private static void ValidateStructure(string pattern, Pcre2CompileOptions options, Pcre2NewlineConvention newline)
+    private static void ValidateStructure(Utf8ConstructionPattern pattern, Pcre2CompileOptions options, Pcre2NewlineConvention newline)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
@@ -276,7 +293,7 @@ internal static class Pcre2CompileValidator
         }
     }
 
-    private static void ValidateEscape(string pattern, ref int offset, char escape)
+    private static void ValidateEscape(Utf8ConstructionPattern pattern, ref int offset, char escape)
     {
         // Unknown ASCII letters are errors. Punctuation can be quoted literally;
         // syntax and operand validity for recognized escapes belong to the parser.
@@ -285,10 +302,10 @@ internal static class Pcre2CompileValidator
         Pcre2PatternCodeScan.SkipEscapeOperand(pattern, ref offset, escape);
     }
 
-    private static void ValidateOptionOpening(string pattern, int offset)
+    private static void ValidateOptionOpening(Utf8ConstructionPattern pattern, int offset)
     {
-        if (!pattern.AsSpan(offset).StartsWith("(?", StringComparison.Ordinal) ||
-            pattern.AsSpan(offset).StartsWith("(?R)", StringComparison.Ordinal)) return;
+        if (!pattern.StartsWithAscii(offset, "(?") ||
+            pattern.StartsWithAscii(offset, "(?R)")) return;
         var cursor = offset + 2;
         if (cursor < pattern.Length && pattern[cursor] == '^') cursor++;
         var invalid = false;
@@ -307,19 +324,19 @@ internal static class Pcre2CompileValidator
         }
     }
 
-    private static bool TryValidateBoundedQuantifier(string pattern, ref int offset)
+    private static bool TryValidateBoundedQuantifier(Utf8ConstructionPattern pattern, ref int offset)
     {
         var cursor = offset + 1;
-        SkipSpace();
-        if (!ReadNumber(out var minimum)) return false;
+        SkipQuantifierSpace(pattern, ref cursor);
+        if (!ReadQuantifierNumber(pattern, ref cursor, out var minimum)) return false;
         var maximum = minimum;
-        SkipSpace();
+        SkipQuantifierSpace(pattern, ref cursor);
         if (cursor < pattern.Length && pattern[cursor] == ',')
         {
             cursor++;
-            SkipSpace();
-            if (!ReadNumber(out maximum)) maximum = int.MaxValue;
-            SkipSpace();
+            SkipQuantifierSpace(pattern, ref cursor);
+            if (!ReadQuantifierNumber(pattern, ref cursor, out maximum)) maximum = int.MaxValue;
+            SkipQuantifierSpace(pattern, ref cursor);
         }
         if (cursor >= pattern.Length || pattern[cursor] != '}') return false;
         if (minimum > 65535 || maximum != int.MaxValue && maximum > 65535)
@@ -328,29 +345,30 @@ internal static class Pcre2CompileValidator
             throw new Pcre2CompileException("Numbers out of order in quantifier.", Pcre2ErrorKind.QuantifierNumbersOutOfOrder);
         offset = cursor;
         return true;
+    }
 
-        void SkipSpace()
+    private static void SkipQuantifierSpace(Utf8ConstructionPattern pattern, ref int cursor)
+    {
+        while (cursor < pattern.Length && pattern[cursor] is ' ' or '\t')
         {
-            while (cursor < pattern.Length && pattern[cursor] is ' ' or '\t')
-            {
-                if ((cursor & 2047) == 0) Utf8ConstructionScope.ChargeWork(0);
-                cursor++;
-            }
-        }
-        bool ReadNumber(out int value)
-        {
-            var start = cursor;
-            value = 0;
-            while (cursor < pattern.Length && pattern[cursor] is >= '0' and <= '9')
-            {
-                if ((cursor & 2047) == 0) Utf8ConstructionScope.ChargeWork(0);
-                value = Math.Min(65536, value * 10 + pattern[cursor++] - '0');
-            }
-            return cursor != start;
+            if ((cursor & 2047) == 0) Utf8ConstructionScope.ChargeWork(0);
+            cursor++;
         }
     }
 
-    private static bool ContainsLookaroundBackslashK(string pattern, Pcre2CompileOptions options, Pcre2NewlineConvention newline)
+    private static bool ReadQuantifierNumber(Utf8ConstructionPattern pattern, ref int cursor, out int value)
+    {
+        var start = cursor;
+        value = 0;
+        while (cursor < pattern.Length && pattern[cursor] is >= '0' and <= '9')
+        {
+            if ((cursor & 2047) == 0) Utf8ConstructionScope.ChargeWork(0);
+            value = Math.Min(65536, value * 10 + pattern[cursor++] - '0');
+        }
+        return cursor != start;
+    }
+
+    private static bool ContainsLookaroundBackslashK(Utf8ConstructionPattern pattern, Pcre2CompileOptions options, Pcre2NewlineConvention newline)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
@@ -433,7 +451,7 @@ internal static class Pcre2CompileValidator
                 continue;
             }
 
-            if (pattern.AsSpan(offset).StartsWith("(?#", StringComparison.Ordinal))
+            if (pattern.StartsWithAscii(offset, "(?#"))
             {
                 var commentEnd = Pcre2PatternCodeScan.FindClosingParenthesis(pattern, offset + 3);
                 if (commentEnd < 0)
@@ -447,10 +465,10 @@ internal static class Pcre2CompileValidator
 
             if (Pcre2PatternCodeScan.TrySkipControlVerbLabel(pattern, ref offset)) continue;
 
-            var isLookaround = pattern.AsSpan(offset).StartsWith("(?=", StringComparison.Ordinal) ||
-                pattern.AsSpan(offset).StartsWith("(?!", StringComparison.Ordinal) ||
-                pattern.AsSpan(offset).StartsWith("(?<=", StringComparison.Ordinal) ||
-                pattern.AsSpan(offset).StartsWith("(?<!", StringComparison.Ordinal);
+            var isLookaround = pattern.StartsWithAscii(offset, "(?=") ||
+                pattern.StartsWithAscii(offset, "(?!") ||
+                pattern.StartsWithAscii(offset, "(?<=") ||
+                pattern.StartsWithAscii(offset, "(?<!");
             if (Pcre2PatternCodeScan.EnterExtendedGroup(pattern, ref offset, ref extended, extendedScopes)) continue;
             if (isLookaround)
             {
@@ -462,7 +480,7 @@ internal static class Pcre2CompileValidator
         return false;
     }
 
-    private static bool ContainsBackslashC(string pattern, bool onlyInLookbehind, Pcre2CompileOptions options, Pcre2NewlineConvention newline)
+    private static bool ContainsBackslashC(Utf8ConstructionPattern pattern, bool onlyInLookbehind, Pcre2CompileOptions options, Pcre2NewlineConvention newline)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
@@ -554,7 +572,7 @@ internal static class Pcre2CompileValidator
                 continue;
             }
 
-            if (pattern.AsSpan(offset).StartsWith("(?#", StringComparison.Ordinal))
+            if (pattern.StartsWithAscii(offset, "(?#"))
             {
                 var commentEnd = Pcre2PatternCodeScan.FindClosingParenthesis(pattern, offset + 3);
                 if (commentEnd < 0)
@@ -568,8 +586,8 @@ internal static class Pcre2CompileValidator
 
             if (Pcre2PatternCodeScan.TrySkipControlVerbLabel(pattern, ref offset)) continue;
 
-            var isLookbehind = pattern.AsSpan(offset).StartsWith("(?<=", StringComparison.Ordinal) ||
-                pattern.AsSpan(offset).StartsWith("(?<!", StringComparison.Ordinal);
+            var isLookbehind = pattern.StartsWithAscii(offset, "(?<=") ||
+                pattern.StartsWithAscii(offset, "(?<!");
             if (Pcre2PatternCodeScan.EnterExtendedGroup(pattern, ref offset, ref extended, extendedScopes)) continue;
             if (isLookbehind)
             {
@@ -581,7 +599,7 @@ internal static class Pcre2CompileValidator
         return false;
     }
 
-    private static bool ContainsBackslashCInCharacterClass(string pattern, Pcre2CompileOptions options, Pcre2NewlineConvention newline)
+    private static bool ContainsBackslashCInCharacterClass(Utf8ConstructionPattern pattern, Pcre2CompileOptions options, Pcre2NewlineConvention newline)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;

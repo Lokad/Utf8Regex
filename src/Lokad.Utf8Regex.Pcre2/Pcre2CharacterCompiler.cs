@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Globalization;
 using System.Text;
 using Lokad.Utf8Regex.Internal;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
@@ -1355,7 +1356,7 @@ internal sealed class Pcre2CharacterParser : IDisposable
             }
 
             moved = true;
-            Pcre2PatternCodeScan.TrySkipExtendedComment(_pattern, ref _offset, true, _request.Settings.Newline);
+            Pcre2PatternCodeScan.TrySkipExtendedComment(new Utf8ConstructionPattern(_pattern), ref _offset, true, _request.Settings.Newline);
             _offset++;
         }
 
