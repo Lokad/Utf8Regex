@@ -34,6 +34,22 @@ public sealed class PythonReNativeReplacementParserTests
     }
 
     [Theory]
+    [InlineData(2046)] [InlineData(2047)] [InlineData(2048)] [InlineData(4095)]
+    public void LiteralBlocksRejoinScalarAndLegacySurrogateFragments(int prefixLength)
+    {
+        var prefix = new string('x', prefixLength);
+        var template = prefix + "😀é\\g<word>" + prefix + "😀é";
+        var native = PythonReReplacementParser.Parse(Encoding.UTF8.GetBytes(template).AsSpan(), 2, Names);
+        var text = PythonReReplacementParser.Parse(template, 2, Names);
+        Assert.Equal(Encoding.UTF8.GetBytes(prefix + "😀é"), native.Tokens[0].RequiredUtf8);
+        Assert.Equal(text.Tokens[0].Utf8, native.Tokens[0].Utf8);
+        Assert.Equal(text.Tokens[2].Utf8, native.Tokens[2].Utf8);
+        var repaired = PythonReReplacementParser.Parse(prefix + new string((char)0xd83d, 1) + @"\g<word>" + new string((char)0xde00, 1), 2, Names);
+        Assert.Equal(Encoding.UTF8.GetBytes(prefix + "\ufffd"), repaired.Tokens[0].RequiredUtf8);
+        Assert.Equal("\ufffd"u8.ToArray(), repaired.Tokens[2].RequiredUtf8);
+    }
+
+    [Theory]
     [InlineData(@"\q")]
     [InlineData("\\")]
     [InlineData(@"\g")]

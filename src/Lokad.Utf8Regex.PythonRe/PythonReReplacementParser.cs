@@ -36,8 +36,18 @@ internal static class PythonReReplacementParser
                 var ch = replacement[index++];
                 if (ch != '\\')
                 {
-                    if (nativeLiteral is not null) nativeLiteral.Add((byte)ch);
-                    else literal!.Append(ch);
+                    // Search/copy one bounded literal run instead of dispatching
+                    // through the source representation for each character.
+                    // Blocks may split a scalar/pair: the same fragment buffer
+                    // joins them before encoding/publication.
+                    var start = index - 1;
+                    var maximum = Math.Min(2048, replacement.Length - start);
+                    var escape = replacement.IndexOf('\\', start, maximum);
+                    var length = escape < 0 ? maximum : escape - start;
+                    storage.Budget.ChargeWork((ulong)(length - 1));
+                    if (nativeLiteral is not null) nativeLiteral.AddRange(replacement.Utf8.Slice(start, length));
+                    else literal!.Append(replacement.Text.AsSpan(start, length));
+                    index = start + length;
                     continue;
                 }
                 if (index >= replacement.Length)
