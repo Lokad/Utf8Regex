@@ -133,7 +133,6 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 | `literal-alternate/sherlock-zh` | 236.367 us | 69.670 us | 2,181.591 us | 3.39x |
 | `bounded-repeat/capitals` | 130,590.400 us | 45,550.450 us | 54,041.750 us | 2.87x |
 | `literal/sherlock-ru` | 247.409 us | 97.602 us | 5,306.210 us | 2.53x |
-| `aws-keys/full` | 144,004.800 us | 87,536.000 us | 118,498.000 us | 1.65x |
 | `ruff-noqa/tweaked` | 12,323.100 us | 8,272.286 us | 43,925.600 us | 1.49x |
 | `aws-keys/quick` | 19,486.600 us | 16,437.575 us | 75,330.950 us | 1.19x |
 | `literal/sherlock-casei-en` | 170.643 us | 190.831 us | 580.143 us | 0.89x |
@@ -146,6 +145,7 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 | `literal-alternate/sherlock-en` | 401.429 us | 1,494.656 us | 2,045.030 us | 0.27x |
 | `literal-alternate/sherlock-en-nomatch` | 167.501 us | 666.392 us | 1,114.198 us | 0.25x |
 | `bounded-repeat/context` | 21,666.533 us | 148,540.900 us | 151,593.000 us | 0.15x |
+| `aws-keys/full` | 10,907.483 us | 91,101.920 us | 123,149.240 us | 0.12x |
 | `ruff-noqa/real` | 4,539.175 us | 71,054.600 us | 85,527.300 us | 0.06x |
 | `literal-alternate/sherlock-casei-ru` | 1,090.147 us | 23,266.933 us | 28,614.050 us | 0.05x |
 | `literal-alternate/sherlock-casei-en` | 220.998 us | 11,485.720 us | 12,302.900 us | 0.02x |
@@ -211,7 +211,6 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 | Case | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
 | `bounded-repeat/capitals` | 131,413.700 us | 13,637.300 us | 21,514.867 us | 9.64x |
-| `aws-keys/full` | 144,399.700 us | 19,072.800 us | 52,446.750 us | 7.57x |
 | `literal-alternate/sherlock-zh` | 247.035 us | 36.260 us | 2,168.896 us | 6.81x |
 | `bounded-repeat/letters-en` | 12,380.160 us | 1,836.996 us | 1,950.331 us | 6.74x |
 | `literal/sherlock-zh` | 133.114 us | 24.089 us | 2,180.178 us | 5.53x |
@@ -227,6 +226,7 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 | `literal/sherlock-en` | 70.005 us | 75.927 us | 450.423 us | 0.92x |
 | `literal-alternate/sherlock-en-nomatch` | 167.491 us | 201.830 us | 583.055 us | 0.83x |
 | `literal-alternate/sherlock-ru` | 1,699.050 us | 2,360.773 us | 7,447.167 us | 0.72x |
+| `aws-keys/full` | 10,923.700 us | 18,762.120 us | 38,491.820 us | 0.58x |
 | `literal-alternate/sherlock-casei-ru` | 1,097.370 us | 1,978.031 us | 7,160.333 us | 0.55x |
 | `bounded-repeat/context` | 21,747.767 us | 69,797.200 us | 72,683.400 us | 0.31x |
 | `ruff-noqa/real` | 4,532.050 us | 21,373.100 us | 34,989.250 us | 0.21x |

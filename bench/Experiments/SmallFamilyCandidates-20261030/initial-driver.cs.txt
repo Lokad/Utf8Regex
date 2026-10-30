@@ -1,0 +1,86 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+var before=Load(Path.GetFullPath(args[0]),"before");var after=Load(Path.GetFullPath(args[1]),"after");
+if(Hash(before)==Hash(after)||!Identity(after).Contains(args[2]))throw new Exception("Unexpected binaries");
+using var process=Process.GetCurrentProcess();process.ProcessorAffinity=(nint)4;
+using var token=new CancellationTokenSource();var preflight=args.Length>4&&args[4]=="--preflight";
+const string paragraph="Vitae magna tempus nibh, sed semper arcu posuere a. "+"Tempus erat at magna aliquet, non feugiat nunc semper. "+"Aliquam magna vel lectus tempus placerat, sed semper mi dictum. ";
+var builder=new StringBuilder(8192);while(builder.Length<8192)builder.Append(paragraph);var original=builder.ToString();
+var corpusRoot=Path.GetFullPath(args[3]);var corpusContext=new AssemblyLoadContext("corpus");
+corpusContext.Resolving+=(c,n)=>File.Exists(Path.Combine(corpusRoot,n.Name+".dll"))?c.LoadFromAssemblyPath(Path.Combine(corpusRoot,n.Name+".dll")):null;
+var corpusAssembly=corpusContext.LoadFromAssemblyPath(Path.Combine(corpusRoot,"Lokad.Utf8Regex.Benchmarks.dll"));
+var corpusType=corpusAssembly.GetType("Lokad.Utf8Regex.Benchmarks.DotNetPerformanceReplicaBenchmarkContext",true)!;
+var benchmarkCase=corpusAssembly.GetType("Lokad.Utf8Regex.Benchmarks.DotNetPerformanceReplicaBenchmarkCatalog",true)!.GetMethod("Get")!.Invoke(null,["aws-keys/full"])!;
+var fixture=Activator.CreateInstance(corpusType,benchmarkCase)!;
+var corpus=(string)corpusType.GetProperty("InputString")!.GetValue(fixture)!;
+var pattern=(string)corpusType.GetProperty("Pattern")!.GetValue(fixture)!;
+var cases=new[]{new Case("aws-keys/full",pattern,corpus,Options:RegexOptions.Multiline),
+    new Case("finite-live-full-corpus",pattern,corpus,Finite:true,Live:true,Options:RegexOptions.Multiline),
+    new Case("ascii-separated-hits",pattern,string.Concat(Enumerable.Repeat("\"AIDAABCDEFGHIJKLMNOP\" \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n\n",512)),Options:RegexOptions.Multiline),
+    new Case("mixed-scalar-hits",pattern,string.Concat(Enumerable.Repeat("é\"AIDAABCDEFGHIJKLMNOP\"😀\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n\n",128)),Options:RegexOptions.Multiline),
+    new Case("prefix-present-miss",pattern,new string('x',4096)+"\"ASIA\"",Options:RegexOptions.Multiline),
+    new Case("finite-pair-control","needle|target",original,Finite:true,Live:true),
+    new Case("literal-control","feugiat",original),new Case("category-control",@"\p{Sm}",original)};
+var roots=new List<object>();var rows=new List<object>();var elapsed=Stopwatch.StartNew();
+foreach(var item in cases)
+{
+    var input=Encoding.UTF8.GetBytes(item.Text);var bcl=new Regex(item.Pattern,item.Options);var bclCompiled=new Regex(item.Pattern,item.Options|RegexOptions.Compiled);var expected=bcl.Count(item.Text);
+    Func<int> Make(Assembly assembly,bool compiled)
+    {
+        var type=assembly.GetType("Lokad.Utf8Regex.Utf8Regex")!;var policyType=assembly.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!;var policy=Activator.CreateInstance(policyType)!;
+        if(item.Finite)foreach(var name in new[]{"MaxWorkSteps","MaxDepth","MaxWorkingBytes","MaxResultBytes"})
+        {var property=policyType.GetProperty(name)!;property.SetValue(policy,Convert.ChangeType(name=="MaxDepth"?4096UL:name=="MaxWorkSteps"?3000000000UL:67108864UL,Nullable.GetUnderlyingType(property.PropertyType)!));}
+        var regex=type.GetConstructor([typeof(string),typeof(RegexOptions),typeof(TimeSpan),policyType])!.Invoke([item.Pattern,item.Options|(compiled?RegexOptions.Compiled:RegexOptions.None),Timeout.InfiniteTimeSpan,policy]);roots.Add(regex);
+        var count=type.GetMethod("Count",[typeof(ReadOnlySpan<byte>),typeof(CancellationToken)])!.CreateDelegate<CoreCount>(regex);return()=>count(input,item.Live?token.Token:default);
+    }
+    Func<int>[] actions=[Make(before,false),Make(after,false),Make(before,true),Make(after,true),
+        ()=>bcl.Count(item.Text),()=>bclCompiled.Count(item.Text),()=>bcl.Count(Encoding.UTF8.GetString(input)),()=>bclCompiled.Count(Encoding.UTF8.GetString(input))];
+    foreach(var action in actions)if(action()!=expected)throw new Exception("Preflight count mismatch "+item.Name);
+    if(preflight){Console.Error.WriteLine("Preflight "+item.Name+": "+expected);continue;}
+    var iterations=new int[8];var calls=new long[8];
+    for(var lane=0;lane<8;lane++)
+    {
+        var warm=Stopwatch.StartNew();while(warm.Elapsed.TotalMilliseconds<500){Loop(1,actions[lane],expected);calls[lane]++;}
+        iterations[lane]=1;while(Loop(iterations[lane],actions[lane],expected).Milliseconds<80)iterations[lane]=checked(iterations[lane]*2);
+    }
+    var times=Enumerable.Range(0,8).Select(_=>new double[3]).ToArray();var bytes=Enumerable.Range(0,8).Select(_=>new double[3]).ToArray();var durations=Enumerable.Range(0,8).Select(_=>new double[3]).ToArray();
+    for(var sample=0;sample<3;sample++)for(var position=0;position<8;position++)
+    {
+        var lane=sample%2==0?position:7-position;GC.Collect();GC.WaitForPendingFinalizers();GC.Collect();
+        var result=Loop(iterations[lane],actions[lane],expected);
+        times[lane][sample]=result.Milliseconds*1000/iterations[lane];bytes[lane][sample]=(double)result.Bytes/iterations[lane];durations[lane][sample]=result.Milliseconds;
+    }
+    rows.Add(new{item.Name,item.Pattern,InputBytes=input.Length,SubjectSha256=Convert.ToHexString(SHA256.HashData(input)),item.Finite,item.Live,item.Options,ExpectedCount=expected,
+        Operation="Public Count over the same UTF-8 subject / predecoded text / freshly decoded text",Iterations=iterations,WarmupCalls=calls,Microseconds=times,AllocatedBytes=bytes,ElapsedMilliseconds=durations});
+    Console.Error.WriteLine("Completed "+item.Name+": "+string.Join(" / ",times.Select(a=>a.Order().ElementAt(1))));
+}
+GC.KeepAlive(roots);
+Console.WriteLine(JsonSerializer.Serialize(new{Runtime=RuntimeInformation.FrameworkDescription,CpuAffinityMask="4",ElapsedSeconds=elapsed.Elapsed.TotalSeconds,
+    LaneNames=new[]{"BeforeOrdinary","AfterOrdinary","BeforeCompiled","AfterCompiled","PredecodedRegex","PredecodedCompiledRegex","DecodeThenRegex","DecodeThenCompiledRegex"},
+    Scope="Equal-result public Count calls, real published AWS corpus, dense/prefix cases and pair/literal/category controls, ordinary/compiled producer and predecoded/decode .NET lanes. Finite/live producers additionally enforce controls unavailable from BCL Count; BCL comparators do not emulate these guarantees. All results consumed and checked after timing. The full AWS corpus and common text match the existing benchmark source; this pilot does not set catalog Status.",
+    Baseline=Identity(before),Candidate=Identity(after),Rows=rows},new JsonSerializerOptions{WriteIndented=true}));
+static Assembly Load(string root,string name)
+{
+    var context=new AssemblyLoadContext(name);context.Resolving+=(c,n)=>File.Exists(Path.Combine(root,n.Name+".dll"))?c.LoadFromAssemblyPath(Path.Combine(root,n.Name+".dll")):null;
+    return context.LoadFromAssemblyPath(Path.Combine(root,"Lokad.Utf8Regex.dll"));
+}
+static string Hash(Assembly assembly)=>Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location)));
+static string Identity(Assembly assembly)=>assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion+" sha256="+Hash(assembly);
+[MethodImpl(MethodImplOptions.NoInlining)]
+static(double Milliseconds,long Bytes)Loop(int count,Func<int> action,int expected)
+{
+    var outputs=new int[count];var allocated=GC.GetAllocatedBytesForCurrentThread();var start=Stopwatch.GetTimestamp();for(var i=0;i<count;i++)outputs[i]=action();
+    var elapsed=Stopwatch.GetElapsedTime(start).TotalMilliseconds;var bytes=GC.GetAllocatedBytesForCurrentThread()-allocated;long checksum=0;
+    foreach(var value in outputs){if(value!=expected)throw new Exception("Timed result mismatch");checksum=unchecked(checksum+value);}
+    GC.KeepAlive(outputs);GC.KeepAlive(checksum);return(elapsed,bytes);
+}
+record Case(string Name,string Pattern,string Text,bool Finite=false,bool Live=false,RegexOptions Options=RegexOptions.None);
+delegate int CoreCount(ReadOnlySpan<byte> input,CancellationToken token);

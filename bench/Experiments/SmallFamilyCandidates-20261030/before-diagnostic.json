@@ -1,0 +1,28 @@
+{
+  "Case": "aws-keys/full",
+  "Pattern": "((\u0027|\u0022)((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))(\u0027|\u0022).*?(\\n^.*?){0,4}((\u0027|\\\u0022)[a-zA-Z0-9\u002B/]{40}(\u0027|\\\u0022))\u002B|(\u0027|\\\u0022)[a-zA-Z0-9\u002B/]{40}(\u0027|\\\u0022).*?(\\n^.*?){0,3}(\u0027|\\\u0022)((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))(\u0027|\\\u0022))\u002B",
+  "Options": "Multiline",
+  "Bytes": 32514627,
+  "Sha256": "FB6F37144103CC533B20FC8C735F4C65B7146D9FBD9931F3D0A231B12BC4A257",
+  "ExecutionKind": "AsciiStructuralQuotedRelation",
+  "Family": "ExactAutomaton",
+  "Literals": [
+    "\u0027ASIA",
+    "\u0022ASIA",
+    "\u0027AKIA",
+    "\u0022AKIA",
+    "\u0027AROA",
+    "\u0022AROA",
+    "\u0027AIDA",
+    "\u0022AIDA"
+  ],
+  "ExecutionRoute": "\u003Cnone\u003E",
+  "Result": 0,
+  "BclCount": 0,
+  "CompiledBclCount": 0,
+  "PublicChecksum": 0,
+  "RequiredSearchChecksum": -3,
+  "PublicMillisecondsPerCall": 144.59810000000002,
+  "RequiredSearchMillisecondsPerCall": 81.50193333333333,
+  "Scope": "Three-call cold attribution only; not a public speedup or catalog Status"
+}

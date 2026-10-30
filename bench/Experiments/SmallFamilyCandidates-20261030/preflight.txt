@@ -1,0 +1,8 @@
+Preflight aws-keys/full: 0
+Preflight finite-live-full-corpus: 0
+Preflight ascii-separated-hits: 512
+Preflight mixed-scalar-hits: 128
+Preflight prefix-present-miss: 0
+Preflight finite-pair-control: 0
+Preflight literal-control: 48
+Preflight category-control: 0

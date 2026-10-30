@@ -1,0 +1,32 @@
+Measuring README benchmark case: aws-keys/full (requested=5, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=6;ElapsedMicroseconds=67513.900
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=5;ElapsedMicroseconds=54618.500
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=5;ElapsedMicroseconds=436220.200
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=5;ElapsedMicroseconds=93412.000
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=5;ElapsedMicroseconds=615746.200
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=5;ElapsedMicroseconds=274718.900
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=6;ElapsedMicroseconds=65444.900
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=5;ElapsedMicroseconds=58893.100
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=5;ElapsedMicroseconds=455509.600
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=5;ElapsedMicroseconds=93810.600
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=5;ElapsedMicroseconds=629556.600
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=5;ElapsedMicroseconds=274385.000
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=6;ElapsedMicroseconds=65271.500
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=5;ElapsedMicroseconds=54448.300
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=5;ElapsedMicroseconds=455577.300
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=5;ElapsedMicroseconds=95195.400
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=5;ElapsedMicroseconds=642215.200
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=5;ElapsedMicroseconds=192459.100
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=6;ElapsedMicroseconds=65420.100
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=5;ElapsedMicroseconds=59001.700
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=5;ElapsedMicroseconds=455679.700
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=5;ElapsedMicroseconds=93590.900
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=5;ElapsedMicroseconds=551114.400
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=5;ElapsedMicroseconds=165078.100
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=6;ElapsedMicroseconds=65656.700
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=5;ElapsedMicroseconds=54560.600
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=5;ElapsedMicroseconds=445079.900
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=5;ElapsedMicroseconds=95307.400
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=5;ElapsedMicroseconds=515307.400
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=5;ElapsedMicroseconds=173219.200
+Updated README case: aws-keys/full

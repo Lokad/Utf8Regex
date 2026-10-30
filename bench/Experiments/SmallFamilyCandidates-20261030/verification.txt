@@ -1,0 +1,14 @@
+Initial candidate 9a2eb3ea, full Core before repair:
+Passed!  - Failed:     0, Passed: 40115, Skipped:     0, Total: 40115, Duration: 1 m 46 s - Lokad.Utf8Regex.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed: 40115, Skipped:     0, Total: 40115, Duration: 1 m 49 s - Lokad.Utf8Regex.Tests.dll (net11.0)
+Final repair e658c1e1, focused Core:
+Passed!  - Failed:     0, Passed:   323, Skipped:     0, Total:   323, Duration: 822 ms - Lokad.Utf8Regex.Tests.dll (net11.0)
+Passed!  - Failed:     0, Passed:   323, Skipped:     0, Total:   323, Duration: 776 ms - Lokad.Utf8Regex.Tests.dll (net10.0)
+Final repair, complete PythonRe:
+Passed!  - Failed:     0, Passed:  4224, Skipped:     0, Total:  4224, Duration: 14 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:  4224, Skipped:     0, Total:  4224, Duration: 14 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)
+Final repair, affected PCRE2:
+Passed!  - Failed:     0, Passed:   902, Skipped:     0, Total:   902, Duration: 1 s - Lokad.Utf8Regex.Pcre2.Tests.dll (net11.0)
+Passed!  - Failed:     0, Passed:   902, Skipped:     0, Total:   902, Duration: 1 s - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)
+Source assertion: TryFindLiteralFamilyCore and the file suffix are identical to baseline 528fe17e; only the raw 3..8-member candidate wrapper/helper changes.
+VM --verify-readme-parity-report passed. Exactly ordinary/compiled aws-keys/full records changed; final snapshot source is clean e658c1e1.

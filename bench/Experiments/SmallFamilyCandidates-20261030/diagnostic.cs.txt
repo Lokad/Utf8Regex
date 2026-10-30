@@ -1,0 +1,25 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Internal.Search;
+var benchmark=Assembly.LoadFrom(Path.GetFullPath("bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.Benchmarks.dll"));
+var contextType=benchmark.GetType("Lokad.Utf8Regex.Benchmarks.DotNetPerformanceReplicaBenchmarkContext",true)!;
+var benchmarkCase=benchmark.GetType("Lokad.Utf8Regex.Benchmarks.DotNetPerformanceReplicaBenchmarkCatalog",true)!.GetMethod("Get")!.Invoke(null,["aws-keys/full"])!;
+var context=Activator.CreateInstance(contextType,benchmarkCase)!;
+T Get<T>(string name)=>(T)contextType.GetProperty(name)!.GetValue(context)!;
+var input=Get<byte[]>("InputBytes");var text=Get<string>("InputString");var regex=Get<Utf8Regex>("Utf8Regex");
+var search=regex.Inspection.SearchPlan.RequiredPrefilterSearcher;
+var family=(PreparedMultiLiteralSearch)typeof(PreparedSearcher).GetProperty("MultiLiteralSearch",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(search)!;
+var diagnostic=regex.CollectCountDiagnostics(input);
+var publicTime=Stopwatch.StartNew();var total=0;for(var i=0;i<3;i++)total+=regex.Count(input);publicTime.Stop();
+var searchTime=Stopwatch.StartNew();var found=0;for(var i=0;i<3;i++)found+=search.FindFirst(input);searchTime.Stop();
+Console.WriteLine(JsonSerializer.Serialize(new{Case="aws-keys/full",Pattern=Get<string>("Pattern"),Options=regex.Options.ToString(),Bytes=input.Length,
+    Sha256=Convert.ToHexString(SHA256.HashData(input)),ExecutionKind=regex.Inspection.ExecutionKind.ToString(),Family=family.Kind.ToString(),
+    Literals=family.Literals.Select(Encoding.UTF8.GetString).ToArray(),diagnostic.ExecutionRoute,diagnostic.Result,
+    BclCount=Get<Regex>("Regex").Count(text),CompiledBclCount=Get<Regex>("CompiledRegex").Count(text),PublicChecksum=total,RequiredSearchChecksum=found,
+    PublicMillisecondsPerCall=publicTime.Elapsed.TotalMilliseconds/3,RequiredSearchMillisecondsPerCall=searchTime.Elapsed.TotalMilliseconds/3,
+    Scope="Three-call cold attribution only; not a public speedup or catalog Status"},new JsonSerializerOptions{WriteIndented=true}));
