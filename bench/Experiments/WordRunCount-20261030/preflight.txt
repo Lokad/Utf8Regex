@@ -1,0 +1,6 @@
+Preflight common/matches-boundary: 0
+Preflight positive-boundaries: 128
+Preflight wrapped-word-repeat: 1296
+Preflight finite-live-boundaries: 0
+Preflight unicode-scalar-control: 1
+Preflight literal-control: 48

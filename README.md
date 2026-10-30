@@ -157,7 +157,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | Case | Operation | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
 | `industry/leipzig-symbol-count` | `Count` | 1,152,702.300 us | 23,036.733 us | 30,488.150 us | 50.04x |
-| `common/matches-boundary` | `Count` | 833.867 us | 164.674 us | 166.856 us | 5.06x |
 | `industry/rust-sherlock-nonnewline-count` | `Count` | 4,808.973 us | 979.187 us | 1,276.603 us | 4.91x |
 | `industry/mariomka-email-count` | `Count` | 1,525.918 us | 492.350 us | 9,040.367 us | 3.10x |
 | `industry/rust-sherlock-letter-count` | `Count` | 46,658.450 us | 19,592.933 us | 20,452.233 us | 2.38x |
@@ -176,7 +175,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/email-miss` | `IsMatch` | 0.183 us | 0.346 us | 0.373 us | 0.53x |
 | `industry/boostdocs-credit-card-match` | `IsMatch` | 0.083 us | 0.163 us | 0.179 us | 0.51x |
 | `industry/leipzig-name-family-count` | `Count` | 4,216.867 us | 9,795.667 us | 17,176.000 us | 0.43x |
-| `common/matches-set` | `Count` | 78.910 us | 194.124 us | 197.086 us | 0.41x |
 | `common/matches-word` | `Count` | 1.422 us | 4.262 us | 6.079 us | 0.33x |
 | `industry/mariomka-ip-count` | `Count` | 2,654.368 us | 8,643.717 us | 17,226.200 us | 0.31x |
 | `common/one-node-backtracking` | `IsMatch` | 0.189 us | 0.628 us | 0.659 us | 0.30x |
@@ -189,6 +187,8 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/boostdocs-float-match` | `IsMatch` | 0.011 us | 0.078 us | 0.091 us | 0.14x |
 | `common/matches-words` | `Count` | 9.542 us | 69.688 us | 71.353 us | 0.14x |
 | `industry/rust-sherlock-word-holmes-count` | `Count` | 522.382 us | 8,730.300 us | 9,193.533 us | 0.06x |
+| `common/matches-boundary` | `Count` | 7.002 us | 163.076 us | 166.566 us | 0.04x |
+| `common/matches-set` | `Count` | 7.892 us | 199.831 us | 201.207 us | 0.04x |
 | `industry/rust-sherlock-ing-count` | `Count` | 266.929 us | 11,941.220 us | 12,497.400 us | 0.02x |
 <!-- END GENERATED DOTNET_PERFORMANCE BENCHMARKS -->
 
@@ -239,7 +239,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | Case | Operation | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
 | `industry/leipzig-symbol-count` | `Count` | 1,153,094.300 us | 1,235.305 us | 6,850.600 us | 933.45x |
-| `common/matches-boundary` | `Count` | 834.275 us | 106.333 us | 107.975 us | 7.85x |
 | `industry/rust-sherlock-letter-count` | `Count` | 44,934.700 us | 8,940.667 us | 9,616.660 us | 5.03x |
 | `common/backtracking` | `IsMatch` | 0.190 us | 0.044 us | 0.075 us | 4.34x |
 | `industry/rust-sherlock-holmes-window-count` | `Count` | 252.827 us | 58.641 us | 263.159 us | 4.31x |
@@ -264,13 +263,14 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/leipzig-twain-count` | `Count` | 1,320.782 us | 1,333.897 us | 5,548.167 us | 0.99x |
 | `common/matches-words` | `Count` | 9.540 us | 11.005 us | 14.130 us | 0.87x |
 | `industry/mariomka-ip-count` | `Count` | 2,655.547 us | 3,546.340 us | 11,183.800 us | 0.75x |
-| `common/matches-set` | `Count` | 78.954 us | 105.581 us | 107.626 us | 0.75x |
 | `common/split-words` | `Split` | 14.632 us | 21.080 us | 22.875 us | 0.69x |
 | `common/date-match` | `IsMatch` | 0.030 us | 0.044 us | 0.074 us | 0.68x |
 | `common/matches-word` | `Count` | 1.422 us | 2.363 us | 3.649 us | 0.60x |
 | `common/date-miss` | `IsMatch` | 0.100 us | 0.203 us | 0.238 us | 0.49x |
 | `industry/boostdocs-float-match` | `IsMatch` | 0.013 us | 0.035 us | 0.053 us | 0.36x |
 | `industry/rust-sherlock-word-holmes-count` | `Count` | 524.364 us | 3,986.215 us | 4,417.133 us | 0.13x |
+| `common/matches-set` | `Count` | 7.813 us | 105.702 us | 108.164 us | 0.07x |
+| `common/matches-boundary` | `Count` | 7.001 us | 103.918 us | 107.271 us | 0.07x |
 | `industry/rust-sherlock-ing-count` | `Count` | 267.806 us | 4,816.909 us | 5,222.220 us | 0.06x |
 <!-- END GENERATED DOTNET_PERFORMANCE_COMPILED BENCHMARKS -->
 

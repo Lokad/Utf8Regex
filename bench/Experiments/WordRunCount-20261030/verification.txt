@@ -1,0 +1,12 @@
+Complete Core Release, including semantic/resource/API/inventory guards.
+Passed!  - Failed:     0, Passed: 40054, Skipped:     0, Total: 40054, Duration: 1 m 38 s - Lokad.Utf8Regex.Tests.dll (net11.0)
+Passed!  - Failed:     0, Passed: 40054, Skipped:     0, Total: 40054, Duration: 1 m 41 s - Lokad.Utf8Regex.Tests.dll (net10.0)
+Focused native word and Core resource checks, before the final extra work-boundary case.
+Passed!  - Failed:     0, Passed:   765, Skipped:     0, Total:   765, Duration: 1 s - Lokad.Utf8Regex.Tests.dll (net11.0)
+Passed!  - Failed:     0, Passed:   765, Skipped:     0, Total:   765, Duration: 2 s - Lokad.Utf8Regex.Tests.dll (net10.0)
+Affected PythonRe public native/funded execution paths.
+Passed!  - Failed:     0, Passed:   169, Skipped:     0, Total:   169, Duration: 1 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:   169, Skipped:     0, Total:   169, Duration: 1 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)
+Affected PCRE2 count/core ownership/resource paths.
+Passed!  - Failed:     0, Passed:    89, Skipped:     0, Total:    89, Duration: 308 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:    89, Skipped:     0, Total:    89, Duration: 281 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net11.0)
