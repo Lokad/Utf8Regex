@@ -272,9 +272,10 @@ public sealed partial class Utf8Pcre2Regex
         return IsMatchCore(input, startOffsetInBytes, matchOptions, CancellationToken.None);
     }
 
-    private bool IsMatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    private bool IsMatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions,
+        CancellationToken cancellationToken, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
-        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
+        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken, workingMemoryAllowance);
         try
         {
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
@@ -294,6 +295,12 @@ public sealed partial class Utf8Pcre2Regex
         catch (Utf8ExecutionDeadlineExpiredException)
         {
             throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
+        }
+        finally
+        {
+            // This lexical bool result leaves no cursor or payload alias. The
+            // separate funded invocation owns every remaining temporary loan.
+            if (workingMemoryAllowance is not null) invocation.Ledger.Release(invocation.Ledger.ReservedBytes);
         }
     }
 
@@ -323,10 +330,11 @@ public sealed partial class Utf8Pcre2Regex
         return CountCore(input, startOffsetInBytes, matchOptions, CancellationToken.None);
     }
 
-    private int CountCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    private int CountCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions,
+        CancellationToken cancellationToken, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         ThrowIfGenericIterationMayBeNonMonotone();
-        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
+        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken, workingMemoryAllowance);
         try
         {
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
@@ -341,6 +349,10 @@ public sealed partial class Utf8Pcre2Regex
         catch (Utf8ExecutionDeadlineExpiredException)
         {
             throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
+        }
+        finally
+        {
+            if (workingMemoryAllowance is not null) invocation.Ledger.Release(invocation.Ledger.ReservedBytes);
         }
     }
 

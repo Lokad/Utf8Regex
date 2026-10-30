@@ -192,6 +192,30 @@ preparation holds its additional peak reservation through output; its checkpoint
 also spend invocation work. Warm plans use their bounded cache. See
 [construction contract](SPEC.md#construction-preparation-and-caches).
 
+`Compile(..., token, programMemoryAllowance)` returns a disposable
+`Utf8Pcre2RegexProgramOwner` for text or strict UTF-8 pattern input. Compilation
+uses the existing shared allowance before substantial acquisition, without an
+extra private byte ceiling when construction MaxBytes is null. Fixed work/depth/
+instruction backstops remain. Byte pattern preparation still decodes to the text
+parser under admission; direct UTF-8 compilation remains unfinished.
+
+The owner exposes Boolean matching and Count with byte starts, PCRE2 match flags
+and each call's cancellation token. Temporary storage uses program funding by
+default; an explicit working allowance selects a separate host account. Ordinary
+expressions also accept shared working admission through their full IsMatch/Count
+signatures. Existing numeric limits, strict whole-subject validation, original
+cancellation and PCRE2 timeout/limit errors still apply. Shared refusal throws
+`Utf8MemoryAdmissionException` synchronously and never retries elsewhere.
+Covered temporary loans refund on success, failure and interruption. Borrowed
+input, fixed invocation metadata and caller retention are separate scopes.
+
+Program Dispose rejects new calls and drops the expression root before the final
+refund; active calls keep their local root and charge until they finish. It does
+not wait, force cancellation or reclaim through GC. The underlying expression
+cannot escape. This first owner covers Boolean/count calls; funded replacement,
+persistent cursors and retained results are still open. Existing copied span
+cursors keep their independent-position/alias contract.
+
 ## Isolation and non-goals
 
 All PCRE2-specific implementation/types/namespaces/test fixtures remain in the

@@ -435,16 +435,16 @@ internal static class Pcre2SliceDriver
     // numeric limits must not be read as cross-engine budgets.
     internal static Utf8SliceInvocation CreateInvocation(
         Pcre2CompileRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, IUtf8MemoryAllowance? memoryAllowance = null)
     {
-        return new Utf8SliceInvocation(
-            new Utf8ExecutionLimits(
+        var limits = new Utf8ExecutionLimits(
                 request.DefaultLimits.MatchLimit,
                 request.DefaultLimits.DepthLimit,
                 request.DefaultLimits.HeapLimitInBytes,
-                request.DefaultLimits.ResultLimitInBytes),
-            request.MatchTimeout,
-            cancellationToken);
+                request.DefaultLimits.ResultLimitInBytes);
+        return memoryAllowance is null
+            ? new Utf8SliceInvocation(limits, request.MatchTimeout, cancellationToken)
+            : new Utf8SliceInvocation(limits, request.MatchTimeout, cancellationToken, memoryAllowance);
     }
 
     // Global cursors retain this authority across waits/copies. A return check

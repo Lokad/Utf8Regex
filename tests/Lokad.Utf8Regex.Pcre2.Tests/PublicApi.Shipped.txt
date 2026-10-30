@@ -106,6 +106,7 @@ sealed class Utf8Pcre2Regex
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions)
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions, Threading.CancellationToken cancellationToken)
+  method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance workingMemoryAllowance)
   method Boolean TryGetFirstSetGroup(ReadOnlySpan<Byte> input, String name, out Utf8Pcre2GroupContext group)
   method Boolean TryGetFirstSetGroup(ReadOnlySpan<Byte> input, String name, out Utf8Pcre2GroupContext group, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions)
   method Boolean TryGetFirstSetGroup(ReadOnlySpan<Byte> input, String name, out Utf8Pcre2GroupContext group, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions, Threading.CancellationToken cancellationToken)
@@ -132,6 +133,7 @@ sealed class Utf8Pcre2Regex
   method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
   method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions)
   method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions, Threading.CancellationToken cancellationToken)
+  method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance workingMemoryAllowance)
   method Int32 MatchMany(ReadOnlySpan<Byte> input, Span<Utf8Pcre2MatchData> destination, out Boolean isMore)
   method Int32 MatchMany(ReadOnlySpan<Byte> input, Span<Utf8Pcre2MatchData> destination, out Boolean isMore, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions)
   method Int32 MatchMany(ReadOnlySpan<Byte> input, Span<Utf8Pcre2MatchData> destination, out Boolean isMore, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions, Threading.CancellationToken cancellationToken)
@@ -173,10 +175,16 @@ sealed class Utf8Pcre2Regex
   method static Utf8Pcre2Regex Compile(String pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken)
   method static Utf8Pcre2Regex Create(ReadOnlySpan<Byte> patternUtf8, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8ResourcePolicy resourcePolicy, TimeSpan matchTimeout)
   method static Utf8Pcre2Regex Create(String pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8ResourcePolicy resourcePolicy, TimeSpan matchTimeout)
+  method static Utf8Pcre2RegexProgramOwner Compile(ReadOnlySpan<Byte> patternUtf8, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance)
+  method static Utf8Pcre2RegexProgramOwner Compile(String pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance)
   method static Utf8Pcre2ValueMatch Match(ReadOnlySpan<Byte> input, String pattern)
   method static Utf8Pcre2ValueMatch Match(ReadOnlySpan<Byte> input, String pattern, Pcre2CompileOptions options)
   method static Utf8Pcre2ValueMatch Match(ReadOnlySpan<Byte> input, String pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, Int32 startOffsetInBytes)
   method static Utf8Pcre2ValueMatch Match(ReadOnlySpan<Byte> input, String pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken)
+sealed class Utf8Pcre2RegexProgramOwner : IDisposable
+  method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
+  method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
+  method Void Dispose()
 readonly ref struct Utf8Pcre2ValueMatch
   property Boolean HasContiguousByteRange { get; }
   property Boolean HasUtf16Projection { get; }

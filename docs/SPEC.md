@@ -222,8 +222,9 @@ default; the optional working allowance selects a separate host child account.
 The private expression cannot escape the owner. Dispose rejects new calls and
 refunds compilation after the final active call/cursor; active users retain their
 program reference and finish under their original controls. This new owner keeps
-legacy copied span-enumerator lifetimes separate. Funded replacement flows and
-PCRE2 program admission remain unfinished.
+legacy copied span-enumerator lifetimes separate. Funded replacement remains
+unfinished. PCRE2 now has its own funded Boolean/count program owner; its cursor/
+retained-result flows remain open under the [profile contract](SPEC-PCRE2.md).
 
 `CreateMatchCursor(ReadOnlyMemory<byte>, startOffsetInBytes, token, workingAllowance)`
 on Core expressions and program owners returns `Utf8RegexMatchCursor`. Null start

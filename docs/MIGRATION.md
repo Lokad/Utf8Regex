@@ -110,8 +110,11 @@ both; copies stay valid after receipt disposal, with further admission owned by
 the caller. `MoveNext(out Utf8RangeMatch)` omits retained funding when the host takes
 over retention directly. Both paths avoid captured strings and whole-subject
 UTF-16 maps, retaining Core capture histories and sparse slot identities. Existing
-span cursors keep their independent-copy contract. Native UTF-8 pattern/template
-parsing, funded replacement and PCRE2 ownership remain unfinished.
+span cursors keep their independent-copy contract. PCRE2 offers its own
+`Utf8Pcre2RegexProgramOwner` through the funded Compile overload, with byte starts,
+match flags and separate working admission for Boolean/count calls. It follows the
+same close/in-flight lifetime rule. PCRE2 persistent cursors/retained results,
+native UTF-8 pattern/template parsing and funded replacement remain unfinished.
 The [resource contract](SPEC.md#cancellation-deadlines-and-resource-limits)
 distinguishes modeled live admission from cumulative work/result traffic.
 

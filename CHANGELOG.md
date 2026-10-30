@@ -7,6 +7,8 @@
   program owner with separate working admission and deterministic close/refunds.
 - Add Core memory cursors with byte-range capture histories, per-advance tokens,
   deterministic scratch release and retained results with separate result funding.
+- Add a caller-funded PCRE2 program owner and shared working admission for
+  Boolean/count calls, preserving profile limits and deterministic close/refunds.
 - Use .NET 11 by default for benchmark runs; historical figures retain their measured runtime.
 - Expose PythonRe effective global flags through `EffectiveOptions`, including
   inline directives and implicit Unicode, while retaining requested `Options`.
