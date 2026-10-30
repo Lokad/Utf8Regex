@@ -1,0 +1,24 @@
+Producer 63a9955577ce57c670faa5d8f720b2e8b3650a80
+Windows Release, affected projects built sequentially; matching binaries reused.
+
+core-full.txt
+Build succeeded.
+Passed!  - Failed:     0, Passed: 40745, Skipped:     0, Total: 40745, Duration: 1 m 9 s - Lokad.Utf8Regex.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed: 40745, Skipped:     0, Total: 40745, Duration: 1 m 13 s - Lokad.Utf8Regex.Tests.dll (net11.0)
+
+python-affected.txt
+Build succeeded.
+Passed!  - Failed:     0, Passed:   970, Skipped:     0, Total:   970, Duration: 1 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:   970, Skipped:     0, Total:   970, Duration: 1 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)
+
+pcre2-affected.txt
+Build succeeded.
+Passed!  - Failed:     0, Passed:  1015, Skipped:     0, Total:  1015, Duration: 1 s - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:  1015, Skipped:     0, Total:  1015, Duration: 1 s - Lokad.Utf8Regex.Pcre2.Tests.dll (net11.0)
+
+Linux Release/net11.0: focused native compilation/Cyrillic/public construction/memory cursor/Core API tests.
+Passed: 278; Failed: 0; Skipped: 0. Full raw output in immutable tar archive.
+
+Initial build found source ambiguity for a bare null; test now explicitly uses text-null.
+Initial public tests found balanced-literal text-only access and null parameter-name drift; fixed before qualification.
+Snapshot optional enum default is formatted as numeric 0. No package matrix repeated.

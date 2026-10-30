@@ -1,0 +1,234 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 47.0381194,
+  "Scope": "Equal-result public Core Count and text/native compilation. Connected native compilation at 63a99555 against fixed b9adddda. Unchanged literal control, scalar/Unicode/Cyrillic workloads and finite numeric policy. Native and funded program calls/compile\u002Bclose remain separate feature costs. Single noise confirmation: Cyrillic and unchanged literal control, plus before-text funded control. Warmup 4s/lane, independent 80ms targets, three alternating samples, post-timing result/checksum consumption and funding balance checks. No comparator Status, catalog, cumulative release-baseline or package claim.",
+  "Baseline": "0.5.0-dev\u002Bb9adddda5706f7d05afdb52f523e35e4333ef795 sha256=A87B90878F57247362D6000EC4DD2CCCBD0AC46BA5A43FB2055B852231A373CC",
+  "Candidate": "0.5.0-dev\u002B63a9955577ce57c670faa5d8f720b2e8b3650a80 sha256=B4CC90076AA6D45FBE5397498BDAF12A5A31DB0B5D97A3C78609B667D46C0F37",
+  "Rows": [
+    {
+      "Name": "literal-count-control",
+      "Pattern": "needle",
+      "Construction": false,
+      "Exists": false,
+      "Finite": false,
+      "InputBytes": 8198,
+      "InputSha256": "8DA47E1CAE661B34F429302D624E9EA43B01F9729C6A36BB3E1D2297395FF58B",
+      "Expected": 1,
+      "Lanes": [
+        "BeforeTextCount",
+        "AfterTextCount",
+        "AfterNativeCount",
+        "BeforeTextProgramDefaultWorking",
+        "AfterNativeProgramDefaultWorking"
+      ],
+      "Iterations": [
+        262144,
+        262144,
+        262144,
+        131072,
+        131072
+      ],
+      "WarmupCalls": [
+        5556266,
+        6053772,
+        5829372,
+        6373499,
+        4814370
+      ],
+      "Microseconds": [
+        [
+          0.5447460174560547,
+          0.5423297882080078,
+          0.5410537719726562
+        ],
+        [
+          0.5047550201416016,
+          0.43842010498046874,
+          0.533889389038086
+        ],
+        [
+          0.41649703979492186,
+          0.41649589538574217,
+          0.5356082916259766
+        ],
+        [
+          0.4371482849121094,
+          0.4358352661132812,
+          0.7547531127929688
+        ],
+        [
+          0.43386535644531254,
+          0.4450538635253906,
+          0.7023269653320313
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          144,
+          144,
+          144
+        ],
+        [
+          144,
+          144,
+          144
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          142.8019,
+          142.1685,
+          141.834
+        ],
+        [
+          132.3185,
+          114.9292,
+          139.9559
+        ],
+        [
+          109.1822,
+          109.1819,
+          140.4065
+        ],
+        [
+          57.2979,
+          57.1258,
+          98.927
+        ],
+        [
+          56.8676,
+          58.3341,
+          92.0554
+        ]
+      ]
+    },
+    {
+      "Name": "cyrillic-count",
+      "Pattern": "\u0428\u0435\u0440\u043B\u043E\u043A \u0425\u043E\u043B\u043C\u0441",
+      "Construction": false,
+      "Exists": false,
+      "Finite": false,
+      "InputBytes": 4800,
+      "InputSha256": "B6F8F2F2B588F7C0D511702DDFB92FA4D484FCE976AD464F740A352A279B539F",
+      "Expected": 128,
+      "Lanes": [
+        "BeforeTextCount",
+        "AfterTextCount",
+        "AfterNativeCount",
+        "BeforeTextProgramDefaultWorking",
+        "AfterNativeProgramDefaultWorking"
+      ],
+      "Iterations": [
+        65536,
+        65536,
+        65536,
+        512,
+        1024
+      ],
+      "WarmupCalls": [
+        981716,
+        1455697,
+        1479936,
+        18617,
+        18659
+      ],
+      "Microseconds": [
+        [
+          2.3991455078125,
+          2.3471343994140623,
+          2.363307189941406
+        ],
+        [
+          2.4159835815429687,
+          2.3634872436523438,
+          2.4029495239257814
+        ],
+        [
+          2.4132583618164065,
+          2.3648803710937503,
+          2.3964462280273438
+        ],
+        [
+          147.44140625,
+          147.1650390625,
+          157.762890625
+        ],
+        [
+          147.92636718749998,
+          147.48476562500002,
+          147.68251953125
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          144,
+          144,
+          144
+        ],
+        [
+          144,
+          144,
+          144
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          157.2304,
+          153.8218,
+          154.8817
+        ],
+        [
+          158.3339,
+          154.8935,
+          157.4797
+        ],
+        [
+          158.1553,
+          154.9848,
+          157.0535
+        ],
+        [
+          75.49,
+          75.3485,
+          80.7746
+        ],
+        [
+          151.4766,
+          151.0244,
+          151.2269
+        ]
+      ]
+    }
+  ]
+}
