@@ -10,6 +10,9 @@
 - Emit PythonRe Core patterns, scalar leaves and literal preparation as UTF-8;
   defer canonical string output and timeout pattern text until requested.
 - Preserve literal spaces inside scoped Python verbose groups in Core guidance.
+- Parse PCRE2 byte patterns directly with owned source storage and on-demand
+  pattern text, preserving profile grammar, native selectors and construction controls.
+- Quote complete Unicode scalars in PCRE2 character classes, including escaped emoji.
 - Add caller-funded Core Boolean/count operations and a disposable compiled
   program owner with separate working admission and deterministic close/refunds.
 - Add Core memory cursors with byte-range capture histories, per-advance tokens,

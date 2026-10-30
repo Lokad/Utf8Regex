@@ -54,8 +54,8 @@ internal static class Pcre2BacktrackingCompiler
         // metadata copies. Shared storage can be charged twice; no helper graph
         // or per-object ledger is retained. Instructions have separate exact
         // array/slot admission in the lowerer.
-        construction.Budget.ChargeWork((ulong)request.Pattern.Length);
-        construction.Budget.ReserveBytes(checked((ulong)request.Pattern.Length * 256));
+        construction.Budget.ChargeWork((ulong)request.ConstructionPattern.Length);
+        construction.Budget.ReserveBytes(checked((ulong)request.ConstructionPattern.Length * 256));
         var parser = new Pcre2BacktrackingParser(request);
         if (!parser.TryParse(out var root))
         {

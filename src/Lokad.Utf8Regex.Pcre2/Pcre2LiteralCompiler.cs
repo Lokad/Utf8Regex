@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Text;
 using Lokad.Utf8Regex.Internal;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Search;
@@ -89,8 +90,8 @@ internal static class Pcre2LiteralCompiler
         {
             // Literal preparation owns its buffers; it needs no second Core
             // compilation to supply construction bounds or group-zero metadata.
-            budget.ChargeWork((ulong)request.Pattern.Length);
-            if (!TryParse(request.Pattern, out var atoms, out var startAnchor, out var endAnchored))
+            budget.ChargeWork((ulong)request.ConstructionPattern.Length);
+            if (!TryParse(request.ConstructionPattern, out var atoms, out var startAnchor, out var endAnchored))
                 return null;
             try
             {
@@ -127,7 +128,7 @@ internal static class Pcre2LiteralCompiler
     }
 
     private static bool TryParse(
-        string pattern,
+        Utf8ConstructionPattern pattern,
         out Rune[] atoms,
         out Pcre2LiteralAnchor startAnchor,
         out bool endAnchored)
@@ -139,12 +140,12 @@ internal static class Pcre2LiteralCompiler
         endAnchored = false;
 
         while (Pcre2CompileValidator.TrySkipParenthesizedComment(pattern, ref position)) { }
-        if (pattern.AsSpan(position).StartsWith(@"\A", StringComparison.Ordinal))
+        if (pattern.StartsWithAscii(position, @"\A"))
         {
             startAnchor = Pcre2LiteralAnchor.AbsoluteStart;
             position += 2;
         }
-        else if (pattern.AsSpan(position).StartsWith(@"\G", StringComparison.Ordinal))
+        else if (pattern.StartsWithAscii(position, @"\G"))
         {
             startAnchor = Pcre2LiteralAnchor.RequestedStart;
             position += 2;
@@ -154,7 +155,7 @@ internal static class Pcre2LiteralCompiler
         {
             budget.ChargeWork(1);
             if (Pcre2CompileValidator.TrySkipParenthesizedComment(pattern, ref position)) continue;
-            if (pattern.AsSpan(position).StartsWith(@"\z", StringComparison.Ordinal))
+            if (pattern.StartsWithAscii(position, @"\z"))
             {
                 position += 2;
                 while (Pcre2CompileValidator.TrySkipParenthesizedComment(pattern, ref position)) { }
@@ -181,7 +182,7 @@ internal static class Pcre2LiteralCompiler
                 return false;
             }
 
-            var status = Rune.DecodeFromUtf16(pattern.AsSpan(position), out var scalar, out var consumed);
+            var status = pattern.DecodeScalar(position, out var scalar, out var consumed);
             if (status != OperationStatus.Done)
             {
                 atoms = [];

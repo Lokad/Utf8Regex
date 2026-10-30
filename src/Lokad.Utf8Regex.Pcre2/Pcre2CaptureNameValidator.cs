@@ -102,7 +102,7 @@ internal static class Pcre2CaptureNameValidator
     private static bool FitsUtf8Limit(Utf8ConstructionPattern pattern, int start, int length, int maximumBytes)
         => pattern.IsUtf8 ? length <= maximumBytes : FitsUtf8Limit(pattern.Text.AsSpan(start, length), maximumBytes);
 
-    // Strict decoding precedes validation. UTF-16 length is only a cheap lower
+    // Text input uses UTF-16 length as a cheap lower
     // bound; the selected eight-bit PCRE2 profile limits UTF-8 code units.
     internal static bool FitsUtf8Limit(ReadOnlySpan<char> text, int maximumBytes)
         => text.Length <= maximumBytes && Encoding.UTF8.GetByteCount(text) <= maximumBytes;

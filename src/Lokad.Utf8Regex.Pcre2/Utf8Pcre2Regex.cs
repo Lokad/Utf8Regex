@@ -59,7 +59,7 @@ public sealed partial class Utf8Pcre2Regex
     {
     }
 
-    /// <summary>Shares decoding and compilation admission without retaining borrowed pattern bytes.</summary>
+    /// <summary>Owns admitted source storage; native compilation borrows it without decoding.</summary>
     private Utf8Pcre2Regex(
         Utf8ConstructionPattern patternSource,
         Pcre2CompileOptions options,
@@ -73,12 +73,15 @@ public sealed partial class Utf8Pcre2Regex
         Pcre2CompileValidator.ValidateArguments(options, compileSettings);
         ArgumentNullException.ThrowIfNull(patternSource.Text, "pattern");
         using var construction = Utf8ConstructionScope.Enter();
-        var pattern = patternSource.Text;
+        object pattern = patternSource.Text;
         if (patternSource.IsUtf8)
         {
             construction.Budget.ChargeWork((ulong)patternSource.Utf8.Length);
             ValidatePatternUtf8(patternSource.Utf8, construction.Budget);
-            pattern = construction.Budget.DecodeUtf8(patternSource.Utf8, Encoding.UTF8);
+            var bytes = construction.Budget.AllocateArray<byte>(patternSource.Length, false);
+            construction.Budget.ChargeWork((ulong)bytes.Length);
+            patternSource.Utf8.CopyTo(bytes);
+            pattern = bytes;
         }
         var request = new Pcre2CompileRequest(
             pattern,
@@ -143,7 +146,7 @@ public sealed partial class Utf8Pcre2Regex
     }
 
     /// <summary>Compiles a well-formed UTF-8 PCRE2 pattern with explicit options, settings, invocation resource policy, and timeout.</summary>
-    /// <remarks>The policy is validated before the UTF-8 pattern bytes are decoded. Policy-based
+    /// <remarks>The policy is validated before the UTF-8 source is acquired and parsed. Policy-based
     /// construction is a named factory rather than a constructor overload; see
     /// <see cref="Create(string, Pcre2CompileOptions, Utf8Pcre2CompileSettings, Utf8ResourcePolicy, TimeSpan)"/>.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero or exceeds the 32-bit work/depth range.</exception>
@@ -178,7 +181,7 @@ public sealed partial class Utf8Pcre2Regex
         set => s_defaultMatchTimeout = Utf8MatchTimeout.Validate(value, nameof(value));
     }
 
-    /// <summary>Gets the compiled PCRE2 pattern.</summary>
+    /// <summary>Gets pattern text as explicit interoperability; native source is decoded per request.</summary>
     public string Pattern => _program.Request.Pattern;
 
     /// <summary>Gets the compile-option flags.</summary>

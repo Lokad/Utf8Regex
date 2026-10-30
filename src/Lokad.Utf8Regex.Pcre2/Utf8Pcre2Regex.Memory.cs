@@ -16,7 +16,7 @@ public sealed partial class Utf8Pcre2Regex
             resourcePolicy, constructionPolicy, constructionTimeout, cancellationToken, programMemoryAllowance);
 
     /// <summary>Compiles strict UTF-8 pattern bytes under caller-owned program admission.</summary>
-    /// <remarks>The current parser still decodes pattern bytes within construction admission. Borrowed bytes are not retained; this is not direct native UTF-8 parsing. The returned owner has the text factory's lifetime/resource contract.</remarks>
+    /// <remarks>Strict validation, an owned source-byte copy and direct scalar parsing share construction admission. Caller-buffer reuse is safe after return. The returned owner has the text factory's lifetime/resource contract; Pattern text is explicit interoperability.</remarks>
     public static Utf8Pcre2RegexProgramOwner Compile(ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options,
         Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout,
         Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy,

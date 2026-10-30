@@ -26,7 +26,7 @@ public sealed partial class Utf8Pcre2Regex
 
     /// <summary>Compiles strict UTF-8 pattern bytes under explicit eager construction and execution policies.</summary>
     /// <remarks>Admission and interruption include bounded strict validation and
-    /// decoding before parsing. The construction timeout is separate from the
+    /// direct scalar parsing of owned source bytes. The construction timeout is separate from the
     /// returned expression's match timeout. Timeout exceptions have empty Input
     /// and Pattern, avoiding decoding merely to report interruption. Covered
     /// construction uses the same scope and exclusions as the text factory.</remarks>

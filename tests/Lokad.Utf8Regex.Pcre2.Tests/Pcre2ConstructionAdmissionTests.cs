@@ -80,7 +80,7 @@ public sealed class Pcre2ConstructionAdmissionTests
     }
 
     [Fact]
-    public void BytePatternWorkAdmissionPrecedesValidationAndDecode()
+    public void BytePatternWorkAdmissionPrecedesValidationAndAcquisition()
     {
         using var scope = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 0, ulong.MaxValue);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Pcre2Regex(new byte[] { 0xff }));
@@ -126,11 +126,11 @@ public sealed class Pcre2ConstructionAdmissionTests
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
-    public void EveryBytePatternEntryAdmitsDecodedTextBeforeParsing(int entry)
+    public void EveryBytePatternEntryAdmitsOwnedSourceBeforeParsing(int entry)
     {
         var encoded = System.Text.Encoding.UTF8.GetBytes(new string('(', 256));
-        var decodedBytes = Utf8ConstructionBudget.StringBytes(256);
-        using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, decodedBytes + 47);
+        var sourceBytes = Utf8ConstructionBudget.ArrayBytes<byte>(encoded.Length);
+        using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, sourceBytes + 47);
         var parent = scope.Budget.AllocateArray<byte>(1, false);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
@@ -143,7 +143,7 @@ public sealed class Pcre2ConstructionAdmissionTests
             };
         });
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
-        Assert.Equal(decodedBytes + 48, failure.Requested);
+        Assert.Equal(sourceBytes + 48, failure.Requested);
         Assert.Equal(48ul, scope.Budget.ReservedBytes);
         Assert.Equal(48ul, scope.Budget.PeakBytes);
         Assert.Equal(0ul, scope.Budget.Peak);
@@ -153,7 +153,7 @@ public sealed class Pcre2ConstructionAdmissionTests
     [Theory]
     [InlineData("")] [InlineData("cat")] [InlineData("é")]
     [InlineData("😀")] [InlineData("a😀é中")]
-    public void RetainedDecodedPatternSharesTheCompilationLoanWithoutChargingBorrowedText(string pattern)
+    public void RetainedNativePatternSharesTheCompilationLoanWithoutChargingBorrowedText(string pattern)
     {
         ulong held;
         ulong peak;
@@ -167,19 +167,19 @@ public sealed class Pcre2ConstructionAdmissionTests
             slots = borrowed.Budget.Reserved;
         }
         var encoded = System.Text.Encoding.UTF8.GetBytes(pattern);
-        using var decoded = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity);
+        using var native = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity);
         var owned = new Utf8Pcre2Regex(encoded);
         Assert.Equal(pattern, owned.Pattern);
         Assert.True(owned.IsMatch(encoded));
-        Assert.Equal(held + Utf8ConstructionBudget.StringBytes(pattern.Length), decoded.Budget.ReservedBytes);
-        Assert.Equal(peak + Utf8ConstructionBudget.StringBytes(pattern.Length), decoded.Budget.PeakBytes);
-        Assert.Equal(slots, decoded.Budget.Reserved);
+        Assert.Equal(held + Utf8ConstructionBudget.ArrayBytes<byte>(encoded.Length), native.Budget.ReservedBytes);
+        Assert.Equal(peak + Utf8ConstructionBudget.ArrayBytes<byte>(encoded.Length), native.Budget.PeakBytes);
+        Assert.Equal(slots, native.Budget.Reserved);
         if (encoded.Length > 0) encoded[0] = (byte)'z';
         Assert.Equal(pattern, owned.Pattern);
     }
 
     [Fact]
-    public void PolicyAndUtf8ErrorsPrecedeDecodeAdmissionAndFailedParsingRestoresParent()
+    public void PolicyAndUtf8ErrorsPrecedeSourceAdmissionAndFailedParsingRestoresParent()
     {
         // The boundary recovery includes admitted scalar/prepared/cursor plans;
         // the byte-pattern probe peaks at 22,672 bytes, plus this parent loan.

@@ -298,7 +298,7 @@ internal static class Pcre2CharacterCompiler
     internal static Pcre2CharacterProgram? Compile(Pcre2CompileRequest request)
     {
         using var construction = Utf8ConstructionScope.Enter();
-        construction.Budget.ChargeWork((ulong)request.Pattern.Length + 1);
+        construction.Budget.ChargeWork((ulong)request.ConstructionPattern.Length + 1);
         using var parser = new Pcre2CharacterParser(request);
         if (!parser.TryParse(out var tokens)) return null;
         if (request.UsesCrLfNewlines)
@@ -384,7 +384,7 @@ internal static class Pcre2CharacterCompiler
 internal sealed class Pcre2CharacterParser : IDisposable
 {
     private readonly Pcre2CompileRequest _request;
-    private readonly string _pattern;
+    private Utf8ConstructionPattern _pattern => _request.ConstructionPattern;
     private readonly Utf8ConstructionBudget _budget;
     private readonly Utf8ConstructionBuffer<Pcre2CharacterToken> _tokens;
     private int _nextCheckpoint;
@@ -405,7 +405,6 @@ internal sealed class Pcre2CharacterParser : IDisposable
         _request = request;
         _budget = Utf8ConstructionScope.CurrentBudget;
         _tokens = new Utf8ConstructionBuffer<Pcre2CharacterToken>(_budget, instructions: true);
-        _pattern = request.Pattern;
         _offset = patternOffset;
         _options = options;
         _requiresCharacterProgram = (request.Options &
@@ -970,7 +969,7 @@ internal sealed class Pcre2CharacterParser : IDisposable
                 end++;
             }
 
-            if (!TryParseScalarNumber(_pattern.AsSpan(begin, end - begin), 8, out var zeroOctal))
+            if (!TryParseScalarNumber(begin, end - begin, 8, out var zeroOctal))
             {
                 term = default;
                 return false;
@@ -1035,7 +1034,8 @@ internal sealed class Pcre2CharacterParser : IDisposable
             return false;
         }
 
-        var value = new Rune(escape);
+        _offset--;
+        if (!TryReadPatternRune(out var value, out _)) { term = default; return false; }
         scalar = value;
         term = Pcre2CharacterClassTerm.CreateRange(value.Value, value.Value);
         return true;
@@ -1062,7 +1062,7 @@ internal sealed class Pcre2CharacterParser : IDisposable
             nameStart++;
         }
 
-        var name = Pcre2CharacterSemantics.NormalizePropertyName(_pattern.AsSpan(nameStart, end - (nameStart)));
+        var name = NormalizePropertyName(nameStart, end - nameStart);
         if (!Pcre2CharacterSemantics.IsKnownPosixName(name))
         {
             return false;
@@ -1100,6 +1100,10 @@ internal sealed class Pcre2CharacterParser : IDisposable
         Add(Pcre2CharacterToken.CreateClass(characterClass, _options));
     }
 
+    private string NormalizePropertyName(int start, int length)
+        => Pcre2CharacterSemantics.NormalizePropertyName(_pattern.IsUtf8
+            ? _pattern.CopyText(start, length).AsSpan() : _pattern.Text.AsSpan(start, length));
+
     private bool TryReadPropertyName(out string property, out bool negated)
     {
         property = string.Empty;
@@ -1136,7 +1140,7 @@ internal sealed class Pcre2CharacterParser : IDisposable
             propertyStart++;
         }
 
-        property = Pcre2CharacterSemantics.NormalizePropertyName(_pattern.AsSpan(propertyStart, end - (propertyStart)));
+        property = NormalizePropertyName(propertyStart, end - propertyStart);
         if (!Pcre2CharacterSemantics.IsKnownProperty(property))
         {
             return false;
@@ -1196,8 +1200,8 @@ internal sealed class Pcre2CharacterParser : IDisposable
         var end = FindPatternDelimiter("}", _offset + 1);
         const string Prefix = "U+";
         if (end < 0 ||
-            !_pattern.AsSpan(_offset + 1, end - _offset - 1).StartsWith(Prefix, StringComparison.OrdinalIgnoreCase) ||
-            !TryParseScalarNumber(_pattern.AsSpan(_offset + 3, end - _offset - 3), 16, out scalar))
+            end - _offset - 1 < Prefix.Length || !_pattern.StartsWithAscii(_offset + 1, Prefix, ignoreCase: true) ||
+            !TryParseScalarNumber(_offset + 3, end - _offset - 3, 16, out scalar))
         {
             scalar = default;
             return false;
@@ -1221,7 +1225,7 @@ internal sealed class Pcre2CharacterParser : IDisposable
             end++;
         }
 
-        if (end == begin || !TryParseScalarNumber(_pattern.AsSpan(begin, end - begin), 16, out scalar))
+        if (end == begin || !TryParseScalarNumber(begin, end - begin, 16, out scalar))
         {
             scalar = default;
             return false;
@@ -1240,7 +1244,7 @@ internal sealed class Pcre2CharacterParser : IDisposable
         }
 
         var end = FindPatternDelimiter("}", _offset + 1);
-        if (end < 0 || !TryParseScalarNumber(_pattern.AsSpan(_offset + 1, end - _offset - 1), radix, out scalar))
+        if (end < 0 || !TryParseScalarNumber(_offset + 1, end - _offset - 1, radix, out scalar))
         {
             scalar = default;
             return false;
@@ -1270,7 +1274,7 @@ internal sealed class Pcre2CharacterParser : IDisposable
             end++;
         }
 
-        if (!TryParseScalarNumber(_pattern.AsSpan(begin, end - begin), 8, out var scalar))
+        if (!TryParseScalarNumber(begin, end - begin, 8, out var scalar))
         {
             return false;
         }
@@ -1280,19 +1284,19 @@ internal sealed class Pcre2CharacterParser : IDisposable
         return true;
     }
 
-    private static bool TryParseScalarNumber(ReadOnlySpan<char> text, int radix, out Rune scalar)
+    private bool TryParseScalarNumber(int start, int length, int radix, out Rune scalar)
     {
         scalar = default;
-        if (text.IsEmpty)
+        if (length == 0)
         {
             return false;
         }
 
         var value = 0;
-        for (var index = 0; index < text.Length; index++)
+        for (var index = 0; index < length; index++)
         {
-            if ((index & 2047) == 0) Utf8ConstructionScope.ChargeWork((ulong)Math.Min(2048, text.Length - index));
-            var ch = text[index];
+            if ((index & 2047) == 0) Utf8ConstructionScope.ChargeWork((ulong)Math.Min(2048, length - index));
+            var ch = _pattern[start + index];
             var digit = ch switch
             {
                 >= '0' and <= '9' => ch - '0',
@@ -1356,7 +1360,7 @@ internal sealed class Pcre2CharacterParser : IDisposable
             }
 
             moved = true;
-            Pcre2PatternCodeScan.TrySkipExtendedComment(new Utf8ConstructionPattern(_pattern), ref _offset, true, _request.Settings.Newline);
+            Pcre2PatternCodeScan.TrySkipExtendedComment(_pattern, ref _offset, true, _request.Settings.Newline);
             _offset++;
         }
 
@@ -1379,8 +1383,13 @@ internal sealed class Pcre2CharacterParser : IDisposable
             var count = Math.Min(2048, _pattern.Length - cursor);
             var available = Math.Min(_pattern.Length - cursor, count + delimiter.Length - 1);
             _budget.ChargeWork((ulong)available);
-            var found = _pattern.AsSpan(cursor, available).IndexOf(delimiter);
-            if (found >= 0) return cursor + found;
+            var limit = cursor + available - delimiter.Length;
+            for (var candidate = cursor; candidate <= limit; candidate++)
+            {
+                candidate = _pattern.IndexOf(delimiter[0], candidate, limit - candidate + 1);
+                if (candidate < 0) break;
+                if (_pattern.StartsWithAscii(candidate, delimiter)) return candidate;
+            }
             cursor += count;
         }
         return -1;
@@ -1391,7 +1400,7 @@ internal sealed class Pcre2CharacterParser : IDisposable
 
     private bool TryReadPatternRune(out Rune rune, out int length)
     {
-        var status = Rune.DecodeFromUtf16(_pattern.AsSpan(_offset), out rune, out length);
+        var status = _pattern.DecodeScalar(_offset, out rune, out length);
         if (status != OperationStatus.Done)
         {
             return false;

@@ -26,7 +26,7 @@ substitution exception. The completion ledger records intentional operation
 support/rejection, rather than inferring it from another engine.
 
 Create validates common policy first; constructors validate timeout, option bits
-and settings before strict pattern decoding/admission. Explicit Compile accepts
+and settings before strict pattern validation/admission. Explicit Compile accepts
 separate construction policy/timeout/token and observes pre-cancellation before
 argument work. Invalid UTF-8 reports absolute byte offsets. A match byte floor
 must be in [0,input.Length]; text-aware execution requires a valid scalar boundary.
@@ -196,8 +196,14 @@ also spend invocation work. Warm plans use their bounded cache. See
 `Utf8Pcre2RegexProgramOwner` for text or strict UTF-8 pattern input. Compilation
 uses the existing shared allowance before substantial acquisition, without an
 extra private byte ceiling when construction MaxBytes is null. Fixed work/depth/
-instruction backstops remain. Byte pattern preparation still decodes to the text
-parser under admission; direct UTF-8 compilation remains unfinished.
+instruction backstops remain. Byte patterns are strictly validated, copied into
+admitted owned storage and parsed directly by the existing PCRE2 grammar. Caller
+reuse after compilation cannot alter the program. `Pattern` decodes on explicit
+request and does not cache that string. Selected names, properties and diagnostic
+operands may project text; compilation does not require a whole-pattern string.
+Native construction work/extent charges use source bytes; string entries retain
+UTF-16 source units. Coarse AST admission can therefore be larger for native
+Unicode sources. Exact internal charges are not a stable heap-size contract.
 
 The owner exposes Boolean matching and Count with byte starts, PCRE2 match flags
 and each call's cancellation token. Temporary storage uses program funding by

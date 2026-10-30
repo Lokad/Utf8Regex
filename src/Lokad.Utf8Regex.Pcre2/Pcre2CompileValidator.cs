@@ -197,7 +197,7 @@ internal static class Pcre2CompileValidator
                 }
 
                 // Endpoint ordering belongs to the scalar class parser. Raw
-                // UTF-16 characters and escape spellings are not endpoint values.
+                // Source units and escape spellings are not endpoint values.
                 if (character == '[') Pcre2PatternCodeScan.TrySkipPosixClassToken(pattern, ref offset);
                 classHasAtom = true;
                 classStart = false;

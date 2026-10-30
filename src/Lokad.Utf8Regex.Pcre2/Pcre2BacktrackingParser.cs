@@ -12,7 +12,7 @@ namespace Lokad.Utf8Regex.Pcre2;
 internal sealed class Pcre2BacktrackingParser
 {
     private readonly Pcre2CompileRequest _request;
-    private readonly string _pattern;
+    private Utf8ConstructionPattern _pattern => _request.ConstructionPattern;
     private int _offset;
     private Pcre2CharacterOptions _options;
     private bool _ungreedy;
@@ -27,7 +27,6 @@ internal sealed class Pcre2BacktrackingParser
     internal Pcre2BacktrackingParser(Pcre2CompileRequest request)
     {
         _request = request;
-        _pattern = request.Pattern;
         _options = Pcre2CharacterOptionsFactory.FromCompileOptions(request.Options);
         _ungreedy = (request.Options & Pcre2CompileOptions.Ungreedy) != 0;
         _noAutoCapture = (request.Options & Pcre2CompileOptions.NoAutoCapture) != 0;
@@ -118,7 +117,7 @@ internal sealed class Pcre2BacktrackingParser
                 continue;
             }
 
-            if (_pattern.AsSpan(_offset).StartsWith("\\Q", StringComparison.Ordinal))
+            if (_pattern.StartsWithAscii(_offset, "\\Q"))
             {
                 if (!TryParseQuotedSequence(out var quotedChildren))
                 {
@@ -169,7 +168,7 @@ internal sealed class Pcre2BacktrackingParser
         var budget = Pcre2BacktrackingCompiler.EnterDepth();
         try
         {
-            if (_pattern.AsSpan(_offset).StartsWith("\\K", StringComparison.Ordinal))
+            if (_pattern.StartsWithAscii(_offset, "\\K"))
             {
                 _sawControlFlow = true;
                 _offset += 2;
@@ -184,8 +183,8 @@ internal sealed class Pcre2BacktrackingParser
 
             if (_pattern[_offset] == '(')
             {
-                if (_pattern.AsSpan(_offset).StartsWith("(?>", StringComparison.Ordinal) ||
-                    _pattern.AsSpan(_offset).StartsWith("(*atomic:", StringComparison.OrdinalIgnoreCase))
+                if (_pattern.StartsWithAscii(_offset, "(?>") ||
+                    _pattern.StartsWithAscii(_offset, "(*atomic:", ignoreCase: true))
                 {
                     return TryParseAtomicGroup(out node);
                 }
@@ -205,7 +204,7 @@ internal sealed class Pcre2BacktrackingParser
                     return true;
                 }
 
-                if (_pattern.AsSpan(_offset).StartsWith("(?|", StringComparison.Ordinal))
+                if (_pattern.StartsWithAscii(_offset, "(?|"))
                 {
                     return TryParseBranchReset(out node);
                 }
@@ -275,8 +274,8 @@ internal sealed class Pcre2BacktrackingParser
                     return true;
                 }
 
-                var explicitNoncapturing = _pattern.AsSpan(_offset).StartsWith("(?:", StringComparison.Ordinal);
-                if (explicitNoncapturing || _noAutoCapture && !_pattern.AsSpan(_offset).StartsWith("(?", StringComparison.Ordinal))
+                var explicitNoncapturing = _pattern.StartsWithAscii(_offset, "(?:");
+                if (explicitNoncapturing || _noAutoCapture && !_pattern.StartsWithAscii(_offset, "(?"))
                 {
                     _sawControlFlow = true;
                     _offset += explicitNoncapturing ? 3 : 1;
@@ -339,7 +338,7 @@ internal sealed class Pcre2BacktrackingParser
                     return true;
                 }
 
-                if (_pattern.AsSpan(_offset).StartsWith("(?#", StringComparison.Ordinal))
+                if (_pattern.StartsWithAscii(_offset, "(?#"))
                 {
                     var end = _pattern.IndexOf(')', _offset + 3);
                     if (end < 0)
@@ -394,19 +393,19 @@ internal sealed class Pcre2BacktrackingParser
 
         var nameStart = 0;
         char terminator;
-        if (_pattern.AsSpan(_offset).StartsWith("(?<", StringComparison.Ordinal) &&
+        if (_pattern.StartsWithAscii(_offset, "(?<") &&
             _offset + 3 < _pattern.Length &&
             _pattern[_offset + 3] is not ('=' or '!'))
         {
             nameStart = _offset + 3;
             terminator = '>';
         }
-        else if (_pattern.AsSpan(_offset).StartsWith("(?P<", StringComparison.Ordinal))
+        else if (_pattern.StartsWithAscii(_offset, "(?P<"))
         {
             nameStart = _offset + 4;
             terminator = '>';
         }
-        else if (_pattern.AsSpan(_offset).StartsWith("(?\'", StringComparison.Ordinal))
+        else if (_pattern.StartsWithAscii(_offset, "(?\'"))
         {
             nameStart = _offset + 3;
             terminator = '\'';
@@ -417,12 +416,12 @@ internal sealed class Pcre2BacktrackingParser
         }
 
         var nameEnd = _pattern.IndexOf(terminator, nameStart);
-        if (nameEnd <= nameStart || !IsValidCaptureName(_pattern.AsSpan(nameStart, nameEnd - nameStart)))
+        if (nameEnd <= nameStart || !IsValidCaptureName(nameStart, nameEnd - nameStart))
         {
             return false;
         }
 
-        name = _pattern[nameStart..nameEnd];
+        name = _pattern.CopyText(nameStart, nameEnd - nameStart);
         openingLength = nameEnd - _offset + 1;
         return true;
     }
@@ -480,16 +479,16 @@ internal sealed class Pcre2BacktrackingParser
             }
         }
 
-        if (_pattern.AsSpan(_offset).StartsWith("(?P=", StringComparison.Ordinal))
+        if (_pattern.StartsWithAscii(_offset, "(?P="))
         {
             var nameStart = _offset + 4;
             var nameEnd = _pattern.IndexOf(')', nameStart);
-            if (nameEnd <= nameStart || !IsValidCaptureName(_pattern.AsSpan(nameStart, nameEnd - nameStart)))
+            if (nameEnd <= nameStart || !IsValidCaptureName(nameStart, nameEnd - nameStart))
             {
                 return false;
             }
 
-            var name = _pattern[nameStart..nameEnd];
+            var name = _pattern.CopyText(nameStart, nameEnd - nameStart);
             _offset = nameEnd + 1;
             node = CreateBackreference(Pcre2BackreferenceTargetKind.Named, 0, name);
             return true;
@@ -504,7 +503,7 @@ internal sealed class Pcre2BacktrackingParser
         _offset += 2;
         while (_offset < _pattern.Length)
         {
-            if (_pattern.AsSpan(_offset).StartsWith("\\E", StringComparison.Ordinal))
+            if (_pattern.StartsWithAscii(_offset, "\\E"))
             {
                 _offset += 2;
                 break;
@@ -512,7 +511,7 @@ internal sealed class Pcre2BacktrackingParser
 
             Utf8ConstructionScope.ChargeWork(1);
             var literalStart = _offset;
-            if (Rune.DecodeFromUtf16(_pattern.AsSpan(_offset), out var literal, out var length) != OperationStatus.Done)
+            if (_pattern.DecodeScalar(_offset, out var literal, out var length) != OperationStatus.Done)
             {
                 children = [];
                 return false;
@@ -546,7 +545,7 @@ internal sealed class Pcre2BacktrackingParser
                 return false;
             }
 
-            var content = _pattern.AsSpan(contentStart, end - contentStart);
+            var content = _pattern.CopyText(contentStart, end - contentStart).AsSpan();
             if (TryParseSignedReference(content, out var number))
             {
                 _offset = end + 1;
@@ -597,12 +596,12 @@ internal sealed class Pcre2BacktrackingParser
         };
         var nameStart = cursor + 1;
         var nameEnd = _pattern.IndexOf(terminator, nameStart);
-        if (nameEnd <= nameStart || !IsValidCaptureName(_pattern.AsSpan(nameStart, nameEnd - nameStart)))
+        if (nameEnd <= nameStart || !IsValidCaptureName(nameStart, nameEnd - nameStart))
         {
             return false;
         }
 
-        var name = _pattern[nameStart..nameEnd];
+        var name = _pattern.CopyText(nameStart, nameEnd - nameStart);
         _offset = nameEnd + 1;
         node = CreateBackreference(Pcre2BackreferenceTargetKind.Named, 0, name);
         return true;
@@ -686,6 +685,24 @@ internal sealed class Pcre2BacktrackingParser
         }
 
         number *= sign;
+        return true;
+    }
+
+    private bool IsValidCaptureName(int start, int length)
+    {
+        if (!_pattern.IsUtf8) return IsValidCaptureName(_pattern.Text.AsSpan(start, length));
+        if (length is 0 or > 128) return false;
+        var first = true;
+        var end = start + length;
+        for (var position = start; position < end;)
+        {
+            if (_pattern.DecodeScalar(position, out var scalar, out var consumed) != OperationStatus.Done ||
+                consumed > end - position) return false;
+            if (scalar.Value != '_' && !Rune.IsLetter(scalar) &&
+                (first || Rune.GetUnicodeCategory(scalar) != System.Globalization.UnicodeCategory.DecimalDigitNumber)) return false;
+            first = false;
+            position += consumed;
+        }
         return true;
     }
 
@@ -778,7 +795,7 @@ internal sealed class Pcre2BacktrackingParser
     private bool TryParseAtomicGroup(out IPcre2BacktrackingNode node)
     {
         _sawControlFlow = true;
-        var longForm = _pattern.AsSpan(_offset).StartsWith("(*atomic:", StringComparison.OrdinalIgnoreCase);
+        var longForm = _pattern.StartsWithAscii(_offset, "(*atomic:", ignoreCase: true);
         _offset += longForm ? 9 : 3;
         var outerOptions = _options;
         var outerUngreedy = _ungreedy;
@@ -806,7 +823,7 @@ internal sealed class Pcre2BacktrackingParser
     private bool TryParseControlVerb(out IPcre2BacktrackingNode node)
     {
         node = Pcre2EmptyBacktrackingNode.Instance;
-        if (!_pattern.AsSpan(_offset).StartsWith("(*", StringComparison.Ordinal))
+        if (!_pattern.StartsWithAscii(_offset, "(*"))
         {
             return false;
         }
@@ -817,7 +834,7 @@ internal sealed class Pcre2BacktrackingParser
             return false;
         }
 
-        var content = _pattern.AsSpan(_offset + 2, end - _offset - 2);
+        var content = _pattern.CopyText(_offset + 2, end - _offset - 2).AsSpan();
         var colon = content.IndexOf(':');
         var verbText = colon < 0 ? content : content[..colon];
         var name = colon < 0 ? ReadOnlySpan<char>.Empty : content[(colon + 1)..];
@@ -940,8 +957,8 @@ internal sealed class Pcre2BacktrackingParser
     private bool TryParseSubroutineCall(out IPcre2BacktrackingNode node)
     {
         node = Pcre2EmptyBacktrackingNode.Instance;
-        if (_pattern.AsSpan(_offset).StartsWith("(?R)", StringComparison.Ordinal) ||
-            _pattern.AsSpan(_offset).StartsWith("(?0)", StringComparison.Ordinal))
+        if (_pattern.StartsWithAscii(_offset, "(?R)") ||
+            _pattern.StartsWithAscii(_offset, "(?0)"))
         {
             _offset += 4;
             node = new Pcre2SubroutineCallBacktrackingNode(
@@ -949,24 +966,24 @@ internal sealed class Pcre2BacktrackingParser
             return true;
         }
 
-        if (_pattern.AsSpan(_offset).StartsWith("(?&", StringComparison.Ordinal) ||
-            _pattern.AsSpan(_offset).StartsWith("(?P>", StringComparison.Ordinal))
+        if (_pattern.StartsWithAscii(_offset, "(?&") ||
+            _pattern.StartsWithAscii(_offset, "(?P>"))
         {
             var nameStart = _offset + (_pattern[_offset + 2] == '&' ? 3 : 4);
             var nameEnd = _pattern.IndexOf(')', nameStart);
-            if (nameEnd <= nameStart || !IsValidCaptureName(_pattern.AsSpan(nameStart, nameEnd - nameStart)))
+            if (nameEnd <= nameStart || !IsValidCaptureName(nameStart, nameEnd - nameStart))
             {
                 return false;
             }
 
-            var name = _pattern[nameStart..nameEnd];
+            var name = _pattern.CopyText(nameStart, nameEnd - nameStart);
             _offset = nameEnd + 1;
             node = new Pcre2SubroutineCallBacktrackingNode(
                 new Pcre2BackreferenceTarget(Pcre2BackreferenceTargetKind.Named, 0, name, _captureCount));
             return true;
         }
 
-        if (!_pattern.AsSpan(_offset).StartsWith("(?", StringComparison.Ordinal) ||
+        if (!_pattern.StartsWithAscii(_offset, "(?") ||
             _offset + 3 >= _pattern.Length ||
             _pattern[_offset + 2] is not ('+' or '-' or >= '1' and <= '9'))
         {
@@ -993,14 +1010,14 @@ internal sealed class Pcre2BacktrackingParser
     private bool TryParseConditional(out IPcre2BacktrackingNode node)
     {
         node = Pcre2EmptyBacktrackingNode.Instance;
-        if (!_pattern.AsSpan(_offset).StartsWith("(?(", StringComparison.Ordinal))
+        if (!_pattern.StartsWithAscii(_offset, "(?("))
         {
             return false;
         }
 
         _sawControlFlow = true;
         _offset += 3;
-        if (_pattern.AsSpan(_offset).StartsWith("DEFINE)", StringComparison.Ordinal))
+        if (_pattern.StartsWithAscii(_offset, "DEFINE)"))
         {
             _offset += 7;
             var definitionOptions = _options;
@@ -1075,22 +1092,22 @@ internal sealed class Pcre2BacktrackingParser
         assertion = null;
         Pcre2AssertionKind kind;
         var openingLength = 0;
-        if (_pattern.AsSpan(_offset).StartsWith("?<=", StringComparison.Ordinal))
+        if (_pattern.StartsWithAscii(_offset, "?<="))
         {
             kind = Pcre2AssertionKind.PositiveLookbehind;
             openingLength = 3;
         }
-        else if (_pattern.AsSpan(_offset).StartsWith("?<!", StringComparison.Ordinal))
+        else if (_pattern.StartsWithAscii(_offset, "?<!"))
         {
             kind = Pcre2AssertionKind.NegativeLookbehind;
             openingLength = 3;
         }
-        else if (_pattern.AsSpan(_offset).StartsWith("?=", StringComparison.Ordinal))
+        else if (_pattern.StartsWithAscii(_offset, "?="))
         {
             kind = Pcre2AssertionKind.PositiveLookahead;
             openingLength = 2;
         }
-        else if (_pattern.AsSpan(_offset).StartsWith("?!", StringComparison.Ordinal))
+        else if (_pattern.StartsWithAscii(_offset, "?!"))
         {
             kind = Pcre2AssertionKind.NegativeLookahead;
             openingLength = 2;
@@ -1136,7 +1153,7 @@ internal sealed class Pcre2BacktrackingParser
             return false;
         }
 
-        var content = _pattern.AsSpan(contentStart, contentEnd - contentStart);
+        var content = _pattern.CopyText(contentStart, contentEnd - contentStart).AsSpan();
         if (content[0] == 'R')
         {
             if (content.Length == 1)
@@ -1304,28 +1321,28 @@ internal sealed class Pcre2BacktrackingParser
 
     private bool TryParseAssertionOpening(out Pcre2AssertionKind assertionKind, out int openingLength)
     {
-        if (_pattern.AsSpan(_offset).StartsWith("(?=", StringComparison.Ordinal))
+        if (_pattern.StartsWithAscii(_offset, "(?="))
         {
             assertionKind = Pcre2AssertionKind.PositiveLookahead;
             openingLength = 3;
             return true;
         }
 
-        if (_pattern.AsSpan(_offset).StartsWith("(?!", StringComparison.Ordinal))
+        if (_pattern.StartsWithAscii(_offset, "(?!"))
         {
             assertionKind = Pcre2AssertionKind.NegativeLookahead;
             openingLength = 3;
             return true;
         }
 
-        if (_pattern.AsSpan(_offset).StartsWith("(?<=", StringComparison.Ordinal))
+        if (_pattern.StartsWithAscii(_offset, "(?<="))
         {
             assertionKind = Pcre2AssertionKind.PositiveLookbehind;
             openingLength = 4;
             return true;
         }
 
-        if (_pattern.AsSpan(_offset).StartsWith("(?<!", StringComparison.Ordinal))
+        if (_pattern.StartsWithAscii(_offset, "(?<!"))
         {
             assertionKind = Pcre2AssertionKind.NegativeLookbehind;
             openingLength = 4;
@@ -1349,7 +1366,7 @@ internal sealed class Pcre2BacktrackingParser
         noAutoCapture = _noAutoCapture;
         allowDuplicateNames = _allowDuplicateNames;
         openingLength = 0;
-        if (_offset + 3 > _pattern.Length || !_pattern.AsSpan(_offset).StartsWith("(?", StringComparison.Ordinal))
+        if (_offset + 3 > _pattern.Length || !_pattern.StartsWithAscii(_offset, "(?"))
         {
             return false;
         }
@@ -1571,7 +1588,7 @@ internal sealed class Pcre2BacktrackingParser
                 return;
             }
 
-            Pcre2PatternCodeScan.TrySkipExtendedComment(new Utf8ConstructionPattern(_pattern), ref _offset, true, _request.Settings.Newline);
+            Pcre2PatternCodeScan.TrySkipExtendedComment(_pattern, ref _offset, true, _request.Settings.Newline);
             _offset++;
         }
     }

@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Lokad.Utf8Regex.Internal;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
@@ -13,12 +14,19 @@ using Lokad.Utf8Regex.Internal.Search;
 namespace Lokad.Utf8Regex.Pcre2;
 
 internal readonly record struct Pcre2CompileRequest(
-    string Pattern,
+    object PatternSource,
     Pcre2CompileOptions Options,
     Utf8Pcre2CompileSettings Settings,
     Utf8Pcre2ExecutionLimits DefaultLimits,
     TimeSpan MatchTimeout)
 {
+    internal Utf8ConstructionPattern ConstructionPattern => PatternSource is byte[] bytes
+        ? new Utf8ConstructionPattern(bytes) : new Utf8ConstructionPattern((string)PatternSource);
+
+    // Explicit diagnostic/interoperability projection; native compilation and
+    // successful execution never request it, and do not retain the result.
+    internal string Pattern => PatternSource is string text ? text : Encoding.UTF8.GetString((byte[])PatternSource);
+
     // Derived during compilation, including explicit newline atoms and leading
     // class filtering. Explicit caller starts at LF remain admissible.
     internal bool SkipsCrLfContinuation { get; init; }
@@ -41,7 +49,7 @@ internal static class Pcre2Compiler
 {
     internal static Pcre2CompiledProgram Compile(Pcre2CompileRequest request)
     {
-        Pcre2CompileValidator.ValidatePattern(request.Pattern, request.Options, request.Settings);
+        Pcre2CompileValidator.ValidatePattern(request.ConstructionPattern, request.Options, request.Settings);
         if (Pcre2LiteralCompiler.Compile(request) is { } literal)
         {
             var literalProgram = Pcre2CompiledProgramOverlay.CreateLiteral(request, literal);
@@ -75,7 +83,10 @@ internal static class Pcre2Compiler
     {
         try
         {
-            regex = new Utf8Regex(request.Pattern, ToRegexOptions(request.Options), request.MatchTimeout, request.CoreResourcePolicy);
+            var source = request.ConstructionPattern;
+            regex = source.IsUtf8
+                ? new Utf8Regex(source.Utf8, ToRegexOptions(request.Options), request.MatchTimeout, request.CoreResourcePolicy)
+                : new Utf8Regex(source.Text, ToRegexOptions(request.Options), request.MatchTimeout, request.CoreResourcePolicy);
             return true;
         }
         catch (ArgumentException)

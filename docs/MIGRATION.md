@@ -132,8 +132,10 @@ match flags and separate working admission. Its `CreateMatchCursor` and
 `MoveNextRetained` follow the same explicit lifetime rule with PCRE2 last-capture
 ranges, duplicate names and consumed-range progression. Opted-in `\C` values may
 be scalar fragments; inspect the range's `IsUtf8SliceWellFormed` before decoding.
-PCRE2 scalar-coordinate queries, native UTF-8 pattern/template parsing and funded
-replacement remain unfinished.
+PCRE2 byte pattern constructors and funded Compile now own and parse UTF-8 source
+directly; `Pattern` is an explicit text projection. Selected names/properties can
+still use internal text. PCRE2 scalar-coordinate queries, native template parsing
+and funded replacement remain unfinished.
 The [resource contract](SPEC.md#cancellation-deadlines-and-resource-limits)
 distinguishes modeled live admission from cumulative work/result traffic.
 
