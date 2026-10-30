@@ -19,8 +19,10 @@ internal static class Utf8OwnedOptionPrelude
     public static string NormalizeLeadingGlobalOptions(string pattern, ref RegexOptions options)
     {
         using var owner = Utf8ConstructionScope.Enter();
-        var consumed = ConsumeLeadingGlobalOptions(new Utf8ConstructionPattern(pattern), ref options);
+        var stagedOptions = options;
+        var consumed = ConsumeLeadingGlobalOptions(new Utf8ConstructionPattern(pattern), ref stagedOptions);
         var result = consumed == 0 ? pattern : owner.Budget.CopyText(pattern.AsSpan(consumed));
+        options = stagedOptions;
         owner.Complete();
         return result;
     }
