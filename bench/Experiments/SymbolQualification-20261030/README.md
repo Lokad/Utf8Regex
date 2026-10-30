@@ -15,7 +15,7 @@ This establishes equal scalar-compatible results on this corpus, without claimin
 general UTF-16/scalar equivalence. [Probe](corpus-probe.cs.txt) and
 [project](corpus-probe.csproj.txt) are retained.
 
-One [focused qualification](qualification-first.log), using the existing
+One [focused qualification](qualification-first.txt), using the existing
 --refresh-readme-case command with one requested iteration/five samples, reproduced
 the short decode+compiled lane. The **single allowed confirmation** used the same
 command with requested floor **five**, preserving independent lane calibration,
@@ -23,7 +23,7 @@ five samples, source/runtime and all six lanes. Its minimum batch is **30.891ms*
 all duration/provenance gates pass. No sampler modification or further campaign.
 Both runs had a 120s outer cap. The successful recorded phase sum is 87.58s
 (warmup 3.79s, calibration 16.58s, sampling 56.21s, allocation 10.99s), excluding
-parent setup/serialization. [Confirmation log](qualification-confirmation.log).
+parent setup/serialization. [Confirmation log](qualification-confirmation.txt).
 
 The resulting qualified gap is **46.62x ordinary / 836.35x compiled**, about
 1.074s producer versus 23.035ms/1.287ms predecoded .NET. The difference from the

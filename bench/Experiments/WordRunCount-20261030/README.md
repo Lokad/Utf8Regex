@@ -70,8 +70,8 @@ ratio **0.039 / 0.074**, from **0.41 / 0.75**. Both now have zero producer
 allocations. Every other case, its historical identities and lifecycle/scaling
 evidence remain unchanged; prior raw samples stay in preserved historical evidence.
 Generated README tables reorder by ratio.
-README.Parity.json verification passes. Raw [boundary refresh](refresh-boundary.log)
-and [set refresh](refresh-set.log) are retained.
+README.Parity.json verification passes. Raw [boundary refresh](refresh-boundary.txt)
+and [set refresh](refresh-set.txt) are retained.
 
 [Driver](driver.cs.txt), [project](driver.csproj.txt), [route probe](route-probe.cs.txt),
 [console](comparison.txt) and [preflight](preflight.txt) accompany the raw data.

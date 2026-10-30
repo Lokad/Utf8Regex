@@ -1,0 +1,32 @@
+Measuring README benchmark case: industry/leipzig-symbol-count (requested=1, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=1;ElapsedMicroseconds=1127637.700
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=1;ElapsedMicroseconds=1135825.400
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=3;ElapsedMicroseconds=68647.300
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=40;ElapsedMicroseconds=51014.300
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=2;ElapsedMicroseconds=71620.000
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=3;ElapsedMicroseconds=22613.800
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=1;ElapsedMicroseconds=1109740.500
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=1;ElapsedMicroseconds=1124577.800
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=3;ElapsedMicroseconds=68619.600
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=40;ElapsedMicroseconds=54205.000
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=2;ElapsedMicroseconds=53487.000
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=3;ElapsedMicroseconds=17042.100
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=1;ElapsedMicroseconds=1120542.600
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=1;ElapsedMicroseconds=1113308.400
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=3;ElapsedMicroseconds=67317.100
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=40;ElapsedMicroseconds=50367.900
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=2;ElapsedMicroseconds=60286.400
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=3;ElapsedMicroseconds=20655.000
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=1;ElapsedMicroseconds=1123265.200
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=1;ElapsedMicroseconds=1121293.700
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=3;ElapsedMicroseconds=68061.500
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=40;ElapsedMicroseconds=54175.500
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=2;ElapsedMicroseconds=52629.100
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=3;ElapsedMicroseconds=16229.700
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=1;ElapsedMicroseconds=1131002.400
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=1;ElapsedMicroseconds=1133060.000
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=3;ElapsedMicroseconds=68497.900
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=40;ElapsedMicroseconds=50561.200
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=2;ElapsedMicroseconds=61439.300
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=3;ElapsedMicroseconds=21058.900
+Updated README case: industry/leipzig-symbol-count
