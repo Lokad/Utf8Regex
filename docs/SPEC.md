@@ -59,8 +59,20 @@ Unpaired surrogate atoms cannot match strict UTF-8; zero repetitions remain
 possible, and negation admits the valid scalar complement. Class ranges use
 numeric scalar order through U+10FFFF, excluding the surrogate gap.
 `[\u0000-\uffff]` covers BMP scalars; singleline dot covers every plane.
-Invalid syntax reports `ArgumentException` naming `pattern`, with a reason and
-a UTF-16 pattern offset. Representation/resource limits are distinct from syntax.
+`Utf8Regex.Compile(ReadOnlySpan<byte>, ...)` parses strict UTF-8 directly through
+the same owned scalar grammar. The call borrows its source; retained source and
+literal bytes are admitted and copied before publication. Reusing the caller's
+buffer afterwards cannot change the program. Both ordinary and caller-funded
+program forms support independent construction/execution controls. Native
+compilation does not retain a whole-pattern UTF-16 copy. `Pattern` is an explicit,
+uncached text projection; its allocation belongs to the requesting caller.
+
+Invalid syntax reports `ArgumentException` with a reason and a source offset:
+`pattern`/UTF-16 for text, `patternUtf8`/UTF-8 bytes for native compilation.
+Malformed bytes reject strictly; interruption/admission may precede a malformed
+tail. Native construction timeouts keep the exception's `Pattern` empty rather
+than decoding after expiry. Matching timeout diagnostics project text only on
+failure. Representation/resource limits remain distinct from syntax.
 
 Finite repeat maximum 2147483647 is distinct from infinity. Consuming expansion
 requires instruction/state admission. Impossible classes and compact zero-width

@@ -79,7 +79,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                                 !TryExpandFiniteRepeat(storage, result, node.M, node.N, budget, out result)) return false;
                             break;
                         case Utf8TreeNodeKind.Multi:
-                            if (!TryLowerLiteralText(storage, node.Str, budget, out var tokens)) return false;
+                            if (!TryLowerLiteralText(storage, node, budget, out var tokens)) return false;
                             result = SingleBranch(storage, new(tokens, storage.Buffer<AsciiFixedLiteralCheck>(), false, false, false, false));
                             break;
                         case Utf8TreeNodeKind.Loop:

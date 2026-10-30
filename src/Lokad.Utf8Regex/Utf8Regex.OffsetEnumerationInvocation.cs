@@ -48,7 +48,7 @@ public sealed partial class Utf8Regex
                 reservation = 0;
                 cursor = Utf8OperationMatchCursor.CreateMappedFromUnit(program, input, ref map, ref invocation, ownedReservation, utf16Offset);
             }
-            return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, Pattern, MatchTimeout);
+            return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, this);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         {
@@ -124,7 +124,7 @@ public sealed partial class Utf8Regex
                 cursor = Utf8OperationMatchCursor.CreateMappedFromUnit(_ownedSliceProgram, input,
                     ref map, ref invocation, ownedReservation, startUnit);
             }
-            return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, Pattern, MatchTimeout);
+            return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, this);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         {

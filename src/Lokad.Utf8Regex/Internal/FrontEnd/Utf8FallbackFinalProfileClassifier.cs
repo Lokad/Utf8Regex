@@ -127,12 +127,11 @@ internal static class Utf8FallbackFinalProfileClassifier
         for (var index = 0; index < slice.Count; index++)
         {
             if (!cursor.Next(out var node)) return false;
-            var width = LiteralLength(node); var value = node.Str;
+            var width = LiteralLength(node);
             for (var offset = 0; offset < width; offset++)
             {
                 Utf8ConstructionScope.ChargeWork(1);
-                if (text[position++] != (node.Kind == Utf8TreeNodeKind.One ? (byte)node.Ch :
-                    (byte)(value ?? throw new InvalidOperationException("Qualified balanced literal lost text."))[offset])) return false;
+                if (text[position++] != LiteralByte(node, offset)) return false;
             }
         }
         return true;

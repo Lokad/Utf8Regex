@@ -85,6 +85,9 @@ public sealed partial class Utf8Regex
 
     /// <summary>Shared construction worker. Validates the policy before any parsing or preparation when requested.</summary>
     private Utf8Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, bool checkPolicy)
+        : this(new Utf8ConstructionPattern(pattern), options, matchTimeout, resourcePolicy, checkPolicy) { }
+
+    private Utf8Regex(Utf8ConstructionPattern pattern, RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, bool checkPolicy)
     {
         if (checkPolicy)
         {
@@ -95,8 +98,8 @@ public sealed partial class Utf8Regex
 
         Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
         ValidateOptions(options);
-        ArgumentNullException.ThrowIfNull(pattern);
-        Pattern = pattern;
+        if (!pattern.IsUtf8) ArgumentNullException.ThrowIfNull(pattern.Text, nameof(pattern));
+        _patternText = pattern.IsUtf8 ? null : pattern.Text;
         Options = options;
         MatchTimeout = matchTimeout;
         ResourcePolicy = resourcePolicy;
@@ -162,7 +165,7 @@ public sealed partial class Utf8Regex
         // projection. Avoid maps that no public detailed/template route consumes. A missing
         // native tree cannot produce a map either; inactive catalog declarations
         // alone must not fence the literal-family native projection.
-        var scalarCaptureProjection = HasFiniteExecutionLimits || matchTimeout != Regex.InfiniteMatchTimeout ||
+        var scalarCaptureProjection = pattern.IsUtf8 || HasFiniteExecutionLimits || matchTimeout != Regex.InfiniteMatchTimeout ||
             _hasCaptures && ownedSliceProgram.HasUnicodePatternAtoms;
         var hasNativeCaptureTree = preparedRegex.ExecutionTree is not null && !UsesRightToLeft();
         _literalFamilyCaptureMap = hasNativeCaptureTree && !scalarCaptureProjection &&
@@ -187,7 +190,7 @@ public sealed partial class Utf8Regex
         _alternationBranchSpanMap = _hasCaptures && hasNativeCaptureTree && !scalarCaptureProjection
             ? Utf8AlternationBranchSpanMap.TryCreate(preparedRegex.ExecutionTree, ownedSliceProgram) : null;
         static bool CanPrioritizePlainAsciiLiteralCount(
-            string pattern,
+            Utf8ConstructionPattern pattern,
             Utf8PreparedRegex preparedRegex,
             RegexOptions options)
         {
@@ -259,11 +262,19 @@ public sealed partial class Utf8Regex
         }
 
         _replacementCache = Utf8ReplacementPlanCache.Create();
+        if (pattern.IsUtf8)
+        {
+            // Parsing borrows only during this call. Retained source bytes are
+            // separately admitted and copied before the expression can escape.
+            _patternUtf8 = construction.Budget.AllocateArray<byte>(pattern.Utf8.Length, false);
+            construction.Budget.ChargeWork((ulong)pattern.Utf8.Length);
+            pattern.Utf8.CopyTo(_patternUtf8);
+        }
         // Scratch has closed; covered retained capacity and conservative helper
         // charges survive successful children. Explicitly cover the facade and
         // borrowed pattern, and reserve the already-enforced lazy child maximum.
         _cacheProgramBytes = checked(construction.Budget.ReservedBytes - beforeProgram
-            + CachedObjectBytes + Utf8ConstructionBudget.StringBytes(Pattern.Length)
+            + CachedObjectBytes + (pattern.IsUtf8 ? 0UL : Utf8ConstructionBudget.StringBytes(pattern.Text.Length))
             + _replacementCache.MaximumRetainedBytes);
         construction.Complete();
     }
@@ -290,8 +301,12 @@ public sealed partial class Utf8Regex
     }
 
 
-    /// <summary>Gets the regular-expression pattern.</summary>
-    public string Pattern { get; }
+    private readonly string? _patternText;
+    private readonly byte[]? _patternUtf8;
+
+    /// <summary>Gets pattern text. A byte-compiled expression projects UTF-8 only for this explicit interoperability request.</summary>
+    /// <remarks>Native source is owned as bytes. Each explicit text projection allocates independently; the result is not retained in the program account.</remarks>
+    public string Pattern => _patternText ?? Encoding.UTF8.GetString(_patternUtf8!);
 
     /// <summary>Gets the .NET regular-expression options used during compilation.</summary>
     public RegexOptions Options { get; }
@@ -2584,7 +2599,7 @@ public sealed partial class Utf8Regex
     public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input)
     {
         if (HasFiniteExecutionLimits)
-            return OwnedSliceEnumerateMatches(input, _ownedSliceProgram, CancellationToken.None).WithTimeoutMapping(input, Pattern, MatchTimeout);
+            return OwnedSliceEnumerateMatches(input, _ownedSliceProgram, CancellationToken.None).WithTimeoutMapping(input, this);
         if (TryCreateNativeSimpleEnumerator(input, CancellationToken.None, out var simpleEnumerator)) return simpleEnumerator;
         if (TryCreateNativeStructuralEnumerator(input, CancellationToken.None, out var structuralEnumerator)) return structuralEnumerator;
         // Anchored prefixes yield at most one match at offset 0 through the
@@ -2595,7 +2610,7 @@ public sealed partial class Utf8Regex
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
             return new Utf8ValueMatchEnumerator(
                 new Utf8OperationMatchCursor(input, anchoredEnumerateLiteral, CreateExecutionBudget()))
-                .WithTimeoutMapping(input, Pattern, MatchTimeout);
+                .WithTimeoutMapping(input, this);
         }
 
         // Anchored suffixes yield at most one match at the input end through the
@@ -2606,7 +2621,7 @@ public sealed partial class Utf8Regex
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
             return new Utf8ValueMatchEnumerator(
                 new Utf8OperationMatchCursor(input, _fallbackDirectFamily.LiteralUtf8, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
-                .WithTimeoutMapping(input, Pattern, MatchTimeout);
+                .WithTimeoutMapping(input, this);
         }
 
         // Folded anchored prefixes enumerate the same single anchored hit with
@@ -2620,7 +2635,7 @@ public sealed partial class Utf8Regex
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
                 return new Utf8ValueMatchEnumerator(
                     new Utf8OperationMatchCursor(input, foldedPrefixLiteral, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
-                    .WithTimeoutMapping(input, Pattern, MatchTimeout);
+                    .WithTimeoutMapping(input, this);
             }
         }
 
@@ -2634,7 +2649,7 @@ public sealed partial class Utf8Regex
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
                 return new Utf8ValueMatchEnumerator(
                     new Utf8OperationMatchCursor(input, foldedSuffixLiteral, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
-                    .WithTimeoutMapping(input, Pattern, MatchTimeout);
+                    .WithTimeoutMapping(input, this);
             }
         }
 
@@ -2646,20 +2661,20 @@ public sealed partial class Utf8Regex
         {
             return new Utf8ValueMatchEnumerator(
                 new Utf8OperationMatchCursor(input, caretEnumeratePrefix, CreateExecutionBudget()))
-                .WithTimeoutMapping(input, Pattern, MatchTimeout);
+                .WithTimeoutMapping(input, this);
         }
 
         if (GetOwnedSliceProgram(input) is { } ownedProgram)
         {
             return OwnedSliceEnumerateMatches(input, ownedProgram, CancellationToken.None)
-                .WithTimeoutMapping(input, Pattern, MatchTimeout);
+                .WithTimeoutMapping(input, this);
         }
 
         var subject = Utf8ValidatedInput.Create(input);
         var startOffsetInBytes = UsesRightToLeft() ? input.Length : 0;
         var start = subject.GetBytePosition(startOffsetInBytes, "startOffsetInBytes");
         return new Utf8ByteOffsetExecution(this).EnumerateMatches(subject, start)
-            .WithTimeoutMapping(input, Pattern, MatchTimeout);
+            .WithTimeoutMapping(input, this);
     }
 
     private Utf8ValueMatchEnumerator OwnedSliceEnumerateMatches(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
@@ -2715,7 +2730,7 @@ public sealed partial class Utf8Regex
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (HasFiniteExecutionLimits)
-            return OwnedSliceEnumerateMatches(input, _ownedSliceProgram, cancellationToken).WithTimeoutMapping(input, Pattern, MatchTimeout);
+            return OwnedSliceEnumerateMatches(input, _ownedSliceProgram, cancellationToken).WithTimeoutMapping(input, this);
         if (TryCreateNativeSimpleEnumerator(input, cancellationToken, out var simpleEnumerator)) return simpleEnumerator;
         if (TryCreateNativeStructuralEnumerator(input, cancellationToken, out var structuralEnumerator)) return structuralEnumerator;
         // Single literals now retain one invocation through bounded validation,
@@ -2734,7 +2749,7 @@ public sealed partial class Utf8Regex
                 var validation = Utf8Validation.Validate(input, ref invocation);
                 return new Utf8ValueMatchEnumerator(new Utf8OperationMatchCursor(
                     input, _preparedRegex, validation.IsAscii, UsesRightToLeft(), invocation))
-                    .WithTimeoutMapping(input, Pattern, MatchTimeout);
+                    .WithTimeoutMapping(input, this);
             }
             catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
         }
@@ -2750,7 +2765,7 @@ public sealed partial class Utf8Regex
             {
                 var validation = Utf8Validation.Validate(input, ref invocation);
                 return new Utf8ValueMatchEnumerator(new Utf8OperationMatchCursor(
-                    input, _preparedRegex, validation.IsAscii, invocation)).WithTimeoutMapping(input, Pattern, MatchTimeout);
+                    input, _preparedRegex, validation.IsAscii, invocation)).WithTimeoutMapping(input, this);
             }
             catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
         }
@@ -2758,7 +2773,7 @@ public sealed partial class Utf8Regex
         if (GetOwnedSliceProgram(input, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceEnumerateMatches(input, ownedProgram, cancellationToken)
-                .WithTimeoutMapping(input, Pattern, MatchTimeout);
+                .WithTimeoutMapping(input, this);
         }
 
         return EnumerateMatches(input);
@@ -2822,7 +2837,7 @@ public sealed partial class Utf8Regex
                 count == 0 ? int.MaxValue : count,
                 rtlAnalysis.Utf16Length,
                 rightToLeft: true)
-                .WithTimeoutMapping(Pattern, MatchTimeout);
+                .WithTimeoutMapping(this);
         }
 
         if (UsesRightToLeft() || ShouldUseKelvinSignFallback(input))
@@ -2834,7 +2849,7 @@ public sealed partial class Utf8Regex
                 input,
                 smallAsciiLiteralFamilySearch,
                 count)
-                .WithTimeoutMapping(Pattern, MatchTimeout);
+                .WithTimeoutMapping(this);
         }
 
 
@@ -2858,7 +2873,7 @@ public sealed partial class Utf8Regex
             (CanUseNativeSplit(validation) || isAnchoredDirectSplitFamily || CanServeLineAnchoredOwned(input)))
         {
             return CreateSplitEnumeratorViaCompiledEngine(input, validation, totalUtf16Length, count == 0 ? int.MaxValue : count, budget)
-                .WithTimeoutMapping(Pattern, MatchTimeout);
+                .WithTimeoutMapping(this);
         }
 
         // R05: caret-anchored grouped literals split the single anchored hit through
@@ -2873,7 +2888,7 @@ public sealed partial class Utf8Regex
                 new Utf8OperationMatchCursor(input, caretSplitPrefix, CreateExecutionBudget()),
                 count,
                 totalUtf16Length)
-                .WithTimeoutMapping(Pattern, MatchTimeout);
+                .WithTimeoutMapping(this);
         }
 
         // R05: absolute-anchored fixed-length simple patterns split owned through
@@ -2897,7 +2912,7 @@ public sealed partial class Utf8Regex
                 totalUtf16Length,
                 count,
                 budget)
-                .WithTimeoutMapping(Pattern, MatchTimeout);
+                .WithTimeoutMapping(this);
         }
 
         // Scalar-verifiable simple patterns split through their native cursor;
@@ -2912,7 +2927,7 @@ public sealed partial class Utf8Regex
                 count,
                 analysis.Utf16Length,
                 rightToLeft: false)
-                .WithTimeoutMapping(Pattern, MatchTimeout);
+                .WithTimeoutMapping(this);
         }
 
         // Any remaining admitted shape uses the cached scalar cursor.
@@ -2937,7 +2952,7 @@ public sealed partial class Utf8Regex
         try
         {
             return Utf8OwnedSplitPreparation.Create(program, input, count, ref invocation)
-                .WithTimeoutMapping(Pattern, MatchTimeout);
+                .WithTimeoutMapping(this);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         {
@@ -3400,7 +3415,7 @@ public sealed partial class Utf8Regex
         out PreparedSmallAsciiLiteralFamilySearch search)
     {
         if (MatchTimeout != Regex.InfiniteMatchTimeout ||
-            _preparedRegex.ExecutionPattern.IndexOf('(') >= 0 ||
+            _preparedRegex.ExecutionPattern is null || _preparedRegex.ExecutionPattern.IndexOf('(') >= 0 ||
             CompiledEngineKind != Utf8CompiledEngineKind.LiteralFamily ||
             _program.CompiledEngineRuntime is not Utf8LiteralCompiledEngineRuntime literalFamilyRuntime)
         {

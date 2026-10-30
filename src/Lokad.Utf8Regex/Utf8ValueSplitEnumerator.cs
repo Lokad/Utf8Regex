@@ -21,8 +21,7 @@ public ref struct Utf8ValueSplitEnumerator
     private int _segmentStartUtf16;
     private int _remainingCount;
     private bool _completed;
-    private string? _timeoutPattern;
-    private TimeSpan _timeout;
+    private Utf8Regex? _timeoutRegex;
 
     internal Utf8ValueSplitEnumerator(
         ReadOnlySpan<byte> input,
@@ -41,8 +40,7 @@ public ref struct Utf8ValueSplitEnumerator
         _segmentStartUtf16 = 0;
         _remainingCount = count;
         _completed = false;
-        _timeoutPattern = null;
-        _timeout = default;
+        _timeoutRegex = null;
         Current = default;
     }
 
@@ -63,8 +61,7 @@ public ref struct Utf8ValueSplitEnumerator
         _segmentStartUtf16 = rightToLeft ? totalUtf16Length : 0;
         _remainingCount = count;
         _completed = false;
-        _timeoutPattern = null;
-        _timeout = default;
+        _timeoutRegex = null;
         Current = default;
     }
 
@@ -83,8 +80,7 @@ public ref struct Utf8ValueSplitEnumerator
         _segmentStartUtf16 = 0;
         _remainingCount = count;
         _completed = false;
-        _timeoutPattern = null;
-        _timeout = default;
+        _timeoutRegex = null;
         Current = default;
     }
 
@@ -113,10 +109,10 @@ public ref struct Utf8ValueSplitEnumerator
                 _ => MoveNextNative(),
             };
         }
-        catch (Utf8ExecutionDeadlineExpiredException) when (_timeoutPattern is not null)
+        catch (Utf8ExecutionDeadlineExpiredException) when (_timeoutRegex is not null)
         {
             if (_sourceKind is SplitSourceKind.OwnedSlice or SplitSourceKind.OwnedSliceRtl) _matchCursor.AbortOwnedSplitMatches();
-            throw _matchCursor.CreateMatchTimeoutException(_input, _timeoutPattern, _timeout);
+            throw _matchCursor.CreateMatchTimeoutException(_input, _timeoutRegex.Pattern, _timeoutRegex.MatchTimeout);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _matchCursor.HasResourceLimitBreach)
         {
@@ -130,10 +126,9 @@ public ref struct Utf8ValueSplitEnumerator
         }
     }
 
-    internal Utf8ValueSplitEnumerator WithTimeoutMapping(string pattern, TimeSpan timeout)
+    internal Utf8ValueSplitEnumerator WithTimeoutMapping(Utf8Regex regex)
     {
-        _timeoutPattern = pattern;
-        _timeout = timeout;
+        _timeoutRegex = regex;
         return this;
     }
 

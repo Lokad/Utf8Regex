@@ -14,15 +14,13 @@ public ref struct Utf8ValueMatchEnumerator
     internal bool DebugIsOwnedSlice => _cursor.DebugIsOwnedSlice;
     internal ulong DebugInvocationSteps => _cursor.DebugInvocationSteps;
     private ReadOnlySpan<byte> _timeoutInput;
-    private string? _timeoutPattern;
-    private TimeSpan _timeout;
+    private Utf8Regex? _timeoutRegex;
 
     internal Utf8ValueMatchEnumerator(Utf8OperationMatchCursor cursor)
     {
         _cursor = cursor;
         _timeoutInput = default;
-        _timeoutPattern = null;
-        _timeout = default;
+        _timeoutRegex = null;
     }
 
     internal Utf8ValueMatchEnumerator(
@@ -56,9 +54,9 @@ public ref struct Utf8ValueMatchEnumerator
         {
             throw _cursor.CreateExecutionResourceFailure();
         }
-        catch (Utf8ExecutionDeadlineExpiredException) when (_timeoutPattern is not null)
+        catch (Utf8ExecutionDeadlineExpiredException) when (_timeoutRegex is not null)
         {
-            throw _cursor.CreateMatchTimeoutException(_timeoutInput, _timeoutPattern, _timeout);
+            throw _cursor.CreateMatchTimeoutException(_timeoutInput, _timeoutRegex.Pattern, _timeoutRegex.MatchTimeout);
         }
     }
 
@@ -70,17 +68,15 @@ public ref struct Utf8ValueMatchEnumerator
 
     internal Utf8ValueMatchEnumerator WithTimeoutMapping(
         ReadOnlySpan<byte> input,
-        string pattern,
-        TimeSpan timeout)
+        Utf8Regex regex)
     {
-        if (timeout == Regex.InfiniteMatchTimeout)
+        if (regex.MatchTimeout == Regex.InfiniteMatchTimeout)
         {
             return this;
         }
 
         _timeoutInput = input;
-        _timeoutPattern = pattern;
-        _timeout = timeout;
+        _timeoutRegex = regex;
         return this;
     }
 }

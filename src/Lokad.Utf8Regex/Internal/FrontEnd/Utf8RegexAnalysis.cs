@@ -6,7 +6,7 @@ internal readonly struct Utf8RegexAnalysis
 {
     private Utf8RegexAnalysis(
         Utf8SemanticRegex semanticRegex,
-        string executionPattern,
+        string? executionPattern,
         Utf8RegexFeatures features,
         Utf8SearchFacts searchFacts,
         NativeExecutionKind executionKind,
@@ -36,7 +36,7 @@ internal readonly struct Utf8RegexAnalysis
 
     public Utf8SemanticRegex SemanticRegex { get; }
 
-    public string ExecutionPattern { get; }
+    public string? ExecutionPattern { get; }
 
     public Utf8RegexFeatures Features { get; }
 
@@ -62,7 +62,7 @@ internal readonly struct Utf8RegexAnalysis
 
     public static Utf8RegexAnalysis Create(
         Utf8SemanticRegex semanticRegex,
-        string executionPattern,
+        string? executionPattern,
         Utf8RegexFeatures features,
         Utf8SearchFacts searchFacts,
         NativeExecutionKind executionKind)
@@ -70,7 +70,7 @@ internal readonly struct Utf8RegexAnalysis
 
     public static Utf8RegexAnalysis CreateFallback(
         Utf8SemanticRegex semanticRegex,
-        string executionPattern,
+        string? executionPattern,
         Utf8RegexFeatures features,
         Utf8SearchFacts searchFacts,
         string fallbackReason)
@@ -78,7 +78,7 @@ internal readonly struct Utf8RegexAnalysis
 
     public static Utf8RegexAnalysis CreateLiteral(
         Utf8SemanticRegex semanticRegex,
-        string executionPattern,
+        string? executionPattern,
         Utf8RegexFeatures features,
         Utf8SearchFacts searchFacts,
         NativeExecutionKind executionKind,
@@ -87,7 +87,7 @@ internal readonly struct Utf8RegexAnalysis
 
     public static Utf8RegexAnalysis CreateSimple(
         Utf8SemanticRegex semanticRegex,
-        string executionPattern,
+        string? executionPattern,
         Utf8RegexFeatures features,
         Utf8SearchFacts searchFacts,
         AsciiSimplePatternPlan simplePatternPlan)
@@ -95,7 +95,7 @@ internal readonly struct Utf8RegexAnalysis
 
     public static Utf8RegexAnalysis CreateSimple(
         Utf8SemanticRegex semanticRegex,
-        string executionPattern,
+        string? executionPattern,
         Utf8RegexFeatures features,
         Utf8SearchFacts searchFacts,
         AsciiSimplePatternPlan simplePatternPlan,
@@ -104,7 +104,7 @@ internal readonly struct Utf8RegexAnalysis
 
     public static Utf8RegexAnalysis CreateStructuralIdentifier(
         Utf8SemanticRegex semanticRegex,
-        string executionPattern,
+        string? executionPattern,
         Utf8RegexFeatures features,
         Utf8SearchFacts searchFacts,
         AsciiStructuralIdentifierFamilyPlan plan)
@@ -112,7 +112,7 @@ internal readonly struct Utf8RegexAnalysis
 
     public static Utf8RegexAnalysis CreateStructuralTokenWindow(
         Utf8SemanticRegex semanticRegex,
-        string executionPattern,
+        string? executionPattern,
         Utf8RegexFeatures features,
         Utf8SearchFacts searchFacts,
         AsciiStructuralTokenWindowPlan plan,
@@ -121,7 +121,7 @@ internal readonly struct Utf8RegexAnalysis
 
     public static Utf8RegexAnalysis CreateStructuralRepeatedSegment(
         Utf8SemanticRegex semanticRegex,
-        string executionPattern,
+        string? executionPattern,
         Utf8RegexFeatures features,
         Utf8SearchFacts searchFacts,
         AsciiStructuralRepeatedSegmentPlan plan)
@@ -129,7 +129,7 @@ internal readonly struct Utf8RegexAnalysis
 
     public static Utf8RegexAnalysis CreateStructuralQuotedRelation(
         Utf8SemanticRegex semanticRegex,
-        string executionPattern,
+        string? executionPattern,
         Utf8RegexFeatures features,
         Utf8SearchFacts searchFacts,
         AsciiStructuralQuotedRelationPlan plan)
@@ -137,7 +137,7 @@ internal readonly struct Utf8RegexAnalysis
 
     public static Utf8RegexAnalysis CreateOrderedLiteralWindow(
         Utf8SemanticRegex semanticRegex,
-        string executionPattern,
+        string? executionPattern,
         Utf8RegexFeatures features,
         Utf8SearchFacts searchFacts,
         AsciiOrderedLiteralWindowPlan plan)
@@ -145,7 +145,7 @@ internal readonly struct Utf8RegexAnalysis
 
     public static Utf8RegexAnalysis CreateOrderedLiteralWindow(
         Utf8SemanticRegex semanticRegex,
-        string executionPattern,
+        string? executionPattern,
         Utf8RegexFeatures features,
         Utf8SearchFacts searchFacts,
         AsciiOrderedLiteralWindowPlan plan,

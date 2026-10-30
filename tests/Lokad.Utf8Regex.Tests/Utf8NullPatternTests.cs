@@ -6,7 +6,7 @@ public sealed class Utf8NullPatternTests
         Utf8ConstructionPolicy construction = default, TimeSpan? constructionTimeout = null, CancellationToken token = default)
     {
         var timeout = constructionTimeout ?? Timeout.InfiniteTimeSpan;
-        return Utf8Regex.Compile(null!, default, Timeout.InfiniteTimeSpan, policy, construction, timeout, token);
+        return Utf8Regex.Compile((string)null!, default, Timeout.InfiniteTimeSpan, policy, construction, timeout, token);
     }
 
     [Fact]

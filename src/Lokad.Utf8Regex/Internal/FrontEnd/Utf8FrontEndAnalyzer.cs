@@ -4,7 +4,7 @@ internal static class Utf8FrontEndAnalyzer
 {
     public static Utf8RegexAnalysis Analyze(
         Utf8SemanticRegex semanticRegex,
-        string executionPattern,
+        string? executionPattern,
         RegexOptions executionOptions)
     {
         var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex);

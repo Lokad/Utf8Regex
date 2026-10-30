@@ -3,9 +3,9 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 internal readonly struct Utf8SemanticRegex
 {
     public Utf8SemanticRegex(
-        string pattern,
+        string? pattern,
         RegexOptions options,
-        string executionPattern,
+        string? executionPattern,
         RegexOptions executionOptions,
         Utf8OwnedRegexTree? runtimeTree)
     {
@@ -16,11 +16,11 @@ internal readonly struct Utf8SemanticRegex
         RuntimeTree = runtimeTree;
     }
 
-    public string Pattern { get; }
+    public string? Pattern { get; }
 
     public RegexOptions Options { get; }
 
-    public string ExecutionPattern { get; }
+    public string? ExecutionPattern { get; }
 
     public RegexOptions ExecutionOptions { get; }
 

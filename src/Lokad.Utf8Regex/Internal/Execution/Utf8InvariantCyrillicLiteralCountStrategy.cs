@@ -106,6 +106,13 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
         RegexOptions options,
         TimeSpan matchTimeout,
         [NotNullWhen(true)] out Utf8InvariantCyrillicLiteralCountStrategy? strategy)
+        => TryCreate(new Utf8ConstructionPattern(pattern), options, matchTimeout, out strategy);
+
+    internal static bool TryCreate(
+        Utf8ConstructionPattern pattern,
+        RegexOptions options,
+        TimeSpan matchTimeout,
+        [NotNullWhen(true)] out Utf8InvariantCyrillicLiteralCountStrategy? strategy)
     {
         strategy = null;
         const RegexOptions allowedOptions =
@@ -127,17 +134,17 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
         {
             budget.ChargeWork(2ul * (ulong)pattern.Length);
             var count = 1;
-            foreach (var value in pattern) if (value == '|') count++;
+            for (var i = 0; i < pattern.Length; i++) if (pattern[i] == '|') count++;
             if (count > MaximumAlternatives) return false;
             var literals = budget.AllocateArray<Literal>(count, false);
             var start = 0;
             for (var index = 0; index < count; index++)
             {
-                var end = pattern.AsSpan(start).IndexOf('|');
-                var length = end < 0 ? pattern.Length - start : end;
+                var end = pattern.IndexOf('|', start);
+                var length = (end < 0 ? pattern.Length : end) - start;
                 // The delimiter scan is bounded by the full-pattern admission.
                 // Literal slices borrow text; no Split strings or array survive.
-                if (!TryCreateLiteral(pattern.AsSpan(start, length), budget, out literals[index])) return false;
+                if (!TryCreateLiteral(pattern, start, length, budget, out literals[index])) return false;
                 start += length + 1;
             }
             var state = PrepareState(literals, budget);
@@ -148,27 +155,39 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
         finally { budget.LeaveDepth(); }
     }
 
-    private static bool TryCreateLiteral(ReadOnlySpan<char> literal, Utf8ConstructionBudget budget, out Literal prepared)
+    private static bool TryCreateLiteral(Utf8ConstructionPattern literal, int start, int length,
+        Utf8ConstructionBudget budget, out Literal prepared)
     {
-        if (literal.Length == 0)
+        if (length == 0)
         {
             prepared = default;
             return false;
         }
 
-        var units = budget.AllocateArray<Unit>(literal.Length, false);
+        var unitCount = length;
+        if (literal.IsUtf8)
+        {
+            unitCount = 0;
+            for (var offset = start; offset < start + length; unitCount++)
+            { budget.ChargeWork(1); literal.ReadScalar(ref offset); }
+        }
+        var units = budget.AllocateArray<Unit>(unitCount, false);
         var byteOffset = 0;
         var anchorPreviousAscii = -1;
         var anchorByteOffset = -1;
         var anchorFirst = (byte)0;
         var anchorSecond = (byte)0;
-        budget.ChargeWork((ulong)literal.Length);
-        for (var i = 0; i < literal.Length; i++)
+        budget.ChargeWork((ulong)length);
+        var sourceOffset = start;
+        var previousValue = -1;
+        for (var i = 0; i < units.Length; i++)
         {
-            var value = literal[i];
+            var previous = previousValue;
+            var value = literal.ReadScalar(ref sourceOffset);
+            previousValue = value;
             if (value <= 0x7F)
             {
-                if (char.IsAsciiLetter(value) || Utf8RegexSyntax.IsRegexMetaCharacter(value))
+                if (char.IsAsciiLetter((char)value) || Utf8RegexSyntax.IsRegexMetaCharacter((char)value))
                 {
                     prepared = default;
                     return false;
@@ -179,7 +198,7 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
                 continue;
             }
 
-            if (!Utf8InvariantCyrillicCase.TryGetPair(value, out var upper, out var lower))
+            if (value > char.MaxValue || !Utf8InvariantCyrillicCase.TryGetPair((char)value, out var upper, out var lower))
             {
                 prepared = default;
                 return false;
@@ -188,8 +207,8 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
             var upperUtf8 = Utf8InvariantCyrillicCase.EncodeTwoByteScalar(upper);
             var lowerUtf8 = Utf8InvariantCyrillicCase.EncodeTwoByteScalar(lower);
             units[i] = Unit.CreatePair(byteOffset, upperUtf8, lowerUtf8);
-            var previousAscii = i > 0 && literal[i - 1] <= 0x7F
-                ? literal[i - 1]
+            var previousAscii = i > 0 && previous <= 0x7F
+                ? previous
                 : -1;
             // Prefer the first Cyrillic scalar following an ASCII separator.
             // Its adjacent byte supplies a cheap correlated rejection while the
@@ -212,9 +231,11 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
             return false;
         }
 
+        var bytes = literal.IsUtf8 ? budget.AllocateArray<byte>(length, false) : budget.EncodeUtf8(literal.Text.AsSpan(start, length));
+        if (literal.IsUtf8) { budget.ChargeWork((ulong)bytes.Length); literal.Utf8.Slice(start, length).CopyTo(bytes); }
         prepared = new Literal(
             units,
-            budget.EncodeUtf8(literal),
+            bytes,
             byteOffset,
             anchorPreviousAscii,
             anchorByteOffset,

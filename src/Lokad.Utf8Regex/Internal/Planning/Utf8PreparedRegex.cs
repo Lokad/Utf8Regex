@@ -20,7 +20,7 @@ internal sealed class Utf8PreparedRegex
         Utf8OperationMatchCursorPlans operationMatchCursorPlans,
         Utf8PreparedSemanticRegex semanticRegex,
         Utf8RegexFeatures features,
-        string executionPattern,
+        string? executionPattern,
         NativeExecutionKind executionKind,
         Utf8ExecutionBackend executionBackend,
         Utf8CompiledPatternCategory compiledPatternCategory,
@@ -60,7 +60,7 @@ internal sealed class Utf8PreparedRegex
     internal static Utf8PreparedRegex Create(
         Utf8PreparedSemanticRegex semanticRegex,
         Utf8RegexFeatures features,
-        string executionPattern,
+        string? executionPattern,
         NativeExecutionKind executionKind,
         Utf8ExecutionBackend executionBackend,
         Utf8CompiledPatternCategory compiledPatternCategory,
@@ -110,7 +110,7 @@ internal sealed class Utf8PreparedRegex
 
     public Utf8RegexFeatures Features { get; }
 
-    public string ExecutionPattern { get; }
+    public string? ExecutionPattern { get; }
 
     public NativeExecutionKind ExecutionKind { get; }
 

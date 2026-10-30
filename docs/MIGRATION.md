@@ -10,6 +10,22 @@ are unchanged. Benchmark runs default to .NET 11; use `-Framework net10.0` with
 the test/benchmark scripts for .NET 10 controls. Historical measurements retain
 their original runtime labels. Published 0.4.0 packages remain .NET 10-only.
 
+Core also accepts native UTF-8 patterns, including the funded program overload:
+
+```csharp
+var emoji = Utf8Regex.Compile("(?<value>😀)+"u8);
+using var matches = emoji.CreateMatchCursor("a😀😀b"u8.ToArray(), 1);
+matches.MoveNext(out var match); // whole match: byte range [1, 9)
+```
+
+Compilation borrows the source only during the call and owns its retained bytes.
+It uses the existing scalar grammar and execution controls without a whole-pattern
+UTF-16 bridge. Pattern syntax errors identify byte offsets. `Pattern` explicitly
+projects a new string on request; native construction timeouts leave the
+exception's pattern text empty. The added span overloads make a bare `null` at
+some `Compile` call sites ambiguous: use a typed string or named `pattern:` when
+testing text-null errors. Existing string constructors remain available.
+
 ## 0.4.0: Unicode scalars
 
 Version **0.4.0** changes matching from UTF-16 units to Unicode scalars.

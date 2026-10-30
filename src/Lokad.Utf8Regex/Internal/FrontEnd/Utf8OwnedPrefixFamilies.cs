@@ -301,6 +301,9 @@ internal static class Utf8OwnedPrefixFamilies
 
         Family Text(Utf8TreeNode node)
         {
+            // A byte literal is consumed text, never an empty fragment. Until
+            // this text-only proof carries byte ropes, stop at that boundary.
+            if (node.LiteralUtf8 is { Length: > 0 }) return empty with { Complete = false };
             if (node.Str is not { Length: > 0 } text) return empty;
             var scalars = 0;
             for (var offset = 0; offset < text.Length; scalars++)

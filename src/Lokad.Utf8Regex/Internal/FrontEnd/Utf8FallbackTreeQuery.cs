@@ -252,7 +252,7 @@ internal static class Utf8FallbackTreeQuery
 
     internal static int LiteralLength(Utf8TreeNode node) => node.Kind == Utf8TreeNodeKind.One ? 1 : node.LiteralUtf8?.Length ?? node.Str?.Length ?? 0;
     internal static byte FirstByte(Utf8TreeNode node) => LiteralByte(node, 0);
-    private static byte LiteralByte(Utf8TreeNode node, int position) => node.Kind == Utf8TreeNodeKind.One ? (byte)node.Ch :
+    internal static byte LiteralByte(Utf8TreeNode node, int position) => node.Kind == Utf8TreeNodeKind.One ? (byte)node.Ch :
         node.LiteralUtf8 is { } native ? native[position] :
         (byte)(node.Str ?? throw new InvalidOperationException("Qualified literal lost its payload."))[position];
 

@@ -251,13 +251,13 @@ public sealed partial class Utf8Regex
                 var analysis = Utf8InputAnalyzer.Analyze(input);
                 return new Utf8ValueMatchEnumerator(
                     new Utf8OperationMatchCursor(input, _preparedRegex, analysis.BoundaryMap, budget))
-                    .WithTimeoutMapping(input, Pattern, MatchTimeout);
+                    .WithTimeoutMapping(input, this);
             }
             var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
             if (validation.ByteLength != input.Length)
                 validation = Utf8Validation.Validate(input, ref invocation);
             var cursor = Utf8OperationMatchCursor.CreateMapped(_ownedSliceProgram, input, validation, ref invocation, false, out _);
-            return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, Pattern, MatchTimeout);
+            return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, this);
         }
 
         return Utf8CompiledOperationCursorFactory.CreateMatchEnumerator(

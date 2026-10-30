@@ -36,6 +36,9 @@ internal sealed class Utf8RegexProgram
         string pattern,
         RegexOptions options,
         bool prepareRuntime)
+        => Compile(new Utf8ConstructionPattern(pattern), options, prepareRuntime);
+
+    internal static Utf8RegexProgram Compile(Utf8ConstructionPattern pattern, RegexOptions options, bool prepareRuntime)
     {
         using var scope = Utf8ConstructionScope.Enter();
         var budget = scope.Budget;

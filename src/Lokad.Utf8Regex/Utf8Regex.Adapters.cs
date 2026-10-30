@@ -266,12 +266,12 @@ public sealed partial class Utf8Regex
             {
                 return new Utf8ValueMatchEnumerator(
                     new Utf8OperationMatchCursor(input.Bytes, _fallbackDirectFamily.LiteralUtf8, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
-                    .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+                    .WithTimeoutMapping(input.Bytes, this);
             }
 
             return new Utf8ValueMatchEnumerator(
                 new Utf8OperationMatchCursor(input.Bytes[..0], Array.Empty<byte>(), CreateExecutionBudget()))
-                .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+                .WithTimeoutMapping(input.Bytes, this);
         }
 
         // Anchored prefixes yield at most one match at byte 0 through the
@@ -284,12 +284,12 @@ public sealed partial class Utf8Regex
             {
                 return new Utf8ValueMatchEnumerator(
                     new Utf8OperationMatchCursor(input.Bytes[..0], Array.Empty<byte>(), CreateExecutionBudget()))
-                    .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+                    .WithTimeoutMapping(input.Bytes, this);
             }
 
             return new Utf8ValueMatchEnumerator(
                 new Utf8OperationMatchCursor(input.Bytes, adapterEnumerateLiteral, CreateExecutionBudget()))
-                .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+                .WithTimeoutMapping(input.Bytes, this);
         }
 
         // Folded anchored prefixes enumerate the same single anchored hit with per-byte
@@ -305,12 +305,12 @@ public sealed partial class Utf8Regex
                 {
                     return new Utf8ValueMatchEnumerator(
                         new Utf8OperationMatchCursor(input.Bytes[..0], Array.Empty<byte>(), CreateExecutionBudget()))
-                        .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+                        .WithTimeoutMapping(input.Bytes, this);
                 }
 
                 return new Utf8ValueMatchEnumerator(
                     new Utf8OperationMatchCursor(input.Bytes, foldedAdapterEnumerateLiteral, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
-                    .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+                    .WithTimeoutMapping(input.Bytes, this);
             }
         }
 
@@ -329,12 +329,12 @@ public sealed partial class Utf8Regex
                 {
                     return new Utf8ValueMatchEnumerator(
                         new Utf8OperationMatchCursor(input.Bytes, _fallbackDirectFamily.LiteralUtf8, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
-                        .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+                        .WithTimeoutMapping(input.Bytes, this);
                 }
 
                 return new Utf8ValueMatchEnumerator(
                     new Utf8OperationMatchCursor(input.Bytes[..0], Array.Empty<byte>(), CreateExecutionBudget()))
-                    .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+                    .WithTimeoutMapping(input.Bytes, this);
             }
         }
 
@@ -351,7 +351,7 @@ public sealed partial class Utf8Regex
                 floorBudget,
                 start.Value,
                 input.Project(start).Value);
-            return new Utf8ValueMatchEnumerator(floorCursor).WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+            return new Utf8ValueMatchEnumerator(floorCursor).WithTimeoutMapping(input.Bytes, this);
         }
 
         // Adapter enumeration rides the owned slice from the start unit on
@@ -361,7 +361,7 @@ public sealed partial class Utf8Regex
         if (_preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex)
         {
             return OwnedSliceEnumerateMatchesFromUnit(input.Bytes, _ownedSliceProgram, input.BoundaryMap, input.Project(start).Value, CancellationToken.None)
-                .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+                .WithTimeoutMapping(input.Bytes, this);
         }
 
         var remaining = input.Bytes[start.Value..];
@@ -382,7 +382,7 @@ public sealed partial class Utf8Regex
             (_preparedRegex.ExecutionKind != NativeExecutionKind.AsciiLiteralIgnoreCase || !ShouldUseKelvinSignFallback(input.Bytes)))
         {
             var rtlCursor = new Utf8OperationMatchCursor(input.Bytes, _preparedRegex, literal, _preparedRegex.ExecutionKind, budget, Utf8InputAnalyzer.IsAscii(input.Bytes), rightToLeft: true);
-            return new Utf8ValueMatchEnumerator(rtlCursor).WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+            return new Utf8ValueMatchEnumerator(rtlCursor).WithTimeoutMapping(input.Bytes, this);
         }
 
         if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow &&
@@ -394,7 +394,7 @@ public sealed partial class Utf8Regex
                     _preparedRegex, input.Bytes,
                     new Utf8ValidationResult(input.Bytes.Length, input.Bytes.Length, true, false),
                     budget, start.Value, start.Value))
-                .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+                .WithTimeoutMapping(input.Bytes, this);
         }
 
         if (UsesRightToLeft() || ShouldUseKelvinSignFallback(remaining) ||
@@ -403,7 +403,7 @@ public sealed partial class Utf8Regex
             return OwnedSliceEnumerateMatchesFromUnit(input.Bytes,
                 _ownedSliceProgram,
                 input.BoundaryMap, input.Project(start).Value, CancellationToken.None)
-                .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+                .WithTimeoutMapping(input.Bytes, this);
         }
 
         if (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals)

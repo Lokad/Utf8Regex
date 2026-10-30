@@ -31,7 +31,7 @@ public sealed partial class Utf8Regex
             var cursor = !_preparedRegex.Features.HasLookarounds && (validation.IsAscii || byteSafe)
                 ? new Utf8OperationMatchCursor(input, _preparedRegex, invocation, validation.IsAscii)
                 : Utf8OperationMatchCursor.CreateMapped(_ownedSliceProgram, input, validation, ref invocation, false, out _);
-            enumerator = new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, Pattern, MatchTimeout);
+            enumerator = new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, this);
             return true;
         }
         catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }

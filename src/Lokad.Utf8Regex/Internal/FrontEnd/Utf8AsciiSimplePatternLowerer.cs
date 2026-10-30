@@ -298,9 +298,21 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         return true;
     }
 
-    private static bool TryLowerLiteralText(Utf8ConstructionSession storage, string? text, Utf8PreparationBudget budget, out Utf8ConstructionBuffer<AsciiSimplePatternToken> tokens)
+    private static bool TryLowerLiteralText(Utf8ConstructionSession storage, Utf8TreeNode node, Utf8PreparationBudget budget, out Utf8ConstructionBuffer<AsciiSimplePatternToken> tokens)
     {
         tokens = storage.Buffer<AsciiSimplePatternToken>();
+        if (node.LiteralUtf8 is { } bytes)
+        {
+            if (!budget.TryReserve(bytes.Length, bytes.Length)) return false;
+            foreach (var value in bytes)
+            {
+                Utf8ConstructionScope.ChargeWork(1);
+                if (value > 0x7f) return false;
+            }
+            foreach (var value in bytes) { Utf8ConstructionScope.ChargeWork(1); tokens.Add(new AsciiSimplePatternToken(value)); }
+            return true;
+        }
+        var text = node.Str;
         if (text is null || !budget.TryReserve(text.Length, text.Length))
         {
             return false;
