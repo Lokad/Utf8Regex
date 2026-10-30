@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Replacement;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
@@ -34,15 +35,19 @@ public sealed class Pcre2RangeBufferAdmissionTests
     }
 
     [Theory]
-    // Include the 48-byte decoded template while range storage is live.
-    [InlineData(207UL, false)] [InlineData(208UL, true)]
-    [InlineData(495UL, false)] [InlineData(496UL, true)]
+    // Warm native queries borrow their span: only range capacity and its old/new
+    // growth overlap remain, with no former 48-byte decoded-template loan.
+    [InlineData(159UL, false)] [InlineData(160UL, true)]
+    [InlineData(447UL, false)] [InlineData(448UL, true)]
     public void LiteralDriverAdmitsCompleteRangeArraysAndGrowthOverlap(ulong heap, bool allow)
     {
         var count = heap < 300 ? 1 : 17;
         var regex = new Utf8Pcre2Regex("a", Pcre2CompileOptions.None, default,
             new() { HeapLimitInBytes = heap }, Regex.InfiniteMatchTimeout);
-        Pcre2PreparationMemoryPolicyTests.Warm(regex, "b");
+        var prepare = typeof(Utf8Pcre2Regex).GetMethod("GetTemplatePreparation",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .CreateDelegate<Func<Utf8ConstructionPattern, Pcre2SubstitutionOptions, Pcre2ReplacementPreparation>>(regex);
+        _ = prepare(new("b"u8), default);
         var input = Enumerable.Repeat((byte)'a', count).ToArray();
         var destination = Enumerable.Repeat((byte)0xcc, count).ToArray();
         if (!allow)

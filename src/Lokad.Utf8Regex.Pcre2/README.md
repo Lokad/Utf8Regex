@@ -49,6 +49,14 @@ uppercase U+03A3; it intentionally does not copy the observed native 10.47
 replacement anomaly that yields lowercase sigma. Complete native PCRE2
 compatibility is not promised.
 
+UTF-8 replacement templates are parsed and cached directly as bytes through the
+existing simple/extended grammar and execution drivers. Warm queries borrow the
+caller span; cold keys are copied after admission. Full strict template validation,
+deferred syntax errors, captures/MARK, aliasing and original operation limits
+remain. Text and byte keys share one bounded cache with independent entries;
+native construction extents use bytes and can require larger position tables.
+Funded program owners still do not expose replacement/result receipts.
+
 ## Example
 
 ```csharp

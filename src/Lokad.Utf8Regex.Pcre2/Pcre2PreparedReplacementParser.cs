@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Text;
 using Lokad.Utf8Regex.Internal;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
@@ -25,6 +26,10 @@ internal readonly record struct Pcre2ReplacementInstruction(
 internal static class Pcre2PreparedReplacementParser
 {
     internal static Pcre2PreparedReplacementPlan Parse(string replacement, Pcre2SubstitutionOptions options)
+        => Parse(new Utf8ConstructionPattern(replacement), options);
+
+    // Native sources have already passed full strict validation at entry.
+    internal static Pcre2PreparedReplacementPlan Parse(Utf8ConstructionPattern replacement, Pcre2SubstitutionOptions options)
     {
         Pcre2ReplacementPreparationControl.Check();
         using var scope = Utf8ConstructionScope.Enter();
@@ -43,11 +48,12 @@ internal static class Pcre2PreparedReplacementParser
 
     // Construction-only position tables and tasks are admitted scratch. Every
     // scan charges the enclosing owner; preparation and execution are iterative.
-    private ref struct Pcre2ReplacementCompiler(string text, Pcre2SubstitutionOptions options,
+    private ref struct Pcre2ReplacementCompiler(Utf8ConstructionPattern source, Pcre2SubstitutionOptions options,
         Utf8ConstructionSession storage, Utf8ConstructionBuffer<Pcre2ReplacementInstruction> code,
         Utf8ConstructionBuffer<Pcre2ReplacementCompileFragment> fragments,
         Utf8ConstructionBuffer<Pcre2ReplacementCompileTask> tasks)
     {
+        private readonly Utf8ConstructionPattern text = source;
         private bool Extended => (options & Pcre2SubstitutionOptions.Extended) != 0;
         private void Work() { Pcre2ReplacementPreparationControl.Check(); storage.Budget.ChargeWork(1); }
         private static Pcre2ReplacementInstruction Op(Pcre2ReplacementOpcode kind)
@@ -124,6 +130,9 @@ internal static class Pcre2PreparedReplacementParser
         private Pcre2ReplacementInstruction Literal(ReadOnlySpan<char> value)
             => Op(Pcre2ReplacementOpcode.Literal) with { Payload = storage.EncodeRepairedUtf8(value, default(Pcre2ReplacementTextControl)) };
 
+        private Pcre2ReplacementInstruction Literal(int start, int length)
+            => Op(Pcre2ReplacementOpcode.Literal) with { Payload = Pcre2ReplacementPreparationControl.EncodeSource(storage, text, start, length) };
+
         private Pcre2ReplacementInstruction Scalar(int value)
         {
             if (!Rune.TryCreate(value, out var scalar)) return Error(Pcre2ErrorKind.BadReplacementEscape);
@@ -145,7 +154,7 @@ internal static class Pcre2PreparedReplacementParser
                 if (Extended && text[next] == '\\' && next + 1 < end && text[next + 1] == 'E') break;
                 next++;
             }
-            return Literal(text.AsSpan(position, next - position));
+            return Literal(position, next - position);
         }
 
         private Pcre2ReplacementInstruction ParseNormal(int position, int end, out int next)
@@ -155,7 +164,7 @@ internal static class Pcre2PreparedReplacementParser
             if (text[position] == '$') return Dollar(position, end, out next);
             if (Extended && text[position] == '\\') return Escape(position, end, out next);
             while (next < end && text[next] != '$' && (!Extended || text[next] != '\\')) { Work(); next++; }
-            return Literal(text.AsSpan(position, next - position));
+            return Literal(position, next - position);
         }
 
         private Pcre2ReplacementInstruction Dollar(int position, int end, out int next)
@@ -174,19 +183,19 @@ internal static class Pcre2PreparedReplacementParser
                 case '+': return next < end && text[next] == '+' ? Error(Pcre2ErrorKind.InvalidReplacementReference) : Op(Pcre2ReplacementOpcode.Plus);
                 case '{': return Braced(next, end, out next);
                 case '<': return Angle(next, end, false, out next);
-                case '*' when position + 6 <= end && text.AsSpan(position + 1, 5).SequenceEqual("*MARK".AsSpan()):
+                case '*' when position + 6 <= end && text.StartsWithAscii(position + 1, "*MARK"):
                     storage.Budget.ChargeWork(5); next = position + 6;
                     return Op(Pcre2ReplacementOpcode.Reference) with { Selector = Pcre2ReplacementSelectorKind.Mark };
             }
             if (char.IsAsciiDigit(ch))
             {
                 while (next < end && char.IsAsciiDigit(text[next])) { Work(); next++; }
-                return Selector(text.AsSpan(position + 1, next - position - 1), Pcre2ReplacementOpcode.Reference);
+                return Selector(position + 1, next - position - 1, Pcre2ReplacementOpcode.Reference);
             }
             if (NameStart(ch))
             {
                 while (next < end && NamePart(text[next])) { Work(); next++; }
-                return Selector(text.AsSpan(position + 1, next - position - 1), Pcre2ReplacementOpcode.Reference);
+                return Selector(position + 1, next - position - 1, Pcre2ReplacementOpcode.Reference);
             }
             next = position + 1;
             return Literal("$".AsSpan());
@@ -210,19 +219,18 @@ internal static class Pcre2PreparedReplacementParser
             if (split > start)
             {
                 var conditional = text[split + 1] == '+';
-                var instruction = Selector(text.AsSpan(start, split - start), conditional ? Pcre2ReplacementOpcode.Conditional : Pcre2ReplacementOpcode.Fallback);
+                var instruction = Selector(start, split - start, conditional ? Pcre2ReplacementOpcode.Conditional : Pcre2ReplacementOpcode.Fallback);
                 var branchStart = split + 2;
                 if (!conditional) return instruction with { ElseFragment = Fragment(branchStart, closing) };
                 var separator = BranchSeparator(branchStart, closing);
                 return instruction with { ThenFragment = Fragment(branchStart, separator < 0 ? closing : separator),
                     ElseFragment = separator < 0 ? -1 : Fragment(separator + 1, closing) };
             }
-            var content = text.AsSpan(start, closing - start);
             var valid = true;
-            foreach (var ch in content) { Work(); if (!NamePart(ch)) valid = false; }
-            if (!valid && !content.StartsWith("*".AsSpan(), StringComparison.Ordinal))
+            for (var index = start; index < closing; index++) { Work(); if (!NamePart(text[index])) valid = false; }
+            if (!valid && text[start] != '*')
                 return Error(Pcre2ErrorKind.MalformedReplacementPattern);
-            return Selector(content, Pcre2ReplacementOpcode.Reference);
+            return Selector(start, closing - start, Pcre2ReplacementOpcode.Reference);
         }
 
         private int CloseBrace(int start, int end)
@@ -270,21 +278,22 @@ internal static class Pcre2PreparedReplacementParser
             return -1;
         }
 
-        private Pcre2ReplacementInstruction Selector(ReadOnlySpan<char> selector, Pcre2ReplacementOpcode kind)
+        private Pcre2ReplacementInstruction Selector(int start, int length, Pcre2ReplacementOpcode kind)
         {
-            if (selector.SequenceEqual("*MARK".AsSpan()))
-            { storage.Budget.ChargeWork((ulong)selector.Length); return Op(kind) with { Selector = Pcre2ReplacementSelectorKind.Mark }; }
-            var number = 0; var digits = !selector.IsEmpty; var overflow = false;
-            foreach (var ch in selector)
+            if (length == 5 && text.StartsWithAscii(start, "*MARK"))
+            { storage.Budget.ChargeWork((ulong)length); return Op(kind) with { Selector = Pcre2ReplacementSelectorKind.Mark }; }
+            var number = 0; var digits = length != 0; var overflow = false;
+            for (var index = start; index < start + length; index++)
             {
                 Work();
+                var ch = text[index];
                 if (!char.IsAsciiDigit(ch)) { digits = false; break; }
                 var digit = ch - '0';
                 if (number > (int.MaxValue - digit) / 10) overflow = true;
                 else if (!overflow) number = number * 10 + digit;
             }
             if (digits) return Op(kind) with { Argument = overflow ? -1 : number };
-            return Op(kind) with { Selector = Pcre2ReplacementSelectorKind.Name, Payload = storage.EncodeRepairedUtf8(selector, default(Pcre2ReplacementTextControl)) };
+            return Op(kind) with { Selector = Pcre2ReplacementSelectorKind.Name, Payload = Pcre2ReplacementPreparationControl.EncodeSource(storage, text, start, length) };
         }
 
         private Pcre2ReplacementInstruction Angle(int start, int end, bool escaped, out int next)
@@ -294,8 +303,8 @@ internal static class Pcre2PreparedReplacementParser
             next = closing == end ? end : closing + 1;
             if (closing == end) return escaped ? Error(Pcre2ErrorKind.BadReplacementEscape) : Op(Pcre2ReplacementOpcode.AngleUnclosed);
             if (closing == start || text[start] == '*') return Error(escaped ? Pcre2ErrorKind.BadReplacementEscape : Pcre2ErrorKind.MalformedReplacementPattern);
-            return escaped ? Selector(text.AsSpan(start, closing - start), Pcre2ReplacementOpcode.Reference)
-                : Op(Pcre2ReplacementOpcode.Reference) with { Selector = Pcre2ReplacementSelectorKind.Name, Payload = storage.EncodeRepairedUtf8(text.AsSpan(start, closing - start), default(Pcre2ReplacementTextControl)) };
+            return escaped ? Selector(start, closing - start, Pcre2ReplacementOpcode.Reference)
+                : Op(Pcre2ReplacementOpcode.Reference) with { Selector = Pcre2ReplacementSelectorKind.Name, Payload = Pcre2ReplacementPreparationControl.EncodeSource(storage, text, start, closing - start) };
         }
 
         private Pcre2ReplacementInstruction Escape(int position, int end, out int next)
@@ -326,7 +335,7 @@ internal static class Pcre2PreparedReplacementParser
                 case 'o': return NumericEscape(next, end, 8, true, out next);
                 case 'x': return NumericEscape(next, end, 16, false, out next);
                 case 'N':
-                    if (next + 3 < end && text.AsSpan(next, 3).SequenceEqual("{U+".AsSpan()))
+                    if (next + 3 < end && text.StartsWithAscii(next, "{U+"))
                         return UnicodeEscape(next + 3, end, out next);
                     return Error(Pcre2ErrorKind.BadReplacementEscape);
                 case 'c':
@@ -343,9 +352,9 @@ internal static class Pcre2PreparedReplacementParser
                     var octalEnd = start;
                     while (octalEnd < end && octalEnd - start < 3 && text[octalEnd] is >= '0' and <= '7') { Work(); octalEnd++; }
                     next = octalEnd;
-                    return NumericValue(text.AsSpan(start, octalEnd - start), 8);
+                    return NumericValue(start, octalEnd - start, 8);
                 }
-                var reference = Selector(text.AsSpan(start, next - start), Pcre2ReplacementOpcode.BackslashDigits);
+                var reference = Selector(start, next - start, Pcre2ReplacementOpcode.BackslashDigits);
                 // Decimal IDs 8/9 and one-digit IDs always denote references.
                 // Other runs may be an octal prefix when that group is absent.
                 if (ch is '8' or '9' || next - start == 1) return reference with { Kind = Pcre2ReplacementOpcode.Reference };
@@ -357,9 +366,9 @@ internal static class Pcre2PreparedReplacementParser
                 return reference with { Payload = Scalar(value).Payload, ElseFragment = fallback };
             }
             if (char.IsAsciiLetter(ch)) return Error(Pcre2ErrorKind.BadReplacementEscape);
-            _ = Rune.DecodeFromUtf16(text.AsSpan(position + 1, end - position - 1), out _, out var consumed);
+            _ = text.DecodeScalar(position + 1, out _, out var consumed);
             next = position + 1 + Math.Max(1, consumed);
-            return Literal(text.AsSpan(position + 1, next - position - 1));
+            return Literal(position + 1, next - position - 1);
         }
 
         private Pcre2ReplacementInstruction UnicodeEscape(int first, int end, out int next)
@@ -367,7 +376,7 @@ internal static class Pcre2PreparedReplacementParser
             var closing = first;
             while (closing < end && text[closing] != '}') { Work(); closing++; }
             next = closing < end ? closing + 1 : end;
-            return closing == end ? Error(Pcre2ErrorKind.BadReplacementEscape) : NumericValue(text.AsSpan(first, closing - first), 16);
+            return closing == end ? Error(Pcre2ErrorKind.BadReplacementEscape) : NumericValue(first, closing - first, 16);
         }
 
         private Pcre2ReplacementInstruction NumericEscape(int start, int end, int radix, bool requireBraces, out int next)
@@ -377,21 +386,21 @@ internal static class Pcre2PreparedReplacementParser
                 var closing = start + 1;
                 while (closing < end && text[closing] != '}') { Work(); closing++; }
                 next = closing < end ? closing + 1 : end;
-                return closing == end ? Error(Pcre2ErrorKind.BadReplacementEscape) : NumericValue(text.AsSpan(start + 1, closing - start - 1), radix);
+                return closing == end ? Error(Pcre2ErrorKind.BadReplacementEscape) : NumericValue(start + 1, closing - start - 1, radix);
             }
             next = start;
             if (requireBraces) return Error(Pcre2ErrorKind.BadReplacementEscape);
             while (next < end && next - start < 2 && Digit(text[next]) is >= 0 and < 16) { Work(); next++; }
-            return NumericValue(text.AsSpan(start, next - start), radix);
+            return NumericValue(start, next - start, radix);
         }
 
-        private Pcre2ReplacementInstruction NumericValue(ReadOnlySpan<char> digits, int radix)
+        private Pcre2ReplacementInstruction NumericValue(int start, int length, int radix)
         {
-            if (digits.IsEmpty) return Error(Pcre2ErrorKind.BadReplacementEscape);
+            if (length == 0) return Error(Pcre2ErrorKind.BadReplacementEscape);
             var value = 0;
-            foreach (var ch in digits)
+            for (var index = start; index < start + length; index++)
             {
-                Work(); var digit = Digit(ch);
+                Work(); var digit = Digit(text[index]);
                 if (digit < 0 || digit >= radix || value > (0x10ffff - digit) / radix) return Error(Pcre2ErrorKind.BadReplacementEscape);
                 value = value * radix + digit;
             }

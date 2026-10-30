@@ -59,7 +59,7 @@ public sealed class Pcre2ReplacementEntryInvocationTests
     }
 
     [Theory] [InlineData("abc")] [InlineData(@"(?<x>a)\k<x>")] [InlineData(@"(?<x>\x41+)")]
-    public void Utf8TemplateValidationAndDecodeUseOriginalLimits(string pattern)
+    public void Utf8TemplateValidationAndPreparationUseOriginalLimits(string pattern)
     {
         var malformed = new byte[16385]; malformed.AsSpan().Fill((byte)'x'); malformed[^1] = 0xff;
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>

@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Text;
 using Lokad.Utf8Regex.Internal;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
@@ -13,11 +14,16 @@ public sealed class Pcre2ReplacementPreparationReuseTests
     [InlineData("Destination")]
     public void UncacheableTemplateDoesNotNeedTwoCompilationAllowances(string route)
     {
-        var template = "$1" + new string('x', 1 << 20);
+        // Exceed the payload bound in both representations: byte keys retain
+        // less storage than their former decoded string keys.
+        var template = "$1" + new string('x', 2 << 20);
+        var utf8 = Encoding.UTF8.GetBytes(template);
         ulong work;
         using (var measured = Utf8ConstructionScope.Enter())
         {
-            _ = Pcre2ReplacementPreparationControl.Prepare(template, Pcre2SubstitutionOptions.None, false);
+            var source = route is "Utf8Bytes" or "Destination"
+                ? new Utf8ConstructionPattern(utf8) : new Utf8ConstructionPattern(template);
+            _ = Pcre2ReplacementPreparationControl.Prepare(source, Pcre2SubstitutionOptions.None, false);
             work = measured.Budget.WorkSteps;
         }
         foreach (var finite in new[] { false, true })
@@ -26,8 +32,7 @@ public sealed class Pcre2ReplacementPreparationReuseTests
                 new Utf8ResourcePolicy { MaxWorkSteps = 50_000_000, MaxDepth = 1024,
                     MaxWorkingBytes = 64 << 20, MaxResultBytes = 64 << 20 }, Timeout.InfiniteTimeSpan)
                 : new Utf8Pcre2Regex("(a)");
-            var utf8 = Encoding.UTF8.GetBytes(template);
-            var destination = new byte[(1 << 20) + 1];
+            var destination = new byte[(2 << 20) + 1];
             // Leave room for cache admission work, but not a second compilation.
             var allowance = work + work / 2;
             using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, allowance, ulong.MaxValue);

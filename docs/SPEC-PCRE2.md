@@ -156,6 +156,24 @@ Use PCRE2 substitution grammar, not .NET parsing. Default forms are `$$`,
 `${*MARK}` and `$<name>`. Backslash processing requires Extended.
 Replace/TryReplace run left-to-right and reject non-monotone successful ranges.
 
+UTF-8 template overloads validate the complete template before route selection,
+then parse its literals, escapes and selectors directly from bytes. Prepared
+payloads, retained keys and output require no whole-template string. The same
+simple/prepared grammar and native/global/detailed drivers serve both source
+forms. Syntax errors remain deferred instructions: no-match and unselected
+fallback behavior retain their existing profile rules. Strict malformed UTF-8
+still fails even on no match or SubstituteLiteral. String templates retain their
+fragment-local surrogate repair.
+
+Warm byte-template cache queries borrow the supplied span. Cold keys are copied
+after major-buffer admission; their temporary working loan overlaps parser/output
+storage and refunds with the operation. Text and byte keys use independent entries
+in one bounded cache; only Extended separates grammar variants. Other substitution
+flags keep their execution meanings. Native construction extents use bytes, so
+position-table capacity can exceed the corresponding UTF-16 source capacity;
+fixed work/instruction/byte backstops remain. These modeled costs are not stable
+per-template quotas or aggregate host-retention guarantees.
+
 Discovery, actual yielded captures/Mark, callback context, output growth and final
 copy/decode share one invocation; callbacks do not rematch at reported starts.
 Evaluators must be non-null, including misses, after pre-cancellation.
@@ -164,7 +182,8 @@ the callback. Arbitrary callback execution cannot be preempted or charged as
 library allocations.
 
 TryReplace supports overlapping output by staging where required. Destination
-shortage leaves it unchanged with zero bytes written; other failures throw.
+shortage leaves it unchanged with zero bytes written, or the required length
+when SubstituteOverflowLength is selected; other failures throw.
 See the [Core writer/output contract](SPEC.md#results-splitting-and-replacement)
 for ownership and exclusions.
 
@@ -273,8 +292,9 @@ before working staging refunds, including conservative overlap without a funding
 gap. Shared names/mark text count again for independent retention. Refusal is
 terminal. Receipt close refunds once; copied ranges remain valid afterward, with
 continued admission then the caller's responsibility. Numeric result traffic is
-cumulative regardless of live refunds. Native pattern compilation and source
-copying are implemented; UTF-8 template preparation remains unfinished.
+cumulative regardless of live refunds. Native pattern compilation, source copying
+and UTF-8 template preparation are implemented. Funded replacement/result receipts
+and final package/consumer acceptance remain separate delivery work.
 
 ## Isolation and non-goals
 

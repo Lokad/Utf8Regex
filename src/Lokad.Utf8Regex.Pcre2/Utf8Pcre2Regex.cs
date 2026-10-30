@@ -831,23 +831,21 @@ public sealed partial class Utf8Pcre2Regex
     {
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, token);
         using var preparationControl = Pcre2ReplacementPreparationControl.Borrow(invocation, token);
-        ulong templateReservation = 0;
         try
         {
-            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(replacementPatternUtf8, ref invocation, out var template));
+            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(replacementPatternUtf8, ref invocation, out _));
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
-            var replacementText = DecodeReplacementTemplate(replacementPatternUtf8, template.Utf16Length,
-                ref invocation, out templateReservation);
+            var replacement = new Utf8ConstructionPattern(replacementPatternUtf8);
             Pcre2ReplacementPreparation? preparation = null;
-            if (TryReplaceUsingLiteralDriver(input, subject, start, replacementText, substitutionOptions,
+            if (TryReplaceUsingLiteralDriver(input, subject, start, replacement, substitutionOptions,
                     matchOptions, invocation, destination, ref preparation, out bytesWritten, out var status))
             {
                 Pcre2SliceDriver.CheckInvocation(ref invocation);
                 return status;
             }
 
-            var replaced = ReplaceValidated(input, subject, start, replacementText, substitutionOptions,
+            var replaced = ReplaceValidated(input, subject, start, replacement, substitutionOptions,
                 matchOptions, invocation, false, preparation).Bytes;
             if (replaced.Length > destination.Length)
             {
@@ -865,7 +863,6 @@ public sealed partial class Utf8Pcre2Regex
         { throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout); }
         catch (InvalidOperationException) when (invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         { Pcre2SliceDriver.ThrowIfSliceBreached(invocation.Budget.LimitBreach); throw; }
-        finally { invocation.Ledger.Release(templateReservation); }
     }
 
     /// <summary>Attempts to write a replacement result, observing cancellation during validation, preparation, discovery and copying.</summary>
@@ -1197,7 +1194,7 @@ public sealed partial class Utf8Pcre2Regex
         ReadOnlySpan<byte> input,
         Utf8ValidatedInput subject,
         Utf8BytePosition start,
-        string replacement,
+        Utf8ConstructionPattern replacement,
         Pcre2SubstitutionOptions substitutionOptions,
         Pcre2MatchOptions matchOptions,
         Utf8SliceInvocation invocation,
@@ -1263,7 +1260,7 @@ public sealed partial class Utf8Pcre2Regex
         ReadOnlySpan<byte> input,
         Utf8ValidatedInput subject,
         Utf8BytePosition start,
-        string replacement,
+        Utf8ConstructionPattern replacement,
         Pcre2SubstitutionOptions substitutionOptions,
         Pcre2MatchOptions matchOptions,
         Utf8SliceInvocation invocation,
@@ -1353,7 +1350,7 @@ public sealed partial class Utf8Pcre2Regex
     }
 
     private bool TryGetLiteralDriverReplacementPlan(
-        string replacement,
+        Utf8ConstructionPattern replacement,
         Pcre2SubstitutionOptions substitutionOptions,
         ref Pcre2ReplacementPreparation? preparation,
         out Pcre2SimpleReplacementPlan plan,
@@ -1404,7 +1401,7 @@ public sealed partial class Utf8Pcre2Regex
               Pcre2SubstitutionOptions.SubstituteMatched);
         // A declined simple optimization still produces a complete prepared plan.
         // Carry it into the executor even when this template cannot be cached.
-        preparation ??= GetReplacementPreparation(replacement, templateOptions);
+        preparation ??= GetTemplatePreparation(replacement, templateOptions);
         // Execution-only flags still retain their established streaming route.
         // Sharing syntax preparation must not opt those calls into the range ledger.
         if (templateOptions != Pcre2SubstitutionOptions.None || preparation.Value.Simple is not { } simplePlan)
@@ -1501,7 +1498,7 @@ public sealed partial class Utf8Pcre2Regex
         {
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
-            var result = ReplaceValidated(input, subject, start, replacement, substitutionOptions, matchOptions, invocation, text);
+            var result = ReplaceValidated(input, subject, start, new Utf8ConstructionPattern(replacement), substitutionOptions, matchOptions, invocation, text);
             Pcre2SliceDriver.CheckInvocation(ref invocation);
             return result;
         }
@@ -1514,14 +1511,12 @@ public sealed partial class Utf8Pcre2Regex
     {
         var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, token);
         using var preparationControl = Pcre2ReplacementPreparationControl.Borrow(invocation, token);
-        ulong reservation = 0;
         try
         {
-            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(replacement, ref invocation, out var template));
+            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(replacement, ref invocation, out _));
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
-            var decoded = DecodeReplacementTemplate(replacement, template.Utf16Length, ref invocation, out reservation);
-            var result = ReplaceValidated(input, subject, start, decoded, options, matchOptions, invocation, false);
+            var result = ReplaceValidated(input, subject, start, new Utf8ConstructionPattern(replacement), options, matchOptions, invocation, false);
             Pcre2SliceDriver.CheckInvocation(ref invocation);
             return result;
         }
@@ -1529,23 +1524,9 @@ public sealed partial class Utf8Pcre2Regex
         { throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout); }
         catch (InvalidOperationException) when (invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         { Pcre2SliceDriver.ThrowIfSliceBreached(invocation.Budget.LimitBreach); throw; }
-        finally { invocation.Ledger.Release(reservation); }
     }
 
-    private static string DecodeReplacementTemplate(ReadOnlySpan<byte> bytes, int charCount,
-        scoped ref Utf8SliceInvocation invocation, out ulong reservation)
-    {
-        reservation = 0;
-        // Preparation scratch stays admitted while discovery/output overlap;
-        // it is not publication and does not consume result-byte credits.
-        var capacity = Utf8ConstructionBudget.StringBytes(charCount);
-        Pcre2SliceDriver.ThrowIfSliceBreached(invocation.TryReserveWorking(capacity));
-        reservation = capacity;
-        return invocation.IsUnmetered ? Encoding.UTF8.GetString(bytes)
-            : Utf8SliceBufferWork.DecodeUtf8(bytes, charCount, ref invocation);
-    }
-
-    private Pcre2ReplacementResult ReplaceValidated(ReadOnlySpan<byte> input, Utf8ValidatedInput subject, Utf8BytePosition start, string replacement,
+    private Pcre2ReplacementResult ReplaceValidated(ReadOnlySpan<byte> input, Utf8ValidatedInput subject, Utf8BytePosition start, Utf8ConstructionPattern replacement,
         Pcre2SubstitutionOptions substitutionOptions,
         Pcre2MatchOptions matchOptions, Utf8SliceInvocation invocation, bool text,
         Pcre2ReplacementPreparation? preparation = null)
@@ -1607,7 +1588,7 @@ public sealed partial class Utf8Pcre2Regex
     // Extended templates on capture-free native routes keep the existing
     // global cursor/kernel. Reuse one admitted group-zero slot and lend the
     // discovery authority to the writer; no per-match core rematching.
-    private Pcre2ReplacementResult ReplaceNativeValueTemplate(ReadOnlySpan<byte> input, Utf8ValidatedInput subject, Utf8BytePosition start, string replacement,
+    private Pcre2ReplacementResult ReplaceNativeValueTemplate(ReadOnlySpan<byte> input, Utf8ValidatedInput subject, Utf8BytePosition start, Utf8ConstructionPattern replacement,
         Pcre2SubstitutionOptions options, Pcre2MatchOptions matchOptions,
         Utf8SliceInvocation invocation, bool text, Pcre2ReplacementPreparation? prepared)
     {
@@ -1623,7 +1604,7 @@ public sealed partial class Utf8Pcre2Regex
         var templateOptions = options & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
         var preparation = prepared ?? ((options & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
             ? Pcre2ReplacementPreparationControl.Prepare(replacement, options, true)
-            : GetReplacementPreparation(replacement, templateOptions));
+            : GetTemplatePreparation(replacement, templateOptions));
         control.WorkingInvocation.ShareStorageForCursor();
         var groupBytes = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(1);
         control.TryChargeResultBytes(groupBytes);
@@ -1659,7 +1640,7 @@ public sealed partial class Utf8Pcre2Regex
         => CreateUnsupportedReplacementException(null);
 
     private Pcre2ReplacementResult ReplaceBacktrackingDetailed(ReadOnlySpan<byte> input, Utf8ValidatedInput validated, Utf8BytePosition start, Pcre2BacktrackingProgram program,
-        string replacement, Pcre2SubstitutionOptions options, Pcre2MatchOptions matchOptions, Utf8SliceInvocation invocation, bool text,
+        Utf8ConstructionPattern replacement, Pcre2SubstitutionOptions options, Pcre2MatchOptions matchOptions, Utf8SliceInvocation invocation, bool text,
         Pcre2ReplacementPreparation? prepared)
     {
         var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(program, _program.CandidateSearchPlan,
@@ -1676,7 +1657,7 @@ public sealed partial class Utf8Pcre2Regex
         var templateOptions = options & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
         var preparation = prepared ?? ((options & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
             ? Pcre2ReplacementPreparationControl.Prepare(replacement, options, true)
-            : GetReplacementPreparation(replacement, templateOptions));
+            : GetTemplatePreparation(replacement, templateOptions));
         // Controlled calls already share this owner. Promote unlimited hits
         // before the writer copies it; no-match helpers borrow the inline owner.
         cursor.WorkingInvocation.ShareStorageForCursor();
@@ -1700,7 +1681,7 @@ public sealed partial class Utf8Pcre2Regex
     }
 
     private Pcre2ReplacementResult ReplaceSliceDetailed(ReadOnlySpan<byte> input, Utf8ValidatedInput validated, Utf8BytePosition start, Utf8SliceProgram sliceProgram,
-        string replacement, Pcre2SubstitutionOptions options, Utf8SliceInvocation invocation, bool text,
+        Utf8ConstructionPattern replacement, Pcre2SubstitutionOptions options, Utf8SliceInvocation invocation, bool text,
         Pcre2ReplacementPreparation? prepared)
     {
         var cursor = new Pcre2SliceGlobalMatchCursor(sliceProgram, invocation, validated, start, _program.Request);
@@ -1714,7 +1695,7 @@ public sealed partial class Utf8Pcre2Regex
         var templateOptions = options & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
         var preparation = prepared ?? ((options & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
             ? Pcre2ReplacementPreparationControl.Prepare(replacement, options, true)
-            : GetReplacementPreparation(replacement, templateOptions));
+            : GetTemplatePreparation(replacement, templateOptions));
         cursor.WorkingInvocation.ShareStorageForCursor();
         var writer = new Pcre2ReplacementTemplateWriter(input, NameEntries, cursor.WorkingInvocation);
         try
@@ -1802,7 +1783,7 @@ public sealed partial class Utf8Pcre2Regex
         try
         {
             result = _replacementCache.GetOrAdd(new Pcre2ReplacementCacheKey(replacement, options), 0,
-                static (key, _) => Pcre2ReplacementPreparationControl.Prepare(key.Replacement, key.Options, false),
+                static (key, _) => Pcre2ReplacementPreparationControl.Prepare(key.Source, key.Options, false),
                 default(Pcre2ReplacementTextControl), default(Pcre2ReplacementRetainedStorage));
         }
         catch (Exception failure) when (failure is OperationCanceledException ||
@@ -1820,12 +1801,78 @@ public sealed partial class Utf8Pcre2Regex
         return result;
     }
 
-    private readonly record struct Pcre2ReplacementCacheKey(string Replacement, Pcre2SubstitutionOptions Options);
+    private Pcre2ReplacementPreparation GetTemplatePreparation(Utf8ConstructionPattern replacement, Pcre2SubstitutionOptions options)
+    {
+        if (!replacement.IsUtf8) return GetReplacementPreparation(replacement.Text, options);
+        options &= Pcre2SubstitutionOptions.Extended;
+        using var control = Pcre2ReplacementPreparationControl.JoinOrEnter(_program.Request.MatchTimeout);
+        Pcre2ReplacementPreparationControl.CheckText(replacement.Length);
+        try
+        {
+            if (_replacementCache.TryGet(replacement.Utf8, options,
+                static (key, query, flags) => key.Options == flags && key.Replacement is byte[] owned && NativeTemplateEquals(owned, query),
+                default(Pcre2ReplacementTextControl), out var plan, out _)) return plan;
+            using var owner = Utf8ConstructionScope.Enter();
+            using var storage = Utf8ConstructionSession.Create(owner.Budget);
+            var bytes = Pcre2ReplacementPreparationControl.FreezeNativeKey(storage, replacement);
+            var result = _replacementCache.GetOrAdd(new Pcre2ReplacementCacheKey(bytes, options), 0,
+                static (key, _) => Pcre2ReplacementPreparationControl.Prepare(key.Source, key.Options, false),
+                default(Pcre2ReplacementTextControl), default(Pcre2ReplacementRetainedStorage));
+            storage.Complete(); owner.Complete();
+            return result;
+        }
+        catch (Exception failure) when (failure is OperationCanceledException ||
+            failure is Pcre2MatchException { ErrorKind: Pcre2ErrorKind.Timeout or Pcre2ErrorKind.MatchLimit or
+                Pcre2ErrorKind.DepthLimit or Pcre2ErrorKind.HeapLimit or Pcre2ErrorKind.ResultLimit })
+        {
+            Pcre2ReplacementPreparationControl.Check();
+            return Pcre2ReplacementPreparationControl.Prepare(replacement, options, false);
+        }
+    }
+
+    private static bool NativeTemplateEquals(ReadOnlySpan<byte> owned, ReadOnlySpan<byte> query)
+    {
+        if (owned.Length != query.Length) return false;
+        for (var offset = 0; offset < query.Length;)
+        {
+            Pcre2ReplacementPreparationControl.Check();
+            var length = Math.Min(2048, query.Length - offset);
+            if (!owned.Slice(offset, length).SequenceEqual(query.Slice(offset, length))) return false;
+            offset += length;
+        }
+        Pcre2ReplacementPreparationControl.Check();
+        return true;
+    }
+
+    private readonly record struct Pcre2ReplacementCacheKey(object Replacement, Pcre2SubstitutionOptions Options)
+    {
+        internal Utf8ConstructionPattern Source => Replacement is byte[] bytes
+            ? new Utf8ConstructionPattern(bytes) : new Utf8ConstructionPattern((string)Replacement);
+        public bool Equals(Pcre2ReplacementCacheKey other) => Options == other.Options &&
+            (ReferenceEquals(Replacement, other.Replacement) ||
+                (Replacement is string text && other.Replacement is string otherText && StringComparer.Ordinal.Equals(text, otherText)) ||
+                (Replacement is byte[] bytes && other.Replacement is byte[] otherBytes && NativeTemplateEquals(bytes, otherBytes)));
+        public override int GetHashCode()
+        {
+            if (Replacement is string text) return HashCode.Combine(StringComparer.Ordinal.GetHashCode(text), Options);
+            var hash = new HashCode(); hash.Add(Options);
+            var bytes = (byte[])Replacement;
+            for (var offset = 0; offset < bytes.Length;)
+            {
+                Pcre2ReplacementPreparationControl.Check();
+                var length = Math.Min(2048, bytes.Length - offset);
+                hash.AddBytes(bytes.AsSpan(offset, length)); offset += length;
+            }
+            return hash.ToHashCode();
+        }
+    }
 
     private readonly struct Pcre2ReplacementRetainedStorage : IUtf8RetainedStorage<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation>
     {
         public Utf8RetainedStorageScope Scope => Utf8RetainedStorageScope.CompletePayload;
-        public ulong GetKeyCharge(Pcre2ReplacementCacheKey key) => Utf8ConstructionBudget.StringBytes(key.Replacement.Length);
+        public ulong GetKeyCharge(Pcre2ReplacementCacheKey key) => key.Replacement is byte[] bytes
+            ? Utf8ConstructionBudget.ArrayBytes<byte>(bytes.Length)
+            : Utf8ConstructionBudget.StringBytes(((string)key.Replacement).Length);
         public bool TryGetValueCharge<TControl>(Pcre2ReplacementPreparation value, ulong maximum, TControl control, out ulong charge)
             where TControl : struct, IUtf8ConstructionTextControl
         {

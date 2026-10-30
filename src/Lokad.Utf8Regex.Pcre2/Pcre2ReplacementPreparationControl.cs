@@ -1,5 +1,6 @@
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
@@ -31,6 +32,9 @@ internal readonly ref struct Pcre2ReplacementPreparationControl
         => s_current.Active ? default : EnterOperation(timeout, default);
 
     internal static Pcre2ReplacementPreparation Prepare(string replacement, Pcre2SubstitutionOptions options, bool literal)
+        => Prepare(new Utf8ConstructionPattern(replacement), options, literal);
+
+    internal static Pcre2ReplacementPreparation Prepare(Utf8ConstructionPattern replacement, Pcre2SubstitutionOptions options, bool literal)
     {
         if (!s_current.HasInvocation || s_current.Invocation.Ledger.IsUnlimited)
             return Compile(replacement, options, literal);
@@ -59,11 +63,48 @@ internal readonly ref struct Pcre2ReplacementPreparationControl
         }
     }
 
-    private static Pcre2ReplacementPreparation Compile(string replacement, Pcre2SubstitutionOptions options, bool literal)
+    private static Pcre2ReplacementPreparation Compile(Utf8ConstructionPattern replacement, Pcre2SubstitutionOptions options, bool literal)
     {
         if (literal) return new(Pcre2SimpleReplacementParser.Literal(replacement), null);
         return Pcre2SimpleReplacementParser.TryParse(replacement, options, out var simple)
             ? new(simple, null) : new(null, Pcre2PreparedReplacementParser.Parse(replacement, options));
+    }
+
+    // Native callers validate once before route selection. Copy complete scalar
+    // fragments directly; only the explicit text convenience performs encoding.
+    internal static byte[] EncodeSource(Utf8ConstructionSession storage,
+        Utf8ConstructionPattern source, int start, int length)
+    {
+        if (!source.IsUtf8)
+            return storage.EncodeRepairedUtf8(source.Text.AsSpan(start, length), default(Pcre2ReplacementTextControl));
+        var result = storage.Allocate<byte>(length);
+        var bytes = source.Utf8.Slice(start, length);
+        for (var offset = 0; offset < length;)
+        {
+            Check();
+            var count = Math.Min(2048, length - offset);
+            storage.Budget.ChargeWork((ulong)count);
+            bytes.Slice(offset, count).CopyTo(result.AsSpan(offset, count));
+            offset += count;
+        }
+        Check();
+        return result;
+    }
+
+    internal static byte[] FreezeNativeKey(Utf8ConstructionSession storage, Utf8ConstructionPattern source)
+    {
+        Check();
+        var charge = Utf8ConstructionBudget.ArrayBytes<byte>(source.Length);
+        // Retain the temporary key loan through parsing/cache admission and the
+        // operation. The existing control refunds it together with parser peak;
+        // retained cache capacity has its own separate conservative bound.
+        if (s_current.HasInvocation)
+        {
+            Pcre2SliceDriver.ThrowIfSliceBreached(s_current.Invocation.TryReserveWorking(charge));
+            s_current.PreparationReservation += charge;
+        }
+        Check();
+        return EncodeSource(storage, source, 0, source.Length);
     }
 
     internal static void Check()

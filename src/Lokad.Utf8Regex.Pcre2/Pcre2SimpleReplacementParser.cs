@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
@@ -7,17 +8,23 @@ namespace Lokad.Utf8Regex.Pcre2;
 internal static class Pcre2SimpleReplacementParser
 {
     internal static Pcre2SimpleReplacementPlan Literal(string replacement)
+        => Literal(new Utf8ConstructionPattern(replacement));
+
+    internal static Pcre2SimpleReplacementPlan Literal(Utf8ConstructionPattern replacement)
     {
         using var scope = Utf8ConstructionScope.Enter();
         using var storage = Utf8ConstructionSession.Create(scope.Budget);
         var segments = storage.Allocate<Pcre2SimpleReplacementSegment>(1);
-        segments[0] = FromLiteral(storage, replacement.AsSpan());
+        segments[0] = FromLiteral(storage, replacement, 0, replacement.Length);
         Pcre2ReplacementPreparationControl.Check();
         storage.Complete(); scope.Complete();
         return new(segments);
     }
 
     internal static bool TryParse(string replacement, Pcre2SubstitutionOptions options, out Pcre2SimpleReplacementPlan plan)
+        => TryParse(new Utf8ConstructionPattern(replacement), options, out plan);
+
+    internal static bool TryParse(Utf8ConstructionPattern replacement, Pcre2SubstitutionOptions options, out Pcre2SimpleReplacementPlan plan)
     {
         plan = default;
         if (options != Pcre2SubstitutionOptions.None) return false;
@@ -50,21 +57,22 @@ internal static class Pcre2SimpleReplacementParser
             }
             else if (!wholeMatch && next != '$') return false;
 
-            if (index > literalStart) segments.Add(FromLiteral(storage, replacement.AsSpan(literalStart, index - literalStart)));
-            segments.Add(wholeMatch ? new([], true) : FromLiteral(storage, "$".AsSpan()));
+            if (index > literalStart) segments.Add(FromLiteral(storage, replacement, literalStart, index - literalStart));
+            segments.Add(wholeMatch ? new([], true) : new(storage.EncodeRepairedUtf8("$".AsSpan(), default(Pcre2ReplacementTextControl)), false));
             index = end;
             literalStart = index + 1;
         }
         if (segments.Count == 0 || literalStart < replacement.Length)
-            segments.Add(FromLiteral(storage, replacement.AsSpan(literalStart)));
+            segments.Add(FromLiteral(storage, replacement, literalStart, replacement.Length - literalStart));
         plan = new(storage.Copy(segments));
         Pcre2ReplacementPreparationControl.Check();
         storage.Complete(); scope.Complete();
         return true;
     }
 
-    private static Pcre2SimpleReplacementSegment FromLiteral(Utf8ConstructionSession storage, ReadOnlySpan<char> literal)
-        => new(storage.EncodeRepairedUtf8(literal, default(Pcre2ReplacementTextControl)), false);
+    private static Pcre2SimpleReplacementSegment FromLiteral(Utf8ConstructionSession storage,
+        Utf8ConstructionPattern replacement, int start, int length)
+        => new(Pcre2ReplacementPreparationControl.EncodeSource(storage, replacement, start, length), false);
 }
 
 // Value descriptors borrow the admitted segment array and its payloads.
