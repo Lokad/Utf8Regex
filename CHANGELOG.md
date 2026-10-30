@@ -78,6 +78,8 @@
   the previous endpoint when an additional segment fails.
 - Improve scalar Count candidate searches for exact literal pairs, retaining
   bounded metering, ordered alternatives and full VM verification.
+- Reuse bounded full-needle candidate searches for small exact literal families,
+  preserving branch priority, scalar verification and original resource limits.
 - Reject impossible bounded Dot tails before greedy endpoint replay, retaining
   scalar limits, captures and original resource/interruption authority.
 
