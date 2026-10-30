@@ -87,7 +87,10 @@ public sealed class Utf8RegexRuntimeRegressionDiffTests
     {
         const RegexOptions options = RegexOptions.CultureInvariant;
         var ordinary = new Regex(pattern, options, TimeSpan.FromSeconds(2));
-        var compiled = new Regex(pattern, options | RegexOptions.Compiled, TimeSpan.FromSeconds(2));
+        // First use includes JIT of the BCL's generated methods. Concurrent
+        // Windows CI builds/tests can spend over two seconds descheduled here;
+        // this is a bounded oracle probe, not a producer deadline assertion.
+        var compiled = new Regex(pattern, options | RegexOptions.Compiled, TimeSpan.FromSeconds(10));
         var prefix = compiled.EnumerateMatches(input);
         // Probe only a bounded prefix: .NET 10.0.12 repeats 0:0, 0:1 rather
         // than advancing. Calling its complete Count or enumeration would hang.
