@@ -1,0 +1,374 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 65.9103315,
+  "Scope": "Sole focused confirmation of the native-metadata first run: fixed face0e34 -\u003E 03ce3861, four cases / eleven lanes. Pcre cold text/native compilation varied substantially in the first run; Python legacy string source export also varied. Unchanged Core literal control and finite/live-token Pcre Count remain. New native source copy is a feature-cost lane. Warmup 4s and at least 1000 calls/lane, independent 150ms calibration, five alternating samples, post-timing results/content/refund checks. One 75s outer cap. No more confirmations, catalog Status, cumulative baseline or package claim.",
+  "Before": {
+    "Core": "0.5.0-dev\u002Bface0e3431fff713ac1a837a397172cf9d97ff05 sha256=CB120D7B0AFFD89CDD62720D9F26298E3A618AD01647C1AD735378B26F626E73",
+    "Python": "0.5.0-dev\u002Bface0e3431fff713ac1a837a397172cf9d97ff05 sha256=5F6CC9BE77F36FA5192C48CA06E6C490DB55CDAB8DAAD593BF5A9387E7DEA479",
+    "Pcre": "0.5.0-dev\u002Bface0e3431fff713ac1a837a397172cf9d97ff05 sha256=D3E44C2EE384719D55B2AF138DE30E18FF33649E2055AFA8B1AE74529BCEEDCB"
+  },
+  "After": {
+    "Core": "0.5.0-dev\u002B03ce3861c8beb9ca4fb886fd60eb70807516dbb5 sha256=CD77ABD6265BE0F82B7E823A1DE95F54D9EE628EA1DEAA5A8AFAD294082E95B7",
+    "Python": "0.5.0-dev\u002B03ce3861c8beb9ca4fb886fd60eb70807516dbb5 sha256=525746004877F633BCE4870E5ACD2F05D78C1B98C4EB433B80599E4B40283DE4",
+    "Pcre": "0.5.0-dev\u002B03ce3861c8beb9ca4fb886fd60eb70807516dbb5 sha256=42823E48AEBFD41D88310C1584ED9800587A9FF87A15472AE2B0F4CE16DF1009"
+  },
+  "Rows": [
+    {
+      "Name": "literal-count-control",
+      "Profile": 0,
+      "Kind": 1,
+      "Finite": false,
+      "Funded": false,
+      "Pattern": "needle",
+      "InputBytes": 8198,
+      "InputSha256": "8DA47E1CAE661B34F429302D624E9EA43B01F9729C6A36BB3E1D2297395FF58B",
+      "Expected": 1,
+      "Lanes": [
+        "BeforeNative",
+        "AfterNative"
+      ],
+      "Iterations": [
+        524288,
+        524288
+      ],
+      "WarmupCalls": [
+        6141474,
+        6881981
+      ],
+      "Microseconds": [
+        [
+          0.4399993896484375,
+          0.44040470123291015,
+          0.4437686920166016,
+          0.4383584976196289,
+          0.44577388763427733
+        ],
+        [
+          0.42114715576171874,
+          0.42047367095947263,
+          0.4204584121704102,
+          0.42069969177246097,
+          0.5546394348144531
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          230.6864,
+          230.8989,
+          232.6626,
+          229.8261,
+          233.7139
+        ],
+        [
+          220.8024,
+          220.4493,
+          220.4413,
+          220.5678,
+          290.7908
+        ]
+      ]
+    },
+    {
+      "Name": "Python-source-copy",
+      "Profile": 1,
+      "Kind": 2,
+      "Finite": false,
+      "Funded": false,
+      "Pattern": "(?#qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq)(?P\u003Cword\u003E[ab]\u002B)(\uD83D\uDE00|x)",
+      "InputBytes": 539,
+      "InputSha256": "0A5CCE6A56CA80EBFEC04FB9EDA33D188D1F563A8C3913D2488B0C68F7B37050",
+      "Expected": 539,
+      "Lanes": [
+        "BeforeStringInterop",
+        "AfterStringInterop",
+        "AfterNativeMetadata"
+      ],
+      "Iterations": [
+        1048576,
+        1048576,
+        8388608
+      ],
+      "WarmupCalls": [
+        9248889,
+        9209153,
+        23991258
+      ],
+      "Microseconds": [
+        [
+          0.18353567123413086,
+          0.17026996612548828,
+          0.16987733840942382,
+          0.23162260055541992,
+          0.2526959419250488
+        ],
+        [
+          0.17605504989624024,
+          0.18805627822875978,
+          0.17001686096191407,
+          0.22443571090698242,
+          0.2573541641235351
+        ],
+        [
+          0.02190498113632202,
+          0.021517527103424073,
+          0.021928632259368898,
+          0.021451926231384276,
+          0.029818356037139893
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1664.000503540039,
+          1664.000503540039,
+          1664.000503540039,
+          1664.000503540039,
+          1664.000503540039
+        ],
+        [
+          1664.000503540039,
+          1664.000503540039,
+          1664.000503540039,
+          1664.000503540039,
+          1664.000503540039
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          192.4511,
+          178.541,
+          178.1293,
+          242.8739,
+          264.9709
+        ],
+        [
+          184.6071,
+          197.1913,
+          178.2756,
+          235.3379,
+          269.8554
+        ],
+        [
+          183.7523,
+          180.5021,
+          183.9507,
+          179.9518,
+          250.1345
+        ]
+      ]
+    },
+    {
+      "Name": "Pcre-compile",
+      "Profile": 2,
+      "Kind": 0,
+      "Finite": false,
+      "Funded": false,
+      "Pattern": "(?\u003Cword\u003E[ab]\u002B)(\uD83D\uDE00|x)",
+      "InputBytes": 22,
+      "InputSha256": "3365628BA8427E5EE8BD8C88521FDC43EA6D763238F8D528159FF5ACDF085B38",
+      "Expected": 1,
+      "Lanes": [
+        "BeforeText",
+        "BeforeNative",
+        "AfterText",
+        "AfterNative"
+      ],
+      "Iterations": [
+        4096,
+        4096,
+        4096,
+        4096
+      ],
+      "WarmupCalls": [
+        10537,
+        53834,
+        22975,
+        45648
+      ],
+      "Microseconds": [
+        [
+          69.3670654296875,
+          76.80354003906251,
+          105.50190429687501,
+          78.4069580078125,
+          68.345751953125
+        ],
+        [
+          73.0955078125,
+          73.2703857421875,
+          127.6574462890625,
+          121.324072265625,
+          72.1762939453125
+        ],
+        [
+          72.25048828125,
+          72.1509033203125,
+          124.863525390625,
+          121.009228515625,
+          70.4193359375
+        ],
+        [
+          73.9578125,
+          74.0173583984375,
+          106.9940185546875,
+          100.82326660156251,
+          72.12270507812501
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          61896,
+          61896,
+          61896,
+          61896,
+          61896
+        ],
+        [
+          61680,
+          61680,
+          61680,
+          61680,
+          61680
+        ],
+        [
+          62200,
+          62200,
+          62200,
+          62200,
+          62200
+        ],
+        [
+          61984,
+          61984,
+          61984,
+          61984,
+          61984
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          284.1275,
+          314.5873,
+          432.1358,
+          321.1549,
+          279.9442
+        ],
+        [
+          299.3992,
+          300.1155,
+          522.8849,
+          496.9434,
+          295.6341
+        ],
+        [
+          295.938,
+          295.5301,
+          511.441,
+          495.6538,
+          288.4376
+        ],
+        [
+          302.9312,
+          303.1751,
+          438.2475,
+          412.9721,
+          295.4146
+        ]
+      ]
+    },
+    {
+      "Name": "Pcre-finite-live-count",
+      "Profile": 2,
+      "Kind": 1,
+      "Finite": true,
+      "Funded": false,
+      "Pattern": "(?\u003Cword\u003E[ab]\u002B)(\uD83D\uDE00|x)",
+      "InputBytes": 704,
+      "InputSha256": "7B112B0DF8406BEDEAC5ED58806659C28095B4F375BD5609616DC53EE1A64257",
+      "Expected": 128,
+      "Lanes": [
+        "BeforeNative",
+        "AfterNative"
+      ],
+      "Iterations": [
+        2048,
+        2048
+      ],
+      "WarmupCalls": [
+        42427,
+        46656
+      ],
+      "Microseconds": [
+        [
+          80.186669921875,
+          139.04404296875,
+          137.879833984375,
+          139.049853515625,
+          137.278369140625
+        ],
+        [
+          87.356689453125,
+          140.819873046875,
+          139.6724609375,
+          139.72861328125,
+          139.760498046875
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1600,
+          1600,
+          1600,
+          1600,
+          1600
+        ],
+        [
+          1600,
+          1600,
+          1600,
+          1600,
+          1600
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          164.2223,
+          284.7622,
+          282.3779,
+          284.7741,
+          281.1461
+        ],
+        [
+          178.9065,
+          288.3991,
+          286.0492,
+          286.1642,
+          286.2295
+        ]
+      ]
+    }
+  ]
+}
