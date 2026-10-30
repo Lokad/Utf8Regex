@@ -46,3 +46,6 @@ Passed!  - Failed:     0, Passed:   317, Skipped:     0, Total:   317, Duration:
 File: option-prelude.txt
 Passed!  - Failed:     0, Passed:   408, Skipped:     0, Total:   408, Duration: 161 ms - Lokad.Utf8Regex.Tests.dll (net10.0)
 Passed!  - Failed:     0, Passed:   408, Skipped:     0, Total:   408, Duration: 134 ms - Lokad.Utf8Regex.Tests.dll (net11.0)
+Later prelude publication repair:
+Passed!  - Failed:     0, Passed:   707, Skipped:     0, Total:   707, Duration: 1 s - Lokad.Utf8Regex.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:   707, Skipped:     0, Total:   707, Duration: 755 ms - Lokad.Utf8Regex.Tests.dll (net11.0)

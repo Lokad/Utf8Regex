@@ -61,6 +61,12 @@ native callers receive only a consumed byte offset and suffix. Its 408 focused
 checks/runtime pass, including Unicode/NUL and zero modeled native payload
 acquisition. That later prelude change is not included in f56f4f86 timings.
 
+CI 41061538838 subsequently caught an option-publication defect in that later
+prelude: text normalization changed ref options before retained-text admission.
+The wrapper now stages options until the copy succeeds; existing lexical-storage,
+prelude and related guards pass **707/runtime**. The f56f4f86 experiment predates
+the prelude and is unaffected. Failed CI remains evidence; fresh CI is required.
+
 Immutable evidence in artifacts/experiments/native-core-preparation-20261030/:
 
 - native-core-preparation-f56f4f86.tar.gz: exact before/after Core DLL/PDB pairs,
