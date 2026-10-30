@@ -101,6 +101,37 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue> where TKey : not
 
     // Controls, storage probes and key comparers are closed non-mutating
     // implementations. Factories alone execute outside the owner lock.
+    internal bool TryGet<TLookup, TState, TControl>(TLookup lookup, TState state,
+        Func<TKey, TLookup, TState, bool> matches, TControl control,
+        out TValue value, out Utf8FundedStorage.Use? memoryUse)
+        where TLookup : allows ref struct
+        where TControl : struct, IUtf8ConstructionTextControl
+    {
+        memoryUse = null;
+        try
+        {
+            lock (this)
+            {
+                control.Check();
+                // A borrowed query never enters retained storage. Reuse Read
+                // for ready/pending entries, including its existing active use
+                // before a wait releases the lock or eviction detaches a value.
+                if (_capacity != 0)
+                    for (var entry = _first; entry is not null; entry = entry.Next)
+                    {
+                        control.Check();
+                        if (!matches(entry.Key, lookup, state)) continue;
+                        value = Read(entry, control, ref memoryUse);
+                        return true;
+                    }
+            }
+            control.Check();
+            value = default!;
+            return false;
+        }
+        catch { memoryUse?.Dispose(); memoryUse = null; throw; }
+    }
+
     internal TValue GetOrAdd<TState, TControl, TStorage>(TKey key, TState state,
         Func<TKey, TState, TValue> factory, TControl control, TStorage storage)
         where TControl : struct, IUtf8ConstructionTextControl

@@ -6,6 +6,24 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8BoundedPreparationCacheTests
 {
     [Fact]
+    public void BorrowedQueriesDoNotRetainOrAllocateKeysAndRespectDisabledRetention()
+    {
+        var cache = Utf8BoundedPreparationCache<string, object>.CreateRetained(2, StringComparer.Ordinal);
+        var value = cache.GetOrAdd("é😀", 0, static (_, _) => new object(),
+            default(Utf8ConstructionTextNoControl), default(Utf8CacheTestStorage<object>));
+        static bool Equal(string key, ReadOnlySpan<char> query, int _) => query.SequenceEqual(key);
+        for (var i = 0; i < 3; i++)
+            Assert.True(cache.TryGet("é😀".AsSpan(), 0, Equal, default(Utf8ConstructionTextNoControl), out _, out _));
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var found = cache.TryGet("é😀".AsSpan(), 0, Equal, default(Utf8ConstructionTextNoControl), out var actual, out var use);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.True(found); Assert.Same(value, actual); Assert.Null(use); Assert.Equal(0, allocated);
+        Assert.False(cache.TryGet("different".AsSpan(), 0, Equal, default(Utf8ConstructionTextNoControl), out _, out _));
+        cache.Capacity = 0;
+        Assert.False(cache.TryGet("é😀".AsSpan(), 0, Equal, default(Utf8ConstructionTextNoControl), out _, out _));
+    }
+
+    [Fact]
     public void FailedGenerationCannotEvictLaterValueForSameKey()
     {
         var cache = Utf8BoundedPreparationCache<string, object>.CreateRetained(2, StringComparer.Ordinal);

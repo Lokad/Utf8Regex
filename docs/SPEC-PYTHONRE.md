@@ -339,6 +339,28 @@ Previously obtained byte arrays remain valid; the caller owns admission for
 continued retention after explicit release. No finalizer is involved. Retained
 text, bulk and callback output remain outside these two receipt APIs.
 
+`Replace`, `Subn` and `SubnRetained` also accept a `ReadOnlySpan<byte>` replacement
+template, with optional count, byte start and cancellation token. These are UTF-8
+encodings of the same Python Unicode template grammar, not Python bytes-pattern
+semantics. Parsing, literal fragments, cache keys and output stay native bytes;
+only selected group-name/error lexemes may project text. Complete strict template
+validation precedes grammar errors and matching, including misses and negative
+counts. Template `Position` retains its published UTF-16 units, derived from the
+failed prefix. Existing string templates retain fragment-local surrogate repair.
+
+Warm native lookup borrows the supplied span. Cold preparation admits an immutable
+byte-key copy before acquisition and keeps its working loan through retained-cache
+admission; denial never retries without limits. That temporary key overlaps parser
+capacity under the working-byte ceiling and fixed construction backstop. Retained
+cache capacity has its separate existing conservative bound. Text and byte keys
+share one bounded cache but occupy independent entries, allowing earlier eviction
+without normalizing or aliasing legacy text. Failed templates are not retained.
+Funded key/plan storage remains charged through eviction/disposal until its last
+active user finishes. Retained byte output has the same receipt contract as the
+text-template overload. Numeric work/depth/working/result limits and the original
+operation token/deadline apply; neither caller buffers nor total process memory
+become covered by this API.
+
 `TryGetScalarRange(groupNumber, out startOffsetInScalars, out endOffsetInScalars,
 token = default)` queries the current capture after a detailed, range-only or
 retained range advance. It returns true for a participating capture, including

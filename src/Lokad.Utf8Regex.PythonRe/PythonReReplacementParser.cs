@@ -6,62 +6,96 @@ using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
-// Template grammar is text interoperability. Published literals are complete
-// UTF-8 scalar fragments; matching and substitution use their byte payloads.
+// Both borrowed source forms use one grammar. Native literals stay bytes;
+// legacy text repairs unpaired surrogates at each literal-fragment boundary.
 internal static class PythonReReplacementParser
 {
     public static PythonReReplacementPlan Parse(string replacement, int captureGroupCount,
         IReadOnlyDictionary<string, int> namedGroups)
+        => Parse(new Utf8ConstructionPattern(replacement), captureGroupCount, namedGroups);
+
+    internal static PythonReReplacementPlan Parse(ReadOnlySpan<byte> replacement, int captureGroupCount,
+        IReadOnlyDictionary<string, int> namedGroups)
+        => Parse(new Utf8ConstructionPattern(replacement), captureGroupCount, namedGroups);
+
+    private static PythonReReplacementPlan Parse(Utf8ConstructionPattern replacement, int captureGroupCount,
+        IReadOnlyDictionary<string, int> namedGroups)
     {
         using var scope = Utf8ConstructionScope.Enter();
         using var storage = Utf8ConstructionSession.Create(scope.Budget);
+        replacement.ValidateUtf8();
         var tokens = storage.Buffer<PythonReReplacementToken>();
-        var literal = storage.Text();
+        var literal = replacement.IsUtf8 ? null : storage.Text();
+        var nativeLiteral = replacement.IsUtf8 ? storage.Buffer<byte>() : null;
         var index = 0;
-        while (index < replacement.Length)
+        try
         {
-            storage.Budget.ChargeWork(1);
-            var ch = replacement[index++];
-            if (ch != '\\') { literal.Append(ch); continue; }
-            if (index >= replacement.Length)
-                throw new PythonRePatternException("bad escape (end of pattern)", index - 1, PythonReErrorSource.Replacement);
-            var escaped = replacement[index++];
-            switch (escaped)
+            while (index < replacement.Length)
             {
-                case '\\': literal.Append('\\'); break;
-                case 'n': literal.Append('\n'); break;
-                case 'r': literal.Append('\r'); break;
-                case 't': literal.Append('\t'); break;
-                case 'v': literal.Append('\v'); break;
-                case 'f': literal.Append('\f'); break;
-                case 'a': literal.Append('\a'); break;
-                case 'b': literal.Append('\b'); break;
-                case 'g':
-                    FlushLiteral(storage, tokens, literal);
-                    tokens.Add(ParseNamedOrNumberedGroup(storage, replacement, ref index, captureGroupCount, namedGroups));
-                    break;
-                case '0': literal.Append(ParseOctalEscape(storage, replacement, ref index, escaped)); break;
-                case >= '1' and <= '9':
-                    FlushLiteral(storage, tokens, literal);
-                    tokens.Add(ParseNumberedGroupOrOctalEscape(storage, replacement, ref index, escaped, captureGroupCount));
-                    break;
-                default:
-                    if (char.IsAsciiLetter(escaped))
-                        throw new PythonRePatternException(storage.Text().Append("bad escape \\").Append(escaped).ToText(),
-                            index - 2, PythonReErrorSource.Replacement);
-                    literal.Append('\\').Append(escaped);
-                    break;
+                storage.Budget.ChargeWork(1);
+                var ch = replacement[index++];
+                if (ch != '\\')
+                {
+                    if (nativeLiteral is not null) nativeLiteral.Add((byte)ch);
+                    else literal!.Append(ch);
+                    continue;
+                }
+                if (index >= replacement.Length)
+                    throw new PythonRePatternException("bad escape (end of pattern)", index - 1, PythonReErrorSource.Replacement);
+                var escaped = replacement[index++];
+                switch (escaped)
+                {
+                    case '\\': AppendLiteral('\\', literal, nativeLiteral); break;
+                    case 'n': AppendLiteral('\n', literal, nativeLiteral); break;
+                    case 'r': AppendLiteral('\r', literal, nativeLiteral); break;
+                    case 't': AppendLiteral('\t', literal, nativeLiteral); break;
+                    case 'v': AppendLiteral('\v', literal, nativeLiteral); break;
+                    case 'f': AppendLiteral('\f', literal, nativeLiteral); break;
+                    case 'a': AppendLiteral('\a', literal, nativeLiteral); break;
+                    case 'b': AppendLiteral('\b', literal, nativeLiteral); break;
+                    case 'g':
+                        FlushLiteral(storage, tokens, literal, nativeLiteral);
+                        tokens.Add(ParseNamedOrNumberedGroup(storage, replacement, ref index, captureGroupCount, namedGroups));
+                        break;
+                    case '0': AppendLiteral(ParseOctalEscape(storage, replacement, ref index, escaped), literal, nativeLiteral); break;
+                    case >= '1' and <= '9':
+                        FlushLiteral(storage, tokens, literal, nativeLiteral);
+                        tokens.Add(ParseNumberedGroupOrOctalEscape(storage, replacement, ref index, escaped, captureGroupCount));
+                        break;
+                    default:
+                        if (char.IsAsciiLetter(escaped))
+                            throw new PythonRePatternException(storage.Text().Append("bad escape \\").Append(escaped).ToText(),
+                                index - 2, PythonReErrorSource.Replacement);
+                        if (nativeLiteral is not null)
+                        { nativeLiteral.Add((byte)'\\'); nativeLiteral.Add((byte)escaped); }
+                        else literal!.Append('\\').Append(escaped);
+                        break;
+                }
             }
+            FlushLiteral(storage, tokens, literal, nativeLiteral);
+            var result = new PythonReReplacementPlan(storage.Copy(tokens), CollectLiteralBytes(storage, tokens));
+            storage.Complete();
+            scope.Complete();
+            return result;
         }
-        FlushLiteral(storage, tokens, literal);
-        var result = new PythonReReplacementPlan(storage.Copy(tokens), CollectLiteralBytes(storage, tokens));
-        storage.Complete();
-        scope.Complete();
-        return result;
+        catch (PythonRePatternException error) when (replacement.IsUtf8 && error.Position >= 0)
+        {
+            // Published diagnostics retain UTF-16 coordinates. Project only the
+            // failed prefix, without acquiring a decoded template or index.
+            var position = 0;
+            for (var offset = 0; offset < error.Position;)
+            {
+                storage.Budget.ChargeWork(1);
+                _ = Rune.DecodeFromUtf8(replacement.Utf8[offset..], out var scalar, out var consumed);
+                offset += consumed;
+                position += scalar.Utf16SequenceLength;
+            }
+            throw new PythonRePatternException(error.Message, position, error.ErrorSource, error.ErrorKind);
+        }
     }
 
     private static PythonReReplacementToken ParseNamedOrNumberedGroup(Utf8ConstructionSession storage,
-        string replacement, ref int index, int captureGroupCount, IReadOnlyDictionary<string, int> namedGroups)
+        Utf8ConstructionPattern replacement, ref int index, int captureGroupCount, IReadOnlyDictionary<string, int> namedGroups)
     {
         storage.Budget.ChargeWork(1);
         if (index >= replacement.Length || replacement[index] != '<')
@@ -72,34 +106,42 @@ internal static class PythonReReplacementParser
         if (index >= replacement.Length)
             throw new PythonRePatternException(index == start ? "missing group name" : "missing >, unterminated name",
                 start, PythonReErrorSource.Replacement);
-        var name = replacement.AsSpan(start, index - start);
+        var length = index - start;
         index++;
-        if (name.IsEmpty) throw new PythonRePatternException("missing group name", start, PythonReErrorSource.Replacement);
+        if (length == 0) throw new PythonRePatternException("missing group name", start, PythonReErrorSource.Replacement);
         var numeric = true;
-        foreach (var ch in name)
+        for (var offset = start; offset < start + length; offset++)
         {
             storage.Budget.ChargeWork(1);
-            if (!char.IsAsciiDigit(ch)) { numeric = false; break; }
+            if (!char.IsAsciiDigit(replacement[offset])) { numeric = false; break; }
         }
         if (numeric)
         {
-            if (!int.TryParse(name, NumberStyles.None, CultureInfo.InvariantCulture, out var number))
+            var parsed = replacement.IsUtf8
+                ? int.TryParse(replacement.Utf8.Slice(start, length), NumberStyles.None, CultureInfo.InvariantCulture, out var number)
+                : int.TryParse(replacement.Text.AsSpan(start, length), NumberStyles.None, CultureInfo.InvariantCulture, out number);
+            if (!parsed)
+            {
+                var errorStart = start;
+                while (length > 0 && replacement[start] == '0')
+                { storage.Budget.ChargeWork(1); start++; length--; }
                 throw new PythonRePatternException(storage.Text().Append("invalid group reference ")
-                    .Append(name.TrimStart('0')).ToText(), start, PythonReErrorSource.Replacement);
+                    .Append(replacement.CopyText(start, length)).ToText(), errorStart, PythonReErrorSource.Replacement);
+            }
             ValidateGroupReference(storage, number, captureGroupCount, start);
             return PythonReReplacementToken.ForGroupNumber(number);
         }
-        var lookup = storage.Budget.CopyText(name);
+        var lookup = replacement.CopyText(start, length);
         if (!PythonReGroupNameValidator.IsValid(lookup))
             throw new PythonRePatternException(storage.Text().Append("bad character in group name '").Append(lookup).Append('\'').ToText(),
                 start, PythonReErrorSource.Replacement);
-        storage.Budget.ChargeWork((ulong)name.Length + 1);
+        storage.Budget.ChargeWork((ulong)length + 1);
         if (!namedGroups.TryGetValue(lookup, out var groupNumber))
             throw new IndexOutOfRangeException(storage.Text().Append("unknown group name '").Append(lookup).Append('\'').ToText());
         return PythonReReplacementToken.ForGroupNumber(groupNumber);
     }
 
-    private static char ParseOctalEscape(Utf8ConstructionSession storage, string replacement, ref int index, char firstDigit)
+    private static char ParseOctalEscape(Utf8ConstructionSession storage, Utf8ConstructionPattern replacement, ref int index, char firstDigit)
     {
         var value = firstDigit - '0';
         for (var digits = 0; digits < 2 && index < replacement.Length && replacement[index] is >= '0' and <= '7'; digits++)
@@ -108,7 +150,7 @@ internal static class PythonReReplacementParser
     }
 
     private static PythonReReplacementToken ParseNumberedGroupOrOctalEscape(Utf8ConstructionSession storage,
-        string replacement, ref int index, char firstDigit, int captureGroupCount)
+        Utf8ConstructionPattern replacement, ref int index, char firstDigit, int captureGroupCount)
     {
         storage.Budget.ChargeWork(1);
         var start = index - 1;
@@ -124,7 +166,7 @@ internal static class PythonReReplacementParser
                 var value = (firstDigit - '0') * 64 + (second - '0') * 8 + replacement[index++] - '0';
                 storage.Budget.ChargeWork(1);
                 if (value > 0xff)
-                    throw new PythonRePatternException(storage.Text().Append("octal escape value \\").Append(replacement.AsSpan(start, 3)).Append(" outside of range 0-0o377").ToText(),
+                    throw new PythonRePatternException(storage.Text().Append("octal escape value \\").Append(replacement.CopyText(start, 3)).Append(" outside of range 0-0o377").ToText(),
                         start - 1, PythonReErrorSource.Replacement);
                 Span<char> octal = stackalloc char[1];
                 octal[0] = (char)value;
@@ -144,13 +186,31 @@ internal static class PythonReReplacementParser
     }
 
     private static void FlushLiteral(Utf8ConstructionSession storage,
-        Utf8ConstructionBuffer<PythonReReplacementToken> tokens, Utf8ConstructionText literal)
+        Utf8ConstructionBuffer<PythonReReplacementToken> tokens, Utf8ConstructionText? literal,
+        Utf8ConstructionBuffer<byte>? nativeLiteral)
     {
+        if (nativeLiteral is not null)
+        {
+            if (nativeLiteral.Count == 0) return;
+            tokens.Add(PythonReReplacementToken.ForLiteral(storage.Copy(nativeLiteral)));
+            nativeLiteral.Clear();
+            return;
+        }
+        if (literal is null) throw new InvalidOperationException("Missing template literal storage.");
         if (literal.Length == 0) return;
         // Borrow the admitted scratch span, so no intermediate literal string is
         // acquired. Fragment boundaries repair unpaired surrogates independently.
         tokens.Add(PythonReReplacementToken.ForLiteral(storage.EncodeRepairedUtf8(literal.Span)));
         literal.Clear();
+    }
+
+    private static void AppendLiteral(char value, Utf8ConstructionText? literal,
+        Utf8ConstructionBuffer<byte>? nativeLiteral)
+    {
+        if (nativeLiteral is null) { literal!.Append(value); return; }
+        Span<byte> encoded = stackalloc byte[3];
+        var length = new Rune(value).EncodeToUtf8(encoded);
+        nativeLiteral.AddRange(encoded[..length]);
     }
 
     private static byte[]? CollectLiteralBytes(Utf8ConstructionSession storage, Utf8ConstructionBuffer<PythonReReplacementToken> tokens)

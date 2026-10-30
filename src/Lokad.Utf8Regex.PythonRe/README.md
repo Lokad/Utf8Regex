@@ -22,6 +22,14 @@ structural full-match collector. Split and template/callback replacement include
 capture-aware output shaping and substitution counts. Primary ranges are byte
 coordinates; derived UTF-16 coordinates do not define matching width.
 
+`Replace`, `Subn` and funded `SubnRetained` accept UTF-8 template spans as well as
+text templates. Native preparation/cache keys and literal/capture output remain
+bytes. Warm queries borrow their span; cold keys are copied after admission.
+Template validation still runs on misses, and template error positions retain
+UTF-16 units. These overloads preserve the Unicode grammar, not Python bytes-regex
+semantics. For example, `regex.Subn(input, "[\\g<word>]"u8)` returns owned bytes
+and a substitution count.
+
 Bytes-pattern semantics, LOCALE and `\N{...}` Unicode-name lookup are excluded.
 There is no `endpos` parameter. Start offsets follow the documented Python `pos`
 contract without resetting prefix/suffix assertion context. This is a selected

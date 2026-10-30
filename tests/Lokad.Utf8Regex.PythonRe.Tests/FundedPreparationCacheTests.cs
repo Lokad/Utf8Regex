@@ -7,8 +7,9 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class FundedPreparationCacheTests
 {
-    [Fact]
-    public void DetachedPendingEntryTransfersFundingToItsAlreadyWaitingUsers()
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void DetachedPendingEntryTransfersFundingToItsAlreadyWaitingUsers(bool borrowedLookup)
     {
         var allowance = new Allowance(1 << 20); Assert.True(allowance.TryReserve(13));
         var cache = Utf8BoundedPreparationCache<string, string>.CreateRetained(1, StringComparer.Ordinal);
@@ -39,8 +40,14 @@ public sealed class FundedPreparationCacheTests
         {
             try
             {
-                var value = cache.GetOrAdd("key", payload, static (_, _) => throw new InvalidOperationException("Unexpected second factory."),
-                    default(Utf8ConstructionTextNoControl), default(TextStorage), out var use);
+                Utf8FundedStorage.Use? use;
+                string value;
+                if (borrowedLookup)
+                    Assert.True(cache.TryGet("key".AsSpan(), 0, static (key, query, _) => query.SequenceEqual(key),
+                        default(Utf8ConstructionTextNoControl), out value, out use));
+                else
+                    value = cache.GetOrAdd("key", payload, static (_, _) => throw new InvalidOperationException("Unexpected second factory."),
+                        default(Utf8ConstructionTextNoControl), default(TextStorage), out use);
                 using (use)
                 {
                     Assert.Equal(payload, value); followerReady.Set();

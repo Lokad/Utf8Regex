@@ -39,11 +39,25 @@ public sealed class PythonReReplacementCacheChargeTests
         {
             if (keyCharge + charge == 0) continue;
             var maximum = keyCharge + charge - (allow ? 0UL : 1UL);
-            var cache = Utf8BoundedPreparationCache<string, PythonReReplacementPlan>.CreateRetained(2, StringComparer.Ordinal, 65536, maximum);
+            var cache = Utf8BoundedPreparationCache<object, PythonReReplacementPlan>.CreateRetained(2, PythonReReplacementKeyComparer.Instance, 65536, maximum);
             var result = cache.GetOrAdd(template, value, static (_, value) => value, default(Utf8ConstructionTextNoControl), storage);
             Assert.Same(value.Tokens, result.Tokens); Assert.Equal(allow ? 1 : 0, cache.Count);
             Assert.Equal(allow ? maximum : 0UL, cache.PayloadBytes);
             cache.Clear(); Assert.Same(value.Tokens, result.Tokens);
+        }
+        var nativeKey = System.Text.Encoding.UTF8.GetBytes(template);
+        keyCharge = storage.GetKeyCharge(nativeKey);
+        Assert.Equal(ArrayBytes<byte>(nativeKey.Length), keyCharge);
+        if (keyCharge + charge > 0)
+        foreach (var allow in new[] { false, true })
+        {
+            var maximum = keyCharge + charge - (allow ? 0UL : 1UL);
+            var cache = Utf8BoundedPreparationCache<object, PythonReReplacementPlan>.CreateRetained(2,
+                PythonReReplacementKeyComparer.Instance, 65536, maximum);
+            var result = cache.GetOrAdd(nativeKey, value, static (_, value) => value,
+                default(Utf8ConstructionTextNoControl), storage);
+            Assert.Same(value.Tokens, result.Tokens); Assert.Equal(allow ? 1 : 0, cache.Count);
+            Assert.Equal(allow ? maximum : 0UL, cache.PayloadBytes);
         }
     }
 
