@@ -28,6 +28,19 @@ internal static class Utf8OwnedFindOptimizations
             case Utf8TreeNodeKind.One:
                 return ComputeScalarByteWidth(node.Ch, node.MatchCaseInsensitive, node.Options);
             case Utf8TreeNodeKind.Multi:
+                if (node.LiteralUtf8 is { } bytes)
+                {
+                    long nativeLow = 0, nativeHigh = 0;
+                    for (var offset = 0; offset < bytes.Length;)
+                    {
+                        budget.ChargeWork(1);
+                        if (Rune.DecodeFromUtf8(bytes.AsSpan(offset), out var scalar, out var consumed) != System.Buffers.OperationStatus.Done)
+                            return new(0, null);
+                        var atom = ComputeScalarByteWidth(scalar.Value, node.MatchCaseInsensitive, node.Options);
+                        nativeLow += atom.Minimum; nativeHigh += atom.Maximum.GetValueOrDefault(); offset += consumed;
+                    }
+                    return Bounds(nativeLow, nativeHigh);
+                }
                 if (node.Str is not { } text) return new(0, null);
                 long low = 0, high = 0;
                 for (var offset = 0; offset < text.Length;)

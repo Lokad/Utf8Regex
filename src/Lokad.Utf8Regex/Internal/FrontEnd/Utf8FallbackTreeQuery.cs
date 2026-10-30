@@ -82,6 +82,7 @@ internal static class Utf8FallbackTreeQuery
             if (!cursor.Next(out var node)) throw new InvalidOperationException("Qualified literal lost its payload.");
             var length = LiteralLength(node); budget.ChargeWork((ulong)length);
             if (node.Kind == Utf8TreeNodeKind.One) bytes[position++] = (byte)node.Ch;
+            else if (node.LiteralUtf8 is { } native) { native.AsSpan().CopyTo(bytes.AsSpan(position, length)); position += length; }
             else { var text = node.Str ?? throw new InvalidOperationException("Qualified literal lost its text."); for (var j = 0; j < length; j++) bytes[position++] = (byte)text[j]; }
         }
         return bytes;
@@ -98,8 +99,7 @@ internal static class Utf8FallbackTreeQuery
             width = LiteralLength(literal);
             for (var index = 0; index < width; index++)
             {
-                var current = literal.Kind == Utf8TreeNodeKind.One ? (byte)literal.Ch :
-                    (byte)(literal.Str ?? throw new InvalidOperationException("Qualified query literal lost text."))[index];
+                var current = LiteralByte(literal, index);
                 Utf8ConstructionScope.ChargeWork(1);
                 if (current == (byte)'\n' || (uint)((current | 32) - 'a') <= 'z' - 'a' && !literal.MatchCaseInsensitive) return false;
             }
@@ -150,7 +150,7 @@ internal static class Utf8FallbackTreeQuery
                 throw new InvalidOperationException("Qualified query shape lost its atom.");
             if (offset < width)
                 return node.Kind == Utf8TreeNodeKind.Multi
-                    ? (byte)(node.Str ?? throw new InvalidOperationException("Qualified query shape lost text."))[offset] : value;
+                    ? LiteralByte(node, offset) : value;
             offset -= width;
         }
         throw new InvalidOperationException("Qualified query shape lost its byte.");
@@ -172,7 +172,7 @@ internal static class Utf8FallbackTreeQuery
                 if (skip != 0) { skip--; continue; }
                 if (written == destination.Length) continue;
                 destination[written++] = node.Kind == Utf8TreeNodeKind.Multi
-                    ? (byte)(node.Str ?? throw new InvalidOperationException("Qualified query shape lost text."))[position] : value;
+                    ? LiteralByte(node, position) : value;
             }
         }
         if (written != destination.Length) throw new InvalidOperationException("Qualified query shape lost its extent.");
@@ -239,19 +239,28 @@ internal static class Utf8FallbackTreeQuery
     {
         literal = Unwrap(source); Utf8ConstructionScope.ChargeWork(1);
         if (literal.Kind == Utf8TreeNodeKind.One) return literal.Ch < 128;
-        if (literal.Kind != Utf8TreeNodeKind.Multi || literal.Str is not { Length: > 0 } text) return false;
+        if (literal.Kind != Utf8TreeNodeKind.Multi) return false;
+        if (literal.LiteralUtf8 is { Length: > 0 } native)
+        {
+            foreach (var value in native) { Utf8ConstructionScope.ChargeWork(1); if (value >= 128) return false; }
+            return true;
+        }
+        if (literal.Str is not { Length: > 0 } text) return false;
         foreach (var value in text) { Utf8ConstructionScope.ChargeWork(1); if (value >= 128) return false; }
         return true;
     }
 
-    internal static int LiteralLength(Utf8TreeNode node) => node.Kind == Utf8TreeNodeKind.One ? 1 : node.Str?.Length ?? 0;
-    internal static byte FirstByte(Utf8TreeNode node) => node.Kind == Utf8TreeNodeKind.One ? (byte)node.Ch :
-        (byte)(node.Str ?? throw new InvalidOperationException("Qualified literal lost its payload."))[0];
+    internal static int LiteralLength(Utf8TreeNode node) => node.Kind == Utf8TreeNodeKind.One ? 1 : node.LiteralUtf8?.Length ?? node.Str?.Length ?? 0;
+    internal static byte FirstByte(Utf8TreeNode node) => LiteralByte(node, 0);
+    private static byte LiteralByte(Utf8TreeNode node, int position) => node.Kind == Utf8TreeNodeKind.One ? (byte)node.Ch :
+        node.LiteralUtf8 is { } native ? native[position] :
+        (byte)(node.Str ?? throw new InvalidOperationException("Qualified literal lost its payload."))[position];
 
     internal static byte[] CopyLiteral(Utf8TreeNode node, Utf8ConstructionBudget budget)
     {
         var length = LiteralLength(node); var bytes = budget.AllocateArray<byte>(length, false); budget.ChargeWork((ulong)length);
         if (node.Kind == Utf8TreeNodeKind.One) bytes[0] = (byte)node.Ch;
+        else if (node.LiteralUtf8 is { } native) native.AsSpan().CopyTo(bytes);
         else
         {
             var text = node.Str ?? throw new InvalidOperationException("Qualified literal lost its payload.");
