@@ -1,0 +1,12 @@
+Preflight actual-ordinary: 877
+Preflight actual-compiled: 877
+Preflight actual-finite-live: 877
+Preflight actual-deadline-live: 877
+Preflight nonzero-index-gaps: 6597069766661
+Preflight dense-ASCII: 2049
+Preflight Unicode-scalar-control: 42949672978
+Preflight empty-ASCII-misses: 0
+Preflight large-scalar-control: 8800387989508
+Preflight number-prefix-control: 420
+Preflight quoted-prefix-control: 2951
+Preflight literal-control: 35184372088839
