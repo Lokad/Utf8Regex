@@ -1,13 +1,14 @@
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
+using System.Buffers;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
 public sealed partial class Utf8Pcre2Regex
 {
     /// <summary>Compiles a PCRE2 text pattern under caller-owned program admission.</summary>
-    /// <remarks>The returned owner keeps compilation funded until explicit close and the final active call. Null construction MaxBytes adds no private byte cap. Construction work/depth/instruction backstops and independent invocation controls remain.</remarks>
+    /// <remarks>The returned owner keeps compilation funded until explicit close and the final active call. Program admission also prepays the bounded replacement cache maximum. Null construction MaxBytes adds no private byte cap. Construction work/depth/instruction backstops and independent invocation controls remain.</remarks>
     public static Utf8Pcre2RegexProgramOwner Compile(string pattern, Pcre2CompileOptions options,
         Utf8Pcre2CompileSettings compileSettings, TimeSpan matchTimeout,
         Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy,
@@ -38,6 +39,11 @@ public sealed partial class Utf8Pcre2Regex
         try
         {
             var regex = new Utf8Pcre2Regex(pattern, options, settings, limits, matchTimeout);
+            // Prepay the existing bounded lazy cache, like the Core owner. This
+            // conservative allowance covers publication without entry leases or
+            // a later refund/reacquire handoff. Temporary preparation is separate.
+            construction.Budget.ReserveBytes(regex._replacementCache.MaximumMetadataBytes
+                + regex._replacementCache.MaximumPayloadBytes);
             var storage = construction.Budget.AllocateObject(programMemoryAllowance,
                 static allowance => new Utf8FundedStorage(allowance, nameof(Utf8Pcre2RegexProgramOwner)));
             var owner = construction.Budget.AllocateObject((Regex: regex, Storage: storage),
@@ -50,6 +56,13 @@ public sealed partial class Utf8Pcre2Regex
         catch (Utf8ExecutionDeadlineExpiredException)
         { throw new System.Text.RegularExpressions.RegexMatchTimeoutException(string.Empty, pattern.IsUtf8 ? string.Empty : pattern.Text, constructionTimeout); }
     }
+
+    internal OperationStatus TryReplaceFunded(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementUtf8,
+        Span<byte> destination, out int bytesWritten, int startOffsetInBytes,
+        Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions,
+        CancellationToken token, IUtf8MemoryAllowance workingMemoryAllowance)
+        => TryReplaceCore(input, replacementUtf8, destination, out bytesWritten, startOffsetInBytes,
+            substitutionOptions, matchOptions, token, workingMemoryAllowance);
 
     /// <summary>Tests for a match with separate caller-owned working admission.</summary>
     /// <remarks>Compilation and borrowed input retain separate owners. Existing PCRE2 limits and cancellation/deadline apply. Covered temporary loans refund synchronously; denial does not retry under another allowance.</remarks>

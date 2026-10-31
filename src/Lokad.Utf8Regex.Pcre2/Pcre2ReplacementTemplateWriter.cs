@@ -158,6 +158,27 @@ internal ref struct Pcre2ReplacementTemplateWriter
             throw;
         }
     }
+
+    internal OperationStatus CompleteToDestination(Span<byte> destination, bool overflowLength, out int written)
+    {
+        try
+        {
+            CheckWork();
+            ReleaseFrames();
+            var bytes = _writer.WrittenBytes;
+            if (bytes.Length > destination.Length)
+            {
+                written = overflowLength ? bytes.Length : 0;
+                return OperationStatus.DestinationTooSmall;
+            }
+            Utf8SliceBufferWork.Copy(bytes, destination, ref _invocation);
+            written = bytes.Length;
+            return OperationStatus.Done;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw DeadlineFailure(); }
+        catch (InvalidOperationException) when (_invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.LimitBreach); throw; }
+    }
     internal void Release() { ReleaseFrames(); _writer.Release(ref _invocation); _groups = []; _mark = null; }
 
     // The subject was strictly validated before discovery. EOF does not reset

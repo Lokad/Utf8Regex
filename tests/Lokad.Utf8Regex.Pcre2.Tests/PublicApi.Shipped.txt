@@ -209,6 +209,7 @@ sealed class Utf8Pcre2RegexProgramOwner : IDisposable
   property Int32 CaptureGroupCount { get; }
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Buffers.OperationStatus TryCopyPatternUtf8(Span<Byte> destination, out Int32 bytesRequired, Threading.CancellationToken cancellationToken = default)
+  method Buffers.OperationStatus TryReplace(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementUtf8, Span<Byte> destination, out Int32 bytesWritten, Int32 startOffsetInBytes = 0, Pcre2SubstitutionOptions substitutionOptions = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Int32 CopyNumbersForUtf8Name(ReadOnlySpan<Byte> nameUtf8, Span<Int32> destination, out Boolean isMore, Threading.CancellationToken cancellationToken = default)
   method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Utf8Pcre2MatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)

@@ -331,8 +331,8 @@ again. Numeric result traffic remains cumulative even when live loans refund.
 
 Native subject/range discovery, pattern compilation, caller-buffer source/name
 metadata and byte-template preparation/cache paths are implemented. Core funded
-caller-destination replacement is source-qualified; PCRE2 funded replacement
-and final package/consumer acceptance remain
+caller-destination replacement and the profile-specific PCRE2 equivalent are
+implemented; final package/consumer acceptance remains
 separate parts of the complete UTF-8 public pipeline.
 
 ### Host admission

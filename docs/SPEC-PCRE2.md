@@ -240,6 +240,13 @@ Native construction work/extent charges use source bytes; string entries retain
 UTF-16 source units. Coarse AST admission can therefore be larger for native
 Unicode sources. Exact internal charges are not a stable heap-size contract.
 
+Funded program admission also reserves the existing replacement cache's maximum
+payload and metadata, even before its first use. This is a conservative per-program
+loan (currently 4MiB payload plus bounded metadata), not additional eager cache
+allocation. It intentionally raises the modeled program admission required by
+earlier owners. Cache publication/eviction needs no additional entry lease or
+funding transfer. Ordinary expressions retain their existing cache bounds.
+
 The owner exposes Boolean matching and Count with byte starts, PCRE2 match flags
 and each call's cancellation token. Temporary storage uses program funding by
 default; an explicit working allowance selects a separate host account. Ordinary
@@ -253,9 +260,28 @@ input, fixed invocation metadata and caller retention are separate scopes.
 Program Dispose rejects new calls and drops the expression root before the final
 refund; active calls keep their local root and charge until they finish. It does
 not wait, force cancellation or reclaim through GC. The underlying expression
-cannot escape. The owner also creates persistent range cursors; funded replacement
-remains unfinished. Existing copied span cursors keep their independent-position/
-alias contract.
+cannot escape. The owner also creates persistent range cursors and supports native
+template replacement into caller-owned destinations. Existing copied span cursors
+keep their independent-position/alias contract.
+
+`Utf8Pcre2RegexProgramOwner.TryReplace` retains the program's admission and accepts
+byte starts, substitution/match options, the current token and an optional separate
+working allowance. Cold key/parser arrays and live output borrow the same working
+ledger before allocation and remain admitted through final copying. An unlimited
+numeric heap ceiling does not disable host admission. Covered temporary loans
+refund synchronously on completion, refusal or interruption; refusal is terminal.
+Construction backstops, original deadlines and cumulative match/depth/heap/result
+controls remain. Warm cache queries borrow the source and avoid key copying.
+
+The literal destination driver remains in use. Detailed/native-value output copies
+directly from its live writer, avoiding an intermediate published byte array and
+its funding gap. Non-funded destination calls use the same output completion.
+Scalar captures, Extended transformations, lazy errors on no match/unselected
+branches, aliases and overflow-length reporting retain their profile semantics.
+Removing an intermediate allocation can admit formerly refused tight result caps;
+numeric charges remain route/version dependent. Copied output belongs to the caller
+and survives owner disposal. No new retained-output receipt or string overload is
+required for this funded route.
 
 `CreateMatchCursor(ReadOnlyMemory<byte>, byteStart, matchOptions, token, workingAllowance)`
 on expressions and program owners returns `Utf8Pcre2MatchCursor`. The entire
@@ -293,8 +319,8 @@ gap. Shared names/mark text count again for independent retention. Refusal is
 terminal. Receipt close refunds once; copied ranges remain valid afterward, with
 continued admission then the caller's responsibility. Numeric result traffic is
 cumulative regardless of live refunds. Native pattern compilation, source copying
-and UTF-8 template preparation are implemented. Funded replacement/result receipts
-and final package/consumer acceptance remain separate delivery work.
+and UTF-8 template preparation are implemented. Funded caller-destination replacement
+is implemented; final package/consumer acceptance remains separate delivery work.
 
 ## Isolation and non-goals
 

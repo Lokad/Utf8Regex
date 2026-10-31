@@ -39,6 +39,15 @@ internal readonly ref struct Pcre2ReplacementPreparationControl
         if (!s_current.HasInvocation || s_current.Invocation.Ledger.IsUnlimited)
             return Compile(replacement, options, literal);
         Check();
+        if (s_current.Invocation.Ledger.HasMemoryAllowance)
+        {
+            // The funded destination entry keeps this construction owner alive
+            // through copying. Each major allocation already borrows the same
+            // invocation ledger; do not acquire its peak a second time afterwards.
+            if (!Utf8ConstructionScope.IsActive)
+                throw new InvalidOperationException("Funded replacement preparation requires a live construction owner.");
+            return Compile(replacement, options, literal);
+        }
         var available = s_current.Invocation.Ledger.MaxLiveBytes - s_current.Invocation.Ledger.ReservedBytes;
         using var scope = Utf8ConstructionScope.RestrictAdditionalBytes(available);
         var baseline = scope.Budget.ReservedBytes;
@@ -98,7 +107,7 @@ internal readonly ref struct Pcre2ReplacementPreparationControl
         // Retain the temporary key loan through parsing/cache admission and the
         // operation. The existing control refunds it together with parser peak;
         // retained cache capacity has its own separate conservative bound.
-        if (s_current.HasInvocation)
+        if (s_current.HasInvocation && !s_current.Invocation.Ledger.HasMemoryAllowance)
         {
             Pcre2SliceDriver.ThrowIfSliceBreached(s_current.Invocation.TryReserveWorking(charge));
             s_current.PreparationReservation += charge;

@@ -55,7 +55,12 @@ caller span; cold keys are copied after admission. Full strict template validati
 deferred syntax errors, captures/MARK, aliasing and original operation limits
 remain. Text and byte keys share one bounded cache with independent entries;
 native construction extents use bytes and can require larger position tables.
-Funded program owners still do not expose replacement/result receipts.
+Funded program owners expose byte-template `TryReplace` into caller-owned storage.
+Cold preparation and live output share working admission through final copying;
+temporary loans refund synchronously. Program admission conservatively prepays
+the bounded replacement cache, including before first use. Substitution flags,
+byte starts, lazy errors and original operation controls remain. Output survives
+owner disposal; no additional retained-output receipt is needed for this route.
 
 ## Example
 

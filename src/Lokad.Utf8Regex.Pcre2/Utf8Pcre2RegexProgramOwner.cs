@@ -3,7 +3,7 @@ using System.Buffers;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
-/// <summary>Owns caller-funded PCRE2 compilation, Boolean/count calls and persistent range cursors.</summary>
+/// <summary>Owns caller-funded PCRE2 compilation, Boolean/count calls, destination replacement and persistent range cursors.</summary>
 /// <remarks>Dispose closes new calls and refunds compilation after active calls finish. Temporary matching storage uses the program allowance unless a separate working account is supplied. Borrowed input and fixed invocation metadata are outside modeled buffer storage.</remarks>
 public sealed class Utf8Pcre2RegexProgramOwner : IDisposable
 {
@@ -89,6 +89,21 @@ public sealed class Utf8Pcre2RegexProgramOwner : IDisposable
             cursor.AttachProgramUse(use); return cursor;
         }
         catch { use.Dispose(); throw; }
+    }
+
+    /// <summary>Replaces matches using a strict UTF-8 template into caller-owned destination storage.</summary>
+    /// <remarks>Null working allowance uses program funding. Cold preparation and live output share working admission through final copying. Retained cache storage is prepaid by program admission. Existing substitution flags, byte starts, matching options and lazy template errors are preserved. Temporary loans refund synchronously and copied output survives owner disposal.</remarks>
+    public OperationStatus TryReplace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementUtf8,
+        Span<byte> destination, out int bytesWritten, int startOffsetInBytes = 0,
+        Pcre2SubstitutionOptions substitutionOptions = Pcre2SubstitutionOptions.None,
+        Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None, CancellationToken cancellationToken = default,
+        IUtf8MemoryAllowance? workingMemoryAllowance = null)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var regex = Volatile.Read(ref _regex) ?? throw new ObjectDisposedException(nameof(Utf8Pcre2RegexProgramOwner));
+        using var use = _storage.Enter();
+        return regex.TryReplaceFunded(input, replacementUtf8, destination, out bytesWritten, startOffsetInBytes,
+            substitutionOptions, matchOptions, cancellationToken, workingMemoryAllowance ?? _storage.Allowance);
     }
 
     /// <summary>Rejects new calls and refunds compilation after the final active use.</summary>

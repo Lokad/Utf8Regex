@@ -827,12 +827,19 @@ public sealed partial class Utf8Pcre2Regex
 
     private OperationStatus TryReplaceCore(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8,
         Span<byte> destination, out int bytesWritten, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions,
-        Pcre2MatchOptions matchOptions, CancellationToken token)
+        Pcre2MatchOptions matchOptions, CancellationToken token, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
-        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, token);
-        using var preparationControl = Pcre2ReplacementPreparationControl.Borrow(invocation, token);
+        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, token, workingMemoryAllowance);
         try
         {
+            // Covered cold preparation and output borrow one working ledger.
+            // This temporary construction owner refunds after final copying;
+            // retained cache state is covered by the program's prepaid maximum.
+            using var construction = workingMemoryAllowance is null ? null : Utf8ConstructionScope.Enter(
+                new() { MaxBytes = Utf8ConstructionScope.DefaultBufferBytes }, Timeout.InfiniteTimeSpan,
+                token, invocation.BorrowWorkingMemoryAllowance());
+            if (construction is not null) construction.Budget.Deadline = invocation.Budget.Deadline;
+            using var preparationControl = Pcre2ReplacementPreparationControl.Borrow(invocation, token);
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(replacementPatternUtf8, ref invocation, out _));
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
@@ -845,24 +852,20 @@ public sealed partial class Utf8Pcre2Regex
                 return status;
             }
 
-            var replaced = ReplaceValidated(input, subject, start, replacement, substitutionOptions,
-                matchOptions, invocation, false, preparation).Bytes;
-            if (replaced.Length > destination.Length)
-            {
-                bytesWritten = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteOverflowLength) != 0
-                    ? replaced.Length : 0;
-                Pcre2SliceDriver.CheckInvocation(ref invocation);
-                return OperationStatus.DestinationTooSmall;
-            }
-            Utf8SliceBufferWork.Copy(replaced, destination, ref invocation);
-            bytesWritten = replaced.Length;
+            var result = ReplaceValidated(input, subject, start, replacement, substitutionOptions,
+                matchOptions, invocation, Pcre2ReplacementResultKind.Destination, destination, preparation);
+            bytesWritten = result.BytesWritten;
             Pcre2SliceDriver.CheckInvocation(ref invocation);
-            return OperationStatus.Done;
+            return result.Status;
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         { throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout); }
         catch (InvalidOperationException) when (invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         { Pcre2SliceDriver.ThrowIfSliceBreached(invocation.Budget.LimitBreach); throw; }
+        finally
+        {
+            if (workingMemoryAllowance is not null) invocation.Ledger.Release(invocation.Ledger.ReservedBytes);
+        }
     }
 
     /// <summary>Attempts to write a replacement result, observing cancellation during validation, preparation, discovery and copying.</summary>
@@ -1482,7 +1485,35 @@ public sealed partial class Utf8Pcre2Regex
         }
     }
 
-    private readonly record struct Pcre2ReplacementResult(string Text, byte[] Bytes);
+    private enum Pcre2ReplacementResultKind : byte { Bytes, Text, Destination }
+    private readonly record struct Pcre2ReplacementResult(string Text, byte[] Bytes,
+        OperationStatus Status = OperationStatus.Done, int BytesWritten = 0);
+
+    private static Pcre2ReplacementResult CompleteReplacementWriter(ref Pcre2ReplacementTemplateWriter writer,
+        Pcre2ReplacementResultKind kind, Span<byte> destination, Pcre2SubstitutionOptions options)
+    {
+        if (kind == Pcre2ReplacementResultKind.Text) return new(writer.CompleteToString(), []);
+        if (kind == Pcre2ReplacementResultKind.Bytes) return new(string.Empty, writer.Complete());
+        var status = writer.CompleteToDestination(destination,
+            (options & Pcre2SubstitutionOptions.SubstituteOverflowLength) != 0, out var written);
+        return new(string.Empty, [], status, written);
+    }
+
+    private static Pcre2ReplacementResult CompleteUnchangedReplacement(ReadOnlySpan<byte> input,
+        Pcre2ReplacementResultKind kind, Span<byte> destination, Pcre2SubstitutionOptions options,
+        ref Utf8SliceInvocation invocation)
+    {
+        if (kind == Pcre2ReplacementResultKind.Text)
+            return new(Pcre2ReplacementTemplateWriter.DecodeUnchanged(input, ref invocation), []);
+        if (kind == Pcre2ReplacementResultKind.Bytes)
+            return new(string.Empty, Pcre2ReplacementTemplateWriter.CopyUnchanged(input, ref invocation));
+        Pcre2SliceDriver.CheckInvocation(ref invocation);
+        if (input.Length > destination.Length)
+            return new(string.Empty, [], OperationStatus.DestinationTooSmall,
+                (options & Pcre2SubstitutionOptions.SubstituteOverflowLength) != 0 ? input.Length : 0);
+        Utf8SliceBufferWork.Copy(input, destination, ref invocation);
+        return new(string.Empty, [], OperationStatus.Done, input.Length);
+    }
 
     private Pcre2ReplacementResult ReplaceCore(
         ReadOnlySpan<byte> input,
@@ -1498,7 +1529,8 @@ public sealed partial class Utf8Pcre2Regex
         {
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
-            var result = ReplaceValidated(input, subject, start, new Utf8ConstructionPattern(replacement), substitutionOptions, matchOptions, invocation, text);
+            var result = ReplaceValidated(input, subject, start, new Utf8ConstructionPattern(replacement), substitutionOptions,
+                matchOptions, invocation, text ? Pcre2ReplacementResultKind.Text : Pcre2ReplacementResultKind.Bytes, default);
             Pcre2SliceDriver.CheckInvocation(ref invocation);
             return result;
         }
@@ -1516,7 +1548,8 @@ public sealed partial class Utf8Pcre2Regex
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(replacement, ref invocation, out _));
             Pcre2SliceDriver.ThrowIfSliceBreached(Utf8ValidatedInput.TryCreate(input, ref invocation, out var subject));
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
-            var result = ReplaceValidated(input, subject, start, new Utf8ConstructionPattern(replacement), options, matchOptions, invocation, false);
+            var result = ReplaceValidated(input, subject, start, new Utf8ConstructionPattern(replacement), options,
+                matchOptions, invocation, Pcre2ReplacementResultKind.Bytes, default);
             Pcre2SliceDriver.CheckInvocation(ref invocation);
             return result;
         }
@@ -1528,7 +1561,7 @@ public sealed partial class Utf8Pcre2Regex
 
     private Pcre2ReplacementResult ReplaceValidated(ReadOnlySpan<byte> input, Utf8ValidatedInput subject, Utf8BytePosition start, Utf8ConstructionPattern replacement,
         Pcre2SubstitutionOptions substitutionOptions,
-        Pcre2MatchOptions matchOptions, Utf8SliceInvocation invocation, bool text,
+        Pcre2MatchOptions matchOptions, Utf8SliceInvocation invocation, Pcre2ReplacementResultKind kind, Span<byte> destination,
         Pcre2ReplacementPreparation? preparation = null)
     {
         if (RejectsReplacementIteration())
@@ -1536,7 +1569,7 @@ public sealed partial class Utf8Pcre2Regex
             throw new NotSupportedException("SPEC-PCRE2 rejects replacement for lookaround-\\K iterative matches.");
         }
 
-        if (TryReplaceUsingLiteralDriver(
+        if (kind != Pcre2ReplacementResultKind.Destination && TryReplaceUsingLiteralDriver(
                 input,
                 subject,
                 start,
@@ -1544,7 +1577,7 @@ public sealed partial class Utf8Pcre2Regex
                 substitutionOptions,
                 matchOptions,
                 invocation,
-                text,
+                kind == Pcre2ReplacementResultKind.Text,
                 ref preparation,
                 out var genericResult))
         {
@@ -1558,7 +1591,7 @@ public sealed partial class Utf8Pcre2Regex
                 backtrackingProgram.Program,
                 replacement,
                 substitutionOptions,
-                matchOptions, invocation, text, preparation);
+                matchOptions, invocation, kind, destination, preparation);
         }
 
         if (_program.Operations.Replace is Pcre2SliceDirectProgram sliceProgram)
@@ -1570,7 +1603,7 @@ public sealed partial class Utf8Pcre2Regex
                     sliceProgram.Fallback,
                     replacement,
                     substitutionOptions,
-                    matchOptions, invocation, text, preparation);
+                    matchOptions, invocation, kind, destination, preparation);
             }
 
             return ReplaceSliceDetailed(
@@ -1578,11 +1611,11 @@ public sealed partial class Utf8Pcre2Regex
                 sliceProgram.SliceProgram,
                 replacement,
                 substitutionOptions,
-                invocation, text, preparation);
+                invocation, kind, destination, preparation);
         }
 
         return ReplaceNativeValueTemplate(input, subject, start, replacement, substitutionOptions,
-            matchOptions, invocation, text, preparation);
+            matchOptions, invocation, kind, destination, preparation);
     }
 
     // Extended templates on capture-free native routes keep the existing
@@ -1590,7 +1623,7 @@ public sealed partial class Utf8Pcre2Regex
     // discovery authority to the writer; no per-match core rematching.
     private Pcre2ReplacementResult ReplaceNativeValueTemplate(ReadOnlySpan<byte> input, Utf8ValidatedInput subject, Utf8BytePosition start, Utf8ConstructionPattern replacement,
         Pcre2SubstitutionOptions options, Pcre2MatchOptions matchOptions,
-        Utf8SliceInvocation invocation, bool text, Pcre2ReplacementPreparation? prepared)
+        Utf8SliceInvocation invocation, Pcre2ReplacementResultKind kind, Span<byte> destination, Pcre2ReplacementPreparation? prepared)
     {
         if (!Pcre2GlobalOperationDriver.TryCreateCursor(_program, subject, start, matchOptions, out var cursor,
             new Pcre2ResourceBudget(_program.Request.DefaultLimits,
@@ -1599,8 +1632,8 @@ public sealed partial class Utf8Pcre2Regex
         var control = cursor.WorkingBufferControl;
         var replacementOnly = (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
         if (!cursor.MoveNext())
-            return text ? new(Pcre2ReplacementTemplateWriter.DecodeUnchanged(replacementOnly ? [] : input, ref control.WorkingInvocation), [])
-                : new(string.Empty, Pcre2ReplacementTemplateWriter.CopyUnchanged(replacementOnly ? [] : input, ref control.WorkingInvocation));
+            return CompleteUnchangedReplacement(replacementOnly ? [] : input, kind, destination,
+                options, ref control.WorkingInvocation);
         var templateOptions = options & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
         var preparation = prepared ?? ((options & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
             ? Pcre2ReplacementPreparationControl.Prepare(replacement, options, true)
@@ -1625,7 +1658,7 @@ public sealed partial class Utf8Pcre2Regex
                 position = value.EndOffsetInBytes;
             } while (cursor.MoveNext());
             if (!replacementOnly) writer.AppendGap(position, input.Length - position);
-            return text ? new(writer.CompleteToString(), []) : new(string.Empty, writer.Complete());
+            return CompleteReplacementWriter(ref writer, kind, destination, options);
         }
         finally { writer.Release(); control.ReleaseWorking(groupBytes); }
     }
@@ -1640,7 +1673,8 @@ public sealed partial class Utf8Pcre2Regex
         => CreateUnsupportedReplacementException(null);
 
     private Pcre2ReplacementResult ReplaceBacktrackingDetailed(ReadOnlySpan<byte> input, Utf8ValidatedInput validated, Utf8BytePosition start, Pcre2BacktrackingProgram program,
-        Utf8ConstructionPattern replacement, Pcre2SubstitutionOptions options, Pcre2MatchOptions matchOptions, Utf8SliceInvocation invocation, bool text,
+        Utf8ConstructionPattern replacement, Pcre2SubstitutionOptions options, Pcre2MatchOptions matchOptions, Utf8SliceInvocation invocation,
+        Pcre2ReplacementResultKind kind, Span<byte> destination,
         Pcre2ReplacementPreparation? prepared)
     {
         var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(program, _program.CandidateSearchPlan,
@@ -1650,8 +1684,7 @@ public sealed partial class Utf8Pcre2Regex
         if (!cursor.MoveNext())
         {
             if ((options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0) return new(string.Empty, []);
-            return text ? new(Pcre2ReplacementTemplateWriter.DecodeUnchanged(input, ref cursor.WorkingInvocation), [])
-                : new(string.Empty, Pcre2ReplacementTemplateWriter.CopyUnchanged(input, ref cursor.WorkingInvocation));
+            return CompleteUnchangedReplacement(input, kind, destination, options, ref cursor.WorkingInvocation);
         }
         var replacementOnly = (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
         var templateOptions = options & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
@@ -1675,21 +1708,21 @@ public sealed partial class Utf8Pcre2Regex
                 position = value.EndOffsetInBytes;
             } while (cursor.MoveNext());
             if (!replacementOnly) writer.AppendGap(position, input.Length - position);
-            return text ? new(writer.CompleteToString(), []) : new(string.Empty, writer.Complete());
+            return CompleteReplacementWriter(ref writer, kind, destination, options);
         }
         finally { writer.Release(); }
     }
 
     private Pcre2ReplacementResult ReplaceSliceDetailed(ReadOnlySpan<byte> input, Utf8ValidatedInput validated, Utf8BytePosition start, Utf8SliceProgram sliceProgram,
-        Utf8ConstructionPattern replacement, Pcre2SubstitutionOptions options, Utf8SliceInvocation invocation, bool text,
+        Utf8ConstructionPattern replacement, Pcre2SubstitutionOptions options, Utf8SliceInvocation invocation,
+        Pcre2ReplacementResultKind kind, Span<byte> destination,
         Pcre2ReplacementPreparation? prepared)
     {
         var cursor = new Pcre2SliceGlobalMatchCursor(sliceProgram, invocation, validated, start, _program.Request);
         if (!cursor.MoveNext())
         {
             if ((options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0) return new(string.Empty, []);
-            return text ? new(Pcre2ReplacementTemplateWriter.DecodeUnchanged(input, ref cursor.WorkingInvocation), [])
-                : new(string.Empty, Pcre2ReplacementTemplateWriter.CopyUnchanged(input, ref cursor.WorkingInvocation));
+            return CompleteUnchangedReplacement(input, kind, destination, options, ref cursor.WorkingInvocation);
         }
         var replacementOnly = (options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
         var templateOptions = options & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
@@ -1712,7 +1745,7 @@ public sealed partial class Utf8Pcre2Regex
                 position = value.EndOffsetInBytes;
             } while (cursor.MoveNext());
             if (!replacementOnly) writer.AppendGap(position, input.Length - position);
-            return text ? new(writer.CompleteToString(), []) : new(string.Empty, writer.Complete());
+            return CompleteReplacementWriter(ref writer, kind, destination, options);
         }
         finally { writer.Release(); }
     }
