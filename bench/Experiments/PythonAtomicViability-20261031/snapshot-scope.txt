@@ -1,0 +1,1 @@
+Exactly one case changed; lifecycle/scaling and all other metadata unchanged.

@@ -1,0 +1,426 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "AffinityMask": "4",
+  "ElapsedSeconds": 58.2289075,
+  "Confirmation": true,
+  "WarmupMilliseconds": 4000,
+  "Samples": 5,
+  "Before": {
+    "Core": {
+      "Version": "0.5.0-dev.1\u002B193af7c3c1dff11aa49c461fbe71b14b621f719a",
+      "Sha256": "E42DF0CD0F37D3D982658B49FF4BA6691FB8A072B597591784D801D5EF1AD814"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.1\u002B193af7c3c1dff11aa49c461fbe71b14b621f719a",
+      "Sha256": "CB4DECB72AC8E5C5E40D399901E406BEFC5C01DD81C35F7B6D183C0AE98C163B"
+    }
+  },
+  "After": {
+    "Core": {
+      "Version": "0.5.0-dev.1\u002B193af7c3c1dff11aa49c461fbe71b14b621f719a",
+      "Sha256": "E42DF0CD0F37D3D982658B49FF4BA6691FB8A072B597591784D801D5EF1AD814"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.1\u002B193af7c3c1dff11aa49c461fbe71b14b621f719a",
+      "Sha256": "FA0403489E58B57391AD82D404CD27D9CADB6AB8BA12F3A99EB0122DFCC07DA5"
+    }
+  },
+  "Scope": "One bounded Python atomic-repeat viability pilot. Actual a\u002B\u002Ba/aaaa public Search plus actual atomic control, hits/exclusions/Unicode/negative captures/finite-live/literal controls and public construction\u002Bclose. Existing literal adjacency proof lowers impossible sequences to Fail; original validation/checkpoint precedes finished state without scalar scratch. Four Search lanes before/after/diagnostic predecoded compiled Regex/decode-then Regex; construction has only two producer lanes. UTF16 start/end range digest retained and checked after timing; setup/compilation excluded from Search. Construction is warm public constructor\u002BDispose, no reflection in timed operations. 1s/min128calls warmup/lane, independent80ms calibration,three alternating samples each\u003E=20ms. One120s cap,at most one selected noise confirmation. Official CPython qualification is separate; diagnostic BCL lanes set no benchmark Status. No package/full-catalog run.",
+  "ConfirmationScope": "The sole selected noise confirmation: unchanged source/DLLs/runtime, six public cases/two producer lanes only; actual miss, finite/live hit, three construction/close cases and unchanged literal Count-free Search control. Warm4s per lane, five alternating samples, independent80ms calibration, \u003E=20ms sample admission. No further measurement of this prototype after the decision; initial unfavorable evidence remains intact. Confirmation fields supersede initial-run parameters in Scope.",
+  "LaneNames": [
+    "BeforePythonRe",
+    "AfterPythonRe"
+  ],
+  "Rows": [
+    {
+      "Name": "actual-possessive-miss",
+      "Pattern": "a\u002B\u002Ba",
+      "Finite": false,
+      "Construction": false,
+      "InputBytes": 4,
+      "InputSha256": "61BE55A8E2F6B4E172338BDDF184D6DBEE29C98853E0A0485ECEE7F27B9AF0B4",
+      "Expected": 0,
+      "Iterations": [
+        65536,
+        524288
+      ],
+      "WarmupCalls": [
+        2100844,
+        19949899
+      ],
+      "Microseconds": [
+        [
+          1.6475372314453125,
+          1.6068542480468748,
+          1.5373474121093749,
+          1.565325927734375,
+          1.5194076538085939
+        ],
+        [
+          0.1618888854980469,
+          0.1650327682495117,
+          0.1610940933227539,
+          0.16587352752685547,
+          0.16419715881347657
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3552,
+          3552,
+          3552,
+          3552,
+          3552
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          107.973,
+          105.3068,
+          100.7516,
+          102.5852,
+          99.5759
+        ],
+        [
+          84.8764,
+          86.5247,
+          84.4597,
+          86.9655,
+          86.0866
+        ]
+      ]
+    },
+    {
+      "Name": "finite-live-hit",
+      "Pattern": "a\u002B\u002Bb",
+      "Finite": true,
+      "Construction": false,
+      "InputBytes": 9,
+      "InputSha256": "AABFC6425B23316B21228744F0CEFA63EFDFEA28A42D29B13C7577226CF08AEE",
+      "Expected": 8589934600,
+      "Iterations": [
+        65536,
+        65536
+      ],
+      "WarmupCalls": [
+        2691625,
+        3026628
+      ],
+      "Microseconds": [
+        [
+          1.2894241333007812,
+          1.353424072265625,
+          1.256011962890625,
+          1.2635986328125,
+          1.2718948364257812
+        ],
+        [
+          1.2545562744140624,
+          1.2477478027343751,
+          1.23590087890625,
+          1.245831298828125,
+          1.2625503540039062
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          3672,
+          3672,
+          3672,
+          3672,
+          3672
+        ],
+        [
+          3672,
+          3672,
+          3672,
+          3672,
+          3672
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          84.5037,
+          88.698,
+          82.314,
+          82.8112,
+          83.3549
+        ],
+        [
+          82.2186,
+          81.7724,
+          80.996,
+          81.6468,
+          82.7425
+        ]
+      ]
+    },
+    {
+      "Name": "literal-control",
+      "Pattern": "alpha",
+      "Finite": false,
+      "Construction": false,
+      "InputBytes": 9,
+      "InputSha256": "70B15D4B7E63DB5FD2B3CB988D003D59139A20B50488F1C0D7D0968E21FB7296",
+      "Expected": 8589934600,
+      "Iterations": [
+        1048576,
+        1048576
+      ],
+      "WarmupCalls": [
+        22755777,
+        22529701
+      ],
+      "Microseconds": [
+        [
+          0.1780771255493164,
+          0.11244010925292969,
+          0.12226858139038085,
+          0.15821466445922852,
+          0.12162418365478515
+        ],
+        [
+          0.17909889221191405,
+          0.1465897560119629,
+          0.18177642822265624,
+          0.15519723892211915,
+          0.11198301315307618
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          186.7274,
+          117.902,
+          128.2079,
+          165.9001,
+          127.5322
+        ],
+        [
+          187.7988,
+          153.7105,
+          190.6064,
+          162.7361,
+          117.4227
+        ]
+      ]
+    },
+    {
+      "Name": "construction-possessive",
+      "Pattern": "a\u002B\u002Ba",
+      "Finite": false,
+      "Construction": true,
+      "InputBytes": 0,
+      "InputSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "Expected": 1,
+      "Iterations": [
+        2048,
+        2048
+      ],
+      "WarmupCalls": [
+        30820,
+        37228
+      ],
+      "Microseconds": [
+        [
+          46.527050781250004,
+          46.170068359374994,
+          46.323046875,
+          46.286865234375,
+          46.36796875
+        ],
+        [
+          43.6064453125,
+          43.67392578125,
+          44.027099609375,
+          43.820458984374994,
+          43.718212890625
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          50432,
+          50432,
+          50432,
+          50432,
+          50432
+        ],
+        [
+          47888,
+          47888,
+          47888,
+          47888,
+          47888
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          95.2874,
+          94.5563,
+          94.8696,
+          94.7955,
+          94.9616
+        ],
+        [
+          89.306,
+          89.4442,
+          90.1675,
+          89.7443,
+          89.5349
+        ]
+      ]
+    },
+    {
+      "Name": "construction-hit",
+      "Pattern": "(?P\u003Cx\u003Ea\u002B\u002B)b",
+      "Finite": false,
+      "Construction": true,
+      "InputBytes": 0,
+      "InputSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "Expected": 1,
+      "Iterations": [
+        2048,
+        1024
+      ],
+      "WarmupCalls": [
+        66720,
+        50204
+      ],
+      "Microseconds": [
+        [
+          83.25917968750001,
+          82.05576171874999,
+          83.31992187499999,
+          81.85629882812499,
+          82.07163085937499
+        ],
+        [
+          83.23203125,
+          82.869921875,
+          83.23173828124999,
+          82.82265625,
+          82.996875
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          62200,
+          62200,
+          62200,
+          62200,
+          62200
+        ],
+        [
+          62200,
+          62200,
+          62200,
+          62200,
+          62200
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          170.5148,
+          168.0502,
+          170.6392,
+          167.6417,
+          168.0827
+        ],
+        [
+          85.2296,
+          84.8588,
+          85.2293,
+          84.8104,
+          84.9888
+        ]
+      ]
+    },
+    {
+      "Name": "construction-literal-control",
+      "Pattern": "alpha",
+      "Finite": false,
+      "Construction": true,
+      "InputBytes": 0,
+      "InputSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "Expected": 1,
+      "Iterations": [
+        2048,
+        2048
+      ],
+      "WarmupCalls": [
+        64274,
+        62144
+      ],
+      "Microseconds": [
+        [
+          58.763769531250006,
+          59.746191406250006,
+          58.342529296875,
+          54.562158203125,
+          42.19990234375
+        ],
+        [
+          62.988671875,
+          60.747412109375006,
+          58.780908203125,
+          58.685400390625006,
+          42.244433593749996
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          48752,
+          48752,
+          48752,
+          48752,
+          48752
+        ],
+        [
+          48752,
+          48752,
+          48752,
+          48752,
+          48752
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          120.3482,
+          122.3602,
+          119.4855,
+          111.7433,
+          86.4254
+        ],
+        [
+          129.0008,
+          124.4107,
+          120.3833,
+          120.1877,
+          86.5166
+        ]
+      ]
+    }
+  ]
+}

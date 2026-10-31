@@ -1,0 +1,62 @@
+
+CaseId             : possessive/search-miss
+Pattern            : a++a
+Options            : None
+Operation          : Search
+InputBytes         : 4
+Iterations         : 20000
+Samples            : 5
+CheckoutCommit     : f61502dcd30c
+BenchmarkAssembly  : 1.0.0+f61502dcd30c32599f7aec3ffbad136d187e22a0 sha256=C4B78D9308DDBAB02DEE1182B320FDA57BC2B12DB0BA86AB495E07E973E01D78
+CoreAssembly       : 0.5.0-dev.1+f61502dcd30c32599f7aec3ffbad136d187e22a0 sha256=9051E3A2CB20DA1702C7870767F0D3010248841916536E574E84A9264F3D4C52
+PythonReAssembly   : 0.5.0-dev.1+f61502dcd30c32599f7aec3ffbad136d187e22a0 sha256=64007ACBE5E319750B81AFB2403A1548E906F31E113FBF6F58B4D71410E0FC83
+PythonRe           :      1.140 us/op | range=0.601..1.369 | alloc=0 B/op | warmup=65551 calls/68.7 ms
+DecodeThenRegex    :      0.144 us/op | range=0.126..0.169 | alloc=32 B/op | warmup=65551 calls/30.2 ms
+PredecodedRegex    :      0.169 us/op | range=0.061..0.206 | alloc=0 B/op | warmup=65551 calls/20.1 ms
+CPythonDecode      :      0.431 us/op | range=0.322..0.571 | iterations=124331 | warmup=65536 calls/57.6 ms
+CPythonPredecoded  :      0.286 us/op | range=0.286..0.287 | iterations=174360 | warmup=65536 calls/78.3 ms
+
+Snapshot           : /home/vermorel/tmp/utf8regex-net11-memory/pilot/PythonRe.Benchmarks.json
+CheckoutCommit     : f61502dcd30c
+BenchmarkAssembly  : 1.0.0+f61502dcd30c32599f7aec3ffbad136d187e22a0 sha256=C4B78D9308DDBAB02DEE1182B320FDA57BC2B12DB0BA86AB495E07E973E01D78
+CoreAssembly       : 0.5.0-dev.1+f61502dcd30c32599f7aec3ffbad136d187e22a0 sha256=9051E3A2CB20DA1702C7870767F0D3010248841916536E574E84A9264F3D4C52
+PythonReAssembly   : 0.5.0-dev.1+f61502dcd30c32599f7aec3ffbad136d187e22a0 sha256=64007ACBE5E319750B81AFB2403A1548E906F31E113FBF6F58B4D71410E0FC83
+CaseId             : possessive/search-miss
+Operation          : Search
+Result contract    : ConsumedGroupZeroRanges
+Protocol           : streaming v3; alternating paired samples
+CPU placement      : least-contended allowed processor (0x40; Linux efficiency class unknown)
+Worktree qualified : True
+Initial lane       : PythonRe
+Samples            : 9
+Iterations         : managed=319006; CPython=244863
+Warmup             : managed=133563 calls/174.8 ms; CPython=392088 calls/146.7 ms
+PythonRe elapsed   : 0.145 us/op
+CPython elapsed    : 0.214 us/op
+Rstrong            : 0.692 [0.527, 0.718]
+Estrong            : -0.068 us/op
+Order effect       : 0.778
+IQR spread         : managed=1.111; CPython=1.264
+Harness floor      : managed=0.45 %; CPython=18.38 %
+Bound trivial call : managed=1.39 %; CPython=25.69 %
+Managed alloc      : 0 B/op
+Process CPU/sample : managed=48.9 ms; CPython=52.3 ms (diagnostic)
+Status             : Inconclusive
+Status reason      : Lane interquartile spreads are 1.111/1.264; the maximum is 1.10.
+Byte control       : eligible; Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical.
+Rbyte             : 0.642 [0.472, 0.649]
+Engine conclusion : NotApplicable; The managed byte control does not use a native UTF-8 core route.
+CPython            : CPython 3.13.2; 843FCB9DA2A5D799DD48E1F518E343ECB8486D4F785F38F795C3493F3D61AADC
+Raw pairs:
+   1: ManagedFirst; managed=     0.143 us; CPython=     0.214 us; R=0.671; bytes=     0.221 us; Rbyte=0.648; GC=0,0,0/0,0,0
+   2: CpythonFirst; managed=     0.143 us; CPython=     0.207 us; R=0.692; bytes=     0.223 us; Rbyte=0.642; GC=0,0,0/0,0,0
+   3: ManagedFirst; managed=     0.187 us; CPython=     0.354 us; R=0.527; bytes=     0.399 us; Rbyte=0.468; GC=0,0,0/0,0,0
+   4: CpythonFirst; managed=     0.184 us; CPython=     0.235 us; R=0.784; bytes=     0.268 us; Rbyte=0.689; GC=0,0,0/0,0,0
+   5: ManagedFirst; managed=     0.160 us; CPython=     0.373 us; R=0.430; bytes=     0.340 us; Rbyte=0.472; GC=0,0,0/0,0,0
+   6: CpythonFirst; managed=     0.145 us; CPython=     0.206 us; R=0.706; bytes=     0.224 us; Rbyte=0.649; GC=0,0,0/0,0,0
+   7: ManagedFirst; managed=     0.145 us; CPython=     0.262 us; R=0.554; bytes=     0.232 us; Rbyte=0.625; GC=0,0,0/0,0,0
+   8: CpythonFirst; managed=     0.149 us; CPython=     0.207 us; R=0.718; bytes=     0.255 us; Rbyte=0.584; GC=0,0,0/0,0,0
+   9: ManagedFirst; managed=     0.144 us; CPython=     0.208 us; R=0.693; bytes=     0.223 us; Rbyte=0.649; GC=0,0,0/0,0,0
+Snapshot           : /home/vermorel/tmp/utf8regex-net11-memory/pilot/PythonRe.Benchmarks.json
+Benchmark page      : /home/vermorel/tmp/utf8regex-net11-memory/pilot/src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md
+PythonRe benchmark page is current: /home/vermorel/tmp/utf8regex-net11-memory/pilot/src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md

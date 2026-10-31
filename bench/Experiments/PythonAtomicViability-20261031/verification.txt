@@ -1,0 +1,6 @@
+Passed!  - Failed:     0, Passed:  4387, Skipped:     0, Total:  4387, Duration: 12 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:  4387, Skipped:     0, Total:  4387, Duration: 14 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)
+Passed!  - Failed:     0, Passed:    68, Skipped:     0, Total:    68, Duration: 143 ms - Lokad.Utf8Regex.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:    68, Skipped:     0, Total:    68, Duration: 132 ms - Lokad.Utf8Regex.Tests.dll (net11.0)
+Passed!  - Failed:     0, Passed:     1, Skipped:     0, Total:     1, Duration: 118 ms - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:     1, Skipped:     0, Total:     1, Duration: 103 ms - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)

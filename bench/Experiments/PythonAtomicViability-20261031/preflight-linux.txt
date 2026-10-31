@@ -1,0 +1,14 @@
+Preflight actual-possessive-miss: 0
+Preflight actual-atomic-control: 0
+Preflight possessive-hit: 8589934600
+Preflight finite-repeat-hit: 8589934598
+Preflight lazy-atomic-hit: 8589934597
+Preflight folded-control: 8589934600
+Preflight unicode-impossible: 0
+Preflight captured-negative-hit: 2
+Preflight finite-live-miss: 0
+Preflight finite-live-hit: 8589934600
+Preflight literal-control: 8589934600
+Preflight construction-possessive: 1
+Preflight construction-hit: 1
+Preflight construction-literal-control: 1

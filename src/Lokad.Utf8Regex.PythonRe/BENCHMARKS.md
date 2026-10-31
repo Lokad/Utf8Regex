@@ -24,16 +24,17 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-10-31T16:54:23.0916027+00:00`
-- Snapshot SHA-256: `7F876BA01B9A2ACF581B75E3FB122EE12C17DE550E9DA718258DBBB50A470F5E`
+- Generated: `2026-10-31T19:12:01.9119842+00:00`
+- Snapshot SHA-256: `4147CAFF82AAEB801C47FD282179BFCDE2C1C264B29BE3ABFDF5953954A9C851`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `4`
 - Scaling families: `7`
-- Public Status: `26` managed faster, `0` equivalent, `47` CPython faster, `17` inconclusive, `0` unqualified
-- Historical point measurement environments represented: `1`
-- Paired evidence from source `0e24cecebbb9`: `90` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
+- Public Status: `26` managed faster, `0` equivalent, `46` CPython faster, `18` inconclusive, `0` unqualified
+- Historical point measurement environments represented: `2`
+- Paired evidence from source `0e24cecebbb9`: `89` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
+- Paired evidence from source `f61502dcd30c`: `1` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
 - Historical CPython point environments represented: `1`
@@ -79,7 +80,7 @@ Input hashes cover the exact decoded subject re-encoded as strict UTF-8 and time
 | `corpus/code-declarations` | `LokadReplica/Code/Data` | 53,352 | `E25F45289E44A6DE119149C10B258E8416A8E24E4FF01D94ED4753FA5A9A351B` |
 | `corpus/sherlock-ru` | `DotNetPerformanceReplica/Stress/Data/opensubtitles/ru-sampled.txt` | 1,570,556 | `7FFDDB21336A1BFB4A9E2DF4BB77EEA0305C0010A57C5D3C56E0DFEAD9E80A90` |
 
-Historical independent point columns were measured from source `0e24cecebbb9` on .NET 11.0.0-rc.3.26522.148, Ubuntu 24.04.4 LTS, X64. Qualified paired rows record their own exact source, runtime, and interpreter provenance in the JSON evidence.
+Historical point rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins; qualified paired rows carry separate exact provenance.
 
 ## Results
 
@@ -109,7 +110,7 @@ Historical independent point columns were measured from source `0e24cecebbb9` on
 | `lookbehind/search-miss` | `Search` | ConsumedGroupZeroRanges | CPython faster | 0.506 us | 0.216 us | 2.35x | 0.593 us | 0.152 us | 0 B |
 | `backreference/fullmatch-hit` | `FullMatch` | ConsumedGroupZeroRanges | Inconclusive | 1.034 us | 0.286 us | 3.39x | 0.384 us | 0.168 us | 3,872 B |
 | `atomic/search-hit` | `Search` | ConsumedGroupZeroRanges | Inconclusive | 1.140 us | 0.327 us | 3.49x | 0.365 us | 0.213 us | 3,552 B |
-| `possessive/search-miss` | `Search` | ConsumedGroupZeroRanges | CPython faster | 2.752 us | 0.347 us | 7.96x | 0.569 us | 0.123 us | 3,552 B |
+| `possessive/search-miss` | `Search` | ConsumedGroupZeroRanges | Inconclusive | 0.145 us | 0.214 us | 0.69x | 0.431 us | 0.144 us | 0 B |
 | `reluctant/search-hit` | `Search` | ConsumedGroupZeroRanges | Inconclusive | 1.210 us | 0.355 us | 3.39x | 0.386 us | 0.124 us | 3,552 B |
 | `scoped-inline/search-hit` | `Search` | ConsumedGroupZeroRanges | CPython faster | 0.611 us | 0.295 us | 2.07x | 0.328 us | 0.144 us | 0 B |
 | `supplementary/fullmatch-hit` | `FullMatch` | ConsumedGroupZeroRanges | Managed faster | 0.106 us | 0.259 us | 0.41x | 0.416 us | 0.115 us | 0 B |
@@ -339,7 +340,7 @@ These fields prevent a composed host-language operation or a managed decode fall
 | `lookbehind/search-miss` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Rbyte 2.21x [2.19, 2.21]; NotApplicable |
 | `backreference/fullmatch-hit` | `_sre C Pattern.fullmatch` | `Utf8Regex/OwnedScalar; full-match value ranges` | Rbyte 2.74x [2.62, 2.96]; Inconclusive |
 | `atomic/search-hit` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Rbyte 3.24x [3.10, 3.27]; NotApplicable |
-| `possessive/search-miss` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Rbyte 7.11x [6.92, 7.19]; NotApplicable |
+| `possessive/search-miss` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Rbyte 0.64x [0.47, 0.65]; NotApplicable |
 | `reluctant/search-hit` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Rbyte 3.21x [3.15, 3.22]; NotApplicable |
 | `scoped-inline/search-hit` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Rbyte 1.88x [1.86, 1.89]; NotApplicable |
 | `supplementary/fullmatch-hit` | `_sre C Pattern.fullmatch` | `Utf8Regex/OwnedScalar; full-match value ranges` | Excluded: pattern or subject is not entirely ASCII. |

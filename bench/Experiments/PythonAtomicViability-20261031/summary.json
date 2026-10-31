@@ -1,0 +1,282 @@
+[
+  {
+    "Name": "actual-possessive-miss",
+    "BeforeUs": 2.407952880859375,
+    "AfterUs": 0.21949520111083984,
+    "ChangePercent": -90.88457241603066,
+    "BeforeBytes": 3552,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.6969951282636826,
+    "AfterSpread": 1.4643140999108708,
+    "BeforeSamples": [
+      2.7213653564453124,
+      2.407952880859375,
+      1.6036376953125
+    ],
+    "AfterSamples": [
+      0.21997947692871095,
+      0.21949520111083984,
+      0.1502269744873047
+    ]
+  },
+  {
+    "Name": "actual-atomic-control",
+    "BeforeUs": 2.8483810424804688,
+    "AfterUs": 2.83526611328125,
+    "ChangePercent": -0.46043450660652185,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "BeforeSpread": 1.0592580941661056,
+    "AfterSpread": 1.041834732248141,
+    "BeforeSamples": [
+      2.8483810424804688,
+      2.793946838378906,
+      2.9595108032226562
+    ],
+    "AfterSamples": [
+      2.83526611328125,
+      2.80543212890625,
+      2.922796630859375
+    ]
+  },
+  {
+    "Name": "possessive-hit",
+    "BeforeUs": 1.8065170288085939,
+    "AfterUs": 1.8737869262695312,
+    "ChangePercent": 3.7237344784567084,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "BeforeSpread": 1.0074004294285883,
+    "AfterSpread": 1.0048668106080612,
+    "BeforeSamples": [
+      1.8065170288085939,
+      1.8112640380859375,
+      1.7979583740234375
+    ],
+    "AfterSamples": [
+      1.8664291381835936,
+      1.8755126953125,
+      1.8737869262695312
+    ]
+  },
+  {
+    "Name": "finite-repeat-hit",
+    "BeforeUs": 1.6253890991210938,
+    "AfterUs": 1.7041839599609374,
+    "ChangePercent": 4.847753739855332,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "BeforeSpread": 1.1198343959241261,
+    "AfterSpread": 1.0534540151392393,
+    "BeforeSamples": [
+      1.7718368530273438,
+      1.6253890991210938,
+      1.5822311401367188
+    ],
+    "AfterSamples": [
+      1.73599853515625,
+      1.7041839599609374,
+      1.6479110717773438
+    ]
+  },
+  {
+    "Name": "lazy-atomic-hit",
+    "BeforeUs": 1.6318908691406249,
+    "AfterUs": 1.6515609741210937,
+    "ChangePercent": 1.2053566419442774,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "BeforeSpread": 1.0322847290877963,
+    "AfterSpread": 1.0228165309003616,
+    "BeforeSamples": [
+      1.5819931030273438,
+      1.6330673217773437,
+      1.6318908691406249
+    ],
+    "AfterSamples": [
+      1.6450164794921875,
+      1.682550048828125,
+      1.6515609741210937
+    ]
+  },
+  {
+    "Name": "folded-control",
+    "BeforeUs": 1.3882568359375,
+    "AfterUs": 1.0900794982910156,
+    "ChangePercent": -21.47854272549813,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "BeforeSpread": 1.722968701477308,
+    "AfterSpread": 1.8180653236917703,
+    "BeforeSamples": [
+      0.82547607421875,
+      1.3882568359375,
+      1.4222694396972657
+    ],
+    "AfterSamples": [
+      0.8472213745117188,
+      1.0900794982910156,
+      1.5403038024902345
+    ]
+  },
+  {
+    "Name": "unicode-impossible",
+    "BeforeUs": 3.1030609130859377,
+    "AfterUs": 0.2534267425537109,
+    "ChangePercent": -91.83300780577707,
+    "BeforeBytes": 3552,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.379103288747991,
+    "AfterSpread": 1.0303649056054236,
+    "BeforeSamples": [
+      3.1649490356445313,
+      3.1030609130859377,
+      2.294932556152344
+    ],
+    "AfterSamples": [
+      0.2534267425537109,
+      0.2537086486816406,
+      0.24623184204101561
+    ]
+  },
+  {
+    "Name": "captured-negative-hit",
+    "BeforeUs": 0.946453857421875,
+    "AfterUs": 0.7274497985839843,
+    "ChangePercent": -23.139433277228562,
+    "BeforeBytes": 5744,
+    "AfterBytes": 4064,
+    "BeforeSpread": 1.0322953326375575,
+    "AfterSpread": 1.019384262127321,
+    "BeforeSamples": [
+      0.9734710693359375,
+      0.946453857421875,
+      0.9430160522460938
+    ],
+    "AfterSamples": [
+      0.7216812133789063,
+      0.7356704711914062,
+      0.7274497985839843
+    ]
+  },
+  {
+    "Name": "finite-live-miss",
+    "BeforeUs": 1.9235565185546875,
+    "AfterUs": 0.22349967956542968,
+    "ChangePercent": -88.380914342285,
+    "BeforeBytes": 3672,
+    "AfterBytes": 120,
+    "BeforeSpread": 1.566777294806619,
+    "AfterSpread": 1.299294274357781,
+    "BeforeSamples": [
+      1.8882431030273437,
+      1.9235565185546875,
+      2.9584564208984374
+    ],
+    "AfterSamples": [
+      0.22349967956542968,
+      0.22337627410888672,
+      0.29023151397705077
+    ]
+  },
+  {
+    "Name": "finite-live-hit",
+    "BeforeUs": 1.3564254760742187,
+    "AfterUs": 2.201808166503906,
+    "ChangePercent": 62.32430054885161,
+    "BeforeBytes": 3672,
+    "AfterBytes": 3672,
+    "BeforeSpread": 1.645275587335921,
+    "AfterSpread": 1.696396095674394,
+    "BeforeSamples": [
+      2.151824951171875,
+      1.3564254760742187,
+      1.3078811645507813
+    ],
+    "AfterSamples": [
+      2.201808166503906,
+      2.2488327026367188,
+      1.325653076171875
+    ]
+  },
+  {
+    "Name": "literal-control",
+    "BeforeUs": 0.1909130096435547,
+    "AfterUs": 0.1791398048400879,
+    "ChangePercent": -6.166790217936446,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.1419169290048914,
+    "AfterSpread": 1.6747103379102826,
+    "BeforeSamples": [
+      0.19614391326904296,
+      0.1909130096435547,
+      0.1717672348022461
+    ],
+    "AfterSamples": [
+      0.18471107482910157,
+      0.1791398048400879,
+      0.11029434204101562
+    ]
+  },
+  {
+    "Name": "construction-possessive",
+    "BeforeUs": 99.886328125,
+    "AfterUs": 230.170703125,
+    "ChangePercent": 130.43264022775887,
+    "BeforeBytes": 50432,
+    "AfterBytes": 47888,
+    "BeforeSpread": 2.0951298521630672,
+    "AfterSpread": 1.6456396409020924,
+    "BeforeSamples": [
+      192.26171875,
+      99.886328125,
+      91.76601562500001
+    ],
+    "AfterSamples": [
+      357.808984375,
+      230.170703125,
+      217.42851562500002
+    ]
+  },
+  {
+    "Name": "construction-hit",
+    "BeforeUs": 114.32421875,
+    "AfterUs": 139.677734375,
+    "ChangePercent": 22.176854477739425,
+    "BeforeBytes": 62200,
+    "AfterBytes": 62200,
+    "BeforeSpread": 1.8856768928066598,
+    "AfterSpread": 2.2580447751965513,
+    "BeforeSamples": [
+      207.3994140625,
+      109.98671875000001,
+      114.32421875
+    ],
+    "AfterSamples": [
+      278.1765625,
+      139.677734375,
+      123.1935546875
+    ]
+  },
+  {
+    "Name": "construction-literal-control",
+    "BeforeUs": 42.094140625,
+    "AfterUs": 41.30048828125,
+    "ChangePercent": -1.885422369874079,
+    "BeforeBytes": 48752,
+    "AfterBytes": 48752,
+    "BeforeSpread": 1.0094780449701501,
+    "AfterSpread": 1.0173637353410765,
+    "BeforeSamples": [
+      42.40517578125,
+      42.00703125,
+      42.094140625
+    ],
+    "AfterSamples": [
+      41.47451171875,
+      40.766650390624996,
+      41.30048828125
+    ]
+  }
+]
