@@ -1801,6 +1801,57 @@ internal static partial class Pcre2Runner
     {
         var budget = new Pcre2ResourceBudget(compiledProgram.Request.DefaultLimits, invocation, false);
         var program = compiledProgram.Operations.IsMatch;
+        // Keep ordinary matching out of the large specialized dispatch frame.
+        // Both paths use this same invocation and budget; only their stack
+        // preparation differs.
+        if (program is Pcre2BacktrackingDirectProgram backtrackingProgram)
+        {
+            result = Pcre2BacktrackingRunner.Match(
+                backtrackingProgram.Program,
+                compiledProgram.CandidateSearch,
+                ref input,
+                start,
+                matchOptions,
+                ref budget).Success;
+            return true;
+        }
+
+        if (program is Pcre2LiteralDirectProgram literalProgram)
+        {
+            result = Pcre2LiteralRunner.Match(
+                literalProgram.Program,
+                ref input,
+                start,
+                matchOptions,
+                ref budget).Success;
+            return true;
+        }
+
+        if (program is Pcre2CharacterDirectProgram characterProgram)
+        {
+            result = Pcre2CharacterRunner.Match(
+                characterProgram.Program,
+                ref input,
+                start,
+                matchOptions,
+                ref budget).Success;
+            return true;
+        }
+
+        return TryIsMatchSpecialized(compiledProgram, ref input, start, matchOptions,
+            ref invocation, ref budget, out result);
+    }
+
+    private static bool TryIsMatchSpecialized(
+        Pcre2CompiledProgram compiledProgram,
+        ref Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        scoped ref Utf8SliceInvocation invocation,
+        ref Pcre2ResourceBudget budget,
+        out bool result)
+    {
+        var program = compiledProgram.Operations.IsMatch;
         if (program is Pcre2MultilinePrefixDirectProgram multilinePrefixProgram)
         {
             if (matchOptions == Pcre2MatchOptions.None &&
@@ -1998,40 +2049,6 @@ internal static partial class Pcre2Runner
 
             result = Pcre2BacktrackingRunner.Match(
                 literalFamilyProgram.Fallback,
-                compiledProgram.CandidateSearch,
-                ref input,
-                start,
-                matchOptions,
-                ref budget).Success;
-            return true;
-        }
-
-        if (program is Pcre2LiteralDirectProgram literalProgram)
-        {
-            result = Pcre2LiteralRunner.Match(
-                literalProgram.Program,
-                ref input,
-                start,
-                matchOptions,
-                ref budget).Success;
-            return true;
-        }
-
-        if (program is Pcre2CharacterDirectProgram characterProgram)
-        {
-            result = Pcre2CharacterRunner.Match(
-                characterProgram.Program,
-                ref input,
-                start,
-                matchOptions,
-                ref budget).Success;
-            return true;
-        }
-
-        if (program is Pcre2BacktrackingDirectProgram backtrackingProgram)
-        {
-            result = Pcre2BacktrackingRunner.Match(
-                backtrackingProgram.Program,
                 compiledProgram.CandidateSearch,
                 ref input,
                 start,
