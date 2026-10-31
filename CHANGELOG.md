@@ -24,6 +24,7 @@
   for matching, preserving strict full-subject validation and resource controls.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
   complete scalars in PCRE2 classes, including escaped supplementary characters.
+- Fix literal Count throwing on a trailing partial Unicode needle after a match.
 - Keep execution owned, managed and checked. Core, PythonRe and PCRE2 retain their
   documented grammar/semantic boundaries; POSIX and complete profile equivalence
   remain outside this release.

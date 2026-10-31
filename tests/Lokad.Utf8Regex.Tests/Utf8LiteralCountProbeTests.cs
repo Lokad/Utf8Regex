@@ -7,7 +7,42 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8LiteralCountProbeTests
 {
     [Theory]
+    [InlineData("夏洛克·福尔摩斯")]
+    [InlineData("夏·é")]
+    [InlineData("夏洛😀")]
+    [InlineData("夏😀")]
+    public void PublicCountIgnoresPartialLeadingScalarAnchorsAtTheSubjectTail(string literal)
+    {
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled,
+            RegexOptions.NonBacktracking, RegexOptions.RightToLeft })
+        foreach (var controlled in new[] { false, true })
+        {
+            using var cancellation = new CancellationTokenSource();
+            var policy = controlled ? new Utf8ResourcePolicy { MaxWorkSteps = 100_000,
+                MaxDepth = 256, MaxWorkingBytes = 1UL << 20, MaxResultBytes = 1UL << 20 } : default;
+            var regex = new Utf8Regex(literal, options, Timeout.InfiniteTimeSpan, policy);
+            var prefix = "";
+            foreach (var scalar in literal.EnumerateRunes().SkipLast(1))
+            {
+                prefix += scalar.ToString();
+                foreach (var offset in new[] { 0, 1, 31, 32 })
+                {
+                    var bytes = Encoding.UTF8.GetBytes(prefix + new string('x', 32) + literal + new string('x', 32) + prefix);
+                    var storage = new byte[offset + bytes.Length + 16];
+                    Array.Fill(storage, (byte)0xff);
+                    bytes.CopyTo(storage.AsSpan(offset));
+                    var subject = storage.AsSpan(offset, bytes.Length);
+                    Assert.Equal(1, regex.Count(subject, controlled ? cancellation.Token : default));
+                    Assert.Equal(0, regex.Count(Encoding.UTF8.GetBytes(new string('x', 32) + prefix),
+                        controlled ? cancellation.Token : default));
+                }
+            }
+        }
+    }
+
+    [Theory]
     [InlineData("汉字")]
+    [InlineData("夏洛克·福尔摩斯")]
     [InlineData("é")]
     [InlineData("éa")]
     [InlineData("😀")]

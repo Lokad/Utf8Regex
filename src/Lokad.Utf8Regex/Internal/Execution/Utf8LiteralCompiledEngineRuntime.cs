@@ -755,7 +755,9 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
 
         while (searchIndex <= maxStart)
         {
-            var relative = input[searchIndex..].IndexOf(anchor);
+            // Admit anchor candidates only where the complete needle still fits.
+            // A matching scalar prefix at the subject tail is not a full candidate.
+            var relative = input.Slice(searchIndex, maxStart - searchIndex + scalarLength).IndexOf(anchor);
             if (relative < 0)
             {
                 return count;
