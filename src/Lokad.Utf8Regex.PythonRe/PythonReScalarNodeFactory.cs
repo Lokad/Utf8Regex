@@ -11,8 +11,23 @@ internal static class PythonReScalarNodeFactory
     internal static Utf8SliceNode.LiteralNode Literal(int scalar) =>
         Create(scalar, static state => new Utf8SliceNode.LiteralNode(state, false));
 
-    internal static Utf8SliceNode.ConcatNode Concat(Utf8SliceNode[] children) =>
-        Create(children, static state => new Utf8SliceNode.ConcatNode(state));
+    internal static Utf8SliceNode Concat(Utf8SliceNode[] children)
+    {
+        for (var index = 1; index < children.Length; index++)
+        {
+            Utf8ConstructionScope.ChargeWork(1);
+            // A committed, greedy unbounded literal run consumes every adjacent
+            // occurrence. The same required literal immediately afterward can
+            // never succeed. Keep lazy/finite/folded and compound atoms intact.
+            if (children[index - 1] is Utf8SliceNode.AtomicNode
+                { Body: Utf8SliceNode.RepeatNode { Maximum: long.MaxValue, Lazy: false,
+                    Body: Utf8SliceNode.LiteralNode { FoldCase: false } repeated } } &&
+                children[index] is Utf8SliceNode.LiteralNode { FoldCase: false } next &&
+                repeated.Value == next.Value)
+                return Create(0, static _ => new Utf8SliceNode.FailNode());
+        }
+        return Create(children, static state => new Utf8SliceNode.ConcatNode(state));
+    }
 
     internal static Utf8SliceNode.AlternationNode Alternation(Utf8SliceNode[][] branches) =>
         Create(branches, static state => new Utf8SliceNode.AlternationNode(state));

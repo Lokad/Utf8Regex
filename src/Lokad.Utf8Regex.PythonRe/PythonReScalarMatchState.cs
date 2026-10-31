@@ -51,10 +51,11 @@ internal struct PythonReScalarMatchState
         try
         {
             _validation = Utf8Validation.Validate(input, ref _invocation);
-            // The native rendering proves only necessity. A missing exact
-            // literal can finish before acquiring scalar scratch; a present
-            // literal retains the original Python VM and capture semantics.
-            if (!program.CanMatchEmpty && !program.IgnoreCase && candidateRegex is { } required &&
+            // An unconditional Fail or an absent necessary literal can finish
+            // before scalar scratch. Strict validation and final publication
+            // still use this invocation; other programs retain their verifier.
+            if (program.Instructions[0].Kind == Utf8SliceInstructionKind.Fail ||
+                !program.CanMatchEmpty && !program.IgnoreCase && candidateRegex is { } required &&
                 required.RejectMissingExactRequiredLiteral(input, ref _invocation))
             {
                 Checkpoint(input);

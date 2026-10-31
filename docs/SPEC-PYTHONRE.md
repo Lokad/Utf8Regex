@@ -35,6 +35,16 @@ still uses Python verification; tight working/depth/result limits may admit a
 scratch-free miss that formerly required VM capacity. Charges remain dependent
 on the selected route and version.
 
+An unconditional failure program also finishes before VM scratch, after full
+validation and an original-invocation publication checkpoint. A sequence of an
+atomic greedy unbounded unfolded literal repeat followed immediately by the
+same required literal (for example `a++a`) is provably impossible and lowers to
+the existing failure instruction. Capture catalogs retain all declared groups;
+enclosing alternatives and assertions retain their normal semantics. Lazy,
+finite, folded and compound atoms retain verification. Construction charges the
+bounded adjacency scan; execution can admit a constant-space miss under tighter
+working/depth/result limits than its former VM route.
+
 `CaptureGroupCount` reports the validated group count excluding group zero,
 independently of match participation. `TryCopyPatternUtf8` follows the
 [caller-buffer metadata contract](SPEC.md#native-pattern-metadata), preserving
