@@ -1950,7 +1950,7 @@ public sealed partial class Utf8Regex
             return found ? Utf8ProjectionExecutor.ProjectLiteralFamilyMatch(plan.ProjectionPlan, input,
                 plan.AlternateLiteralUtf16Lengths, 0, 0, selected, ref invocation, out _, out _) : Utf8ValueMatch.NoMatch;
         }
-        // These complete anchored grammars supply the whole value range without
+        // These complete native grammars supply the selected value range without
         // capture workspace. Bound the helpers' scans and require complete
         // ASCII validation; detailed captures and wider subjects keep the VM.
         var queryWhole = _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiDigitsQueryWhole or
@@ -1958,15 +1958,17 @@ public sealed partial class Utf8Regex
         var colorWhole = _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiHexColorWhole;
         var referenceWhole = _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiCellReferenceWhole or
             Utf8FallbackDirectFamilyKind.AnchoredAsciiRangeReferenceWhole;
+        var identifierToken = _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiIdentifierToken;
         if (startByte == 0 && input.Length <= 2048 && validation.ByteLength == input.Length && validation.IsAscii &&
             ReferenceEquals(program, _ownedSliceProgram) && !program.RightToLeft &&
             !program.IsNonBacktracking &&
             (queryWhole || colorWhole || referenceWhole || !program.IgnoreCase &&
-                _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredTrimmedOptionalLiteralPrefixTail or
+                (identifierToken || _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredTrimmedOptionalLiteralPrefixTail or
                     Utf8FallbackDirectFamilyKind.AnchoredNumberPrefix or Utf8FallbackDirectFamilyKind.AnchoredPrefixUntilByte or
-                    Utf8FallbackDirectFamilyKind.AnchoredOperatorRun or Utf8FallbackDirectFamilyKind.AnchoredQuotedStringPrefix))
+                    Utf8FallbackDirectFamilyKind.AnchoredOperatorRun or Utf8FallbackDirectFamilyKind.AnchoredQuotedStringPrefix)))
         {
             bool found; int length; Utf8ExecutionLimitKind breach;
+            var index = 0;
             if (queryWhole)
                 breach = Utf8AsciiAnchoredUrlExecutor.TryMatchWhole(input, _fallbackDirectFamily, ref invocation,
                     out found, out length);
@@ -1976,16 +1978,18 @@ public sealed partial class Utf8Regex
                 if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
                 // Color/reference proofs qualify their folded ASCII alphabets
                 // and final-LF semantics. The envelope bounds reference digit scans.
-                found = colorWhole ? Utf8AsciiHexColorExecutor.TryMatchWhole(input, out length)
+                found = identifierToken ? Utf8AsciiTokenFinderExecutor.TryFindAsciiIdentifierToken(input, 0, out index, out length)
+                    : colorWhole ? Utf8AsciiHexColorExecutor.TryMatchWhole(input, out length)
                     : referenceWhole ? Utf8AsciiAnchoredWholeFamilyExecutor.TryMatchWhole(input, _fallbackDirectFamily, out length)
                     : Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out length);
                 breach = invocation.TryChargeInputStep();
             }
             invocation.Budget.ThrowIfCancellationRequested();
             if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiAnchoredValidator);
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(identifierToken
+                ? Utf8ExecutionRoute.FallbackDirectAsciiIdentifierToken : Utf8ExecutionRoute.NativeAsciiAnchoredValidator);
             return found ? Utf8ProjectionExecutor.ProjectMatch(new Utf8ProjectionPlan(Utf8ProjectionKind.ByteOnly),
-                input, 0, 0, 0, length, length, ref invocation, out _, out _) : Utf8ValueMatch.NoMatch;
+                input, 0, 0, index, length, length, ref invocation, out _, out _) : Utf8ValueMatch.NoMatch;
         }
         var slots = new Utf8SliceSlots([], []);
         try

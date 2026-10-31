@@ -224,6 +224,15 @@ this changes route-dependent resource cost, not matching semantics. Quoted-strin
 value matching does not materialize captures; detailed matching keeps all scalar
 capture histories and escape/newline semantics.
 
+The same ASCII size envelope can find a complete identifier token of the form
+`[A-Za-z][A-Za-z0-9]*` from zero origin using the existing checked finder. Its
+selected start can be nonzero; byte and derived UTF-16 coordinates retain that
+index. Discovery and publication share the original bounded work/token/deadline
+scope without VM repeat/capture arrays. This can reduce working/depth admission;
+mixed Unicode, larger subjects, nonzero origins, RTL/NonBacktracking, global
+IgnoreCase and unproved shapes keep their existing paths. Detailed captures are
+unchanged.
+
 A complete greedy star excluding one ASCII scalar (for example `[^\n]*`) can
 use zero-origin span Count by searching for that byte after strict whole-subject UTF-8 validation.
 The byte cannot occur inside a wider scalar. Scans cover at most 256 bytes per
