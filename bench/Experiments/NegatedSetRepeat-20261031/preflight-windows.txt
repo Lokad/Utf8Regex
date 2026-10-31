@@ -1,0 +1,12 @@
+Preflight ordinary: 19
+Preflight compiled: 19
+Preflight finite-hit: 19
+Preflight finite-miss: 0
+Preflight ascii-hit: 128
+Preflight full-prefix-false-tail: 0
+Preflight unicode-hit: 128
+Preflight boundary-hit: 1
+Preflight positive-set-control: 256
+Preflight folded-control: 256
+Preflight detailed-control: 27
+Preflight control: 513

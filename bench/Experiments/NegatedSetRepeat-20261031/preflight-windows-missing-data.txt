@@ -1,0 +1,15 @@
+Unhandled exception. System.Reflection.TargetInvocationException: Exception has been thrown by the target of an invocation.
+ ---> System.IO.DirectoryNotFoundException: Lokad script corpus root not found: D:\code\utf8regex\tmp\negated-set-repeat-20261031\driver\bin\Release\net11.0\LokadReplica\Script\Data\Corpus
+   at Lokad.Utf8Regex.Benchmarks.LokadReplicaScriptBenchmarkContext.LoadCorpus() in D:\code\utf8regex\bench\Lokad.Utf8Regex.Benchmarks\LokadReplica\Script\LokadReplicaScriptBenchmarkContext.cs:line 745
+   at Lokad.Utf8Regex.Benchmarks.LokadReplicaScriptBenchmarkContext..ctor(LokadReplicaScriptBenchmarkCase benchmarkCase) in D:\code\utf8regex\bench\Lokad.Utf8Regex.Benchmarks\LokadReplica\Script\LokadReplicaScriptBenchmarkContext.cs:line 38
+   at Lokad.Utf8Regex.Benchmarks.ReplicaCountBenchmarkCase.FromLokadScript(LokadReplicaScriptBenchmarkCase benchmarkCase) in D:\code\utf8regex\bench\Lokad.Utf8Regex.Benchmarks\ReplicaCountBenchmarkCase.cs:line 205
+   at Lokad.Utf8Regex.Benchmarks.ReplicaCountBenchmarkCase.TryGetLokadScript(String caseId) in D:\code\utf8regex\bench\Lokad.Utf8Regex.Benchmarks\ReplicaCountBenchmarkCase.cs:line 155
+   at Lokad.Utf8Regex.Benchmarks.ReplicaCountBenchmarkCase.Resolve(String caseId) in D:\code\utf8regex\bench\Lokad.Utf8Regex.Benchmarks\ReplicaCountBenchmarkCase.cs:line 97
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+   --- End of inner exception stack trace ---
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+   at System.Reflection.MethodBase.Invoke(Object obj, Object[] parameters)
+   at Program.<Main>$(String[] args) in D:\code\utf8regex\tmp\negated-set-repeat-20261031\driver\Compare.cs:line 35

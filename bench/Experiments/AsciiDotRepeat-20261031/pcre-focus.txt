@@ -1,0 +1,24 @@
+D:\code\utf8regex\.dotnet\sdk\11.0.100-rc.3.26522.148\Sdks\Microsoft.NET.Sdk\targets\Microsoft.NET.RuntimeIdentifierInference.targets(385,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [D:\code\utf8regex\tests\Lokad.Utf8Regex.Pcre2.Tests\Lokad.Utf8Regex.Pcre2.Tests.csproj::TargetFramework=net10.0]
+D:\code\utf8regex\.dotnet\sdk\11.0.100-rc.3.26522.148\Sdks\Microsoft.NET.Sdk\targets\Microsoft.NET.RuntimeIdentifierInference.targets(385,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [D:\code\utf8regex\tests\Lokad.Utf8Regex.Pcre2.Tests\Lokad.Utf8Regex.Pcre2.Tests.csproj::TargetFramework=net11.0]
+D:\code\utf8regex\.dotnet\sdk\11.0.100-rc.3.26522.148\Sdks\Microsoft.NET.Sdk\targets\Microsoft.NET.RuntimeIdentifierInference.targets(385,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [D:\code\utf8regex\src\Lokad.Utf8Regex.Pcre2\Lokad.Utf8Regex.Pcre2.csproj::TargetFramework=net10.0]
+D:\code\utf8regex\.dotnet\sdk\11.0.100-rc.3.26522.148\Sdks\Microsoft.NET.Sdk\targets\Microsoft.NET.RuntimeIdentifierInference.targets(385,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [D:\code\utf8regex\src\Lokad.Utf8Regex\Lokad.Utf8Regex.csproj::TargetFramework=net11.0]
+  Lokad.Utf8Regex -> D:\code\utf8regex\src\Lokad.Utf8Regex\bin\Release\net10.0\Lokad.Utf8Regex.dll
+  Lokad.Utf8Regex.Pcre2 -> D:\code\utf8regex\src\Lokad.Utf8Regex.Pcre2\bin\Release\net10.0\Lokad.Utf8Regex.Pcre2.dll
+  Lokad.Utf8Regex -> D:\code\utf8regex\src\Lokad.Utf8Regex\bin\Release\net11.0\Lokad.Utf8Regex.dll
+  Lokad.Utf8Regex.Pcre2.Tests -> D:\code\utf8regex\tests\Lokad.Utf8Regex.Pcre2.Tests\bin\Release\net10.0\Lokad.Utf8Regex.Pcre2.Tests.dll
+  Lokad.Utf8Regex.Pcre2 -> D:\code\utf8regex\src\Lokad.Utf8Regex.Pcre2\bin\Release\net11.0\Lokad.Utf8Regex.Pcre2.dll
+  Lokad.Utf8Regex.Pcre2.Tests -> D:\code\utf8regex\tests\Lokad.Utf8Regex.Pcre2.Tests\bin\Release\net11.0\Lokad.Utf8Regex.Pcre2.Tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:00.68
+Test run for D:\code\utf8regex\tests\Lokad.Utf8Regex.Pcre2.Tests\bin\Release\net10.0\Lokad.Utf8Regex.Pcre2.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+Test run for D:\code\utf8regex\tests\Lokad.Utf8Regex.Pcre2.Tests\bin\Release\net11.0\Lokad.Utf8Regex.Pcre2.Tests.dll (.NETCoreApp,Version=v11.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:   114, Skipped:     0, Total:   114, Duration: 283 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)
+
+Passed!  - Failed:     0, Passed:   114, Skipped:     0, Total:   114, Duration: 261 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net11.0)

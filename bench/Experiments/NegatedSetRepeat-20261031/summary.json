@@ -1,0 +1,98 @@
+[
+  {
+    "Name": "ordinary",
+    "BeforeUs": 50.72451481103167,
+    "AfterUs": 50.6808383233533,
+    "ChangePercent": -0.08610528428133479,
+    "BeforeBytes": 3584,
+    "AfterBytes": 3584
+  },
+  {
+    "Name": "compiled",
+    "BeforeUs": 50.49429735234216,
+    "AfterUs": 49.706679960119644,
+    "ChangePercent": -1.5598145404947972,
+    "BeforeBytes": 3584,
+    "AfterBytes": 3584
+  },
+  {
+    "Name": "finite-hit",
+    "BeforeUs": 62.78669778296383,
+    "AfterUs": 62.827382550335564,
+    "ChangePercent": 0.06479838693280726,
+    "BeforeBytes": 3704,
+    "AfterBytes": 3704
+  },
+  {
+    "Name": "finite-miss",
+    "BeforeUs": 49.288141592920354,
+    "AfterUs": 47.979187817258875,
+    "ChangePercent": -2.6557174471546596,
+    "BeforeBytes": 216,
+    "AfterBytes": 216
+  },
+  {
+    "Name": "ascii-hit",
+    "BeforeUs": 119.98329297820823,
+    "AfterUs": 114.15714285714284,
+    "ChangePercent": -4.855801150684824,
+    "BeforeBytes": 3584,
+    "AfterBytes": 3584
+  },
+  {
+    "Name": "full-prefix-false-tail",
+    "BeforeUs": 77.87887537993922,
+    "AfterUs": 76.33292682926829,
+    "ChangePercent": -1.9850678930953713,
+    "BeforeBytes": 1712,
+    "AfterBytes": 1712
+  },
+  {
+    "Name": "unicode-hit",
+    "BeforeUs": 126.99688311688311,
+    "AfterUs": 122.05721393034825,
+    "ChangePercent": -3.8895987565211176,
+    "BeforeBytes": 3584,
+    "AfterBytes": 3584
+  },
+  {
+    "Name": "boundary-hit",
+    "BeforeUs": 2.9935145881467946,
+    "AfterUs": 2.9465688651794375,
+    "ChangePercent": -1.568247676268042,
+    "BeforeBytes": 3584,
+    "AfterBytes": 3584
+  },
+  {
+    "Name": "positive-set-control",
+    "BeforeUs": 66.16945551128818,
+    "AfterUs": 67.71172413793103,
+    "ChangePercent": 2.3307863344587343,
+    "BeforeBytes": 1680,
+    "AfterBytes": 1680
+  },
+  {
+    "Name": "folded-control",
+    "BeforeUs": 87.31526011560693,
+    "AfterUs": 107.21304347826087,
+    "ChangePercent": 22.78843736628502,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552
+  },
+  {
+    "Name": "detailed-control",
+    "BeforeUs": 168.2451754385965,
+    "AfterUs": 165.11636363636362,
+    "ChangePercent": -1.859674010904877,
+    "BeforeBytes": 203880,
+    "AfterBytes": 203880
+  },
+  {
+    "Name": "control",
+    "BeforeUs": 95.14285714285714,
+    "AfterUs": 95.22244039270689,
+    "ChangePercent": 0.08364605840063266,
+    "BeforeBytes": 0,
+    "AfterBytes": 0
+  }
+]

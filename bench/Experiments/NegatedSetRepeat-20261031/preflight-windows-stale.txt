@@ -1,0 +1,2 @@
+Unhandled exception. System.Exception: Stale or unexpected candidate binary
+   at Program.<Main>$(String[] args) in D:\code\utf8regex\tmp\negated-set-repeat-20261031\driver\Compare.cs:line 21
