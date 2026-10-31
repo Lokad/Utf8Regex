@@ -214,6 +214,14 @@ use and record active nesting against depth. A Count or value-Match shortcut can
 avoid capture workspace; a declined shortcut retains its spent work when scalar
 execution resumes.
 
+On fully validated ASCII subjects of at most 2048 bytes, a proved zero-origin
+contiguous operator prefix can publish its value-Match range through the existing
+bounded prefix helper. The original invocation meters discovery and publication,
+including cancellation/deadline checks. Wider or mixed subjects, nonzero origins,
+RTL/NonBacktracking and detailed captures retain their existing paths. A tight
+working/result limit can therefore admit the range without VM capture workspace;
+this changes route-dependent resource cost, not matching semantics.
+
 Greedy unbounded word repeats with a positive minimum, optionally enclosed by
 word boundaries and ordinary captures, can Count fully validated ASCII through their existing whole-pattern
 proof. That counter needs no capture workspace and admits one work unit before
