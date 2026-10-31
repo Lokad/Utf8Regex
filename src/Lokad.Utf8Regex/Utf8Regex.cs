@@ -1040,6 +1040,26 @@ public sealed partial class Utf8Regex
 
     private int CountCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
+        // A complete greedy star excluding one ASCII scalar needs only byte
+        // search after strict validation, including on mixed UTF-8 subjects.
+        // Carry validation, bounded scans and publication through one authority.
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiUntilByteStarCount &&
+            !UsesRightToLeft() && (Options & (RegexOptions.NonBacktracking | RegexOptions.ECMAScript)) == 0)
+        {
+            var starInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
+            try
+            {
+                _ = Utf8Validation.Validate(input, ref starInvocation);
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAsciiUntilByteStar);
+                var breach = Utf8AsciiUntilByteStarExecutor.TryCountValidated(input,
+                    _fallbackDirectFamily.TerminatorByte, ref starInvocation, out var starCount);
+                if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref starInvocation);
+                return starCount;
+            }
+            catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+                starInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+            { throw CreateExecutionResourceFailure(ref starInvocation); }
+        }
         // A complete single-category proof needs no captures or VM workspace.
         // Validate the whole subject first, then reuse the shared scalar counter
         // in bounded blocks under this same interruption/resource authority.

@@ -222,6 +222,16 @@ RTL/NonBacktracking and detailed captures retain their existing paths. A tight
 working/result limit can therefore admit the range without VM capture workspace;
 this changes route-dependent resource cost, not matching semantics.
 
+A complete greedy star excluding one ASCII scalar (for example `[^\n]*`) can
+use zero-origin span Count by searching for that byte after strict whole-subject UTF-8 validation.
+The byte cannot occur inside a wider scalar. Scans cover at most 256 bytes per
+work/interruption checkpoint and carry nonempty runs across block boundaries;
+the original invocation also checks final publication. Empty matches still
+advance one scalar. This constant-space counter needs no VM capture workspace,
+so tight working/result/depth limits can admit it. Work charges are bounded scan
+units rather than VM instructions. RTL, NonBacktracking, ECMAScript, folded and unproved
+grammar shapes keep their existing routes; detailed results are unchanged.
+
 Greedy unbounded word repeats with a positive minimum, optionally enclosed by
 word boundaries and ordinary captures, can Count fully validated ASCII through their existing whole-pattern
 proof. That counter needs no capture workspace and admits one work unit before
