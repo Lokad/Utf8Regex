@@ -1,0 +1,152 @@
+[
+  {
+    "Name": "actual-atomic-miss",
+    "BeforeUs": 2.7830627441406253,
+    "AfterUs": 0.3235492706298828,
+    "ChangePercent": -88.37434508758118,
+    "BeforeBytes": 3552,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.122327594713384,
+    "AfterSpread": 1.0031200861299598
+  },
+  {
+    "Name": "actual-atomic-hit",
+    "BeforeUs": 1.6127738952636719,
+    "AfterUs": 1.5802536010742188,
+    "ChangePercent": -2.0164199262498794,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "BeforeSpread": 1.0123337635533523,
+    "AfterSpread": 1.1758163514217337
+  },
+  {
+    "Name": "actual-finite-live-miss",
+    "BeforeUs": 3.129791259765625,
+    "AfterUs": 0.4885765075683594,
+    "ChangePercent": -84.3894858468949,
+    "BeforeBytes": 3672,
+    "AfterBytes": 120,
+    "BeforeSpread": 1.0076290672641972,
+    "AfterSpread": 1.0566432502244842
+  },
+  {
+    "Name": "actual-finite-live-hit",
+    "BeforeUs": 1.9757675170898439,
+    "AfterUs": 1.8343719482421874,
+    "ChangePercent": -7.156488181156129,
+    "BeforeBytes": 3672,
+    "AfterBytes": 3672,
+    "BeforeSpread": 1.025962024729117,
+    "AfterSpread": 1.2132506709587636
+  },
+  {
+    "Name": "rare-present-common-absent",
+    "BeforeUs": 0.21948623657226562,
+    "AfterUs": 1.944219970703125,
+    "ChangePercent": 785.8049602864244,
+    "BeforeBytes": 0,
+    "AfterBytes": 1936,
+    "BeforeSpread": 1.0049751849603288,
+    "AfterSpread": 1.0210494135779864
+  },
+  {
+    "Name": "dense-rare-present-common-absent",
+    "BeforeUs": 0.4048248291015625,
+    "AfterUs": 690.6671875,
+    "ChangePercent": 170508.89991179996,
+    "BeforeBytes": 0,
+    "AfterBytes": 1936,
+    "BeforeSpread": 1.4118458132805474,
+    "AfterSpread": 1.4833238650085216
+  },
+  {
+    "Name": "captured-unicode-hit",
+    "BeforeUs": 1.2056472778320313,
+    "AfterUs": 1.1485427856445312,
+    "ChangePercent": -4.736417792953851,
+    "BeforeBytes": 5744,
+    "AfterBytes": 5744,
+    "BeforeSpread": 1.0187950272105961,
+    "AfterSpread": 1.0253972602003958
+  },
+  {
+    "Name": "core-atomic-miss",
+    "BeforeUs": 1.7514190673828125,
+    "AfterUs": 0.1771921157836914,
+    "ChangePercent": -89.88294012075168,
+    "BeforeBytes": 3552,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.2347742199436296,
+    "AfterSpread": 1.0064533828146687
+  },
+  {
+    "Name": "core-atomic-hit",
+    "BeforeUs": 2.1521385192871096,
+    "AfterUs": 2.1426773071289062,
+    "ChangePercent": -0.43961910785079716,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "BeforeSpread": 1.6306329013172731,
+    "AfterSpread": 1.82924317485097
+  },
+  {
+    "Name": "core-opposite-miss",
+    "BeforeUs": 1.8188201904296875,
+    "AfterUs": 1005.4984375,
+    "ChangePercent": 55183.00393797894,
+    "BeforeBytes": 0,
+    "AfterBytes": 1936,
+    "BeforeSpread": 1.003892158006839,
+    "AfterSpread": 1.0075657466969943
+  },
+  {
+    "Name": "folded-control",
+    "BeforeUs": 1.447509765625,
+    "AfterUs": 1.3809234619140627,
+    "ChangePercent": -4.600059031877201,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "BeforeSpread": 1.0706256665971163,
+    "AfterSpread": 1.0491197379270385
+  },
+  {
+    "Name": "literal-control",
+    "BeforeUs": 0.19107398986816407,
+    "AfterUs": 0.19365062713623046,
+    "ChangePercent": 1.3485023627989312,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0089900393652627,
+    "AfterSpread": 1.0035110773058524
+  },
+  {
+    "Name": "construction-python-atomic",
+    "BeforeUs": 120.552734375,
+    "AfterUs": 280.37890625,
+    "ChangePercent": 132.57780730035807,
+    "BeforeBytes": 66664,
+    "AfterBytes": 66664,
+    "BeforeSpread": 1.1929025406421045,
+    "AfterSpread": 1.1141525506827152
+  },
+  {
+    "Name": "construction-core-atomic",
+    "BeforeUs": 46.392724609375,
+    "AfterUs": 46.244824218750004,
+    "ChangePercent": -0.31880082894529815,
+    "BeforeBytes": 51736,
+    "AfterBytes": 51736,
+    "BeforeSpread": 1.1029751093385494,
+    "AfterSpread": 1.01552186578944
+  },
+  {
+    "Name": "construction-core-literal-control",
+    "BeforeUs": 32.0673828125,
+    "AfterUs": 32.280712890625,
+    "ChangePercent": 0.6652556567286805,
+    "BeforeBytes": 40464,
+    "AfterBytes": 40464,
+    "BeforeSpread": 1.019118471384661,
+    "AfterSpread": 1.0038228926124364
+  }
+]

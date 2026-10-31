@@ -1,0 +1,15 @@
+Preflight actual-atomic-miss: 0
+Preflight actual-atomic-hit: 8589934600
+Preflight actual-finite-live-miss: 0
+Preflight actual-finite-live-hit: 8589934600
+Preflight rare-present-common-absent: 0
+Preflight dense-rare-present-common-absent: 0
+Preflight captured-unicode-hit: 8589934600
+Preflight core-atomic-miss: 0
+Preflight core-atomic-hit: 1
+Preflight core-opposite-miss: 0
+Preflight folded-control: 8589934600
+Preflight literal-control: 8589934600
+Preflight construction-python-atomic: 1
+Preflight construction-core-atomic: 1
+Preflight construction-core-literal-control: 1

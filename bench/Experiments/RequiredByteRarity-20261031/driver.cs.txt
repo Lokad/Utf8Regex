@@ -1,0 +1,118 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+var root = Path.GetFullPath(args[0]); var before = Load(Path.Combine(root, "before"), "before"); var after = Load(Path.Combine(root, "after"), "after");
+if (Hash(before.Core) == Hash(after.Core) || !Version(after.Core).Contains("0103b540")) throw new Exception("Unexpected binaries");
+var preflight = args.Contains("--preflight"); using var process = Process.GetCurrentProcess(); if (!preflight) process.ProcessorAffinity = (nint)4;
+using var live = new CancellationTokenSource(); var clock = Stopwatch.StartNew(); var roots = new List<object>(); var rows = new List<object>();
+var cases = new[] {
+    new Case("actual-atomic-miss", "(?>ab+)c", "xxabbbdzz"),
+    new Case("actual-atomic-hit", "(?>ab+)c", "xxabbbczz"),
+    new Case("actual-finite-live-miss", "(?>ab+)c", "xxabbbdzz", Finite: true),
+    new Case("actual-finite-live-hit", "(?>ab+)c", "xxabbbczz", Finite: true),
+    new Case("rare-present-common-absent", "(?>ab+)c", new string('c', 16)),
+    new Case("dense-rare-present-common-absent", "(?>ab+)c", new string('c', 8192)),
+    new Case("captured-unicode-hit", "(?P<x>(?>ab+))c", "😀abbbc"),
+    new Case("core-atomic-miss", "(?>ab+)c", "xxabbbdzz", Core: true),
+    new Case("core-atomic-hit", "(?>ab+)c", "xxabbbczz", Core: true),
+    new Case("core-opposite-miss", "(?>ab+)c", new string('c', 8192), Core: true),
+    new Case("folded-control", "(?i:a+b)", "xxAAAABzz"),
+    new Case("literal-control", "alpha", "xxalphazz"),
+    new Case("construction-python-atomic", "(?>ab+)c", "", Construction: true),
+    new Case("construction-core-atomic", "(?>ab+)c", "", Construction: true, Core: true),
+    new Case("construction-core-literal-control", "needle", "", Construction: true, Core: true)
+};
+foreach (var item in cases) {
+    var input = Encoding.UTF8.GetBytes(item.Text);
+    var reference = item.Reference ?? item.Pattern.Replace("a++", "(?>a+)").Replace("é++", "(?>é+)").Replace("(?P<", "(?<");
+    var oracle = item.Construction ? null : new Regex(reference, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    long Oracle(string text) { if (item.Core) return oracle!.Count(text); var m = oracle!.Match(text); return m.Success ? ((long)m.Index << 32) | (uint)(m.Index + m.Length + 1) : 0; }
+    var expected = item.Construction ? 1 : Oracle(item.Text);
+    Func<long> Make((Assembly Core, Assembly Python) assemblies) {
+        var type = item.Core ? assemblies.Core.GetType("Lokad.Utf8Regex.Utf8Regex")! : assemblies.Python.GetType("Lokad.Utf8Regex.PythonRe.Utf8PythonRegex")!;
+        if (item.Construction) {
+            var method = new DynamicMethod("PublicConstructAndClose", typeof(long), [typeof(string)], typeof(Program).Module, true); var il = method.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Newobj, type.GetConstructor([typeof(string)])!);
+            if (item.Core) il.Emit(OpCodes.Pop); else il.Emit(OpCodes.Callvirt, typeof(IDisposable).GetMethod("Dispose")!);
+            il.Emit(OpCodes.Ldc_I4_1); il.Emit(OpCodes.Conv_I8); il.Emit(OpCodes.Ret);
+            var construct = method.CreateDelegate<Func<string, long>>(); return () => construct(item.Pattern);
+        }
+        object owner;
+        if (item.Finite) {
+            var options = assemblies.Python.GetType("Lokad.Utf8Regex.PythonRe.PythonReCompileOptions")!;
+            var policyType = assemblies.Core.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!; var policy = Activator.CreateInstance(policyType)!;
+            foreach (var name in new[] { "MaxWorkSteps", "MaxDepth", "MaxWorkingBytes", "MaxResultBytes" }) {
+                var property = policyType.GetProperty(name)!; property.SetValue(policy, Convert.ChangeType(name == "MaxDepth" ? 4096UL : 16777216UL, Nullable.GetUnderlyingType(property.PropertyType)!));
+            }
+            owner = type.GetConstructor([typeof(string), options, typeof(TimeSpan), policyType])!.Invoke([item.Pattern, Enum.ToObject(options, 0), Timeout.InfiniteTimeSpan, policy]);
+        } else owner = type.GetConstructor([typeof(string)])!.Invoke([item.Pattern]);
+        roots.Add(owner);
+        if (item.Core) {
+            var count = type.GetMethod("Count", [typeof(ReadOnlySpan<byte>)])!.CreateDelegate<SpanCount>(owner);
+            return () => count(input);
+        }
+        var methodInfo = type.GetMethod("Search", item.Finite ? [typeof(ReadOnlySpan<byte>), typeof(int), typeof(CancellationToken)] : [typeof(ReadOnlySpan<byte>)])!;
+        var bridge = new DynamicMethod("PublicSearchRange", typeof(long), [typeof(object), typeof(byte[]), typeof(CancellationToken)], typeof(Program).Module, true);
+        var code = bridge.GetILGenerator(); var result = code.DeclareLocal(methodInfo.ReturnType); var hit = code.DefineLabel();
+        code.Emit(OpCodes.Ldarg_0); code.Emit(OpCodes.Castclass, type); code.Emit(OpCodes.Ldarg_1);
+        code.Emit(OpCodes.Call, typeof(ReadOnlySpan<byte>).GetMethod("op_Implicit", [typeof(byte[])])!);
+        if (item.Finite) { code.Emit(OpCodes.Ldc_I4_0); code.Emit(OpCodes.Ldarg_2); }
+        code.Emit(OpCodes.Call, methodInfo); code.Emit(OpCodes.Stloc, result);
+        code.Emit(OpCodes.Ldloca, result); code.Emit(OpCodes.Call, methodInfo.ReturnType.GetProperty("Success")!.GetMethod!);
+        code.Emit(OpCodes.Brtrue_S, hit); code.Emit(OpCodes.Ldc_I4_0); code.Emit(OpCodes.Conv_I8); code.Emit(OpCodes.Ret); code.MarkLabel(hit);
+        code.Emit(OpCodes.Ldloca, result); code.Emit(OpCodes.Call, methodInfo.ReturnType.GetProperty("StartOffsetInUtf16")!.GetMethod!);
+        code.Emit(OpCodes.Conv_I8); code.Emit(OpCodes.Ldc_I4, 32); code.Emit(OpCodes.Shl);
+        code.Emit(OpCodes.Ldloca, result); code.Emit(OpCodes.Call, methodInfo.ReturnType.GetProperty("EndOffsetInUtf16")!.GetMethod!);
+        code.Emit(OpCodes.Ldc_I4_1); code.Emit(OpCodes.Add); code.Emit(OpCodes.Conv_U8); code.Emit(OpCodes.Or); code.Emit(OpCodes.Ret);
+        var call = bridge.CreateDelegate<SearchRange>(); return () => call(owner, input, item.Finite ? live.Token : default);
+    }
+    var actions = new List<Func<long>> { Make(before), Make(after) };
+    if (!item.Construction) { actions.Add(() => Oracle(item.Text)); actions.Add(() => Oracle(Encoding.UTF8.GetString(input))); }
+    foreach (var action in actions) if (action() != expected) throw new Exception("Preflight mismatch " + item.Name);
+    if (preflight) { Console.Error.WriteLine("Preflight " + item.Name + ": " + expected); continue; }
+    var iterations = new int[actions.Count]; var calls = new long[actions.Count];
+    for (var lane = 0; lane < actions.Count; lane++) {
+        var warm = Stopwatch.StartNew(); do { if (actions[lane]() != expected) throw new Exception("Warm result"); calls[lane]++; } while (warm.Elapsed.TotalMilliseconds < 1000 || calls[lane] < 128);
+        iterations[lane] = 1; while (Measure(iterations[lane], actions[lane], expected).Milliseconds < 80) iterations[lane] = checked(iterations[lane] * 2);
+    }
+    var times = Enumerable.Range(0, actions.Count).Select(_ => new double[3]).ToArray(); var bytes = Enumerable.Range(0, actions.Count).Select(_ => new double[3]).ToArray(); var durations = Enumerable.Range(0, actions.Count).Select(_ => new double[3]).ToArray();
+    for (var sample = 0; sample < 3; sample++) for (var position = 0; position < actions.Count; position++) {
+        var lane = sample % 2 == 0 ? position : actions.Count - 1 - position; GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        var result = Measure(iterations[lane], actions[lane], expected); if (result.Milliseconds < 20) throw new Exception("Sample below20ms");
+        times[lane][sample] = result.Milliseconds * 1000 / iterations[lane]; bytes[lane][sample] = (double)result.Bytes / iterations[lane]; durations[lane][sample] = result.Milliseconds;
+    }
+    rows.Add(new { item.Name, item.Pattern, item.Finite, item.Construction, item.Core, InputBytes = input.Length, InputSha256 = Convert.ToHexString(SHA256.HashData(input)), Expected = expected,
+        Iterations = iterations, WarmupCalls = calls, Microseconds = times, AllocatedBytes = bytes, ElapsedMilliseconds = durations });
+    Console.Error.WriteLine(item.Name + ": " + string.Join(" / ", times.Select(values => values.Order().ElementAt(1))));
+}
+GC.KeepAlive(roots);
+Console.WriteLine(JsonSerializer.Serialize(new { Runtime = RuntimeInformation.FrameworkDescription, AffinityMask = "4", ElapsedSeconds = clock.Elapsed.TotalSeconds,
+    Before = new { Core = Identity(before.Core), Python = Identity(before.Python) }, After = new { Core = Identity(after.Core), Python = Identity(after.Python) },
+    Scope = "One bounded required-ASCII-byte tie-break pilot, existing frequency ranking and proved necessity only. Actual Python atomic miss/hit, finite-live, opposite selectivity (rare byte present/common absent) at16/8192bytes, Unicode captured hit, Core public Count counterparts, unchanged folded/literal controls and Core/Python public construction. No new fields/matcher/tables. Four matching lanes before/after/diagnostic predecoded compiled Regex/decode-then Regex; two construction producer lanes. Search range digest and complete Count checked after timing, setup/compilation excluded. Warm construction: Core ctor/drop, Python ctor/Dispose, no reflection in timed operations. Warm1s/min128calls per lane, independent80ms calibration,three alternating samples each>=20ms. One120s cap,at most one selected noise confirmation. Actual target gain must earn the observed affected-path tradeoffs; preserve unfavorable evidence and defer if not justified. Official CPython qualification only after acceptance. No package/full-catalog campaign.",
+    LaneNames = new[] { "BeforePythonRe", "AfterPythonRe", "DiagnosticPredecodedCompiledRegex", "DiagnosticDecodeThenCompiledRegex" }, Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+static (Assembly Core, Assembly Python) Load(string root, string name) {
+    var context = new AssemblyLoadContext(name); context.Resolving += (c, n) => File.Exists(Path.Combine(root, n.Name + ".dll")) ? c.LoadFromAssemblyPath(Path.Combine(root, n.Name + ".dll")) : null;
+    return (context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.dll")), context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.PythonRe.dll")));
+}
+static string Version(Assembly a) => a.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
+static string Hash(Assembly a) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(a.Location)));
+static object Identity(Assembly a) => new { Version = Version(a), Sha256 = Hash(a) };
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds, long Bytes) Measure(int count, Func<long> action, long expected) {
+    var values = new long[count]; var before = GC.GetAllocatedBytesForCurrentThread(); var start = Stopwatch.GetTimestamp();
+    for (var i = 0; i < count; i++) values[i] = action();
+    var elapsed = Stopwatch.GetElapsedTime(start); var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+    foreach (var value in values) if (value != expected) throw new Exception("Timed result mismatch");
+    GC.KeepAlive(values); return (elapsed.TotalMilliseconds, bytes);
+}
+sealed record Case(string Name, string Pattern, string Text, bool Finite = false, bool Construction = false, string? Reference = null, bool Core = false);
+delegate long SearchRange(object owner, byte[] input, CancellationToken token);
+delegate int SpanCount(ReadOnlySpan<byte> input);
