@@ -148,7 +148,12 @@ internal static partial class Utf8SearchExecutor
                         {
                             breach = invocation.TryChargeInputStep();
                             if (breach != Utf8ExecutionLimitKind.None) return breach;
-                            var other = pairBlock.IndexOf(literals[1]);
+                            // Only an earlier start can beat the first branch.
+                            // Include that last start's complete second needle;
+                            // miss windows retain their full bounded scan.
+                            var otherBlock = relative < 0 ? pairBlock :
+                                pairBlock[..Math.Min(pairBlock.Length, relative + literals[1].Length - 1)];
+                            var other = otherBlock.IndexOf(literals[1]);
                             if (other >= 0 && other < count && (relative < 0 || other < relative)) relative = other;
                         }
                         if (relative >= 0) candidateByte = blockStart + relative;

@@ -7,6 +7,34 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8PairCandidateInvocationTests
 {
     [Theory]
+    [InlineData(1)] [InlineData(31)] [InlineData(1023)] [InlineData(2042)]
+    public void EarlierLongBranchCanExtendBeyondALaterShortBranch(int firstOffset)
+    {
+        // The second alternative starts one byte earlier, but finishes after
+        // the first. Earliest start wins, regardless of the literals' lengths.
+        var first = "a"u8.ToArray();
+        var second = Encoding.ASCII.GetBytes("ba" + new string('z', 63));
+        byte[][] literals = [first, second];
+        var bytes = Encoding.ASCII.GetBytes(new string('x', firstOffset - 1) +
+            Encoding.ASCII.GetString(second) + "a");
+        var storage = new byte[bytes.Length + 7];
+        bytes.CopyTo(storage, 3);
+        var input = storage.AsSpan(3, bytes.Length);
+        foreach (var end in new[] { firstOffset + 1, firstOffset + second.Length - 1, input.Length })
+        {
+            var invocation = new Utf8SliceInvocation(new(100000, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
+            Assert.True(invocation.Ledger.TryReserve(7));
+            Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamilyCandidate(
+                literals, false, input, 0, end, false, ref invocation, out var match, out var found));
+            Assert.True(found);
+            var complete = end >= firstOffset + second.Length - 1;
+            Assert.Equal(complete ? (firstOffset - 1, second.Length, 1) : (firstOffset, 1, 0),
+                (match.Index, match.Length, match.LiteralId));
+            Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+        }
+    }
+
+    [Theory]
     [InlineData(0)]
     [InlineData(1023)]
     [InlineData(1024)]
