@@ -1,0 +1,33 @@
+Measuring README benchmark case: bounded-repeat/letters-en (requested=5, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=48;ElapsedMicroseconds=50925.000
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=48;ElapsedMicroseconds=50666.900
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=14;ElapsedMicroseconds=39980.000
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=27;ElapsedMicroseconds=59576.500
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=14;ElapsedMicroseconds=63677.500
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=22;ElapsedMicroseconds=50118.800
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=48;ElapsedMicroseconds=63357.300
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=48;ElapsedMicroseconds=68358.000
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=14;ElapsedMicroseconds=60013.300
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=27;ElapsedMicroseconds=54577.900
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=14;ElapsedMicroseconds=63392.900
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=22;ElapsedMicroseconds=50218.800
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=48;ElapsedMicroseconds=50765.100
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=48;ElapsedMicroseconds=50743.500
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=14;ElapsedMicroseconds=39978.100
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=27;ElapsedMicroseconds=50462.300
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=14;ElapsedMicroseconds=41693.900
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=22;ElapsedMicroseconds=51908.700
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=48;ElapsedMicroseconds=50351.200
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=48;ElapsedMicroseconds=50550.800
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=14;ElapsedMicroseconds=39944.400
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=27;ElapsedMicroseconds=53735.200
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=14;ElapsedMicroseconds=54480.300
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=22;ElapsedMicroseconds=50780.300
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=48;ElapsedMicroseconds=50729.900
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=48;ElapsedMicroseconds=67521.400
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=14;ElapsedMicroseconds=59184.200
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=27;ElapsedMicroseconds=58169.800
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=14;ElapsedMicroseconds=61189.000
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=22;ElapsedMicroseconds=50071.400
+Updated README case: bounded-repeat/letters-en
+Verified README.Parity.json against README.Benchmarks.json.

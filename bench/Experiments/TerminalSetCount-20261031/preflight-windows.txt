@@ -1,0 +1,11 @@
+Preflight actual-ordinary: 1833
+Preflight actual-compiled: 1833
+Preflight actual-finite-live: 1833
+Preflight actual-deadline-live: 1833
+Preflight russian-category-control: 3475
+Preflight dense-maxima-and-short-tail: 630
+Preflight mixed-scalar-gaps: 1536
+Preflight complemented-bmp-set: 1537
+Preflight folded-kelvin-set: 1024
+Preflight capture-control: 192
+Preflight literal-control: 1

@@ -1,0 +1,92 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+var root = Path.GetFullPath(args[0]); var afterRoot = Path.Combine(root, "after");
+var preflight = args.Contains("--preflight");
+AssemblyLoadContext.Default.Resolving += (_, name) => File.Exists(Path.Combine(afterRoot, name.Name + ".dll"))
+    ? AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(afterRoot, name.Name + ".dll")) : null;
+var assemblies = new[] { "before", "after" }.Select(name => new AssemblyLoadContext(name).LoadFromAssemblyPath(Path.Combine(root, name, "Lokad.Utf8Regex.dll"))).ToArray();
+var identities = assemblies.Select(assembly => new { Version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
+    Sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))) }).ToArray();
+if (identities[0].Sha256 == identities[1].Sha256 || identities.Any(item => !item.Version.Contains("16502c14"))) throw new Exception("Unexpected frozen source");
+var contextType = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(afterRoot, "Lokad.Utf8Regex.Benchmarks.dll"))
+    .GetType("Lokad.Utf8Regex.Benchmarks.ReplicaCountBenchmarkCase")!;
+var context = contextType.GetMethod("Resolve", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, ["bounded-repeat/letters-en"])!;
+T Get<T>(string name) => (T)contextType.GetProperty(name)!.GetValue(context)!;
+using var process = Process.GetCurrentProcess(); if (!preflight) process.ProcessorAffinity = (nint)4;
+using var live = new CancellationTokenSource(); var clock = Stopwatch.StartNew(); var rows = new List<object>();
+var cases = new[] {
+    new Case("actual-ordinary"), new Case("actual-compiled", Compiled: true),
+    new Case("actual-finite-live", Compiled: true, Finite: true, Live: true),
+    new Case("actual-deadline-live", Compiled: true, Live: true, Deadline: true),
+    new Case("russian-category-control", Compiled: true, Catalog: "bounded-repeat/letters-ru"),
+    new Case("dense-maxima-and-short-tail", Text: new string('a', 8197)),
+    new Case("mixed-scalar-gaps", Pattern: "[A-Za-z]{2,3}", Text: string.Concat(Enumerable.Repeat("ab😀cdeéfg a ", 512))),
+    new Case("complemented-bmp-set", Pattern: "[^x]{2,3}", Text: string.Concat(Enumerable.Repeat("ééxabcéxaxéééé ", 512))),
+    new Case("folded-kelvin-set", Pattern: "(?i:[ak]{2,4})", Text: string.Concat(Enumerable.Repeat("KaKk K AAkkk é a ", 512))),
+    new Case("capture-control", Pattern: "(?<v>[a-z]{2,3})", Text: string.Concat(Enumerable.Repeat("ab cde fg ", 64))),
+    new Case("literal-control", Pattern: "needle", Text: new string('x', 8192) + "needle")
+};
+foreach (var item in cases) {
+    context = contextType.GetMethod("Resolve", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, [item.Catalog])!;
+    var pattern = item.Pattern ?? Get<string>("Utf8Pattern"); var input = item.Text is null ? Get<byte[]>("InputBytes") : Encoding.UTF8.GetBytes(item.Text);
+    var text = Encoding.UTF8.GetString(input);
+    var options = (Get<RegexOptions>("Options") & ~RegexOptions.Compiled) | (item.Compiled ? RegexOptions.Compiled : 0) | (item.Folded ? RegexOptions.IgnoreCase | RegexOptions.CultureInvariant : 0);
+    var oracle = new Regex(pattern, options); var expected = oracle.Count(text); var actions = new List<Func<int>>();
+    foreach (var assembly in assemblies) {
+        var type = assembly.GetType("Lokad.Utf8Regex.Utf8Regex")!; var policyType = assembly.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!;
+        var policy = Activator.CreateInstance(policyType)!;
+        if (item.Finite) foreach (var (name, number) in new[] { ("MaxWorkSteps", 100_000_000UL), ("MaxDepth", 4096UL), ("MaxWorkingBytes", 16UL << 20), ("MaxResultBytes", 16UL << 20) }) {
+            var property = policyType.GetProperty(name)!; property.SetValue(policy, Convert.ChangeType(number, Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType));
+        }
+        var owner = type.GetConstructor([typeof(string), typeof(RegexOptions), typeof(TimeSpan), policyType])!
+            .Invoke([pattern, options, item.Deadline ? TimeSpan.FromSeconds(1) : Timeout.InfiniteTimeSpan, policy]);
+        if (item.Live) {
+            var count = type.GetMethod("Count", [typeof(ReadOnlySpan<byte>), typeof(CancellationToken)])!.CreateDelegate<TokenCount>(owner);
+            actions.Add(() => count(input, live.Token));
+        } else {
+            var count = type.GetMethod("Count", [typeof(ReadOnlySpan<byte>)])!.CreateDelegate<SpanCount>(owner);
+            actions.Add(() => count(input));
+        }
+    }
+    actions.Add(() => oracle.Count(text)); actions.Add(() => oracle.Count(Encoding.UTF8.GetString(input)));
+    foreach (var action in actions) if (action() != expected) throw new Exception("Public preflight mismatch " + item.Name);
+    if (preflight) { Console.Error.WriteLine("Preflight " + item.Name + ": " + expected); continue; }
+    var iterations = new int[4]; var warmCalls = new long[4];
+    for (var lane = 0; lane < 4; lane++) {
+        var warm = Stopwatch.StartNew(); do { if (actions[lane]() != expected) throw new Exception("Warm result"); warmCalls[lane]++; } while (warm.Elapsed.TotalMilliseconds < 1500 || warmCalls[lane] < 64);
+        iterations[lane] = 1; while (Measure(iterations[lane], actions[lane], expected).Milliseconds < 60) iterations[lane] = checked(iterations[lane] * 2);
+    }
+    var times = Enumerable.Range(0, 4).Select(_ => new double[5]).ToArray(); var allocation = Enumerable.Range(0, 4).Select(_ => new double[5]).ToArray(); var durations = Enumerable.Range(0, 4).Select(_ => new double[5]).ToArray();
+    for (var sample = 0; sample < 5; sample++) for (var position = 0; position < 4; position++) {
+        var lane = sample % 2 == 0 ? position : 3 - position; GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        var result = Measure(iterations[lane], actions[lane], expected); if (result.Milliseconds < 20) throw new Exception("Sample below20ms");
+        times[lane][sample] = result.Milliseconds * 1000 / iterations[lane]; allocation[lane][sample] = (double)result.Bytes / iterations[lane]; durations[lane][sample] = result.Milliseconds;
+    }
+    rows.Add(new { item.Name, item.Finite, item.Live, item.Deadline, Pattern = pattern, Options = options.ToString(), InputBytes = input.Length,
+        InputSha256 = Convert.ToHexString(SHA256.HashData(input)), Expected = expected, Iterations = iterations, WarmupCalls = warmCalls,
+        Microseconds = times, AllocatedBytes = allocation, ElapsedMilliseconds = durations });
+    Console.Error.WriteLine(item.Name + ": " + string.Join(" / ", times.Select(values => values.Order().ElementAt(2))));
+}
+Console.WriteLine(JsonSerializer.Serialize(new { Runtime = RuntimeInformation.FrameworkDescription, AffinityMask = "4", ElapsedSeconds = clock.Elapsed.TotalSeconds, Identities = identities,
+    Scope = "One bounded terminal Set repeat Count pilot, baseline16502c14 plus archived patch. Extend existing complete-root greedy/min>=1/no-capture fiveinstruction proof from category/shorthand/hybrid to Set; reuse positive ASCII mask predicate, original per-scalar work, strict validation and final publication authority. Wider/complemented/folded membership stays scalar. No new engine/fields/API/modes or unchecked access. Eleven equal-result public Count cases: actual English ordinary/compiled/finite-live/deadline-live, unchanged Russian category, dense maxima/tails, mixed scalar gaps, BMP complemented/folded-Kelvin sets; unchanged capture/ASCII literal controls. Four before/after/predecoded/decode-then Regex lanes. Full strict validation included, compilation/setup excluded, result batches consumed after timing with host arrays outside allocation counters. Warm1.5s/min64calls, independent60ms calibration, five alternating samples each>=20ms. One120s cap, at most one selected noise confirmation. No package/fullcatalog campaign. All BCL comparator cases overlap scalar semantics; no negated supplementary case is timed against UTF16 Regex.",
+    LaneNames = new[] { "Before", "After", "PredecodedRegex", "DecodeThenRegex" }, Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds, long Bytes) Measure(int count, Func<int> action, int expected) {
+    var values = new int[count]; var before = GC.GetAllocatedBytesForCurrentThread(); var start = Stopwatch.GetTimestamp();
+    for (var i = 0; i < count; i++) values[i] = action();
+    var elapsed = Stopwatch.GetElapsedTime(start); var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+    foreach (var value in values) if (value != expected) throw new Exception("Timed result mismatch");
+    GC.KeepAlive(values); return (elapsed.TotalMilliseconds, bytes);
+}
+sealed record Case(string Name, bool Compiled = false, bool Finite = false, bool Live = false, bool Deadline = false, bool Folded = false, string? Pattern = null, string? Text = null, string Catalog = "bounded-repeat/letters-en");
+delegate int SpanCount(ReadOnlySpan<byte> input);
+delegate int TokenCount(ReadOnlySpan<byte> input, CancellationToken token);

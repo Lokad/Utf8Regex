@@ -1,0 +1,21 @@
+using System.Reflection;
+using System.Security.Cryptography;
+using System.Text.Json;
+
+var assembly = Assembly.LoadFrom(Path.GetFullPath(args[0]));
+var type = assembly.GetType("Lokad.Utf8Regex.Utf8Regex")!;
+var predicate = assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner")!
+    .GetMethod("CanRunTerminalClassRepeat", BindingFlags.NonPublic | BindingFlags.Static)!;
+foreach (var pattern in new[] { "[A-Za-z]{8,13}", @"\p{L}{8,13}", "[^a]{2,4}", "(?i:[a-z]{2,4})", "(?<=[a-z]{2})x" }) {
+    var regex = type.GetConstructor([typeof(string)])!.Invoke([pattern]);
+    var program = type.GetField("_ownedSliceProgram", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(regex)!;
+    object? Property(object value, string name) => value.GetType().GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(value);
+    var instructions = (Array)Property(program, "Instructions")!;
+    var rows = instructions.Cast<object>().Select((instruction, index) => new {
+        Index = index, Kind = Property(instruction, "Kind")!.ToString(), A = Property(instruction, "A"), B = Property(instruction, "B"),
+        C = Property(instruction, "C"), D = Property(instruction, "D"), Minimum = Property(instruction, "RepeatMinimum"), Maximum = Property(instruction, "RepeatMaximum")
+    }).ToArray();
+    Console.WriteLine(JsonSerializer.Serialize(new { Pattern = pattern, CanRun = predicate.Invoke(null, [program]),
+        GroupCount = Property(program, "GroupCount"), RepeatCount = Property(program, "RepeatCount"), Rows = rows }));
+}
+Console.Error.WriteLine(Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))));
