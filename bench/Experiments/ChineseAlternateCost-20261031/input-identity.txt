@@ -1,0 +1,2 @@
+bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/DotNetPerformanceReplica/Stress/Data/opensubtitles/zh-sampled.txt
+f129e81928c58ecbba0ccbb63b36679355345248df057d1e9ded670d6e9c964b  bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/DotNetPerformanceReplica/Stress/Data/opensubtitles/zh-sampled.txt

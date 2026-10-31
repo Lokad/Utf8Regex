@@ -1,0 +1,129 @@
+SourceKind        : dotnet-performance-case
+Origin            : curated/02-literal-alternate.toml :: sherlock-zh
+Pattern           : 夏洛克·福尔摩斯|约翰华生|阿德勒|雷斯垂德|莫里亚蒂教授
+Options           : None
+InputChars        : 339698
+InputBytes        : 813478
+CompiledEngine    : LiteralFamily
+ExecutionKind     : ExactUtf8Literals
+DirectFamily      : None
+OwnedScalarPlan   : True
+ScalarPrepared    : True
+SearchKind        : ExactUtf8Literals
+PortfolioKind     : ExactPackedFamily
+PreparedSearcher  : MultiLiteral
+RequiredPrefilter : None
+WindowSearch      : None
+StructuralYield   : Start
+StructuralStages  : 2
+StructuralStage[0] : FindLiteralFamily MultiLiteral
+StructuralStage[1] : YieldStart
+FallbackPlans     : 1
+FallbackPlan[0]  : Yield=Start, Stages=2
+Verifier          : None
+FallbackReason    : <native>
+CaseId            : literal-alternate/sherlock-zh
+Source            : DotNetPerformance
+Pattern           : 夏洛克·福尔摩斯|约翰华生|阿德勒|雷斯垂德|莫里亚蒂教授
+Options           : None
+Group             : literal-alternate
+Origin            : curated/02-literal-alternate.toml :: sherlock-zh
+InputBytes        : 813478
+ExecutionKind     : ExactUtf8Literals
+PreparedKind      : ExactPacked
+ExactStrategy     : UniqueAnchorByte
+BucketCount       : 4
+LiteralCount      : 5
+ShortestLength    : 9
+PackedOffset      : 1
+PackedValues      : A4 BA 98 9B 8E
+PackedSecondGuard : True
+PackedThirdGuard  : True
+Bucket[0]        : first=å literals=1 prefix=??????????????????????? prefixLen=23 prefixDiscriminator=False
+Bucket[1]        : first=ç literals=1 prefix=???????????? prefixLen=12 prefixDiscriminator=False
+Bucket[2]        : first=é literals=2 prefix=<none> prefixLen=0 prefixDiscriminator=False
+Bucket[3]        : first=è literals=1 prefix=?????????????????? prefixLen=18 prefixDiscriminator=False
+CaseId                    : literal-alternate/sherlock-zh
+Origin                    : DotNetPerformance
+InputBytes                : 813478
+ThrowIfInvalidMode        : ValidationCore
+First256                  : bytes=256, ascii=13, firstNonAscii=0, leads2=0, leads3=81, leads4=0
+First4096                 : bytes=4096, ascii=627, firstNonAscii=0, leads2=2, leads3=1155, leads4=0
+InitialWideMode           : True
+ScalarCount               : 339698
+FirstNonAsciiOffset       : 0
+FirstTwoByteOffset        : 1152
+FirstSafeThreeByteOffset  : 0
+FirstConstrained3Offset   : -1
+FirstFourByteOffset       : -1
+Cross32ByteScalars        : 14813
+Scalar[Ascii            ]: count=102638, bytes=102638, runs=36716, maxRunScalars=276, maxRunBytes=276
+Scalar[TwoByte          ]: count=340, bytes=680, runs=331, maxRunScalars=3, maxRunBytes=6
+Scalar[SafeThreeByte    ]: count=236720, bytes=710160, runs=36896, maxRunScalars=35, maxRunBytes=105
+Scalar[ConstrainedThreeByte]: count=0, bytes=0, runs=0, maxRunScalars=0, maxRunBytes=0
+Scalar[FourByte         ]: count=0, bytes=0, runs=0, maxRunScalars=0, maxRunBytes=0
+Blocks32                  : 25422
+Block[AsciiOnly            ]: count=592, maxRun=7
+Block[TwoByteCommon        ]: count=6, maxRun=3
+Block[SafeThreeByteCommon  ]: count=24824, maxRun=450
+Block[ConstrainedThreeByte ]: count=0, maxRun=0
+Block[FourByte             ]: count=0, maxRun=0
+BlockShapeTransitions     : 852
+DenseSafeThreeByteBlocks  : 24678
+ScalarEscapeBlocks        : 0
+EstimatedLeanBlocks       : 18
+EstimatedWideBlocks       : 25404
+EstimatedWideEntries      : 15
+EstimatedWideExits        : 15
+CensusScope                : untimed full-corpus shape replay
+PolicyEstimateScope        : fixed 32-byte grid; not executed production-branch counters
+CaseId            : literal-alternate/sherlock-zh
+Origin            : DotNetPerformance
+Pattern           : 夏洛克·福尔摩斯|约翰华生|阿德勒|雷斯垂德|莫里亚蒂教授
+InputBytes        : 813478
+Iterations        : 1000
+Samples           : 5
+AttributionProtocol: AlternatingSelectedCountPhasesV2
+WarmupPerLane     : at least 250 ms and 64 calls
+ExpectedResult    : 207
+OrdinaryKernel    : PackedNibbleLiteralFamily
+CompiledKernel    : PackedNibbleLiteralFamily
+OrdinaryRoute     : literal_family_packed_nibble_simd_count
+CompiledRoute     : literal_family_packed_nibble_simd_count
+OrdinaryMetricRoute : PackedNibbleLiteralFamily
+OrdinaryCandidateDef: packed-nibble correlated start lanes
+OrdinaryCandidates  : 212
+OrdinaryVerifies    : 212
+OrdinaryMetricMatches: 207
+OrdinaryRejected    : 5
+OrdinaryKernelValidatesUtf8: False
+CompiledMetricRoute : PackedNibbleLiteralFamily
+CompiledCandidateDef: packed-nibble correlated start lanes
+CompiledCandidates  : 212
+CompiledVerifies    : 212
+CompiledMetricMatches: 207
+CompiledRejected    : 5
+CompiledKernelValidatesUtf8: False
+CheckoutCommit    : f42523bae841
+BenchmarkAssembly : 1.0.0+f42523bae841f1428e13e8f925d004b2b2d91d26 sha256=45D7AC3014CAF525BBCAA5F3CE2AC6B5B9519ED97AACA03D2FA7D0DBD9040AE4
+CoreAssembly      : 0.5.0-dev.1+f42523bae841f1428e13e8f925d004b2b2d91d26 sha256=477CD2F3CB990DFC92D6AD67169E87F26210A76BC49D54DCB5082B5FF21BC512
+Pcre2Assembly     : 0.5.0-dev.1+f42523bae841f1428e13e8f925d004b2b2d91d26 sha256=5E94FD0DAE41E81F11490CF3727ADB28EB51B605F63B30AC0808649E51194DB2
+PythonReAssembly  : 0.5.0-dev.1+f42523bae841f1428e13e8f925d004b2b2d91d26 sha256=57A31B5C5988F6BD802DF938FA7E3DDE53CF7EE85F4B7C29C0EB64EAA1264199
+TrackedDirty      : False
+HasUntrackedFiles : False
+Runtime           : .NET 11.0.0-rc.3.26522.148
+OperatingSystem   : Ubuntu 24.04.4 LTS
+Processor         : X64
+TieredPGO         : runtime-default
+ValidationOnly                  :    148.562 us/op | range=105.648..235.701 | result=813478 | warmupCalls=1037
+OrdinarySelectedKernel          :    211.260 us/op | range=134.152..1168.607 | result=207 | warmupCalls=213
+CompiledSelectedKernel          :    211.977 us/op | range=149.930..235.211 | result=207 | warmupCalls=215
+ValidationThenOrdinaryKernel    :    364.631 us/op | range=294.459..449.199 | result=207 | warmupCalls=178
+ValidationThenCompiledKernel    :    364.911 us/op | range=359.714..371.038 | result=207 | warmupCalls=170
+Utf8Regex                       :    364.409 us/op | range=315.729..401.814 | result=207 | warmupCalls=177
+Utf8Compiled                    :    364.935 us/op | range=244.329..370.147 | result=207 | warmupCalls=176
+PredecodedRegex                 :    104.683 us/op | range=82.069..426.492 | result=207 | warmupCalls=1676
+PredecodedCompiledRegex         :     51.779 us/op | range=40.903..142.599 | result=207 | warmupCalls=3912
+OrdinaryComposition : validation=148.562 + kernel=211.260 => sum=359.823 us | sameTrip=364.631 (+4.808) | public=364.409 (-0.222 vs sameTrip)
+CompiledComposition : validation=148.562 + kernel=211.977 => sum=360.540 us | sameTrip=364.911 (+4.372) | public=364.935 (+0.024 vs sameTrip)
+CompositionNote   : independently timed phase sums are attribution ceilings, not realizable speedups
