@@ -1,0 +1,45 @@
+param([string]$RepositoryRoot,[string]$InputRoot,[string]$ActualInputRoot,[string]$ConsumerRoot,[string]$OutputPath)
+$ErrorActionPreference='Stop'
+. (Join-Path $RepositoryRoot 'test-packaged-common.ps1')
+if(Test-Path $OutputPath){throw 'Identity audit already exists'}
+$candidate=Get-Content (Join-Path $InputRoot 'candidate.json') -Raw|ConvertFrom-Json
+$feed=Join-Path $InputRoot 'feed'
+function Check-Restore([string]$name,[string]$framework,[string]$lockPath,[string]$cache){
+    $lock=Get-Content -LiteralPath $lockPath -Raw|ConvertFrom-Json -AsHashtable
+    foreach($record in $candidate.Packages|Where-Object TargetFramework -eq $framework){
+        if(-not $lock.dependencies[$framework].ContainsKey($record.Id)){continue}
+        $id=$record.Id.ToLowerInvariant();$root=Join-Path $cache "$id/$($candidate.PackageVersion)"
+        $metadata=Get-Content (Join-Path $root '.nupkg.metadata') -Raw|ConvertFrom-Json
+        $locked=$lock.dependencies[$framework][$record.Id]
+        if((Get-FileHash (Join-Path $root "$id.$($candidate.PackageVersion).nupkg") -Algorithm SHA256).Hash -ne $record.PackageSha256 -or
+           (Get-FileHash (Join-Path $root "lib/$framework/$($record.Id).dll") -Algorithm SHA256).Hash -ne $record.AssemblySha256 -or
+           $locked.resolved -ne $candidate.PackageVersion -or $locked.contentHash -ne $record.PackageSha512Base64 -or
+           $metadata.source -ne $feed -or $metadata.contentHash -ne $record.PackageSha512Base64){throw "Cache/lock/feed disagreement: $name/$framework/$($record.Id)"}
+        $checks.Add([pscustomobject]@{Fixture=$name;Framework=$framework;Id=$record.Id;LockedVersion=$locked.resolved;LockSha256=(Get-FileHash $lockPath -Algorithm SHA256).Hash;PackageSha256=$record.PackageSha256;AssemblySha256=$record.AssemblySha256;ContentHash=$locked.contentHash;Source=$metadata.source})
+    }
+}
+
+$assets=foreach($record in $candidate.Packages){
+    $package=Join-Path $InputRoot $record.RelativePath
+    $provenance=Read-PackageProvenance -PackagePath $package -ExpectedAssembly "$($record.Id).dll" -TargetFramework $record.TargetFramework
+    Assert-PackageProvenance $provenance $candidate.SourceRevision
+    if(-not $candidate.CleanSource -or $candidate.SourceRevision -ne $provenance.AssemblyRevision){throw 'Original compiled-source qualification mismatch'}
+    if($provenance.PackageSha256 -ne $record.PackageSha256 -or $provenance.AssemblySha256 -ne $record.AssemblySha256 -or $provenance.SymbolPackageSha256 -ne $record.SymbolSha256 -or $provenance.PdbSha256 -ne $record.PdbSha256){throw 'Feed/symbol/PDB/source disagreement'}
+    [pscustomobject]@{Id=$record.Id;Framework=$record.TargetFramework;PackageSha256=$provenance.PackageSha256;AssemblySha256=$provenance.AssemblySha256;SymbolSha256=$provenance.SymbolPackageSha256;PdbSha256=$provenance.PdbSha256;CompiledSourceEvidence='Original Windows qualifier/source checks; exact matching package/PDB/SourceLink retained. Linux LF checkout is not the CRLF compilation input.'}
+}
+$checks=[Collections.Generic.List[object]]::new()
+foreach($profile in @('Core','Diff','PythonRe','Pcre2')){
+    foreach($framework in @('net10.0','net11.0')){
+        $root=Join-Path $ConsumerRoot "$profile/$framework"
+        Check-Restore "$profile/$framework" $framework (Join-Path $root 'tests/packages.lock.json') (Join-Path $root 'cache')
+    }
+}
+foreach($fixture in @(
+    @{Name='Awk';Lock='awk/tests/packages.lock.json';Cache='awk/packages'},
+    @{Name='Lython';Lock='lython/tests/Lokad.Lython.PublicApi.Tests/packages.lock.json';Cache='lython/packages'},
+    @{Name='PublicProducerApis';Lock='producer-apis/packages.lock.json';Cache='packages-producer'})){
+    foreach($framework in @('net10.0','net11.0')){
+        Check-Restore $fixture.Name $framework (Join-Path $ActualInputRoot $fixture.Lock) (Join-Path $ActualInputRoot $fixture.Cache)
+    }
+}
+[pscustomobject]@{Complete=$true;Version=$candidate.PackageVersion;Source=$candidate.SourceRevision;Scope='Read-only reuse of existing package provenance/compiled-source checks and candidate feed/cache/lock rules after successful Linux consumers; no rebuild, repack or repeated tests.';Assets=@($assets);Restores=$checks}|ConvertTo-Json -Depth 8|Set-Content -LiteralPath $OutputPath

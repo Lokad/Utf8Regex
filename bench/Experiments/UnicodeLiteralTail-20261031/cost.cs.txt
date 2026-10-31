@@ -1,0 +1,42 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+var root=Path.GetFullPath(args[0]); var preflight=args.Contains("--preflight");
+var assemblies=new[]{"before","after"}.Select(name=>new AssemblyLoadContext(name).LoadFromAssemblyPath(Path.Combine(root,name,"Lokad.Utf8Regex.dll"))).ToArray();
+var identities=assemblies.Select(assembly=>new{Version=assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,Sha256=Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location)))}).ToArray();
+if(!identities[0].Version.Contains("0e24cece")||!identities[1].Version.Contains("13ff4c5f"))throw new Exception("Unexpected source");
+using var process=Process.GetCurrentProcess(); if(!preflight)process.ProcessorAffinity=(nint)4;
+var watch=Stopwatch.StartNew();var rows=new List<object>();
+foreach(var name in new[]{"Chinese-ordinary","Chinese-compiled","literal-control"}){
+    var control=name=="literal-control";var pattern=control?"needle":"夏洛克·福尔摩斯";
+    var input=control?Encoding.UTF8.GetBytes(new string('x',8192)+"needle"):File.ReadAllBytes(args[1]);
+    var expected=control?1:30;var calls=new List<Func<int>>();
+    foreach(var assembly in assemblies){var type=assembly.GetType("Lokad.Utf8Regex.Utf8Regex")!;
+        var regex=Activator.CreateInstance(type,[pattern,name=="Chinese-compiled"?RegexOptions.Compiled:RegexOptions.None,Timeout.InfiniteTimeSpan,Activator.CreateInstance(assembly.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!)!])!;
+        var bridge=new DynamicMethod("Count",typeof(int),[typeof(object),typeof(byte[])],typeof(Program).Module,true);var il=bridge.GetILGenerator();
+        il.Emit(OpCodes.Ldarg_0);il.Emit(OpCodes.Castclass,type);il.Emit(OpCodes.Ldarg_1);il.Emit(OpCodes.Call,typeof(ReadOnlySpan<byte>).GetMethod("op_Implicit",[typeof(byte[])])!);
+        il.Emit(OpCodes.Call,type.GetMethod("Count",[typeof(ReadOnlySpan<byte>)])!);il.Emit(OpCodes.Ret);
+        var run=bridge.CreateDelegate<Func<object,byte[],int>>();calls.Add(()=>run(regex,input));}
+    if(calls.Any(run=>run()!=expected))throw new Exception("Preflight count");
+    if(preflight){Console.Error.WriteLine("Preflight "+name);continue;}
+    var iterations=new int[2];var warmCalls=new long[2];
+    for(var version=0;version<2;version++){var warm=Stopwatch.StartNew();do{if(calls[version]()!=expected)throw new Exception("Warm output");warmCalls[version]++;}while(warm.Elapsed.TotalMilliseconds<1500||warmCalls[version]<1000);
+        iterations[version]=1;while(Measure(iterations[version],calls[version],expected).Milliseconds<60)iterations[version]=checked(iterations[version]*2);}
+    var timings=new[]{new double[5],new double[5]};var allocation=new[]{new double[5],new double[5]};var duration=new[]{new double[5],new double[5]};
+    for(var sample=0;sample<5;sample++)for(var position=0;position<2;position++){var version=sample%2==0?position:1-position;GC.Collect();GC.WaitForPendingFinalizers();GC.Collect();
+        var result=Measure(iterations[version],calls[version],expected);if(result.Milliseconds<20)throw new Exception("Short sample");
+        timings[version][sample]=result.Milliseconds*1000/iterations[version];allocation[version][sample]=(double)result.Bytes/iterations[version];duration[version][sample]=result.Milliseconds;}
+    rows.Add(new{Name=name,Iterations=iterations,WarmupCalls=warmCalls,Microseconds=timings,AllocatedBytes=allocation,ElapsedMilliseconds=duration});
+    Console.Error.WriteLine(name+": "+string.Join(" / ",timings.Select(values=>values.Order().ElementAt(2))));
+}
+Console.WriteLine(JsonSerializer.Serialize(new{Runtime=RuntimeInformation.FrameworkDescription,Identities=identities,ElapsedSeconds=watch.Elapsed.TotalSeconds,Passed=true,
+    Scope="Core-only correctness fix 0e24cece ->13ff4c5f. Two actual Chinese-catalog public Count lanes plus unchanged literal control. No catalog/package refresh. Corrected exception subjects are covered by focused source tests, not a fictitious timing baseline. Warm1.5s/min1000calls, independent60ms calibration,5alternating samples,counts retained and checked after timing,all>=20ms. One30s outer cap; at most one focused noise confirmation.",Rows=rows},new JsonSerializerOptions{WriteIndented=true}));
+[MethodImpl(MethodImplOptions.NoInlining)]static(double Milliseconds,long Bytes)Measure(int count,Func<int>run,int expected){var values=new int[count];var bytes=GC.GetAllocatedBytesForCurrentThread();var stamp=Stopwatch.GetTimestamp();for(var i=0;i<count;i++)values[i]=run();var elapsed=Stopwatch.GetElapsedTime(stamp).TotalMilliseconds;bytes=GC.GetAllocatedBytesForCurrentThread()-bytes;foreach(var value in values)if(value!=expected)throw new Exception("Timed count");GC.KeepAlive(values);return(elapsed,bytes);}

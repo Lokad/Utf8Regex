@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net11.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Lokad.Utf8Regex"><HintPath>../after/Lokad.Utf8Regex.dll</HintPath></Reference>
+    <Reference Include="Lokad.Utf8Regex.PythonRe"><HintPath>../after/Lokad.Utf8Regex.PythonRe.dll</HintPath></Reference>
+    <Reference Include="Lokad.Utf8Regex.Pcre2"><HintPath>../after/Lokad.Utf8Regex.Pcre2.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

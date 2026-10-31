@@ -1,0 +1,90 @@
+using System.Text;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.PythonRe;
+using Lokad.Utf8Regex.Pcre2;
+
+public static class Lanes
+{
+    private static readonly CancellationTokenSource Live = new();
+    private static readonly Utf8ResourcePolicy Finite = new() {
+        MaxWorkSteps = 50_000_000, MaxDepth = 4096, MaxWorkingBytes = 64UL << 20, MaxResultBytes = 64UL << 20 };
+    // Only BCL tuple/delegate types cross the isolated assembly contexts.
+    public static (string Name, Func<int>? Count, int Expected, Func<object>? Output, Action<object>? Check)[] Create(string corpus)
+    {
+        var rows = new List<(string, Func<int>?, int, Func<object>?, Action<object>?)>();
+        var literalInput = Encoding.UTF8.GetBytes(new string('x', 8192) + "needle");
+        var literal = new Utf8Regex("needle", RegexOptions.CultureInvariant);
+        rows.Add(("core/literal-Count-control", () => literal.Count(literalInput), 1, null, null));
+        var identifierInput = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("record Bravo class Echo needle ASCII!\n", 8)));
+        foreach (var finite in new[] { false, true }) {
+            var regex = new Utf8Regex(@"\b(?:record|class|interface)\s+[A-Z][A-Za-z0-9_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant,
+                Timeout.InfiniteTimeSpan, finite ? Finite : default);
+            rows.Add(("core/identifier-Count/" + (finite ? "finite-live" : "unlimited"),
+                () => regex.Count(identifierInput, finite ? Live.Token : default), 16, null, null));
+        }
+        var chinese = File.ReadAllBytes(corpus);
+        foreach (var compiled in new[] { false, true }) {
+            var regex = new Utf8Regex("夏洛克·福尔摩斯", compiled ? RegexOptions.Compiled : RegexOptions.None);
+            rows.Add(("core/Chinese-catalog-Count/" + (compiled ? "compiled" : "ordinary"), () => regex.Count(chinese), 30, null, null));
+        }
+        var tokenRegex = new Utf8Regex("^[A-Z]{3}[0-9]{4}$", RegexOptions.CultureInvariant);
+        var ascii = "ABC0123"u8.ToArray();
+        rows.Add(("core/ASCII-IsMatch/live", () => tokenRegex.IsMatch(ascii, Live.Token) ? 1 : 0, 1, null, null));
+        var scalarInput = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é😀 ", 128)));
+        var scalar = new Utf8Regex(".", RegexOptions.NonBacktracking | RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan, Finite);
+        rows.Add(("core/scalar-NB-Count/finite-live", () => scalar.Count(scalarInput, Live.Token), 384, null, null));
+        foreach (var finite in new[] { false, true }) {
+            var regex = new Utf8Regex("(a+)", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan, finite ? Finite : default);
+            var input = "aa/a"u8.ToArray();
+            AddBytes("core/grouped-text-Replace/" + (finite ? "finite-live" : "unlimited"),
+                () => regex.Replace(input, "é${1}", finite ? Live.Token : default), "éaa/éa");
+            if (!finite) AddBytes("core/grouped-native-Replace/unlimited", () => regex.Replace(input, "é${1}"u8), "éaa/éa");
+        }
+        var largeInput = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aa😀/a😀 ", 128)));
+        var large = new Utf8Regex("(a+)", RegexOptions.CultureInvariant);
+        AddBytes("core/grouped-Unicode-Replace", () => large.Replace(largeInput, "é${1}"),
+            string.Concat(Enumerable.Repeat("éaa😀/éa😀 ", 128)));
+
+        var tupleInput = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("ab ", 128)));
+        var python = new Utf8PythonRegex("(a)(b)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, Finite);
+        rows.Add(("python/captured-Count/finite-live", () => python.Count(tupleInput, 0, Live.Token), 128, null, null));
+        rows.Add(("python/captured-FindAllToUtf8/finite", null, 0, () => python.FindAllToUtf8(tupleInput), value => {
+            var result = (Utf8PythonFindAllUtf8Result)value;
+            if (result.Count != 128 || result.TupleValues.Length != 128) throw new Exception("Python tuple count");
+            foreach (var pair in result.TupleValues)
+                if (pair.Length != 2 || !pair[0].AsSpan().SequenceEqual("a"u8) || !pair[1].AsSpan().SequenceEqual("b"u8)) throw new Exception("Python tuple values");
+        }));
+        var possessive = new Utf8PythonRegex("a++a"); var miss = "aaaa"u8.ToArray();
+        rows.Add(("python/possessive-Search-miss", () => possessive.Search(miss).Success ? 1 : 0, 0, null, null));
+        var lookbehind = new Utf8PythonRegex("(?<=a)b");
+        rows.Add(("python/lookbehind-Search", () => lookbehind.Search("ab"u8).Success ? 1 : 0, 1, null, null));
+        var sub = new Utf8PythonRegex("(a+)");
+        AddBytes("python/grouped-Subn", () => {
+            var result = sub.Subn("aa/a"u8, "é\\1");
+            if (result.ReplacementCount != 2) throw new Exception("Python substitution count");
+            return result.ResultBytes;
+        }, "éaa/éa");
+
+        var pcreInput = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("éa😀 ", 8)));
+        var pcre = Utf8Pcre2Regex.Create("(?P<g>(?:é|a)+😀)", default, default, Finite, Timeout.InfiniteTimeSpan);
+        rows.Add(("pcre2/Unicode-Count/finite-live", () => pcre.Count(pcreInput, 0, default, Live.Token), 8, null, null));
+        rows.Add(("pcre2/Unicode-Enumerate/finite", () => {
+            var cursor = pcre.EnumerateMatches(pcreInput); var sum = 0;
+            while (cursor.MoveNext()) sum += cursor.Current.EndOffsetInBytes + cursor.Current.EndOffsetInUtf16;
+            return sum;
+        }, 452, null, null));
+        var pcreSub = new Utf8Pcre2Regex("(?<x>a+)");
+        AddBytes("pcre2/grouped-Replace", () => pcreSub.Replace("aa/a"u8, "é${x}"), "éaa/éa");
+        var pcreControl = new Utf8Pcre2Regex("needle");
+        rows.Add(("pcre2/literal-Count-control", () => pcreControl.Count(literalInput), 1, null, null));
+        var bcl = new Regex("needle", RegexOptions.CultureInvariant); var decoded = Encoding.UTF8.GetString(literalInput);
+        rows.Add(("control/predecoded-BCL-Count", () => bcl.Count(decoded), 1, null, null));
+        return rows.ToArray();
+
+        void AddBytes(string name, Func<byte[]> run, string expected) {
+            var bytes = Encoding.UTF8.GetBytes(expected);
+            rows.Add((name, null, 0, () => run(), value => { if (!((byte[])value).AsSpan().SequenceEqual(bytes)) throw new Exception("Output mismatch " + name); }));
+        }
+    }
+}

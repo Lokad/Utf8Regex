@@ -1,0 +1,195 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "Identities": [
+    {
+      "Version": "0.5.0-dev.1\u002B0e24cecebbb9093a18f5cb962dae3b6f6426742c",
+      "Sha256": "39F05ABDBC2F27D03293D800A2A6C92C8DCF2F7029FFCA8FD5FC00DB5032472C"
+    },
+    {
+      "Version": "0.5.0-dev.1\u002B13ff4c5f8691ffc8c10c4614a469d38233294b7d",
+      "Sha256": "EC01668AD25811AD341B42069036BBDFB71B53E85E46FD8DEEA899988D2E39D5"
+    }
+  ],
+  "ElapsedSeconds": 12.5665085,
+  "Passed": true,
+  "Scope": "Core-only correctness fix 0e24cece -\u003E13ff4c5f. Two actual Chinese-catalog public Count lanes plus unchanged literal control. No catalog/package refresh. Corrected exception subjects are covered by focused source tests, not a fictitious timing baseline. Warm1.5s/min1000calls, independent60ms calibration,5alternating samples,counts retained and checked after timing,all\u003E=20ms. One30s outer cap; at most one focused noise confirmation.",
+  "Rows": [
+    {
+      "Name": "Chinese-ordinary",
+      "Iterations": [
+        512,
+        512
+      ],
+      "WarmupCalls": [
+        8918,
+        10655
+      ],
+      "Microseconds": [
+        [
+          133.3341796875,
+          132.1923828125,
+          132.32382812499998,
+          132.319921875,
+          134.30703125
+        ],
+        [
+          133.21699218749998,
+          132.5419921875,
+          132.4619140625,
+          131.93417968749998,
+          132.4248046875
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          68.2671,
+          67.6825,
+          67.7498,
+          67.7478,
+          68.7652
+        ],
+        [
+          68.2071,
+          67.8615,
+          67.8205,
+          67.5503,
+          67.8015
+        ]
+      ]
+    },
+    {
+      "Name": "Chinese-compiled",
+      "Iterations": [
+        512,
+        512
+      ],
+      "WarmupCalls": [
+        10998,
+        11034
+      ],
+      "Microseconds": [
+        [
+          134.4095703125,
+          170.54335937500002,
+          179.9607421875,
+          180.8314453125,
+          153.5048828125
+        ],
+        [
+          145.134375,
+          162.9345703125,
+          178.95781250000002,
+          178.6953125,
+          132.2509765625
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          68.8177,
+          87.3182,
+          92.1399,
+          92.5857,
+          78.5945
+        ],
+        [
+          74.3088,
+          83.4225,
+          91.6264,
+          91.492,
+          67.7125
+        ]
+      ]
+    },
+    {
+      "Name": "literal-control",
+      "Iterations": [
+        131072,
+        131072
+      ],
+      "WarmupCalls": [
+        2762428,
+        2296315
+      ],
+      "Microseconds": [
+        [
+          0.6466781616210937,
+          0.6489288330078125,
+          0.6474143981933593,
+          0.6484527587890625,
+          0.6501800537109375
+        ],
+        [
+          0.6156402587890626,
+          0.6147918701171875,
+          0.618402099609375,
+          0.6186119079589844,
+          0.6216552734375
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          84.7614,
+          85.0564,
+          84.8579,
+          84.994,
+          85.2204
+        ],
+        [
+          80.6932,
+          80.582,
+          81.0552,
+          81.0827,
+          81.4816
+        ]
+      ]
+    }
+  ]
+}

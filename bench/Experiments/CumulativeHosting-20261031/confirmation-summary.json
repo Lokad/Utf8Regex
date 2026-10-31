@@ -1,0 +1,58 @@
+[
+  {
+    "Name": "core/literal-Count-control",
+    "BeforeUs": 0.5461868286132813,
+    "AfterUs": 0.5411636352539062,
+    "ChangePercent": -0.9196840890741576,
+    "BeforeSpread": 1.02116789858277,
+    "AfterSpread": 1.0473361881091314
+  },
+  {
+    "Name": "core/Chinese-catalog-Count/ordinary",
+    "BeforeUs": 187.13359375,
+    "AfterUs": 190.61953125,
+    "ChangePercent": 1.862806901820635,
+    "BeforeSpread": 1.4090272400877608,
+    "AfterSpread": 1.4971649615717413
+  },
+  {
+    "Name": "core/Chinese-catalog-Count/compiled",
+    "BeforeUs": 182.16416015625,
+    "AfterUs": 183.1484375,
+    "ChangePercent": 0.5403243661682655,
+    "BeforeSpread": 1.2497452810127707,
+    "AfterSpread": 1.425707476760206
+  },
+  {
+    "Name": "core/scalar-NB-Count/finite-live",
+    "BeforeUs": 24.97529296875,
+    "AfterUs": 29.0433837890625,
+    "ChangePercent": 16.288460861710984,
+    "BeforeSpread": 1.7167607702093575,
+    "AfterSpread": 1.712554138426283
+  },
+  {
+    "Name": "python/captured-Count/finite-live",
+    "BeforeUs": 3.5143798828125,
+    "AfterUs": 3.378274536132812,
+    "ChangePercent": -3.87281259334904,
+    "BeforeSpread": 1.040648920691376,
+    "AfterSpread": 1.074961683938188
+  },
+  {
+    "Name": "pcre2/Unicode-Count/finite-live",
+    "BeforeUs": 7.55992431640625,
+    "AfterUs": 11.01982421875,
+    "ChangePercent": 45.766329893478044,
+    "BeforeSpread": 1.7533617502296117,
+    "AfterSpread": 1.812703914303255
+  },
+  {
+    "Name": "control/predecoded-BCL-Count",
+    "BeforeUs": 0.5394123077392577,
+    "AfterUs": 0.5398235321044922,
+    "ChangePercent": 0.07623562891212465,
+    "BeforeSpread": 1.2679831099858236,
+    "AfterSpread": 1.2772470199406658
+  }
+]

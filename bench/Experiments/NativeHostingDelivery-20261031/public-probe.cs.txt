@@ -1,0 +1,78 @@
+using System.Buffers;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.PythonRe;
+using Lokad.Utf8Regex.Pcre2;
+using CoreRegex = Lokad.Utf8Regex.Utf8Regex;
+
+var root = new Root(); var programs = new Account(root); var working = new Account(root); var results = new Account(root);
+var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 256, MaxWorkingBytes = 8UL << 20, MaxResultBytes = 8UL << 20 };
+var input = "é😀"u8.ToArray(); var output = new byte[128];
+var source = "(?<x>.)"u8.ToArray();
+using (var core = CoreRegex.Compile(source, RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan,
+    policy, default, Timeout.InfiniteTimeSpan, default, programs))
+{
+    Array.Fill(source, (byte)0xff);
+    Check(core.CaptureGroupCount == 1 && core.GroupNumberFromUtf8Name("x"u8) == 1);
+    Check(core.TryCopyPatternUtf8(output, out var size) == OperationStatus.Done && output.AsSpan(0, size).SequenceEqual("(?<x>.)"u8));
+    Check(core.Count(input, workingMemoryAllowance: working) == 2 && working.Used == 0);
+    Check(core.TryReplace(input, "[$1]"u8, output, out var written, workingMemoryAllowance: working) == OperationStatus.Done);
+    Check(output.AsSpan(0, written).SequenceEqual("[é][😀]"u8) && working.Used == 0);
+    var small = new byte[] { 0xcc };
+    Check(core.TryReplace(input, "[$1]"u8, small, out written, workingMemoryAllowance: working) == OperationStatus.DestinationTooSmall && written == 0 && small[0] == 0xcc);
+    using var cursor = core.CreateMatchCursor(input, workingMemoryAllowance: working);
+    Check(cursor.MoveNextRetained(out var retained, resultMemoryAllowance: results));
+    using var receipt = retained!; var alias = receipt.Match;
+    core.Dispose(); Check(programs.Used > 0);
+    Check(cursor.MoveNext(out var next) && next.GetValueMemory().Span.SequenceEqual("😀"u8));
+    Check(!cursor.MoveNext(out _)); cursor.Dispose(); Check(programs.Used == 0 && working.Used == 0);
+    receipt.Dispose(); Check(results.Used == 0 && alias.GetValueMemory().Span.SequenceEqual("é"u8));
+}
+Check(root.Used == 0);
+
+using (var pcre = Utf8Pcre2Regex.Compile("(?<x>.)"u8, default, default, Timeout.InfiniteTimeSpan,
+    policy, default, Timeout.InfiniteTimeSpan, default, programs))
+{
+    var numbers = new int[1]; Check(pcre.CaptureGroupCount == 1 && pcre.CopyNumbersForUtf8Name("x"u8, numbers, out var more) == 1 && !more && numbers[0] == 1);
+    Check(pcre.TryReplace(input, "[${x}]"u8, output, out var written, workingMemoryAllowance: working) == OperationStatus.Done);
+    Check(output.AsSpan(0, written).SequenceEqual("[é][😀]"u8) && working.Used == 0);
+    working.Maximum = 0; var attempts = working.Attempts;
+    try { pcre.TryReplace(input, "new${x}"u8, output, out _, workingMemoryAllowance: working); throw new Exception("Expected admission denial"); }
+    catch (Utf8MemoryAdmissionException) { Check(working.Used == 0 && working.Attempts == attempts + 1); }
+    working.Maximum = ulong.MaxValue;
+    using var canceled = new CancellationTokenSource(); canceled.Cancel();
+    try { pcre.IsMatch(input, cancellationToken: canceled.Token); throw new Exception("Expected cancellation"); }
+    catch (OperationCanceledException failure) { Check(failure.CancellationToken == canceled.Token); }
+}
+Check(root.Used == 0);
+
+var python = Utf8PythonRegex.Compile("(?P<x>.)"u8, default, Timeout.InfiniteTimeSpan,
+    policy, default, Timeout.InfiniteTimeSpan, default, programs);
+Check(python.CaptureGroupCount == 1 && python.TryGetGroupNumber("x"u8, out var slot) && slot == 1);
+using (var receipt = python.SubnRetained(input, "[\\g<x>]"u8))
+{
+    var alias = receipt.Result.ResultBytes;
+    Check(receipt.Result.ReplacementCount == 2 && alias.AsSpan().SequenceEqual("[é][😀]"u8));
+    python.Dispose(); Check(programs.Used > 0);
+    receipt.Dispose(); Check(root.Used == 0 && alias.AsSpan().SequenceEqual("[é][😀]"u8));
+}
+Console.WriteLine(JsonSerializer.Serialize(new { Runtime = RuntimeInformation.FrameworkDescription,
+    Packages = new[] { typeof(CoreRegex).Assembly, typeof(Utf8PythonRegex).Assembly, typeof(Utf8Pcre2Regex).Assembly }
+        .Select(assembly => new { assembly.GetName().Name, Version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion }),
+    Scope = "Public NuGet APIs only, no friend/internal/source references. Native compilation/template/metadata, funded destinations and retained aliases under independent child accounts of one root. Strict scalar results, terminal denial, original cancellation and deterministic final refunds. Functional probe, not throughput or total heap accounting.",
+    Passed = true, FinalRootLoan = root.Used, WorkingAdmissionAttempts = working.Attempts }));
+static void Check(bool value) { if (!value) throw new Exception("Public hosting assertion failed"); }
+sealed class Root { internal ulong Used; }
+sealed class Account(Root root) : IUtf8MemoryAllowance
+{
+    internal ulong Used; internal ulong Maximum = ulong.MaxValue; internal long Attempts;
+    public bool TryReserve(ulong bytes) {
+        lock (root) { Attempts++; if (bytes > Maximum - Math.Min(Maximum, Used) || bytes > ulong.MaxValue - root.Used) return false;
+            Used += bytes; root.Used += bytes; return true; }
+    }
+    public void Release(ulong bytes) { lock (root) { if (bytes > Used || bytes > root.Used) throw new Exception("Invalid refund"); Used -= bytes; root.Used -= bytes; } }
+}

@@ -1,0 +1,17 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "Identities": [
+    {
+      "Version": "0.5.0-dev.1\u002B0e24cecebbb9093a18f5cb962dae3b6f6426742c",
+      "Sha256": "39F05ABDBC2F27D03293D800A2A6C92C8DCF2F7029FFCA8FD5FC00DB5032472C"
+    },
+    {
+      "Version": "0.5.0-dev.1\u002B13ff4c5f8691ffc8c10c4614a469d38233294b7d",
+      "Sha256": "EC01668AD25811AD341B42069036BBDFB71B53E85E46FD8DEEA899988D2E39D5"
+    }
+  ],
+  "ElapsedSeconds": 0.1562465,
+  "Passed": true,
+  "Scope": "Core-only correctness fix 0e24cece -\u003E13ff4c5f. Two actual Chinese-catalog public Count lanes plus unchanged literal control. No catalog/package refresh. Corrected exception subjects are covered by focused source tests, not a fictitious timing baseline. Warm1.5s/min1000calls, independent60ms calibration,5alternating samples,counts retained and checked after timing,all\u003E=20ms. One30s outer cap; at most one focused noise confirmation.",
+  "Rows": []
+}

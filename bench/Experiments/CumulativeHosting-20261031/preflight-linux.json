@@ -1,0 +1,62 @@
+{
+  "Passed": true,
+  "Identities": [
+    [
+      {
+        "Name": "Lokad.Utf8Regex",
+        "Version": "0.5.0-dev\u002Ba40bda03c8f984cef1d884447cccc805d2ceaa01",
+        "Sha256": "88908D310EE129970BECD18F4C4A0632F9B4F151432F875EB68AFB12EE6F0B47"
+      },
+      {
+        "Name": "Lokad.Utf8Regex.PythonRe",
+        "Version": "0.5.0-dev\u002Ba40bda03c8f984cef1d884447cccc805d2ceaa01",
+        "Sha256": "077CBA962A92865948E35B475BA86C77DE227085734391EBB8EB6EE0A3DFF5C7"
+      },
+      {
+        "Name": "Lokad.Utf8Regex.Pcre2",
+        "Version": "0.5.0-dev\u002Ba40bda03c8f984cef1d884447cccc805d2ceaa01",
+        "Sha256": "7B5DF8E5C19833D4C50810E0256274CB53A0986E7045ED096F8D3EB28416BD3B"
+      }
+    ],
+    [
+      {
+        "Name": "Lokad.Utf8Regex",
+        "Version": "0.5.0-dev.1\u002B0e24cecebbb9093a18f5cb962dae3b6f6426742c",
+        "Sha256": "39F05ABDBC2F27D03293D800A2A6C92C8DCF2F7029FFCA8FD5FC00DB5032472C"
+      },
+      {
+        "Name": "Lokad.Utf8Regex.PythonRe",
+        "Version": "0.5.0-dev.1\u002B0e24cecebbb9093a18f5cb962dae3b6f6426742c",
+        "Sha256": "7F4B0982CDEE5ABD4D626F09A0D20224071BF84579B2FAC23009F4572D595337"
+      },
+      {
+        "Name": "Lokad.Utf8Regex.Pcre2",
+        "Version": "0.5.0-dev.1\u002B0e24cecebbb9093a18f5cb962dae3b6f6426742c",
+        "Sha256": "FFA48A5963AA1FAEF7C9052C94CB4F966CA7DFCD97AAF647BA22F826DBF4CF72"
+      }
+    ]
+  ],
+  "Cases": [
+    "core/literal-Count-control",
+    "core/identifier-Count/unlimited",
+    "core/identifier-Count/finite-live",
+    "core/Chinese-catalog-Count/ordinary",
+    "core/Chinese-catalog-Count/compiled",
+    "core/ASCII-IsMatch/live",
+    "core/scalar-NB-Count/finite-live",
+    "core/grouped-text-Replace/unlimited",
+    "core/grouped-native-Replace/unlimited",
+    "core/grouped-text-Replace/finite-live",
+    "core/grouped-Unicode-Replace",
+    "python/captured-Count/finite-live",
+    "python/captured-FindAllToUtf8/finite",
+    "python/possessive-Search-miss",
+    "python/lookbehind-Search",
+    "python/grouped-Subn",
+    "pcre2/Unicode-Count/finite-live",
+    "pcre2/Unicode-Enumerate/finite",
+    "pcre2/grouped-Replace",
+    "pcre2/literal-Count-control",
+    "control/predecoded-BCL-Count"
+  ]
+}

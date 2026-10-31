@@ -1,0 +1,122 @@
+{
+  "Version": "0.5.0-dev.1",
+  "SourceRevision": "0e24cecebbb9093a18f5cb962dae3b6f6426742c",
+  "Scope": "Windows .NET10/11 immutable NuGet assets, actual copied Awk adapter and matching committed Lython runtime/provider scenarios, including cancellation workers. Public native/funded API probe has no friend/source references. Adoption and POSIX/full-language acceptance remain separate.",
+  "Tests": [
+    {
+      "Fixture": "Awk",
+      "TargetFramework": "net10.0",
+      "Total": 19,
+      "Passed": 19,
+      "TrxSha256": "67DD8221456209C1BD08DF336D150067F257064DE8B2537A423395D32BBCD8A9"
+    },
+    {
+      "Fixture": "Awk",
+      "TargetFramework": "net11.0",
+      "Total": 19,
+      "Passed": 19,
+      "TrxSha256": "8E6205E82B076F4E2D56718EAE534781C6D59265177C4EF52291B4DE751F71F4"
+    },
+    {
+      "Fixture": "Lython",
+      "TargetFramework": "net10.0",
+      "Total": 118,
+      "Passed": 118,
+      "TrxSha256": "1AF90CF1884E9783F555C9593C11A08FF78835A24E0A65BFE7691677E1F80794"
+    },
+    {
+      "Fixture": "Lython",
+      "TargetFramework": "net11.0",
+      "Total": 118,
+      "Passed": 118,
+      "TrxSha256": "B48100803D3D68A91F486173A21D97AFEB5D282C382EC56E1314D192782E5C75"
+    }
+  ],
+  "Assets": [
+    {
+      "Fixture": "Awk",
+      "TargetFramework": "net10.0",
+      "PackageId": "Lokad.Utf8Regex",
+      "Sha256": "905BC24AB4E5E88C19AF8C664DE9EBB57E148E616721DCFD247A221E71752DD9",
+      "RelativePath": "artifacts\\consumer-qualification\\0.5.0-dev.1-windows\\awk\\tests\\bin\\Release\\net10.0\\Lokad.Utf8Regex.dll"
+    },
+    {
+      "Fixture": "Awk",
+      "TargetFramework": "net11.0",
+      "PackageId": "Lokad.Utf8Regex",
+      "Sha256": "39F05ABDBC2F27D03293D800A2A6C92C8DCF2F7029FFCA8FD5FC00DB5032472C",
+      "RelativePath": "artifacts\\consumer-qualification\\0.5.0-dev.1-windows\\awk\\tests\\bin\\Release\\net11.0\\Lokad.Utf8Regex.dll"
+    },
+    {
+      "Fixture": "Lython",
+      "TargetFramework": "net10.0",
+      "PackageId": "Lokad.Utf8Regex",
+      "Sha256": "905BC24AB4E5E88C19AF8C664DE9EBB57E148E616721DCFD247A221E71752DD9",
+      "RelativePath": "artifacts\\consumer-qualification\\0.5.0-dev.1-windows-sourcehost\\lython\\tests\\Lokad.Lython.PublicApi.Tests\\bin\\Release\\net10.0\\Lokad.Utf8Regex.dll"
+    },
+    {
+      "Fixture": "Lython",
+      "TargetFramework": "net10.0",
+      "PackageId": "Lokad.Utf8Regex.PythonRe",
+      "Sha256": "642EE1C09759F68DC78B2AC6919AEAB9AAA9C732EF921BA0560332352E27B720",
+      "RelativePath": "artifacts\\consumer-qualification\\0.5.0-dev.1-windows-sourcehost\\lython\\tests\\Lokad.Lython.PublicApi.Tests\\bin\\Release\\net10.0\\Lokad.Utf8Regex.PythonRe.dll"
+    },
+    {
+      "Fixture": "Lython",
+      "TargetFramework": "net11.0",
+      "PackageId": "Lokad.Utf8Regex",
+      "Sha256": "39F05ABDBC2F27D03293D800A2A6C92C8DCF2F7029FFCA8FD5FC00DB5032472C",
+      "RelativePath": "artifacts\\consumer-qualification\\0.5.0-dev.1-windows-sourcehost\\lython\\tests\\Lokad.Lython.PublicApi.Tests\\bin\\Release\\net11.0\\Lokad.Utf8Regex.dll"
+    },
+    {
+      "Fixture": "Lython",
+      "TargetFramework": "net11.0",
+      "PackageId": "Lokad.Utf8Regex.PythonRe",
+      "Sha256": "7F4B0982CDEE5ABD4D626F09A0D20224071BF84579B2FAC23009F4572D595337",
+      "RelativePath": "artifacts\\consumer-qualification\\0.5.0-dev.1-windows-sourcehost\\lython\\tests\\Lokad.Lython.PublicApi.Tests\\bin\\Release\\net11.0\\Lokad.Utf8Regex.PythonRe.dll"
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "TargetFramework": "net10.0",
+      "PackageId": "Lokad.Utf8Regex",
+      "Sha256": "905BC24AB4E5E88C19AF8C664DE9EBB57E148E616721DCFD247A221E71752DD9",
+      "RelativePath": "artifacts\\consumer-qualification\\0.5.0-dev.1-windows\\producer-apis\\bin\\Release\\net10.0\\Lokad.Utf8Regex.dll"
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "TargetFramework": "net10.0",
+      "PackageId": "Lokad.Utf8Regex.PythonRe",
+      "Sha256": "642EE1C09759F68DC78B2AC6919AEAB9AAA9C732EF921BA0560332352E27B720",
+      "RelativePath": "artifacts\\consumer-qualification\\0.5.0-dev.1-windows\\producer-apis\\bin\\Release\\net10.0\\Lokad.Utf8Regex.PythonRe.dll"
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "TargetFramework": "net10.0",
+      "PackageId": "Lokad.Utf8Regex.Pcre2",
+      "Sha256": "A26876626D686BF1BD4EE63E0295194397B17840DA0D39BB6F49330F39AA33AF",
+      "RelativePath": "artifacts\\consumer-qualification\\0.5.0-dev.1-windows\\producer-apis\\bin\\Release\\net10.0\\Lokad.Utf8Regex.Pcre2.dll"
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "TargetFramework": "net11.0",
+      "PackageId": "Lokad.Utf8Regex",
+      "Sha256": "39F05ABDBC2F27D03293D800A2A6C92C8DCF2F7029FFCA8FD5FC00DB5032472C",
+      "RelativePath": "artifacts\\consumer-qualification\\0.5.0-dev.1-windows\\producer-apis\\bin\\Release\\net11.0\\Lokad.Utf8Regex.dll"
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "TargetFramework": "net11.0",
+      "PackageId": "Lokad.Utf8Regex.PythonRe",
+      "Sha256": "7F4B0982CDEE5ABD4D626F09A0D20224071BF84579B2FAC23009F4572D595337",
+      "RelativePath": "artifacts\\consumer-qualification\\0.5.0-dev.1-windows\\producer-apis\\bin\\Release\\net11.0\\Lokad.Utf8Regex.PythonRe.dll"
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "TargetFramework": "net11.0",
+      "PackageId": "Lokad.Utf8Regex.Pcre2",
+      "Sha256": "FFA48A5963AA1FAEF7C9052C94CB4F966CA7DFCD97AAF647BA22F826DBF4CF72",
+      "RelativePath": "artifacts\\consumer-qualification\\0.5.0-dev.1-windows\\producer-apis\\bin\\Release\\net11.0\\Lokad.Utf8Regex.Pcre2.dll"
+    }
+  ],
+  "CandidateManifestSha256": "985E1A5953203072BC67A2F467D55C5CA96F0478B68DD54EC44D6AE3619C5176"
+}

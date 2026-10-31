@@ -1,0 +1,70 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text.Json;
+
+var root = Path.GetFullPath(args[0]); var preflight = args.Contains("--preflight");
+using var process = Process.GetCurrentProcess(); if (!preflight) process.ProcessorAffinity = (nint)4;
+var contexts = new[] { new VersionContext(Path.Combine(root, "before")), new VersionContext(Path.Combine(root, "after")) };
+var identities = contexts.Select(context => new[] { "Lokad.Utf8Regex", "Lokad.Utf8Regex.PythonRe", "Lokad.Utf8Regex.Pcre2" }.Select(name => {
+    var assembly = context.LoadFromAssemblyName(new AssemblyName(name));
+    return new { Name = name, Version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
+        Sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))) };
+}).ToArray()).ToArray();
+if (identities[0].Any(item => !item.Version.Contains("a40bda03")) || identities[1].Any(item => !item.Version.Contains("0e24cece"))) throw new Exception("Unexpected frozen source");
+var library = Path.Combine(root, "lanes/bin/Release/net11.0/Lanes.dll");
+var lanes = contexts.Select(context => ((string Name, Func<int>? Count, int Expected, Func<object>? Output, Action<object>? Check)[])
+    context.LoadFromAssemblyPath(library).GetType("Lanes")!.GetMethod("Create")!.Invoke(null, [args[1]])!).ToArray();
+for (var index = 0; index < lanes[0].Length; index++) for (var version = 0; version < 2; version++) {
+    var lane = lanes[version][index]; if (lane.Name != lanes[0][index].Name) throw new Exception("Lane mismatch");
+    if (lane.Count is not null) { if (lane.Count() != lane.Expected) throw new Exception("Count mismatch " + lane.Name); }
+    else lane.Check!(lane.Output!());
+}
+if (preflight) { Console.WriteLine(JsonSerializer.Serialize(new { Passed = true, Identities = identities, Cases = lanes[0].Select(lane => lane.Name) }, new JsonSerializerOptions { WriteIndented = true })); return; }
+var clock = Stopwatch.StartNew(); var rows = new List<object>();
+for (var index = 0; index < lanes[0].Length; index++) {
+    if (clock.Elapsed.TotalSeconds > 115) throw new Exception("Comparison 120s cap approaching");
+    var counts = new int[2]; var warms = new long[2];
+    for (var version = 0; version < 2; version++) {
+        var lane = lanes[version][index]; var warm = Stopwatch.StartNew();
+        do { if (lane.Count is not null) { if (lane.Count() != lane.Expected) throw new Exception("Warm count"); } else lane.Check!(lane.Output!()); warms[version]++; }
+        while (warm.Elapsed.TotalMilliseconds < 1500 || warms[version] < 1000);
+        counts[version] = 1;
+        while (Measure(counts[version], lane.Count, lane.Expected, lane.Output, lane.Check).Milliseconds < 60) counts[version] = checked(counts[version] * 2);
+    }
+    var timings = new[] { new double[5], new double[5] }; var allocations = new[] { new double[5], new double[5] }; var durations = new[] { new double[5], new double[5] };
+    for (var sample = 0; sample < 5; sample++) for (var position = 0; position < 2; position++) {
+        var version = sample % 2 == 0 ? position : 1 - position; var lane = lanes[version][index];
+        GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        var result = Measure(counts[version], lane.Count, lane.Expected, lane.Output, lane.Check);
+        if (result.Milliseconds < 20) throw new Exception("Sample below20ms");
+        timings[version][sample] = result.Milliseconds * 1000 / counts[version];
+        allocations[version][sample] = (double)result.Bytes / counts[version]; durations[version][sample] = result.Milliseconds;
+    }
+    rows.Add(new { Name = lanes[0][index].Name, Iterations = counts, WarmupCalls = warms, Microseconds = timings, AllocatedBytes = allocations, ElapsedMilliseconds = durations });
+    Console.Error.WriteLine(lanes[0][index].Name + ": " + string.Join(" / ", timings.Select(values => values.Order().ElementAt(2))));
+}
+Console.WriteLine(JsonSerializer.Serialize(new { Scope = "Fixed a40bda03 ->0e24cece cumulative public operations. Setup/compile excluded. Existing APIs only; new funded APIs have no baseline and retain their separate feature-cost receipts. Both versions use the same typed lane IL in isolated contexts. Counts or full object results are retained in preallocated batches and checked after timing. No per-call Count boxing. Unicode enumeration consumes coordinate checksums inside the public cursor driver. Warm1.5s/min1000calls/lane, independent60ms calibration,5alternating samples,each>=20ms. One120s run, at most one selected noise confirmation. Not a catalog/overall parity claim.",
+    Runtime = RuntimeInformation.FrameworkDescription, OS = RuntimeInformation.OSDescription, AffinityMask = "4", ElapsedSeconds = clock.Elapsed.TotalSeconds, Identities = identities,
+    CorpusSha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(args[1]))), Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds, long Bytes) Measure(int count, Func<int>? integer, int expected, Func<object>? output, Action<object>? check) {
+    if (integer is not null) {
+        var values = new int[count]; var bytes = GC.GetAllocatedBytesForCurrentThread(); var stamp = Stopwatch.GetTimestamp();
+        for (var i = 0; i < count; i++) values[i] = integer();
+        var elapsed = Stopwatch.GetElapsedTime(stamp).TotalMilliseconds; bytes = GC.GetAllocatedBytesForCurrentThread() - bytes;
+        foreach (var value in values) if (value != expected) throw new Exception("Timed count mismatch"); GC.KeepAlive(values); return (elapsed, bytes);
+    } else {
+        var values = new object[count]; var bytes = GC.GetAllocatedBytesForCurrentThread(); var stamp = Stopwatch.GetTimestamp();
+        for (var i = 0; i < count; i++) values[i] = output!();
+        var elapsed = Stopwatch.GetElapsedTime(stamp).TotalMilliseconds; bytes = GC.GetAllocatedBytesForCurrentThread() - bytes;
+        foreach (var value in values) check!(value); GC.KeepAlive(values); return (elapsed, bytes);
+    }
+}
+sealed class VersionContext(string root) : AssemblyLoadContext {
+    protected override Assembly? Load(AssemblyName name) { var path = Path.Combine(root, name.Name + ".dll"); return File.Exists(path) ? LoadFromAssemblyPath(path) : null; }
+}
