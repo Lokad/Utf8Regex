@@ -85,6 +85,12 @@ and each group's last completed capture. Unsupported grammar fails before planni
 Nullable cycles and zero-width repeats must terminate without bound-sized
 expansion. This mode does not expose ordinary backtracking capture history.
 
+Viability preparation charges each instruction cell and checks the same absolute
+deadline periodically inside that bounded work, then directly before publishing
+the table. Scalar passes and preallocation checks also remain in scope. Every
+charge checks the original token; working admission covers scalar
+boundaries and packed rows before their allocation.
+
 ### Native pattern metadata
 
 `CaptureGroupCount` counts defined capture slots excluding group zero. Sparse

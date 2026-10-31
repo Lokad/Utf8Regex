@@ -130,7 +130,9 @@ internal sealed class Utf8NonBacktrackingSearchState
                 if (boundary > 0) _ = Rune.DecodeFromUtf8(input[boundaries[boundary - 1]..], out before, out _);
                 foreach (var pc in program.NonBacktrackingEpsilonOrder)
                 {
-                    breach = invocation.TryChargeInputStep();
+                    // Each cell is bounded VM work: keep its exact charge and
+                    // the normal instruction deadline cadence.
+                    breach = invocation.TryChargeStep();
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     var instruction = program.Instructions[pc];
                     bool viable;
@@ -183,6 +185,7 @@ internal sealed class Utf8NonBacktrackingSearchState
                 if (singleWord) bits[boundary] = current;
             }
             invocation.Budget.ThrowIfCancellationRequested();
+            invocation.Budget.CheckDeadline();
             state = result;
             published = true;
             return Utf8ExecutionLimitKind.None;
