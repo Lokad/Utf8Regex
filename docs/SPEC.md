@@ -215,12 +215,14 @@ avoid capture workspace; a declined shortcut retains its spent work when scalar
 execution resumes.
 
 On fully validated ASCII subjects of at most 2048 bytes, a proved zero-origin
-contiguous operator prefix can publish its value-Match range through the existing
+operator or quoted-string prefix can publish its value-Match range through the existing
 bounded prefix helper. The original invocation meters discovery and publication,
 including cancellation/deadline checks. Wider or mixed subjects, nonzero origins,
 RTL/NonBacktracking and detailed captures retain their existing paths. A tight
 working/result limit can therefore admit the range without VM capture workspace;
-this changes route-dependent resource cost, not matching semantics.
+this changes route-dependent resource cost, not matching semantics. Quoted-string
+value matching does not materialize captures; detailed matching keeps all scalar
+capture histories and escape/newline semantics.
 
 A complete greedy star excluding one ASCII scalar (for example `[^\n]*`) can
 use zero-origin span Count by searching for that byte after strict whole-subject UTF-8 validation.

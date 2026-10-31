@@ -1964,7 +1964,7 @@ public sealed partial class Utf8Regex
             (queryWhole || colorWhole || referenceWhole || !program.IgnoreCase &&
                 _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredTrimmedOptionalLiteralPrefixTail or
                     Utf8FallbackDirectFamilyKind.AnchoredNumberPrefix or Utf8FallbackDirectFamilyKind.AnchoredPrefixUntilByte or
-                    Utf8FallbackDirectFamilyKind.AnchoredOperatorRun))
+                    Utf8FallbackDirectFamilyKind.AnchoredOperatorRun or Utf8FallbackDirectFamilyKind.AnchoredQuotedStringPrefix))
         {
             bool found; int length; Utf8ExecutionLimitKind breach;
             if (queryWhole)
