@@ -250,6 +250,15 @@ scalars. This constant-space route needs no capture workspace or nesting records
 tight working/depth/result limits can therefore admit it. RTL, NonBacktracking,
 ECMAScript, case-folded and compound expressions retain their owned routes.
 
+A complete greedy set repeat with a positive minimum (for example
+`[A-Za-z]{8,13}`) can Count scalar runs without VM repeat/capture arrays. Full
+strict validation, one work charge per examined scalar and final publication
+checks remain. Complemented/folded sets retain scalar membership; positive
+unfolded sets can use their existing ASCII mask. Tight working/depth/result
+limits can admit this constant-space route. Captured, lazy, nullable, trailing,
+RTL and NonBacktracking shapes retain their existing paths. Matching semantics
+are unchanged; route-dependent workspace/depth and work charges can decrease.
+
 Bounded literal assertions can avoid child VM storage while still admitting
 their logical assertion depth under the original work, token and deadline scope.
 

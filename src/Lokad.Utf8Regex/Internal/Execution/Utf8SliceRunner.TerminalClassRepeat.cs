@@ -17,7 +17,7 @@ internal static partial class Utf8SliceRunner
             instructions[2].Kind != Utf8SliceInstructionKind.RepeatEnd || instructions[2].A != 0 ||
             instructions[3].Kind != Utf8SliceInstructionKind.RepeatExit || instructions[3].A != 0 ||
             instructions[4].Kind != Utf8SliceInstructionKind.Accept ||
-            atom.Kind is not (Utf8SliceInstructionKind.Shorthand or
+            atom.Kind is not (Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Shorthand or
                 Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid))
             return false;
         // Keep each fused base step bounded. A nested class program retains its
@@ -38,6 +38,8 @@ internal static partial class Utf8SliceRunner
         if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
         var repeat = program.Instructions[0];
         var atom = program.Instructions[1];
+        ReadOnlySpan<byte> asciiMask = atom.Kind == Utf8SliceInstructionKind.Set && atom.B == 0 && atom.C == 0
+            ? program.SetMasks[atom.A] : [];
         var minimum = repeat.RepeatMinimum;
         var maximum = repeat.RepeatMaximum;
         var position = start;
@@ -47,9 +49,23 @@ internal static partial class Utf8SliceRunner
         {
             breach = invocation.TryChargeStep();
             if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
-            if (!TryReadScalar(input, position, false, out var scalar, out var width)) break;
-            breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var hit);
-            if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
+            bool hit;
+            int width;
+            if (!asciiMask.IsEmpty && input[position] < 128)
+            {
+                // Same positive ASCII predicate as RunClassRepeat, with the
+                // original per-scalar charge. Wider/folded/complemented masks
+                // retain full scalar decoding and membership semantics.
+                var value = input[position];
+                hit = (asciiMask[value >> 3] & (1 << (value & 7))) != 0;
+                width = 1;
+            }
+            else
+            {
+                if (!TryReadScalar(input, position, false, out var scalar, out width)) break;
+                breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out hit);
+                if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
+            }
             if (hit)
             {
                 position += width;
