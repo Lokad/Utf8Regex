@@ -1,0 +1,1 @@
+Initial metadata-only probe was launched outside its corpus directory and failed before measuring anything. The same DLL was launched beside the staged/canonical data; no performance run repeated.

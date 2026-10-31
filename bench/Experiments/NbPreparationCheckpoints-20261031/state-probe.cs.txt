@@ -1,0 +1,29 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Internal.Execution;
+var cases = new[] {
+    ("region", @"^\s*///(?<title>#.*)$", " \n///#Title\n///not\n \r\n///#x\n", RegexOptions.Multiline),
+    ("unicode", @"\b(?<g>a+)|(?<last>b)$", "aaa é 😀 aa ab b", RegexOptions.None),
+    ("wide", "(?<x>"+new string('a',70)+")|(?<last>b)$", "é"+new string('a',70)+" 😀x b", RegexOptions.None),
+    ("last-cell", new string('a',62), "", RegexOptions.None),
+    ("long-empty-row", string.Concat(Enumerable.Repeat("a?",2048)), "", RegexOptions.None)
+};
+foreach(var (name,pattern,text,options) in cases) {
+    var regex=new Utf8Regex(pattern,options|RegexOptions.NonBacktracking);
+    var program=regex.Inspection.AvailableOwnedSliceProgram!;
+    var input=Encoding.UTF8.GetBytes(text);
+    var invocation=new Utf8SliceInvocation(new(1_000_000_000,0,16UL<<20),Timeout.InfiniteTimeSpan,default);
+    if(!invocation.Ledger.TryReserve(13)) throw new Exception("loan");
+    var breach=Utf8NonBacktrackingSearchState.TryCreate(program,input,ref invocation,out var table);
+    if(breach!=Utf8ExecutionLimitKind.None || table is null) throw new Exception("preparation");
+    var bytes=new List<byte>();
+    for(var boundary=0;boundary<=text.EnumerateRunes().Count();boundary++)
+        for(var pc=0;pc<program.Instructions.Length;pc++) bytes.Add(table.CanMatch(boundary,pc)?(byte)1:(byte)0);
+    var held=invocation.Ledger.ReservedBytes;
+    table.Release(ref invocation);
+    Console.WriteLine(JsonSerializer.Serialize(new { Name=name,States=program.Instructions.Length,Steps=invocation.Budget.Steps,HeldBytes=held,RemainingBytes=invocation.Ledger.ReservedBytes,
+        ViabilitySha256=Convert.ToHexString(SHA256.HashData(bytes.ToArray())) }));
+}

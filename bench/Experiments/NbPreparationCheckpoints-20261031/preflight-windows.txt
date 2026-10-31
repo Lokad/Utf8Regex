@@ -1,0 +1,11 @@
+Preflight region-ordinary: 10
+Preflight region-compiled: 10
+Preflight region-live: 10
+Preflight region-finite-live: 10
+Preflight region-deadline-live: 10
+Preflight unicode-nb: 1537
+Preflight unicode-nb-deadline-live: 1537
+Preflight wide-nb: 65
+Preflight nullable-nb: 257
+Preflight non-nb-scalar-control: 384
+Preflight literal-control: 1

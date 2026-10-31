@@ -1,0 +1,12 @@
+using System.Reflection;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+var root=Path.GetFullPath(args[0]);
+AssemblyLoadContext.Default.Resolving+=(_,name)=>File.Exists(Path.Combine(root,name.Name+".dll"))?AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(root,name.Name+".dll")):null;
+var type=AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(root,"Lokad.Utf8Regex.Benchmarks.dll")).GetType("Lokad.Utf8Regex.Benchmarks.ReplicaCountBenchmarkCase")!;
+var context=type.GetMethod("Resolve",BindingFlags.Public|BindingFlags.Static)!.Invoke(null,["lokad/folding/region-marker"])!;
+var input=(byte[])type.GetProperty("InputBytes")!.GetValue(context)!;
+var text=Encoding.UTF8.GetString(input); var normalized=Encoding.UTF8.GetBytes(text.Replace("\r\n","\n"));
+Console.WriteLine(JsonSerializer.Serialize(new { Bytes=input.Length,Sha256=Convert.ToHexString(SHA256.HashData(input)),Crlf=text.Split("\r\n").Length-1,LfBytes=normalized.Length,LfSha256=Convert.ToHexString(SHA256.HashData(normalized)) }));

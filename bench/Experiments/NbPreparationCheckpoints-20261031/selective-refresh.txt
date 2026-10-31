@@ -1,0 +1,33 @@
+Measuring README benchmark case: lokad/folding/region-marker (requested=5, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=9;ElapsedMicroseconds=71461.900
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=6;ElapsedMicroseconds=34923.000
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=991;ElapsedMicroseconds=36551.800
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=1005;ElapsedMicroseconds=36917.000
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=810;ElapsedMicroseconds=64195.100
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=605;ElapsedMicroseconds=50635.800
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=9;ElapsedMicroseconds=71322.600
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=6;ElapsedMicroseconds=46825.800
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=991;ElapsedMicroseconds=49060.200
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=1005;ElapsedMicroseconds=44173.700
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=810;ElapsedMicroseconds=64996.900
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=605;ElapsedMicroseconds=49964.500
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=9;ElapsedMicroseconds=71419.000
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=6;ElapsedMicroseconds=47172.500
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=991;ElapsedMicroseconds=51018.700
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=1005;ElapsedMicroseconds=51942.900
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=810;ElapsedMicroseconds=69071.200
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=605;ElapsedMicroseconds=50366.500
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=9;ElapsedMicroseconds=72526.000
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=6;ElapsedMicroseconds=48456.800
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=991;ElapsedMicroseconds=52703.000
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=1005;ElapsedMicroseconds=49825.000
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=810;ElapsedMicroseconds=68236.800
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=605;ElapsedMicroseconds=50511.100
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=9;ElapsedMicroseconds=71834.000
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=6;ElapsedMicroseconds=47187.500
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=991;ElapsedMicroseconds=51215.100
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=1005;ElapsedMicroseconds=51503.700
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=810;ElapsedMicroseconds=68913.400
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=605;ElapsedMicroseconds=50108.800
+Updated README case: lokad/folding/region-marker
+Verified README.Parity.json against README.Benchmarks.json.

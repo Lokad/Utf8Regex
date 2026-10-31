@@ -289,7 +289,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 
 | Case | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `lokad/folding/region-marker` | 5,329.290 us | 36.539 us | 61.095 us | 145.85x |
+| `lokad/folding/region-marker` | 7,940.211 us | 51.482 us | 84.243 us | 154.23x |
 | `lokad/imports/module-imports` | 51.202 us | 9.069 us | 39.502 us | 5.65x |
 | `lokad/lexer/identifier` | 47.471 us | 32.767 us | 38.789 us | 1.45x |
 | `lokad/langserv/helper-identifier` | 10.136 us | 7.172 us | 7.914 us | 1.41x |
@@ -340,7 +340,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 
 | Case | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `lokad/folding/region-marker` | 5,316.170 us | 36.834 us | 60.794 us | 144.33x |
+| `lokad/folding/region-marker` | 7,862.083 us | 49.577 us | 83.250 us | 158.58x |
 | `structural/keyword-family-to-capitalized-identifier` | 75.252 us | 7.756 us | 19.226 us | 9.70x |
 | `lokad/imports/module-imports` | 51.139 us | 5.473 us | 30.611 us | 9.34x |
 | `lokad/lexer/operator-run` | 6.794 us | 2.793 us | 3.806 us | 2.43x |
