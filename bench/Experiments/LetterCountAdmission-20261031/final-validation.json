@@ -1,0 +1,6 @@
+{
+  "AcceptedCommit": "9a79aefc17bc00c92436e9b8314dbbd73c4e1b8b",
+  "FinalTestSha256": "E00DB9E93EFE16E7E3B543F9A3EFF5E8E91126CA8E385ECDC478957A70F2DFDA",
+  "TimedDllUnchangedAfterFinalTests": true,
+  "Validation": "Initial capture fixture corrected to MatchDetailed/GetGroup. Timed patch has initial 474 tests; four new block-tail theories produce final 478 tests/runtime without changing production DLL. Python164/runtime and PCRE2174/runtime include final ownership coordination."
+}

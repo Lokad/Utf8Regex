@@ -1,0 +1,150 @@
+{
+  "ElapsedSeconds": 77.0712423,
+  "Confirmation": "None",
+  "Rows": [
+    {
+      "Name": "letters-ordinary",
+      "BeforeUs": 43816.8,
+      "AfterUs": 2145.6062500000003,
+      "ChangePercent": -95.10323380529843,
+      "BeforeSpread": 1.5640340710361904,
+      "AfterSpread": 1.2260167298233635,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "PairedChangePercent": [
+        -96.58778818699167,
+        -95.09829482565027,
+        -96.4024536101628,
+        -95.65427102161728,
+        -94.92614255930542
+      ],
+      "MinimumSampleMs": 60.9331
+    },
+    {
+      "Name": "letters-compiled",
+      "BeforeUs": 68403.5,
+      "AfterUs": 2329.75625,
+      "ChangePercent": -96.59409788972786,
+      "BeforeSpread": 1.0119846793185463,
+      "AfterSpread": 1.0011515171036525,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "PairedChangePercent": [
+        -96.6226913669513,
+        -96.59489280519271,
+        -96.59544670074499,
+        -96.58168842766521,
+        -96.58642604252948
+      ],
+      "MinimumSampleMs": 68.1954
+    },
+    {
+      "Name": "letters-finite-live",
+      "BeforeUs": 46674.6,
+      "AfterUs": 1906.6499999999999,
+      "ChangePercent": -95.91501587587253,
+      "BeforeSpread": 1.5594062819148247,
+      "AfterSpread": 1.2305822054989721,
+      "BeforeBytes": 120,
+      "AfterBytes": 120,
+      "PairedChangePercent": [
+        -96.76349046853865,
+        -95.88439480873728,
+        -95.9060868146214,
+        -95.93609748947284,
+        -95.92168438508311
+      ],
+      "MinimumSampleMs": 46.4126
+    },
+    {
+      "Name": "letters-deadline-live",
+      "BeforeUs": 76989.59999999999,
+      "AfterUs": 2320.878125,
+      "ChangePercent": -96.98546540701601,
+      "BeforeSpread": 1.011629457719086,
+      "AfterSpread": 1.0040163298356894,
+      "BeforeBytes": 168,
+      "AfterBytes": 168,
+      "PairedChangePercent": [
+        -96.9952329300218,
+        -96.99439221568905,
+        -96.98546540701601,
+        -96.97184813519432,
+        -96.99030447285902
+      ],
+      "MinimumSampleMs": 74.0975
+    },
+    {
+      "Name": "mixed-letters",
+      "BeforeUs": 1166.2796875000001,
+      "AfterUs": 64.63095703125,
+      "ChangePercent": -94.45836554267777,
+      "BeforeSpread": 1.5360453424649152,
+      "AfterSpread": 1.262186081780011,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "PairedChangePercent": [
+        -94.39697241093809,
+        -94.49238059704466,
+        -94.49070158497602,
+        -93.24214838276774,
+        -93.25037265866503
+      ],
+      "MinimumSampleMs": 49.0313
+    },
+    {
+      "Name": "category-shared-control",
+      "BeforeUs": 122.11044921875,
+      "AfterUs": 120.470703125,
+      "ChangePercent": -1.342838474709518,
+      "BeforeSpread": 1.2162187603403227,
+      "AfterSpread": 1.2384723349665854,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "PairedChangePercent": [
+        1.7588616862775464,
+        -2.7363227024541414,
+        -3.5561528472598525,
+        -1.531951469470061,
+        -2.3114780908769395
+      ],
+      "MinimumSampleMs": 51.3699
+    },
+    {
+      "Name": "scalar-control",
+      "BeforeUs": 4.877917480468749,
+      "AfterUs": 4.898028564453125,
+      "ChangePercent": 0.4122883190398552,
+      "BeforeSpread": 1.313489725734254,
+      "AfterSpread": 1.2481815851249392,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "PairedChangePercent": [
+        0.16817470028147596,
+        -0.024274335020835203,
+        0.4190734085471659,
+        -4.812296109452097,
+        -18.30303227966308
+      ],
+      "MinimumSampleMs": 52.6333
+    },
+    {
+      "Name": "literal-control",
+      "BeforeUs": 0.4360382080078125,
+      "AfterUs": 0.4233390808105469,
+      "ChangePercent": -2.912388631098606,
+      "BeforeSpread": 1.1806455858939013,
+      "AfterSpread": 1.2614298128896628,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "PairedChangePercent": [
+        6.851817206476962,
+        7.592089391035306,
+        -2.9531568228105987,
+        -1.375741052038315,
+        -6.460283731581928
+      ],
+      "MinimumSampleMs": 89.7689
+    }
+  ]
+}

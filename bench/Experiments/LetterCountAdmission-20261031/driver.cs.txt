@@ -1,0 +1,88 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+var root = Path.GetFullPath(args[0]); var afterRoot = Path.Combine(root, "after");
+var preflight = args.Contains("--preflight");
+AssemblyLoadContext.Default.Resolving += (_, name) => File.Exists(Path.Combine(afterRoot, name.Name + ".dll"))
+    ? AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(afterRoot, name.Name + ".dll")) : null;
+var assemblies = new[] { "before", "after" }.Select(name => new AssemblyLoadContext(name).LoadFromAssemblyPath(Path.Combine(root, name, "Lokad.Utf8Regex.dll"))).ToArray();
+var identities = assemblies.Select(assembly => new { Version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
+    Sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))) }).ToArray();
+if (identities[0].Sha256 == identities[1].Sha256 || !identities[0].Version.Contains("4c1b3183") || !identities[1].Version.Contains("f92441ab")) throw new Exception("Unexpected frozen source");
+var contextType = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(afterRoot, "Lokad.Utf8Regex.Benchmarks.dll"))
+    .GetType("Lokad.Utf8Regex.Benchmarks.LokadPublicBenchmarkContext")!;
+var context = Activator.CreateInstance(contextType, ["industry/rust-sherlock-letter-count"])!;
+T Get<T>(string name) => (T)contextType.GetProperty(name)!.GetValue(context)!;
+using var process = Process.GetCurrentProcess(); if (!preflight) process.ProcessorAffinity = (nint)4;
+using var live = new CancellationTokenSource(); var clock = Stopwatch.StartNew(); var rows = new List<object>();
+var cases = new[] {
+    new Case("letters-ordinary"), new Case("letters-compiled", Compiled: true),
+    new Case("letters-finite-live", Compiled: true, Finite: true, Live: true),
+    new Case("letters-deadline-live", Compiled: true, Live: true, Deadline: true),
+    new Case("mixed-letters", Pattern: @"\p{L}", Text: string.Concat(Enumerable.Repeat("aé中 😀 éx ", 1024))),
+    new Case("category-shared-control", Pattern: @"\p{Sm}", Text: string.Concat(Enumerable.Repeat("aé中 ∑+ 😀 éx ", 1024))),
+    new Case("scalar-control", Pattern: "(?<v>[a-z]{2,3})", Text: string.Concat(Enumerable.Repeat("ab cde fg ", 128))),
+    new Case("literal-control", Pattern: "needle", Text: new string('x', 8192) + "needle")
+};
+foreach (var item in cases) {
+    var pattern = item.Pattern ?? Get<string>("Pattern"); var input = item.Text is null ? Get<byte[]>("InputBytes") : Encoding.UTF8.GetBytes(item.Text);
+    var text = Encoding.UTF8.GetString(input);
+    var options = Get<RegexOptions>("Options") | (item.Compiled ? RegexOptions.Compiled : 0);
+    var oracle = new Regex(pattern, options); var expected = oracle.Count(text); var actions = new List<Func<int>>();
+    foreach (var assembly in assemblies) {
+        var type = assembly.GetType("Lokad.Utf8Regex.Utf8Regex")!; var policyType = assembly.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!;
+        var policy = Activator.CreateInstance(policyType)!;
+        if (item.Finite) foreach (var (name, number) in new[] { ("MaxWorkSteps", 1_000_000_000UL), ("MaxDepth", 4096UL), ("MaxWorkingBytes", 16UL << 20), ("MaxResultBytes", 16UL << 20) }) {
+            var property = policyType.GetProperty(name)!; property.SetValue(policy, Convert.ChangeType(number, Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType));
+        }
+        var owner = type.GetConstructor([typeof(string), typeof(RegexOptions), typeof(TimeSpan), policyType])!
+            .Invoke([pattern, options, item.Deadline ? TimeSpan.FromSeconds(5) : Timeout.InfiniteTimeSpan, policy]);
+        if (item.Live) {
+            var count = type.GetMethod("Count", [typeof(ReadOnlySpan<byte>), typeof(CancellationToken)])!.CreateDelegate<TokenCount>(owner);
+            actions.Add(() => count(input, live.Token));
+        } else {
+            var count = type.GetMethod("Count", [typeof(ReadOnlySpan<byte>)])!.CreateDelegate<SpanCount>(owner);
+            actions.Add(() => count(input));
+        }
+    }
+    actions.Add(() => oracle.Count(text)); actions.Add(() => oracle.Count(Encoding.UTF8.GetString(input)));
+    foreach (var action in actions) if (action() != expected) throw new Exception("Public preflight mismatch " + item.Name);
+    if (preflight) { Console.Error.WriteLine("Preflight " + item.Name + ": " + expected + ", bytes=" + input.Length + ", sha256=" + Convert.ToHexString(SHA256.HashData(input))); continue; }
+    var iterations = new int[4]; var warmCalls = new long[4];
+    for (var lane = 0; lane < 4; lane++) {
+        var warm = Stopwatch.StartNew(); do { if (actions[lane]() != expected) throw new Exception("Warm result"); warmCalls[lane]++; } while (warm.Elapsed.TotalMilliseconds < 1500 || warmCalls[lane] < 64);
+        iterations[lane] = 1; while (Measure(iterations[lane], actions[lane], expected).Milliseconds < 60) iterations[lane] = checked(iterations[lane] * 2);
+    }
+    var times = Enumerable.Range(0, 4).Select(_ => new double[5]).ToArray(); var allocation = Enumerable.Range(0, 4).Select(_ => new double[5]).ToArray(); var durations = Enumerable.Range(0, 4).Select(_ => new double[5]).ToArray();
+    for (var sample = 0; sample < 5; sample++) for (var position = 0; position < 4; position++) {
+        var lane = sample % 2 == 0 ? position : 3 - position; GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        var result = Measure(iterations[lane], actions[lane], expected); if (result.Milliseconds < 20) throw new Exception("Sample below20ms");
+        times[lane][sample] = result.Milliseconds * 1000 / iterations[lane]; allocation[lane][sample] = (double)result.Bytes / iterations[lane]; durations[lane][sample] = result.Milliseconds;
+    }
+    rows.Add(new { item.Name, item.Finite, item.Live, item.Deadline, Pattern = pattern, Options = options.ToString(), InputBytes = input.Length,
+        InputSha256 = Convert.ToHexString(SHA256.HashData(input)), Expected = expected, Iterations = iterations, WarmupCalls = warmCalls,
+        Microseconds = times, AllocatedBytes = allocation, ElapsedMilliseconds = durations });
+    Console.Error.WriteLine(item.Name + ": " + string.Join(" / ", times.Select(values => values.Order().ElementAt(2))));
+}
+Console.WriteLine(JsonSerializer.Serialize(new { Runtime = RuntimeInformation.FrameworkDescription, AffinityMask = "4", ElapsedSeconds = clock.Elapsed.TotalSeconds, Identities = identities,
+    Scope = "Whole-pattern letter Count shares the existing category counter 4096-byte scalar-ended admission and owned letter primitive. Strict full validation, original-token/direct deadline/publication and meaningful finite work remain. Eight equal-result public Count cases: actual Rust Sherlock ordinary/compiled/finite-live/deadline-live, mixed letters, category shared-envelope control, unchanged scalar/literal controls. Finite work1B/depth4096/working16MiB/result16MiB; deadline5seconds. Warm1.5s/min64calls, independent60ms calibration, five alternating samples each>=20ms; result batches consumed after timing. Construction excluded; no new proof/matcher/field/policy/mode or unchecked access. One120s cap, at most one selected confirmation; no package/fullcatalog campaign.",
+    LaneNames = new[] { "Before", "After", "PredecodedRegex", "DecodeThenRegex" }, Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds, long Bytes) Measure(int count, Func<int> action, int expected) {
+    var values = new int[count]; var before = GC.GetAllocatedBytesForCurrentThread(); var start = Stopwatch.GetTimestamp();
+    for (var i = 0; i < count; i++) values[i] = action();
+    var elapsed = Stopwatch.GetElapsedTime(start); var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+    foreach (var value in values) if (value != expected) throw new Exception("Timed result mismatch");
+    GC.KeepAlive(values); return (elapsed.TotalMilliseconds, bytes);
+}
+sealed record Case(string Name, bool Compiled = false, bool Finite = false, bool Live = false, bool Deadline = false, string? Pattern = null, string? Text = null);
+delegate int SpanCount(ReadOnlySpan<byte> input);
+delegate int TokenCount(ReadOnlySpan<byte> input, CancellationToken token);

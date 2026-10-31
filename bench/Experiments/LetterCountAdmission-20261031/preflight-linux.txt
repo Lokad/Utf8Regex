@@ -1,0 +1,31 @@
+Preflight letters-ordinary: 447160, bytes=594930, sha256=9C87F6C7316C6690EC5F9697D6F3D2B0DD6011C7D51F4A4A72881D00BFBF03B1
+Preflight letters-compiled: 447160, bytes=594930, sha256=9C87F6C7316C6690EC5F9697D6F3D2B0DD6011C7D51F4A4A72881D00BFBF03B1
+Preflight letters-finite-live: 447160, bytes=594930, sha256=9C87F6C7316C6690EC5F9697D6F3D2B0DD6011C7D51F4A4A72881D00BFBF03B1
+Preflight letters-deadline-live: 447160, bytes=594930, sha256=9C87F6C7316C6690EC5F9697D6F3D2B0DD6011C7D51F4A4A72881D00BFBF03B1
+Preflight mixed-letters: 5120, bytes=17408, sha256=33EBBC8EF38E4B8689E57A7BDFCF51C692582321683FAA69778D3D7D4076605E
+Preflight category-shared-control: 2048, bytes=22528, sha256=3060113E595D6E83A3F146C0DC85686EAC487876BAFFF6517859E29A8B569E79
+Preflight scalar-control: 384, bytes=1280, sha256=5EC68CA8663FDA6C80D37371E2CCC88F2029517AC58FCC9408830758B9D7C8BC
+Preflight literal-control: 1, bytes=8198, sha256=8DA47E1CAE661B34F429302D624E9EA43B01F9729C6A36BB3E1D2297395FF58B
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "AffinityMask": "4",
+  "ElapsedSeconds": 1.043042,
+  "Identities": [
+    {
+      "Version": "0.5.0-dev.1\u002B4c1b31839c82c814a6990d02ce03908a7008bd63",
+      "Sha256": "430F858DBC91EB8D2C3D0D6192D376E161D3106E502DD351DB1AC9BCB19BEBDF"
+    },
+    {
+      "Version": "0.5.0-dev.1\u002Bf92441abbbc0efba4d76f0289987ec969679fe15",
+      "Sha256": "DE0F227BE3FE20F1FA83CD9648FC8E705C2EF17D518AA6C29A8416AC8C9534C4"
+    }
+  ],
+  "Scope": "Whole-pattern letter Count shares the existing category counter 4096-byte scalar-ended admission and owned letter primitive. Strict full validation, original-token/direct deadline/publication and meaningful finite work remain. Eight equal-result public Count cases: actual Rust Sherlock ordinary/compiled/finite-live/deadline-live, mixed letters, category shared-envelope control, unchanged scalar/literal controls. Finite work1B/depth4096/working16MiB/result16MiB; deadline5seconds. Warm1.5s/min64calls, independent60ms calibration, five alternating samples each\u003E=20ms; result batches consumed after timing. Construction excluded; no new proof/matcher/field/policy/mode or unchecked access. One120s cap, at most one selected confirmation; no package/fullcatalog campaign.",
+  "LaneNames": [
+    "Before",
+    "After",
+    "PredecodedRegex",
+    "DecodeThenRegex"
+  ],
+  "Rows": []
+}

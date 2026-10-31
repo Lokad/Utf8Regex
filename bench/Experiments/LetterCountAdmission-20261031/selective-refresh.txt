@@ -1,0 +1,33 @@
+Measuring README benchmark case: industry/rust-sherlock-letter-count (requested=5, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=24;ElapsedMicroseconds=51305.900
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=19;ElapsedMicroseconds=40634.200
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=5;ElapsedMicroseconds=99110.300
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=5;ElapsedMicroseconds=125664.000
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=5;ElapsedMicroseconds=148363.700
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=5;ElapsedMicroseconds=129819.900
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=24;ElapsedMicroseconds=61024.100
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=19;ElapsedMicroseconds=42043.900
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=5;ElapsedMicroseconds=139734.300
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=5;ElapsedMicroseconds=122281.100
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=5;ElapsedMicroseconds=145250.000
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=5;ElapsedMicroseconds=129467.100
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=24;ElapsedMicroseconds=60000.400
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=19;ElapsedMicroseconds=49553.100
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=5;ElapsedMicroseconds=122232.700
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=5;ElapsedMicroseconds=96247.700
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=5;ElapsedMicroseconds=138290.900
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=5;ElapsedMicroseconds=126040.100
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=24;ElapsedMicroseconds=51390.600
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=19;ElapsedMicroseconds=40779.500
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=5;ElapsedMicroseconds=94071.200
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=5;ElapsedMicroseconds=91486.900
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=5;ElapsedMicroseconds=111541.100
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=5;ElapsedMicroseconds=93996.100
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=24;ElapsedMicroseconds=51303.400
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=19;ElapsedMicroseconds=40537.200
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=5;ElapsedMicroseconds=93715.700
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=5;ElapsedMicroseconds=90644.200
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=5;ElapsedMicroseconds=96872.000
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=5;ElapsedMicroseconds=93260.700
+Updated README case: industry/rust-sherlock-letter-count
+Verified README.Parity.json against README.Benchmarks.json.
