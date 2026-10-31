@@ -1,0 +1,86 @@
+CaseId                    : literal/sherlock-zh
+Origin                    : DotNetPerformance
+InputBytes                : 813478
+ThrowIfInvalidMode        : ValidationCore
+First256                  : bytes=256, ascii=13, firstNonAscii=0, leads2=0, leads3=81, leads4=0
+First4096                 : bytes=4096, ascii=627, firstNonAscii=0, leads2=2, leads3=1155, leads4=0
+InitialWideMode           : True
+ScalarCount               : 339698
+FirstNonAsciiOffset       : 0
+FirstTwoByteOffset        : 1152
+FirstSafeThreeByteOffset  : 0
+FirstConstrained3Offset   : -1
+FirstFourByteOffset       : -1
+Cross32ByteScalars        : 14813
+Scalar[Ascii            ]: count=102638, bytes=102638, runs=36716, maxRunScalars=276, maxRunBytes=276
+Scalar[TwoByte          ]: count=340, bytes=680, runs=331, maxRunScalars=3, maxRunBytes=6
+Scalar[SafeThreeByte    ]: count=236720, bytes=710160, runs=36896, maxRunScalars=35, maxRunBytes=105
+Scalar[ConstrainedThreeByte]: count=0, bytes=0, runs=0, maxRunScalars=0, maxRunBytes=0
+Scalar[FourByte         ]: count=0, bytes=0, runs=0, maxRunScalars=0, maxRunBytes=0
+Blocks32                  : 25422
+Block[AsciiOnly            ]: count=592, maxRun=7
+Block[TwoByteCommon        ]: count=6, maxRun=3
+Block[SafeThreeByteCommon  ]: count=24824, maxRun=450
+Block[ConstrainedThreeByte ]: count=0, maxRun=0
+Block[FourByte             ]: count=0, maxRun=0
+BlockShapeTransitions     : 852
+DenseSafeThreeByteBlocks  : 24678
+ScalarEscapeBlocks        : 0
+EstimatedLeanBlocks       : 18
+EstimatedWideBlocks       : 25404
+EstimatedWideEntries      : 15
+EstimatedWideExits        : 15
+CensusScope                : untimed full-corpus shape replay
+PolicyEstimateScope        : fixed 32-byte grid; not executed production-branch counters
+CaseId            : literal/sherlock-zh
+Source            : DotNetPerformance
+Pattern           : 夏洛克·福尔摩斯
+Options           : None
+Iterations        : 2000
+Group             : literal
+Origin            : curated/01-literal.toml :: sherlock-zh
+InputBytes        : 813478
+ExecutionKind     : ExactUtf8Literal
+CompiledEngine    : ExactLiteral
+LiteralBytes      : 23
+InputBytes        : 813478
+HasValidatedThreeByte: False
+HasPreparedSearch : True
+HasAnchorByte     : False
+CheckoutCommit    : 04e75512226f
+BenchmarkAssembly : 1.0.0+04e75512226fad28364384c6b3555b0687b23e22 sha256=63867579FA06D19EC1880678C419FA95B3F99400839ACAAD765BB57F8D259E49
+CoreAssembly      : 0.5.0-dev.1+04e75512226fad28364384c6b3555b0687b23e22 sha256=2F51621B0A5BF885BC7F9500CE95ACB6D4D5FF326EB42E7B69F303A5A00B0674
+Pcre2Assembly     : 0.5.0-dev.1+04e75512226fad28364384c6b3555b0687b23e22 sha256=0BD68A3831680F385C86333788CBA8FDE37FFA4443180C09DDA19C31925CF61D
+PythonReAssembly  : 0.5.0-dev.1+04e75512226fad28364384c6b3555b0687b23e22 sha256=4D59BB9B4ABF378082EE3E9C8B5661B9A63080F5E38828D7BE36D8E3F65982B6
+TrackedDirty      : False
+HasUntrackedFiles : False
+Runtime           : .NET 11.0.0-rc.3.26522.148
+OperatingSystem   : Ubuntu 24.04.4 LTS
+Processor         : X64
+TieredPGO         : runtime-default
+ThrowIfInvalidOnly:    434.104 ms total |    217.052 us/op | sink=813478 | samples=1 range=217.052..217.052 us/op | warmup=2047 calls/352.5 ms
+Utf8IsValid       :   2036.115 ms total |   1018.057 us/op | sink=813478 | samples=1 range=1018.057..1018.057 us/op | warmup=255 calls/271.9 ms
+ValidateOnly      :   2573.538 ms total |   1286.769 us/op | sink=339698 | samples=1 range=1286.769..1286.769 us/op | warmup=255 calls/344.3 ms
+StrictDecodeOnly  :   5581.931 ms total |   2790.965 us/op | sink=339698 | samples=1 range=2790.965..2790.965 us/op | warmup=127 calls/281.3 ms
+DefaultDecodeOnly :   4073.551 ms total |   2036.776 us/op | sink=339698 | samples=1 range=2036.776..2036.776 us/op | warmup=127 calls/260.1 ms
+PreparedLiteralSearch:    104.594 ms total |     52.297 us/op | sink=30 | samples=1 range=52.297..52.297 us/op | warmup=5119 calls/293.4 ms
+UnvalidatedMatchProbe:      0.386 ms total |      0.193 us/op | sink=-1 | samples=1 range=0.193..0.193 us/op | warmup=1206271 calls/250.2 ms
+CompiledUnvalidatedMatchProbe:      0.385 ms total |      0.193 us/op | sink=-1 | samples=1 range=0.193..0.193 us/op | warmup=1219583 calls/250.0 ms
+MatchAfterValidation:    148.799 ms total |     74.400 us/op | sink=1 | samples=1 range=74.400..74.400 us/op | warmup=4095 calls/310.4 ms
+CompiledMatchAfterValidation:    147.350 ms total |     73.675 us/op | sink=1 | samples=1 range=73.675..73.675 us/op | warmup=3071 calls/338.6 ms
+RuntimeFamilyIsMatch:      0.086 ms total |      0.043 us/op | sink=-1 | samples=1 range=0.043..0.043 us/op | warmup=4687871 calls/250.0 ms
+CompiledRuntimeFamilyIsMatch:      0.087 ms total |      0.044 us/op | sink=-1 | samples=1 range=0.044..0.044 us/op | warmup=4638719 calls/250.0 ms
+OrdinaryDirect    :    108.356 ms total |     54.178 us/op | sink=30 | samples=1 range=54.178..54.178 us/op | warmup=5119 calls/288.6 ms
+CompiledDirect    :    108.137 ms total |     54.069 us/op | sink=30 | samples=1 range=54.069..54.069 us/op | warmup=4095 calls/266.2 ms
+Utf8Regex         :    425.191 ms total |    212.595 us/op | sink=30 | samples=1 range=212.595..212.595 us/op | warmup=2047 calls/464.4 ms
+Utf8Compiled      :    426.392 ms total |    213.196 us/op | sink=30 | samples=1 range=213.196..213.196 us/op | warmup=2047 calls/439.1 ms
+DecodeThenRegex   :   4583.240 ms total |   2291.620 us/op | sink=30 | samples=1 range=2291.620..2291.620 us/op | warmup=127 calls/338.6 ms
+DecodeThenCompiledRegex:   4747.898 ms total |   2373.949 us/op | sink=30 | samples=1 range=2373.949..2373.949 us/op | warmup=127 calls/273.7 ms
+PredecodedRegex   :     83.653 ms total |     41.827 us/op | sink=30 | samples=1 range=41.827..41.827 us/op | warmup=10239 calls/260.3 ms
+PredecodedCompiledRegex:     58.129 ms total |     29.064 us/op | sink=30 | samples=1 range=29.064..29.064 us/op | warmup=6143 calls/260.2 ms
+Utf8IsMatch       :    557.101 ms total |    278.550 us/op | sink=1 | samples=1 range=278.550..278.550 us/op | warmup=1023 calls/356.1 ms
+Utf8CompiledIsMatch:    508.311 ms total |    254.156 us/op | sink=1 | samples=1 range=254.156..254.156 us/op | warmup=1023 calls/267.0 ms
+DecodeIsMatch     :   4159.129 ms total |   2079.565 us/op | sink=1 | samples=1 range=2079.565..2079.565 us/op | warmup=127 calls/266.6 ms
+DecodeCompiledIsMatch:   4737.102 ms total |   2368.551 us/op | sink=1 | samples=1 range=2368.551..2368.551 us/op | warmup=127 calls/301.0 ms
+PredecodedIsMatch :      8.742 ms total |      4.371 us/op | sink=1 | samples=1 range=4.371..4.371 us/op | warmup=56319 calls/250.2 ms
+PredecodedCompiledIsMatch:     11.910 ms total |      5.955 us/op | sink=1 | samples=1 range=5.955..5.955 us/op | warmup=40959 calls/251.6 ms
