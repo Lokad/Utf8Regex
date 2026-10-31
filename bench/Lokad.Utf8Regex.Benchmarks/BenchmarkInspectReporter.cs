@@ -3438,12 +3438,10 @@ internal static partial class BenchmarkInspectReporter
         }
 
         var hasValidatedThreeByte = isExactLiteral && regex.Inspection.DebugTryCountExactUtf8LiteralValidatedThreeByte(benchmarkCase.InputBytes, out _);
-        var hasLeadingScalar = isExactLiteral && regex.Inspection.DebugTryCountExactUtf8LiteralLeadingScalarAnchored(benchmarkCase.InputBytes, out _);
         var hasPreparedSearch = isExactLiteral && regex.Inspection.DebugTryCountExactUtf8LiteralPreparedSearch(benchmarkCase.InputBytes, out _);
         var hasAnchorByte = isExactLiteral && regex.Inspection.DebugTryCountExactUtf8LiteralAnchored(benchmarkCase.InputBytes, out _);
 
         Console.WriteLine($"HasValidatedThreeByte: {hasValidatedThreeByte}");
-        Console.WriteLine($"HasLeadingScalar  : {hasLeadingScalar}");
         Console.WriteLine($"HasPreparedSearch : {hasPreparedSearch}");
         Console.WriteLine($"HasAnchorByte     : {hasAnchorByte}");
         if (regex.Inspection.SearchPlan.AlternateLiteralsUtf8 is { Length: > 0 } alternateLiterals)
@@ -3466,15 +3464,6 @@ internal static partial class BenchmarkInspectReporter
             Measure("ValidatedThreeByte", iterations, () =>
             {
                 regex.Inspection.DebugTryCountExactUtf8LiteralValidatedThreeByte(benchmarkCase.InputBytes, out var count);
-                return count;
-            });
-        }
-
-        if (hasLeadingScalar)
-        {
-            Measure("LeadingScalarAnchored", iterations, () =>
-            {
-                regex.Inspection.DebugTryCountExactUtf8LiteralLeadingScalarAnchored(benchmarkCase.InputBytes, out var count);
                 return count;
             });
         }

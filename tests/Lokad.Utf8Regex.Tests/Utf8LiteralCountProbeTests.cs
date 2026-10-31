@@ -11,6 +11,37 @@ public sealed class Utf8LiteralCountProbeTests
     [InlineData("夏·é")]
     [InlineData("夏洛😀")]
     [InlineData("夏😀")]
+    [InlineData("夏A")]
+    public void PublicCountPreservesDensePrefixTailsNonoverlapAndBorrowedBounds(string literal)
+    {
+        var scalars = literal.EnumerateRunes().ToArray();
+        var prefix = string.Concat(scalars.Take(Math.Min(2, scalars.Length - 1)).Select(scalar => scalar.ToString()));
+        var text = string.Concat(Enumerable.Repeat(prefix + "?", 256)) + literal + literal + prefix;
+        var bytes = Encoding.UTF8.GetBytes(text);
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
+        foreach (var controlled in new[] { false, true })
+        {
+            using var token = new CancellationTokenSource();
+            var regex = new Utf8Regex(literal, options, Timeout.InfiniteTimeSpan,
+                controlled ? new() { MaxWorkSteps = 1_000_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 } : default);
+            foreach (var offset in new[] { 0, 1, 31, 32 })
+            {
+                byte[] storage = [.. Enumerable.Repeat((byte)0xff, offset), .. bytes, 0xff];
+                Assert.Equal(2, regex.Count(storage.AsSpan(offset, bytes.Length), controlled ? token.Token : default));
+            }
+            byte[] invalid = [.. bytes, 0xff];
+            Assert.Throws<ArgumentException>(() => regex.Count(invalid, controlled ? token.Token : default));
+        }
+        var repeated = new Utf8Regex("夏夏A");
+        Assert.Equal(1, repeated.Count("夏夏夏A"u8));
+        Assert.Equal(2, repeated.Count("夏夏A夏夏A夏夏"u8));
+    }
+
+    [Theory]
+    [InlineData("夏洛克·福尔摩斯")]
+    [InlineData("夏·é")]
+    [InlineData("夏洛😀")]
+    [InlineData("夏😀")]
     public void PublicCountIgnoresPartialLeadingScalarAnchorsAtTheSubjectTail(string literal)
     {
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled,
@@ -68,8 +99,6 @@ public sealed class Utf8LiteralCountProbeTests
                     Assert.Equal(2, expected);
                     if (regex.Inspection.DebugTryCountExactUtf8LiteralValidatedThreeByte(input, out var threeByte))
                         Assert.Equal(expected, threeByte);
-                    if (regex.Inspection.DebugTryCountExactUtf8LiteralLeadingScalarAnchored(input, out var leading))
-                        Assert.Equal(expected, leading);
                     if (regex.Inspection.DebugTryCountExactUtf8LiteralPreparedSearch(input, out var prepared))
                         Assert.Equal(expected, prepared);
                     if (regex.Inspection.DebugTryCountExactUtf8LiteralAnchored(input, out var anchored))
@@ -84,10 +113,8 @@ public sealed class Utf8LiteralCountProbeTests
     {
         var threeByte = new Utf8Regex("汉字");
         Assert.True(threeByte.Inspection.DebugTryCountExactUtf8LiteralValidatedThreeByte("汉字!汉字"u8, out var validated));
-        Assert.True(threeByte.Inspection.DebugTryCountExactUtf8LiteralLeadingScalarAnchored("汉字!汉字"u8, out var leading));
         Assert.True(threeByte.Inspection.DebugTryCountExactUtf8LiteralPreparedSearch("汉字!汉字"u8, out var prepared));
         Assert.Equal(2, validated);
-        Assert.Equal(2, leading);
         Assert.Equal(2, prepared);
         var anchor = new Utf8Regex("abé");
         Assert.True(anchor.Inspection.DebugTryCountExactUtf8LiteralAnchored("abé!abé"u8, out var anchored));
@@ -99,11 +126,9 @@ public sealed class Utf8LiteralCountProbeTests
     {
         var regex = new Utf8Regex("a+");
         Assert.False(regex.Inspection.DebugTryCountExactUtf8LiteralValidatedThreeByte("aaa"u8, out var threeByte));
-        Assert.False(regex.Inspection.DebugTryCountExactUtf8LiteralLeadingScalarAnchored("aaa"u8, out var leading));
         Assert.False(regex.Inspection.DebugTryCountExactUtf8LiteralPreparedSearch("aaa"u8, out var prepared));
         Assert.False(regex.Inspection.DebugTryCountExactUtf8LiteralAnchored("aaa"u8, out var anchored));
         Assert.Equal(0, threeByte);
-        Assert.Equal(0, leading);
         Assert.Equal(0, prepared);
         Assert.Equal(0, anchored);
     }

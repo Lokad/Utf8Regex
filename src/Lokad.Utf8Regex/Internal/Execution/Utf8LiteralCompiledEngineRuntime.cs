@@ -478,9 +478,12 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
 
         if (budget.IsInfinite &&
             _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
-            TryGetLeadingUtf8SegmentLength(literal, out var leadingSegmentLength))
+            TryGetLeadingUtf8SegmentLength(literal, out _))
         {
-            return CountExactUtf8LiteralLeadingScalarAnchored(input, literal, leadingSegmentLength);
+            // Reuse complete-sequence search instead of restarting a scalar
+            // anchor and rechecking each prefix. Earlier fused strategies keep
+            // their priority; controlled invocations use their metered paths.
+            return CountViaSpanSearch(input, literal);
         }
 
         if (budget.IsInfinite &&
@@ -741,37 +744,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
 
             count++;
             searchIndex = candidate + literal.Length + anchorIndex;
-        }
-
-        return count;
-    }
-
-    internal static int CountExactUtf8LiteralLeadingScalarAnchored(ReadOnlySpan<byte> input, ReadOnlySpan<byte> literal, int scalarLength)
-    {
-        var count = 0;
-        var searchIndex = 0;
-        var maxStart = input.Length - literal.Length;
-        var anchor = literal[..scalarLength];
-
-        while (searchIndex <= maxStart)
-        {
-            // Admit anchor candidates only where the complete needle still fits.
-            // A matching scalar prefix at the subject tail is not a full candidate.
-            var relative = input.Slice(searchIndex, maxStart - searchIndex + scalarLength).IndexOf(anchor);
-            if (relative < 0)
-            {
-                return count;
-            }
-
-            var candidate = searchIndex + relative;
-            if (input.Slice(candidate, literal.Length).SequenceEqual(literal))
-            {
-                count++;
-                searchIndex = candidate + literal.Length;
-                continue;
-            }
-
-            searchIndex = candidate + 1;
         }
 
         return count;

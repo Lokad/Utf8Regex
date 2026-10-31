@@ -66,9 +66,9 @@ internal static class Utf8CountKernelCensus
         }
 
         if (plan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
-            Utf8LiteralCompiledEngineRuntime.TryGetLeadingUtf8SegmentLength(literal, out var leadingSegmentLength))
+            Utf8LiteralCompiledEngineRuntime.TryGetLeadingUtf8SegmentLength(literal, out _))
         {
-            metrics = InspectLeadingScalarMetrics(input, literal, leadingSegmentLength);
+            metrics = InspectFullSequenceSearchMetrics(input, literal, "SpanSequenceSearch");
             return true;
         }
 
@@ -94,46 +94,6 @@ internal static class Utf8CountKernelCensus
 
         metrics = InspectFullSequenceSearchMetrics(input, literal, "SequenceSearchFallback");
         return true;
-
-        static Utf8SelectedCountKernelMetrics InspectLeadingScalarMetrics(
-            ReadOnlySpan<byte> input,
-            ReadOnlySpan<byte> literal,
-            int scalarLength)
-        {
-            var candidates = 0;
-            var matches = 0;
-            var searchIndex = 0;
-            var maxStart = input.Length - literal.Length;
-            var anchor = literal[..scalarLength];
-            while (searchIndex <= maxStart)
-            {
-                var relative = input[searchIndex..].IndexOf(anchor);
-                if (relative < 0)
-                {
-                    break;
-                }
-
-                candidates++;
-                var candidate = searchIndex + relative;
-                if (input.Slice(candidate, literal.Length).SequenceEqual(literal))
-                {
-                    matches++;
-                    searchIndex = candidate + literal.Length;
-                }
-                else
-                {
-                    searchIndex = candidate + 1;
-                }
-            }
-
-            return new Utf8SelectedCountKernelMetrics(
-                "LeadingUtf8Scalar",
-                "leading-scalar sequence hits",
-                candidates,
-                candidates,
-                matches,
-                IncludesUtf8Validation: false);
-        }
     }
 
     private static Utf8SelectedCountKernelMetrics InspectValidatedThreeByteMetrics(
