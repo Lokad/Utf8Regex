@@ -5,8 +5,9 @@
 All three packages now build `net10.0` and `net11.0` assets. Adapters still require
 exactly the same Core version; NuGet selects the asset matching the application.
 The build SDK is pinned in `global.json`; its .NET 11 version is currently a
-release candidate. Matching units, validation, coordinates and resource contracts
-are unchanged. Benchmark runs default to .NET 11; use `-Framework net10.0` with
+release candidate. Scalar matching, strict validation and primary byte coordinates
+remain. The new ownership controls below cover additional storage lifetimes.
+Benchmark runs default to .NET 11; use `-Framework net10.0` with
 the test/benchmark scripts for .NET 10 controls. Historical measurements retain
 their original runtime labels. Published 0.4.0 packages remain .NET 10-only.
 
@@ -25,6 +26,15 @@ projects a new string on request; native construction timeouts leave the
 exception's pattern text empty. The added span overloads make a bare `null` at
 some `Compile` call sites ambiguous: use a typed string or named `pattern:` when
 testing text-null errors. Existing string constructors remain available.
+
+PythonRe and PCRE2 likewise compile native source bytes directly. UTF-8 template
+overloads across all three profiles parse/cache bytes and assemble byte output
+without mandatory whole-template strings. Their replacement grammars and error
+timing remain profile-specific. For example, Core can use both native inputs:
+
+```csharp
+byte[] output = emoji.Replace("a😀😀b"u8, "[${value}]"u8); // a[😀]b
+```
 
 All three profiles expose `CaptureGroupCount` excluding group zero and
 `TryCopyPatternUtf8(destination, out bytesRequired, token)`. A zero-length
@@ -113,9 +123,12 @@ using var program = Utf8Regex.Compile(pattern, RegexOptions.None,
     matchTimeout, resourcePolicy, constructionPolicy, constructionTimeout,
     compileToken, programMemoryAllowance);
 int count = program.Count(subject.Span, callToken, workingMemoryAllowance);
+Span<byte> destination = stackalloc byte[256];
+var status = program.TryReplace(subject.Span, "[$0]"u8, destination,
+    out int bytesWritten, callToken, workingMemoryAllowance);
 ```
 
-Boolean/count calls refund temporary loans synchronously, retain numeric limits
+Boolean/count/destination calls refund temporary loans synchronously, retain numeric limits
 and never retry a refusal under another allowance. For repeated captures across
 host calls or awaits, use the separate memory cursor:
 
@@ -147,8 +160,18 @@ ranges, duplicate names and consumed-range progression. Opted-in `\C` values may
 be scalar fragments; inspect the range's `IsUtf8SliceWellFormed` before decoding.
 PCRE2 byte pattern constructors and funded Compile now own and parse UTF-8 source
 directly; `Pattern` is an explicit text projection. Selected names/properties can
-still use internal text. PCRE2 scalar-coordinate queries, native template parsing
-and funded replacement remain unfinished.
+still use internal text. Its funded owner also exposes byte-template `TryReplace`
+with substitution/match options, byte starts and separate working admission.
+PCRE2 optional scalar-coordinate projection remains a later improvement.
+
+Core and PCRE2 funded compilation conservatively prepay their bounded replacement
+cache maximum (currently 4MiB payload plus bounded metadata), even before first
+use; this is a modeled loan, not an eager allocation. Cold template preparation
+and output scratch share working admission through final copying. Caller-owned
+destinations stay valid after program close. Short destinations remain unchanged;
+PCRE2 can additionally report required length with SubstituteOverflowLength.
+PythonRe's funded `SubnRetained` instead returns an explicit disposable output
+receipt. Continued retention after releasing a receipt belongs to the host.
 The [resource contract](SPEC.md#cancellation-deadlines-and-resource-limits)
 distinguishes modeled live admission from cumulative work/result traffic.
 

@@ -55,7 +55,7 @@ valid after advance/failure/disposal. Copied value cursors retain independent
 positions while sharing allowance/deadline. A host must separately account for
 retained results and its own storage.
 
-Optional `Lokad.Utf8Regex.PythonRe` and `Lokad.Utf8Regex.Pcre2` **0.5.0-dev**
+Optional `Lokad.Utf8Regex.PythonRe` and `Lokad.Utf8Regex.Pcre2` **0.5.0-dev.1**
 require exactly this Core version. Both are managed profile adapters with explicit
 compatibility boundaries; no native PCRE2 binary is shipped.
 

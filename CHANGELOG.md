@@ -2,111 +2,31 @@
 
 ## Unreleased — 0.5.0
 
-- Target .NET 10 and .NET 11 across Core, PythonRe and PCRE2.
-- Compile Core UTF-8 pattern spans directly, including caller-funded programs,
-  with owned source bytes, strict validation and byte-coordinate syntax errors.
-- Parse PythonRe UTF-8 pattern sources directly, retaining owned bytes and
-  preserving the existing UTF-16 diagnostic-position contract.
-- Emit PythonRe Core patterns, scalar leaves and literal preparation as UTF-8;
-  defer canonical string output and timeout pattern text until requested.
-- Preserve literal spaces inside scoped Python verbose groups in Core guidance.
-- Parse PCRE2 byte patterns directly with owned source storage and on-demand
-  pattern text, preserving profile grammar, native selectors and construction controls.
-- Quote complete Unicode scalars in PCRE2 character classes, including escaped emoji.
-- Expose validated capture counts and UTF-8 pattern copies into caller-owned
-  buffers, including funded Core/PCRE2 owners without borrowed storage aliases.
-- Add strict UTF-8 capture-name lookup using admitted native keys, preserving
-  Core sparse/numeric identities, Python names and PCRE2 duplicate slots.
-
-- Add caller-funded Core Boolean/count operations and a disposable compiled
-  program owner with separate working admission and deterministic close/refunds.
-- Add Core memory cursors with byte-range capture histories, per-advance tokens,
-  deterministic scratch release and retained results with separate result funding.
-- Add a caller-funded PCRE2 program owner and shared working admission for
-  Boolean/count calls, preserving profile limits and deterministic close/refunds.
-- Add PCRE2 memory cursors and retained byte-range captures, preserving empty
-  retry, duplicate names, reset-start progression and explicit `\C` slice validity.
-- Use .NET 11 by default for benchmark runs; historical figures retain their measured runtime.
-- Expose PythonRe effective global flags through `EffectiveOptions`, including
-  inline directives and implicit Unicode, while retaining requested `Options`.
-- Expose PythonRe error source/kind metadata and restore known replacement-template
-  positions, retaining UTF-16 coordinates and existing exception distinctions.
-- Accept a PythonRe cursor token per advance, preserving the creation token,
-  absolute deadline, cumulative limits and previously returned owned snapshots.
-- Add PythonRe range cursor results and range-only split, avoiding captured-text
-  copies and coordinate maps while retaining capture metadata and resource limits.
-- Add current-capture Unicode-scalar coordinate queries with lazy compact UTF-8
-  indexing, caller admission and call-scoped cancellation.
-- Add retained range cursor receipts that transfer admitted result charges without
-  reacquisition and refund on explicit disposal, independently of cursor/program lifetime.
-- Add `SubnRetained` for caller-funded UTF-8 template substitution output, preserving
-  native/scalar execution and transferring the final result charge until explicit disposal.
-- Accept a caller-owned shared working allowance for PythonRe cursors, with
-  synchronous scratch refunds and explicit admission failure.
-- Add caller-funded PythonRe compilation with explicit program disposal; active
-  operations/cursors retain the program charge until they finish. Replacement
-  preparation/cache storage shares that account; active evicted plans keep their
-  funding until completion. Default execution/result staging uses it too, with
-  synchronous temporary refunds. Caller-retained output remains a separate scope.
-- Lower compatible Python Unicode character-class unions to the existing scalar
-  predicate instruction, preserving pinned membership and lexical folding.
-- Reject missing mandatory exact literals before acquiring Python scalar scratch,
-  preserving full UTF-8 validation and original interruption/resource admission.
-- Reuse complete cell/range-reference proofs for bounded ASCII value Match,
-  preserving construction-culture folding, digit captures and resource controls.
-- Recognize nested capture endings in proved disjoint class repeats, avoiding
-  useless backtracking while preserving capture histories and resource controls.
-- Reuse complete terminated-prefix ranges for bounded ASCII value Match, retaining
-  contiguous-anchor origins, strict validation and original interruption/resource admission.
-- Reuse scalar-aligned folded literal-family routes on mixed UTF-8 subjects and
-  prune impossible leading-whitespace Count starts before scalar VM verification.
-- PCRE2 Count checks an existing required literal before allocating slice VM
-  scratch, avoiding repeated attempts on subjects without that literal.
-- Admit boundary-disjoint ASCII prefix families to existing structural routes;
-  preserve identifier-tail bounds and narrower whitespace classes in native plans.
-- Filter PythonRe search starts through convergent zero-width prefixes, retaining
-  profile verification and Unicode behavior on validated UTF-8.
-- Reuse the anchored leading-digits/tail grammar for Boolean matching without
-  capture workspace, preserving Unicode-prefix verification and finite limits.
-- Reuse the proved balanced-block counter with finite work/depth/working limits;
-  deeper nesting retains scalar execution under the original invocation.
-- Reuse complete simple-pattern branches for captured Unicode-class Boolean
-  searches on ASCII subjects; mixed subjects retain scalar verification.
-- Reuse the admitted dotted-decimal finder for Boolean searches with bounded
-  work and original interruption, avoiding scalar capture workspace.
-- Lower Python word boundaries directly to the owned boundary primitive,
-  preserving pinned Unicode/strict ASCII membership and the non-boundary
-  empty-subject rule.
-- Reuse the complete anchored-email proof for bounded ASCII Boolean matching;
-  Unicode aliases, long inputs and capture operations retain scalar execution.
-- Filter mandatory ASCII literal/set prefixes after nullable whitespace before
-  scalar Count verification, retaining capture-sensitive candidate windows and
-  original resource limits and interruption.
-- Guide scalar Count through bounded gaps after class/whitespace prefixes,
-  retaining scalar gap lengths, Unicode predicates and VM match selection.
-- Reuse complete number and trimmed optional-prefix ranges for bounded ASCII
-  value Match; detailed captures, Unicode subjects and long inputs retain scalar
-  execution.
-- Reuse complete query URL ranges for bounded ASCII value Match, metering prefix
-  and optional-parameter retries under the original invocation.
-- Reuse the complete hex-color grammar for ASCII value Match without capture
-  workspace, retaining strict validation and original invocation limits.
-- Reuse the proved word-repeat Count kernel on validated ASCII with bounded work
-  metering, finite policies and original cancellation/deadlines.
-- Reuse the proved single-Unicode-category counter with bounded scalar-aligned
-  work admission, strict validation and original cancellation/deadlines.
-- Check a second proved mandatory ASCII scalar before Count's VM attempts,
-  preserving scalar verification and bounded candidate-search admission.
-- Avoid child-VM storage for small capture-free ASCII literal assertions,
-  preserving logical assertion depth and original invocation limits.
-- Require greedy, disjoint classes in native repeated-segment plans and retain
-  the previous endpoint when an additional segment fails.
-- Improve scalar Count candidate searches for exact literal pairs, retaining
-  bounded metering, ordered alternatives and full VM verification.
-- Reuse bounded full-needle candidate searches for small exact literal families,
-  preserving branch priority, scalar verification and original resource limits.
-- Reject impossible bounded Dot tails before greedy endpoint replay, retaining
-  scalar limits, captures and original resource/interruption authority.
+- Target .NET 10 and .NET 11 in all three packages. Benchmarks default to .NET 11;
+  the current pinned SDK/runtime is RC3, with historical measurements labeled.
+- Compile UTF-8 patterns and parse UTF-8 replacement templates directly across
+  Core, PythonRe and PCRE2. Owned bytes and admitted cache keys replace mandatory
+  whole-pattern/template strings; explicit text interoperability remains.
+- Add UTF-8 capture-name lookup, validated capture counts and caller-buffer
+  pattern metadata without exposing mutable program storage.
+- Add caller-funded Core and PCRE2 program owners with separate working admission,
+  deterministic close and byte-template replacement into caller-owned destinations.
+  Their bounded cache maxima are conservatively prepaid. Controls cover modeled
+  major capacity and overlap, not total heap/RSS; execution defaults remain unlimited.
+- Extend PythonRe hosting with effective flags and structured errors, funded
+  compilation/cache storage, native `Replace`/`Subn` and retained substitution
+  output with explicit disposal.
+- Add persistent memory cursors, byte-range captures and retained result receipts.
+  Current-call tokens, original cancellation and absolute deadlines preserve
+  cursor/result lifetimes across advances and program closure.
+- Reduce live-token ASCII Boolean matching scratch through existing metered
+  native plans. Reuse proved literal/category/count and bounded candidate ranges
+  for matching, preserving strict full-subject validation and resource controls.
+- Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
+  complete scalars in PCRE2 classes, including escaped supplementary characters.
+- Keep execution owned, managed and checked. Core, PythonRe and PCRE2 retain their
+  documented grammar/semantic boundaries; POSIX and complete profile equivalence
+  remain outside this release.
 
 ## 0.4.0 — 2026-10-27
 
