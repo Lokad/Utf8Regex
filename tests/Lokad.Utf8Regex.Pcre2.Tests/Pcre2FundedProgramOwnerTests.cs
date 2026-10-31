@@ -146,7 +146,7 @@ public sealed class Pcre2FundedProgramOwnerTests
     public async Task ClosingDuringAnActiveCallDefersRefundAndRejectsNewCalls()
     {
         var root = new Root(); var programs = new Account(root); var working = new Account(root);
-        var owner = Compile("(?<x>a+)(?=b)b", programs); var held = programs.Used;
+        using var owner = Compile("(?<x>a+)(?=b)b", programs); var held = programs.Used;
         using var entered = new ManualResetEventSlim(); using var resume = new ManualResetEventSlim();
         var paused = false;
         working.AfterGrant = () =>
@@ -154,14 +154,17 @@ public sealed class Pcre2FundedProgramOwnerTests
             if (paused) return; paused = true; entered.Set();
             if (!resume.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException("Test call was not resumed.");
         };
-        var call = Task.Run(() => owner.Count("aaab"u8, workingMemoryAllowance: working));
+        // Both sides block on signals; do not depend on a free thread-pool worker.
+        var call = Task.Factory.StartNew(() => owner.Count("aaab"u8, workingMemoryAllowance: working),
+            CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        var count = 0;
         try
         {
             Assert.True(entered.Wait(TimeSpan.FromSeconds(10))); owner.Dispose(); Assert.Equal(held, programs.Used);
             Assert.Throws<ObjectDisposedException>(() => owner.Count("aaab"u8));
         }
-        finally { resume.Set(); }
-        Assert.Equal(1, await call); Assert.Equal(0UL, root.Used); owner.Dispose();
+        finally { resume.Set(); count = await call; }
+        Assert.Equal(1, count); Assert.Equal(0UL, root.Used); owner.Dispose();
     }
 
     [Fact]
