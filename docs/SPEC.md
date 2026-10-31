@@ -233,6 +233,14 @@ mixed Unicode, larger subjects, nonzero origins, RTL/NonBacktracking, global
 IgnoreCase and unproved shapes keep their existing paths. Detailed captures are
 unchanged.
 
+A proved anchored identifier prefix, such as invariant
+`\G[a-z][a-z0-9_]*` with IgnoreCase, can use the same ASCII size envelope and its
+existing prefix helper. The construction-captured culture must produce the
+complete ASCII head/tail masks; variants with different masks retain scalar
+execution. Unicode subjects, including Kelvin/Turkic scalars, retain scalar
+folding. Validation, bounded interruption/publication and detailed captures stay
+unchanged; this route can avoid VM workspace and nesting records.
+
 A complete greedy star excluding one ASCII scalar (for example `[^\n]*`) can
 use zero-origin span Count by searching for that byte after strict whole-subject UTF-8 validation.
 The byte cannot occur inside a wider scalar. Scans cover at most 256 bytes per

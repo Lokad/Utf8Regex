@@ -1962,7 +1962,8 @@ public sealed partial class Utf8Regex
         if (startByte == 0 && input.Length <= 2048 && validation.ByteLength == input.Length && validation.IsAscii &&
             ReferenceEquals(program, _ownedSliceProgram) && !program.RightToLeft &&
             !program.IsNonBacktracking &&
-            (queryWhole || colorWhole || referenceWhole || !program.IgnoreCase &&
+            (queryWhole || colorWhole || referenceWhole ||
+                _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredIdentifierPrefix || !program.IgnoreCase &&
                 (identifierToken || _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.AnchoredTrimmedOptionalLiteralPrefixTail or
                     Utf8FallbackDirectFamilyKind.AnchoredNumberPrefix or Utf8FallbackDirectFamilyKind.AnchoredPrefixUntilByte or
                     Utf8FallbackDirectFamilyKind.AnchoredOperatorRun or Utf8FallbackDirectFamilyKind.AnchoredQuotedStringPrefix)))
