@@ -1,0 +1,102 @@
+[
+  {
+    "Name": "actual-ordinary",
+    "BeforeUs": 25.5130615234375,
+    "AfterUs": 6.0287109375,
+    "ChangePercent": -76.37009995071841,
+    "BeforeBytes": 47040,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0963517829023854,
+    "AfterSpread": 1.0574542980656865
+  },
+  {
+    "Name": "actual-compiled",
+    "BeforeUs": 24.1118896484375,
+    "AfterUs": 6.075189208984375,
+    "ChangePercent": -74.8041762899406,
+    "BeforeBytes": 47040,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0339411245543402,
+    "AfterSpread": 1.0160662215986744
+  },
+  {
+    "Name": "actual-finite-live",
+    "BeforeUs": 28.83349609375,
+    "AfterUs": 9.426293945312501,
+    "ChangePercent": -67.30783559973581,
+    "BeforeBytes": 50400,
+    "AfterBytes": 3360,
+    "BeforeSpread": 1.0131968265218403,
+    "AfterSpread": 1.0080960597094164
+  },
+  {
+    "Name": "actual-deadline-live",
+    "BeforeUs": 35.117822265625,
+    "AfterUs": 13.04793701171875,
+    "ChangePercent": -62.845255856053775,
+    "BeforeBytes": 51744,
+    "AfterBytes": 4704,
+    "BeforeSpread": 1.0397340864976432,
+    "AfterSpread": 1.007236449848595
+  },
+  {
+    "Name": "dense-ASCII",
+    "BeforeUs": 6.55809326171875,
+    "AfterUs": 0.3170619964599609,
+    "ChangePercent": -95.1653326080199,
+    "BeforeBytes": 1680,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.7357097767414298,
+    "AfterSpread": 1.628646945206872
+  },
+  {
+    "Name": "Unicode-tail-control",
+    "BeforeUs": 3.3969055175781246,
+    "AfterUs": 3.47593994140625,
+    "ChangePercent": 2.3266594675401597,
+    "BeforeBytes": 6720,
+    "AfterBytes": 6720,
+    "BeforeSpread": 1.3439866990816234,
+    "AfterSpread": 1.2591760892745911
+  },
+  {
+    "Name": "empty-miss",
+    "BeforeUs": 4.214178466796875,
+    "AfterUs": 0.8231399536132813,
+    "ChangePercent": -80.46736843019997,
+    "BeforeBytes": 6720,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.4439739318972895,
+    "AfterSpread": 1.5028618777310183
+  },
+  {
+    "Name": "large-scalar-control",
+    "BeforeUs": 11.731481933593749,
+    "AfterUs": 11.244024658203125,
+    "ChangePercent": -4.155121050775024,
+    "BeforeBytes": 1680,
+    "AfterBytes": 1680,
+    "BeforeSpread": 1.6539983177830007,
+    "AfterSpread": 1.65286212516181
+  },
+  {
+    "Name": "number-prefix-control",
+    "BeforeUs": 12.7717041015625,
+    "AfterUs": 10.835766601562499,
+    "ChangePercent": -15.158020297096908,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.525735117069741,
+    "AfterSpread": 1.4759558440327856
+  },
+  {
+    "Name": "literal-control",
+    "BeforeUs": 0.7086265563964844,
+    "AfterUs": 0.7624237060546875,
+    "ChangePercent": 7.591749021060257,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.071289903250717,
+    "AfterSpread": 1.3286142242760177
+  }
+]

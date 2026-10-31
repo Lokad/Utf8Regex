@@ -1,0 +1,10 @@
+Preflight actual-ordinary: 451
+Preflight actual-compiled: 451
+Preflight actual-finite-live: 451
+Preflight actual-deadline-live: 451
+Preflight dense-ASCII: 1024
+Preflight Unicode-tail-control: 6
+Preflight empty-miss: 0
+Preflight large-scalar-control: 2049
+Preflight number-prefix-control: 340
+Preflight literal-control: 6
