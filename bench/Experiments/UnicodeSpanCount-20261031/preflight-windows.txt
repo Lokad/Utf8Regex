@@ -1,0 +1,11 @@
+Preflight actual-ordinary: 30
+Preflight actual-compiled: 30
+Preflight actual-finite-live: 30
+Preflight actual-deadline-live: 30
+Preflight dense-false-prefixes: 1
+Preflight dense-complete-hits: 256
+Preflight short-mixed-needle: 128
+Preflight fused-three-byte-control: 512
+Preflight correlated-two-byte-control: 64
+Preflight supplementary-control: 256
+Preflight literal-control: 1

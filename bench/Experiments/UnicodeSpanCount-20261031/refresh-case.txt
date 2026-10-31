@@ -1,0 +1,33 @@
+Measuring README benchmark case: literal/sherlock-zh (requested=5, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=370;ElapsedMicroseconds=50460.800
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=370;ElapsedMicroseconds=50251.600
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=2610;ElapsedMicroseconds=50202.800
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=2058;ElapsedMicroseconds=50026.800
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=22;ElapsedMicroseconds=48515.900
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=23;ElapsedMicroseconds=50762.800
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=370;ElapsedMicroseconds=50185.800
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=370;ElapsedMicroseconds=50937.500
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=2610;ElapsedMicroseconds=50026.300
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=2058;ElapsedMicroseconds=50152.300
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=22;ElapsedMicroseconds=47947.300
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=23;ElapsedMicroseconds=51130.000
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=370;ElapsedMicroseconds=50229.000
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=370;ElapsedMicroseconds=50026.600
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=2610;ElapsedMicroseconds=56978.200
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=2058;ElapsedMicroseconds=58059.700
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=22;ElapsedMicroseconds=60131.300
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=23;ElapsedMicroseconds=62749.800
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=370;ElapsedMicroseconds=68778.200
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=370;ElapsedMicroseconds=69166.500
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=2610;ElapsedMicroseconds=61657.100
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=2058;ElapsedMicroseconds=59176.400
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=22;ElapsedMicroseconds=60419.100
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=23;ElapsedMicroseconds=62567.400
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=370;ElapsedMicroseconds=68514.700
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=370;ElapsedMicroseconds=68522.700
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=2610;ElapsedMicroseconds=61594.800
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=2058;ElapsedMicroseconds=54631.900
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=22;ElapsedMicroseconds=48413.400
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=23;ElapsedMicroseconds=50803.900
+Updated README case: literal/sherlock-zh
+Verified README.Parity.json against README.Benchmarks.json.

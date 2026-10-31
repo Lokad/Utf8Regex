@@ -1,0 +1,428 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "AffinityMask": "4",
+  "ElapsedSeconds": 55.5725033,
+  "Identities": [
+    {
+      "Version": "0.5.0-dev.1\u002Bafb260d273b7ffa9a332aff04227f93390e8b2b6",
+      "Sha256": "2C04D11FAC4A78823D715F619B8C7DB48EF3173B06E692C467FE224A1CC8507D"
+    },
+    {
+      "Version": "0.5.0-dev.1\u002Bafb260d273b7ffa9a332aff04227f93390e8b2b6",
+      "Sha256": "10AF27D93D85FD76758CF59B11C366A66CC4386C9998607256CB0664924354AA"
+    }
+  ],
+  "Confirmation": true,
+  "Samples": 5,
+  "WarmupMilliseconds": 4000,
+  "Scope": "One bounded UTF8 sequence-search simplification pilot, baselineafb260d2 plus archived patch. Remaining uncontrolled exact UTF8 BMP-leading Count branch reuses existing CountViaSpanSearch/checked BCL IndexOf. Existing fused-three-byte/correlated-two-byte strategies and controlled/finite/deadline authorities unchanged; no fields/new matcher/modes/unchecked API or removed metering. Eleven equal-result public Count cases: actual Sherlock Chinese ordinary/compiled/finite-live/deadline-live, dense false prefixes/hits, short mixed-width needle; unchanged fused-three-byte/correlated-two-byte/supplementary/ASCII controls. Four before/after/predecoded/decode-then Regex lanes. Full strict validation included, compilation/setup excluded, result batches consumed after timing with host arrays outside allocation counts. Warm1.5s/min64calls, independent60ms calibration, five alternating samples each\u003E=20ms. One120s cap,at most one selected noise confirmation. Only accepted public gains/simplification justify source promotion and selective snapshot refresh; no package/full-catalog campaign.",
+  "ConfirmationScope": "Sole selected noise confirmation: same source/DLL/runtime, actual ordinary/compiled, dense false prefixes, short mixed-width, correlated-two-byte and ASCII controls. Two public producer lanes only, warm4s per lane, independent60ms calibration, five alternating samples each\u003E=20ms. One120s cap. Stop after the decision; no further measurement of this prototype. Confirmation fields supersede initial Scope parameters.",
+  "LaneNames": [
+    "Before",
+    "After"
+  ],
+  "Rows": [
+    {
+      "Name": "actual-ordinary",
+      "Finite": false,
+      "Live": false,
+      "Deadline": false,
+      "Pattern": "\u590F\u6D1B\u514B\u00B7\u798F\u5C14\u6469\u65AF",
+      "Options": "None",
+      "InputBytes": 813478,
+      "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+      "Expected": 30,
+      "Iterations": [
+        512,
+        512
+      ],
+      "WarmupCalls": [
+        29253,
+        25796
+      ],
+      "Microseconds": [
+        [
+          188.29140625,
+          190.387109375,
+          187.24101562500002,
+          190.78105468750002,
+          188.68046875
+        ],
+        [
+          189.423828125,
+          193.23105468749998,
+          190.08476562500002,
+          190.13105468749998,
+          191.11640625
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          96.4052,
+          97.4782,
+          95.8674,
+          97.6799,
+          96.6044
+        ],
+        [
+          96.985,
+          98.9343,
+          97.3234,
+          97.3471,
+          97.8516
+        ]
+      ]
+    },
+    {
+      "Name": "actual-compiled",
+      "Finite": false,
+      "Live": false,
+      "Deadline": false,
+      "Pattern": "\u590F\u6D1B\u514B\u00B7\u798F\u5C14\u6469\u65AF",
+      "Options": "Compiled",
+      "InputBytes": 813478,
+      "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+      "Expected": 30,
+      "Iterations": [
+        512,
+        512
+      ],
+      "WarmupCalls": [
+        28545,
+        20740
+      ],
+      "Microseconds": [
+        [
+          191.8083984375,
+          188.573828125,
+          189.1462890625,
+          201.94160156249998,
+          188.068359375
+        ],
+        [
+          189.721875,
+          190.303125,
+          190.540234375,
+          191.60566406249998,
+          191.5609375
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          98.2059,
+          96.5498,
+          96.8429,
+          103.3941,
+          96.291
+        ],
+        [
+          97.1376,
+          97.4352,
+          97.5566,
+          98.1021,
+          98.0792
+        ]
+      ]
+    },
+    {
+      "Name": "dense-false-prefixes",
+      "Finite": false,
+      "Live": false,
+      "Deadline": false,
+      "Pattern": "\u590F\u6D1B\u514B\u00B7\u798F\u5C14\u6469\u65AF",
+      "Options": "None",
+      "InputBytes": 14365,
+      "InputSha256": "A0CB76E50F9CAD3698EDE51E7C82DBED6C8E4169DCF1DB4CE7379C3EA51A448E",
+      "Expected": 1,
+      "Iterations": [
+        2048,
+        16384
+      ],
+      "WarmupCalls": [
+        121306,
+        913925
+      ],
+      "Microseconds": [
+        [
+          28.878125,
+          28.349462890625,
+          28.477294921875,
+          28.479052734375,
+          29.425927734374998
+        ],
+        [
+          2.651123046875,
+          2.673040771484375,
+          2.67626953125,
+          2.660552978515625,
+          4.2865966796875
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          59.1424,
+          58.0597,
+          58.3215,
+          58.3251,
+          60.2643
+        ],
+        [
+          43.436,
+          43.7951,
+          43.848,
+          43.5905,
+          70.2316
+        ]
+      ]
+    },
+    {
+      "Name": "short-mixed-needle",
+      "Finite": false,
+      "Live": false,
+      "Deadline": false,
+      "Pattern": "\u590F\u00B7\u00E9",
+      "Options": "None",
+      "InputBytes": 3072,
+      "InputSha256": "D6E1B3D517B2DBD7FA37B724EAC490D8D0704188B9E9D8574FDCB87EABBED967",
+      "Expected": 128,
+      "Iterations": [
+        8192,
+        16384
+      ],
+      "WarmupCalls": [
+        386567,
+        581128
+      ],
+      "Microseconds": [
+        [
+          9.83145751953125,
+          11.7188720703125,
+          11.591015624999999,
+          11.529833984375,
+          11.545434570312501
+        ],
+        [
+          6.54669189453125,
+          7.9998291015625,
+          7.47020263671875,
+          7.69095458984375,
+          7.415936279296876
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          80.5393,
+          96.001,
+          94.9536,
+          94.4524,
+          94.5802
+        ],
+        [
+          107.261,
+          131.0692,
+          122.3918,
+          126.0086,
+          121.5027
+        ]
+      ]
+    },
+    {
+      "Name": "correlated-two-byte-control",
+      "Finite": false,
+      "Live": false,
+      "Deadline": false,
+      "Pattern": "\u0416\u0451\u043B\u0442\u044B\u0439",
+      "Options": "None",
+      "InputBytes": 131841,
+      "InputSha256": "E2A533AA29176340B0AC29B684340BDC383501B902C07B221B48BDF68A72EF75",
+      "Expected": 64,
+      "Iterations": [
+        4096,
+        4096
+      ],
+      "WarmupCalls": [
+        216758,
+        175178
+      ],
+      "Microseconds": [
+        [
+          20.7755126953125,
+          21.0245849609375,
+          15.100170898437499,
+          20.92783203125,
+          20.9876220703125
+        ],
+        [
+          22.5148193359375,
+          22.5232177734375,
+          23.0337158203125,
+          22.577539062499998,
+          22.6119384765625
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          85.0965,
+          86.1167,
+          61.8503,
+          85.7204,
+          85.9653
+        ],
+        [
+          92.2207,
+          92.2551,
+          94.3461,
+          92.4776,
+          92.6185
+        ]
+      ]
+    },
+    {
+      "Name": "literal-control",
+      "Finite": false,
+      "Live": false,
+      "Deadline": false,
+      "Pattern": "needle",
+      "Options": "None",
+      "InputBytes": 8198,
+      "InputSha256": "8DA47E1CAE661B34F429302D624E9EA43B01F9729C6A36BB3E1D2297395FF58B",
+      "Expected": 1,
+      "Iterations": [
+        131072,
+        131072
+      ],
+      "WarmupCalls": [
+        6390362,
+        6895464
+      ],
+      "Microseconds": [
+        [
+          0.587884521484375,
+          0.5985725402832032,
+          0.5997268676757812,
+          0.5987480163574219,
+          0.6007514953613281
+        ],
+        [
+          0.61712646484375,
+          0.6210578918457031,
+          0.6321838378906249,
+          0.6297515869140625,
+          0.6292549133300781
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          77.0552,
+          78.4561,
+          78.6074,
+          78.4791,
+          78.7417
+        ],
+        [
+          80.888,
+          81.4033,
+          82.8616,
+          82.5428,
+          82.4777
+        ]
+      ]
+    }
+  ]
+}
