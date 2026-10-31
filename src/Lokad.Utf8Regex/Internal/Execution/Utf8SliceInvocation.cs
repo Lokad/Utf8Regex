@@ -81,6 +81,12 @@ internal struct Utf8SliceInvocation
 
     internal bool IsUnmetered => Budget.IsUnmetered && Ledger.IsUnlimited;
 
+    // A funded synchronous preparation borrows the same numeric/host ledger as
+    // execution. Its construction scope owns/refunds its temporary loans; no
+    // second account or release/reacquire transfer is needed between phases.
+    internal IUtf8MemoryAllowance BorrowWorkingMemoryAllowance()
+        => _sharedWork ?? throw new InvalidOperationException("Working admission requires a shared invocation.");
+
     // One checked admission for major capacity, including old/new overlap.
     // A denied request updates the existing peak/first-failure authority but
     // never changes outstanding bytes or acquires the requested payload.
@@ -119,9 +125,20 @@ internal struct Utf8SliceInvocation
 
     // One synchronous invocation owns these mutable counters. Separate calls
     // construct separate owners; this is not a caller-owned/concurrent meter.
-    private sealed class SharedInvocationState(Utf8ExecutionBudget budget, Utf8StorageLedger ledger)
+    private sealed class SharedInvocationState(Utf8ExecutionBudget budget, Utf8StorageLedger ledger) : IUtf8MemoryAllowance
     {
         internal Utf8ExecutionBudget Budget = budget;
         internal Utf8StorageLedger Ledger = ledger;
+
+        public bool TryReserve(ulong bytes)
+        {
+            // This temporary view shares counters; it does not copy their state.
+            var invocation = new Utf8SliceInvocation { _sharedWork = this };
+            if (invocation.TryReserveWorking(bytes) != Utf8ExecutionLimitKind.None)
+                throw Budget.CreateResourceFailure();
+            return true;
+        }
+
+        public void Release(ulong bytes) => Ledger.Release(bytes);
     }
 }

@@ -88,6 +88,19 @@ public sealed class Utf8RegexProgramOwner : IDisposable
         catch { use.Dispose(); throw; }
     }
 
+    /// <summary>Replaces matches using a strict UTF-8 template into caller-owned destination storage.</summary>
+    /// <remarks>Null working allowance uses program funding. Cold preparation and output scratch share live working admission; cached plans remain covered by the program's conservative cache allowance. Uses the controlled scalar replacement route, preserving captures, RTL and NonBacktracking. Covered temporary loans refund synchronously. An insufficient destination remains unchanged and reports zero bytes written. Caller-owned output remains valid after owner disposal.</remarks>
+    public OperationStatus TryReplace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementUtf8,
+        Span<byte> destination, out int bytesWritten, CancellationToken cancellationToken = default,
+        IUtf8MemoryAllowance? workingMemoryAllowance = null)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var regex = Volatile.Read(ref _regex) ?? throw new ObjectDisposedException(nameof(Utf8RegexProgramOwner));
+        using var use = _storage.Enter();
+        return regex.TryReplaceFunded(input, replacementUtf8, destination, out bytesWritten, cancellationToken,
+            workingMemoryAllowance ?? _storage.Allowance);
+    }
+
     /// <summary>Closes new uses and releases compilation after its last active call finishes.</summary>
     public void Dispose()
     {

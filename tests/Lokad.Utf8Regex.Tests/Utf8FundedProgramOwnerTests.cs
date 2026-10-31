@@ -1,4 +1,5 @@
 using System.Text;
+using System.Buffers;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Diagnostics;
@@ -218,16 +219,164 @@ public sealed class Utf8FundedProgramOwnerTests
         Assert.Equal(encoded, destination);
     }
 
+    [Theory]
+    [InlineData("(ab[0-9]d)", "ab1d/ab2d", "é[$1]😀", RegexOptions.None)]
+    [InlineData("(ab[0-9]d)", "ab1d/ab2d", "é[$1]😀", RegexOptions.Compiled)]
+    [InlineData("(.)", "é😀", "[$1]", RegexOptions.None)]
+    [InlineData("(?<12>é)(?<5>😀)?", "é😀/é", "$12-$5-$+", RegexOptions.None)]
+    [InlineData("(a)?", "ba😀", "$`<$1>$'", RegexOptions.None)]
+    [InlineData("(a|aa)", "aa", "[$1]", RegexOptions.RightToLeft)]
+    [InlineData("(a|aa)", "aa", "[$1]", RegexOptions.NonBacktracking)]
+    [InlineData("(a)", "😀", "${unknown}", RegexOptions.None)]
+    public void FundedTemplateDestinationPreservesContractsAndSeparateOwners(string pattern, string subject, string template, RegexOptions options)
+    {
+        var root = new SharedRoot(); var programs = new Account(root); var working = new Account(root);
+        var input = Encoding.UTF8.GetBytes(subject); var native = Encoding.UTF8.GetBytes(template);
+        var expected = new Utf8Regex(pattern, options).Replace(input, native);
+        var owner = Compile(pattern, programs, options); var held = programs.Used;
+        var destination = new byte[expected.Length + 4];
+        foreach (var warm in new[] { false, true })
+        {
+            destination.AsSpan().Fill(0xcc);
+            Assert.Equal(OperationStatus.Done, owner.TryReplace(input, native, destination, out var written,
+                workingMemoryAllowance: working));
+            Assert.Equal(expected.Length, written); Assert.Equal(expected, destination[..written]);
+            Assert.All(destination[written..], value => Assert.Equal(0xcc, value));
+            Assert.Equal(0UL, working.Used); Assert.Equal(held, programs.Used);
+            if (expected.Length > 0)
+            {
+                var shortDestination = Enumerable.Repeat((byte)0xcc, expected.Length - 1).ToArray();
+                Assert.Equal(OperationStatus.DestinationTooSmall, owner.TryReplace(input, native, shortDestination, out written,
+                    workingMemoryAllowance: working));
+                Assert.Equal(0, written); Assert.All(shortDestination, value => Assert.Equal(0xcc, value));
+                Assert.Equal(0UL, working.Used);
+            }
+        }
+        Assert.True(working.Peak > 0); owner.Dispose(); Assert.Equal(0UL, root.Used);
+        Assert.Equal(expected, destination[..expected.Length]);
+        Assert.Throws<ObjectDisposedException>(() => owner.TryReplace(input, native, destination, out _));
+    }
+
+    [Theory] [InlineData(false)] [InlineData(true)]
+    public void FundedTemplateAdmissionDenialIsTerminalAndRefundsColdAndWarmLoans(bool warm)
+    {
+        var root = new SharedRoot(); var programs = new Account(root); var working = new Account(root);
+        using var owner = Compile("(a)", programs); var held = programs.Used;
+        var destination = new byte[16];
+        if (warm) owner.TryReplace("a"u8, "[$1]"u8, destination, out _, workingMemoryAllowance: working);
+        working.Maximum = 0; var attempts = working.Attempts;
+        Assert.Throws<Utf8MemoryAdmissionException>(() => owner.TryReplace("a"u8, "[$1]"u8, destination, out _,
+            workingMemoryAllowance: working));
+        Assert.Equal(attempts + 1, working.Attempts); Assert.Equal(0UL, working.Used); Assert.Equal(held, root.Used);
+        working.Maximum = ulong.MaxValue;
+        Assert.Equal(OperationStatus.Done, owner.TryReplace("a"u8, "[$1]"u8, destination, out var written,
+            workingMemoryAllowance: working));
+        Assert.Equal("[a]"u8.ToArray(), destination[..written]);
+        root.Maximum = held;
+        Assert.Throws<Utf8MemoryAdmissionException>(() => owner.TryReplace("a"u8, "[$1]"u8, destination, out _,
+            workingMemoryAllowance: working));
+        Assert.Equal(0UL, working.Used); Assert.Equal(held, root.Used);
+    }
+
+    [Theory] [InlineData(false)] [InlineData(true)]
+    public void FundedTemplateAliasesAndMalformedNoMatchAreQualified(bool warm)
+    {
+        var root = new SharedRoot(); var programs = new Account(root); using var owner = Compile("(a)", programs);
+        var bytes = new byte[64]; "aaé[$1]😀"u8.CopyTo(bytes);
+        if (warm) owner.TryReplace("aa"u8, "é[$1]😀"u8, new byte[64], out _);
+        Assert.Equal(OperationStatus.Done, owner.TryReplace(bytes.AsSpan(0, 2), bytes.AsSpan(2, "é[$1]😀"u8.Length),
+            bytes, out var written));
+        Assert.Equal("é[a]😀é[a]😀"u8.ToArray(), bytes[..written]);
+        var held = programs.Used;
+        Assert.Throws<ArgumentException>(() => owner.TryReplace("none"u8, new byte[] { 0xff }, bytes, out _));
+        Assert.Throws<ArgumentException>(() => owner.TryReplace(new byte[] { 0xff }, "$1"u8, bytes, out _));
+        Assert.Equal(held, root.Used);
+        using var canceled = new CancellationTokenSource(); canceled.Cancel();
+        Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() =>
+            owner.TryReplace([], [], bytes, out _, canceled.Token)).CancellationToken);
+    }
+
+    [Theory] [InlineData(false)] [InlineData(true)]
+    public void FundedTemplateAdmissionInterruptionKeepsOriginalAuthority(bool timeout)
+    {
+        long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var root = new SharedRoot(); var programs = new Account(root); var working = new Account(root);
+        using var owner = Utf8Regex.Compile("(a)", RegexOptions.None,
+            timeout ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan, default, default,
+            Timeout.InfiniteTimeSpan, default, programs);
+        var held = programs.Used; using var canceled = new CancellationTokenSource();
+        working.AfterGrant = () => { if (timeout) ticks = 20; else canceled.Cancel(); };
+        var error = Record.Exception(() => owner.TryReplace("a"u8, "é[$1]"u8, new byte[32], out _, canceled.Token, working));
+        if (timeout) Assert.Empty(Assert.IsType<RegexMatchTimeoutException>(error).Input);
+        else Assert.Equal(canceled.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+        Assert.Equal(0UL, working.Used); Assert.Equal(held, programs.Used);
+    }
+
+    [Fact]
+    public void FundedTemplateCallRetainsProgramAcrossReentrantClose()
+    {
+        var root = new SharedRoot(); var programs = new Account(root); var working = new Account(root);
+        var owner = Compile("(a)", programs); var held = programs.Used;
+        working.AfterGrant = () => { owner.Dispose(); Assert.Equal(held, programs.Used); };
+        var destination = new byte[16];
+        Assert.Equal(OperationStatus.Done, owner.TryReplace("aa"u8, "[$1]"u8, destination, out var written,
+            workingMemoryAllowance: working));
+        Assert.Equal("[a][a]"u8.ToArray(), destination[..written]); Assert.Equal(0UL, root.Used);
+    }
+
+    [Fact]
+    public void FundedTemplateNumericWorkingLimitIncludesPreparationOutputOverlap()
+    {
+        var root = new SharedRoot(); var programs = new Account(root); var working = new Account(root);
+        var destination = new byte[16]; ulong coldPeak; ulong warmPeak;
+        using (var probe = Compile("(a)", programs))
+        {
+            probe.TryReplace("aa"u8, "é[$1]"u8, destination, out _, workingMemoryAllowance: working);
+            coldPeak = working.Peak; working.Peak = 0;
+            probe.TryReplace("aa"u8, "é[$1]"u8, destination, out _, workingMemoryAllowance: working);
+            warmPeak = working.Peak;
+        }
+        Assert.True(coldPeak > warmPeak); Assert.Equal(0UL, root.Used);
+        using var owner = Compile("(a)", programs, policy: new() { MaxWorkingBytes = coldPeak - 1 });
+        var held = programs.Used;
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => owner.TryReplace(
+            "aa"u8, "é[$1]"u8, destination, out _, workingMemoryAllowance: working));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);
+        Assert.Equal(coldPeak - 1, failure.Limit);
+        Assert.Equal(0UL, working.Used); Assert.Equal(held, programs.Used);
+        // Preparation published a valid plan under prepaid program admission.
+        // Reuse no longer overlaps cold scratch, so the same cap now admits it.
+        Assert.Equal(OperationStatus.Done, owner.TryReplace("aa"u8, "é[$1]"u8, destination,
+            out var written, workingMemoryAllowance: working));
+        Assert.Equal("é[a]é[a]"u8.ToArray(), destination[..written]); Assert.Equal(0UL, working.Used);
+    }
+
+    [Theory] [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    public void FundedTemplateOtherNumericControlsStillApply(int control)
+    {
+        var root = new SharedRoot(); var programs = new Account(root); var working = new Account(root);
+        var policy = control switch { 0 => new Utf8ResourcePolicy { MaxWorkSteps = 1 },
+            1 => new Utf8ResourcePolicy { MaxDepth = 1 }, _ => new Utf8ResourcePolicy { MaxResultBytes = 1 } };
+        using var owner = Compile("(?=(?=(a)))a", programs, policy: policy); var held = programs.Used;
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => owner.TryReplace(
+            "a"u8, "[$1]"u8, new byte[16], out _, workingMemoryAllowance: working));
+        Assert.Equal(control switch { 0 => Utf8ResourceLimitKind.ExecutionWorkSteps,
+            1 => Utf8ResourceLimitKind.ExecutionDepth, _ => Utf8ResourceLimitKind.ExecutionResultBytes }, failure.ResourceKind);
+        Assert.Equal(0UL, working.Used); Assert.Equal(held, programs.Used);
+    }
+
     private sealed class SharedRoot
     {
         internal readonly object Gate = new();
         internal ulong Used;
+        internal ulong Peak;
         internal ulong Maximum = 64 << 20;
     }
 
     private sealed class Account(SharedRoot root) : IUtf8MemoryAllowance
     {
         internal ulong Used;
+        internal ulong Peak;
         internal ulong Maximum = ulong.MaxValue;
         internal int Attempts;
         internal Action? AfterGrant;
@@ -237,7 +386,7 @@ public sealed class Utf8FundedProgramOwnerTests
             {
                 Attempts++;
                 if (bytes > Maximum - Math.Min(Maximum, Used) || bytes > root.Maximum - root.Used) return false;
-                Used += bytes; root.Used += bytes;
+                Used += bytes; root.Used += bytes; Peak = Math.Max(Peak, Used); root.Peak = Math.Max(root.Peak, root.Used);
             }
             AfterGrant?.Invoke(); return true;
         }

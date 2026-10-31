@@ -1,11 +1,50 @@
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Replacement;
+using Lokad.Utf8Regex.Internal;
+using System.Buffers;
 using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex;
 
 public sealed partial class Utf8Regex
 {
+    // The owning facade holds program/cache admission until this returns. Cold
+    // key/parser loans stay live through output, including uncached large plans.
+    internal OperationStatus TryReplaceFunded(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementUtf8,
+        Span<byte> destination, out int bytesWritten, CancellationToken token, IUtf8MemoryAllowance working)
+    {
+        token.ThrowIfCancellationRequested();
+        bytesWritten = 0;
+        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token, working);
+        try
+        {
+            using var construction = Utf8ConstructionScope.Enter(
+                new() { MaxBytes = Utf8ConstructionScope.DefaultBufferBytes }, Timeout.InfiniteTimeSpan,
+                token, invocation.BorrowWorkingMemoryAllowance());
+            var deadline = invocation.Budget.Deadline;
+            construction.Budget.Deadline = deadline;
+            var control = new ReplacementPreparationControl(deadline, token);
+            ValidateReplacementTemplateUtf8(replacementUtf8, control);
+            var replacement = GetParsedReplacement(replacementUtf8, control);
+            var state = 0;
+            // Funded calls use the existing controlled scalar replacement route,
+            // including its native literal candidate discovery and NB/RTL rules.
+            var result = OwnedSliceReplace(input, _ownedSliceProgram,
+                new Utf8SliceTemplateExpansion(replacement, _program.CaptureCatalog), ref state,
+                Utf8SliceReplacementResultKind.Destination, destination, invocation);
+            FinishFundedInvocation(ref invocation);
+            bytesWritten = result.BytesWritten;
+            construction.Complete();
+            return result.Status;
+        }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { throw CreateExecutionResourceFailure(ref invocation); }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(ReadOnlySpan<byte>.Empty); }
+        finally { invocation.Ledger.Release(invocation.Ledger.ReservedBytes); }
+    }
+
     /// <summary>Tests for a match with caller-owned admission for temporary matching storage.</summary>
     /// <remarks>Compilation and borrowed input keep their separate owners. The existing numeric limits, original token and deadline still apply. Covered loans refund synchronously; refusal does not retry under another allowance.</remarks>
     public bool IsMatch(ReadOnlySpan<byte> input, CancellationToken cancellationToken,

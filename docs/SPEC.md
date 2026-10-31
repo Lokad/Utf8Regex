@@ -268,14 +268,33 @@ admission. Native literal, word and category counters keep bounded metering.
 Core's `Compile(..., token, programMemoryAllowance)` returns a disposable
 `Utf8RegexProgramOwner`. It admits conservative compilation capacities before
 acquisition and transfers their charge to explicit ownership. The owner offers
-Boolean matching, Count and persistent range cursors, using its program allowance for working storage by
+Boolean matching, Count, byte-template destination replacement and persistent range cursors, using its program allowance for working storage by
 default; the optional working allowance selects a separate host child account.
 The private expression cannot escape the owner. Dispose rejects new calls and
 refunds compilation after the final active call/cursor; active users retain their
 program reference and finish under their original controls. This new owner keeps
-legacy copied span-enumerator lifetimes separate. Funded replacement remains
-unfinished. PCRE2 now has its own funded program owner, byte-range memory cursor
+legacy copied span-enumerator lifetimes separate. PCRE2 has its own funded program owner, byte-range memory cursor
 and retained receipts under the [profile contract](SPEC-PCRE2.md).
+
+`Utf8RegexProgramOwner.TryReplace(input, replacementUtf8, destination, out written,
+token, workingAllowance)` uses strict native templates and caller-owned output.
+The program's prepaid conservative cache maximum covers retained keys/plans.
+Cold key/parser capacity borrows the invocation's existing working ledger and
+stays admitted through output, including uncached plans. Preparation and execution
+therefore share host admission and numeric live-capacity overlap, without a
+refund/reacquire gap. Covered temporary loans refund synchronously, even when
+preparation publishes a cached plan before execution fails. Warm reuse can need
+less working capacity. Construction work/depth/instruction and 64MiB preparation
+backstops remain; cold preparation retains the existing construction-byte refusal
+vocabulary. Work/depth/result controls also apply during matching and output.
+
+This funded destination API uses the existing controlled scalar replacement
+route, including native literal candidate discovery, with the original deadline
+and token; it does not promise ordinary unlimited grouped-worker throughput.
+RTL, NonBacktracking, capture expansion, aliases and short-destination behavior
+are preserved. The destination belongs to the caller and remains valid after
+program close. No additional retained output receipt or string convenience is
+required for this route.
 
 `CreateMatchCursor(ReadOnlyMemory<byte>, startOffsetInBytes, token, workingAllowance)`
 on Core expressions and program owners returns `Utf8RegexMatchCursor`. Null start
@@ -306,8 +325,9 @@ retention then the caller's admission responsibility. Borrowed input is not char
 again. Numeric result traffic remains cumulative even when live loans refund.
 
 Native subject/range discovery, pattern compilation, caller-buffer source/name
-metadata and byte-template preparation/cache paths are implemented. Core/PCRE2
-funded replacement/output receipts and final package/consumer acceptance remain
+metadata and byte-template preparation/cache paths are implemented. Core funded
+caller-destination replacement is source-qualified; PCRE2 funded replacement
+and final package/consumer acceptance remain
 separate parts of the complete UTF-8 public pipeline.
 
 ### Host admission

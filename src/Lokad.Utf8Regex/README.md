@@ -43,6 +43,13 @@ construction controls. Memory accounting admits modeled major capacity before
 allocation; it is not total heap/RSS, all preparation, callbacks or retained-host
 storage containment. See [resource contract](../../docs/SPEC.md#cancellation-deadlines-and-resource-limits).
 
+Caller-funded `Compile` returns `Utf8RegexProgramOwner`. Its byte-template
+`TryReplace` writes into caller-owned storage; cold preparation and output share
+working admission, while cached plans remain covered by the program allowance.
+Temporary loans refund synchronously and copied output survives owner disposal.
+This API uses the controlled scalar replacement route, preserving RTL, captures,
+NonBacktracking, cancellation and numeric limits.
+
 Keep borrowed subjects unchanged and their owners alive. Owned snapshots remain
 valid after advance/failure/disposal. Copied value cursors retain independent
 positions while sharing allowance/deadline. A host must separately account for
