@@ -239,15 +239,18 @@ public sealed class Pcre2MemoryCursorTests
             if (paused) return; paused = true; entered.Set();
             if (!resume.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException("Test advance was not resumed.");
         };
-        var advance = Task.Run(() => cursor.MoveNext(out _));
+        // The caller blocks on entry; use a worker independent of pool availability.
+        var advance = Task.Factory.StartNew(() => cursor.MoveNext(out _),
+            CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        var matched = false;
         try
         {
             Assert.True(entered.Wait(TimeSpan.FromSeconds(10)));
             Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
             Assert.Throws<InvalidOperationException>(cursor.Dispose);
         }
-        finally { resume.Set(); }
-        Assert.True(await advance); cursor.Dispose(); Assert.Equal(0UL, root.Used);
+        finally { resume.Set(); matched = await advance; }
+        Assert.True(matched); cursor.Dispose(); Assert.Equal(0UL, root.Used);
     }
 
     [Fact]
