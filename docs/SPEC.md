@@ -204,6 +204,11 @@ total. Totals saturate, and first denial stays sticky across copies. Denial is n
 no-match or partial success. Numerical charges depend on route/version; they are
 not byte counts, CPU instructions, elapsed time or portable per-pattern minima.
 Native shortcuts still meter bounded search, comparison and publication.
+Eligible controlled ASCII Boolean calls reuse the complete simple-branch search
+with its bounded checkpoints, without scalar capture/backtracking workspace.
+Full strict subject validation still precedes the decision. Unsupported shapes,
+mixed Unicode input, RTL and NonBacktracking keep their existing paths. The
+controlled invocation owner remains; this is not a general zero-allocation claim.
 Native counters admit their fixed scratch capacity against working bytes before
 use and record active nesting against depth. A Count or value-Match shortcut can
 avoid capture workspace; a declined shortcut retains its spent work when scalar

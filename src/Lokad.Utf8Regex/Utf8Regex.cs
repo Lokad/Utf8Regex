@@ -601,10 +601,12 @@ public sealed partial class Utf8Regex
 
     private bool IsMatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
-        // Captures with Unicode atoms require scalar result projection, but
-        // existence on a fully ASCII subject can use the complete branch plan.
-        // Do not change global capture dispatch or already-qualified native lanes.
-        if (_hasCaptures && _ownedSliceProgram.HasUnicodePatternAtoms &&
+        // Boolean existence on fully ASCII input can use the complete branch
+        // plan without capture projection. Controlled calls retain its bounded
+        // checkpoints instead of acquiring scalar capture/backtracking storage.
+        // Ordinary and unsupported routes keep their existing dispatch.
+        if ((_hasCaptures && _ownedSliceProgram.HasUnicodePatternAtoms ||
+            HasFiniteExecutionLimits || cancellationToken.CanBeCanceled || MatchTimeout != Regex.InfiniteMatchTimeout) &&
             _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
             _preparedRegex.SimplePatternPlan is { Branches.Length: > 0, MinLength: > 0 } simple &&
             !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
