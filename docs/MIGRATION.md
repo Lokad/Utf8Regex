@@ -106,6 +106,12 @@ covers validation, matching, required shaping and cursor waits. Callbacks cannot
 be forcibly interrupted; library copying/encoding of returned output is covered.
 Core/PythonRe byte-capped timeout diagnostics omit Input to avoid subject decoding.
 
+Core NonBacktracking preparation now meters groups of at most64 state cells,
+with token/deadline checks before every group. Scalar passes and atom work remain
+separately metered; storage/depth admission is unchanged. Preparation can consume
+fewer MaxWorkSteps than earlier versions. Treat work units as route/version
+dependent, and qualify finite policies against representative workloads when upgrading.
+
 Use Compile for separate construction caps/timeout/token; ordinary constructors
 retain fixed backstops. Pass execution tokens again later. Cold preparation,
 program/cache retention, standalone getters, callback allocations and host storage

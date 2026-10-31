@@ -128,12 +128,16 @@ internal sealed class Utf8NonBacktrackingSearchState
                 var before = default(Rune);
                 if (boundary < scalars) _ = Rune.DecodeFromUtf8(input[edge..], out scalar, out _);
                 if (boundary > 0) _ = Rune.DecodeFromUtf8(input[boundaries[boundary - 1]..], out before, out _);
+                var instructionWork = 0;
                 foreach (var pc in program.NonBacktrackingEpsilonOrder)
                 {
-                    // Each cell is bounded VM work: keep its exact charge and
-                    // the normal instruction deadline cadence.
-                    breach = invocation.TryChargeStep();
-                    if (breach != Utf8ExecutionLimitKind.None) return breach;
+                    // One input-work quantum admits at most one packed word's
+                    // worth of cells. Atom work retains its separate charges.
+                    if ((instructionWork++ & 63) == 0)
+                    {
+                        breach = invocation.TryChargeInputStep();
+                        if (breach != Utf8ExecutionLimitKind.None) return breach;
+                    }
                     var instruction = program.Instructions[pc];
                     bool viable;
                     switch (instruction.Kind)
