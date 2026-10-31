@@ -1,0 +1,112 @@
+[
+  {
+    "Name": "actual-ordinary",
+    "BeforeUs": 7989.5,
+    "AfterUs": 227.240625,
+    "ChangePercent": -97.15575912134676,
+    "BeforeBytes": 1680,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.6938336867175932,
+    "AfterSpread": 1.278242800982908
+  },
+  {
+    "Name": "actual-compiled",
+    "BeforeUs": 4750.19375,
+    "AfterUs": 177.06328125000002,
+    "ChangePercent": -96.27250401628355,
+    "BeforeBytes": 1680,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0028540340927825,
+    "AfterSpread": 1.0120174018436932
+  },
+  {
+    "Name": "actual-finite-live",
+    "BeforeUs": 5645.643749999999,
+    "AfterUs": 201.0546875,
+    "ChangePercent": -96.4387641799042,
+    "BeforeBytes": 1800,
+    "AfterBytes": 120,
+    "BeforeSpread": 1.0085274752609936,
+    "AfterSpread": 1.0057291534903274
+  },
+  {
+    "Name": "actual-deadline-live",
+    "BeforeUs": 6197.71875,
+    "AfterUs": 230.2060546875,
+    "ChangePercent": -96.28563244036364,
+    "BeforeBytes": 1848,
+    "AfterBytes": 168,
+    "BeforeSpread": 1.007940642960406,
+    "AfterSpread": 1.083372680937298
+  },
+  {
+    "Name": "dense-delimiters",
+    "BeforeUs": 750.1921875,
+    "AfterUs": 67.580859375,
+    "ChangePercent": -90.99152717116239,
+    "BeforeBytes": 1680,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0092245528675987,
+    "AfterSpread": 1.0047463016348535
+  },
+  {
+    "Name": "scalar-block-boundaries",
+    "BeforeUs": 39.542578125,
+    "AfterUs": 1.036773681640625,
+    "ChangePercent": -97.37808273814817,
+    "BeforeBytes": 1680,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.6597062725220766,
+    "AfterSpread": 1.128942419034835
+  },
+  {
+    "Name": "one-long-run",
+    "BeforeUs": 59.602587890625,
+    "AfterUs": 0.6861366271972656,
+    "ChangePercent": -98.84881403395373,
+    "BeforeBytes": 1680,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0104350773949993,
+    "AfterSpread": 1.018713253066226
+  },
+  {
+    "Name": "nul-delimiters",
+    "BeforeUs": 157.6224609375,
+    "AfterUs": 10.88336181640625,
+    "ChangePercent": -93.09529761705619,
+    "BeforeBytes": 1680,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0249728029441203,
+    "AfterSpread": 1.0086337848451368
+  },
+  {
+    "Name": "folded-control",
+    "BeforeUs": 145.82167968750002,
+    "AfterUs": 143.4326171875,
+    "ChangePercent": -1.6383452070500404,
+    "BeforeBytes": 1680,
+    "AfterBytes": 1680,
+    "BeforeSpread": 1.0194566115253354,
+    "AfterSpread": 1.0151025510823612
+  },
+  {
+    "Name": "word-control",
+    "BeforeUs": 6.9786132812499995,
+    "AfterUs": 6.983642578125,
+    "ChangePercent": 0.07206728145423558,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0160367751832642,
+    "AfterSpread": 1.0075592760751673
+  },
+  {
+    "Name": "literal-control",
+    "BeforeUs": 0.5629707336425781,
+    "AfterUs": 0.5727584838867187,
+    "ChangePercent": 1.7385895321433642,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0173457975769467,
+    "AfterSpread": 1.045300240367505
+  }
+]

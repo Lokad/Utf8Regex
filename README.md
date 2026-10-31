@@ -156,7 +156,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 
 | Case | Operation | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
-| `industry/rust-sherlock-nonnewline-count` | `Count` | 4,780.527 us | 988.390 us | 1,280.449 us | 4.84x |
 | `industry/mariomka-email-count` | `Count` | 1,520.615 us | 490.404 us | 8,946.667 us | 3.10x |
 | `industry/rust-sherlock-letter-count` | `Count` | 82,988.200 us | 31,167.900 us | 32,561.700 us | 2.66x |
 | `industry/boostdocs-ftp-line-match` | `IsMatch` | 0.328 us | 0.175 us | 0.229 us | 1.88x |
@@ -183,6 +182,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/date-miss` | `IsMatch` | 0.109 us | 0.574 us | 0.612 us | 0.19x |
 | `industry/leipzig-river-window-count` | `Count` | 6,139.922 us | 32,656.450 us | 49,199.500 us | 0.19x |
 | `common/split-words` | `Split` | 14.806 us | 79.613 us | 81.139 us | 0.19x |
+| `industry/rust-sherlock-nonnewline-count` | `Count` | 224.454 us | 1,367.473 us | 1,871.763 us | 0.16x |
 | `industry/boostdocs-float-match` | `IsMatch` | 0.018 us | 0.122 us | 0.151 us | 0.15x |
 | `common/matches-words` | `Count` | 9.490 us | 69.603 us | 71.227 us | 0.14x |
 | `industry/leipzig-symbol-count` | `Count` | 1,828.625 us | 23,707.200 us | 31,235.400 us | 0.08x |
@@ -238,7 +238,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 
 | Case | Operation | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
-| `industry/rust-sherlock-nonnewline-count` | `Count` | 4,778.827 us | 605.864 us | 878.485 us | 7.89x |
 | `industry/rust-sherlock-letter-count` | `Count` | 82,432.200 us | 15,647.100 us | 16,753.850 us | 5.27x |
 | `industry/rust-sherlock-holmes-window-count` | `Count` | 276.557 us | 59.682 us | 303.314 us | 4.63x |
 | `common/backtracking` | `IsMatch` | 0.197 us | 0.044 us | 0.075 us | 4.54x |
@@ -268,6 +267,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/date-miss` | `IsMatch` | 0.111 us | 0.204 us | 0.236 us | 0.54x |
 | `common/matches-word` | `Count` | 1.630 us | 3.090 us | 4.255 us | 0.53x |
 | `industry/boostdocs-float-match` | `IsMatch` | 0.020 us | 0.055 us | 0.083 us | 0.36x |
+| `industry/rust-sherlock-nonnewline-count` | `Count` | 219.826 us | 852.980 us | 1,017.947 us | 0.26x |
 | `industry/rust-sherlock-word-holmes-count` | `Count` | 842.461 us | 4,519.777 us | 4,980.908 us | 0.19x |
 | `common/matches-boundary` | `Count` | 8.316 us | 105.692 us | 107.623 us | 0.08x |
 | `common/matches-set` | `Count` | 8.367 us | 107.719 us | 108.646 us | 0.08x |

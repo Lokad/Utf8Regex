@@ -1,0 +1,11 @@
+Preflight actual-ordinary: 26105
+Preflight actual-compiled: 26105
+Preflight actual-finite-live: 26105
+Preflight actual-deadline-live: 26105
+Preflight dense-delimiters: 8193
+Preflight scalar-block-boundaries: 65
+Preflight one-long-run: 2
+Preflight nul-delimiters: 770
+Preflight folded-control: 770
+Preflight word-control: 768
+Preflight literal-control: 1
