@@ -1,0 +1,41 @@
+ComparisonSample;Index=0;Lane=Utf8Pcre2;Iterations=200000;ElapsedMicroseconds=102223.600
+ComparisonSample;Index=1;Lane=Utf8Pcre2;Iterations=200000;ElapsedMicroseconds=101306.600
+ComparisonSample;Index=2;Lane=Utf8Pcre2;Iterations=200000;ElapsedMicroseconds=132817.900
+ComparisonSample;Index=3;Lane=Utf8Pcre2;Iterations=200000;ElapsedMicroseconds=120281.800
+ComparisonSample;Index=4;Lane=Utf8Pcre2;Iterations=200000;ElapsedMicroseconds=124751.800
+Updated PCRE2 benchmark case: pcre2/subroutine-prefix-digits
+Qualification CPU set: least-contended allowed processor (0x8; Linux efficiency class unknown)
+Initial paired lane: Utf8Pcre2
+pcre2-special-ismatch: Inconclusive; R=5.027 [4.969, 5.298]; managed=0.549 us; comparator=0.109 us
+Qualified PCRE.NET / PCRE2 NFA benchmark case: pcre2/subroutine-prefix-digits
+ComparisonSample;Index=0;Lane=Utf8Pcre2;Iterations=200000;ElapsedMicroseconds=153693.700
+ComparisonSample;Index=1;Lane=Utf8Pcre2;Iterations=200000;ElapsedMicroseconds=153497.600
+ComparisonSample;Index=2;Lane=Utf8Pcre2;Iterations=200000;ElapsedMicroseconds=153083.000
+ComparisonSample;Index=3;Lane=Utf8Pcre2;Iterations=200000;ElapsedMicroseconds=153253.000
+ComparisonSample;Index=4;Lane=Utf8Pcre2;Iterations=200000;ElapsedMicroseconds=154119.100
+Updated PCRE2 benchmark case: pcre2/conditional-negative-lookahead
+Qualification CPU set: least-contended allowed processor (0x80; Linux efficiency class unknown)
+Initial paired lane: Utf8Pcre2
+pcre2-special-ismatch: Inconclusive; R=4.695 [4.607, 4.733]; managed=0.712 us; comparator=0.153 us
+Qualified PCRE.NET / PCRE2 NFA benchmark case: pcre2/conditional-negative-lookahead
+ComparisonSample;Index=0;Lane=Utf8Pcre2;Iterations=200000;ElapsedMicroseconds=150202.100
+ComparisonSample;Index=1;Lane=Utf8Pcre2;Iterations=200000;ElapsedMicroseconds=151178.200
+ComparisonSample;Index=2;Lane=Utf8Pcre2;Iterations=200000;ElapsedMicroseconds=149890.300
+ComparisonSample;Index=3;Lane=Utf8Pcre2;Iterations=200000;ElapsedMicroseconds=137068.000
+ComparisonSample;Index=4;Lane=Utf8Pcre2;Iterations=200000;ElapsedMicroseconds=150539.600
+Updated PCRE2 benchmark case: pcre2/conditional-accept-negative-lookahead
+Qualification CPU set: least-contended allowed processor (0x20; Linux efficiency class unknown)
+Initial paired lane: Utf8Pcre2
+pcre2-special-ismatch: Inconclusive; R=4.532 [4.444, 4.969]; managed=0.576 us; comparator=0.127 us
+Qualified PCRE.NET / PCRE2 NFA benchmark case: pcre2/conditional-accept-negative-lookahead
+ComparisonSample;Index=0;Lane=Utf8Pcre2;Iterations=200000;ElapsedMicroseconds=144442.300
+ComparisonSample;Index=1;Lane=Utf8Pcre2;Iterations=200000;ElapsedMicroseconds=145339.500
+ComparisonSample;Index=2;Lane=Utf8Pcre2;Iterations=200000;ElapsedMicroseconds=128275.800
+ComparisonSample;Index=3;Lane=Utf8Pcre2;Iterations=200000;ElapsedMicroseconds=93711.700
+ComparisonSample;Index=4;Lane=Utf8Pcre2;Iterations=200000;ElapsedMicroseconds=94711.200
+Updated PCRE2 benchmark case: pcre2/conditional-lookahead
+Qualification CPU set: least-contended allowed processor (0x80; Linux efficiency class unknown)
+Initial paired lane: Utf8Pcre2
+pcre2-special-ismatch: Inconclusive; R=3.994 [3.924, 4.014]; managed=0.480 us; comparator=0.121 us
+Qualified PCRE.NET / PCRE2 NFA benchmark case: pcre2/conditional-lookahead
+PCRE2 benchmark page is current: /home/vermorel/tmp/utf8regex-net11-memory/pilot/src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md

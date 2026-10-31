@@ -1,0 +1,964 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "AffinityMask": "4",
+  "ElapsedSeconds": 63.6048221,
+  "Identities": [
+    {
+      "Version": "0.5.0-dev.1\u002B035a621c8410ed2de2f57cfef4b0986bcd00214a",
+      "Sha256": "FDE68E77C3B36E5EA8F5FA7BC19CE7CC77DBFB74EE32EEE74EE2DFD9B13A83EB"
+    },
+    {
+      "Version": "0.5.0-dev.1\u002B035a621c8410ed2de2f57cfef4b0986bcd00214a",
+      "Sha256": "980045C507F4E84C829A4D7D1953163DE344B9B9B132A81464483C3F45CA89D1"
+    }
+  ],
+  "Scope": "Only PCRE2 Boolean dispatch is split: existing plain backtracking/literal/character arms avoid a roughly12KiB shared frame. Same original budget, validator, matchers, captures, loans, token and deadline; Core DLLs identical. Ten equal-result public IsMatch cases include actual subroutine/negative conditional/ACCEPT cases, finite-live/deadline-live, backreference/literal/character and proven cached URI specialization bypassing the edited dispatcher. Optional compiled predecoded/decode-then .NET lanes only for equal overlapping semantics, explicit exclusions otherwise. Finite MatchLimit1M/Depth1024/Heap1MiB/Result1MiB; deadline1second. Warm1.5s/min64calls, independent60ms calibration, five alternating samples each\u003E=20ms; batches checked after timing. Default tiering/PGO, CPU2, one120s cap, at most one selected confirmation. No public parity/Status inferred from this producer A/B; native row refresh is separate. No new executor, policy, field, mode or unchecked access; no package/fullcatalog campaign.",
+  "LaneNames": [
+    "Before",
+    "After",
+    "PredecodedCompiledRegex",
+    "DecodeThenCompiledRegex"
+  ],
+  "Rows": [
+    {
+      "Name": "subroutine-hit",
+      "Finite": false,
+      "Live": false,
+      "Deadline": false,
+      "Pattern": "^(?1)\\d{3}(a)",
+      "InputBytes": 5,
+      "InputSha256": "A6D2352543DACCA9CB4EF492AA9942CEF664CF4B95CDA3B2039BC3CE10B07957",
+      "Expected": 1,
+      "Plans": [
+        "IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+        "IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking"
+      ],
+      "DotNetExclusion": "PCRE2 grammar unsupported by .NET Regex",
+      "Iterations": [
+        65536,
+        131072
+      ],
+      "WarmupCalls": [
+        1164735,
+        2154882
+      ],
+      "Microseconds": [
+        [
+          1.1450958251953125,
+          1.0943206787109374,
+          1.0874282836914062,
+          1.0860382080078124,
+          1.0898345947265624
+        ],
+        [
+          0.9768096923828125,
+          0.9491462707519531,
+          0.9557945251464844,
+          0.9568511962890625,
+          0.9556808471679688
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          75.045,
+          71.7174,
+          71.2657,
+          71.1746,
+          71.4234
+        ],
+        [
+          128.0324,
+          124.4065,
+          125.2779,
+          125.4164,
+          125.263
+        ]
+      ]
+    },
+    {
+      "Name": "subroutine-miss",
+      "Finite": false,
+      "Live": false,
+      "Deadline": false,
+      "Pattern": "^(?1)\\d{3}(a)",
+      "InputBytes": 5,
+      "InputSha256": "7F86C80729B265DD6BA302CE13385EA9ADF1994BE42EEA0E48DC4B69D711AB70",
+      "Expected": 0,
+      "Plans": [
+        "IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+        "IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking"
+      ],
+      "DotNetExclusion": "PCRE2 grammar unsupported by .NET Regex",
+      "Iterations": [
+        65536,
+        65536
+      ],
+      "WarmupCalls": [
+        1373985,
+        1473883
+      ],
+      "Microseconds": [
+        [
+          1.0931777954101562,
+          1.0933914184570312,
+          1.0924087524414063,
+          1.0929580688476563,
+          1.089453125
+        ],
+        [
+          0.962237548828125,
+          0.95823974609375,
+          0.9482467651367188,
+          0.9452957153320312,
+          0.9552993774414062
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          71.6425,
+          71.6565,
+          71.5921,
+          71.6281,
+          71.3984
+        ],
+        [
+          63.0612,
+          62.7992,
+          62.1443,
+          61.9509,
+          62.6065
+        ]
+      ]
+    },
+    {
+      "Name": "subroutine-finite-live",
+      "Finite": true,
+      "Live": true,
+      "Deadline": false,
+      "Pattern": "^(?1)\\d{3}(a)",
+      "InputBytes": 5,
+      "InputSha256": "A6D2352543DACCA9CB4EF492AA9942CEF664CF4B95CDA3B2039BC3CE10B07957",
+      "Expected": 1,
+      "Plans": [
+        "IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+        "IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking"
+      ],
+      "DotNetExclusion": "PCRE2 grammar unsupported by .NET Regex",
+      "Iterations": [
+        32768,
+        32768
+      ],
+      "WarmupCalls": [
+        494730,
+        569976
+      ],
+      "Microseconds": [
+        [
+          2.8665191650390622,
+          2.8063629150390623,
+          2.8115081787109375,
+          2.805517578125,
+          2.807330322265625
+        ],
+        [
+          2.5328094482421872,
+          2.54730224609375,
+          2.529638671875,
+          2.536376953125,
+          2.5562774658203127
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1760,
+          1760,
+          1760,
+          1760,
+          1760
+        ],
+        [
+          1760,
+          1760,
+          1760,
+          1760,
+          1760
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          93.9301,
+          91.9589,
+          92.1275,
+          91.9312,
+          91.9906
+        ],
+        [
+          82.9951,
+          83.47,
+          82.8912,
+          83.112,
+          83.7641
+        ]
+      ]
+    },
+    {
+      "Name": "subroutine-deadline-live",
+      "Finite": false,
+      "Live": true,
+      "Deadline": true,
+      "Pattern": "^(?1)\\d{3}(a)",
+      "InputBytes": 5,
+      "InputSha256": "A6D2352543DACCA9CB4EF492AA9942CEF664CF4B95CDA3B2039BC3CE10B07957",
+      "Expected": 1,
+      "Plans": [
+        "IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+        "IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking"
+      ],
+      "DotNetExclusion": "PCRE2 grammar unsupported by .NET Regex",
+      "Iterations": [
+        32768,
+        32768
+      ],
+      "WarmupCalls": [
+        478370,
+        505823
+      ],
+      "Microseconds": [
+        [
+          3.0621063232421877,
+          3.0562225341796876,
+          3.0455200195312497,
+          3.4780853271484373,
+          3.4860595703125
+        ],
+        [
+          2.9146575927734375,
+          2.9125701904296872,
+          3.2522399902343753,
+          3.308599853515625,
+          3.343658447265625
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          168,
+          168,
+          168,
+          168,
+          168
+        ],
+        [
+          168,
+          168,
+          168,
+          168,
+          168
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          100.3391,
+          100.1463,
+          99.7956,
+          113.9699,
+          114.2312
+        ],
+        [
+          95.5075,
+          95.4391,
+          106.5694,
+          108.4162,
+          109.565
+        ]
+      ]
+    },
+    {
+      "Name": "conditional-negative",
+      "Finite": false,
+      "Live": false,
+      "Deadline": false,
+      "Pattern": "^(?(?!(a))def|abc)",
+      "InputBytes": 3,
+      "InputSha256": "CB8379AC2098AA165029E3938A51DA0BCECFC008FD6795F401178647F96C5B34",
+      "Expected": 1,
+      "Plans": [
+        "IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+        "IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking"
+      ],
+      "DotNetExclusion": null,
+      "Iterations": [
+        65536,
+        131072,
+        2097152,
+        1048576
+      ],
+      "WarmupCalls": [
+        1856642,
+        2601705,
+        17902238,
+        13619682
+      ],
+      "Microseconds": [
+        [
+          0.9740783691406251,
+          0.9699417114257812,
+          0.969293212890625,
+          0.6029678344726562,
+          0.6022552490234375
+        ],
+        [
+          0.8278350830078125,
+          0.8296173095703124,
+          0.8294662475585938,
+          0.506866455078125,
+          0.5072593688964844
+        ],
+        [
+          0.04190559387207032,
+          0.04246082305908203,
+          0.042079734802246097,
+          0.03695192337036132,
+          0.030268430709838867
+        ],
+        [
+          0.06784324645996094,
+          0.06822748184204103,
+          0.06815128326416016,
+          0.0679180145263672,
+          0.04782915115356445
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          32,
+          32,
+          32,
+          32,
+          32
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          63.8372,
+          63.5661,
+          63.5236,
+          39.5161,
+          39.4694
+        ],
+        [
+          108.506,
+          108.7396,
+          108.7198,
+          66.436,
+          66.4875
+        ],
+        [
+          87.8824,
+          89.0468,
+          88.2476,
+          77.4938,
+          63.4775
+        ],
+        [
+          71.1388,
+          71.5417,
+          71.4618,
+          71.2172,
+          50.1525
+        ]
+      ]
+    },
+    {
+      "Name": "conditional-accept-negative",
+      "Finite": false,
+      "Live": false,
+      "Deadline": false,
+      "Pattern": "^(?(?!(a)(*ACCEPT))def|abc)",
+      "InputBytes": 3,
+      "InputSha256": "CB8379AC2098AA165029E3938A51DA0BCECFC008FD6795F401178647F96C5B34",
+      "Expected": 1,
+      "Plans": [
+        "IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+        "IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking"
+      ],
+      "DotNetExclusion": "PCRE2 grammar unsupported by .NET Regex",
+      "Iterations": [
+        65536,
+        131072
+      ],
+      "WarmupCalls": [
+        1479994,
+        1707021
+      ],
+      "Microseconds": [
+        [
+          0.9641891479492188,
+          0.9513473510742188,
+          0.9151397705078126,
+          0.8558639526367188,
+          0.8453994750976562
+        ],
+        [
+          0.8266860961914063,
+          0.82491455078125,
+          0.79122314453125,
+          0.798504638671875,
+          0.7882392883300782
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          63.1891,
+          62.3475,
+          59.9746,
+          56.0899,
+          55.4041
+        ],
+        [
+          108.3554,
+          108.1232,
+          103.7072,
+          104.6616,
+          103.3161
+        ]
+      ]
+    },
+    {
+      "Name": "backreference",
+      "Finite": false,
+      "Live": false,
+      "Deadline": false,
+      "Pattern": "^(a\u002B)\\1$",
+      "InputBytes": 256,
+      "InputSha256": "02D7160D77E18C6447BE80C2E355C7ED4388545271702C50253B0914C65CE5FE",
+      "Expected": 1,
+      "Plans": [
+        "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
+        "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice"
+      ],
+      "DotNetExclusion": null,
+      "Iterations": [
+        4096,
+        4096,
+        32768,
+        65536
+      ],
+      "WarmupCalls": [
+        38070,
+        84727,
+        1089073,
+        1031466
+      ],
+      "Microseconds": [
+        [
+          17.6765869140625,
+          17.6275390625,
+          17.520288085937498,
+          29.860888671875,
+          28.406494140625
+        ],
+        [
+          17.6756591796875,
+          17.725,
+          17.72431640625,
+          24.6114990234375,
+          19.9134765625
+        ],
+        [
+          1.2662292480468749,
+          1.2612884521484375,
+          1.2628326416015625,
+          1.26419677734375,
+          1.263214111328125
+        ],
+        [
+          1.35106201171875,
+          1.3552581787109377,
+          1.3571395874023438,
+          1.349505615234375,
+          1.3530364990234376
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          14312,
+          14312,
+          14312,
+          14312,
+          14312
+        ],
+        [
+          14312,
+          14312,
+          14312,
+          14312,
+          14312
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          536,
+          536,
+          536,
+          536,
+          536
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          72.4033,
+          72.2024,
+          71.7631,
+          122.3102,
+          116.353
+        ],
+        [
+          72.3995,
+          72.6016,
+          72.5988,
+          100.8087,
+          81.5656
+        ],
+        [
+          41.4918,
+          41.3299,
+          41.3805,
+          41.4252,
+          41.393
+        ],
+        [
+          88.5432,
+          88.8182,
+          88.9415,
+          88.4412,
+          88.6726
+        ]
+      ]
+    },
+    {
+      "Name": "literal",
+      "Finite": false,
+      "Live": false,
+      "Deadline": false,
+      "Pattern": "needle",
+      "InputBytes": 8198,
+      "InputSha256": "8DA47E1CAE661B34F429302D624E9EA43B01F9729C6A36BB3E1D2297395FF58B",
+      "Expected": 1,
+      "Plans": [
+        "IsMatch=Pcre2Literal, Count=Pcre2Literal, Enumerate=Pcre2Literal, Match=Pcre2Literal, Replace=Pcre2Literal",
+        "IsMatch=Pcre2Literal, Count=Pcre2Literal, Enumerate=Pcre2Literal, Match=Pcre2Literal, Replace=Pcre2Literal"
+      ],
+      "DotNetExclusion": null,
+      "Iterations": [
+        262144,
+        262144,
+        262144,
+        65536
+      ],
+      "WarmupCalls": [
+        4184149,
+        4448549,
+        3132671,
+        1091418
+      ],
+      "Microseconds": [
+        [
+          0.32027664184570315,
+          0.3200286865234375,
+          0.3206787109375,
+          0.4624137878417969,
+          0.46201171875
+        ],
+        [
+          0.2610363006591797,
+          0.26214447021484377,
+          0.2631996154785156,
+          0.385235595703125,
+          0.384356689453125
+        ],
+        [
+          0.37069244384765626,
+          0.3707378387451172,
+          0.37300910949707033,
+          0.42663993835449215,
+          0.3766632080078125
+        ],
+        [
+          1.4938446044921874,
+          1.3239334106445313,
+          1.5495925903320313,
+          1.3325302124023437,
+          1.790141296386719
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          16424,
+          16424,
+          16424,
+          16424,
+          16424
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          83.9586,
+          83.8936,
+          84.064,
+          121.219,
+          121.1136
+        ],
+        [
+          68.4291,
+          68.7196,
+          68.9962,
+          100.9872,
+          100.7568
+        ],
+        [
+          97.1748,
+          97.1867,
+          97.7821,
+          111.8411,
+          98.74
+        ],
+        [
+          97.9006,
+          86.7653,
+          101.5541,
+          87.3287,
+          117.3187
+        ]
+      ]
+    },
+    {
+      "Name": "character",
+      "Finite": false,
+      "Live": false,
+      "Deadline": false,
+      "Pattern": "[\u00E9\u4E2D]",
+      "InputBytes": 3,
+      "InputSha256": "3C862ECA78C03D61DCB7F2B6C4064D1FFC4D4CA51A6F076BA0A19839B51592BA",
+      "Expected": 1,
+      "Plans": [
+        "IsMatch=Pcre2Character, Count=Pcre2Character, Enumerate=Pcre2Character, Match=Pcre2Character, Replace=Pcre2Character",
+        "IsMatch=Pcre2Character, Count=Pcre2Character, Enumerate=Pcre2Character, Match=Pcre2Character, Replace=Pcre2Character"
+      ],
+      "DotNetExclusion": null,
+      "Iterations": [
+        262144,
+        524288,
+        2097152,
+        1048576
+      ],
+      "WarmupCalls": [
+        4097621,
+        7321111,
+        16950046,
+        16896950
+      ],
+      "Microseconds": [
+        [
+          0.31825904846191405,
+          0.3174468994140625,
+          0.31744041442871096,
+          0.19471893310546876,
+          0.19420318603515624
+        ],
+        [
+          0.19509830474853515,
+          0.19502315521240235,
+          0.19560489654541013,
+          0.12302074432373047,
+          0.12281570434570312
+        ],
+        [
+          0.0439185619354248,
+          0.04376025199890137,
+          0.04383940696716308,
+          0.03202471733093262,
+          0.029358386993408203
+        ],
+        [
+          0.07661504745483398,
+          0.07424745559692383,
+          0.07420692443847657,
+          0.057491111755371097,
+          0.052312278747558595
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          32,
+          32,
+          32,
+          32,
+          32
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          83.4297,
+          83.2168,
+          83.2151,
+          51.0444,
+          50.9092
+        ],
+        [
+          102.2877,
+          102.2483,
+          102.5533,
+          64.4983,
+          64.3908
+        ],
+        [
+          92.1039,
+          91.7719,
+          91.9379,
+          67.1607,
+          61.569
+        ],
+        [
+          80.3367,
+          77.8541,
+          77.8116,
+          60.2838,
+          54.8534
+        ]
+      ]
+    },
+    {
+      "Name": "cached-uri-control",
+      "Finite": false,
+      "Live": false,
+      "Deadline": false,
+      "Pattern": "[\\w]\u002B://[^/\\s?#]\u002B[^\\s?#]\u002B(?:\\?[^\\s#]*)?(?:#[^\\s]*)?",
+      "InputBytes": 46,
+      "InputSha256": "DA2B84E6CFC2D523FB74BFEB6138D77F37EB4D2BAC9AB2E6FA26ACEDE1AA247B",
+      "Expected": 1,
+      "Plans": [
+        "IsMatch=Pcre2SeparatedRunsIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+        "IsMatch=Pcre2SeparatedRunsIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking"
+      ],
+      "DotNetExclusion": null,
+      "Iterations": [
+        1048576,
+        524288,
+        524288,
+        524288
+      ],
+      "WarmupCalls": [
+        10407565,
+        8699713,
+        7680355,
+        6031393
+      ],
+      "Microseconds": [
+        [
+          0.13129405975341796,
+          0.12777395248413087,
+          0.12752027511596678,
+          0.1279315948486328,
+          0.1275583267211914
+        ],
+        [
+          0.13025264739990236,
+          0.12731075286865234,
+          0.12717056274414062,
+          0.12716503143310545,
+          0.12702865600585936
+        ],
+        [
+          0.15284595489501954,
+          0.15227508544921875,
+          0.14892864227294922,
+          0.14927654266357424,
+          0.14815082550048828
+        ],
+        [
+          0.2039875030517578,
+          0.20605182647705078,
+          0.2059246063232422,
+          0.20694961547851562,
+          0.20183658599853516
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          120,
+          120,
+          120,
+          120,
+          120
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          137.6718,
+          133.9807,
+          133.7147,
+          134.146,
+          133.7546
+        ],
+        [
+          68.2899,
+          66.7475,
+          66.674,
+          66.6711,
+          66.5996
+        ],
+        [
+          80.1353,
+          79.836,
+          78.0815,
+          78.2639,
+          77.6737
+        ],
+        [
+          106.9482,
+          108.0305,
+          107.9638,
+          108.5012,
+          105.8205
+        ]
+      ]
+    }
+  ]
+}

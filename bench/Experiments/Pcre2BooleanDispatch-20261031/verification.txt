@@ -1,0 +1,6 @@
+Passed!  - Failed:     0, Passed:  6442, Skipped:     0, Total:  6442, Duration: 7 s - Lokad.Utf8Regex.Pcre2.Tests.dll (net11.0)
+
+Passed!  - Failed:     0, Passed:  6442, Skipped:     0, Total:  6442, Duration: 7 s - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:     1, Skipped:     0, Total:     1, Duration: 84 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)
+
+Passed!  - Failed:     0, Passed:     1, Skipped:     0, Total:     1, Duration: 60 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net11.0)

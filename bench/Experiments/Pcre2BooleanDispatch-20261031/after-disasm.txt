@@ -1,0 +1,80 @@
+; Assembly listing for method Lokad.Utf8Regex.Pcre2.Pcre2Runner:TryIsMatch(Lokad.Utf8Regex.Pcre2.Pcre2CompiledProgram,byref,Lokad.Utf8Regex.Internal.Input.Utf8BytePosition,int,byref,byref):bool (FullOpts)
+; Emitting BLENDED_CODE for x64 + VEX + EVEX on Unix
+; FullOpts code
+; optimized code
+; rbp based frame
+; fully interruptible
+; No PGO data
+; 1 inlinees with PGO data; 36 single block inlinees; 13 inlinees without PGO data
+
+G_M000_IG01:
+       push     rbp
+       push     r15
+       push     r14
+       push     r13
+       push     rbx
+       sub      rsp, 0x620
+       lea      rbp, [rsp+0x640]
+       xor      eax, eax
+       mov      qword ptr [rbp-0x438], rax
+       vxorps   xmm8, xmm8, xmm8
+       vmovdqa32 xmmword ptr [rbp-0x430], xmm8
+       vmovdqa32 xmmword ptr [rbp-0x420], xmm8
+       mov      rax, -0x3F0
+
+G_M000_IG57:
+       vmovdqa  xmmword ptr [rbp+rax-0x20], xmm8
+       vmovdqa  xmmword ptr [rbp+rax-0x10], xmm8
+       vmovdqa  xmmword ptr [rax+rbp], xmm8
+       add      rax, 48
+       jne      SHORT G_M000_IG57
+       mov      bword ptr [rbp-0x460], r9
+       mov      rbx, rsi
+       mov      r14d, edx
+       mov      r15d, ecx
+
+G_M000_IG02:
+       vmovdqu32 zmm0, zmmword ptr [rdi+0x40]
+       vmovdqu32 zmmword ptr [rbp-0x118], zmm0
+       mov      rsi, qword ptr [rdi+0x80]
+       mov      qword ptr [rbp-0xD8], rsi
+
+G_M000_IG03:
+       vmovdqu32 xmm0, xmmword ptr [rbp-0xF0]
+       vmovdqu  xmmword ptr [rbp-0x148], xmm0
+       mov      rsi, qword ptr [rbp-0xE0]
+       mov      qword ptr [rbp-0x138], rsi
+
+G_M000_IG04:
+       vmovdqu32 zmm0, zmmword ptr [r8]
+       vmovdqu32 zmmword ptr [rbp-0x380], zmm0
+       vmovdqu32 zmm0, zmmword ptr [r8+0x40]
+       vmovdqu32 zmmword ptr [rbp-0x340], zmm0
+
+G_M000_IG05:
+       vmovdqu  xmm0, xmmword ptr [rbp-0x148]
+       vmovdqu  xmmword ptr [rbp-0x38], xmm0
+       mov      rsi, qword ptr [rbp-0x138]
+       mov      qword ptr [rbp-0x28], rsi
+
+G_M000_IG06:
+       vmovdqu32 zmm0, zmmword ptr [rbp-0x380]
+       vmovdqu32 zmmword ptr [rbp-0xB8], zmm0
+       vmovdqu32 zmm0, zmmword ptr [rbp-0x340]
+       vmovdqu32 zmmword ptr [rbp-0x78], zmm0
+
+G_M000_IG07:
+       xor      rsi, rsi
+       mov      gword ptr [rbp-0xB0], rsi
+
+G_M000_IG08:
+       mov      gword ptr [rbp-0xD0], rsi
+
+G_M000_IG09:
+       mov      qword ptr [rbp-0xC8], rsi
+
+G_M000_IG10:
+       mov      qword ptr [rbp-0xC0], rsi
+       mov      r13, gword ptr [rdi+0x88]
+       test     r13, r13
+       je       G_M000_IG23

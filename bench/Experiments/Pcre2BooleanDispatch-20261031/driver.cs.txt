@@ -1,0 +1,103 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+var root = Path.GetFullPath(args[0]); var afterRoot = Path.Combine(root, "after");
+var preflight = args.Contains("--preflight"); var codegenAfter = args.Contains("--codegen-after");
+AssemblyLoadContext.Default.Resolving += (_, name) => File.Exists(Path.Combine(afterRoot, name.Name + ".dll"))
+    ? AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.Combine(afterRoot, name.Name + ".dll")) : null;
+var assemblies = new[] { "before", "after" }.Select(name => new AssemblyLoadContext(name).LoadFromAssemblyPath(Path.Combine(root, name, "Lokad.Utf8Regex.Pcre2.dll"))).ToArray();
+var identities = assemblies.Select(assembly => new { Version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
+    Sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))) }).ToArray();
+if (identities[0].Sha256 == identities[1].Sha256 || identities.Any(item => !item.Version.Contains("035a621c"))) throw new Exception("Unexpected frozen source");
+if (!File.ReadAllBytes(Path.Combine(root, "before/Lokad.Utf8Regex.dll")).AsSpan().SequenceEqual(File.ReadAllBytes(Path.Combine(afterRoot, "Lokad.Utf8Regex.dll")))) throw new Exception("Core changed");
+using var process = Process.GetCurrentProcess(); if (!preflight && !codegenAfter) process.ProcessorAffinity = (nint)4;
+using var live = new CancellationTokenSource(); var clock = Stopwatch.StartNew(); var rows = new List<object>();
+var cases = new[] {
+    new Case("subroutine-hit", @"^(?1)\d{3}(a)", "a123a", true),
+    new Case("subroutine-miss", @"^(?1)\d{3}(a)", "a123b", false),
+    new Case("subroutine-finite-live", @"^(?1)\d{3}(a)", "a123a", true, Finite: true, Live: true),
+    new Case("subroutine-deadline-live", @"^(?1)\d{3}(a)", "a123a", true, Live: true, Deadline: true),
+    new Case("conditional-negative", @"^(?(?!(a))def|abc)", "def", true),
+    new Case("conditional-accept-negative", @"^(?(?!(a)(*ACCEPT))def|abc)", "def", true),
+    new Case("backreference", @"^(a+)\1$", new string('a', 256), true),
+    new Case("literal", "needle", new string('x', 8192) + "needle", true),
+    new Case("character", "[é中]", "xé", true),
+    new Case("cached-uri-control", @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", "https://atlas.example.org/reports/export?id=42", true)
+};
+foreach (var item in cases) {
+    var input = Encoding.UTF8.GetBytes(item.Text); var expected = item.Expected ? 1 : 0; var actions = new List<Func<int>>(); var plans = new List<string>();
+    foreach (var assembly in assemblies) {
+        var type = assembly.GetType("Lokad.Utf8Regex.Pcre2.Utf8Pcre2Regex")!;
+        var optionsType = assembly.GetType("Lokad.Utf8Regex.Pcre2.Pcre2CompileOptions")!;
+        var settingsType = assembly.GetType("Lokad.Utf8Regex.Pcre2.Utf8Pcre2CompileSettings")!;
+        var limitsType = assembly.GetType("Lokad.Utf8Regex.Pcre2.Utf8Pcre2ExecutionLimits")!;
+        var limits = Activator.CreateInstance(limitsType)!;
+        if (item.Finite) foreach (var (name, number) in new[] { ("MatchLimit", 1_000_000UL), ("DepthLimit", 1024UL), ("HeapLimitInBytes", 1UL << 20), ("ResultLimitInBytes", 1UL << 20) }) {
+            var property = limitsType.GetProperty(name)!; property.SetValue(limits, Convert.ChangeType(number, property.PropertyType));
+        }
+        var owner = type.GetConstructor([typeof(string), optionsType, settingsType, limitsType, typeof(TimeSpan)])!
+            .Invoke([item.Pattern, Activator.CreateInstance(optionsType), Activator.CreateInstance(settingsType), limits,
+                item.Deadline ? TimeSpan.FromSeconds(1) : Timeout.InfiniteTimeSpan]);
+        plans.Add((string)type.GetMethod("DebugDescribeExecutionPlan", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(owner, null)!);
+        if (item.Name == "cached-uri-control" && type.GetField("_unmeteredIsMatchProgram", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(owner)?.GetType().Name != "Pcre2SeparatedRunsIsMatchDirectProgram") throw new Exception("Control no longer bypasses edited dispatch");
+        if (item.Live) {
+            var factory = typeof(Controlled).GetMethod(nameof(Controlled.Create))!.MakeGenericMethod(assembly.GetType("Lokad.Utf8Regex.Pcre2.Pcre2MatchOptions")!);
+            actions.Add((Func<int>)factory.Invoke(null, [owner, input, live.Token])!);
+        } else {
+            var action = type.GetMethod("IsMatch", [typeof(ReadOnlySpan<byte>)])!.CreateDelegate<SpanMatch>(owner);
+            actions.Add(() => action(input) ? 1 : 0);
+        }
+    }
+    if (codegenAfter) { if (actions[1]() != expected) throw new Exception("Codegen result mismatch"); Console.WriteLine(JsonSerializer.Serialize(identities)); return; }
+    string? excluded = null;
+    try {
+        var oracle = new Regex(item.Pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        if ((oracle.IsMatch(item.Text) ? 1 : 0) != expected) excluded = "Different comparator result";
+        else { actions.Add(() => oracle.IsMatch(item.Text) ? 1 : 0); actions.Add(() => oracle.IsMatch(Encoding.UTF8.GetString(input)) ? 1 : 0); }
+    } catch (RegexParseException) { excluded = "PCRE2 grammar unsupported by .NET Regex"; }
+    foreach (var action in actions) if (action() != expected) throw new Exception("Public result mismatch " + item.Name);
+    if (preflight) { Console.Error.WriteLine("Preflight " + item.Name + ": " + expected + ", " + plans[1] + ", BCL=" + (excluded ?? "equal")); continue; }
+    var iterations = new int[actions.Count]; var warmCalls = new long[actions.Count];
+    for (var lane = 0; lane < actions.Count; lane++) {
+        var warm = Stopwatch.StartNew(); do { if (actions[lane]() != expected) throw new Exception("Warm result"); warmCalls[lane]++; } while (warm.Elapsed.TotalMilliseconds < 1500 || warmCalls[lane] < 64);
+        iterations[lane] = 1; while (Measure(iterations[lane], actions[lane], expected).Milliseconds < 60) iterations[lane] = checked(iterations[lane] * 2);
+    }
+    var times = Enumerable.Range(0, actions.Count).Select(_ => new double[5]).ToArray(); var allocation = Enumerable.Range(0, actions.Count).Select(_ => new double[5]).ToArray(); var durations = Enumerable.Range(0, actions.Count).Select(_ => new double[5]).ToArray();
+    for (var sample = 0; sample < 5; sample++) for (var position = 0; position < actions.Count; position++) {
+        var lane = sample % 2 == 0 ? position : actions.Count - 1 - position; GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        var result = Measure(iterations[lane], actions[lane], expected); if (result.Milliseconds < 20) throw new Exception("Sample below20ms");
+        times[lane][sample] = result.Milliseconds * 1000 / iterations[lane]; allocation[lane][sample] = (double)result.Bytes / iterations[lane]; durations[lane][sample] = result.Milliseconds;
+    }
+    rows.Add(new { item.Name, item.Finite, item.Live, item.Deadline, item.Pattern, InputBytes = input.Length,
+        InputSha256 = Convert.ToHexString(SHA256.HashData(input)), Expected = expected, Plans = plans, DotNetExclusion = excluded, Iterations = iterations, WarmupCalls = warmCalls,
+        Microseconds = times, AllocatedBytes = allocation, ElapsedMilliseconds = durations });
+    Console.Error.WriteLine(item.Name + ": " + string.Join(" / ", times.Select(values => values.Order().ElementAt(2))));
+}
+Console.WriteLine(JsonSerializer.Serialize(new { Runtime = RuntimeInformation.FrameworkDescription, AffinityMask = "4", ElapsedSeconds = clock.Elapsed.TotalSeconds, Identities = identities,
+    Scope = "Only PCRE2 Boolean dispatch is split: existing plain backtracking/literal/character arms avoid a roughly12KiB shared frame. Same original budget, validator, matchers, captures, loans, token and deadline; Core DLLs identical. Ten equal-result public IsMatch cases include actual subroutine/negative conditional/ACCEPT cases, finite-live/deadline-live, backreference/literal/character and proven cached URI specialization bypassing the edited dispatcher. Optional compiled predecoded/decode-then .NET lanes only for equal overlapping semantics, explicit exclusions otherwise. Finite MatchLimit1M/Depth1024/Heap1MiB/Result1MiB; deadline1second. Warm1.5s/min64calls, independent60ms calibration, five alternating samples each>=20ms; batches checked after timing. Default tiering/PGO, CPU2, one120s cap, at most one selected confirmation. No public parity/Status inferred from this producer A/B; native row refresh is separate. No new executor, policy, field, mode or unchecked access; no package/fullcatalog campaign.",
+    LaneNames = new[] { "Before", "After", "PredecodedCompiledRegex", "DecodeThenCompiledRegex" }, Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds, long Bytes) Measure(int count, Func<int> action, int expected) {
+    var values = new int[count]; var before = GC.GetAllocatedBytesForCurrentThread(); var start = Stopwatch.GetTimestamp();
+    for (var i = 0; i < count; i++) values[i] = action();
+    var elapsed = Stopwatch.GetElapsedTime(start); var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+    foreach (var value in values) if (value != expected) throw new Exception("Timed result mismatch");
+    GC.KeepAlive(values); return (elapsed.TotalMilliseconds, bytes);
+}
+sealed record Case(string Name, string Pattern, string Text, bool Expected, bool Finite = false, bool Live = false, bool Deadline = false);
+delegate bool SpanMatch(ReadOnlySpan<byte> input);
+delegate bool ControlledMatch<TOptions>(ReadOnlySpan<byte> input, int start, TOptions options, CancellationToken token);
+static class Controlled {
+    public static Func<int> Create<TOptions>(object owner, byte[] input, CancellationToken token) {
+        var action = owner.GetType().GetMethod("IsMatch", [typeof(ReadOnlySpan<byte>), typeof(int), typeof(TOptions), typeof(CancellationToken)])!.CreateDelegate<ControlledMatch<TOptions>>(owner);
+        return () => action(input, 0, default!, token) ? 1 : 0;
+    }
+}

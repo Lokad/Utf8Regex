@@ -1,0 +1,33 @@
+Preflight subroutine-hit: 1, IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking, BCL=PCRE2 grammar unsupported by .NET Regex
+Preflight subroutine-miss: 0, IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking, BCL=PCRE2 grammar unsupported by .NET Regex
+Preflight subroutine-finite-live: 1, IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking, BCL=PCRE2 grammar unsupported by .NET Regex
+Preflight subroutine-deadline-live: 1, IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking, BCL=PCRE2 grammar unsupported by .NET Regex
+Preflight conditional-negative: 1, IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking, BCL=equal
+Preflight conditional-accept-negative: 1, IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking, BCL=PCRE2 grammar unsupported by .NET Regex
+Preflight backreference: 1, IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice, BCL=equal
+Preflight literal: 1, IsMatch=Pcre2Literal, Count=Pcre2Literal, Enumerate=Pcre2Literal, Match=Pcre2Literal, Replace=Pcre2Literal, BCL=equal
+Preflight character: 1, IsMatch=Pcre2Character, Count=Pcre2Character, Enumerate=Pcre2Character, Match=Pcre2Character, Replace=Pcre2Character, BCL=equal
+Preflight cached-uri-control: 1, IsMatch=Pcre2SeparatedRunsIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking, BCL=equal
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "AffinityMask": "4",
+  "ElapsedSeconds": 0.4121319,
+  "Identities": [
+    {
+      "Version": "0.5.0-dev.1\u002B035a621c8410ed2de2f57cfef4b0986bcd00214a",
+      "Sha256": "FDE68E77C3B36E5EA8F5FA7BC19CE7CC77DBFB74EE32EEE74EE2DFD9B13A83EB"
+    },
+    {
+      "Version": "0.5.0-dev.1\u002B035a621c8410ed2de2f57cfef4b0986bcd00214a",
+      "Sha256": "980045C507F4E84C829A4D7D1953163DE344B9B9B132A81464483C3F45CA89D1"
+    }
+  ],
+  "Scope": "Only PCRE2 Boolean dispatch is split: existing plain backtracking/literal/character arms avoid a roughly12KiB shared frame. Same original budget, validator, matchers, captures, loans, token and deadline; Core DLLs identical. Ten equal-result public IsMatch cases include actual subroutine/negative conditional/ACCEPT cases, finite-live/deadline-live, backreference/literal/character and proven cached URI specialization bypassing the edited dispatcher. Optional compiled predecoded/decode-then .NET lanes only for equal overlapping semantics, explicit exclusions otherwise. Finite MatchLimit1M/Depth1024/Heap1MiB/Result1MiB; deadline1second. Warm1.5s/min64calls, independent60ms calibration, five alternating samples each\u003E=20ms; batches checked after timing. Default tiering/PGO, CPU2, one120s cap, at most one selected confirmation. No public parity/Status inferred from this producer A/B; native row refresh is separate. No new executor, policy, field, mode or unchecked access; no package/fullcatalog campaign.",
+  "LaneNames": [
+    "Before",
+    "After",
+    "PredecodedCompiledRegex",
+    "DecodeThenCompiledRegex"
+  ],
+  "Rows": []
+}

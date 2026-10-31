@@ -13,21 +13,21 @@ Enumeration and MatchMany consume byte ranges. Managed public results also suppl
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `E8FB96F87F8745BE17ADD88625C6414BD1F67520BC8D4CC9E95CC9D8D02A924E`
-- Latest managed row measurement: `2026-10-31T17:05:35.4988616+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-10-31T17:05:35.4988616+00:00`
+- Snapshot SHA-256: `6D9B1B2E09F3AE2285072C0605EB9A8875AF88B9CFCE03BEF2422EC51C2C6D53`
+- Latest managed row measurement: `2026-10-31T22:59:15.7954934+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-10-31T22:59:15.7954934+00:00`
 - Operation rows: `126` across `10` sections
 - Comparable rows at or below the decode-then-.NET median: `37/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `101/126`
-- Comparator Status: `47` managed faster, `1` equivalent, `14` native faster, `38` inconclusive, `1` unqualified, `25` excluded
+- Comparator Status: `47` managed faster, `1` equivalent, `10` native faster, `42` inconclusive, `1` unqualified, `25` excluded
 - Rows with paired qualification evidence: `101/101`
 - Qualification processor sets: `single-least-contended-allowed-processor 0x10`, `single-least-contended-allowed-processor 0x2`, `single-least-contended-allowed-processor 0x20`, `single-least-contended-allowed-processor 0x4`, `single-least-contended-allowed-processor 0x40`, `single-least-contended-allowed-processor 0x8`, `single-least-contended-allowed-processor 0x80`
 - Scaling families: `16`
-- Managed/comparator measurement environments represented: `1/1`
+- Managed/comparator measurement environments represented: `2/2`
 
-Managed rows were measured from source `0e24cecebbb9` on .NET 11.0.0-rc.3.26522.148, Ubuntu 24.04.4 LTS, X64; Tiered PGO `runtime-default`.
+Managed rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.
 
-PCRE.NET / PCRE2 NFA rows were measured from source `0e24cecebbb9` on .NET 11.0.0-rc.3.26522.148, Ubuntu 24.04.4 LTS, X64; Tiered PGO `runtime-default`, tracked dirty `False`, untracked files `False`.
+Comparator rows span more than one measurement environment. Consult each row's `PcreNetNativeEnvironment` metadata before comparing small differences.
 
 NuGet package SHA-512: `Zu3NJGiU1S7tHHaW4UdEK1WZ9LFYqPI+6Y0eiL6YPHVOHSoWjbq0x5j3uN9895DoIgO5XI/50S6dj2ZmRHirNA==`.
 
@@ -149,13 +149,13 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|
 | `pcre2/backslash-c-literal` | **Native faster** | 5 B | 0.199 us | 0.088 us | 2.27x | 2.20–2.27x | +0.110 us | 9 pairs; 40/29 ms; 200,429/331,539 ops/lane; IQR 1.015/1.025 | `Pcre2Character` | 0 B | 0 B | 3.862 us | 2,712 B |
 | `pcre2/branch-reset-backref` | **Inconclusive** | 23 B | 0.017 us | 0.165 us | 0.11x | 0.11–0.12x | -0.148 us | 9 pairs; 52/55 ms; 3,065,892/331,535 ops/lane; IQR 1.337/1.284 | `Pcre2Backtracking` | 0 B | 0 B | 131.812 us | 111,888 B |
-| `pcre2/conditional-accept-negative-lookahead` | **Native faster** | 3 B | 0.561 us | 0.105 us | 5.34x | 5.32–5.35x | +0.456 us | 9 pairs; 37/39 ms; 65,226/372,533 ops/lane; IQR 1.016/1.014 | `Pcre2Backtracking` | 0 B | 0 B | 35.200 us | 19,056 B |
-| `pcre2/conditional-lookahead` | **Native faster** | 3 B | 0.556 us | 0.114 us | 4.86x | 4.80–4.90x | +0.442 us | 9 pairs; 37/40 ms; 66,588/349,260 ops/lane; IQR 1.010/1.016 | `Pcre2Backtracking` | 0 B | 0 B | 70.281 us | 65,152 B |
-| `pcre2/conditional-negative-lookahead` | **Native faster** | 3 B | 0.550 us | 0.101 us | 5.42x | 5.39–5.51x | +0.448 us | 9 pairs; 37/39 ms; 66,521/384,476 ops/lane; IQR 1.009/1.015 | `Pcre2Backtracking` | 0 B | 0 B | 71.281 us | 65,112 B |
+| `pcre2/conditional-accept-negative-lookahead` | **Inconclusive** | 3 B | 0.576 us | 0.127 us | 4.53x | 4.44–4.97x | +0.449 us | 9 pairs; 43/48 ms; 74,830/378,057 ops/lane; IQR 1.431/1.351 | `Pcre2Backtracking` | 0 B | 0 B | 127.831 us | 19,377 B |
+| `pcre2/conditional-lookahead` | **Inconclusive** | 3 B | 0.480 us | 0.121 us | 3.99x | 3.92–4.01x | +0.358 us | 9 pairs; 36/40 ms; 75,433/327,549 ops/lane; IQR 1.011/1.022 | `Pcre2Backtracking` | 0 B | 0 B | 341.100 us | 65,153 B |
+| `pcre2/conditional-negative-lookahead` | **Inconclusive** | 3 B | 0.712 us | 0.153 us | 4.69x | 4.61–4.73x | +0.558 us | 9 pairs; 46/47 ms; 64,285/306,896 ops/lane; IQR 1.187/1.174 | `Pcre2Backtracking` | 0 B | 0 B | 465.006 us | 65,113 B |
 | `pcre2/grapheme-cluster` | **Native faster** | 248 B | 0.655 us | 0.347 us | 1.89x | 1.88–1.90x | +0.310 us | 9 pairs; 30/30 ms; 45,072/86,557 ops/lane; IQR 1.011/1.011 | `Pcre2Character` | 0 B | 0 B | 1.481 us | 2,248 B |
 | `pcre2/recursive-optional` | **Managed faster** | 6 B | 0.012 us | 0.634 us | 0.02x | 0.02–0.02x | -0.623 us | 9 pairs; 40/39 ms; 3,477,018/62,155 ops/lane; IQR 1.011/1.013 | `Pcre2Backtracking` | 0 B | 0 B | 23.650 us | 21,584 B |
 | `pcre2/recursive-palindrome` | **Inconclusive** | 6 B | 0.012 us | 0.505 us | 0.02x | 0.02–0.03x | -0.493 us | 9 pairs; 25/27 ms; 2,009,738/53,881 ops/lane; IQR 1.364/1.024 | `Pcre2Backtracking` | 0 B | 0 B | 22.506 us | 21,072 B |
-| `pcre2/subroutine-prefix-digits` | **Native faster** | 5 B | 0.633 us | 0.104 us | 6.10x | 5.99–6.17x | +0.530 us | 9 pairs; 37/41 ms; 57,968/389,947 ops/lane; IQR 1.002/1.024 | `Pcre2Backtracking` | 0 B | 0 B | 18.125 us | 13,760 B |
+| `pcre2/subroutine-prefix-digits` | **Inconclusive** | 5 B | 0.549 us | 0.109 us | 5.03x | 4.97–5.30x | +0.437 us | 9 pairs; 38/40 ms; 69,081/365,470 ops/lane; IQR 1.115/1.051 | `Pcre2Backtracking` | 0 B | 0 B | 81.394 us | 14,113 B |
 
 ## PCRE2-only Count
 
