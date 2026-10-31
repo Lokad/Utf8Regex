@@ -270,13 +270,17 @@ NonBacktracking and ECMAScript retain their admitted owned paths. Tight working/
 therefore admit a constant-space count that formerly required VM scratch; this
 changes route-dependent resource costs, not matching semantics.
 
-A complete case-sensitive single-category expression can Count using the shared
-Unicode-category kernel after full strict validation. One work unit admits at
+A complete case-sensitive single-category expression or proven Unicode-letter
+expression (`\p{L}`) can Count using the existing category/letter kernels after
+full strict validation, including caller-funded Count. One work unit admits at
 most 4096 bytes ending on a scalar boundary; publication has its own checkpoint.
 The original token/deadline cover validation and counting, including supplementary
 scalars. This constant-space route needs no capture workspace or nesting records;
 tight working/depth/result limits can therefore admit it. RTL, NonBacktracking,
-ECMAScript, case-folded and compound expressions retain their owned routes.
+ECMAScript and unproved compound expressions retain their owned routes; folded
+single-category expressions also retain their scalar route. Letter Count now
+uses this existing block admission rather than VM instruction charges, so its
+route-dependent work and working-storage costs can be lower.
 
 A complete greedy set repeat with a positive minimum (for example
 `[A-Za-z]{8,13}`) can Count scalar runs without VM repeat/capture arrays. Full

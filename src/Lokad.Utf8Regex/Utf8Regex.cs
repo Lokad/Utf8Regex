@@ -1060,19 +1060,18 @@ public sealed partial class Utf8Regex
                 starInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
             { throw CreateExecutionResourceFailure(ref starInvocation); }
         }
-        // A complete single-category proof needs no captures or VM workspace.
+        // A complete single-category or letter proof needs no captures or VM workspace.
         // Validate the whole subject first, then reuse the shared scalar counter
         // in bounded blocks under this same interruption/resource authority.
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.UnicodeCategoryCount &&
+        if (_fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.UnicodeCategoryCount or Utf8FallbackDirectFamilyKind.UnicodeLetterCount &&
             !UsesRightToLeft() && (Options & (RegexOptions.NonBacktracking | RegexOptions.ECMAScript)) == 0)
         {
             var categoryInvocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken);
             try
             {
                 var categoryValidation = Utf8Validation.Validate(input, ref categoryInvocation);
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectUnicodeCategory);
                 var breach = Utf8UnicodeCategoryExecutor.TryCountValidated(input,
-                    categoryValidation.ContainsSupplementaryScalars, _fallbackDirectFamily.UnicodeCategory,
+                    categoryValidation.ContainsSupplementaryScalars, _fallbackDirectFamily,
                     ref categoryInvocation, out var categoryCount);
                 if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref categoryInvocation);
                 return categoryCount;

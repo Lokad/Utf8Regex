@@ -90,10 +90,10 @@ public sealed partial class Utf8Regex
             // Borrow the same complete family proofs/counters as ordinary Count.
             // They need no capture scratch but still meter every bounded block.
             if (!UsesRightToLeft() && (Options & (RegexOptions.NonBacktracking | RegexOptions.ECMAScript)) == 0 &&
-                _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.UnicodeCategoryCount)
+                _fallbackDirectFamily.Kind is Utf8FallbackDirectFamilyKind.UnicodeCategoryCount or Utf8FallbackDirectFamilyKind.UnicodeLetterCount)
             {
                 var breach = Utf8UnicodeCategoryExecutor.TryCountValidated(input, validation.ContainsSupplementaryScalars,
-                    _fallbackDirectFamily.UnicodeCategory, ref invocation, out result);
+                    _fallbackDirectFamily, ref invocation, out result);
                 if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
             }
             else if (validation.IsAscii && !UsesRightToLeft() &&

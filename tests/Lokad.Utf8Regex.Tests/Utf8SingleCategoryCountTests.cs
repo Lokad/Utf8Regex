@@ -9,6 +9,52 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8SingleCategoryCountTests
 {
     private const string NativeRoute = "fallback_direct_unicode_category";
+    private const string LetterRoute = "fallback_direct_unicode_letter";
+
+    [Theory]
+    [InlineData(@"\p{L}")] [InlineData(@"(\p{L})")] [InlineData(@"(?:[\p{L}]){1}")]
+    public void LetterProofSharesBoundedAdmissionAndCountsSupplementaryScalars(string pattern)
+    {
+        var text = new StringBuilder();
+        for (var value = 0; value < 128; value++) text.Append((char)value);
+        text.Append("é中∑𝛁😀𐐀𐐨𝟙\u0345\u212a\u2028\u0300");
+        foreach (var boundary in new[] { 4093, 4094, 4095, 4096, 4097 })
+            text.Append(new string('x', boundary)).Append("𐐀😀é中");
+        var subject = text.ToString(); var bytes = Encoding.UTF8.GetBytes(subject);
+        var expected = subject.EnumerateRunes().Count(Rune.IsLetter);
+        using var live = new CancellationTokenSource();
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
+        foreach (var finite in new[] { false, true })
+        {
+            var policy = finite ? new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000,
+                MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 } : default;
+            var regex = new Utf8Regex(pattern, options, Timeout.InfiniteTimeSpan, policy);
+            Assert.Equal(expected, regex.Count(bytes));
+            Assert.Equal(expected, regex.Count(bytes, live.Token));
+            Assert.Equal(expected, regex.Count(bytes, live.Token, new NoStorage()));
+            var diagnostic = regex.CollectCountDiagnostics(bytes);
+            Assert.Equal(expected, diagnostic.Result); Assert.Equal(LetterRoute, diagnostic.ExecutionRoute);
+        }
+        // Count's proof does not change scalar capture materialization.
+        var captured = new Utf8Regex(@"(\p{L})").MatchDetailed("😀𐐀"u8);
+        Assert.Equal(4, captured.IndexInBytes); Assert.Equal(4, captured.LengthInBytes);
+        Assert.Equal(4, captured.GetGroup(1).IndexInBytes); Assert.Equal(4, captured.GetGroup(1).LengthInBytes);
+    }
+
+    [Theory]
+    [InlineData(@"(?i:\p{L})")] [InlineData(@"\p{L}|a")] [InlineData(@"\P{L}")]
+    public void LetterRelatedGrammarPreservesScalarEnumeration(string pattern)
+    {
+        const string text = "Aaé中𐐀😀\u0345\u212a\u0300 1";
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.IgnoreCase,
+            RegexOptions.NonBacktracking, RegexOptions.RightToLeft })
+        {
+            var regex = new Utf8Regex(pattern, options); var input = Encoding.UTF8.GetBytes(text);
+            var cursor = regex.EnumerateMatches(input); var expected = 0;
+            while (cursor.MoveNext()) expected++;
+            Assert.Equal(expected, regex.Count(input));
+        }
+    }
 
     public static IEnumerable<object[]> Categories()
     {
@@ -54,17 +100,20 @@ public sealed class Utf8SingleCategoryCountTests
         Assert.True(match.Success); Assert.Equal(8, match.IndexInBytes); Assert.Equal(1, match.LengthInBytes);
     }
 
-    [Theory] [InlineData(0)] [InlineData(1)] [InlineData(17)] [InlineData(31)]
-    public void NativeBlocksKeepCompleteScalarsAndBorrowedSliceBoundaries(int offset)
+    [Theory]
+    [InlineData(@"\p{Sm}", 0)] [InlineData(@"\p{Sm}", 1)] [InlineData(@"\p{Sm}", 17)] [InlineData(@"\p{Sm}", 31)]
+    [InlineData(@"\p{L}", 0)] [InlineData(@"\p{L}", 1)] [InlineData(@"\p{L}", 17)] [InlineData(@"\p{L}", 31)]
+    public void NativeBlocksKeepCompleteScalarsAndBorrowedSliceBoundaries(string pattern, int offset)
     {
-        var regex = new Utf8Regex(@"\p{Sm}");
+        var regex = new Utf8Regex(pattern);
         foreach (var length in new[] { 4093, 4094, 4095, 4096, 4097, 8191 })
-        foreach (var scalar in new[] { "é", "∑", "𝛁", "😀" })
+        foreach (var scalar in new[] { "é", "∑", "𝛁", "😀", "𐐀" })
         {
             var text = new string('x', length) + scalar + "+" + new string('x', 4095) + "𝛁~";
             var bytes = Encoding.UTF8.GetBytes(text); var storage = Enumerable.Repeat((byte)'+', offset + bytes.Length + 11).ToArray();
             bytes.CopyTo(storage.AsSpan(offset));
-            var expected = text.EnumerateRunes().Count(rune => Rune.GetUnicodeCategory(rune) == UnicodeCategory.MathSymbol);
+            var expected = text.EnumerateRunes().Count(rune => pattern == @"\p{L}"
+                ? Rune.IsLetter(rune) : Rune.GetUnicodeCategory(rune) == UnicodeCategory.MathSymbol);
             Assert.Equal(expected, regex.Count(storage.AsSpan(offset, bytes.Length)));
         }
     }
@@ -99,17 +148,20 @@ public sealed class Utf8SingleCategoryCountTests
             Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(new byte[8192])).ResourceKind);
     }
 
-    [Theory] [InlineData(false)] [InlineData(true)]
-    public void NativeWorkObservesOriginalCancellationAndDeadline(bool timeout)
+    [Theory]
+    [InlineData(@"\p{Sm}", false)] [InlineData(@"\p{Sm}", true)]
+    [InlineData(@"\p{L}", false)] [InlineData(@"\p{L}", true)]
+    public void NativeWorkObservesOriginalCancellationAndDeadline(string pattern, bool timeout)
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
-        var regex = new Utf8Regex(@"\p{Sm}", RegexOptions.None, timeout ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
+        var regex = new Utf8Regex(pattern, RegexOptions.None, timeout ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxWorkingBytes = 1 });
         var input = new byte[4096 * 128]; var reached = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
-            if (Utf8SearchDiagnosticsSession.Current!.ExecutionRoute != Utf8ExecutionRoute.FallbackDirectUnicodeCategory) return;
+            if (Utf8SearchDiagnosticsSession.Current!.ExecutionRoute != (pattern == @"\p{L}"
+                ? Utf8ExecutionRoute.FallbackDirectUnicodeLetter : Utf8ExecutionRoute.FallbackDirectUnicodeCategory)) return;
             reached = true; if (timeout) ticks = 100; else token.Cancel();
         });
         try
@@ -121,38 +173,47 @@ public sealed class Utf8SingleCategoryCountTests
         finally { session.Complete(); }
     }
 
-    [Fact]
-    public void NativeCounterCannotOutrunFiniteWorkAfterValidation()
+    [Theory] [InlineData(@"\p{Sm}")] [InlineData(@"\p{L}")]
+    public void NativeCounterCannotOutrunFiniteWorkAfterValidation(string pattern)
     {
         var input = new byte[4096 * 128]; ulong firstNative = 0;
-        var reference = new Utf8Regex(@"\p{Sm}", RegexOptions.None, Timeout.InfiniteTimeSpan,
+        var route = pattern == @"\p{L}" ? Utf8ExecutionRoute.FallbackDirectUnicodeLetter : Utf8ExecutionRoute.FallbackDirectUnicodeCategory;
+        var reference = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxWorkSteps = 100000 });
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
-            if (firstNative == 0 && Utf8SearchDiagnosticsSession.Current!.ExecutionRoute == Utf8ExecutionRoute.FallbackDirectUnicodeCategory) firstNative = steps;
+            if (firstNative == 0 && Utf8SearchDiagnosticsSession.Current!.ExecutionRoute == route) firstNative = steps;
         });
         try { Assert.Equal(0, reference.Count(input)); } finally { session.Complete(); }
         Assert.True(firstNative > 1);
-        var limited = new Utf8Regex(@"\p{Sm}", RegexOptions.None, Timeout.InfiniteTimeSpan,
+        var limited = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxWorkSteps = firstNative - 1 });
         session = Utf8SearchDiagnosticsSession.Start();
         try
         {
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
                 Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input)).ResourceKind);
-            Assert.Equal(Utf8ExecutionRoute.FallbackDirectUnicodeCategory, session.ExecutionRoute);
+            Assert.Equal(route, session.ExecutionRoute);
         }
         finally { session.Complete(); }
     }
 
-    [Theory] [InlineData(0)] [InlineData(4095)] [InlineData(4096)]
-    public void WholeSubjectValidationAndPreCancellationRemainAuthoritative(int prefix)
+    [Theory]
+    [InlineData(@"\p{Sm}", 0)] [InlineData(@"\p{Sm}", 4095)] [InlineData(@"\p{Sm}", 4096)]
+    [InlineData(@"\p{L}", 0)] [InlineData(@"\p{L}", 4095)] [InlineData(@"\p{L}", 4096)]
+    public void WholeSubjectValidationAndPreCancellationRemainAuthoritative(string pattern, int prefix)
     {
-        var regex = new Utf8Regex(@"\p{Sm}");
+        var regex = new Utf8Regex(pattern);
         var malformed = Encoding.UTF8.GetBytes(new string('+', prefix)).Concat(new byte[] { 0xf0, 0x9f }).ToArray();
         Assert.Throws<ArgumentException>(() => regex.Count(malformed));
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(malformed, token.Token)).CancellationToken);
         Assert.Equal(0, regex.Count(ReadOnlySpan<byte>.Empty));
+    }
+
+    private sealed class NoStorage : IUtf8MemoryAllowance
+    {
+        public bool TryReserve(ulong bytes) => bytes == 0;
+        public void Release(ulong bytes) => Assert.Equal(0UL, bytes);
     }
 }
