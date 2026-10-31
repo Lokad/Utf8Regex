@@ -1,0 +1,1 @@
+Initial focused checks passed (Core437 and PCRE280 per runtime observed in tool output), but stdout redirection did not capture test.ps1 Write-Host information stream. Reused matching binaries with -SkipBuild once and all-stream redirection to retain evidence. No rebuild, broadened matrix or performance retry.

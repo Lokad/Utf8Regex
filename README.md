@@ -293,7 +293,6 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `lokad/imports/module-imports` | 51.202 us | 9.069 us | 39.502 us | 5.65x |
 | `lokad/lexer/identifier` | 101.302 us | 21.445 us | 25.736 us | 4.72x |
 | `lokad/langserv/helper-identifier` | 30.129 us | 7.005 us | 7.844 us | 4.30x |
-| `lokad/lexer/string` | 311.895 us | 95.086 us | 101.342 us | 3.28x |
 | `structural/keyword-to-generic-type` | 5.845 us | 4.139 us | 15.972 us | 1.41x |
 | `lokad/langserv/color-short-hex` | 1.880 us | 1.385 us | 1.574 us | 1.36x |
 | `lokad/lexer/operator-run` | 6.811 us | 5.146 us | 6.128 us | 1.32x |
@@ -315,6 +314,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `literal/identifier-token-casei` | 7.370 us | 15.239 us | 27.353 us | 0.48x |
 | `lokad/style/range-ref` | 1.992 us | 4.136 us | 4.386 us | 0.48x |
 | `structural/ordered-keyword-window` | 6.907 us | 18.209 us | 29.381 us | 0.38x |
+| `lokad/lexer/string` | 49.924 us | 145.053 us | 155.031 us | 0.34x |
 | `structural/ordered-modifier-pair` | 6.020 us | 17.578 us | 28.927 us | 0.34x |
 | `structural/keyword-family-to-capitalized-identifier` | 75.096 us | 226.435 us | 238.537 us | 0.33x |
 | `structural/modifier-family-to-type-window` | 78.053 us | 257.501 us | 270.770 us | 0.30x |
@@ -343,7 +343,6 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `lokad/folding/region-marker` | 5,316.170 us | 36.834 us | 60.794 us | 144.33x |
 | `structural/keyword-family-to-capitalized-identifier` | 75.252 us | 7.756 us | 19.226 us | 9.70x |
 | `lokad/imports/module-imports` | 51.139 us | 5.473 us | 30.611 us | 9.34x |
-| `lokad/lexer/string` | 304.325 us | 46.620 us | 50.538 us | 6.53x |
 | `lokad/langserv/helper-identifier` | 29.997 us | 4.643 us | 5.786 us | 6.46x |
 | `lokad/lexer/identifier` | 100.981 us | 16.479 us | 25.949 us | 6.13x |
 | `lokad/lexer/operator-run` | 6.794 us | 2.793 us | 3.806 us | 2.43x |
@@ -368,6 +367,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `structural/ordered-keyword-window` | 6.934 us | 8.740 us | 20.134 us | 0.79x |
 | `literal/call-token` | 3.786 us | 4.890 us | 17.964 us | 0.77x |
 | `lokad/style/cell-ref` | 1.957 us | 2.657 us | 2.156 us | 0.74x |
+| `lokad/lexer/string` | 49.638 us | 68.877 us | 78.509 us | 0.72x |
 | `structural/ordered-modifier-pair` | 6.124 us | 8.771 us | 19.738 us | 0.70x |
 | `literal/identifier-token` | 2.820 us | 4.761 us | 15.457 us | 0.59x |
 | `structural/ordered-identifier-window` | 7.206 us | 15.170 us | 28.326 us | 0.48x |
