@@ -1,0 +1,2 @@
+aa64a7966735aa64593fcffb64dab0265a0f45f415ebb51edaea2d203a68a94c  src/Lokad.Utf8Regex/bin/Release/net11.0/Lokad.Utf8Regex.dll
+aa64a7966735aa64593fcffb64dab0265a0f45f415ebb51edaea2d203a68a94c  bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.dll

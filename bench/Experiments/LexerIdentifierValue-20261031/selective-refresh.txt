@@ -1,0 +1,33 @@
+Measuring README benchmark case: lokad/lexer/identifier (requested=5, samples=5, cap=120s)
+ComparisonSample;Index=0;Lane=Utf8Regex;Iterations=940;ElapsedMicroseconds=44622.700
+ComparisonSample;Index=0;Lane=Utf8Compiled;Iterations=905;ElapsedMicroseconds=42756.300
+ComparisonSample;Index=0;Lane=PredecodedRegex;Iterations=1315;ElapsedMicroseconds=42690.400
+ComparisonSample;Index=0;Lane=CompiledRegex;Iterations=2104;ElapsedMicroseconds=49362.400
+ComparisonSample;Index=0;Lane=DecodeThenRegex;Iterations=1273;ElapsedMicroseconds=48901.300
+ComparisonSample;Index=0;Lane=DecodeThenCompiledRegex;Iterations=1643;ElapsedMicroseconds=49576.700
+ComparisonSample;Index=1;Lane=Utf8Regex;Iterations=940;ElapsedMicroseconds=44376.800
+ComparisonSample;Index=1;Lane=Utf8Compiled;Iterations=905;ElapsedMicroseconds=43002.400
+ComparisonSample;Index=1;Lane=PredecodedRegex;Iterations=1315;ElapsedMicroseconds=41410.300
+ComparisonSample;Index=1;Lane=CompiledRegex;Iterations=2104;ElapsedMicroseconds=47428.300
+ComparisonSample;Index=1;Lane=DecodeThenRegex;Iterations=1273;ElapsedMicroseconds=48808.400
+ComparisonSample;Index=1;Lane=DecodeThenCompiledRegex;Iterations=1643;ElapsedMicroseconds=49198.000
+ComparisonSample;Index=2;Lane=Utf8Regex;Iterations=940;ElapsedMicroseconds=51695.400
+ComparisonSample;Index=2;Lane=Utf8Compiled;Iterations=905;ElapsedMicroseconds=42779.300
+ComparisonSample;Index=2;Lane=PredecodedRegex;Iterations=1315;ElapsedMicroseconds=43309.500
+ComparisonSample;Index=2;Lane=CompiledRegex;Iterations=2104;ElapsedMicroseconds=49916.800
+ComparisonSample;Index=2;Lane=DecodeThenRegex;Iterations=1273;ElapsedMicroseconds=53814.100
+ComparisonSample;Index=2;Lane=DecodeThenCompiledRegex;Iterations=1643;ElapsedMicroseconds=57175.200
+ComparisonSample;Index=3;Lane=Utf8Regex;Iterations=940;ElapsedMicroseconds=48152.200
+ComparisonSample;Index=3;Lane=Utf8Compiled;Iterations=905;ElapsedMicroseconds=42623.600
+ComparisonSample;Index=3;Lane=PredecodedRegex;Iterations=1315;ElapsedMicroseconds=43089.000
+ComparisonSample;Index=3;Lane=CompiledRegex;Iterations=2104;ElapsedMicroseconds=51451.700
+ComparisonSample;Index=3;Lane=DecodeThenRegex;Iterations=1273;ElapsedMicroseconds=51425.200
+ComparisonSample;Index=3;Lane=DecodeThenCompiledRegex;Iterations=1643;ElapsedMicroseconds=51428.100
+ComparisonSample;Index=4;Lane=Utf8Regex;Iterations=940;ElapsedMicroseconds=44311.800
+ComparisonSample;Index=4;Lane=Utf8Compiled;Iterations=905;ElapsedMicroseconds=42817.900
+ComparisonSample;Index=4;Lane=PredecodedRegex;Iterations=1315;ElapsedMicroseconds=43250.900
+ComparisonSample;Index=4;Lane=CompiledRegex;Iterations=2104;ElapsedMicroseconds=50207.800
+ComparisonSample;Index=4;Lane=DecodeThenRegex;Iterations=1273;ElapsedMicroseconds=49378.300
+ComparisonSample;Index=4;Lane=DecodeThenCompiledRegex;Iterations=1643;ElapsedMicroseconds=49081.700
+Updated README case: lokad/lexer/identifier
+Verified README.Parity.json against README.Benchmarks.json.

@@ -1,0 +1,12 @@
+Preflight actual-ordinary: 1565
+Preflight actual-compiled: 1565
+Preflight actual-finite-live: 1565
+Preflight actual-deadline-live: 1565
+Preflight dense-ASCII: 2049
+Preflight Unicode-scalar-control: 14
+Preflight empty-ASCII-misses: 0
+Preflight large-scalar-control: 2050
+Preflight helper-identifier-control: 877
+Preflight number-prefix-control: 420
+Preflight quoted-prefix-control: 2951
+Preflight folded-literal-control: 35184372088839

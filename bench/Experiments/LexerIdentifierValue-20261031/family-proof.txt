@@ -1,0 +1,6 @@
+{"Culture":"","Invariant":false,"Options":"IgnoreCase, Multiline, Compiled","Kind":"AnchoredIdentifierPrefix"}
+{"Culture":"","Invariant":true,"Options":"IgnoreCase, Multiline, Compiled, CultureInvariant","Kind":"AnchoredIdentifierPrefix"}
+{"Culture":"en-US","Invariant":false,"Options":"IgnoreCase, Multiline, Compiled","Kind":"AnchoredIdentifierPrefix"}
+{"Culture":"en-US","Invariant":true,"Options":"IgnoreCase, Multiline, Compiled, CultureInvariant","Kind":"AnchoredIdentifierPrefix"}
+{"Culture":"tr-TR","Invariant":false,"Options":"IgnoreCase, Multiline, Compiled","Kind":"None"}
+{"Culture":"tr-TR","Invariant":true,"Options":"IgnoreCase, Multiline, Compiled, CultureInvariant","Kind":"AnchoredIdentifierPrefix"}

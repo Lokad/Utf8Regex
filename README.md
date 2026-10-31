@@ -291,7 +291,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 |---|---:|---:|---:|---:|
 | `lokad/folding/region-marker` | 5,329.290 us | 36.539 us | 61.095 us | 145.85x |
 | `lokad/imports/module-imports` | 51.202 us | 9.069 us | 39.502 us | 5.65x |
-| `lokad/lexer/identifier` | 101.302 us | 21.445 us | 25.736 us | 4.72x |
+| `lokad/lexer/identifier` | 47.471 us | 32.767 us | 38.789 us | 1.45x |
 | `lokad/langserv/helper-identifier` | 10.136 us | 7.172 us | 7.914 us | 1.41x |
 | `structural/keyword-to-generic-type` | 5.845 us | 4.139 us | 15.972 us | 1.41x |
 | `lokad/langserv/color-short-hex` | 1.880 us | 1.385 us | 1.574 us | 1.36x |
@@ -343,10 +343,10 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `lokad/folding/region-marker` | 5,316.170 us | 36.834 us | 60.794 us | 144.33x |
 | `structural/keyword-family-to-capitalized-identifier` | 75.252 us | 7.756 us | 19.226 us | 9.70x |
 | `lokad/imports/module-imports` | 51.139 us | 5.473 us | 30.611 us | 9.34x |
-| `lokad/lexer/identifier` | 100.981 us | 16.479 us | 25.949 us | 6.13x |
 | `lokad/lexer/operator-run` | 6.794 us | 2.793 us | 3.806 us | 2.43x |
 | `lokad/lexer/doc-line` | 7.009 us | 3.135 us | 4.561 us | 2.24x |
 | `lokad/langserv/helper-identifier` | 10.139 us | 4.917 us | 5.794 us | 2.06x |
+| `lokad/lexer/identifier` | 47.270 us | 23.725 us | 30.174 us | 1.99x |
 | `structural/modifier-family-to-type-pair` | 28.502 us | 15.310 us | 33.778 us | 1.86x |
 | `lokad/langserv/color-short-hex` | 1.971 us | 1.066 us | 1.268 us | 1.85x |
 | `lokad/docs/inline-doc-prefix` | 7.335 us | 4.084 us | 3.854 us | 1.80x |

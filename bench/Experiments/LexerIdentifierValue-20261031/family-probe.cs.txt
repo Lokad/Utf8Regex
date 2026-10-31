@@ -1,0 +1,19 @@
+using System.Globalization;
+using System.Reflection;
+using System.Runtime.Loader;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.GetFullPath(args[0]));
+var type=assembly.GetType("Lokad.Utf8Regex.Utf8Regex")!;
+var policy=assembly.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!;
+foreach(var culture in new[]{"", "en-US", "tr-TR"}) {
+    CultureInfo.CurrentCulture=CultureInfo.GetCultureInfo(culture);
+    foreach(var invariant in new[]{false,true}) {
+        var options=RegexOptions.IgnoreCase|RegexOptions.Multiline|RegexOptions.Compiled|(invariant?RegexOptions.CultureInvariant:0);
+        var regex=type.GetConstructor([typeof(string),typeof(RegexOptions),typeof(TimeSpan),policy])!.Invoke([@"\G[a-z][a-z0-9_]*",options,Timeout.InfiniteTimeSpan,Activator.CreateInstance(policy)]);
+        var field=type.GetProperty("Inspection",BindingFlags.Instance|BindingFlags.NonPublic)!;
+        var plan=field.GetValue(regex)!;
+        var kind=plan.GetType().GetProperty("DebugFallbackDirectFamilyKind",BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic)!.GetValue(plan);
+        Console.WriteLine(JsonSerializer.Serialize(new { Culture=culture,Invariant=invariant,Options=options.ToString(),Kind=kind!.ToString() }));
+    }
+}
