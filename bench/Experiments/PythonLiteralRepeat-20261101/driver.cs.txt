@@ -1,0 +1,115 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+var root = Path.GetFullPath(args[0]); var before = Load(Path.Combine(root, "before"), "before"); var after = Load(Path.Combine(root, "after"), "after");
+if (Hash(before.Core) == Hash(after.Core) || new[] { before.Core, after.Core, before.Python, after.Python }.Any(assembly => !Version(assembly).Contains("e1240a20"))) throw new Exception("Unexpected frozen binaries");
+var preflight = args.Contains("--preflight"); using var process = Process.GetCurrentProcess(); if (!preflight) process.ProcessorAffinity = (nint)4;
+using var live = new CancellationTokenSource(); var clock = Stopwatch.StartNew(); var roots = new List<object>(); var rows = new List<object>();
+var corpus = string.Concat(Enumerable.Repeat("Шерлок ", 1024));
+var cases = new[] {
+    new Case("actual-unicode-full", "(?:Шерлок )+", corpus),
+    new Case("actual-finite-live", "(?:Шерлок )+", corpus, Finite: true, Live: true),
+    new Case("actual-deadline-live", "(?:Шерлок )+", corpus, Live: true, Deadline: true),
+    new Case("offset-supplementary", "(?:😀a){2,4}", "π😀😀a😀a😀a", Start: 6),
+    new Case("partial-tail", "(?:Шерлок )+", string.Concat(Enumerable.Repeat("Шерлок ", 256)) + "Ше"),
+    new Case("captured-body-control", "(?:(?P<x>Шерлок ))+", string.Concat(Enumerable.Repeat("Шерлок ", 64))),
+    new Case("folded-body-control", "(?i:(?:ab)+)", string.Concat(Enumerable.Repeat("aBaB", 128))),
+    new Case("native-literal-control", "needle", "needle")
+};
+foreach (var item in cases) {
+    var input = Encoding.UTF8.GetBytes(item.Text); var startUtf16 = Encoding.UTF8.GetString(input.AsSpan(0, item.Start)).Length;
+    if (item.Name.StartsWith("actual-", StringComparison.Ordinal) && (input.Length != 13312 || Convert.ToHexString(SHA256.HashData(input)) != "2CD7BD658BD1B142A30FDF94DF801CFFD3CBA9778D4A9557B6B1B43A0EB2F5FB")) throw new Exception("Actual corpus changed");
+    var reference = item.Pattern.Replace("(?P<", "(?<");
+    var oracle = new Regex(@"\G(?:" + reference + @")\z", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    long Oracle(string text) {
+        var match = oracle.Match(text, startUtf16);
+        return match.Success ? RangeShape.Digest(Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index)),
+            Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index + match.Length)), match.Index, match.Index + match.Length) : 0;
+    }
+    var expected = Oracle(item.Text);
+    Func<long> Make((Assembly Core, Assembly Python) assemblies) {
+        var type = assemblies.Python.GetType("Lokad.Utf8Regex.PythonRe.Utf8PythonRegex")!;
+        var options = assemblies.Python.GetType("Lokad.Utf8Regex.PythonRe.PythonReCompileOptions")!;
+        var policyType = assemblies.Core.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!; var policy = Activator.CreateInstance(policyType)!;
+        if (item.Finite) foreach (var (name, amount) in new[] { ("MaxWorkSteps", 1_000_000UL), ("MaxDepth", 4096UL), ("MaxWorkingBytes", 16UL << 20), ("MaxResultBytes", 16UL << 20) }) {
+            var property = policyType.GetProperty(name)!; property.SetValue(policy, Convert.ChangeType(amount, Nullable.GetUnderlyingType(property.PropertyType)!));
+        }
+        var owner = type.GetConstructor([typeof(string), options, typeof(TimeSpan), policyType])!
+            .Invoke([item.Pattern, Enum.ToObject(options, 0), item.Deadline ? TimeSpan.FromSeconds(1) : Timeout.InfiniteTimeSpan, policy]);
+        roots.Add(owner);
+        var methodInfo = type.GetMethod("FullMatch", item.Live
+            ? [typeof(ReadOnlySpan<byte>), typeof(int), typeof(CancellationToken)]
+            : item.Start != 0 ? [typeof(ReadOnlySpan<byte>), typeof(int)] : [typeof(ReadOnlySpan<byte>)])!;
+        // The existing experiment bridge pattern consumes the public ref-struct
+        // result in its owning load context. It performs no unchecked reads.
+        var bridge = new DynamicMethod("PublicFullMatchRanges", typeof(long), [typeof(object), typeof(byte[]), typeof(int), typeof(CancellationToken)], typeof(Program).Module, true);
+        var code = bridge.GetILGenerator(); var result = code.DeclareLocal(methodInfo.ReturnType); var hit = code.DefineLabel();
+        code.Emit(OpCodes.Ldarg_0); code.Emit(OpCodes.Castclass, type); code.Emit(OpCodes.Ldarg_1);
+        code.Emit(OpCodes.Call, typeof(ReadOnlySpan<byte>).GetMethod("op_Implicit", [typeof(byte[])])!);
+        if (item.Live || item.Start != 0) code.Emit(OpCodes.Ldarg_2);
+        if (item.Live) code.Emit(OpCodes.Ldarg_3);
+        code.Emit(OpCodes.Call, methodInfo); code.Emit(OpCodes.Stloc, result);
+        code.Emit(OpCodes.Ldloca, result); code.Emit(OpCodes.Call, methodInfo.ReturnType.GetProperty("Success")!.GetMethod!);
+        code.Emit(OpCodes.Brtrue_S, hit); code.Emit(OpCodes.Ldc_I4_0); code.Emit(OpCodes.Conv_I8); code.Emit(OpCodes.Ret); code.MarkLabel(hit);
+        foreach (var name in new[] { "StartOffsetInBytes", "EndOffsetInBytes", "StartOffsetInUtf16", "EndOffsetInUtf16" }) {
+            code.Emit(OpCodes.Ldloca, result); code.Emit(OpCodes.Call, methodInfo.ReturnType.GetProperty(name)!.GetMethod!);
+        }
+        code.Emit(OpCodes.Call, typeof(RangeShape).GetMethod(nameof(RangeShape.Digest))!); code.Emit(OpCodes.Ret);
+        var call = bridge.CreateDelegate<FullRanges>(); return () => call(owner, input, item.Start, item.Live ? live.Token : default);
+    }
+    var actions = new List<Func<long>> { Make(before), Make(after), () => Oracle(item.Text), () => Oracle(Encoding.UTF8.GetString(input)) };
+    foreach (var action in actions) if (action() != expected) throw new Exception("Preflight mismatch " + item.Name);
+    if (preflight) { Console.Error.WriteLine("Preflight " + item.Name + ": " + expected + ", bytes=" + input.Length); continue; }
+    var iterations = new int[actions.Count]; var calls = new long[actions.Count];
+    for (var lane = 0; lane < actions.Count; lane++) {
+        var warm = Stopwatch.StartNew(); do { if (actions[lane]() != expected) throw new Exception("Warm result"); calls[lane]++; } while (warm.Elapsed.TotalMilliseconds < 1500 || calls[lane] < 64);
+        iterations[lane] = 1; while (Measure(iterations[lane], actions[lane], expected).Milliseconds < 60) iterations[lane] = checked(iterations[lane] * 2);
+    }
+    var times = Enumerable.Range(0, actions.Count).Select(_ => new double[5]).ToArray(); var bytes = Enumerable.Range(0, actions.Count).Select(_ => new double[5]).ToArray(); var durations = Enumerable.Range(0, actions.Count).Select(_ => new double[5]).ToArray();
+    for (var sample = 0; sample < 5; sample++) for (var position = 0; position < actions.Count; position++) {
+        var lane = sample % 2 == 0 ? position : actions.Count - 1 - position; GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        var result = Measure(iterations[lane], actions[lane], expected); if (result.Milliseconds < 20) throw new Exception("Sample below20ms");
+        times[lane][sample] = result.Milliseconds * 1000 / iterations[lane]; bytes[lane][sample] = (double)result.Bytes / iterations[lane]; durations[lane][sample] = result.Milliseconds;
+    }
+    rows.Add(new { item.Name, item.Pattern, item.Start, StartUtf16 = startUtf16, item.Finite, item.Live, item.Deadline, InputBytes = input.Length,
+        InputSha256 = Convert.ToHexString(SHA256.HashData(input)), Expected = expected, Iterations = iterations, WarmupCalls = calls,
+        Microseconds = times, AllocatedBytes = bytes, ElapsedMilliseconds = durations });
+    Console.Error.WriteLine(item.Name + ": " + string.Join(" / ", times.Select(values => values.Order().ElementAt(2))));
+}
+GC.KeepAlive(roots);
+Console.WriteLine(JsonSerializer.Serialize(new { Runtime = RuntimeInformation.FrameworkDescription, AffinityMask = "4", ElapsedSeconds = clock.Elapsed.TotalSeconds,
+    Before = new { Core = Identity(before.Core), Python = Identity(before.Python) }, After = new { Core = Identity(after.Core), Python = Identity(after.Python) },
+    Scope = "Existing scalar VM admits a bounded exact literal-block repeat before VeryEnd without rewind records. At most64 unfolded scalars encode into fixed256B stack scratch; one original input-work unit before encoding/every<=256B checked comparison and publication, with synchronous token/direct deadline. Base workspace, strict full validation, captures outside the block and result admission remain. Work/depth/storage costs intentionally decrease; no new plan/field/matcher/policy/mode or unchecked access. Eight equal-result public FullMatch range cases: actual13312B repeated Cyrillic with guarded digest, finite/live/deadline, supplementary offset, partial tail, captured/folded-body controls and unchanged exact-literal native control. Every lane consumes primary byte and derived UTF16 ranges; diagnostic predecoded/decode-then compiled .NET lanes include byte-coordinate projection and do not set public parity/Status. Warm1.5s/min64calls, independent60ms calibration, five alternating samples each>=20ms; batches checked after timing. Construction/cold full-program preparation excluded. Default tiering/PGO, CPU2, one120s cap, at most one selected confirmation. Official CPython qualification is separate; no package/fullcatalog campaign.",
+    LaneNames = new[] { "BeforePythonRe", "AfterPythonRe", "DiagnosticPredecodedCompiledRegex", "DiagnosticDecodeThenCompiledRegex" }, Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+
+static (Assembly Core, Assembly Python) Load(string root, string name) {
+    var context = new AssemblyLoadContext(name); context.Resolving += (c, n) => File.Exists(Path.Combine(root, n.Name + ".dll")) ? c.LoadFromAssemblyPath(Path.Combine(root, n.Name + ".dll")) : null;
+    return (context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.dll")), context.LoadFromAssemblyPath(Path.Combine(root, "Lokad.Utf8Regex.PythonRe.dll")));
+}
+static string Version(Assembly assembly) => assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
+static string Hash(Assembly assembly) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location)));
+static object Identity(Assembly assembly) => new { Version = Version(assembly), Sha256 = Hash(assembly) };
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds, long Bytes) Measure(int count, Func<long> action, long expected) {
+    var values = new long[count]; var before = GC.GetAllocatedBytesForCurrentThread(); var start = Stopwatch.GetTimestamp();
+    for (var index = 0; index < count; index++) values[index] = action();
+    var elapsed = Stopwatch.GetElapsedTime(start); var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+    foreach (var value in values) if (value != expected) throw new Exception("Timed result mismatch");
+    GC.KeepAlive(values); return (elapsed.TotalMilliseconds, bytes);
+}
+sealed record Case(string Name, string Pattern, string Text, bool Finite = false, bool Live = false, bool Deadline = false, int Start = 0);
+delegate long FullRanges(object owner, byte[] input, int start, CancellationToken token);
+static class RangeShape {
+    public static long Digest(int startByte, int endByte, int startUtf16, int endUtf16) {
+        var hash = 17L; hash = hash * 397 + startByte; hash = hash * 397 + endByte;
+        hash = hash * 397 + startUtf16; return hash * 397 + endUtf16;
+    }
+}

@@ -1,0 +1,16 @@
+Input=13312;sha256=2CD7BD658BD1B142A30FDF94DF801CFFD3CBA9778D4A9557B6B1B43A0EB2F5FB;allocatedB/op=43752;endSum=851968
+0.5.0-dev.1+035a621c8410ed2de2f57cfef4b0986bcd00214a
+0.5.0-dev.1+035a621c8410ed2de2f57cfef4b0986bcd00214a
+Full program: instructions=12;groups=0;repeats=1;RTL=False;NB=False
+0: RepeatGreedy A=9 B=0 C=1 D=-1 min=1 max=9223372036854775807
+1: Literal A=1064 B=0 C=0 D=0 min=0 max=0
+2: Literal A=1077 B=0 C=0 D=0 min=0 max=0
+3: Literal A=1088 B=0 C=0 D=0 min=0 max=0
+4: Literal A=1083 B=0 C=0 D=0 min=0 max=0
+5: Literal A=1086 B=0 C=0 D=0 min=0 max=0
+6: Literal A=1082 B=0 C=0 D=0 min=0 max=0
+7: Literal A=32 B=0 C=0 D=0 min=0 max=0
+8: RepeatEnd A=0 B=0 C=0 D=0 min=0 max=0
+9: RepeatExit A=0 B=0 C=0 D=0 min=0 max=0
+10: Anchor A=2 B=0 C=0 D=0 min=0 max=0
+11: Accept A=0 B=0 C=0 D=0 min=0 max=0

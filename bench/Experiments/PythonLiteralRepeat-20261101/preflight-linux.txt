@@ -1,0 +1,41 @@
+Preflight actual-unicode-full: 424388245153, bytes=13312
+Preflight actual-finite-live: 424388245153, bytes=13312
+Preflight actual-deadline-live: 424388245153, bytes=13312
+Preflight offset-supplementary: 422668882607, bytes=21
+Preflight partial-tail: 0, bytes=3332
+Preflight captured-body-control: 422421278113, bytes=832
+Preflight folded-body-control: 422370843297, bytes=512
+Preflight native-literal-control: 422291092637, bytes=6
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "AffinityMask": "4",
+  "ElapsedSeconds": 0.7535887,
+  "Before": {
+    "Core": {
+      "Version": "0.5.0-dev.1\u002Be1240a20b335f521d743948a000496b8b98f7717",
+      "Sha256": "9CF3E9F30D675EB99BBBE0F36ABCD676108D37A28CE28F065AD91FCF392AE3CC"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.1\u002Be1240a20b335f521d743948a000496b8b98f7717",
+      "Sha256": "BC24E31430E716560A1BDAF5039611A1DBF0E5B1BAB83562F3C00B2314D38249"
+    }
+  },
+  "After": {
+    "Core": {
+      "Version": "0.5.0-dev.1\u002Be1240a20b335f521d743948a000496b8b98f7717",
+      "Sha256": "06940445A365D357240F2CC92841E6A65CFA74EE3E4988FC23736A5E82A2DEBF"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.1\u002Be1240a20b335f521d743948a000496b8b98f7717",
+      "Sha256": "BC24E31430E716560A1BDAF5039611A1DBF0E5B1BAB83562F3C00B2314D38249"
+    }
+  },
+  "Scope": "Existing scalar VM admits a bounded exact literal-block repeat before VeryEnd without rewind records. At most64 unfolded scalars encode into fixed256B stack scratch; one original input-work unit before encoding/every\u003C=256B checked comparison and publication, with synchronous token/direct deadline. Base workspace, strict full validation, captures outside the block and result admission remain. Work/depth/storage costs intentionally decrease; no new plan/field/matcher/policy/mode or unchecked access. Eight equal-result public FullMatch range cases: actual13312B repeated Cyrillic with guarded digest, finite/live/deadline, supplementary offset, partial tail, captured/folded-body controls and unchanged exact-literal native control. Every lane consumes primary byte and derived UTF16 ranges; diagnostic predecoded/decode-then compiled .NET lanes include byte-coordinate projection and do not set public parity/Status. Warm1.5s/min64calls, independent60ms calibration, five alternating samples each\u003E=20ms; batches checked after timing. Construction/cold full-program preparation excluded. Default tiering/PGO, CPU2, one120s cap, at most one selected confirmation. Official CPython qualification is separate; no package/fullcatalog campaign.",
+  "LaneNames": [
+    "BeforePythonRe",
+    "AfterPythonRe",
+    "DiagnosticPredecodedCompiledRegex",
+    "DiagnosticDecodeThenCompiledRegex"
+  ],
+  "Rows": []
+}
