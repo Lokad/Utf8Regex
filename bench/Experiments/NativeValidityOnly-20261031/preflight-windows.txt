@@ -1,0 +1,11 @@
+Preflight count-live-Chinese: 30
+Preflight count-deadline-live-Chinese: 30
+Preflight ismatch-live-Chinese: 1
+Preflight match-live-Chinese: 345710507670133
+Preflight match-deadline-live-Chinese: 345710507670133
+Preflight ordinary-count-control: 30
+Preflight finite-count-control: 30
+Preflight ascii-ismatch-control: 1
+Preflight ascii-match-control: 35184372097031
+Preflight folded-mixed-ismatch: 1
+Preflight family-mixed-match: 17592186048517
