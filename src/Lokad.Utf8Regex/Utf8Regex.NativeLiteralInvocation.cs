@@ -113,7 +113,9 @@ public sealed partial class Utf8Regex
             return false;
         // Empty literals use the shared scalar program and its boundary progression.
         invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
-        _ = Utf8Validation.Validate(input, ref invocation);
+        // These roots consume bytes or project their selected range separately.
+        // Keep full metered validity without deriving discarded UTF-16 metadata.
+        Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
         return true;
     }
 }

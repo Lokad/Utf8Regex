@@ -10,6 +10,40 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8NativeLiteralValueInvocationTests
 {
+    [Theory]
+    [InlineData(2045)] [InlineData(2046)] [InlineData(2047)]
+    [InlineData(2048)] [InlineData(2049)]
+    public void ControlledLiteralRootsKeepWholeValidationAndDeriveOnlySelectedCoordinates(int prefixLength)
+    {
+        foreach (var pattern in new[] { "café", "汉字|café", "NEEDLE" })
+        foreach (var compiled in new[] { RegexOptions.None, RegexOptions.Compiled })
+        {
+            var options = RegexOptions.CultureInvariant | compiled |
+                (pattern == "NEEDLE" ? RegexOptions.IgnoreCase : RegexOptions.None);
+            var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(1));
+            var oracle = new Regex(pattern, options);
+            var text = new string('x', prefixLength) + "é😀前汉字 café needle";
+            var bytes = Encoding.UTF8.GetBytes(text);
+            byte[] backing = [0xff, .. bytes, 0xff];
+            using var live = new CancellationTokenSource();
+            Assert.Equal(oracle.IsMatch(text), regex.IsMatch(backing.AsSpan(1, bytes.Length), live.Token));
+            Assert.Equal(oracle.Count(text), regex.Count(backing.AsSpan(1, bytes.Length), live.Token));
+            var expected = oracle.Match(text);
+            var actual = regex.Match(backing.AsSpan(1, bytes.Length), live.Token);
+            Assert.True(actual.Success);
+            Assert.Equal(expected.Index, actual.IndexInUtf16);
+            Assert.Equal(expected.Length, actual.LengthInUtf16);
+            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.IndexInBytes);
+            Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), actual.LengthInBytes);
+            byte[] malformed = [.. bytes, 0xed, 0xa0, 0x80];
+            Assert.Contains(bytes.Length.ToString(), Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed, live.Token)).Message);
+            Assert.Contains(bytes.Length.ToString(), Assert.Throws<ArgumentException>(() => regex.Count(malformed, live.Token)).Message);
+            Assert.Contains(bytes.Length.ToString(), Assert.Throws<ArgumentException>(() => regex.Match(malformed, live.Token)).Message);
+            live.Cancel();
+            Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, live.Token)).CancellationToken);
+        }
+    }
+
     private static Utf8PreparedRegex Prepared(Utf8Regex regex) =>
         (Utf8PreparedRegex)typeof(Utf8Regex).GetProperty("PreparedRegex", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(regex)!;
 
