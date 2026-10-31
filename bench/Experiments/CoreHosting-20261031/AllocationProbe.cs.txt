@@ -1,0 +1,50 @@
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+
+var assembly = typeof(Utf8Regex).Assembly;
+var rows = new List<object>();
+foreach (var constructionLive in new[] { false, true })
+foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.NonBacktracking, RegexOptions.RightToLeft })
+foreach (var row in new[] {
+    new Case("anchored-ASCII-hit", "^[A-Z]{3}[0-9]{4}$", "ABC0123", true),
+    new Case("anchored-ASCII-miss", "^[A-Z]{3}[0-9]{4}$", "ABC012x", false),
+    new Case("Unicode-scalar-hit", "^.$", "😀", true),
+    new Case("Unicode-scalar-miss", "^.$", "😀é", false),
+    new Case("Unicode-category-hit", "^\\p{L}+$", "éЖ文", true),
+    new Case("Unicode-category-miss", "^\\p{L}+$", "éЖ😀", false)
+}) {
+    using var construction = new CancellationTokenSource();
+    var regex = Utf8Regex.Compile(row.Pattern, options | RegexOptions.CultureInvariant,
+        Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan,
+        constructionLive ? construction.Token : default);
+    construction.Cancel(); // Completed compilation must not retain this authority.
+    var subject = Encoding.UTF8.GetBytes(row.Subject);
+    foreach (var operationLive in new[] { false, true }) {
+        using var operation = new CancellationTokenSource();
+        var token = operationLive ? operation.Token : default;
+        for (var i = 0; i < 1000; i++) if (regex.IsMatch(subject, token) != row.Expected) throw new Exception("Warmup mismatch");
+        var allocated = GC.GetAllocatedBytesForCurrentThread(); var hits = 0;
+        for (var i = 0; i < 10000; i++) if (regex.IsMatch(subject, token)) hits++;
+        allocated = GC.GetAllocatedBytesForCurrentThread() - allocated;
+        if (hits != (row.Expected ? 10000 : 0)) throw new Exception("Measured result mismatch");
+        operation.Cancel();
+        try { regex.IsMatch(subject, operation.Token); throw new Exception("Missing cancellation"); }
+        catch (OperationCanceledException canceled) when (canceled.CancellationToken == operation.Token) { }
+        rows.Add(new { row.Name, row.Pattern, row.Subject, row.Expected, Options = options.ToString(),
+            ConstructionLive = constructionLive, OperationLive = operationLive, WarmupCalls = 1000, Calls = 10000,
+            AllocatedBytes = allocated, BytesPerCall = allocated / 10000.0 });
+    }
+}
+Console.WriteLine(JsonSerializer.Serialize(new {
+    Runtime = RuntimeInformation.FrameworkDescription,
+    Source = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
+    DllSha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))),
+    Scope = "Public current-source Core IsMatch allocation only, not throughput. Both token modes, six ASCII/Unicode hit/miss scenarios, None/Compiled/NB/RTL options, absent/live construction token independently. Construction token canceled after compilation, operation pre-cancellation token checked after measurement. Warm1000/calls10000. No Awk/adapter dependency. No matching speed or final delivery qualification claim.",
+    Rows = rows
+}, new JsonSerializerOptions { WriteIndented = true }));
+record Case(string Name, string Pattern, string Subject, bool Expected);

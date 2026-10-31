@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework /><TargetFrameworks>net10.0;net11.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup><Reference Include="Lokad.Utf8Regex"><HintPath>../../src/Lokad.Utf8Regex/bin/Release/$(TargetFramework)/Lokad.Utf8Regex.dll</HintPath></Reference></ItemGroup>
+</Project>

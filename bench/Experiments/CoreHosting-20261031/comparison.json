@@ -1,0 +1,978 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 68.9848377,
+  "Scope": "Fixed cc5fb784 -\u003E5770b86c. Fourteen equal-result public Core cases: ten before/after Count or IsMatch controls/ASCII/Unicode hit/miss/compiled/NB/finite/live token rows, four existing caller-destination before/after controls plus new funded-owner destination lanes. New funded APIs have no funded baseline; their cost is a feature observation against existing unfunded live-token APIs, not a claimed funded speedup/regression. No host conversion added. Cold32 same-size distinct template keys have identical expansions, so every stored destination remains invariant and full contents can be checked after timing without per-call snapshots. Complete operations include native preparation, matching/output and synchronous refunds; setup/compilation excluded. Lightweight atomic host counters are used for program and working admission. Warm1.5s/min1000calls/lane, independent80ms calibration,3alternating samples,all\u003E=20ms. One120s cap; at most one focused noise confirmation. No catalog/cumulative/package claim.",
+  "Before": "0.5.0-dev\u002Bcc5fb784de936cbb966864b50acc3bfec6761d44 sha256=62E8458AD49E9F3731069074A80D6A4A0FD8EF6FED4B1914BC9A2F865AC0EACC",
+  "After": "0.5.0-dev\u002B5770b86c07658604ac045e5ce753e36d282982ad sha256=BE2B0131DBCBEC8663766E4F83E435E30886F11AA14E8E00282F0D9235A90A48",
+  "Rows": [
+    {
+      "Name": "Count-unchanged-control",
+      "Boolean": false,
+      "Live": false,
+      "Finite": false,
+      "Destination": false,
+      "Cold": false,
+      "Literal": false,
+      "Compiled": false,
+      "NonBacktracking": false,
+      "Pattern": "needle",
+      "InputBytes": 8198,
+      "InputSha256": "8DA47E1CAE661B34F429302D624E9EA43B01F9729C6A36BB3E1D2297395FF58B",
+      "TemplateBytes": 22,
+      "TemplateCount": 1,
+      "Lanes": [
+        "Before",
+        "After"
+      ],
+      "Iterations": [
+        262144,
+        262144
+      ],
+      "WarmupCalls": [
+        2574438,
+        2872024
+      ],
+      "Microseconds": [
+        [
+          0.5583377838134765,
+          0.5407386779785156,
+          0.5413349151611329
+        ],
+        [
+          0.5443916320800781,
+          0.5421344757080078,
+          0.5423927307128906
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          146.3649,
+          141.7514,
+          141.9077
+        ],
+        [
+          142.709,
+          142.1173,
+          142.185
+        ]
+      ]
+    },
+    {
+      "Name": "ASCII-hit-live",
+      "Boolean": true,
+      "Live": true,
+      "Finite": false,
+      "Destination": false,
+      "Cold": false,
+      "Literal": false,
+      "Compiled": false,
+      "NonBacktracking": false,
+      "Pattern": "^[A-Z]{3}[0-9]{4}$",
+      "InputBytes": 7,
+      "InputSha256": "8141C7D92971A424094DB9B8C3797122767EA028FF745E877AA28EB56D70A160",
+      "TemplateBytes": 22,
+      "TemplateCount": 1,
+      "Lanes": [
+        "Before",
+        "After"
+      ],
+      "Iterations": [
+        131072,
+        524288
+      ],
+      "WarmupCalls": [
+        1214582,
+        4814885
+      ],
+      "Microseconds": [
+        [
+          0.9809501647949218,
+          0.9656242370605469,
+          0.9412345886230469
+        ],
+        [
+          0.24675121307373044,
+          0.24598693847656247,
+          0.2443979263305664
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1800,
+          1800,
+          1800
+        ],
+        [
+          120,
+          120,
+          120
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          128.5751,
+          126.5663,
+          123.3695
+        ],
+        [
+          129.3687,
+          128.968,
+          128.1349
+        ]
+      ]
+    },
+    {
+      "Name": "ASCII-miss-live",
+      "Boolean": true,
+      "Live": true,
+      "Finite": false,
+      "Destination": false,
+      "Cold": false,
+      "Literal": false,
+      "Compiled": false,
+      "NonBacktracking": false,
+      "Pattern": "^[A-Z]{3}[0-9]{4}$",
+      "InputBytes": 7,
+      "InputSha256": "E21F712B3AFFD4EF53CD4BE2274A84630B1FFCED3199012616F77A4D26B92E8B",
+      "TemplateBytes": 22,
+      "TemplateCount": 1,
+      "Lanes": [
+        "Before",
+        "After"
+      ],
+      "Iterations": [
+        131072,
+        524288
+      ],
+      "WarmupCalls": [
+        1474756,
+        3850197
+      ],
+      "Microseconds": [
+        [
+          0.6005020141601562,
+          0.5778984069824219,
+          0.5475807189941406
+        ],
+        [
+          0.2196359634399414,
+          0.21804237365722656,
+          0.21829471588134763
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1800,
+          1800,
+          1800
+        ],
+        [
+          120,
+          120,
+          120
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          78.709,
+          75.7463,
+          71.7725
+        ],
+        [
+          115.1525,
+          114.317,
+          114.4493
+        ]
+      ]
+    },
+    {
+      "Name": "ASCII-hit-compiled-live",
+      "Boolean": true,
+      "Live": true,
+      "Finite": false,
+      "Destination": false,
+      "Cold": false,
+      "Literal": false,
+      "Compiled": true,
+      "NonBacktracking": false,
+      "Pattern": "^[A-Z]{3}[0-9]{4}$",
+      "InputBytes": 7,
+      "InputSha256": "8141C7D92971A424094DB9B8C3797122767EA028FF745E877AA28EB56D70A160",
+      "TemplateBytes": 22,
+      "TemplateCount": 1,
+      "Lanes": [
+        "Before",
+        "After"
+      ],
+      "Iterations": [
+        131072,
+        524288
+      ],
+      "WarmupCalls": [
+        2155075,
+        4886780
+      ],
+      "Microseconds": [
+        [
+          1.006433868408203,
+          0.8306480407714844,
+          0.9444686889648438
+        ],
+        [
+          0.256745719909668,
+          0.2312318801879883,
+          0.2534036636352539
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1800,
+          1800,
+          1800
+        ],
+        [
+          120,
+          120,
+          120
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          131.9153,
+          108.8747,
+          123.7934
+        ],
+        [
+          134.6087,
+          121.2321,
+          132.8565
+        ]
+      ]
+    },
+    {
+      "Name": "ASCII-hit-no-token-control",
+      "Boolean": true,
+      "Live": false,
+      "Finite": false,
+      "Destination": false,
+      "Cold": false,
+      "Literal": false,
+      "Compiled": false,
+      "NonBacktracking": false,
+      "Pattern": "^[A-Z]{3}[0-9]{4}$",
+      "InputBytes": 7,
+      "InputSha256": "8141C7D92971A424094DB9B8C3797122767EA028FF745E877AA28EB56D70A160",
+      "TemplateBytes": 22,
+      "TemplateCount": 1,
+      "Lanes": [
+        "Before",
+        "After"
+      ],
+      "Iterations": [
+        1048576,
+        1048576
+      ],
+      "WarmupCalls": [
+        7006494,
+        8218952
+      ],
+      "Microseconds": [
+        [
+          0.1326841354370117,
+          0.13183975219726562,
+          0.1313070297241211
+        ],
+        [
+          0.1384943962097168,
+          0.13776292800903323,
+          0.13796911239624024
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          139.1294,
+          138.244,
+          137.6854
+        ],
+        [
+          145.2219,
+          144.4549,
+          144.6711
+        ]
+      ]
+    },
+    {
+      "Name": "ASCII-hit-finite-live",
+      "Boolean": true,
+      "Live": true,
+      "Finite": true,
+      "Destination": false,
+      "Cold": false,
+      "Literal": false,
+      "Compiled": false,
+      "NonBacktracking": false,
+      "Pattern": "^[A-Z]{3}[0-9]{4}$",
+      "InputBytes": 7,
+      "InputSha256": "8141C7D92971A424094DB9B8C3797122767EA028FF745E877AA28EB56D70A160",
+      "TemplateBytes": 22,
+      "TemplateCount": 1,
+      "Lanes": [
+        "Before",
+        "After"
+      ],
+      "Iterations": [
+        131072,
+        1048576
+      ],
+      "WarmupCalls": [
+        2489289,
+        7846277
+      ],
+      "Microseconds": [
+        [
+          0.6162307739257813,
+          0.5986190795898437,
+          0.5846389770507813
+        ],
+        [
+          0.15205888748168947,
+          0.1501455307006836,
+          0.14944171905517578
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1800,
+          1800,
+          1800
+        ],
+        [
+          120,
+          120.00003814697266,
+          120.00003814697266
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          80.7706,
+          78.4622,
+          76.6298
+        ],
+        [
+          159.4453,
+          157.439,
+          156.701
+        ]
+      ]
+    },
+    {
+      "Name": "Unicode-scalar-live-control",
+      "Boolean": true,
+      "Live": true,
+      "Finite": false,
+      "Destination": false,
+      "Cold": false,
+      "Literal": false,
+      "Compiled": false,
+      "NonBacktracking": false,
+      "Pattern": "^.$",
+      "InputBytes": 4,
+      "InputSha256": "F0443A342C5EF54783A111B51BA56C938E474C32324D90C3A60C9C8E3A37E2D9",
+      "TemplateBytes": 22,
+      "TemplateCount": 1,
+      "Lanes": [
+        "Before",
+        "After"
+      ],
+      "Iterations": [
+        524288,
+        524288
+      ],
+      "WarmupCalls": [
+        5052668,
+        5542807
+      ],
+      "Microseconds": [
+        [
+          0.2381214141845703,
+          0.2371248245239258,
+          0.23736457824707033
+        ],
+        [
+          0.22396717071533204,
+          0.22453155517578124,
+          0.22298107147216797
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          120,
+          120,
+          120
+        ],
+        [
+          120,
+          120,
+          120
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          124.8442,
+          124.3217,
+          124.4474
+        ],
+        [
+          117.4233,
+          117.7192,
+          116.9063
+        ]
+      ]
+    },
+    {
+      "Name": "Unicode-category-hit-live-control",
+      "Boolean": true,
+      "Live": true,
+      "Finite": false,
+      "Destination": false,
+      "Cold": false,
+      "Literal": false,
+      "Compiled": false,
+      "NonBacktracking": false,
+      "Pattern": "^\\p{L}\u002B$",
+      "InputBytes": 7,
+      "InputSha256": "561B4C675C1057BBCE8A7066AAFA802C67A7C592CB911A870FB6423D5C62282D",
+      "TemplateBytes": 22,
+      "TemplateCount": 1,
+      "Lanes": [
+        "Before",
+        "After"
+      ],
+      "Iterations": [
+        262144,
+        262144
+      ],
+      "WarmupCalls": [
+        2398209,
+        2475179
+      ],
+      "Microseconds": [
+        [
+          0.58997802734375,
+          0.577902603149414,
+          0.5819198608398437
+        ],
+        [
+          0.6009605407714843,
+          0.5918720245361327,
+          0.5895221710205079
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1800.0006103515625,
+          1800.0006103515625,
+          1800.0006103515625
+        ],
+        [
+          1800.0006103515625,
+          1800.0006103515625,
+          1800.0006103515625
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          154.6592,
+          151.4937,
+          152.5468
+        ],
+        [
+          157.5382,
+          155.1557,
+          154.5397
+        ]
+      ]
+    },
+    {
+      "Name": "Unicode-category-miss-live-control",
+      "Boolean": true,
+      "Live": true,
+      "Finite": false,
+      "Destination": false,
+      "Cold": false,
+      "Literal": false,
+      "Compiled": false,
+      "NonBacktracking": false,
+      "Pattern": "^\\p{L}\u002B$",
+      "InputBytes": 8,
+      "InputSha256": "E495D0B62909D5D5105AD9D8859EFC8EE9FA47CD55E058CF8AFAA7F347435277",
+      "TemplateBytes": 22,
+      "TemplateCount": 1,
+      "Lanes": [
+        "Before",
+        "After"
+      ],
+      "Iterations": [
+        262144,
+        131072
+      ],
+      "WarmupCalls": [
+        2461251,
+        1428061
+      ],
+      "Microseconds": [
+        [
+          1.035544204711914,
+          1.0526050567626952,
+          1.0330230712890625
+        ],
+        [
+          1.0492347717285155,
+          1.074933624267578,
+          1.0514625549316405
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1800.0006103515625,
+          1800.0006103515625,
+          1800.0006103515625
+        ],
+        [
+          1800,
+          1800,
+          1800
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          271.4617,
+          275.9341,
+          270.8008
+        ],
+        [
+          137.5253,
+          140.8937,
+          137.8173
+        ]
+      ]
+    },
+    {
+      "Name": "ASCII-NB-live-control",
+      "Boolean": true,
+      "Live": true,
+      "Finite": false,
+      "Destination": false,
+      "Cold": false,
+      "Literal": false,
+      "Compiled": false,
+      "NonBacktracking": true,
+      "Pattern": "^[A-Z]{3}[0-9]{4}$",
+      "InputBytes": 7,
+      "InputSha256": "8141C7D92971A424094DB9B8C3797122767EA028FF745E877AA28EB56D70A160",
+      "TemplateBytes": 22,
+      "TemplateCount": 1,
+      "Lanes": [
+        "Before",
+        "After"
+      ],
+      "Iterations": [
+        131072,
+        65536
+      ],
+      "WarmupCalls": [
+        1494653,
+        1765772
+      ],
+      "Microseconds": [
+        [
+          1.1565391540527343,
+          1.1581680297851564,
+          0.8117668151855469
+        ],
+        [
+          1.1985427856445314,
+          1.197760009765625,
+          0.6877777099609375
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          760,
+          760,
+          760
+        ],
+        [
+          760,
+          760,
+          760
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          151.5899,
+          151.8034,
+          106.3999
+        ],
+        [
+          78.5477,
+          78.4964,
+          45.0742
+        ]
+      ]
+    },
+    {
+      "Name": "destination-warm-funding",
+      "Boolean": false,
+      "Live": true,
+      "Finite": false,
+      "Destination": true,
+      "Cold": false,
+      "Literal": false,
+      "Compiled": false,
+      "NonBacktracking": false,
+      "Pattern": "(a\u002B)",
+      "InputBytes": 4,
+      "InputSha256": "0ABE81E7382331DD7B85D5FD1F0712D0F7180C49A4C65B5F467BBD937D2F4FA4",
+      "TemplateBytes": 22,
+      "TemplateCount": 1,
+      "Lanes": [
+        "Before-existing-unfunded-live",
+        "After-existing-unfunded-live",
+        "After-new-funded-live"
+      ],
+      "Iterations": [
+        32768,
+        32768,
+        16384
+      ],
+      "WarmupCalls": [
+        273926,
+        396768,
+        367548
+      ],
+      "Microseconds": [
+        [
+          4.390167236328125,
+          4.3543151855468745,
+          4.3762939453125
+        ],
+        [
+          4.4303131103515625,
+          4.370169067382812,
+          4.549658203125
+        ],
+        [
+          4.8006591796875,
+          4.775067138671875,
+          4.63980712890625
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          6656,
+          6656,
+          6656
+        ],
+        [
+          6656,
+          6656,
+          6656
+        ],
+        [
+          6896,
+          6896,
+          6896
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          143.857,
+          142.6822,
+          143.4024
+        ],
+        [
+          145.1725,
+          143.2017,
+          149.0832
+        ],
+        [
+          78.654,
+          78.2347,
+          76.0186
+        ]
+      ]
+    },
+    {
+      "Name": "destination-cold32-funding",
+      "Boolean": false,
+      "Live": true,
+      "Finite": false,
+      "Destination": true,
+      "Cold": true,
+      "Literal": false,
+      "Compiled": false,
+      "NonBacktracking": false,
+      "Pattern": "(a\u002B)",
+      "InputBytes": 4,
+      "InputSha256": "0ABE81E7382331DD7B85D5FD1F0712D0F7180C49A4C65B5F467BBD937D2F4FA4",
+      "TemplateBytes": 22,
+      "TemplateCount": 32,
+      "Lanes": [
+        "Before-existing-unfunded-live",
+        "After-existing-unfunded-live",
+        "After-new-funded-live"
+      ],
+      "Iterations": [
+        16384,
+        16384,
+        16384
+      ],
+      "WarmupCalls": [
+        159856,
+        190487,
+        193328
+      ],
+      "Microseconds": [
+        [
+          4.9713500976562495,
+          4.948797607421875,
+          4.933111572265625
+        ],
+        [
+          4.967333984375,
+          5.0051330566406245,
+          4.98885498046875
+        ],
+        [
+          7.5583984375,
+          7.6238525390625,
+          7.526373291015625
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          9568,
+          9568,
+          9568
+        ],
+        [
+          9568,
+          9568,
+          9568
+        ],
+        [
+          9672,
+          9672,
+          9672
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          81.4506,
+          81.0811,
+          80.8241
+        ],
+        [
+          81.3848,
+          82.0041,
+          81.7374
+        ],
+        [
+          123.8368,
+          124.9092,
+          123.3121
+        ]
+      ]
+    },
+    {
+      "Name": "destination-finite-funding",
+      "Boolean": false,
+      "Live": true,
+      "Finite": true,
+      "Destination": true,
+      "Cold": false,
+      "Literal": false,
+      "Compiled": false,
+      "NonBacktracking": false,
+      "Pattern": "(a\u002B)",
+      "InputBytes": 4,
+      "InputSha256": "0ABE81E7382331DD7B85D5FD1F0712D0F7180C49A4C65B5F467BBD937D2F4FA4",
+      "TemplateBytes": 22,
+      "TemplateCount": 1,
+      "Lanes": [
+        "Before-existing-unfunded-live",
+        "After-existing-unfunded-live",
+        "After-new-funded-live"
+      ],
+      "Iterations": [
+        32768,
+        32768,
+        32768
+      ],
+      "WarmupCalls": [
+        555840,
+        538794,
+        476813
+      ],
+      "Microseconds": [
+        [
+          2.7093017578125003,
+          2.661041259765625,
+          2.657525634765625
+        ],
+        [
+          2.7456512451171875,
+          2.718408203125,
+          2.7642883300781254
+        ],
+        [
+          3.0611206054687496,
+          3.0468658447265624,
+          3.0641662597656247
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          6656,
+          6656,
+          6656
+        ],
+        [
+          6656,
+          6656,
+          6656
+        ],
+        [
+          6896,
+          6896,
+          6896
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          88.7784,
+          87.197,
+          87.0818
+        ],
+        [
+          89.9695,
+          89.0768,
+          90.5802
+        ],
+        [
+          100.3068,
+          99.8397,
+          100.4066
+        ]
+      ]
+    },
+    {
+      "Name": "destination-literal-guidance-funding",
+      "Boolean": false,
+      "Live": true,
+      "Finite": false,
+      "Destination": true,
+      "Cold": false,
+      "Literal": true,
+      "Compiled": false,
+      "NonBacktracking": false,
+      "Pattern": "a",
+      "InputBytes": 4,
+      "InputSha256": "0ABE81E7382331DD7B85D5FD1F0712D0F7180C49A4C65B5F467BBD937D2F4FA4",
+      "TemplateBytes": 22,
+      "TemplateCount": 1,
+      "Lanes": [
+        "Before-existing-unfunded-live",
+        "After-existing-unfunded-live",
+        "After-new-funded-live"
+      ],
+      "Iterations": [
+        65536,
+        65536,
+        65536
+      ],
+      "WarmupCalls": [
+        790439,
+        791554,
+        725494
+      ],
+      "Microseconds": [
+        [
+          1.7930313110351563,
+          1.800048828125,
+          1.784161376953125
+        ],
+        [
+          1.7402099609375001,
+          1.7599502563476563,
+          1.7552459716796875
+        ],
+        [
+          1.9633514404296875,
+          1.9631103515625001,
+          1.9685134887695312
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          560,
+          560,
+          560
+        ],
+        [
+          560,
+          560,
+          560
+        ],
+        [
+          800,
+          800,
+          800
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          117.5081,
+          117.968,
+          116.9268
+        ],
+        [
+          114.0464,
+          115.3401,
+          115.0318
+        ],
+        [
+          128.6702,
+          128.6544,
+          129.0085
+        ]
+      ]
+    }
+  ]
+}
