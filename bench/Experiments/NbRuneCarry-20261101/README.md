@@ -54,3 +54,20 @@ No complete catalog or package qualification was repeated. The separate8d
 full refresh/common dev.2 package/consumer evidence remains that source's
 immutable milestone. A general reachable-state design is unmeasured and deferred;
 this change adds no additional pass, storage, runtime mode or fallback.
+
+Only the region row was selectively refreshed from clean `5864a16a` using the
+existing command, five independently calibrated samples/lane: ordinary/compiled
+4048.023/4056.177us,557416B,**105.83/107.36x** predecoded .NET11, both Gap.
+All30 samples >=49.820ms. This later observation is not the controlled A/B above;
+the frozen8d full-run values were lower. Do not repeat measurements for a more
+favorable ratio or change the remaining-gap classification.
+
+Existing parity verification and both-runtime source snapshot/hash/ratio guards
+pass. Only the region case changed in each of the two snapshot sections; all
+other rows retain their identities. The initial script used a nonexistent
+Markdown verification flag after successful measurement/generation; the existing
+verifier and source guards were then run, without repeating the measurement.
+[Selective raw/generated/binary evidence](../../../artifacts/experiments/nb-rune-carry-20261101/selective-evidence.tar.gz):
+`923091D0EF150F41EEA9032D237175A933D1E83A8B24CE7B44195D47EB5D0B17`.
+Committed-source Core DLL SHA256:
+`F62C3DC026DF38715BC95DB2DFACC0E870866E1D32550A2253D1310EB539AB7F`.
