@@ -1,0 +1,11 @@
+{
+  "CandidateDllSha256": "DFF00DAB1478706B9B5DE2C62C53C9B49EF76222466968C6CE4356C4FEBDB1D6",
+  "PdbSha256": "DE41D5ECE12C89CB9830A3D97249B68D9AA810713FC100F38083A9B5EB5D0928",
+  "CodeViewGuid": "72a64f62-d7f9-4a45-8b50-58a891d3ba99",
+  "Stamp": 2781682385,
+  "PdbIdentityMatches": true,
+  "PdbChecksumMatches": true,
+  "PdbChecksumSha256": "624FA672F9D745FACB5058A891D3BA99D11ACDA57A123516603C8C8250CE8E54",
+  "ChecksumScope": "Portable PDB with its20-byte content ID zeroed, matching compiler debug-directory checksum",
+  "PerformanceRerun": false
+}

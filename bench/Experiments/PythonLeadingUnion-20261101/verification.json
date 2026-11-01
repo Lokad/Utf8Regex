@@ -1,0 +1,21 @@
+{
+  "Status": "Accepted source71b8c55f; coherent fixed-original/platform/package qualification remains",
+  "Baseline": "Frozen825ed1f7 Core/Python DLLs",
+  "Candidate": "Parentb3b250d1 plus archived runtime patch; recovered DLL equals original measured SHA256",
+  "PythonReTestsPerRuntime": 4513,
+  "CoreGuardTestsPerRuntime": 59,
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "CompletedComparisonSeconds": 82.2478688,
+  "MinimumSampleMilliseconds": 20.2439,
+  "MaximumAdverseMedianPercent": 4.30157259884374,
+  "SourceState": "No new execution mode/API/state field;16pending/64work proof bounds retained",
+  "DataStatus": "Existing CPython ratios/Status and staged/published package bytes unchanged",
+  "InitialAttempt": "Aborted before a completed row on sample-duration guard; original transient log lost, failure retained as transcript summary",
+  "Confirmation": "Sole corrected timing-loop warmup/duration-calibration attempt; no further timing",
+  "Recovery": "Exact measured DLL SHA and portable-PDB identity/checksum match; original raw completed result data survives; no performance rerun",
+  "EvidenceSha256": "40DF331C26ED0AB1754BCBB5DCE17D060D8A396A02259D309966CBDF6BBD17FE",
+  "CorrectnessSha256": "9584725CC493DD0C6FA13B334AF01A452A0D42E388130A8B750DBD6137C5758E"
+}

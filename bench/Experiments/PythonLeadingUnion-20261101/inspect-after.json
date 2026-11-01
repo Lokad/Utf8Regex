@@ -1,0 +1,129 @@
+{
+  "Purpose": "Untimed actual program/candidate census, not performance qualification",
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "Python": "0.5.0-dev.6\u002Bb3b250d113708aaf15826abd5c76845398a41250",
+  "PythonSha256": "DFF00DAB1478706B9B5DE2C62C53C9B49EF76222466968C6CE4356C4FEBDB1D6",
+  "Pattern": "(,)?;",
+  "InputBytes": 2304,
+  "InputSha256": "A3875A2B306A1EEAAA6AF99A79D6E78D93CECAA3F87D488D8F8D9A8165C5B315",
+  "CoreCandidateRetained": true,
+  "CoreCandidateEnabled": false,
+  "CoreSearchKind": "ExactAsciiLiterals",
+  "LeadingIntervalAvailable": true,
+  "Low": 44,
+  "High": 59,
+  "Code": [
+    {
+      "Index": 0,
+      "Fields": {
+        "Kind": "RepeatGreedy",
+        "A": "5",
+        "B": "0",
+        "C": "0",
+        "D": "1",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "1"
+      }
+    },
+    {
+      "Index": 1,
+      "Fields": {
+        "Kind": "CaptureStart",
+        "A": "0",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      }
+    },
+    {
+      "Index": 2,
+      "Fields": {
+        "Kind": "Literal",
+        "A": "44",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      }
+    },
+    {
+      "Index": 3,
+      "Fields": {
+        "Kind": "CaptureEnd",
+        "A": "0",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      }
+    },
+    {
+      "Index": 4,
+      "Fields": {
+        "Kind": "RepeatEnd",
+        "A": "0",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      }
+    },
+    {
+      "Index": 5,
+      "Fields": {
+        "Kind": "RepeatExit",
+        "A": "0",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      }
+    },
+    {
+      "Index": 6,
+      "Fields": {
+        "Kind": "Literal",
+        "A": "59",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      }
+    },
+    {
+      "Index": 7,
+      "Fields": {
+        "Kind": "Accept",
+        "A": "0",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      }
+    }
+  ],
+  "Matches": 384,
+  "OutputValues": 769,
+  "MissingCaptures": 256,
+  "NecessaryAsciiStartPositions": 512,
+  "ScalarAttemptsWithoutCandidateSearch": 2177,
+  "CensusScope": "Computed from public match gaps; not an instrumented VM attempt counter",
+  "PrefixValues": [
+    "alpha",
+    null,
+    "beta",
+    ",",
+    "gamma",
+    null,
+    "alpha",
+    null
+  ]
+}

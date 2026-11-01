@@ -1,0 +1,86 @@
+[
+  {
+    "Name": "actual",
+    "MinimumPairedPercent": -80.36268902349637,
+    "MaximumPairedPercent": -67.46384024926849,
+    "EnvelopeWorstPercent": -67.1670759175254
+  },
+  {
+    "Name": "finite-live",
+    "MinimumPairedPercent": -76.58274917948104,
+    "MaximumPairedPercent": -36.846758477605,
+    "EnvelopeWorstPercent": -36.37982448039424
+  },
+  {
+    "Name": "deadline-live",
+    "MinimumPairedPercent": -60.882617721319775,
+    "MaximumPairedPercent": -59.64886256655901,
+    "EnvelopeWorstPercent": -59.586764831179416
+  },
+  {
+    "Name": "dense",
+    "MinimumPairedPercent": -0.1957383613055752,
+    "MaximumPairedPercent": 22.50643464087321,
+    "EnvelopeWorstPercent": 85.86708354728034
+  },
+  {
+    "Name": "unicode",
+    "MinimumPairedPercent": -67.87227412722436,
+    "MaximumPairedPercent": -67.43179710479323,
+    "EnvelopeWorstPercent": -66.9421260925147
+  },
+  {
+    "Name": "miss",
+    "MinimumPairedPercent": -99.7839932142272,
+    "MaximumPairedPercent": -99.65949536510517,
+    "EnvelopeWorstPercent": -99.65872165531005
+  },
+  {
+    "Name": "offset",
+    "MinimumPairedPercent": -67.1146138320766,
+    "MaximumPairedPercent": -65.80099871987643,
+    "EnvelopeWorstPercent": -65.52487192514027
+  },
+  {
+    "Name": "nested",
+    "MinimumPairedPercent": -66.66632392328675,
+    "MaximumPairedPercent": -66.18047639531815,
+    "EnvelopeWorstPercent": -66.05545647163123
+  },
+  {
+    "Name": "union-findall",
+    "MinimumPairedPercent": -1.8689009238701426,
+    "MaximumPairedPercent": -0.5240552177206759,
+    "EnvelopeWorstPercent": -0.10780580836727838
+  },
+  {
+    "Name": "zero-width-control",
+    "MinimumPairedPercent": 1.7745702709889288,
+    "MaximumPairedPercent": 38.6016229298701,
+    "EnvelopeWorstPercent": 82.02630267262141
+  },
+  {
+    "Name": "literal-control",
+    "MinimumPairedPercent": -0.258936217900374,
+    "MaximumPairedPercent": 75.17417478891527,
+    "EnvelopeWorstPercent": 78.66683093140787
+  },
+  {
+    "Name": "negated-control",
+    "MinimumPairedPercent": -38.74231356860965,
+    "MaximumPairedPercent": 1.8381329525964496,
+    "EnvelopeWorstPercent": 1.8893169185456582
+  },
+  {
+    "Name": "folded-control",
+    "MinimumPairedPercent": -45.832780499945436,
+    "MaximumPairedPercent": -23.72267045202281,
+    "EnvelopeWorstPercent": 4.8608795279979855
+  },
+  {
+    "Name": "dense-false-starts",
+    "MinimumPairedPercent": 2.462511891007302,
+    "MaximumPairedPercent": 9.480297776375268,
+    "EnvelopeWorstPercent": 49.19010474448064
+  }
+]
