@@ -1,0 +1,118 @@
+{
+  "ElapsedSeconds": 89.5997829,
+  "Before": "0.5.0-dev.1+c6b716ee3850db4d7de89399d889565b04759bfc sha256=00B17079EFA6EA4206C803ED4266641C949DD1E080148F247BB9A99A7C4E3D83",
+  "After": "0.5.0-dev.1+c6b716ee3850db4d7de89399d889565b04759bfc sha256=764DBE8DDD4277855B1A44F3BED4487136A76E3753CC5036E2FCAA68CB6B6928",
+  "Interpretation": "Rejected/unpromoted. GroupedMap is present, bypassing the changed proof. No affected public-path qualification, no demonstrated gain and no confirmation. Source completely reverted.",
+  "Rows": [
+    {
+      "Name": "Count-unchanged-control",
+      "BeforeUs": 0.4271289825439453,
+      "AfterUs": 0.4238166809082031,
+      "ChangePercent": -0.7754804218656375,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "PredecodedUs": 0.44042816162109377,
+      "DecodeThenUs": 1.5241470336914062,
+      "MinMilliseconds": 90.3943
+    },
+    {
+      "Name": "text-warm-grouped",
+      "BeforeUs": 5.34266357421875,
+      "AfterUs": 5.389019775390625,
+      "ChangePercent": 0.8676608685519449,
+      "BeforeBytes": 400,
+      "AfterBytes": 400,
+      "PredecodedUs": 0.39412994384765626,
+      "DecodeThenUs": 0.4220237731933594,
+      "MinMilliseconds": 87.4496
+    },
+    {
+      "Name": "native-warm-grouped",
+      "BeforeUs": 5.458477783203126,
+      "AfterUs": 5.460278320312501,
+      "ChangePercent": 0.03298606646189306,
+      "BeforeBytes": 400,
+      "AfterBytes": 400,
+      "PredecodedUs": 0.3962673187255859,
+      "DecodeThenUs": 0.4237968444824219,
+      "MinMilliseconds": 88.5005
+    },
+    {
+      "Name": "text-result-grouped",
+      "BeforeUs": 5.449224853515625,
+      "AfterUs": 5.4647277832031245,
+      "ChangePercent": 0.28449788922726427,
+      "BeforeBytes": 416,
+      "AfterBytes": 416,
+      "PredecodedUs": 0.3674144744873047,
+      "DecodeThenUs": 0.3922756195068359,
+      "MinMilliseconds": 89.1337
+    },
+    {
+      "Name": "native-destination-grouped",
+      "BeforeUs": 5.437115478515625,
+      "AfterUs": 5.4593139648437505,
+      "ChangePercent": 0.4082768963771688,
+      "BeforeBytes": 344,
+      "AfterBytes": 344,
+      "PredecodedUs": 0.4024669647216797,
+      "DecodeThenUs": 0.43265533447265625,
+      "MinMilliseconds": 88.8904
+    },
+    {
+      "Name": "compiled-grouped",
+      "BeforeUs": 5.368572998046875,
+      "AfterUs": 5.4093383789062495,
+      "ChangePercent": 0.7593336418114438,
+      "BeforeBytes": 400,
+      "AfterBytes": 400,
+      "PredecodedUs": 0.33337860107421874,
+      "DecodeThenUs": 0.3542568206787109,
+      "MinMilliseconds": 86.6806
+    },
+    {
+      "Name": "scalar-unicode-control",
+      "BeforeUs": 2.451580810546875,
+      "AfterUs": 2.4687957763671875,
+      "ChangePercent": 0.7021985873870706,
+      "BeforeBytes": 6744,
+      "AfterBytes": 6744,
+      "PredecodedUs": 0.41384811401367183,
+      "DecodeThenUs": 0.45870132446289064,
+      "MinMilliseconds": 79.4789
+    },
+    {
+      "Name": "native-cold-grouped",
+      "BeforeUs": 7.1417480468750005,
+      "AfterUs": 7.06612548828125,
+      "ChangePercent": -1.0588802362866967,
+      "BeforeBytes": 2520,
+      "AfterBytes": 2520,
+      "PredecodedUs": 0.980841064453125,
+      "DecodeThenUs": 0.9949256896972657,
+      "MinMilliseconds": 57.5648
+    },
+    {
+      "Name": "native-finite-live",
+      "BeforeUs": 2.5001922607421876,
+      "AfterUs": 2.4500640869140624,
+      "ChangePercent": -2.0049727621044844,
+      "BeforeBytes": 3160,
+      "AfterBytes": 3160,
+      "PredecodedUs": 0.39107284545898435,
+      "DecodeThenUs": 0.41858482360839844,
+      "MinMilliseconds": 78.5548
+    },
+    {
+      "Name": "native-no-match",
+      "BeforeUs": 4.89715576171875,
+      "AfterUs": 4.91483154296875,
+      "ChangePercent": 0.360939739515187,
+      "BeforeBytes": 40,
+      "AfterBytes": 40,
+      "PredecodedUs": 0.07138824462890625,
+      "DecodeThenUs": 0.15431413650512696,
+      "MinMilliseconds": 71.0868
+    }
+  ]
+}
