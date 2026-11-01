@@ -1,0 +1,32 @@
+{
+  "Purpose": "Untimed allocation/admission census, not public throughput or causal phase timing",
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CoreSha256": "BDE66941B834DAF05DBD97F700340DE7C330D44F37BE6648049428D7850FE794",
+  "PythonSha256": "961477B6C44165A6E07B818959185C01F04B8E17792D2E2E177E047E57CDE52F",
+  "ProgramInstructions": 10,
+  "RepeatCount": 2,
+  "GroupCount": 0,
+  "ConservativeRepeatVectors": 96,
+  "ConservativeFirstJournalTable": 64,
+  "ConservativeFirstJournalChunk": 1568,
+  "Rows": [
+    {
+      "Subject": "ABC12x",
+      "IsMatch": false,
+      "EndIndex": -1,
+      "ActualRunnerAllocatedBytes": 64,
+      "Steps": 12,
+      "PeakWorkingBytes": 109,
+      "FinalCallerLoanBytes": 13
+    },
+    {
+      "Subject": "ABC123",
+      "IsMatch": true,
+      "EndIndex": 6,
+      "ActualRunnerAllocatedBytes": 64,
+      "Steps": 14,
+      "PeakWorkingBytes": 109,
+      "FinalCallerLoanBytes": 13
+    }
+  ]
+}

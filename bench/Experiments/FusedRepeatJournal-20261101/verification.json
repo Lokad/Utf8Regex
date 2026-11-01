@@ -1,0 +1,26 @@
+{
+  "SourceCommit": "a861c90d",
+  "Parent": "c909b8f5",
+  "CoreChecksPerRuntime": 41159,
+  "PythonChecksPerRuntime": 4515,
+  "Runtimes": [
+    "net10.0",
+    "net11.0"
+  ],
+  "ComparisonSeconds": 91.7269001,
+  "Cases": 16,
+  "MinimumDurationMs": 42.49,
+  "Confirmation": "None",
+  "CandidateStatus": "Accepted source; coherent fixed-original cumulative/package boundary remains",
+  "ResourceChange": "Unused journal removed for accepted fusion. Existing live counters/captures admitted before allocation; numerical costs and proof-before-journal denial order intentionally route/version dependent.",
+  "UnchangedContracts": [
+    "Strict UTF8/scalars",
+    "Capture/rollback/required assertion ends",
+    "RTL/NonBacktracking",
+    "Retained aliases",
+    "Original-token synchronous cancellation/absolute deadline",
+    "Work/depth/working/result enforcement",
+    "Managed checked owned execution"
+  ],
+  "ImmutablePackages": "0.5.0-dev.6 and published0.4.0 unchanged"
+}
