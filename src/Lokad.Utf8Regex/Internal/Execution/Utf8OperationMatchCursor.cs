@@ -797,8 +797,9 @@ internal ref partial struct Utf8OperationMatchCursor
         _budget = budget;
         _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         _literalUtf16Length = 0;
-        var useByteOnlyProjection = inputIsAscii &&
-            executionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals;
+        // Proven ASCII has identical byte and UTF-16 coordinates for exact and
+        // folded families; no inter-match gap needs another validation scan.
+        var useByteOnlyProjection = inputIsAscii;
         _projectionPlan = useByteOnlyProjection
             ? new Utf8ProjectionPlan(Utf8ProjectionKind.ByteOnly)
             : searchPlan.EnumerationOperation.Projection;

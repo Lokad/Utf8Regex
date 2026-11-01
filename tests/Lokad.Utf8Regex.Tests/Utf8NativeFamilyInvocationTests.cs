@@ -86,24 +86,33 @@ public sealed class Utf8NativeFamilyInvocationTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void EveryCutoffAcrossMatchesSearchAndProjectionPreservesCallerLeaseAndUnpublishedResult(bool folded)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void EveryCutoffAcrossMatchesSearchAndProjectionPreservesCallerLeaseAndUnpublishedResult(bool folded, bool ascii)
     {
         var regex = new Utf8Regex("target|needle", RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None));
-        var input = Encoding.UTF8.GetBytes("é target 中 needle 😀 target");
+        var text = ascii ? "x target y needle z target" : "é target 中 needle 😀 target";
+        var input = Encoding.UTF8.GetBytes(text);
         var plan = Prepared(regex);
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
         Assert.True(baseline.Ledger.TryReserve(7));
-        var cursor = new Utf8OperationMatchCursor(input, plan, false, baseline);
-        var count = 0;
-        while (cursor.MoveNext()) count++;
-        Assert.Equal(3, count);
+        var cursor = new Utf8OperationMatchCursor(input, plan, ascii, baseline);
+        foreach (Match expected in new Regex(regex.Pattern, regex.Options).Matches(text))
+        {
+            Assert.True(cursor.MoveNext());
+            Assert.Equal(expected.Index, cursor.CurrentValueMatch.IndexInUtf16);
+            Assert.Equal(expected.Length, cursor.CurrentValueMatch.LengthInUtf16);
+            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), cursor.CurrentValueMatch.IndexInBytes);
+            Assert.Equal(expected.Length, cursor.CurrentValueMatch.LengthInBytes);
+        }
+        Assert.False(cursor.MoveNext());
         for (var cap = 1UL; cap < cursor.DebugInvocationSteps; cap++)
         {
             var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(7));
-            var limited = new Utf8OperationMatchCursor(input, plan, false, invocation);
+            var limited = new Utf8OperationMatchCursor(input, plan, ascii, invocation);
             Utf8ExecutionLimitKind breach;
             bool found;
             do { breach = limited.TryMoveNextLiteralFamily(out found); } while (breach == Utf8ExecutionLimitKind.None && found);

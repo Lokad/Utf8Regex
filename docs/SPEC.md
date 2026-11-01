@@ -213,6 +213,9 @@ total. Totals saturate, and first denial stays sticky across copies. Denial is n
 no-match or partial success. Numerical charges depend on route/version; they are
 not byte counts, CPU instructions, elapsed time or portable per-pattern minima.
 Native shortcuts still meter bounded search, comparison and publication.
+Validated ASCII literal-family cursors reuse byte coordinates for UTF-16
+projection. Avoided gap scans consume no validation-work units; search and
+per-match interruption checks remain.
 Eligible controlled ASCII Boolean calls reuse the complete simple-branch search
 with its bounded checkpoints, without scalar capture/backtracking workspace.
 Full strict subject validation still precedes the decision. Unsupported shapes,
