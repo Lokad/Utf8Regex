@@ -74,3 +74,14 @@ remain immutable; the older dev.2 boundary does not qualify current source.
 The producer patch changes two Core files and the required empty-ancestry argument
 at PythonRe's non-NB FullMatch bridge. The initial predeclaration's two-file wording
 omitted that bridge argument; its failed build and correction remain archived.
+
+Only the two region rows were refreshed from clean committed source `efcc6b61`:
+ordinary 1439.646us / 39.08x predecoded .NET, compiled 1452.980us / 40.12x,
+557416 bytes, both Gap (previous 54.90x / 54.37x). These are separate observations
+from the frozen A/B above. All 30 raw samples were at least 48.257ms. Other cases,
+statuses, identities, lifecycle/scaling evidence and ratio ordering are preserved.
+Existing parity verification and three snapshot guards per runtime pass.
+[Selective raw/generated/binary evidence](../../../artifacts/experiments/nb-epsilon-closure-20261101/selective-evidence.tar.gz):
+`ED924B8B6AC079E2C0FEAD35A27606182CC361A6B627B33644DB5FC2D6FE68B2`.
+Committed Core DLL SHA256:
+`89580FBA3B49A475503437C2879A2C376F0865BB9B111FCAB64A8DF36232BEE4`.

@@ -20,5 +20,10 @@
   "ColdLaneSha256": "1AECB724EA2556FF0F92C6757929B24BBEB25230120CBF71852F2D2DDBB303A7",
   "Scope": "One 96.372s public matrix, sole 23.038s selected cold confirmation; no package/fullcatalog rerun",
   "Decision": "PROMOTE; primary ~27%, matching allocation and invocation work unchanged; cold +128B, modeled region capacity +144B, construction work +54",
-  "PriorCI": "41284365361 green Windows/Linux"
+  "PriorCI": "41284365361 green Windows/Linux",
+  "SelectiveSource": "efcc6b616554fa4e0546a627b483ac631add8e06",
+  "SelectiveCoreSha256": "89580FBA3B49A475503437C2879A2C376F0865BB9B111FCAB64A8DF36232BEE4",
+  "SnapshotGuardsPerFramework": 3,
+  "SelectiveSamples": 30,
+  "SelectiveMinimumMilliseconds": 48.2567
 }
