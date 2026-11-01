@@ -1,0 +1,9 @@
+{
+  "Source": "2ff58324cb10f04e27699eb01df1d13fadd71c68",
+  "Version": "0.5.0-dev.7",
+  "WallSeconds": 269.6503584,
+  "BuildCount": 2,
+  "PackCountPerPackage": 1,
+  "Passed": 107286.0,
+  "Consumers": 8
+}

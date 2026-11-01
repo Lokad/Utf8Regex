@@ -1,0 +1,121 @@
+{
+  "Scope": "Untimed metadata and actual managed size query only, no field-address reads or performance claim",
+  "Rows": [
+    {
+      "CoreSha256": "03B0F7211A0D54F7E4D66E361307C6DCE1D93537EFB6AB193F7F18A962B0187C",
+      "Fields": [
+        {
+          "Index": 0,
+          "Name": "_deadline",
+          "IsInitOnly": true,
+          "Type": "Utf8ExecutionDeadline"
+        },
+        {
+          "Index": 1,
+          "Name": "_token",
+          "IsInitOnly": false,
+          "Type": "CancellationToken"
+        },
+        {
+          "Index": 2,
+          "Name": "\u003CLimits\u003Ek__BackingField",
+          "IsInitOnly": true,
+          "Type": "Utf8ExecutionLimits"
+        },
+        {
+          "Index": 3,
+          "Name": "\u003CSteps\u003Ek__BackingField",
+          "IsInitOnly": false,
+          "Type": "UInt64"
+        },
+        {
+          "Index": 4,
+          "Name": "\u003CLimitBreach\u003Ek__BackingField",
+          "IsInitOnly": false,
+          "Type": "Utf8ExecutionLimitKind"
+        },
+        {
+          "Index": 5,
+          "Name": "\u003CResultBytes\u003Ek__BackingField",
+          "IsInitOnly": false,
+          "Type": "UInt64"
+        },
+        {
+          "Index": 6,
+          "Name": "\u003CPeakDepth\u003Ek__BackingField",
+          "IsInitOnly": false,
+          "Type": "UInt32"
+        },
+        {
+          "Index": 7,
+          "Name": "\u003CPeakWorkingBytes\u003Ek__BackingField",
+          "IsInitOnly": false,
+          "Type": "UInt64"
+        }
+      ],
+      "Sizes": {
+        "Utf8ExecutionBudget": 80,
+        "Utf8SliceInvocation": 128,
+        "Utf8StorageLedger": 24
+      }
+    },
+    {
+      "CoreSha256": "B531D581F1E2509501D411D8DD52AAB8FAD13B0DE6D1D176692BAF49AFDCB27F",
+      "Fields": [
+        {
+          "Index": 0,
+          "Name": "_deadline",
+          "IsInitOnly": true,
+          "Type": "Utf8ExecutionDeadline"
+        },
+        {
+          "Index": 1,
+          "Name": "\u003CToken\u003Ek__BackingField",
+          "IsInitOnly": true,
+          "Type": "CancellationToken"
+        },
+        {
+          "Index": 2,
+          "Name": "\u003CLimits\u003Ek__BackingField",
+          "IsInitOnly": true,
+          "Type": "Utf8ExecutionLimits"
+        },
+        {
+          "Index": 3,
+          "Name": "\u003CSteps\u003Ek__BackingField",
+          "IsInitOnly": false,
+          "Type": "UInt64"
+        },
+        {
+          "Index": 4,
+          "Name": "\u003CLimitBreach\u003Ek__BackingField",
+          "IsInitOnly": false,
+          "Type": "Utf8ExecutionLimitKind"
+        },
+        {
+          "Index": 5,
+          "Name": "\u003CResultBytes\u003Ek__BackingField",
+          "IsInitOnly": false,
+          "Type": "UInt64"
+        },
+        {
+          "Index": 6,
+          "Name": "\u003CPeakDepth\u003Ek__BackingField",
+          "IsInitOnly": false,
+          "Type": "UInt32"
+        },
+        {
+          "Index": 7,
+          "Name": "\u003CPeakWorkingBytes\u003Ek__BackingField",
+          "IsInitOnly": false,
+          "Type": "UInt64"
+        }
+      ],
+      "Sizes": {
+        "Utf8ExecutionBudget": 80,
+        "Utf8SliceInvocation": 128,
+        "Utf8StorageLedger": 24
+      }
+    }
+  ]
+}

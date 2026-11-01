@@ -11,6 +11,36 @@ namespace Lokad.Utf8Regex.Tests;
 /// </summary>
 public sealed class Utf8ExecutionBudgetTests
 {
+    [Fact]
+    public void BorrowedTokenRestorationKeepsCountersFirstDenialAndOriginalDeadline()
+    {
+        using var clock = Utf8DeadlineTestClock.Start();
+        using var original = new CancellationTokenSource();
+        using var borrowed = new CancellationTokenSource();
+        var budget = new Utf8ExecutionBudget(new(1, 8, 8192, 1000), TimeSpan.FromMilliseconds(200), original.Token);
+        var deadline = budget.Deadline;
+        Assert.Equal(Utf8ExecutionLimitKind.None, budget.TryChargeStep());
+        Assert.Equal(Utf8ExecutionLimitKind.None, budget.TryNoteDepth(7));
+        Assert.Equal(Utf8ExecutionLimitKind.None, budget.TryNoteWorkingBytes(1000));
+        Assert.Equal(Utf8ExecutionLimitKind.None, budget.TryChargeResultBytes(90));
+        var previous = budget.ExchangeCancellationToken(borrowed.Token);
+        Assert.Equal(original.Token, previous);
+        borrowed.Cancel();
+        Assert.Equal(borrowed.Token, Assert.Throws<OperationCanceledException>(() => budget.TryChargeStep()).CancellationToken);
+        Assert.Equal(borrowed.Token, budget.ExchangeCancellationToken(previous));
+        Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, budget.TryChargeStep());
+        Assert.Equal(original.Token, budget.ExchangeCancellationToken(default));
+        Assert.Equal(2UL, budget.Steps);
+        Assert.Equal(90UL, budget.ResultBytes);
+        Assert.Equal(7U, budget.PeakDepth);
+        Assert.Equal(1000UL, budget.PeakWorkingBytes);
+        Assert.Equal(new Utf8ExecutionLimits(1, 8, 8192, 1000), budget.Limits);
+        Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, budget.LimitBreach);
+        Assert.Same(deadline, budget.Deadline);
+        clock.Advance(250);
+        Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => budget.CheckDeadline());
+    }
+
     [Theory]
     [InlineData(0UL)]
     [InlineData(ulong.MaxValue - 1)]

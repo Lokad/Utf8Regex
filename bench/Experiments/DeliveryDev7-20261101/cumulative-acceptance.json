@@ -1,0 +1,139 @@
+{
+  "Source": "2ff58324cb10f04e27699eb01df1d13fadd71c68",
+  "Baseline": "a40bda03",
+  "Accepted": false,
+  "ConfirmationRuns": 0,
+  "Cases": 79,
+  "TimedSeconds": 383.3796337,
+  "Scope": "One fixed-original coherent public gate. Completed correctness and duration guards, failed cumulative <=10% operating-cost requirement. Full catalog refresh held; immutable correctness-qualified candidate remains staged, not performance-qualified.",
+  "Parts": [
+    {
+      "Part": "cost",
+      "Cases": 26,
+      "Seconds": 108.9612503,
+      "Failures": [
+        {
+          "Name": "core/grouped-Unicode-Replace",
+          "BeforeUs": 184.2591796875,
+          "AfterUs": 214.25644531249998,
+          "ChangePercent": 16.279930083198437,
+          "BeforeBytes": 73920,
+          "AfterBytes": 73928,
+          "BeforeSpread": 1.0180091466919892,
+          "AfterSpread": 1.0095079443851758
+        },
+        {
+          "Name": "python/captured-Count/finite-live",
+          "BeforeUs": 2.2249847412109376,
+          "AfterUs": 2.55916748046875,
+          "ChangePercent": 15.019551957733213,
+          "BeforeBytes": 112,
+          "AfterBytes": 120,
+          "BeforeSpread": 1.0185748874859966,
+          "AfterSpread": 1.0484332962601666
+        }
+      ],
+      "MaximumChangePercent": 16.279930083198437
+    },
+    {
+      "Part": "pcre2-cost",
+      "Cases": 17,
+      "Seconds": 63.7899864,
+      "Failures": [],
+      "MaximumChangePercent": 2.0219826277779074
+    },
+    {
+      "Part": "union",
+      "Cases": 14,
+      "Seconds": 82.3245215,
+      "Failures": [],
+      "MaximumChangePercent": 4.472617284229985
+    },
+    {
+      "Part": "repeat",
+      "Cases": 16,
+      "Seconds": 91.6882022,
+      "Failures": [
+        {
+          "Name": "variable-control",
+          "BeforeUs": 0.7457527759840975,
+          "AfterUs": 0.8435192837465565,
+          "ChangePercent": 13.109774567509458,
+          "BeforeBytes": 3552,
+          "AfterBytes": 3552,
+          "BeforeSpread": 1.057792301982099,
+          "AfterSpread": 1.0631026304587254
+        },
+        {
+          "Name": "lazy-control",
+          "BeforeUs": 0.532553531422655,
+          "AfterUs": 0.5870619684082624,
+          "ChangePercent": 10.235297255469211,
+          "BeforeBytes": 1680,
+          "AfterBytes": 1680,
+          "BeforeSpread": 1.0528025995125914,
+          "AfterSpread": 1.0391371980725286
+        }
+      ],
+      "MaximumChangePercent": 13.109774567509458
+    },
+    {
+      "Part": "findall",
+      "Cases": 6,
+      "Seconds": 36.6156733,
+      "Failures": [
+        {
+          "Name": "actual",
+          "BeforeUs": 467.37109375,
+          "AfterUs": 738.4862499999999,
+          "ChangePercent": 58.00854179377668,
+          "BeforeBytes": 114560,
+          "AfterBytes": 112944,
+          "BeforeSpread": 1.0188371129837965,
+          "AfterSpread": 1.0175441270873666
+        },
+        {
+          "Name": "finite-live",
+          "BeforeUs": 635.9202127659574,
+          "AfterUs": 974.9609375,
+          "ChangePercent": 53.31497850325797,
+          "BeforeBytes": 118760,
+          "AfterBytes": 117152,
+          "BeforeSpread": 1.0140401155826844,
+          "AfterSpread": 1.0270086894994208
+        },
+        {
+          "Name": "deadline-live",
+          "BeforeUs": 793.9921052631579,
+          "AfterUs": 1499.0275,
+          "ChangePercent": 88.79627266610764,
+          "BeforeBytes": 114720,
+          "AfterBytes": 113112,
+          "BeforeSpread": 1.0164038557790958,
+          "AfterSpread": 1.0334319076668301
+        },
+        {
+          "Name": "unicode",
+          "BeforeUs": 261.33539823008846,
+          "AfterUs": 406.1364864864865,
+          "ChangePercent": 55.40814188857428,
+          "BeforeBytes": 57192,
+          "AfterBytes": 55576,
+          "BeforeSpread": 1.0171457025374613,
+          "AfterSpread": 1.019759075730551
+        },
+        {
+          "Name": "offset",
+          "BeforeUs": 486.008547008547,
+          "AfterUs": 780.9671052631579,
+          "ChangePercent": 60.68999404848403,
+          "BeforeBytes": 114560,
+          "AfterBytes": 112944,
+          "BeforeSpread": 1.0261072006565102,
+          "AfterSpread": 1.027865770253401
+        }
+      ],
+      "MaximumChangePercent": 88.79627266610764
+    }
+  ]
+}

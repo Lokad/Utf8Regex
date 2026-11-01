@@ -1,0 +1,342 @@
+{
+  "Scope": "Untimed actual compiled program/search-hint census, not performance attribution",
+  "Rows": [
+    {
+      "CoreSha256": "88908D310EE129970BECD18F4C4A0632F9B4F151432F875EB68AFB12EE6F0B47",
+      "PythonSha256": "077CBA962A92865948E35B475BA86C77DE227085734391EBB8EB6EE0A3DFF5C7",
+      "GroupCount": 1,
+      "RepeatCount": 1,
+      "CaseBehavior": "Invariant",
+      "CoreHintRetained": true,
+      "CoreHintEligible": false,
+      "CoreExecution": "FallbackRegex",
+      "SearchKind": "FixedDistanceAsciiSets",
+      "LiteralLength": null,
+      "Distance": 0,
+      "Alternates": null,
+      "Code": [
+        {
+          "Index": 0,
+          "Fields": {
+            "Kind": "Literal",
+            "A": "105",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        },
+        {
+          "Index": 1,
+          "Fields": {
+            "Kind": "Literal",
+            "A": "116",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        },
+        {
+          "Index": 2,
+          "Fields": {
+            "Kind": "Literal",
+            "A": "101",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        },
+        {
+          "Index": 3,
+          "Fields": {
+            "Kind": "Literal",
+            "A": "109",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        },
+        {
+          "Index": 4,
+          "Fields": {
+            "Kind": "Literal",
+            "A": "45",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        },
+        {
+          "Index": 5,
+          "Fields": {
+            "Kind": "CaptureStart",
+            "A": "0",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        },
+        {
+          "Index": 6,
+          "Fields": {
+            "Kind": "RepeatGreedy",
+            "A": "9",
+            "B": "0",
+            "C": "1",
+            "D": "-1",
+            "RepeatMinimum": "1",
+            "RepeatMaximum": "9223372036854775807"
+          }
+        },
+        {
+          "Index": 7,
+          "Fields": {
+            "Kind": "Set",
+            "A": "0",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        },
+        {
+          "Index": 8,
+          "Fields": {
+            "Kind": "RepeatEnd",
+            "A": "6",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        },
+        {
+          "Index": 9,
+          "Fields": {
+            "Kind": "RepeatExit",
+            "A": "0",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        },
+        {
+          "Index": 10,
+          "Fields": {
+            "Kind": "CaptureEnd",
+            "A": "0",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        },
+        {
+          "Index": 11,
+          "Fields": {
+            "Kind": "Accept",
+            "A": "0",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        }
+      ],
+      "Masks": [
+        "000000000000FF030000000000000000"
+      ]
+    },
+    {
+      "CoreSha256": "03B0F7211A0D54F7E4D66E361307C6DCE1D93537EFB6AB193F7F18A962B0187C",
+      "PythonSha256": "3F7513DC7DA9259B7D130F0DD07774AD9A25C610EE2F9832329DDDAB19DA56B0",
+      "GroupCount": 1,
+      "RepeatCount": 1,
+      "CaseBehavior": "Invariant",
+      "CoreHintRetained": true,
+      "CoreHintEligible": true,
+      "CoreExecution": "FallbackRegex",
+      "SearchKind": "ExactAsciiLiterals",
+      "LiteralLength": null,
+      "Distance": 0,
+      "Alternates": [
+        "item-0",
+        "item-1",
+        "item-2",
+        "item-3",
+        "item-4",
+        "item-5",
+        "item-6",
+        "item-7",
+        "item-8",
+        "item-9"
+      ],
+      "Code": [
+        {
+          "Index": 0,
+          "Fields": {
+            "Kind": "Literal",
+            "A": "105",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        },
+        {
+          "Index": 1,
+          "Fields": {
+            "Kind": "Literal",
+            "A": "116",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        },
+        {
+          "Index": 2,
+          "Fields": {
+            "Kind": "Literal",
+            "A": "101",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        },
+        {
+          "Index": 3,
+          "Fields": {
+            "Kind": "Literal",
+            "A": "109",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        },
+        {
+          "Index": 4,
+          "Fields": {
+            "Kind": "Literal",
+            "A": "45",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        },
+        {
+          "Index": 5,
+          "Fields": {
+            "Kind": "CaptureStart",
+            "A": "0",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        },
+        {
+          "Index": 6,
+          "Fields": {
+            "Kind": "RepeatGreedy",
+            "A": "9",
+            "B": "0",
+            "C": "1",
+            "D": "-1",
+            "RepeatMinimum": "1",
+            "RepeatMaximum": "9223372036854775807"
+          }
+        },
+        {
+          "Index": 7,
+          "Fields": {
+            "Kind": "Set",
+            "A": "0",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        },
+        {
+          "Index": 8,
+          "Fields": {
+            "Kind": "RepeatEnd",
+            "A": "6",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        },
+        {
+          "Index": 9,
+          "Fields": {
+            "Kind": "RepeatExit",
+            "A": "0",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        },
+        {
+          "Index": 10,
+          "Fields": {
+            "Kind": "CaptureEnd",
+            "A": "0",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        },
+        {
+          "Index": 11,
+          "Fields": {
+            "Kind": "Accept",
+            "A": "0",
+            "B": "0",
+            "C": "0",
+            "D": "0",
+            "RepeatMinimum": "0",
+            "RepeatMaximum": "0"
+          }
+        }
+      ],
+      "Masks": [
+        "000000000000FF030000000000000000"
+      ]
+    }
+  ]
+}
