@@ -44,7 +44,10 @@ public sealed class Pcre2GraphemeInvocationTests
             Assert.Equal(Pcre2ErrorKind.Timeout, failure.ErrorKind);
             Assert.Equal(3, checkpoints);
         }
-        Assert.True(regex.IsMatch("a"u8));
+        // Recovery uses the same short timeout under controlled time, including
+        // when a loaded CI runner pauses this invocation for more than 20 ms.
+        using (Utf8ExecutionDeadline.UseClockForDiagnostics(static () => 0))
+            Assert.True(regex.IsMatch("a"u8));
     }
 
     [Theory] [MemberData(nameof(Routes))]
