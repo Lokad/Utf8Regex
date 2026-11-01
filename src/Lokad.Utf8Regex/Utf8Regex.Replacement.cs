@@ -371,7 +371,9 @@ public sealed partial class Utf8Regex
         }
 
         var invocation = new Utf8SliceInvocation(InvocationLimits, deadline, token);
-        var matches = EnumerateMatches(input, token);
+        // Cancellable and finite calls declined above. Use the same no-token
+        // enumerator that the token overload reaches after its extra dispatch.
+        var matches = EnumerateMatches(input);
         if (!matches.MoveNext())
         {
             result = CompleteUnchangedOwnedReplacement(input, validation.Utf16Length, resultKind,
