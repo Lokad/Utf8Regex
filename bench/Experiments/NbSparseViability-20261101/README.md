@@ -74,3 +74,14 @@ The unchanged typed cold-lane DLL is SHA256
 `EA31D008AC8DBE2A3F835DF392968909E0AA1EA57C406CC40E14AA9B9C3070F2`.
 No complete package/platform/catalog qualification was repeated. Immutable dev.2
 and8d full-refresh/consumer evidence remain that source's completed boundary.
+
+Only the region row was selectively refreshed from clean source `570c9d4c`:
+ordinary/compiled2176.461/2176.661us,557416B,**60.79/60.15x** predecoded.NET11,
+both Gap. Previous published105.83/107.36x; this separate refreshed observation
+is not the controlled A/B percentage above. All30 samples>=48.459ms. Other
+rows/statuses/lifecycle/scaling retain their original identities. Existing
+parity verification and both-runtime source snapshot/hash/ratio guards pass.
+[Selective raw/generated/binary evidence](../../../artifacts/experiments/nb-sparse-viability-20261101/selective-evidence.tar.gz):
+`3F444AF584A4667E3B178B522509CEE0C99DEDCC2BEEE26664F3F74348E7E0B9`.
+Committed-source Core DLL SHA256:
+`09D6CB2B17106DF51E687D991EFEA6B2FEB7F8DCC0C569AEB11D089C4E0EA10C`.
