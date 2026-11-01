@@ -1,0 +1,211 @@
+{
+  "Source": "2598d9049842015891c30a8f542aca43d75a602f",
+  "Baseline": "a40bda03",
+  "Accepted": false,
+  "Cases": 79.0,
+  "TimedSeconds": 381.3756246,
+  "ConfirmationRuns": 1,
+  "ConfirmationCases": 5,
+  "ConfirmationSeconds": 28.8718276,
+  "Scope": "Fixed-original public operating-cost gate; all initial and single selected confirmation results retained. Selected repeat rows assess pooled ten samples per version; initial/confirmation medians remain separate. Not package, catalog or platform qualification.",
+  "Parts": [
+    {
+      "Part": "cost",
+      "Cases": 26,
+      "Seconds": 108.8082711,
+      "MinimumSampleMilliseconds": 48.1518,
+      "InitialFailures": [],
+      "Failures": [],
+      "MaximumChangePercent": 2.673739533716968
+    },
+    {
+      "Part": "pcre2-cost",
+      "Cases": 17,
+      "Seconds": 63.740772,
+      "MinimumSampleMilliseconds": 36.1954,
+      "InitialFailures": [],
+      "Failures": [],
+      "MaximumChangePercent": -2.860385719646974
+    },
+    {
+      "Part": "union",
+      "Cases": 14,
+      "Seconds": 81.4817369,
+      "MinimumSampleMilliseconds": 32.3267,
+      "InitialFailures": [],
+      "Failures": [],
+      "MaximumChangePercent": 5.352165335699177
+    },
+    {
+      "Part": "repeat",
+      "Cases": 16,
+      "Seconds": 91.8529061,
+      "MinimumSampleMilliseconds": 55.2793,
+      "InitialFailures": [
+        {
+          "Name": "lazy-control",
+          "BeforeUs": 0.53148638199158,
+          "AfterUs": 0.5885513295502508,
+          "ChangePercent": 10.736859775190766,
+          "BeforeBytes": 1680.0,
+          "AfterBytes": 1680.0,
+          "BeforeSpread": 1.1013609431962836,
+          "AfterSpread": 1.4736830824526406,
+          "PairChangesPercent": [
+            8.204641309967187,
+            47.62106695467985,
+            10.736859775190766,
+            9.835451489586822,
+            11.401632859119104
+          ],
+          "SamplesPerVersion": 5
+        },
+        {
+          "Name": "captured-body",
+          "BeforeUs": 0.75880476556495,
+          "AfterUs": 0.8420003608755396,
+          "ChangePercent": 10.96403173596945,
+          "BeforeBytes": 3872.0,
+          "AfterBytes": 3872.0,
+          "BeforeSpread": 1.0666776195879306,
+          "AfterSpread": 1.0611957513236772,
+          "PairChangesPercent": [
+            5.681031306486006,
+            13.83964126351589,
+            8.959552927570137,
+            8.59747559003421,
+            10.96403173596945
+          ],
+          "SamplesPerVersion": 5
+        }
+      ],
+      "Failures": [
+        {
+          "Name": "captured-body",
+          "BeforeUs": 0.7507833717653087,
+          "AfterUs": 0.8312414118561495,
+          "ChangePercent": 10.716545293439395,
+          "BeforeBytes": 3872.0,
+          "AfterBytes": 3872.0,
+          "BeforeSpread": 1.1013023523819663,
+          "AfterSpread": 1.116312919813403,
+          "PairChangesPercent": [
+            5.681031306486006,
+            13.83964126351589,
+            8.959552927570137,
+            8.59747559003421,
+            10.96403173596945,
+            12.434461724249491,
+            16.890782190451638,
+            9.06612309584547,
+            11.01232186560932,
+            7.93875097581398
+          ],
+          "SamplesPerVersion": 10
+        }
+      ],
+      "MaximumChangePercent": 10.716545293439395
+    },
+    {
+      "Part": "findall",
+      "Cases": 6,
+      "Seconds": 35.4919385,
+      "MinimumSampleMilliseconds": 45.6102,
+      "InitialFailures": [],
+      "Failures": [],
+      "MaximumChangePercent": 3.556350727432922
+    }
+  ],
+  "Confirmation": [
+    {
+      "Name": "actual-hit",
+      "BeforeUs": 0.5479890141812132,
+      "AfterUs": 0.378684081951728,
+      "ChangePercent": -30.895679995055183,
+      "BeforeBytes": 1680.0,
+      "AfterBytes": 64.0,
+      "BeforeSpread": 1.077700538212063,
+      "AfterSpread": 1.0211426615306949,
+      "PairChangesPercent": [
+        -31.984716370061427,
+        -32.85468817803064,
+        -28.89927668123026,
+        -31.239835079468403,
+        -28.781034284657647
+      ],
+      "SamplesPerVersion": 5
+    },
+    {
+      "Name": "variable-control",
+      "BeforeUs": 0.7636503986052144,
+      "AfterUs": 0.8016491464943583,
+      "ChangePercent": 4.975935055955905,
+      "BeforeBytes": 3552.0,
+      "AfterBytes": 3552.0,
+      "BeforeSpread": 1.0376148400583205,
+      "AfterSpread": 1.0430580809007055,
+      "PairChangesPercent": [
+        1.9726518625838185,
+        5.775604807377843,
+        6.301124353975585,
+        6.856391335184475,
+        3.621713282681438
+      ],
+      "SamplesPerVersion": 5
+    },
+    {
+      "Name": "lazy-control",
+      "BeforeUs": 0.5272035335749895,
+      "AfterUs": 0.5593712073050916,
+      "ChangePercent": 6.101566412495707,
+      "BeforeBytes": 1680.0,
+      "AfterBytes": 1680.0,
+      "BeforeSpread": 1.1484223339261723,
+      "AfterSpread": 1.0340455936569557,
+      "PairChangesPercent": [
+        5.606620166729281,
+        5.697652227107053,
+        7.885175418989876,
+        -4.023394811377601,
+        10.125785208613735
+      ],
+      "SamplesPerVersion": 5
+    },
+    {
+      "Name": "captured-body",
+      "BeforeUs": 0.7388236511303088,
+      "AfterUs": 0.8169708078384863,
+      "ChangePercent": 10.577240805518606,
+      "BeforeBytes": 3872.0,
+      "AfterBytes": 3872.0,
+      "BeforeSpread": 1.082870149051394,
+      "AfterSpread": 1.116312919813403,
+      "PairChangesPercent": [
+        12.434461724249491,
+        16.890782190451638,
+        9.06612309584547,
+        11.01232186560932,
+        7.93875097581398
+      ],
+      "SamplesPerVersion": 5
+    },
+    {
+      "Name": "literal-control",
+      "BeforeUs": 6.175303602408409,
+      "AfterUs": 6.171215880893301,
+      "ChangePercent": -0.06619466472084223,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0119834876357663,
+      "AfterSpread": 1.0280434314873201,
+      "PairChangesPercent": [
+        1.597359633984663,
+        0.0473907143635266,
+        0.797049154583962,
+        -1.3043769334667554,
+        -0.048304810319754754
+      ],
+      "SamplesPerVersion": 5
+    }
+  ]
+}

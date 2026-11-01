@@ -1,0 +1,9 @@
+{
+  "Scope": "Untimed actual public captured FullMatch warmup, default tiering; constructor-only search intent skips candidate preparation. Body size is not public speedup proof; same0x688 local stack allocation.",
+  "BeforeTier1CodeBytes": 3930,
+  "AfterTier1CodeBytes": 3712,
+  "BeforeLocalStackBytes": 1672,
+  "AfterLocalStackBytes": 1672,
+  "BranchEvidence": "Candidate Tier1 IG30 compares bool [rbp+0xA0] to0; only nonzero jumpsIG90 CanUseCandidateRegex/IG91 TryGetLeadingAsciiRange, zero proceedsIG31 RentSlots. Parent enters hint eligibility/proof unconditionally. Required-literal/UTF8/slot/cleanup branches remain.",
+  "Pgo": "Both constructor listings report optimized using Synthesized PGO; this is the observed controlled codegen, not a guarantee about every production PGO shape."
+}

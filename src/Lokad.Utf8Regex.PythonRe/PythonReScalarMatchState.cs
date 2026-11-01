@@ -37,7 +37,7 @@ internal struct PythonReScalarMatchState
 
     internal PythonReScalarMatchState(ReadOnlySpan<byte> input, Utf8SliceProgram program,
         int startOffsetInBytes, TimeSpan timeout, object pattern,
-        Utf8SliceInvocation invocation, Utf8Regex? candidateRegex)
+        Utf8SliceInvocation invocation, Utf8Regex? candidateRegex, bool prepareSearch = true)
     {
         this = default;
         _program = program;
@@ -62,11 +62,16 @@ internal struct PythonReScalarMatchState
                 _finished = true;
                 return;
             }
-            if (CanUseCandidateRegex(program, candidateRegex)) _candidateRegex = candidateRegex;
-            if (_candidateRegex is null && TryGetLeadingAsciiRange(program, _validation.IsAscii, out var low, out var high))
+            // Anchored Match/FullMatch never seek a candidate. Their existing
+            // operation intent avoids preparing hints they cannot consume.
+            if (prepareSearch)
             {
-                _leadingAsciiLow = low;
-                _leadingAsciiHigh = high;
+                if (CanUseCandidateRegex(program, candidateRegex)) _candidateRegex = candidateRegex;
+                if (_candidateRegex is null && TryGetLeadingAsciiRange(program, _validation.IsAscii, out var low, out var high))
+                {
+                    _leadingAsciiLow = low;
+                    _leadingAsciiHigh = high;
+                }
             }
             _slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref _invocation);
         }

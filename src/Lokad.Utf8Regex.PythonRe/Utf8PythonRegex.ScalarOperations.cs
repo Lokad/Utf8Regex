@@ -21,7 +21,7 @@ public sealed partial class Utf8PythonRegex
         var invocation = CreateInvocation(cancellationToken);
         var program = kind == 2 ? GetScalarFullProgram(input, invocation.Budget.Deadline, cancellationToken) : ScalarProgram;
         return new PythonReScalarMatchCursor(input, program,
-            startOffsetInBytes, MatchTimeout, _utf8Regex, this, invocation);
+            startOffsetInBytes, MatchTimeout, _utf8Regex, this, invocation, prepareSearch: kind == 0);
     }
 
     private Utf8SliceProgram GetScalarFullProgram(ReadOnlySpan<byte> input,

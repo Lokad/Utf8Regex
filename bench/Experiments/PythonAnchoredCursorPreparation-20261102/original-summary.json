@@ -1,0 +1,62 @@
+[
+  {
+    "Name": "actual-hit",
+    "OriginalUs": 0.5252556005669762,
+    "CandidateUs": 0.3451183569273613,
+    "ChangePercent": -34.29515905116851,
+    "OriginalBytes": 1680,
+    "CandidateBytes": 64,
+    "OriginalSpread": 1.0544836519342942,
+    "CandidateSpread": 1.0125350464338938,
+    "MinimumPairedChangePercent": -35.71816349588527,
+    "MaximumPairedChangePercent": -32.13663933506227
+  },
+  {
+    "Name": "variable-control",
+    "OriginalUs": 0.7517084714875092,
+    "CandidateUs": 0.78061499220632,
+    "ChangePercent": 3.845442989568748,
+    "OriginalBytes": 3552,
+    "CandidateBytes": 3552,
+    "OriginalSpread": 1.023906366589217,
+    "CandidateSpread": 1.0479280511917772,
+    "MinimumPairedChangePercent": 2.0297799005392303,
+    "MaximumPairedChangePercent": 8.407269506688287
+  },
+  {
+    "Name": "lazy-control",
+    "OriginalUs": 0.5188674478372609,
+    "CandidateUs": 0.5518512652331085,
+    "ChangePercent": 6.356887010994905,
+    "OriginalBytes": 1680,
+    "CandidateBytes": 1680,
+    "OriginalSpread": 1.0457174185409819,
+    "CandidateSpread": 1.0424323052325928,
+    "MinimumPairedChangePercent": 4.106195464242979,
+    "MaximumPairedChangePercent": 9.765718442925287
+  },
+  {
+    "Name": "captured-body",
+    "OriginalUs": 0.761406646737295,
+    "CandidateUs": 0.8057151992326446,
+    "ChangePercent": 5.819302035937857,
+    "OriginalBytes": 3872,
+    "CandidateBytes": 3872,
+    "OriginalSpread": 1.0539814245714676,
+    "CandidateSpread": 1.0587537321722504,
+    "MinimumPairedChangePercent": 3.2306723730882947,
+    "MaximumPairedChangePercent": 14.39155611778762
+  },
+  {
+    "Name": "literal-control",
+    "OriginalUs": 6.214410345889356,
+    "CandidateUs": 6.2276897757663034,
+    "ChangePercent": 0.2136876893836126,
+    "OriginalBytes": 0,
+    "CandidateBytes": 0,
+    "OriginalSpread": 1.0221359386137783,
+    "CandidateSpread": 1.014750122917691,
+    "MinimumPairedChangePercent": -0.13672761565156621,
+    "MaximumPairedChangePercent": 1.2834953322611975
+  }
+]
