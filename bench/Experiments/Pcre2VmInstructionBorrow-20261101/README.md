@@ -57,5 +57,18 @@ Immutable archives under
   `C94DA27EF5BD21CC9837644DD720662AB526FC827204575F093D3AEBEEEE6EF0`.
 
 The rejected single-token subroutine expansion remains reverted and separately
-documented. Next refresh affected existing native rows selectively at committed
-source; preserve other identities/statuses, lifecycle/scaling and all deferrals.
+documented. Sourcee6779865 CI41311508437 passed Windows/Linux.
+
+Six existing native rows were selectively refreshed at that clean committed
+source with the existing raw and nine-pair protocol. All remain qualified
+NativeFaster: date miss/match11.44x/11.32x, subroutine4.35x, conditional negative
+4.40x, conditional ACCEPT-negative4.59x and conditional positive3.89x. Keep the
+adverse ACCEPT-negative ratio movement from4.35x; unlike the controlled A/B,
+these ratios include comparator movement and are not causal speedup estimates.
+Other120rows/identities/statuses and scaling evidence are unchanged. Minimum
+paired sample32.286ms; existing qualification/Markdown verification and one
+snapshot check per runtime passed. No resampling for Status or package refresh.
+
+[Selective summary](selective-summary.json); exact source/binaries/generated/raw
+evidence is sealed as `selective-evidence.tar.gz` in the same artifact directory,
+SHA256 `C7A643CC2D17A73B202977E245FC6E5A64A602AC3DE03B31715CD23D06AD4744`.

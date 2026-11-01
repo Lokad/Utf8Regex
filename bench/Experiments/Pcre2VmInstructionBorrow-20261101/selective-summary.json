@@ -1,0 +1,88 @@
+{
+  "Source": "e67798655839f068691490173a06692c0fa3980b",
+  "Cases": 6,
+  "MinimumPairedMilliseconds": 32.2862,
+  "UnchangedOtherRows": 120,
+  "PreservedScalingFamilies": true,
+  "Scope": "Six predeclared rows only; other row byte-derived JSON data and scaling families unchanged. No status-improving resampling.",
+  "Rows": [
+    {
+      "Section": "pcre2-managed-compatible-ismatch",
+      "Case": "common/date-match",
+      "BeforeStatus": "NativeFaster",
+      "AfterStatus": "NativeFaster",
+      "BeforeRatio": 11.411725984990676,
+      "AfterRatio": 11.315637642119658,
+      "Lower95": 11.266708182398936,
+      "Upper95": 11.486216308007386,
+      "ManagedUs": 1.8038243358230122,
+      "NativeUs": 0.15843163671666038,
+      "Source": "e67798655839"
+    },
+    {
+      "Section": "pcre2-managed-compatible-ismatch",
+      "Case": "common/date-miss",
+      "BeforeStatus": "NativeFaster",
+      "AfterStatus": "NativeFaster",
+      "BeforeRatio": 11.500446288107929,
+      "AfterRatio": 11.438668613522854,
+      "Lower95": 11.406861445830163,
+      "Upper95": 11.509883632350087,
+      "ManagedUs": 6.54099234099234,
+      "NativeUs": 0.571259393549519,
+      "Source": "e67798655839"
+    },
+    {
+      "Section": "pcre2-special-ismatch",
+      "Case": "pcre2/conditional-accept-negative-lookahead",
+      "BeforeStatus": "NativeFaster",
+      "AfterStatus": "NativeFaster",
+      "BeforeRatio": 4.354620965247079,
+      "AfterRatio": 4.594480116149263,
+      "Lower95": 4.489332027370258,
+      "Upper95": 4.630955303593808,
+      "ManagedUs": 0.4621098688613996,
+      "NativeUs": 0.10081455649132681,
+      "Source": "e67798655839"
+    },
+    {
+      "Section": "pcre2-special-ismatch",
+      "Case": "pcre2/conditional-lookahead",
+      "BeforeStatus": "NativeFaster",
+      "AfterStatus": "NativeFaster",
+      "BeforeRatio": 3.995114252746928,
+      "AfterRatio": 3.892842026292387,
+      "Lower95": 3.859771963107909,
+      "Upper95": 3.9496679809835693,
+      "ManagedUs": 0.4498766075296827,
+      "NativeUs": 0.11524970460136882,
+      "Source": "e67798655839"
+    },
+    {
+      "Section": "pcre2-special-ismatch",
+      "Case": "pcre2/conditional-negative-lookahead",
+      "BeforeStatus": "NativeFaster",
+      "AfterStatus": "NativeFaster",
+      "BeforeRatio": 4.558853412594083,
+      "AfterRatio": 4.403553192360726,
+      "Lower95": 4.380747507661652,
+      "Upper95": 4.429799532159555,
+      "ManagedUs": 0.4559572750419177,
+      "NativeUs": 0.10332329437801104,
+      "Source": "e67798655839"
+    },
+    {
+      "Section": "pcre2-special-ismatch",
+      "Case": "pcre2/subroutine-prefix-digits",
+      "BeforeStatus": "NativeFaster",
+      "AfterStatus": "NativeFaster",
+      "BeforeRatio": 4.955712526128524,
+      "AfterRatio": 4.353476854807266,
+      "Lower95": 4.3102218367678935,
+      "Upper95": 4.369445358549283,
+      "ManagedUs": 0.4883770659161769,
+      "NativeUs": 0.11225273127342365,
+      "Source": "e67798655839"
+    }
+  ]
+}

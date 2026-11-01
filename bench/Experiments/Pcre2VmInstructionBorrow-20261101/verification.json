@@ -20,9 +20,19 @@
   "MinimumSampleMilliseconds": 34.1933,
   "MaximumAdverseMedianPercent": 6.443674144040545,
   "AllocationsChanged": false,
-  "TablesChanged": false,
+  "TablesChanged": true,
   "PackagesChanged": false,
   "Guarantees": "Strict full UTF8/scalars/captures/RTL and owned VM semantics, all resource controls and original-token/deadline checks retained",
   "RawArchiveSha256": "841C3FC9BE57B3838AE3DAA7656D4478C895EE195589468BBB341BB5E6EC7A76",
-  "CorrectnessArchiveSha256": "C94DA27EF5BD21CC9837644DD720662AB526FC827204575F093D3AEBEEEE6EF0"
+  "CorrectnessArchiveSha256": "C94DA27EF5BD21CC9837644DD720662AB526FC827204575F093D3AEBEEEE6EF0",
+  "CommittedSource": "e67798655839f068691490173a06692c0fa3980b",
+  "SourceCI": {
+    "Run": 41311508437,
+    "Status": "success Windows/Linux"
+  },
+  "SelectiveEvidenceSha256": "C7A643CC2D17A73B202977E245FC6E5A64A602AC3DE03B31715CD23D06AD4744",
+  "SelectedNativeRows": 6,
+  "MinimumSelectedPairedMilliseconds": 32.2862,
+  "ExistingSnapshotChecksPerRuntime": 1,
+  "TablesChangeScope": "Six selected native IsMatch rows refreshed after source commit; other120rows and scaling unchanged, existing verification/snapshot guards pass"
 }
