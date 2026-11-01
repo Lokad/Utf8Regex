@@ -20,5 +20,15 @@
   "ContractChange": "None",
   "Scope": "Core NonBacktracking anchors, packed rows borrow checked elements; every atom/row charge retained. No unchecked API, array/layout/metadata/engine/mode/framework.",
   "RawArchiveSha256": "89515743CD4601501AF39ADF78364F4EF2560E860655DC0F9A20874556D2FF83",
-  "CorrectnessArchiveSha256": "B527515C54FFFE09FF031797B468AB3A282916D07796E81C411EC2594CA9C86F"
+  "CorrectnessArchiveSha256": "B527515C54FFFE09FF031797B468AB3A282916D07796E81C411EC2594CA9C86F",
+  "SelectiveSource": "60563cb308b543127000b56a49cad22f24a18ba4",
+  "SelectiveCoreSha256": "AE3926ED79BB72CA7DC09317F2E5236A61272734BB8041EE9732D492D3678BC4",
+  "SelectiveSamples": 30,
+  "SelectiveMinimumMilliseconds": 47.7196,
+  "SnapshotGuardsPerFramework": 3,
+  "SelectiveRatios": [
+    37.60248001245783,
+    37.7409817355045
+  ],
+  "SelectiveScope": "Only region ordinary/compiled changed; allothercases/identities/statuses unchanged. Existing generator/guardpasses; nofullcatalog/packagequalification."
 }

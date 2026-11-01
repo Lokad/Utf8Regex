@@ -59,3 +59,14 @@ No new test framework or forwarding executor was introduced.
 
 No package/full-catalog qualification was repeated. Historical/staged bytes remain
 immutable; a fresh final-source package/platform/cumulative gate stays separate.
+Only the region rows were selectively refreshed from clean committed source
+`60563cb3`: ordinary1346.065us/37.60x and compiled1350.179us/37.74x predecoded
+.NET11, both still Gap, allocations557416bytes (previous38.57x/38.83x). These
+separate point estimates are not the controlled A/B percentage. All30 samples
+exceeded47.719ms. Allothercases, identities, statuses, lifecycle/scaling and
+worst-first ordering remain unchanged. Existing parity verification and3snapshot
+guards per runtime pass. No broad package/platform/catalog repetition.
+[Selective raw/generated/binary evidence](../../../artifacts/experiments/nb-instruction-borrow-20261101/selective-evidence.tar.gz):
+`E39E5FC9FD0B4791BB047BD83E63E32FE36B79B2D8ABF2737C020FB9392FF357`.
+Committed Core DLL SHA256:
+`AE3926ED79BB72CA7DC09317F2E5236A61272734BB8041EE9732D492D3678BC4`.
