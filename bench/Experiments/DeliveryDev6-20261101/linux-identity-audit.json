@@ -1,0 +1,328 @@
+{
+  "Complete": true,
+  "Version": "0.5.0-dev.6",
+  "Source": "825ed1f7c4b4eb54f0e092da495396d93b435a48",
+  "Scope": "Read-only reuse of existing package provenance/compiled-source checks and candidate feed/cache/lock rules after successful Linux consumers; no rebuild, repack or repeated tests.",
+  "Assets": [
+    {
+      "Id": "Lokad.Utf8Regex",
+      "Framework": "net10.0",
+      "PackageSha256": "6ED5A8071923966E59315883D5E7CC870488C82F1422902B837CF6A5F32F30DC",
+      "AssemblySha256": "AC43E229123219B3211BB83E7D59341E931716ED4024635B85FF1C6922EEF3FD",
+      "SymbolSha256": "5716A88BCD17285380E2C69395756F96AD9A4FE4EF10BC0C8C02DD738AD750DD",
+      "PdbSha256": "0CA809B583B28343C0AA36B5FB23CE1332EC8120750018D2CB0D259D9301B3D2",
+      "CompiledSourceEvidence": "Original Windows qualifier/source checks; exact matching package/PDB/SourceLink retained. Linux LF checkout is not the CRLF compilation input."
+    },
+    {
+      "Id": "Lokad.Utf8Regex",
+      "Framework": "net11.0",
+      "PackageSha256": "6ED5A8071923966E59315883D5E7CC870488C82F1422902B837CF6A5F32F30DC",
+      "AssemblySha256": "6CD1176B2578CC388D6C0661D38F3631473D0D6BACCEB2401C18160DF9269BB3",
+      "SymbolSha256": "5716A88BCD17285380E2C69395756F96AD9A4FE4EF10BC0C8C02DD738AD750DD",
+      "PdbSha256": "A63D2567799C381E945ED31E5A94E88B6CF9960067EF00707FC12EA19C858FD4",
+      "CompiledSourceEvidence": "Original Windows qualifier/source checks; exact matching package/PDB/SourceLink retained. Linux LF checkout is not the CRLF compilation input."
+    },
+    {
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "Framework": "net10.0",
+      "PackageSha256": "FFBFDCD07F85B44388B2D4352E36B0DE1EAFE641042C04C13C00C4A37ED928C4",
+      "AssemblySha256": "37C299054A61C726EF843AB2A3CF0DF3F8F576BFFFF28AC564DB1F3488012626",
+      "SymbolSha256": "C5C43609EF7907D60DBADB723170A94D169B3591DDD16A80BD1A60FF8B7FF45C",
+      "PdbSha256": "FD128DD52A34526FB93BECB15D86AEA3F24F5E17B1A7CDFB008F89ACAF577E24",
+      "CompiledSourceEvidence": "Original Windows qualifier/source checks; exact matching package/PDB/SourceLink retained. Linux LF checkout is not the CRLF compilation input."
+    },
+    {
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "Framework": "net11.0",
+      "PackageSha256": "FFBFDCD07F85B44388B2D4352E36B0DE1EAFE641042C04C13C00C4A37ED928C4",
+      "AssemblySha256": "FD2EFF8A6E2B406B3CDCB846C4894B53F577D46532F2B4001EF98D3091D29241",
+      "SymbolSha256": "C5C43609EF7907D60DBADB723170A94D169B3591DDD16A80BD1A60FF8B7FF45C",
+      "PdbSha256": "B67A0C11F6A7542D3BFE8561A23EC54F4CB78E97EC59F4760270E5E7EF63AE19",
+      "CompiledSourceEvidence": "Original Windows qualifier/source checks; exact matching package/PDB/SourceLink retained. Linux LF checkout is not the CRLF compilation input."
+    },
+    {
+      "Id": "Lokad.Utf8Regex.Pcre2",
+      "Framework": "net10.0",
+      "PackageSha256": "CBAC3110214F2B345925D88887746CF913ACE4FEE1987BD8A7031DC92E607422",
+      "AssemblySha256": "7623D7B15347B02220FD6DEB643D33D9CAAF78520F27023E964C7713796A1D46",
+      "SymbolSha256": "2137A31D5C58935F97EF3356D02F297144C0F7CEC1433897C9D702943CE95D2D",
+      "PdbSha256": "B12E7C6EDA67C7A060116A13F7BB6B02E6C261DD540560DD4D8C2AB29C3D3A6D",
+      "CompiledSourceEvidence": "Original Windows qualifier/source checks; exact matching package/PDB/SourceLink retained. Linux LF checkout is not the CRLF compilation input."
+    },
+    {
+      "Id": "Lokad.Utf8Regex.Pcre2",
+      "Framework": "net11.0",
+      "PackageSha256": "CBAC3110214F2B345925D88887746CF913ACE4FEE1987BD8A7031DC92E607422",
+      "AssemblySha256": "DCD30091DC9CFD9B8EC9BB6B2E0849776E8236D86367FEA0E5CF1EDD344D9415",
+      "SymbolSha256": "2137A31D5C58935F97EF3356D02F297144C0F7CEC1433897C9D702943CE95D2D",
+      "PdbSha256": "9269A23CBE5D083759CCEF94B680670FE2601F4BCD34D71375D00DCD6FBE8B40",
+      "CompiledSourceEvidence": "Original Windows qualifier/source checks; exact matching package/PDB/SourceLink retained. Linux LF checkout is not the CRLF compilation input."
+    }
+  ],
+  "Restores": [
+    {
+      "Fixture": "Core/net10.0",
+      "Framework": "net10.0",
+      "Id": "Lokad.Utf8Regex",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "58F5FEE0548380DB31F9995E9B0145906CD9B155A727BBCA06B5D072D56080D0",
+      "PackageSha256": "6ED5A8071923966E59315883D5E7CC870488C82F1422902B837CF6A5F32F30DC",
+      "AssemblySha256": "AC43E229123219B3211BB83E7D59341E931716ED4024635B85FF1C6922EEF3FD",
+      "ContentHash": "jQ9+Lp9u542nUgNNO9P2tZZRrrSEimjO7kGYYHdw2wPUvyQnEQDwpJtJ7ghXqdh6lBOX3p8LfSXGwXSyAF3RlQ==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "Core/net11.0",
+      "Framework": "net11.0",
+      "Id": "Lokad.Utf8Regex",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "3CDE9AD40F4BFC54EB06B4E2B1F946A4682E81DCF2D9D901AED64E78EA373E7B",
+      "PackageSha256": "6ED5A8071923966E59315883D5E7CC870488C82F1422902B837CF6A5F32F30DC",
+      "AssemblySha256": "6CD1176B2578CC388D6C0661D38F3631473D0D6BACCEB2401C18160DF9269BB3",
+      "ContentHash": "jQ9+Lp9u542nUgNNO9P2tZZRrrSEimjO7kGYYHdw2wPUvyQnEQDwpJtJ7ghXqdh6lBOX3p8LfSXGwXSyAF3RlQ==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "Diff/net10.0",
+      "Framework": "net10.0",
+      "Id": "Lokad.Utf8Regex",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "58F5FEE0548380DB31F9995E9B0145906CD9B155A727BBCA06B5D072D56080D0",
+      "PackageSha256": "6ED5A8071923966E59315883D5E7CC870488C82F1422902B837CF6A5F32F30DC",
+      "AssemblySha256": "AC43E229123219B3211BB83E7D59341E931716ED4024635B85FF1C6922EEF3FD",
+      "ContentHash": "jQ9+Lp9u542nUgNNO9P2tZZRrrSEimjO7kGYYHdw2wPUvyQnEQDwpJtJ7ghXqdh6lBOX3p8LfSXGwXSyAF3RlQ==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "Diff/net11.0",
+      "Framework": "net11.0",
+      "Id": "Lokad.Utf8Regex",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "3CDE9AD40F4BFC54EB06B4E2B1F946A4682E81DCF2D9D901AED64E78EA373E7B",
+      "PackageSha256": "6ED5A8071923966E59315883D5E7CC870488C82F1422902B837CF6A5F32F30DC",
+      "AssemblySha256": "6CD1176B2578CC388D6C0661D38F3631473D0D6BACCEB2401C18160DF9269BB3",
+      "ContentHash": "jQ9+Lp9u542nUgNNO9P2tZZRrrSEimjO7kGYYHdw2wPUvyQnEQDwpJtJ7ghXqdh6lBOX3p8LfSXGwXSyAF3RlQ==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "PythonRe/net10.0",
+      "Framework": "net10.0",
+      "Id": "Lokad.Utf8Regex",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "5EA1C10D4842AD2B633F8E334BA45A5E526D52835443D740C676FE2998CE1D75",
+      "PackageSha256": "6ED5A8071923966E59315883D5E7CC870488C82F1422902B837CF6A5F32F30DC",
+      "AssemblySha256": "AC43E229123219B3211BB83E7D59341E931716ED4024635B85FF1C6922EEF3FD",
+      "ContentHash": "jQ9+Lp9u542nUgNNO9P2tZZRrrSEimjO7kGYYHdw2wPUvyQnEQDwpJtJ7ghXqdh6lBOX3p8LfSXGwXSyAF3RlQ==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "PythonRe/net10.0",
+      "Framework": "net10.0",
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "5EA1C10D4842AD2B633F8E334BA45A5E526D52835443D740C676FE2998CE1D75",
+      "PackageSha256": "FFBFDCD07F85B44388B2D4352E36B0DE1EAFE641042C04C13C00C4A37ED928C4",
+      "AssemblySha256": "37C299054A61C726EF843AB2A3CF0DF3F8F576BFFFF28AC564DB1F3488012626",
+      "ContentHash": "KjQzZslqP4j/YhLOoDlouFGmacj4igTDKUoTVBcgE2WsM9Cd9MWSuB0oPi703xVXlQ1P51vd1s4IKCtqixUnZg==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "PythonRe/net11.0",
+      "Framework": "net11.0",
+      "Id": "Lokad.Utf8Regex",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "C8519351298E9D79C47AFD75284FBAC340D3B96EE61FBB92B0BEE751290B25C6",
+      "PackageSha256": "6ED5A8071923966E59315883D5E7CC870488C82F1422902B837CF6A5F32F30DC",
+      "AssemblySha256": "6CD1176B2578CC388D6C0661D38F3631473D0D6BACCEB2401C18160DF9269BB3",
+      "ContentHash": "jQ9+Lp9u542nUgNNO9P2tZZRrrSEimjO7kGYYHdw2wPUvyQnEQDwpJtJ7ghXqdh6lBOX3p8LfSXGwXSyAF3RlQ==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "PythonRe/net11.0",
+      "Framework": "net11.0",
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "C8519351298E9D79C47AFD75284FBAC340D3B96EE61FBB92B0BEE751290B25C6",
+      "PackageSha256": "FFBFDCD07F85B44388B2D4352E36B0DE1EAFE641042C04C13C00C4A37ED928C4",
+      "AssemblySha256": "FD2EFF8A6E2B406B3CDCB846C4894B53F577D46532F2B4001EF98D3091D29241",
+      "ContentHash": "KjQzZslqP4j/YhLOoDlouFGmacj4igTDKUoTVBcgE2WsM9Cd9MWSuB0oPi703xVXlQ1P51vd1s4IKCtqixUnZg==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "Pcre2/net10.0",
+      "Framework": "net10.0",
+      "Id": "Lokad.Utf8Regex",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "004137469AA2AEE0DCAB1E8634917B9482CF5C026F15F46C7C46C01E25E48668",
+      "PackageSha256": "6ED5A8071923966E59315883D5E7CC870488C82F1422902B837CF6A5F32F30DC",
+      "AssemblySha256": "AC43E229123219B3211BB83E7D59341E931716ED4024635B85FF1C6922EEF3FD",
+      "ContentHash": "jQ9+Lp9u542nUgNNO9P2tZZRrrSEimjO7kGYYHdw2wPUvyQnEQDwpJtJ7ghXqdh6lBOX3p8LfSXGwXSyAF3RlQ==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "Pcre2/net10.0",
+      "Framework": "net10.0",
+      "Id": "Lokad.Utf8Regex.Pcre2",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "004137469AA2AEE0DCAB1E8634917B9482CF5C026F15F46C7C46C01E25E48668",
+      "PackageSha256": "CBAC3110214F2B345925D88887746CF913ACE4FEE1987BD8A7031DC92E607422",
+      "AssemblySha256": "7623D7B15347B02220FD6DEB643D33D9CAAF78520F27023E964C7713796A1D46",
+      "ContentHash": "T22zizgtJQyAxsTCDHPtL45hSzO5EAkR/Gy83grkz7TiJkxwDiJMfoIj8m283DYo6IECkenhry8mQK7u2iU7qw==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "Pcre2/net11.0",
+      "Framework": "net11.0",
+      "Id": "Lokad.Utf8Regex",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "DD745EB2BC23B54265A890F2C5057290F7B74A9B6141F0952416B266F7D73F80",
+      "PackageSha256": "6ED5A8071923966E59315883D5E7CC870488C82F1422902B837CF6A5F32F30DC",
+      "AssemblySha256": "6CD1176B2578CC388D6C0661D38F3631473D0D6BACCEB2401C18160DF9269BB3",
+      "ContentHash": "jQ9+Lp9u542nUgNNO9P2tZZRrrSEimjO7kGYYHdw2wPUvyQnEQDwpJtJ7ghXqdh6lBOX3p8LfSXGwXSyAF3RlQ==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "Pcre2/net11.0",
+      "Framework": "net11.0",
+      "Id": "Lokad.Utf8Regex.Pcre2",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "DD745EB2BC23B54265A890F2C5057290F7B74A9B6141F0952416B266F7D73F80",
+      "PackageSha256": "CBAC3110214F2B345925D88887746CF913ACE4FEE1987BD8A7031DC92E607422",
+      "AssemblySha256": "DCD30091DC9CFD9B8EC9BB6B2E0849776E8236D86367FEA0E5CF1EDD344D9415",
+      "ContentHash": "T22zizgtJQyAxsTCDHPtL45hSzO5EAkR/Gy83grkz7TiJkxwDiJMfoIj8m283DYo6IECkenhry8mQK7u2iU7qw==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "Awk",
+      "Framework": "net10.0",
+      "Id": "Lokad.Utf8Regex",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "913CC9D22191C0D02F548A5D9F5B53CFF6112142B96EA087885A91CC533D73AE",
+      "PackageSha256": "6ED5A8071923966E59315883D5E7CC870488C82F1422902B837CF6A5F32F30DC",
+      "AssemblySha256": "AC43E229123219B3211BB83E7D59341E931716ED4024635B85FF1C6922EEF3FD",
+      "ContentHash": "jQ9+Lp9u542nUgNNO9P2tZZRrrSEimjO7kGYYHdw2wPUvyQnEQDwpJtJ7ghXqdh6lBOX3p8LfSXGwXSyAF3RlQ==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "Awk",
+      "Framework": "net11.0",
+      "Id": "Lokad.Utf8Regex",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "913CC9D22191C0D02F548A5D9F5B53CFF6112142B96EA087885A91CC533D73AE",
+      "PackageSha256": "6ED5A8071923966E59315883D5E7CC870488C82F1422902B837CF6A5F32F30DC",
+      "AssemblySha256": "6CD1176B2578CC388D6C0661D38F3631473D0D6BACCEB2401C18160DF9269BB3",
+      "ContentHash": "jQ9+Lp9u542nUgNNO9P2tZZRrrSEimjO7kGYYHdw2wPUvyQnEQDwpJtJ7ghXqdh6lBOX3p8LfSXGwXSyAF3RlQ==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "Lython",
+      "Framework": "net10.0",
+      "Id": "Lokad.Utf8Regex",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "7C1F9A4785A0303550B53B4A77379E2352685FBC4FB60C46D154DC1B0CDD24C0",
+      "PackageSha256": "6ED5A8071923966E59315883D5E7CC870488C82F1422902B837CF6A5F32F30DC",
+      "AssemblySha256": "AC43E229123219B3211BB83E7D59341E931716ED4024635B85FF1C6922EEF3FD",
+      "ContentHash": "jQ9+Lp9u542nUgNNO9P2tZZRrrSEimjO7kGYYHdw2wPUvyQnEQDwpJtJ7ghXqdh6lBOX3p8LfSXGwXSyAF3RlQ==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "Lython",
+      "Framework": "net10.0",
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "7C1F9A4785A0303550B53B4A77379E2352685FBC4FB60C46D154DC1B0CDD24C0",
+      "PackageSha256": "FFBFDCD07F85B44388B2D4352E36B0DE1EAFE641042C04C13C00C4A37ED928C4",
+      "AssemblySha256": "37C299054A61C726EF843AB2A3CF0DF3F8F576BFFFF28AC564DB1F3488012626",
+      "ContentHash": "KjQzZslqP4j/YhLOoDlouFGmacj4igTDKUoTVBcgE2WsM9Cd9MWSuB0oPi703xVXlQ1P51vd1s4IKCtqixUnZg==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "Lython",
+      "Framework": "net11.0",
+      "Id": "Lokad.Utf8Regex",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "7C1F9A4785A0303550B53B4A77379E2352685FBC4FB60C46D154DC1B0CDD24C0",
+      "PackageSha256": "6ED5A8071923966E59315883D5E7CC870488C82F1422902B837CF6A5F32F30DC",
+      "AssemblySha256": "6CD1176B2578CC388D6C0661D38F3631473D0D6BACCEB2401C18160DF9269BB3",
+      "ContentHash": "jQ9+Lp9u542nUgNNO9P2tZZRrrSEimjO7kGYYHdw2wPUvyQnEQDwpJtJ7ghXqdh6lBOX3p8LfSXGwXSyAF3RlQ==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "Lython",
+      "Framework": "net11.0",
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "7C1F9A4785A0303550B53B4A77379E2352685FBC4FB60C46D154DC1B0CDD24C0",
+      "PackageSha256": "FFBFDCD07F85B44388B2D4352E36B0DE1EAFE641042C04C13C00C4A37ED928C4",
+      "AssemblySha256": "FD2EFF8A6E2B406B3CDCB846C4894B53F577D46532F2B4001EF98D3091D29241",
+      "ContentHash": "KjQzZslqP4j/YhLOoDlouFGmacj4igTDKUoTVBcgE2WsM9Cd9MWSuB0oPi703xVXlQ1P51vd1s4IKCtqixUnZg==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "Framework": "net10.0",
+      "Id": "Lokad.Utf8Regex",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "0110BA43037539565DF41865CE17B8E3E8A36C8FDAFA7134429FE75E9AF3F6FB",
+      "PackageSha256": "6ED5A8071923966E59315883D5E7CC870488C82F1422902B837CF6A5F32F30DC",
+      "AssemblySha256": "AC43E229123219B3211BB83E7D59341E931716ED4024635B85FF1C6922EEF3FD",
+      "ContentHash": "jQ9+Lp9u542nUgNNO9P2tZZRrrSEimjO7kGYYHdw2wPUvyQnEQDwpJtJ7ghXqdh6lBOX3p8LfSXGwXSyAF3RlQ==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "Framework": "net10.0",
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "0110BA43037539565DF41865CE17B8E3E8A36C8FDAFA7134429FE75E9AF3F6FB",
+      "PackageSha256": "FFBFDCD07F85B44388B2D4352E36B0DE1EAFE641042C04C13C00C4A37ED928C4",
+      "AssemblySha256": "37C299054A61C726EF843AB2A3CF0DF3F8F576BFFFF28AC564DB1F3488012626",
+      "ContentHash": "KjQzZslqP4j/YhLOoDlouFGmacj4igTDKUoTVBcgE2WsM9Cd9MWSuB0oPi703xVXlQ1P51vd1s4IKCtqixUnZg==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "Framework": "net10.0",
+      "Id": "Lokad.Utf8Regex.Pcre2",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "0110BA43037539565DF41865CE17B8E3E8A36C8FDAFA7134429FE75E9AF3F6FB",
+      "PackageSha256": "CBAC3110214F2B345925D88887746CF913ACE4FEE1987BD8A7031DC92E607422",
+      "AssemblySha256": "7623D7B15347B02220FD6DEB643D33D9CAAF78520F27023E964C7713796A1D46",
+      "ContentHash": "T22zizgtJQyAxsTCDHPtL45hSzO5EAkR/Gy83grkz7TiJkxwDiJMfoIj8m283DYo6IECkenhry8mQK7u2iU7qw==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "Framework": "net11.0",
+      "Id": "Lokad.Utf8Regex",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "0110BA43037539565DF41865CE17B8E3E8A36C8FDAFA7134429FE75E9AF3F6FB",
+      "PackageSha256": "6ED5A8071923966E59315883D5E7CC870488C82F1422902B837CF6A5F32F30DC",
+      "AssemblySha256": "6CD1176B2578CC388D6C0661D38F3631473D0D6BACCEB2401C18160DF9269BB3",
+      "ContentHash": "jQ9+Lp9u542nUgNNO9P2tZZRrrSEimjO7kGYYHdw2wPUvyQnEQDwpJtJ7ghXqdh6lBOX3p8LfSXGwXSyAF3RlQ==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "Framework": "net11.0",
+      "Id": "Lokad.Utf8Regex.PythonRe",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "0110BA43037539565DF41865CE17B8E3E8A36C8FDAFA7134429FE75E9AF3F6FB",
+      "PackageSha256": "FFBFDCD07F85B44388B2D4352E36B0DE1EAFE641042C04C13C00C4A37ED928C4",
+      "AssemblySha256": "FD2EFF8A6E2B406B3CDCB846C4894B53F577D46532F2B4001EF98D3091D29241",
+      "ContentHash": "KjQzZslqP4j/YhLOoDlouFGmacj4igTDKUoTVBcgE2WsM9Cd9MWSuB0oPi703xVXlQ1P51vd1s4IKCtqixUnZg==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "Framework": "net11.0",
+      "Id": "Lokad.Utf8Regex.Pcre2",
+      "LockedVersion": "0.5.0-dev.6",
+      "LockSha256": "0110BA43037539565DF41865CE17B8E3E8A36C8FDAFA7134429FE75E9AF3F6FB",
+      "PackageSha256": "CBAC3110214F2B345925D88887746CF913ACE4FEE1987BD8A7031DC92E607422",
+      "AssemblySha256": "DCD30091DC9CFD9B8EC9BB6B2E0849776E8236D86367FEA0E5CF1EDD344D9415",
+      "ContentHash": "T22zizgtJQyAxsTCDHPtL45hSzO5EAkR/Gy83grkz7TiJkxwDiJMfoIj8m283DYo6IECkenhry8mQK7u2iU7qw==",
+      "Source": "/dev/shm/delivery-dev6-20261101/package-input/feed"
+    }
+  ]
+}

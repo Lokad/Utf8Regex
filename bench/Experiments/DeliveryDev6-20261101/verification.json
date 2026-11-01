@@ -1,0 +1,63 @@
+{
+  "FrozenSource": "825ed1f7c4b4eb54f0e092da495396d93b435a48",
+  "Version": "0.5.0-dev.6",
+  "Published": false,
+  "Profiles": [
+    "Core",
+    "PythonRe",
+    "Pcre2"
+  ],
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "WindowsDetachedPassed": 107206,
+  "LinuxExactWindowsAssetDetachedPassed": 107206,
+  "WindowsQualificationSeconds": 252.1193318,
+  "ActualAwkPerFrameworkPerPlatform": 19,
+  "ActualLythonPerFrameworkPerPlatform": 118,
+  "PublicNativeFundedProbes": "Pass both frameworks/platforms; loaded assets match and final root loans zero",
+  "OriginalWindowsCompilationDocuments": 463,
+  "LinuxAssets": 6,
+  "LinuxRestoreAudits": 24,
+  "FullRefreshSeconds": 2643.7288141,
+  "FullRefreshScope": "Full",
+  "FullRefreshComplete": true,
+  "FullRefreshSteps": 83,
+  "FullRefreshExitCode": 0,
+  "CumulativeCases": 43,
+  "CumulativeTimedSeconds": 173.4824703,
+  "MaximumCoveredAdversePercent": 4.520104142535564,
+  "ConfirmationRuns": 0,
+  "CumulativeScope": "Fixed-a40 representative public operations; no universal or noise-free parity claim",
+  "CoreStatuses": {
+    "TieCandidate": 3,
+    "Win": 106,
+    "Gap": 67,
+    "Unqualified": 2
+  },
+  "PythonStatuses": {
+    "ManagedFaster": 25,
+    "Unqualified": 3,
+    "CpythonFaster": 45,
+    "Inconclusive": 17
+  },
+  "Pcre2NativeStatuses": {
+    "Inconclusive": 38,
+    "NativeFaster": 6,
+    "Equivalent": 2,
+    "Unqualified": 1,
+    "ManagedFaster": 54,
+    "Excluded": 25
+  },
+  "SourceCiRun": 41322982454,
+  "SourceCi": "Green Windows/Linux",
+  "DocumentationErratum": "Packaged README prose says dev.1; actual dependencies are exact dev.6. Source-only correction follows, existing staged bytes unchanged.",
+  "Archives": {
+    "WindowsConsumers": "1A38AC43563F32728A26AAA7BEBD0F44B8376CB0E9A7071CDA892428E1F6C12B",
+    "LinuxConsumers": "5B9C183F7B8B8E1CFC09450DE84F21CFD748E5AE1988196B89F2CD4CBF873485",
+    "ProducerSource": "B4D5B0483B7EE71AD6DEFC55DDB150708D341C00C84021F20C67C339EE7984CC",
+    "WindowsCompilationInputs": "EBDEFAF5359D85CAD3F66A46EB1BBE5C92E5680E0A4C7F1547E962D219E083BB",
+    "FullRefresh": "8871B811D1D85C6EC6C3FE7E07BD2F85740170B014D7CE3BDADA3F9BCA683992"
+  }
+}
