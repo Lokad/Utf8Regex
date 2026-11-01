@@ -1,0 +1,289 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 13.6962775,
+  "Metadata": {
+    "Methods": [
+      {
+        "Name": "MeasurePythonReBatch",
+        "IlBytes": 2703
+      },
+      {
+        "Name": "MeasurePythonReQualificationBatch",
+        "IlBytes": 391
+      }
+    ],
+    "Assemblies": [
+      {
+        "Name": "Lokad.Utf8Regex",
+        "Path": "/home/vermorel/tmp/utf8regex-net11-memory/pilot/bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.dll",
+        "Sha256": "FC24B4DE9E46467F5ED7CA689B696EB02CEC4AABA6124F31840FC0FE23E08E23"
+      },
+      {
+        "Name": "Lokad.Utf8Regex.PythonRe",
+        "Path": "/home/vermorel/tmp/utf8regex-net11-memory/pilot/bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.PythonRe.dll",
+        "Sha256": "8B65A5523BF43EFF9C67AAEBAE96112A572D3210B5A34648814F56C52296F202"
+      },
+      {
+        "Name": "Lokad.Utf8Regex.Benchmarks",
+        "Path": "/home/vermorel/tmp/utf8regex-net11-memory/pilot/bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.Benchmarks.dll",
+        "Sha256": "89297B81EA3A75C52C5657C1EA3AD67AA6B0725561CA3F55FEBA526C908359E8"
+      }
+    ]
+  },
+  "Scope": "One\u003C=60s frozen current-binary point vs paired batch investigation. Existing methods, identical contexts and equal checksum/semantic digest, warm1.2s each, independent40ms calibration,5alternating samples\u003E=20ms. Count/FindAll use existing fallback in both entry points. No production change, source A/B claim, CPython qualification or package/full refresh. Reflection/boxing outside existing timed batches. Untimed FullOpts preflight is diagnostic only.",
+  "Rows": [
+    {
+      "Id": "lookahead/search-miss",
+      "Iterations": [
+        262144,
+        262144
+      ],
+      "WarmCalls": [
+        3393792,
+        4805376
+      ],
+      "WarmMilliseconds": [
+        1200.0468,
+        1200.0386
+      ],
+      "Microseconds": [
+        [
+          0.24784202575683592,
+          0.2478908538818359,
+          0.24806213378906253,
+          0.24991188049316407,
+          0.24863739013671873
+        ],
+        [
+          0.24780082702636722,
+          0.24812393188476564,
+          0.2506359100341797,
+          0.2524150848388672,
+          0.25191612243652345
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          64.9703,
+          64.9831,
+          65.028,
+          65.5129,
+          65.1788
+        ],
+        [
+          64.9595,
+          65.0442,
+          65.7027,
+          66.1691,
+          66.0383
+        ]
+      ]
+    },
+    {
+      "Id": "lookahead/search-hit",
+      "Iterations": [
+        262144,
+        262144
+      ],
+      "WarmCalls": [
+        4172800,
+        4223488
+      ],
+      "WarmMilliseconds": [
+        1200.0709,
+        1200.0461
+      ],
+      "Microseconds": [
+        [
+          0.2782764434814453,
+          0.27782096862792965,
+          0.2797237396240234,
+          0.2773754119873047,
+          0.2756320953369141
+        ],
+        [
+          0.27313232421875,
+          0.2760951995849609,
+          0.27856369018554683,
+          0.2785224914550781,
+          0.2764842987060547
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          72.9485,
+          72.8291,
+          73.3279,
+          72.7123,
+          72.2553
+        ],
+        [
+          71.6,
+          72.3767,
+          73.0238,
+          73.013,
+          72.4787
+        ]
+      ]
+    },
+    {
+      "Id": "family/count",
+      "Iterations": [
+        64,
+        64
+      ],
+      "WarmCalls": [
+        1536,
+        1536
+      ],
+      "WarmMilliseconds": [
+        1385.716,
+        1207.1763
+      ],
+      "Microseconds": [
+        [
+          823.496875,
+          813.2625,
+          820.6375,
+          815.0500000000001,
+          806.6765624999999
+        ],
+        [
+          794.9421875,
+          789.6140625,
+          786.0296875,
+          781.3375,
+          782.809375
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          52.7038,
+          52.0488,
+          52.5208,
+          52.1632,
+          51.6273
+        ],
+        [
+          50.8763,
+          50.5353,
+          50.3059,
+          50.0056,
+          50.0998
+        ]
+      ]
+    },
+    {
+      "Id": "findall/many-capture-strings",
+      "Iterations": [
+        64,
+        64
+      ],
+      "WarmCalls": [
+        1280,
+        1792
+      ],
+      "WarmMilliseconds": [
+        1205.9571,
+        1365.6891
+      ],
+      "Microseconds": [
+        [
+          782.39375,
+          766.2843750000001,
+          761.8515625,
+          761.85625,
+          762.165625
+        ],
+        [
+          764.9203125,
+          757.9875000000001,
+          749.2328124999999,
+          751.784375,
+          738.0109375000001
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          262016,
+          262016,
+          262016,
+          262016,
+          262016
+        ],
+        [
+          262016,
+          262016,
+          262016,
+          262016,
+          262016
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          50.0732,
+          49.0422,
+          48.7585,
+          48.7588,
+          48.7786
+        ],
+        [
+          48.9549,
+          48.5112,
+          47.9509,
+          48.1142,
+          47.2327
+        ]
+      ]
+    }
+  ]
+}

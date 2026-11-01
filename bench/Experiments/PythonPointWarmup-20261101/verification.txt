@@ -1,0 +1,6 @@
+Release net11 benchmark-only VM build passed; original Core/Python/Pcre2 DLLs byte-identical.
+Release net10 benchmark-only local build passed,0warnings/0errors.
+FullOpts untimed preflight:4cases equal checksum/semantic digest; IL point2703B/paired391B; code9043B/991B. This is diagnostic, not default-tier attribution.
+Frozen existing-method probe13.6962775s, sustained1.2s warm,5alternating samples >=20ms.
+One fresh-process6-lane actual-point before/after,6.4033277s summed runner elapsed; expected checksums verified by original runner.
+Core/Python engine source and binary bytes unchanged; no API/semantic/package matrix repeated.

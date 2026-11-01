@@ -1,0 +1,46 @@
+[
+  {
+    "Case": "lookahead/search-miss",
+    "PointUs": 0.24806213378906253,
+    "PairedUs": 0.2506359100341797,
+    "Ratio": 0.9897310156203628,
+    "PointWarmMs": 1200.0468,
+    "PairWarmMs": 1200.0386,
+    "PointBytes": 0,
+    "PairBytes": 0,
+    "MinimumSampleMs": 64.9595
+  },
+  {
+    "Case": "lookahead/search-hit",
+    "PointUs": 0.27782096862792965,
+    "PairedUs": 0.2764842987060547,
+    "Ratio": 1.004834523798026,
+    "PointWarmMs": 1200.0709,
+    "PairWarmMs": 1200.0461,
+    "PointBytes": 0,
+    "PairBytes": 0,
+    "MinimumSampleMs": 71.6
+  },
+  {
+    "Case": "family/count",
+    "PointUs": 815.0500000000001,
+    "PairedUs": 786.0296875,
+    "Ratio": 1.0369201226893865,
+    "PointWarmMs": 1385.716,
+    "PairWarmMs": 1207.1763,
+    "PointBytes": 0,
+    "PairBytes": 0,
+    "MinimumSampleMs": 50.0056
+  },
+  {
+    "Case": "findall/many-capture-strings",
+    "PointUs": 762.165625,
+    "PairedUs": 751.784375,
+    "Ratio": 1.0138088131985983,
+    "PointWarmMs": 1205.9571,
+    "PairWarmMs": 1365.6891,
+    "PointBytes": 262016,
+    "PairBytes": 262016,
+    "MinimumSampleMs": 47.2327
+  }
+]

@@ -1,0 +1,47 @@
+[
+  {
+    "Case": "lookahead/search-miss",
+    "BeforeUs": 1.44164666895212,
+    "AfterUs": 0.23895141758085198,
+    "BeforeWarmMs": 103.0944,
+    "AfterWarmMs": 1000.0012,
+    "BeforeWarmCalls": 65551,
+    "AfterWarmCalls": 3220463,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.2680188250555005,
+    "AfterSpread": 1.010695197838209,
+    "MinimumSampleMilliseconds": 49.954699999999995,
+    "WallSeconds": 1.8411287
+  },
+  {
+    "Case": "lookahead/search-hit",
+    "BeforeUs": 1.4963683763792894,
+    "AfterUs": 0.24976164615013274,
+    "BeforeWarmMs": 106.9386,
+    "AfterWarmMs": 1000,
+    "BeforeWarmCalls": 65551,
+    "AfterWarmCalls": 2292831,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.2469645359181176,
+    "AfterSpread": 1.023285092701571,
+    "MinimumSampleMilliseconds": 48.6746,
+    "WallSeconds": 1.8371583999999999
+  },
+  {
+    "Case": "family/count",
+    "BeforeUs": 731.0314285714285,
+    "AfterUs": 732.3985507246376,
+    "BeforeWarmMs": 1008.2729,
+    "AfterWarmMs": 1005.5156,
+    "BeforeWarmCalls": 1191,
+    "AfterWarmCalls": 1191,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0672044857963525,
+    "AfterSpread": 1.0049210588405573,
+    "MinimumSampleMilliseconds": 50.4363,
+    "WallSeconds": 2.7250406
+  }
+]

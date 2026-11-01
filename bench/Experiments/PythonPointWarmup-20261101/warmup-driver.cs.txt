@@ -1,0 +1,33 @@
+using System.Collections;
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text.Json;
+
+using var process=Process.GetCurrentProcess();process.ProcessorAffinity=(nint)4;
+var root=Path.GetFullPath(args[0]);var id=args[1];var label=args[2];
+AssemblyLoadContext.Default.Resolving+=(_,name)=>{
+    var path=Path.Combine(AppContext.BaseDirectory,name.Name+".dll");
+    return File.Exists(path)?AssemblyLoadContext.Default.LoadFromAssemblyPath(path):null;
+};
+var core=Assembly.LoadFrom(Path.Combine(root,"Lokad.Utf8Regex.dll"));
+var python=Assembly.LoadFrom(Path.Combine(root,"Lokad.Utf8Regex.PythonRe.dll"));
+Assembly.LoadFrom(Path.Combine(root,"Lokad.Utf8Regex.Pcre2.dll"));
+var bench=Assembly.LoadFrom(Path.Combine(root,"Lokad.Utf8Regex.Benchmarks.dll"));
+var catalog=bench.GetType("Lokad.Utf8Regex.Benchmarks.PythonReBenchmarkCatalog")!;
+var contextType=bench.GetType("Lokad.Utf8Regex.Benchmarks.PythonReBenchmarkContext")!;
+var reporter=bench.GetType("Lokad.Utf8Regex.Benchmarks.PythonReBenchmarkReporter")!;
+var cases=((IEnumerable)catalog.GetProperty("Cases",BindingFlags.Static|BindingFlags.NonPublic)!.GetValue(null)!).Cast<object>();
+var item=cases.Single(value=>(string)value.GetType().GetProperty("Id")!.GetValue(value)! ==id);
+var context=Activator.CreateInstance(contextType,BindingFlags.Instance|BindingFlags.NonPublic,null,[item],null)!;
+var expected=(int)contextType.GetMethod("ExecutePythonRe",BindingFlags.Instance|BindingFlags.NonPublic)!.Invoke(context,null)!;
+var measure=reporter.GetMethod("MeasureResultOperation",BindingFlags.Static|BindingFlags.NonPublic)!;
+var batch=contextType.GetMethod("MeasurePythonReBatch",BindingFlags.Instance|BindingFlags.NonPublic)!;
+var runBatch=batch.CreateDelegate(measure.GetParameters()[0].ParameterType,context);
+var watch=Stopwatch.StartNew();var result=measure.Invoke(null,[runBatch,200,5,expected])!;
+Console.WriteLine(JsonSerializer.Serialize(new{Case=id,Label=label,Runtime=RuntimeInformation.FrameworkDescription,CpuAffinityMask="4",ElapsedSeconds=watch.Elapsed.TotalSeconds,
+    Measurement=JsonSerializer.SerializeToElement(result,result.GetType()),
+    Assemblies=new[]{core,python,bench}.Select(assembly=>new{Name=assembly.GetName().Name,Version=assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,Sha256=Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location)))}).ToArray(),
+    Scope="Actual existing MeasureResultOperation point runner and actual catalog context; unchanged engine binaries; fresh process per variant/case, CPU2. No Core/Python source change, CPython execution or snapshot write. Calibration/sampling/result checks remain inside the existing runner. One bounded six-process before/after, with slow Count control, no resampling."},new JsonSerializerOptions{WriteIndented=true}));

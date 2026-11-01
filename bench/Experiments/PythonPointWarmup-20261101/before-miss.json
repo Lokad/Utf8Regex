@@ -1,0 +1,41 @@
+{
+  "Case": "lookahead/search-miss",
+  "Label": "before",
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 0.4731542,
+  "Measurement": {
+    "EffectiveIterations": 35004,
+    "SampleMicroseconds": [
+      49954.7,
+      51082.4,
+      50463.4,
+      50120.8,
+      63343.5
+    ],
+    "MedianMicroseconds": 1.44164666895212,
+    "MinimumMicroseconds": 1.4271140441092445,
+    "MaximumMicroseconds": 1.8096074734316079,
+    "MedianAllocatedBytes": 0,
+    "WarmupCalls": 65551,
+    "WarmupMilliseconds": 103.0944
+  },
+  "Assemblies": [
+    {
+      "Name": "Lokad.Utf8Regex",
+      "Version": "0.5.0-dev.1\u002B5c05ff8bf8874a8ea0d0c75845d0d1cb3ee29ce7",
+      "Sha256": "FC24B4DE9E46467F5ED7CA689B696EB02CEC4AABA6124F31840FC0FE23E08E23"
+    },
+    {
+      "Name": "Lokad.Utf8Regex.PythonRe",
+      "Version": "0.5.0-dev.1\u002B5c05ff8bf8874a8ea0d0c75845d0d1cb3ee29ce7",
+      "Sha256": "8B65A5523BF43EFF9C67AAEBAE96112A572D3210B5A34648814F56C52296F202"
+    },
+    {
+      "Name": "Lokad.Utf8Regex.Benchmarks",
+      "Version": "1.0.0\u002B5c05ff8bf8874a8ea0d0c75845d0d1cb3ee29ce7",
+      "Sha256": "89297B81EA3A75C52C5657C1EA3AD67AA6B0725561CA3F55FEBA526C908359E8"
+    }
+  ],
+  "Scope": "Actual existing MeasureResultOperation point runner and actual catalog context; unchanged engine binaries; fresh process per variant/case, CPU2. No Core/Python source change, CPython execution or snapshot write. Calibration/sampling/result checks remain inside the existing runner. One bounded six-process before/after, with slow Count control, no resampling."
+}

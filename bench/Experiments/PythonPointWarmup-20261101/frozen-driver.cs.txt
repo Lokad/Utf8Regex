@@ -1,0 +1,48 @@
+using System.Collections;
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text.Json;
+
+using var process=Process.GetCurrentProcess();process.ProcessorAffinity=(nint)4;
+var root=Path.GetFullPath(args[0]);
+var core=Assembly.LoadFrom(Path.Combine(root,"Lokad.Utf8Regex.dll"));
+var python=Assembly.LoadFrom(Path.Combine(root,"Lokad.Utf8Regex.PythonRe.dll"));
+var bench=Assembly.LoadFrom(Path.Combine(root,"Lokad.Utf8Regex.Benchmarks.dll"));
+var catalog=bench.GetType("Lokad.Utf8Regex.Benchmarks.PythonReBenchmarkCatalog")!;
+var contextType=bench.GetType("Lokad.Utf8Regex.Benchmarks.PythonReBenchmarkContext")!;
+var cases=((IEnumerable)catalog.GetProperty("Cases",BindingFlags.Static|BindingFlags.NonPublic)!.GetValue(null)!).Cast<object>().ToArray();
+var methods=new[]{"MeasurePythonReBatch","MeasurePythonReQualificationBatch"}.Select(name=>contextType.GetMethod(name,BindingFlags.Instance|BindingFlags.NonPublic)!).ToArray();
+var batchType=methods[0].ReturnType;var elapsed=batchType.GetProperty("Elapsed")!;var allocated=batchType.GetProperty("AllocatedBytes")!;var checksum=batchType.GetProperty("Checksum")!;var digest=batchType.GetProperty("SemanticDigest")!;
+var functions=methods.Select(Bridge).ToArray();
+var metadata=new{Methods=methods.Select(method=>new{method.Name,IlBytes=method.GetMethodBody()!.GetILAsByteArray()!.Length}).ToArray(),Assemblies=new[]{core,python,bench}.Select(assembly=>new{Name=assembly.GetName().Name,Path=assembly.Location,Sha256=Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location)))}).ToArray()};
+var preflight=args.Contains("--preflight");var rows=new List<object>();var wall=Stopwatch.StartNew();
+foreach(var id in new[]{"lookahead/search-miss","lookahead/search-hit","family/count","findall/many-capture-strings"}){
+    var item=cases.Single(value=>(string)value.GetType().GetProperty("Id")!.GetValue(value)! == id);
+    var context=Activator.CreateInstance(contextType,BindingFlags.Instance|BindingFlags.NonPublic,null,[item],null)!;
+    var checks=functions.Select(call=>call(context,1)).ToArray();
+    if(!Equals(checksum.GetValue(checks[0]),checksum.GetValue(checks[1]))||!Equals(digest.GetValue(checks[0]),digest.GetValue(checks[1])))throw new Exception("Batch result mismatch");
+    if(preflight){Console.Error.WriteLine(id+" preflight equal checksum/digest");continue;}
+    var iterations=new int[2];var warmCalls=new long[2];var warmMilliseconds=new double[2];
+    for(var lane=0;lane<2;lane++){
+        var warm=Stopwatch.StartNew();do{var batch=functions[lane](context,256);Check(batch);warmCalls[lane]+=256;}while(warm.Elapsed.TotalMilliseconds<1200);
+        warmMilliseconds[lane]=warm.Elapsed.TotalMilliseconds;iterations[lane]=1;
+        while(Duration(functions[lane](context,iterations[lane]))<40)iterations[lane]=checked(iterations[lane]*2);
+    }
+    var times=new[]{new double[5],new double[5]};var bytes=new[]{new double[5],new double[5]};var durations=new[]{new double[5],new double[5]};
+    for(var sample=0;sample<5;sample++)for(var position=0;position<2;position++){
+        var lane=sample%2==0?position:1-position;GC.Collect();GC.WaitForPendingFinalizers();GC.Collect();
+        var batch=functions[lane](context,iterations[lane]);Check(batch);var milliseconds=Duration(batch);if(milliseconds<20)throw new Exception("Sample below20ms");
+        times[lane][sample]=milliseconds*1000/iterations[lane];bytes[lane][sample]=(long)allocated.GetValue(batch)!/(double)iterations[lane];durations[lane][sample]=milliseconds;
+    }
+    rows.Add(new{Id=id,Iterations=iterations,WarmCalls=warmCalls,WarmMilliseconds=warmMilliseconds,Microseconds=times,AllocatedBytes=bytes,ElapsedMilliseconds=durations});
+    Console.Error.WriteLine(id+": "+string.Join(" / ",times.Select(values=>values.Order().ElementAt(2))));
+    void Check(object batch){if(!Equals(checksum.GetValue(batch),checksum.GetValue(checks[0]))||!Equals(digest.GetValue(batch),digest.GetValue(checks[0])))throw new Exception("Result mismatch: "+id);}
+}
+Console.WriteLine(JsonSerializer.Serialize(new{Runtime=RuntimeInformation.FrameworkDescription,CpuAffinityMask="4",ElapsedSeconds=wall.Elapsed.TotalSeconds,Metadata=metadata,
+    Scope="One<=60s frozen current-binary point vs paired batch investigation. Existing methods, identical contexts and equal checksum/semantic digest, warm1.2s each, independent40ms calibration,5alternating samples>=20ms. Count/FindAll use existing fallback in both entry points. No production change, source A/B claim, CPython qualification or package/full refresh. Reflection/boxing outside existing timed batches. Untimed FullOpts preflight is diagnostic only.",Rows=rows},new JsonSerializerOptions{WriteIndented=true}));
+
+double Duration(object value)=>((TimeSpan)elapsed.GetValue(value)!).TotalMilliseconds;
+static Func<object,int,object> Bridge(MethodInfo method){var bridge=new DynamicMethod(method.Name,typeof(object),[typeof(object),typeof(int)],typeof(Program).Module,true);var il=bridge.GetILGenerator();il.Emit(OpCodes.Ldarg_0);il.Emit(OpCodes.Castclass,method.DeclaringType!);il.Emit(OpCodes.Ldarg_1);il.Emit(OpCodes.Call,method);il.Emit(OpCodes.Box,method.ReturnType);il.Emit(OpCodes.Ret);return bridge.CreateDelegate<Func<object,int,object>>();}

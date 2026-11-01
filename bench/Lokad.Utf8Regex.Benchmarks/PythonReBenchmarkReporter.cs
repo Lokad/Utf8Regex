@@ -1532,10 +1532,9 @@ internal static partial class PythonReBenchmarkReporter
             if (batch.Elapsed.TotalMilliseconds < 20)
                 warmupBatchSize = Math.Min(warmupBatchSize * 2, Math.Min(iterations, 16));
         }
-        // A fresh selective run must pass the runtime's tiering delay too;
-        // 100 ms can time Tier0 while the paired lane measures warm Tier1.
-        // Keep the existing call cap so cheap lanes remain bounded.
-        while (warmup.ElapsedMilliseconds < 1_000 && warmupCalls < 65_536);
+        // Warm through the tiering delay even for cheap operations. A call cap
+        // can finish this phase early; the clock and small batches bound it.
+        while (warmup.ElapsedMilliseconds < 1_000);
         warmup.Stop();
 
         // Calibrate the retained-result loop independently. Consume results
