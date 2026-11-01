@@ -418,10 +418,10 @@ internal struct PythonReScalarMatchState
                 breach = Utf8SearchExecutor.TryFindLiteralCandidate(literal, input, _position,
                     input.Length - literal.Length, false, ref _invocation, out _position);
             }
-            else if (plan.AlternateLiteralsUtf8 is { } literals)
+            else if (plan.AlternateLiteralsUtf8 is not null)
             {
-                breach = Utf8SearchExecutor.TryFindLiteralFamilyCandidate(literals, false,
-                    input, _position, input.Length, false, ref _invocation, out var candidate, out var found);
+                breach = Utf8SearchExecutor.TryFindExactLiteralFamilyCandidate(plan,
+                    input, _position, input.Length, ref _invocation, out var candidate, out var found);
                 _position = found ? candidate.Index : -1;
             }
             else return true;

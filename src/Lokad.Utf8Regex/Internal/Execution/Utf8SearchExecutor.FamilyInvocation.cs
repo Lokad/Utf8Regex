@@ -27,6 +27,23 @@ internal static partial class Utf8SearchExecutor
             input, start, end, reverse, ref invocation, out match, out found);
     }
 
+    // Prepared Python hints can lend their first-byte union without applying
+    // Core boundary/suffix predicates. Every candidate still confirms its branch.
+    internal static Utf8ExecutionLimitKind TryFindExactLiteralFamilyCandidate(
+        in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int start, int end,
+        ref Utf8SliceInvocation invocation, out PreparedSearchMatch match, out bool found)
+    {
+        var literals = plan.AlternateLiteralsUtf8 ?? [];
+        // Preserve the existing pair and small complete-needle searches.
+        if (literals.Length <= 8)
+            return TryFindLiteralFamilyCandidate(literals, false, input, start, end, false,
+                ref invocation, out match, out found);
+        return TryFindLiteralFamilyCore(literals, false, false,
+            plan.AlternateLiteralSearch?.SearchData.FirstByteSearch,
+            Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None, null,
+            input, start, end, false, ref invocation, out match, out found);
+    }
+
     internal static Utf8ExecutionLimitKind TryFindLiteralFamilyCandidate(
         byte[][] literals, bool folded, ReadOnlySpan<byte> input, int start, int end,
         bool reverse, ref Utf8SliceInvocation invocation, out PreparedSearchMatch match, out bool found)
