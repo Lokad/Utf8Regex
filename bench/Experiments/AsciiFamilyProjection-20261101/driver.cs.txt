@@ -1,0 +1,172 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+var before = Load(args[0], "before"); var after = Load(args[1], "after");
+if (!Identity(before).Contains("32cefcf5") || !Identity(after).Contains("32cefcf5")) throw new Exception("Unexpected source");
+using var process = Process.GetCurrentProcess(); process.ProcessorAffinity = (nint)4;
+using var live = new CancellationTokenSource();
+var preflight = args.Contains("--preflight"); var watch = Stopwatch.StartNew(); var rows = new List<object>();
+const string paragraph = "Vitae magna tempus nibh, sed semper arcu posuere a. " +
+    "Tempus erat at magna aliquet, non feugiat nunc semper. " +
+    "Aliquam magna vel lectus tempus placerat, sed semper mi dictum. ";
+var builder = new StringBuilder(8192); while (builder.Length < 8192) builder.Append(paragraph);
+var actual = builder.ToString();
+var cases = new[] {
+    new Case("Count-unchanged-control", Count: true),
+    new Case("actual-words"), new Case("actual-words-compiled", Compiled: true),
+    new Case("native-words", Native: true), new Case("destination-words", Native: true, Destination: true),
+    new Case("finite-live-words", Native: true, Finite: true),
+    new Case("deadline-live-words", Deadline: true),
+    new Case("mixed-Unicode-control", Mixed: true),
+    new Case("overlapping-alternatives", Overlap: true),
+    new Case("dense-adjacent-control", Dense: true)
+};
+foreach (var item in cases) {
+    var pattern = item.Count ? "needle" : item.Overlap ? "alpha|alphabet|beta" : item.Dense ? "alpha|beta" : "tempus|magna|semper";
+    var inputText = item.Count ? new string('x', 8192) + "needle" : item.Overlap ? string.Concat(Enumerable.Repeat("alphabet alpha beta ", 320)) :
+        item.Dense ? string.Concat(Enumerable.Repeat("alphabeta", 512)) : item.Mixed ? "é😀 " + actual + " 😀" : actual;
+    const string replacement = "amoveatur";
+    var input = Encoding.UTF8.GetBytes(inputText); var native = Encoding.UTF8.GetBytes(replacement);
+    var expectedText = new Regex(pattern).Replace(inputText, replacement); var expected = Encoding.UTF8.GetBytes(expectedText);
+    var actions = new List<Func<Output>>(); var routes = new List<object>();
+    foreach (var assembly in new[] { before, after }) {
+        var type = assembly.GetType("Lokad.Utf8Regex.Utf8Regex")!;
+        var options = item.Compiled ? RegexOptions.Compiled : RegexOptions.None;
+        var regex = Activator.CreateInstance(type, [pattern, options, item.Deadline ? TimeSpan.FromSeconds(10) : Timeout.InfiniteTimeSpan, Policy(assembly, item.Finite)])!;
+        if (item.Count) { var count = CountBridge(type); actions.Add(() => new([], null, count(regex, input), 0)); continue; }
+        var prepare = type.GetMethod("GetParsedReplacement", BindingFlags.Instance | BindingFlags.NonPublic, [typeof(string)])!;
+        var plan = prepare.Invoke(regex, [replacement])!;
+        var scalar = SelectorBridge(type, prepare.ReturnType)(regex, input, plan, item.Finite || item.Deadline ? live.Token : default);
+        var inspection = type.GetProperty("Inspection", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
+        var kind = inspection.GetType().GetProperty("ExecutionKind")!.GetValue(inspection)!.ToString();
+        if (kind != "ExactUtf8Literals") throw new Exception("Unexpected family route: " + kind);
+        if (scalar != (item.Finite || item.Deadline)) throw new Exception("Unexpected scalar selection: " + item.Name);
+        var projection = scalar ? "OwnedScalar" : ProjectionBridge(assembly)(regex, input);
+        var expectedProjection = scalar ? "OwnedScalar" : item.Mixed || assembly == before ? "Utf16BoundaryMap" : "ByteOnly";
+        if (projection != expectedProjection) throw new Exception("Projection coverage failed " + item.Name + ":" + projection);
+        routes.Add(new { Kind = kind, ScalarSelected = scalar, Projection = projection });
+        if (item.Destination) {
+            var destination = new byte[expected.Length]; var call = DestinationBridge(type, item.Native);
+            actions.Add(() => new(destination, null, call(regex, input, native, destination), 0));
+        } else {
+            var call = ReplaceBridge(type, item.Native, false);
+            actions.Add(() => { var output = (byte[])call(regex, input, item.Native ? native : replacement, item.Finite || item.Deadline ? live.Token : default); return new(output, null, output.Length, 0); });
+        }
+    }
+    for (var comparator = 0; comparator < 2; comparator++) {
+        var decode = comparator == 1;
+        var bcl = new Regex(pattern, item.Compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var destination = item.Destination ? new byte[expected.Length] : null;
+        actions.Add(() => {
+            var text = decode ? Encoding.UTF8.GetString(input) : inputText;
+            if (item.Count) return new([], null, bcl.Count(text), 0);
+            var output = Encoding.UTF8.GetBytes(bcl.Replace(text, replacement));
+            if (destination is null) return new(output, null, output.Length, 0);
+            output.CopyTo(destination, 0); return new(destination, null, output.Length, 0);
+        });
+    }
+    void Check(Output value) {
+        if (item.Count) { if (value.Size != 1) throw new Exception("Count mismatch"); }
+        else if (value.Size != expected.Length || !value.Bytes.AsSpan(0, value.Size).SequenceEqual(expected)) throw new Exception("Replacement mismatch: " + item.Name);
+    }
+    foreach (var action in actions) Check(action());
+    if (preflight) { Console.Error.WriteLine("Preflight " + item.Name + " " + JsonSerializer.Serialize(routes)); continue; }
+    var iterations = new int[4]; var warmCalls = new long[4];
+    for (var lane = 0; lane < 4; lane++) {
+        var warm = Stopwatch.StartNew(); do { Check(actions[lane]()); warmCalls[lane]++; } while (warm.Elapsed.TotalMilliseconds < 1500 || warmCalls[lane] < 64);
+        iterations[lane] = 1; while (Loop(iterations[lane], actions[lane], Check).Milliseconds < 60) iterations[lane] = checked(iterations[lane] * 2);
+    }
+    var times = new[] { new double[5], new double[5], new double[5], new double[5] };
+    var allocations = new[] { new double[5], new double[5], new double[5], new double[5] };
+    var durations = new[] { new double[5], new double[5], new double[5], new double[5] };
+    for (var sample = 0; sample < 5; sample++) for (var position = 0; position < 4; position++) {
+        var lane = sample % 2 == 0 ? position : 3 - position; GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        var measured = Loop(iterations[lane], actions[lane], Check); if (measured.Milliseconds < 20) throw new Exception("Sample below20ms");
+        times[lane][sample] = measured.Milliseconds * 1000 / iterations[lane]; allocations[lane][sample] = (double)measured.Bytes / iterations[lane]; durations[lane][sample] = measured.Milliseconds;
+    }
+    rows.Add(new { item.Name, Pattern = pattern, Replacement = replacement, InputBytes = input.Length,
+        InputSha256 = Convert.ToHexString(SHA256.HashData(input)), Matches = item.Count ? 1 : new Regex(pattern).Count(inputText),
+        Routes = routes, Lanes = new[] { "Before", "After", "PredecodedRegex", "DecodeThenRegex" },
+        Iterations = iterations, WarmupCalls = warmCalls, Microseconds = times, AllocatedBytes = allocations, ElapsedMilliseconds = durations });
+    Console.Error.WriteLine(item.Name + ": " + string.Join(" / ", times.Select(values => values.Order().ElementAt(2))));
+}
+Console.WriteLine(JsonSerializer.Serialize(new { Runtime = RuntimeInformation.FrameworkDescription, CpuAffinityMask = "4", ElapsedSeconds = watch.Elapsed.TotalSeconds,
+    Scope = "One ten-case public comparison: frozen32cefcf5 -> proven-ASCII exact-family ByteOnly projection. Actual catalog subject/pattern/replacement, ordinary/compiled/native/destination, finite/live, deadline/live, mixed Unicode, overlap and adjacent dense controls; unchanged Count. Projection/scalar authority proved before timing. Equal actual UTF8 outputs: BCL byte-output lanes include encoding, destination includes Replace/encoding/copy; native templates predecoded for BCL. BCL resource semantics differ. Warm1.5s/min64, independent60ms calibration, five alternating samples >=20ms, outputs consumed after timing. 120s cap, at most one noise confirmation; no full-catalog/package/cumulative qualification.",
+    Before = Identity(before), After = Identity(after), Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+
+static Func<object, byte[], string> ProjectionBridge(Assembly assembly) {
+    var regex = assembly.GetType("Lokad.Utf8Regex.Utf8Regex")!;
+    var cursor = assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8OperationMatchCursor")!;
+    var validation = assembly.GetType("Lokad.Utf8Regex.Internal.Input.Utf8Validation")!;
+    var factory = assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8CompiledOperationCursorFactory")!;
+    var prepared = regex.GetProperty("_preparedRegex", BindingFlags.Instance | BindingFlags.NonPublic)!.GetMethod!;
+    var validate = validation.GetMethod("Validate", BindingFlags.Public | BindingFlags.Static, [typeof(ReadOnlySpan<byte>)])!;
+    var deadline = regex.GetMethod("CreateExecutionBudget", BindingFlags.NonPublic | BindingFlags.Instance, Type.EmptyTypes)!;
+    var create = factory.GetMethod("CreateMatchCursor", BindingFlags.Public | BindingFlags.Static,
+        [prepared.ReturnType, typeof(ReadOnlySpan<byte>), validate.ReturnType, deadline.ReturnType])!;
+    var field = cursor.GetField("_projectionPlan", BindingFlags.Instance | BindingFlags.NonPublic)!;
+    var kind = field.FieldType.GetProperty("Kind")!.GetMethod!;
+    var bridge = new DynamicMethod("ProjectionCoverage", typeof(string), [typeof(object), typeof(byte[])], typeof(Program).Module, true);
+    var il = bridge.GetILGenerator(); var local = il.DeclareLocal(cursor); var metadata = il.DeclareLocal(validate.ReturnType);
+    ReadSpan(il, 1); il.Emit(OpCodes.Call, validate); il.Emit(OpCodes.Stloc, metadata);
+    il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Castclass, regex); il.Emit(OpCodes.Call, prepared); ReadSpan(il, 1); il.Emit(OpCodes.Ldloc, metadata);
+    il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Castclass, regex); il.Emit(OpCodes.Call, deadline); il.Emit(OpCodes.Call, create); il.Emit(OpCodes.Stloc, local);
+    il.Emit(OpCodes.Ldloca, local); il.Emit(OpCodes.Ldflda, field); il.Emit(OpCodes.Call, kind); il.Emit(OpCodes.Box, kind.ReturnType);
+    il.Emit(OpCodes.Callvirt, typeof(object).GetMethod("ToString")!); il.Emit(OpCodes.Ret);
+    return bridge.CreateDelegate<Func<object, byte[], string>>();
+}
+
+
+static Assembly Load(string root, string name) => new AssemblyLoadContext(name).LoadFromAssemblyPath(Path.Combine(Path.GetFullPath(root), "Lokad.Utf8Regex.dll"));
+static Func<object, byte[], int> CountBridge(Type type) {
+    var bridge = new DynamicMethod("PublicCount", typeof(int), [typeof(object), typeof(byte[])], typeof(Program).Module, true); var il = bridge.GetILGenerator();
+    il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Castclass, type); ReadSpan(il, 1); il.Emit(OpCodes.Call, type.GetMethod("Count", [typeof(ReadOnlySpan<byte>)])!); il.Emit(OpCodes.Ret);
+    return bridge.CreateDelegate<Func<object, byte[], int>>();
+}
+static Func<object, byte[], object, CancellationToken, object> ReplaceBridge(Type type, bool native, bool text) {
+    var method = type.GetMethod(text ? "ReplaceToString" : "Replace", [typeof(ReadOnlySpan<byte>), native ? typeof(ReadOnlySpan<byte>) : typeof(string), typeof(CancellationToken)])!;
+    var bridge = new DynamicMethod("PublicReplace", typeof(object), [typeof(object), typeof(byte[]), typeof(object), typeof(CancellationToken)], typeof(Program).Module, true); var il = bridge.GetILGenerator();
+    il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Castclass, type); ReadSpan(il, 1); il.Emit(OpCodes.Ldarg_2); il.Emit(OpCodes.Castclass, native ? typeof(byte[]) : typeof(string));
+    if (native) il.Emit(OpCodes.Call, typeof(ReadOnlySpan<byte>).GetMethod("op_Implicit", [typeof(byte[])])!);
+    il.Emit(OpCodes.Ldarg_3); il.Emit(OpCodes.Call, method); il.Emit(OpCodes.Ret);
+    return bridge.CreateDelegate<Func<object, byte[], object, CancellationToken, object>>();
+}
+static Func<object, byte[], object, byte[], int> DestinationBridge(Type type, bool native) {
+    var method = type.GetMethod("TryReplace", [typeof(ReadOnlySpan<byte>), native ? typeof(ReadOnlySpan<byte>) : typeof(string), typeof(Span<byte>), typeof(int).MakeByRefType()])!;
+    var bridge = new DynamicMethod("PublicTryReplace", typeof(int), [typeof(object), typeof(byte[]), typeof(object), typeof(byte[])], typeof(Program).Module, true); var il = bridge.GetILGenerator();
+    var written = il.DeclareLocal(typeof(int)); var done = il.DefineLabel();
+    il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Castclass, type); ReadSpan(il, 1); il.Emit(OpCodes.Ldarg_2); il.Emit(OpCodes.Castclass, native ? typeof(byte[]) : typeof(string));
+    if (native) il.Emit(OpCodes.Call, typeof(ReadOnlySpan<byte>).GetMethod("op_Implicit", [typeof(byte[])])!);
+    il.Emit(OpCodes.Ldarg_3); il.Emit(OpCodes.Call, typeof(Span<byte>).GetMethod("op_Implicit", [typeof(byte[])])!); il.Emit(OpCodes.Ldloca, written);
+    il.Emit(OpCodes.Call, method); il.Emit(OpCodes.Brfalse, done); il.Emit(OpCodes.Ldc_I4_M1); il.Emit(OpCodes.Ret); il.MarkLabel(done); il.Emit(OpCodes.Ldloc, written); il.Emit(OpCodes.Ret);
+    return bridge.CreateDelegate<Func<object, byte[], object, byte[], int>>();
+}
+static Func<object, byte[], object, CancellationToken, bool> SelectorBridge(Type type, Type plan) {
+    var bridge = new DynamicMethod("RouteProof", typeof(bool), [typeof(object), typeof(byte[]), typeof(object), typeof(CancellationToken)], typeof(Program).Module, true); var il = bridge.GetILGenerator();
+    il.Emit(OpCodes.Ldarg_0); il.Emit(OpCodes.Castclass, type); ReadSpan(il, 1); il.Emit(OpCodes.Ldarg_2); il.Emit(OpCodes.Unbox_Any, plan); il.Emit(OpCodes.Ldarg_3);
+    il.Emit(OpCodes.Call, type.GetMethod("GetOwnedReplacementProgram", BindingFlags.NonPublic | BindingFlags.Instance)!); il.Emit(OpCodes.Ldnull); il.Emit(OpCodes.Cgt_Un); il.Emit(OpCodes.Ret);
+    return bridge.CreateDelegate<Func<object, byte[], object, CancellationToken, bool>>();
+}
+static void ReadSpan(ILGenerator il, short index) { il.Emit(OpCodes.Ldarg, index); il.Emit(OpCodes.Call, typeof(ReadOnlySpan<byte>).GetMethod("op_Implicit", [typeof(byte[])])!); }
+static object Policy(Assembly assembly, bool finite) {
+    var type = assembly.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!; var value = Activator.CreateInstance(type)!;
+    if (finite) { type.GetProperty("MaxWorkSteps")!.SetValue(value, 16_000_000UL); type.GetProperty("MaxDepth")!.SetValue(value, 4096U); type.GetProperty("MaxWorkingBytes")!.SetValue(value, 4UL << 20); type.GetProperty("MaxResultBytes")!.SetValue(value, 4UL << 20); } return value;
+}
+static string Identity(Assembly assembly) => assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion + " sha256=" + Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location)));
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds, long Bytes) Loop(int count, Func<Output> action, Action<Output> check) {
+    var output = new Output[count]; var bytes = GC.GetAllocatedBytesForCurrentThread(); var start = Stopwatch.GetTimestamp(); for (var i = 0; i < count; i++) output[i] = action();
+    var elapsed = Stopwatch.GetElapsedTime(start).TotalMilliseconds; bytes = GC.GetAllocatedBytesForCurrentThread() - bytes;
+    foreach (var value in output) check(value); GC.KeepAlive(output); return (elapsed, bytes);
+}
+
+record Case(string Name, bool Count = false, bool Native = false, bool Compiled = false, bool Destination = false, bool Finite = false, bool Deadline = false, bool Mixed = false, bool Overlap = false, bool Dense = false);
+readonly record struct Output(byte[] Bytes, string? Text, int Size, int Template);

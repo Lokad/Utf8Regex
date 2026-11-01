@@ -1,0 +1,19 @@
+Preflight Count-unchanged-control []
+Preflight actual-words [{"Kind":"ExactUtf8Literals","ScalarSelected":false,"Projection":"Utf16BoundaryMap"},{"Kind":"ExactUtf8Literals","ScalarSelected":false,"Projection":"ByteOnly"}]
+Preflight actual-words-compiled [{"Kind":"ExactUtf8Literals","ScalarSelected":false,"Projection":"Utf16BoundaryMap"},{"Kind":"ExactUtf8Literals","ScalarSelected":false,"Projection":"ByteOnly"}]
+Preflight native-words [{"Kind":"ExactUtf8Literals","ScalarSelected":false,"Projection":"Utf16BoundaryMap"},{"Kind":"ExactUtf8Literals","ScalarSelected":false,"Projection":"ByteOnly"}]
+Preflight destination-words [{"Kind":"ExactUtf8Literals","ScalarSelected":false,"Projection":"Utf16BoundaryMap"},{"Kind":"ExactUtf8Literals","ScalarSelected":false,"Projection":"ByteOnly"}]
+Preflight finite-live-words [{"Kind":"ExactUtf8Literals","ScalarSelected":true,"Projection":"OwnedScalar"},{"Kind":"ExactUtf8Literals","ScalarSelected":true,"Projection":"OwnedScalar"}]
+Preflight deadline-live-words [{"Kind":"ExactUtf8Literals","ScalarSelected":true,"Projection":"OwnedScalar"},{"Kind":"ExactUtf8Literals","ScalarSelected":true,"Projection":"OwnedScalar"}]
+Preflight mixed-Unicode-control [{"Kind":"ExactUtf8Literals","ScalarSelected":false,"Projection":"Utf16BoundaryMap"},{"Kind":"ExactUtf8Literals","ScalarSelected":false,"Projection":"Utf16BoundaryMap"}]
+Preflight overlapping-alternatives [{"Kind":"ExactUtf8Literals","ScalarSelected":false,"Projection":"Utf16BoundaryMap"},{"Kind":"ExactUtf8Literals","ScalarSelected":false,"Projection":"ByteOnly"}]
+Preflight dense-adjacent-control [{"Kind":"ExactUtf8Literals","ScalarSelected":false,"Projection":"Utf16BoundaryMap"},{"Kind":"ExactUtf8Literals","ScalarSelected":false,"Projection":"ByteOnly"}]
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 0.5769617,
+  "Scope": "One ten-case public comparison: frozen32cefcf5 -\u003E proven-ASCII exact-family ByteOnly projection. Actual catalog subject/pattern/replacement, ordinary/compiled/native/destination, finite/live, deadline/live, mixed Unicode, overlap and adjacent dense controls; unchanged Count. Projection/scalar authority proved before timing. Equal actual UTF8 outputs: BCL byte-output lanes include encoding, destination includes Replace/encoding/copy; native templates predecoded for BCL. BCL resource semantics differ. Warm1.5s/min64, independent60ms calibration, five alternating samples \u003E=20ms, outputs consumed after timing. 120s cap, at most one noise confirmation; no full-catalog/package/cumulative qualification.",
+  "Before": "0.5.0-dev.1\u002B32cefcf5831c71f282dd7aa62192f84919281c5e sha256=873F5D3526FD225275A4645D9FC3ECC8ACF1A3B21C1D845485A1ECD2C192A2E6",
+  "After": "0.5.0-dev.1\u002B32cefcf5831c71f282dd7aa62192f84919281c5e sha256=906EE212FB8A79EA6B616C8DB29EB916224BC48711DC3566D105030075FAB0E9",
+  "Rows": []
+}

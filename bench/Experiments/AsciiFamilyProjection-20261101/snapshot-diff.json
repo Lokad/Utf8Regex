@@ -1,0 +1,30 @@
+[
+  {
+    "Section": "dotnet-performance",
+    "Case": "common/replace-words",
+    "OldOrdinaryRatio": 0.8911152324387455,
+    "NewOrdinaryRatio": 0.8602952525406148,
+    "OldCompiledRatio": 3.71159347715367,
+    "NewCompiledRatio": 3.547853921370804,
+    "OldBytes": 13648,
+    "NewBytes": 13648,
+    "Source": "1fb3bea05aa4",
+    "Dirty": false,
+    "Untracked": false,
+    "Protocol": "IndependentSixLaneV3"
+  },
+  {
+    "Section": "dotnet-performance-compiled",
+    "Case": "common/replace-words",
+    "OldOrdinaryRatio": 0.8911152324387455,
+    "NewOrdinaryRatio": 0.8602952525406148,
+    "OldCompiledRatio": 3.71159347715367,
+    "NewCompiledRatio": 3.547853921370804,
+    "OldBytes": 13648,
+    "NewBytes": 13648,
+    "Source": "1fb3bea05aa4",
+    "Dirty": false,
+    "Untracked": false,
+    "Protocol": "IndependentSixLaneV3"
+  }
+]

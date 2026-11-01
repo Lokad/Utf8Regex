@@ -162,8 +162,8 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/leipzig-twain-count` | `Count` | 1,326.974 us | 1,401.215 us | 16,066.100 us | 0.95x |
 | `industry/rust-sherlock-holmes-window-count` | `Count` | 246.070 us | 271.565 us | 524.233 us | 0.91x |
 | `industry/mariomka-uri-count` | `Count` | 1,765.390 us | 1,954.558 us | 10,446.633 us | 0.90x |
-| `common/replace-words` | `Replace` | 69.808 us | 78.338 us | 79.286 us | 0.89x |
 | `common/uri-miss` | `IsMatch` | 0.182 us | 0.207 us | 0.226 us | 0.88x |
+| `common/replace-words` | `Replace` | 66.979 us | 77.856 us | 80.244 us | 0.86x |
 | `common/uri-match` | `IsMatch` | 0.320 us | 0.394 us | 0.464 us | 0.81x |
 | `industry/boostdocs-date-match` | `IsMatch` | 0.104 us | 0.134 us | 0.134 us | 0.77x |
 | `common/ip-match` | `IsMatch` | 0.126 us | 0.179 us | 0.201 us | 0.71x |
@@ -242,7 +242,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/backtracking` | `IsMatch` | 0.190 us | 0.044 us | 0.075 us | 4.34x |
 | `industry/leipzig-river-window-count` | `Count` | 6,211.033 us | 1,628.347 us | 17,876.467 us | 3.81x |
 | `industry/boostdocs-ftp-line-match` | `IsMatch` | 0.186 us | 0.049 us | 0.087 us | 3.76x |
-| `common/replace-words` | `Replace` | 69.651 us | 18.766 us | 20.255 us | 3.71x |
+| `common/replace-words` | `Replace` | 67.013 us | 18.888 us | 20.340 us | 3.55x |
 | `industry/mariomka-email-count` | `Count` | 1,519.468 us | 456.758 us | 7,831.000 us | 3.33x |
 | `common/uri-miss` | `IsMatch` | 0.182 us | 0.066 us | 0.086 us | 2.78x |
 | `common/match-word` | `Match` | 0.203 us | 0.075 us | 0.993 us | 2.69x |
