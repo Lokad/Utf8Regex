@@ -95,7 +95,7 @@ internal sealed class Utf8NonBacktrackingSearchState
         }
     }
 
-    // The caller has validated the complete subject. Two bounded scalar passes
+    // The caller has validated the complete subject. A bounded size scan and scalar pass
     // admit exact offsets and bit rows; no UTF-16 subject or unit map is built.
     internal static Utf8ExecutionLimitKind TryCreate(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         ref Utf8SliceInvocation invocation, out Utf8NonBacktrackingSearchState? state)
@@ -103,12 +103,20 @@ internal sealed class Utf8NonBacktrackingSearchState
         state = null;
         invocation.Budget.ThrowIfCancellationRequested();
         var scalars = 0;
-        for (var edge = 0; edge < input.Length; scalars++)
+        for (var edge = 0; edge < input.Length;)
         {
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
-            edge = Utf8SliceRunner.AdvancePastScalar(input, edge, false);
-            if (edge < 0) throw new InvalidOperationException("The NonBacktracking batch requires validated scalar input.");
+            var block = input.Slice(edge, Math.Min(64, input.Length - edge));
+            var firstNonAscii = block.IndexOfAnyExceptInRange((byte)0, (byte)0x7f);
+            if (firstNonAscii < 0) scalars += block.Length;
+            else
+            {
+                scalars += firstNonAscii;
+                for (var index = firstNonAscii; index < block.Length; index++)
+                    if ((block[index] & 0xc0) != 0x80) scalars++;
+            }
+            edge += block.Length;
         }
         var count = (long)scalars + 1;
         var stride = (int)(((long)program.Instructions.Length + 63) / 64);
@@ -127,9 +135,13 @@ internal sealed class Utf8NonBacktrackingSearchState
             var bits = new ulong[(int)cells];
             for (var index = 1; index < boundaries.Length; index++)
             {
-                breach = invocation.TryChargeInputStep();
-                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                if (((index - 1) & 63) == 0)
+                {
+                    breach = invocation.TryChargeInputStep();
+                    if (breach != Utf8ExecutionLimitKind.None) return breach;
+                }
                 boundaries[index] = Utf8SliceRunner.AdvancePastScalar(input, boundaries[index - 1], false);
+                if (boundaries[index] < 0) throw new InvalidOperationException("The NonBacktracking batch requires validated scalar input.");
             }
             var result = new Utf8NonBacktrackingSearchState(boundaries, bits, stride, reservation);
             var singleWord = stride == 1;

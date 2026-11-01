@@ -1,0 +1,23 @@
+{
+  "BaselineRuntimeSource": "570c9d4c767fd05ed31877450ecb8b9946c6e0d7",
+  "Parent": "7e7636388c6baa182ca9fd638b73eaf53b356ba3 (generateddata/receipt only)",
+  "Configuration": "Release",
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "CorePerFramework": 1796,
+  "PythonRePerFramework": 1791,
+  "Pcre2PerFramework": 1504,
+  "DiffPerFramework": 28,
+  "FinalEntryChecksPerFramework": 37,
+  "NewTheoryRows": 15,
+  "Results": "All passed; zero skipped",
+  "WorkUnits": "size ceil(bytes/64), offsets ceil(scalars/64), unchanged row/atom work; each quantum directly checks originaltoken/deadline",
+  "StateProbe": "371cases, allfields other than preparationSteps byte-equivalent after parsedcomparison; exact delta2*scalars-ceil(bytes/64)-ceil(scalars/64), min0 max148",
+  "NewWitnesses": "Scalar64/65 boundaries including split UTF8continuations/supplementary; interruption in size phase before allocation and offsetphase after admission; unpublishedtable/loanrefund; publicCount/IsMatch/MatchDetailed/Replace/enumeration reject invalidtail63/64/65 beforeearlyhits; precanceloriginaltoken",
+  "Allocation": "Invocationarrays/peak/loan unchanged, all measuredbytes same",
+  "Scope": "One89.876s14case/fourlane publicmatrix; no confirmation; no package/fullcatalog or validationframework",
+  "PriorCI": "41282499246 green Windows/Linux",
+  "Decision": "PROMOTE primary~7%,finite/live16.7%,deadline15.9%,all controls nonadverse"
+}

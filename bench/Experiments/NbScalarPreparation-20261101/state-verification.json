@@ -1,0 +1,8 @@
+{
+  "Cases": 371,
+  "AllOtherFieldsIdentical": true,
+  "PreparationWorkDelta": "2*scalars-ceil(bytes/64)-ceil(scalars/64)",
+  "MinimumReduction": 0.0,
+  "MaximumReduction": 148.0,
+  "Compared": "Complete viability digests, exact scalar counts, single-search work/ranges/captures/peaks and13B loan refunds"
+}

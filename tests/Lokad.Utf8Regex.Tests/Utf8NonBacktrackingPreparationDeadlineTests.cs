@@ -1,10 +1,95 @@
 using System.Text.RegularExpressions;
+using System.Text;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8NonBacktrackingPreparationDeadlineTests
 {
+    [Theory]
+    [InlineData(63)] [InlineData(64)] [InlineData(65)]
+    public void PublicEntryPointsRejectMalformedTailsBeforeEarlyMatches(int prefix)
+    {
+        var input = Encoding.UTF8.GetBytes(new string('a', prefix)).Concat(new byte[] { 0xc3 }).ToArray();
+        foreach (var compiled in new[] { false, true })
+        {
+            var regex = new Utf8Regex("(?<x>a+)|$", RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : 0));
+            Assert.Throws<ArgumentException>(() => regex.Count(input));
+            Assert.Throws<ArgumentException>(() => regex.IsMatch(input));
+            Assert.Throws<ArgumentException>(() => regex.MatchDetailed(input));
+            Assert.Throws<ArgumentException>(() => regex.ReplaceToString(input, "X"));
+            Assert.Throws<ArgumentException>(() => { var cursor = regex.EnumerateMatches(input); _ = cursor.MoveNext(); });
+            using var live = new CancellationTokenSource();
+            live.Cancel();
+            Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, live.Token)).CancellationToken);
+        }
+    }
+
+    [Theory]
+    [InlineData(0, "", 0)] [InlineData(64, "", 0)] [InlineData(65, "", 0)]
+    [InlineData(63, "é", 1)] [InlineData(62, "😀", 1)] [InlineData(63, "😀", 1)]
+    [InlineData(0, "😀", 65)] [InlineData(1, "é", 128)]
+    public void SizeBlocksPreserveEveryScalarBoundary(int prefix, string unit, int repeats)
+    {
+        var text = new string('a', prefix) + string.Concat(Enumerable.Repeat(unit, repeats));
+        var input = Encoding.UTF8.GetBytes(text);
+        var program = new Utf8Regex("(.)?", RegexOptions.NonBacktracking).Inspection.AvailableOwnedSliceProgram!;
+        var invocation = new Utf8SliceInvocation(new(1_000_000, 0, 1_000_000), Timeout.InfiniteTimeSpan, default);
+        Assert.True(invocation.Ledger.TryReserve(13));
+        Assert.Equal(Utf8ExecutionLimitKind.None,
+            Utf8NonBacktrackingSearchState.TryCreate(program, input, ref invocation, out var state));
+        Assert.NotNull(state);
+        var boundary = 0;
+        var index = 0;
+        Assert.Equal(0, state.ResolveByteOffset(0));
+        foreach (var scalar in text.EnumerateRunes())
+        {
+            for (var continuation = 1; continuation < scalar.Utf8SequenceLength; continuation++)
+            {
+                var offset = boundary + continuation;
+                Assert.Throws<ArgumentOutOfRangeException>(() => state.ResolveByteOffset(offset));
+            }
+            boundary += scalar.Utf8SequenceLength;
+            Assert.Equal(++index, state.ResolveByteOffset(boundary));
+        }
+        Assert.Equal(input.Length, boundary);
+        state.Release(ref invocation);
+        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+    }
+
+    [Theory]
+    [InlineData(false, false)] [InlineData(false, true)]
+    [InlineData(true, false)] [InlineData(true, true)]
+    public void SizeAndOffsetBlocksKeepBoundedInterruptionAndRefunds(bool offsets, bool expire)
+    {
+        var input = Encoding.UTF8.GetBytes(new string('a', offsets ? 65 : 4097));
+        var program = new Utf8Regex("a", RegexOptions.NonBacktracking).Inspection.AvailableOwnedSliceProgram!;
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var live = new CancellationTokenSource();
+        var invocation = new Utf8SliceInvocation(new(1_000_000, 0, 1_000_000), TimeSpan.FromMilliseconds(50), live.Token);
+        Assert.True(invocation.Ledger.TryReserve(13));
+        // For 65 ASCII scalars: two size blocks, one allocation admission,
+        // two offset blocks. Align the second offset admission with the hook.
+        if (offsets) for (var step = 0; step < 59; step++) _ = invocation.TryChargeStep();
+        invocation.CheckpointHook = step =>
+        {
+            if (step != 64) return;
+            if (expire) ticks = 100; else live.Cancel();
+        };
+        Utf8NonBacktrackingSearchState? state = null;
+        if (expire)
+            Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
+                Utf8NonBacktrackingSearchState.TryCreate(program, input, ref invocation, out state));
+        else
+            Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() =>
+                Utf8NonBacktrackingSearchState.TryCreate(program, input, ref invocation, out state)).CancellationToken);
+        Assert.Equal(64UL, invocation.Budget.Steps);
+        Assert.Equal(offsets, invocation.Budget.PeakWorkingBytes > 0);
+        Assert.Null(state);
+        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+    }
+
     [Theory]
     [InlineData(false, false)] [InlineData(false, true)]
     [InlineData(true, false)] [InlineData(true, true)]

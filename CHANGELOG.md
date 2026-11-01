@@ -22,8 +22,9 @@
 - Reduce live-token ASCII Boolean matching scratch through existing metered
   native plans. Reuse proved literal/category/count and bounded candidate ranges
   for matching, preserving strict full-subject validation and resource controls.
-- Reduce NonBacktracking batch preparation work by skipping inactive consuming
-  states while preserving captures, invocation capacity and interruption checks.
+- Speed up NonBacktracking batch operations while preserving captures, invocation
+  capacity and interruption checks. Work-unit costs change; recheck finite policies
+  when upgrading.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
   complete scalars in PCRE2 classes, including escaped supplementary characters.
 - Fix literal Count throwing on a trailing partial Unicode needle after a match.
