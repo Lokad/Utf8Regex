@@ -850,11 +850,6 @@ internal static partial class Utf8SliceRunner
                         var count = (long)unchecked((uint)counts[repeatId]);
                         if (counts[repeatId] == -1 && positions[repeatId] == -1)
                         {
-                            if (!SetRepeat(counts, positions, repeatId, 0, -1, ref stacks, ref invocation))
-                            {
-                                return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
-                            }
-
                             count = 0;
                             if (TryRunClassRepeatWithoutRewind(program, programIndex, input, inputIndex, cursor.RequiredEnd,
                                 ref invocation, out var repeated))
@@ -863,10 +858,17 @@ internal static partial class Utf8SliceRunner
                                 if (repeated.IsMatch)
                                 {
                                     inputIndex = repeated.EndIndex;
-                                    programIndex = instruction.A;
+                                    // Fusion never activates the repeat counters.
+                                    // Its proof validates RepeatExit, whose reset
+                                    // would only journal their unchanged values.
+                                    programIndex = instruction.A + 1;
                                 }
                                 else failed = true;
                                 break;
+                            }
+                            if (!SetRepeat(counts, positions, repeatId, 0, -1, ref stacks, ref invocation))
+                            {
+                                return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
                             }
                         }
 

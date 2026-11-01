@@ -243,6 +243,9 @@ total. Totals saturate, and first denial stays sticky across copies. Denial is n
 no-match or partial success. Numerical charges depend on route/version; they are
 not byte counts, CPU instructions, elapsed time or portable per-pattern minima.
 Native shortcuts still meter bounded search, comparison and publication.
+Scalar-class repetitions with a proved endpoint can omit unused repeat-journal
+storage. Live counter vectors and captures still require admission; examined
+scalars/classifications and terminal interruption remain metered.
 Validated ASCII literal-family cursors reuse byte coordinates for UTF-16
 projection. Avoided gap scans consume no validation-work units; search and
 per-match interruption checks remain.

@@ -6,6 +6,40 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReFullMatchByteCeilingTests
 {
+    [Fact]
+    public void PureClassFusionFitsItsLiveBuffersAndStillDeniesUnfundedVectors()
+    {
+        foreach (var maximum in new[] { 64UL, 256UL })
+        {
+            using var regex = Utf8PythonRegex.Compile("[A-Z]{3}[0-9]{3}",
+                PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
+                new() { MaxWorkSteps = 10000, MaxDepth = 1, MaxWorkingBytes = maximum, MaxResultBytes = 4096 },
+                default, Timeout.InfiniteTimeSpan, default);
+            if (maximum == 256)
+            {
+                Assert.True(regex.FullMatch("ABC123"u8).Success);
+                Assert.False(regex.FullMatch("ABC12x"u8).Success);
+            }
+            else
+            {
+                var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.FullMatch("ABC123"u8));
+                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);
+                Assert.True(failure.Requested > maximum);
+            }
+        }
+    }
+
+    [Fact]
+    public void CapturesStillRequireTheirOwnAdmittedScratch()
+    {
+        using var regex = Utf8PythonRegex.Compile("([A-Z]{3})[0-9]{3}",
+            PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
+            new() { MaxWorkSteps = 10000, MaxDepth = 1, MaxWorkingBytes = 256, MaxResultBytes = 4096 },
+            default, Timeout.InfiniteTimeSpan, default);
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.FullMatch("ABC123"u8));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
