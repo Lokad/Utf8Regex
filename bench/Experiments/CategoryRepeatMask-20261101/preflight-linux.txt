@@ -1,0 +1,37 @@
+Preflight date-miss: 0, bytes=47
+Preflight date-finite-live: 0, bytes=47
+Preflight date-deadline-live: 0, bytes=47
+Preflight date-hit: 1, bytes=20
+Preflight date-unicode-hit: 1, bytes=28
+Preflight ascii-digit-count: 128, bytes=640
+Preflight unicode-digit-count: 128, bytes=1024
+Preflight folded-set-control: 1, bytes=515
+Preflight class-program-control: 1, bytes=513
+Preflight metadata-count-control: 4096, bytes=4096
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "AffinityMask": "4",
+  "ElapsedSeconds": 0.5800409,
+  "Identities": [
+    {
+      "Version": "0.5.0-dev.1\u002B4235552382021bb64804e217b8552bd9b795556c",
+      "Sha256": "0E7BDDAECD21FFEC946E635385DEB0815AA7D31F815CB03CE7D08888B5BC2D54",
+      "PythonVersion": "0.5.0-dev.1\u002B4235552382021bb64804e217b8552bd9b795556c",
+      "PythonSha256": "5D3BD25D9675EFF07185AD51BE789AD27628D5D3337ED36CC819064303A6D6DE"
+    },
+    {
+      "Version": "0.5.0-dev.1\u002B4235552382021bb64804e217b8552bd9b795556c",
+      "Sha256": "0E7DF7DA7EE34D3F191B11669619E4C58B5EE9D419A3601D8A8D11FEB94C0EDB",
+      "PythonVersion": "0.5.0-dev.1\u002B4235552382021bb64804e217b8552bd9b795556c",
+      "PythonSha256": "5D3BD25D9675EFF07185AD51BE789AD27628D5D3337ED36CC819064303A6D6DE"
+    }
+  ],
+  "Scope": "Reuse positive unfolded CategorySet ASCII mask hits in the existing no-rewind class-repeat loop; retain full Rune/table fallback on mask misses and exclude complete class-program predicates. Original per-scalar work/token/deadline and allocations unchanged. Ten equal-result public workloads: actual Python date IsMatch miss, finite/live, deadline/live, ASCII/Unicode hits and dense ASCII/Unicode Count; unchanged Core folded-set/class-program/metadata Count controls. Strict whole-subject UTF8 included. Finite work1B/depth4096/working16MiB/result16MiB; deadline5s. Warm1.5s/min64, independent60ms calibration, five alternating samples\u003E=20ms; result batches consumed after timing. .NET comparison only on overlapping semantics, not a new CPython Status. One120s cap; at most one noise confirmation; no package/full-catalog qualification.",
+  "LaneNames": [
+    "Before",
+    "After",
+    "PredecodedRegex",
+    "DecodeThenRegex"
+  ],
+  "Rows": []
+}

@@ -1,0 +1,1 @@
+Exact instructions, masks, class-program flags, per-attempt work, outstanding loans and 3568B public allocation are unchanged.

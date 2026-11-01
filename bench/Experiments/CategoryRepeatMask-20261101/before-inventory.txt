@@ -1,0 +1,42 @@
+PublicIsMatchAllocatedBytes=3568;InputBytes=47;SHA256=1C2ACBD374A589D0C859E3C8E71C5374170E8293CCC5BB092805C8AE9D7098FA
+Instructions=17;Groups=0;Repeats=3;Empty=False;IgnoreCase=False
+AsciiHead=True;Low=48;High=57
+0: Boundary A=1 B=0 C=1 D=0 Min=1 Max=0
+1: RepeatGreedy A=4 B=0 C=1 D=2 Min=1 Max=2
+2: CategorySet A=0 B=0 C=0 D=1 Min=0 Max=1
+  Mask=000000000000FF030000000000000000
+  MemberNegated=False;Predicate=IsDigit;ClassProgram=False
+3: RepeatEnd A=1 B=0 C=0 D=0 Min=0 Max=0
+4: RepeatExit A=0 B=0 C=0 D=0 Min=0 Max=0
+5: Literal A=47 B=0 C=0 D=0 Min=0 Max=0
+6: RepeatGreedy A=9 B=1 C=1 D=2 Min=1 Max=2
+7: CategorySet A=1 B=0 C=0 D=2 Min=0 Max=2
+  Mask=000000000000FF030000000000000000
+  MemberNegated=False;Predicate=IsDigit;ClassProgram=False
+8: RepeatEnd A=6 B=0 C=0 D=0 Min=0 Max=0
+9: RepeatExit A=1 B=0 C=0 D=0 Min=0 Max=0
+10: Literal A=47 B=0 C=0 D=0 Min=0 Max=0
+11: RepeatGreedy A=14 B=2 C=2 D=4 Min=2 Max=4
+12: CategorySet A=2 B=0 C=0 D=3 Min=0 Max=3
+  Mask=000000000000FF030000000000000000
+  MemberNegated=False;Predicate=IsDigit;ClassProgram=False
+13: RepeatEnd A=11 B=0 C=0 D=0 Min=0 Max=0
+14: RepeatExit A=2 B=0 C=0 D=0 Min=0 Max=0
+15: Boundary A=1 B=0 C=5 D=0 Min=5 Max=0
+16: Accept A=0 B=0 C=0 D=0 Min=0 Max=0
+DigitStart=9;Success=False;Breach=None;Steps=36;Outstanding=0
+DigitStart=10;Success=False;Breach=None;Steps=3;Outstanding=0
+DigitStart=12;Success=False;Breach=None;Steps=19;Outstanding=0
+DigitStart=13;Success=False;Breach=None;Steps=3;Outstanding=0
+DigitStart=15;Success=False;Breach=None;Steps=12;Outstanding=0
+DigitStart=16;Success=False;Breach=None;Steps=3;Outstanding=0
+DigitStart=17;Success=False;Breach=None;Steps=3;Outstanding=0
+DigitStart=36;Success=False;Breach=None;Steps=36;Outstanding=0
+DigitStart=37;Success=False;Breach=None;Steps=3;Outstanding=0
+DigitStart=39;Success=False;Breach=None;Steps=19;Outstanding=0
+DigitStart=40;Success=False;Breach=None;Steps=3;Outstanding=0
+DigitStart=42;Success=False;Breach=None;Steps=12;Outstanding=0
+DigitStart=43;Success=False;Breach=None;Steps=3;Outstanding=0
+DigitStart=44;Success=False;Breach=None;Steps=3;Outstanding=0
+Lokad.Utf8Regex: 0.5.0-dev.1+4235552382021bb64804e217b8552bd9b795556c;SHA256=0E7BDDAECD21FFEC946E635385DEB0815AA7D31F815CB03CE7D08888B5BC2D54
+Lokad.Utf8Regex.PythonRe: 0.5.0-dev.1+4235552382021bb64804e217b8552bd9b795556c;SHA256=5D3BD25D9675EFF07185AD51BE789AD27628D5D3337ED36CC819064303A6D6DE
