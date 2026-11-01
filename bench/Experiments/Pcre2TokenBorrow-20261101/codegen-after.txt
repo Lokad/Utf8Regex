@@ -1,0 +1,42 @@
+; Assembly listing for method Lokad.Utf8Regex.Pcre2.Pcre2BacktrackingRunner:TryMatchAt(Lokad.Utf8Regex.Pcre2.Pcre2BacktrackingProgram,System.ReadOnlySpan`1[byte],byref,int,int,int,byte,System.ReadOnlySpan`1[int],System.ReadOnlySpan`1[int],int,bool,byref,byref,byref,byref,byref,byref):bool (Tier1)
+; Emitting BLENDED_CODE for x64 + VEX + EVEX on Unix
+; Tier1 code
+; optimized code
+; optimized using Synthesized PGO
+; rbp based frame
+; fully interruptible
+; with Synthesized PGO: fgCalledCount is 76032
+; 68 inlinees with PGO data; 370 single block inlinees; 17 inlinees without PGO data
+       lea      rbx, bword ptr [rdx+8*rsi+0x10]
+       movzx    rdx, byte  ptr [rbx+0x20]
+       movzx    rsi, byte  ptr [rbx+0x14]
+       mov      rdi, bword ptr [rbp+0x50]
+       call     [Lokad.Utf8Regex.Pcre2.Pcre2ResourceBudget:ChargeBacktracking(byte,byte):this]
+       movzx    rdi, byte  ptr [rbx+0x14]
+       cmp      edi, 23
+       ja       SHORT G_M000_IG127
+       lea      rax, [reloc @RWD00]
+       mov      eax, dword ptr [rax+4*rdi]
+       lea      rcx, G_M000_IG02
+       add      rax, rcx
+       jmp      rax
+ 
+G_M000_IG126:                ;; offset=0x0B7F
+       lea      rdi, bword ptr [rbx+0x18]
+       mov      r11d, dword ptr [rbp+0x10]
+       mov      dword ptr [rsp], r11d
+       mov      r12, bword ptr [rbp+0x50]
+       mov      bword ptr [rsp+0x08], r12
+       lea      rdx, [rbp-0x110]
+       mov      qword ptr [rsp+0x10], rdx
+       mov      rdx, bword ptr [rbp-0x6C8]
+       mov      ecx, dword ptr [rbp-0x5B4]
+       lea      rsi, bword ptr [r15+0x68]
+       mov      r8d, dword ptr [rbp-0x110]
+       mov      r9d, dword ptr [rbp-0x30]
+       call     [Lokad.Utf8Regex.Pcre2.Pcre2CharacterRunner:TryMatchToken(byref,byref,System.ReadOnlySpan`1[byte],int,int,int,byref,byref):bool]
+       test     eax, eax
+       jne      G_M000_IG124
+ 
+G_M000_IG127:                ;; offset=0x0BCA
+; Total bytes of code 15433

@@ -1538,7 +1538,7 @@ internal static class Pcre2CharacterRunner
     }
 
     internal static bool TryMatchToken(
-        Pcre2CharacterToken token,
+        in Pcre2CharacterToken token,
         in Pcre2CompileRequest request,
         ReadOnlySpan<byte> input,
         int index,

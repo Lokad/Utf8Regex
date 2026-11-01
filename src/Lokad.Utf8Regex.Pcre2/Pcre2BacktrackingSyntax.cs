@@ -480,7 +480,8 @@ internal readonly struct Pcre2BacktrackingInstruction
 
     internal Pcre2BacktrackingInstructionKind Kind { get; }
 
-    internal Pcre2CharacterToken Token { get; }
+    // Token execution borrows this immutable storage without a value-property copy.
+    internal readonly Pcre2CharacterToken Token;
 
     internal int PrimaryTarget { get; }
 

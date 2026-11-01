@@ -1,0 +1,27 @@
+diff --git a/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingSyntax.cs b/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingSyntax.cs
+index 57059157..7ce816e3 100644
+--- a/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingSyntax.cs
++++ b/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingSyntax.cs
+@@ -480,7 +480,8 @@ internal readonly struct Pcre2BacktrackingInstruction
+ 
+     internal Pcre2BacktrackingInstructionKind Kind { get; }
+ 
+-    internal Pcre2CharacterToken Token { get; }
++    // Token execution borrows this immutable storage without a value-property copy.
++    internal readonly Pcre2CharacterToken Token;
+ 
+     internal int PrimaryTarget { get; }
+ 
+diff --git a/src/Lokad.Utf8Regex.Pcre2/Pcre2CharacterCompiler.cs b/src/Lokad.Utf8Regex.Pcre2/Pcre2CharacterCompiler.cs
+index fe9130b6..72e50705 100644
+--- a/src/Lokad.Utf8Regex.Pcre2/Pcre2CharacterCompiler.cs
++++ b/src/Lokad.Utf8Regex.Pcre2/Pcre2CharacterCompiler.cs
+@@ -1538,7 +1538,7 @@ internal static class Pcre2CharacterRunner
+     }
+ 
+     internal static bool TryMatchToken(
+-        Pcre2CharacterToken token,
++        in Pcre2CharacterToken token,
+         in Pcre2CompileRequest request,
+         ReadOnlySpan<byte> input,
+         int index,

@@ -1,0 +1,24 @@
+{
+  "Status": "Accepted source change; staged packages unchanged",
+  "Parent": "ba9c810a81e302086ef44255948b1f97e95236af",
+  "BaselineRuntime": "ecfd28a18a3effbf6bffb01720b45395e173c8b2",
+  "FocusedPerRuntime": 261,
+  "Pcre2ReleasePerRuntime": 6486,
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "ElapsedSeconds": 63.7351338,
+  "MinimumSampleMilliseconds": 36.2404,
+  "Cases": 17,
+  "AllocationsChanged": false,
+  "ConfirmationRuns": 0,
+  "MaximumAdversePercent": 4.791890917391695,
+  "ActualTokenBytes": 16,
+  "ActualInstructionBytes": 40,
+  "ActualRequestBytes": 72,
+  "TablesChanged": false,
+  "PackagesChanged": false,
+  "RawArchiveSha256": "883DCC90E5EB7811644B82E586E82480D11894FF22EE9F134C7124FAE634282E",
+  "CorrectnessArchiveSha256": "39BABFB08AF51EA122C14A6A3015399D88873C0730E86AFCD5DCE320B0CA0D4D"
+}
