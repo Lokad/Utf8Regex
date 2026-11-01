@@ -49,5 +49,13 @@ Sealed archives under `artifacts/experiments/pcre2-token-borrow-20261101/`:
   test binaries and focused/full logs. SHA256
   `39BABFB08AF51EA122C14A6A3015399D88873C0730E86AFCD5DCE320B0CA0D4D`.
 
-Refresh only the existing affected date/native rows at committed source next.
-No package, complete platform/catalog matrix or immutable artifact changes.
+The existing two-row selective refresh is complete at committed `de2f5e67f5f9`:
+raw1/5 and nine-pair native comparisons. Date hit/miss9.67x/9.27x remain
+NativeFaster; the other124rows and scaling are unchanged. Minimum paired38.027ms,
+existing Markdown/qualification guards and one snapshot check per runtime pass.
+See [verification](selective-verification.json). Comparator ratio movement stays
+separate from the causal A/B. No package/full-platform/catalog matrix repeat.
+
+`selective-evidence.tar.gz` preserves committed source, loaded benchmark binaries/
+PDBs, raw measurements, before/final snapshots, generated Markdown and guard logs.
+SHA256 `79AC4670098FA4D6C3E43D780938F2FEF2D192C05A818931E100A9D59955594A`.
