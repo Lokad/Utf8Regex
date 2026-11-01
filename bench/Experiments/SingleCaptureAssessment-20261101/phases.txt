@@ -1,0 +1,22 @@
+CaseId             : findall/one-capture-strings
+Operation          : FindAllStrings
+ManagedRoute       : owned scalar VM; findall string shaping
+InputBytes         : 17408
+CaptureCount       : 1
+MatchCount         : 2048
+OutputValueCount   : 2048
+OutputUtf8Bytes    : 5120
+Iterations         : 1000
+Samples            : 5
+CpuPolicy          : single-least-contended-allowed-processor
+CpuAffinityMask    : 0x8
+Phase model        : cumulative controls; phase timings are not additive
+Utf8DecodeOnly     :      2.387 us/op | range=2.364..2.461 | alloc=34840 B/op | warmup=23512 calls/100.0 ms
+PredecodedDiscovery:    223.541 us/op | range=218.872..228.375 | alloc=507904 B/op | warmup=1024 calls/498.8 ms
+CaptureRangeCollect:    288.124 us/op | range=283.814..291.113 | alloc=860408 B/op | warmup=1024 calls/353.0 ms
+PreparedProjection :     47.492 us/op | range=22.467..82.042 | alloc=81944 B/op | warmup=2038 calls/100.0 ms
+PreparedFinalShape :      1.048 us/op | range=1.047..1.217 | alloc=16408 B/op | warmup=65536 calls/87.7 ms
+PredecodedProjection:    307.319 us/op | range=301.615..311.720 | alloc=901424 B/op | warmup=1024 calls/325.3 ms
+TrailingCaptureReplay:    186.825 us/op | range=186.340..187.357 | alloc=98384 B/op | warmup=1024 calls/197.1 ms
+PythonRePublic     :    805.540 us/op | range=804.639..809.066 | alloc=114560 B/op | warmup=1024 calls/1083.7 ms
+ChecksumTraversal  :      3.800 us/op | range=3.742..3.820 | alloc=0 B/op | warmup=24403 calls/100.0 ms

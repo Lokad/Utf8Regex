@@ -1,0 +1,12 @@
+{
+  "Pattern": "item-([0-9]+)",
+  "Bytes": 17408,
+  "Sha256": "332DF9A8E15D370BEA5C971A99487AB004C70A24DF73ECE9FF954619B5E8C3C1",
+  "Ratio": 4.1718870627144335,
+  "Low95": 4.141730937539749,
+  "High95": 4.179027734709583,
+  "ManagedUs": 908.1381818181818,
+  "CpythonUs": 217.99573913043477,
+  "AllocatedBytes": 114560,
+  "Source": "0e24cecebbb9"
+}
