@@ -1,0 +1,20 @@
+{
+  "Subject": "[A-Z]{3}[0-9]{3} / ABC12x",
+  "LocalParent": "496e15ca",
+  "VmFrozenParent": "6592113a",
+  "SourceDifference": "Local parent is receipt-only; production source identical",
+  "SourceSha256": "B90827305C7BBEE905D87DF91E066B0897DBB14B85E9474137FCF7C5AF96A209",
+  "CoreChecksPerRuntime": 7169,
+  "PythonChecksPerRuntime": 4513,
+  "Runtimes": [
+    "net10.0",
+    "net11.0"
+  ],
+  "WorkContract": "Per-scalar/classification charges and terminal interruption retained. Fewer incidental VM/journal work steps are permitted by version-dependent resource policy.",
+  "Protocol": "Frozen final16-case source before timing; BCL anchors give equivalent full-suffix matching; all lanes consume success+UTF16range checksums or Counts. Both Unicode class scalars are BMP for overlap; supplementary semantics tested separately.",
+  "ChangedContracts": [],
+  "ExistingImmutablePackages": "0.5.0-dev.6 unchanged",
+  "CandidateStatus": "Accepted source,91.262s16-case comparison. No confirmation or variants; largest adverse public median5.14%, with uncertainty retained. Later fixed-original coherent gate required.",
+  "SourceCommit": "27c0b2eb",
+  "AdditionalCoreChecksPerRuntime": 356
+}

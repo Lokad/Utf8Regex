@@ -1,0 +1,127 @@
+{
+  "Pattern": "[A-Z]{3}[0-9]{3}",
+  "Subject": "ABC12x",
+  "Success": false,
+  "Code": [
+    {
+      "Index": 0,
+      "Fields": {
+        "Kind": "RepeatGreedy",
+        "A": "3",
+        "B": "0",
+        "C": "3",
+        "D": "3",
+        "RepeatMinimum": "3",
+        "RepeatMaximum": "3"
+      }
+    },
+    {
+      "Index": 1,
+      "Fields": {
+        "Kind": "Set",
+        "A": "0",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      }
+    },
+    {
+      "Index": 2,
+      "Fields": {
+        "Kind": "RepeatEnd",
+        "A": "0",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      }
+    },
+    {
+      "Index": 3,
+      "Fields": {
+        "Kind": "RepeatExit",
+        "A": "0",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      }
+    },
+    {
+      "Index": 4,
+      "Fields": {
+        "Kind": "RepeatGreedy",
+        "A": "7",
+        "B": "1",
+        "C": "3",
+        "D": "3",
+        "RepeatMinimum": "3",
+        "RepeatMaximum": "3"
+      }
+    },
+    {
+      "Index": 5,
+      "Fields": {
+        "Kind": "Set",
+        "A": "1",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      }
+    },
+    {
+      "Index": 6,
+      "Fields": {
+        "Kind": "RepeatEnd",
+        "A": "4",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      }
+    },
+    {
+      "Index": 7,
+      "Fields": {
+        "Kind": "RepeatExit",
+        "A": "1",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      }
+    },
+    {
+      "Index": 8,
+      "Fields": {
+        "Kind": "Anchor",
+        "A": "2",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      }
+    },
+    {
+      "Index": 9,
+      "Fields": {
+        "Kind": "Accept",
+        "A": "0",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      }
+    }
+  ]
+}
