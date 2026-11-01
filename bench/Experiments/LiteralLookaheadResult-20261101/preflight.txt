@@ -1,0 +1,27 @@
+Core-Count-unchanged []
+Python-actual-miss [{"Kind":"ExactAsciiLiteral","NativeCompleteCapability":false,"Groups":0,"Core":false,"ScalarVerificationRequired":true},{"Kind":"ExactAsciiLiteral","NativeCompleteCapability":true,"Groups":0,"Core":false,"ScalarVerificationRequired":false}]
+Python-hit [{"Kind":"ExactAsciiLiteral","NativeCompleteCapability":false,"Groups":0,"Core":false,"ScalarVerificationRequired":true},{"Kind":"ExactAsciiLiteral","NativeCompleteCapability":true,"Groups":0,"Core":false,"ScalarVerificationRequired":false}]
+Python-finite-live [{"Kind":"ExactAsciiLiteral","NativeCompleteCapability":false,"Groups":0,"Core":false,"ScalarVerificationRequired":true},{"Kind":"ExactAsciiLiteral","NativeCompleteCapability":true,"Groups":0,"Core":false,"ScalarVerificationRequired":false}]
+Python-deadline-live [{"Kind":"ExactAsciiLiteral","NativeCompleteCapability":false,"Groups":0,"Core":false,"ScalarVerificationRequired":true},{"Kind":"ExactAsciiLiteral","NativeCompleteCapability":true,"Groups":0,"Core":false,"ScalarVerificationRequired":false}]
+Python-family-overlap [{"Kind":null,"NativeCompleteCapability":false,"Groups":0,"Core":false,"ScalarVerificationRequired":true},{"Kind":"ExactUtf8Literals","NativeCompleteCapability":true,"Groups":0,"Core":false,"ScalarVerificationRequired":false}]
+Python-Unicode [{"Kind":"ExactUtf8Literal","NativeCompleteCapability":false,"Groups":0,"Core":false,"ScalarVerificationRequired":true},{"Kind":"ExactUtf8Literal","NativeCompleteCapability":true,"Groups":0,"Core":false,"ScalarVerificationRequired":false}]
+Python-negative-control [{"Kind":"FallbackRegex","NativeCompleteCapability":false,"Groups":0,"Core":false,"ScalarVerificationRequired":true},{"Kind":"FallbackRegex","NativeCompleteCapability":false,"Groups":0,"Core":false,"ScalarVerificationRequired":true}]
+Python-capture-control [{"Kind":"FallbackRegex","NativeCompleteCapability":false,"Groups":1,"Core":false,"ScalarVerificationRequired":true},{"Kind":"FallbackRegex","NativeCompleteCapability":false,"Groups":1,"Core":false,"ScalarVerificationRequired":true}]
+Core-Match-shared [{"Kind":"ExactAsciiLiteral","NativeCompleteCapability":false,"Groups":-1,"Core":true,"ScalarVerificationRequired":false},{"Kind":"ExactAsciiLiteral","NativeCompleteCapability":true,"Groups":-1,"Core":true,"ScalarVerificationRequired":false}]
+Core-finite-live [{"Kind":"ExactAsciiLiteral","NativeCompleteCapability":false,"Groups":-1,"Core":true,"ScalarVerificationRequired":false},{"Kind":"ExactAsciiLiteral","NativeCompleteCapability":true,"Groups":-1,"Core":true,"ScalarVerificationRequired":false}]
+Python-long-tail [{"Kind":"ExactAsciiLiteral","NativeCompleteCapability":false,"Groups":0,"Core":false,"ScalarVerificationRequired":true},{"Kind":"ExactAsciiLiteral","NativeCompleteCapability":true,"Groups":0,"Core":false,"ScalarVerificationRequired":false}]
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 0.652807,
+  "Scope": "One bounded12-case public A/B: source-equivalent clean1fb3bea0 baseline -\u003Ea2dfbd6b with complete literal-lookahead result eligibility. Same Python DLL both sides, exact Core identities retained. Actual Python miss/hit, finite/live/deadline, overlapping family, Unicode, long assertion tail, unsupported negative/captured controls, shared Core Match/finite Match and unchanged Count. Equal success/byte-range checksums; BCL converts returned UTF16 coordinates to bytes, native UTF8 predecoded lane excludes input decode. Resource semantics differ. Warm1s/min64, independent60ms calibration,5alternating samples\u003E=20ms, outputs checked after timing,120s cap; at most one noise confirmation. No CPython/catalog/cumulative/package qualification.",
+  "Before": {
+    "Core": "0.5.0-dev.1\u002B1fb3bea05aa42cd85c3455f419de2ba2ff83ad2f sha256=BD4B5D27737C8C7F9C575265DB5CF499B08515A37EB3A0D621CA2F4B4B1C1FAE",
+    "Python": "0.5.0-dev.1\u002B1fb3bea05aa42cd85c3455f419de2ba2ff83ad2f sha256=7723FA286837EEFACC70664570CF88CC906831D8992136E3D1D2A7F140870776"
+  },
+  "After": {
+    "Core": "0.5.0-dev.1\u002Ba2dfbd6b73abccb3c4043ecc09c08011f6d0c30d sha256=85CEED43A73E4650B6982F617944556079089C7F65D614728834403164F03552",
+    "Python": "0.5.0-dev.1\u002B1fb3bea05aa42cd85c3455f419de2ba2ff83ad2f sha256=7723FA286837EEFACC70664570CF88CC906831D8992136E3D1D2A7F140870776"
+  },
+  "Rows": []
+}

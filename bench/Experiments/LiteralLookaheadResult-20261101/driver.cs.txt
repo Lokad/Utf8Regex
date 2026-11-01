@@ -1,0 +1,100 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+var before=Load(args[0],"before"); var after=Load(args[1],"after");
+using var process=Process.GetCurrentProcess(); process.ProcessorAffinity=(nint)4;
+using var live=new CancellationTokenSource(); var preflight=args.Contains("--preflight");
+var watch=Stopwatch.StartNew(); var rows=new List<object>();
+var longTail=new string('b',4097)+"x";
+var cases=new[]{
+    new Case("Core-Count-unchanged", "needle",new string('x',8192)+"needle",Core:true,Count:true),
+    new Case("Python-actual-miss","foo(?=bar)","xxfoobazzz"),
+    new Case("Python-hit","foo(?=bar)","xxfoobarzz"),
+    new Case("Python-finite-live","foo(?=bar)","xxfoobazzz",Finite:true),
+    new Case("Python-deadline-live","foo(?=bar)","xxfoobarzz",Deadline:true),
+    new Case("Python-family-overlap","(?:a|ab)(?=c)","xxabczz"),
+    new Case("Python-Unicode","😀(?=é)","x😀éz"),
+    new Case("Python-negative-control","foo(?!bar)","xxfoobazzz",Eligible:false),
+    new Case("Python-capture-control","(foo)(?=bar)","xxfoobarzz",Eligible:false),
+    new Case("Core-Match-shared","foo(?=bar)","xxfoobazzz",Core:true),
+    new Case("Core-finite-live","foo(?=bar)","xxfoobarzz",Core:true,Finite:true),
+    new Case("Python-long-tail","foo(?="+longTail+")","xxfoo"+longTail)
+};
+foreach(var item in cases){
+    var input=Encoding.UTF8.GetBytes(item.Input); var oracle=new Regex(item.Pattern);
+    long Expected(string text){var match=oracle.Match(text);return match.Success?Signature(Encoding.UTF8.GetByteCount(text.AsSpan(0,match.Index)),Encoding.UTF8.GetByteCount(text.AsSpan(0,match.Index+match.Length))):0;}
+    var expected=item.Count?1:Expected(item.Input);var actions=new List<Func<long>>();var routes=new List<object>();
+    foreach(var pair in new[]{before,after}){
+        var coreType=pair.Core.GetType("Lokad.Utf8Regex.Utf8Regex")!;
+        var type=item.Core?coreType:pair.Python.GetType("Lokad.Utf8Regex.PythonRe.Utf8PythonRegex")!;
+        var optionType=item.Core?typeof(RegexOptions):pair.Python.GetType("Lokad.Utf8Regex.PythonRe.PythonReCompileOptions")!;
+        var regex=Activator.CreateInstance(type,[item.Pattern,Enum.ToObject(optionType,0),item.Deadline?TimeSpan.FromSeconds(10):Timeout.InfiniteTimeSpan,Policy(pair.Core,item.Finite)])!;
+        if(item.Count){var count=CountBridge(type);actions.Add(()=>count(regex,input));continue;}
+        var candidate=item.Core?regex:type.GetField("_utf8Regex",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(regex);
+        var capability=candidate is not null&&(bool)coreType.GetProperty("CanFindNativeLiteralForResult",BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(candidate)!;
+        var inspection=candidate is null?null:coreType.GetProperty("Inspection",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(candidate);
+        var kind=inspection?.GetType().GetProperty("ExecutionKind")!.GetValue(inspection)?.ToString();
+        var groups=-1;
+        if(!item.Core){var program=type.GetField("_scalarProgram",BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(regex)!;groups=(int)program.GetType().GetProperty("GroupCount",BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic)!.GetValue(program)!;}
+        if(item.Eligible&&capability!=(pair==after))throw new Exception("Capability coverage failed: "+item.Name);
+        if(item.Eligible&&groups>0)throw new Exception("Unexpected captured native case");
+        routes.Add(new{Kind=kind,NativeCompleteCapability=capability,Groups=groups,Core=item.Core,ScalarVerificationRequired=!item.Core&&(groups!=0||!capability)});
+        var call=MatchBridge(type,item.Core);var token=item.Finite||item.Deadline?live.Token:default;
+        actions.Add(()=>call(regex,input,token));
+    }
+    for(var comparator=0;comparator<2;comparator++){
+        var decode=comparator==1;var regex=new Regex(item.Pattern);
+        actions.Add(()=>{var text=decode?Encoding.UTF8.GetString(input):item.Input;if(item.Count)return regex.Count(text);var match=regex.Match(text);return match.Success?Signature(Encoding.UTF8.GetByteCount(text.AsSpan(0,match.Index)),Encoding.UTF8.GetByteCount(text.AsSpan(0,match.Index+match.Length))):0;});
+    }
+    void Check(long value){if(value!=expected)throw new Exception("Result mismatch "+item.Name+":"+value+" expected "+expected);}
+    foreach(var action in actions)Check(action());
+    if(preflight){Console.Error.WriteLine(item.Name+" "+JsonSerializer.Serialize(routes));continue;}
+    var iterations=new int[4];var warmCalls=new long[4];
+    for(var lane=0;lane<4;lane++){
+        var warm=Stopwatch.StartNew();do{Check(actions[lane]());warmCalls[lane]++;}while(warm.Elapsed.TotalMilliseconds<1000||warmCalls[lane]<64);
+        iterations[lane]=1;while(Loop(iterations[lane],actions[lane],Check).Milliseconds<60)iterations[lane]=checked(iterations[lane]*2);
+    }
+    var times=Enumerable.Range(0,4).Select(_=>new double[5]).ToArray();var allocations=Enumerable.Range(0,4).Select(_=>new double[5]).ToArray();var durations=Enumerable.Range(0,4).Select(_=>new double[5]).ToArray();
+    for(var sample=0;sample<5;sample++)for(var position=0;position<4;position++){
+        var lane=sample%2==0?position:3-position;GC.Collect();GC.WaitForPendingFinalizers();GC.Collect();
+        var measured=Loop(iterations[lane],actions[lane],Check);if(measured.Milliseconds<20)throw new Exception("Sample below20ms");
+        times[lane][sample]=measured.Milliseconds*1000/iterations[lane];allocations[lane][sample]=(double)measured.Bytes/iterations[lane];durations[lane][sample]=measured.Milliseconds;
+    }
+    rows.Add(new{item.Name,item.Pattern,InputBytes=input.Length,InputSha256=Convert.ToHexString(SHA256.HashData(input)),Expected=expected,Routes=routes,
+        Lanes=new[]{"Before","After","PredecodedRegex","DecodeThenRegex"},Iterations=iterations,WarmupCalls=warmCalls,Microseconds=times,AllocatedBytes=allocations,ElapsedMilliseconds=durations});
+    Console.Error.WriteLine(item.Name+": "+string.Join(" / ",times.Select(v=>v.Order().ElementAt(2))));
+}
+Console.WriteLine(JsonSerializer.Serialize(new{Runtime=RuntimeInformation.FrameworkDescription,CpuAffinityMask="4",ElapsedSeconds=watch.Elapsed.TotalSeconds,
+    Scope="One bounded12-case public A/B: source-equivalent clean1fb3bea0 baseline ->a2dfbd6b with complete literal-lookahead result eligibility. Same Python DLL both sides, exact Core identities retained. Actual Python miss/hit, finite/live/deadline, overlapping family, Unicode, long assertion tail, unsupported negative/captured controls, shared Core Match/finite Match and unchanged Count. Equal success/byte-range checksums; BCL converts returned UTF16 coordinates to bytes, native UTF8 predecoded lane excludes input decode. Resource semantics differ. Warm1s/min64, independent60ms calibration,5alternating samples>=20ms, outputs checked after timing,120s cap; at most one noise confirmation. No CPython/catalog/cumulative/package qualification.",
+    Before=new{Core=Identity(before.Core),Python=Identity(before.Python)},After=new{Core=Identity(after.Core),Python=Identity(after.Python)},Rows=rows},new JsonSerializerOptions{WriteIndented=true}));
+
+static (Assembly Core,Assembly Python) Load(string root,string name){var context=new AssemblyLoadContext(name);var path=Path.GetFullPath(root);return(context.LoadFromAssemblyPath(Path.Combine(path,"Lokad.Utf8Regex.dll")),context.LoadFromAssemblyPath(Path.Combine(path,"Lokad.Utf8Regex.PythonRe.dll")));}
+static long Signature(int start,int end)=>((long)(start+1)<<32)|(uint)end;
+static Func<object,byte[],CancellationToken,long> MatchBridge(Type type,bool core){
+    var method=type.GetMethod(core?"Match":"Search",core?[typeof(ReadOnlySpan<byte>),typeof(CancellationToken)]:[typeof(ReadOnlySpan<byte>),typeof(int),typeof(CancellationToken)])!;
+    var value=method.ReturnType;var bridge=new DynamicMethod("PublicRange",typeof(long),[typeof(object),typeof(byte[]),typeof(CancellationToken)],typeof(Program).Module,true);
+    var il=bridge.GetILGenerator();var result=il.DeclareLocal(value);var failed=il.DefineLabel();
+    il.Emit(OpCodes.Ldarg_0);il.Emit(OpCodes.Castclass,type);Span(il);if(!core)il.Emit(OpCodes.Ldc_I4_0);il.Emit(OpCodes.Ldarg_2);il.Emit(OpCodes.Call,method);il.Emit(OpCodes.Stloc,result);
+    il.Emit(OpCodes.Ldloca,result);il.Emit(OpCodes.Call,value.GetProperty("Success")!.GetMethod!);il.Emit(OpCodes.Brfalse,failed);
+    var start=value.GetProperty(core?"IndexInBytes":"StartOffsetInBytes")!.GetMethod!;
+    il.Emit(OpCodes.Ldloca,result);il.Emit(OpCodes.Call,start);il.Emit(OpCodes.Ldc_I4_1);il.Emit(OpCodes.Add);il.Emit(OpCodes.Conv_I8);il.Emit(OpCodes.Ldc_I4,32);il.Emit(OpCodes.Shl);
+    il.Emit(OpCodes.Ldloca,result);il.Emit(OpCodes.Call,value.GetProperty(core?"LengthInBytes":"EndOffsetInBytes")!.GetMethod!);
+    if(core){il.Emit(OpCodes.Ldloca,result);il.Emit(OpCodes.Call,start);il.Emit(OpCodes.Add);}il.Emit(OpCodes.Conv_U8);il.Emit(OpCodes.Or);il.Emit(OpCodes.Ret);
+    il.MarkLabel(failed);il.Emit(OpCodes.Ldc_I4_0);il.Emit(OpCodes.Conv_I8);il.Emit(OpCodes.Ret);
+    return bridge.CreateDelegate<Func<object,byte[],CancellationToken,long>>();
+}
+static Func<object,byte[],int> CountBridge(Type type){var bridge=new DynamicMethod("PublicCount",typeof(int),[typeof(object),typeof(byte[])],typeof(Program).Module,true);var il=bridge.GetILGenerator();il.Emit(OpCodes.Ldarg_0);il.Emit(OpCodes.Castclass,type);Span(il);il.Emit(OpCodes.Call,type.GetMethod("Count",[typeof(ReadOnlySpan<byte>)])!);il.Emit(OpCodes.Ret);return bridge.CreateDelegate<Func<object,byte[],int>>();}
+static void Span(ILGenerator il){il.Emit(OpCodes.Ldarg_1);il.Emit(OpCodes.Call,typeof(ReadOnlySpan<byte>).GetMethod("op_Implicit",[typeof(byte[])])!);}
+static object Policy(Assembly assembly,bool finite){var type=assembly.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!;var value=Activator.CreateInstance(type)!;if(finite){type.GetProperty("MaxWorkSteps")!.SetValue(value,16000000UL);type.GetProperty("MaxDepth")!.SetValue(value,4096U);type.GetProperty("MaxWorkingBytes")!.SetValue(value,4UL<<20);type.GetProperty("MaxResultBytes")!.SetValue(value,4UL<<20);}return value;}
+static string Identity(Assembly assembly)=>assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion+" sha256="+Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location)));
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds,long Bytes) Loop(int count,Func<long> action,Action<long> check){var output=new long[count];var bytes=GC.GetAllocatedBytesForCurrentThread();var start=Stopwatch.GetTimestamp();for(var i=0;i<count;i++)output[i]=action();var elapsed=Stopwatch.GetElapsedTime(start).TotalMilliseconds;bytes=GC.GetAllocatedBytesForCurrentThread()-bytes;foreach(var value in output)check(value);GC.KeepAlive(output);return(elapsed,bytes);}
+record Case(string Name,string Pattern,string Input,bool Core=false,bool Count=false,bool Finite=false,bool Deadline=false,bool Eligible=true);

@@ -24,16 +24,17 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-10-31T19:12:01.9119842+00:00`
-- Snapshot SHA-256: `4147CAFF82AAEB801C47FD282179BFCDE2C1C264B29BE3ABFDF5953954A9C851`
+- Generated: `2026-11-01T02:34:50.2667332+00:00`
+- Snapshot SHA-256: `19DACA43A50C3DECC9D2972A7E1BAD5732E22445740B85F6A575F3B725DB6110`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `4`
 - Scaling families: `7`
-- Public Status: `26` managed faster, `0` equivalent, `46` CPython faster, `18` inconclusive, `0` unqualified
-- Historical point measurement environments represented: `2`
-- Paired evidence from source `0e24cecebbb9`: `89` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
+- Public Status: `27` managed faster, `0` equivalent, `45` CPython faster, `18` inconclusive, `0` unqualified
+- Historical point measurement environments represented: `3`
+- Paired evidence from source `0e24cecebbb9`: `87` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
+- Paired evidence from source `5c05ff8bf887`: `2` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
 - Paired evidence from source `f61502dcd30c`: `1` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -106,7 +107,7 @@ Historical point rows span more than one measurement environment. Consult the JS
 | `verbose/fullmatch-hit` | `FullMatch` | ConsumedGroupZeroRanges | CPython faster | 1.636 us | 0.522 us | 3.17x | 0.386 us | 0.161 us | 3,552 B |
 | `unicode-option/search-hit` | `Search` | ConsumedGroupZeroRanges | CPython faster | 0.434 us | 0.303 us | 1.43x | 0.404 us | 0.185 us | 0 B |
 | `ascii-option/search-hit` | `Search` | ConsumedGroupZeroRanges | CPython faster | 0.656 us | 0.310 us | 2.12x | 0.349 us | 0.130 us | 1,680 B |
-| `lookahead/search-hit` | `Search` | ConsumedGroupZeroRanges | CPython faster | 0.700 us | 0.304 us | 2.29x | 0.545 us | 0.131 us | 1,872 B |
+| `lookahead/search-hit` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.257 us | 0.302 us | 0.85x | 0.331 us | 0.234 us | 0 B |
 | `lookbehind/search-miss` | `Search` | ConsumedGroupZeroRanges | CPython faster | 0.506 us | 0.216 us | 2.35x | 0.593 us | 0.152 us | 0 B |
 | `backreference/fullmatch-hit` | `FullMatch` | ConsumedGroupZeroRanges | Inconclusive | 1.034 us | 0.286 us | 3.39x | 0.384 us | 0.168 us | 3,872 B |
 | `atomic/search-hit` | `Search` | ConsumedGroupZeroRanges | Inconclusive | 1.140 us | 0.327 us | 3.49x | 0.365 us | 0.213 us | 3,552 B |
@@ -116,7 +117,7 @@ Historical point rows span more than one measurement environment. Consult the JS
 | `supplementary/fullmatch-hit` | `FullMatch` | ConsumedGroupZeroRanges | Managed faster | 0.106 us | 0.259 us | 0.41x | 0.416 us | 0.115 us | 0 B |
 | `search-offset/literal-hit` | `SearchFromOffset` | ConsumedGroupZeroRanges | CPython faster | 0.295 us | 0.239 us | 1.23x | 0.286 us | 0.114 us | 0 B |
 | `backreference/named-fullmatch-miss` | `FullMatch` | ConsumedGroupZeroRanges | Inconclusive | 0.959 us | 0.194 us | 4.89x | 0.353 us | 0.133 us | 3,872 B |
-| `lookahead/search-miss` | `Search` | ConsumedGroupZeroRanges | CPython faster | 0.797 us | 0.188 us | 4.23x | 0.290 us | 0.101 us | 1,872 B |
+| `lookahead/search-miss` | `Search` | ConsumedGroupZeroRanges | CPython faster | 0.251 us | 0.195 us | 1.30x | 0.287 us | 0.123 us | 0 B |
 | `lookbehind/search-hit` | `Search` | ConsumedGroupZeroRanges | CPython faster | 0.466 us | 0.334 us | 1.39x | 0.690 us | 0.189 us | 0 B |
 | `atomic/search-miss` | `Search` | ConsumedGroupZeroRanges | CPython faster | 1.747 us | 0.255 us | 6.86x | 0.367 us | 0.115 us | 3,552 B |
 | `possessive/search-hit` | `Search` | ConsumedGroupZeroRanges | CPython faster | 1.235 us | 0.311 us | 3.91x | 0.348 us | 0.125 us | 3,552 B |
@@ -336,7 +337,7 @@ These fields prevent a composed host-language operation or a managed decode fall
 | `verbose/fullmatch-hit` | `_sre C Pattern.fullmatch` | `Utf8Regex/OwnedScalar; full-match value ranges` | Rbyte 2.74x [2.68, 2.83]; CpythonFaster |
 | `unicode-option/search-hit` | `_sre C Pattern.search` | `Utf8Regex/OwnedScalar; value ranges` | Excluded: pattern or subject is not entirely ASCII. |
 | `ascii-option/search-hit` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Rbyte 1.96x [1.93, 1.97]; NotApplicable |
-| `lookahead/search-hit` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Rbyte 2.11x [2.09, 2.34]; CpythonFaster |
+| `lookahead/search-hit` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Rbyte 0.79x [0.79, 0.80]; ManagedFaster |
 | `lookbehind/search-miss` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Rbyte 2.21x [2.19, 2.21]; NotApplicable |
 | `backreference/fullmatch-hit` | `_sre C Pattern.fullmatch` | `Utf8Regex/OwnedScalar; full-match value ranges` | Rbyte 2.74x [2.62, 2.96]; Inconclusive |
 | `atomic/search-hit` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Rbyte 3.24x [3.10, 3.27]; NotApplicable |
@@ -346,7 +347,7 @@ These fields prevent a composed host-language operation or a managed decode fall
 | `supplementary/fullmatch-hit` | `_sre C Pattern.fullmatch` | `Utf8Regex/OwnedScalar; full-match value ranges` | Excluded: pattern or subject is not entirely ASCII. |
 | `search-offset/literal-hit` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges from a nonzero byte offset` | Rbyte 1.16x [1.16, 1.16]; CpythonFaster |
 | `backreference/named-fullmatch-miss` | `_sre C Pattern.fullmatch` | `Utf8Regex/OwnedScalar; full-match value ranges` | Rbyte 4.05x [3.66, 4.12]; Inconclusive |
-| `lookahead/search-miss` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Rbyte 3.91x [3.86, 3.95]; CpythonFaster |
+| `lookahead/search-miss` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Rbyte 1.21x [1.19, 1.24]; CpythonFaster |
 | `lookbehind/search-hit` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Rbyte 1.29x [1.27, 1.30]; NotApplicable |
 | `atomic/search-miss` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Rbyte 6.46x [6.43, 6.54]; NotApplicable |
 | `possessive/search-hit` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Rbyte 3.69x [3.51, 3.71]; NotApplicable |

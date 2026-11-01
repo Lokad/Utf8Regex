@@ -1,0 +1,40 @@
+[
+  {
+    "Case": "lookahead/search-hit",
+    "OldStatus": "CpythonFaster",
+    "NewStatus": "ManagedFaster",
+    "OldRatio": 2.288126039639726,
+    "NewRatio": 0.8472061087063644,
+    "Low95": 0.8366361243001817,
+    "High95": 0.8577883369141,
+    "OldPointUs": 0.6329458947061397,
+    "NewPointUs": 1.9757232258826307,
+    "NewPointMin": 1.6014799071122132,
+    "NewPointMax": 2.2702641004447592,
+    "PairedUs": 0.2568098445399325,
+    "OldBytes": 1872,
+    "NewBytes": 0,
+    "Source": "5c05ff8bf887",
+    "Dirty": false,
+    "WorktreeQualified": true
+  },
+  {
+    "Case": "lookahead/search-miss",
+    "OldStatus": "CpythonFaster",
+    "NewStatus": "CpythonFaster",
+    "OldRatio": 4.227055215512117,
+    "NewRatio": 1.2962640546454676,
+    "Low95": 1.259397523737566,
+    "High95": 1.322241578551723,
+    "OldPointUs": 0.7390379397267313,
+    "NewPointUs": 1.894066404309785,
+    "NewPointMin": 1.604263936117373,
+    "NewPointMax": 1.9424406831467542,
+    "PairedUs": 0.2513405479184947,
+    "OldBytes": 1872,
+    "NewBytes": 0,
+    "Source": "5c05ff8bf887",
+    "Dirty": false,
+    "WorktreeQualified": true
+  }
+]
