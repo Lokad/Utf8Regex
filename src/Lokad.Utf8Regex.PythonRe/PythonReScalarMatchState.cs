@@ -421,8 +421,7 @@ internal struct PythonReScalarMatchState
             else if (plan.AlternateLiteralsUtf8 is not null)
             {
                 breach = Utf8SearchExecutor.TryFindExactLiteralFamilyCandidate(plan,
-                    input, _position, input.Length, ref _invocation, out var candidate, out var found);
-                _position = found ? candidate.Index : -1;
+                    input, _position, input.Length, ref _invocation, out _position);
             }
             else return true;
             if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();

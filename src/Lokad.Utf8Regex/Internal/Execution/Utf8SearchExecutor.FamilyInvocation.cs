@@ -28,20 +28,66 @@ internal static partial class Utf8SearchExecutor
     }
 
     // Prepared Python hints can lend their first-byte union without applying
-    // Core boundary/suffix predicates. Every candidate still confirms its branch.
+    // Core boundary/suffix predicates. Only the necessary start escapes; the
+    // profile VM verifies ordered alternatives and captures there.
     internal static Utf8ExecutionLimitKind TryFindExactLiteralFamilyCandidate(
         in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int start, int end,
-        ref Utf8SliceInvocation invocation, out PreparedSearchMatch match, out bool found)
+        ref Utf8SliceInvocation invocation, out int candidate)
     {
+        candidate = -1;
         var literals = plan.AlternateLiteralsUtf8 ?? [];
         // Preserve the existing pair and small complete-needle searches.
         if (literals.Length <= 8)
-            return TryFindLiteralFamilyCandidate(literals, false, input, start, end, false,
-                ref invocation, out match, out found);
-        return TryFindLiteralFamilyCore(literals, false, false,
+        {
+            var breach = TryFindLiteralFamilyCandidate(literals, false, input, start, end, false,
+                ref invocation, out var smallMatch, out var smallFound);
+            if (breach == Utf8ExecutionLimitKind.None && smallFound) candidate = smallMatch.Index;
+            return breach;
+        }
+        var buckets = plan.AlternateLiteralSearch?.SearchData.Buckets;
+        if (buckets is { Length: 1 } && buckets[0].PrefixDiscriminator is { HasValue: true } discriminator)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(start);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(end, input.Length);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(start, end);
+            var first = buckets[0].FirstByte;
+            for (var low = start; low < end;)
+            {
+                var breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                var count = Math.Min(2048, end - low);
+                var relative = input.Slice(low, count).IndexOf(first);
+                if (relative < 0) { low += count; continue; }
+                var at = low + relative;
+                // The prepared column is unique across all branches. A selected
+                // byte proves no prefix: confirm the entire needle under budget.
+                if ((uint)discriminator.Offset < (uint)(end - at) &&
+                    discriminator.LiteralsByByte[input[at + discriminator.Offset]] is { } literal &&
+                    literal.Length <= end - at)
+                {
+                    breach = TryCompareLiteral(input.Slice(at, literal.Length), literal, false,
+                        ref invocation, out var equal);
+                    if (breach != Utf8ExecutionLimitKind.None) return breach;
+                    if (equal)
+                    {
+                        breach = invocation.TryChargeInputStep();
+                        invocation.Budget.ThrowIfCancellationRequested();
+                        if (breach == Utf8ExecutionLimitKind.None) candidate = at;
+                        return breach;
+                    }
+                }
+                low = at + 1;
+            }
+            var completion = invocation.TryChargeInputStep();
+            invocation.Budget.ThrowIfCancellationRequested();
+            return completion;
+        }
+        var result = TryFindLiteralFamilyCore(literals, false, false,
             plan.AlternateLiteralSearch?.SearchData.FirstByteSearch,
             Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None, null,
-            input, start, end, false, ref invocation, out match, out found);
+            input, start, end, false, ref invocation, out var match, out var found);
+        if (result == Utf8ExecutionLimitKind.None && found) candidate = match.Index;
+        return result;
     }
 
     internal static Utf8ExecutionLimitKind TryFindLiteralFamilyCandidate(
