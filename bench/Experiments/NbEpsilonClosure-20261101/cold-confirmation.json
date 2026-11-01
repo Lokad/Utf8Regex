@@ -1,0 +1,146 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "AffinityMask": "4",
+  "ElapsedSeconds": 23.0376031,
+  "Identities": [
+    {
+      "Version": "0.5.0-dev.2\u002Bc8ed65bfbc0d1c16cf7480197591b6e8ed46cb1e",
+      "Sha256": "32E0E00E4F3F9957F6D36CE0B92C90ED70C06E24C4773D4C8F5043AE745992CB"
+    },
+    {
+      "Version": "0.5.0-dev.2\u002B28c55fc391f8f3a9c56aec9742344b7f37926f13",
+      "Sha256": "B73EE2430BB83690043891A616EF9AF5C192F2A25CB0A9943450EE622E638CDC"
+    }
+  ],
+  "Scope": "ONE selected cold confirmation after fifteen-case publicmatrix. Same frozenproducer/typedcold DLLs, same publicnativeUTF8Compile\u002Bfirst-emptyCount patterns and nonNBconstructioncontrol. Fourproducerlanes,warm5s/min64,independent60mscalibration,5alternatingsamples\u003E=20ms,completeoutputscheckedaftertiming. Hard45scap; no furtherconfirmation/variant/sourcechange/warmtargetresampling. Initialcoldphasebimodality retained. No fullpackage/catalog qualification.",
+  "LaneNames": [
+    "Before",
+    "After",
+    "PredecodedRegex",
+    "DecodeThenRegex"
+  ],
+  "Rows": [
+    {
+      "Name": "cold-compile-first-empty-count",
+      "Cold": true,
+      "ColdControlPattern": "(?\u003Cx\u003E[a-z]{2,3})",
+      "LaneNames": [
+        "BeforeColdNB",
+        "AfterColdNB",
+        "BeforeColdNonNBControl",
+        "AfterColdNonNBControl"
+      ],
+      "IsMatch": false,
+      "Finite": false,
+      "Live": false,
+      "Deadline": false,
+      "Pattern": "^\\s*///(?\u003Ctitle\u003E#.*)$",
+      "Options": "Multiline, NonBacktracking",
+      "InputBytes": 0,
+      "InputSha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "Expected": 0,
+      "Iterations": [
+        2048,
+        2048,
+        2048,
+        2048
+      ],
+      "WarmupCalls": [
+        80453,
+        91585,
+        104763,
+        106565
+      ],
+      "Microseconds": [
+        [
+          50.37353515625,
+          48.352099609374996,
+          49.75205078125,
+          49.325830078125,
+          48.480322265625
+        ],
+        [
+          49.30712890625,
+          48.923535156250004,
+          48.935205078125,
+          50.60302734375,
+          47.841406250000006
+        ],
+        [
+          41.30654296875,
+          41.865624999999994,
+          40.589404296875,
+          41.086962890625,
+          40.6580078125
+        ],
+        [
+          41.722998046875,
+          39.821435546875,
+          40.78876953125,
+          40.65263671875,
+          40.663720703125
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          51200,
+          51200,
+          51200,
+          51200,
+          51200
+        ],
+        [
+          51328,
+          51328,
+          51328,
+          51328,
+          51328
+        ],
+        [
+          44160,
+          44160,
+          44160,
+          44160,
+          44160
+        ],
+        [
+          44168,
+          44168,
+          44168,
+          44168,
+          44168
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          103.165,
+          99.0251,
+          101.8922,
+          101.0193,
+          99.2877
+        ],
+        [
+          100.981,
+          100.1954,
+          100.2193,
+          103.635,
+          97.9792
+        ],
+        [
+          84.5958,
+          85.7408,
+          83.1271,
+          84.1461,
+          83.2676
+        ],
+        [
+          85.4487,
+          81.5543,
+          83.5354,
+          83.2566,
+          83.2793
+        ]
+      ]
+    }
+  ]
+}

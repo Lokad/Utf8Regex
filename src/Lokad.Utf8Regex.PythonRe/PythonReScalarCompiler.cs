@@ -39,7 +39,7 @@ internal static partial class PythonReScalarCompiler
             program.HasBalancing, program.IgnoreCase, program.HasContiguousAnchor, program.HasConditionalTest,
             program.RightToLeft, program.SawLookaround, program.SawCapturingLookbehind, program.CanMatchEmpty,
             program.CaptureCatalog, program.UsesInterpretedLazyLoopSemantics, program.UsesLiteralClassBracketSyntax,
-            program.CaseBehavior, false, 0, [], program.BackreferenceLowerings);
+            program.CaseBehavior, false, 0, [], [], program.BackreferenceLowerings);
         construction.Complete();
         return result;
     }

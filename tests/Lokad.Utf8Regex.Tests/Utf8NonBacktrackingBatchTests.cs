@@ -17,6 +17,12 @@ public sealed class Utf8NonBacktrackingBatchTests
     [InlineData(@"(?:(?<x>[a\d])(?<y>b?))*c|$", "ab1c aa2bc !")]
     [InlineData(@"(?<x>[^ab]+)|(?<y>a)|$", "abé😀\n")]
     [InlineData(@"(?<x>a){0,3}?b|$", "aaaab aab b")]
+    [InlineData(@"^(?<x>a*)\b$", "aa")]
+    [InlineData(@"^(?<x>a*)\B$", "aa")]
+    [InlineData(@"^(?<x>a*)\B$", "")]
+    [InlineData(@"(?<x>^|$)\b(?<y>a?)", "a\nb")]
+    [InlineData(@"\B(?<x>a*)$", "!aa!")]
+    [InlineData(@"\b(?<x>a*)\B", "aa!")]
     public void SharedEpsilonDependenciesPreservePublicPriorityAndLastCaptures(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);

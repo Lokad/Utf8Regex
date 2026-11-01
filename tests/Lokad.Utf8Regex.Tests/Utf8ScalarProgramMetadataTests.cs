@@ -119,6 +119,6 @@ public sealed class Utf8ScalarProgramMetadataTests
             body.HasBalancing, body.IgnoreCase, body.HasContiguousAnchor, body.HasConditionalTest, body.RightToLeft,
             body.SawLookaround, body.SawCapturingLookbehind, body.CanMatchEmpty, body.CaptureCatalog,
             body.UsesInterpretedLazyLoopSemantics, body.UsesLiteralClassBracketSyntax, body.CaseBehavior,
-            body.IsNonBacktracking, body.NonBacktrackingCaptureOpeningCount, body.NonBacktrackingEpsilonOrder, body.BackreferenceLowerings),
+            body.IsNonBacktracking, body.NonBacktrackingCaptureOpeningCount, body.NonBacktrackingEpsilonOrder, body.NonBacktrackingEpsilonAncestors, body.BackreferenceLowerings),
     };
 }

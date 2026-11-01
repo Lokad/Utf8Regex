@@ -1,0 +1,46 @@
+{
+  "ElapsedSeconds": 23.0376031,
+  "MinimumSampleMilliseconds": 81.5543,
+  "Lanes": [
+    {
+      "Name": "BeforeColdNB",
+      "Us": 49.325830078125,
+      "Bytes": 51200,
+      "Spread": 1.0418065722730905
+    },
+    {
+      "Name": "AfterColdNB",
+      "Us": 48.935205078125,
+      "Bytes": 51328,
+      "Spread": 1.0577244966278556
+    },
+    {
+      "Name": "BeforeColdNonNBControl",
+      "Us": 41.086962890625,
+      "Bytes": 44160,
+      "Spread": 1.0314422131892005
+    },
+    {
+      "Name": "AfterColdNonNBControl",
+      "Us": 40.663720703125,
+      "Bytes": 44168,
+      "Spread": 1.0477522337877954
+    }
+  ],
+  "TargetChangePercent": -0.7919278791280515,
+  "ControlChangePercent": -1.030113100904262,
+  "TargetPairedPercent": [
+    -2.1169970435709784,
+    1.1818215785694974,
+    -1.641833231591816,
+    2.5893071917940436,
+    -1.3178873113185108
+  ],
+  "ControlPairedPercent": [
+    1.0082060811529514,
+    -4.882739605881903,
+    0.4911755612790447,
+    -1.0570899899104091,
+    0.014051083494659444
+  ]
+}

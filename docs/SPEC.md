@@ -95,11 +95,12 @@ Preparation work units are consequently lower than earlier per-cell accounting;
 finite limits remain enforceable, with CPU growth bounded by64 bytes/scalars/simple
 cells per corresponding quantum plus separately metered atom work. This applies
 to unlimited calls too.
-Programs fitting one packed word visit eligible consuming cells, then their
-ordered epsilon cells; wider programs keep the full ordered evaluation. This
-changes no invocation work units or table capacity. Compact compilation metadata
-uses the same construction admission; cold costs and construction-limit thresholds
-can differ from earlier layouts.
+Programs fitting one packed word precompute unconditional Fork/Jump/Capture
+ancestry. Each row visits eligible consuming cells, folds successful ancestry,
+then evaluates ordered anchor/boundary conditions. Wider programs keep the full
+ordered evaluation. This changes no invocation work units or table capacity.
+The immutable ancestry array uses construction admission before allocation;
+cold costs and construction-limit thresholds can differ from earlier layouts.
 
 ### Native pattern metadata
 

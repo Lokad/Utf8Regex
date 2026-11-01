@@ -1,0 +1,24 @@
+{
+  "BaselineSource": "c8ed65bfbc0d1c16cf7480197591b6e8ed46cb1e",
+  "Parent": "28c55fc391f8f3a9c56aec9742344b7f37926f13 (data/receipt only)",
+  "Configuration": "Release",
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "CorePerFramework": 1822,
+  "PythonRePerFramework": 1938,
+  "Pcre2PerFramework": 1507,
+  "DiffPerFramework": 28,
+  "NewTheoryRows": 6,
+  "Results": "All passed; zero skipped",
+  "StateCases": 371,
+  "StateBeforeAndAfterSha256": "85EC26EF19F131AD9421BB0CDECECC932728853B56D606D7914FD19A8640D571",
+  "StateResult": "Byte-for-byte equal complete JSONL, all viability bits, invocation work, ranges/captures, peaks and enclosing 13B loan refunds",
+  "BeforeCoreSha256": "32E0E00E4F3F9957F6D36CE0B92C90ED70C06E24C4773D4C8F5043AE745992CB",
+  "AfterCoreSha256": "B73EE2430BB83690043891A616EF9AF5C192F2A25CB0A9943450EE622E638CDC",
+  "ColdLaneSha256": "1AECB724EA2556FF0F92C6757929B24BBEB25230120CBF71852F2D2DDBB303A7",
+  "Scope": "One 96.372s public matrix, sole 23.038s selected cold confirmation; no package/fullcatalog rerun",
+  "Decision": "PROMOTE; primary ~27%, matching allocation and invocation work unchanged; cold +128B, modeled region capacity +144B, construction work +54",
+  "PriorCI": "41284365361 green Windows/Linux"
+}

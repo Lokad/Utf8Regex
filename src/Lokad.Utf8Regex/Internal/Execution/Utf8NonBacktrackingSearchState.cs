@@ -24,8 +24,9 @@ internal sealed class Utf8NonBacktrackingSearchState
         _reservation = reservation;
     }
 
-    internal static int[] BuildEpsilonOrder(Utf8SliceInstruction[] instructions)
+    internal static int[] BuildEpsilonOrder(Utf8SliceInstruction[] instructions, out ulong[] ancestors)
     {
+        ancestors = [];
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
         var colors = budget.AllocateArray<byte>(instructions.Length, false);
@@ -70,16 +71,37 @@ internal sealed class Utf8NonBacktrackingSearchState
                     }
                 }
             }
-            // Packed rows evaluate live consuming cells separately. Keep only
-            // epsilon dependencies after checking the complete graph for cycles.
+            // Fold unconditional packed dependencies once. A condition's edge
+            // remains a runtime decision; its unconditional ancestors can fold.
             if (instructions.Length <= 64)
             {
+                ancestors = budget.AllocateArray<ulong>(instructions.Length, false);
+                budget.ChargeWork(3UL * (ulong)instructions.Length);
+                for (var pc = 0; pc < instructions.Length; pc++) ancestors[pc] = 1UL << pc;
+                // Parents precede their children in this reverse order.
+                for (var index = order.Length - 1; index >= 0; index--)
+                {
+                    var pc = order[index];
+                    var instruction = instructions[pc];
+                    switch (instruction.Kind)
+                    {
+                        case Utf8SliceInstructionKind.Fork:
+                            ancestors[instruction.A] |= ancestors[pc];
+                            ancestors[pc + 1] |= ancestors[pc];
+                            break;
+                        case Utf8SliceInstructionKind.Jump:
+                            ancestors[instruction.A] |= ancestors[pc];
+                            break;
+                        case Utf8SliceInstructionKind.CaptureStart:
+                        case Utf8SliceInstructionKind.CaptureEnd:
+                            ancestors[pc + 1] |= ancestors[pc];
+                            break;
+                    }
+                }
                 budget.ChargeWork((ulong)order.Length);
                 var kept = 0;
                 foreach (var pc in order)
-                    if (instructions[pc].Kind is Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump
-                        or Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd
-                        or Utf8SliceInstructionKind.Anchor or Utf8SliceInstructionKind.Boundary)
+                    if (instructions[pc].Kind is Utf8SliceInstructionKind.Anchor or Utf8SliceInstructionKind.Boundary)
                         order[kept++] = pc;
                 var compact = kept == 0 ? [] : budget.AllocateArray<int>(kept, false);
                 order.AsSpan(0, kept).CopyTo(compact);
@@ -227,7 +249,7 @@ internal sealed class Utf8NonBacktrackingSearchState
     private static Utf8ExecutionLimitKind TryBuildPackedRow(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         int edge, Rune scalar, Rune before, ulong following, ref Utf8SliceInvocation invocation, out ulong current)
     {
-        current = program.NonBacktrackingAcceptMask;
+        current = program.NonBacktrackingAcceptClosure;
         // At most 64 distinct cells; atom predicates retain their own direct charges.
         var breach = invocation.TryChargeInputStep();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
@@ -235,11 +257,10 @@ internal sealed class Utf8NonBacktrackingSearchState
         while (candidates != 0)
         {
             var pc = BitOperations.TrailingZeroCount(candidates);
-            var bit = 1UL << pc;
             candidates &= candidates - 1;
             if (Utf8SliceRunner.MatchesNonBacktrackingAtom(program, program.Instructions[pc], scalar, ref invocation, out breach))
             {
-                current |= bit;
+                current |= program.NonBacktrackingEpsilonAncestors[pc];
             }
             if (breach != Utf8ExecutionLimitKind.None) return breach;
         }
@@ -249,16 +270,6 @@ internal sealed class Utf8NonBacktrackingSearchState
             bool viable;
             switch (instruction.Kind)
             {
-                case Utf8SliceInstructionKind.Fork:
-                    viable = (current & ((1UL << (pc + 1)) | (1UL << instruction.A))) != 0;
-                    break;
-                case Utf8SliceInstructionKind.Jump:
-                    viable = (current & (1UL << instruction.A)) != 0;
-                    break;
-                case Utf8SliceInstructionKind.CaptureStart:
-                case Utf8SliceInstructionKind.CaptureEnd:
-                    viable = (current & (1UL << (pc + 1))) != 0;
-                    break;
                 case Utf8SliceInstructionKind.Anchor:
                     viable = (current & (1UL << (pc + 1))) != 0 &&
                         Utf8SliceRunner.HoldsNonBacktrackingAnchor(instruction, input, edge);
@@ -270,9 +281,9 @@ internal sealed class Utf8NonBacktrackingSearchState
                         (beforeWord != afterWord) == (instruction.A != 0);
                     break;
                 default:
-                    throw new InvalidOperationException("A consuming cell entered the packed epsilon order.");
+                    throw new InvalidOperationException("An unconditional cell entered the packed condition order.");
             }
-            if (viable) current |= 1UL << pc;
+            if (viable) current |= program.NonBacktrackingEpsilonAncestors[pc];
         }
         return Utf8ExecutionLimitKind.None;
     }

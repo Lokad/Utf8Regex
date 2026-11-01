@@ -1,0 +1,4 @@
+{"Name":"region","States":15,"EpsilonOrder":2,"ModeledRetainedBytes":37488,"ModeledPeakBytes":37488,"ConstructionWork":2967,"CacheCharge":4297888,"EmptyCount":0}
+{"Name":"control","States":7,"EpsilonOrder":0,"ModeledRetainedBytes":41056,"ModeledPeakBytes":41056,"ConstructionWork":2633,"CacheCharge":4301456,"EmptyCount":0}
+{"Name":"wide","States":79,"EpsilonOrder":79,"ModeledRetainedBytes":44400,"ModeledPeakBytes":44400,"ConstructionWork":8088,"CacheCharge":4304800,"EmptyCount":0}
+{"Name":"category","States":9,"EpsilonOrder":0,"ModeledRetainedBytes":35440,"ModeledPeakBytes":35440,"ConstructionWork":1361,"CacheCharge":4295840,"EmptyCount":0}
