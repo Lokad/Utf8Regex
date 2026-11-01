@@ -1,0 +1,1045 @@
+{
+  "Scope": "Derived from reported public-operation medians rounded to3 decimals; raw samples/durations remain in resources.txt. Core/Python finite lanes set all4 public limits; PCRE2 finite lane changes MatchLimit. Limits are compared within each profile, not cross-dialect Status.",
+  "Rows": [
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "IsMatch",
+      "Lane": "core/unlimited",
+      "Result": 1,
+      "Microseconds": 1.166,
+      "AllocatedBytes": 5744.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "IsMatch",
+      "Lane": "core/token",
+      "Result": 1,
+      "Microseconds": 1.235,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "IsMatch",
+      "Lane": "core/finite",
+      "Result": 1,
+      "Microseconds": 1.269,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "IsMatch",
+      "Lane": "core/finite+token",
+      "Result": 1,
+      "Microseconds": 1.311,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "IsMatch",
+      "Lane": "python/unlimited",
+      "Result": 1,
+      "Microseconds": 1.024,
+      "AllocatedBytes": 5744.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "IsMatch",
+      "Lane": "python/token",
+      "Result": 1,
+      "Microseconds": 1.128,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "IsMatch",
+      "Lane": "python/finite",
+      "Result": 1,
+      "Microseconds": 1.138,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "IsMatch",
+      "Lane": "python/finite+token",
+      "Result": 1,
+      "Microseconds": 1.177,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "IsMatch",
+      "Lane": "dotnet/predecoded",
+      "Result": 1,
+      "Microseconds": 0.083,
+      "AllocatedBytes": 0.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "IsMatch",
+      "Lane": "dotnet/decode",
+      "Result": 1,
+      "Microseconds": 0.099,
+      "AllocatedBytes": 40.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "IsMatch",
+      "Lane": "pcre2/unlimited",
+      "Result": 1,
+      "Microseconds": 1.311,
+      "AllocatedBytes": 5744.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "IsMatch",
+      "Lane": "pcre2/finite",
+      "Result": 1,
+      "Microseconds": 1.423,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "IsMatch",
+      "Lane": "pcre2/finite+token",
+      "Result": 1,
+      "Microseconds": 1.461,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "Count",
+      "Lane": "core/unlimited",
+      "Result": 1,
+      "Microseconds": 0.771,
+      "AllocatedBytes": 3552.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "Count",
+      "Lane": "core/token",
+      "Result": 1,
+      "Microseconds": 0.852,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "Count",
+      "Lane": "core/finite",
+      "Result": 1,
+      "Microseconds": 0.855,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "Count",
+      "Lane": "core/finite+token",
+      "Result": 1,
+      "Microseconds": 0.875,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "Count",
+      "Lane": "python/unlimited",
+      "Result": 1,
+      "Microseconds": 1.047,
+      "AllocatedBytes": 5744.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "Count",
+      "Lane": "python/token",
+      "Result": 1,
+      "Microseconds": 1.157,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "Count",
+      "Lane": "python/finite",
+      "Result": 1,
+      "Microseconds": 1.166,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "Count",
+      "Lane": "python/finite+token",
+      "Result": 1,
+      "Microseconds": 1.203,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "Count",
+      "Lane": "dotnet/predecoded",
+      "Result": 1,
+      "Microseconds": 0.097,
+      "AllocatedBytes": 0.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "Count",
+      "Lane": "dotnet/decode",
+      "Result": 1,
+      "Microseconds": 0.113,
+      "AllocatedBytes": 40.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "Count",
+      "Lane": "pcre2/unlimited",
+      "Result": 1,
+      "Microseconds": 1.781,
+      "AllocatedBytes": 5744.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "Count",
+      "Lane": "pcre2/finite",
+      "Result": 1,
+      "Microseconds": 1.899,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a+)(b+)",
+      "Operation": "Count",
+      "Lane": "pcre2/finite+token",
+      "Result": 1,
+      "Microseconds": 1.905,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "IsMatch",
+      "Lane": "core/unlimited",
+      "Result": 1,
+      "Microseconds": 1.259,
+      "AllocatedBytes": 5744.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "IsMatch",
+      "Lane": "core/token",
+      "Result": 1,
+      "Microseconds": 1.347,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "IsMatch",
+      "Lane": "core/finite",
+      "Result": 1,
+      "Microseconds": 1.361,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "IsMatch",
+      "Lane": "core/finite+token",
+      "Result": 1,
+      "Microseconds": 1.399,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "IsMatch",
+      "Lane": "python/unlimited",
+      "Result": 1,
+      "Microseconds": 1.174,
+      "AllocatedBytes": 5744.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "IsMatch",
+      "Lane": "python/token",
+      "Result": 1,
+      "Microseconds": 1.32,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "IsMatch",
+      "Lane": "python/finite",
+      "Result": 1,
+      "Microseconds": 1.324,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "IsMatch",
+      "Lane": "python/finite+token",
+      "Result": 1,
+      "Microseconds": 1.365,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "IsMatch",
+      "Lane": "dotnet/predecoded",
+      "Result": 1,
+      "Microseconds": 0.194,
+      "AllocatedBytes": 0.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "IsMatch",
+      "Lane": "dotnet/decode",
+      "Result": 1,
+      "Microseconds": 0.211,
+      "AllocatedBytes": 48.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "IsMatch",
+      "Lane": "pcre2/unlimited",
+      "Result": 1,
+      "Microseconds": 1.398,
+      "AllocatedBytes": 5744.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "IsMatch",
+      "Lane": "pcre2/finite",
+      "Result": 1,
+      "Microseconds": 1.579,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "IsMatch",
+      "Lane": "pcre2/finite+token",
+      "Result": 1,
+      "Microseconds": 1.613,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "Count",
+      "Lane": "core/unlimited",
+      "Result": 1,
+      "Microseconds": 0.863,
+      "AllocatedBytes": 3552.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "Count",
+      "Lane": "core/token",
+      "Result": 1,
+      "Microseconds": 0.966,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "Count",
+      "Lane": "core/finite",
+      "Result": 1,
+      "Microseconds": 0.969,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "Count",
+      "Lane": "core/finite+token",
+      "Result": 1,
+      "Microseconds": 1.011,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "Count",
+      "Lane": "python/unlimited",
+      "Result": 1,
+      "Microseconds": 1.297,
+      "AllocatedBytes": 5744.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "Count",
+      "Lane": "python/token",
+      "Result": 1,
+      "Microseconds": 1.475,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "Count",
+      "Lane": "python/finite",
+      "Result": 1,
+      "Microseconds": 1.471,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "Count",
+      "Lane": "python/finite+token",
+      "Result": 1,
+      "Microseconds": 1.535,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "Count",
+      "Lane": "dotnet/predecoded",
+      "Result": 1,
+      "Microseconds": 0.215,
+      "AllocatedBytes": 0.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "Count",
+      "Lane": "dotnet/decode",
+      "Result": 1,
+      "Microseconds": 0.234,
+      "AllocatedBytes": 48.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "Count",
+      "Lane": "pcre2/unlimited",
+      "Result": 1,
+      "Microseconds": 3.002,
+      "AllocatedBytes": 5744.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "Count",
+      "Lane": "pcre2/finite",
+      "Result": 1,
+      "Microseconds": 3.123,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(ab|cd)+",
+      "Operation": "Count",
+      "Lane": "pcre2/finite+token",
+      "Result": 1,
+      "Microseconds": 3.174,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "IsMatch",
+      "Lane": "core/unlimited",
+      "Result": 1,
+      "Microseconds": 1.347,
+      "AllocatedBytes": 5744.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "IsMatch",
+      "Lane": "core/token",
+      "Result": 1,
+      "Microseconds": 1.47,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "IsMatch",
+      "Lane": "core/finite",
+      "Result": 1,
+      "Microseconds": 1.506,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "IsMatch",
+      "Lane": "core/finite+token",
+      "Result": 1,
+      "Microseconds": 1.536,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "IsMatch",
+      "Lane": "python/unlimited",
+      "Result": 1,
+      "Microseconds": 1.271,
+      "AllocatedBytes": 5744.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "IsMatch",
+      "Lane": "python/token",
+      "Result": 1,
+      "Microseconds": 1.428,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "IsMatch",
+      "Lane": "python/finite",
+      "Result": 1,
+      "Microseconds": 1.452,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "IsMatch",
+      "Lane": "python/finite+token",
+      "Result": 1,
+      "Microseconds": 1.523,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "IsMatch",
+      "Lane": "dotnet/predecoded",
+      "Result": 1,
+      "Microseconds": 0.147,
+      "AllocatedBytes": 0.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "IsMatch",
+      "Lane": "dotnet/decode",
+      "Result": 1,
+      "Microseconds": 0.164,
+      "AllocatedBytes": 48.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "IsMatch",
+      "Lane": "pcre2/unlimited",
+      "Result": 1,
+      "Microseconds": 1.404,
+      "AllocatedBytes": 5744.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "IsMatch",
+      "Lane": "pcre2/finite",
+      "Result": 1,
+      "Microseconds": 1.521,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "IsMatch",
+      "Lane": "pcre2/finite+token",
+      "Result": 1,
+      "Microseconds": 1.557,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "Count",
+      "Lane": "core/unlimited",
+      "Result": 2,
+      "Microseconds": 2.026,
+      "AllocatedBytes": 3552.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "Count",
+      "Lane": "core/token",
+      "Result": 2,
+      "Microseconds": 2.205,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "Count",
+      "Lane": "core/finite",
+      "Result": 2,
+      "Microseconds": 2.185,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "Count",
+      "Lane": "core/finite+token",
+      "Result": 2,
+      "Microseconds": 2.252,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "Count",
+      "Lane": "python/unlimited",
+      "Result": 2,
+      "Microseconds": 2.297,
+      "AllocatedBytes": 5744.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "Count",
+      "Lane": "python/token",
+      "Result": 2,
+      "Microseconds": 2.506,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "Count",
+      "Lane": "python/finite",
+      "Result": 2,
+      "Microseconds": 2.53,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "Count",
+      "Lane": "python/finite+token",
+      "Result": 2,
+      "Microseconds": 2.588,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "Count",
+      "Lane": "dotnet/predecoded",
+      "Result": 2,
+      "Microseconds": 0.295,
+      "AllocatedBytes": 0.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "Count",
+      "Lane": "dotnet/decode",
+      "Result": 2,
+      "Microseconds": 0.318,
+      "AllocatedBytes": 48.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "Count",
+      "Lane": "pcre2/unlimited",
+      "Result": 2,
+      "Microseconds": 3.875,
+      "AllocatedBytes": 5744.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "Count",
+      "Lane": "pcre2/finite",
+      "Result": 2,
+      "Microseconds": 4.031,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "(a|ab)+c",
+      "Operation": "Count",
+      "Lane": "pcre2/finite+token",
+      "Result": 2,
+      "Microseconds": 4.046,
+      "AllocatedBytes": 5864.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "IsMatch",
+      "Lane": "core/unlimited",
+      "Result": 1,
+      "Microseconds": 0.87,
+      "AllocatedBytes": 3552.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "IsMatch",
+      "Lane": "core/token",
+      "Result": 1,
+      "Microseconds": 0.941,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "IsMatch",
+      "Lane": "core/finite",
+      "Result": 1,
+      "Microseconds": 0.95,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "IsMatch",
+      "Lane": "core/finite+token",
+      "Result": 1,
+      "Microseconds": 0.991,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "IsMatch",
+      "Lane": "python/unlimited",
+      "Result": 1,
+      "Microseconds": 0.785,
+      "AllocatedBytes": 3552.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "IsMatch",
+      "Lane": "python/token",
+      "Result": 1,
+      "Microseconds": 0.895,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "IsMatch",
+      "Lane": "python/finite",
+      "Result": 1,
+      "Microseconds": 0.898,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "IsMatch",
+      "Lane": "python/finite+token",
+      "Result": 1,
+      "Microseconds": 0.931,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "IsMatch",
+      "Lane": "dotnet/predecoded",
+      "Result": 1,
+      "Microseconds": 0.057,
+      "AllocatedBytes": 0.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "IsMatch",
+      "Lane": "dotnet/decode",
+      "Result": 1,
+      "Microseconds": 0.074,
+      "AllocatedBytes": 40.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "IsMatch",
+      "Lane": "pcre2/unlimited",
+      "Result": 1,
+      "Microseconds": 0.991,
+      "AllocatedBytes": 3552.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "IsMatch",
+      "Lane": "pcre2/finite",
+      "Result": 1,
+      "Microseconds": 1.1,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "IsMatch",
+      "Lane": "pcre2/finite+token",
+      "Result": 1,
+      "Microseconds": 1.148,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "Count",
+      "Lane": "core/unlimited",
+      "Result": 1,
+      "Microseconds": 0.691,
+      "AllocatedBytes": 3552.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "Count",
+      "Lane": "core/token",
+      "Result": 1,
+      "Microseconds": 0.767,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "Count",
+      "Lane": "core/finite",
+      "Result": 1,
+      "Microseconds": 0.771,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "Count",
+      "Lane": "core/finite+token",
+      "Result": 1,
+      "Microseconds": 0.807,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "Count",
+      "Lane": "python/unlimited",
+      "Result": 1,
+      "Microseconds": 0.8,
+      "AllocatedBytes": 3552.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "Count",
+      "Lane": "python/token",
+      "Result": 1,
+      "Microseconds": 0.911,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "Count",
+      "Lane": "python/finite",
+      "Result": 1,
+      "Microseconds": 0.933,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "Count",
+      "Lane": "python/finite+token",
+      "Result": 1,
+      "Microseconds": 1.006,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "Count",
+      "Lane": "dotnet/predecoded",
+      "Result": 1,
+      "Microseconds": 0.068,
+      "AllocatedBytes": 0.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "Count",
+      "Lane": "dotnet/decode",
+      "Result": 1,
+      "Microseconds": 0.084,
+      "AllocatedBytes": 40.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "Count",
+      "Lane": "pcre2/unlimited",
+      "Result": 1,
+      "Microseconds": 1.373,
+      "AllocatedBytes": 3552.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "Count",
+      "Lane": "pcre2/finite",
+      "Result": 1,
+      "Microseconds": 1.469,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "a+b",
+      "Operation": "Count",
+      "Lane": "pcre2/finite+token",
+      "Result": 1,
+      "Microseconds": 1.478,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "IsMatch",
+      "Lane": "core/unlimited",
+      "Result": 1,
+      "Microseconds": 0.566,
+      "AllocatedBytes": 3552.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "IsMatch",
+      "Lane": "core/token",
+      "Result": 1,
+      "Microseconds": 0.624,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "IsMatch",
+      "Lane": "core/finite",
+      "Result": 1,
+      "Microseconds": 0.619,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "IsMatch",
+      "Lane": "core/finite+token",
+      "Result": 1,
+      "Microseconds": 0.637,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "IsMatch",
+      "Lane": "python/unlimited",
+      "Result": 1,
+      "Microseconds": 0.573,
+      "AllocatedBytes": 3552.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "IsMatch",
+      "Lane": "python/token",
+      "Result": 1,
+      "Microseconds": 0.671,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "IsMatch",
+      "Lane": "python/finite",
+      "Result": 1,
+      "Microseconds": 0.674,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "IsMatch",
+      "Lane": "python/finite+token",
+      "Result": 1,
+      "Microseconds": 0.717,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "IsMatch",
+      "Lane": "dotnet/predecoded",
+      "Result": 1,
+      "Microseconds": 0.059,
+      "AllocatedBytes": 0.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "IsMatch",
+      "Lane": "dotnet/decode",
+      "Result": 1,
+      "Microseconds": 0.072,
+      "AllocatedBytes": 24.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "IsMatch",
+      "Lane": "pcre2/unlimited",
+      "Result": 1,
+      "Microseconds": 0.665,
+      "AllocatedBytes": 3552.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "IsMatch",
+      "Lane": "pcre2/finite",
+      "Result": 1,
+      "Microseconds": 0.739,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "IsMatch",
+      "Lane": "pcre2/finite+token",
+      "Result": 1,
+      "Microseconds": 0.756,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "Count",
+      "Lane": "core/unlimited",
+      "Result": 2,
+      "Microseconds": 0.728,
+      "AllocatedBytes": 3552.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "Count",
+      "Lane": "core/token",
+      "Result": 2,
+      "Microseconds": 0.799,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "Count",
+      "Lane": "core/finite",
+      "Result": 2,
+      "Microseconds": 0.797,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "Count",
+      "Lane": "core/finite+token",
+      "Result": 2,
+      "Microseconds": 0.829,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "Count",
+      "Lane": "python/unlimited",
+      "Result": 3,
+      "Microseconds": 1.088,
+      "AllocatedBytes": 3552.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "Count",
+      "Lane": "python/token",
+      "Result": 3,
+      "Microseconds": 1.21,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "Count",
+      "Lane": "python/finite",
+      "Result": 3,
+      "Microseconds": 1.205,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "Count",
+      "Lane": "python/finite+token",
+      "Result": 3,
+      "Microseconds": 1.244,
+      "AllocatedBytes": 3672.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "Count",
+      "Lane": "dotnet/predecoded",
+      "Result": 2,
+      "Microseconds": 0.107,
+      "AllocatedBytes": 0.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "Count",
+      "Lane": "dotnet/decode",
+      "Result": 2,
+      "Microseconds": 0.122,
+      "AllocatedBytes": 24.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "Count",
+      "Lane": "pcre2/unlimited",
+      "Result": 3,
+      "Microseconds": 2.565,
+      "AllocatedBytes": 14208.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "Count",
+      "Lane": "pcre2/finite",
+      "Result": 3,
+      "Microseconds": 2.735,
+      "AllocatedBytes": 14328.0
+    },
+    {
+      "Pattern": "x*|y",
+      "Operation": "Count",
+      "Lane": "pcre2/finite+token",
+      "Result": 3,
+      "Microseconds": 2.822,
+      "AllocatedBytes": 14328.0
+    }
+  ]
+}
