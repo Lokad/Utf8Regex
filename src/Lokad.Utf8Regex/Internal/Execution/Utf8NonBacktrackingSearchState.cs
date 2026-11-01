@@ -116,6 +116,7 @@ internal sealed class Utf8NonBacktrackingSearchState
             }
             var result = new Utf8NonBacktrackingSearchState(boundaries, bits, stride, reservation);
             var singleWord = stride == 1;
+            var scalar = default(Rune);
             for (var boundary = scalars; boundary >= 0; boundary--)
             {
                 var edge = boundaries[boundary];
@@ -124,9 +125,7 @@ internal sealed class Utf8NonBacktrackingSearchState
                 // the next row is complete already. Wider rows keep the table.
                 ulong current = 0;
                 var following = singleWord && boundary < scalars ? bits[boundary + 1] : 0;
-                var scalar = default(Rune);
                 var before = default(Rune);
-                if (boundary < scalars) _ = Rune.DecodeFromUtf8(input[edge..], out scalar, out _);
                 if (boundary > 0) _ = Rune.DecodeFromUtf8(input[boundaries[boundary - 1]..], out before, out _);
                 var instructionWork = 0;
                 foreach (var pc in program.NonBacktrackingEpsilonOrder)
@@ -187,6 +186,9 @@ internal sealed class Utf8NonBacktrackingSearchState
                     }
                 }
                 if (singleWord) bits[boundary] = current;
+                // On the next reverse row this preceding scalar is current.
+                // The end row has no current scalar; boundary zero has no prior one.
+                scalar = before;
             }
             invocation.Budget.ThrowIfCancellationRequested();
             invocation.Budget.CheckDeadline();

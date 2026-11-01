@@ -1,0 +1,26 @@
+{
+  "BaselineSource": "1a18b14eee814b2e00ffae9856dfd724cd47efd6",
+  "Configuration": "Release",
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "CorePerFramework": 641,
+  "PythonRePerFramework": 1710,
+  "Pcre2PerFramework": 263,
+  "DiffPerFramework": 28,
+  "NewTheoryRows": 6,
+  "NewTheoryScope": "Both ordinary/compiled NB; adjacent mixed Unicode/NUL/combining/supplementary scalars, empty/end boundaries, ranges, last captures, counts, replacement; scalar owned ordinary oracle",
+  "Results": "All passed; zero skipped",
+  "CommandLogs": [
+    "core-tests.txt",
+    "python-tests.txt",
+    "pcre-tests.txt",
+    "diff-tests.txt"
+  ],
+  "ExistingChecks": "NB work/working cutoffs, cancellation original identity, deadlines and final publication, full storage admission/refunds, captures, packed-word widths and aliases",
+  "PublicStateProbe": "Nine cases, identical full viability hashes/numeric steps/held bytes and final13B enclosing loan before and after",
+  "SourceSha256": "B00EB0C3530100668F0294C205BB40F9B689855679B9A308B0AB8CC116357789",
+  "TestsSha256": "88293CEDD192F62DA6BF53008DACBC88A84CFA01B0C182E48CCC8030F9F8D01F",
+  "Scope": "Focused affected validation; no repeated complete platform/package/catalog matrix"
+}

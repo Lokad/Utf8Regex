@@ -8,6 +8,52 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8NonBacktrackingBatchTests
 {
+    [Theory]
+    [InlineData(@"\b(?<x>.)\B|(?<last>.)$", "aé中😀\0z\r\n")]
+    [InlineData(@"(?<x>\w+)\b|(?<last>\W)$", "é中a\u0301😀\0z\n")]
+    [InlineData(@"^\s*///(?<title>#.*)$", " \n///#é😀\n///not\n \r\n///#中\n")]
+    [InlineData(@"(?<x>😀|é|a)+|$", "😀éa\0😀😀\n")]
+    [InlineData(@"\B(?<x>.)\b|^$", "")]
+    [InlineData(@"\B(?<x>.)\b|^$", "\0😀éa\u0301\n")]
+    public void ReverseRowsPreserveBothAdjacentScalars(string pattern, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        foreach (var compiled in new[] { false, true })
+        {
+            var options = RegexOptions.Multiline | RegexOptions.CultureInvariant |
+                (compiled ? RegexOptions.Compiled : 0);
+            // Ordinary owned matching is a scalar oracle even for supplementary dots.
+            // Only last capture values/ranges are shared with NonBacktracking.
+            var ordinary = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options | RegexOptions.NonBacktracking);
+            Assert.Equal(ordinary.Count(input), regex.Count(input));
+            Assert.Equal(ordinary.IsMatch(input), regex.IsMatch(input));
+            Assert.Equal(ordinary.ReplaceToString(input, "<$0>"), regex.ReplaceToString(input, "<$0>"));
+            var expected = ordinary.EnumerateMatches(input).GetEnumerator();
+            var actual = regex.EnumerateMatches(input).GetEnumerator();
+            while (expected.MoveNext())
+            {
+                Assert.True(actual.MoveNext());
+                var wanted = expected.Current;
+                var found = actual.Current;
+                Assert.Equal((wanted.IndexInBytes, wanted.LengthInBytes, wanted.IndexInUtf16, wanted.LengthInUtf16),
+                    (found.IndexInBytes, found.LengthInBytes, found.IndexInUtf16, found.LengthInUtf16));
+                var detailedExpected = ordinary.MatchDetailedFromUtf16Offset(input, wanted.IndexInUtf16);
+                var detailedActual = regex.MatchDetailedFromUtf16Offset(input, wanted.IndexInUtf16);
+                foreach (var group in ordinary.GetGroupNumbers())
+                {
+                    var left = detailedExpected.GetGroup(group);
+                    var right = detailedActual.GetGroup(group);
+                    Assert.Equal(left.Success, right.Success);
+                    if (left.Success)
+                        Assert.Equal((left.IndexInBytes, left.LengthInBytes, left.GetValueString()),
+                            (right.IndexInBytes, right.LengthInBytes, right.GetValueString()));
+                }
+            }
+            Assert.False(actual.MoveNext());
+        }
+    }
+
     [Fact]
     public void PackedWordBoundariesPreservePublicCountsCapturesAndAliases()
     {
