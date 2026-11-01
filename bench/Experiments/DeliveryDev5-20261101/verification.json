@@ -1,0 +1,23 @@
+{
+  "Status": "Superseded before delivery; preserve all attempt bytes",
+  "FrozenSource": "7c117bfbbc1e79f165ecdb43af5ba98871293e89",
+  "Version": "0.5.0-dev.5",
+  "Attempt": "142c13045e76",
+  "Qualified": false,
+  "Published": false,
+  "WindowsCoreNet10Passed": 41128,
+  "WindowsCoreNet11Passed": 41127,
+  "WindowsCoreNet11Failed": 1,
+  "Failure": "DenseFiniteValuesDoNotAcquirePerResultScratch(compiled:false):7200B >4096B",
+  "SamePackageIsolatedCasesPassed": 2,
+  "FixedFixtureCasesPerRuntime": 25,
+  "AllocationLimitUnchanged": 4096,
+  "Repair": "Reuse existing exclusive runtime-allocation collection; no production change",
+  "OriginalWindowsCompilationDocuments": 463,
+  "VmStatus": "Intentionally terminated during Core sampling after Windows qualification failure; not Complete",
+  "VmExitCode": 143,
+  "SourceCiRun": 41321863446,
+  "SourceCi": "Green Windows/Linux",
+  "PartialArchiveSha256": "CC084F65C64332BDB4C73BEADAFD71C3602E6B6D35810FFE2413C5D9B83D5175",
+  "WindowsArchiveSha256": "3DA0332BA379759F2EC9C4D42320019D271BCC531E17AC7BF93E1124A12A882A"
+}

@@ -5,6 +5,7 @@ using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
 
+[Collection(Utf8RuntimeAllocationCollection.Name)]
 public sealed class Utf8FiniteBranchEnumerationTests
 {
     private static Utf8ResourcePolicy Tiny(ulong work = 1000000) => new()
