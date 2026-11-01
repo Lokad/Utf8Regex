@@ -63,3 +63,16 @@ caseless programs. No new package/platform/fullcatalog qualification.
 Immutable dev.3 packages and its full refresh remain that source's qualified
 boundary. This new source needs only its affected-row refresh now; future cumulative
 and package gates remain at the next coherent delivery boundary.
+
+Only assertion-capture was refreshed from clean committed source `092b8e68`,
+using the existing raw and nine-pair native commands. Its point native ratio is
+now0.519x (managed1.240us,native2.489us,95% interval[0.440,0.625]),5744bytes.
+The existing verdict is **Inconclusive**, replacing the prior qualified438.51x
+NativeFaster result. This is not a qualified native win; variation remains and
+no rerun was made to change Status. Causal gains come from the controlled A/B above.
+Other rows, identities, lifecycle/scaling and exclusions are unchanged. Existing
+Markdown verification and one snapshot guard per runtime pass.
+[Selective raw/generated/binary evidence](../../../artifacts/experiments/pcre2-slice-leading-byte-20261101/selective-evidence.tar.gz):
+`5E2D23CB368A366AB6EA2682FF4720951F09DD389837FE0601AFAD5DB3AA14E4`.
+Committed Pcre2 DLL SHA256:
+`88F40593D1572505045250E1F8419E2D9CBC77C41F591327356289F02A1ACF23`.

@@ -23,5 +23,16 @@
   "Decision": "PROMOTE primary753x, matching allocation unchanged, miss5744->64B. Initialdense+11.105% retained; soleconfirmation+2.352% (allpairs0.7..5.3%), literal+.75%, under10% gate.",
   "Contract": "Existing necessaryASCIIhint, every<=2048byte scan admits basic work and directly checks token/deadline, actualVM/captures/workspace remain. Scalar boundaries, absolute origins, aliases and allcaps preserved; route-specific work/admission thresholds can decrease.",
   "Scope": "Boolean slice search only; no new compiledmetadata/arrays/engine/framework/unsafe; no package/fullcatalog rerun",
-  "PriorCI": "7a99e749/41291788934 green Windows/Linux"
+  "PriorCI": "7a99e749/41291788934 green Windows/Linux",
+  "SelectiveSource": "092b8e689750bbbdb0ee006e62daf61fb245fd69",
+  "SelectivePcre2Sha256": "88F40593D1572505045250E1F8419E2D9CBC77C41F591327356289F02A1ACF23",
+  "SelectiveCoreSha256": "E2658B9B1F605FF1CE14C698FAB2FE8A786DFC2B88FF03EBED67A6072B0047A4",
+  "NativePairStatus": "Inconclusive",
+  "NativePointRatio": 0.5192868407115545,
+  "NativeLower95": 0.4399989347672903,
+  "NativeUpper95": 0.6248285048636573,
+  "NativeManagedMedianMicroseconds": 1.24000444329248,
+  "NativeComparatorMedianMicroseconds": 2.4891637714148795,
+  "SnapshotGuardsPerFramework": 1,
+  "SelectiveRefresh": "Only assertion-capture raw/native pair changed, existing generator/guard pass; no resample to alter Status"
 }

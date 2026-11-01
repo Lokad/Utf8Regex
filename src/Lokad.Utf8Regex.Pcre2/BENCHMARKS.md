@@ -13,21 +13,21 @@ Enumeration and MatchMany consume byte ranges. Managed public results also suppl
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `4B0255475809D3798BA05F25C915029BCD6D6DBCBCCB02E8FB023AB2099CA7A4`
-- Latest managed row measurement: `2026-11-01T08:44:46.2639767+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-11-01T08:44:46.2639767+00:00`
+- Snapshot SHA-256: `B44935B0C91ABD448D1EEB0A49592C4B432D843F32887CAF0BB9A042095FEFB6`
+- Latest managed row measurement: `2026-11-01T09:48:16.3524325+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-11-01T09:48:16.3524325+00:00`
 - Operation rows: `126` across `10` sections
 - Comparable rows at or below the decode-then-.NET median: `40/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `101/126`
-- Comparator Status: `71` managed faster, `1` equivalent, `16` native faster, `13` inconclusive, `0` unqualified, `25` excluded
+- Comparator Status: `71` managed faster, `1` equivalent, `15` native faster, `14` inconclusive, `0` unqualified, `25` excluded
 - Rows with paired qualification evidence: `101/101`
 - Qualification processor sets: `single-least-contended-allowed-processor 0x10`, `single-least-contended-allowed-processor 0x2`, `single-least-contended-allowed-processor 0x4`, `single-least-contended-allowed-processor 0x40`, `single-least-contended-allowed-processor 0x8`, `single-least-contended-allowed-processor 0x80`
 - Scaling families: `16`
-- Managed/comparator measurement environments represented: `1/1`
+- Managed/comparator measurement environments represented: `2/2`
 
-Managed rows were measured from source `a1986746bb8b` on .NET 11.0.0-rc.3.26522.148, Ubuntu 24.04.4 LTS, X64; Tiered PGO `runtime-default`.
+Managed rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.
 
-PCRE.NET / PCRE2 NFA rows were measured from source `a1986746bb8b` on .NET 11.0.0-rc.3.26522.148, Ubuntu 24.04.4 LTS, X64; Tiered PGO `runtime-default`, tracked dirty `False`, untracked files `False`.
+Comparator rows span more than one measurement environment. Consult each row's `PcreNetNativeEnvironment` metadata before comparing small differences.
 
 NuGet package SHA-512: `Zu3NJGiU1S7tHHaW4UdEK1WZ9LFYqPI+6Y0eiL6YPHVOHSoWjbq0x5j3uN9895DoIgO5XI/50S6dj2ZmRHirNA==`.
 
@@ -57,7 +57,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 
 | Case | Status | Input | Utf8Pcre2 elapsed | PCRE.NET / PCRE2 NFA elapsed | R | 95% R | E | Paired samples | Managed route | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | vs decode | Utf8Pcre2 managed alloc | Comparator managed alloc |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---:|---:|
-| `backtracking/assertion-capture` | **Native faster** | 4,103 B | 903.922 us | 2.072 us | 438.51x | 384.71–479.62x | +902.015 us | 9 pairs; 37/37 ms; 41/17,804 ops/lane; IQR 1.009/1.092 | `Pcre2Slice` | 860.455 us | 0.283 us | 0.846 us | 1068.78x | 5,744 B | 0 B |
+| `backtracking/assertion-capture` | **Inconclusive** | 4,103 B | 1.240 us | 2.489 us | 0.52x | 0.44–0.62x | -1.128 us | 9 pairs; 33/42 ms; 27,007/16,694 ops/lane; IQR 1.114/1.200 | `Pcre2Slice` | 897.588 us | 0.282 us | 0.805 us | 1.54x | 5,744 B | 0 B |
 | `backtracking/capture-backreference` | **Inconclusive** | 22,528 B | 1.322 us | 11.291 us | 0.12x | 0.11–0.13x | -9.889 us | 9 pairs; 35/50 ms; 26,783/4,408 ops/lane; IQR 1.028/1.151 | `Pcre2Slice` | 1.870 us | 0.095 us | 3.230 us | 0.41x | 3,872 B | 0 B |
 | `common/backtracking` | **Managed faster** | 49 B | 0.011 us | 1.217 us | 0.01x | 0.01–0.01x | -1.206 us | 9 pairs; 41/42 ms; 3,749,378/34,094 ops/lane; IQR 1.006/1.011 | `Pcre2Slice` | 0.214 us | 1.038 us | 1.076 us | 0.01x | 0 B | 0 B |
 | `common/date-match` | **Native faster** | 47 B | 1.852 us | 0.161 us | 11.47x | 11.44–11.66x | +1.691 us | 9 pairs; 37/41 ms; 20,202/256,737 ops/lane; IQR 1.017/1.005 | `Pcre2Backtracking` | 0.047 us | 0.121 us | 0.160 us | 11.57x | 0 B | 0 B |
