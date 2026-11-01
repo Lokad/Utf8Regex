@@ -1,0 +1,252 @@
+{
+  "Scope": "Existing compiler-required leading ASCII byte filters impossible slice Boolean starts; every\u003C=2048byte scan charged even unlimited; all actual VM/capture work retained, nullable/contiguous/compileanchored unfiltered, nonNone options unchanged. No compiledmetadata/array/engine/mode/framework; derived cursor hint only. Selected sole noise confirmation of densefalse-starts and unchangedliteralcontrol, samefrozen producer/lane binaries, four equal-result lanes, warm5s/min64, independent60ms calibration, five alternating samples\u003E=20ms; complete batches consumed after timing. One60s cap for sole selected confirmation; stop afterwards; no cold/package/fullcatalog repetition.",
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "AffinityMask": "4",
+  "ElapsedSeconds": 45.538469,
+  "Identities": [
+    {
+      "Version": "0.5.0-dev.3\u002Ba1986746bb8bfa95367eef1c12c3e916fbb40bc0",
+      "Sha256": "4F5EE13373E74A9C0F637972997C8BA57EEF155B2FE428DC80FA7E1BEB17709E"
+    },
+    {
+      "Version": "0.5.0-dev.3\u002B7a99e7498afb3a3e578cffff5ec77c20692d2bf8",
+      "Sha256": "1B55E931C26573F4A8F023D75C164ED44BF037A6451603720C3EFDE0B7490F80"
+    }
+  ],
+  "LaneNames": [
+    "Before",
+    "After",
+    "PredecodedRegex",
+    "DecodeThenRegex"
+  ],
+  "Rows": [
+    {
+      "Name": "dense-false-starts",
+      "Pattern": "(?=(?\u003Ctoken\u003E[a-z]{3}[0-9]{3}))abc123",
+      "Folded": false,
+      "Anchored": false,
+      "Finite": false,
+      "Live": false,
+      "Deadline": false,
+      "InputBytes": 4102,
+      "InputSha256": "DE90DEF09B003B29B8764064F28B37F9E4CDE15EE8309A2FC951EC4388DC3B1A",
+      "Expected": 1,
+      "Iterations": [
+        128,
+        128,
+        262144,
+        131072
+      ],
+      "WarmupCalls": [
+        5446,
+        5387,
+        16152092,
+        6512190
+      ],
+      "Microseconds": [
+        [
+          852.0234375,
+          846.3773437499999,
+          851.33515625,
+          847.05546875,
+          842.4546875
+        ],
+        [
+          866.98203125,
+          869.84453125,
+          857.57265625,
+          891.56640625,
+          849.3359375
+        ],
+        [
+          0.2815971374511719,
+          0.2735897064208984,
+          0.27017822265624997,
+          0.2736522674560547,
+          0.27877044677734375
+        ],
+        [
+          0.8164741516113282,
+          0.7209724426269531,
+          0.7996177673339844,
+          0.7244117736816407,
+          0.8092185974121093
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          5744,
+          5744,
+          5744,
+          5744,
+          5744
+        ],
+        [
+          5744,
+          5744,
+          5744,
+          5744,
+          5744
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          8232,
+          8232,
+          8232,
+          8232,
+          8232
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          109.059,
+          108.3363,
+          108.9709,
+          108.4231,
+          107.8342
+        ],
+        [
+          110.9737,
+          111.3401,
+          109.7693,
+          114.1205,
+          108.715
+        ],
+        [
+          73.819,
+          71.7199,
+          70.8256,
+          71.7363,
+          73.078
+        ],
+        [
+          107.0169,
+          94.4993,
+          104.8075,
+          94.9501,
+          106.0659
+        ]
+      ]
+    },
+    {
+      "Name": "literal-control",
+      "Pattern": "needle",
+      "Folded": false,
+      "Anchored": false,
+      "Finite": false,
+      "Live": false,
+      "Deadline": false,
+      "InputBytes": 8198,
+      "InputSha256": "8DA47E1CAE661B34F429302D624E9EA43B01F9729C6A36BB3E1D2297395FF58B",
+      "Expected": 1,
+      "Iterations": [
+        262144,
+        262144,
+        262144,
+        65536
+      ],
+      "WarmupCalls": [
+        17676861,
+        18431758,
+        11394834,
+        3678856
+      ],
+      "Microseconds": [
+        [
+          0.24162673950195312,
+          0.2385009765625,
+          0.2593208312988281,
+          0.24437904357910156,
+          0.23745079040527342
+        ],
+        [
+          0.24626235961914064,
+          0.24109535217285158,
+          0.24244575500488283,
+          0.24343795776367189,
+          0.2437053680419922
+        ],
+        [
+          0.3985771179199219,
+          0.40050163269042965,
+          0.40068206787109373,
+          0.39678916931152347,
+          0.40299263000488283
+        ],
+        [
+          1.4737655639648437,
+          1.3097137451171874,
+          1.481488037109375,
+          1.3067718505859376,
+          1.4616973876953125
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          16424,
+          16424,
+          16424,
+          16424,
+          16424
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          63.341,
+          62.5216,
+          67.9794,
+          64.0625,
+          62.2463
+        ],
+        [
+          64.5562,
+          63.2017,
+          63.5557,
+          63.8158,
+          63.8859
+        ],
+        [
+          104.4846,
+          104.9891,
+          105.0364,
+          104.0159,
+          105.6421
+        ],
+        [
+          96.5847,
+          85.8334,
+          97.0908,
+          85.6406,
+          95.7938
+        ]
+      ]
+    }
+  ]
+}

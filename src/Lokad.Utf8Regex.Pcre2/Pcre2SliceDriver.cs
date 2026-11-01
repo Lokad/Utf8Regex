@@ -32,6 +32,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
     private int _position;
     private bool _retryPending;
     private int _retryPosition;
+    private readonly byte? _leadingAsciiByte;
 
     internal Pcre2SliceGlobalMatchCursor(
         Utf8SliceProgram program,
@@ -39,7 +40,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         Utf8BytePosition start,
         Pcre2CompileRequest request,
         CancellationToken cancellationToken)
-        : this(program, Pcre2SliceDriver.CreateInvocation(request, cancellationToken), input, start, request)
+        : this(program, Pcre2SliceDriver.CreateInvocation(request, cancellationToken), input, start, request, null)
     {
     }
 
@@ -50,7 +51,8 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         Utf8SliceInvocation invocation,
         Utf8ValidatedInput input,
         Utf8BytePosition start,
-        Pcre2CompileRequest request)
+        Pcre2CompileRequest request,
+        byte? leadingAsciiByte)
     {
         _program = program;
         _input = input;
@@ -60,6 +62,8 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         _position = start.Value;
         _retryPending = false;
         _retryPosition = start.Value;
+        _leadingAsciiByte = !program.CanMatchEmpty && !program.HasContiguousAnchor &&
+            (request.Options & Pcre2CompileOptions.Anchored) == 0 ? leadingAsciiByte : null;
         Current = Pcre2CharacterMatch.NoMatch;
     }
 
@@ -189,6 +193,9 @@ internal ref struct Pcre2SliceGlobalMatchCursor
 
                 while (_position <= bytes.Length)
                 {
+                    if (_leadingAsciiByte is { } leading && _position < bytes.Length &&
+                        bytes[_position] != leading && !SeekLeadingAsciiByte(bytes, leading))
+                        return false;
                     var outcome = Utf8SliceRunner.TryMatchAt(
                         _program,
                         bytes,
@@ -237,6 +244,21 @@ internal ref struct Pcre2SliceGlobalMatchCursor
             finally { Utf8SliceRunner.ReleaseSlots(slots, ref _invocation); }
         }
     }
+
+    // This compiler proof is a necessary first byte, never a successful match.
+    // Keep the original invocation and admit every bounded scan, including unlimited calls.
+    private bool SeekLeadingAsciiByte(ReadOnlySpan<byte> bytes, byte leading)
+    {
+        while (_position < bytes.Length)
+        {
+            Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.TryChargeInputStep());
+            var length = Math.Min(2048, bytes.Length - _position);
+            var found = bytes.Slice(_position, length).IndexOf(leading);
+            if (found >= 0) { _position += found; return true; }
+            _position += length;
+        }
+        return false;
+    }
 }
 
 internal static class Pcre2SliceDriver
@@ -271,13 +293,14 @@ internal static class Pcre2SliceDriver
 
     internal static bool IsMatch(
         Utf8SliceProgram program,
+        byte? leadingAsciiByte,
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
         scoped ref Utf8SliceInvocation invocation)
     {
         var cursor = new Pcre2SliceGlobalMatchCursor(
-            program, invocation, input, start, request);
+            program, invocation, input, start, request, leadingAsciiByte);
         return cursor.MoveNext();
     }
 
@@ -289,7 +312,7 @@ internal static class Pcre2SliceDriver
         scoped ref Utf8SliceInvocation invocation)
     {
         var cursor = new Pcre2SliceGlobalMatchCursor(
-            program, invocation, input, start, request);
+            program, invocation, input, start, request, null);
         return cursor.MoveNext() ? cursor.Current : Pcre2CharacterMatch.NoMatch;
     }
 
@@ -306,7 +329,7 @@ internal static class Pcre2SliceDriver
             return CountNonEmpty(program, default, ref input, start, ref invocation);
 
         var cursor = new Pcre2SliceGlobalMatchCursor(
-            program, invocation, input, start, request);
+            program, invocation, input, start, request, null);
         var count = 0;
         while (cursor.MoveNext())
         {

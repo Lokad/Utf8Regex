@@ -164,7 +164,7 @@ public sealed class Pcre2SliceCallbackAuthorityTests
         {
             var buffer = scope.CreateBuffer();
             var cursor = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram, scope.Invocation,
-                Utf8ValidatedInput.Create("é😀"u8), new Utf8BytePosition(0), regex.DebugCompiledProgram.Request);
+                Utf8ValidatedInput.Create("é😀"u8), new Utf8BytePosition(0), regex.DebugCompiledProgram.Request, null);
             Pcre2MatchException? failure = null;
             try { cursor.MoveNext(); }
             catch (Pcre2MatchException error) { failure = error; }
@@ -203,7 +203,7 @@ public sealed class Pcre2SliceCallbackAuthorityTests
         {
             scope.CreateBuffer();
             var cursor = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram, scope.Invocation,
-                Utf8ValidatedInput.Create("é😀"u8), new Utf8BytePosition(0), regex.DebugCompiledProgram.Request);
+                Utf8ValidatedInput.Create("é😀"u8), new Utf8BytePosition(0), regex.DebugCompiledProgram.Request, null);
             Assert.Same(invocation.Budget.Deadline, cursor.WorkingInvocation.Budget.Deadline);
             if (cancel) source.Cancel(); else ticks = 25;
             try { cursor.MoveNext(); Assert.Fail("Original authority must fail before slot admission."); }
@@ -264,7 +264,7 @@ public sealed class Pcre2SliceCallbackAuthorityTests
         {
             scope.CreateBuffer();
             var cursor = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram, scope.Invocation,
-                Utf8ValidatedInput.Create(input), new Utf8BytePosition(0), regex.DebugCompiledProgram.Request);
+                Utf8ValidatedInput.Create(input), new Utf8BytePosition(0), regex.DebugCompiledProgram.Request, null);
             Assert.True(cursor.MoveNext());
             groups = cursor.CaptureGroupsAt(0, true);
             var alias = cursor;

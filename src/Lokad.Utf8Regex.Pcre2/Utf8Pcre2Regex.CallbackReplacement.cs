@@ -165,7 +165,7 @@ public sealed partial class Utf8Pcre2Regex
         }
 
         var scalarProgram = ((Pcre2SliceDirectProgram)program).SliceProgram;
-        var cursor = new Pcre2SliceGlobalMatchCursor(scalarProgram, invocation, subject, start, _program.Request);
+        var cursor = new Pcre2SliceGlobalMatchCursor(scalarProgram, invocation, subject, start, _program.Request, null);
         while (true)
         {
             output.Checkpoint();

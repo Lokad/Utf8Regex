@@ -1,0 +1,39 @@
+{
+  "ElapsedSeconds": 45.538469,
+  "Rows": [
+    {
+      "Name": "dense-false-starts",
+      "BeforeUs": 847.05546875,
+      "AfterUs": 866.98203125,
+      "ChangePercent": 2.3524507231392544,
+      "BeforeBytes": 5744,
+      "AfterBytes": 5744,
+      "BeforeSpread": 1.0113581776467948,
+      "AfterSpread": 1.049721749528584,
+      "PairedPercent": [
+        1.7556551958114452,
+        2.772662533241421,
+        0.7326726676571527,
+        5.254784266452428,
+        0.8168095094135186
+      ]
+    },
+    {
+      "Name": "literal-control",
+      "BeforeUs": 0.24162673950195312,
+      "AfterUs": 0.24343795776367189,
+      "ChangePercent": 0.7495934702641316,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0921034663907734,
+      "AfterSpread": 1.0214313855481736,
+      "PairedPercent": [
+        1.9185046020745,
+        1.0877840618282342,
+        -6.507412539681123,
+        -0.3850926829268242,
+        2.6340521444648157
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "BaselineRuntimeSource": "a1986746bb8bfa95367eef1c12c3e916fbb40bc0",
+  "Parent": "7a99e7498afb3a3e578cffff5ec77c20692d2bf8 (data/receipt only)",
+  "Configuration": "Release",
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "FullPcre2ChecksPerFramework": 6462,
+  "FinalNewFixtureChecksPerFramework": 30,
+  "FullResult": "All passed, zero skipped",
+  "FinalFixture": "2047/2048/2049 scan bounds, unlimited basic steps, refusal, actual scan cancellation/deadline/slot-only peak, EOF publication, original token, 13B loans, offsets, malformed UTF8, captures, nullable/anchored/contiguous/caseless proof exclusions",
+  "BeforePcre2Sha256": "4F5EE13373E74A9C0F637972997C8BA57EEF155B2FE428DC80FA7E1BEB17709E",
+  "AfterPcre2Sha256": "1B55E931C26573F4A8F023D75C164ED44BF037A6451603720C3EFDE0B7490F80",
+  "BeforeCoreSha256": "88A3352A5FA6D7856A513E54C8D843FD88E38CE4956F4317636E9152B03D8C34",
+  "AfterCoreSha256": "40BB21D4A3A2297AC13D62D4FDD27ED3E5D989CB25DA3052E9E1BDD1718CF48A",
+  "CoreSourceChange": "None; afterCore rebuilt with parent metadata",
+  "ComparisonSeconds": 91.0582531,
+  "MinimumSampleMilliseconds": 59.7141,
+  "ConfirmationSeconds": 45.538469,
+  "ConfirmationRuns": 1,
+  "Confirmation": "Only dense false-start and unchanged literal, same producer/lane binaries, warm5s/min64; no primary rerun or variants",
+  "Decision": "PROMOTE primary753x, matching allocation unchanged, miss5744->64B. Initialdense+11.105% retained; soleconfirmation+2.352% (allpairs0.7..5.3%), literal+.75%, under10% gate.",
+  "Contract": "Existing necessaryASCIIhint, every<=2048byte scan admits basic work and directly checks token/deadline, actualVM/captures/workspace remain. Scalar boundaries, absolute origins, aliases and allcaps preserved; route-specific work/admission thresholds can decrease.",
+  "Scope": "Boolean slice search only; no new compiledmetadata/arrays/engine/framework/unsafe; no package/fullcatalog rerun",
+  "PriorCI": "7a99e749/41291788934 green Windows/Linux"
+}

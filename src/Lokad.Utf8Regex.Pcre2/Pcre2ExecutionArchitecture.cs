@@ -2092,6 +2092,7 @@ internal static partial class Pcre2Runner
 
             result = Pcre2SliceDriver.IsMatch(
                 sliceProgram.SliceProgram,
+                sliceProgram.Fallback.LeadingAsciiByte,
                 ref input,
                 start,
                 compiledProgram.Request,

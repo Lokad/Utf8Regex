@@ -550,7 +550,7 @@ public sealed partial class Utf8Pcre2Regex
                     invocation,
                     input,
                     start,
-                    _program.Request));
+                    _program.Request, null));
         }
 
         if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.Pcre2Slice)
@@ -1718,7 +1718,7 @@ public sealed partial class Utf8Pcre2Regex
         Pcre2ReplacementResultKind kind, Span<byte> destination,
         Pcre2ReplacementPreparation? prepared)
     {
-        var cursor = new Pcre2SliceGlobalMatchCursor(sliceProgram, invocation, validated, start, _program.Request);
+        var cursor = new Pcre2SliceGlobalMatchCursor(sliceProgram, invocation, validated, start, _program.Request, null);
         if (!cursor.MoveNext())
         {
             if ((options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0) return new(string.Empty, []);

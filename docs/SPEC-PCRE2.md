@@ -205,6 +205,13 @@ Create maps positive nullable common policies to these limits; null becomes zero
 common zero rejects, and work values above uint.MaxValue reject. Units depend on
 the managed route, not native PCRE2. Proved search/count shortcuts can change work
 counts or avoid VM workspace; exact denial thresholds are not version-stable.
+Boolean slice searches can reuse a compiler-proved first ASCII byte to skip
+impossible starts. Each scan admits at most 2048 bytes, with original-token and
+deadline checks even on unlimited calls. Actual candidates retain normal VM and
+capture checks. Nullable, contiguous-origin and compile-anchored programs retain
+their existing search. Other public operations and non-None match options keep
+their existing paths. Skipped attempts reduce route-dependent work costs; these
+scans retain their own admission and normal publication checks.
 Depth admits live frames/assertion state
 before growth. Working admission includes major workspace/output growth overlap;
 result admission cumulatively covers owned capture/probe roots, staging and
