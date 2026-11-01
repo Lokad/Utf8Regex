@@ -1,0 +1,37 @@
+{
+  "Status": "Closed and reverted; no runtime change remains",
+  "BaselineCommit": "825ed1f7c4b4eb54f0e092da495396d93b435a48",
+  "ParentCommit": "95eb66f8d9d1d18aeb2aea0e51d4aae81c94ed20",
+  "Candidate": "Parent plus archived one-line readonly instruction reference patch",
+  "CandidateWindowsRelease": {
+    "Pcre2FocusedPerRuntime": 211,
+    "PythonRePerRuntime": 4493,
+    "CorePerRuntime": 8951,
+    "Failed": 0,
+    "Skipped": 0
+  },
+  "RestoredReleaseCorePerRuntime": 89,
+  "ExistingBenchHost": "Frozen825 DLL/PDBs unchanged",
+  "Codegen": {
+    "ProgramShapesEqual": true,
+    "AfterTier1Bytes": 19480,
+    "Checksum": 760000,
+    "CopyRemoved": true,
+    "InstructionBytes": 20,
+    "BeforeTier1Bytes": 19014
+  },
+  "Comparison": {
+    "Lanes": 4,
+    "Confirmation": false,
+    "CompletedSeconds": 88.0346077,
+    "AllocationsChanged": false,
+    "SamplesPerLane": 5,
+    "MinimumTimedMilliseconds": 44.2811,
+    "Cases": 12,
+    "ExitCode": 0
+  },
+  "Archives": {
+    "EvidenceSha256": "83B8A1C31479F4D3F0CF30E58C4469AD4EEA0B6D1539F937F5F68B455EE84C59",
+    "CorrectnessSha256": "8ED5573898AA5454B3AEB21434F43CAD71ADADAA9077E757E5B1C7450F6058BB"
+  }
+}

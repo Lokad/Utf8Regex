@@ -1,0 +1,454 @@
+{
+  "Purpose": "Release codegen/program identity diagnostic only; no throughput claim",
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "Core": "0.5.0-dev.6\u002B95eb66f8d9d1d18aeb2aea0e51d4aae81c94ed20",
+  "Sha256": "A5B8EF7144CA8548ECE9ED5EEA8FF6A89390703CB2EF604B59319D3E291574F9",
+  "InputBytes": 46429,
+  "Expected": 19,
+  "Checksum": 760000,
+  "InstructionBytes": 20,
+  "OrdinaryAndCompiledShapeEqual": true,
+  "ProgramShape": {
+    "Facts": {
+      "IsNonBacktracking": "False",
+      "NonBacktrackingCaptureOpeningCount": "0",
+      "NonBacktrackingConsumerMask": "0",
+      "NonBacktrackingAcceptClosure": "0",
+      "RepeatCount": "5",
+      "GroupCount": "3",
+      "HasNonFixedLookbehind": "False",
+      "HasOrderSensitiveLookbehind": "False",
+      "UsesLiteralClassBracketSyntax": "False",
+      "HasMixedNamedGroups": "True",
+      "UsesCaptureOpeningJournal": "False",
+      "HasExplicitCaptureNumbers": "False",
+      "HasSharedCaptureDeclarations": "False",
+      "HasBalancing": "False",
+      "IgnoreCase": "False",
+      "CaseBehavior": "Invariant",
+      "HasContiguousAnchor": "False",
+      "HasConditionalTest": "False",
+      "SawLookaround": "False",
+      "SawCapturingLookbehind": "False",
+      "RightToLeft": "False",
+      "CanMatchEmpty": "False",
+      "HasUnicodePatternAtoms": "False",
+      "UsesInterpretedLazyLoopSemantics": "False",
+      "RequiresUnicodeWordBoundary": "False",
+      "RequiresUnicodeShorthand": "True",
+      "RequiresUnicodeCategory": "False"
+    },
+    "Instructions": [
+      {
+        "Kind": "Anchor",
+        "A": "0",
+        "B": "1",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "Literal",
+        "A": "105",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "Literal",
+        "A": "109",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "Literal",
+        "A": "112",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "Literal",
+        "A": "111",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "Literal",
+        "A": "114",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "Literal",
+        "A": "116",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "RepeatGreedy",
+        "A": "10",
+        "B": "0",
+        "C": "1",
+        "D": "-1",
+        "RepeatMinimum": "1",
+        "RepeatMaximum": "9223372036854775807"
+      },
+      {
+        "Kind": "Hybrid",
+        "A": "0",
+        "B": "0",
+        "C": "16",
+        "D": "0",
+        "RepeatMinimum": "16",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "RepeatEnd",
+        "A": "7",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "RepeatExit",
+        "A": "0",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "RepeatGreedy",
+        "A": "25",
+        "B": "1",
+        "C": "0",
+        "D": "1",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "1"
+      },
+      {
+        "Kind": "CaptureStart",
+        "A": "1",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "Literal",
+        "A": "115",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "Literal",
+        "A": "104",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "Literal",
+        "A": "97",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "Literal",
+        "A": "114",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "Literal",
+        "A": "101",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "Literal",
+        "A": "100",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "RepeatGreedy",
+        "A": "22",
+        "B": "2",
+        "C": "1",
+        "D": "-1",
+        "RepeatMinimum": "1",
+        "RepeatMaximum": "9223372036854775807"
+      },
+      {
+        "Kind": "Hybrid",
+        "A": "1",
+        "B": "0",
+        "C": "16",
+        "D": "0",
+        "RepeatMinimum": "16",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "RepeatEnd",
+        "A": "19",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "RepeatExit",
+        "A": "2",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "CaptureEnd",
+        "A": "1",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "RepeatEnd",
+        "A": "11",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "RepeatExit",
+        "A": "1",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "Literal",
+        "A": "34",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "CaptureStart",
+        "A": "2",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "CaptureStart",
+        "A": "0",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "Fork",
+        "A": "32",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "Literal",
+        "A": "46",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "Jump",
+        "A": "36",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "RepeatGreedy",
+        "A": "35",
+        "B": "3",
+        "C": "0",
+        "D": "-1",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "9223372036854775807"
+      },
+      {
+        "Kind": "Set",
+        "A": "2",
+        "B": "1",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "RepeatEnd",
+        "A": "32",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "RepeatExit",
+        "A": "3",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "CaptureEnd",
+        "A": "0",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "CaptureEnd",
+        "A": "2",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "Literal",
+        "A": "34",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "RepeatGreedy",
+        "A": "42",
+        "B": "4",
+        "C": "0",
+        "D": "-1",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "9223372036854775807"
+      },
+      {
+        "Kind": "Dot",
+        "A": "0",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "RepeatEnd",
+        "A": "39",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "RepeatExit",
+        "A": "4",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "Anchor",
+        "A": "1",
+        "B": "1",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      },
+      {
+        "Kind": "Accept",
+        "A": "0",
+        "B": "0",
+        "C": "0",
+        "D": "0",
+        "RepeatMinimum": "0",
+        "RepeatMaximum": "0"
+      }
+    ],
+    "SetMasks": [
+      "003E0000010000000000000000000000",
+      "003E0000010000000000000000000000",
+      "00000000040000000000001000000000"
+    ]
+  }
+}
