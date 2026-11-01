@@ -9,6 +9,49 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8NonBacktrackingBatchTests
 {
     [Theory]
+    [InlineData(@"(?<x>a?)(?<y>b?)|(?<z>ab)", "ab a b é")]
+    [InlineData(@"(?:a(?<x>b?)|(?<y>a?))(?<last>c?)", "abc a acc\n")]
+    [InlineData(@"(?:^|\b|$)(?<x>a*)", "aa ab\nb")]
+    [InlineData(@"(?<x>a+?)|(?<y>a+)", "aaaa b a")]
+    [InlineData(@"(?<x>😀|é|a)+|$", "éa😀\0a😀\n")]
+    [InlineData(@"(?:(?<x>[a\d])(?<y>b?))*c|$", "ab1c aa2bc !")]
+    [InlineData(@"(?<x>[^ab]+)|(?<y>a)|$", "abé😀\n")]
+    [InlineData(@"(?<x>a){0,3}?b|$", "aaaab aab b")]
+    public void SharedEpsilonDependenciesPreservePublicPriorityAndLastCaptures(string pattern, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        foreach (var compiled in new[] { false, true })
+        {
+            var options = RegexOptions.NonBacktracking | RegexOptions.Multiline | RegexOptions.CultureInvariant |
+                (compiled ? RegexOptions.Compiled : 0);
+            var oracle = new Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options);
+            var matches = oracle.Matches(text);
+            Assert.Equal(matches.Count, regex.Count(input));
+            Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
+            Assert.Equal(oracle.Replace(text, "<$0:$1>"), regex.ReplaceToString(input, "<$0:$1>"));
+            var cursor = regex.EnumerateMatches(input).GetEnumerator();
+            foreach (Match expected in matches)
+            {
+                Assert.True(cursor.MoveNext());
+                Assert.Equal((expected.Index, expected.Length), (cursor.Current.IndexInUtf16, cursor.Current.LengthInUtf16));
+                Assert.Equal((Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), Encoding.UTF8.GetByteCount(expected.Value)),
+                    (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
+                var found = regex.MatchDetailedFromUtf16Offset(input, expected.Index);
+                foreach (var number in oracle.GetGroupNumbers())
+                {
+                    var wanted = expected.Groups[number];
+                    var actual = found.GetGroup(number);
+                    Assert.Equal(wanted.Success, actual.Success);
+                    Assert.Equal(wanted.Captures.Count, actual.CaptureCount);
+                    if (wanted.Success) Assert.Equal(wanted.Value, actual.GetValueString());
+                }
+            }
+            Assert.False(cursor.MoveNext());
+        }
+    }
+
+    [Theory]
     [InlineData(@"\b(?<x>.)\B|(?<last>.)$", "aé中😀\0z\r\n")]
     [InlineData(@"(?<x>\w+)\b|(?<last>\W)$", "é中a\u0301😀\0z\n")]
     [InlineData(@"^\s*///(?<title>#.*)$", " \n///#é😀\n///not\n \r\n///#中\n")]

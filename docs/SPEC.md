@@ -93,6 +93,11 @@ and packed rows before allocation; storage and depth bounds are unchanged.
 Preparation work units are consequently lower than earlier per-cell accounting;
 finite limits remain enforceable, with CPU growth bounded by64simple cells per
 quantum plus separately metered atom work. This applies to unlimited calls too.
+Programs fitting one packed word visit eligible consuming cells, then their
+ordered epsilon cells; wider programs keep the full ordered evaluation. This
+changes no invocation work units or table capacity. Compact compilation metadata
+uses the same construction admission; cold costs and construction-limit thresholds
+can differ from earlier layouts.
 
 ### Native pattern metadata
 

@@ -1,0 +1,22 @@
+{
+  "BaselineRuntimeSource": "ff0185ea28fddaf1c1ae2d4d552ee73b82df5505",
+  "SourceParent": "ee59dcbe9b85dfdb7a23865cb753cf31f8240b66 (tests/receipt only; relevant production code identical to ff018)",
+  "Configuration": "Release",
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "CorePerFramework": 1801,
+  "PythonRePerFramework": 1791,
+  "Pcre2PerFramework": 1504,
+  "DiffPerFramework": 28,
+  "NewPublicTheoryRows": 8,
+  "StateProbeCases": 371,
+  "StateProbe": "Exact byte-for-byte JSON equality of full viability digests, complete numeric invocation work, single-search ranges/last-capture hashes, working peaks and13B enclosing-loan refunds;24patterns x15subjects plus11existing witnesses",
+  "Semantics": "Original direct atom work/token/deadline checks retained; one direct quantum for <=64 distinct cells; wider evaluation, strict validation, scalars, captures, aliases and invocation capacities preserved",
+  "Construction": "Two readonly masks within existing512B conservative carrier; allocating builder admits compact int order before releasing its own scratch; cache charge automatically follows constructor reservations; no graph collector/refcounts/manifest",
+  "ConstructionDiagnostic": "Internal constructor under existing diagnostic scope only, NOT public timing. Regionstates15 order15->8, retained/peak37376->37344, constructionwork2890->2913, cachecharge4297776->4297744. Public cold timing separately uses native Compile+first-empty-Count.",
+  "Scope": "Focused Release checks; no package/platform/fullcatalog repetition. Closed atom-poll and checked-access campaigns remain closed.",
+  "SourceDisposition": "PROMOTE: regionpublicCount-45%,dense/nullable/Unicode improve; all invocation allocations unchanged. One cold confirmation23.309s: nativeNBCompile+first-emptyCount49.098->48.773us(-.66%),nonNBcontrol40.356->40.698us(+.85%); spreads<=1.05, actual cold allocation+72/+16B. No further confirmation.",
+  "PriorCI": "41278713558 green Windows/Linux"
+}

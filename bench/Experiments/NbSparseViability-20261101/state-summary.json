@@ -1,0 +1,11 @@
+{
+  "Cases": 371,
+  "MatrixPatterns": 24,
+  "MatrixSubjects": 15,
+  "AdditionalCases": 11,
+  "BeforeSha256": "26146C88AE7666E95762F548D426F970FE5D31E2BBC6B167E0306E4286568252",
+  "AfterSha256": "26146C88AE7666E95762F548D426F970FE5D31E2BBC6B167E0306E4286568252",
+  "Equality": "Byte-for-byte complete production-state/search JSON equality",
+  "Compared": "All viability bits hashed across every state/boundary; complete invocation work; single-search ranges/capture hashes/peaks; enclosing13B loan refunds",
+  "Raw": "state-before.jsonl and state-after.jsonl in immutable evidence archive"
+}

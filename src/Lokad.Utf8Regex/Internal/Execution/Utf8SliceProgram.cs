@@ -285,6 +285,8 @@ internal sealed class Utf8SliceProgram
         bool isNonBacktracking,
         int nonBacktrackingCaptureOpeningCount,
         int[] nonBacktrackingEpsilonOrder,
+        ulong nonBacktrackingConsumerMask,
+        ulong nonBacktrackingAcceptMask,
         Func<int, int>[] backreferenceLowerings,
         byte[][] setMasks,
         Utf8SliceNode.CategorySetMember[][] categorySetMembers,
@@ -318,6 +320,8 @@ internal sealed class Utf8SliceProgram
         IsNonBacktracking = isNonBacktracking;
         NonBacktrackingCaptureOpeningCount = nonBacktrackingCaptureOpeningCount;
         NonBacktrackingEpsilonOrder = nonBacktrackingEpsilonOrder;
+        NonBacktrackingConsumerMask = nonBacktrackingConsumerMask;
+        NonBacktrackingAcceptMask = nonBacktrackingAcceptMask;
         BackreferenceLowerings = backreferenceLowerings;
         SetMasks = setMasks;
         CategorySetMembers = categorySetMembers;
@@ -355,13 +359,35 @@ internal sealed class Utf8SliceProgram
         var usesCaptureOpeningJournal = captureCatalog is { HasSharedCaptureDeclarations: true };
         var hasUnicodePatternAtoms = false;
         var hasOrderSensitiveLookbehind = false;
+        ulong consumers = 0, accepts = 0;
         budget.ChargeWork((ulong)instructions.Length);
-        foreach (var instruction in instructions)
+        for (var pc = 0; pc < instructions.Length; pc++)
         {
+            var instruction = instructions[pc];
             usesCaptureOpeningJournal |= instruction.Kind == Utf8SliceInstructionKind.Backref;
             hasUnicodePatternAtoms |= instruction.Kind == Utf8SliceInstructionKind.CategorySet ||
                 instruction.Kind == Utf8SliceInstructionKind.Boundary && instruction.C != 0 ||
                 instruction.Kind == Utf8SliceInstructionKind.Literal && instruction.A >= 128;
+            if (!isNonBacktracking || instructions.Length > 64) continue;
+            var bit = 1UL << pc;
+            switch (instruction.Kind)
+            {
+                case Utf8SliceInstructionKind.Accept:
+                    accepts |= bit;
+                    break;
+                case Utf8SliceInstructionKind.Fail:
+                    break;
+                case Utf8SliceInstructionKind.Fork:
+                case Utf8SliceInstructionKind.Jump:
+                case Utf8SliceInstructionKind.CaptureStart:
+                case Utf8SliceInstructionKind.CaptureEnd:
+                case Utf8SliceInstructionKind.Anchor:
+                case Utf8SliceInstructionKind.Boundary:
+                    break;
+                default:
+                    consumers |= bit;
+                    break;
+            }
         }
         budget.ChargeWork((ulong)assertions.Length);
         foreach (var assertion in assertions)
@@ -393,6 +419,8 @@ internal sealed class Utf8SliceProgram
             isNonBacktracking,
             nonBacktrackingCaptureOpeningCount,
             nonBacktrackingEpsilonOrder,
+            consumers,
+            accepts,
             backreferenceLowerings,
             setMasks,
             categorySetMembers,
@@ -428,6 +456,8 @@ internal sealed class Utf8SliceProgram
     internal bool IsNonBacktracking { get; }
     internal int NonBacktrackingCaptureOpeningCount { get; }
     internal int[] NonBacktrackingEpsilonOrder { get; }
+    internal ulong NonBacktrackingConsumerMask { get; }
+    internal ulong NonBacktrackingAcceptMask { get; }
     internal Func<int, int>[] BackreferenceLowerings { get; }
 
     internal byte[][] SetMasks { get; }
