@@ -1,0 +1,30 @@
+Preflight window-compiled: 7, bytes=594930
+Preflight window-finite-live: 7, bytes=594930
+Preflight window-deadline-live: 7, bytes=594930
+Preflight captured-tail-control: 32, bytes=1728
+Preflight captured-repeat-control: 1, bytes=1665
+Preflight folded-repeat-control: 1, bytes=1665
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "AffinityMask": "4",
+  "ElapsedSeconds": 0.3122461,
+  "Identities": [
+    {
+      "Version": "0.5.0-dev.1\u002Bbfe582c0fc540d2a8602c389e33e4326ec0b977b",
+      "Sha256": "DA796A55296EDB565DCC45B817D7CD2D247B8E6EC169BF40F049CF3FB50E93F9"
+    },
+    {
+      "Version": "0.5.0-dev.1\u002Bbfe582c0fc540d2a8602c389e33e4326ec0b977b",
+      "Sha256": "972FBC639D9A8363AE120E9B257A587777A1C734A95DE8FA66B3CB0941FF78C9"
+    }
+  ],
+  "Stage": "Corrected denial/capture-clearing source; six selected public cases",
+  "Scope": "Extend the existing bounded Dot-repeat helper only when a complete \u003C=64-byte unfolded ASCII tail ends at Accept/Jump-to-Accept; select the last valid scalar endpoint, then execute original capture/tail instructions. Strict validation and per-scalar work/token/deadline remain; no new matcher/program/field/mode. Twelve equal-result public Count workloads: actual Holmes ordinary/compiled/finite-live/deadline-live, shared River, scalar dense hits/false tails; unchanged ASCII-native, captured-tail, captured/folded literal-repeat and exact-literal controls. Finite work1B/depth4096/working16MiB/result16MiB; deadline5s. Warm1s/min64, independent60ms calibration, five alternating samples\u003E=20ms, consume batches after timing. One120s cap, at most one noise confirmation. No package/fullcatalog qualification.",
+  "LaneNames": [
+    "Before",
+    "After",
+    "PredecodedRegex",
+    "DecodeThenRegex"
+  ],
+  "Rows": []
+}

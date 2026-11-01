@@ -1,0 +1,16 @@
+{
+  "BaselineCommit": "bfe582c0fc540d2a8602c389e33e4326ec0b977b",
+  "Outcome": "Rejected and fully reverted",
+  "BeforeCoreSha256": "DA796A55296EDB565DCC45B817D7CD2D247B8E6EC169BF40F049CF3FB50E93F9",
+  "PrototypeCoreSha256": "BE9B92594D63AF502F2C2592EA6A27DA2439113A8E1426FBEB6BE4C1F7AFBCCF",
+  "FinalCorrectedCoreSha256": "972FBC639D9A8363AE120E9B257A587777A1C734A95DE8FA66B3CB0941FF78C9",
+  "PrototypePatchSha256": "26D972C5E47883A8E736DD27A931F98E77AF771E5A778F24F426FA80A2CD37E6",
+  "FinalPatchSha256": "002E19836FE1DB198DBBE4BB2DDDE5A8195F7EB20DCE3A9D6DB2A08737AD199C",
+  "PrototypeCorePerRuntime": 41025,
+  "PrototypePythonPerRuntime": 4387,
+  "PrototypePcrePerRuntime": 6442,
+  "FinalCoreFocusedPerRuntime": 468,
+  "FinalPythonFocusedPerRuntime": 82,
+  "ComparisonStages": "78.955s initial12cases +40.316s corrected6cases; no third stage/no noise confirmation",
+  "Rejection": "Corrected captured-tail public control+11.23percent; all pairs11.12-11.50percent"
+}
