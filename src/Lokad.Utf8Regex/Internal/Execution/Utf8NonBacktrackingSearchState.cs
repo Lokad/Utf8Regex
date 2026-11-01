@@ -258,7 +258,12 @@ internal sealed class Utf8NonBacktrackingSearchState
         {
             var pc = BitOperations.TrailingZeroCount(candidates);
             candidates &= candidates - 1;
-            if (Utf8SliceRunner.MatchesNonBacktrackingAtom(program, program.Instructions[pc], scalar, ref invocation, out breach))
+            ref readonly var instruction = ref program.Instructions[pc];
+            // The row admission covers this constant rejection, at most 64
+            // cells. Feasible/folded atoms retain their direct admission.
+            if (instruction.Kind == Utf8SliceInstructionKind.Literal && instruction.B == 0 && instruction.A != scalar.Value)
+                continue;
+            if (Utf8SliceRunner.MatchesNonBacktrackingAtom(program, instruction, scalar, ref invocation, out breach))
             {
                 current |= program.NonBacktrackingEpsilonAncestors[pc];
             }

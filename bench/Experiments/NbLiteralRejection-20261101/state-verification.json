@@ -1,0 +1,8 @@
+{
+  "Cases": 371,
+  "AllFieldsExactExceptPreparationWork": true,
+  "WorkDelta": "Exact number of unfolded literal predicate calls provenfalse by scalar!=A within an admitted packed row",
+  "MaximumCoveredDelta": 26.0,
+  "BeforeCoreSha256": "AE3926ED79BB72CA7DC09317F2E5236A61272734BB8041EE9732D492D3678BC4",
+  "AfterCoreSha256": "C4C25E5975ACCCD50D4CE951E99D9E316C933EF6AC481F8ED3F62B3D3D1482F7"
+}

@@ -1,0 +1,31 @@
+{
+  "Parent": "ae8cadcae4b79117f0e53a7063d1ae04ee17f6f8",
+  "BaselineRuntimeSource": "60563cb308b543127000b56a49cad22f24a18ba4",
+  "Configuration": "Release",
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "CoreFocusedPerFramework": 713,
+  "AdditionalResourcePerFramework": 729,
+  "SelectionsOverlap": true,
+  "DifferentialPerFramework": 28,
+  "GraphemeCIFixPerFramework": 37,
+  "NewInterruptionRows": 4,
+  "AllPassed": true,
+  "StateCases": 371,
+  "StateProof": "Allfields exact except independently counted constantfalse literalwork reduction, covered delta0..26",
+  "CanonicalPreparationBefore": 140790,
+  "CanonicalPreparationAfter": 94390,
+  "CanonicalDelta": 46400,
+  "BeforeCoreSha256": "AE3926ED79BB72CA7DC09317F2E5236A61272734BB8041EE9732D492D3678BC4",
+  "AfterCoreSha256": "C4C25E5975ACCCD50D4CE951E99D9E316C933EF6AC481F8ED3F62B3D3D1482F7",
+  "PublicSeconds": 90.7186089,
+  "MinimumSampleMilliseconds": 59.7666,
+  "ConfirmationRuns": 0,
+  "Decision": "PROMOTE region8-9%, finite11.2%,deadline26.1%,largestadverse2.37%,unchangedallocations; retainallobservations, no confirmation",
+  "Contract": "Constantfailedliteral comparisons covered by existing<=64cell rowquantum; executed/folded/complex atoms, wide andstreaming charges remain",
+  "CIFix": "30da6059 controlledclock for shorttimeout recovery only; no runtime change",
+  "RawSha256": "194F7FB6A192A0391AB7AD90518CA0DA7495F1951454CC62DFDDF86151E694BB",
+  "CorrectnessSha256": "776B5B5B35FF13166732A7F3D0CAD74FF5836C409EFCDF73AD1BF961679F0CA3"
+}

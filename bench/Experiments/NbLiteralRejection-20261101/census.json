@@ -1,0 +1,235 @@
+{
+  "Scope": "Read-only exact production census, no timing or unproved window dispatch. Windows are workload diagnostics, not a general proof.",
+  "Source": "0.5.0-dev.3\u002B60563cb308b543127000b56a49cad22f24a18ba4",
+  "CoreSha256": "AE3926ED79BB72CA7DC09317F2E5236A61272734BB8041EE9732D492D3678BC4",
+  "InputBytes": 46429,
+  "Scalars": 46410,
+  "SearchKind": "ExactAsciiLiteral",
+  "CanGuideFallbackStarts": false,
+  "Distance": 0,
+  "Literal": "///",
+  "Transform": "None",
+  "Offset": 0,
+  "PreparationWork": 140790,
+  "TotalCandidateAtoms": 92926,
+  "ProvenFalseUnfoldedLiteralAtoms": 46400,
+  "Instructions": [
+    {
+      "Pc": 0,
+      "Kind": "Anchor",
+      "A": 0,
+      "B": 1,
+      "Candidates": 0,
+      "FalseUnfolded": 0
+    },
+    {
+      "Pc": 1,
+      "Kind": "Fork",
+      "A": 4,
+      "B": 0,
+      "Candidates": 0,
+      "FalseUnfolded": 0
+    },
+    {
+      "Pc": 2,
+      "Kind": "Hybrid",
+      "A": 0,
+      "B": 0,
+      "Candidates": 29,
+      "FalseUnfolded": 0
+    },
+    {
+      "Pc": 3,
+      "Kind": "Jump",
+      "A": 1,
+      "B": 0,
+      "Candidates": 0,
+      "FalseUnfolded": 0
+    },
+    {
+      "Pc": 4,
+      "Kind": "Literal",
+      "A": 47,
+      "B": 0,
+      "Candidates": 10,
+      "FalseUnfolded": 0
+    },
+    {
+      "Pc": 5,
+      "Kind": "Literal",
+      "A": 47,
+      "B": 0,
+      "Candidates": 10,
+      "FalseUnfolded": 0
+    },
+    {
+      "Pc": 6,
+      "Kind": "Literal",
+      "A": 47,
+      "B": 0,
+      "Candidates": 57,
+      "FalseUnfolded": 47
+    },
+    {
+      "Pc": 7,
+      "Kind": "CaptureStart",
+      "A": 0,
+      "B": 0,
+      "Candidates": 0,
+      "FalseUnfolded": 0
+    },
+    {
+      "Pc": 8,
+      "Kind": "Literal",
+      "A": 35,
+      "B": 0,
+      "Candidates": 46410,
+      "FalseUnfolded": 46353
+    },
+    {
+      "Pc": 9,
+      "Kind": "Fork",
+      "A": 12,
+      "B": 0,
+      "Candidates": 0,
+      "FalseUnfolded": 0
+    },
+    {
+      "Pc": 10,
+      "Kind": "Dot",
+      "A": 0,
+      "B": 0,
+      "Candidates": 46410,
+      "FalseUnfolded": 0
+    },
+    {
+      "Pc": 11,
+      "Kind": "Jump",
+      "A": 9,
+      "B": 0,
+      "Candidates": 0,
+      "FalseUnfolded": 0
+    },
+    {
+      "Pc": 12,
+      "Kind": "CaptureEnd",
+      "A": 0,
+      "B": 0,
+      "Candidates": 0,
+      "FalseUnfolded": 0
+    },
+    {
+      "Pc": 13,
+      "Kind": "Anchor",
+      "A": 1,
+      "B": 1,
+      "Candidates": 0,
+      "FalseUnfolded": 0
+    },
+    {
+      "Pc": 14,
+      "Kind": "Accept",
+      "A": 0,
+      "B": 0,
+      "Candidates": 0,
+      "FalseUnfolded": 0
+    }
+  ],
+  "WindowCount": 10,
+  "ContiguousWindowBytes": 37113,
+  "SumWindowBytes": 260,
+  "Windows": [
+    {
+      "LiteralByte": 3359,
+      "WhiteSpaceStartByte": 3357,
+      "NonNewlineTailEndByte": 3378
+    },
+    {
+      "LiteralByte": 17947,
+      "WhiteSpaceStartByte": 17946,
+      "NonNewlineTailEndByte": 17965
+    },
+    {
+      "LiteralByte": 30752,
+      "WhiteSpaceStartByte": 30750,
+      "NonNewlineTailEndByte": 30768
+    },
+    {
+      "LiteralByte": 32100,
+      "WhiteSpaceStartByte": 32098,
+      "NonNewlineTailEndByte": 32122
+    },
+    {
+      "LiteralByte": 32515,
+      "WhiteSpaceStartByte": 32513,
+      "NonNewlineTailEndByte": 32550
+    },
+    {
+      "LiteralByte": 33092,
+      "WhiteSpaceStartByte": 33090,
+      "NonNewlineTailEndByte": 33127
+    },
+    {
+      "LiteralByte": 34440,
+      "WhiteSpaceStartByte": 34438,
+      "NonNewlineTailEndByte": 34457
+    },
+    {
+      "LiteralByte": 37713,
+      "WhiteSpaceStartByte": 37711,
+      "NonNewlineTailEndByte": 37739
+    },
+    {
+      "LiteralByte": 39393,
+      "WhiteSpaceStartByte": 39391,
+      "NonNewlineTailEndByte": 39420
+    },
+    {
+      "LiteralByte": 40444,
+      "WhiteSpaceStartByte": 40442,
+      "NonNewlineTailEndByte": 40470
+    }
+  ],
+  "ActualMatches": [
+    {
+      "Start": 3358,
+      "Length": 20
+    },
+    {
+      "Start": 17947,
+      "Length": 18
+    },
+    {
+      "Start": 30751,
+      "Length": 17
+    },
+    {
+      "Start": 32099,
+      "Length": 23
+    },
+    {
+      "Start": 32514,
+      "Length": 36
+    },
+    {
+      "Start": 33091,
+      "Length": 36
+    },
+    {
+      "Start": 34439,
+      "Length": 18
+    },
+    {
+      "Start": 37712,
+      "Length": 27
+    },
+    {
+      "Start": 39392,
+      "Length": 28
+    },
+    {
+      "Start": 40443,
+      "Length": 27
+    }
+  ]
+}

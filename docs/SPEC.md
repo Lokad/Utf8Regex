@@ -88,7 +88,11 @@ expansion. This mode does not expose ordinary backtracking capture history.
 Scalar sizing admits one work quantum before at most 64 bytes, and exact offset
 preparation one before at most 64 scalars. Viability preparation admits one before
 at most 64 instruction cells per row. Scanning prepared candidate starts admits
-one before at most 64 scalar-boundary lookups. Atom predicates retain their direct charges.
+one before at most 64 scalar-boundary lookups. Executed atom predicates retain their direct charges.
+Packed viability rows reject a case-sensitive literal whose value differs from
+the current scalar within the already admitted cell quantum, without a separate
+failed-predicate charge. Feasible literals, folded and complex atoms, and wider
+rows retain their existing charges. Numeric preparation costs can therefore fall.
 Every quantum checks the original token and absolute deadline directly, and
 publication checks them again. Working admission still covers scalar boundaries
 and packed rows before allocation; storage and depth bounds are unchanged.

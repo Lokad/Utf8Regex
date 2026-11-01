@@ -110,7 +110,11 @@ Core NonBacktracking preparation now meters groups of at most 64 size-scan bytes
 64 scalar offsets or64 state cells, with token/deadline checks before every group.
 Scanning prepared candidate starts similarly admits at most 64 scalar-boundary
 lookups per group, with a final token/deadline check before publishing no match.
-Atom work retains its direct charges; storage/depth admission is unchanged.
+Executed atom work retains its direct charges; storage/depth admission is unchanged.
+Packed NonBacktracking rows cover constant rejections of impossible case-sensitive
+literals within their existing cell quantum. Those rejections no longer incur a
+separate failed-predicate work charge; feasible/folded/complex atoms and wider
+rows retain their charges. Token/deadline checks still precede every row quantum.
 Preparation and candidate scanning can consume fewer MaxWorkSteps than earlier versions. Treat work units as route/version
 dependent, and qualify finite policies against representative workloads when upgrading.
 
