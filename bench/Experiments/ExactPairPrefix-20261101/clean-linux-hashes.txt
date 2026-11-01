@@ -1,0 +1,64 @@
+From /dev/shm/holmes-window-20261101/source.bundle
+ * branch            HEAD       -> FETCH_HEAD
+Updating e167851..0674459
+Fast-forward
+ PCRE2.Benchmarks.json                              | 804 ++++++++---------
+ .../Pcre2BooleanDispatch-20261031/README.md        |  91 ++
+ .../Pcre2BooleanDispatch-20261031/after-disasm.txt |  80 ++
+ .../baseline-inspection.txt                        | 199 +++++
+ .../before-disasm.txt                              |  80 ++
+ .../clean-linux-hashes.txt                         |   2 +
+ .../Pcre2BooleanDispatch-20261031/comparison.json  | 964 +++++++++++++++++++++
+ .../Pcre2BooleanDispatch-20261031/comparison.txt   |  10 +
+ .../Pcre2BooleanDispatch-20261031/driver.cs.txt    | 103 +++
+ .../driver.csproj.txt                              |   1 +
+ .../Pcre2BooleanDispatch-20261031/identities.json  |   8 +
+ .../preflight-linux.txt                            |  33 +
+ .../preflight-windows.txt                          |  33 +
+ .../selective-refresh.txt                          |  41 +
+ .../Pcre2BooleanDispatch-20261031/summary.json     | 186 ++++
+ .../Pcre2BooleanDispatch-20261031/verification.txt |   6 +
+ .../PythonLiteralRepeat-20261101/README.md         |  75 ++
+ .../PythonLiteralRepeat-20261101/comparison.json   | 946 ++++++++++++++++++++
+ .../PythonLiteralRepeat-20261101/comparison.txt    |   8 +
+ .../PythonLiteralRepeat-20261101/driver.cs.txt     | 115 +++
+ .../PythonLiteralRepeat-20261101/driver.csproj.txt |   1 +
+ .../PythonLiteralRepeat-20261101/identities.json   |   9 +
+ .../PythonLiteralRepeat-20261101/inventory.txt     |  16 +
+ .../preflight-linux.txt                            |  41 +
+ .../preflight-windows.txt                          |  41 +
+ .../PythonLiteralRepeat-20261101/summary.json      | 150 ++++
+ .../PythonLiteralRepeat-20261101/verification.txt  |  12 +
+ src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md            |  22 +-
+ .../Utf8SearchExecutor.FamilyInvocation.cs         |   7 +-
+ .../Utf8PairCandidateInvocationTests.cs            |  28 +
+ 30 files changed, 3702 insertions(+), 410 deletions(-)
+ create mode 100644 bench/Experiments/Pcre2BooleanDispatch-20261031/README.md
+ create mode 100644 bench/Experiments/Pcre2BooleanDispatch-20261031/after-disasm.txt
+ create mode 100644 bench/Experiments/Pcre2BooleanDispatch-20261031/baseline-inspection.txt
+ create mode 100644 bench/Experiments/Pcre2BooleanDispatch-20261031/before-disasm.txt
+ create mode 100644 bench/Experiments/Pcre2BooleanDispatch-20261031/clean-linux-hashes.txt
+ create mode 100644 bench/Experiments/Pcre2BooleanDispatch-20261031/comparison.json
+ create mode 100644 bench/Experiments/Pcre2BooleanDispatch-20261031/comparison.txt
+ create mode 100644 bench/Experiments/Pcre2BooleanDispatch-20261031/driver.cs.txt
+ create mode 100644 bench/Experiments/Pcre2BooleanDispatch-20261031/driver.csproj.txt
+ create mode 100644 bench/Experiments/Pcre2BooleanDispatch-20261031/identities.json
+ create mode 100644 bench/Experiments/Pcre2BooleanDispatch-20261031/preflight-linux.txt
+ create mode 100644 bench/Experiments/Pcre2BooleanDispatch-20261031/preflight-windows.txt
+ create mode 100644 bench/Experiments/Pcre2BooleanDispatch-20261031/selective-refresh.txt
+ create mode 100644 bench/Experiments/Pcre2BooleanDispatch-20261031/summary.json
+ create mode 100644 bench/Experiments/Pcre2BooleanDispatch-20261031/verification.txt
+ create mode 100644 bench/Experiments/PythonLiteralRepeat-20261101/README.md
+ create mode 100644 bench/Experiments/PythonLiteralRepeat-20261101/comparison.json
+ create mode 100644 bench/Experiments/PythonLiteralRepeat-20261101/comparison.txt
+ create mode 100644 bench/Experiments/PythonLiteralRepeat-20261101/driver.cs.txt
+ create mode 100644 bench/Experiments/PythonLiteralRepeat-20261101/driver.csproj.txt
+ create mode 100644 bench/Experiments/PythonLiteralRepeat-20261101/identities.json
+ create mode 100644 bench/Experiments/PythonLiteralRepeat-20261101/inventory.txt
+ create mode 100644 bench/Experiments/PythonLiteralRepeat-20261101/preflight-linux.txt
+ create mode 100644 bench/Experiments/PythonLiteralRepeat-20261101/preflight-windows.txt
+ create mode 100644 bench/Experiments/PythonLiteralRepeat-20261101/summary.json
+ create mode 100644 bench/Experiments/PythonLiteralRepeat-20261101/verification.txt
+310774090beb1e6d04d0f31093051790d4ed5804107b49fb132fd6c61adfde29  bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.dll
+040ae4237c806064f384062dfe208164e3066801982d735143241c093703d981  bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.Benchmarks.dll
+Terminated

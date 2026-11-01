@@ -1,0 +1,33 @@
+Preflight window-ordinary: 7, bytes=594930
+Preflight window-compiled: 7, bytes=594930
+Preflight window-finite-live: 7, bytes=594930
+Preflight window-deadline-live: 7, bytes=594930
+Preflight first-only: 0, bytes=11008
+Preflight second-only: 0, bytes=11008
+Preflight mixed-dense-hits: 256, bytes=13824
+Preflight unequal-needles: 32, bytes=2176
+Preflight larger-family-control: 128, bytes=2816
+Preflight literal-control: 1, bytes=8198
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "AffinityMask": "4",
+  "ElapsedSeconds": 0.2968255,
+  "Identities": [
+    {
+      "Version": "0.5.0-dev.1\u002B589d89df9fb2929f3d211230aa70efd2f08580a8",
+      "Sha256": "66FAD5970EE5EA9B928DEE89C1838B28796C29832C468B05CCA4F329773BB9D4"
+    },
+    {
+      "Version": "0.5.0-dev.1\u002B589d89df9fb2929f3d211230aa70efd2f08580a8",
+      "Sha256": "4D25502E02A59098886B7CF2B4CEEB4E02FFC7EDAC32DF78B491814A3994BFF2"
+    }
+  ],
+  "Scope": "Shorten the second raw exact-pair scan after an earlier first-needle candidate; unchanged 2048-byte scan envelope, work checkpoints, ordered verification, scalar VM and strict validation. Ten equal-result public Count cases, actual Holmes ordinary/compiled/finite-live/deadline-live; dense first-only/second-only/hits and unequal needles; unchanged larger family/literal controls. Finite work1B/depth4096/working16MiB/result16MiB; deadline5s. Warm1s/min64, independent60ms calibration, five alternating samples\u003E=20ms; consume result batches after timing. One120s cap; at most one noise confirmation. No package/full-catalog qualification.",
+  "LaneNames": [
+    "Before",
+    "After",
+    "PredecodedRegex",
+    "DecodeThenRegex"
+  ],
+  "Rows": []
+}

@@ -1,0 +1,88 @@
+SourceKind        : dotnet-performance-case
+Origin            : public//Count
+Pattern           : Holmes.{0,25}Watson|Watson.{0,25}Holmes
+Options           : None
+InputChars        : 594915
+InputBytes        : 594930
+CompiledEngine    : StructuralLinearAutomaton
+ExecutionKind     : AsciiOrderedLiteralWindow
+DirectFamily      : None
+OwnedScalarPlan   : True
+ScalarPrepared    : True
+SearchKind        : ExactAsciiLiterals
+PortfolioKind     : ExactDirectFamily
+PreparedSearcher  : MultiLiteral
+RequiredPrefilter : None
+WindowSearch      : None
+StructuralYield   : Start
+StructuralStages  : 3
+StructuralStage[0] : FindLiteralFamily MultiLiteral
+StructuralStage[1] : RequireMinLength 12
+StructuralStage[2] : YieldStart
+FallbackPlans     : 1
+FallbackPlan[0]  : Yield=Start, Stages=2
+Verifier          : None
+FallbackReason    : <native>
+CaseId            : industry/rust-sherlock-holmes-window-count
+Operation         : Count
+Pattern           : Holmes.{0,25}Watson|Watson.{0,25}Holmes
+Options           : None
+Iterations        : 64
+InputChars        : 594915
+InputBytes        : 594930
+ExecutionKind     : AsciiOrderedLiteralWindow
+CompiledEngine    : StructuralLinearAutomaton
+BaselineResult     : 7
+BaselineRoute      : <none>
+BaselineExecKind   : AsciiOrderedLiteralWindow
+BaselineSearchKind : ExactAsciiLiterals
+BaselineFallback   : Scalar
+BaselineCandidates : 0
+BaselineFixedReject: 0
+BaselineVerifierInv: 0
+BaselineVerifierHit: 0
+BaselineProbeWin   : 0
+BaselineProbeSkip  : 0
+BaselineProbeProm  : 0
+BaselineSkipBytes  : 0
+BaselinePromBytes  : 0
+BaselineDemotions  : 0
+CompiledResult     : 7
+CompiledRoute      : <none>
+CompiledExecKind   : AsciiOrderedLiteralWindow
+CompiledSearchKind : ExactAsciiLiterals
+CompiledFallback   : Scalar
+CompiledCandidates : 0
+CompiledFixedReject: 0
+CompiledVerifierInv: 0
+CompiledVerifierHit: 0
+CompiledProbeWin   : 0
+CompiledProbeSkip  : 0
+CompiledProbeProm  : 0
+CompiledSkipBytes  : 0
+CompiledPromBytes  : 0
+CompiledDemotions  : 0
+CheckoutCommit    : e1678514062a
+BenchmarkAssembly : 1.0.0+e1678514062ac7adf4cb7d5ca09212b67d60003b sha256=28E403D3255E9D1CAFBE8B058957F931380BDFA9DD305CC0C55B9EE38638F158
+CoreAssembly      : 0.5.0-dev.1+e1678514062ac7adf4cb7d5ca09212b67d60003b sha256=C25D657B616BB3FBAE26A0713022D574F1E9F6A8A7E0842C1E2293B0B3E09D02
+Pcre2Assembly     : 0.5.0-dev.1+e1678514062ac7adf4cb7d5ca09212b67d60003b sha256=CB8929F0106B4EB4FD9E4B6D8B26B84984A25922FC247591050061BA858C47F8
+PythonReAssembly  : 0.5.0-dev.1+e1678514062ac7adf4cb7d5ca09212b67d60003b sha256=E31CDE95AC76BADB1B95D3FBACCFFA934E3F224E3D5DBABFC0DC30E258AC2104
+TrackedDirty      : False
+HasUntrackedFiles : False
+Runtime           : .NET 11.0.0-rc.3.26522.148
+OperatingSystem   : Ubuntu 24.04.4 LTS
+Processor         : X64
+TieredPGO         : runtime-default
+ValidationOnly    :      0.967 ms total |     15.113 us/op | sink=594915 | samples=1 range=15.113..15.113 us/op | warmup=6143 calls/254.7 ms
+WellFormedOnly    :      2.070 ms total |     32.348 us/op | sink=594930 | samples=1 range=32.348..32.348 us/op | warmup=9215 calls/261.3 ms
+Utf8Direct        :     71.477 ms total |   1116.827 us/op | sink=7 | samples=1 range=1116.827..1116.827 us/op | warmup=127 calls/294.0 ms
+Utf8CompiledDirect:     25.284 ms total |    395.055 us/op | sink=7 | samples=1 range=395.055..395.055 us/op | warmup=511 calls/302.4 ms
+FallbackCandidates:     12.811 ms total |    200.172 us/op | sink=542 | samples=1 range=200.172..200.172 us/op | warmup=511 calls/265.5 ms
+FallbackBoundaryCandidates:      9.719 ms total |    151.852 us/op | sink=542 | samples=1 range=151.852..151.852 us/op | warmup=2047 calls/397.9 ms
+FallbackVerifiedCount:     71.208 ms total |   1112.625 us/op | sink=7 | samples=1 range=1112.625..1112.625 us/op | warmup=255 calls/343.2 ms
+Utf8Regex         :     16.617 ms total |    259.641 us/op | sink=7 | samples=1 range=259.641..259.641 us/op | warmup=1023 calls/267.6 ms
+Utf8Compiled      :     16.459 ms total |    257.167 us/op | sink=7 | samples=1 range=257.167..257.167 us/op | warmup=1023 calls/261.7 ms
+DecodeThenRegex   :     55.242 ms total |    863.148 us/op | sink=7 | samples=1 range=863.148..863.148 us/op | warmup=511 calls/368.2 ms
+DecodeThenCompiledRegex:     23.142 ms total |    361.597 us/op | sink=7 | samples=1 range=361.597..361.597 us/op | warmup=511 calls/382.7 ms
+PredecodedRegex   :     16.979 ms total |    265.295 us/op | sink=7 | samples=1 range=265.295..265.295 us/op | warmup=255 calls/257.9 ms
+PredecodedCompiledRegex:      4.008 ms total |     62.623 us/op | sink=7 | samples=1 range=62.623..62.623 us/op | warmup=5119 calls/299.9 ms

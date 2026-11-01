@@ -1,0 +1,1 @@
+Measuring README benchmark case: industry/rust-sherlock-holmes-window-count (requested=200000, samples=5, cap=120s)
