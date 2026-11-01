@@ -1,0 +1,16 @@
+[
+  {
+    "Lane": 0,
+    "CodeBytes": 4186,
+    "StackReservation": "0xD88",
+    "CopyCalls": [
+      "       call     CORINFO_HELP_BULK_WRITEBARRIER"
+    ]
+  },
+  {
+    "Lane": 1,
+    "CodeBytes": 578,
+    "StackReservation": "136",
+    "CopyCalls": []
+  }
+]

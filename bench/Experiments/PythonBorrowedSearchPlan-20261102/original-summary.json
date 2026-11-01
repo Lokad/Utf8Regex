@@ -1,0 +1,74 @@
+[
+  {
+    "Name": "actual",
+    "OriginalUs": 474.0904,
+    "CandidateUs": 444.7007352941177,
+    "ChangePercent": -6.199168915017539,
+    "OriginalBytes": 114560,
+    "CandidateBytes": 112944,
+    "OriginalSpread": 1.0119596355934504,
+    "CandidateSpread": 1.0194448884813097,
+    "MinimumPairedChangePercent": -7.298479705986171,
+    "MaximumPairedChangePercent": -5.892156233134105
+  },
+  {
+    "Name": "finite-live",
+    "OriginalUs": 633.2210526315789,
+    "CandidateUs": 627.946875,
+    "ChangePercent": -0.8329125523638514,
+    "OriginalBytes": 118760,
+    "CandidateBytes": 117152,
+    "OriginalSpread": 1.0280506951701385,
+    "CandidateSpread": 1.012369769856956,
+    "MinimumPairedChangePercent": -1.7885095972693055,
+    "MaximumPairedChangePercent": 0.48620732143127565
+  },
+  {
+    "Name": "deadline-live",
+    "OriginalUs": 816.2243243243244,
+    "CandidateUs": 819.4040540540541,
+    "ChangePercent": 0.38956566656622726,
+    "OriginalBytes": 114720,
+    "CandidateBytes": 113112,
+    "OriginalSpread": 1.009466969538741,
+    "CandidateSpread": 1.0074402322319538,
+    "MinimumPairedChangePercent": 0.08748343179345586,
+    "MaximumPairedChangePercent": 1.054852671191342
+  },
+  {
+    "Name": "unicode",
+    "OriginalUs": 264.5493392070485,
+    "CandidateUs": 247.5175,
+    "ChangePercent": -6.438057739285663,
+    "OriginalBytes": 57192,
+    "CandidateBytes": 55576,
+    "OriginalSpread": 1.0140295264782968,
+    "CandidateSpread": 1.0162716564600651,
+    "MinimumPairedChangePercent": -6.630075511580991,
+    "MaximumPairedChangePercent": -6.169494293294675
+  },
+  {
+    "Name": "miss",
+    "OriginalUs": 0.4728662137630897,
+    "CandidateUs": 0.4629429707710722,
+    "ChangePercent": -2.0985307689986743,
+    "OriginalBytes": 64,
+    "CandidateBytes": 0,
+    "OriginalSpread": 1.020729947261471,
+    "CandidateSpread": 1.0106274811158351,
+    "MinimumPairedChangePercent": -3.19636650284032,
+    "MaximumPairedChangePercent": -0.9313521429898497
+  },
+  {
+    "Name": "offset",
+    "OriginalUs": 499.52718446601943,
+    "CandidateUs": 464.76328125,
+    "ChangePercent": -6.959361631776073,
+    "OriginalBytes": 114560,
+    "CandidateBytes": 112944,
+    "OriginalSpread": 1.0217134792920284,
+    "CandidateSpread": 1.0128491243447335,
+    "MinimumPairedChangePercent": -8.165055271472642,
+    "MaximumPairedChangePercent": -6.207721326333471
+  }
+]

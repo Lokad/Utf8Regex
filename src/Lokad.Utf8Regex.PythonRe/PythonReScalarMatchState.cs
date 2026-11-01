@@ -411,7 +411,7 @@ internal struct PythonReScalarMatchState
                 Checkpoint(input);
                 return false;
             }
-            var plan = candidateRegex.Inspection.SearchPlan;
+            ref readonly var plan = ref candidateRegex.Inspection.PreparedRegex.SearchPlan;
             if (plan.LiteralSearch is { } literal)
             {
                 if (_position < input.Length && input[_position] == literal.Needle[0]) return true;
