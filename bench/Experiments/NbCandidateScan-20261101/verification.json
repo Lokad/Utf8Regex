@@ -19,5 +19,10 @@
   "StateProof": "All fields exact except declared batch search work reduction, independently verified from first viable bit, delta0..7",
   "PriorCI": "41286044140 green Windows/Linux",
   "Decision": "PROMOTE primary2.5-4.1%, live8.9%, finite10.5%, deadline11.9%; unchanged allocations, no adverse median above1%; no confirmation needed",
-  "Scope": "One92.532s 14-case warm public matrix, no cold/package/fullcatalog rerun"
+  "Scope": "One92.532s 14-case warm public matrix, no cold/package/fullcatalog rerun",
+  "SelectiveSource": "6a55974aa067fe83edb7eac8e9a07b38e799b1bb",
+  "SelectiveCoreSha256": "76D728E68C04CFD0C57D5A3A7F9956744FDCD1705881ED801EB166B4C9A8E67D",
+  "SelectiveSamples": 30,
+  "SelectiveMinimumMilliseconds": 49.320699999999995,
+  "SnapshotGuardsPerFramework": 3
 }

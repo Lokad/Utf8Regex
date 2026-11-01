@@ -60,3 +60,14 @@ coherent delivery gate.
   `B96D6DECCA2E4F53BDD5CDC62542F50B3FD0F0D8D19AB103D802CF131CF6B19D`.
 - [Correctness logs and source](../../../artifacts/experiments/nb-candidate-scan-20261101/correctness-source.zip):
   `E585AEC8258C1DB909BA1A2FB688706B700646B49121B6345065286A4F91F7FE`.
+
+Only region rows were selectively refreshed from clean source `6a55974a`:
+ordinary 1382.928us / 38.60x, compiled 1392.136us / 38.31x predecoded .NET 11,
+557416 bytes, both Gap (previous 39.08x / 40.12x). This separate observation is
+not the controlled A/B percentage. All 30 samples exceeded 49.32ms. Other cases,
+identities, statuses, lifecycle/scaling and descending ordering are unchanged.
+The existing parity verifier and three snapshot guards per runtime pass.
+[Selective raw/generated/binary evidence](../../../artifacts/experiments/nb-candidate-scan-20261101/selective-evidence.tar.gz):
+`CC25241A95CC06CBEFC1F7FCC61BBE606AC9B63B5687270163FA8DE35CA976A3`.
+Committed Core DLL SHA256:
+`76D728E68C04CFD0C57D5A3A7F9956744FDCD1705881ED801EB166B4C9A8E67D`.
