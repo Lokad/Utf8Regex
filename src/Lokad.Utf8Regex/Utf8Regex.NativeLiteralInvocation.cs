@@ -85,13 +85,15 @@ public sealed partial class Utf8Regex
         !program.RightToLeft && !program.IgnoreCase &&
         !program.HasBalancing && !program.HasSharedCaptureDeclarations &&
         !program.HasExplicitCaptureNumbers && !program.HasContiguousAnchor &&
-        !program.SawLookaround && !program.HasConditionalTest &&
+        // A prepared trailing literal proves the complete positive lookahead;
+        // the shared metered confirmer checks it before publishing a result.
+        (!program.SawLookaround || _preparedRegex.SearchPlan.HasTrailingLiteralRequirement) && !program.HasConditionalTest &&
         !_requiresKelvinSignFallback && !program.CanMatchEmpty &&
         (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal &&
             _preparedRegex.LiteralUtf8 is { Length: > 0 } ||
          _preparedRegex.ExecutionKind == NativeExecutionKind.ExactUtf8Literals &&
             _preparedRegex.SearchPlan.AlternateLiteralsUtf8 is { Length: 2 or 3 }) &&
-        !_preparedRegex.SearchPlan.HasBoundaryRequirements && !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement;
+        !_preparedRegex.SearchPlan.HasBoundaryRequirements;
 
     // Metered literal value operations start their one deadline before validation.
     // Unlimited operations keep the established specialized kernels. Semantic

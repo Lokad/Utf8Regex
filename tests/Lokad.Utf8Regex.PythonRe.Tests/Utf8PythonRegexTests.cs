@@ -306,7 +306,10 @@ public sealed class Utf8PythonRegexTests
         Assert.False(conditional.FullMatch("foo"u8).Success);
         Assert.True(conditional.DebugIsScalarFullProgramValueCreated);
         Assert.False(lookahead.FullMatch("foobar"u8).Success);
-        Assert.True(lookahead.DebugIsScalarFullProgramValueCreated);
+        Assert.False(lookahead.FullMatch("foo"u8).Success);
+        // The complete single-literal finder checks both full-match endpoints
+        // and its positive suffix without preparing a second scalar program.
+        Assert.False(lookahead.DebugIsScalarFullProgramValueCreated);
     }
 
     [Fact]

@@ -10,7 +10,8 @@ public sealed class PythonReFiniteWorkPolicyTests
     {
         // Exact literal, two native-specialized forms, and general scalar discovery.
         foreach (var (pattern, input) in new[] { ("cat", "cat"), ("cat\\d+", "cat123"),
-            ("(?s:cat.*dog)", "cat😀dog"), ("(?P<x>a|ab)+(?P=x)", "abab"), (".*?", "😀a") })
+            ("(?s:cat.*dog)", "cat😀dog"), ("(?P<x>a|ab)+(?P=x)", "abab"), (".*?", "😀a"),
+            ("foo(?=bar)", "foobar") })
             for (var operation = 0; operation < 25; operation++)
                 yield return [operation, pattern, input];
     }

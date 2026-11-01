@@ -10,6 +10,33 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8NativeLiteralInvocationTests
 {
+    [Theory]
+    [InlineData("foo(?=bar)", "xxfoobazfoobar", 8, 11)]
+    [InlineData("(?:a|ab)(?=c)", "xabc", 1, 3)]
+    public void CompleteLookaheadDiscoveryKeepsEveryWorkCutoffAndCallerReservation(
+        string pattern, string text, int expectedStart, int expectedEnd)
+    {
+        var regex = new Utf8Regex(pattern);
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.True(regex.CanFindNativeLiteralForResult);
+        var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
+        Assert.True(baseline.Ledger.TryReserve(7));
+        Assert.True(regex.TryFindNativeLiteralForResult(input, 0, ref baseline, out var found, out var start, out var end));
+        Assert.True(found);
+        Assert.Equal((expectedStart, expectedEnd), (start, end));
+        for (var cap = 1UL; cap < baseline.Budget.Steps; cap++)
+        {
+            var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
+            Assert.True(invocation.Ledger.TryReserve(7));
+            var denied = false;
+            try { regex.TryFindNativeLiteralForResult(input, 0, ref invocation, out _, out _, out _); }
+            catch (InvalidOperationException) { denied = true; }
+            Assert.True(denied);
+            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, invocation.Budget.LimitBreach);
+            Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+        }
+    }
+
     private static Utf8SearchPlan Plan(byte[] literal, bool folded, byte[] trailing)
         => Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(folded ? Utf8SearchKind.AsciiFoldedByteLiteral : Utf8SearchKind.ExactAsciiLiteral,
             new() { LiteralUtf8 = literal, TrailingLiteralUtf8 = trailing }));

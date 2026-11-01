@@ -31,9 +31,17 @@ The whole subject is validated even when discovery starts later or returns early
 Nonempty scalar programs can reject an absent mandatory exact literal, proved by
 their existing native rendering, before acquiring VM scratch. The search observes
 the same work budget, token and deadline as validation and matching. Presence
-still uses Python verification; tight working/depth/result limits may admit a
+alone does not prove a match; tight working/depth/result limits may admit a
 scratch-free miss that formerly required VM capacity. Charges remain dependent
 on the selected route and version.
+
+Capture-free exact literals, including two or three alternatives, followed by
+an exact positive literal lookahead can borrow complete native discovery. The
+same invocation confirms the suffix before publishing, excluding it from the
+returned span. Search, counting and cursors avoid VM scratch; captured results
+and unsupported assertions retain Python verification. Single-literal FullMatch
+also checks both endpoints without preparing a second scalar program. Work and
+depth charges reflect the work and state actually used.
 
 An unconditional failure program also finishes before VM scratch, after full
 validation and an original-invocation publication checkpoint. A sequence of an

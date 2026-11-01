@@ -216,6 +216,8 @@ Native shortcuts still meter bounded search, comparison and publication.
 Validated ASCII literal-family cursors reuse byte coordinates for UTF-16
 projection. Avoided gap scans consume no validation-work units; search and
 per-match interruption checks remain.
+Complete literal discovery can also use a proved positive literal suffix,
+confirmed under the same bounded comparison budget without consuming the suffix.
 Eligible controlled ASCII Boolean calls reuse the complete simple-branch search
 with its bounded checkpoints, without scalar capture/backtracking workspace.
 Full strict subject validation still precedes the decision. Unsupported shapes,

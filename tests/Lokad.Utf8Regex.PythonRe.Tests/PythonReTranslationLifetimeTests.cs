@@ -77,7 +77,7 @@ public sealed class PythonReTranslationLifetimeTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void RealLookaheadCandidateRemainsWithoutClaimingLiteralResultEligibility(bool finite)
+    public void ProvedLiteralLookaheadRetainsCompleteNativeResultEligibility(bool finite)
     {
         var policy = finite
             ? new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 1024,
@@ -89,12 +89,13 @@ public sealed class PythonReTranslationLifetimeTests
         var core = Assert.IsType<Utf8Regex>(typeof(Utf8PythonRegex).GetField("_utf8Regex", fields)!.GetValue(regex));
         var program = Assert.IsType<Lokad.Utf8Regex.Internal.Execution.Utf8SliceProgram>(
             typeof(Utf8PythonRegex).GetField("_scalarProgram", fields)!.GetValue(regex));
-        Assert.False(core.CanFindNativeLiteralForResult);
+        Assert.True(core.CanFindNativeLiteralForResult);
         Assert.True(PythonReScalarMatchState.CanUseCandidateRegex(program, core));
         Assert.Equal("needle", regex.SearchToString("xxneedlebar"u8));
         Assert.Equal(1, regex.Count("xxneedlebar"u8));
         Assert.Equal(["needle"], regex.FindAllToStrings("xxneedlebar"u8).ScalarValues);
         Assert.False(regex.IsMatch("needlex"u8));
+        Assert.False(regex.Search("xxneedlexbar"u8).Success);
         Assert.False(regex.FullMatch("needlebar"u8).Success);
     }
 

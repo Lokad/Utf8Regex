@@ -13,6 +13,11 @@ public sealed class PythonReNativeLiteralCursorTests
     [InlineData("😀|中", "é😀中", 6, 6, 9, 3, 4)]
     [InlineData("a|ab", "éab", 0, 2, 3, 1, 2)]
     [InlineData("ab|a", "éab", 0, 2, 4, 1, 3)]
+    [InlineData("foo(?=bar)", "é😀foobar", 0, 6, 9, 3, 6)]
+    [InlineData("foo(?=bar)", "éfoobar foobar", 6, 9, 12, 8, 11)]
+    [InlineData("(?:a|ab)(?=c)", "éabc", 0, 2, 4, 1, 3)]
+    [InlineData("(?:ab|a)(?=bc)", "éabc", 0, 2, 3, 1, 2)]
+    [InlineData("(?:😀|中)(?=é)", "é😀é中é", 8, 8, 11, 4, 5)]
     public void CaptureFreeFamilySearchKeepsScalarPriorityWithoutVmStorage(string pattern, string text,
         int start, int byteStart, int byteEnd, int utf16Start, int utf16End)
     {
@@ -30,6 +35,7 @@ public sealed class PythonReNativeLiteralCursorTests
     [InlineData("a|ab", "aba", "a", "a")]
     [InlineData("ab|a", "aba", "ab", "a")]
     [InlineData("😀|中", "é😀中", "😀", "中")]
+    [InlineData("foo(?=bar)", "foobar foobar", "foo", "foo")]
     public void GlobalSnapshotsRetainGroupZeroAndNoLastCapture(string pattern, string text,
         string firstValue, string secondValue)
     {
