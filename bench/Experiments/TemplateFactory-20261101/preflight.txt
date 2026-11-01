@@ -1,0 +1,20 @@
+Preflight Count-unchanged-control []
+Preflight text-warm-grouped [{"Kind":"AsciiSimplePattern","ScalarSelected":false,"UsesTemplateWorker":true,"Wrap":1,"GroupedMap":true,"BranchMap":false},{"Kind":"AsciiSimplePattern","ScalarSelected":false,"UsesTemplateWorker":true,"Wrap":1,"GroupedMap":true,"BranchMap":false}]
+Preflight native-warm-grouped [{"Kind":"AsciiSimplePattern","ScalarSelected":false,"UsesTemplateWorker":true,"Wrap":1,"GroupedMap":true,"BranchMap":false},{"Kind":"AsciiSimplePattern","ScalarSelected":false,"UsesTemplateWorker":true,"Wrap":1,"GroupedMap":true,"BranchMap":false}]
+Preflight text-result-grouped [{"Kind":"AsciiSimplePattern","ScalarSelected":false,"UsesTemplateWorker":true,"Wrap":1,"GroupedMap":true,"BranchMap":false},{"Kind":"AsciiSimplePattern","ScalarSelected":false,"UsesTemplateWorker":true,"Wrap":1,"GroupedMap":true,"BranchMap":false}]
+Preflight native-destination-grouped [{"Kind":"AsciiSimplePattern","ScalarSelected":false,"UsesTemplateWorker":true,"Wrap":1,"GroupedMap":true,"BranchMap":false},{"Kind":"AsciiSimplePattern","ScalarSelected":false,"UsesTemplateWorker":true,"Wrap":1,"GroupedMap":true,"BranchMap":false}]
+Preflight compiled-grouped [{"Kind":"AsciiSimplePattern","ScalarSelected":false,"UsesTemplateWorker":true,"Wrap":1,"GroupedMap":true,"BranchMap":false},{"Kind":"AsciiSimplePattern","ScalarSelected":false,"UsesTemplateWorker":true,"Wrap":1,"GroupedMap":true,"BranchMap":false}]
+Preflight scalar-unicode-control [{"Kind":"FallbackRegex","ScalarSelected":true,"UsesTemplateWorker":true,"Wrap":0,"GroupedMap":false,"BranchMap":false},{"Kind":"FallbackRegex","ScalarSelected":true,"UsesTemplateWorker":true,"Wrap":0,"GroupedMap":false,"BranchMap":false}]
+Preflight native-mixed-map [{"Kind":"AsciiSimplePattern","ScalarSelected":true,"UsesTemplateWorker":true,"Wrap":1,"GroupedMap":true,"BranchMap":false},{"Kind":"AsciiSimplePattern","ScalarSelected":true,"UsesTemplateWorker":true,"Wrap":1,"GroupedMap":true,"BranchMap":false}]
+Preflight native-cold-grouped [{"Kind":"AsciiSimplePattern","ScalarSelected":false,"UsesTemplateWorker":true,"Wrap":1,"GroupedMap":true,"BranchMap":false},{"Kind":"AsciiSimplePattern","ScalarSelected":false,"UsesTemplateWorker":true,"Wrap":1,"GroupedMap":true,"BranchMap":false}]
+Preflight native-finite-live [{"Kind":"AsciiSimplePattern","ScalarSelected":true,"UsesTemplateWorker":true,"Wrap":1,"GroupedMap":false,"BranchMap":false},{"Kind":"AsciiSimplePattern","ScalarSelected":true,"UsesTemplateWorker":true,"Wrap":1,"GroupedMap":false,"BranchMap":false}]
+Preflight native-no-match [{"Kind":"AsciiSimplePattern","ScalarSelected":false,"UsesTemplateWorker":true,"Wrap":1,"GroupedMap":true,"BranchMap":false},{"Kind":"AsciiSimplePattern","ScalarSelected":false,"UsesTemplateWorker":true,"Wrap":1,"GroupedMap":true,"BranchMap":false}]
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 0.6878979,
+  "Scope": "Fixed 6c73821a clean baseline -\u003E same source with validated simple-pattern compiled-factory enumeration. One bounded eleven-case/four-lane public comparison. Mapped worker coverage established; unchanged Count, warm text/native/string/destination/compiled, cold32, finite/live, scalar Unicode and no-match controls. Native/scalar routes proved outside timing. Warm1.5s/min64, independent60ms calibration, five alternating samples\u003E=20ms. Output batches consumed after timing. .NET comparators produce equal public outputs; byte outputs include encoding, native templates are predecoded for BCL. Destination BCL uses Replace plus encoding/copy. One120s cap, at most one noise confirmation if necessary, no full refresh/package/cumulative claim.",
+  "Before": "0.5.0-dev.2\u002B6c73821a677cb8bbf7e910ada1d98709fd7d769a sha256=0B1F22DA5C037AD4FFD1E96646550F341FE3791B8346F1D542B59376886262E6",
+  "After": "0.5.0-dev.2\u002B6c73821a677cb8bbf7e910ada1d98709fd7d769a sha256=3AD9C0F0CE7259C8F8529EAA6FF3D8EBD9F64EB0F4B76276CC91EA2CD698D75B",
+  "Rows": []
+}

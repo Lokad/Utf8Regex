@@ -22,6 +22,31 @@ public sealed class Utf8NativeTemplatePreparationTests
     }
 
     [Theory]
+    [InlineData("(ab[0-9]d)", "ab1d/ab2d", "[ab1d]/[ab2d]")]
+    [InlineData("(ab[0-9]d)", "é😀ab1d/ab2dé😀", "é😀[ab1d]/[ab2d]é😀")]
+    [InlineData("^(ab[0-9]d)", "ab1d/ab2d", "[ab1d]/ab2d")]
+    [InlineData("(ab[0-9]d)$", "ab1d/ab2d", "ab1d/[ab2d]")]
+    public void SimplePatternTemplatesPreserveWholeSubjectAndAnchors(string pattern, string text, string expected)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var expectedBytes = Encoding.UTF8.GetBytes(expected);
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
+        {
+            var regex = new Utf8Regex(pattern, options);
+            Assert.Equal(expectedBytes, regex.Replace(input, "[$1]"));
+            Assert.Equal(expectedBytes, regex.Replace(input, "[$1]"u8));
+            Assert.Equal(expected, regex.ReplaceToString(input, "[$1]"));
+            var destination = new byte[expectedBytes.Length];
+            Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "[$1]"u8, destination, out var written));
+            Assert.Equal(destination.Length, written);
+            Assert.Equal(expectedBytes, destination);
+            var malformed = input.Concat(new byte[] { 0xff }).ToArray();
+            Assert.Throws<ArgumentException>(() => regex.Replace(malformed, "[$1]"));
+            Assert.Throws<ArgumentException>(() => regex.Replace(malformed, "[$1]"u8));
+        }
+    }
+
+    [Theory]
     [MemberData(nameof(Cases))]
     public void NativeTemplatesKeepScalarCapturesOptionsAndAllOutputForms(string pattern, string input, string template, RegexOptions options)
     {

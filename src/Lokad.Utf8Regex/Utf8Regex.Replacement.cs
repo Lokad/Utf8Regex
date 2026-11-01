@@ -371,9 +371,13 @@ public sealed partial class Utf8Regex
         }
 
         var invocation = new Utf8SliceInvocation(InvocationLimits, deadline, token);
-        // Cancellable and finite calls declined above. Use the same no-token
-        // enumerator that the token overload reaches after its extra dispatch.
-        var matches = EnumerateMatches(input);
+        // Simple-pattern discovery reaches this same factory through public
+        // enumeration's validation and zero-offset routing. Reuse the complete
+        // validation above; diagnostic hooks retain their invocation route.
+        var matches = _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+            Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null
+            ? CreateMatchEnumeratorViaCompiledEngine(input, validation, deadline)
+            : EnumerateMatches(input);
         if (!matches.MoveNext())
         {
             result = CompleteUnchangedOwnedReplacement(input, validation.Utf16Length, resultKind,

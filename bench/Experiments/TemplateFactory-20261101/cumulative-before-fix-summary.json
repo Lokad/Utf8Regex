@@ -1,0 +1,236 @@
+[
+  {
+    "Case": "core/literal-Count-control",
+    "Before": 0.3966,
+    "After": 0.3978,
+    "Pct": 0.3,
+    "Range": "-1.3..1.0",
+    "BytesBefore": 0,
+    "BytesAfter": 0
+  },
+  {
+    "Case": "core/identifier-Count/unlimited",
+    "Before": 0.4392,
+    "After": 0.4589,
+    "Pct": 4.48,
+    "Range": "3.0..7.5",
+    "BytesBefore": 0,
+    "BytesAfter": 0
+  },
+  {
+    "Case": "core/identifier-Count/finite-live",
+    "Before": 7.591,
+    "After": 6.2256,
+    "Pct": -17.99,
+    "Range": "-19.4..-15.9",
+    "BytesBefore": 112,
+    "BytesAfter": 120
+  },
+  {
+    "Case": "core/Chinese-catalog-Count/ordinary",
+    "Before": 130.6844,
+    "After": 135.8129,
+    "Pct": 3.92,
+    "Range": "1.3..20.5",
+    "BytesBefore": 0,
+    "BytesAfter": 0
+  },
+  {
+    "Case": "core/Chinese-catalog-Count/compiled",
+    "Before": 130.7482,
+    "After": 134.6223,
+    "Pct": 2.96,
+    "Range": "1.8..4.9",
+    "BytesBefore": 0,
+    "BytesAfter": 0
+  },
+  {
+    "Case": "core/ASCII-IsMatch/live",
+    "Before": 0.4858,
+    "After": 0.1402,
+    "Pct": -71.13,
+    "Range": "-73.8..-70.1",
+    "BytesBefore": 1792,
+    "BytesAfter": 120
+  },
+  {
+    "Case": "core/scalar-NB-Count/finite-live",
+    "Before": 24.6538,
+    "After": 23.6707,
+    "Pct": -3.99,
+    "Range": "-4.5..-2.9",
+    "BytesBefore": 4832,
+    "BytesAfter": 4840
+  },
+  {
+    "Case": "core/grouped-text-Replace/unlimited",
+    "Before": 2.1305,
+    "After": 2.1956,
+    "Pct": 3.05,
+    "Range": "-2.2..5.0",
+    "BytesBefore": 6504,
+    "BytesAfter": 6512
+  },
+  {
+    "Case": "core/grouped-native-Replace/unlimited",
+    "Before": 2.2735,
+    "After": 2.2298,
+    "Pct": -1.92,
+    "Range": "-4.3..2.4",
+    "BytesBefore": 6744,
+    "BytesAfter": 6512
+  },
+  {
+    "Case": "core/grouped-text-Replace/finite-live",
+    "Before": 2.2519,
+    "After": 2.287,
+    "Pct": 1.56,
+    "Range": "-0.2..5.4",
+    "BytesBefore": 6616,
+    "BytesAfter": 6632
+  },
+  {
+    "Case": "core/grouped-Unicode-Replace",
+    "Before": 186.5393,
+    "After": 184.9234,
+    "Pct": -0.87,
+    "Range": "-1.6..0.3",
+    "BytesBefore": 73920,
+    "BytesAfter": 73928
+  },
+  {
+    "Case": "core/mapped-template/text-bytes",
+    "Before": 4.2433,
+    "After": 4.9156,
+    "Pct": 15.84,
+    "Range": "11.9..19.8",
+    "BytesBefore": 1032,
+    "BytesAfter": 400
+  },
+  {
+    "Case": "core/mapped-template/native-bytes",
+    "Before": 4.4052,
+    "After": 4.8704,
+    "Pct": 10.56,
+    "Range": "9.2..12.9",
+    "BytesBefore": 1280,
+    "BytesAfter": 400
+  },
+  {
+    "Case": "core/mapped-template/string-result",
+    "Before": 4.1387,
+    "After": 4.7627,
+    "Pct": 15.08,
+    "Range": "12.7..16.6",
+    "BytesBefore": 976,
+    "BytesAfter": 416
+  },
+  {
+    "Case": "core/mapped-template/native-destination",
+    "Before": 4.3401,
+    "After": 4.7257,
+    "Pct": 8.89,
+    "Range": "6.6..10.9",
+    "BytesBefore": 1224,
+    "BytesAfter": 344
+  },
+  {
+    "Case": "core/mapped-template/native-no-match",
+    "Before": 3.7992,
+    "After": 4.1738,
+    "Pct": 9.86,
+    "Range": "7.9..12.6",
+    "BytesBefore": 328,
+    "BytesAfter": 40
+  },
+  {
+    "Case": "python/captured-Count/finite-live",
+    "Before": 2.4909,
+    "After": 2.3395,
+    "Pct": -6.08,
+    "Range": "-8.8..-0.4",
+    "BytesBefore": 112,
+    "BytesAfter": 120
+  },
+  {
+    "Case": "python/captured-FindAllToUtf8/finite",
+    "Before": 48.8286,
+    "After": 49.2563,
+    "Pct": 0.88,
+    "Range": "-1.9..3.6",
+    "BytesBefore": 18720,
+    "BytesAfter": 18728
+  },
+  {
+    "Case": "python/possessive-Search-miss",
+    "Before": 1.7178,
+    "After": 0.1786,
+    "Pct": -89.61,
+    "Range": "-89.9..-89.0",
+    "BytesBefore": 3552,
+    "BytesAfter": 0
+  },
+  {
+    "Case": "python/lookbehind-Search",
+    "Before": 0.8387,
+    "After": 0.455,
+    "Pct": -45.75,
+    "Range": "-48.2..-42.6",
+    "BytesBefore": 1872,
+    "BytesAfter": 0
+  },
+  {
+    "Case": "python/grouped-Subn",
+    "Before": 1.7684,
+    "After": 1.7546,
+    "Pct": -0.78,
+    "Range": "-1.9..1.6",
+    "BytesBefore": 6056,
+    "BytesAfter": 6056
+  },
+  {
+    "Case": "pcre2/Unicode-Count/finite-live",
+    "Before": 6.9101,
+    "After": 6.2574,
+    "Pct": -9.45,
+    "Range": "-10.8..-8.1",
+    "BytesBefore": 1592,
+    "BytesAfter": 1600
+  },
+  {
+    "Case": "pcre2/Unicode-Enumerate/finite",
+    "Before": 12.5443,
+    "After": 8.4488,
+    "Pct": -32.65,
+    "Range": "-33.3..-30.7",
+    "BytesBefore": 11952,
+    "BytesAfter": 11960
+  },
+  {
+    "Case": "pcre2/grouped-Replace",
+    "Before": 4.614,
+    "After": 4.7171,
+    "Pct": 2.24,
+    "Range": "-2.1..3.7",
+    "BytesBefore": 27216,
+    "BytesAfter": 27224
+  },
+  {
+    "Case": "pcre2/literal-Count-control",
+    "Before": 0.4456,
+    "After": 0.4306,
+    "Pct": -3.37,
+    "Range": "-4.2..-1.8",
+    "BytesBefore": 0,
+    "BytesAfter": 0
+  },
+  {
+    "Case": "control/predecoded-BCL-Count",
+    "Before": 0.4233,
+    "After": 0.4255,
+    "Pct": 0.52,
+    "Range": "-0.4..2.1",
+    "BytesBefore": 0,
+    "BytesAfter": 0
+  }
+]

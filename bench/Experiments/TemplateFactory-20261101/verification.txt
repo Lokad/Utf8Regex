@@ -1,0 +1,9 @@
+Release, .NET10 and .NET11, repository scripts, matching binaries reused.
+Core replacement/resource:5053/runtime; shaping/capture/RTL/NonBacktracking:9150/runtime.
+PythonRe:230/runtime; PCRE2:1188/runtime.
+Final test-only consolidation replaces20 generated rows with4 hardcoded public cases.
+Focused source checks only; full refresh/package boundary remains separate.
+core-final SHA256=429E7F013520B4390ED04AAC33CD2E5CB799037D35B29E646C9145E1B1C04002
+core-shaping SHA256=B4A401F62EBFA62515FAAD64DA787B62621A049ACFE9F53DAD799201573CDF73
+python-focused SHA256=759B55735176887A62193AD7B4FD5028814DD4A5EF33FDF6728742F10439C0E8
+pcre-focused SHA256=CE895CDC47B5DEF52DBEB19E7E5222AB7367459F09310FEED7F07F081D527293
