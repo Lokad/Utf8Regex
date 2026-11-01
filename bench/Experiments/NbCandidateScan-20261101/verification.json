@@ -1,0 +1,23 @@
+{
+  "BaselineRuntimeSource": "efcc6b616554fa4e0546a627b483ac631add8e06",
+  "Parent": "da684c0b9b1ca685b2e7e8a1e08a1778ce0e48b0 (data/receipt only)",
+  "Configuration": "Release",
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "CorePrimaryPerFramework": 905,
+  "CoreAdditionalControlsPerFramework": 739,
+  "DifferentialPerFramework": 28,
+  "NewTheoryRows": 13,
+  "Result": "All passed, zero skipped",
+  "ChangedLiveProfile": "Core NonBacktracking table-backed batches/cursors; PythonRe/PCRE2 do not use this NonBacktracking dispatch",
+  "BeforeCoreSha256": "89580FBA3B49A475503437C2879A2C376F0865BB9B111FCAB64A8DF36232BEE4",
+  "AfterCoreSha256": "BEF1BE09C0D45B0387EB450222F2929AF7DF89EDBE3297B70E81616FC5FB74D0",
+  "WorkUnits": "Candidate starts k->ceil(k/64); all atom/replay/preparation work unchanged; originaltoken/deadline before groups and no-match publication",
+  "StateCases": 371,
+  "StateProof": "All fields exact except declared batch search work reduction, independently verified from first viable bit, delta0..7",
+  "PriorCI": "41286044140 green Windows/Linux",
+  "Decision": "PROMOTE primary2.5-4.1%, live8.9%, finite10.5%, deadline11.9%; unchanged allocations, no adverse median above1%; no confirmation needed",
+  "Scope": "One92.532s 14-case warm public matrix, no cold/package/fullcatalog rerun"
+}

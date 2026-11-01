@@ -1,0 +1,9 @@
+{
+  "Cases": 371,
+  "ExactWorkDelta": "k-ceil(k/64), k independently counted from prepared viable starts",
+  "MinimumDelta": 0.0,
+  "MaximumDelta": 7.0,
+  "OtherFields": "Exact equality: every viability bit, prep and independent streaming-search work, ranges, captures, peaks and enclosing 13B loans",
+  "BeforeSha256": "9F82AC2A54A5F69605983755B0A8BF43CF5BB647955DE141D3D33AA4EB89D81F",
+  "AfterSha256": "CD48B3DA6BA36D3EB62AB8D2BFF425F8DB34988191DCE1C116A38EBEC5866154"
+}

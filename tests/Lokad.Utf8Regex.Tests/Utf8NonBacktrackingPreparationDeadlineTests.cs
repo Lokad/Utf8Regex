@@ -7,6 +7,134 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8NonBacktrackingPreparationDeadlineTests
 {
     [Theory]
+    [InlineData(0, "x")] [InlineData(62, "x")] [InlineData(63, "😀")]
+    [InlineData(64, "é")] [InlineData(65, "😀")] [InlineData(127, "x")]
+    [InlineData(128, "😀")]
+    public void CandidateQuantaBoundExaminedStartsAndPreserveOffsets(int prefix, string scalar)
+    {
+        foreach (var width in new[] { 1, 70 })
+        foreach (var hit in new[] { false, true })
+        {
+            var needle = new string('z', width);
+            var program = new Utf8Regex("(?<x>" + needle + ")", RegexOptions.NonBacktracking)
+                .Inspection.AvailableOwnedSliceProgram!;
+            var prefixText = string.Concat(Enumerable.Repeat(scalar, prefix));
+            var input = Encoding.UTF8.GetBytes(prefixText + (hit ? needle : ""));
+            var owner = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
+            Assert.True(owner.Ledger.TryReserve(13));
+            Assert.Equal(Utf8ExecutionLimitKind.None,
+                Utf8NonBacktrackingSearchState.TryCreate(program, input, ref owner, out var state));
+            Assert.NotNull(state);
+            try
+            {
+                foreach (var origin in new[] { 0, Math.Min(prefix, 1) }.Distinct())
+                {
+                    var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
+                    Assert.True(invocation.Ledger.TryReserve(13));
+                    var boundary = origin;
+                    var starts = new[] { 42 }; var ends = new[] { 43 };
+                    var found = state.FindFirst(program, ref boundary, starts, ends, false, ref invocation);
+                    Assert.Equal(Utf8ExecutionLimitKind.None, found.Breach);
+                    Assert.Equal(hit, found.Found);
+                    var candidateQuanta = (ulong)(prefix - origin + 1 + 63) / 64;
+                    Assert.Equal(candidateQuanta + (hit ? (ulong)width + 4 : 0), invocation.Budget.Steps);
+                    if (hit)
+                    {
+                        Assert.Equal(Encoding.UTF8.GetByteCount(prefixText), found.StartByte);
+                        Assert.Equal(input.Length, found.EndByte);
+                        Assert.Equal(found.StartByte, starts[0]); Assert.Equal(found.EndByte, ends[0]);
+                    }
+                    else { Assert.Equal(-1, starts[0]); Assert.Equal(-1, ends[0]); }
+                    Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+                    if (prefix - origin < 64) continue;
+                    var limited = new Utf8SliceInvocation(new(1, 0, 0), Timeout.InfiniteTimeSpan, default);
+                    Assert.True(limited.Ledger.TryReserve(13));
+                    boundary = origin;
+                    var denied = state.FindFirst(program, ref boundary, starts, ends, false, ref limited);
+                    Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, denied.Breach);
+                    Assert.False(denied.Found); Assert.Equal(origin + 64, boundary);
+                    Assert.Equal(-1, starts[0]); Assert.Equal(-1, ends[0]);
+                    Assert.Equal(13UL, limited.Ledger.ReservedBytes);
+                }
+            }
+            finally { state.Release(ref owner); }
+            Assert.Equal(13UL, owner.Ledger.ReservedBytes);
+        }
+    }
+
+    [Theory]
+    [InlineData(false, false)] [InlineData(false, true)]
+    [InlineData(true, false)] [InlineData(true, true)]
+    public void CandidateQuantaKeepBoundedInterruptionAndTableLoans(bool expire, bool wide)
+    {
+        var program = new Utf8Regex("(?<x>" + new string('z', wide ? 70 : 1) + ")", RegexOptions.NonBacktracking)
+            .Inspection.AvailableOwnedSliceProgram!;
+        var input = Encoding.UTF8.GetBytes(new string('a', 128));
+        var owner = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
+        Assert.True(owner.Ledger.TryReserve(13));
+        Assert.Equal(Utf8ExecutionLimitKind.None,
+            Utf8NonBacktrackingSearchState.TryCreate(program, input, ref owner, out var state));
+        Assert.NotNull(state);
+        try
+        {
+            long ticks = 0;
+            using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+            using var live = new CancellationTokenSource();
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, TimeSpan.FromMilliseconds(50), live.Token);
+            Assert.True(invocation.Ledger.TryReserve(13));
+            for (var i = 0; i < 62; i++) _ = invocation.TryChargeStep();
+            invocation.CheckpointHook = _ => { if (expire) ticks = 100; else live.Cancel(); };
+            var starts = new[] { 42 }; var ends = new[] { 43 }; var boundary = 0;
+            if (expire) Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
+                state.FindFirst(program, ref boundary, starts, ends, false, ref invocation));
+            else Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() =>
+                state.FindFirst(program, ref boundary, starts, ends, false, ref invocation)).CancellationToken);
+            Assert.Equal(expire ? 64 : 128, boundary);
+            Assert.Equal(-1, starts[0]); Assert.Equal(-1, ends[0]);
+            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        }
+        finally { state.Release(ref owner); }
+        Assert.Equal(13UL, owner.Ledger.ReservedBytes);
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void LastCandidateQuantumCannotPublishNoMatchAfterInterruption(bool expire)
+    {
+        var program = new Utf8Regex("(?<x>z)", RegexOptions.NonBacktracking).Inspection.AvailableOwnedSliceProgram!;
+        var input = Encoding.UTF8.GetBytes(new string('a', 63));
+        var owner = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
+        Assert.True(owner.Ledger.TryReserve(13));
+        Assert.Equal(Utf8ExecutionLimitKind.None,
+            Utf8NonBacktrackingSearchState.TryCreate(program, input, ref owner, out var state));
+        Assert.NotNull(state);
+        try
+        {
+            var reads = 0; var armed = false;
+            using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => armed && ++reads >= 2 ? 100 : 0);
+            using var live = new CancellationTokenSource();
+            var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, TimeSpan.FromMilliseconds(50), live.Token);
+            Assert.True(invocation.Ledger.TryReserve(13));
+            if (!expire)
+            {
+                for (var i = 0; i < 63; i++) _ = invocation.TryChargeStep();
+                invocation.CheckpointHook = _ => live.Cancel();
+            }
+            armed = expire;
+            var starts = new[] { 42 }; var ends = new[] { 43 }; var boundary = 0;
+            if (expire) Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
+                state.FindFirst(program, ref boundary, starts, ends, false, ref invocation));
+            else Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() =>
+                state.FindFirst(program, ref boundary, starts, ends, false, ref invocation)).CancellationToken);
+            Assert.Equal(64, boundary);
+            Assert.Equal(-1, starts[0]); Assert.Equal(-1, ends[0]);
+            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        }
+        finally { state.Release(ref owner); }
+        Assert.Equal(13UL, owner.Ledger.ReservedBytes);
+    }
+
+    [Theory]
     [InlineData(63)] [InlineData(64)] [InlineData(65)]
     public void PublicEntryPointsRejectMalformedTailsBeforeEarlyMatches(int prefix)
     {

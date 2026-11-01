@@ -316,13 +316,23 @@ internal sealed class Utf8NonBacktrackingSearchState
         Array.Fill(captureEnds, -1);
         try
         {
+            var visited = 0;
             for (; boundary < _boundaries.Length; boundary++)
             {
-                var breach = invocation.TryChargeInputStep();
-                if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+                // A candidate lookup reads one already prepared viability bit.
+                if ((visited++ & 63) == 0)
+                {
+                    var breach = invocation.TryChargeInputStep();
+                    if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+                }
                 if (CanMatch(boundary, 0)) break;
             }
-            if (boundary == _boundaries.Length) return new(false, -1, -1, null, null, Utf8ExecutionLimitKind.None);
+            if (boundary == _boundaries.Length)
+            {
+                invocation.Budget.ThrowIfCancellationRequested();
+                invocation.Budget.CheckDeadline();
+                return new(false, -1, -1, null, null, Utf8ExecutionLimitKind.None);
+            }
             var bytes = Utf8ConstructionBudget.ArrayBytes<int>(program.NonBacktrackingCaptureOpeningCount);
             var admission = invocation.TryReserveWorking(bytes);
             if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, admission);

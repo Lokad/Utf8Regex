@@ -87,18 +87,19 @@ expansion. This mode does not expose ordinary backtracking capture history.
 
 Scalar sizing admits one work quantum before at most 64 bytes, and exact offset
 preparation one before at most 64 scalars. Viability preparation admits one before
-at most 64 instruction cells per row. Atom predicates retain their direct charges.
+at most 64 instruction cells per row. Scanning prepared candidate starts admits
+one before at most 64 scalar-boundary lookups. Atom predicates retain their direct charges.
 Every quantum checks the original token and absolute deadline directly, and
 publication checks them again. Working admission still covers scalar boundaries
 and packed rows before allocation; storage and depth bounds are unchanged.
-Preparation work units are consequently lower than earlier per-cell accounting;
+Preparation and candidate-scan work units are lower than earlier per-cell accounting;
 finite limits remain enforceable, with CPU growth bounded by64 bytes/scalars/simple
 cells per corresponding quantum plus separately metered atom work. This applies
 to unlimited calls too.
 Programs fitting one packed word precompute unconditional Fork/Jump/Capture
 ancestry. Each row visits eligible consuming cells, folds successful ancestry,
 then evaluates ordered anchor/boundary conditions. Wider programs keep the full
-ordered evaluation. This changes no invocation work units or table capacity.
+ordered evaluation. This ancestry folding changes no invocation work units or table capacity.
 The immutable ancestry array uses construction admission before allocation;
 cold costs and construction-limit thresholds can differ from earlier layouts.
 

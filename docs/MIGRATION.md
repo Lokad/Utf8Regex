@@ -108,8 +108,10 @@ Core/PythonRe byte-capped timeout diagnostics omit Input to avoid subject decodi
 
 Core NonBacktracking preparation now meters groups of at most 64 size-scan bytes,
 64 scalar offsets or64 state cells, with token/deadline checks before every group.
+Scanning prepared candidate starts similarly admits at most 64 scalar-boundary
+lookups per group, with a final token/deadline check before publishing no match.
 Atom work retains its direct charges; storage/depth admission is unchanged.
-Preparation can consume fewer MaxWorkSteps than earlier versions. Treat work units as route/version
+Preparation and candidate scanning can consume fewer MaxWorkSteps than earlier versions. Treat work units as route/version
 dependent, and qualify finite policies against representative workloads when upgrading.
 
 Proven whole-expression Unicode-letter Count now shares the existing category
