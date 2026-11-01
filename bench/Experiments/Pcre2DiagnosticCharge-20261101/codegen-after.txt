@@ -1,0 +1,31 @@
+; Assembly listing for method Lokad.Utf8Regex.Pcre2.Pcre2BacktrackingRunner:TryMatchAt(Lokad.Utf8Regex.Pcre2.Pcre2BacktrackingProgram,System.ReadOnlySpan`1[byte],byref,int,int,int,byte,System.ReadOnlySpan`1[int],System.ReadOnlySpan`1[int],int,bool,byref,byref,byref,byref,byref,byref):bool (Tier1)
+; Emitting BLENDED_CODE for x64 + VEX + EVEX on Unix
+; Tier1 code
+; optimized code
+; optimized using Synthesized PGO
+; rbp based frame
+; fully interruptible
+; with Synthesized PGO: fgCalledCount is 73808
+; 74 inlinees with PGO data; 393 single block inlinees; 16 inlinees without PGO data
+       xor      edi, edi
+       mov      r8, bword ptr [rbp+0x78]
+       mov      qword ptr [r8], rdi
+ 
+G_M000_IG153:                ;; offset=0x0FD2
+       mov      dword ptr [rbp-0x1CC], 1
+       jmp      G_M000_IG310
+ 
+G_M000_IG154:                ;; offset=0x0FE1
+       mov      rdi, rax
+       call     [Lokad.Utf8Regex.Pcre2.Pcre2ExecutionDiagnosticsCollector:RecordBacktracking(byte,byte):this]
+       jmp      G_M000_IG130
+ 
+G_M000_IG155:                ;; offset=0x0FEF
+       mov      r15, gword ptr [r15]
+       cmp      byte  ptr [r15], r15b
+       add      r15, 8
+       jmp      G_M000_IG131
+ 
+G_M000_IG156:                ;; offset=0x0FFE
+       mov      rcx, gword ptr [rax]
+; Total bytes of code 16649

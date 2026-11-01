@@ -1,0 +1,22 @@
+{
+  "Status": "Rejected; source fully restored on Windows and VM",
+  "Parent": "48df5d6cfc28132d49fa6ca58191f44796a71b16",
+  "FocusedPerRuntime": 247,
+  "Pcre2ReleasePerRuntime": 6486,
+  "RestoredPerRuntime": 247,
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "ElapsedSeconds": 63.8088736,
+  "MinimumSampleMilliseconds": 35.9394,
+  "Cases": 17,
+  "AllocationsChanged": false,
+  "ConfirmationRuns": 0,
+  "UnchangedLiteralControlPercent": 15.503606055406705,
+  "AdverseCause": "Unresolved; no JIT/layout causal explanation is claimed",
+  "TablesChanged": false,
+  "PackagesChanged": false,
+  "RawArchiveSha256": "91463B55FC44C288C70F58284D3DC0B4917B03597768784ED24ED98741BDD639",
+  "CorrectnessArchiveSha256": "64CA719286320C4161EA3009F87B70E1CB31EEBB19919644143F7E5BE16D2C7B"
+}

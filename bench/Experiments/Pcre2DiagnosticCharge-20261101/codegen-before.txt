@@ -1,0 +1,31 @@
+; Assembly listing for method Lokad.Utf8Regex.Pcre2.Pcre2BacktrackingRunner:TryMatchAt(Lokad.Utf8Regex.Pcre2.Pcre2BacktrackingProgram,System.ReadOnlySpan`1[byte],byref,int,int,int,byte,System.ReadOnlySpan`1[int],System.ReadOnlySpan`1[int],int,bool,byref,byref,byref,byref,byref,byref):bool (Tier1)
+; Emitting BLENDED_CODE for x64 + VEX + EVEX on Unix
+; Tier1 code
+; optimized code
+; optimized using Synthesized PGO
+; rbp based frame
+; fully interruptible
+; with Synthesized PGO: fgCalledCount is 82496
+; 75 inlinees with PGO data; 407 single block inlinees; 31 inlinees without PGO data
+       mov      rdi, gword ptr [r12+0x08]
+       mov      esi, dword ptr [rdi+0x08]
+       cmp      dword ptr [rbp-0x108], esi
+       jae      G_M000_IG322
+       mov      esi, dword ptr [rbp-0x108]
+       lea      rsi, [rsi+4*rsi]
+       lea      rbx, bword ptr [rdi+8*rsi+0x10]
+       movzx    rsi, byte  ptr [rbx+0x14]
+       movzx    rdx, byte  ptr [rbx+0x20]
+       mov      rdi, bword ptr [rbp+0x50]
+       call     [Lokad.Utf8Regex.Pcre2.Pcre2ResourceBudget:ChargeBacktracking(byte,byte):this]
+       movzx    rdi, byte  ptr [rbx+0x14]
+       cmp      edi, 23
+       ja       G_M000_IG302
+       lea      rax, [reloc @RWD00]
+       mov      eax, dword ptr [rax+4*rdi]
+       lea      rcx, G_M000_IG02
+       add      rax, rcx
+       jmp      rax
+ 
+G_M000_IG110:                ;; offset=0x07E1
+; Total bytes of code 17512
