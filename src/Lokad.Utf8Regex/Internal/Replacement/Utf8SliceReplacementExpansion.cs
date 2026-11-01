@@ -9,7 +9,7 @@ internal interface IUtf8SliceReplacementExpansion<TState>
 {
     bool RequiresContext { get; }
     void Append(ReadOnlySpan<byte> input, Utf8BoundaryMap map, Utf8SliceSearchOutcome outcome,
-        Utf8SliceByteOutputBuffer writer, ref TState state, ref Utf8SliceInvocation invocation);
+        in Utf8SliceSlots slots, Utf8SliceByteOutputBuffer writer, ref TState state, ref Utf8SliceInvocation invocation);
 }
 
 internal readonly struct Utf8SliceTemplateExpansion(Utf8AnalyzedReplacement replacement, Utf8CaptureCatalog captureCatalog)
@@ -18,7 +18,7 @@ internal readonly struct Utf8SliceTemplateExpansion(Utf8AnalyzedReplacement repl
     public bool RequiresContext => false;
 
     public void Append(ReadOnlySpan<byte> input, Utf8BoundaryMap map, Utf8SliceSearchOutcome outcome,
-        Utf8SliceByteOutputBuffer writer, ref int state, ref Utf8SliceInvocation invocation)
+        in Utf8SliceSlots slots, Utf8SliceByteOutputBuffer writer, ref int state, ref Utf8SliceInvocation invocation)
     {
         foreach (var instruction in replacement.Plan.Instructions)
         {
@@ -32,10 +32,10 @@ internal readonly struct Utf8SliceTemplateExpansion(Utf8AnalyzedReplacement repl
                     writer.Append(input.Slice(outcome.StartByte, outcome.EndByte - outcome.StartByte));
                     break;
                 case Utf8ReplacementInstructionKind.Group:
-                    AppendGroup(captureCatalog.OrdinalFromNumber(instruction.GroupNumber), input, outcome, writer);
+                    AppendGroup(captureCatalog.OrdinalFromNumber(instruction.GroupNumber), input, outcome, slots, writer);
                     break;
                 case Utf8ReplacementInstructionKind.LastGroup:
-                    AppendGroup(captureCatalog.GroupNumbers.Length - 1, input, outcome, writer);
+                    AppendGroup(captureCatalog.GroupNumbers.Length - 1, input, outcome, slots, writer);
                     break;
                 case Utf8ReplacementInstructionKind.LeftPortion:
                     writer.Append(input[..outcome.StartByte]);
@@ -52,16 +52,20 @@ internal readonly struct Utf8SliceTemplateExpansion(Utf8AnalyzedReplacement repl
         }
     }
 
-    private static void AppendGroup(int group, ReadOnlySpan<byte> input, Utf8SliceSearchOutcome outcome, Utf8SliceByteOutputBuffer writer)
+    private static void AppendGroup(int group, ReadOnlySpan<byte> input, Utf8SliceSearchOutcome outcome,
+        in Utf8SliceSlots slots, Utf8SliceByteOutputBuffer writer)
     {
         if (group == 0)
         {
             writer.Append(input.Slice(outcome.StartByte, outcome.EndByte - outcome.StartByte));
             return;
         }
-        if (outcome.CaptureStarts is not { } starts || outcome.CaptureLengths is not { } lengths ||
-            (uint)(group - 1) >= (uint)starts.Length || starts[group - 1].Length == 0) return;
-        writer.Append(input.Slice(starts[group - 1][^1], lengths[group - 1][^1]));
+        var slot = group - 1;
+        if ((uint)slot >= (uint)slots.Starts.Length) return;
+        var start = slots.Starts[slot];
+        var end = slots.Ends[slot];
+        if (start < 0 || end < 0) return;
+        writer.Append(input.Slice(Math.Min(start, end), Math.Abs(end - start)));
     }
 }
 
@@ -71,7 +75,7 @@ internal readonly struct Utf8SliceEvaluatorExpansion<TState>(Utf16MatchEvaluator
     public bool RequiresContext => true;
 
     public void Append(ReadOnlySpan<byte> input, Utf8BoundaryMap map, Utf8SliceSearchOutcome outcome,
-        Utf8SliceByteOutputBuffer writer, ref TState state, ref Utf8SliceInvocation invocation)
+        in Utf8SliceSlots slots, Utf8SliceByteOutputBuffer writer, ref TState state, ref Utf8SliceInvocation invocation)
     {
         var projection = Utf8SliceCaptureProjection.Create(outcome, map, ref invocation);
         try

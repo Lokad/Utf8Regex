@@ -90,15 +90,15 @@ public sealed partial class Utf8Regex
                     position = candidateStart;
                 }
                 var outcome = batch is null
-                    ? Utf8SliceRunner.TryFindFirst(program, input, position, slots.Starts, slots.Ends, true, ref workspace, ref invocation)
-                    : batch.FindFirst(program, ref boundary, slots.Starts, slots.Ends, true, ref invocation);
+                    ? Utf8SliceRunner.TryFindFirst(program, input, position, slots.Starts, slots.Ends, expansion.RequiresContext, ref workspace, ref invocation)
+                    : batch.FindFirst(program, ref boundary, slots.Starts, slots.Ends, expansion.RequiresContext, ref invocation);
                 try
                 {
                     if (outcome.Breach != Utf8ExecutionLimitKind.None)
                         throw new InvalidOperationException("Owned replacement execution exceeded the invocation budget.");
                     if (!outcome.Found) break;
                     anyMatch = true;
-                    if (outcome.CaptureStarts is null || outcome.CaptureLengths is null)
+                    if (expansion.RequiresContext && (outcome.CaptureStarts is null || outcome.CaptureLengths is null))
                         throw new InvalidOperationException("Owned replacement match is missing capture histories.");
                     // Only callbacks need derived UTF-16 coordinates. Templates
                     // splice original byte ranges and never build a subject map.
@@ -108,7 +108,7 @@ public sealed partial class Utf8Regex
                         mapCreated = true;
                     }
                     if (!program.RightToLeft) writer.Append(input.Slice(edgeByte, outcome.StartByte - edgeByte));
-                    expansion.Append(input, map, outcome, writer, ref state, ref invocation);
+                    expansion.Append(input, map, outcome, slots, writer, ref state, ref invocation);
                     scope.Retain(writer);
                     if (program.RightToLeft)
                     {

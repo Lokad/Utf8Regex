@@ -246,6 +246,11 @@ Native shortcuts still meter bounded search, comparison and publication.
 Scalar-class repetitions with a proved endpoint can omit unused repeat-journal
 storage. Live counter vectors and captures still require admission; examined
 scalars/classifications and terminal interruption remain metered.
+Template replacement reads final completed captures without materializing capture
+histories. Evaluator callbacks retain their profile's histories. Avoiding those
+temporary snapshots can lower work and covered working/result charges; execution,
+output staging and final output remain under their original admission and
+interruption controls.
 Validated ASCII literal-family cursors reuse byte coordinates for UTF-16
 projection. Avoided gap scans consume no validation-work units; search and
 per-match interruption checks remain.
