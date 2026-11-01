@@ -1,0 +1,131 @@
+diff --git a/src/Lokad.Utf8Regex.Pcre2/Pcre2AsciiBoundedIsMatchCompiler.cs b/src/Lokad.Utf8Regex.Pcre2/Pcre2AsciiBoundedIsMatchCompiler.cs
+index c0d7af16..fe5c778f 100644
+--- a/src/Lokad.Utf8Regex.Pcre2/Pcre2AsciiBoundedIsMatchCompiler.cs
++++ b/src/Lokad.Utf8Regex.Pcre2/Pcre2AsciiBoundedIsMatchCompiler.cs
+@@ -71,7 +71,7 @@ internal static class Pcre2AsciiBoundedIsMatchAnalyzer
+             request.Settings.BackslashC != Pcre2BackslashCPolicy.Forbid ||
+             request.Settings.AllowLookaroundBackslashK ||
+             !TryGetMatchBody(root, out var matchBody, out var beginningOfSubject, out var endOfSubjectOrFinalNewline) ||
+-            !TryExpand(matchBody, out var alternatives) ||
++            !TryExpand(matchBody, fallback, out var alternatives) ||
+             alternatives.Length == 0 ||
+             alternatives.Any(static alternative => alternative.Length == 0))
+         {
+@@ -148,20 +148,20 @@ internal static class Pcre2AsciiBoundedIsMatchAnalyzer
+         return true;
+     }
+ 
+-    internal static bool TryExpand(IPcre2BacktrackingNode node, out AsciiCharClass[][] alternatives)
++    private static bool TryExpand(IPcre2BacktrackingNode node, Pcre2BacktrackingProgram program, out AsciiCharClass[][] alternatives)
+     {
+         using var construction = Utf8ConstructionScope.Enter();
+         var depth = Pcre2BacktrackingCompiler.EnterDepth();
+         try
+         {
+-            var result = TryExpandCore(node, construction.Budget, out alternatives);
++            var result = TryExpandCore(node, program, construction.Budget, out alternatives);
+             if (result) construction.Complete();
+             return result;
+         }
+         finally { depth.LeaveDepth(); }
+     }
+ 
+-    private static bool TryExpandCore(IPcre2BacktrackingNode node, Utf8ConstructionBudget budget,
++    private static bool TryExpandCore(IPcre2BacktrackingNode node, Pcre2BacktrackingProgram program, Utf8ConstructionBudget budget,
+         out AsciiCharClass[][] alternatives)
+     {
+         switch (node)
+@@ -181,7 +181,7 @@ internal static class Pcre2AsciiBoundedIsMatchAnalyzer
+                 alternatives[0] = [];
+                 foreach (var child in sequence.Children)
+                 {
+-                    if (!TryExpand(child, out var childAlternatives) ||
++                    if (!TryExpand(child, program, out var childAlternatives) ||
+                         !TryConcatenate(alternatives, childAlternatives, out alternatives))
+                     {
+                         alternatives = [];
+@@ -195,7 +195,7 @@ internal static class Pcre2AsciiBoundedIsMatchAnalyzer
+                 using var expanded = new Utf8ConstructionBuffer<AsciiCharClass[]>(budget);
+                 foreach (var branch in alternation.Alternatives)
+                 {
+-                    if (!TryExpand(branch, out var branchAlternatives) ||
++                    if (!TryExpand(branch, program, out var branchAlternatives) ||
+                         expanded.Count + branchAlternatives.Length > MaximumAlternatives)
+                     {
+                         alternatives = [];
+@@ -209,14 +209,23 @@ internal static class Pcre2AsciiBoundedIsMatchAnalyzer
+                 return true;
+             }
+             case Pcre2CaptureBacktrackingNode capture:
+-                return TryExpand(capture.Body, out alternatives);
++                return TryExpand(capture.Body, program, out alternatives);
++            case Pcre2SubroutineCallBacktrackingNode call:
++                if (TryGetAsciiSubroutineClass(call.Target, program, out var callClass))
++                {
++                    alternatives = budget.AllocateArray<AsciiCharClass[]>(1, false);
++                    alternatives[0] = budget.AllocateArray<AsciiCharClass>(1, false);
++                    alternatives[0][0] = callClass;
++                    return true;
++                }
++                break;
+             case Pcre2RepeatBacktrackingNode
+             {
+                 Maximum: < int.MaxValue,
+                 Preference: not Pcre2RepeatPreference.Possessive,
+             } repeat when repeat.Maximum <= MaximumTokensPerAlternative:
+             {
+-                if (!TryExpand(repeat.Body, out var bodyAlternatives))
++                if (!TryExpand(repeat.Body, program, out var bodyAlternatives))
+                 {
+                     break;
+                 }
+@@ -264,6 +273,49 @@ internal static class Pcre2AsciiBoundedIsMatchAnalyzer
+         return false;
+     }
+ 
++    private static bool TryGetAsciiSubroutineClass(
++        Pcre2BackreferenceTarget target,
++        Pcre2BacktrackingProgram program,
++        out AsciiCharClass asciiClass)
++    {
++        asciiClass = default;
++        var slot = target.Kind switch
++        {
++            Pcre2BackreferenceTargetKind.Absolute => target.Number,
++            Pcre2BackreferenceTargetKind.Relative when target.Number > 0 =>
++                target.CaptureCountAtReference + target.Number,
++            Pcre2BackreferenceTargetKind.Relative =>
++                target.CaptureCountAtReference + target.Number + 1,
++            _ => -1,
++        };
++        if (target.Kind == Pcre2BackreferenceTargetKind.Named)
++        {
++            foreach (var name in program.NameEntries)
++            {
++                Utf8ConstructionScope.ChargeWork(1);
++                if (string.Equals(name.Name, target.Name, StringComparison.Ordinal))
++                {
++                    slot = name.Number;
++                    break;
++                }
++            }
++        }
++        if (slot <= 0 || (uint)slot >= (uint)program.SubroutineTargets.Length)
++            return false;
++        var entry = program.SubroutineTargets[slot];
++        if (entry < 0 || entry > program.Instructions.Length - 4)
++            return false;
++
++        // Inspect the actual lowered target: this cannot recursively expand a
++        // call, change its options, or overlook capture-dependent instructions.
++        var body = program.Instructions.AsSpan(entry, 4);
++        return body[0].Kind == Pcre2BacktrackingInstructionKind.CaptureStart && body[0].CaptureSlot == slot &&
++            body[1].Kind == Pcre2BacktrackingInstructionKind.Token &&
++            body[2].Kind == Pcre2BacktrackingInstructionKind.CaptureEnd && body[2].CaptureSlot == slot &&
++            body[3].Kind == Pcre2BacktrackingInstructionKind.SubroutineReturn &&
++            TryGetAsciiClass(body[1].Token, out asciiClass);
++    }
++
+     internal static bool TryConcatenate(
+         AsciiCharClass[][] left,
+         AsciiCharClass[][] right,

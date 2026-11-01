@@ -1,0 +1,63 @@
+CaseId            : pcre2/subroutine-prefix-digits
+Pattern           : ^(?1)\d{3}(a)
+Options           : CultureInvariant
+CompileSettings   : Lokad.Utf8Regex.Pcre2.Utf8Pcre2CompileSettings
+Replacement       : sub
+InputBytes        : 5
+SupportsOps       : IsMatch
+SupportsBackends  : Pcre2Only
+ExecutionKind     : Pcre2Backtracking
+UsesTranslation   : False
+Utf8ExecKind      : <none>
+ExecutionPlan     : IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking
+ValueEnumeratorB  : 1656
+GlobalCursorB     : 1248
+DirectCursorB     : 464
+ResourceBudgetB   : 176
+DiagnosticsB      : 216
+CandidateSearchB  : 440
+SliceCursorB      : 360
+Utf8OperationCurB : 1448
+Utf8SimplePlanB   : 536
+Utf8StructPlanB   : 4000
+Utf8SearchPlanB   : 2720
+Utf8SmallFamilyB  : 128
+Utf8SearchOpB     : 896
+Utf8DfaStateB     : 8
+ValueDataB        : 24
+GroupDataB        : 28
+LiteralFamilyCurB : 776
+DetailedCursorB   : 400
+CandidateSearch   : None
+AutoPossessRepeats: 2
+HasUtf8Regex      : False
+HasRegex          : False
+IsMatchResult     : True
+IsMatchCandidates : 1
+IsMatchVmSteps    : 11
+IsMatchVmTokens   : 3
+IsMatchLiteralTok : 2
+IsMatchClassTok   : 0
+IsMatchBoundaryTok: 1
+IsMatchOtherTok   : 0
+IsMatchVmBranches : 0
+IsMatchVmRepeats  : 1
+IsMatchRepeatEnter: 1
+IsMatchTokenScans : 1
+IsMatchScanChars  : 3
+IsMatchRepeatEnd  : 0
+IsMatchRepeatExit : 0
+IsMatchVmCaptures : 4
+IsMatchAssertions : 2
+IsMatchControls   : 0
+IsMatchAccepts    : 1
+IsMatchWorkspace  : 2
+IsMatchWorkFixed  : 0
+IsMatchWorkInitial: 2
+IsMatchWorkFrames : 0
+IsMatchWorkRepeats: 0
+IsMatchWorkCapture: 0
+IsMatchWorkControl: 2
+IsMatchWorkGrowths: 0
+IsMatchAllocBytes : 8
+IsMatchElapsedUs  : 4100.400

@@ -1,0 +1,31 @@
+{
+  "Status": "Rejected and reverted",
+  "AcceptedSource": "ce3a4e40cbdc4ff94d977b00ab0f69e14069f951",
+  "BaselineRuntime": "2ebc01a79afbad0a39fd246b083e030239125dd9",
+  "PrototypeFocusedPerRuntime": 34,
+  "PrototypeNewCasesPerRuntime": 22,
+  "PrototypeFullPcre2PerRuntime": 6494,
+  "RestoredFocusedPerRuntime": 62,
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "FailedTimingAttempts": 1,
+  "FailedAttempt": "No completed row; original timing/duration guard fired before calibrated cap correction. Original logs and driver retained.",
+  "CompletedComparisons": 1,
+  "ConfirmationRuns": 0,
+  "ComparisonSeconds": 62.8260714,
+  "MinimumSampleMilliseconds": 30.4837,
+  "MaximumAdverseMedianPercent": 24.801094158955685,
+  "Reason": "Stable public complex/UCP/captured Count17-25% costs above10%; paired samples consistently above allowance, no noise confirmation justified",
+  "SourceDiffAfterRevert": "",
+  "TablesChanged": false,
+  "PackagesChanged": false,
+  "AdverseExecutionCause": "Unresolved; no JIT/layout or algorithm attribution",
+  "RawArchiveSha256": "4C51C00E6F4209647B7BCBD87C83C85FF0DC0589299BF41D7DA09A4826AF9A7A",
+  "AcceptedSourceCI": {
+    "Run": 41307940052,
+    "Status": "success Windows/Linux"
+  },
+  "CorrectnessArchiveSha256": "47FBFDE8B3B20B979589684200FB59E1E894BD4E6F2DB171FB36309DD334510F"
+}
