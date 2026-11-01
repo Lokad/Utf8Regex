@@ -54,6 +54,14 @@ Immutable archives under
   both-runtime checks, SHA256
   `42DAEE4C1F4FFF33CB693C1C60A6D829AB30BC1094327B67CDDFC3D627514ED2`.
 
-Next refresh the affected existing date/native rows selectively at committed
-source, preserving other identities/statuses, scaling and uncertainty. No package
-or full catalog/platform matrix for this small step.
+The selective refresh at committed source `ecfd28a18a3e` is complete: existing
+raw1/5 and nine-pair native comparisons for date hit/miss only. Ratios are
+9.93x/10.29x, both NativeFaster; retain the miss ratio's adverse movement from
+9.98x. Ratios include comparator movement and are separate from the causal A/B.
+The other124rows and scaling are unchanged. Minimum paired duration38.189ms;
+existing Markdown/qualification guards and one snapshot check per runtime pass.
+See [verification](selective-verification.json). No package/full-catalog repeat.
+
+`selective-evidence.tar.gz` preserves exact committed source, loaded benchmark
+binaries/PDBs, before/final snapshots, raw measurements, generated page and guard
+logs. SHA256 `84BBB5AE475A9BAD7820FDFE89B35952DB1AE77BABD99CF5DF50E7E2CBFEC179`.

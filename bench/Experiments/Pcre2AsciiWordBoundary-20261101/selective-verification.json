@@ -1,0 +1,29 @@
+{
+  "Source": "ecfd28a18a3effbf6bffb01720b45395e173c8b2",
+  "Changed": [
+    {
+      "Section": "pcre2-managed-compatible-ismatch",
+      "Case": "common/date-match",
+      "Ratio": 9.92622627293143,
+      "Low": 9.856660602717161,
+      "High": 9.9946627067406,
+      "Status": "NativeFaster",
+      "MinimumMilliseconds": 38.3196,
+      "Source": "ecfd28a18a3e"
+    },
+    {
+      "Section": "pcre2-managed-compatible-ismatch",
+      "Case": "common/date-miss",
+      "Ratio": 10.288176548223355,
+      "Low": 10.054287460154288,
+      "High": 10.456964543440579,
+      "Status": "NativeFaster",
+      "MinimumMilliseconds": 38.1894,
+      "Source": "ecfd28a18a3e"
+    }
+  ],
+  "UnchangedRows": 124,
+  "ScalingUnchanged": true,
+  "QualificationVerification": "Passed",
+  "SnapshotTestsPerRuntime": 1
+}

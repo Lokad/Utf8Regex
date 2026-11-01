@@ -18,8 +18,10 @@
   "AllocationsChanged": false,
   "ConfirmationRuns": 0,
   "ScopeLimit": "Changed-helper public observations; unchanged subroutine-control5.26% improvement retained without attribution; no universal speedup or parity claim",
-  "TablesChanged": false,
+  "TablesChanged": true,
   "PackagesChanged": false,
   "RawArchiveSha256": "904DEA437D692A8CC529AB19F1BF452B1CE98C9C57D4E09B27F33B56E1BD516E",
-  "CorrectnessArchiveSha256": "42DAEE4C1F4FFF33CB693C1C60A6D829AB30BC1094327B67CDDFC3D627514ED2"
+  "CorrectnessArchiveSha256": "42DAEE4C1F4FFF33CB693C1C60A6D829AB30BC1094327B67CDDFC3D627514ED2",
+  "SelectiveSource": "ecfd28a18a3effbf6bffb01720b45395e173c8b2",
+  "SelectiveArchiveSha256": "84BBB5AE475A9BAD7820FDFE89B35952DB1AE77BABD99CF5DF50E7E2CBFEC179"
 }
