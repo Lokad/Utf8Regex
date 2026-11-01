@@ -1,0 +1,28 @@
+{
+  "Status": "Rejected and reverted",
+  "AcceptedSource": "65c3b76167b27cc1fb53be7b65412a6c2b17b6de",
+  "BaselineRuntime": "2ebc01a79afbad0a39fd246b083e030239125dd9",
+  "Scope": "Construction-only existing bounded-window prefix proof, no execution runner changes",
+  "PrototypeNewFocusedPerRuntime": 12,
+  "PrototypeFullPcre2PerRuntime": 6484,
+  "RestoredRouteCancellationPerRuntime": 104,
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "InitialSeconds": 79.5437302,
+  "ConfirmationSeconds": 94.6219368,
+  "ComparisonRuns": 1,
+  "ConfirmationRuns": 1,
+  "Reason": "Sole confirmation finite/deadline15-17% and UCP17.5% public penalties exceed10% allowance despite primary gains",
+  "ProductionDiffAfterRevert": "",
+  "TablesChanged": false,
+  "PackagesChanged": false,
+  "ExecutionCauseOfAdverseCosts": "Unresolved; no JIT/layout/algorithm cause asserted",
+  "RawArchiveSha256": "088D29BC36C0A88396858A6B172132DACAD103BE165E2BFDB2F24D7D4468B1BD",
+  "DeliveryCI": {
+    "Status": "success Windows/Linux",
+    "Run": 41306352565
+  },
+  "CorrectnessArchiveSha256": "2D7F429E38B8C62F8213DD406BD3BFE5122570AA2044726C3F08649944BF3730"
+}
