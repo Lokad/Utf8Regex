@@ -1,0 +1,24 @@
+{
+  "Decision": "REJECT; production and contract restored",
+  "Parent": "5973835d151864c34abd0c93aadf67b5b6b269be",
+  "BaselineSource": "092b8e689750bbbdb0ee006e62daf61fb245fd69",
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "FocusedCorePerFramework": 709,
+  "DifferentialPerFramework": 28,
+  "RestoredCorePerFramework": 709,
+  "RetainedNewTheoryRows": 14,
+  "StateCases": 371,
+  "StateProof": "All fields exact except predicted packed-row work delta; no memory or atom accounting change",
+  "PublicElapsedSeconds": 92.0727381,
+  "MinimumSampleMilliseconds": 60.9455,
+  "ConfirmationRuns": 0,
+  "Reason": "Stable affected public regressions: compiledregion26.15%, live25.85%, finite23.51%, unicode28.14%, dense31.15/26.68%. Ordinaryregion-2.49% andcategory-12.53% do not justify these costs.",
+  "Allocations": "Unchanged on every public lane",
+  "ShippedRuntimeChange": "None. Prototype and documentation restored; keep useful current-contract finite-cutoff and actual-row interruption tests.",
+  "RawEvidenceSha256": "BA5069DF3C39E14EB51DE9C49920BB4CE50AA184102D58BE5BC0BA8A8E3B963D",
+  "PrototypeCorrectnessSha256": "A3F36EAF1376A174353A989AA98A2A9346E3E8F566F2AFEE993B1BAC6EBBFF9C",
+  "PackageQualification": "Not repeated; staged/published bytes unchanged"
+}

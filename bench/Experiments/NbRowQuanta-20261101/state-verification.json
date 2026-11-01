@@ -1,0 +1,7 @@
+{
+  "Cases": 371,
+  "ExactViabilityCapturesOffsetsReplayWorkLoans": true,
+  "PreparationWorkDelta": "R-ceil(R/floor(64/w)) for w<=64; wide unchanged",
+  "BeforeCoreSha256": "E2658B9B1F605FF1CE14C698FAB2FE8A786DFC2B88FF03EBED67A6072B0047A4",
+  "AfterCoreSha256": "AB41490A6D733051000B1F09012FB6528347F79280BF6F01390147CA990EF3D6"
+}
