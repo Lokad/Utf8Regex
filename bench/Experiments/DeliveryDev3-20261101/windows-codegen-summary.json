@@ -1,0 +1,13 @@
+{
+  "Scope": "Windows Release dynamic-PGO codegen diagnostic only, no VM timing or cross-platform speed claim",
+  "Source": "a1986746bb8bfa95367eef1c12c3e916fbb40bc0",
+  "PackageCoreSha256": "94E0FCF775FB423F557087B888220D8DFBD3FD616FC8E7D5122DBB9C8CDCC38A",
+  "Observed": {
+    "Header": "; Assembly listing for method Lokad.Utf8Regex.Internal.Execution.Utf8NonBacktrackingSearchState:TryCreate(Lokad.Utf8Regex.Internal.Execution.Utf8SliceProgram,System.ReadOnlySpan`1[byte],byref,byref):byte (Tier1)",
+    "DirectDecodeCalls": 0,
+    "DirectScalarReadCalls": 0,
+    "CodeBytes": 12970
+  },
+  "Interpretation": "Full Tier1 already inlines Rune.DecodeFromUtf8 and scalar helper calls in TryCreate. An explicit ASCII shortcut has no demonstrated call-elimination benefit; do not launch a speculative VM campaign based on Tier0/OSR calls.",
+  "RawSha256": "72DDD768D16B2ED5B524780A4345E0AED231129E3F3787AAAAF9974EF5443046"
+}

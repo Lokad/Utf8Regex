@@ -1,0 +1,9 @@
+{
+  "Scope": "Read-only canonical LF corpus reconstruction on Windows, matching prior public VM input identity; not performance evidence",
+  "InputBytes": 46429,
+  "InputSha256": "507F5A33C406D155D02A9633551C5231E9CF9890D250C1A5153045F224C688D2",
+  "NonAsciiBytes": 28,
+  "IsAscii": false,
+  "FirstNonAscii": 5831,
+  "PotentialAsciiBoundaryPayloadBytes": 0
+}

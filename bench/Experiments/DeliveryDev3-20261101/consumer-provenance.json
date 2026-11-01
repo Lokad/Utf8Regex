@@ -1,0 +1,22 @@
+{
+  "Scope": "Existing frozen dev.2 compatible Awk/Lython/public API fixtures reused; only three producer PackageReference project versions adapted to dev.3. No external consumer checkout edits.",
+  "OriginalArchiveSha256": "E28D7631B64E77AC77455C47E5C0DC4C78BC81FC31D40708B7AE2283FB002D42",
+  "OriginalReceipt": "bench/Experiments/DeliveryDev2-20261101",
+  "Changes": [
+    {
+      "Relative": "awk\\adapter\\Adapter.csproj",
+      "BeforeSha256": "1ECDEB25A936C00956D86235D62B5A0FD436F419ED918772927C9E31133A8527",
+      "AfterSha256": "DF15CC53B53FB3225CE8780619565CC71A628914B76AD376A2EF08CCA5F8CF92"
+    },
+    {
+      "Relative": "lython\\src\\Lokad.Lython.Utf8Regex\\Lokad.Lython.Utf8Regex.csproj",
+      "BeforeSha256": "860FDE59E9A223B9523DEAC8D2B1D69B94A7B54918BAA124C6317BD0B36246CB",
+      "AfterSha256": "1E902217648AD92C3574A4771DE00933B479101C46E2F20330B216CB0064CFBA"
+    },
+    {
+      "Relative": "producer-apis\\Probe.csproj",
+      "BeforeSha256": "6C3F2C51978332F3A6D44802C317EB5BAFB0A4F32D95F5C51CFC1CD18E8AAB89",
+      "AfterSha256": "1176E90BBA7E495EF924F5AD04081AA98B961E1E210C557C7BB943BEF1088A76"
+    }
+  ]
+}

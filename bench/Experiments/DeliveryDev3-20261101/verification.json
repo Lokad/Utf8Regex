@@ -1,0 +1,63 @@
+{
+  "FrozenSource": "a1986746bb8bfa95367eef1c12c3e916fbb40bc0",
+  "Version": "0.5.0-dev.3",
+  "Published": false,
+  "Profiles": [
+    "Core",
+    "PythonRe",
+    "Pcre2"
+  ],
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "WindowsDetachedPassed": 107006,
+  "LinuxExactWindowsAssetDetachedPassed": 107006,
+  "ActualAwkPerFrameworkPerPlatform": 19,
+  "ActualLythonPerFrameworkPerPlatform": 118,
+  "PublicNativeFundedProbe": "Passed both frameworks/platforms, all loaded asset hashes equal, final root loans zero",
+  "OriginalWindowsCompilationDocuments": 462,
+  "LinuxAssets": 6,
+  "LinuxFeedCacheLockObservations": 24,
+  "FullRefreshSeconds": 2544.5930423,
+  "FullRefreshSteps": 83,
+  "FullRefreshResult": "All passed, Full scope, Complete true, outer3600s cap met",
+  "CoreRows": {
+    "TieCandidate": 2,
+    "Win": 105,
+    "Gap": 67,
+    "Unqualified": 4
+  },
+  "PythonRows": {
+    "CpythonFaster": 46,
+    "ManagedFaster": 27,
+    "Inconclusive": 14,
+    "Unqualified": 3
+  },
+  "Pcre2NativeRows": {
+    "Unqualified": 0,
+    "ManagedFaster": 71,
+    "Inconclusive": 13,
+    "Equivalent": 1,
+    "Excluded": 25,
+    "NativeFaster": 16
+  },
+  "CumulativeCostCases": 26,
+  "CumulativeCostSeconds": 109.0731544,
+  "MinimumCostSampleMilliseconds": 59.0179,
+  "MaximumCoveredAdverseMedianPercent": 5.7709083313879805,
+  "ConfirmationRuns": 0,
+  "CostScope": "Fixed a40, same26typed public lanes, representative coverage; actual8-16B growth and statistical spreads retained, not universal equivalence",
+  "FinalSnapshotChecksPerFramework": {
+    "Pcre2": 1,
+    "Core": 3,
+    "PythonRe": 1
+  },
+  "SourceCI": {
+    "Run": 41288159238,
+    "Status": "success Windows/Linux"
+  },
+  "NewPriority": "Pcre2 assertion-capture newly qualified438.51x, previously399.57x Inconclusive; investigate existing mandatory literal search across leading capture assertion",
+  "GoalComplete": false,
+  "Remaining": "N4gaps/closed deferrals, optional PCRE2 scalar projection and POSIX remain open; publication/adoption separate"
+}

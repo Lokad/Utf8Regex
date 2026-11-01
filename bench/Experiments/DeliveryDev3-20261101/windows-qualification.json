@@ -1,0 +1,10 @@
+{
+  "Source": "a1986746bb8bfa95367eef1c12c3e916fbb40bc0",
+  "Version": "0.5.0-dev.3",
+  "WallSeconds": 264.2604537,
+  "BuildCount": 2,
+  "PackCountPerPackage": 1,
+  "DetachedPassed": 107006.0,
+  "PackageAssets": 6,
+  "ArchiveSha256": "A9663FBCDBBB70115E6BD77DE59484842BCD8B2A78E137656785D2A1D8C42BC3"
+}
