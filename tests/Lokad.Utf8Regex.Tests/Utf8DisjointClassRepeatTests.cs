@@ -31,6 +31,15 @@ public sealed class Utf8DisjointClassRepeatTests
     [InlineData("(?<=(([a-z]+)))b", "aab")]
     [InlineData("""^import\s+(?<shared>shared\s+)?"(?<path>(\.|[^\\"]*))".*$""", "import \"module😀.nvn\";")]
     [InlineData("([a-z])+-", "abc-")]
+    [InlineData("([A-Z]{3})([0-9]{3})", "ABC12x ABC123 DEF456")]
+    [InlineData("([a-z]{3})a", "abca abba")]
+    [InlineData("([a-z]{3}?)a", "abca abba")]
+    [InlineData("([a-z]){3}a", "abca abba")]
+    [InlineData("(?:([a-z]{3})x|([a-z]{3})y)", "abc-y abcy abcx")]
+    [InlineData("(?=([a-z]{3})a)([a-z]{3})a", "abca")]
+    [InlineData("(?<=([a-z]{3}))a", "abca")]
+    [InlineData("(?i:([a-z]{3}))a", "AbCa")]
+    [InlineData(@"(\w{2})[a-z]", "ééa ABc")]
     public void CapturesAndFallbackKeepOverlappingBclSemantics(string pattern, string text)
     {
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
@@ -60,6 +69,9 @@ public sealed class Utf8DisjointClassRepeatTests
     [InlineData("([é😀]*)-", "-", "")]
     [InlineData("(([é😀]{1,2}))-", "é😀-", "é😀")]
     [InlineData("(([é😀]{2,3}))-", "é-", null)]
+    [InlineData("([é😀]{2})[é😀]", "é😀é", "é😀")]
+    [InlineData("([é😀]{2})[é😀]", "é😀", null)]
+    [InlineData("([é😀]{0})[é😀]", "😀", "")]
     public void RepeatBoundsCountCompleteScalars(string pattern, string text, string? expected)
     {
         var match = new Utf8Regex(pattern).MatchDetailed(Encoding.UTF8.GetBytes(text));
@@ -100,12 +112,14 @@ public sealed class Utf8DisjointClassRepeatTests
     }
 
     [Theory]
-    [InlineData(1)] [InlineData(2)]
-    public void EveryWorkCutoffDeniesWithoutLeakingTheParentLoan(int nesting)
+    [InlineData(1, false)] [InlineData(2, false)]
+    [InlineData(1, true)] [InlineData(2, true)]
+    public void EveryWorkCutoffDeniesWithoutLeakingTheParentLoan(int nesting, bool exact)
     {
-        var regex = new Utf8Regex(new string('(', nesting) + @"\p{L}{2,3}" + new string(')', nesting) + "-");
+        var regex = new Utf8Regex(new string('(', nesting) + (exact ? @"\p{L}{2}" : @"\p{L}{2,3}") +
+            new string(')', nesting) + (exact ? "[A-Z]" : "-"));
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException();
-        var input = "éé- AB-"u8.ToArray();
+        var input = Encoding.UTF8.GetBytes(exact ? "ééA ABB" : "éé- AB-");
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
         var baseline = new Utf8SliceInvocation(new(100000, 1, 1 << 20), Timeout.InfiniteTimeSpan, default);
@@ -125,11 +139,13 @@ public sealed class Utf8DisjointClassRepeatTests
     }
 
     [Theory]
-    [InlineData(false, 1)] [InlineData(true, 1)]
-    [InlineData(false, 2)] [InlineData(true, 2)]
-    public void OriginalInterruptionInsideScanReleasesScratch(bool timeout, int nesting)
+    [InlineData(false, 1, false)] [InlineData(true, 1, false)]
+    [InlineData(false, 2, false)] [InlineData(true, 2, false)]
+    [InlineData(false, 1, true)] [InlineData(true, 1, true)]
+    public void OriginalInterruptionInsideScanReleasesScratch(bool timeout, int nesting, bool exact)
     {
-        var regex = new Utf8Regex(new string('(', nesting) + @"\p{L}+" + new string(')', nesting) + "-");
+        var regex = new Utf8Regex(new string('(', nesting) + (exact ? @"\p{L}{2048}" : @"\p{L}+") +
+            new string(')', nesting) + (exact ? "." : "-"));
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException();
         var input = Encoding.UTF8.GetBytes(new string('é', 2048) + "-");
         using var token = new CancellationTokenSource();

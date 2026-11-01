@@ -118,6 +118,13 @@ internal static partial class Utf8SliceRunner
             atom.Kind is not (Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Shorthand or
                 Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid))
             return false;
+        // A pure atom repeated an exact number of times has one endpoint,
+        // independently of its tail or an enclosing assertion's required end.
+        if (repeat.RepeatMinimum == repeat.RepeatMaximum)
+        {
+            outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
+            return true;
+        }
         var tail = repeatIndex + 4;
         // Nested capture endings do not consume input. They still execute with
         // their original trails after the selected boundary; only this proof

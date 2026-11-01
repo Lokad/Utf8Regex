@@ -74,13 +74,16 @@ public sealed class Utf8TerminalCaptureRepeatTests
         Assert.Equal(6, regex.Count(input));
     }
 
-    [Fact]
-    public void RequiredAssertionEndKeepsItsShorterAlternatives()
+    [Theory]
+    [InlineData(1L, long.MaxValue, true)]
+    [InlineData(2L, 2L, true)]
+    [InlineData(3L, 3L, false)]
+    public void RequiredAssertionEndKeepsOnlyItsValidEndpoints(long minimum, long maximum, bool success)
     {
         // The assertion caller requires edge2; a greedy body can first reach3.
         // Accept alone must not discard the alternative ending at the caller's edge.
         Utf8SliceNode body = new Utf8SliceNode.CaptureNode(0,
-            new Utf8SliceNode.RepeatNode(new Utf8SliceNode.ShorthandNode(Utf8SliceShorthand.Word), 1, long.MaxValue, false));
+            new Utf8SliceNode.RepeatNode(new Utf8SliceNode.ShorthandNode(Utf8SliceShorthand.Word), minimum, maximum, false));
         var behind = new Utf8SliceNode.LookbehindNode(body, true) { ForwardScalarCount = 2 };
         var root = new Utf8SliceNode.ConcatNode([behind, new Utf8SliceNode.LiteralNode('x', false)]);
         var program = Utf8SliceLowerer.Lower(root, null, false, false, false)!;
@@ -90,7 +93,8 @@ public sealed class Utf8TerminalCaptureRepeatTests
         var invocation = new Utf8SliceInvocation(new(100000, 32, 1 << 20), Timeout.InfiniteTimeSpan, default);
         var result = Utf8SliceRunner.TryFindFirst(program, "abx"u8, 2, starts, ends, false, ref invocation);
         Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
-        Assert.True(result.Found);
+        Assert.Equal(success, result.Found);
+        if (!success) return;
         Assert.Equal((2, 3), (result.StartByte, result.EndByte));
         Assert.Equal((0, 2), (starts[0], ends[0]));
     }
