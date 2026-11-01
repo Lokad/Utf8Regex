@@ -345,7 +345,7 @@ internal sealed class Pcre2BacktrackingProgram
         bool usesCodeUnit)
     {
         Instructions = instructions;
-        Request = request;
+        _request = request;
         RepeatCount = repeatCount;
         CaptureSlotCount = captureSlotCount;
         RequiresCaptureState = requiresCaptureState;
@@ -376,7 +376,8 @@ internal sealed class Pcre2BacktrackingProgram
 
     internal Pcre2BacktrackingInstruction[] Instructions { get; }
 
-    internal Pcre2CompileRequest Request { get; }
+    private readonly Pcre2CompileRequest _request;
+    internal ref readonly Pcre2CompileRequest Request => ref _request;
 
     internal int RepeatCount { get; }
 

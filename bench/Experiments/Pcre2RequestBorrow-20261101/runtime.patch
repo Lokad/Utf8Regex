@@ -1,0 +1,36 @@
+diff --git a/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingSyntax.cs b/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingSyntax.cs
+index f756306f..57059157 100644
+--- a/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingSyntax.cs
++++ b/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingSyntax.cs
+@@ -345,7 +345,7 @@ internal sealed class Pcre2BacktrackingProgram
+         bool usesCodeUnit)
+     {
+         Instructions = instructions;
+-        Request = request;
++        _request = request;
+         RepeatCount = repeatCount;
+         CaptureSlotCount = captureSlotCount;
+         RequiresCaptureState = requiresCaptureState;
+@@ -376,7 +376,8 @@ internal sealed class Pcre2BacktrackingProgram
+ 
+     internal Pcre2BacktrackingInstruction[] Instructions { get; }
+ 
+-    internal Pcre2CompileRequest Request { get; }
++    private readonly Pcre2CompileRequest _request;
++    internal ref readonly Pcre2CompileRequest Request => ref _request;
+ 
+     internal int RepeatCount { get; }
+ 
+diff --git a/src/Lokad.Utf8Regex.Pcre2/Pcre2CharacterCompiler.cs b/src/Lokad.Utf8Regex.Pcre2/Pcre2CharacterCompiler.cs
+index 38116337..0606273d 100644
+--- a/src/Lokad.Utf8Regex.Pcre2/Pcre2CharacterCompiler.cs
++++ b/src/Lokad.Utf8Regex.Pcre2/Pcre2CharacterCompiler.cs
+@@ -1539,7 +1539,7 @@ internal static class Pcre2CharacterRunner
+ 
+     internal static bool TryMatchToken(
+         Pcre2CharacterToken token,
+-        Pcre2CompileRequest request,
++        in Pcre2CompileRequest request,
+         ReadOnlySpan<byte> input,
+         int index,
+         int firstMatchingPosition,

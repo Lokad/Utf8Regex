@@ -1,0 +1,36 @@
+{
+  "Status": "Accepted source change; not in immutable staged dev.4 packages",
+  "Parent": "5fa1b9056e918e8a249286efc87ba17ca28747b7",
+  "BaselineRuntime": "e67798655839f068691490173a06692c0fa3980b",
+  "Scope": "Borrow immutable stored request via internal ref-readonly getter and in token argument; no new storage or route change",
+  "Pcre2ReleasePassedPerRuntime": 6472,
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "RequestBytes": 72,
+  "SizeEvidence": "Actual Unsafe.SizeOf<T>() on internal request before/after",
+  "Codegen": "Actual Linux .NET11RC3 Tier1 removes nine-qword request copy and passes stored request address",
+  "CodeBytes": {
+    "before": 17258,
+    "after": 17488
+  },
+  "DiagnosticResultChecksumPerLane": 2000000,
+  "ComparisonCases": 17,
+  "ComparisonSeconds": 63.8072554,
+  "MinimumSampleMilliseconds": 36.2316,
+  "MaximumImmediateAdversePercent": 7.379020520866564,
+  "ImmediateAllocationsChanged": false,
+  "FixedOriginal": "a40bda03c8f984cef1d884447cccc805d2ceaa01",
+  "SelectedCumulativeCases": 17,
+  "CumulativeSeconds": 63.6527439,
+  "CumulativeMinimumSampleMilliseconds": 36.7579,
+  "MaximumSelectedCumulativeAdversePercent": 0.446713202350546,
+  "CumulativeAllocationScope": "Finite/deadline8B increases retained, pre-existing relative to immediate parent; not total heap/RSS accounting",
+  "CumulativeScope": "Selected affected PCRE2 public workloads, not a new full26-lane or package qualification",
+  "ConfirmationRuns": 0,
+  "TablesChanged": false,
+  "PackagesChanged": false,
+  "RawArchiveSha256": "76D935A06CCEFA267DE1435E8B85C9BE6DC1422BDA36A71AED6D51FD14E2CF0E",
+  "CorrectnessArchiveSha256": "45E99D85A065C2B9A7020A759F0E9FF55DEB36EA3DB8A195BA9A5637BD06B567"
+}

@@ -1,0 +1,48 @@
+; Assembly listing for method Lokad.Utf8Regex.Pcre2.Pcre2BacktrackingRunner:TryMatchAt(Lokad.Utf8Regex.Pcre2.Pcre2BacktrackingProgram,System.ReadOnlySpan`1[byte],byref,int,int,int,byte,System.ReadOnlySpan`1[int],System.ReadOnlySpan`1[int],int,bool,byref,byref,byref,byref,byref,byref):bool (Tier1)
+; Emitting BLENDED_CODE for x64 + VEX + EVEX on Unix
+; Tier1 code
+; optimized code
+; optimized using Synthesized PGO
+; rbp based frame
+; fully interruptible
+; with Synthesized PGO: fgCalledCount is 76624
+; 75 inlinees with PGO data; 407 single block inlinees; 31 inlinees without PGO data
+
+       movzx    rsi, byte  ptr [rbx+0x14]
+       movzx    rdx, byte  ptr [rbx+0x20]
+       mov      rdi, bword ptr [rbp+0x50]
+       call     [Lokad.Utf8Regex.Pcre2.Pcre2ResourceBudget:ChargeBacktracking(byte,byte):this]
+       movzx    rdi, byte  ptr [rbx+0x14]
+       cmp      edi, 23
+       ja       G_M000_IG124
+       lea      rax, [reloc @RWD00]
+       mov      eax, dword ptr [rax+4*rdi]
+       lea      rcx, G_M000_IG02
+       add      rax, rcx
+       jmp      rax
+ 
+G_M000_IG122:                ;; offset=0x0ABF
+       vmovdqu  xmm0, xmmword ptr [rbx+0x18]
+       vmovdqu32 xmmword ptr [rbp-0x4D0], xmm0
+ 
+G_M000_IG123:                ;; offset=0x0ACB
+       mov      r13d, dword ptr [rbp-0x30]
+       mov      dword ptr [rsp], r13d
+       mov      r14d, dword ptr [rbp+0x10]
+       mov      dword ptr [rsp+0x08], r14d
+       mov      r15, bword ptr [rbp+0x50]
+       mov      bword ptr [rsp+0x10], r15
+       lea      rdi, [rbp-0x110]
+       mov      qword ptr [rsp+0x18], rdi
+       mov      rdi, gword ptr [rbp-0x4D0]
+       mov      rsi, qword ptr [rbp-0x4C8]
+       mov      rcx, bword ptr [rbp-0x890]
+       mov      r8d, dword ptr [rbp-0x714]
+       lea      rdx, bword ptr [r12+0x68]
+       mov      r9d, dword ptr [rbp-0x110]
+       call     [Lokad.Utf8Regex.Pcre2.Pcre2CharacterRunner:TryMatchToken(Lokad.Utf8Regex.Pcre2.Pcre2CharacterToken,byref,System.ReadOnlySpan`1[byte],int,int,int,byref,byref):bool]
+       test     eax, eax
+       jne      G_M000_IG120
+ 
+G_M000_IG124:                ;; offset=0x0B27
+       lea      rdx, [rbp-0xD8]

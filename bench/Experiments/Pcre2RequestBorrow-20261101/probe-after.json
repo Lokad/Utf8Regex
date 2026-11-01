@@ -1,0 +1,1 @@
+{"Purpose":"Release codegen diagnostic only; no timing or public speedup claim","Runtime":".NET 11.0.0-rc.3.26522.148","Adapter":"0.5.0-dev.4\u002B5fa1b9056e918e8a249286efc87ba17ca28747b7","Sha256":"E9C8B180740EA59F5BA40EE4E284E0E51F084CD800652EA4E8D41E1DA4AA33A2","InstructionBytes":40,"RequestBytes":72,"Checksum":2000000}
