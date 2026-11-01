@@ -2082,6 +2082,9 @@ internal static class Pcre2CharacterSemantics
 
     internal static bool IsWordBoundary(ReadOnlySpan<byte> input, int offset, bool ucp)
     {
+        if (Utf8ScalarWordBoundary.TryGetAsciiBoundary(input, offset, out var boundary))
+            return boundary;
+
         var previousIsWord = Utf8ScalarNeighbors.TryGetPrevious(input, offset, out var previous) && IsWord(previous, ucp);
         var nextIsWord = Utf8ScalarNeighbors.TryGetNext(input, offset, out var next) && IsWord(next, ucp);
         return previousIsWord != nextIsWord;

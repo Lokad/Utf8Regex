@@ -1,0 +1,25 @@
+{
+  "Status": "Accepted source change; staged dev.4 packages unchanged",
+  "Parent": "423a81451825cc86f42387839f45b61eb0b56d1d",
+  "BaselineRuntime": "1cd08c540872c74c5f77e85ac8b2c61f8222a068",
+  "Scope": "Reuse existing checked partial ASCII adjacency helper; preserve PCRE2 Rune policy on non-ASCII, invalid boundaries and all metering",
+  "CoreImplementationChange": "Integration marker comment only; identical actual Core DLL/PDBs in comparison",
+  "FocusedPerRuntime": 138,
+  "NewCasesPerRuntime": 14,
+  "Pcre2ReleasePassedPerRuntime": 6486,
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "ComparisonCases": 17,
+  "ComparisonSeconds": 63.9861948,
+  "MinimumSampleMilliseconds": 48.3613,
+  "MaximumAdversePercent": 3.6609133403499916,
+  "AllocationsChanged": false,
+  "ConfirmationRuns": 0,
+  "ScopeLimit": "Changed-helper public observations; unchanged subroutine-control5.26% improvement retained without attribution; no universal speedup or parity claim",
+  "TablesChanged": false,
+  "PackagesChanged": false,
+  "RawArchiveSha256": "904DEA437D692A8CC529AB19F1BF452B1CE98C9C57D4E09B27F33B56E1BD516E",
+  "CorrectnessArchiveSha256": "42DAEE4C1F4FFF33CB693C1C60A6D829AB30BC1094327B67CDDFC3D627514ED2"
+}

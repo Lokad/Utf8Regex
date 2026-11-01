@@ -90,6 +90,7 @@ internal static class Utf8ScalarWordBoundary
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    // PCRE2-INTEGRATION-POINT: only the common ASCII membership, not Unicode policy.
     public static bool TryGetAsciiBoundary(ReadOnlySpan<byte> input, int byteOffset, out bool isBoundary)
     {
         if ((uint)byteOffset > (uint)input.Length)
