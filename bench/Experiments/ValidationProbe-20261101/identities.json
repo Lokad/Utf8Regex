@@ -1,0 +1,14 @@
+{
+  "BaselineCommit": "50b91b4d911099ab26a1192f2ffe96196a070be9",
+  "Outcome": "Rejected and fully reverted",
+  "BeforeCoreSha256": "7493A5CBB7287C267E93751CBB4DCB98EFC7AEA83356DF55BE794E76DF7B1AE7",
+  "AfterCoreSha256": "A6CB68D907DF1C44334193E718844712BA7997CC47FDDC91D1C076AF07DCB782",
+  "PatchSha256": "2CD9800A0940503BFCFE2DDFBA3908585162EB18CB440863C6B30EFCFF864D3B",
+  "CoreFocusedRunsPerRuntime": [
+    425,
+    223
+  ],
+  "PythonPerRuntime": 203,
+  "PcrePerRuntime": 105,
+  "Confirmation": "None: three-byte public regression stable61.83-63.44percent"
+}

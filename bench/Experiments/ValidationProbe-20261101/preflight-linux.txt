@@ -1,0 +1,33 @@
+Preflight common-ordinary: 1, bytes=49
+Preflight common-compiled: 1, bytes=49
+Preflight common-finite-live: 1, bytes=49
+Preflight common-deadline-live: 1, bytes=49
+Preflight large-ascii: 1, bytes=32770
+Preflight two-byte: 1, bytes=896
+Preflight common-three-byte: 1, bytes=768
+Preflight constrained-three-byte: 1, bytes=1152
+Preflight four-byte: 1, bytes=896
+Preflight metadata-count-control: 4096, bytes=4096
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "AffinityMask": "4",
+  "ElapsedSeconds": 0.4110964,
+  "Identities": [
+    {
+      "Version": "0.5.0-dev.1\u002B50b91b4d911099ab26a1192f2ffe96196a070be9",
+      "Sha256": "7493A5CBB7287C267E93751CBB4DCB98EFC7AEA83356DF55BE794E76DF7B1AE7"
+    },
+    {
+      "Version": "0.5.0-dev.1\u002B50b91b4d911099ab26a1192f2ffe96196a070be9",
+      "Sha256": "A6CB68D907DF1C44334193E718844712BA7997CC47FDDC91D1C076AF07DCB782"
+    }
+  ],
+  "Scope": "Skip bytes below E0 using a checked span range search in the existing \u003C=256-byte validator cost selector; retain exact eight-lead threshold, both validation algorithms and every invocation checkpoint. Ten equal-result public workloads: actual common/backtracking IsMatch ordinary/compiled/finite-live/deadline-live; large ASCII, two-byte/common-three-byte/constrained-three-byte/four-byte subjects; unchanged metadata-validation letter Count control. Strict whole-subject UTF8 included, captures unobserved by Boolean API. Finite work1B/depth4096/working16MiB/result16MiB; deadline5s. Warm1.5s/min64, independent60ms calibration, five alternating samples\u003E=20ms; consume result batches after timing. One120s cap; at most one noise confirmation. No package/full-catalog qualification.",
+  "LaneNames": [
+    "Before",
+    "After",
+    "PredecodedRegex",
+    "DecodeThenRegex"
+  ],
+  "Rows": []
+}

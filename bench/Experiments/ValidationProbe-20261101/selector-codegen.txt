@@ -1,0 +1,245 @@
+; Assembly listing for method Lokad.Utf8Regex.Internal.Input.Utf8InputAnalyzer:ShouldUseUtf8IsValidFastPath(System.ReadOnlySpan`1[byte]):bool (FullOpts)
+; Emitting BLENDED_CODE for x64 + VEX + EVEX on Unix
+; FullOpts code
+; optimized code
+; rbp based frame
+; fully interruptible
+; No PGO data
+; 1 inlinees with PGO data; 0 single block inlinees; 0 inlinees without PGO data
+
+G_M000_IG01:                ;; offset=0x0000
+       push     rbp
+       mov      rbp, rsp
+
+G_M000_IG02:                ;; offset=0x0004
+       mov      eax, 256
+       cmp      esi, 256
+       cmovle   eax, esi
+       xor      ecx, ecx
+       xor      edx, edx
+       test     eax, eax
+       jle      SHORT G_M000_IG08
+
+G_M000_IG03:                ;; offset=0x001A
+       cmp      eax, esi
+       jg       SHORT G_M000_IG11
+       align    [2 bytes for IG04]
+
+G_M000_IG04:                ;; offset=0x0020
+       mov      esi, edx
+       movzx    rsi, byte  ptr [rdi+rsi]
+       cmp      esi, 224
+       je       SHORT G_M000_IG06
+
+G_M000_IG05:                ;; offset=0x002F
+       cmp      esi, 237
+       je       SHORT G_M000_IG06
+       cmp      esi, 240
+       jl       SHORT G_M000_IG07
+
+G_M000_IG06:                ;; offset=0x003F
+       inc      ecx
+       cmp      ecx, 8
+       je       SHORT G_M000_IG14
+
+G_M000_IG07:                ;; offset=0x0046
+       inc      edx
+       cmp      edx, eax
+       jl       SHORT G_M000_IG04
+
+G_M000_IG08:                ;; offset=0x004C
+       xor      eax, eax
+
+G_M000_IG09:                ;; offset=0x004E
+       pop      rbp
+       ret
+
+G_M000_IG10:                ;; offset=0x0050
+       inc      edx
+       cmp      edx, eax
+       jge      SHORT G_M000_IG08
+
+G_M000_IG11:                ;; offset=0x0056
+       cmp      edx, esi
+       jae      SHORT G_M000_IG16
+       mov      r8d, edx
+       movzx    r8, byte  ptr [rdi+r8]
+       cmp      r8d, 224
+       je       SHORT G_M000_IG13
+
+G_M000_IG12:                ;; offset=0x006B
+       cmp      r8d, 237
+       je       SHORT G_M000_IG13
+       cmp      r8d, 240
+       jl       SHORT G_M000_IG10
+
+G_M000_IG13:                ;; offset=0x007D
+       inc      ecx
+       cmp      ecx, 8
+       jne      SHORT G_M000_IG10
+
+G_M000_IG14:                ;; offset=0x0084
+       mov      eax, 1
+
+G_M000_IG15:                ;; offset=0x0089
+       pop      rbp
+       ret
+
+G_M000_IG16:                ;; offset=0x008B
+       call     CORINFO_HELP_RNGCHKFAIL
+       int3
+
+; Total bytes of code 145
+
+; Assembly listing for method Lokad.Utf8Regex.Internal.Input.Utf8InputAnalyzer:ShouldUseUtf8IsValidFastPath(System.ReadOnlySpan`1[byte]):bool (FullOpts)
+; Emitting BLENDED_CODE for x64 + VEX + EVEX on Unix
+; FullOpts code
+; optimized code
+; rbp based frame
+; fully interruptible
+; No PGO data
+; 3 inlinees with PGO data; 21 single block inlinees; 11 inlinees without PGO data
+
+G_M000_IG01:                ;; offset=0x0000
+       push     rbp
+       push     r15
+       push     r14
+       push     rbx
+       push     rax
+       lea      rbp, [rsp+0x20]
+       mov      rbx, rdi
+       mov      r15d, esi
+
+G_M000_IG02:                ;; offset=0x0012
+       mov      edi, 256
+       cmp      r15d, 256
+       mov      r14d, edi
+       cmovle   r14d, r15d
+       cmp      r14d, r15d
+       ja       G_M000_IG16
+       mov      rdi, rbx
+       mov      esi, 224
+       mov      ecx, r14d
+       mov      edx, 255
+       call     [System.SpanHelpers:NonPackedIndexOfAnyInRangeUnsignedNumber[byte,System.SpanHelpers+DontNegate`1[byte]](byref,byte,byte,int):int]
+       test     eax, eax
+       jl       SHORT G_M000_IG08
+
+G_M000_IG03:                ;; offset=0x0048
+       xor      ecx, ecx
+       cmp      eax, r14d
+       jge      SHORT G_M000_IG08
+       cmp      r14d, r15d
+       jg       SHORT G_M000_IG11
+       align    [0 bytes for IG04]
+
+G_M000_IG04:                ;; offset=0x0054
+       mov      edx, eax
+       movzx    rdx, byte  ptr [rbx+rdx]
+       cmp      edx, 224
+       je       SHORT G_M000_IG06
+
+G_M000_IG05:                ;; offset=0x0062
+       cmp      edx,Preflight common-ordinary: 1, bytes=49
+Preflight common-compiled: 1, bytes=49
+Preflight common-finite-live: 1, bytes=49
+Preflight common-deadline-live: 1, bytes=49
+Preflight large-ascii: 1, bytes=32770
+Preflight two-byte: 1, bytes=896
+Preflight common-three-byte: 1, bytes=768
+Preflight constrained-three-byte: 1, bytes=1152
+Preflight four-byte: 1, bytes=896
+Preflight metadata-count-control: 4096, bytes=4096
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "AffinityMask": "4",
+  "ElapsedSeconds": 1.033158,
+  "Identities": [
+    {
+      "Version": "0.5.0-dev.1\u002B50b91b4d911099ab26a1192f2ffe96196a070be9",
+      "Sha256": "7493A5CBB7287C267E93751CBB4DCB98EFC7AEA83356DF55BE794E76DF7B1AE7"
+    },
+    {
+      "Version": "0.5.0-dev.1\u002B50b91b4d911099ab26a1192f2ffe96196a070be9",
+      "Sha256": "A6CB68D907DF1C44334193E718844712BA7997CC47FDDC91D1C076AF07DCB782"
+    }
+  ],
+  "Scope": "Skip bytes below E0 using a checked span range search in the existing \u003C=256-byte validator cost selector; retain exact eight-lead threshold, both validation algorithms and every invocation checkpoint. Ten equal-result public workloads: actual common/backtracking IsMatch ordinary/compiled/finite-live/deadline-live; large ASCII, two-byte/common-three-byte/constrained-three-byte/four-byte subjects; unchanged metadata-validation letter Count control. Strict whole-subject UTF8 included, captures unobserved by Boolean API. Finite work1B/depth4096/working16MiB/result16MiB; deadline5s. Warm1.5s/min64, independent60ms calibration, five alternating samples\u003E=20ms; consume result batches after timing. One120s cap; at most one noise confirmation. No package/full-catalog qualification.",
+  "LaneNames": [
+    "Before",
+    "After",
+    "PredecodedRegex",
+    "DecodeThenRegex"
+  ],
+  "Rows": []
+}
+ 237
+       je       SHORT G_M000_IG06
+       cmp      edx, 240
+       jl       SHORT G_M000_IG07
+
+G_M000_IG06:                ;; offset=0x0072
+       inc      ecx
+       cmp      ecx, 8
+       je       SHORT G_M000_IG14
+
+G_M000_IG07:                ;; offset=0x0079
+       inc      eax
+       cmp      eax, r14d
+       jl       SHORT G_M000_IG04
+
+G_M000_IG08:                ;; offset=0x0080
+       xor      eax, eax
+
+G_M000_IG09:                ;; offset=0x0082
+       add      rsp, 8
+       pop      rbx
+       pop      r14
+       pop      r15
+       pop      rbp
+       ret
+
+G_M000_IG10:                ;; offset=0x008D
+       inc      eax
+       cmp      eax, r14d
+       jge      SHORT G_M000_IG08
+
+G_M000_IG11:                ;; offset=0x0094
+       cmp      eax, r15d
+       jae      SHORT G_M000_IG17
+       mov      edx, eax
+       movzx    rdx, byte  ptr [rbx+rdx]
+       cmp      edx, 224
+       je       SHORT G_M000_IG13
+
+G_M000_IG12:                ;; offset=0x00A7
+       cmp      edx, 237
+       je       SHORT G_M000_IG13
+       cmp      edx, 240
+       jl       SHORT G_M000_IG10
+
+G_M000_IG13:                ;; offset=0x00B7
+       inc      ecx
+       cmp      ecx, 8
+       jne      SHORT G_M000_IG10
+
+G_M000_IG14:                ;; offset=0x00BE
+       mov      eax, 1
+
+G_M000_IG15:                ;; offset=0x00C3
+       add      rsp, 8
+       pop      rbx
+       pop      r14
+       pop      r15
+       pop      rbp
+       ret
+
+G_M000_IG16:                ;; offset=0x00CE
+       call     [System.ThrowHelper:ThrowArgumentOutOfRangeException()]
+       int3
+
+G_M000_IG17:                ;; offset=0x00D5
+       call     CORINFO_HELP_RNGCHKFAIL
+       int3
+
+; Total bytes of code 219

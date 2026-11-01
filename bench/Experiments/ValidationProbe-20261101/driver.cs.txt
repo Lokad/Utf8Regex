@@ -1,0 +1,91 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+var root = Path.GetFullPath(args[0]);
+var preflight = args.Contains("--preflight");
+var assemblies = new[] { "before", "after" }.Select(name => new AssemblyLoadContext(name)
+    .LoadFromAssemblyPath(Path.Combine(root, name, "Lokad.Utf8Regex.dll"))).ToArray();
+var identities = assemblies.Select(a => new { Version = a.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
+    Sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(a.Location))) }).ToArray();
+if (identities[0].Sha256 == identities[1].Sha256 || identities.Any(i => !i.Version.Contains("50b91b4d"))) throw new Exception("Frozen source mismatch");
+const string corpus = "Essential services are provided by regular exprs.";
+using var process = Process.GetCurrentProcess(); if (!preflight) process.ProcessorAffinity = (nint)4;
+using var live = new CancellationTokenSource(); var clock = Stopwatch.StartNew(); var rows = new List<object>();
+var cases = new[] {
+    new Case("common-ordinary"), new Case("common-compiled", Compiled: true),
+    new Case("common-finite-live", Compiled: true, Finite: true, Live: true),
+    new Case("common-deadline-live", Compiled: true, Live: true, Deadline: true),
+    new Case("large-ascii", Text: new string('x', 32768) + "ss"),
+    new Case("two-byte", Text: string.Concat(Enumerable.Repeat("éЯss ", 128))),
+    new Case("common-three-byte", Text: string.Concat(Enumerable.Repeat("中ss ", 128))),
+    new Case("constrained-three-byte", Text: string.Concat(Enumerable.Repeat("\u0800\ud7ffss ", 128))),
+    new Case("four-byte", Text: string.Concat(Enumerable.Repeat("😀ss ", 128))),
+    new Case("metadata-count-control", Pattern: @"\p{L}", Text: new string('x', 4096), Count: true)
+};
+foreach (var item in cases) {
+    var pattern = item.Pattern ?? ".*(ss)";
+    var text = item.Text ?? corpus; var input = Encoding.UTF8.GetBytes(text);
+    var options = item.Compiled ? RegexOptions.Compiled : RegexOptions.None;
+    var oracle = new Regex(pattern, options); var expected = item.Count ? oracle.Count(text) : oracle.IsMatch(text) ? 1 : 0;
+    var actions = new List<Func<int>>();
+    foreach (var assembly in assemblies) {
+        var type = assembly.GetType("Lokad.Utf8Regex.Utf8Regex")!; var policyType = assembly.GetType("Lokad.Utf8Regex.Utf8ResourcePolicy")!;
+        var policy = Activator.CreateInstance(policyType)!;
+        if (item.Finite) foreach (var (name, number) in new[] { ("MaxWorkSteps", 1_000_000_000UL), ("MaxDepth", 4096UL), ("MaxWorkingBytes", 16UL << 20), ("MaxResultBytes", 16UL << 20) }) {
+            var property = policyType.GetProperty(name)!; property.SetValue(policy, Convert.ChangeType(number, Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType));
+        }
+        var owner = type.GetConstructor([typeof(string), typeof(RegexOptions), typeof(TimeSpan), policyType])!
+            .Invoke([pattern, options, item.Deadline ? TimeSpan.FromSeconds(5) : Timeout.InfiniteTimeSpan, policy]);
+        if (item.Count) {
+            var count = type.GetMethod("Count", [typeof(ReadOnlySpan<byte>)])!.CreateDelegate<SpanCount>(owner);
+            actions.Add(() => count(input));
+        } else if (item.Live) {
+            var match = type.GetMethod("IsMatch", [typeof(ReadOnlySpan<byte>), typeof(CancellationToken)])!.CreateDelegate<TokenIsMatch>(owner);
+            actions.Add(() => match(input, live.Token) ? 1 : 0);
+        } else {
+            var match = type.GetMethod("IsMatch", [typeof(ReadOnlySpan<byte>)])!.CreateDelegate<SpanIsMatch>(owner);
+            actions.Add(() => match(input) ? 1 : 0);
+        }
+    }
+    actions.Add(() => item.Count ? oracle.Count(text) : oracle.IsMatch(text) ? 1 : 0);
+    actions.Add(() => item.Count ? oracle.Count(Encoding.UTF8.GetString(input)) : oracle.IsMatch(Encoding.UTF8.GetString(input)) ? 1 : 0);
+    foreach (var action in actions) if (action() != expected) throw new Exception("Public preflight mismatch " + item.Name);
+    if (preflight) { Console.Error.WriteLine($"Preflight {item.Name}: {expected}, bytes={input.Length}"); continue; }
+    var iterations = new int[4]; var warmCalls = new long[4];
+    for (var lane = 0; lane < 4; lane++) {
+        var warm = Stopwatch.StartNew(); do { if (actions[lane]() != expected) throw new Exception("Warm result"); warmCalls[lane]++; } while (warm.Elapsed.TotalMilliseconds < 1500 || warmCalls[lane] < 64);
+        iterations[lane] = 1; while (Measure(iterations[lane], actions[lane], expected).Milliseconds < 60) iterations[lane] = checked(iterations[lane] * 2);
+    }
+    var times = Enumerable.Range(0, 4).Select(_ => new double[5]).ToArray(); var allocation = Enumerable.Range(0, 4).Select(_ => new double[5]).ToArray(); var durations = Enumerable.Range(0, 4).Select(_ => new double[5]).ToArray();
+    for (var sample = 0; sample < 5; sample++) for (var position = 0; position < 4; position++) {
+        var lane = sample % 2 == 0 ? position : 3 - position; GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        var result = Measure(iterations[lane], actions[lane], expected); if (result.Milliseconds < 20) throw new Exception("Sample below20ms");
+        times[lane][sample] = result.Milliseconds * 1000 / iterations[lane]; allocation[lane][sample] = (double)result.Bytes / iterations[lane]; durations[lane][sample] = result.Milliseconds;
+    }
+    rows.Add(new { item.Name, item.Finite, item.Live, item.Deadline, Operation = item.Count ? "Count" : "IsMatch", Pattern = pattern, Options = options.ToString(), InputBytes = input.Length,
+        InputSha256 = Convert.ToHexString(SHA256.HashData(input)), Expected = expected, Iterations = iterations, WarmupCalls = warmCalls,
+        Microseconds = times, AllocatedBytes = allocation, ElapsedMilliseconds = durations });
+    Console.Error.WriteLine(item.Name + ": " + string.Join(" / ", times.Select(values => values.Order().ElementAt(2))));
+}
+Console.WriteLine(JsonSerializer.Serialize(new { Runtime = RuntimeInformation.FrameworkDescription, AffinityMask = "4", ElapsedSeconds = clock.Elapsed.TotalSeconds, Identities = identities,
+    Scope = "Skip bytes below E0 using a checked span range search in the existing <=256-byte validator cost selector; retain exact eight-lead threshold, both validation algorithms and every invocation checkpoint. Ten equal-result public workloads: actual common/backtracking IsMatch ordinary/compiled/finite-live/deadline-live; large ASCII, two-byte/common-three-byte/constrained-three-byte/four-byte subjects; unchanged metadata-validation letter Count control. Strict whole-subject UTF8 included, captures unobserved by Boolean API. Finite work1B/depth4096/working16MiB/result16MiB; deadline5s. Warm1.5s/min64, independent60ms calibration, five alternating samples>=20ms; consume result batches after timing. One120s cap; at most one noise confirmation. No package/full-catalog qualification.",
+    LaneNames = new[] { "Before", "After", "PredecodedRegex", "DecodeThenRegex" }, Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds, long Bytes) Measure(int count, Func<int> action, int expected) {
+    var values = new int[count]; var before = GC.GetAllocatedBytesForCurrentThread(); var start = Stopwatch.GetTimestamp();
+    for (var i = 0; i < count; i++) values[i] = action();
+    var elapsed = Stopwatch.GetElapsedTime(start); var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+    foreach (var value in values) if (value != expected) throw new Exception("Timed result mismatch");
+    GC.KeepAlive(values); return (elapsed.TotalMilliseconds, bytes);
+}
+sealed record Case(string Name, bool Compiled = false, bool Finite = false, bool Live = false, bool Deadline = false, string? Pattern = null, string? Text = null, bool Count = false);
+delegate int SpanCount(ReadOnlySpan<byte> input);
+delegate bool SpanIsMatch(ReadOnlySpan<byte> input);
+delegate bool TokenIsMatch(ReadOnlySpan<byte> input, CancellationToken token);
