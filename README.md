@@ -289,7 +289,6 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 
 | Case | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `lokad/folding/region-marker` | 1,210.114 us | 36.441 us | 60.095 us | 33.21x |
 | `lokad/imports/module-imports` | 30.771 us | 6.290 us | 28.562 us | 4.89x |
 | `lokad/lexer/doc-line` | 4.286 us | 2.954 us | 3.635 us | 1.45x |
 | `structural/keyword-to-generic-type` | 5.650 us | 4.018 us | 15.492 us | 1.41x |
@@ -320,6 +319,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `structural/modifier-family-to-type-window` | 75.573 us | 249.981 us | 264.076 us | 0.30x |
 | `structural/ordered-identifier-window` | 6.346 us | 28.036 us | 39.182 us | 0.23x |
 | `structural/modifier-family-to-type-pair` | 24.540 us | 125.372 us | 137.909 us | 0.20x |
+| `lokad/folding/region-marker` | 6.946 us | 36.916 us | 59.999 us | 0.19x |
 | `lokad/langserv/url-dashboard` | 2.838 us | 24.071 us | 24.453 us | 0.12x |
 | `lokad/langserv/url-download` | 2.784 us | 48.931 us | 49.089 us | 0.06x |
 | `balancing/begin-end-blocks` | 7.234 us | 4,270.817 us | 4,309.275 us | 0.0017x |
@@ -340,7 +340,6 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 
 | Case | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `lokad/folding/region-marker` | 1,205.870 us | 36.087 us | 58.856 us | 33.42x |
 | `structural/keyword-family-to-capitalized-identifier` | 71.951 us | 7.502 us | 18.192 us | 9.59x |
 | `lokad/imports/module-imports` | 30.927 us | 4.326 us | 25.973 us | 7.15x |
 | `structural/modifier-family-to-type-pair` | 24.500 us | 10.541 us | 21.607 us | 2.32x |
@@ -373,5 +372,6 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `structural/ordered-identifier-window` | 6.332 us | 10.628 us | 20.968 us | 0.60x |
 | `lokad/langserv/url-dashboard` | 2.844 us | 7.440 us | 7.797 us | 0.38x |
 | `lokad/langserv/url-download` | 2.791 us | 12.568 us | 13.270 us | 0.22x |
+| `lokad/folding/region-marker` | 6.942 us | 36.709 us | 59.048 us | 0.19x |
 | `balancing/begin-end-blocks` | 7.285 us | 458.002 us | 483.677 us | 0.02x |
 <!-- END GENERATED LOKAD_COMPILED BENCHMARKS -->

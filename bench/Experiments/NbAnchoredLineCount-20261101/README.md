@@ -77,3 +77,14 @@ Previous checkpointf7222d08 CI41298221173 passed Windows/Linux, including the
 controlled-clock recovery fix. Current-source full package/platform/actual
 consumer/cumulative acceptance belongs to the next common immutable dev.4
 boundary; published/staged historical bytes remain unchanged.
+Only the region rows were refreshed from clean committed source `697015a6`:
+ordinary6.946us/0.1882x and compiled6.942us/0.1891x predecoded.NET11, both Win,
+64bytes (previous33.21x/33.42x and557416bytes). Separate point estimates do not
+replace the controlled A/B. All30 raw samples exceeded48.911ms. Everyothercase,
+identity/status, lifecycle/scaling and worst-first ordering remains unchanged;
+only these two rows move to Win. Existing parity verifier and3snapshot guards per
+runtime pass. No full package/platform/catalog repetition for this experiment.
+[Selective raw/generated/binary evidence](../../../artifacts/experiments/nb-anchored-line-count-20261101/selective-evidence.tar.gz):
+`337C608D2DAFB65BC14FA3F577540B4524B2AA0CC5FE0562E80F4FCD89D57575`.
+Committed Core DLL SHA256:
+`69497A5C97E7DF01882E69E54107233026A9496BA878181961AB8582653800F8`.

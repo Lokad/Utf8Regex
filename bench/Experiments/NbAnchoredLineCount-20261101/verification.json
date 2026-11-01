@@ -26,5 +26,26 @@
   "PriorCI": "f7222d08/41298221173 green Windows/Linux",
   "RawSha256": "267802936D85E8ECD3E2F0F66ED2C22478FD06C43C0981DB7DB6B5944B33AFD6",
   "CorrectnessSha256": "E27998F1A7F5AABD9A5917D9D6B129A3ABBD1C22C1D19B6E4FEDBF1CCB08AB5A",
-  "FinalFixtureSha256": "A1A7BC53E8D29FAC075B07619D948305B284727FEE0131C057918A5B70BC763D"
+  "FinalFixtureSha256": "A1A7BC53E8D29FAC075B07619D948305B284727FEE0131C057918A5B70BC763D",
+  "SelectiveSource": "697015a6efd07d35106bd132918207bd517e1f3f",
+  "SelectiveCoreSha256": "69497A5C97E7DF01882E69E54107233026A9496BA878181961AB8582653800F8",
+  "SelectiveSamples": 30,
+  "SelectiveMinimumMilliseconds": 48.9115,
+  "SnapshotGuardsPerFramework": 3,
+  "SelectiveRows": [
+    {
+      "Section": "lokad",
+      "Status": "Win",
+      "Utf8Microseconds": 6.9464972623894425,
+      "RatioToPredecoded": 0.1881695166827777,
+      "Utf8AllocatedBytes": 64
+    },
+    {
+      "Section": "lokad-compiled",
+      "Status": "Win",
+      "Utf8Microseconds": 6.941797312430011,
+      "RatioToPredecoded": 0.18910374359014553,
+      "Utf8AllocatedBytes": 64
+    }
+  ]
 }
