@@ -1,0 +1,13 @@
+diff --git a/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingRunner.cs b/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingRunner.cs
+index feffb539..638ab503 100644
+--- a/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingRunner.cs
++++ b/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingRunner.cs
+@@ -740,7 +740,7 @@ internal static class Pcre2BacktrackingRunner
+             var lastEncounteredMarkId = -1;
+             while (true)
+             {
+-                var instruction = program.Instructions[instructionIndex];
++                ref readonly var instruction = ref program.Instructions[instructionIndex];
+                 budget.ChargeBacktracking(instruction.Kind, instruction.Token.Kind);
+                 switch (instruction.Kind)
+                 {

@@ -1,0 +1,28 @@
+{
+  "Status": "Accepted source change; not included in immutable dev.4 packages",
+  "Parent": "ce3a4e40cbdc4ff94d977b00ab0f69e14069f951",
+  "BaselineRuntime": "2ebc01a79afbad0a39fd246b083e030239125dd9",
+  "Scope": "One readonly managed reference to checked immutable instruction array element; routes/algorithm/allocations/metering unchanged",
+  "Pcre2ReleasePassedPerRuntime": 6472,
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "InstructionBytes": 40,
+  "SizeEvidence": "Actual Unsafe.SizeOf<T>() on internal instruction type",
+  "Codegen": "Actual Linux .NET11RC3 Tier1: all-field eager load/spills removed, only kind/token-kind before ChargeBacktracking; remaining fields loaded in selected case",
+  "BeforeCodeBytes": 17526,
+  "AfterCodeBytes": 17329,
+  "DiagnosticResultChecksumPerLane": 2000000,
+  "CompletedComparisons": 1,
+  "ConfirmationRuns": 0,
+  "ComparisonSeconds": 63.8371342,
+  "MinimumSampleMilliseconds": 34.1933,
+  "MaximumAdverseMedianPercent": 6.443674144040545,
+  "AllocationsChanged": false,
+  "TablesChanged": false,
+  "PackagesChanged": false,
+  "Guarantees": "Strict full UTF8/scalars/captures/RTL and owned VM semantics, all resource controls and original-token/deadline checks retained",
+  "RawArchiveSha256": "841C3FC9BE57B3838AE3DAA7656D4478C895EE195589468BBB341BB5E6EC7A76",
+  "CorrectnessArchiveSha256": "C94DA27EF5BD21CC9837644DD720662AB526FC827204575F093D3AEBEEEE6EF0"
+}

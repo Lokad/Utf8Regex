@@ -1,0 +1,1238 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 63.8371342,
+  "LaneNames": [
+    "Baseline",
+    "Candidate"
+  ],
+  "Baseline": {
+    "Core": {
+      "Version": "0.5.0-dev.4\u002B2ebc01a79afbad0a39fd246b083e030239125dd9",
+      "Sha256": "E84F71D8C438FCC517E62D630B41C78715959D049DB1D36215190B362A14F988"
+    },
+    "Pcre2": {
+      "Version": "0.5.0-dev.4\u002B2ebc01a79afbad0a39fd246b083e030239125dd9",
+      "Sha256": "E4A6A35D032188B7FBE828BA9196BB3118AEB06627D137F854D5925C35D86FD4"
+    }
+  },
+  "Candidate": {
+    "Core": {
+      "Version": "0.5.0-dev.4\u002B2ebc01a79afbad0a39fd246b083e030239125dd9",
+      "Sha256": "E84F71D8C438FCC517E62D630B41C78715959D049DB1D36215190B362A14F988"
+    },
+    "Pcre2": {
+      "Version": "0.5.0-dev.4\u002Bce3a4e40cbdc4ff94d977b00ab0f69e14069f951",
+      "Sha256": "419224A185D93971A37A1636DFCDCE6086EF66269DFC5CCD44D99D4ECDB235D0"
+    }
+  },
+  "Rows": [
+    {
+      "Name": "subroutine-hit",
+      "Operation": "IsMatch",
+      "Pattern": "^(?1)\\d{3}(a)",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 5,
+      "InputSha256": "A6D2352543DACCA9CB4EF492AA9942CEF664CF4B95CDA3B2039BC3CE10B07957",
+      "Expected": 1,
+      "DiagnosticExclusion": "Only owned before/after public operations; .NET does not support the subroutine syntax.",
+      "Iterations": [
+        120851,
+        120177
+      ],
+      "WarmupCalls": [
+        2036851,
+        2017189
+      ],
+      "WarmupMilliseconds": [
+        1500.0003,
+        1500.0002
+      ],
+      "Microseconds": [
+        [
+          0.5075001448064145,
+          0.5125683693142796,
+          0.5019130996019892,
+          0.5105377696502305,
+          0.5068059014819902
+        ],
+        [
+          0.5105943732993834,
+          0.5046714429549748,
+          0.502608652237949,
+          0.5039924444777287,
+          0.5055318405352106
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          61.3319,
+          61.9444,
+          60.6567,
+          61.699,
+          61.248
+        ],
+        [
+          61.3617,
+          60.6499,
+          60.402,
+          60.5683,
+          60.7533
+        ]
+      ]
+    },
+    {
+      "Name": "subroutine-miss",
+      "Operation": "IsMatch",
+      "Pattern": "^(?1)\\d{3}(a)",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 5,
+      "InputSha256": "7F86C80729B265DD6BA302CE13385EA9ADF1994BE42EEA0E48DC4B69D711AB70",
+      "Expected": 0,
+      "DiagnosticExclusion": "Only owned before/after public operations; .NET does not support the subroutine syntax.",
+      "Iterations": [
+        116287,
+        117036
+      ],
+      "WarmupCalls": [
+        2368408,
+        2416517
+      ],
+      "WarmupMilliseconds": [
+        1500.0001,
+        1500.0005
+      ],
+      "Microseconds": [
+        [
+          0.503928212095935,
+          0.5074505318737262,
+          0.5019374478660555,
+          0.49968354158246403,
+          0.508203840498078
+        ],
+        [
+          0.49983082128575823,
+          0.5085366895656037,
+          0.5092347653713387,
+          0.5088502682935165,
+          0.5140811374278
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          58.6003,
+          59.0099,
+          58.3688,
+          58.1067,
+          59.0975
+        ],
+        [
+          58.4982,
+          59.5171,
+          59.5988,
+          59.5538,
+          60.166
+        ]
+      ]
+    },
+    {
+      "Name": "subroutine-short",
+      "Operation": "IsMatch",
+      "Pattern": "^(?1)\\d{3}(a)",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 4,
+      "InputSha256": "C920BD175D104532C353B77B6AED348B6EFA4FD5476AACE7A7860899184395A1",
+      "Expected": 0,
+      "DiagnosticExclusion": "Only owned before/after public operations; .NET does not support the subroutine syntax.",
+      "Iterations": [
+        119526,
+        114476
+      ],
+      "WarmupCalls": [
+        2401820,
+        2447316
+      ],
+      "WarmupMilliseconds": [
+        1500.0004,
+        1500.0004
+      ],
+      "Microseconds": [
+        [
+          0.5050432541873735,
+          0.5032930073791476,
+          0.5022948981811489,
+          0.504763817077456,
+          0.5021300804845807
+        ],
+        [
+          0.5198652992767043,
+          0.5250244592753066,
+          0.516121283063699,
+          0.5178613857926552,
+          0.5232939655473636
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          60.3658,
+          60.1566,
+          60.0373,
+          60.3324,
+          60.0176
+        ],
+        [
+          59.5121,
+          60.1027,
+          59.0835,
+          59.2827,
+          59.9046
+        ]
+      ]
+    },
+    {
+      "Name": "finite-hit",
+      "Operation": "IsMatch",
+      "Pattern": "^(?1)\\d{3}(a)",
+      "Options": "None",
+      "FiniteAndLiveToken": true,
+      "InputBytes": 5,
+      "InputSha256": "A6D2352543DACCA9CB4EF492AA9942CEF664CF4B95CDA3B2039BC3CE10B07957",
+      "Expected": 1,
+      "DiagnosticExclusion": "Only owned before/after public operations; .NET does not support the subroutine syntax.",
+      "Iterations": [
+        38949,
+        42688
+      ],
+      "WarmupCalls": [
+        815634,
+        958068
+      ],
+      "WarmupMilliseconds": [
+        1500.0003,
+        1500.002
+      ],
+      "Microseconds": [
+        [
+          1.4670363809083673,
+          1.466718015866903,
+          1.4651852422398521,
+          1.488954787029192,
+          1.4621710441859868
+        ],
+        [
+          1.404378279610195,
+          1.4093726574212895,
+          1.3976152548725638,
+          1.3962799850074963,
+          1.4229221326836583
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1760,
+          1760,
+          1760,
+          1760,
+          1760
+        ],
+        [
+          1760,
+          1760,
+          1760,
+          1760,
+          1760
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          57.1396,
+          57.1272,
+          57.0675,
+          57.9933,
+          56.9501
+        ],
+        [
+          59.9501,
+          60.1633,
+          59.6614,
+          59.6044,
+          60.7417
+        ]
+      ]
+    },
+    {
+      "Name": "finite-miss",
+      "Operation": "IsMatch",
+      "Pattern": "^(?1)\\d{3}(a)",
+      "Options": "None",
+      "FiniteAndLiveToken": true,
+      "InputBytes": 5,
+      "InputSha256": "7F86C80729B265DD6BA302CE13385EA9ADF1994BE42EEA0E48DC4B69D711AB70",
+      "Expected": 0,
+      "DiagnosticExclusion": "Only owned before/after public operations; .NET does not support the subroutine syntax.",
+      "Iterations": [
+        39609,
+        41119
+      ],
+      "WarmupCalls": [
+        927521,
+        952439
+      ],
+      "WarmupMilliseconds": [
+        1500,
+        1500.0008
+      ],
+      "Microseconds": [
+        [
+          1.51016183190689,
+          1.4783458304930697,
+          1.4750637481380495,
+          1.467259966169305,
+          1.4500770027014065
+        ],
+        [
+          1.437537391473528,
+          1.4240083659622074,
+          1.4281524356137067,
+          1.4209270653469201,
+          1.4194095187139764
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1760,
+          1760,
+          1760,
+          1760,
+          1760
+        ],
+        [
+          1760,
+          1760,
+          1760,
+          1760,
+          1760
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          59.816,
+          58.5558,
+          58.4258,
+          58.1167,
+          57.4361
+        ],
+        [
+          59.1101,
+          58.5538,
+          58.7242,
+          58.4271,
+          58.3647
+        ]
+      ]
+    },
+    {
+      "Name": "deadline-hit",
+      "Operation": "IsMatch",
+      "Pattern": "^(?1)\\d{3}(a)",
+      "Options": "None",
+      "FiniteAndLiveToken": true,
+      "InputBytes": 5,
+      "InputSha256": "A6D2352543DACCA9CB4EF492AA9942CEF664CF4B95CDA3B2039BC3CE10B07957",
+      "Expected": 1,
+      "DiagnosticExclusion": "Only owned before/after public operations; .NET does not support the subroutine syntax.",
+      "Iterations": [
+        35142,
+        37136
+      ],
+      "WarmupCalls": [
+        821487,
+        883055
+      ],
+      "WarmupMilliseconds": [
+        1500.0011,
+        1500.0003
+      ],
+      "Microseconds": [
+        [
+          1.7045558021740368,
+          1.6770815548346707,
+          1.674770929372261,
+          1.6481588981845088,
+          1.6523077798645494
+        ],
+        [
+          1.5977111158983197,
+          1.5820928479103835,
+          1.576074429125377,
+          1.5741571520896165,
+          1.5816835415769066
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1808,
+          1808,
+          1808,
+          1808,
+          1808
+        ],
+        [
+          1808,
+          1808,
+          1808,
+          1808,
+          1808
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          59.9015,
+          58.936,
+          58.8548,
+          57.9196,
+          58.0654
+        ],
+        [
+          59.3326,
+          58.7526,
+          58.5291,
+          58.4579,
+          58.7374
+        ]
+      ]
+    },
+    {
+      "Name": "deadline-miss",
+      "Operation": "IsMatch",
+      "Pattern": "^(?1)\\d{3}(a)",
+      "Options": "None",
+      "FiniteAndLiveToken": true,
+      "InputBytes": 5,
+      "InputSha256": "7F86C80729B265DD6BA302CE13385EA9ADF1994BE42EEA0E48DC4B69D711AB70",
+      "Expected": 0,
+      "DiagnosticExclusion": "Only owned before/after public operations; .NET does not support the subroutine syntax.",
+      "Iterations": [
+        35376,
+        37301
+      ],
+      "WarmupCalls": [
+        843406,
+        860803
+      ],
+      "WarmupMilliseconds": [
+        1500.0017,
+        1500.0002
+      ],
+      "Microseconds": [
+        [
+          1.6316400949796472,
+          1.6293051786521937,
+          1.635476028946178,
+          1.6388059701492537,
+          1.611199683401176
+        ],
+        [
+          1.5912629688212112,
+          1.5991206670062466,
+          1.6112972842551139,
+          1.6161094876812954,
+          1.6070802391356802
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1808,
+          1808,
+          1808,
+          1808,
+          1808
+        ],
+        [
+          1808,
+          1808,
+          1808,
+          1808,
+          1808
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          57.7209,
+          57.6383,
+          57.8566,
+          57.9744,
+          56.9978
+        ],
+        [
+          59.3557,
+          59.6488,
+          60.103,
+          60.2825,
+          59.9457
+        ]
+      ]
+    },
+    {
+      "Name": "class-call",
+      "Operation": "IsMatch",
+      "Pattern": "^(?1)[0-9]{3}([A-Z])",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 5,
+      "InputSha256": "5DA4AD4A079BA1D4A59BA6F33F6E33D5BFA84FA02F7F65B448F2CA0922BE1290",
+      "Expected": 1,
+      "DiagnosticExclusion": "Only owned before/after public operations; .NET does not support the subroutine syntax.",
+      "Iterations": [
+        49093,
+        49474
+      ],
+      "WarmupCalls": [
+        1079374,
+        1147154
+      ],
+      "WarmupMilliseconds": [
+        1500.0011,
+        1500.0012
+      ],
+      "Microseconds": [
+        [
+          1.2180697859165257,
+          1.2300409427005887,
+          1.222836249567148,
+          1.2076304157415518,
+          1.2090522070356262
+        ],
+        [
+          1.195179286089663,
+          1.183908719731576,
+          1.1822654323483042,
+          1.16701499777661,
+          1.1779459918340949
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          59.7987,
+          60.3864,
+          60.0327,
+          59.2862,
+          59.356
+        ],
+        [
+          59.1303,
+          58.5727,
+          58.4914,
+          57.7369,
+          58.2777
+        ]
+      ]
+    },
+    {
+      "Name": "named-call",
+      "Operation": "IsMatch",
+      "Pattern": "^(?\u0026letter)[0-9]{3}(?\u003Cletter\u003E[A-Z])",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 5,
+      "InputSha256": "5DA4AD4A079BA1D4A59BA6F33F6E33D5BFA84FA02F7F65B448F2CA0922BE1290",
+      "Expected": 1,
+      "DiagnosticExclusion": "Only owned before/after public operations; .NET does not support the subroutine syntax.",
+      "Iterations": [
+        49415,
+        50923
+      ],
+      "WarmupCalls": [
+        1132045,
+        1165282
+      ],
+      "WarmupMilliseconds": [
+        1500.0002,
+        1500.0005
+      ],
+      "Microseconds": [
+        [
+          1.2547890316705455,
+          1.2382758271779823,
+          1.2453465546898717,
+          1.250116361428716,
+          1.2398927451178792
+        ],
+        [
+          1.17552579384561,
+          1.17130176933802,
+          1.1700665710975395,
+          1.1841368340435559,
+          1.163242542662451
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          62.0054,
+          61.1894,
+          61.5388,
+          61.7745,
+          61.2693
+        ],
+        [
+          59.8613,
+          59.6462,
+          59.5833,
+          60.2998,
+          59.2358
+        ]
+      ]
+    },
+    {
+      "Name": "relative-call",
+      "Operation": "IsMatch",
+      "Pattern": "(a)(?-1)[0-9]{3}",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 5,
+      "InputSha256": "6C69EDC1DBBD3EF870C5252ACCDF9535964EB9234D8979650267AC14B26ADE40",
+      "Expected": 1,
+      "DiagnosticExclusion": "Only owned before/after public operations; .NET does not support the subroutine syntax.",
+      "Iterations": [
+        50465,
+        51287
+      ],
+      "WarmupCalls": [
+        1179076,
+        1169863
+      ],
+      "WarmupMilliseconds": [
+        1500.0009,
+        1500.0009
+      ],
+      "Microseconds": [
+        [
+          1.171615971465372,
+          1.177584464480333,
+          1.1682255028237392,
+          1.1737283265629643,
+          1.1552224313880908
+        ],
+        [
+          1.1847076257141185,
+          1.1738081775108702,
+          1.1447501316122994,
+          1.1424181566478835,
+          1.1508393939984791
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          59.1256,
+          59.4268,
+          58.9545,
+          59.2322,
+          58.2983
+        ],
+        [
+          60.7601,
+          60.2011,
+          58.7108,
+          58.5912,
+          59.0231
+        ]
+      ]
+    },
+    {
+      "Name": "dense-unanchored",
+      "Operation": "IsMatch",
+      "Pattern": "([0-9])(?1)x",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 1027,
+      "InputSha256": "106EE551917B8339A68FE2341642D91227EC367AAD5926FEB1DBA13ECB6D16A1",
+      "Expected": 1,
+      "DiagnosticExclusion": "Only owned before/after public operations; .NET does not support the subroutine syntax.",
+      "Iterations": [
+        212,
+        226
+      ],
+      "WarmupCalls": [
+        5215,
+        5621
+      ],
+      "WarmupMilliseconds": [
+        1500.0271,
+        1500.0794
+      ],
+      "Microseconds": [
+        [
+          288.69528301886794,
+          286.44009433962265,
+          289.05518867924525,
+          287.2466981132075,
+          281.4179245283019
+        ],
+        [
+          264.5367256637168,
+          268.1265486725664,
+          266.53716814159293,
+          264.929203539823,
+          264.39823008849555
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          61.2034,
+          60.7253,
+          61.2797,
+          60.8963,
+          59.6606
+        ],
+        [
+          59.7853,
+          60.5966,
+          60.2374,
+          59.874,
+          59.754
+        ]
+      ]
+    },
+    {
+      "Name": "complex-control",
+      "Operation": "IsMatch",
+      "Pattern": "^(?1)\\d{3}(ab)",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 7,
+      "InputSha256": "72CA38FEB1A0576D856B1979C46DBFD9C4B5A0C26B4EEC3D8BAD19E0EAB5C4BD",
+      "Expected": 1,
+      "DiagnosticExclusion": "Only owned before/after public operations; .NET does not support the subroutine syntax.",
+      "Iterations": [
+        106244,
+        105725
+      ],
+      "WarmupCalls": [
+        2168378,
+        2243749
+      ],
+      "WarmupMilliseconds": [
+        1500.0001,
+        1500.0003
+      ],
+      "Microseconds": [
+        [
+          0.5582583487067505,
+          0.5648497797522684,
+          0.5522871879823802,
+          0.5620797409736079,
+          0.5608119046722638
+        ],
+        [
+          0.5495606526365572,
+          0.5584648853156775,
+          0.5505764956254433,
+          0.5588820052021755,
+          0.5555847718136675
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          59.3116,
+          60.0119,
+          58.6772,
+          59.7176,
+          59.5829
+        ],
+        [
+          58.1023,
+          59.0437,
+          58.2097,
+          59.0878,
+          58.7392
+        ]
+      ]
+    },
+    {
+      "Name": "recursive-control",
+      "Operation": "IsMatch",
+      "Pattern": "^(a(?1)?b)$",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 4,
+      "InputSha256": "486B34250BD4400C0AA90516FCE9A9C0633A922EB40D0828CF299BC4E825ACF4",
+      "Expected": 1,
+      "DiagnosticExclusion": "Only owned before/after public operations; .NET does not support the subroutine syntax.",
+      "Iterations": [
+        41232,
+        43454
+      ],
+      "WarmupCalls": [
+        935075,
+        986647
+      ],
+      "WarmupMilliseconds": [
+        1500.0012,
+        1500.0014
+      ],
+      "Microseconds": [
+        [
+          1.4537664920450135,
+          1.4494785603414821,
+          1.4512926852929762,
+          1.4755772215754754,
+          1.442100795498642
+        ],
+        [
+          1.4178533621760943,
+          1.4067036406314724,
+          1.405592120403185,
+          1.4059672297141805,
+          1.3924126662677774
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          59.9417,
+          59.7649,
+          59.8397,
+          60.841,
+          59.4607
+        ],
+        [
+          61.6114,
+          61.1269,
+          61.0786,
+          61.0949,
+          60.5059
+        ]
+      ]
+    },
+    {
+      "Name": "bounded-control",
+      "Operation": "IsMatch",
+      "Pattern": "^\\d{1,2}/\\d{1,2}/\\d{4}$",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 10,
+      "InputSha256": "8F8333352D651D8065490BF3C95A285363435EECD67CE3018DF356A0CAC4AA8F",
+      "Expected": 1,
+      "DiagnosticExclusion": "Only owned before/after public operations; .NET does not support the subroutine syntax.",
+      "Iterations": [
+        1269230,
+        1721678
+      ],
+      "WarmupCalls": [
+        10376925,
+        11075161
+      ],
+      "WarmupMilliseconds": [
+        1500.0001,
+        1500
+      ],
+      "Microseconds": [
+        [
+          0.030170181921322377,
+          0.029671296770482896,
+          0.03015655161003128,
+          0.029478108774611378,
+          0.029732121049770334
+        ],
+        [
+          0.03189005144980653,
+          0.030936911547920106,
+          0.03197589793213365,
+          0.030929360774779025,
+          0.03164796204632922
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          38.2929,
+          37.6597,
+          38.2756,
+          37.4145,
+          37.7369
+        ],
+        [
+          54.9044,
+          53.2634,
+          55.0522,
+          53.2504,
+          54.4876
+        ]
+      ]
+    },
+    {
+      "Name": "ucp-control",
+      "Operation": "IsMatch",
+      "Pattern": "^(?1)\\d{3}(a)",
+      "Options": "Ucp",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 8,
+      "InputSha256": "05DFAC9C12505CBF03F81BE76F8BCA829EF3CADF77939E793A2A79C9560D7554",
+      "Expected": 1,
+      "DiagnosticExclusion": "Only owned before/after public operations; .NET does not support the subroutine syntax.",
+      "Iterations": [
+        55395,
+        96221
+      ],
+      "WarmupCalls": [
+        1993462,
+        2014516
+      ],
+      "WarmupMilliseconds": [
+        1500.0007,
+        1500.0007
+      ],
+      "Microseconds": [
+        [
+          0.6266197310226554,
+          0.6172632909107321,
+          0.6329831212203268,
+          0.6313042693383879,
+          0.6183572524596083
+        ],
+        [
+          0.6431465064798745,
+          0.6320314692218955,
+          0.6415751239334448,
+          0.628173683499444,
+          0.629943567412519
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          34.7116,
+          34.1933,
+          35.0641,
+          34.9711,
+          34.2539
+        ],
+        [
+          61.8842,
+          60.8147,
+          61.733,
+          60.4435,
+          60.6138
+        ]
+      ]
+    },
+    {
+      "Name": "captured-count",
+      "Operation": "Count",
+      "Pattern": "([0-9])(?1)x",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 256,
+      "InputSha256": "D0A3280D0F82DAEA73F521A3353D0C2A9A2AF083C181AA29E8FFF6FEB48CB116",
+      "Expected": 64,
+      "DiagnosticExclusion": "Only owned before/after public operations; .NET does not support the subroutine syntax.",
+      "Iterations": [
+        1430,
+        1540
+      ],
+      "WarmupCalls": [
+        34597,
+        38577
+      ],
+      "WarmupMilliseconds": [
+        1500.0215,
+        1500.0224
+      ],
+      "Microseconds": [
+        [
+          40.805734265734266,
+          40.65237762237762,
+          40.523286713286716,
+          40.68888111888112,
+          41.495734265734264
+        ],
+        [
+          38.467922077922076,
+          38.274415584415586,
+          38.34357142857143,
+          38.73655844155844,
+          39.119805194805195
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          58.3522,
+          58.1329,
+          57.9483,
+          58.1851,
+          59.3389
+        ],
+        [
+          59.2406,
+          58.9426,
+          59.0491,
+          59.6543,
+          60.2445
+        ]
+      ]
+    },
+    {
+      "Name": "literal-control",
+      "Operation": "IsMatch",
+      "Pattern": "alpha",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 4096,
+      "InputSha256": "A2E659DACB4691E887AC0139F8893D04764EE197D70FB73D3190D56113D18E3E",
+      "Expected": 0,
+      "DiagnosticExclusion": "Only owned before/after public operations; .NET does not support the subroutine syntax.",
+      "Iterations": [
+        400868,
+        400082
+      ],
+      "WarmupCalls": [
+        5637344,
+        6090816
+      ],
+      "WarmupMilliseconds": [
+        1500.0001,
+        1500.0001
+      ],
+      "Microseconds": [
+        [
+          0.14818319247233502,
+          0.14935215582186656,
+          0.1490932177175529,
+          0.1492997695001846,
+          0.1466969176886157
+        ],
+        [
+          0.14880174564214335,
+          0.15000224953884453,
+          0.1496530711204203,
+          0.1515191885663439,
+          0.15240575681985194
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          59.4019,
+          59.8705,
+          59.7667,
+          59.8495,
+          58.8061
+        ],
+        [
+          59.5329,
+          60.0132,
+          59.8735,
+          60.6201,
+          60.9748
+        ]
+      ]
+    }
+  ]
+}

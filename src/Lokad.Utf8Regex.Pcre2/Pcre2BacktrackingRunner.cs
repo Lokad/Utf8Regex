@@ -740,7 +740,7 @@ internal static class Pcre2BacktrackingRunner
             var lastEncounteredMarkId = -1;
             while (true)
             {
-                var instruction = program.Instructions[instructionIndex];
+                ref readonly var instruction = ref program.Instructions[instructionIndex];
                 budget.ChargeBacktracking(instruction.Kind, instruction.Token.Kind);
                 switch (instruction.Kind)
                 {
