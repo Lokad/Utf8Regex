@@ -1,0 +1,22 @@
+{
+  "Scope": "Reuse frozen dev.3 Awk/Lython/public API source fixtures; only three copied project pins changed to dev.4. External checkouts untouched.",
+  "OriginalReceipt": "bench/Experiments/DeliveryDev3-20261101",
+  "CleanSourceInputArchiveSha256": "EA3485F142F4E4DE66120C807AD597B65D801661858E2A136723FDA26C06084F",
+  "Changes": [
+    {
+      "Project": "awk\\adapter\\Adapter.csproj",
+      "Before": "0.5.0-dev.3",
+      "After": "0.5.0-dev.4"
+    },
+    {
+      "Project": "lython\\src\\Lokad.Lython.Utf8Regex\\Lokad.Lython.Utf8Regex.csproj",
+      "Before": "0.5.0-dev.3",
+      "After": "0.5.0-dev.4"
+    },
+    {
+      "Project": "producer-apis\\Probe.csproj",
+      "Before": "0.5.0-dev.3",
+      "After": "0.5.0-dev.4"
+    }
+  ]
+}

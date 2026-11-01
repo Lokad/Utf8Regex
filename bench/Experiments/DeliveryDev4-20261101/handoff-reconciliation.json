@@ -1,0 +1,15 @@
+{
+  "AtSafeCheckpoint": "2026-11-01 after Full refresh exit0",
+  "ActiveTodoFiles": 0,
+  "Search": "Case-insensitive Markdown filename search including ignored files outside tmp/artifacts/external/.git/.dotnet and build outputs",
+  "PreviouslyIntegrated": [
+    "TODO-pythonre-hosting-contracts.md",
+    "TODO-embedding-api-refresh.md",
+    "TODO-utf8-native.md",
+    "TODO-native-pattern-compilation.md",
+    "TODO-live-token-boolean-allocation.md"
+  ],
+  "Contracts": "H1-H4 preserved; optional PCRE2 scalar projection remains unfinished",
+  "PreserveHistoricalReceipts": true,
+  "RemovedThisCheckpoint": []
+}

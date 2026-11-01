@@ -1,0 +1,62 @@
+{
+  "FrozenSource": "2ebc01a79afbad0a39fd246b083e030239125dd9",
+  "Version": "0.5.0-dev.4",
+  "Published": false,
+  "Profiles": [
+    "Core",
+    "PythonRe",
+    "Pcre2"
+  ],
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "WindowsDetachedPassed": 107178,
+  "LinuxExactWindowsAssetDetachedPassed": 107178,
+  "ActualAwkPerFrameworkPerPlatform": 19,
+  "ActualLythonPerFrameworkPerPlatform": 118,
+  "PublicNativeFundedProbe": "Passed both frameworks/platforms; all loaded assets match package hashes; final root loans zero",
+  "OriginalWindowsCompilationDocuments": 463,
+  "LinuxAssets": 6,
+  "LinuxFeedCacheLockObservations": 24,
+  "FullRefreshSeconds": 2605.7737756,
+  "FullRefreshSteps": 83,
+  "FullRefreshResult": "All passed, Full scope, Complete true, outer3600s cap met",
+  "CoreRows": {
+    "TieCandidate": 2,
+    "Gap": 65,
+    "Win": 107,
+    "Unqualified": 4
+  },
+  "PythonRows": {
+    "Unqualified": 3,
+    "Inconclusive": 13,
+    "Equivalent": 1,
+    "CpythonFaster": 46,
+    "ManagedFaster": 27
+  },
+  "Pcre2NativeRows": {
+    "NativeFaster": 17,
+    "Inconclusive": 15,
+    "Excluded": 25,
+    "ManagedFaster": 69
+  },
+  "CumulativeCostCases": 26,
+  "CumulativeCostSeconds": 109.5870537,
+  "MinimumCostSampleMilliseconds": 48.3337,
+  "MaximumCoveredAdverseMedianPercent": 4.854860705240593,
+  "ConfirmationRuns": 0,
+  "CostScope": "Fixed a40, same26typed public lanes, representative coverage; all medians/spreads and8-16B growth retained, not universal equivalence",
+  "FinalSnapshotChecksPerFramework": {
+    "Pcre2": 1,
+    "Core": 3,
+    "PythonRe": 1
+  },
+  "SourceCI": {
+    "Status": "success Windows/Linux",
+    "Run": 41301029454
+  },
+  "NewPriority": "PCRE2 date11.50/11.41x: inspect existing bounded mandatory-literal window proof across zero-width boundaries; no reopening rejected LeadingAsciiSet pilot",
+  "GoalComplete": false,
+  "Remaining": "N4gaps/closed deferrals, optional PCRE2 scalar projection and POSIX remain open; publication/adoption separate"
+}

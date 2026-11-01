@@ -1,0 +1,33 @@
+# Combined immutable delivery boundary: 0.5.0-dev.4
+
+Recorded during the active run; acceptance gates were set in PLAN.md and the
+existing scripts before launch.
+
+Frozen2ebc01a79afbad0a39fd246b083e030239125dd9, all3packages/exactCorepins,
+net10/net11RC3. Published/stagedhistoryimmutable. Windows269.076s/107178detached
+passes,2graphbuilds/onepackperprofile; originalAwk19/Lython118perruntime and
+native/fundedproducerprobespass,loadedassetshashesagree/rootloans0.463original
+WindowsPDBcompilationdocumentspreserved/checked,includinggeneratedinputs.
+
+VMcompleteexistingrefreshONCE: fullscope83steps,oneReleasebuild,bothruntime
+correctness/disabled-dynamic,Core89cases/178rows,Python90raw+paired+lifecycle+
+scaling,PCRE2fullcatalog/.NET+nativepairs/scaling,resourcechecksandverification.
+ExactSDK/CPython/CPU/binary/sourceidentityretained.3600soutercap+5skill, official
+CPython3.13.2, no otherVMtiming/consumerjobsuntilterminal. Nativeexperimentreceipts
+remainincrementalobservations; currentfullrefreshmaydiffer, preserveuncertainty.
+
+Afterfullterminalsuccessonly: one120s26-lanepublicfixed-a40comparison; sameIL,
+warm1.5s/min1000,independent60ms/5alternatingsamples,unchangedcontrols. Atmostone
+selectednoiseconfirmation, nevervariants. Retainalladverse medians/allocations;
+representativecoverage,notuniversalparity. Noa40counterpartfornewfundedAPIs;
+existingfeaturecostreceiptsremain. Aftercomparisonterminal, consumeEXACTWindows
+packagebytesonLinuxbothruntimes,detachedfixtures+originalAwk/Lython+producerprobes,
+existing6asset/24restorecache/feed/lock/PDB/SourceLinkaudits. NoLinuxrepack.
+
+Sealraws+sources+binaries+consumerarchivesonce/hash-checkcopies. Import4JSON+
+3generatedMDonly, existingbothruntimesnapshotguards(Core3/Python1/Pcre1), preserve
+allstatuses/historicalidentities/uncertaintyandworst-firstratios. Fullproofrequires
+Complete/Full/all83Passed/exit0/actualelapsed<=3600; sourcefreezeandpackage/platform/
+originalconsumer/cumulativeacceptanceareseparateexplicitchecks. Finalreceiptand
+push/CIwhileindependentworkcontinues. N4residualgapsandoptionalprojection/POSIX
+remainopen; noforcedpublication/adoptionornewqualificationframework.
