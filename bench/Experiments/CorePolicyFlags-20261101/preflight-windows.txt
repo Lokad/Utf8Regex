@@ -1,0 +1,33 @@
+Preflight ftp-ordinary: 1, bytes=67
+Preflight ftp-compiled: 1, bytes=67
+Preflight ftp-finite-live: 1, bytes=67
+Preflight ftp-deadline-live: 1, bytes=67
+Preflight backtracking-shared: 1, bytes=49
+Preflight literal-shared: 1, bytes=8198
+Preflight unicode-scalar-shared: 1, bytes=6
+Preflight metadata-count-control: 4096, bytes=4096
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "AffinityMask": "4",
+  "ElapsedSeconds": 0.3343008,
+  "Identities": [
+    {
+      "Version": "0.5.0-dev.1\u002B1f430e612840b23f8066f4bd1dbd67193b64d46e",
+      "Sha256": "BAFC001FE8A4D74E3271305675DA39685B6DA77F7029D786D5E35F3E51B0A1E8",
+      "PolicyFlagGetterIlBytes": 97
+    },
+    {
+      "Version": "0.5.0-dev.1\u002B1f430e612840b23f8066f4bd1dbd67193b64d46e",
+      "Sha256": "65AE38780E1998056B70A2162EE7B7DC8335B676B8DCE71EF76C7CDF0BB6205B",
+      "PolicyFlagGetterIlBytes": 7
+    }
+  ],
+  "Scope": "Cache the existing four-nullable finite-policy decision once in the shared string/native constructor; ResourcePolicy is a copied immutable value. Same flags/routes/bounds/work/cancellation/deadlines, no new execution mode. Eight equal-result public operations: actual FTP IsMatch ordinary/compiled/finite-live/deadline-live, shared backtracking/literal/Unicode scalar, unchanged native category Count control. Strict whole-subject UTF8 included. Finite work1B/depth4096/working16MiB/result16MiB; deadline5s. Warm1.5s/min64, independent60ms calibration, five alternating samples\u003E=20ms; result batches consumed after timing. One120s cap; at most one noise confirmation. No package/full-catalog qualification.",
+  "LaneNames": [
+    "Before",
+    "After",
+    "PredecodedRegex",
+    "DecodeThenRegex"
+  ],
+  "Rows": []
+}

@@ -1,0 +1,150 @@
+{
+  "ElapsedSeconds": 69.2993361,
+  "Confirmation": "None",
+  "Rows": [
+    {
+      "Name": "ftp-ordinary",
+      "BeforeUs": 0.19475173950195312,
+      "AfterUs": 0.1870950698852539,
+      "ChangePercent": -3.9315025561671213,
+      "BeforeSpread": 1.0042777790853672,
+      "AfterSpread": 1.0021621102686449,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "PairedChangePercent": [
+        -4.247741809481964,
+        -4.008439025394528,
+        -3.7747820902079954,
+        -4.123202651418934,
+        -3.9315025561671213
+      ],
+      "MinimumSampleMs": 78.5397
+    },
+    {
+      "Name": "ftp-compiled",
+      "BeforeUs": 0.19523315429687502,
+      "AfterUs": 0.18722953796386718,
+      "ChangePercent": -4.099516991277719,
+      "BeforeSpread": 1.0044954805656992,
+      "AfterSpread": 1.0070683202736044,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "PairedChangePercent": [
+        -3.8752360179222234,
+        -4.4559924391889165,
+        -4.12581088281736,
+        -4.039043205052051,
+        -4.470218583775787
+      ],
+      "MinimumSampleMs": 91.5111
+    },
+    {
+      "Name": "ftp-finite-live",
+      "BeforeUs": 0.1719259262084961,
+      "AfterUs": 0.15932769775390626,
+      "ChangePercent": -7.327707189032006,
+      "BeforeSpread": 1.0201970376624578,
+      "AfterSpread": 1.1185069409187833,
+      "BeforeBytes": 120,
+      "AfterBytes": 120,
+      "PairedChangePercent": [
+        -6.620673151812473,
+        -7.327707189032006,
+        -6.918934416756317,
+        2.5826793302505813,
+        -7.987032744532896
+      ],
+      "MinimumSampleMs": 82.7268
+    },
+    {
+      "Name": "ftp-deadline-live",
+      "BeforeUs": 0.2533901214599609,
+      "AfterUs": 0.2592453002929687,
+      "ChangePercent": 2.310736819285597,
+      "BeforeSpread": 1.0102011652857945,
+      "AfterSpread": 1.0294376575294555,
+      "BeforeBytes": 168,
+      "AfterBytes": 168,
+      "PairedChangePercent": [
+        0.31317244747821604,
+        1.5208198155204355,
+        2.723814637619082,
+        2.3026852926856467,
+        1.7293796956183716
+      ],
+      "MinimumSampleMs": 66.1297
+    },
+    {
+      "Name": "backtracking-shared",
+      "BeforeUs": 0.2053159713745117,
+      "AfterUs": 0.19615612030029295,
+      "ChangePercent": -4.461343661137063,
+      "BeforeSpread": 1.0079698801960242,
+      "AfterSpread": 1.006215628646925,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "PairedChangePercent": [
+        -4.5178775880718725,
+        -4.543547551732274,
+        -5.05526223030942,
+        -4.174232385427001,
+        -4.794569542206917
+      ],
+      "MinimumSampleMs": 79.8779
+    },
+    {
+      "Name": "literal-shared",
+      "BeforeUs": 0.5201728820800781,
+      "AfterUs": 0.47059860229492184,
+      "ChangePercent": -9.53034683140681,
+      "BeforeSpread": 1.0587394438148154,
+      "AfterSpread": 1.0503820041178173,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "PairedChangePercent": [
+        -8.885412580755691,
+        -9.53034683140681,
+        -9.604649664366615,
+        -9.779204337576342,
+        -9.577044631044075
+      ],
+      "MinimumSampleMs": 58.769
+    },
+    {
+      "Name": "unicode-scalar-shared",
+      "BeforeUs": 0.881195068359375,
+      "AfterUs": 0.8899955749511719,
+      "ChangePercent": 0.9987012987012989,
+      "BeforeSpread": 1.114044282381568,
+      "AfterSpread": 1.125509832113973,
+      "BeforeBytes": 5744,
+      "AfterBytes": 5744,
+      "PairedChangePercent": [
+        -8.611206209707689,
+        10.351872911362792,
+        -0.9051082251082199,
+        10.48027821723332,
+        -2.5878923882483362
+      ],
+      "MinimumSampleMs": 60.5361
+    },
+    {
+      "Name": "metadata-count-control",
+      "BeforeUs": 4.271966552734375,
+      "AfterUs": 4.2792602539062505,
+      "ChangePercent": 0.17073404208203247,
+      "BeforeSpread": 1.003929922818893,
+      "AfterSpread": 1.0053113037965828,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "PairedChangePercent": [
+        0.2333155106207352,
+        0.13601573896409036,
+        0.8054552196390175,
+        0.15886325780911648,
+        0.013708469406537027
+      ],
+      "MinimumSampleMs": 69.8487
+    }
+  ]
+}

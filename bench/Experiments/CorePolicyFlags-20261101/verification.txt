@@ -1,0 +1,15 @@
+core-focus.txt
+Passed!  - Failed:     0, Passed:   380, Skipped:     0, Total:   380, Duration: 1 s - Lokad.Utf8Regex.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:   380, Skipped:     0, Total:   380, Duration: 1 s - Lokad.Utf8Regex.Tests.dll (net11.0)
+core-extra.txt
+Passed!  - Failed:     0, Passed:   674, Skipped:     0, Total:   674, Duration: 1 s - Lokad.Utf8Regex.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:   674, Skipped:     0, Total:   674, Duration: 1 s - Lokad.Utf8Regex.Tests.dll (net11.0)
+python-focus.txt
+Passed!  - Failed:     0, Passed:    62, Skipped:     0, Total:    62, Duration: 402 ms - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:    62, Skipped:     0, Total:    62, Duration: 378 ms - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)
+pcre-focus.txt
+Passed!  - Failed:     0, Passed:    88, Skipped:     0, Total:    88, Duration: 280 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:    88, Skipped:     0, Total:    88, Duration: 256 ms - Lokad.Utf8Regex.Pcre2.Tests.dll (net11.0)
+snapshot-checks.txt
+Passed!  - Failed:     0, Passed:    16, Skipped:     0, Total:    16, Duration: 1 s - Lokad.Utf8Regex.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:    16, Skipped:     0, Total:    16, Duration: 720 ms - Lokad.Utf8Regex.Tests.dll (net11.0)

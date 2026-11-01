@@ -1,0 +1,16 @@
+{
+  "BaselineCommit": "1f430e612840b23f8066f4bd1dbd67193b64d46e",
+  "AcceptedSourceCommit": "1db4c97454ab5e48ffd06efc3a5fe69905ca73ce",
+  "BeforeCoreSha256": "BAFC001FE8A4D74E3271305675DA39685B6DA77F7029D786D5E35F3E51B0A1E8",
+  "AfterCoreSha256": "65AE38780E1998056B70A2162EE7B7DC8335B676B8DCE71EF76C7CDF0BB6205B",
+  "PatchSha256": "4DEE34BE8B1A47D35142537BB32361D47751289E8D0F9096C7A3CD57E2FE91C9",
+  "CoreFocusedRunsPerRuntime": [
+    380,
+    674
+  ],
+  "PythonPerRuntime": 62,
+  "PcrePerRuntime": 88,
+  "SnapshotApiDependencyPerRuntime": 16,
+  "Confirmation": "None",
+  "PublicApiResourceContractChange": "None; immutable existing decision cached once"
+}

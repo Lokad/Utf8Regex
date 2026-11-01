@@ -157,7 +157,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | Case | Operation | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
 | `industry/mariomka-email-count` | `Count` | 1,520.615 us | 490.404 us | 8,946.667 us | 3.10x |
-| `industry/boostdocs-ftp-line-match` | `IsMatch` | 0.328 us | 0.175 us | 0.229 us | 1.88x |
+| `industry/boostdocs-ftp-line-match` | `IsMatch` | 0.185 us | 0.110 us | 0.147 us | 1.68x |
 | `common/match-word` | `Match` | 0.203 us | 0.163 us | 1.153 us | 1.24x |
 | `industry/leipzig-twain-count` | `Count` | 1,326.974 us | 1,401.215 us | 16,066.100 us | 0.95x |
 | `industry/rust-sherlock-holmes-window-count` | `Count` | 246.070 us | 271.565 us | 524.233 us | 0.91x |
@@ -176,7 +176,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/matches-word` | `Count` | 1.697 us | 5.397 us | 7.562 us | 0.31x |
 | `industry/mariomka-ip-count` | `Count` | 2,696.340 us | 8,720.075 us | 31,596.450 us | 0.31x |
 | `common/date-match` | `IsMatch` | 0.028 us | 0.108 us | 0.137 us | 0.26x |
-| `common/backtracking` | `IsMatch` | 0.197 us | 0.839 us | 0.882 us | 0.23x |
+| `common/backtracking` | `IsMatch` | 0.190 us | 0.836 us | 0.878 us | 0.23x |
 | `industry/boostdocs-postcode-match` | `IsMatch` | 0.019 us | 0.084 us | 0.101 us | 0.22x |
 | `common/date-miss` | `IsMatch` | 0.109 us | 0.574 us | 0.612 us | 0.19x |
 | `industry/leipzig-river-window-count` | `Count` | 6,139.922 us | 32,656.450 us | 49,199.500 us | 0.19x |
@@ -238,10 +238,10 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 
 | Case | Operation | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
-| `common/backtracking` | `IsMatch` | 0.197 us | 0.044 us | 0.075 us | 4.54x |
 | `industry/rust-sherlock-holmes-window-count` | `Count` | 263.745 us | 59.204 us | 272.362 us | 4.45x |
-| `industry/boostdocs-ftp-line-match` | `IsMatch` | 0.324 us | 0.077 us | 0.128 us | 4.21x |
+| `common/backtracking` | `IsMatch` | 0.190 us | 0.044 us | 0.075 us | 4.34x |
 | `industry/leipzig-river-window-count` | `Count` | 6,211.033 us | 1,628.347 us | 17,876.467 us | 3.81x |
+| `industry/boostdocs-ftp-line-match` | `IsMatch` | 0.186 us | 0.049 us | 0.087 us | 3.76x |
 | `common/replace-words` | `Replace` | 69.651 us | 18.766 us | 20.255 us | 3.71x |
 | `industry/mariomka-email-count` | `Count` | 1,519.468 us | 456.758 us | 7,831.000 us | 3.33x |
 | `common/uri-miss` | `IsMatch` | 0.182 us | 0.066 us | 0.086 us | 2.78x |
