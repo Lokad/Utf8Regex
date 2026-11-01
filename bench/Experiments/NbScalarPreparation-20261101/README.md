@@ -58,3 +58,13 @@ enclosing loans agree. No UTF16 subject map or new persistent ownership state.
 
 No repeated package/fullcatalog/unchecked-access qualification. Existing immutable
 8d/dev.2 full refresh and consumer evidence remain that source's old boundary.
+
+Onlyregion rows were selectively refreshed from clean source `c8ed65bf`:
+ordinary2012.360us/54.90x,compiled2004.924us/54.37x,557416B, bothGap (previous
+60.79/60.15x). This is a separate observation, not the A/B percentage above.
+All30raw samples>=47.999ms; other rows/statuses/identities/lifecycle/scaling remain.
+Existing parity verification and3snapshot/hash/ratio guards perruntime pass.
+[Selective raw/generated/binary evidence](../../../artifacts/experiments/nb-scalar-preparation-20261101/selective-evidence.tar.gz):
+`E381B45AC3C8FF83EB3FA979B9AC4174C675F2D6FC97DF63F4B1888EBBF11720`.
+Committed-source Core DLL SHA256:
+`32E0E00E4F3F9957F6D36CE0B92C90ED70C06E24C4773D4C8F5043AE745992CB`.
