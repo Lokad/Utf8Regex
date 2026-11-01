@@ -1,0 +1,19 @@
+diff --git a/src/Lokad.Utf8Regex.Pcre2/Pcre2CharacterCompiler.cs b/src/Lokad.Utf8Regex.Pcre2/Pcre2CharacterCompiler.cs
+index 72e50705..14b8ca64 100644
+--- a/src/Lokad.Utf8Regex.Pcre2/Pcre2CharacterCompiler.cs
++++ b/src/Lokad.Utf8Regex.Pcre2/Pcre2CharacterCompiler.cs
+@@ -1735,6 +1735,14 @@ internal static class Pcre2CharacterRunner
+             return false;
+         }
+ 
++        var first = input[index];
++        if (first < 0x80)
++        {
++            rune = new Rune(first);
++            width = 1;
++            return true;
++        }
++
+         return Rune.DecodeFromUtf8(input[index..], out rune, out width) == OperationStatus.Done;
+     }
+ }

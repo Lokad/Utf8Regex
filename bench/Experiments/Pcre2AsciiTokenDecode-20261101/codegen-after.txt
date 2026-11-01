@@ -1,0 +1,60 @@
+; Assembly listing for method Lokad.Utf8Regex.Pcre2.Pcre2CharacterRunner:TryMatchToken(byref,byref,System.ReadOnlySpan`1[byte],int,int,int,byref,byref):bool (Tier1)
+; Emitting BLENDED_CODE for x64 + VEX + EVEX on Unix
+; Tier1 code
+; optimized code
+; optimized using Synthesized PGO
+; rbp based frame
+; partially interruptible
+; with Synthesized PGO: fgCalledCount is 22164
+; 14 inlinees with PGO data; 39 single block inlinees; 0 inlinees without PGO data
+       mov      eax, dword ptr [rbp-0x38]
+       mov      r15, bword ptr [rbp+0x20]
+       add      dword ptr [r15], eax
+ 
+G_M000_IG37:                ;; offset=0x02A2
+       mov      eax, 1
+ 
+G_M000_IG38:                ;; offset=0x02A7
+       add      rsp, 120
+       pop      rbx
+       pop      r12
+       pop      r13
+       pop      r14
+       pop      r15
+       pop      rbp
+       ret      
+ 
+G_M000_IG39:                ;; offset=0x02B6
+       xor      eax, eax
+       mov      dword ptr [rbp-0x30], eax
+ 
+G_M000_IG40:                ;; offset=0x02BB
+       mov      dword ptr [rbp-0x38], eax
+       jmp      G_M000_IG33
+ 
+G_M000_IG41:                ;; offset=0x02C3
+       mov      edi, 7
+       call     [System.ThrowHelper:ThrowArgumentOutOfRangeException(int)]
+       int3     
+ 
+G_M000_IG42:                ;; offset=0x02CF
+       mov      bword ptr [rbp+0x20], rax
+       mov      edi, ebx
+       add      rdi, r12
+       mov      esi, r14d
+       sub      esi, ebx
+       lea      rdx, [rbp-0x30]
+       lea      rcx, [rbp-0x38]
+       call     [System.Text.Rune:DecodeFromUtf8(System.ReadOnlySpan`1[byte],byref,byref):int]
+       test     eax, eax
+       sete     dl
+       movzx    rdx, dl
+       test     edx, edx
+       je       G_M000_IG33
+       jmp      SHORT G_M000_IG36
+ 
+G_M000_IG43:                ;; offset=0x02FD
+       xor      edi, edi
+       mov      dword ptr [rbp-0x40], edi
+; Total bytes of code 1469
+; Total bytes of code 105

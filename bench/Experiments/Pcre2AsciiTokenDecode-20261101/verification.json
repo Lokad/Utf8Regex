@@ -1,0 +1,24 @@
+{
+  "Status": "Rejected for insufficient useful benefit; fully restored",
+  "Parent": "40c0659d2eba525c81d0033d847247c29c873427",
+  "BaselineRuntime": "de2f5e67f5f99269b3a9b14773ccb855962b32ff",
+  "FocusedPerRuntime": 265,
+  "NewChecksPerRuntime": 4,
+  "Pcre2ReleasePerRuntime": 6490,
+  "RestoredPerRuntime": 261,
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "ElapsedSeconds": 63.8037605,
+  "MinimumSampleMilliseconds": 37.1726,
+  "Cases": 17,
+  "AllocationsChanged": false,
+  "ConfirmationRuns": 0,
+  "MaximumAdversePercent": 8.90724071024167,
+  "Decision": "Within10% but negligible changed-route benefit does not justify extra branch; no noise confirmation/variants",
+  "TablesChanged": false,
+  "PackagesChanged": false,
+  "RawArchiveSha256": "321600A771E7A569DEA3975F70A3A155C03F96EC06405EE4A768557B72539C66",
+  "CorrectnessArchiveSha256": "07CC7F6943566E93B0010F649C2B23469212E4ADFB99ECAE614D81CE02D23D5D"
+}

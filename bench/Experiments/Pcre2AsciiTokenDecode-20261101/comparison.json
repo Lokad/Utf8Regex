@@ -1,0 +1,1238 @@
+{
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 63.8037605,
+  "LaneNames": [
+    "Baseline",
+    "Candidate"
+  ],
+  "Baseline": {
+    "Core": {
+      "Version": "0.5.0-dev.4\u002Bde2f5e67f5f99269b3a9b14773ccb855962b32ff",
+      "Sha256": "6B1986C1DC96BDEBD1763D6E876E97AC0023307E94B261A0290F4E17DE413A44"
+    },
+    "Pcre2": {
+      "Version": "0.5.0-dev.4\u002Bde2f5e67f5f99269b3a9b14773ccb855962b32ff",
+      "Sha256": "882833EB543011EB6E7B587626B1161DC82D6A257A4DE2D69CDE7CE21F4C3404"
+    }
+  },
+  "Candidate": {
+    "Core": {
+      "Version": "0.5.0-dev.4\u002Bde2f5e67f5f99269b3a9b14773ccb855962b32ff",
+      "Sha256": "6B1986C1DC96BDEBD1763D6E876E97AC0023307E94B261A0290F4E17DE413A44"
+    },
+    "Pcre2": {
+      "Version": "0.5.0-dev.4\u002B40c0659d2eba525c81d0033d847247c29c873427",
+      "Sha256": "E91AD0F1FF78F42D7E69A360EC62E1C42F19F55AE6A94A8800E4BF872266E0E7"
+    }
+  },
+  "Rows": [
+    {
+      "Name": "date-hit",
+      "Operation": "IsMatch",
+      "Pattern": "\\b\\d{1,2}/\\d{1,2}/\\d{2,4}\\b",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 47,
+      "InputSha256": "336189FDA7377C88425195886029156A4A5F0EE3E8B03542CFECF0C057C452C6",
+      "Expected": 1,
+      "DiagnosticExclusion": "Owned equal-result before/after public operations; comparator qualification stays in existing selective tools.",
+      "Iterations": [
+        40568,
+        40509
+      ],
+      "WarmupCalls": [
+        736951,
+        740318
+      ],
+      "WarmupMilliseconds": [
+        1500.0004,
+        1500.0008
+      ],
+      "Microseconds": [
+        [
+          1.4790672451193059,
+          1.4794394596726483,
+          1.4828066456320252,
+          1.4834450798659042,
+          1.4877736146716625
+        ],
+        [
+          1.4747784442963292,
+          1.458014268434175,
+          1.4578661532005233,
+          1.469325335110716,
+          1.4910242168407022
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          60.0028,
+          60.0179,
+          60.1545,
+          60.1804,
+          60.356
+        ],
+        [
+          59.7418,
+          59.0627,
+          59.0567,
+          59.5209,
+          60.3999
+        ]
+      ]
+    },
+    {
+      "Name": "date-miss",
+      "Operation": "IsMatch",
+      "Pattern": "\\b\\d{1,2}/\\d{1,2}/\\d{2,4}\\b",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 47,
+      "InputSha256": "1C2ACBD374A589D0C859E3C8E71C5374170E8293CCC5BB092805C8AE9D7098FA",
+      "Expected": 0,
+      "DiagnosticExclusion": "Owned equal-result before/after public operations; comparator qualification stays in existing selective tools.",
+      "Iterations": [
+        11547,
+        11762
+      ],
+      "WarmupCalls": [
+        274813,
+        279662
+      ],
+      "WarmupMilliseconds": [
+        1500.0053,
+        1500.0043
+      ],
+      "Microseconds": [
+        [
+          5.167515371958085,
+          5.261626396466615,
+          5.131324153459772,
+          5.245552957478133,
+          5.156577466008487
+        ],
+        [
+          5.22481720795783,
+          5.255169188913451,
+          5.159853766366264,
+          5.190239755143684,
+          5.195681006631526
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          59.6693,
+          60.756,
+          59.2514,
+          60.5704,
+          59.543
+        ],
+        [
+          61.4543,
+          61.8113,
+          60.6902,
+          61.0476,
+          61.1116
+        ]
+      ]
+    },
+    {
+      "Name": "finite-hit",
+      "Operation": "IsMatch",
+      "Pattern": "\\b\\d{1,2}/\\d{1,2}/\\d{2,4}\\b",
+      "Options": "None",
+      "FiniteAndLiveToken": true,
+      "InputBytes": 47,
+      "InputSha256": "336189FDA7377C88425195886029156A4A5F0EE3E8B03542CFECF0C057C452C6",
+      "Expected": 1,
+      "DiagnosticExclusion": "Owned equal-result before/after public operations; comparator qualification stays in existing selective tools.",
+      "Iterations": [
+        24556,
+        23253
+      ],
+      "WarmupCalls": [
+        532841,
+        553640
+      ],
+      "WarmupMilliseconds": [
+        1500.001,
+        1500.0016
+      ],
+      "Microseconds": [
+        [
+          2.4329125264701092,
+          2.405583156865939,
+          2.39521094640821,
+          2.3867568007818867,
+          2.4952028017592442
+        ],
+        [
+          2.6109620264051947,
+          2.578553304949899,
+          2.5436889863673504,
+          2.5327613641250593,
+          2.5298671139207842
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1600,
+          1600,
+          1600,
+          1600,
+          1600
+        ],
+        [
+          1600,
+          1600,
+          1600,
+          1600,
+          1600
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          59.7426,
+          59.0715,
+          58.8168,
+          58.6092,
+          61.2722
+        ],
+        [
+          60.7127,
+          59.9591,
+          59.1484,
+          58.8943,
+          58.827
+        ]
+      ]
+    },
+    {
+      "Name": "finite-miss",
+      "Operation": "IsMatch",
+      "Pattern": "\\b\\d{1,2}/\\d{1,2}/\\d{2,4}\\b",
+      "Options": "None",
+      "FiniteAndLiveToken": true,
+      "InputBytes": 47,
+      "InputSha256": "1C2ACBD374A589D0C859E3C8E71C5374170E8293CCC5BB092805C8AE9D7098FA",
+      "Expected": 0,
+      "DiagnosticExclusion": "Owned equal-result before/after public operations; comparator qualification stays in existing selective tools.",
+      "Iterations": [
+        7700,
+        7466
+      ],
+      "WarmupCalls": [
+        187314,
+        184689
+      ],
+      "WarmupMilliseconds": [
+        1500.0071,
+        1500.0037
+      ],
+      "Microseconds": [
+        [
+          7.7211428571428575,
+          7.736974025974026,
+          7.6978831168831165,
+          7.730623376623376,
+          7.644103896103896
+        ],
+        [
+          8.015269220466113,
+          7.941548352531477,
+          7.9144923653897665,
+          7.8734663809268675,
+          7.950857219394589
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1600,
+          1600,
+          1600,
+          1600,
+          1600
+        ],
+        [
+          1600,
+          1600,
+          1600,
+          1600,
+          1600
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          59.4528,
+          59.5747,
+          59.2737,
+          59.5258,
+          58.8596
+        ],
+        [
+          59.842,
+          59.2916,
+          59.0896,
+          58.7833,
+          59.3611
+        ]
+      ]
+    },
+    {
+      "Name": "deadline-hit",
+      "Operation": "IsMatch",
+      "Pattern": "\\b\\d{1,2}/\\d{1,2}/\\d{2,4}\\b",
+      "Options": "None",
+      "FiniteAndLiveToken": true,
+      "InputBytes": 47,
+      "InputSha256": "336189FDA7377C88425195886029156A4A5F0EE3E8B03542CFECF0C057C452C6",
+      "Expected": 1,
+      "DiagnosticExclusion": "Owned equal-result before/after public operations; comparator qualification stays in existing selective tools.",
+      "Iterations": [
+        21893,
+        21300
+      ],
+      "WarmupCalls": [
+        484274,
+        508882
+      ],
+      "WarmupMilliseconds": [
+        1500.0011,
+        1500.0017
+      ],
+      "Microseconds": [
+        [
+          2.740821267071667,
+          2.8570684693737722,
+          2.700776503905358,
+          2.699497556296533,
+          2.7109121637052938
+        ],
+        [
+          2.7838591549295773,
+          2.7994835680751176,
+          2.783737089201878,
+          2.7849154929577464,
+          2.7955211267605637
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1648,
+          1648,
+          1648,
+          1648,
+          1648
+        ],
+        [
+          1648,
+          1648,
+          1648,
+          1648,
+          1648
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          60.0048,
+          62.5498,
+          59.1281,
+          59.1001,
+          59.35
+        ],
+        [
+          59.2962,
+          59.629,
+          59.2936,
+          59.3187,
+          59.5446
+        ]
+      ]
+    },
+    {
+      "Name": "deadline-miss",
+      "Operation": "IsMatch",
+      "Pattern": "\\b\\d{1,2}/\\d{1,2}/\\d{2,4}\\b",
+      "Options": "None",
+      "FiniteAndLiveToken": true,
+      "InputBytes": 47,
+      "InputSha256": "1C2ACBD374A589D0C859E3C8E71C5374170E8293CCC5BB092805C8AE9D7098FA",
+      "Expected": 0,
+      "DiagnosticExclusion": "Owned equal-result before/after public operations; comparator qualification stays in existing selective tools.",
+      "Iterations": [
+        6939,
+        6721
+      ],
+      "WarmupCalls": [
+        170138,
+        164633
+      ],
+      "WarmupMilliseconds": [
+        1500.0025,
+        1500.0008
+      ],
+      "Microseconds": [
+        [
+          8.64548205793342,
+          8.607090358841333,
+          8.631358985444589,
+          8.506254503530768,
+          8.603718115002161
+        ],
+        [
+          8.941392649903289,
+          8.9524921886624,
+          8.98583544115459,
+          8.938595447106087,
+          8.911605415860736
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          1648,
+          1648,
+          1648,
+          1648,
+          1648
+        ],
+        [
+          1648,
+          1648,
+          1648,
+          1648,
+          1648
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          59.991,
+          59.7246,
+          59.893,
+          59.0249,
+          59.7012
+        ],
+        [
+          60.0951,
+          60.1697,
+          60.3938,
+          60.0763,
+          59.8949
+        ]
+      ]
+    },
+    {
+      "Name": "no-digit-miss",
+      "Operation": "IsMatch",
+      "Pattern": "\\b\\d{1,2}/\\d{1,2}/\\d{2,4}\\b",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 4096,
+      "InputSha256": "A2E659DACB4691E887AC0139F8893D04764EE197D70FB73D3190D56113D18E3E",
+      "Expected": 0,
+      "DiagnosticExclusion": "Owned equal-result before/after public operations; comparator qualification stays in existing selective tools.",
+      "Iterations": [
+        170,
+        168
+      ],
+      "WarmupCalls": [
+        4100,
+        4242
+      ],
+      "WarmupMilliseconds": [
+        1500.1436,
+        1500.0341
+      ],
+      "Microseconds": [
+        [
+          337.86176470588236,
+          334.40647058823527,
+          333.4717647058823,
+          334.09470588235297,
+          334.20588235294116
+        ],
+        [
+          363.4988095238095,
+          366.8434523809524,
+          363.97440476190474,
+          359.3375,
+          364.57976190476194
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          57.4365,
+          56.8491,
+          56.6902,
+          56.7961,
+          56.815
+        ],
+        [
+          61.0678,
+          61.6297,
+          61.1477,
+          60.3687,
+          61.2494
+        ]
+      ]
+    },
+    {
+      "Name": "dense-candidates",
+      "Operation": "IsMatch",
+      "Pattern": "\\b\\d{1,2}/\\d{1,2}/\\d{2,4}\\b",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 3584,
+      "InputSha256": "6341319677B392016539C2D1FAA87238239A7B057EA6634E4EA0358A32E96BD6",
+      "Expected": 0,
+      "DiagnosticExclusion": "Owned equal-result before/after public operations; comparator qualification stays in existing selective tools.",
+      "Iterations": [
+        137,
+        140
+      ],
+      "WarmupCalls": [
+        3412,
+        3517
+      ],
+      "WarmupMilliseconds": [
+        1500.0391,
+        1500.1287
+      ],
+      "Microseconds": [
+        [
+          430.1102189781022,
+          431.06934306569343,
+          434.4715328467153,
+          436.95839416058396,
+          435.98759124087593
+        ],
+        [
+          433.58785714285716,
+          428.8,
+          424.5857142857143,
+          427.7485714285714,
+          428.0735714285714
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          58.9251,
+          59.0565,
+          59.5226,
+          59.8633,
+          59.7303
+        ],
+        [
+          60.7023,
+          60.032,
+          59.442,
+          59.8848,
+          59.9303
+        ]
+      ]
+    },
+    {
+      "Name": "dense-count",
+      "Operation": "Count",
+      "Pattern": "\\b\\d{1,2}/\\d{1,2}/\\d{2,4}\\b",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 1280,
+      "InputSha256": "25404F03026F57E58ACAD06129935E16C88E3721421E3099199BA6FB280C2C7F",
+      "Expected": 128,
+      "DiagnosticExclusion": "Owned equal-result before/after public operations; comparator qualification stays in existing selective tools.",
+      "Iterations": [
+        1015,
+        996
+      ],
+      "WarmupCalls": [
+        21962,
+        24321
+      ],
+      "WarmupMilliseconds": [
+        1500.0463,
+        1500.028
+      ],
+      "Microseconds": [
+        [
+          59.98522167487685,
+          60.40098522167488,
+          59.57566502463054,
+          59.92029556650246,
+          59.718620689655175
+        ],
+        [
+          60.60481927710843,
+          60.56847389558233,
+          59.856726907630524,
+          60.09407630522089,
+          59.67530120481928
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          60.885,
+          61.307,
+          60.4693,
+          60.8191,
+          60.6144
+        ],
+        [
+          60.3624,
+          60.3262,
+          59.6173,
+          59.8537,
+          59.4366
+        ]
+      ]
+    },
+    {
+      "Name": "unicode",
+      "Operation": "IsMatch",
+      "Pattern": "\\b\\d{1,2}/\\d{1,2}/\\d{2,4}\\b",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 28,
+      "InputSha256": "A4218205F7D1206E5F16167234BBE8E237E1DE80129B7ED3256F869B44DA70BF",
+      "Expected": 1,
+      "DiagnosticExclusion": "Owned equal-result before/after public operations; comparator qualification stays in existing selective tools.",
+      "Iterations": [
+        76818,
+        76294
+      ],
+      "WarmupCalls": [
+        1615472,
+        1632377
+      ],
+      "WarmupMilliseconds": [
+        1500.0005,
+        1500.001
+      ],
+      "Microseconds": [
+        [
+          0.7835351089588377,
+          0.7828907287354526,
+          0.773405972558515,
+          0.7658179072613189,
+          0.784652034679372
+        ],
+        [
+          0.7774831572600729,
+          0.7879020630718012,
+          0.7827221013447978,
+          0.7849162450520356,
+          0.7841416100872939
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          60.1896,
+          60.1401,
+          59.4115,
+          58.8286,
+          60.2754
+        ],
+        [
+          59.3173,
+          60.1122,
+          59.717,
+          59.8844,
+          59.8253
+        ]
+      ]
+    },
+    {
+      "Name": "ucp-control",
+      "Operation": "IsMatch",
+      "Pattern": "\\b\\d{1,2}/\\d{1,2}/\\d{2,4}\\b",
+      "Options": "Ucp",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 30,
+      "InputSha256": "51B79A9A212A3EB4619821162781591CD5ADF489D835B039BC38B1C76A51BC7E",
+      "Expected": 1,
+      "DiagnosticExclusion": "Owned equal-result before/after public operations; comparator qualification stays in existing selective tools.",
+      "Iterations": [
+        25941,
+        26061
+      ],
+      "WarmupCalls": [
+        565850,
+        620303
+      ],
+      "WarmupMilliseconds": [
+        1500.0016,
+        1500.0024
+      ],
+      "Microseconds": [
+        [
+          2.421244362206546,
+          2.3233452835280057,
+          2.337338575999383,
+          2.3399560541228173,
+          2.3211441347673567
+        ],
+        [
+          2.3269636621772,
+          2.328410268216876,
+          2.3415141399025363,
+          2.33525574613407,
+          2.334000997659338
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          62.8095,
+          60.2699,
+          60.6329,
+          60.7008,
+          60.2128
+        ],
+        [
+          60.643,
+          60.6807,
+          61.0222,
+          60.8591,
+          60.8264
+        ]
+      ]
+    },
+    {
+      "Name": "nonword-count",
+      "Operation": "Count",
+      "Pattern": "\\B\\d\u002B",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 1280,
+      "InputSha256": "440AE563E4707505719F570AC04BFCE437293C1D392D291E0CEB7F38AC739C06",
+      "Expected": 256,
+      "DiagnosticExclusion": "Owned equal-result before/after public operations; comparator qualification stays in existing selective tools.",
+      "Iterations": [
+        516,
+        505
+      ],
+      "WarmupCalls": [
+        12795,
+        12575
+      ],
+      "WarmupMilliseconds": [
+        1500.1077,
+        1500.0103
+      ],
+      "Microseconds": [
+        [
+          116.2077519379845,
+          116.35058139534884,
+          117.4,
+          116.46182170542635,
+          117.01918604651163
+        ],
+        [
+          118.24138613861386,
+          117.91366336633664,
+          119.57049504950494,
+          119.61188118811882,
+          118.99940594059407
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          59.9632,
+          60.0369,
+          60.5784,
+          60.0943,
+          60.3819
+        ],
+        [
+          59.7119,
+          59.5464,
+          60.3831,
+          60.404,
+          60.0947
+        ]
+      ]
+    },
+    {
+      "Name": "captured-count",
+      "Operation": "Count",
+      "Pattern": "\\b(?\u003Cdate\u003E\\d{1,2}/\\d{1,2}/\\d{2,4})\\b",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 1280,
+      "InputSha256": "25404F03026F57E58ACAD06129935E16C88E3721421E3099199BA6FB280C2C7F",
+      "Expected": 128,
+      "DiagnosticExclusion": "Owned equal-result before/after public operations; comparator qualification stays in existing selective tools.",
+      "Iterations": [
+        967,
+        971
+      ],
+      "WarmupCalls": [
+        23999,
+        23952
+      ],
+      "WarmupMilliseconds": [
+        1500.0112,
+        1500.0199
+      ],
+      "Microseconds": [
+        [
+          61.38510858324716,
+          62.04953464322647,
+          61.196173733195444,
+          61.51396070320579,
+          61.84374353671148
+        ],
+        [
+          62.182904222451086,
+          62.296704428424306,
+          61.45406797116375,
+          61.31256436663234,
+          61.25962924819773
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          59.3594,
+          60.0019,
+          59.1767,
+          59.484,
+          59.8029
+        ],
+        [
+          60.3796,
+          60.4901,
+          59.6719,
+          59.5345,
+          59.4831
+        ]
+      ]
+    },
+    {
+      "Name": "unicode-heavy",
+      "Operation": "IsMatch",
+      "Pattern": "\\b\\d{1,2}/\\d{1,2}/\\d{2,4}\\b",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 1160,
+      "InputSha256": "F3E2218B151F910F08ED8EA366A063C1C9360A3479FD67F98168F8DDBBA2B60D",
+      "Expected": 1,
+      "DiagnosticExclusion": "Owned equal-result before/after public operations; comparator qualification stays in existing selective tools.",
+      "Iterations": [
+        1451,
+        1364
+      ],
+      "WarmupCalls": [
+        35976,
+        33738
+      ],
+      "WarmupMilliseconds": [
+        1500.0143,
+        1500.0424
+      ],
+      "Microseconds": [
+        [
+          41.85513439007581,
+          41.59331495520331,
+          41.58221915920055,
+          41.69159200551344,
+          41.44521019986217
+        ],
+        [
+          45.03189149560117,
+          44.228519061583576,
+          44.72895894428153,
+          44.54156891495601,
+          44.872800586510266
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          60.7318,
+          60.3519,
+          60.3358,
+          60.4945,
+          60.137
+        ],
+        [
+          61.4235,
+          60.3277,
+          61.0103,
+          60.7547,
+          61.2065
+        ]
+      ]
+    },
+    {
+      "Name": "subroutine-control",
+      "Operation": "IsMatch",
+      "Pattern": "^(?1)\\d{3}(a)",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 5,
+      "InputSha256": "A6D2352543DACCA9CB4EF492AA9942CEF664CF4B95CDA3B2039BC3CE10B07957",
+      "Expected": 1,
+      "DiagnosticExclusion": "Owned equal-result before/after public operations; comparator qualification stays in existing selective tools.",
+      "Iterations": [
+        117568,
+        113371
+      ],
+      "WarmupCalls": [
+        2118165,
+        2282206
+      ],
+      "WarmupMilliseconds": [
+        1500.0008,
+        1500.0001
+      ],
+      "Microseconds": [
+        [
+          0.5098368603701687,
+          0.513809880239521,
+          0.5152813690800218,
+          0.5154191616766467,
+          0.5131668481219379
+        ],
+        [
+          0.5242169514249676,
+          0.5237106491077966,
+          0.525757909871131,
+          0.5232263982852757,
+          0.520372934877526
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          59.9405,
+          60.4076,
+          60.5806,
+          60.5968,
+          60.332
+        ],
+        [
+          59.431,
+          59.3736,
+          59.6057,
+          59.3187,
+          58.9952
+        ]
+      ]
+    },
+    {
+      "Name": "bounded-control",
+      "Operation": "IsMatch",
+      "Pattern": "^\\d{1,2}/\\d{1,2}/\\d{4}$",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 10,
+      "InputSha256": "8F8333352D651D8065490BF3C95A285363435EECD67CE3018DF356A0CAC4AA8F",
+      "Expected": 1,
+      "DiagnosticExclusion": "Owned equal-result before/after public operations; comparator qualification stays in existing selective tools.",
+      "Iterations": [
+        1301650,
+        2165101
+      ],
+      "WarmupCalls": [
+        10247489,
+        10727468
+      ],
+      "WarmupMilliseconds": [
+        1500.0005,
+        1500.0002
+      ],
+      "Microseconds": [
+        [
+          0.02859570545077402,
+          0.028771789651596054,
+          0.028670994506971918,
+          0.02860669150693351,
+          0.02855806092267507
+        ],
+        [
+          0.02648264445861879,
+          0.026320573497495035,
+          0.026598297261882932,
+          0.026484769070819328,
+          0.02666517635897817
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          37.2216,
+          37.4508,
+          37.3196,
+          37.2359,
+          37.1726
+        ],
+        [
+          57.3376,
+          56.9867,
+          57.588,
+          57.3422,
+          57.7328
+        ]
+      ]
+    },
+    {
+      "Name": "literal-control",
+      "Operation": "IsMatch",
+      "Pattern": "alpha",
+      "Options": "None",
+      "FiniteAndLiveToken": false,
+      "InputBytes": 4096,
+      "InputSha256": "A2E659DACB4691E887AC0139F8893D04764EE197D70FB73D3190D56113D18E3E",
+      "Expected": 0,
+      "DiagnosticExclusion": "Owned equal-result before/after public operations; comparator qualification stays in existing selective tools.",
+      "Iterations": [
+        396782,
+        377977
+      ],
+      "WarmupCalls": [
+        5575381,
+        5783548
+      ],
+      "WarmupMilliseconds": [
+        1500.0004,
+        1500.0006
+      ],
+      "Microseconds": [
+        [
+          0.15229798730789199,
+          0.1515955864933389,
+          0.15199530220624927,
+          0.15068727916084904,
+          0.1501358428557747
+        ],
+        [
+          0.15770668585654682,
+          0.15726380176571592,
+          0.1576315490095958,
+          0.15626506374726504,
+          0.15818872576902826
+        ]
+      ],
+      "AllocatedBytes": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "ElapsedMilliseconds": [
+        [
+          60.4291,
+          60.1504,
+          60.309,
+          59.79,
+          59.5712
+        ],
+        [
+          59.6095,
+          59.4421,
+          59.5811,
+          59.0646,
+          59.7917
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+; Assembly listing for method Lokad.Utf8Regex.Pcre2.Pcre2CharacterRunner:TryMatchToken(byref,byref,System.ReadOnlySpan`1[byte],int,int,int,byref,byref):bool (Tier1)
+; Emitting BLENDED_CODE for x64 + VEX + EVEX on Unix
+; Tier1 code
+; optimized code
+; optimized using Synthesized PGO
+; rbp based frame
+; partially interruptible
+; with Synthesized PGO: fgCalledCount is 22071
+; 12 inlinees with PGO data; 35 single block inlinees; 0 inlinees without PGO data
+       jmp      G_M000_IG06
+ 
+G_M000_IG22:                ;; offset=0x015D
+       lea      edi, [r9-0x30]
+       cmp      edi, 9
+       jbe      SHORT G_M000_IG14
+ 
+G_M000_IG23:                ;; offset=0x0166
+       cmp      r9d, 95
+       sete     dil
+       movzx    rdi, dil
+       jmp      SHORT G_M000_IG15
+ 
+G_M000_IG24:                ;; offset=0x0174
+       xor      edi, edi
+       jmp      SHORT G_M000_IG15
+ 
+G_M000_IG25:                ;; offset=0x0178
+       lea      esi, [r10-0x30]
+       cmp      esi, 9
+       jbe      SHORT G_M000_IG16
+ 
+G_M000_IG26:                ;; offset=0x0181
+       cmp      r10d, 95
+       sete     sil
+       movzx    rsi, sil
+       jmp      SHORT G_M000_IG17
+ 
+G_M000_IG27:                ;; offset=0x018F
+       cmp      ebx, r14d
+       jae      G_M000_IG39
+       mov      bword ptr [rbp+0x20], rax
+       mov      edi, ebx
+       add      rdi, r12
+       mov      esi, r14d
+       sub      esi, ebx
+       lea      rdx, [rbp-0x40]
+       lea      rcx, [rbp-0x48]
+       call     [System.Text.Rune:DecodeFromUtf8(System.ReadOnlySpan`1[byte],byref,byref):int]
+       test     eax, eax
+       jne      SHORT G_M000_IG32
+       mov      rdi, gword ptr [r15]
+       mov      esi, dword ptr [rbp-0x40]
+       test     dword ptr [r13+0x08], 0x400
+       setne    dl
+       movzx    rdx, dl
+       movzx    rcx, byte  ptr [r15+0x09]
+       cmp      byte  ptr [rdi], dil
+       cmp      esi, 127
+; Total bytes of code 1287
+; Total bytes of code 281
