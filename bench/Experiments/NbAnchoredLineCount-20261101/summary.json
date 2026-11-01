@@ -1,0 +1,259 @@
+{
+  "ElapsedSeconds": 89.6300402,
+  "MinimumSampleMilliseconds": 58.0679,
+  "Decision": "PROMOTE region177-188x,finite158x,deadline138x; buffersremoved, maxadversecontrol1.77%, no confirmation",
+  "Rows": [
+    {
+      "Name": "region-ordinary",
+      "BeforeUs": 1196.203125,
+      "AfterUs": 6.749163818359375,
+      "ChangePercent": -99.43578446859857,
+      "Speedup": 177.23723370679417,
+      "BeforeBytes": 557416,
+      "AfterBytes": 64,
+      "BeforeSpread": 1.037909134675627,
+      "AfterSpread": 1.0327309800109805,
+      "PairedPercent": [
+        -99.42318305314994,
+        -99.44335828289252,
+        -99.44285374990717,
+        -99.43549820014873,
+        -99.43026625904334
+      ]
+    },
+    {
+      "Name": "region-compiled",
+      "BeforeUs": 1271.565625,
+      "AfterUs": 6.779681396484375,
+      "ChangePercent": -99.46682410540278,
+      "Speedup": 187.55536589955014,
+      "BeforeBytes": 557416,
+      "AfterBytes": 64,
+      "BeforeSpread": 1.0288855549833182,
+      "AfterSpread": 1.0257917907325613,
+      "PairedPercent": [
+        -99.47453737967638,
+        -99.46688506540903,
+        -99.46023122205678,
+        -99.46615735728138,
+        -99.45902310501894
+      ]
+    },
+    {
+      "Name": "region-live",
+      "BeforeUs": 1285.9609375,
+      "AfterUs": 7.9001708984375,
+      "ChangePercent": -99.38566011858836,
+      "Speedup": 162.77634421229268,
+      "BeforeBytes": 557536,
+      "AfterBytes": 184,
+      "BeforeSpread": 1.0176137086347061,
+      "AfterSpread": 1.0299145969307584,
+      "PairedPercent": [
+        -99.39493240206907,
+        -99.38348550258989,
+        -99.37657006555166,
+        -99.38297623417837,
+        -99.37986501827069
+      ]
+    },
+    {
+      "Name": "region-finite-live",
+      "BeforeUs": 1334.09375,
+      "AfterUs": 8.44896240234375,
+      "ChangePercent": -99.36668900500105,
+      "Speedup": 157.9003061523769,
+      "BeforeBytes": 557536,
+      "AfterBytes": 184,
+      "BeforeSpread": 1.027527082219204,
+      "AfterSpread": 1.02205638715303,
+      "PairedPercent": [
+        -99.36570674188194,
+        -99.36769312033638,
+        -99.36023303989333,
+        -99.37856679706842,
+        -99.35649767369
+      ]
+    },
+    {
+      "Name": "region-deadline-live",
+      "BeforeUs": 2223.096875,
+      "AfterUs": 16.087744140625,
+      "ChangePercent": -99.2763363431643,
+      "Speedup": 138.18574285913738,
+      "BeforeBytes": 557584,
+      "AfterBytes": 232,
+      "BeforeSpread": 1.0169217937952477,
+      "AfterSpread": 1.016579397282583,
+      "PairedPercent": [
+        -99.26735982073961,
+        -99.28250054295036,
+        -99.28795708276029,
+        -99.28027092537188,
+        -99.26422124722959
+      ]
+    },
+    {
+      "Name": "literal-head-no-white",
+      "BeforeUs": 326.0734375,
+      "AfterUs": 24.1845703125,
+      "ChangePercent": -92.58309094481208,
+      "Speedup": 13.482705431051889,
+      "BeforeBytes": 133296,
+      "AfterBytes": 64,
+      "BeforeSpread": 1.012165735475657,
+      "AfterSpread": 1.0204158739845308,
+      "PairedPercent": [
+        -92.59238210326694,
+        -92.61977723960405,
+        -92.48262809797663,
+        -92.56551078888478,
+        -92.61029231704651
+      ]
+    },
+    {
+      "Name": "unicode-whitespace",
+      "BeforeUs": 276.260546875,
+      "AfterUs": 31.80439453125,
+      "ChangePercent": -88.48753653353167,
+      "Speedup": 8.686238205338418,
+      "BeforeBytes": 93360,
+      "AfterBytes": 64,
+      "BeforeSpread": 1.0337955842683313,
+      "AfterSpread": 1.018238975196419,
+      "PairedPercent": [
+        -88.31369670193013,
+        -88.47887383276998,
+        -88.55424693083143,
+        -88.52979665651905,
+        -88.65224433132809
+      ]
+    },
+    {
+      "Name": "dense-false-prefix",
+      "BeforeUs": 196.5400390625,
+      "AfterUs": 89.17158203125,
+      "ChangePercent": -54.629304819211264,
+      "Speedup": 2.204065853554364,
+      "BeforeBytes": 98416,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.029846487070791,
+      "AfterSpread": 1.0220706645371573,
+      "PairedPercent": [
+        -53.96240627281418,
+        -54.702693570906845,
+        -53.924270198295886,
+        -55.03133416123418,
+        -54.920704548191694
+      ]
+    },
+    {
+      "Name": "newline-prefix",
+      "BeforeUs": 79.96279296875001,
+      "AfterUs": 7.80677490234375,
+      "ChangePercent": -90.23699071467564,
+      "Speedup": 10.242743510478775,
+      "BeforeBytes": 23152,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.039592208283053,
+      "AfterSpread": 1.023479920009113,
+      "PairedPercent": [
+        -90.31116983885356,
+        -90.24019655137461,
+        -90.09274618374589,
+        -90.08905120313958,
+        -90.61298539594432
+      ]
+    },
+    {
+      "Name": "absolute-end",
+      "BeforeUs": 198.3158203125,
+      "AfterUs": 21.6233642578125,
+      "ChangePercent": -89.09650061011821,
+      "Speedup": 9.171367505444888,
+      "BeforeBytes": 49384,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0160833573934402,
+      "AfterSpread": 1.0217210952778186,
+      "PairedPercent": [
+        -89.0786403423631,
+        -89.23642400802855,
+        -89.198944288658,
+        -89.13901463767806,
+        -89.14861068774118
+      ]
+    },
+    {
+      "Name": "folded-control",
+      "BeforeUs": 166.1798828125,
+      "AfterUs": 141.24140625,
+      "ChangePercent": -15.006916685961302,
+      "Speedup": 1.1765663287036268,
+      "BeforeBytes": 36976,
+      "AfterBytes": 36976,
+      "BeforeSpread": 1.0388076497114918,
+      "AfterSpread": 1.0180405194572595,
+      "PairedPercent": [
+        -17.507798841314994,
+        -13.636034504657301,
+        -15.006916685961302,
+        -14.872461684473636,
+        -15.199492147870409
+      ]
+    },
+    {
+      "Name": "wide-control",
+      "BeforeUs": 2314.9500000000003,
+      "AfterUs": 2355.753125,
+      "ChangePercent": 1.762592064623414,
+      "Speedup": 0.9826793713793758,
+      "BeforeBytes": 99560,
+      "AfterBytes": 99560,
+      "BeforeSpread": 1.0138254677521372,
+      "AfterSpread": 1.0168647925033467,
+      "PairedPercent": [
+        2.509436533995135,
+        1.1328538413356348,
+        2.2445581546458815,
+        2.5403820910951946,
+        0.22419629452228307
+      ]
+    },
+    {
+      "Name": "non-nb-scalar-control",
+      "BeforeUs": 4.685595703125,
+      "AfterUs": 4.709307861328125,
+      "ChangePercent": 0.5060649638915837,
+      "Speedup": 0.9949648315843089,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.017384333306306,
+      "AfterSpread": 1.0328768992931705,
+      "PairedPercent": [
+        -1.7831271879849786,
+        0.5468367357572168,
+        -0.8193360216055989,
+        2.6879980794422,
+        0.7995773251692873
+      ]
+    },
+    {
+      "Name": "literal-control",
+      "BeforeUs": 0.39802017211914065,
+      "AfterUs": 0.3965282440185547,
+      "ChangePercent": -0.3748373085320389,
+      "Speedup": 1.0037624762500301,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0877572319413473,
+      "AfterSpread": 1.1074436561129963,
+      "PairedPercent": [
+        0.18146837466144206,
+        0.8915808229696731,
+        2.190272823288786,
+        -0.5656273077555785,
+        0.08696506373586654
+      ]
+    }
+  ]
+}

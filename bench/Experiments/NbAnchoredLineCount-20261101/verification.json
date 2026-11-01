@@ -1,0 +1,30 @@
+{
+  "Parent": "f7222d086273bba2b323d1ef0a55ff9ef03cdb54",
+  "BaselineRuntimeSource": "8cb45ef04054f97943aa4fabee8f49010a0f1fa6",
+  "Configuration": "Release",
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "CoreFocusedPerFramework": 750,
+  "ResourcePerFramework": 729,
+  "SelectionsOverlap": true,
+  "DifferentialPerFramework": 28,
+  "PythonControlsPerFramework": 46,
+  "PcreControlsPerFramework": 45,
+  "FinalNewFixturePerFramework": 38,
+  "AllPassed": true,
+  "StateCases": 371,
+  "AllTableStateFieldsIdentical": true,
+  "BeforeCoreSha256": "FE220D58A5833DE30C6F2C4105785E5DE9AE58FCD28A01543EBD6066BEDA7CB0",
+  "AfterCoreSha256": "FAE0DE675308A869165E5F044B32A67E351F962C0884C7C5800727D8B309198E",
+  "PublicSeconds": 89.6300402,
+  "MinimumSampleMilliseconds": 58.0679,
+  "ConfirmationRuns": 0,
+  "Decision": "PROMOTE region177-188x,finite158x,deadline138x; buffersremoved, maxadversecontrol1.77%, no confirmation",
+  "Contract": "Admitted complete-root Count scans<=2048bytes/64scalars/candidate<=64instructions; zero local scratch/workingloan admission; directoriginaltoken/deadline andpublication. Others unchanged.",
+  "PriorCI": "f7222d08/41298221173 green Windows/Linux",
+  "RawSha256": "267802936D85E8ECD3E2F0F66ED2C22478FD06C43C0981DB7DB6B5944B33AFD6",
+  "CorrectnessSha256": "E27998F1A7F5AABD9A5917D9D6B129A3ABBD1C22C1D19B6E4FEDBF1CCB08AB5A",
+  "FinalFixtureSha256": "A1A7BC53E8D29FAC075B07619D948305B284727FEE0131C057918A5B70BC763D"
+}

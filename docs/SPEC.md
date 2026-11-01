@@ -107,6 +107,23 @@ ordered evaluation. This ancestry folding changes no invocation work units or ta
 The immutable ancestry array uses construction admission before allocation;
 cold costs and construction-limit thresholds can differ from earlier layouts.
 
+Count recognizes a complete regular line shape from at most 64 lowered
+instructions: beginning anchor, optional Unicode-whitespace star, a nonempty
+case-sensitive ASCII literal whose first byte is not whitespace, greedy
+non-newline dot star, and end anchor. Capture markers outside the loop bodies
+are transparent to Count. Other grammars and all capture/cursor operations retain
+their existing runners. The proof uses no new program metadata.
+
+This Count path uses no viability table or local scratch. It admits every scan
+of at most 2048 bytes, candidate verification of at most 64 instructions, and
+backward whitespace block of at most 64 scalars, including unlimited calls.
+Every quantum and final publication check the original token and deadline.
+Original full-input anchors and scalar origins remain authoritative. Failed end
+anchors retain overlapping newline-prefix candidates; the bounded prefix limits
+repeated tail scans. Working admission observes enclosing loans with a zero-byte
+local request. Work/working/depth thresholds can consequently be lower than table
+execution; budget costs remain route/version dependent.
+
 ### Native pattern metadata
 
 `CaptureGroupCount` counts defined capture slots excluding group zero. Sparse

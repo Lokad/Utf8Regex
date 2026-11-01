@@ -118,6 +118,13 @@ rows retain their charges. Token/deadline checks still precede every row quantum
 Preparation and candidate scanning can consume fewer MaxWorkSteps than earlier versions. Treat work units as route/version
 dependent, and qualify finite policies against representative workloads when upgrading.
 
+Core NonBacktracking Count can now scan a proved complete anchored-line shape
+directly: optional Unicode whitespace, mandatory unfolded ASCII prefix, greedy
+non-newline tail and end anchor. It retains strict full-subject validation and
+bounded token/deadline/work checks, while avoiding the viability table and local
+scratch. Numeric work and working/depth requirements can be lower. Matching,
+captures and retained cursors keep their existing semantics and implementations.
+
 Proven whole-expression Unicode-letter Count now shares the existing category
 counter's scalar-ended 4096-byte admission, including caller-funded Count. This
 reduces work units and can admit tighter storage policies while retaining strict

@@ -1,0 +1,6 @@
+{
+  "Cases": 371,
+  "AllStateFieldsIdentical": true,
+  "ProbeOutputSha256": "888B3A3F455D461A0F2FB1E1112255525E05EB038A11BA76AA639235A465CECC",
+  "Scope": "Existing table preparation, viability, replay/captures, allworkcounts, loans/peaks unchanged; acceptedcomplete-root Count bypasses table under its own scanned work policy"
+}
