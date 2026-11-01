@@ -1,0 +1,12 @@
+{
+  "RetiredRoot": "/home/vermorel/dfa-graph-44b2a78e-20261010/src",
+  "Scope": "Sixteen bin/obj directories only,780files,199506748logical bytes",
+  "SourcePackagesEvidence": "Outside removal targets, unchanged",
+  "ProcessReferences": "All available cwd/exe/maps/fd and non-ancestor cmdlines inspected with read-only sudo, no references",
+  "ArchiveSha256": "960726FB5F428B69A6DCF8985FECC91D8B954543030BD5D387C9F4069BF04EF3",
+  "ImmediateRootAvailableBytes": 201859072,
+  "AfterOrdinaryBuildRootAvailableBytes": 789876736,
+  "OrdinaryBuild": "Current659 net11 affected benchmark project,14.02s, normal build/compiler servers, no temp overrides/server shutdown",
+  "RuntimeDir": "Still nearly full; avoid this old scratch for new work",
+  "Measurements": "No new performance result from maintenance"
+}
