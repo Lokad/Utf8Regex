@@ -266,7 +266,7 @@ internal sealed class Utf8NonBacktrackingSearchState
         }
         foreach (var pc in program.NonBacktrackingEpsilonOrder)
         {
-            var instruction = program.Instructions[pc];
+            ref readonly var instruction = ref program.Instructions[pc];
             bool viable;
             switch (instruction.Kind)
             {

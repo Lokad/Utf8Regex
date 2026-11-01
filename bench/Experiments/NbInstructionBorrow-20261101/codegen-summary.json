@@ -1,0 +1,12 @@
+{
+  "Scope": "Current UbuntuVM/.NET11RC3 Release Tier1; actual region Count warm1024calls per binary, diagnostic only",
+  "BeforeCoreSha256": "E2658B9B1F605FF1CE14C698FAB2FE8A786DFC2B88FF03EBED67A6072B0047A4",
+  "AfterCoreSha256": "91BF43B71860E988ACB77045A930F718BA1E53F1B62D0D0C05E81B3D0CDEE7ED",
+  "BeforePackedBytes": 2244,
+  "AfterPackedBytes": 2187,
+  "BeforeAnchorSignature": "HoldsNonBacktrackingAnchor(Utf8SliceInstruction, span, int)",
+  "AfterAnchorSignature": "HoldsNonBacktrackingAnchor(byref, span, int)",
+  "Change": "Outgoing anchor instruction copy removed; anchor call remains. Atom helper already inline. No public speedup claim from code size.",
+  "BeforeDisassemblySha256": "0E39DC886ADC6E72EB23C1ADD9810E0C610FCBA69F5A44E6994AAB68227D9DE6",
+  "AfterDisassemblySha256": "51AFA3FD1211AD1A43C3B605DB797E5DE2AC5775B2EA5DCDEE00992C77055F4C"
+}

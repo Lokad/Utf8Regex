@@ -326,7 +326,7 @@ internal static partial class Utf8SliceRunner
         finally { if (!published) invocation.Ledger.Release(bytes); }
     }
 
-    internal static bool HoldsNonBacktrackingAnchor(Utf8SliceInstruction instruction, ReadOnlySpan<byte> input, int position)
+    internal static bool HoldsNonBacktrackingAnchor(in Utf8SliceInstruction instruction, ReadOnlySpan<byte> input, int position)
         => instruction.A switch
         {
             (int)Utf8SliceAnchorKind.Beginning => position == 0 || instruction.B != 0 && position > 0 && input[position - 1] == (byte)'\n',

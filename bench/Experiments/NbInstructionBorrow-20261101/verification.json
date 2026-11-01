@@ -1,0 +1,24 @@
+{
+  "Parent": "322f4b0feadc5c1728640397330ab1b4d348956e",
+  "BaselineRuntimeSource": "092b8e689750bbbdb0ee006e62daf61fb245fd69",
+  "Configuration": "Release",
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "CorePerFramework": 709,
+  "DifferentialPerFramework": 28,
+  "AllPassed": true,
+  "StateCases": 371,
+  "AllStateFieldsIdentical": true,
+  "BeforeCoreSha256": "E2658B9B1F605FF1CE14C698FAB2FE8A786DFC2B88FF03EBED67A6072B0047A4",
+  "AfterCoreSha256": "91BF43B71860E988ACB77045A930F718BA1E53F1B62D0D0C05E81B3D0CDEE7ED",
+  "PublicComparisonSeconds": 91.3540157,
+  "MinimumSampleMilliseconds": 59.6237,
+  "ConfirmationRuns": 0,
+  "Decision": "PROMOTE primary3.3-4.3%, dense4.3-5.4%; maximumadverse+2.34%, unchangedalloc/work",
+  "ContractChange": "None",
+  "Scope": "Core NonBacktracking anchors, packed rows borrow checked elements; every atom/row charge retained. No unchecked API, array/layout/metadata/engine/mode/framework.",
+  "RawArchiveSha256": "89515743CD4601501AF39ADF78364F4EF2560E860655DC0F9A20874556D2FF83",
+  "CorrectnessArchiveSha256": "B527515C54FFFE09FF031797B468AB3A282916D07796E81C411EC2594CA9C86F"
+}

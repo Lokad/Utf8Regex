@@ -1,0 +1,217 @@
+{
+  "Scope": "Read-only phase attribution; prepared replay borrows diagnostic-owned table. Timings are neither additive nor public speedup evidence.",
+  "Source": "0.5.0-dev.3\u002B092b8e689750bbbdb0ee006e62daf61fb245fd69",
+  "Sha256": "E2658B9B1F605FF1CE14C698FAB2FE8A786DFC2B88FF03EBED67A6072B0047A4",
+  "Scalars": 46410,
+  "PreparationWork": 140790,
+  "WorkingBytes": 557008,
+  "Instructions": [
+    {
+      "Pc": 0,
+      "Kind": "Anchor",
+      "A": 0,
+      "B": 1,
+      "C": 0,
+      "D": 0,
+      "CandidateAtomCalls": 0
+    },
+    {
+      "Pc": 1,
+      "Kind": "Fork",
+      "A": 4,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "CandidateAtomCalls": 0
+    },
+    {
+      "Pc": 2,
+      "Kind": "Hybrid",
+      "A": 0,
+      "B": 0,
+      "C": 16,
+      "D": 0,
+      "CandidateAtomCalls": 29
+    },
+    {
+      "Pc": 3,
+      "Kind": "Jump",
+      "A": 1,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "CandidateAtomCalls": 0
+    },
+    {
+      "Pc": 4,
+      "Kind": "Literal",
+      "A": 47,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "CandidateAtomCalls": 10
+    },
+    {
+      "Pc": 5,
+      "Kind": "Literal",
+      "A": 47,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "CandidateAtomCalls": 10
+    },
+    {
+      "Pc": 6,
+      "Kind": "Literal",
+      "A": 47,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "CandidateAtomCalls": 57
+    },
+    {
+      "Pc": 7,
+      "Kind": "CaptureStart",
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "CandidateAtomCalls": 0
+    },
+    {
+      "Pc": 8,
+      "Kind": "Literal",
+      "A": 35,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "CandidateAtomCalls": 46410
+    },
+    {
+      "Pc": 9,
+      "Kind": "Fork",
+      "A": 12,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "CandidateAtomCalls": 0
+    },
+    {
+      "Pc": 10,
+      "Kind": "Dot",
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "CandidateAtomCalls": 46410
+    },
+    {
+      "Pc": 11,
+      "Kind": "Jump",
+      "A": 9,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "CandidateAtomCalls": 0
+    },
+    {
+      "Pc": 12,
+      "Kind": "CaptureEnd",
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "CandidateAtomCalls": 0
+    },
+    {
+      "Pc": 13,
+      "Kind": "Anchor",
+      "A": 1,
+      "B": 1,
+      "C": 0,
+      "D": 0,
+      "CandidateAtomCalls": 0
+    },
+    {
+      "Pc": 14,
+      "Kind": "Accept",
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "CandidateAtomCalls": 0
+    }
+  ],
+  "Phases": [
+    {
+      "Name": "StrictValidation",
+      "Microseconds": [
+        1.8375,
+        1.8921875,
+        1.88984375
+      ],
+      "AllocatedBytes": [
+        0,
+        0,
+        0
+      ],
+      "WarmCalls": 183635
+    },
+    {
+      "Name": "PrepareAndRelease",
+      "Microseconds": [
+        1294.30546875,
+        1299.6609375,
+        1297.31171875
+      ],
+      "AllocatedBytes": [
+        557032,
+        557032,
+        557032
+      ],
+      "WarmCalls": 154
+    },
+    {
+      "Name": "ReplayPreparedTable",
+      "Microseconds": [
+        102.6359375,
+        100.121875,
+        78.021875
+      ],
+      "AllocatedBytes": [
+        320,
+        320,
+        320
+      ],
+      "WarmCalls": 6698
+    },
+    {
+      "Name": "CountValidatedSubject",
+      "Microseconds": [
+        1346.521875,
+        1334.3078125,
+        1337.2
+      ],
+      "AllocatedBytes": [
+        557352,
+        557352,
+        557352
+      ],
+      "WarmCalls": 369
+    },
+    {
+      "Name": "PublicCount",
+      "Microseconds": [
+        1310.15703125,
+        1311.99375,
+        1307.92578125
+      ],
+      "AllocatedBytes": [
+        557416,
+        557416,
+        557416
+      ],
+      "WarmCalls": 374
+    }
+  ]
+}
