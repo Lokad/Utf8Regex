@@ -6,6 +6,29 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ValueMatchValidationReuseTests
 {
     [Theory]
+    [InlineData("needleé😀")]
+    [InlineData("é😀needle")]
+    [InlineData("aé😀needle中needle😀")]
+    [InlineData("\0needle😀needle")]
+    public void ExactLiteralProjectionKeepsPrefixCoordinatesAndValidatesTheTail(string text)
+    {
+        var bytes = Encoding.UTF8.GetBytes(text);
+        foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled,
+            RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled })
+        {
+            var regex = new Utf8Regex("needle", mode | RegexOptions.CultureInvariant);
+            var expected = new Regex("needle", mode | RegexOptions.CultureInvariant).Match(text);
+            AssertRange(regex.Match(bytes), text, expected.Index, expected.Length);
+            byte[] malformed = [.. bytes, 0xff];
+            Assert.Throws<ArgumentException>(() => regex.Match(malformed));
+            using var source = new CancellationTokenSource();
+            source.Cancel();
+            var error = Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, source.Token));
+            Assert.Equal(source.Token, error.CancellationToken);
+        }
+    }
+
+    [Theory]
     [InlineData(@"\A(a+)(b*)\z", "aaaabbb", 0, 7)]
     [InlineData(@"\A(?s:(.+))\z", "π😀中", 0, 4)]
     [InlineData(@"a+(b*)", "π😀XYZ中aabb!", 7, 4)]

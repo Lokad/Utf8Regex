@@ -1,0 +1,316 @@
+; Assembly listing for method Lokad.Utf8Regex.Internal.Execution.Utf8LiteralCompiledEngineRuntime:MatchExactAsciiLiteral(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline,bool):Lokad.Utf8Regex.Utf8ValueMatch:this (FullOpts)
+; Emitting BLENDED_CODE for x64 + VEX + EVEX on Unix
+; FullOpts code
+; optimized code
+; rbp based frame
+; partially interruptible
+; No PGO data
+; 2 inlinees with PGO data; 28 single block inlinees; 12 inlinees without PGO data
+
+G_M000_IG01:                ;; offset=0x0000
+       push     rbp
+       push     r15
+       push     r14
+       push     r13
+       push     rbx
+       sub      rsp, 48
+       lea      rbp, [rsp+0x50]
+       xor      eax, eax
+       mov      qword ptr [rbp-0x48], rax
+       mov      rbx, rsi
+       mov      r15d, edx
+ 
+G_M000_IG02:                ;; offset=0x001D
+       mov      rsi, gword ptr [rdi+0x08]
+       mov      r14, gword ptr [rsi+0x28]
+       test     r14, r14
+       je       G_M000_IG13
+       test     r8b, r8b
+       je       SHORT G_M000_IG04
+ 
+G_M000_IG03:                ;; offset=0x0033
+       mov      rsi, rbx
+       mov      edx, r15d
+       call     [Lokad.Utf8Regex.Internal.Execution.Utf8LiteralCompiledEngineRuntime:FindLastLiteralViaSearch(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline):int:this]
+       mov      r13d, eax
+       jmp      SHORT G_M000_IG05
+ 
+G_M000_IG04:                ;; offset=0x0044
+       mov      rsi, rbx
+       mov      edx, r15d
+       call     [Lokad.Utf8Regex.Internal.Execution.Utf8LiteralCompiledEngineRuntime:FindFirstLiteralViaSearch(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline):int:this]
+       mov      r13d, eax
+ 
+G_M000_IG05:                ;; offset=0x0053
+       test     r13d, r13d
+       jl       G_M000_IG11
+ 
+G_M000_IG06:                ;; offset=0x005C
+       mov      rdi, rbx
+       xor      esi, esi
+       mov      ecx, r15d
+       mov      edx, 127
+       call     [System.SpanHelpers:NonPackedIndexOfAnyInRangeUnsignedNumber[byte,System.SpanHelpers+Negate`1[byte]](byref,byte,byte,int):int]
+       test     eax, eax
+       jge      SHORT G_M000_IG07
+       mov      ecx, r13d
+       jmp      SHORT G_M000_IG09
+ 
+G_M000_IG07:                ;; offset=0x0078
+       test     r13d, r13d
+       jne      SHORT G_M000_IG08
+       xor      ecx, ecx
+       jmp      SHORT G_M000_IG09
+ 
+G_M000_IG08:                ;; offset=0x0081
+       cmp      r13d, r15d
+       ja       SHORT G_M000_IG14
+       mov      rdi, rbx
+       mov      esi, r13d
+       lea      rdx, [rbp-0x48]
+       call     [Lokad.Utf8Regex.Internal.Input.Utf8InputAnalyzer:ValidateOnly(System.ReadOnlySpan`1[byte],byref):Lokad.Utf8Regex.Internal.Input.Utf8ValidationResult]
+       mov      qword ptr [rbp-0x40], rax
+       mov      dword ptr [rbp-0x38], edx
+       mov      ecx, dword ptr [rbp-0x3C]
+ 
+G_M000_IG09:                ;; offset=0x00A0
+       vxorps   xmm0, xmm0, xmm0
+       vmovups  xmmword ptr [rbp-0x30], xmm0
+       mov      r8d, dword ptr [r14+0x08]
+       mov      dword ptr [rsp], r8d
+       lea      rdi, [rbp-0x30]
+       mov      r9d, r13d
+       mov      esi, 1
+       mov      edx, 1
+       call     [Lokad.Utf8Regex.Utf8ValueMatch:.ctor(bool,bool,int,int,int,int):this]
+       mov      rax, qword ptr [rbp-0x30]
+       mov      rdx, qword ptr [rbp-0x28]
+ 
+G_M000_IG10:                ;; offset=0x00D0
+       add      rsp, 48
+       pop      rbx
+       pop      r13
+       pop      r14
+       pop      r15
+       pop      rbp
+       ret      
+ 
+G_M000_IG11:                ;; offset=0x00DD
+       xor      eax, eax
+       xor      edx, edx
+ 
+G_M000_IG12:                ;; offset=0x00E1
+       add      rsp, 48
+       pop      rbx
+       pop      r13
+       pop      r14
+       pop      r15
+       pop      rbp
+       ret      
+ 
+G_M000_IG13:                ;; offset=0x00EE
+       call     [Lokad.Utf8Regex.Internal.Execution.Utf8LiteralCompiledEngineRuntime:UnexpectedExecutionKind():System.InvalidOperationException:this]
+       mov      rdi, rax
+       call     CORINFO_HELP_THROW
+       int3     
+ 
+G_M000_IG14:                ;; offset=0x00FD
+       call     [System.ThrowHelper:ThrowArgumentOutOfRangeException()]
+       int3     
+ 
+; Total bytes of code 260
+
+; Assembly listing for method Lokad.Utf8Regex.Internal.Execution.Utf8LiteralCompiledEngineRuntime:MatchExactAsciiLiteral(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline,bool):Lokad.Utf8Regex.Utf8ValueMatch:this (FullOpts)
+; Emitting BLENDED_CODE for x64 + VEX + EVEX on Unix
+; FullOpts code
+; optimized code
+; rbp based frame
+; partially interruptible
+; No PGO data
+; 3 inlinees with PGO data; 27 single block inlinees; 11 inlinees without PGO data
+
+G_M000_IG01:                ;; offset=0x0000
+       push     rbp
+       push     r15
+       push     r14
+       push     r13
+       push     rbx
+       sub      rsp, 48
+       lea      rbp, [rsp+0x50]
+       xor      eax, eax
+       mov      qword ptr [rbp-0x48], rax
+       mov      rbx, rsi
+       mov      r15d, edx
+ 
+G_M000_IG02:                ;; offset=0x001D
+       mov      rsi, gword ptr [rdi+0x08]
+       mov      r14, gword ptr [rsi+0x28]
+       test     r14, r14
+       je       G_M000_IG13
+       test     r8b, r8b
+       je       SHORT G_M000_IG04
+ 
+G_M000_IG03:                ;; offset=0x0033
+       mov      rsi, rbx
+       mov      edx, r15d
+       call     [Lokad.Utf8Regex.Internal.Execution.Utf8LiteralCompiledEngineRuntime:FindLastLiteralViaSearch(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline):int:this]
+       mov      r13d, eax
+       jmp      SHORT G_M000_IG05
+ 
+G_M000_IG04:                ;; offset=0x0044
+       mov      rsi, rbx
+       mov      edx, r15d
+       call     [Lokad.Utf8Regex.Internal.Execution.Utf8LiteralCompiledEngineRuntime:FindFirstLiteralViaSearch(System.ReadOnlySpan`1[byte],Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline):int:this]
+       mov      r13d, eax
+ 
+G_M000_IG05:                ;; offset=0x0053
+       test     r13d, r13d
+       jl       G_M000_IG11
+ 
+G_M000_IG06:                ;; offset=0x005C
+       cmp      r13d, r15d
+       ja       G_M000_IG14
+       mov      rdi, rbx
+       xor      esi, esi
+       mov      ecx, r13d
+       mov      edx, 127
+       call     [System.SpanHelpers:NonPackedIndexOfAnyInRangeUnsignedNumber[byte,System.SpanHelpers+Negate`1[byte]](byref,byte,byte,int):int]
+       test     eax, eax
+       jge      SHORT G_M000_IG07
+       mov      ecx, r13d
+       jmp      SHORT G_M000_IG09
+ 
+G_M000_IG07:                ;; offset=0x0081
+       test     r13d, r13d
+       jne      SHORT G_M000_IG08
+       xor      ecx, ecx
+       jmp      SHORT G_M000_IG09
+ 
+G_M000_IG08:                ;; offset=0x008A
+       mov      rdi, rbx
+       mov      esi, r13d
+       lea      rdx, [rbp-0x48]
+       call     [Lokad.Utf8Regex.Internal.Input.Utf8InputAnalyzer:ValidateOnly(System.ReadOnlySpan`1[byte],byref):Lokad.Utf8Regex.Internal.Input.Utf8ValidationResult]
+       mov      qword ptr [rbp-0x40], rax
+       mov      dword ptr [rbp-0x38], edx
+       mov      ecx, dword ptr [rbp-0x3C]
+ 
+G_M000_IG09:                ;; offset=0x00A4
+       vxorps   xmm0, xmm0, xmm0
+       vmovups  xmmword ptr [rbp-0x30], xmm0
+       mov      r8d, dword ptr [r14+0x08]
+       mov      dword ptr [rsp], r8d
+       lea      rdi, [rbp-0x30]
+       mov      r9d, r13d
+       mov      esi, 1
+       mov      edx, 1
+       call     [Lokad.Utf8Regex.Utf8ValueMatch:.ctor(bool,bool,int,int,int,int):this]
+       mov      rax, qword ptr [rbp-0x30]
+       mov      rdx, qword ptr [rbp-0x28]
+ 
+G_M000_IG10:                ;; offset=0x00D4
+       add      rsp, 48
+       pop      rbx
+       pop      r13
+       pop      r14
+       pop      r15
+       pop      rbp
+       ret      
+ 
+G_M000_IG11:                ;; offset=0x00E1
+       xor      eax, eax
+       xor      edx, edx
+ 
+G_M000_IG12:                ;; offset=0x00E5
+       add      rsp, 48
+       pop      rbx
+       pop      r13
+       pop      r14
+       pop      r15
+       pop      rbp
+       ret      
+ 
+G_M000_IG13:                ;; offset=0{
+  "Passed": true,
+  "Identities": [
+    [
+      {
+        "Name": "Lokad.Utf8Regex",
+        "Version": "0.5.0-dev.2\u002B8d5545276e603f208071198f6f25de10106eb8d9",
+        "Sha256": "217D9DDF766C215FDEC81D1B32F21A1D0CE1F143B488D0D94F5450FACA4E9952"
+      },
+      {
+        "Name": "Lokad.Utf8Regex.PythonRe",
+        "Version": "0.5.0-dev.2\u002B8d5545276e603f208071198f6f25de10106eb8d9",
+        "Sha256": "825FD4749A76A2B170B20200F11A0302BA382C36E24F6006F90DF200422ACF06"
+      }
+    ],
+    [
+      {
+        "Name": "Lokad.Utf8Regex",
+        "Version": "0.5.0-dev.2\u002B8d5545276e603f208071198f6f25de10106eb8d9",
+        "Sha256": "DA8088138A2CDE6FC1B4C15EC6200BFBB0C7140F8A5745E05D7D1AA8D66A6D8B"
+      },
+      {
+        "Name": "Lokad.Utf8Regex.PythonRe",
+        "Version": "0.5.0-dev.2\u002B8d5545276e603f208071198f6f25de10106eb8d9",
+        "Sha256": "825FD4749A76A2B170B20200F11A0302BA382C36E24F6006F90DF200422ACF06"
+      }
+    ]
+  ],
+  "Routes": [
+    [
+      "core/early: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/early-compiled: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/middle: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/late: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/miss: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/RTL-early: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/RTL-late: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/Unicode-before: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/Unicode-after: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/finite-live: ExactAsciiLiteral/None; finite=True; live=True",
+      "core/deadline-live: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=True"
+    ],
+    [
+      "core/early: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/early-compiled: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/middle: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/late: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/miss: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/RTL-early: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/RTL-late: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/Unicode-before: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/Unicode-after: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/finite-live: ExactAsciiLiteral/None; finite=True; live=True",
+      "core/deadline-live: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=True"
+    ]
+  ],
+  "Cases": [
+    "core/early",
+    "core/early-compiled",
+    "core/middle",
+    "core/late",
+    "core/miss",
+    "core/RTL-early",
+    "core/RTL-late",
+    "core/Unicode-before",
+    "core/Unicode-after",
+    "core/finite-live",
+    "core/deadline-live",
+    "control/Core-Count",
+    "control/Python-Search"
+  ]
+}
+x00F2
+       call     [Lokad.Utf8Regex.Internal.Execution.Utf8LiteralCompiledEngineRuntime:UnexpectedExecutionKind():System.InvalidOperationException:this]
+       mov      rdi, rax
+       call     CORINFO_HELP_THROW
+       int3     
+ 
+G_M000_IG14:                ;; offset=0x0101
+       call     [System.ThrowHelper:ThrowArgumentOutOfRangeException()]
+       int3     
+ 
+; Total bytes of code 264
+

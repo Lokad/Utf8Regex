@@ -1263,7 +1263,9 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
             return Utf8ValueMatch.NoMatch;
         }
 
-        var indexInUtf16 = Utf8InputAnalyzer.IsAscii(input) ? index : GetUtf16LengthOfPrefix(input, index);
+        // Only bytes before the hit determine its derived UTF-16 start.
+        // Public entry points still validate the complete subject.
+        var indexInUtf16 = Utf8InputAnalyzer.IsAscii(input[..index]) ? index : GetUtf16LengthOfPrefix(input, index);
         return new Utf8ValueMatch(true, true, indexInUtf16, literal.Length, index, literal.Length);
     }
 

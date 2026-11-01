@@ -1,0 +1,72 @@
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.PythonRe;
+using Value = System.ValueTuple<bool, int, int, int, int>;
+
+public static class Lanes
+{
+    private static readonly CancellationTokenSource Live = new();
+    public static string[] Routes { get; private set; } = [];
+    public static (string Name, Func<Value> Call, Value Expected, Func<Value> Predecoded, Func<Value> Decode)[] Create()
+    {
+        var rows = new List<(string, Func<Value>, Value, Func<Value>, Func<Value>)>();
+        var routes = new List<string>();
+        var padding = new string('x', 65536);
+        Add("core/early", "needle" + padding);
+        Add("core/early-compiled", "needle" + padding, RegexOptions.Compiled);
+        Add("core/middle", padding[..32768] + "needle" + padding[..32768]);
+        Add("core/late", padding + "needle");
+        Add("core/miss", padding + "xxxxxx");
+        Add("core/RTL-early", "needle" + padding, RegexOptions.RightToLeft);
+        Add("core/RTL-late", padding + "needle", RegexOptions.RightToLeft);
+        Add("core/Unicode-before", "é😀" + padding[..4096] + "needle" + padding[..4096]);
+        Add("core/Unicode-after", "needle" + padding + "é😀");
+        Add("core/finite-live", "needle" + padding, finite: true, live: true);
+        Add("core/deadline-live", "needle" + padding, live: true, deadline: true);
+        var controlText = "needle" + padding;
+        var controlInput = Encoding.UTF8.GetBytes(controlText);
+        var count = new Utf8Regex("needle", RegexOptions.CultureInvariant);
+        var controlBcl = new Regex("needle", RegexOptions.CultureInvariant);
+        rows.Add(("control/Core-Count", () => (true, count.Count(controlInput), 0, 0, 0), (true, 1, 0, 0, 0),
+            () => (true, controlBcl.Count(controlText), 0, 0, 0),
+            () => (true, controlBcl.Count(Encoding.UTF8.GetString(controlInput)), 0, 0, 0)));
+        var python = new Utf8PythonRegex("needle");
+        rows.Add(("control/Python-Search", () => {
+            var match = python.Search(controlInput);
+            return match.Success ? (true, match.StartOffsetInBytes, match.EndOffsetInBytes,
+                match.StartOffsetInUtf16, match.EndOffsetInUtf16) : default;
+        }, (true, 0, 6, 0, 6), () => Observe(controlBcl.Match(controlText), controlText),
+            () => { var text = Encoding.UTF8.GetString(controlInput); return Observe(controlBcl.Match(text), text); }));
+        Routes = routes.ToArray();
+        return rows.ToArray();
+
+        void Add(string name, string text, RegexOptions options = RegexOptions.None,
+            bool finite = false, bool live = false, bool deadline = false)
+        {
+            options |= RegexOptions.CultureInvariant;
+            var policy = finite ? new Utf8ResourcePolicy { MaxWorkSteps = 50_000_000, MaxDepth = 4096,
+                MaxWorkingBytes = 64UL << 20, MaxResultBytes = 64UL << 20 } : default;
+            var regex = new Utf8Regex("needle", options, deadline ? TimeSpan.FromHours(1) : Timeout.InfiniteTimeSpan, policy);
+            var input = Encoding.UTF8.GetBytes(text);
+            var bcl = new Regex("needle", options);
+            var expected = Observe(bcl.Match(text), text);
+            Func<Value> call = live ? () => Observe(regex.Match(input, Live.Token)) : () => Observe(regex.Match(input));
+            rows.Add((name, call, expected, () => Observe(bcl.Match(text), text),
+                () => { var decoded = Encoding.UTF8.GetString(input); return Observe(bcl.Match(decoded), decoded); }));
+            var flags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
+            var inspection = typeof(Utf8Regex).GetProperty("Inspection", flags)!.GetValue(regex)!;
+            var kind = inspection.GetType().GetProperty("ExecutionKind", flags)!.GetValue(inspection)!.ToString();
+            var runtime = inspection.GetType().GetProperty("DebugCompiledEngineRuntimeType", flags)!.GetValue(inspection)!.ToString();
+            if (!finite && !live && (kind != "ExactAsciiLiteral" || runtime != "Utf8LiteralCompiledEngineRuntime"))
+                throw new Exception("Unexpected literal route: " + name);
+            routes.Add(name + ": " + kind + "/" + runtime + "; finite=" + finite + "; live=" + live);
+        }
+    }
+    private static Value Observe(Utf8ValueMatch match) => match.Success
+        ? (true, match.IndexInBytes, match.IndexInBytes + match.LengthInBytes, match.IndexInUtf16, match.IndexInUtf16 + match.LengthInUtf16) : default;
+    private static Value Observe(Match match, string text) => match.Success
+        ? (true, Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index)), Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index + match.Length)),
+            match.Index, match.Index + match.Length) : default;
+}

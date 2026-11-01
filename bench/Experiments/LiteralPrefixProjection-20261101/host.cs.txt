@@ -1,0 +1,68 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+using System.Text.Json;
+using Value = System.ValueTuple<bool, int, int, int, int>;
+
+var root = Path.GetFullPath(args[0]); var preflight = args.Contains("--preflight");
+using var process = Process.GetCurrentProcess(); if (!preflight) process.ProcessorAffinity = (nint)4;
+var contexts = new[] { new VersionContext(Path.Combine(root, "before")), new VersionContext(Path.Combine(root, "after")) };
+var identities = contexts.Select(context => new[] { "Lokad.Utf8Regex", "Lokad.Utf8Regex.PythonRe" }.Select(name => {
+    var assembly = context.LoadFromAssemblyName(new AssemblyName(name));
+    return new { Name = name, Version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
+        Sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))) };
+}).ToArray()).ToArray();
+if (identities.SelectMany(items => items).Any(item => !item.Version.Contains("8d554527")) ||
+    identities[0][0].Sha256 == identities[1][0].Sha256) throw new Exception("Unexpected frozen source/patch");
+var assemblies = contexts.Select(context => context.LoadFromAssemblyPath(Path.Combine(root, "lanes/bin/Release/net11.0/Lanes.dll"))).ToArray();
+var cases = assemblies.Select(assembly => ((string Name, Func<Value> Call, Value Expected, Func<Value> Predecoded, Func<Value> Decode)[])
+    assembly.GetType("Lanes")!.GetMethod("Create")!.Invoke(null, null)!).ToArray();
+var routes = assemblies.Select(assembly => (string[])assembly.GetType("Lanes")!.GetProperty("Routes")!.GetValue(null)!).ToArray();
+foreach (var version in new[] { 0, 1 }) foreach (var item in cases[version]) {
+    if (item.Call() != item.Expected || item.Predecoded() != item.Expected || item.Decode() != item.Expected)
+        throw new Exception("Preflight mismatch " + item.Name);
+}
+if (preflight) { Console.WriteLine(JsonSerializer.Serialize(new { Passed = true, Identities = identities, Routes = routes, Cases = cases[0].Select(item => item.Name) }, new JsonSerializerOptions { WriteIndented = true })); return; }
+var clock = Stopwatch.StartNew(); var rows = new List<object>();
+for (var index = 0; index < cases[0].Length; index++) {
+    if (clock.Elapsed.TotalSeconds > 112) throw new Exception("120s cap approaching");
+    var item = cases[0][index]; var actions = new[] { item.Call, cases[1][index].Call, item.Predecoded, item.Decode };
+    var iterations = new int[4]; var warms = new long[4];
+    for (var lane = 0; lane < 4; lane++) {
+        var warm = Stopwatch.StartNew(); do { if (actions[lane]() != item.Expected) throw new Exception("Warm mismatch"); warms[lane]++; }
+        while (warm.Elapsed.TotalMilliseconds < 1000 || warms[lane] < 64);
+        iterations[lane] = 1; while (Measure(iterations[lane], actions[lane], item.Expected).Milliseconds < 60) iterations[lane] = checked(iterations[lane] * 2);
+    }
+    var times = new[] { new double[5], new double[5], new double[5], new double[5] };
+    var bytes = new[] { new double[5], new double[5], new double[5], new double[5] };
+    var durations = new[] { new double[5], new double[5], new double[5], new double[5] };
+    for (var sample = 0; sample < 5; sample++) for (var position = 0; position < 4; position++) {
+        var lane = sample % 2 == 0 ? position : 3 - position;
+        GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        var result = Measure(iterations[lane], actions[lane], item.Expected);
+        if (result.Milliseconds < 20) throw new Exception("Sample below20ms");
+        times[lane][sample] = result.Milliseconds * 1000 / iterations[lane];
+        bytes[lane][sample] = (double)result.Bytes / iterations[lane]; durations[lane][sample] = result.Milliseconds;
+    }
+    rows.Add(new { item.Name, Lanes = new[] { "Before", "After", "PredecodedRegex", "DecodeThenRegex" }, Iterations = iterations, WarmupCalls = warms,
+        Microseconds = times, AllocatedBytes = bytes, ElapsedMilliseconds = durations });
+    Console.Error.WriteLine(item.Name + ": " + string.Join(" / ", times.Select(values => values.Order().ElementAt(2))));
+}
+Console.WriteLine(JsonSerializer.Serialize(new { Scope = "One bounded13-case/four-lane public comparison, frozen8d before and one prefix-only ASCII projection patch after. Same typed public-call IL in isolated contexts; complete result batches checked after timing. Warm1s/min64, independent60ms calibration,5alternating samples>=20ms, CPU2. Full-input UTF8 validation remains in public calls; BCL byte coordinates include prefix encoding. One120s cap, at most one selected noise confirmation. Not a full refresh/package/overall parity claim.",
+    Runtime = RuntimeInformation.FrameworkDescription, OS = RuntimeInformation.OSDescription, AffinityMask = "4", ElapsedSeconds = clock.Elapsed.TotalSeconds,
+    Identities = identities, Routes = routes, Rows = rows }, new JsonSerializerOptions { WriteIndented = true }));
+
+[MethodImpl(MethodImplOptions.NoInlining)]
+static (double Milliseconds, long Bytes) Measure(int count, Func<Value> action, Value expected) {
+    var values = new Value[count]; var allocated = GC.GetAllocatedBytesForCurrentThread(); var stamp = Stopwatch.GetTimestamp();
+    for (var i = 0; i < count; i++) values[i] = action();
+    var elapsed = Stopwatch.GetElapsedTime(stamp).TotalMilliseconds; allocated = GC.GetAllocatedBytesForCurrentThread() - allocated;
+    foreach (var value in values) if (value != expected) throw new Exception("Timed output mismatch");
+    GC.KeepAlive(values); return (elapsed, allocated);
+}
+sealed class VersionContext(string root) : AssemblyLoadContext {
+    protected override Assembly? Load(AssemblyName name) { var path = Path.Combine(root, name.Name + ".dll"); return File.Exists(path) ? LoadFromAssemblyPath(path) : null; }
+}

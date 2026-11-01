@@ -1,0 +1,72 @@
+{
+  "Passed": true,
+  "Identities": [
+    [
+      {
+        "Name": "Lokad.Utf8Regex",
+        "Version": "0.5.0-dev.2\u002B8d5545276e603f208071198f6f25de10106eb8d9",
+        "Sha256": "217D9DDF766C215FDEC81D1B32F21A1D0CE1F143B488D0D94F5450FACA4E9952"
+      },
+      {
+        "Name": "Lokad.Utf8Regex.PythonRe",
+        "Version": "0.5.0-dev.2\u002B8d5545276e603f208071198f6f25de10106eb8d9",
+        "Sha256": "825FD4749A76A2B170B20200F11A0302BA382C36E24F6006F90DF200422ACF06"
+      }
+    ],
+    [
+      {
+        "Name": "Lokad.Utf8Regex",
+        "Version": "0.5.0-dev.2\u002B8d5545276e603f208071198f6f25de10106eb8d9",
+        "Sha256": "DA8088138A2CDE6FC1B4C15EC6200BFBB0C7140F8A5745E05D7D1AA8D66A6D8B"
+      },
+      {
+        "Name": "Lokad.Utf8Regex.PythonRe",
+        "Version": "0.5.0-dev.2\u002B8d5545276e603f208071198f6f25de10106eb8d9",
+        "Sha256": "825FD4749A76A2B170B20200F11A0302BA382C36E24F6006F90DF200422ACF06"
+      }
+    ]
+  ],
+  "Routes": [
+    [
+      "core/early: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/early-compiled: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/middle: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/late: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/miss: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/RTL-early: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/RTL-late: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/Unicode-before: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/Unicode-after: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/finite-live: ExactAsciiLiteral/None; finite=True; live=True",
+      "core/deadline-live: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=True"
+    ],
+    [
+      "core/early: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/early-compiled: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/middle: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/late: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/miss: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/RTL-early: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/RTL-late: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/Unicode-before: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/Unicode-after: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=False",
+      "core/finite-live: ExactAsciiLiteral/None; finite=True; live=True",
+      "core/deadline-live: ExactAsciiLiteral/Utf8LiteralCompiledEngineRuntime; finite=False; live=True"
+    ]
+  ],
+  "Cases": [
+    "core/early",
+    "core/early-compiled",
+    "core/middle",
+    "core/late",
+    "core/miss",
+    "core/RTL-early",
+    "core/RTL-late",
+    "core/Unicode-before",
+    "core/Unicode-after",
+    "core/finite-live",
+    "core/deadline-live",
+    "control/Core-Count",
+    "control/Python-Search"
+  ]
+}

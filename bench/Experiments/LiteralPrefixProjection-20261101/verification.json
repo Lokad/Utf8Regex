@@ -1,0 +1,26 @@
+[
+  {
+    "Profile": "core",
+    "Sha256": "10EFC968FBF2BE5E9BC35A2D83FFD5D9C4523ABE95608D9CB29A2B3B14684573",
+    "Results": [
+      "Passed!  - Failed:     0, Passed: 12871, Skipped:     0, Total: 12871, Duration: 12 s - Lokad.Utf8Regex.Tests.dll (net10.0)",
+      "Passed!  - Failed:     0, Passed: 12871, Skipped:     0, Total: 12871, Duration: 12 s - Lokad.Utf8Regex.Tests.dll (net11.0)"
+    ]
+  },
+  {
+    "Profile": "python",
+    "Sha256": "AB9B4A1C7C5A331ACCE6FD0C4F1C03FC42CA1EBAFD32F1D8436F5C535C339774",
+    "Results": [
+      "Passed!  - Failed:     0, Passed:   408, Skipped:     0, Total:   408, Duration: 1 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net11.0)",
+      "Passed!  - Failed:     0, Passed:   408, Skipped:     0, Total:   408, Duration: 2 s - Lokad.Utf8Regex.PythonRe.Tests.dll (net10.0)"
+    ]
+  },
+  {
+    "Profile": "pcre",
+    "Sha256": "BA7074583F107D787C5A0DBB02DF71068B1B632224EEB96CC8B13BEDEF62E5DD",
+    "Results": [
+      "Passed!  - Failed:     0, Passed:   871, Skipped:     0, Total:   871, Duration: 1 s - Lokad.Utf8Regex.Pcre2.Tests.dll (net10.0)",
+      "Passed!  - Failed:     0, Passed:   871, Skipped:     0, Total:   871, Duration: 1 s - Lokad.Utf8Regex.Pcre2.Tests.dll (net11.0)"
+    ]
+  }
+]
