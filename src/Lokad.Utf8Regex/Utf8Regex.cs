@@ -103,6 +103,8 @@ public sealed partial class Utf8Regex
         Options = options;
         MatchTimeout = matchTimeout;
         ResourcePolicy = resourcePolicy;
+        HasFiniteExecutionLimits = resourcePolicy.MaxWorkSteps.HasValue || resourcePolicy.MaxDepth.HasValue ||
+            resourcePolicy.MaxWorkingBytes.HasValue || resourcePolicy.MaxResultBytes.HasValue;
         construction.Budget.CheckBytes(ProgramFixedMetadataBytes);
         construction.Budget.ChargeWork(1);
         construction.Budget.ReserveBytes(ProgramFixedMetadataBytes);
@@ -279,7 +281,8 @@ public sealed partial class Utf8Regex
         construction.Complete();
     }
 
-    private bool HasFiniteExecutionLimits => ResourcePolicy.MaxWorkSteps.HasValue || ResourcePolicy.MaxDepth.HasValue || ResourcePolicy.MaxWorkingBytes.HasValue || ResourcePolicy.MaxResultBytes.HasValue;
+    // ResourcePolicy is an immutable value copied by the shared constructor.
+    private bool HasFiniteExecutionLimits { get; }
 
     private Utf8ExecutionLimits InvocationLimits => new(ResourcePolicy.MaxWorkSteps ?? 0, ResourcePolicy.MaxDepth ?? 0, ResourcePolicy.MaxWorkingBytes ?? 0, ResourcePolicy.MaxResultBytes ?? 0);
 

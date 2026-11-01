@@ -16,7 +16,7 @@ three positive digit category masks and an already-working ASCII head range.
 One [public A/B](comparison.json), **84.071 seconds**, quiet Ubuntu VM/.NET11RC3,
 CPU2. Ten equal-result IsMatch/Count cases, four producer/predecoded/decode lanes,
 warm1.5s/min64, independent60ms calibration, five alternating samples; minimum
-**58.844ms**. Result batches consumed after timing. [Driver](driver.cs.txt),
+**58.838ms**. Result batches consumed after timing. [Driver](driver.cs.txt),
 [summary](summary.json), [identities](identities.json). The .NET lanes cover only
 overlapping BMP/ASCII semantics; they do not update the official CPython Status.
 
