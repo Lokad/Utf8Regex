@@ -29,8 +29,13 @@
   "CumulativeAllocationScope": "Finite/deadline8B increases retained, pre-existing relative to immediate parent; not total heap/RSS accounting",
   "CumulativeScope": "Selected affected PCRE2 public workloads, not a new full26-lane or package qualification",
   "ConfirmationRuns": 0,
-  "TablesChanged": false,
+  "TablesChanged": true,
   "PackagesChanged": false,
   "RawArchiveSha256": "76D935A06CCEFA267DE1435E8B85C9BE6DC1422BDA36A71AED6D51FD14E2CF0E",
-  "CorrectnessArchiveSha256": "45E99D85A065C2B9A7020A759F0E9FF55DEB36EA3DB8A195BA9A5637BD06B567"
+  "CorrectnessArchiveSha256": "45E99D85A065C2B9A7020A759F0E9FF55DEB36EA3DB8A195BA9A5637BD06B567",
+  "CommittedSource": "1cd08c540872c74c5f77e85ac8b2c61f8222a068",
+  "SelectiveEvidenceSha256": "C7A131C603DEC6D01A8E49499C6FAADC0CC419F2F2C46593A002AF869C4ABB0B",
+  "SelectedNativeRows": 6,
+  "MinimumSelectedPairedMilliseconds": 34.4523,
+  "TablesChangeScope": "Six selected rows only, other120rows/scaling unchanged; existing qualification and both-runtime snapshot checks pass"
 }

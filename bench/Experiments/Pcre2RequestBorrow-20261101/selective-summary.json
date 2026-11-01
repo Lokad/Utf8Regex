@@ -1,0 +1,88 @@
+{
+  "Source": "1cd08c540872c74c5f77e85ac8b2c61f8222a068",
+  "Cases": 6,
+  "MinimumPairedMilliseconds": 34.4523,
+  "UnchangedOtherRows": 120,
+  "PreservedScalingFamilies": true,
+  "Scope": "Six selected rows only; other rows and scaling preserved, existing qualification retained, no status-improving resampling",
+  "Rows": [
+    {
+      "Section": "pcre2-managed-compatible-ismatch",
+      "Case": "common/date-match",
+      "BeforeStatus": "NativeFaster",
+      "AfterStatus": "NativeFaster",
+      "BeforeRatio": 11.315637642119658,
+      "AfterRatio": 10.648485505740823,
+      "Lower95": 10.591682287858943,
+      "Upper95": 10.775281102810544,
+      "ManagedUs": 1.7284459429484051,
+      "NativeUs": 0.16231777043412296,
+      "Source": "1cd08c540872"
+    },
+    {
+      "Section": "pcre2-managed-compatible-ismatch",
+      "Case": "common/date-miss",
+      "BeforeStatus": "NativeFaster",
+      "AfterStatus": "NativeFaster",
+      "BeforeRatio": 11.438668613522854,
+      "AfterRatio": 9.978302154007622,
+      "Lower95": 9.884398174641767,
+      "Upper95": 10.013205999495892,
+      "ManagedUs": 5.654018558172734,
+      "NativeUs": 0.5684469420731271,
+      "Source": "1cd08c540872"
+    },
+    {
+      "Section": "pcre2-special-ismatch",
+      "Case": "pcre2/conditional-accept-negative-lookahead",
+      "BeforeStatus": "NativeFaster",
+      "AfterStatus": "NativeFaster",
+      "BeforeRatio": 4.594480116149263,
+      "AfterRatio": 3.777053083248648,
+      "Lower95": 3.754298398189345,
+      "Upper95": 3.8154600308838416,
+      "ManagedUs": 0.39336433897998213,
+      "NativeUs": 0.10365019247646143,
+      "Source": "1cd08c540872"
+    },
+    {
+      "Section": "pcre2-special-ismatch",
+      "Case": "pcre2/conditional-lookahead",
+      "BeforeStatus": "NativeFaster",
+      "AfterStatus": "NativeFaster",
+      "BeforeRatio": 3.892842026292387,
+      "AfterRatio": 3.445516613132951,
+      "Lower95": 3.388041988157731,
+      "Upper95": 3.4679785711300375,
+      "ManagedUs": 0.39104881765460386,
+      "NativeUs": 0.11359329071512261,
+      "Source": "1cd08c540872"
+    },
+    {
+      "Section": "pcre2-special-ismatch",
+      "Case": "pcre2/conditional-negative-lookahead",
+      "BeforeStatus": "NativeFaster",
+      "AfterStatus": "NativeFaster",
+      "BeforeRatio": 4.403553192360726,
+      "AfterRatio": 3.6564354220153867,
+      "Lower95": 3.645968555172861,
+      "Upper95": 3.6695176213091165,
+      "ManagedUs": 0.38314129840619937,
+      "NativeUs": 0.10463324964828964,
+      "Source": "1cd08c540872"
+    },
+    {
+      "Section": "pcre2-special-ismatch",
+      "Case": "pcre2/subroutine-prefix-digits",
+      "BeforeStatus": "NativeFaster",
+      "AfterStatus": "NativeFaster",
+      "BeforeRatio": 4.353476854807266,
+      "AfterRatio": 4.337962730892036,
+      "Lower95": 4.287700436038439,
+      "Upper95": 4.412160909534192,
+      "ManagedUs": 0.46902681971928517,
+      "NativeUs": 0.10839819641382598,
+      "Source": "1cd08c540872"
+    }
+  ]
+}

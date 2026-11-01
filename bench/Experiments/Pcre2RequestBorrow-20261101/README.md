@@ -68,6 +68,15 @@ Immutable archives under `artifacts/experiments/pcre2-request-borrow-20261101/`:
 - `correctness.zip`: matching Windows assets and both-runtime checks,
   `45E99D85A065C2B9A7020A759F0E9FF55DEB36EA3DB8A195BA9A5637BD06B567`.
 
-Next selectively refresh affected existing native rows at committed source;
-preserve other identities/statuses, scaling, uncertainty and closed deferrals.
-Batch complete package/platform/cumulative matrices at a coherent delivery boundary.
+Six existing native rows were selectively refreshed at clean committed1cd08c54,
+using existing raw and nine-pair commands. All remain qualified NativeFaster:
+date hit10.65x/miss9.98x, subroutine4.34x, conditionals negative3.66x,
+ACCEPT-negative3.78x and positive3.45x. Ratios include comparator movement and
+are not causal before/after estimates. Other120rows/identities/statuses and
+scaling are unchanged; minimum paired34.452ms. Existing Markdown/qualification
+verification and one snapshot check per runtime pass. No status resampling.
+
+[Selective summary](selective-summary.json); raw/generated/source/binary evidence
+is sealed as `selective-evidence.tar.gz` in the same artifact directory,
+SHA256 `C7A131C603DEC6D01A8E49499C6FAADC0CC419F2F2C46593A002AF869C4ABB0B`.
+Complete package/platform/cumulative matrices stay at a coherent delivery boundary.

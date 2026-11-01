@@ -13,9 +13,9 @@ Enumeration and MatchMany consume byte ranges. Managed public results also suppl
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `9457AED05A6F53A0A175B3692A9561BECC1BA18BBEFB815A4685305BC5C73CE8`
-- Latest managed row measurement: `2026-11-01T13:34:51.9218156+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-11-01T13:34:51.9218156+00:00`
+- Snapshot SHA-256: `862EBFFF6CF738B884A969C6DFD2A8641AE006911B6E4891F1C0612FE7ECDC39`
+- Latest managed row measurement: `2026-11-01T14:25:07.4854595+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-11-01T14:25:07.4854595+00:00`
 - Operation rows: `126` across `10` sections
 - Comparable rows at or below the decode-then-.NET median: `40/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `101/126`
@@ -60,8 +60,8 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `backtracking/assertion-capture` | **Inconclusive** | 4,103 B | 1.129 us | 2.249 us | 0.50x | 0.45–0.57x | -1.127 us | 9 pairs; 32/47 ms; 28,636/20,811 ops/lane; IQR 1.023/1.089 | `Pcre2Slice` | 874.566 us | 0.275 us | 0.777 us | 1.45x | 5,744 B | 0 B |
 | `backtracking/capture-backreference` | **Inconclusive** | 22,528 B | 1.320 us | 11.137 us | 0.12x | 0.11–0.13x | -9.818 us | 9 pairs; 35/46 ms; 26,565/4,086 ops/lane; IQR 1.018/1.081 | `Pcre2Slice` | 1.813 us | 0.093 us | 3.300 us | 0.40x | 3,872 B | 0 B |
 | `common/backtracking` | **Managed faster** | 49 B | 0.011 us | 1.205 us | 0.01x | 0.01–0.01x | -1.195 us | 9 pairs; 38/41 ms; 3,619,274/34,159 ops/lane; IQR 1.013/1.004 | `Pcre2Slice` | 0.207 us | 1.162 us | 1.207 us | 0.01x | 0 B | 0 B |
-| `common/date-match` | **Native faster** | 47 B | 1.804 us | 0.158 us | 11.32x | 11.27–11.49x | +1.648 us | 9 pairs; 38/40 ms; 21,154/252,365 ops/lane; IQR 1.011/1.010 | `Pcre2Backtracking` | 0.028 us | 0.110 us | 0.142 us | 12.72x | 0 B | 0 B |
-| `common/date-miss` | **Native faster** | 47 B | 6.541 us | 0.571 us | 11.44x | 11.41–11.51x | +5.968 us | 9 pairs; 39/39 ms; 6,006/68,398 ops/lane; IQR 1.002/1.005 | `Pcre2Backtracking` | 0.098 us | 0.556 us | 0.595 us | 11.00x | 0 B | 0 B |
+| `common/date-match` | **Native faster** | 47 B | 1.728 us | 0.162 us | 10.65x | 10.59–10.78x | +1.566 us | 9 pairs; 39/40 ms; 22,541/247,833 ops/lane; IQR 1.007/1.003 | `Pcre2Backtracking` | 0.048 us | 0.192 us | 0.256 us | 6.76x | 0 B | 0 B |
+| `common/date-miss` | **Native faster** | 47 B | 5.654 us | 0.568 us | 9.98x | 9.88–10.01x | +5.086 us | 9 pairs; 40/40 ms; 7,005/69,933 ops/lane; IQR 1.005/1.007 | `Pcre2Backtracking` | 0.111 us | 0.553 us | 0.595 us | 9.50x | 0 B | 0 B |
 | `common/email-match` | **Managed faster** | 34 B | 0.170 us | 0.284 us | 0.60x | 0.59–0.60x | -0.114 us | 9 pairs; 40/40 ms; 234,045/141,856 ops/lane; IQR 1.022/1.025 | `Pcre2Slice` | 0.178 us | 0.309 us | 0.334 us | 0.51x | 0 B | 0 B |
 | `common/email-miss` | **Managed faster** | 35 B | 0.177 us | 0.350 us | 0.51x | 0.50–0.51x | -0.173 us | 9 pairs; 40/39 ms; 228,041/112,204 ops/lane; IQR 1.008/1.007 | `Pcre2Slice` | 0.186 us | 0.431 us | 0.450 us | 0.39x | 0 B | 0 B |
 | `common/ip-match` | **Managed faster** | 15 B | 0.118 us | 0.282 us | 0.42x | 0.41–0.42x | -0.164 us | 9 pairs; 39/38 ms; 333,856/135,777 ops/lane; IQR 1.014/1.003 | `Pcre2Slice` | 0.133 us | 0.231 us | 0.256 us | 0.46x | 0 B | 0 B |
@@ -149,13 +149,13 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|
 | `pcre2/backslash-c-literal` | **Native faster** | 5 B | 0.118 us | 0.081 us | 1.46x | 1.45–1.47x | +0.037 us | 9 pairs; 41/40 ms; 342,965/491,225 ops/lane; IQR 1.012/1.017 | `Pcre2Character` | 0 B | 0 B | 2.237 us | 2,712 B |
 | `pcre2/branch-reset-backref` | **Managed faster** | 23 B | 0.013 us | 0.115 us | 0.11x | 0.11–0.11x | -0.103 us | 9 pairs; 39/41 ms; 3,025,320/351,814 ops/lane; IQR 1.012/1.014 | `Pcre2Backtracking` | 0 B | 0 B | 132.425 us | 111,912 B |
-| `pcre2/conditional-accept-negative-lookahead` | **Native faster** | 3 B | 0.462 us | 0.101 us | 4.59x | 4.49–4.63x | +0.360 us | 9 pairs; 37/40 ms; 80,678/398,008 ops/lane; IQR 1.003/1.026 | `Pcre2Backtracking` | 0 B | 0 B | 123.819 us | 19,377 B |
-| `pcre2/conditional-lookahead` | **Native faster** | 3 B | 0.450 us | 0.115 us | 3.89x | 3.86–3.95x | +0.334 us | 9 pairs; 33/40 ms; 72,938/350,374 ops/lane; IQR 1.023/1.004 | `Pcre2Backtracking` | 0 B | 0 B | 245.400 us | 65,177 B |
-| `pcre2/conditional-negative-lookahead` | **Native faster** | 3 B | 0.456 us | 0.103 us | 4.40x | 4.38–4.43x | +0.353 us | 9 pairs; 37/40 ms; 80,515/383,174 ops/lane; IQR 1.009/1.005 | `Pcre2Backtracking` | 0 B | 0 B | 245.863 us | 65,137 B |
+| `pcre2/conditional-accept-negative-lookahead` | **Native faster** | 3 B | 0.393 us | 0.104 us | 3.78x | 3.75–3.82x | +0.288 us | 9 pairs; 35/40 ms; 88,371/386,281 ops/lane; IQR 1.009/1.009 | `Pcre2Backtracking` | 0 B | 0 B | 125.888 us | 19,377 B |
+| `pcre2/conditional-lookahead` | **Native faster** | 3 B | 0.391 us | 0.114 us | 3.45x | 3.39–3.47x | +0.277 us | 9 pairs; 36/39 ms; 91,217/340,543 ops/lane; IQR 1.015/1.035 | `Pcre2Backtracking` | 0 B | 0 B | 245.744 us | 65,177 B |
+| `pcre2/conditional-negative-lookahead` | **Native faster** | 3 B | 0.383 us | 0.105 us | 3.66x | 3.65–3.67x | +0.278 us | 9 pairs; 36/40 ms; 93,299/385,971 ops/lane; IQR 1.008/1.011 | `Pcre2Backtracking` | 0 B | 0 B | 231.738 us | 65,137 B |
 | `pcre2/grapheme-cluster` | **Native faster** | 248 B | 0.561 us | 0.342 us | 1.64x | 1.63–1.65x | +0.220 us | 9 pairs; 36/41 ms; 64,982/118,570 ops/lane; IQR 1.008/1.008 | `Pcre2Character` | 0 B | 0 B | 1.406 us | 2,248 B |
 | `pcre2/recursive-optional` | **Managed faster** | 6 B | 0.012 us | 0.617 us | 0.02x | 0.02–0.02x | -0.605 us | 9 pairs; 42/39 ms; 3,542,167/63,634 ops/lane; IQR 1.037/1.014 | `Pcre2Backtracking` | 0 B | 0 B | 21.856 us | 21,584 B |
 | `pcre2/recursive-palindrome` | **Managed faster** | 6 B | 0.012 us | 0.490 us | 0.02x | 0.02–0.02x | -0.478 us | 9 pairs; 41/37 ms; 3,519,656/76,482 ops/lane; IQR 1.011/1.017 | `Pcre2Backtracking` | 0 B | 0 B | 20.894 us | 21,072 B |
-| `pcre2/subroutine-prefix-digits` | **Native faster** | 5 B | 0.488 us | 0.112 us | 4.35x | 4.31–4.37x | +0.377 us | 9 pairs; 35/41 ms; 72,486/364,482 ops/lane; IQR 1.023/1.027 | `Pcre2Backtracking` | 0 B | 0 B | 104.537 us | 14,113 B |
+| `pcre2/subroutine-prefix-digits` | **Native faster** | 5 B | 0.469 us | 0.108 us | 4.34x | 4.29–4.41x | +0.361 us | 9 pairs; 35/38 ms; 75,094/352,409 ops/lane; IQR 1.018/1.011 | `Pcre2Backtracking` | 0 B | 0 B | 103.763 us | 14,113 B |
 
 ## PCRE2-only Count
 
