@@ -1,0 +1,22 @@
+[
+  {
+    "Method": "FullMatchCore",
+    "CodeBytes": 3586,
+    "StackReservation": "0x758"
+  },
+  {
+    "Method": "CreateScalarCursor",
+    "CodeBytes": 1478,
+    "StackReservation": "0x508"
+  },
+  {
+    "Method": "MatchValueScalar",
+    "CodeBytes": 2806,
+    "StackReservation": "0x728"
+  },
+  {
+    "Method": "RunSegment",
+    "CodeBytes": 16504,
+    "StackReservation": "0x7B8"
+  }
+]

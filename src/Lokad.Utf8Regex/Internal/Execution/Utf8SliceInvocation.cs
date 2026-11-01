@@ -22,7 +22,7 @@ internal struct Utf8SliceInvocation
     }
 
     internal Utf8SliceInvocation(Utf8ExecutionLimits limits, TimeSpan timeout, CancellationToken token,
-        IUtf8MemoryAllowance memoryAllowance)
+        IUtf8MemoryAllowance? memoryAllowance)
         : this(limits, Utf8ExecutionDeadline.Start(timeout), token, memoryAllowance)
     {
     }
