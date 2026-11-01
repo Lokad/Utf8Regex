@@ -73,3 +73,13 @@ checkpoint witnesses remain. No shipped deadline behavior was changed for CI.
 
 No package/platform/full-catalog qualification was repeated. Published/staged
 artifacts remain immutable; final-source release acceptance stays separate.
+Only current region rows were selectively refreshed from clean source `8cb45ef0`:
+ordinary1210.114us/33.21x and compiled1205.870us/33.42x predecoded.NET11, both
+still Gap,557416bytes (previous37.60x/37.74x). Separate point estimates are not
+controlled A/B percentages. All30 raw samples exceeded47.941ms. Allothercases,
+identities/statuses, lifecycle/scaling and worst-first ordering remain unchanged.
+Existing parity verifier and3snapshot guards per runtime pass. No package/platform/
+full-catalog repeat. [Selective raw/generated/binary evidence](../../../artifacts/experiments/nb-literal-rejection-20261101/selective-evidence.tar.gz):
+`5F931239F1863E965F418DA4F0F662AC49173C22D0AED299564182B13ED2C19F`.
+Committed Core DLL SHA256:
+`FE220D58A5833DE30C6F2C4105785E5DE9AE58FCD28A01543EBD6066BEDA7CB0`.

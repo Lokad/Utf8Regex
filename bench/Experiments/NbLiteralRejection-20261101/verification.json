@@ -27,5 +27,26 @@
   "Contract": "Constantfailedliteral comparisons covered by existing<=64cell rowquantum; executed/folded/complex atoms, wide andstreaming charges remain",
   "CIFix": "30da6059 controlledclock for shorttimeout recovery only; no runtime change",
   "RawSha256": "194F7FB6A192A0391AB7AD90518CA0DA7495F1951454CC62DFDDF86151E694BB",
-  "CorrectnessSha256": "776B5B5B35FF13166732A7F3D0CAD74FF5836C409EFCDF73AD1BF961679F0CA3"
+  "CorrectnessSha256": "776B5B5B35FF13166732A7F3D0CAD74FF5836C409EFCDF73AD1BF961679F0CA3",
+  "SelectiveSource": "8cb45ef04054f97943aa4fabee8f49010a0f1fa6",
+  "SelectiveCoreSha256": "FE220D58A5833DE30C6F2C4105785E5DE9AE58FCD28A01543EBD6066BEDA7CB0",
+  "SelectiveSamples": 30,
+  "SelectiveMinimumMilliseconds": 47.9414,
+  "SnapshotGuardsPerFramework": 3,
+  "SelectiveRows": [
+    {
+      "Section": "lokad",
+      "Status": "Gap",
+      "Utf8Microseconds": 1210.1142857142859,
+      "RatioToPredecoded": 33.20716436654314,
+      "Utf8AllocatedBytes": 557416
+    },
+    {
+      "Section": "lokad-compiled",
+      "Status": "Gap",
+      "Utf8Microseconds": 1205.8700000000001,
+      "RatioToPredecoded": 33.41552220006298,
+      "Utf8AllocatedBytes": 557416
+    }
+  ]
 }
