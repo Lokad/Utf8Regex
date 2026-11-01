@@ -1,0 +1,34 @@
+{
+  "BaselineSource": "ff0185ea28fddaf1c1ae2d4d552ee73b82df5505",
+  "Configuration": "Release",
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "CorePerFramework": 658,
+  "PythonRePerFramework": 1710,
+  "Pcre2PerFramework": 1372,
+  "DiffPerFramework": 28,
+  "NewTheoryRows": 12,
+  "NewWitnesses": "Category first-block admission/subsequent32table block checks in both owning routes; last Literal/Set/Shorthand/Dot cannot publish on original-token cancellation/deadline expiry; synchronous13B enclosing loan returns",
+  "Results": "All passed; zero skipped",
+  "CommandLogs": [
+    "core-tests.txt",
+    "pythonre-tests.txt",
+    "pcre2-tests.txt",
+    "diff-tests.txt"
+  ],
+  "PreparationStateProof": "Eleven cases identical full bits, work, held bytes and13B enclosing loan before/after",
+  "Scope": "Focused existing Release suites and scalar/admission controls; no package/full-platform/catalog repetition",
+  "PriorCI": "41277110235 green, Windows/Linux, both runtimes",
+  "SourceFiles": [
+    "src/Lokad.Utf8Regex/Internal/Execution/Utf8NonBacktrackingSearchState.cs",
+    "src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceRunner.NonBacktracking.cs",
+    "tests/Lokad.Utf8Regex.Tests/Utf8NonBacktrackingPreparationDeadlineTests.cs",
+    "docs/SPEC.md"
+  ],
+  "Decision": "Runtime and SPEC proposal rejected: ordinary/finite region Count +2.6..4.3%, categoryCount+3.9%, deadline target -9.1%; main parity route regresses. Retain independent interruption witnesses. No confirmation or variants.",
+  "CompleteStateProof": "Eleven cases preserve all viability bits, table work/held bytes, single-search ranges/capture hashes/work/peak working and13B enclosing-loan refunds exactly",
+  "RetainedChecks": "After reverting all runtime/SPEC changes: focused Core658 perframework pass again, including the12 new interruption witnesses; source/src docs diff empty; no unchanged adapter rerun.",
+  "VMRestore": "Affected Release/net11 bench project rebuilt after rollback; CoreDLL and PDB cmp original before both exit0. DLL CEF93A88D00525AC72C3012BAA9A6972B595684158AE1BF5672A74E3E77975B0; clean sourceff0185ea. No rejected runtime in live benchmark host."
+}
