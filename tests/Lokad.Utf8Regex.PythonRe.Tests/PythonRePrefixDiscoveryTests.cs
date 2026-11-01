@@ -116,7 +116,8 @@ public sealed class PythonRePrefixDiscoveryTests
         var program = Field<Utf8SliceProgram>(regex, "_scalarProgram");
 
         var candidate = Field<global::Lokad.Utf8Regex.Utf8Regex>(regex, "_utf8Regex");
-        var input = Encoding.UTF8.GetBytes(new string('x', 4097) + "abcd xx cd");
+        // b falls inside the conservative a..c union, but starts neither ab nor cd.
+        var input = Encoding.UTF8.GetBytes(new string('b', 4097) + "abcd xx cd");
         var plain = new PythonReScalarMatchCursor(input, program, 0, Regex.InfiniteMatchTimeout,
             null, "(ab|cd)+", new(new(ulong.MaxValue, 0, 1048576), Regex.InfiniteMatchTimeout, default));
         ulong originalWork;

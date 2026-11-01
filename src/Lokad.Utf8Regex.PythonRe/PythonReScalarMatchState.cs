@@ -202,9 +202,75 @@ internal struct PythonReScalarMatchState
         low = high = -1;
         if (program.CanMatchEmpty || program.HasContiguousAnchor || program.RightToLeft || program.IgnoreCase ||
             program.Instructions.Length == 0) return false;
-        var index = FindLeadingPredicate(program.Instructions);
-        if (index < 0) return false;
-        var atom = program.Instructions[index];
+        // Union necessary starts across zero-width branches. This proof stays
+        // bounded independently of pattern depth; the VM still verifies every
+        // candidate and retains the original captures/assertions/repeat order.
+        var code = program.Instructions;
+        Span<int> pending = stackalloc int[16];
+        var count = 0;
+        var index = 0;
+        var minimum = 128;
+        var maximum = -1;
+        for (var work = 0; work < 64 && (uint)index < (uint)code.Length; work++)
+        {
+            var instruction = code[index];
+            switch (instruction.Kind)
+            {
+                case Utf8SliceInstructionKind.CaptureStart:
+                case Utf8SliceInstructionKind.CaptureEnd:
+                case Utf8SliceInstructionKind.Anchor:
+                case Utf8SliceInstructionKind.Boundary:
+                case Utf8SliceInstructionKind.Lookbehind:
+                case Utf8SliceInstructionKind.RepeatExit:
+                    index++;
+                    continue;
+                case Utf8SliceInstructionKind.RepeatGreedy:
+                    if (instruction.RepeatMinimum == 0)
+                    {
+                        if (count == pending.Length) return false;
+                        pending[count++] = instruction.A;
+                    }
+                    index++;
+                    continue;
+                case Utf8SliceInstructionKind.Jump:
+                    index = instruction.A;
+                    continue;
+                case Utf8SliceInstructionKind.Fork when instruction.B == 0:
+                    if (count == pending.Length) return false;
+                    pending[count++] = instruction.A;
+                    index++;
+                    continue;
+                case Utf8SliceInstructionKind.Fork when instruction.B == 1:
+                    // Lookahead restores its input position. Skip only the
+                    // lowerer's known negative/positive assertion trailers.
+                    var target = instruction.A;
+                    if (target < index + 3 || target > code.Length ||
+                        code[target - 2].Kind != Utf8SliceInstructionKind.Commit) return false;
+                    if (code[target - 1].Kind == Utf8SliceInstructionKind.Fail) index = target;
+                    else if (target < code.Length && code[target].Kind == Utf8SliceInstructionKind.Fail &&
+                        code[target - 1] is { Kind: Utf8SliceInstructionKind.Jump } jump && jump.A == target + 1)
+                        index = target + 1;
+                    else return false;
+                    continue;
+            }
+            if (!TryGetAsciiInterval(program, instruction, asciiInput, out var first, out var last)) return false;
+            minimum = Math.Min(minimum, first);
+            maximum = Math.Max(maximum, last);
+            if (count == 0)
+            {
+                low = minimum;
+                high = maximum;
+                return true;
+            }
+            index = pending[--count];
+        }
+        return false;
+    }
+
+    private static bool TryGetAsciiInterval(Utf8SliceProgram program, Utf8SliceInstruction atom,
+        bool asciiInput, out int low, out int high)
+    {
+        low = high = -1;
         if (atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } literal && (uint)literal.A < 128)
         {
             low = high = literal.A;
@@ -242,60 +308,6 @@ internal struct PythonReScalarMatchState
         low = first;
         high = last;
         return true;
-    }
-
-    private static int FindLeadingPredicate(ReadOnlySpan<Utf8SliceInstruction> code)
-    {
-        // This optional proof is bounded independently of pattern depth/size.
-        // Every zero-width branch must converge on the same consuming atom;
-        // it remains necessary only, and the original VM verifies assertions.
-        Span<int> pending = stackalloc int[16];
-        var count = 0;
-        var index = 0;
-        var leading = -1;
-        for (var work = 0; work < 64 && (uint)index < (uint)code.Length; work++)
-        {
-            var instruction = code[index];
-            switch (instruction.Kind)
-            {
-                case Utf8SliceInstructionKind.CaptureStart:
-                case Utf8SliceInstructionKind.CaptureEnd:
-                case Utf8SliceInstructionKind.Anchor:
-                case Utf8SliceInstructionKind.Boundary:
-                case Utf8SliceInstructionKind.Lookbehind:
-                    index++;
-                    continue;
-                case Utf8SliceInstructionKind.RepeatGreedy when instruction.RepeatMinimum > 0:
-                    index++;
-                    continue;
-                case Utf8SliceInstructionKind.Jump:
-                    index = instruction.A;
-                    continue;
-                case Utf8SliceInstructionKind.Fork when instruction.B == 0:
-                    if (count == pending.Length) return -1;
-                    pending[count++] = instruction.A;
-                    index++;
-                    continue;
-                case Utf8SliceInstructionKind.Fork when instruction.B == 1:
-                    // Lookahead restores its input position. Recognize the
-                    // lowerer's negative Commit/Fail and positive Commit/Jump/
-                    // Fail trailers; never treat its body as consuming input.
-                    var target = instruction.A;
-                    if (target < index + 3 || target > code.Length ||
-                        code[target - 2].Kind != Utf8SliceInstructionKind.Commit) return -1;
-                    if (code[target - 1].Kind == Utf8SliceInstructionKind.Fail) index = target;
-                    else if (target < code.Length && code[target].Kind == Utf8SliceInstructionKind.Fail &&
-                        code[target - 1] is { Kind: Utf8SliceInstructionKind.Jump } jump && jump.A == target + 1)
-                        index = target + 1;
-                    else return -1;
-                    continue;
-            }
-            if (leading >= 0 && leading != index) return -1;
-            leading = index;
-            if (count == 0) return leading;
-            index = pending[--count];
-        }
-        return -1;
     }
 
     private bool MoveNextCore(ReadOnlySpan<byte> input, bool search)
