@@ -1,0 +1,27 @@
+{
+  "Scope": "Focused Release checks and restoration for rejected Python immutable-policy snapshot",
+  "CandidateFocusedChecks": {
+    "Project": "tests/Lokad.Utf8Regex.PythonRe.Tests/Lokad.Utf8Regex.PythonRe.Tests.csproj",
+    "Filter": "FullyQualifiedName~PolicyTests|FullyQualifiedName~PythonReFunded|FullyQualifiedName~PythonReFixedPolicyPreparationTests|FullyQualifiedName~PythonReNativeOneShotInvocationTests|FullyQualifiedName~PythonReNativeLiteralValidationTests",
+    "net10.0": { "Passed": 887, "Failed": 0, "Skipped": 0 },
+    "net11.0": { "Passed": 887, "Failed": 0, "Skipped": 0 }
+  },
+  "RestoredChecks": {
+    "Filter": "FullyQualifiedName~PythonReFixedPolicyPreparationTests|FullyQualifiedName~PythonReNativeOneShotInvocationTests|FullyQualifiedName~PythonReNativeLiteralValidationTests",
+    "net10.0": { "Passed": 72, "Failed": 0, "Skipped": 0 },
+    "net11.0": { "Passed": 72, "Failed": 0, "Skipped": 0 }
+  },
+  "VmPreflightsPassed": 20,
+  "VmAffectedProjectRestoredReleaseBuildExitCode": 0,
+  "VmTrackedDiffAfterRevertExitCode": 0,
+  "LocalRuntimeDiffAfterRevertEmpty": true,
+  "CoreDllAndPdbIdenticalBetweenLanes": true,
+  "PublicContractChanged": false,
+  "NoiseConfirmationUsed": false,
+  "FullSuiteRun": false,
+  "CumulativeGateRun": false,
+  "PackageQualificationRun": false,
+  "PublicationRun": false,
+  "ActiveTodoHandoffFound": false,
+  "ArchivedHandoffEvidencePreserved": true
+}
