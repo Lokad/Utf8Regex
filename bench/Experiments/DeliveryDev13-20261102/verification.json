@@ -1,0 +1,20 @@
+{
+  "Source": "b8099e59ec41ec0df6a502b171240cc5f4654b2d",
+  "PackageVersion": "0.5.0-dev.13",
+  "SourceCi": "41505175693",
+  "SourceCiConclusion": "success",
+  "Accepted": false,
+  "MeasuredEntries": 172,
+  "TimedSeconds": 787.9841042,
+  "OuterWallSeconds": 790,
+  "ConfirmationRuns": 0,
+  "MinimumSampleMilliseconds": 29.3503,
+  "Failures": 1,
+  "FailingOperation": "Public PythonRe Search: needle in xxneedlezz",
+  "FailurePercent": 10.89511207283791,
+  "PackagesCreated": false,
+  "PackagePlatformOrFullRefreshRun": false,
+  "ImmutablePriorCandidate": "ea01c3cd / 0.5.0-dev.12",
+  "RawArchiveSha256": "F0ECEE607AA6782944DE5C73D1012B47FB8B9CB95D379BE9958A18BD058DDB6B",
+  "LocalPreparationArchiveSha256": "CE6D4216203E06EEEE5348472CFD9BE083B2A2F253D3D9AFAEDA48FC88863752"
+}

@@ -1,0 +1,15 @@
+{
+  "Scope": "Read-only getter IL inspection; no throughput attribution or public cost claim",
+  "Rows": [
+    {
+      "Type": "Lokad.Utf8Regex.Utf8Regex",
+      "Version": "0.5.0-dev.13\u002Bb8099e59ec41ec0df6a502b171240cc5f4654b2d",
+      "GetterIlBytes": 7
+    },
+    {
+      "Type": "Lokad.Utf8Regex.PythonRe.Utf8PythonRegex",
+      "Version": "0.5.0-dev.13\u002Bb8099e59ec41ec0df6a502b171240cc5f4654b2d",
+      "GetterIlBytes": 97
+    }
+  ]
+}
