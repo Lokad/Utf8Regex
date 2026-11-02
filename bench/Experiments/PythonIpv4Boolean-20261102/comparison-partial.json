@@ -1,0 +1,111 @@
+{
+  "Disposition": "Deferred: incomplete qualification; candidate reverted. No measured regression claimed.",
+  "PlannedCases": 15,
+  "CompletedCases": 5,
+  "InitialFailure": "Sixth case Unicode-prefix decode comparator 11.3680ms below 20ms",
+  "SoleFollowupFailure": "Only interrupted/unmeasured cases; same comparator 18.5058ms below 20ms; no third attempt",
+  "Cause": "Scratch batch cap used total allocation traffic, not retained bool result payload",
+  "Accepted": false,
+  "Rows": [
+    {
+      "Workload": {
+        "Name": "catalog-hit",
+        "Profile": "PythonRe",
+        "Operation": "IsMatch",
+        "Pattern": "(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])",
+        "InputBytes": 15,
+        "InputSha256": "4F16BA476C8DC1B6333EFC00F6059D451373AABF9F4E5F75EB8ECE21A39563A2",
+        "StartByte": 0,
+        "OracleStartUtf16": 0
+      },
+      "MedianMicroseconds": [
+        1.2003987664823481,
+        0.07624902825563226,
+        0.17558701384600528,
+        0.19738072718764313
+      ],
+      "PercentChange": -93.64802510760049,
+      "Evidence": "Initial stderr: all five samples for each of four lanes completed; no replay. Iterations/allocation arrays were not flushed before later abort."
+    },
+    {
+      "Workload": {
+        "Name": "finite-token",
+        "Profile": "PythonRe",
+        "Operation": "IsMatch",
+        "Pattern": "(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])",
+        "InputBytes": 15,
+        "InputSha256": "4F16BA476C8DC1B6333EFC00F6059D451373AABF9F4E5F75EB8ECE21A39563A2",
+        "StartByte": 0,
+        "OracleStartUtf16": 0
+      },
+      "MedianMicroseconds": [
+        1.371951085764422,
+        0.12304476546729155,
+        0.17483531502783364,
+        0.19686149382646223
+      ],
+      "PercentChange": -91.03140288717118,
+      "Evidence": "Initial stderr: all five samples for each of four lanes completed; no replay. Iterations/allocation arrays were not flushed before later abort."
+    },
+    {
+      "Workload": {
+        "Name": "deadline-token",
+        "Profile": "PythonRe",
+        "Operation": "IsMatch",
+        "Pattern": "(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])",
+        "InputBytes": 15,
+        "InputSha256": "4F16BA476C8DC1B6333EFC00F6059D451373AABF9F4E5F75EB8ECE21A39563A2",
+        "StartByte": 0,
+        "OracleStartUtf16": 0
+      },
+      "MedianMicroseconds": [
+        1.541636575745792,
+        0.19855313933652427,
+        0.17602385603748974,
+        0.19840195080375958
+      ],
+      "PercentChange": -87.12062606321655,
+      "Evidence": "Initial stderr: all five samples for each of four lanes completed; no replay. Iterations/allocation arrays were not flushed before later abort."
+    },
+    {
+      "Workload": {
+        "Name": "partial-positive",
+        "Profile": "PythonRe",
+        "Operation": "IsMatch",
+        "Pattern": "(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])",
+        "InputBytes": 15,
+        "InputSha256": "16A9507071B4873D10EB57EBB070AEBD2AB1A0087DE108627D40978105FFBC4C",
+        "StartByte": 0,
+        "OracleStartUtf16": 0
+      },
+      "MedianMicroseconds": [
+        1.242683964270523,
+        0.07598575191283224,
+        0.18982955413040156,
+        0.21078433778444647
+      ],
+      "PercentChange": -93.8853518595585,
+      "Evidence": "Initial stderr: all five samples for each of four lanes completed; no replay. Iterations/allocation arrays were not flushed before later abort."
+    },
+    {
+      "Workload": {
+        "Name": "dense-genuine-miss",
+        "Profile": "PythonRe",
+        "Operation": "IsMatch",
+        "Pattern": "(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])",
+        "InputBytes": 2048,
+        "InputSha256": "56E8F779473FF557945DBADA649C7BC1D430C7620457FB10BB676FDA07AD179A",
+        "StartByte": 0,
+        "OracleStartUtf16": 0
+      },
+      "MedianMicroseconds": [
+        383.0327044025157,
+        6.939403471979493,
+        97.94475409836065,
+        98.31377049180328
+      ],
+      "PercentChange": -98.18830000879322,
+      "Evidence": "Initial stderr: all five samples for each of four lanes completed; no replay. Iterations/allocation arrays were not flushed before later abort."
+    }
+  ]
+}

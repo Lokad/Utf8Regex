@@ -1,0 +1,19 @@
+{
+  "PythonFocusedPerRuntime": 124,
+  "AdditionalIpv4LifetimePerRuntime": 26,
+  "PythonFullPerRuntime": 4649,
+  "CoreFocusedPerRuntime": 83,
+  "Pcre2FocusedPerRuntime": 55,
+  "Runtimes": [
+    "net10.0",
+    "net11.0"
+  ],
+  "Tests": "Release passed before reversion. Restored canonical checks recorded separately.",
+  "ChangesPromoted": false,
+  "FreshPackageOrFullRefresh": false,
+  "RestoredPythonPerRuntime": 60,
+  "RestoredCorePerRuntime": 22,
+  "EngineEvidenceSha256": "A216C19617E1DB56F685577866AC5134D275A87C9E6DEDAB220EF0E84E3ABEF8",
+  "CorrectnessArchiveSha256": "A79546D5DF067B495B66F50FA0E248BA47B2A3F73FD4B99EA468848FAF92267F",
+  "LocalAndVmSourceReverted": true
+}
