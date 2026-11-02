@@ -24,17 +24,18 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-11-02T05:12:01.6184178+00:00`
-- Snapshot SHA-256: `CF1D02EA5EC7C8B6B84090F6801D90CCFE70A8BD0FE5C21BED879EBBD3C3C5FE`
+- Generated: `2026-11-02T06:05:26.4829010+00:00`
+- Snapshot SHA-256: `965E54D2FA6970BF8ADF8A90A35CF7851224EC95D36CD5D648AB3BE283A30E24`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `4`
 - Scaling families: `7`
-- Public Status: `29` managed faster, `0` equivalent, `45` CPython faster, `13` inconclusive, `3` unqualified
-- Historical point measurement environments represented: `1`
+- Public Status: `30` managed faster, `0` equivalent, `44` CPython faster, `13` inconclusive, `3` unqualified
+- Historical point measurement environments represented: `2`
+- Paired evidence from source `20f071a5b1cd`: `1` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
 - Paired evidence from source `253d5983dd01`: `2` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
-- Paired evidence from source `2c6cb298c484`: `88` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
+- Paired evidence from source `2c6cb298c484`: `87` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
 - Historical CPython point environments represented: `1`
@@ -80,7 +81,7 @@ Input hashes cover the exact decoded subject re-encoded as strict UTF-8 and time
 | `corpus/code-declarations` | `LokadReplica/Code/Data` | 53,352 | `E25F45289E44A6DE119149C10B258E8416A8E24E4FF01D94ED4753FA5A9A351B` |
 | `corpus/sherlock-ru` | `DotNetPerformanceReplica/Stress/Data/opensubtitles/ru-sampled.txt` | 1,570,556 | `7FFDDB21336A1BFB4A9E2DF4BB77EEA0305C0010A57C5D3C56E0DFEAD9E80A90` |
 
-Historical independent point columns were measured from source `2c6cb298c484` on .NET 11.0.0-rc.3.26522.148, Ubuntu 24.04.4 LTS, X64. Qualified paired rows record their own exact source, runtime, and interpreter provenance in the JSON evidence.
+Historical point rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins; qualified paired rows carry separate exact provenance.
 
 ## Results
 
@@ -95,7 +96,7 @@ Historical independent point columns were measured from source `2c6cb298c484` on
 | `literal/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 2.295 us | 22.294 us | 0.10x | 28.135 us | 31.896 us | 0 B |
 | `prefix/match` | `Match` | ConsumedGroupZeroRanges | CPython faster | 0.305 us | 0.274 us | 1.12x | 1.790 us | 2.582 us | 0 B |
 | `literal/fullmatch` | `FullMatch` | ConsumedGroupZeroRanges | Managed faster | 0.093 us | 0.348 us | 0.27x | 0.434 us | 0.152 us | 0 B |
-| `unicode/fullmatch` | `FullMatch` | ConsumedGroupZeroRanges | CPython faster | 93.061 us | 19.700 us | 4.72x | 29.218 us | 27.514 us | 43,752 B |
+| `unicode/fullmatch` | `FullMatch` | ConsumedGroupZeroRanges | Managed faster | 14.044 us | 19.651 us | 0.71x | 29.015 us | 22.906 us | 0 B |
 | `literal/search-early` | `Search` | ConsumedGroupZeroRanges | CPython faster | 1.309 us | 0.235 us | 5.58x | 5.939 us | 30.509 us | 0 B |
 | `anchor/fullmatch-miss` | `FullMatch` | ConsumedGroupZeroRanges | CPython faster | 0.383 us | 0.184 us | 2.09x | 0.351 us | 0.083 us | 64 B |
 | `ignorecase/search-hit` | `Search` | ConsumedGroupZeroRanges | CPython faster | 0.445 us | 0.357 us | 1.25x | 0.400 us | 0.177 us | 0 B |

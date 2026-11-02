@@ -1,0 +1,19 @@
+{
+  "Scope": "Only unicode/fullmatch changed; other89cases,Corpus,Catalog,Lifecycle,Scaling identical. One selective raw refresh/officialCPython paired qualification; no status retry.",
+  "Source": "20f071a5b1cd",
+  "WorktreeQualified": true,
+  "Ratio": 0.7136486685983201,
+  "Lower": 0.7113020980871477,
+  "Upper": 0.7161745419891528,
+  "Status": "ManagedFaster",
+  "ManagedUs": 14.043950824252585,
+  "CpythonUs": 19.651357170467723,
+  "ManagedAllocatedBytes": 0,
+  "MinimumManagedSampleMilliseconds": 49.8216,
+  "MinimumCpythonSampleMilliseconds": 50.81258,
+  "CpuPolicy": "single-least-contended-allowed-processor",
+  "CpuMask": "0x40",
+  "ManagedIqrSpread": 1.0047215861335101,
+  "CpythonIqrSpread": 1.0013369885518963,
+  "OrderEffect": 1.0021491051700604
+}

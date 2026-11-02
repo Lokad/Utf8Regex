@@ -78,3 +78,25 @@ Raw inputs, both DLL/PDB sets, driver/binaries, protocol, patch and all samples:
 Existing staged dev.9 and published packages remain immutable. Official selective
 qualification and generated snapshot updates follow from a clean committed source;
 platform/package/full-refresh work stays at the next coherent delivery boundary.
+
+The clean committed producer is `20f071a5`. One selective raw refresh and one
+nine-pair official CPython qualification refreshed only `unicode/fullmatch`.
+The fresh paired ratio is **0.713649 [0.711302, 0.716175]**, **Managed faster**:
+14.044us versus CPython 19.651us, zero managed allocations. All paired managed
+samples exceed 49.821ms and CPython samples exceed 50.812ms; lane order differs
+by 0.215%, with IQR spreads 1.005x/1.001x. The existing protocol selected CPU6;
+it is separate from the CPU2 parent comparison, with exact identities retained.
+No status retry or product change was used. Independent raw diagnostics are
+13.805us PythonRe, 11.347us predecoded Regex and 22.906us decode-then Regex.
+Thus this clears the CPython gap while leaving the measured .NET comparator gap
+explicit; it does not imply whole-profile parity.
+
+The other 89 row objects, catalog/corpus, lifecycle and scaling are identical.
+The page records mixed source identities. Generated Markdown verification and
+matching-binary snapshot guards pass on .NET 10/11; the complete suite was not
+repeated after a data-only import. A PowerShell scalar-string scope assertion
+was corrected to an explicit array before import, without replaying measurements.
+`selected-summary.json` records the exact qualification summary. All loaded
+producer/benchmark DLL/PDB bytes, before/after snapshots and console evidence are
+in `selected-20f071a5.tar.gz`, SHA256
+`FF669A0DDD44D4941DBDC88B3B3371D8C1EF6F87EC87676CB0B48624A790D91A`.
