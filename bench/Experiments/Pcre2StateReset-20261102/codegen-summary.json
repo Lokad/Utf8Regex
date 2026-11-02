@@ -1,0 +1,16 @@
+[
+  {
+    "Lane": "before",
+    "Tier": "Tier1",
+    "MethodBytes": 14025,
+    "AllOnesVectorSetupSites": 7,
+    "Scope": "Initialization prefix between EnsureInitialized and first ChargeBacktracking; codegen observation only"
+  },
+  {
+    "Lane": "after",
+    "Tier": "Tier1",
+    "MethodBytes": 13609,
+    "AllOnesVectorSetupSites": 2,
+    "Scope": "Initialization prefix between EnsureInitialized and first ChargeBacktracking; codegen observation only"
+  }
+]

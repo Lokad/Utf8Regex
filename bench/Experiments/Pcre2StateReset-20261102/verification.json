@@ -1,0 +1,17 @@
+{
+  "ParentSource": "e503a097c8b487bf41feae4e7a04202d5d071609",
+  "Decision": "Rejected; fully restored",
+  "CandidateFocusedPerRuntime": 103,
+  "CandidateFullPerRuntime": 6486,
+  "RestoredFocusedPerRuntime": 103,
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "SourceAndTestsDiffAfterRestoration": "Empty",
+  "VmRestoredDllAndPdb": "Exact parent bytes",
+  "PackageAndSnapshotChanges": false,
+  "AdditionalConfirmation": false,
+  "RawEvidenceSha256": "78A42EE161AAF4BA7904426EC47F9911C07485C3654AF1CBF3EC518C64EFDB81",
+  "CorrectnessArchiveSha256": "F191222661836C6CCFB1456AB6270FED96D538F01D998D2977C7EE54374E83C6"
+}

@@ -1,0 +1,37 @@
+diff --git a/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingRunner.cs b/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingRunner.cs
+index 638ab503..4324f52e 100644
+--- a/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingRunner.cs
++++ b/src/Lokad.Utf8Regex.Pcre2/Pcre2BacktrackingRunner.cs
+@@ -666,12 +666,11 @@ internal static class Pcre2BacktrackingRunner
+         var rentedRepeatRestoreSnapshots = workspace.RepeatRestoreSnapshots;
+         var captureState = rentedCaptureState is null ? Span<int>.Empty : rentedCaptureState.AsSpan(0, captureStateLength);
+ 
+-        var counts = rentedRepeatState is null
++        var repeatState = rentedRepeatState is null
+             ? Span<int>.Empty
+-            : rentedRepeatState.AsSpan(0, program.RepeatCount);
+-        var positions = rentedRepeatState is null
+-            ? Span<int>.Empty
+-            : rentedRepeatState.AsSpan(program.RepeatCount, program.RepeatCount);
++            : rentedRepeatState.AsSpan(0, checked(program.RepeatCount * 2));
++        var counts = repeatState[..program.RepeatCount];
++        var positions = repeatState[program.RepeatCount..];
+         var captureStarts = captureState.IsEmpty
+             ? Span<int>.Empty
+             : captureState[..program.CaptureSlotCount];
+@@ -705,13 +704,8 @@ internal static class Pcre2BacktrackingRunner
+         var repeatRestoreSnapshots = rentedRepeatRestoreSnapshots is null
+             ? Span<Pcre2SubroutineRepeatSnapshot>.Empty
+             : rentedRepeatRestoreSnapshots.AsSpan(0, program.RepeatCount);
+-        counts.Fill(-1);
+-        positions.Fill(-1);
+-        captureStarts.Fill(-1);
+-        captureEnds.Fill(-1);
+-        captureOpenStarts.Fill(-1);
+-        captureOwners.Fill(-1);
+-        captureOpenOwners.Fill(-1);
++        repeatState.Fill(-1);
++        captureState.Fill(-1);
+         captureRestoreGenerations.Clear();
+         repeatRestoreGenerations.Clear();
+         if (!initialCaptureStarts.IsEmpty)
