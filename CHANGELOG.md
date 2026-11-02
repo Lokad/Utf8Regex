@@ -36,6 +36,8 @@
   literal Count validation cost without changing resource controls.
 - Reduce shared invocation metadata while preserving numeric working limits,
   caller-funded admission and deterministic refunds.
+- Reduce required-literal screening overhead while retaining strict validation,
+  matching and resource controls.
 - Reduce shared PCRE2 VM overhead for controlled matching and capture operations.
 - Speed up NonBacktracking batches and scan proved complete anchored-line Count
   roots without a viability table. Captures, cursors and bounded interruption

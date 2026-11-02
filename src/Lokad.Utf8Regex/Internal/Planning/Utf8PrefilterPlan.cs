@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Search;
 
@@ -10,12 +11,15 @@ internal readonly struct Utf8PrefilterPlan
         PreparedSearcher secondarySearcher,
         Utf8StructuralSearchPlan[]? windowPlans)
     {
-        PrimarySearcher = primarySearcher;
+        _primarySearcher = primarySearcher;
         SecondarySearcher = secondarySearcher;
         WindowPlans = windowPlans;
     }
 
-    public PreparedSearcher PrimarySearcher { get; }
+    private readonly PreparedSearcher _primarySearcher;
+
+    [UnscopedRef]
+    public ref readonly PreparedSearcher PrimarySearcher => ref _primarySearcher;
 
     public PreparedSearcher SecondarySearcher { get; }
 

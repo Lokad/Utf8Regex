@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -97,7 +98,7 @@ internal readonly struct Utf8SearchPlan
             leadingBoundary, trailingBoundary, trailingLiteralUtf8,
             exactRequiredLength, maxPossibleLength);
         StructuralSearchPlan = structuralSearchPlan;
-        PrefilterPlan = new Utf8PrefilterPlan(
+        _prefilterPlan = new Utf8PrefilterPlan(
             requiredPrefilterSearcher,
             secondaryRequiredPrefilterSearcher,
             requiredWindowPrefilterPlans);
@@ -176,7 +177,10 @@ internal readonly struct Utf8SearchPlan
 
     public byte[][]? RequiredPrefilterAlternateLiteralsUtf8 { get; }
 
-    public Utf8PrefilterPlan PrefilterPlan { get; }
+    private readonly Utf8PrefilterPlan _prefilterPlan;
+
+    [UnscopedRef]
+    public ref readonly Utf8PrefilterPlan PrefilterPlan => ref _prefilterPlan;
 
     public Utf8CandidateSearchPlan NativeCandidateSource => HasPreparedSearcher
         ? Utf8CandidateSearchPlan.FromPreparedSearcher(PreparedSearcher, PortfolioKind)

@@ -982,7 +982,7 @@ public sealed partial class Utf8Regex
     // finding this literal never proves a regex match or a candidate start.
     internal bool RejectMissingExactRequiredLiteral(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)
     {
-        var prefilter = _preparedRegex.SearchPlan.RequiredPrefilterSearcher;
+        ref readonly var prefilter = ref _preparedRegex.SearchPlan.PrefilterPlan.PrimarySearcher;
         if (prefilter.Kind != PreparedSearcherKind.ExactLiteral) return false;
         var breach = prefilter.TryFindMatch(input, 0, input.Length, false, ref invocation, out _, out var found);
         if (breach != Utf8ExecutionLimitKind.None)
@@ -1000,7 +1000,7 @@ public sealed partial class Utf8Regex
             _preparedRegex.Features.HasAbsoluteStartAnchor &&
                 !_preparedRegex.StructuralLinearProgram.QuotedRelationPlan.HasValue ||
             _preparedRegex.SearchPlan.CanGuideFallbackStarts) return false;
-        var prefilter = _preparedRegex.SearchPlan.RequiredPrefilterSearcher;
+        ref readonly var prefilter = ref _preparedRegex.SearchPlan.PrefilterPlan.PrimarySearcher;
         if (prefilter.Kind is not (PreparedSearcherKind.ExactLiteral or PreparedSearcherKind.MultiLiteral)) return false;
         // The existing planner proves this literal is necessary. Search the
         // complete already-validated subject, including lookbehind context;
