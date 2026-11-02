@@ -4,6 +4,8 @@ on:
   push:
     # Tags reuse the checks on their branch commit.
     branches: ['**']
+    # Archived experiment receipts do not change build/test inputs.
+    paths-ignore: ['bench/Experiments/**']
   pull_request:
 
 permissions:
