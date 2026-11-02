@@ -75,11 +75,12 @@ public sealed class PythonReNativeOneShotInvocationTests
     [InlineData(1, false)] [InlineData(1, true)]
     [InlineData(2, false)] [InlineData(2, true)]
     [InlineData(3, false)] [InlineData(3, true)]
+    [InlineData(4, false)] [InlineData(4, true)]
     public void EveryNativeValueOrTextWorkCutoffIsCumulativeAndUnpublished(int kind, bool text)
     {
-        var pattern = kind switch { 0 => "Шерлок", 1 => "ab[0-9]+", 2 => "ab.*xy", _ => "é😀" };
-        var input = Encoding.UTF8.GetBytes(kind switch { 0 => "π Шерлок 𝒜", 1 => "ab123😀", 2 => "éab😀xy", _ => "xé😀z" });
-        var expected = kind switch { 0 => "Шерлок", 1 => "ab123", 2 => "ab😀xy", _ => "é😀" };
+        var pattern = kind switch { 0 => "Шерлок", 1 => "ab[0-9]+", 2 => "ab.*xy", 4 => "needle", _ => "é😀" };
+        var input = Encoding.UTF8.GetBytes(kind switch { 0 => "π Шерлок 𝒜", 1 => "ab123😀", 2 => "éab😀xy", 4 => "needle", _ => "xé😀z" });
+        var expected = kind switch { 0 => "Шерлок", 1 => "ab123", 2 => "ab😀xy", 4 => "needle", _ => "é😀" };
         var regex = new Utf8PythonRegex(pattern, kind == 2 ? PythonReCompileOptions.DotAll : PythonReCompileOptions.None);
         if (kind == 0) Assert.True(regex.DebugUsesZeroOffsetUtf8SearchValueFastPath);
         if (kind == 1) Assert.True(regex.DebugUsesAsciiLiteralPrefixDigitMatchFastPath);
@@ -89,7 +90,7 @@ public sealed class PythonReNativeOneShotInvocationTests
         // as an internal borrowed-backend witness, separately from public routes.
         if (kind == 3) Assert.Equal("ExactUtf8Literal", regex.DebugUtf8ExecutionKind);
         var start = kind == 2 ? 2 : 0;
-        var operationKind = kind == 3 ? 0 : kind;
+        var operationKind = kind switch { 3 => 0, 4 => 2, _ => kind };
         const ulong seed = 7;
         var measured = new Utf8SliceInvocation(new(100000, 0, 1UL << 20), Regex.InfiniteMatchTimeout, default);
         for (var index = 0; index < (int)seed; index++) Assert.Equal(Utf8ExecutionLimitKind.None, measured.TryChargeInputStep());

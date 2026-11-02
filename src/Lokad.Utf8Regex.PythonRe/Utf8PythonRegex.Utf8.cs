@@ -452,6 +452,25 @@ public sealed partial class Utf8PythonRegex
             return true;
         }
         if (_utf8Regex is null) throw new InvalidOperationException("Native result discovery requires its prepared core.");
+        if (kind != 0 && _utf8Regex.Inspection.ExecutionKind is
+            NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal)
+        {
+            ref readonly var search = ref _utf8Regex.Inspection.PreparedRegex.SearchPlan;
+            if (!search.HasBoundaryRequirements && !search.HasTrailingLiteralRequirement &&
+                search.LiteralSearch is { IgnoreCase: false, Needle: { Length: >= 1 and <= 16 } literal })
+            {
+                // A required start permits one bounded comparison of the complete
+                // short literal. Validate the whole subject before any rejection.
+                validation = Utf8Validation.Validate(input, ref invocation);
+                var remaining = input.Length - startOffsetInBytes;
+                if (remaining < literal.Length || kind == 2 && remaining != literal.Length) return false;
+                Utf8InvocationOutput.Checkpoint(control);
+                if (!input.Slice(startOffsetInBytes, literal.Length).SequenceEqual(literal)) return false;
+                start = startOffsetInBytes;
+                end = start + literal.Length;
+                return true;
+            }
+        }
         return _utf8Regex.FindLiteralForResult(input, startOffsetInBytes, ref invocation, out start, out end, out validation) &&
             (kind == 0 || start == startOffsetInBytes && (kind != 2 || end == input.Length));
     }

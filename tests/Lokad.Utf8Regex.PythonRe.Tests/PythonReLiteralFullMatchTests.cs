@@ -57,6 +57,48 @@ public sealed class PythonReLiteralFullMatchTests
     }
 
     [Theory]
+    [InlineData(1)] [InlineData(16)] [InlineData(17)] [InlineData(4096)]
+    public void LiteralLengthBoundariesKeepAnchoredValuesAndText(int length)
+    {
+        var pattern = new string('x', length);
+        var regex = new Utf8PythonRegex(pattern);
+        foreach (var prefix in new[] { "", "π😀" })
+        {
+            var start = Encoding.UTF8.GetByteCount(prefix);
+            var input = Encoding.UTF8.GetBytes(prefix + pattern);
+            var full = regex.FullMatch(input, start);
+            Assert.True(full.Success);
+            Assert.Equal((start, input.Length), (full.StartOffsetInBytes, full.EndOffsetInBytes));
+            Assert.Equal((prefix.Length, prefix.Length + length), (full.StartOffsetInUtf16, full.EndOffsetInUtf16));
+            Assert.Equal(pattern, regex.FullMatchToString(input, start));
+            var tail = Encoding.UTF8.GetBytes(prefix + pattern + "!");
+            var match = regex.Match(tail, start);
+            Assert.True(match.Success);
+            Assert.Equal(input.Length, match.EndOffsetInBytes);
+            Assert.Equal(pattern, regex.MatchToString(tail, start));
+            Assert.False(regex.FullMatch(tail, start).Success);
+            Assert.Null(regex.FullMatchToString(tail, start));
+        }
+    }
+
+    [Theory]
+    [InlineData("foo(?=bar)", "foo", false, false)]
+    [InlineData("foo(?=bar)", "foobar", true, false)]
+    [InlineData(@"foo\b", "foobar", false, false)]
+    [InlineData(@"foo\b", "foo!", true, false)]
+    [InlineData("(?i:k)", "K", true, true)]
+    public void AnchoredLiteralResultsKeepAssertionsAndProfileFolding(string pattern,
+        string subject, bool matched, bool fullMatched)
+    {
+        var regex = new Utf8PythonRegex(pattern);
+        var input = Encoding.UTF8.GetBytes(subject);
+        Assert.Equal(matched, regex.Match(input).Success);
+        Assert.Equal(fullMatched, regex.FullMatch(input).Success);
+        Assert.Equal(matched, regex.MatchToString(input) is not null);
+        Assert.Equal(fullMatched, regex.FullMatchToString(input) is not null);
+    }
+
+    [Theory]
     [InlineData(false)] [InlineData(true)]
     public void WorkDenialAndPreCancellationStayDistinctFromNoMatch(bool text)
     {
@@ -149,6 +191,32 @@ public sealed class PythonReLiteralFullMatchTests
         var error = Assert.Throws<RegexMatchTimeoutException>(() => Run(regex, input, 0, text, default));
         Assert.Empty(error.Input);
         Assert.Equal(regex.Pattern, error.Pattern);
+    }
+
+    [Theory]
+    [InlineData(false, false)] [InlineData(false, true)]
+    [InlineData(true, false)] [InlineData(true, true)]
+    public void FinalLiteralPublicationKeepsOriginalTokenAndDeadline(bool text, bool expire)
+    {
+        var regex = new Utf8PythonRegex("cat", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20));
+        var input = "cat"u8.ToArray();
+        var total = 0;
+        using (Utf8ExecutionDeadline.UseClockForDiagnostics(() => { total++; return 0; }))
+            Run(regex, input, 0, text, default);
+        using var cancellation = new CancellationTokenSource();
+        var reads = 0;
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
+        {
+            if (++reads == total) { if (expire) ticks = 50; else cancellation.Cancel(); }
+            return ticks;
+        });
+        if (expire)
+            Assert.Equal(regex.Pattern, Assert.Throws<RegexMatchTimeoutException>(() =>
+                Run(regex, input, 0, text, cancellation.Token)).Pattern);
+        else
+            Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
+                Run(regex, input, 0, text, cancellation.Token)).CancellationToken);
     }
 
     private static void Run(Utf8PythonRegex regex, byte[] input, int start, bool text, CancellationToken token)
