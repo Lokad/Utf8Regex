@@ -1,0 +1,222 @@
+[
+  {
+    "Name": "corpus-ordinary",
+    "BeforeUs": 68.08269230769231,
+    "AfterUs": 18.861217445873862,
+    "ChangePercent": -72.29660460454083,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumDurationMs": 58.947,
+    "BeforeSpread": 1.01052906325971,
+    "AfterSpread": 1.0204695518375422
+  },
+  {
+    "Name": "corpus-compiled",
+    "BeforeUs": 68.02426636568849,
+    "AfterUs": 18.954336171554715,
+    "ChangePercent": -72.13591974713998,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumDurationMs": 59.6444,
+    "BeforeSpread": 1.005930921813315,
+    "AfterSpread": 1.0185482627036238
+  },
+  {
+    "Name": "corpus-finite-live",
+    "BeforeUs": 48.56136363636364,
+    "AfterUs": 48.05644114921223,
+    "ChangePercent": -1.0397617557290073,
+    "BeforeBytes": 3672,
+    "AfterBytes": 3672,
+    "MinimumDurationMs": 51.5926,
+    "BeforeSpread": 1.0433072029736106,
+    "AfterSpread": 1.0473672580951532
+  },
+  {
+    "Name": "corpus-live",
+    "BeforeUs": 47.47578772802654,
+    "AfterUs": 47.290774299835256,
+    "ChangePercent": -0.38970059696780135,
+    "BeforeBytes": 3672,
+    "AfterBytes": 3672,
+    "MinimumDurationMs": 57.0006,
+    "BeforeSpread": 1.0435521731350197,
+    "AfterSpread": 1.0448636765723396
+  },
+  {
+    "Name": "corpus-deadline-live",
+    "BeforeUs": 59.523727087576376,
+    "AfterUs": 58.40934959349594,
+    "ChangePercent": -1.8721567828588248,
+    "BeforeBytes": 3720,
+    "AfterBytes": 3720,
+    "MinimumDurationMs": 57.3415,
+    "BeforeSpread": 1.0361811202802846,
+    "AfterSpread": 1.0476496080500162
+  },
+  {
+    "Name": "dense-hits",
+    "BeforeUs": 36.14102102102102,
+    "AfterUs": 40.926977687626774,
+    "ChangePercent": 13.242450078601987,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumDurationMs": 59.7434,
+    "BeforeSpread": 1.0064029766994442,
+    "AfterSpread": 1.0040204013455363
+  },
+  {
+    "Name": "dense-anchor-miss",
+    "BeforeUs": 3.204419392399704,
+    "AfterUs": 9.120097516379705,
+    "ChangePercent": 184.6099838869689,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumDurationMs": 59.4843,
+    "BeforeSpread": 1.0152789833484641,
+    "AfterSpread": 1.0199834241976458
+  },
+  {
+    "Name": "boundary-false",
+    "BeforeUs": 36.321148036253774,
+    "AfterUs": 35.13916861826698,
+    "ChangePercent": -3.2542457545863046,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumDurationMs": 59.638,
+    "BeforeSpread": 1.0041012737641952,
+    "AfterSpread": 1.0032193514900976
+  },
+  {
+    "Name": "sparse-anchor-miss",
+    "BeforeUs": 3.377069992135715,
+    "AfterUs": 9.131625204826458,
+    "ChangePercent": 170.40082752479364,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumDurationMs": 59.8094,
+    "BeforeSpread": 1.0078888686895304,
+    "AfterSpread": 1.0112621653100304
+  },
+  {
+    "Name": "short-tail",
+    "BeforeUs": 0.11831409482991481,
+    "AfterUs": 0.11613274812001205,
+    "ChangePercent": -1.8436913311458025,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumDurationMs": 29.0715,
+    "BeforeSpread": 1.011346597977797,
+    "AfterSpread": 1.0203630068899325
+  },
+  {
+    "Name": "two-anchors",
+    "BeforeUs": 50.96574074074074,
+    "AfterUs": 18.13048632218845,
+    "ChangePercent": -64.42613006565135,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumDurationMs": 59.2206,
+    "BeforeSpread": 1.0089730227517157,
+    "AfterSpread": 1.0166800066193182
+  },
+  {
+    "Name": "large-anchor-control",
+    "BeforeUs": 15.40398867730314,
+    "AfterUs": 12.062394366197182,
+    "ChangePercent": -21.69304575008938,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumDurationMs": 59.4353,
+    "BeforeSpread": 1.0088303525916553,
+    "AfterSpread": 1.010890250752425
+  },
+  {
+    "Name": "unicode-control",
+    "BeforeUs": 48.51230893000805,
+    "AfterUs": 48.01633499170812,
+    "ChangePercent": -1.0223672079090251,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "MinimumDurationMs": 57.4718,
+    "BeforeSpread": 1.0365739059152057,
+    "AfterSpread": 1.0383457626174926
+  },
+  {
+    "Name": "literal-control",
+    "BeforeUs": 6.374400252525252,
+    "AfterUs": 6.376873548659489,
+    "ChangePercent": 0.03880045237600882,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumDurationMs": 59.6887,
+    "BeforeSpread": 1.0028210821704298,
+    "AfterSpread": 1.004489313643768
+  },
+  {
+    "Name": "is-match-late",
+    "BeforeUs": 3.7564704428933227,
+    "AfterUs": 9.861173927502495,
+    "ChangePercent": 162.5116868990239,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumDurationMs": 59.0284,
+    "BeforeSpread": 1.0235500070493928,
+    "AfterSpread": 1.0161295240934871
+  },
+  {
+    "Name": "is-match-miss",
+    "BeforeUs": 3.543430014091123,
+    "AfterUs": 9.727709847984139,
+    "ChangePercent": 174.52806487781757,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumDurationMs": 58.6187,
+    "BeforeSpread": 1.0158199602755777,
+    "AfterSpread": 1.00776202815825
+  },
+  {
+    "Name": "zero-offset-anchor",
+    "BeforeUs": 38.84836223506744,
+    "AfterUs": 41.80398601398601,
+    "ChangePercent": 7.608103942797895,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumDurationMs": 59.2675,
+    "BeforeSpread": 1.0021151971453113,
+    "AfterSpread": 1.0031465307696177
+  },
+  {
+    "Name": "shared-word-control",
+    "BeforeUs": 554.2541284403669,
+    "AfterUs": 554.3761467889908,
+    "ChangePercent": 0.022014874109688165,
+    "BeforeBytes": 64,
+    "AfterBytes": 64,
+    "MinimumDurationMs": 59.0007,
+    "BeforeSpread": 1.0044853188100773,
+    "AfterSpread": 1.0023832947435019
+  },
+  {
+    "Name": "construct-keyword",
+    "BeforeUs": 114.9220502901354,
+    "AfterUs": 115.16536964980544,
+    "ChangePercent": 0.21172556446369395,
+    "BeforeBytes": 108216,
+    "AfterBytes": 108624,
+    "MinimumDurationMs": 58.802,
+    "BeforeSpread": 1.0133124723648856,
+    "AfterSpread": 1.006523246803236
+  },
+  {
+    "Name": "construct-literal-control",
+    "BeforeUs": 33.04919590643275,
+    "AfterUs": 32.49503750721292,
+    "ChangePercent": -1.6767681755064046,
+    "BeforeBytes": 40488,
+    "AfterBytes": 40488,
+    "MinimumDurationMs": 44.9482,
+    "BeforeSpread": 1.0169372744626037,
+    "AfterSpread": 1.0080720234524765
+  }
+]
