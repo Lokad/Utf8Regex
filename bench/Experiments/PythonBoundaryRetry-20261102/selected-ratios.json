@@ -1,0 +1,28 @@
+[
+  {
+    "Case": "split/zero-width",
+    "Status": "CpythonFaster",
+    "Ratio": 2.9359941033628805,
+    "Lower95": 2.9123712381680633,
+    "Upper95": 2.95327567776694,
+    "Microseconds": 197.0992125984252,
+    "CpythonMicroseconds": 67.18592523364485,
+    "Bytes": 40016,
+    "Source": "cb1d443edc8c",
+    "SampleCount": 9,
+    "WorktreeQualified": true
+  },
+  {
+    "Case": "zero-width/count",
+    "Status": "CpythonFaster",
+    "Ratio": 1.1008032044698346,
+    "Lower95": 1.096918074322767,
+    "Upper95": 1.1064741681833288,
+    "Microseconds": 1228.0951219512197,
+    "CpythonMicroseconds": 1116.4087608695652,
+    "Bytes": 0,
+    "Source": "cb1d443edc8c",
+    "SampleCount": 9,
+    "WorktreeQualified": true
+  }
+]

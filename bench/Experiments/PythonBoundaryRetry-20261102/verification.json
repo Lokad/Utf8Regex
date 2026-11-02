@@ -1,0 +1,50 @@
+{
+  "Source": "cb1d443edc8c4f129608c59c32bfabfdd9ed1075",
+  "Parent": "ef9292766de8af03a8eeffc437bfc6f5ee6d7658",
+  "FrozenBefore": "ea01c3cd01aeb969951f1bc68c4c00a24592fc99",
+  "Scope": "Accepted bounded public parent comparison and focused/full PythonRe checks, followed by two existing selective clean-source CPython qualifications. Other88 rows/catalog/corpus/lifecycle/scaling preserved. This is not a new full fixed-a40/platform/package delivery gate.",
+  "CoreBytesIdentical": true,
+  "Cases": 14,
+  "TimedSeconds": 60.0657166,
+  "MinimumSampleMilliseconds": 40.0803,
+  "MaximumAdversePercent": 4.661181092326383,
+  "AllocationsUnchanged": true,
+  "FocusedPerRuntime": 214,
+  "FundedClosePerRuntime": 2,
+  "FullPythonRePerRuntime": 4623,
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "NoiseConfirmationRuns": 0,
+  "VariantsAfterTiming": 0,
+  "SelectedCases": [
+    "split/zero-width",
+    "zero-width/count"
+  ],
+  "OtherRowsUnchanged": 88,
+  "ImportedGuardsPerRuntime": 2,
+  "FrozenDev12Unchanged": true,
+  "Archives": [
+    {
+      "File": "correctness-source.zip",
+      "Length": 20515,
+      "Sha256": "5EA0F2A6AF92F30BC2E7E8034455278468121379D8EC9AD748EC51BA23F11323"
+    },
+    {
+      "File": "evidence.tar.gz",
+      "Length": 1871808,
+      "Sha256": "77BEB451457066CF72F026CE071CC2DE5297135DA6AB55943B98DE183E7A9CC9"
+    },
+    {
+      "File": "import-guards.zip",
+      "Length": 1877,
+      "Sha256": "81D0E5384EA02DEA6906A423A6B70970D5571FBEFDB8ED473D37B17933761679"
+    },
+    {
+      "File": "selective-refresh.tar.gz",
+      "Length": 34223943,
+      "Sha256": "DFDF901458588F95B16BC0F428986A14A495406B48932BCF98224A2949866C3F"
+    }
+  ]
+}

@@ -24,16 +24,17 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-11-02T15:34:48.0894930+00:00`
-- Snapshot SHA-256: `91103D73166E07D6204F14B73BD100111AAA7202F3BE644BE64B150D431A96DE`
+- Generated: `2026-11-02T17:10:50.4838533+00:00`
+- Snapshot SHA-256: `E9F23CE25D48C8718EC5648C470790A420BD9DE96911DEE99BAFF98F8926D3D6`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `4`
 - Scaling families: `7`
 - Public Status: `30` managed faster, `1` equivalent, `43` CPython faster, `13` inconclusive, `3` unqualified
-- Historical point measurement environments represented: `1`
-- Paired evidence from source `ea01c3cd01ae`: `90` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
+- Historical point measurement environments represented: `2`
+- Paired evidence from source `cb1d443edc8c`: `2` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
+- Paired evidence from source `ea01c3cd01ae`: `88` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
 - Historical CPython point environments represented: `1`
@@ -79,7 +80,7 @@ Input hashes cover the exact decoded subject re-encoded as strict UTF-8 and time
 | `corpus/code-declarations` | `LokadReplica/Code/Data` | 53,352 | `E25F45289E44A6DE119149C10B258E8416A8E24E4FF01D94ED4753FA5A9A351B` |
 | `corpus/sherlock-ru` | `DotNetPerformanceReplica/Stress/Data/opensubtitles/ru-sampled.txt` | 1,570,556 | `7FFDDB21336A1BFB4A9E2DF4BB77EEA0305C0010A57C5D3C56E0DFEAD9E80A90` |
 
-Historical independent point columns were measured from source `ea01c3cd01ae` on .NET 11.0.0-rc.3.26522.148, Ubuntu 24.04.4 LTS, X64. Qualified paired rows record their own exact source, runtime, and interpreter provenance in the JSON evidence.
+Historical point rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins; qualified paired rows carry separate exact provenance.
 
 ## Results
 
@@ -150,7 +151,7 @@ Historical independent point columns were measured from source `ea01c3cd01ae` on
 | `findall/many-capture-utf8` | `FindAllUtf8` | EagerMaterializedResult | Managed faster | 795.734 us | 1,254.712 us | 0.63x | 1,197.157 us | 816.151 us | 260,400 B |
 | `findall/unicode-capture-utf8` | `FindAllUtf8` | EagerMaterializedResult | Equivalent | 611.814 us | 620.966 us | 0.99x | 626.023 us | 392.663 us | 132,792 B |
 | `iteration/finditer-detailed` | `FindIterDetailed` | EagerMaterializedResult | Managed faster | 253.753 us | 543.818 us | 0.47x | 534.652 us | 161.193 us | 141,568 B |
-| `zero-width/count` | `Count` | ScalarResult | CPython faster | 1,941.262 us | 1,115.726 us | 1.74x | 1,127.914 us | 1,895.137 us | 0 B |
+| `zero-width/count` | `Count` | ScalarResult | CPython faster | 1,228.095 us | 1,116.409 us | 1.10x | 1,125.493 us | 1,528.548 us | 0 B |
 | `count/zero` | `Count` | ScalarResult | Managed faster | 0.445 us | 91.483 us | 0.00x | 93.054 us | 1.158 us | 0 B |
 | `count/one` | `Count` | ScalarResult | Managed faster | 0.279 us | 2.018 us | 0.14x | 2.683 us | 0.723 us | 0 B |
 | `count/empty-progression` | `Count` | ScalarResult | CPython faster | 533.761 us | 379.698 us | 1.41x | 352.621 us | 70.745 us | 3,552 B |
@@ -192,7 +193,7 @@ Historical independent point columns were measured from source `ea01c3cd01ae` on
 | `split/one-separator` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 1.292 us | 12.075 us | 0.11x | 12.672 us | 0.777 us | 4,192 B |
 | `split/limited` | `SplitStringsLimited` | EagerMaterializedResult | Inconclusive | 1.631 us | 0.550 us | 2.93x | 1.272 us | 1.211 us | 6,032 B |
 | `split/optional-capture` | `SplitStrings` | EagerMaterializedResult | CPython faster | 109.616 us | 82.731 us | 1.33x | 84.727 us | 92.260 us | 39,616 B |
-| `split/zero-width` | `SplitStrings` | EagerMaterializedResult | CPython faster | 288.423 us | 66.735 us | 4.32x | 79.184 us | 316.308 us | 40,016 B |
+| `split/zero-width` | `SplitStrings` | EagerMaterializedResult | CPython faster | 197.099 us | 67.186 us | 2.94x | 79.541 us | 255.257 us | 40,016 B |
 | `split/unicode` | `SplitStrings` | EagerMaterializedResult | CPython faster | 157.573 us | 45.292 us | 3.48x | 42.982 us | 57.970 us | 19,512 B |
 | `split/detailed` | `SplitDetailed` | EagerMaterializedResult | Managed faster | 121.343 us | 136.665 us | 0.89x | 137.451 us | 93.541 us | 104,704 B |
 

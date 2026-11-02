@@ -1,0 +1,25 @@
+{
+  "Scope": "Prior recorded identities before the selected clean-cb1 refresh; catalog movement is not a causal parent A/B gain.",
+  "Rows": [
+    {
+      "Case": "split/zero-width",
+      "Status": "CpythonFaster",
+      "Ratio": 4.321940282788038,
+      "Lower95": 4.314062551405014,
+      "Upper95": 4.326603385334917,
+      "Microseconds": 288.42285714285714,
+      "Bytes": 40016,
+      "Source": "ea01c3cd01ae"
+    },
+    {
+      "Case": "zero-width/count",
+      "Status": "CpythonFaster",
+      "Ratio": 1.7411813825997424,
+      "Lower95": 1.7359184462899642,
+      "Upper95": 1.7441810479477116,
+      "Microseconds": 1941.2615384615385,
+      "Bytes": 0,
+      "Source": "ea01c3cd01ae"
+    }
+  ]
+}
