@@ -1614,6 +1614,14 @@ public sealed partial class Utf8Regex
             // The fixed native nesting envelope declined. Keep all work already
             // spent and retry scalar discovery from the original start.
         }
+        if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralRepeatedSegment &&
+            ReferenceEquals(program, _ownedSliceProgram) &&
+            Utf8SliceRunner.TryCountPreparedRepeatedSegment(program, _preparedRegex.StructuralRepeatedSegmentPlan,
+                input, startByte, ref invocation, out var repeatedCount))
+        {
+            if (repeatedCount.Breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
+            return repeatedCount.Count;
+        }
         var slots = new Utf8SliceSlots([], []);
         try
         {

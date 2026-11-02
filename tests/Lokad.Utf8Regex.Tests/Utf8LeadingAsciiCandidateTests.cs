@@ -96,14 +96,18 @@ public sealed class Utf8LeadingAsciiCandidateTests
     }
 
     [Fact]
-    public void SkippedStartsStillRequireValidationWorkAndRealVmStorage()
+    public void SkippedStartsRequireValidationAndAdmissionForTheStorageActuallyUsed()
     {
         const string pattern = @"(?:[A-Z][a-z]+\s*){2,4}";
         var input = Encoding.UTF8.GetBytes(new string('x', 200000) + "😀Ab Cd");
         Assert.Equal(1, new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout,
             Funded with { MaxWorkSteps = 4096 }).Count(input));
+        Assert.Equal(1, new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout,
+            Funded with { MaxWorkingBytes = 1 }).Count(input));
+        // The complete count plan needs no VM scratch; a captured root still
+        // uses the verifier and must admit its actual continuation storage.
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(pattern,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex("(?<x>" + pattern + ")",
                 RegexOptions.None, Regex.InfiniteMatchTimeout, Funded with { MaxWorkingBytes = 1 }).Count(input)).ResourceKind);
         var invalid = input.Append((byte)255).ToArray();
         Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern).Count(invalid));

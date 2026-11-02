@@ -334,6 +334,18 @@ limits can admit this constant-space route. Captured, lazy, nullable, trailing,
 RTL and NonBacktracking shapes retain their existing paths. Matching semantics
 are unchanged; route-dependent workspace/depth and work charges can decrease.
 
+An uncaptured, case-sensitive finite repeat of disjoint classes, such as
+`(?:[A-Z][a-z]+\s*){10,100}`, can Count through its existing prepared plan after
+a complete-root check. The leading and trailing classes must be ASCII; the
+original separator predicate retains Unicode membership. Full strict validation
+precedes counting. Work admission covers at most 2048 search bytes, 64 trailing
+ASCII bytes or 64 separator scalars per quantum; non-ASCII separator predicates
+retain their direct atom charges. Original-token/deadline checks include final
+publication. No local VM arrays or frames are needed, while zero-byte working
+admission still checks enclosing loans and the first denial. Work/depth/working
+costs can therefore fall; other grammars and capture/cursor operations retain
+their existing implementations and lifetimes.
+
 Bounded literal assertions can avoid child VM storage while still admitting
 their logical assertion depth under the original work, token and deadline scope.
 

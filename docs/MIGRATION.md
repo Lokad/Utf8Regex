@@ -130,6 +130,13 @@ counter's scalar-ended 4096-byte admission, including caller-funded Count. This
 reduces work units and can admit tighter storage policies while retaining strict
 validation, original-token cancellation and deadlines.
 
+Count can reuse a prepared disjoint-class repeat such as
+`(?:[A-Z][a-z]+\s*){10,100}` without VM scratch, including on mixed UTF-8.
+Its original separator predicate preserves Unicode whitespace. Complete-input
+validation, bounded work checks and original interruption authority remain;
+route-dependent work/depth/working requirements can be lower. Captured roots
+and unproved shapes retain their existing paths; returned captures/cursors are unchanged.
+
 Use Compile for separate construction caps/timeout/token; ordinary constructors
 retain fixed backstops. Pass execution tokens again later. Cold preparation,
 program/cache retention, standalone getters, callback allocations and host storage
