@@ -1,0 +1,89 @@
+{
+  "Scope": "Untimed search-only anchor locality census. Exact corpus and complete necessary-boundary candidate sequence checked. This omits full-match advancement and is not actual public Count helper-call frequency, throughput or a speedup. No production change. Distinct next hypothesis: near hits may avoid repeated general SIMD setup; no BCL span-substitution retune.",
+  "Rows": [
+    {
+      "Name": "corpus",
+      "Bytes": 53352,
+      "RawAnchors": 5878,
+      "BoundaryEligible": 1387,
+      "SkipLoopAnchorVisits": 4038,
+      "WordBytesSkipped": 17091,
+      "DistanceHistogram0Through7Then8OrMore": [
+        437,
+        272,
+        246,
+        264,
+        247,
+        665,
+        263,
+        219,
+        1425
+      ],
+      "FirstByteHitFraction": 0.10822189202575533,
+      "FirstFourBytesHitFraction": 0.30188211986131747
+    },
+    {
+      "Name": "dense-hits",
+      "Bytes": 20480,
+      "RawAnchors": 2560,
+      "BoundaryEligible": 1536,
+      "SkipLoopAnchorVisits": 2560,
+      "WordBytesSkipped": 3072,
+      "DistanceHistogram0Through7Then8OrMore": [
+        1024,
+        0,
+        0,
+        1,
+        0,
+        0,
+        512,
+        0,
+        1023
+      ],
+      "FirstByteHitFraction": 0.4,
+      "FirstFourBytesHitFraction": 0.400390625
+    },
+    {
+      "Name": "dense-anchor-miss",
+      "Bytes": 32768,
+      "RawAnchors": 32768,
+      "BoundaryEligible": 1,
+      "SkipLoopAnchorVisits": 5,
+      "WordBytesSkipped": 32767,
+      "DistanceHistogram0Through7Then8OrMore": [
+        5,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "FirstByteHitFraction": 1,
+      "FirstFourBytesHitFraction": 1
+    },
+    {
+      "Name": "boundary-false",
+      "Bytes": 17408,
+      "RawAnchors": 2560,
+      "BoundaryEligible": 512,
+      "SkipLoopAnchorVisits": 2048,
+      "WordBytesSkipped": 6144,
+      "DistanceHistogram0Through7Then8OrMore": [
+        0,
+        512,
+        0,
+        0,
+        513,
+        512,
+        0,
+        0,
+        511
+      ],
+      "FirstByteHitFraction": 0,
+      "FirstFourBytesHitFraction": 0.25
+    }
+  ]
+}

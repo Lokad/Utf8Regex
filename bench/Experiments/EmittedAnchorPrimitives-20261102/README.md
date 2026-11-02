@@ -43,6 +43,14 @@ All allocation medians were unchanged. Finite/live/deadline controls moved by
 is unproven; this does not establish that checked BCL primitives generally regress.
 No fixed-original, catalog Status or cumulative acceptance claim is made.
 
+An additional [untimed locality census](anchor-locality.json) retains all necessary
+boundary candidates in order. Only10.82% of its corpus anchor hits are at the
+current byte;30.19% fall within four bytes. It omits full-match advancement and
+does not establish actual public Count helper-call frequency or throughput. This
+does not justify another near-hit peeling pilot. Its source/build/output archive
+is `artifacts/experiments/emitted-anchor-locality-20261102.zip`, SHA256
+`34786E5B04BBCEF3B4E0EEE25EF5DB53CD2E701D8785558383A36B87AD16BBB9`.
+
 Focused Release Core300/runtime passes on .NET10/11. Production emitted tests
 cover one/two/three/four-anchor prefix families, unaligned spans, nonzero offsets,
 tails, complete Count/FindNext sequences and public strict validation/interruption.
