@@ -1,0 +1,24 @@
+{
+  "Disposition": "Rejected and fully reverted: stable public Unicode IsMatch regression above10%; no confirmation/variant",
+  "Parent": "5514a236",
+  "CandidateFocusedPythonPerRuntime": 71,
+  "RestoredPythonPerRuntime": 54,
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "PlannedCases": 15,
+  "CompletedCases": 15,
+  "SamplesPerLane": 5,
+  "Lanes": 4,
+  "MinimumSampleMilliseconds": 45.8248,
+  "ElapsedSeconds": 64.2603978,
+  "AllocationsUnchanged": true,
+  "FullAffectedSuiteRun": false,
+  "PackageOrFullRefreshRun": false,
+  "OriginalCandidatePackagesUnchanged": true,
+  "OriginalFixedBaseline": "a40bda03",
+  "InitialFixtureFailures": "Two count expectations omitted second matches under scoped ASCII/combining-mark semantics; default internal cursor disposed after failed construction. Corrected before timing, runtime unchanged.",
+  "RawArchiveSha256": "EE9BCA4821E57A124FE4D479F0F66AFA77174D433DCF0A74BA642FFFB8C798F1",
+  "CorrectnessArchiveSha256": "64BBFD748D943E98F5D470CEBEE602307356CB572CEC79248A6F30075E4E1B54"
+}

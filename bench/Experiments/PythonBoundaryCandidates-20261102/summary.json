@@ -1,0 +1,122 @@
+[
+  {
+    "Case": "date-miss",
+    "Before": 3.0527606423655365,
+    "After": 2.5036332179930794,
+    "Percent": -17.98789648791288,
+    "AllocBefore": 3568,
+    "AllocAfter": 3568
+  },
+  {
+    "Case": "finite-token",
+    "Before": 3.4904527328172645,
+    "After": 2.9210895017880762,
+    "Percent": -16.312016652625903,
+    "AllocBefore": 3680,
+    "AllocAfter": 3680
+  },
+  {
+    "Case": "deadline-token",
+    "Before": 3.9883773534694966,
+    "After": 3.3769365599909533,
+    "Percent": -15.330565272281715,
+    "AllocBefore": 3728,
+    "AllocAfter": 3728
+  },
+  {
+    "Case": "date-hit",
+    "Before": 0.9687392318599723,
+    "After": 0.9499870373476889,
+    "Percent": -1.9357319178949117,
+    "AllocBefore": 3568,
+    "AllocAfter": 3568
+  },
+  {
+    "Case": "dense-almost-dates",
+    "Before": 72.45854545454546,
+    "After": 53.62125560538117,
+    "Percent": -25.99733369058761,
+    "AllocBefore": 3568,
+    "AllocAfter": 3568
+  },
+  {
+    "Case": "dense-word-interiors",
+    "Before": 102.41107325383304,
+    "After": 55.85655813953488,
+    "Percent": -45.45847791176792,
+    "AllocBefore": 80,
+    "AllocAfter": 80
+  },
+  {
+    "Case": "unicode-prefix",
+    "Before": 586.9941747572816,
+    "After": 650.9054945054945,
+    "Percent": 10.887896762287275,
+    "AllocBefore": 3568,
+    "AllocAfter": 3568
+  },
+  {
+    "Case": "offset",
+    "Before": 1.9448293559148062,
+    "After": 1.597954688483323,
+    "Percent": -17.83573794670129,
+    "AllocBefore": 3568,
+    "AllocAfter": 3568
+  },
+  {
+    "Case": "scoped-ascii",
+    "Before": 2.742798467857308,
+    "After": 2.232076795274137,
+    "Percent": -18.620459307101413,
+    "AllocBefore": 3568,
+    "AllocAfter": 3568
+  },
+  {
+    "Case": "nonboundary-control",
+    "Before": 1.2108824716121966,
+    "After": 1.2203236963292758,
+    "Percent": 0.7796978599012183,
+    "AllocBefore": 3568,
+    "AllocAfter": 3568
+  },
+  {
+    "Case": "captured-control",
+    "Before": 3.448764386282643,
+    "After": 2.9604747860561815,
+    "Percent": -14.158392558465827,
+    "AllocBefore": 5760,
+    "AllocAfter": 5760
+  },
+  {
+    "Case": "anchored-control",
+    "Before": 1.004309825195901,
+    "After": 0.9694604456175763,
+    "Percent": -3.4699829379372105,
+    "AllocBefore": 3616,
+    "AllocAfter": 3616
+  },
+  {
+    "Case": "literal-control",
+    "Before": 0.3037152550624534,
+    "After": 0.30521767240290737,
+    "Percent": 0.49467957746971436,
+    "AllocBefore": 0,
+    "AllocAfter": 0
+  },
+  {
+    "Case": "boundary-count-control",
+    "Before": 176.27163742690058,
+    "After": 189.06257861635217,
+    "Percent": 7.2563807633295285,
+    "AllocBefore": 0,
+    "AllocAfter": 0
+  },
+  {
+    "Case": "core-count-control",
+    "Before": 1.8576941851241686,
+    "After": 1.8737036688911866,
+    "Percent": 0.8617932862801991,
+    "AllocBefore": 0,
+    "AllocAfter": 0
+  }
+]
