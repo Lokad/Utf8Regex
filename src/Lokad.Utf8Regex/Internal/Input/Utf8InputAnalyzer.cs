@@ -12,7 +12,7 @@ internal static class Utf8InputAnalyzer
 
     public static bool IsAscii(ReadOnlySpan<byte> input)
     {
-        return input.IndexOfAnyExceptInRange((byte)0x00, (byte)0x7F) < 0;
+        return System.Text.Ascii.IsValid(input);
     }
 
     public static Utf8ValidatedInput Analyze(ReadOnlySpan<byte> input)
