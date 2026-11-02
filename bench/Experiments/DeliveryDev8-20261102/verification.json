@@ -1,0 +1,65 @@
+{
+  "FrozenSource": "27078deb7d80c96e7e9b020e037df304c3e931a4",
+  "Version": "0.5.0-dev.8",
+  "Published": false,
+  "Profiles": [
+    "Core",
+    "PythonRe",
+    "Pcre2"
+  ],
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "WindowsDetachedPassed": 107378,
+  "LinuxExactWindowsAssetDetachedPassed": 107378,
+  "WindowsQualificationSeconds": 246.5519509,
+  "ActualAwkPerFrameworkPerPlatform": 19,
+  "ActualLythonPerFrameworkPerPlatform": 118,
+  "PublicNativeFundedProbes": "Pass both frameworks/platforms; exact loaded assets and final root loans zero",
+  "OriginalWindowsCompilationDocuments": 463,
+  "LinuxAssets": 6,
+  "LinuxRestoreAudits": 24,
+  "FullRefreshSeconds": 2512.1104167,
+  "FullRefreshScope": "Full",
+  "FullRefreshComplete": true,
+  "FullRefreshSteps": 83,
+  "FullRefreshExitCode": 0,
+  "CumulativeCases": 79.0,
+  "CumulativeTimedSeconds": 382.8878553,
+  "MaximumCoveredAdversePercent": 8.28786607395795,
+  "ConfirmationRuns": 0,
+  "CumulativeScope": "Fixed-a40 representative public operations; no universal or noise-free parity claim",
+  "CoreStatuses": {
+    "Gap": 65,
+    "TieCandidate": 2,
+    "Unqualified": 4,
+    "Win": 107
+  },
+  "PythonStatuses": {
+    "CpythonFaster": 45,
+    "Inconclusive": 13,
+    "ManagedFaster": 29,
+    "Unqualified": 3
+  },
+  "Pcre2NativeStatuses": {
+    "Equivalent": 4,
+    "Excluded": 25,
+    "Inconclusive": 13,
+    "ManagedFaster": 73,
+    "NativeFaster": 11
+  },
+  "SourceCiRun": 41362554601,
+  "SourceCi": "Green Windows/Linux",
+  "SnapshotChecks": "Core3/Python1/Pcre1 per runtime, current affected-project binaries; actual imported snapshots found from repository",
+  "ScopeNotes": "Earlier2598 gate rejection and confirmation remain intact. Current package/data/performance scopes are separate. Status changes include uncertainty/comparator movement, not causal speedups. No row was resampled for status; Leipzig four rows and Python three remain unqualified, native25excluded.",
+  "Archives": {
+    "cumulative-27078deb-accepted.tar.gz": "0B799800F5D83414A3C3194C6F792289BFAE57133957B3AA2907C845E259926A",
+    "full-refresh-27078deb.tar.gz": "64E48C9249F57778552D5069B7B7DF8A9B34DD65A15F361577645D54F6EBCD7A",
+    "linux-consumers.tar.gz": "438E3E8FF47E677B82128C97BD7BC9A25F6B933F3DEF799D9E6BEA40F18AF0F6",
+    "post-import-snapshot-checks.zip": "73F57D685CD438CBEA82E9687F5590CC5E31FA927D7714FC03DCE5F4392F2C4A",
+    "producer-source.tar.gz": "9A615A9FFE9B795D451F8BF3A143CAB906060F352081AEADC2EE1FCE8DB40D2F",
+    "windows-compilation-inputs.zip": "F7B6C8E9E7BC99CBB251E6FD6D134EC96FB982E59058354BC1AFBF309CA1EC34",
+    "windows-consumers.tar.gz": "4E7F9B0EC3DDCAE497BC24A1656D6A4631B195D3CDFE89E23EC3B9D52F8D85AB"
+  }
+}

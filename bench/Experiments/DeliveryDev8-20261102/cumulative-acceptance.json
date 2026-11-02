@@ -1,0 +1,59 @@
+{
+  "Source": "27078deb7d80c96e7e9b020e037df304c3e931a4",
+  "Baseline": "a40bda03",
+  "Accepted": true,
+  "Cases": 79.0,
+  "TimedSeconds": 382.8878553,
+  "ConfirmationRuns": 0,
+  "ConfirmationCases": 0,
+  "ConfirmationSeconds": 0,
+  "Scope": "Fixed-original public operating-cost gate; all initial results and any sole selected confirmation retained. If present, selected repeat rows assess pooled ten samples per version with separate initial/confirmation medians. Not package, catalog or platform qualification.",
+  "Parts": [
+    {
+      "Part": "cost",
+      "Cases": 26,
+      "Seconds": 109.5948597,
+      "MinimumSampleMilliseconds": 47.274,
+      "InitialFailures": [],
+      "Failures": [],
+      "MaximumChangePercent": 6.415585855226702
+    },
+    {
+      "Part": "pcre2-cost",
+      "Cases": 17,
+      "Seconds": 63.7835865,
+      "MinimumSampleMilliseconds": 49.7635,
+      "InitialFailures": [],
+      "Failures": [],
+      "MaximumChangePercent": 1.4047933796702772
+    },
+    {
+      "Part": "union",
+      "Cases": 14,
+      "Seconds": 82.1521194,
+      "MinimumSampleMilliseconds": 33.8306,
+      "InitialFailures": [],
+      "Failures": [],
+      "MaximumChangePercent": 5.5073123981389305
+    },
+    {
+      "Part": "repeat",
+      "Cases": 16,
+      "Seconds": 91.6661197,
+      "MinimumSampleMilliseconds": 41.0767,
+      "InitialFailures": [],
+      "Failures": [],
+      "MaximumChangePercent": 8.28786607395795
+    },
+    {
+      "Part": "findall",
+      "Cases": 6,
+      "Seconds": 35.69117,
+      "MinimumSampleMilliseconds": 50.6359,
+      "InitialFailures": [],
+      "Failures": [],
+      "MaximumChangePercent": 2.041022749883936
+    }
+  ],
+  "Confirmation": null
+}

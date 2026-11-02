@@ -1,0 +1,106 @@
+{
+  "Version": "0.5.0-dev.8",
+  "Source": "27078deb7d80c96e7e9b020e037df304c3e931a4",
+  "Complete": true,
+  "Scope": "Actual copied Awk adapter, matching committed Lython runtime/provider, and public native/funded producer APIs consume immutable Windows package assets. No producer/consumer checkout edits or package repacking. Compatibility is separate from downstream adoption/POSIX acceptance.",
+  "Checks": [
+    {
+      "Fixture": "Awk",
+      "Framework": "net10.0",
+      "Total": 19,
+      "Passed": 19,
+      "TrxSha256": "8BAE99AC9D2F397EA14AC363FAC68AF2325C317C56C96CB3E04527D90824E317",
+      "Assets": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "Sha256": "087BB5E17C70403045AD4378F09C2A849BC628A651BAB891935A8D8E5973C9A8"
+        }
+      ]
+    },
+    {
+      "Fixture": "Awk",
+      "Framework": "net11.0",
+      "Total": 19,
+      "Passed": 19,
+      "TrxSha256": "E5212403E6B65A4BFCFB323A5568828F7FA0138DFC12A12EBF2EE19BFBC6AB14",
+      "Assets": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "Sha256": "FA9405C103488946A80F8092B2C4428F66ADE09881172BB1F79B0B3D7D09484B"
+        }
+      ]
+    },
+    {
+      "Fixture": "Lython",
+      "Framework": "net10.0",
+      "Total": 118,
+      "Passed": 118,
+      "TrxSha256": "B781DAF4B4CA5BAA7198EAD494CC3EAB1D50C17342902C767F7D32CC9379456E",
+      "Assets": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "Sha256": "087BB5E17C70403045AD4378F09C2A849BC628A651BAB891935A8D8E5973C9A8"
+        },
+        {
+          "Id": "Lokad.Utf8Regex.PythonRe",
+          "Sha256": "EA06DEE59F7B763D8C471D42020198BB0F42F93CD0061310D9BAEEFC334BE11F"
+        }
+      ]
+    },
+    {
+      "Fixture": "Lython",
+      "Framework": "net11.0",
+      "Total": 118,
+      "Passed": 118,
+      "TrxSha256": "4F8B32ECB87A6C854CBDD8CC14B8ADE243DFEFD77A6A1ED55FE4241C4C0D4EFC",
+      "Assets": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "Sha256": "FA9405C103488946A80F8092B2C4428F66ADE09881172BB1F79B0B3D7D09484B"
+        },
+        {
+          "Id": "Lokad.Utf8Regex.PythonRe",
+          "Sha256": "6ED74967AE665C44892381BB420C2E91EDEF396E4C2680B303BE4F9FACAAD504"
+        }
+      ]
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "Framework": "net10.0",
+      "Passed": true,
+      "Assets": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "Sha256": "087BB5E17C70403045AD4378F09C2A849BC628A651BAB891935A8D8E5973C9A8"
+        },
+        {
+          "Id": "Lokad.Utf8Regex.PythonRe",
+          "Sha256": "EA06DEE59F7B763D8C471D42020198BB0F42F93CD0061310D9BAEEFC334BE11F"
+        },
+        {
+          "Id": "Lokad.Utf8Regex.Pcre2",
+          "Sha256": "483F19A221B7F71520832F3757C250F60A0A963F56385306055EE5E0E7D7C0CC"
+        }
+      ]
+    },
+    {
+      "Fixture": "PublicProducerApis",
+      "Framework": "net11.0",
+      "Passed": true,
+      "Assets": [
+        {
+          "Id": "Lokad.Utf8Regex",
+          "Sha256": "FA9405C103488946A80F8092B2C4428F66ADE09881172BB1F79B0B3D7D09484B"
+        },
+        {
+          "Id": "Lokad.Utf8Regex.PythonRe",
+          "Sha256": "6ED74967AE665C44892381BB420C2E91EDEF396E4C2680B303BE4F9FACAAD504"
+        },
+        {
+          "Id": "Lokad.Utf8Regex.Pcre2",
+          "Sha256": "322E3BD6C75AB816D42703FB29908B756EAAE9BE0F8EE742C4575C6F96715707"
+        }
+      ]
+    }
+  ]
+}
