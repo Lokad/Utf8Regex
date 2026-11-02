@@ -57,6 +57,12 @@ denial directly on the ledger. That and the analogous string-getter fixture were
 migrated; initial failure, focused repair pass and final combined pass are saved.
 Production runtime was unchanged after its one performance run.
 
+Source CI on `cb4320f5` caught eight benchmark-only references to the removed
+ledger property in two replay/portfolio tools. The initial audit covered shipped
+source and tests but missed those consumers. They now use the identical invocation
+predicate too; the affected benchmark project is built for both targets. This
+repair changes no shipped runtime and does not require another performance run.
+
 Raw driver/protocol, all DLL/PDB sets and hashes, samples, actual-size probe,
 complete patch and test logs:
 `artifacts/experiments/working-ceiling-20261102/evidence.tar.gz`, SHA256

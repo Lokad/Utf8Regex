@@ -34,10 +34,10 @@ internal static class Utf8CandidateVerificationReplay
         {
             breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
-            starts = program.GroupCount == 0 ? [] : Utf8ExactStatePool<int>.Rent(program.GroupCount, invocation.Ledger.IsUnlimited);
+            starts = program.GroupCount == 0 ? [] : Utf8ExactStatePool<int>.Rent(program.GroupCount, invocation.HasUnlimitedWorkingMemory);
             breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
-            ends = program.GroupCount == 0 ? [] : Utf8ExactStatePool<int>.Rent(program.GroupCount, invocation.Ledger.IsUnlimited);
+            ends = program.GroupCount == 0 ? [] : Utf8ExactStatePool<int>.Rent(program.GroupCount, invocation.HasUnlimitedWorkingMemory);
             var match = Utf8SliceRunner.TryMatchAt(program, input, attempt, starts, ends,
                 startIsScalarBoundary: true, ref invocation);
             if (match.Breach != Utf8ExecutionLimitKind.None) return match.Breach;
@@ -66,8 +66,8 @@ internal static class Utf8CandidateVerificationReplay
         }
         finally
         {
-            if (starts is not null) Utf8ExactStatePool<int>.Return(starts, invocation.Ledger.IsUnlimited);
-            if (ends is not null) Utf8ExactStatePool<int>.Return(ends, invocation.Ledger.IsUnlimited);
+            if (starts is not null) Utf8ExactStatePool<int>.Return(starts, invocation.HasUnlimitedWorkingMemory);
+            if (ends is not null) Utf8ExactStatePool<int>.Return(ends, invocation.HasUnlimitedWorkingMemory);
             invocation.Ledger.Release(bytes);
         }
     }

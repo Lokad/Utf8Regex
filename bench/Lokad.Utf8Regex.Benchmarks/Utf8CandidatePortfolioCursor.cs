@@ -67,7 +67,7 @@ internal ref struct Utf8CandidatePortfolioCursor
                 if (admission != Utf8ExecutionLimitKind.None)
                     throw new InvalidOperationException($"Scalar candidate portfolio exceeded {admission}.");
                 _reservedBytes = bytes;
-                var retain = invocation.Ledger.IsUnlimited;
+                var retain = invocation.HasUnlimitedWorkingMemory;
                 Check();
                 _states = Utf8ExactStatePool<Utf8StructuralSearchState>.Rent(capacity, retain);
                 Check();
@@ -141,19 +141,19 @@ internal ref struct Utf8CandidatePortfolioCursor
     {
         if (_states is { } states)
         {
-            Utf8ExactStatePool<Utf8StructuralSearchState>.Return(states, _invocation.Ledger.IsUnlimited);
+            Utf8ExactStatePool<Utf8StructuralSearchState>.Return(states, _invocation.HasUnlimitedWorkingMemory);
             _states = null;
         }
 
         if (_candidates is { } candidates)
         {
-            Utf8ExactStatePool<Utf8StructuralCandidate>.Return(candidates, _invocation.Ledger.IsUnlimited);
+            Utf8ExactStatePool<Utf8StructuralCandidate>.Return(candidates, _invocation.HasUnlimitedWorkingMemory);
             _candidates = null;
         }
 
         if (_available is { } available)
         {
-            Utf8ExactStatePool<bool>.Return(available, _invocation.Ledger.IsUnlimited);
+            Utf8ExactStatePool<bool>.Return(available, _invocation.HasUnlimitedWorkingMemory);
             _available = null;
         }
         _invocation.Ledger.Release(_reservedBytes);
