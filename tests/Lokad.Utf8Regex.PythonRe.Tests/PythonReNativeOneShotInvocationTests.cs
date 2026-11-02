@@ -8,6 +8,47 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReNativeOneShotInvocationTests
 {
     [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void LiteralSearchObservesOriginalAuthorityAfterWholeValidation(bool expire)
+    {
+        const string pattern = "abcdefghijklmnopq";
+        var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, timeout,
+            new() { MaxWorkSteps = 100000, MaxWorkingBytes = 1UL << 20 });
+        var input = Encoding.UTF8.GetBytes(new string('x', 131072) + pattern);
+        using var token = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var limits = new Utf8ExecutionLimits(100000, 0, 1UL << 20);
+        var probe = new Utf8SliceInvocation(limits, timeout, token.Token);
+        _ = Utf8Validation.Validate(input, ref probe);
+        var validationSteps = probe.Budget.Steps;
+        var invocation = new Utf8SliceInvocation(limits, timeout, token.Token);
+        Assert.True(invocation.Ledger.TryReserve(13));
+        var enteredSearch = false;
+        invocation.CheckpointHook = step =>
+        {
+            if (step <= validationSteps) return;
+            enteredSearch = true;
+            if (expire) ticks = 50; else token.Cancel();
+        };
+        Exception? failure = null;
+        try { _ = regex.MaterializeNativeMatchValue(input, 0, 2, ref invocation); }
+        catch (Exception error) { failure = error; }
+        Assert.True(enteredSearch);
+        if (expire)
+        {
+            var error = Assert.IsType<RegexMatchTimeoutException>(failure);
+            Assert.Equal(pattern, error.Pattern);
+            Assert.Equal(timeout, error.MatchTimeout);
+            Assert.Empty(error.Input);
+        }
+        else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        invocation.Ledger.Release(13);
+    }
+
+    [Theory]
     [InlineData(0, "é😀", "xé😀z", 0, 1, 7, 1, 4, "é😀")]
     [InlineData(1, "é😀", "é😀z", 0, 0, 6, 0, 3, "é😀")]
     [InlineData(1, "é😀", "xé😀z", 0, 0, 0, 0, 0, null)]

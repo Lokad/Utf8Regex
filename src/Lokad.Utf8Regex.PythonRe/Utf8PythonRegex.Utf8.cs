@@ -429,7 +429,7 @@ public sealed partial class Utf8PythonRegex
     {
         ValidateScalarStartOffset(input, startOffsetInBytes);
         var control = new Utf8InvocationBufferControl(ref invocation);
-        Utf8InvocationOutput.Checkpoint(control);
+        // Each route enters full validation before its metered comparison/search.
         start = end = -1;
         validation = default;
         if (kind == 1 && _asciiLiteralPrefixDigitMatchPrefix is { } prefix)

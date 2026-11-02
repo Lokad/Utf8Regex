@@ -19,8 +19,8 @@ public sealed partial class Utf8Regex
             _preparedRegex.LiteralUtf8 is not { } literal || UsesRightToLeft())
             throw new InvalidOperationException("Literal result discovery requires an exact LTR literal.");
         validation = Utf8Validation.Validate(input, ref invocation);
-        var control = new Utf8InvocationBufferControl(ref invocation);
-        Utf8InvocationOutput.Checkpoint(control);
+        // Validation and search own their bounded checkpoints; the adapter
+        // retains its final publication check.
         if (literal.Length == 0)
         {
             start = end = startOffsetInBytes;
@@ -30,7 +30,6 @@ public sealed partial class Utf8Regex
             input, startOffsetInBytes, input.Length, false, ref invocation, out var match, out var found);
         if (breach != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException($"Native literal result discovery exceeded {breach}.");
-        Utf8InvocationOutput.Checkpoint(control);
         if (!found) return false;
         start = match.Index;
         end = match.Index + match.Length;

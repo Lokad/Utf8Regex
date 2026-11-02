@@ -248,6 +248,11 @@ discovery checks interruption before reporting EOF. Timeout uses
 pattern, while nested Core exceptions propagate. Finite working/result byte caps
 omit diagnostic subject text.
 
+Native literal value/text operations use validation and discovery's own bounded
+checkpoints, followed by final publication checks. Adjacent helper boundaries
+add no separate work charges. This can reduce required work units without
+changing interruption bounds or byte/depth/result admission.
+
 Constructors defer general FullMatch preparation; Compile completes it eagerly.
 Cold FullMatch copies the existing instruction program with an end constraint,
 sharing immutable tables/names. Its token/deadline is the current invocation's;
