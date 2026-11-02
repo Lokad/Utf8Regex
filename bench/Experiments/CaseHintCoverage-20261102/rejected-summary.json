@@ -1,0 +1,76 @@
+{
+  "ElapsedSeconds": 34.5045444,
+  "MinimumSampleMilliseconds": 48.6201,
+  "Rows": [
+    {
+      "Name": "construct-unicode16-variable-width",
+      "BeforeUs": 31.042339121552605,
+      "AfterUs": 33.41336689038031,
+      "ChangePercent": 7.638044799212662,
+      "BeforeBytes": 22272,
+      "AfterBytes": 23608,
+      "BeforeSpread": 1.0392847049585643,
+      "AfterSpread": 1.0420952682386455
+    },
+    {
+      "Name": "construct-unicode16-cyrillic",
+      "BeforeUs": 31.019459459459455,
+      "AfterUs": 32.72154769846564,
+      "ChangePercent": 5.487162796085188,
+      "BeforeBytes": 22272,
+      "AfterBytes": 23568,
+      "BeforeSpread": 1.0384067313564496,
+      "AfterSpread": 1.0322520932700674
+    },
+    {
+      "Name": "construct-ascii-control",
+      "BeforeUs": 93.10909090909091,
+      "AfterUs": 99.25779967159278,
+      "ChangePercent": 6.6037684424448795,
+      "BeforeBytes": 48024,
+      "AfterBytes": 48024,
+      "BeforeSpread": 1.0169259986221852,
+      "AfterSpread": 1.0040248222245807
+    },
+    {
+      "Name": "construct-cyrillic-control",
+      "BeforeUs": 41.094914089347085,
+      "AfterUs": 41.026373626373626,
+      "ChangePercent": -0.16678575559117004,
+      "BeforeBytes": 40392,
+      "AfterBytes": 40392,
+      "BeforeSpread": 1.011835178675743,
+      "AfterSpread": 1.0118905915000107
+    },
+    {
+      "Name": "count-unicode16-variable-width",
+      "BeforeUs": 38.021329113924054,
+      "AfterUs": 43.23120516499282,
+      "ChangePercent": 13.702509019235798,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0051481361577714,
+      "AfterSpread": 1.0018480325599406
+    },
+    {
+      "Name": "count-ascii-control",
+      "BeforeUs": 7.645680428134557,
+      "AfterUs": 8.521522042942449,
+      "ChangePercent": 11.455378275882055,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.4295215170040245,
+      "AfterSpread": 1.2011894183697578
+    },
+    {
+      "Name": "count-cyrillic-control",
+      "BeforeUs": 6.695068882571616,
+      "AfterUs": 6.559927955463377,
+      "ChangePercent": -2.018514364505397,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.209405543458686,
+      "AfterSpread": 1.0022440102764334
+    }
+  ]
+}

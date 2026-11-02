@@ -166,9 +166,9 @@ and cache identity; later ambient culture changes cannot alter the expression.
 | Non-Turkic culture | I/i/İ; ı remains distinct |
 | Turkic culture | I/ı and İ/i |
 
-Supplementary simple-case mappings use owned Unicode 16.0 data. General
-categories/shorthands use runtime scalar properties; this is not a claim that
-every Core property table is pinned. [PythonRe](SPEC-PYTHONRE.md) owns its
+Case-equivalence mappings use owned Unicode 16.0 data for BMP and supplementary
+scalars. General categories/shorthands use runtime scalar properties.
+[PythonRe](SPEC-PYTHONRE.md) owns its
 separate Unicode 15.1 rules.
 
 ## Results, splitting and replacement

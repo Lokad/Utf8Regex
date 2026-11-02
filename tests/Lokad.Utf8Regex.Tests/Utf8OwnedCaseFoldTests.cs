@@ -1,11 +1,12 @@
 using System.Text.RegularExpressions;
+using System.Text;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// The owned fold table must reproduce BCL invariant IgnoreCase folding over
-// the whole BMP: every table entry matches its partners through the BCL engine,
-// and every character with a distinct invariant case variant folds.
+// Parser hints are conservative; a missing hint keeps the owned scalar route.
+// Validate the hint subset against overlapping regex semantics and validate
+// public Unicode 16 behavior independently of host NLS/ICU char conversion.
 public sealed class Utf8OwnedCaseFoldTests
 {
     [Fact]
@@ -36,25 +37,36 @@ public sealed class Utf8OwnedCaseFoldTests
         Assert.True(failures.Count == 0, "Fold table mismatches:" + System.Environment.NewLine + string.Join(System.Environment.NewLine, failures.Take(20)));
     }
 
-    [Fact]
-    public void FoldTableCoversCaseVariants()
+    [Theory]
+    [InlineData("\u1C89", "\u1C8A")]
+    [InlineData("\u0264", "\uA7CB")]
+    [InlineData("\uA7CC", "\uA7CD")]
+    [InlineData("\u019B", "\uA7DC")]
+    [InlineData("\uA7DA", "\uA7DB")]
+    public void Unicode16MatchingUsesCompleteScalarPairs(string left, string right)
     {
-        // Twenty-two symbols have distinct invariant case variants yet match only
-        // themselves through BCL (machine-probed matrices): they stay unfolded.
-        var intentionallyUnfolded = new System.Collections.Generic.HashSet<int>(new[] { 0xB5, 0x17F, 0x345, 0x3C2, 0x3D0, 0x3D1, 0x3D5, 0x3D6, 0x3F0, 0x3F1, 0x3F5, 0x1C80, 0x1C81, 0x1C82, 0x1C83, 0x1C84, 0x1C85, 0x1C86, 0x1C87, 0x1C88, 0x1E9B, 0x1FBE });
-        var missing = new System.Collections.Generic.List<string>();
-        for (var n = 0; n <= 0xFFFF; n++)
+        foreach (var (pattern, subject) in new[] { (left, right), (right, left) })
+        foreach (var compiled in new[] { false, true })
         {
-            var c = (char)n;
-            if ((char.ToLowerInvariant(c) != c || char.ToUpperInvariant(c) != c) && !intentionallyUnfolded.Contains(n))
-            {
-                if (!Utf8OwnedCaseFold.TryGetFold(c, out _, out _))
-                {
-                    missing.Add(n.ToString("X4"));
-                }
-            }
+            var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.IgnoreCase |
+                (compiled ? RegexOptions.Compiled : RegexOptions.None));
+            var input = Encoding.UTF8.GetBytes(subject);
+            var match = regex.Match(input);
+            Assert.True(match.Success);
+            Assert.Equal(input.Length, match.LengthInBytes);
+            Assert.Equal(1, match.LengthInUtf16);
+            Assert.Equal(1, regex.Count(input));
         }
+    }
 
-        Assert.True(missing.Count == 0, "Unfolded case variants:" + System.Environment.NewLine + string.Join(System.Environment.NewLine, missing.Take(20)));
+    [Theory]
+    [InlineData("\uA7CE", "\uA7CF")]
+    [InlineData("\uA7D2", "\uA7D3")]
+    [InlineData("\uA7D4", "\uA7D5")]
+    public void NewerHostCasingDoesNotChangeOwnedUnicode16Matching(string left, string right)
+    {
+        var flags = RegexOptions.CultureInvariant | RegexOptions.IgnoreCase;
+        Assert.False(new Utf8Regex(left, flags).IsMatch(Encoding.UTF8.GetBytes(right)));
+        Assert.False(new Utf8Regex(right, flags).IsMatch(Encoding.UTF8.GetBytes(left)));
     }
 }

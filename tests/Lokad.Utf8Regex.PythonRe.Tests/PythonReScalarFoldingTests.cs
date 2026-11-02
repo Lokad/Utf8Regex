@@ -6,6 +6,18 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed partial class PythonReScalarFoldingTests
 {
+    [Theory]
+    [InlineData("\u1C89", "\u1C8A")]
+    [InlineData("\u0264", "\uA7CB")]
+    [InlineData("\uA7CC", "\uA7CD")]
+    [InlineData("\u019B", "\uA7DC")]
+    [InlineData("\uA7DA", "\uA7DB")]
+    public void CoreUnicode16SupportDoesNotExpandPinnedPython151Folding(string left, string right)
+    {
+        Assert.False(new Utf8PythonRegex("(?i:" + left + ")").IsMatch(Encoding.UTF8.GetBytes(right)));
+        Assert.False(new Utf8PythonRegex("(?i:" + right + ")").IsMatch(Encoding.UTF8.GetBytes(left)));
+    }
+
     public static IEnumerable<object[]> ReferenceBlocks()
     {
         for (var start = 0; start < ReferenceControls.Length; start += 128)
