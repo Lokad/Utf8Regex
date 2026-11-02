@@ -30,6 +30,8 @@
 - Reuse admitted literals for capture-free repeated-literal PythonRe value
   FullMatch, reducing execution work and temporary storage while preserving
   strict validation, cancellation and finite resource limits.
+- Reuse validated subject-end coordinates for PythonRe scalar value results,
+  avoiding redundant Unicode scans without changing strict input validation.
 - Reduce shared PCRE2 VM overhead for controlled matching and capture operations.
 - Speed up NonBacktracking batches and scan proved complete anchored-line Count
   roots without a viability table. Captures, cursors and bounded interruption
