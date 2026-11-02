@@ -1,0 +1,58 @@
+{
+  "Scope": "Read-only canonical b757 prepared-route facts; no timing or production mutation",
+  "CoreSha256": "DDD2AD70FC674ABA96522B662150003C1C3A17D7190207750C9B2270CD9A6132",
+  "PythonSha256": "15C5B048A0F7BBE9F75BA5173A09599EFCD0E26C906917520050C8C22B881DC6",
+  "Version": "0.5.0-dev.11\u002Bb757befb3a83bfd7d5d83d1c254936510d8edca8",
+  "Rows": [
+    {
+      "Pattern": "(?\u003Ea?)b",
+      "CorePresent": true,
+      "CoreKind": "FallbackRegex",
+      "CompleteNative": false,
+      "CandidateUsable": false,
+      "LeadingRange": false,
+      "Low": -1,
+      "High": -1
+    },
+    {
+      "Pattern": "(?:ab)\u002Bc",
+      "CorePresent": true,
+      "CoreKind": "FallbackRegex",
+      "CompleteNative": false,
+      "CandidateUsable": false,
+      "LeadingRange": true,
+      "Low": 97,
+      "High": 97
+    },
+    {
+      "Pattern": "(?i:(?:ab)\u002B)",
+      "CorePresent": true,
+      "CoreKind": "FallbackRegex",
+      "CompleteNative": false,
+      "CandidateUsable": true,
+      "LeadingRange": true,
+      "Low": 65,
+      "High": 97
+    },
+    {
+      "Pattern": "needle",
+      "CorePresent": true,
+      "CoreKind": "ExactAsciiLiteral",
+      "CompleteNative": true,
+      "CandidateUsable": true,
+      "LeadingRange": true,
+      "Low": 110,
+      "High": 110
+    },
+    {
+      "Pattern": "(?:ab[cd])\u002B",
+      "CorePresent": true,
+      "CoreKind": "FallbackRegex",
+      "CompleteNative": false,
+      "CandidateUsable": true,
+      "LeadingRange": true,
+      "Low": 97,
+      "High": 97
+    }
+  ]
+}
