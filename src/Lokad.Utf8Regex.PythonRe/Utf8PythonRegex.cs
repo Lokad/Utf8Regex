@@ -181,6 +181,8 @@ public sealed partial class Utf8PythonRegex
         else _patternSource = patternSource.Text;
         Options = options;
         ResourcePolicy = resourcePolicy;
+        HasFiniteExecutionLimits = resourcePolicy.MaxWorkSteps.HasValue || resourcePolicy.MaxDepth.HasValue ||
+            resourcePolicy.MaxWorkingBytes.HasValue || resourcePolicy.MaxResultBytes.HasValue;
 
         var parser = PythonReParser.Create(_patternSource);
         var parseResult = parser.Parse(options);
@@ -333,7 +335,7 @@ public sealed partial class Utf8PythonRegex
     /// <remarks>The count comes from the validated grammar and does not depend on match participation.</remarks>
     public int CaptureGroupCount => _scalarProgram.GroupCount;
 
-    private bool HasFiniteExecutionLimits => ResourcePolicy.MaxWorkSteps.HasValue || ResourcePolicy.MaxDepth.HasValue || ResourcePolicy.MaxWorkingBytes.HasValue || ResourcePolicy.MaxResultBytes.HasValue;
+    private bool HasFiniteExecutionLimits { get; }
 
     private Utf8ExecutionLimits InvocationLimits => new(ResourcePolicy.MaxWorkSteps ?? 0, ResourcePolicy.MaxDepth ?? 0, ResourcePolicy.MaxWorkingBytes ?? 0, ResourcePolicy.MaxResultBytes ?? 0);
 

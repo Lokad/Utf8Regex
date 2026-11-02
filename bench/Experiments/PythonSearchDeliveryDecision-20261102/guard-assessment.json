@@ -1,0 +1,271 @@
+{
+  "Scope": "Single parent comparison of removal of internal literal eligibility guard; no cumulative acceptance claim",
+  "Accepted": false,
+  "Status": "RejectedNoPrimaryGain",
+  "RuntimeChangeReverted": true,
+  "Parent": "d7938115",
+  "BeforeSource": "b8099e59",
+  "After": "Only Core rebuilt with archived guard-deletion patch; Python DLL/PDB identical",
+  "ElapsedSeconds": 77.1504979,
+  "PublicOperations": 18,
+  "PublicConstructors": 2,
+  "SamplesPerLane": 5,
+  "RequiredPrimaryGainPercent": 2,
+  "PrimaryChangePercent": 0.5646985630975099,
+  "PrimaryPairedChangePercent": [
+    0.3907005047004031,
+    0.5148388368763301,
+    0.6928438645735113,
+    0.6023018222624188,
+    0.6260863322421484
+  ],
+  "MaximumAdversePercent": 4.780336683840347,
+  "MinimumSampleMilliseconds": 43.3126,
+  "ProducerAllocationsUnchanged": true,
+  "NoiseConfirmationUsed": false,
+  "Decision": "All five primary pairs regress 0.39..0.69%; no useful gain, no confirmation or variants.",
+  "BeforeIdentities": {
+    "Core": {
+      "Version": "0.5.0-dev.13+b8099e59ec41ec0df6a502b171240cc5f4654b2d",
+      "Sha256": "82D2693C80BF0E325CEA082054171E59A156EFFC9989A08521A4E91B5E5358ED"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.13+b8099e59ec41ec0df6a502b171240cc5f4654b2d",
+      "Sha256": "63D1AED35C4B23FA0A3D6951533562D5C73815B840AF706BA3604666B5C04E3A"
+    }
+  },
+  "AfterIdentities": {
+    "Core": {
+      "Version": "0.5.0-dev.13+d79381153be7364dc9bda69587f6bb471090095f",
+      "Sha256": "741D1CDB4CFBCE89048719BE9AA32E225C4939F8C178750CFC875B6E469E768F"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.13+b8099e59ec41ec0df6a502b171240cc5f4654b2d",
+      "Sha256": "63D1AED35C4B23FA0A3D6951533562D5C73815B840AF706BA3604666B5C04E3A"
+    }
+  },
+  "RawArchiveSha256": "243244352455EB5D7CE6526049B47C6BADA1AAFFC1D39B286ECB11479746FDCE",
+  "EntryCodegenArchiveSha256": "96FAB85A365183A81119DDFE144FD252B3D807893EF92BBF442A7A5B2DC29FFD",
+  "Rows": [
+    {
+      "Name": "core-count-control",
+      "BeforeMicroseconds": 1.643707244704525,
+      "AfterMicroseconds": 1.639371960768153,
+      "ChangePercent": -0.263750369802096,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0,
+      "BeforeSpreadRatio": 1.0082722398511872,
+      "AfterSpreadRatio": 1.0056368743993496,
+      "MinimumSampleMilliseconds": 59.4035
+    },
+    {
+      "Name": "actual-unicode-hit",
+      "BeforeMicroseconds": 16.077048741296196,
+      "AfterMicroseconds": 15.90084745762712,
+      "ChangePercent": -1.0959802791197348,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0,
+      "BeforeSpreadRatio": 1.0080200309065421,
+      "AfterSpreadRatio": 1.0057148392096087,
+      "MinimumSampleMilliseconds": 55.5831
+    },
+    {
+      "Name": "actual-unicode-miss",
+      "BeforeMicroseconds": 16.17419012214551,
+      "AfterMicroseconds": 15.881388595564943,
+      "ChangePercent": -1.8103010065379954,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0,
+      "BeforeSpreadRatio": 1.0121316439239798,
+      "AfterSpreadRatio": 1.0088766717731839,
+      "MinimumSampleMilliseconds": 59.4557
+    },
+    {
+      "Name": "ascii-repeat-hit",
+      "BeforeMicroseconds": 16.5285635359116,
+      "AfterMicroseconds": 15.632356289129197,
+      "ChangePercent": -5.42217262156639,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0,
+      "BeforeSpreadRatio": 1.042011976210844,
+      "AfterSpreadRatio": 1.0448058880739446,
+      "MinimumSampleMilliseconds": 54.7004
+    },
+    {
+      "Name": "mixed-scalar-repeat-hit",
+      "BeforeMicroseconds": 18.473116962645438,
+      "AfterMicroseconds": 18.1331221719457,
+      "ChangePercent": -1.8404841553661067,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0,
+      "BeforeSpreadRatio": 1.0030490437693886,
+      "AfterSpreadRatio": 1.0048313209782798,
+      "MinimumSampleMilliseconds": 59.4126
+    },
+    {
+      "Name": "offset-unicode-hit",
+      "BeforeMicroseconds": 16.187396749267254,
+      "AfterMicroseconds": 16.027827934147634,
+      "ChangePercent": -0.9857595856285095,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0,
+      "BeforeSpreadRatio": 1.0150717169965564,
+      "AfterSpreadRatio": 1.0092222681677516,
+      "MinimumSampleMilliseconds": 55.2361
+    },
+    {
+      "Name": "valid-partial-period-miss",
+      "BeforeMicroseconds": 11.81970687264805,
+      "AfterMicroseconds": 11.816055226824458,
+      "ChangePercent": -0.030894554856020218,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0,
+      "BeforeSpreadRatio": 1.013442264840429,
+      "AfterSpreadRatio": 1.0071790724023488,
+      "MinimumSampleMilliseconds": 58.8707
+    },
+    {
+      "Name": "bounded-too-many-miss",
+      "BeforeMicroseconds": 0.08123688411385935,
+      "AfterMicroseconds": 0.081130703556518,
+      "ChangePercent": -0.13070486208276444,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0,
+      "BeforeSpreadRatio": 1.0012663198026923,
+      "AfterSpreadRatio": 1.0066221921807192,
+      "MinimumSampleMilliseconds": 54.4652
+    },
+    {
+      "Name": "finite-live-hit",
+      "BeforeMicroseconds": 16.78002820874471,
+      "AfterMicroseconds": 16.760871995528227,
+      "ChangePercent": -0.11416079268865564,
+      "BeforeAllocatedBytes": 112,
+      "AfterAllocatedBytes": 112,
+      "BeforeSpreadRatio": 1.0074767874194923,
+      "AfterSpreadRatio": 1.0060038553184651,
+      "MinimumSampleMilliseconds": 58.0213
+    },
+    {
+      "Name": "finite-live-miss",
+      "BeforeMicroseconds": 16.82888700084962,
+      "AfterMicroseconds": 16.76710233592881,
+      "ChangePercent": -0.36713458779352726,
+      "BeforeAllocatedBytes": 112,
+      "AfterAllocatedBytes": 112,
+      "BeforeSpreadRatio": 1.0077463456171059,
+      "AfterSpreadRatio": 1.0038013898519853,
+      "MinimumSampleMilliseconds": 59.1892
+    },
+    {
+      "Name": "deadline-live-hit",
+      "BeforeMicroseconds": 17.58337785693084,
+      "AfterMicroseconds": 17.318236819360415,
+      "ChangePercent": -1.507907295900579,
+      "BeforeAllocatedBytes": 160,
+      "AfterAllocatedBytes": 160,
+      "BeforeSpreadRatio": 1.0090790122197861,
+      "AfterSpreadRatio": 1.0108110554735055,
+      "MinimumSampleMilliseconds": 58.8159
+    },
+    {
+      "Name": "captured-control",
+      "BeforeMicroseconds": 98.01287128712872,
+      "AfterMicroseconds": 98.06888519134776,
+      "ChangePercent": 0.05714953912017151,
+      "BeforeAllocatedBytes": 79616,
+      "AfterAllocatedBytes": 79616,
+      "BeforeSpreadRatio": 1.0136309023289987,
+      "AfterSpreadRatio": 1.014657986016278,
+      "MinimumSampleMilliseconds": 58.5824
+    },
+    {
+      "Name": "lazy-control",
+      "BeforeMicroseconds": 98.90711920529802,
+      "AfterMicroseconds": 99.50016366612113,
+      "ChangePercent": 0.599597345052727,
+      "BeforeAllocatedBytes": 16272,
+      "AfterAllocatedBytes": 16272,
+      "BeforeSpreadRatio": 1.0074729633270934,
+      "AfterSpreadRatio": 1.009868888778665,
+      "MinimumSampleMilliseconds": 59.2096
+    },
+    {
+      "Name": "branched-control",
+      "BeforeMicroseconds": 99.88316666666667,
+      "AfterMicroseconds": 97.48400000000001,
+      "ChangePercent": -2.4019729717553284,
+      "BeforeAllocatedBytes": 75440,
+      "AfterAllocatedBytes": 75440,
+      "BeforeSpreadRatio": 1.0139966698622536,
+      "AfterSpreadRatio": 1.008593091828138,
+      "MinimumSampleMilliseconds": 58.163
+    },
+    {
+      "Name": "folded-control",
+      "BeforeMicroseconds": 79.17172131147541,
+      "AfterMicroseconds": 82.95639614855571,
+      "ChangePercent": 4.780336683840347,
+      "BeforeAllocatedBytes": 85848,
+      "AfterAllocatedBytes": 85848,
+      "BeforeSpreadRatio": 1.024334608717489,
+      "AfterSpreadRatio": 1.0120120319965926,
+      "MinimumSampleMilliseconds": 57.3422
+    },
+    {
+      "Name": "literal-control",
+      "BeforeMicroseconds": 0.04758772442608926,
+      "AfterMicroseconds": 0.047592136397652744,
+      "ChangePercent": 0.009271238784158697,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0,
+      "BeforeSpreadRatio": 1.0131597098630554,
+      "AfterSpreadRatio": 1.0174643630992017,
+      "MinimumSampleMilliseconds": 43.3126
+    },
+    {
+      "Name": "suffixed-control",
+      "BeforeMicroseconds": 4.210031104199067,
+      "AfterMicroseconds": 3.9363710388817266,
+      "ChangePercent": -6.500191056650229,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0,
+      "BeforeSpreadRatio": 1.0306766851468678,
+      "AfterSpreadRatio": 1.0394077952277596,
+      "MinimumSampleMilliseconds": 57.4531
+    },
+    {
+      "Name": "unchanged-search-control",
+      "BeforeMicroseconds": 0.08284208174493457,
+      "AfterMicroseconds": 0.08330988979018829,
+      "ChangePercent": 0.5646985630975099,
+      "BeforeAllocatedBytes": 0,
+      "AfterAllocatedBytes": 0,
+      "BeforeSpreadRatio": 1.0067273847608276,
+      "AfterSpreadRatio": 1.0043724351924976,
+      "MinimumSampleMilliseconds": 56.926
+    },
+    {
+      "Name": "construct-literal",
+      "BeforeMicroseconds": 44.75630630630631,
+      "AfterMicroseconds": 45.578119349005426,
+      "ChangePercent": 1.8361949645145925,
+      "BeforeAllocatedBytes": 50336,
+      "AfterAllocatedBytes": 50336,
+      "BeforeSpreadRatio": 1.0190225646857154,
+      "AfterSpreadRatio": 1.0180767983732484,
+      "MinimumSampleMilliseconds": 49.9646
+    },
+    {
+      "Name": "construct-general",
+      "BeforeMicroseconds": 54.594199999999994,
+      "AfterMicroseconds": 54.117641597028786,
+      "ChangePercent": -0.8729103145960648,
+      "BeforeAllocatedBytes": 60960,
+      "AfterAllocatedBytes": 60960,
+      "BeforeSpreadRatio": 1.0428128873518192,
+      "AfterSpreadRatio": 1.029904293852681,
+      "MinimumSampleMilliseconds": 53.8109
+    }
+  ]
+}
