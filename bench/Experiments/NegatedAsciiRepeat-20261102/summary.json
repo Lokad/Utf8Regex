@@ -1,0 +1,205 @@
+{
+  "ElapsedSeconds": 112.4975279,
+  "StartupProcessors": 8,
+  "MinimumSampleMilliseconds": 27.6672,
+  "Rows": [
+    {
+      "Name": "actual-imports-ordinary",
+      "Profile": "Core",
+      "BeforeUs": 32.2636,
+      "AfterUs": 31.6759,
+      "ChangePercent": -1.822,
+      "BeforeBytes": 3584,
+      "AfterBytes": 3584,
+      "BeforeSpread": 1.027,
+      "AfterSpread": 1.029
+    },
+    {
+      "Name": "actual-imports-compiled",
+      "Profile": "Core",
+      "BeforeUs": 32.2107,
+      "AfterUs": 31.7721,
+      "ChangePercent": -1.362,
+      "BeforeBytes": 3584,
+      "AfterBytes": 3584,
+      "BeforeSpread": 1.023,
+      "AfterSpread": 1.036
+    },
+    {
+      "Name": "actual-imports-finite-live",
+      "Profile": "Core",
+      "BeforeUs": 37.8372,
+      "AfterUs": 37.7582,
+      "ChangePercent": -0.209,
+      "BeforeBytes": 3704,
+      "AfterBytes": 3704,
+      "BeforeSpread": 1.039,
+      "AfterSpread": 1.03
+    },
+    {
+      "Name": "actual-imports-deadline-live",
+      "Profile": "Core",
+      "BeforeUs": 66.5581,
+      "AfterUs": 63.7281,
+      "ChangePercent": -4.252,
+      "BeforeBytes": 3752,
+      "AfterBytes": 3752,
+      "BeforeSpread": 1.029,
+      "AfterSpread": 1.032
+    },
+    {
+      "Name": "long-negated-count",
+      "Profile": "Core",
+      "BeforeUs": 45.2345,
+      "AfterUs": 28.6906,
+      "ChangePercent": -36.574,
+      "BeforeBytes": 64,
+      "AfterBytes": 64,
+      "BeforeSpread": 1.006,
+      "AfterSpread": 1.01
+    },
+    {
+      "Name": "long-negated-match",
+      "Profile": "Core",
+      "BeforeUs": 44.5465,
+      "AfterUs": 28.346,
+      "ChangePercent": -36.368,
+      "BeforeBytes": 2256,
+      "AfterBytes": 2256,
+      "BeforeSpread": 1.007,
+      "AfterSpread": 1.018
+    },
+    {
+      "Name": "mixed-scalar-negated-count",
+      "Profile": "Core",
+      "BeforeUs": 16.9723,
+      "AfterUs": 16.0623,
+      "ChangePercent": -5.361,
+      "BeforeBytes": 64,
+      "AfterBytes": 64,
+      "BeforeSpread": 1.011,
+      "AfterSpread": 1.01
+    },
+    {
+      "Name": "positive-set-control",
+      "Profile": "Core",
+      "BeforeUs": 16.272,
+      "AfterUs": 15.0685,
+      "ChangePercent": -7.396,
+      "BeforeBytes": 64,
+      "AfterBytes": 64,
+      "BeforeSpread": 1.009,
+      "AfterSpread": 1.012
+    },
+    {
+      "Name": "folded-set-control",
+      "Profile": "Core",
+      "BeforeUs": 36.6221,
+      "AfterUs": 45.1646,
+      "ChangePercent": 23.326,
+      "BeforeBytes": 64,
+      "AfterBytes": 64,
+      "BeforeSpread": 1.013,
+      "AfterSpread": 1.009
+    },
+    {
+      "Name": "bounded-negated-count",
+      "Profile": "Core",
+      "BeforeUs": 66.866,
+      "AfterUs": 69.85,
+      "ChangePercent": 4.463,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.019,
+      "AfterSpread": 1.021
+    },
+    {
+      "Name": "dense-negated-count",
+      "Profile": "Core",
+      "BeforeUs": 131.4948,
+      "AfterUs": 121.9169,
+      "ChangePercent": -7.284,
+      "BeforeBytes": 64,
+      "AfterBytes": 64,
+      "BeforeSpread": 1.045,
+      "AfterSpread": 1.014
+    },
+    {
+      "Name": "unchanged-literal-control",
+      "Profile": "Core",
+      "BeforeUs": 0.4299,
+      "AfterUs": 0.4317,
+      "ChangePercent": 0.427,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.004,
+      "AfterSpread": 1.006
+    },
+    {
+      "Name": "python-long-negated-count",
+      "Profile": "PythonRe",
+      "BeforeUs": 424.9259,
+      "AfterUs": 416.315,
+      "ChangePercent": -2.026,
+      "BeforeBytes": 344312,
+      "AfterBytes": 344312,
+      "BeforeSpread": 1.029,
+      "AfterSpread": 1.016
+    },
+    {
+      "Name": "python-positive-control",
+      "Profile": "PythonRe",
+      "BeforeUs": 16.0779,
+      "AfterUs": 14.9715,
+      "ChangePercent": -6.881,
+      "BeforeBytes": 2256,
+      "AfterBytes": 2256,
+      "BeforeSpread": 1.014,
+      "AfterSpread": 1.013
+    },
+    {
+      "Name": "python-folded-control",
+      "Profile": "PythonRe",
+      "BeforeUs": 263.6938,
+      "AfterUs": 253.7504,
+      "ChangePercent": -3.771,
+      "BeforeBytes": 175048,
+      "AfterBytes": 175048,
+      "BeforeSpread": 1.011,
+      "AfterSpread": 1.005
+    },
+    {
+      "Name": "pcre2-long-negated-count",
+      "Profile": "Pcre2",
+      "BeforeUs": 44.9696,
+      "AfterUs": 29.3323,
+      "ChangePercent": -34.773,
+      "BeforeBytes": 2256,
+      "AfterBytes": 2256,
+      "BeforeSpread": 1.011,
+      "AfterSpread": 1.008
+    },
+    {
+      "Name": "pcre2-positive-control",
+      "Profile": "Pcre2",
+      "BeforeUs": 16.6468,
+      "AfterUs": 15.6463,
+      "ChangePercent": -6.01,
+      "BeforeBytes": 2256,
+      "AfterBytes": 2256,
+      "BeforeSpread": 1.006,
+      "AfterSpread": 1.015
+    },
+    {
+      "Name": "pcre2-folded-control",
+      "Profile": "Pcre2",
+      "BeforeUs": 47.4372,
+      "AfterUs": 46.7259,
+      "ChangePercent": -1.499,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.063,
+      "AfterSpread": 1.005
+    }
+  ]
+}
