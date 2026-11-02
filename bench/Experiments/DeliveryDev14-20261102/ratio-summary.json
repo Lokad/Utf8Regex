@@ -1,0 +1,420 @@
+{
+  "Source": "16839b38bce3eafce4e20785cbcfe02d57a1dcee",
+  "PackageSource": "895f98a06c4b6b28abb79ab3231f0b277b848fe8",
+  "Scope": "Completed .NET11 Full rankings. Core uses predecoded .NET; PythonRe uses official CPython; PCRE2 uses native PCRE2. Ratios retain uncertainty/status/exclusions and their real provenance. Previous rows are committed pre-refresh data and can include selective updates. Catalog movement is not a causal parent A/B gain.",
+  "Core": {
+    "Summary": {
+      "Rows": 178,
+      "Wins": 110,
+      "TieCandidates": 1,
+      "Gaps": 61,
+      "Unqualified": 6
+    },
+    "LargestGaps": [
+      {
+        "CaseId": "structural/keyword-family-to-capitalized-identifier",
+        "Section": "lokad-compiled",
+        "Mode": "Compiled",
+        "RatioToPredecoded": 8.5295557581123,
+        "Utf8Microseconds": 64.53901170351105,
+        "Utf8AllocatedBytes": 0
+      },
+      {
+        "CaseId": "lokad/imports/module-imports",
+        "Section": "lokad-compiled",
+        "Mode": "Compiled",
+        "RatioToPredecoded": 7.064691241853098,
+        "Utf8Microseconds": 31.556583172768143,
+        "Utf8AllocatedBytes": 3584
+      },
+      {
+        "CaseId": "literal/sherlock-zh",
+        "Section": "dotnet-performance",
+        "Mode": "Ordinary",
+        "RatioToPredecoded": 6.995961394143405,
+        "Utf8Microseconds": 132.83449197860963,
+        "Utf8AllocatedBytes": 0
+      },
+      {
+        "CaseId": "literal-alternate/sherlock-zh",
+        "Section": "dotnet-performance-compiled",
+        "Mode": "Compiled",
+        "RatioToPredecoded": 6.48101951373562,
+        "Utf8Microseconds": 237.07156398104266,
+        "Utf8AllocatedBytes": 0
+      },
+      {
+        "CaseId": "literal/sherlock-zh",
+        "Section": "dotnet-performance-compiled",
+        "Mode": "Compiled",
+        "RatioToPredecoded": 5.5168982890784735,
+        "Utf8Microseconds": 133.13706666666667,
+        "Utf8AllocatedBytes": 0
+      },
+      {
+        "CaseId": "lokad/imports/module-imports",
+        "Section": "lokad",
+        "Mode": "Ordinary",
+        "RatioToPredecoded": 4.780247421222567,
+        "Utf8Microseconds": 31.520809248554915,
+        "Utf8AllocatedBytes": 3584
+      },
+      {
+        "CaseId": "industry/rust-sherlock-holmes-window-count",
+        "Section": "dotnet-performance-compiled",
+        "Mode": "Compiled",
+        "RatioToPredecoded": 4.024167109819331,
+        "Utf8Microseconds": 241.46699029126214,
+        "Utf8AllocatedBytes": 3552
+      },
+      {
+        "CaseId": "common/backtracking",
+        "Section": "dotnet-performance-compiled",
+        "Mode": "Compiled",
+        "RatioToPredecoded": 3.6892934718925967,
+        "Utf8Microseconds": 0.16548167095778413,
+        "Utf8AllocatedBytes": 0
+      },
+      {
+        "CaseId": "industry/boostdocs-ftp-line-match",
+        "Section": "dotnet-performance-compiled",
+        "Mode": "Compiled",
+        "RatioToPredecoded": 3.6133147709397937,
+        "Utf8Microseconds": 0.17714555805752644,
+        "Utf8AllocatedBytes": 0
+      },
+      {
+        "CaseId": "common/replace-words",
+        "Section": "dotnet-performance-compiled",
+        "Mode": "Compiled",
+        "RatioToPredecoded": 3.5247108944566334,
+        "Utf8Microseconds": 66.35066137566137,
+        "Utf8AllocatedBytes": 13648
+      }
+    ]
+  },
+  "PythonRe": {
+    "StatusCounts": [
+      {
+        "Status": "CpythonFaster",
+        "Count": 43
+      },
+      {
+        "Status": "Inconclusive",
+        "Count": 13
+      },
+      {
+        "Status": "ManagedFaster",
+        "Count": 30
+      },
+      {
+        "Status": "Unqualified",
+        "Count": 4
+      }
+    ],
+    "LargestQualifiedGaps": [
+      {
+        "Case": "literal/search-early",
+        "Status": "CpythonFaster",
+        "Ratio": 5.560402354792749,
+        "Lower95": 5.53629646470039,
+        "Upper95": 5.561949434642887,
+        "Microseconds": 1.300220458553792,
+        "Bytes": 0,
+        "PreviousRatio": 5.583703586265775,
+        "PreviousSource": "ea01c3cd01ae",
+        "Source": "16839b38bce3"
+      },
+      {
+        "Case": "common/date-miss",
+        "Status": "CpythonFaster",
+        "Ratio": 4.018486539702405,
+        "Lower95": 3.9802484633524036,
+        "Upper95": 4.033228488581635,
+        "Microseconds": 3.486815401723659,
+        "Bytes": 3568,
+        "PreviousRatio": 3.871926548864145,
+        "PreviousSource": "ea01c3cd01ae",
+        "Source": "16839b38bce3"
+      },
+      {
+        "Case": "findall/empty-progression-strings",
+        "Status": "CpythonFaster",
+        "Ratio": 3.5755909662769016,
+        "Lower95": 3.526531013396594,
+        "Upper95": 3.600069938494006,
+        "Microseconds": 155.54984520123838,
+        "Bytes": 20016,
+        "PreviousRatio": 3.594753020289878,
+        "PreviousSource": "ea01c3cd01ae",
+        "Source": "16839b38bce3"
+      },
+      {
+        "Case": "corpus/mail-email-count",
+        "Status": "CpythonFaster",
+        "Ratio": 3.5716980819630195,
+        "Lower95": 3.5623812307737173,
+        "Upper95": 3.57699771288364,
+        "Microseconds": 1281333.9,
+        "Bytes": 3568,
+        "PreviousRatio": 3.5372056334443887,
+        "PreviousSource": "ea01c3cd01ae",
+        "Source": "16839b38bce3"
+      },
+      {
+        "Case": "split/unicode",
+        "Status": "CpythonFaster",
+        "Ratio": 3.5486015852589694,
+        "Lower95": 3.5408974396461796,
+        "Upper95": 3.5622164509949292,
+        "Microseconds": 158.7167192429022,
+        "Bytes": 19512,
+        "PreviousRatio": 3.482301923643124,
+        "PreviousSource": "ea01c3cd01ae",
+        "Source": "16839b38bce3"
+      },
+      {
+        "Case": "replacement/empty-progression-string",
+        "Status": "CpythonFaster",
+        "Ratio": 3.5108335993319186,
+        "Lower95": 3.496253695697401,
+        "Upper95": 3.5223993180045454,
+        "Microseconds": 82.95138662316477,
+        "Bytes": 6464,
+        "PreviousRatio": 3.353433759865251,
+        "PreviousSource": "ea01c3cd01ae",
+        "Source": "16839b38bce3"
+      },
+      {
+        "Case": "split/zero-width",
+        "Status": "CpythonFaster",
+        "Ratio": 3.3500313727546756,
+        "Lower95": 3.3480101648537164,
+        "Upper95": 3.3511207572659463,
+        "Microseconds": 223.6653333333333,
+        "Bytes": 40016,
+        "PreviousRatio": 2.9359941033628805,
+        "PreviousSource": "cb1d443edc8c",
+        "Source": "16839b38bce3"
+      },
+      {
+        "Case": "unicode-literal/search-miss",
+        "Status": "CpythonFaster",
+        "Ratio": 2.9187891373741826,
+        "Lower95": 2.9069566079831715,
+        "Upper95": 2.9394920923864007,
+        "Microseconds": 0.8553689427312775,
+        "Bytes": 0,
+        "PreviousRatio": 2.885563446925312,
+        "PreviousSource": "ea01c3cd01ae",
+        "Source": "16839b38bce3"
+      },
+      {
+        "Case": "findall/one-capture-strings",
+        "Status": "CpythonFaster",
+        "Ratio": 2.5136426983743383,
+        "Lower95": 2.4944724388644497,
+        "Upper95": 2.5231046335729475,
+        "Microseconds": 539.8,
+        "Bytes": 112944,
+        "PreviousRatio": 2.572675908331951,
+        "PreviousSource": "ea01c3cd01ae",
+        "Source": "16839b38bce3"
+      },
+      {
+        "Case": "leading-inline/search-hit",
+        "Status": "CpythonFaster",
+        "Ratio": 2.3974854893472752,
+        "Lower95": 2.3909927406368343,
+        "Upper95": 2.4017093326316408,
+        "Microseconds": 0.8055729522658994,
+        "Bytes": 0,
+        "PreviousRatio": 2.3795636618881484,
+        "PreviousSource": "ea01c3cd01ae",
+        "Source": "16839b38bce3"
+      }
+    ],
+    "BoundaryRows": [
+      {
+        "Case": "split/zero-width",
+        "Status": "CpythonFaster",
+        "Ratio": 3.3500313727546756,
+        "Lower95": 3.3480101648537164,
+        "Upper95": 3.3511207572659463,
+        "Microseconds": 223.6653333333333,
+        "Bytes": 40016,
+        "PreviousRatio": 2.9359941033628805,
+        "PreviousSource": "cb1d443edc8c",
+        "Source": "16839b38bce3"
+      },
+      {
+        "Case": "zero-width/count",
+        "Status": "CpythonFaster",
+        "Ratio": 1.3849274505201112,
+        "Lower95": 1.3812659061901824,
+        "Upper95": 1.3901563220723203,
+        "Microseconds": 1543.6818181818182,
+        "Bytes": 0,
+        "PreviousRatio": 1.1008032044698346,
+        "PreviousSource": "cb1d443edc8c",
+        "Source": "16839b38bce3"
+      }
+    ]
+  },
+  "Pcre2": {
+    "StatusCounts": [
+      {
+        "Status": "Equivalent",
+        "Count": 1
+      },
+      {
+        "Status": "Excluded",
+        "Count": 25
+      },
+      {
+        "Status": "Inconclusive",
+        "Count": 12
+      },
+      {
+        "Status": "ManagedFaster",
+        "Count": 77
+      },
+      {
+        "Status": "NativeFaster",
+        "Count": 11
+      }
+    ],
+    "LargestQualifiedGaps": [
+      {
+        "Section": "pcre2-managed-compatible-ismatch",
+        "Case": "common/date-match",
+        "Status": "NativeFaster",
+        "Ratio": 9.612350763177993,
+        "Lower95": 9.529892001280889,
+        "Upper95": 9.689725679216007,
+        "Microseconds": 1.5228505004334463,
+        "Bytes": 0,
+        "PreviousRatio": 9.656832991210573,
+        "PreviousSource": "ea01c3cd01ae",
+        "Source": "16839b38bce3"
+      },
+      {
+        "Section": "pcre2-managed-compatible-ismatch",
+        "Case": "common/date-miss",
+        "Status": "NativeFaster",
+        "Ratio": 9.140289103684989,
+        "Lower95": 9.074425566967355,
+        "Upper95": 9.205891268789257,
+        "Microseconds": 5.2833132610731965,
+        "Bytes": 0,
+        "PreviousRatio": 9.365877746478455,
+        "PreviousSource": "ea01c3cd01ae",
+        "Source": "16839b38bce3"
+      },
+      {
+        "Section": "pcre2-special-ismatch",
+        "Case": "pcre2/subroutine-prefix-digits",
+        "Status": "NativeFaster",
+        "Ratio": 4.133732151261651,
+        "Lower95": 4.107871707803212,
+        "Upper95": 4.14215656520306,
+        "Microseconds": 0.45757834578911005,
+        "Bytes": 0,
+        "PreviousRatio": 4.253521670380767,
+        "PreviousSource": "ea01c3cd01ae",
+        "Source": "16839b38bce3"
+      },
+      {
+        "Section": "pcre2-special-ismatch",
+        "Case": "pcre2/conditional-negative-lookahead",
+        "Status": "NativeFaster",
+        "Ratio": 3.8528631769745236,
+        "Lower95": 3.8279366270385315,
+        "Upper95": 3.8574655727893292,
+        "Microseconds": 0.39041777225139607,
+        "Bytes": 0,
+        "PreviousRatio": 3.7978168082970125,
+        "PreviousSource": "ea01c3cd01ae",
+        "Source": "16839b38bce3"
+      },
+      {
+        "Section": "pcre2-special-ismatch",
+        "Case": "pcre2/conditional-accept-negative-lookahead",
+        "Status": "NativeFaster",
+        "Ratio": 3.6725836745286813,
+        "Lower95": 3.6616017836803874,
+        "Upper95": 3.6845725619162546,
+        "Microseconds": 0.39229315682715915,
+        "Bytes": 0,
+        "PreviousRatio": 3.7738766226269798,
+        "PreviousSource": "ea01c3cd01ae",
+        "Source": "16839b38bce3"
+      },
+      {
+        "Section": "pcre2-special-ismatch",
+        "Case": "pcre2/conditional-lookahead",
+        "Status": "NativeFaster",
+        "Ratio": 3.286768268187953,
+        "Lower95": 3.2626152596176836,
+        "Upper95": 3.2960006448981187,
+        "Microseconds": 0.3862660477655423,
+        "Bytes": 0,
+        "PreviousRatio": 3.572503603135859,
+        "PreviousSource": "ea01c3cd01ae",
+        "Source": "16839b38bce3"
+      },
+      {
+        "Section": "pcre2-managed-compatible-ismatch",
+        "Case": "common/one-node-backtracking",
+        "Status": "NativeFaster",
+        "Ratio": 2.2831028386808776,
+        "Lower95": 2.2569865734339336,
+        "Upper95": 2.311405909041407,
+        "Microseconds": 0.1734210154275717,
+        "Bytes": 0,
+        "PreviousRatio": 2.235712171323659,
+        "PreviousSource": "ea01c3cd01ae",
+        "Source": "16839b38bce3"
+      },
+      {
+        "Section": "pcre2-special-ismatch",
+        "Case": "pcre2/grapheme-cluster",
+        "Status": "NativeFaster",
+        "Ratio": 1.6762035937927184,
+        "Lower95": 1.6666594378779855,
+        "Upper95": 1.6779149059659069,
+        "Microseconds": 0.5773733104111792,
+        "Bytes": 0,
+        "PreviousRatio": 1.6626636617473776,
+        "PreviousSource": "ea01c3cd01ae",
+        "Source": "16839b38bce3"
+      },
+      {
+        "Section": "pcre2-managed-compatible-count",
+        "Case": "common/matches-set",
+        "Status": "NativeFaster",
+        "Ratio": 1.1211577172298477,
+        "Lower95": 1.1198792626743483,
+        "Upper95": 1.1237397432570027,
+        "Microseconds": 240.40952380952382,
+        "Bytes": 0,
+        "PreviousRatio": 1.1679823343992168,
+        "PreviousSource": "ea01c3cd01ae",
+        "Source": "16839b38bce3"
+      },
+      {
+        "Section": "pcre2-special-enumerate",
+        "Case": "pcre2/kreset-atomic-alt",
+        "Status": "NativeFaster",
+        "Ratio": 1.068313584552202,
+        "Lower95": 1.065633449649162,
+        "Upper95": 1.0747178457497588,
+        "Microseconds": 0.9536435611568912,
+        "Bytes": 0,
+        "PreviousRatio": 1.03648608674443,
+        "PreviousSource": "ea01c3cd01ae",
+        "Source": "16839b38bce3"
+      }
+    ]
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "Source": "895f98a06c4b6b28abb79ab3231f0b277b848fe8",
+  "Baseline": "a40bda03",
+  "Accepted": true,
+  "Cases": 172,
+  "TimedSeconds": 787.8891098,
+  "ConfirmationRuns": 0,
+  "ConfirmationSeconds": 0,
+  "Scope": "One172entry fixed-original gate: original147 and19 existing controls unchanged, plus6 accepted boundary controls. Existing source/shape/output/allocations and >=20ms requirements. Initial results preserved; any sole selected same-binary noise confirmation must pool actual samples. Package/platform/consumer/Full acceptance separate.",
+  "Parts": [
+    {
+      "Part": "cost",
+      "Cases": 26,
+      "Seconds": 109.3548309,
+      "MinimumSampleMilliseconds": 61.2411,
+      "Failures": [],
+      "MaximumChangePercent": 3.299976993943665
+    },
+    {
+      "Part": "pcre2-cost",
+      "Cases": 17,
+      "Seconds": 63.7502856,
+      "MinimumSampleMilliseconds": 36.0138,
+      "Failures": [],
+      "MaximumChangePercent": 0.8399368466657453
+    },
+    {
+      "Part": "union",
+      "Cases": 14,
+      "Seconds": 85.5226941,
+      "MinimumSampleMilliseconds": 27.5771,
+      "Failures": [],
+      "MaximumChangePercent": 6.740174396033938
+    },
+    {
+      "Part": "repeat",
+      "Cases": 16,
+      "Seconds": 91.8084502,
+      "MinimumSampleMilliseconds": 43.2341,
+      "Failures": [],
+      "MaximumChangePercent": 1.8095526203196544
+    },
+    {
+      "Part": "findall",
+      "Cases": 6,
+      "Seconds": 35.5920495,
+      "MinimumSampleMilliseconds": 51.1043,
+      "Failures": [],
+      "MaximumChangePercent": -0.15807268723893042
+    },
+    {
+      "Part": "capital",
+      "Cases": 16,
+      "Seconds": 76.9840234,
+      "MinimumSampleMilliseconds": 48.0033,
+      "Failures": [],
+      "MaximumChangePercent": -1.0819168287619974
+    },
+    {
+      "Part": "word",
+      "Cases": 18,
+      "Seconds": 67.2041787,
+      "MinimumSampleMilliseconds": 29.1864,
+      "Failures": [],
+      "MaximumChangePercent": 0.56121333395176
+    },
+    {
+      "Part": "atomic",
+      "Cases": 17,
+      "Seconds": 97.2091394,
+      "MinimumSampleMilliseconds": 39.6962,
+      "Failures": [],
+      "MaximumChangePercent": 5.470192354247461
+    },
+    {
+      "Part": "fullmatch",
+      "Cases": 17,
+      "Seconds": 63.7718657,
+      "MinimumSampleMilliseconds": 54.5874,
+      "Failures": [],
+      "MaximumChangePercent": 9.832910951681706
+    },
+    {
+      "Part": "supplement",
+      "Cases": 19,
+      "Seconds": 71.17588,
+      "MinimumSampleMilliseconds": 44.0759,
+      "Failures": [],
+      "MaximumChangePercent": 9.241785796055657
+    },
+    {
+      "Part": "boundary",
+      "Cases": 6,
+      "Seconds": 25.5157123,
+      "MinimumSampleMilliseconds": 32.6715,
+      "Failures": [],
+      "MaximumChangePercent": -74.71498406050424
+    }
+  ]
+}

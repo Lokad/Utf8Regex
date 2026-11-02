@@ -1,0 +1,15 @@
+{
+  "PackageSource": "895f98a06c4b6b28abb79ab3231f0b277b848fe8",
+  "TestAndFullSource": "16839b38bce3eafce4e20785cbcfe02d57a1dcee",
+  "ProductionAndBenchmarkBuildInputsDiffEmpty": true,
+  "OnlyTrackedDelta": "Existing PCRE2 allocation collection attribute on one test fixture",
+  "PackagesRebuilt": false,
+  "PackagesRepublished": false,
+  "CumulativeGateReplayed": false,
+  "FirstFullFailedBeforeMeasurements": true,
+  "FirstFailureArchiveSha256": "42979F1FD92CA505DC077C3B4AD5F801AB0271F7EE9CEA71AC171DF6E43C5F94",
+  "ShippedSourceTree": "b0f5ea406903c613d159a0445c9807243e259326",
+  "FullSourceTree": "b0f5ea406903c613d159a0445c9807243e259326",
+  "BenchmarkTree": "44588f28a52d30d75f8a4d19c9bfb0ba4f364b5c",
+  "FullBenchmarkTree": "44588f28a52d30d75f8a4d19c9bfb0ba4f364b5c"
+}

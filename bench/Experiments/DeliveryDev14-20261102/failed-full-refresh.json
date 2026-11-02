@@ -1,0 +1,34 @@
+{
+  "Source": "895f98a06c4b6b28abb79ab3231f0b277b848fe8",
+  "StartedAtUtc": "2026-11-02T20:43:58.0516681+00:00",
+  "UpdatedAtUtc": "2026-11-02T20:46:58.9568559+00:00",
+  "ElapsedSeconds": 180.9053162,
+  "BudgetSeconds": 3600,
+  "Scope": "Full",
+  "Phases": [
+    "Build",
+    "Tests",
+    "Core",
+    "PythonRe",
+    "Pcre2",
+    "Resources",
+    "Verify"
+  ],
+  "Complete": false,
+  "Steps": [
+    {
+      "Name": "build",
+      "Status": "Passed",
+      "Seconds": 20.1753834,
+      "ExitCode": 0,
+      "Error": null
+    },
+    {
+      "Name": "tests",
+      "Status": "Failed",
+      "Seconds": 160.5841356,
+      "ExitCode": 1,
+      "Error": "tests failed with exit code 1. See /home/vermorel/tmp/utf8regex-net11-memory/pilot/artifacts/benchmark-refresh/delivery-dev14-20261102/tests.txt"
+    }
+  ]
+}

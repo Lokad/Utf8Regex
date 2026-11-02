@@ -1,0 +1,102 @@
+{
+  "Source": "895f98a06c4b6b28abb79ab3231f0b277b848fe8",
+  "FullSource": "16839b38bce3eafce4e20785cbcfe02d57a1dcee",
+  "PackageVersion": "0.5.0-dev.14",
+  "Published": false,
+  "WindowsQualificationSeconds": 468.3347365,
+  "WindowsPackagePassed": 107642.0,
+  "LinuxPackagePassed": 107642.0,
+  "OriginalWindowsCompilationDocuments": 464,
+  "LinuxPackageAssets": 6,
+  "LinuxRestoreChecks": 24,
+  "WindowsOriginalRestoreChecks": 12,
+  "SourceCi": "41515781894",
+  "SourceCiConclusion": "success",
+  "TestFixCi": "41523989459",
+  "TestFixCiConclusion": "success",
+  "Archives": [
+    {
+      "File": "cumulative.tar.gz",
+      "Sha256": "747751967E5ABF42221AEFB7E3452FF65243442D951D50BFBCEC626B83DDA405",
+      "Length": 30832870
+    },
+    {
+      "File": "failed-full.tar.gz",
+      "Sha256": "42979F1FD92CA505DC077C3B4AD5F801AB0271F7EE9CEA71AC171DF6E43C5F94",
+      "Length": 1541170
+    },
+    {
+      "File": "full-refresh-16839b38.tar.gz",
+      "Sha256": "81EE5216E1469CC17425BDCC35C2EF952139B815A6ADD31A32D5DD74EB8D00C0",
+      "Length": 34331140
+    },
+    {
+      "File": "linux-consumers.tar.gz",
+      "Sha256": "8DAA2A5823FA83FA7C6A4C49765C308A8FCBF59C76F5FD722EDBE3D3C7629BD0",
+      "Length": 37840074
+    },
+    {
+      "File": "post-import-guards.zip",
+      "Sha256": "DD36B6E738F9AF63376BC686463F567801CB412752187959062C681E657B53C5",
+      "Length": 12018
+    },
+    {
+      "File": "windows-evidence.zip",
+      "Sha256": "98630F9739C1FC39520A412EE2775EC9E4F09C673E873ACE9D4E513992773AA3",
+      "Length": 6632574
+    },
+    {
+      "File": "windows-restore-inputs.zip",
+      "Sha256": "C0EFB3B3F2EB14EB53313C821C6280791FF7B4D287DF3487AB1DC0814668290D",
+      "Length": 31393
+    }
+  ],
+  "Windows": true,
+  "Linux": true,
+  "OriginalConsumers": true,
+  "FixedOriginalPerformance": true,
+  "FixedOriginalCases": 172,
+  "FixedOriginalMaximumAdversePercent": 9.832910951681706,
+  "ConfirmationRuns": 0,
+  "FullRefreshComplete": true,
+  "FullRefreshSeconds": 2568.409692,
+  "RequiredSteps": 83,
+  "RequiredStepInventoryMatches": true,
+  "AllStepsPassed": true,
+  "Within3600Seconds": true,
+  "FailedInitialFullPreserved": true,
+  "FailedInitialFullSeconds": 180.9053162,
+  "ProductionAndBenchmarkTreesIdenticalAcrossTestFix": true,
+  "ImportedSnapshots": [
+    {
+      "Path": "README.md",
+      "Sha256": "46FC0E34D9507BE40E4223FDAA5D80D75D9BD9A93E358CD75717AB9E02BF547D"
+    },
+    {
+      "Path": "README.Benchmarks.json",
+      "Sha256": "54F451B6208FEC90998A2688E69B1C1256D08A2412D327EEC7CE8D67E9BFF51F"
+    },
+    {
+      "Path": "README.Parity.json",
+      "Sha256": "5A015EB7DF256210EB2833AF32A66C80B6E41498A4D2D1E6D919D58BB13F30E8"
+    },
+    {
+      "Path": "PythonRe.Benchmarks.json",
+      "Sha256": "B37FD6782BF13E5F5D5DFEF8160902CD4402C191C7A9F440C02271B9946779CF"
+    },
+    {
+      "Path": "PCRE2.Benchmarks.json",
+      "Sha256": "294027CCC3291AF426FA4C397FECB82AC91D3463D3E37FBA4795E9F1A7D83019"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md",
+      "Sha256": "46CABE97640FF81F17164F07F1F165FB972751B90916B91B563F60F4767914F1"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md",
+      "Sha256": "6C70138344F232A32B5F01B19ED8230B9720C58F55FA59FA58C5D69630B9A67E"
+    }
+  ],
+  "SnapshotGuards": "Core3/PythonRe1/Pcre2 1 per runtime, .NET10/11; matching16839b38 graphs built once after observed test fix, SkipBuild checks after exact import.",
+  "Scope": "Common dev.14 exact-pin packages qualified on Windows/Linux with original copied consumers and fixed-a40 public costs. Full uses an explicit test-only follow-up revision with identical engine/benchmark trees. Fresh complete 42m48.41s refresh and byte-identical import pass. No publication, universal equivalence, POSIX completion or complete N4 parity claim."
+}
