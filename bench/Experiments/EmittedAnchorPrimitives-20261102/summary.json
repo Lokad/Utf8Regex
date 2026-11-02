@@ -1,0 +1,146 @@
+[
+  {
+    "Case": "corpus-ordinary",
+    "Before": 66.36349557522125,
+    "After": 78.1478947368421,
+    "Percent": 17.75735147685755,
+    "AllocBefore": 0,
+    "AllocAfter": 0
+  },
+  {
+    "Case": "corpus-compiled",
+    "Before": 66.04939360529217,
+    "After": 78.5315589353612,
+    "Percent": 18.89822850556635,
+    "AllocBefore": 0,
+    "AllocAfter": 0
+  },
+  {
+    "Case": "corpus-finite-live",
+    "Before": 47.25734208367514,
+    "After": 47.54048257372654,
+    "Percent": 0.5991460322716913,
+    "AllocBefore": 3664,
+    "AllocAfter": 3664
+  },
+  {
+    "Case": "corpus-live",
+    "Before": 46.42328213419564,
+    "After": 46.79092409240924,
+    "Percent": 0.7919344374464066,
+    "AllocBefore": 3664,
+    "AllocAfter": 3664
+  },
+  {
+    "Case": "corpus-deadline-live",
+    "Before": 56.58791748526522,
+    "After": 57.323995983935745,
+    "Percent": 1.3007697250251082,
+    "AllocBefore": 3712,
+    "AllocAfter": 3712
+  },
+  {
+    "Case": "dense-hits",
+    "Before": 35.68628841607565,
+    "After": 40.204088471849865,
+    "Percent": 12.659764453786892,
+    "AllocBefore": 0,
+    "AllocAfter": 0
+  },
+  {
+    "Case": "dense-anchor-miss",
+    "Before": 3.031956984883839,
+    "After": 2.5980739989863153,
+    "Percent": -14.310327885939545,
+    "AllocBefore": 0,
+    "AllocAfter": 0
+  },
+  {
+    "Case": "boundary-false",
+    "Before": 35.7628927089508,
+    "After": 40.610953346855986,
+    "Percent": 13.556119963114188,
+    "AllocBefore": 0,
+    "AllocAfter": 0
+  },
+  {
+    "Case": "sparse-anchor-miss",
+    "Before": 2.9126182965299687,
+    "After": 1.3269591642082381,
+    "Percent": -54.441020789124714,
+    "AllocBefore": 0,
+    "AllocAfter": 0
+  },
+  {
+    "Case": "short-tail",
+    "Before": 0.11871104978960573,
+    "After": 0.1176599885968189,
+    "Percent": -0.8853945733355406,
+    "AllocBefore": 0,
+    "AllocAfter": 0
+  },
+  {
+    "Case": "two-anchors",
+    "Before": 49.15723630417008,
+    "After": 55.15739051094891,
+    "Percent": 12.206044639392854,
+    "AllocBefore": 0,
+    "AllocAfter": 0
+  },
+  {
+    "Case": "large-anchor-control",
+    "Before": 15.207347352419559,
+    "After": 17.671226831421006,
+    "Percent": 16.201901764343084,
+    "AllocBefore": 0,
+    "AllocAfter": 0
+  },
+  {
+    "Case": "unicode-control",
+    "Before": 48.587418831168826,
+    "After": 47.40670529801324,
+    "Percent": -2.430080793668654,
+    "AllocBefore": 3552,
+    "AllocAfter": 3552
+  },
+  {
+    "Case": "literal-control",
+    "Before": 6.327283298097251,
+    "After": 6.3310399492707665,
+    "Percent": 0.059372261309120766,
+    "AllocBefore": 0,
+    "AllocAfter": 0
+  },
+  {
+    "Case": "is-match-late",
+    "Before": 3.809900614040641,
+    "After": 3.2815447636500834,
+    "Percent": -13.8679693754584,
+    "AllocBefore": 0,
+    "AllocAfter": 0
+  },
+  {
+    "Case": "is-match-miss",
+    "Before": 3.6549188156638017,
+    "After": 3.2702330055579307,
+    "Percent": -10.525153348337913,
+    "AllocBefore": 0,
+    "AllocAfter": 0
+  },
+  {
+    "Case": "zero-offset-anchor",
+    "Before": 38.525080179602305,
+    "After": 39.18146214099217,
+    "Percent": 1.7037783135812834,
+    "AllocBefore": 0,
+    "AllocAfter": 0
+  },
+  {
+    "Case": "shared-word-control",
+    "Before": 554.2091743119266,
+    "After": 554.1633027522936,
+    "Percent": -0.008276939783613546,
+    "AllocBefore": 64,
+    "AllocAfter": 64
+  }
+]

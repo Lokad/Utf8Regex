@@ -1,0 +1,23 @@
+{
+  "Disposition": "Rejected and fully reverted: primary compiled corpus+18.90%, ordinary+17.76% and multiple dense controls above10%; no confirmation or variant",
+  "Parent": "2b6c0d8d",
+  "CandidateCoreFocusedPerRuntime": 300,
+  "RestoredCoreFocusedPerRuntime": 299,
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "CompletedCases": 18,
+  "SamplesPerLane": 5,
+  "Lanes": 4,
+  "MinimumSampleMilliseconds": 53.0659,
+  "ElapsedSeconds": 67.3330822,
+  "AllocationsUnchanged": true,
+  "FullSuiteRun": false,
+  "PackageOrFullRefreshRun": false,
+  "RuntimeAndTestsReverted": true,
+  "ImmutableCandidate": "ea01c3cd/0.5.0-dev.12, unchanged",
+  "OriginalFixedBaseline": "a40bda03",
+  "RawArchiveSha256": "764F4DC365229F1F1FDAB2540FCE560DE8DC9083C0E7E16F41D915B80423DBAD",
+  "CorrectnessArchiveSha256": "F8BC4CF1480A1A2E55B9A06AD406F7F0757A7DBC60D1C6AAAD077E015D0D4D0E"
+}
