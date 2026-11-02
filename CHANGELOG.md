@@ -22,6 +22,9 @@
 - Reduce live-token ASCII Boolean matching scratch through existing metered
   native plans. Reuse proved literal/category/count and bounded candidate ranges
   for matching, preserving strict full-subject validation and resource controls.
+- Speed up repeated-segment Count with Unicode separators and declaration searches
+  by skipping impossible word-interior starts, preserving strict validation and
+  existing cancellation and resource authority.
 - Reduce shared PCRE2 VM overhead for controlled matching and capture operations.
 - Speed up NonBacktracking batches and scan proved complete anchored-line Count
   roots without a viability table. Captures, cursors and bounded interruption
