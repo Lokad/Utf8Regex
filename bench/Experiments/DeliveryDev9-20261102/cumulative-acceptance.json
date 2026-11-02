@@ -1,0 +1,79 @@
+{
+  "Source": "2c6cb298c4841983f74af9587275263df86536cb",
+  "Baseline": "a40bda03",
+  "Accepted": true,
+  "Cases": 113.0,
+  "TimedSeconds": 530.5716955,
+  "ConfirmationRuns": 1,
+  "ConfirmationCases": 14,
+  "ConfirmationPart": "union",
+  "InitialFailure": "Union decoded-BCL miss sample18.6609ms below20; initial partial logs retained, successful sections not replayed",
+  "ConfirmationSeconds": 85.7485625,
+  "Scope": "Fixed-original113named-public-entry operating-cost gate; one union-section noise confirmation after18.6609ms decoded-BCL sample. Only that comparator batch increased60->100ms; producer protocols/cases unchanged. Successful cost/PCRE sections retained, unattempted sections run once. Initial partial union logs retained, final union uses five eligible samples per lane. Not package/catalog/platform qualification.",
+  "Parts": [
+    {
+      "Part": "cost",
+      "Cases": 26,
+      "Seconds": 109.0566231,
+      "MinimumSampleMilliseconds": 60.927,
+      "InitialFailures": [],
+      "Failures": [],
+      "MaximumChangePercent": 3.996555077919095
+    },
+    {
+      "Part": "pcre2-cost",
+      "Cases": 17,
+      "Seconds": 63.6723521,
+      "MinimumSampleMilliseconds": 36.7514,
+      "InitialFailures": [],
+      "Failures": [],
+      "MaximumChangePercent": 0.0731838025543663
+    },
+    {
+      "Part": "union",
+      "Cases": 14,
+      "Seconds": 85.7485625,
+      "MinimumSampleMilliseconds": 28.9191,
+      "InitialFailures": [],
+      "Failures": [],
+      "MaximumChangePercent": 6.222126936793937
+    },
+    {
+      "Part": "repeat",
+      "Cases": 16,
+      "Seconds": 91.8580329,
+      "MinimumSampleMilliseconds": 45.5076,
+      "InitialFailures": [],
+      "Failures": [],
+      "MaximumChangePercent": 6.478280210422649
+    },
+    {
+      "Part": "findall",
+      "Cases": 6,
+      "Seconds": 35.8724548,
+      "MinimumSampleMilliseconds": 53.826,
+      "InitialFailures": [],
+      "Failures": [],
+      "MaximumChangePercent": -2.5136732211847868
+    },
+    {
+      "Part": "capital",
+      "Cases": 16,
+      "Seconds": 77.0623548,
+      "MinimumSampleMilliseconds": 47.7459,
+      "InitialFailures": [],
+      "Failures": [],
+      "MaximumChangePercent": 8.009209344183255
+    },
+    {
+      "Part": "word",
+      "Cases": 18,
+      "Seconds": 67.3013153,
+      "MinimumSampleMilliseconds": 29.3889,
+      "InitialFailures": [],
+      "Failures": [],
+      "MaximumChangePercent": 0.5213885931129925
+    }
+  ],
+  "Confirmation": null
+}

@@ -1,0 +1,15 @@
+{
+  "Source": "2c6cb298c4841983f74af9587275263df86536cb",
+  "Version": "0.5.0-dev.9",
+  "Complete": true,
+  "Published": false,
+  "WallSeconds": 250.2304417,
+  "BuildCount": 2,
+  "PackCountPerPackage": 1,
+  "PassedTests": 107442.0,
+  "QualifiedAssets": 6,
+  "ConsumerCount": 8,
+  "CandidateSha256": "03A185289C2AFA72A8D7BD4F6D67FC11E865F51EAA5E4382DDA3CC5EC8BBC8F8",
+  "ProvenanceSha256": "A9BCBB0F4EB4C633970D5FFC6962E94F66921FDF1ECE983A24F8828878DFE839",
+  "Scope": "Existing Windows detached package/API/correctness and exact restore/PDB/source qualification only; Linux, original consumers, fixed-original performance and full current benchmark refresh are separate checks."
+}

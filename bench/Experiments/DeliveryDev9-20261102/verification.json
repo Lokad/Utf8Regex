@@ -1,0 +1,77 @@
+{
+  "Source": "2c6cb298c4841983f74af9587275263df86536cb",
+  "PackageVersion": "0.5.0-dev.9",
+  "Published": false,
+  "Windows": true,
+  "Linux": true,
+  "OriginalConsumers": true,
+  "FixedOriginalPerformance": true,
+  "FullRefreshComplete": true,
+  "FullRefreshSeconds": 2498.4955224,
+  "RequiredSteps": 83,
+  "RequiredStepInventoryMatches": true,
+  "AllStepsPassed": true,
+  "Within3600Seconds": true,
+  "OriginalWindowsCompilationDocuments": 464,
+  "SourceCi": "41377163464",
+  "SourceCiConclusion": "success",
+  "ImportedSnapshots": [
+    {
+      "Path": "README.md",
+      "Sha256": "E8DE8296CD0F0D63A6B8AF68761D5FB87704BD5273E1F51C8A15245BA22D89AA"
+    },
+    {
+      "Path": "README.Benchmarks.json",
+      "Sha256": "37BBA7856BCE5343AFC28E0251586AC8EFF23BEFF14A31E4E689D35E569F58F7"
+    },
+    {
+      "Path": "README.Parity.json",
+      "Sha256": "88CD16DFE94E6990A9EE8ADDEEFCD8009C961C46062BE666FDE5A8FDC7C23DCC"
+    },
+    {
+      "Path": "PythonRe.Benchmarks.json",
+      "Sha256": "F6D7B5473F0576866F2EC80BA22802EC3743F635DE46F59C53919FBCE67CFFBE"
+    },
+    {
+      "Path": "PCRE2.Benchmarks.json",
+      "Sha256": "C3E6CFBCD205126712CF3F9DE8243BB5ED2B379CF81F85EF0926B32D899EC089"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md",
+      "Sha256": "8CE46BE275AC2BFB961F58D97609B76CC4F11E2F1003D82D0AC8AD4110A39DA5"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md",
+      "Sha256": "A61DE7C379432895FDADD6817C9A2907BD0477D55E61E178A47A8474E20A0151"
+    }
+  ],
+  "SnapshotGuards": "Core3/PythonRe1/Pcre2 1 per runtime, net10.0/net11.0; affected-project builds then matching binary tests",
+  "Archives": [
+    {
+      "File": "cumulative-2c6cb298-accepted.tar.gz",
+      "Sha256": "0A7ED2E85215A0161DF565B3B855207B40A5C88B8201F4A2FD19629BCE2EE23D",
+      "Length": 29892154
+    },
+    {
+      "File": "linux-consumers.tar.gz",
+      "Sha256": "8F7019681813009FE3ECE1E80F4E344FB3E917086FB54BEC6C7BACEAD94B09CB",
+      "Length": 36808743
+    },
+    {
+      "File": "windows-evidence.zip",
+      "Sha256": "D2BB0CCDFA6711272B5FB24995270FA357519372D680E87A22631B7BB6C4FC2D",
+      "Length": 6662421
+    },
+    {
+      "File": "full-refresh-2c6cb298.tar.gz",
+      "Sha256": "B205E4C2DF98610080477AA455012EFA79962874CE111AA71F381224AA656D8D",
+      "Length": 59213418
+    },
+    {
+      "File": "post-import-guards.zip",
+      "Sha256": "E2BF76127D3B7D98C8B190B6F842AB8AFE00172CE547F02B31AB477DED552400",
+      "Length": 7014
+    }
+  ],
+  "Scope": "Fresh immutable dev.9 common-version candidate qualified for declared package/platform/consumer and representative fixed-original public costs. Full quiet-VM refresh completed; all seven snapshots imported byte-identically. Per-row uncertainty/unqualified/excluded reasons remain; this is not universal profile equivalence, publication, POSIX or complete N4 parity."
+}
