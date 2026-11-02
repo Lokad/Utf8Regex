@@ -55,6 +55,9 @@ public sealed class PythonReTemplateAuthorityTests
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
     public void WarmCachedPlanObservesNewDeadlineWithoutInvalidatingRetainedResults(int result)
     {
+        // Success/recovery must use the same deterministic time authority as the
+        // expiry witness; a loaded test host can spend 200ms scheduling or JITing.
+        using var stableClock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => 0);
         var regex = new Utf8PythonRegex("(?P<x>😀|a)", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(200));
         var retained = regex.Subn("😀a"u8, Template);
         var payload = regex.DebugReplacementPlanCachePayloadBytes;

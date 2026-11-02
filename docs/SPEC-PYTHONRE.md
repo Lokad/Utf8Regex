@@ -253,6 +253,12 @@ Cold FullMatch copies the existing instruction program with an end constraint,
 sharing immutable tables/names. Its token/deadline is the current invocation's;
 failure is retryable and leaves no failed publication. Exact capture-free literal
 value/string paths can use the complete literal finder without this preparation.
+Value FullMatch also reuses the existing admitted literal for eligible capture-free
+positive greedy literal repeats. It validates the whole subject and compares
+bounded blocks under the original invocation, avoiding cold FullMatch preparation,
+VM scratch and coordinate maps. These calls need no major temporary/result buffer;
+finite work is charged at validation, comparison and publication checkpoints.
+Work/depth/byte requirements can therefore be lower than general matching.
 The previously rejected program-sharing prototype is not delivered.
 
 Cold FullMatch/replacement preparation retains separate construction limits;

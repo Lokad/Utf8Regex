@@ -121,6 +121,11 @@ public sealed partial class Utf8PythonRegex
         {
             return MatchValueNative(input, startOffsetInBytes, 2, cancellationToken);
         }
+        if (_scalarProgram.GroupCount == 0 && _utf8Regex is not null &&
+            _scalarProgram.Instructions is { Length: >= 5 and <= 64 } code &&
+            code[0].Kind == Utf8SliceInstructionKind.RepeatGreedy &&
+            code[1].Kind == Utf8SliceInstructionKind.Literal)
+            return MatchLiteralRepeatFullValue(input, startOffsetInBytes, cancellationToken);
         return MatchValueScalar(input, startOffsetInBytes, 2, cancellationToken);
     }
 

@@ -1,0 +1,176 @@
+{
+  "ElapsedSeconds": 64.2818687,
+  "MinimumSampleMilliseconds": 47.7429,
+  "Rows": [
+    {
+      "Name": "actual-unicode-hit",
+      "BeforeUs": 89.283,
+      "AfterUs": 14.0179,
+      "ChangePercent": -84.299,
+      "BeforeBytes": 43752,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.007,
+      "AfterSpread": 1.025
+    },
+    {
+      "Name": "actual-unicode-miss",
+      "BeforeUs": 109.5882,
+      "AfterUs": 14.0479,
+      "ChangePercent": -87.181,
+      "BeforeBytes": 43752,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.012,
+      "AfterSpread": 1.008
+    },
+    {
+      "Name": "ascii-repeat-hit",
+      "BeforeUs": 143.7602,
+      "AfterUs": 8.8809,
+      "ChangePercent": -93.822,
+      "BeforeBytes": 169992,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.045,
+      "AfterSpread": 1.014
+    },
+    {
+      "Name": "mixed-scalar-repeat-hit",
+      "BeforeUs": 74.6006,
+      "AfterUs": 17.7536,
+      "ChangePercent": -76.202,
+      "BeforeBytes": 43752,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.009,
+      "AfterSpread": 1.009
+    },
+    {
+      "Name": "offset-unicode-hit",
+      "BeforeUs": 90.6107,
+      "AfterUs": 14.1118,
+      "ChangePercent": -84.426,
+      "BeforeBytes": 43752,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.027,
+      "AfterSpread": 1.017
+    },
+    {
+      "Name": "valid-partial-period-miss",
+      "BeforeUs": 107.4845,
+      "AfterUs": 11.798,
+      "ChangePercent": -89.024,
+      "BeforeBytes": 43752,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.004,
+      "AfterSpread": 1.018
+    },
+    {
+      "Name": "bounded-too-many-miss",
+      "BeforeUs": 0.7481,
+      "AfterUs": 0.7786,
+      "ChangePercent": 4.072,
+      "BeforeBytes": 3552,
+      "AfterBytes": 3552,
+      "BeforeSpread": 1.2,
+      "AfterSpread": 1.14
+    },
+    {
+      "Name": "finite-live-hit",
+      "BeforeUs": 100.8253,
+      "AfterUs": 14.5969,
+      "ChangePercent": -85.523,
+      "BeforeBytes": 43872,
+      "AfterBytes": 120,
+      "BeforeSpread": 1.009,
+      "AfterSpread": 1.007
+    },
+    {
+      "Name": "finite-live-miss",
+      "BeforeUs": 121.6594,
+      "AfterUs": 14.5458,
+      "ChangePercent": -88.044,
+      "BeforeBytes": 43872,
+      "AfterBytes": 120,
+      "BeforeSpread": 1.018,
+      "AfterSpread": 1.019
+    },
+    {
+      "Name": "deadline-live-hit",
+      "BeforeUs": 100.8517,
+      "AfterUs": 14.863,
+      "ChangePercent": -85.262,
+      "BeforeBytes": 43920,
+      "AfterBytes": 168,
+      "BeforeSpread": 1.007,
+      "AfterSpread": 1.007
+    },
+    {
+      "Name": "captured-control",
+      "BeforeUs": 112.2383,
+      "AfterUs": 120.1248,
+      "ChangePercent": 7.027,
+      "BeforeBytes": 79616,
+      "AfterBytes": 79616,
+      "BeforeSpread": 1.015,
+      "AfterSpread": 1.009
+    },
+    {
+      "Name": "lazy-control",
+      "BeforeUs": 111.2796,
+      "AfterUs": 116.5123,
+      "ChangePercent": 4.702,
+      "BeforeBytes": 16272,
+      "AfterBytes": 16272,
+      "BeforeSpread": 1.014,
+      "AfterSpread": 1.007
+    },
+    {
+      "Name": "branched-control",
+      "BeforeUs": 108.822,
+      "AfterUs": 119.1364,
+      "ChangePercent": 9.478,
+      "BeforeBytes": 75440,
+      "AfterBytes": 75440,
+      "BeforeSpread": 1.012,
+      "AfterSpread": 1.053
+    },
+    {
+      "Name": "folded-control",
+      "BeforeUs": 81.2977,
+      "AfterUs": 84.7193,
+      "ChangePercent": 4.209,
+      "BeforeBytes": 85848,
+      "AfterBytes": 85848,
+      "BeforeSpread": 1.037,
+      "AfterSpread": 1.017
+    },
+    {
+      "Name": "literal-control",
+      "BeforeUs": 0.1199,
+      "AfterUs": 0.0898,
+      "ChangePercent": -25.114,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.009,
+      "AfterSpread": 1.004
+    },
+    {
+      "Name": "suffixed-control",
+      "BeforeUs": 36.2435,
+      "AfterUs": 38.4852,
+      "ChangePercent": 6.185,
+      "BeforeBytes": 43752,
+      "AfterBytes": 43752,
+      "BeforeSpread": 1.051,
+      "AfterSpread": 1.031
+    },
+    {
+      "Name": "unchanged-search-control",
+      "BeforeUs": 0.0895,
+      "AfterUs": 0.0895,
+      "ChangePercent": 0.002,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.005,
+      "AfterSpread": 1.007
+    }
+  ]
+}
