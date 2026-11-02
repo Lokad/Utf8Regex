@@ -19,8 +19,8 @@ observations exceed 10%:
 
 | Public control | Original us | Candidate us | Change | Original / candidate spread |
 | --- | ---: | ---: | ---: | ---: |
-| Lazy Count |0.571|0.629|+10.23%|1.090 / 1.031|
-| Nullable atomic Count |0.951|1.048|+10.14%|1.051 / 1.048|
+| Lazy FullMatch |0.571|0.629|+10.23%|1.090 / 1.031|
+| Nullable atomic Search |0.951|1.048|+10.14%|1.051 / 1.048|
 | Folded FullMatch |77.73|89.31|+14.89%|1.01 / 1.01|
 | Literal FullMatch |0.08|0.10|+29.94%|1.01 / 1.01|
 | Suffixed FullMatch |33.09|38.87|+17.46%|1.02 / 1.02|
