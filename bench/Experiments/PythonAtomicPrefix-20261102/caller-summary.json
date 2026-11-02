@@ -1,0 +1,32 @@
+[
+  {
+    "Name": "atomic/search-miss",
+    "BeforeUs": 1.6167303165053621,
+    "AfterUs": 0.7777106046856427,
+    "ChangePercent": -51.8960833018397,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "BeforeSamples": "1.642,1.617,1.680,1.611,1.571",
+    "AfterSamples": "0.798,0.777,0.779,0.778,0.762"
+  },
+  {
+    "Name": "atomic/search-hit",
+    "BeforeUs": 0.9981900526738977,
+    "AfterUs": 0.7791335388609444,
+    "ChangePercent": -21.94537134748603,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "BeforeSamples": "1.009,0.979,0.975,1.006,0.998",
+    "AfterSamples": "0.783,0.765,0.779,0.787,0.765"
+  },
+  {
+    "Name": "literal/search",
+    "BeforeUs": 2.3822394433022303,
+    "AfterUs": 2.366494377589268,
+    "ChangePercent": -0.660935480571867,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSamples": "2.382,2.384,2.372,2.377,2.383",
+    "AfterSamples": "2.375,2.362,2.366,2.366,2.371"
+  }
+]

@@ -40,6 +40,8 @@ and benchmark builds disable incidental packing.
 
 Use ./bench.ps1 in Release, sequentially, with a focused filter or custom command.
 Benchmarks default to net11.0; use -Framework net10.0 for compatibility controls.
+Let the existing benchmark code set affinity after runtime startup. An outer
+`taskset` changes .NET's visible processor count and defines a different environment.
 Use warm throughput (typically -Job Short); Dry is smoke evidence, not parity.
 Custom commands default to a 120-second outer cap; disable it only for preflighted
 milestone refreshes. The cap returns 124 and owns only its launched process tree;

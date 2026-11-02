@@ -24,7 +24,8 @@ integer outputs, all checked after timing. Compilation is excluded. Diagnostic
 predecoded/decode-then compiled Regex lanes cover overlapping semantics; official
 CPython qualification is separate. Warmup is 1s/minimum 128 calls per lane,
 independently calibrated 60ms batches and five alternating samples. Every sample
-is at least 39.12ms. No confirmation, variants or third run.
+is at least 39.12ms. The sole selected caller confirmation follows below;
+no product variants or third comparison.
 
 | Public operation | Before us | After us | Change |
 | --- | ---: | ---: | ---: |
@@ -65,6 +66,45 @@ all observations and logs are preserved under
 - Runtime patch: SHA256 `0632982D823AA58211BE8A594D3BB8F05F455E7812A8B734D5F1F8B79795B0B8`.
 
 See `summary.json` for every workload, exact identities, allocations and spreads.
-Next: selectively refresh atomic miss/hit against official CPython on clean,
-matching committed binaries. Preserve unrelated rows, uncertainty and immutable
-dev.9/published packages; batch the full cumulative/delivery boundary later.
+Source `253d5983` is pushed; CI 41391386838 passes Windows/Linux. The sole selected
+confirmation uses the exact official `MeasurePythonReQualificationBatch` caller
+and its own timer, original full consumption checksum/digest and unchanged
+benchmark bytes. Separate default-load-context hosts compare parent284 with
+committed253: miss 1.617 -> 0.778us (-51.90%), hit 0.998 -> 0.779us (-21.95%),
+literal control 2.382 -> 2.366us (-0.66%), unchanged allocations. Each host took
+about 7.4s, warmed each case for at least 2s, independently calibrated and kept
+five samples >=20ms. The trace's reported WarmupMilliseconds includes subsequent
+calibration/samples; its fixed 2s guard and call count describe actual warmup.
+The confirmation allowance is exhausted.
+
+An initial selective launch mistakenly wrapped the host in external `taskset`.
+Readonly probes prove that this changes .NET startup ProcessorCount from 8 to 1;
+the repository's in-process placement keeps startup count 8 while pinning its
+main thread. This is a different runtime environment from the full refresh.
+Its ~3.9us and 15.013x/12.103x paired observations remain archived as single-CPU
+evidence, not ordinary-environment replacements or an inferred producer regression.
+AGENTS now records the distinction. No producer change was made to alter a result.
+
+One corrected selective launch reused the exact clean253 binaries and the normal
+placement workflow. Fresh official CPython paired estimates are miss **3.323
+[2.967,3.459]**, hit **2.674 [2.371,2.728]**; both are **Inconclusive**, respectively
+because of 8.25% lane-order variation and 1.138x managed IQR spread. No verdict
+retry. The printed raw diagnostics are 0.774/0.743us, 3,552B. `--measure-pythonre-case`
+does not persist raw rows: their historical source2c6 values/identities remain,
+while these two authoritative paired qualifications carry source253. This is
+intentional mixed-source evidence, not a claim of a fresh complete catalog.
+
+Only these two qualification entries and generated Markdown changed. The other
+88 cases, catalog/corpus metadata, lifecycle and scaling remain identical.
+See `selected-summary.json` and `caller-summary.json`. All initial single-CPU,
+normal-workflow, exact-caller, metadata-probe and snapshot-scope evidence is in
+`selected-253d5983.tar.gz`, SHA256
+`100EAE6E13AF404F89315F308AD6BA523C803AA73DB6ABE698526179C9D10714`.
+Immutable dev.9/published packages are unchanged; batch the full cumulative and
+delivery boundary after further meaningful progress.
+
+Imported snapshot scope and generated Markdown verification pass. Matching-build
+PythonRe snapshot guards pass on .NET10/11; no complete suite was repeated after
+the data import. `post-import.zip` SHA256
+`9DDAF0AFDAD9F5B33DB181CEA9D99D7413459320ED7EA4725D913AE54908CF41`
+preserves these checks and the placement instruction.

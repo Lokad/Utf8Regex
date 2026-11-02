@@ -1,0 +1,31 @@
+{
+  "Scope": "Only atomic/search-hit and atomic/search-miss changed; other88cases,Corpus,Catalog, Lifecycle and Scaling unchanged. Normal existing placement, corrected external-taskset environment. SingleCPU observations retained separately; no status retries.",
+  "Rows": [
+    {
+      "CaseId": "atomic/search-hit",
+      "Ratio": 2.6738839887322485,
+      "Lower": 2.37105451985912,
+      "Upper": 2.7279184975270656,
+      "Status": "Inconclusive",
+      "Reason": "Lane interquartile spreads are 1.138/1.003; the maximum is 1.10.",
+      "Source": "253d5983dd01",
+      "WorktreeQualified": true,
+      "DiagnosticRawUs": 0.743,
+      "AllocatedBytes": 3552,
+      "HistoricalRawScope": "The --measure-pythonre-case command prints diagnostics only; original source2c6 raw snapshot and its identities intentionally retained. Fresh source253 paired evidence is the changed authoritative qualification."
+    },
+    {
+      "CaseId": "atomic/search-miss",
+      "Ratio": 3.3230530937256026,
+      "Lower": 2.967160229861333,
+      "Upper": 3.458514302608796,
+      "Status": "Inconclusive",
+      "Reason": "Lane-order median ratios differ by 8.25%.",
+      "Source": "253d5983dd01",
+      "WorktreeQualified": true,
+      "DiagnosticRawUs": 0.774,
+      "AllocatedBytes": 3552,
+      "HistoricalRawScope": "The --measure-pythonre-case command prints diagnostics only; original source2c6 raw snapshot and its identities intentionally retained. Fresh source253 paired evidence is the changed authoritative qualification."
+    }
+  ]
+}
