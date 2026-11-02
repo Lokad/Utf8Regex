@@ -76,7 +76,11 @@ capture to close on the successful path, not the largest participating number:
 `((a))` closes group 1 last. `LastGroup` is that slot's name, or null when
 unnamed. Misses/no participating captures have null completion metadata.
 Global discovery retries a nonempty match at the same position after an empty
-result before advancing one complete scalar.
+result before advancing one complete scalar. A complete capture-free boundary-only
+program skips that impossible nonempty retry and uses the same scalar advancement,
+EOF checks and workspace cleanup. Actual candidates still execute the VM; other
+programs retain their retry. Eliminated instructions lower work requirements,
+with the original cancellation/deadline and byte/depth/result admission preserved.
 
 Default match/group data expose empty text. Default and unsuccessful detailed
 results expose empty capture/name arrays and group-zero text. Successful snapshots

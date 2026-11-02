@@ -74,21 +74,23 @@ public sealed class PythonReFundedProgramTests
         Assert.Equal(0UL, allowance.Used);
     }
 
-    [Fact]
-    public async Task ExistingCursorKeepsProgramFundingAcrossClosureAndHostWaits()
+    [Theory]
+    [InlineData("(?P<x>.)", "é")]
+    [InlineData(@"\b", "")]
+    public async Task ExistingCursorKeepsProgramFundingAcrossClosureAndHostWaits(string pattern, string firstValue)
     {
-        var allowance = new Allowance(16 << 20); using var regex = Compile("(?P<x>.)", allowance);
+        var allowance = new Allowance(16 << 20); using var regex = Compile(pattern, allowance);
         var held = allowance.Used;
         using var cursor = regex.CreateMatchCursor("é😀"u8.ToArray()); var alias = cursor;
         var withCursor = allowance.Used; Assert.True(withCursor >= held);
         regex.Dispose(); Assert.Equal(withCursor, allowance.Used);
         Assert.Throws<ObjectDisposedException>(() => regex.CreateMatchCursor("a"u8.ToArray()));
         await Task.Yield();
-        Assert.True(alias.MoveNext(out var first)); Assert.Equal("é", Encoding.UTF8.GetString(first.GetValueMemory().Span));
+        Assert.True(alias.MoveNext(out var first)); Assert.Equal(firstValue, Encoding.UTF8.GetString(first.GetValueMemory().Span));
         Assert.True(cursor.MoveNext(out _)); Assert.True(allowance.Used >= withCursor);
         Assert.False(alias.MoveNext(out _)); Assert.Equal(0UL, allowance.Used);
         alias.Dispose(); cursor.Dispose(); Assert.Equal(0UL, allowance.Used);
-        Assert.Equal("é", Encoding.UTF8.GetString(first.GetValueMemory().Span));
+        Assert.Equal(firstValue, Encoding.UTF8.GetString(first.GetValueMemory().Span));
     }
 
     [Fact]

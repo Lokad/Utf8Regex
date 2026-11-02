@@ -355,8 +355,16 @@ internal struct PythonReScalarMatchState
                                 (uint)(input[_position] - _leadingAsciiLow) > (uint)(_leadingAsciiHigh - _leadingAsciiLow))) &&
                             !SeekCandidate(input)) { _finished = true; return false; }
                         _invocation.AnchorOriginByte = _position;
-                        outcome = Utf8SliceRunner.TryMatchAt(_program, input, _position,
-                            _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref _workspace, ref _invocation);
+                        // A complete boundary-only root cannot satisfy a nonempty
+                        // retry. Reuse failure's scalar advance/EOF checks; actual
+                        // candidates still run the VM with its admitted workspace.
+                        if (_retryNonEmpty && _program.GroupCount == 0 && !_program.IsNonBacktracking &&
+                            _program.Instructions is { Length: 2 } code &&
+                            code[0].Kind == Utf8SliceInstructionKind.Boundary && code[1].Kind == Utf8SliceInstructionKind.Accept)
+                            outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+                        else
+                            outcome = Utf8SliceRunner.TryMatchAt(_program, input, _position,
+                                _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref _workspace, ref _invocation);
                     }
                 }
                 catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
