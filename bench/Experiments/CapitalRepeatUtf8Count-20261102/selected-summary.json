@@ -1,0 +1,20 @@
+[
+  {
+    "CaseId": "bounded-repeat/capitals",
+    "Section": "dotnet-performance",
+    "Mode": "Ordinary",
+    "RatioToPredecoded": 0.2044373028521825,
+    "Utf8Microseconds": 9357.616666666667,
+    "Utf8AllocatedBytes": 0,
+    "Status": "Win"
+  },
+  {
+    "CaseId": "bounded-repeat/capitals",
+    "Section": "dotnet-performance-compiled",
+    "Mode": "Compiled",
+    "RatioToPredecoded": 0.6980826117057315,
+    "Utf8Microseconds": 9427.85,
+    "Utf8AllocatedBytes": 0,
+    "Status": "Win"
+  }
+]

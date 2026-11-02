@@ -63,3 +63,12 @@ It preserves exact tested product/fixtures, logs and initial failures. Final
 migration prose subsequently clarifies that declined roots retain existing paths.
 Published/staged dev.8 and earlier bytes remain immutable. This parent comparison
 does not replace the next coherent cumulative/package/platform delivery gate.
+
+The subsequent selective V3 refresh on clean committed `f48327e6` updates only
+the two capitals rows. Ordinary9357.62us/0.2044x and compiled9427.85us/0.6981x,
+both **Win**, zeroB/op. All30samples>=47.352ms. The existing parity verifier
+and three Core snapshot guards pass per runtime on matching binaries. This
+single catalog qualification is separate from the causal A/B above; no profile,
+package or full refresh was repeated. [Selected rows](selected-summary.json).
+Raw source/DLL/PDBs, snapshot and logs are sealed in
+`selected-f48327e6.tar.gz`, SHA256 `3C98E3E3B0E49442BFF7E69E392C54E9FC39EF7B31ED0C68D977D8CE2A5A68A1`.
