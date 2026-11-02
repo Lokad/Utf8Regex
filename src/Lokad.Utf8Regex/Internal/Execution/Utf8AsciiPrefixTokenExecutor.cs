@@ -5,7 +5,6 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8AsciiPrefixTokenExecutor
 {
-    private static readonly PreparedByteSetState s_asciiIdentifierTail = PreparedByteSetState.FromValues("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"u8);
     private static readonly PreparedByteSetState s_asciiOperators = PreparedByteSetState.FromValues("=+-^*/.<>~!&|?"u8);
     public static bool TryMatchIdentifierPrefixIgnoreCase(ReadOnlySpan<byte> input, out int matchedLength)
     {
@@ -24,7 +23,7 @@ internal static class Utf8AsciiPrefixTokenExecutor
         if (tail.Length <= 16)
         {
             var length = 1;
-            while (length < input.Length && s_asciiIdentifierTail.Contains(input[length]))
+            while (length < input.Length && Utf8AsciiBytePredicates.WordSearch.Contains(input[length]))
             {
                 length++;
             }
@@ -33,7 +32,7 @@ internal static class Utf8AsciiPrefixTokenExecutor
             return true;
         }
 
-        var stop = s_asciiIdentifierTail.IndexOfAnyExcept(tail);
+        var stop = Utf8AsciiBytePredicates.WordSearch.IndexOfAnyExcept(tail);
         var index = stop < 0 ? input.Length : 1 + stop;
 
         matchedLength = index;

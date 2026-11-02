@@ -64,3 +64,8 @@ roughly 46–56 us with live/finite/deadline authority, versus 73–74 us throug
 unlimited emitted path. That is an observation across distinct routes, not proof
 that switching all workloads is faster. Preserve dense-hit and native-path controls
 before choosing a further change. Do not reopen this small-set substitution trial.
+
+The raw driver's narrative Scope retained stale27078/407 labels from its template.
+The measured producer identity/SHA fields identify frozenf483 and9f3+patch, as
+recorded above and in summary.json; those fields and archived binaries are the
+authoritative identities. Original raw bytes remain untouched.

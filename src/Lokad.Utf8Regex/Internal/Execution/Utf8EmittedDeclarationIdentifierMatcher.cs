@@ -125,7 +125,29 @@ internal sealed class Utf8EmittedKernelMatcher
     private int FindNextAnchorRelative(ReadOnlySpan<byte> input, int startIndex)
     {
         var search = _anchorSearch ?? throw new InvalidOperationException("The emitted plan does not define an anchor byte set.");
-        return search.IndexOf(input[startIndex..]);
+        var anchorOffset = _plan.FindOptimization.AnchorOffset;
+        var scanFrom = startIndex;
+        while (scanFrom < input.Length)
+        {
+            var relative = search.IndexOf(input[scanFrom..]);
+            if (relative < 0) return -1;
+            var anchor = scanFrom + relative;
+            var start = anchor - anchorOffset;
+            if (start < 0) { scanFrom = anchor + 1; continue; }
+            if (start == 0 || !Utf8AsciiBytePredicates.IsWord(input[start - 1]))
+                return anchor - startIndex;
+
+            // This kernel requires a word boundary and a word-only prefix.
+            // No interior position of this ASCII word can start a match. Scan
+            // from the candidate, not the anchor: punctuation may lie between
+            // them. The next candidate starts strictly after this word.
+            var stop = Utf8AsciiBytePredicates.WordSearch.IndexOfAnyExcept(input[start..]);
+            if (stop < 0) return -1;
+            var wordEnd = start + stop;
+            if (input.Length - wordEnd <= anchorOffset + 1) return -1;
+            scanFrom = wordEnd + anchorOffset + 1;
+        }
+        return -1;
     }
 
     private int FindNextCommonPrefixRelative(ReadOnlySpan<byte> input, int startIndex) => input[startIndex..].IndexOf(_plan.FindOptimization.CommonPrefix);
@@ -433,19 +455,8 @@ internal sealed class Utf8EmittedKernelMatcher
         emitter.Emit(OpCodes.Sub);
         emitter.StoreLocal(matchIndexLocal);
 
-        emitter.LoadLocal(matchIndexLocal);
-        emitter.LdcI4(0);
-        emitter.Emit(OpCodes.Blt, failureLabel);
-
-        var pastBoundaryCheckLabel = emitter.DefineLabel();
-        emitter.LoadLocal(matchIndexLocal);
-        emitter.Emit(OpCodes.Brfalse, pastBoundaryCheckLabel);
-
-        emitter.LoadInputByte(matchIndexLocal, -1);
-        emitter.StoreLocal(valueLocal);
-        emitter.EmitAsciiWordBranch(valueLocal, successLabel: failureLabel, failureLabel: pastBoundaryCheckLabel);
-        emitter.MarkLabel(pastBoundaryCheckLabel);
-
+        // FindNextAnchorRelative has already established the nonnegative
+        // candidate and required leading word boundary.
         emitter.LoadInputByte(anchorIndexLocal);
         emitter.StoreLocal(valueLocal);
 

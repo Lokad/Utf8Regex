@@ -1,0 +1,206 @@
+{
+  "Accepted": true,
+  "Reason": "Useful primary keyword Count improvement with all adverse representative public medians <=10%; no confirmation or variants.",
+  "Parent": "feaf867d5494e6cb977a718e6b18b6f9c7202c80",
+  "Baseline": {
+    "Version": "0.5.0-dev.8+f48327e6d027a2be107383c27126cfc1eece5743",
+    "Sha256": "95BE7091C4BCE7423C96712A50892C0DB5E4A7E660427025E4ADD69138C09640"
+  },
+  "Candidate": {
+    "Version": "0.5.0-dev.8+feaf867d5494e6cb977a718e6b18b6f9c7202c80",
+    "Sha256": "CD545519D87EE9ACE5CC7619080A1DFC70EB48C14A2734B9ED020791D93070D9"
+  },
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CpuAffinityMask": "4",
+  "ElapsedSeconds": 66.9794148,
+  "MinimumSampleMilliseconds": 28.0719,
+  "MaximumAdverseMedianPct": 8.495206663692901,
+  "MaximumAdversePairedSamplePct": 9.978,
+  "Protocol": "One 120-second capped 18-case public Count/IsMatch batch, four equal-result lanes, isolated producers, 500ms warmup, independent calibration, five alternating >=20ms samples; complete result batches consumed after timing; compilation excluded.",
+  "CandidatePatchSha256": "8A7058D4B95F8940980A44E5B4787FFA544B74D214BF045F7B1847AB3F31CA5D",
+  "Scope": "Parent pilot, not fixed-a40 cumulative, catalog, package or platform qualification. All allocation medians unchanged. Larger-anchor is affected-path coverage despite the inherited control name; literal and controlled operations are unchanged controls. Numeric byte coordinates, captures, resource/interruption/ownership contracts unchanged.",
+  "EvidenceSha256": "14D283108EB7F76C18D0F31997102CA53DC72DBDF71FB5A6A1AC8C8000F7CC18",
+  "CorrectnessSourceSha256": "C296861E3250C834A2C5CE1EFEB2DA1101B0E7219061ACE5E0596BEE548231AB",
+  "Rows": [
+    {
+      "Name": "corpus-ordinary",
+      "Before": 72.95174909529554,
+      "After": 65.84901746724891,
+      "ChangePct": -9.73620470534361,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.0136097215149429,
+      "Predecoded": 217.45724637681158
+    },
+    {
+      "Name": "corpus-compiled",
+      "Before": 73.09770808202654,
+      "After": 66.40985442329227,
+      "ChangePct": -9.149197470363223,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.010029422793037,
+      "Predecoded": 7.635832195606305
+    },
+    {
+      "Name": "corpus-finite-live",
+      "Before": 48.5671096345515,
+      "After": 46.47862010221465,
+      "ChangePct": -4.300213762054028,
+      "BeforeBytes": 3672,
+      "AfterBytes": 3672,
+      "CandidateSpread": 1.0924148769181792,
+      "Predecoded": 7.4398135487880666
+    },
+    {
+      "Name": "corpus-live",
+      "Before": 45.84376508447305,
+      "After": 45.6823669579031,
+      "ChangePct": -0.3520612372752363,
+      "BeforeBytes": 3672,
+      "AfterBytes": 3672,
+      "CandidateSpread": 1.0559733029714589,
+      "Predecoded": 7.472716110019646
+    },
+    {
+      "Name": "corpus-deadline-live",
+      "Before": 57.295386158475424,
+      "After": 56.37267497603069,
+      "ChangePct": -1.6104458741103111,
+      "BeforeBytes": 3720,
+      "AfterBytes": 3720,
+      "CandidateSpread": 1.0650206991113884,
+      "Predecoded": 7.505567318470544
+    },
+    {
+      "Name": "dense-hits",
+      "Before": 37.029901960784315,
+      "After": 35.702909298345695,
+      "ChangePct": -3.583570552911375,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.0139554811006488,
+      "Predecoded": 62.8558670820353
+    },
+    {
+      "Name": "dense-anchor-miss",
+      "Before": 391.80256410256413,
+      "After": 3.0387394580567895,
+      "ChangePct": -99.22442073215699,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.0279184558302412,
+      "Predecoded": 2.2133921090021493
+    },
+    {
+      "Name": "boundary-false",
+      "Before": 32.18378812199037,
+      "After": 34.9178674351585,
+      "ChangePct": 8.495206663692901,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.0104935782606108,
+      "Predecoded": 32.011278586278586
+    },
+    {
+      "Name": "sparse-anchor-miss",
+      "Before": 3.635533749628308,
+      "After": 3.2789222148978245,
+      "ChangePct": -9.809055816548062,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.0275434027333616,
+      "Predecoded": 2.207681266102319
+    },
+    {
+      "Name": "short-tail",
+      "Before": 0.11940563313382734,
+      "After": 0.12233786008144383,
+      "ChangePct": 2.455685607671554,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.01839985274613,
+      "Predecoded": 0.028352
+    },
+    {
+      "Name": "two-anchors",
+      "Before": 50.67224523612262,
+      "After": 49.136504065040654,
+      "ChangePct": -3.0307344068251085,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.0559587856142614,
+      "Predecoded": 6.93849907063197
+    },
+    {
+      "Name": "large-anchor-control",
+      "Before": 14.032123749709234,
+      "After": 14.943401832136669,
+      "ChangePct": 6.494227806723263,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.0076814351997525,
+      "Predecoded": 20.356203389830508
+    },
+    {
+      "Name": "unicode-control",
+      "Before": 47.75770720371805,
+      "After": 46.5640586797066,
+      "ChangePct": -2.4993840657378197,
+      "BeforeBytes": 3552,
+      "AfterBytes": 3552,
+      "CandidateSpread": 1.0514814383174804,
+      "Predecoded": 7.589572296162295
+    },
+    {
+      "Name": "literal-control",
+      "Before": 6.241548932659585,
+      "After": 6.259001009081735,
+      "ChangePct": 0.2796113049892135,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.0302997328309362,
+      "Predecoded": 11.68374309129026
+    },
+    {
+      "Name": "is-match-late",
+      "Before": 398.2634615384615,
+      "After": 3.661578077314344,
+      "ChangePct": -99.08061410826645,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.0119616639762967,
+      "Predecoded": 2.308777260663872
+    },
+    {
+      "Name": "is-match-miss",
+      "Before": 398.941059602649,
+      "After": 3.5860434455047714,
+      "ChangePct": -99.10110945985943,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.0729910146303256,
+      "Predecoded": 2.20929495544536
+    },
+    {
+      "Name": "zero-offset-anchor",
+      "Before": 57.08901734104047,
+      "After": 37.640488110137674,
+      "ChangePct": -34.067023985927904,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.0158826624397264,
+      "Predecoded": 84.20893854748603
+    },
+    {
+      "Name": "shared-word-control",
+      "Before": 540.9946428571428,
+      "After": 546.8848214285714,
+      "ChangePct": 1.0887683730694375,
+      "BeforeBytes": 64,
+      "AfterBytes": 64,
+      "CandidateSpread": 1.010104534778265,
+      "Predecoded": 1.5909943363966659
+    }
+  ]
+}

@@ -1,9 +1,12 @@
 using System.Runtime.CompilerServices;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8AsciiBytePredicates
 {
+    internal static readonly PreparedByteSetState WordSearch = PreparedByteSetState.FromValues("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"u8);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsDigit(byte value) => (uint)(value - (byte)'0') <= 9;
 
