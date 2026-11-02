@@ -91,7 +91,7 @@ public sealed class Utf8UpperWordAnchorAdmissionTests
     public void EmittedPlanAdmitsOnlyItsFinalOwnedArraysAndRollsBackEveryWorkCutoff(bool bytes)
     {
         var family = Family(["aa"u8.ToArray(), "bb"u8.ToArray()]);
-        var extent = Bytes<byte>(2) + Bytes<byte[]>(256) + Bytes<Utf8EmittedKernelBlock>(6);
+        var extent = Bytes<byte>(2) + Bytes<Utf8EmittedKernelBlock>(6);
         ulong work;
         using (var probe = Utf8ConstructionScope.Enter())
         {
@@ -99,7 +99,6 @@ public sealed class Utf8UpperWordAnchorAdmissionTests
             Assert.Equal(extent, probe.Budget.ReservedBytes); work = probe.Budget.WorkSteps;
             Assert.Equal(new byte[] { (byte)'a', (byte)'b' }, lowered.FindOptimization.AnchorBytes);
             Assert.Equal(1, lowered.FindOptimization.AnchorOffset); Assert.Same(family.Prefixes, lowered.Prefixes);
-            Assert.Same(family.Prefixes[1], lowered.FindOptimization.AnchorPrefixesByByte![(byte)'b']);
         }
         var cutoffs = bytes ? new[] { extent - 1, extent } : Enumerable.Range(0, checked((int)work + 1)).Select(i => (ulong)i);
         foreach (var cutoff in cutoffs)

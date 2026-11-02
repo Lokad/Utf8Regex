@@ -11,12 +11,11 @@ internal enum Utf8CompiledFindOptimizationKind : byte
 
 internal readonly struct Utf8CompiledFindOptimization
 {
-    public Utf8CompiledFindOptimization(int anchorOffset, byte[] anchorBytes, byte[][] anchorPrefixesByByte)
+    public Utf8CompiledFindOptimization(int anchorOffset, byte[] anchorBytes)
     {
         Kind = Utf8CompiledFindOptimizationKind.AnchorByteSetAtOffset;
         AnchorOffset = anchorOffset;
         AnchorBytes = anchorBytes;
-        AnchorPrefixesByByte = anchorPrefixesByByte;
         CommonPrefix = [];
         PrefixDiscriminator = default;
     }
@@ -26,7 +25,6 @@ internal readonly struct Utf8CompiledFindOptimization
         Kind = Utf8CompiledFindOptimizationKind.SharedPrefix;
         AnchorOffset = 0;
         AnchorBytes = [];
-        AnchorPrefixesByByte = null;
         CommonPrefix = commonPrefix;
         PrefixDiscriminator = prefixDiscriminator;
     }
@@ -36,8 +34,6 @@ internal readonly struct Utf8CompiledFindOptimization
     public int AnchorOffset { get; }
 
     public byte[] AnchorBytes { get; }
-
-    public byte[][]? AnchorPrefixesByByte { get; }
 
     public byte[] CommonPrefix { get; }
 

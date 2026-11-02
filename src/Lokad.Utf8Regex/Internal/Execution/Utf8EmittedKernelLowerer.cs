@@ -36,15 +36,8 @@ internal static class Utf8EmittedKernelLowerer
                 Utf8AsciiStructuralIdentifierFamilyExecutor.TryGetUpperWordIdentifierKernelSpec(familyPlan, budget.Deadline, out var anchorOffset, out var anchorClass))
             {
                 var anchorBytes = anchorClass.GetPositiveMatchBytes();
-                var anchorPrefixesByByte = budget.AllocateArray<byte[]>(256, false);
-                foreach (var prefix in familyPlan.Prefixes)
-                {
-                    budget.ChargeWork(1);
-                    anchorPrefixesByByte[prefix[anchorOffset]] = prefix;
-                }
-
                 kernelPlan = Utf8EmittedKernelPlan.CreateUpperWordIdentifierFamily(
-                    new Utf8CompiledFindOptimization(anchorOffset, anchorBytes, anchorPrefixesByByte),
+                    new Utf8CompiledFindOptimization(anchorOffset, anchorBytes),
                     familyPlan.Prefixes,
                     familyPlan.IdentifierTailMinCount,
                     familyPlan.IdentifierTailMaxCount,

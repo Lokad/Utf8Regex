@@ -1,0 +1,148 @@
+{
+  "Decision": "Promote orphan table deletion",
+  "Scope": "Parent comparison, not cumulative fixed-original or package/catalog qualification. Original first3 construction timings were not warmed: preserve initial values, use sole selected 4case >=2000ms/min2048 warmup confirmation. Same frozen binaries and unchanged controls. No third run or product variants.",
+  "Baseline": {
+    "Version": "0.5.0-dev.9+2c6cb298c4841983f74af9587275263df86536cb",
+    "Sha256": "DC463E67E1F1EBE3D2B2AF113F59F4F067B3C06F8C04D765E5C2556E5C6DA188"
+  },
+  "Candidate": {
+    "Version": "0.5.0-dev.9+a7a6a005aa2d626f0546623955fd2325d11e2831",
+    "Sha256": "2B2319F3655A99CE828F28BAF21FFD67CCAD303F5145319905617E99F3624E79"
+  },
+  "InitialSeconds": 16.1431919,
+  "ConfirmationSeconds": 26.6853684,
+  "Rows": [
+    {
+      "Name": "construct-keyword-ordinary",
+      "Evidence": "Sole warmup confirmation",
+      "BeforeUs": 112.37400379506641,
+      "AfterUs": 112.37590132827324,
+      "ChangePercent": 0.0016885873447058941,
+      "BeforeBytes": 110136,
+      "AfterBytes": 108056,
+      "MinimumDurationMs": 58.9304,
+      "BeforeSpread": 1.0121596392730623,
+      "AfterSpread": 1.0081995031426905
+    },
+    {
+      "Name": "construct-keyword-compiled",
+      "Evidence": "Sole warmup confirmation",
+      "BeforeUs": 113.66520076481835,
+      "AfterUs": 112.84126679462572,
+      "ChangePercent": -0.7248779438637554,
+      "BeforeBytes": 110296,
+      "AfterBytes": 108216,
+      "MinimumDurationMs": 58.5298,
+      "BeforeSpread": 1.0258518290683112,
+      "AfterSpread": 1.0114762052834625
+    },
+    {
+      "Name": "construct-two-prefix",
+      "Evidence": "Sole warmup confirmation",
+      "BeforeUs": 100.29861351819758,
+      "AfterUs": 101.25989492119089,
+      "ChangePercent": 0.9584194330053197,
+      "BeforeBytes": 92272,
+      "AfterBytes": 90192,
+      "MinimumDurationMs": 56.7951,
+      "BeforeSpread": 1.1036856000708202,
+      "AfterSpread": 1.0664687622699847
+    },
+    {
+      "Name": "construct-four-prefix",
+      "Evidence": "Initial comparison",
+      "BeforeUs": 118.17485380116958,
+      "AfterUs": 116.87201166180758,
+      "ChangePercent": -1.1024698550116674,
+      "BeforeBytes": 117696,
+      "AfterBytes": 115616,
+      "MinimumDurationMs": 39.8489,
+      "BeforeSpread": 1.0288111231996167,
+      "AfterSpread": 1.0130066325544744
+    },
+    {
+      "Name": "construct-zero-offset",
+      "Evidence": "Initial comparison",
+      "BeforeUs": 93.58771653543306,
+      "AfterUs": 93.66814516129033,
+      "ChangePercent": 0.08593929720126514,
+      "BeforeBytes": 88864,
+      "AfterBytes": 86784,
+      "MinimumDurationMs": 46.1271,
+      "BeforeSpread": 1.0057138221769306,
+      "AfterSpread": 1.0103951906796655
+    },
+    {
+      "Name": "construct-finite-control",
+      "Evidence": "Initial comparison",
+      "BeforeUs": 64.09675675675676,
+      "AfterUs": 63.92056818181819,
+      "ChangePercent": -0.2748790794629419,
+      "BeforeBytes": 53632,
+      "AfterBytes": 53632,
+      "MinimumDurationMs": 56.0359,
+      "BeforeSpread": 1.0088998135277167,
+      "AfterSpread": 1.0101845424094196
+    },
+    {
+      "Name": "construct-shared-prefix-control",
+      "Evidence": "Initial comparison",
+      "BeforeUs": 52.122778257118206,
+      "AfterUs": 52.54094903339192,
+      "ChangePercent": 0.8022802894559922,
+      "BeforeBytes": 53944,
+      "AfterBytes": 53944,
+      "MinimumDurationMs": 59.6769,
+      "BeforeSpread": 1.0174835438755354,
+      "AfterSpread": 1.005941997657385
+    },
+    {
+      "Name": "construct-literal-control",
+      "Evidence": "Sole warmup confirmation",
+      "BeforeUs": 32.84842105263158,
+      "AfterUs": 32.831092896174866,
+      "ChangePercent": -0.05275187026173578,
+      "BeforeBytes": 40488,
+      "AfterBytes": 40488,
+      "MinimumDurationMs": 46.1538,
+      "BeforeSpread": 1.4801923135256467,
+      "AfterSpread": 1.0998792675565094
+    },
+    {
+      "Name": "count-keyword",
+      "Evidence": "Initial comparison",
+      "BeforeUs": 77.47827763496144,
+      "AfterUs": 75.54508094645081,
+      "ChangePercent": -2.4951467011423256,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "MinimumDurationMs": 60.0677,
+      "BeforeSpread": 1.0090464592451516,
+      "AfterSpread": 1.0218407959373064
+    },
+    {
+      "Name": "count-shared-prefix-control",
+      "Evidence": "Initial comparison",
+      "BeforeUs": 21.27186392629341,
+      "AfterUs": 21.765217391304347,
+      "ChangePercent": 2.319277082254745,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "MinimumDurationMs": 60.0138,
+      "BeforeSpread": 1.005047172483662,
+      "AfterSpread": 1.0011441457045405
+    },
+    {
+      "Name": "count-literal-control",
+      "Evidence": "Initial comparison",
+      "BeforeUs": 6.4585321298087255,
+      "AfterUs": 6.451237623762376,
+      "ChangePercent": -0.11294371383061552,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "MinimumDurationMs": 59.792,
+      "BeforeSpread": 1.0023606673175025,
+      "AfterSpread": 1.0043734947819105
+    }
+  ]
+}
