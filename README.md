@@ -314,9 +314,9 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `lokad/style/range-ref` | 1.177 us | 2.666 us | 2.725 us | 0.44x |
 | `structural/ordered-keyword-window` | 6.751 us | 17.481 us | 28.780 us | 0.39x |
 | `structural/ordered-modifier-pair` | 5.994 us | 17.295 us | 28.250 us | 0.35x |
-| `structural/keyword-family-to-capitalized-identifier` | 71.852 us | 210.219 us | 223.915 us | 0.34x |
 | `lokad/lexer/string` | 28.717 us | 93.031 us | 99.192 us | 0.31x |
 | `structural/modifier-family-to-type-window` | 77.097 us | 252.152 us | 266.828 us | 0.31x |
+| `structural/keyword-family-to-capitalized-identifier` | 68.117 us | 224.741 us | 236.698 us | 0.30x |
 | `structural/ordered-identifier-window` | 6.404 us | 28.309 us | 39.208 us | 0.23x |
 | `lokad/folding/region-marker` | 6.893 us | 35.148 us | 60.312 us | 0.20x |
 | `structural/modifier-family-to-type-pair` | 24.632 us | 131.488 us | 145.315 us | 0.19x |
@@ -340,7 +340,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 
 | Case | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `structural/keyword-family-to-capitalized-identifier` | 71.709 us | 7.566 us | 18.679 us | 9.48x |
+| `structural/keyword-family-to-capitalized-identifier` | 68.088 us | 7.771 us | 18.884 us | 8.76x |
 | `lokad/imports/module-imports` | 30.197 us | 4.364 us | 26.394 us | 6.92x |
 | `structural/modifier-family-to-type-pair` | 24.579 us | 10.579 us | 21.502 us | 2.32x |
 | `lokad/langserv/helper-identifier` | 9.318 us | 4.707 us | 5.686 us | 1.98x |

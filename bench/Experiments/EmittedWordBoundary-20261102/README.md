@@ -71,3 +71,10 @@ Refresh only the affected keyword catalog case with the existing V3 command on
 clean matching binaries. Preserve all other row identities and immutable dev.8/
 published packages. Recheck the complete checked candidate against fixed a40 at
 the next coherent delivery boundary; this pilot does not claim cumulative acceptance.
+
+Selective V3 refresh on cleanb28a44d2 is complete: ordinary68.12us/0.3031xWin,
+compiled68.09us/8.7620xGap, both0B. Only the two keyword case entries changed;
+all30samples were >=49.3664ms. Existing parity verification and the three
+Core snapshot guards perruntime pass. See selected-summary.json; raw archive
+selected-b28a44d2.tar.gz SHA256 BD006032EC54691EABCBC2162A5C5311B45B3D25710FE68AFF9F9DE0FB746AD7.
+Comparator movement and this selective catalog are distinct from the causal pilot.
