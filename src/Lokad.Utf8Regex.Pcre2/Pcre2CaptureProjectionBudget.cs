@@ -29,7 +29,7 @@ internal readonly ref struct Pcre2CaptureProjectionBudget : IUtf8InvocationBuffe
         ? _slice.IsUnmetered && _slice.CheckpointHook is null
         : _vm.IsUnmetered;
 
-    public bool CanRetainWorkspace => _isSlice ? _slice.Ledger.IsUnlimited : _vm.CanRetainWorkspace;
+    public bool CanRetainWorkspace => _isSlice ? _slice.HasUnlimitedWorkingMemory : _vm.CanRetainWorkspace;
 
     internal ref Utf8SliceInvocation WorkingInvocation => ref (_isSlice ? ref _slice : ref _vm.WorkingInvocation);
 

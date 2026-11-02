@@ -36,7 +36,7 @@ internal readonly ref struct Pcre2ReplacementPreparationControl
 
     internal static Pcre2ReplacementPreparation Prepare(Utf8ConstructionPattern replacement, Pcre2SubstitutionOptions options, bool literal)
     {
-        if (!s_current.HasInvocation || s_current.Invocation.Ledger.IsUnlimited)
+        if (!s_current.HasInvocation || s_current.Invocation.HasUnlimitedWorkingMemory)
             return Compile(replacement, options, literal);
         Check();
         if (s_current.Invocation.Ledger.HasMemoryAllowance)
@@ -48,7 +48,7 @@ internal readonly ref struct Pcre2ReplacementPreparationControl
                 throw new InvalidOperationException("Funded replacement preparation requires a live construction owner.");
             return Compile(replacement, options, literal);
         }
-        var available = s_current.Invocation.Ledger.MaxLiveBytes - s_current.Invocation.Ledger.ReservedBytes;
+        var available = s_current.Invocation.Budget.Limits.MaxWorkingBytes - s_current.Invocation.Ledger.ReservedBytes;
         using var scope = Utf8ConstructionScope.RestrictAdditionalBytes(available);
         var baseline = scope.Budget.ReservedBytes;
         var ceiling = scope.Budget.MaximumBytes;

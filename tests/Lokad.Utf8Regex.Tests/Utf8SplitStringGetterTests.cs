@@ -57,8 +57,8 @@ public sealed class Utf8SplitStringGetterTests
         if (coordinates is not null) Assert.False(coordinates.IsAlive);
         var held = HeldBytes(text);
         Assert.Equal(held, invocation.Ledger.ReservedBytes);
-        Assert.True(invocation.Ledger.TryReserve(Capacity - held));
-        Assert.False(invocation.Ledger.TryReserve(1));
+        Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(Capacity - held));
+        Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, invocation.TryReserveWorking(1));
         invocation.Ledger.Release(Capacity - held);
         Assert.Equal(text, alias);
         return new WeakReference(alias);

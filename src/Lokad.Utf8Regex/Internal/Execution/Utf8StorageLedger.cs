@@ -3,9 +3,10 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// <summary>
 /// Flavor-neutral aggregate admission ledger for invocation-owned storage: frames,
 /// repeats, capture slots/history, decode/coordinate buffers, and output staging.
-/// Reservation precedes acquisition, so a denied reservation must skip the
-/// allocation it would have covered; callers map denial onto their own failure
-/// vocabulary (see <see cref="Utf8ExecutionLimitKind"/>). Zero means unlimited.
+/// The invocation checks its numeric ceiling before reserving here. Reservation
+/// precedes acquisition; overflow or refused caller funding must skip the
+/// allocation it would have covered. Numeric limits and sticky denials belong
+/// to the invocation budget, not a second copy in this ledger.
 /// Growth and copies must reserve the new extent while the old extent is still
 /// held, then release the old extent, so overlap peaks are admitted, not assumed.
 /// Hold by reference, including through the shared invocation of copied cursors.
@@ -19,22 +20,15 @@ internal struct Utf8StorageLedger
     private ulong _reservedBytes;
     private readonly IUtf8MemoryAllowance? _memoryAllowance;
 
-    internal Utf8StorageLedger(ulong maxLiveBytes) : this(maxLiveBytes, null) { }
-
-    internal Utf8StorageLedger(ulong maxLiveBytes, IUtf8MemoryAllowance? memoryAllowance)
+    internal Utf8StorageLedger(IUtf8MemoryAllowance? memoryAllowance)
     {
-        MaxLiveBytes = maxLiveBytes;
         _memoryAllowance = memoryAllowance;
     }
-
-    internal ulong MaxLiveBytes { get; }
 
     internal ulong ReservedBytes => _reservedBytes;
 
     internal bool HasMemoryAllowance => _memoryAllowance is not null;
     internal IUtf8MemoryAllowance? MemoryAllowance => _memoryAllowance;
-
-    internal bool IsUnlimited => MaxLiveBytes == 0 && _memoryAllowance is null;
 
     internal bool TryReserve(ulong bytes)
     {
@@ -44,11 +38,6 @@ internal struct Utf8StorageLedger
         }
 
         var admitted = _reservedBytes + bytes;
-        if (MaxLiveBytes != 0 && admitted > MaxLiveBytes)
-        {
-            return false;
-        }
-
         if (bytes != 0 && _memoryAllowance is not null && !_memoryAllowance.TryReserve(bytes))
             throw new Utf8MemoryAdmissionException(bytes);
         _reservedBytes = admitted;

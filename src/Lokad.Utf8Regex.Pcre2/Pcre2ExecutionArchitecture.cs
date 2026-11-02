@@ -3830,7 +3830,7 @@ internal struct Pcre2ResourceBudget
 
     internal ulong ReservedWorkingBytes => _invocation.Ledger.ReservedBytes;
 
-    internal bool CanRetainWorkspace => _invocation.Ledger.IsUnlimited;
+    internal bool CanRetainWorkspace => _invocation.HasUnlimitedWorkingMemory;
 
     internal void ReserveWorking(ulong bytes)
     {

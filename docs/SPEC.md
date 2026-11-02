@@ -242,6 +242,8 @@ Denial throws `Utf8ResourceLimitExceededException` with kind, limit and requeste
 total. Totals saturate, and first denial stays sticky across copies. Denial is not
 no-match or partial success. Numerical charges depend on route/version; they are
 not byte counts, CPU instructions, elapsed time or portable per-pattern minima.
+The invocation checks its numeric working ceiling before caller-funded admission;
+live reservations, overlap and the first denial remain shared across aliases.
 Native shortcuts still meter bounded search, comparison and publication.
 Scalar-class repetitions with a proved endpoint can omit unused repeat-journal
 storage. Live counter vectors and captures still require admission; examined

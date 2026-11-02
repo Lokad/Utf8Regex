@@ -36,7 +36,7 @@ internal struct Utf8SliceInvocation
         IUtf8MemoryAllowance? memoryAllowance)
     {
         _inlineBudget = new Utf8ExecutionBudget(limits, deadline, token);
-        _inlineLedger = new Utf8StorageLedger(limits.MaxWorkingBytes, memoryAllowance);
+        _inlineLedger = new Utf8StorageLedger(memoryAllowance);
         CheckpointHook = Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook;
         AnchorOriginByte = -1;
         // Create the owner at invocation entry, before validation/preparation.
@@ -79,7 +79,9 @@ internal struct Utf8SliceInvocation
     // by every scan driver, so nested lookbehind runs read the outer origin.
     internal int AnchorOriginByte;
 
-    internal bool IsUnmetered => Budget.IsUnmetered && Ledger.IsUnlimited;
+    internal bool IsUnmetered => Budget.IsUnmetered && !Ledger.HasMemoryAllowance;
+
+    internal bool HasUnlimitedWorkingMemory => Budget.Limits.MaxWorkingBytes == 0 && !Ledger.HasMemoryAllowance;
 
     // A funded synchronous preparation borrows the same numeric/host ledger as
     // execution. Its construction scope owns/refunds its temporary loans; no

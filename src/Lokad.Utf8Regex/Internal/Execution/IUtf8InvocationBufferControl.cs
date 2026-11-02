@@ -14,7 +14,7 @@ internal interface IUtf8InvocationBufferControl
 internal readonly ref struct Utf8InvocationBufferControl(ref Utf8SliceInvocation invocation) : IUtf8InvocationBufferControl
 {
     private readonly ref Utf8SliceInvocation _invocation = ref invocation;
-    public bool CanRetainWorkspace => _invocation.Ledger.IsUnlimited;
+    public bool CanRetainWorkspace => _invocation.HasUnlimitedWorkingMemory;
 
     public Utf8ExecutionLimitKind TryReserveWorking(ulong bytes)
         => _invocation.TryReserveWorking(bytes);

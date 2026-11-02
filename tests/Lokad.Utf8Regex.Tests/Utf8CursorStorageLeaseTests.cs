@@ -24,7 +24,7 @@ public sealed class Utf8CursorStorageLeaseTests
     [Fact]
     public void CollectedReleaseTransportPreservesTheFullUnsignedRange()
     {
-        var ledger = new Utf8StorageLedger(ulong.MaxValue);
+        var ledger = default(Utf8StorageLedger);
         Assert.True(ledger.TryReserve(ulong.MaxValue));
         CollectLeases();
         Assert.Equal(ulong.MaxValue, ledger.ReservedBytes);
@@ -72,13 +72,15 @@ public sealed class Utf8CursorStorageLeaseTests
     {
         var original = new Utf8SliceInvocation(new(1000, 0, 64), Regex.InfiniteMatchTimeout, default);
         var copy = original;
-        Assert.True(original.Ledger.TryReserve(7));
+        Assert.Equal(Utf8ExecutionLimitKind.None, original.TryReserveWorking(7));
         Assert.Equal(7UL, copy.Ledger.ReservedBytes);
-        Assert.False(copy.Ledger.TryReserve(58));
-        Assert.True(copy.Ledger.TryReserve(57));
+        Assert.Equal(Utf8ExecutionLimitKind.None, copy.TryReserveWorking(57));
         Assert.Equal(64UL, original.Ledger.ReservedBytes);
+        Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, copy.TryReserveWorking(1));
+        Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, original.Budget.LimitBreach);
         copy.Ledger.Release(57);
         Assert.Equal(7UL, original.Ledger.ReservedBytes);
+        Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, original.TryReserveWorking(1));
         original.Ledger.Release(7);
         Assert.Equal(0UL, copy.Ledger.ReservedBytes);
     }

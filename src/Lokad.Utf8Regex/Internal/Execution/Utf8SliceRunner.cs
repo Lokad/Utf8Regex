@@ -1871,7 +1871,7 @@ internal static partial class Utf8SliceRunner
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             int[]? rentedCounts = null;
             int[]? rentedOpen = null;
-            var retain = invocation.Ledger.IsUnlimited;
+            var retain = invocation.HasUnlimitedWorkingMemory;
             var published = false;
             try
             {

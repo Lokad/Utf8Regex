@@ -34,6 +34,8 @@
   avoiding redundant Unicode scans without changing strict input validation.
 - Use the runtime's checked ASCII predicate for boolean input checks, reducing
   literal Count validation cost without changing resource controls.
+- Reduce shared invocation metadata while preserving numeric working limits,
+  caller-funded admission and deterministic refunds.
 - Reduce shared PCRE2 VM overhead for controlled matching and capture operations.
 - Speed up NonBacktracking batches and scan proved complete anchored-line Count
   roots without a viability table. Captures, cursors and bounded interruption
