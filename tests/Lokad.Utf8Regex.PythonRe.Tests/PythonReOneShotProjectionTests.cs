@@ -21,6 +21,11 @@ public sealed class PythonReOneShotProjectionTests
     [InlineData(2, "(?P<x>.)?", "", 0, 0, 0, 0, 0, "")]
     [InlineData(0, "😀", "é😀", 0, 2, 6, 1, 3, "😀")]
     [InlineData(1, "ab[0-9]+", "ab12😀", 0, 0, 4, 0, 4, "ab12")]
+    [InlineData(2, "(?P<x>.)+", "é😀", 0, 0, 6, 0, 3, "é😀")]
+    [InlineData(2, "(?P<x>.)+", "πé😀", 2, 2, 8, 1, 4, "é😀")]
+    [InlineData(2, "(?P<x>.*)", "πé😀", 8, 8, 8, 4, 4, "")]
+    [InlineData(0, "(?P<x>😀)$", "πé😀", 0, 4, 8, 2, 4, "😀")]
+    [InlineData(0, "(?P<x>é)", "πé😀", 0, 2, 4, 1, 2, "é")]
     public void ValueAndContextEntryPointsKeepScalarByteRangesAndDerivedCoordinates(int kind, string pattern,
         string subject, int start, int startBytes, int endBytes, int startUtf16, int endUtf16, string text)
     {
@@ -48,6 +53,30 @@ public sealed class PythonReOneShotProjectionTests
 
     private static Utf8PythonMatchContext Context(Utf8PythonRegex regex, ReadOnlySpan<byte> input, int start, int kind, CancellationToken token)
         => kind switch { 0 => regex.SearchDetailed(input, start, token), 1 => regex.MatchDetailed(input, start, token), _ => regex.FullMatchDetailed(input, start, token) };
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void KnownEndpointPublicationKeepsOriginalCancellationAndDeadline(bool expire)
+    {
+        var regex = new Utf8PythonRegex("(?P<x>.)+", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20));
+        var input = "é😀"u8.ToArray();
+        long ticks = 0;
+        using var stable = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        Assert.True(regex.FullMatch(input).Success); // Prepare before counting warm-call clock reads.
+        var total = 0;
+        using (Utf8ExecutionDeadline.UseClockForDiagnostics(() => { total++; return 0; }))
+            Assert.True(regex.FullMatch(input).Success);
+        using var token = new CancellationTokenSource();
+        var reads = 0;
+        using var injection = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
+        {
+            if (++reads == total) { if (expire) ticks = 50; else token.Cancel(); }
+            return ticks;
+        });
+        if (expire) Assert.Throws<RegexMatchTimeoutException>(() => regex.FullMatch(input, 0, token.Token));
+        else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
+            regex.FullMatch(input, 0, token.Token)).CancellationToken);
+    }
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)]

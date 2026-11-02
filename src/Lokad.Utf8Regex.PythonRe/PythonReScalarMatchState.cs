@@ -452,9 +452,12 @@ internal struct PythonReScalarMatchState
             var end = EndOffsetInBytes;
             // Collections that publish coordinates reuse their single map. A
             // one-shot fixed value still needs no whole-subject map allocation.
-            var startUtf16 = _validation.IsAscii ? start : _hasMap ? _map.GetUtf16OffsetForByteOffset(start)
+            // Entry validation already supplies coordinates at both subject ends.
+            var startUtf16 = _validation.IsAscii || start == 0 ? start : start == input.Length ? _validation.Utf16Length
+                : _hasMap ? _map.GetUtf16OffsetForByteOffset(start)
                 : Utf8Validation.Validate(input[..start], ref _invocation).Utf16Length;
-            var endUtf16 = _validation.IsAscii ? end : _hasMap ? _map.GetUtf16OffsetForByteOffset(end)
+            var endUtf16 = _validation.IsAscii ? end : end == input.Length ? _validation.Utf16Length
+                : _hasMap ? _map.GetUtf16OffsetForByteOffset(end)
                 : startUtf16 + Utf8Validation.Validate(input[start..end], ref _invocation).Utf16Length;
             var value = new PythonReGroupData
             {

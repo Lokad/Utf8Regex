@@ -261,6 +261,11 @@ finite work is charged at validation, comparison and publication checkpoints.
 Work/depth/byte requirements can therefore be lower than general matching.
 The previously rejected program-sharing prototype is not delivered.
 
+Scalar value results reuse the original validation's UTF-16 coordinates at byte
+zero and subject end. Interior coordinates still use an existing map or bounded
+validation of the necessary span. Avoiding redundant endpoint scans lowers work
+charges without changing full-subject validation or publication checks.
+
 Cold FullMatch/replacement preparation retains separate construction limits;
 finite working bytes cap additional covered construction capacity. A byte failure
 can report ConstructionBytes before execution. Template lookup also charges one
