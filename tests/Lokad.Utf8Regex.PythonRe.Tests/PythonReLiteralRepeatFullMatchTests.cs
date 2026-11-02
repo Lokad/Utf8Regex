@@ -55,7 +55,7 @@ public sealed class PythonReLiteralRepeatFullMatchTests
     [InlineData("ab")]
     [InlineData("Шерлок ")]
     [InlineData("😀A")]
-    public void ValueMatchingBorrowsExistingLiteralWithoutColdPreparationOrMajorScratch(string period)
+    public void ValueMatchingUsesOwnedLiteralInstructionsWithoutColdPreparationOrMajorScratch(string period)
     {
         var regex = new Utf8PythonRegex("(?:" + period + ")+", PythonReCompileOptions.None,
             Timeout.InfiniteTimeSpan, Small);
@@ -75,7 +75,7 @@ public sealed class PythonReLiteralRepeatFullMatchTests
     [InlineData("(ab)+", "abab")]
     [InlineData("(?:ab|cd)+", "abcd")]
     [InlineData("(?i:(?:ab)+)", "ABab")]
-    [InlineData("(?:ab)+c", "ababc")]
+    [InlineData("(?:ab)+(?!x)", "abab")]
     [InlineData("(?:ab)*", "")]
     public void UnsupportedRootsKeepFullVerificationAndCaptures(string pattern, string text)
     {
@@ -89,11 +89,97 @@ public sealed class PythonReLiteralRepeatFullMatchTests
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
     }
 
-    [Fact]
-    public void EveryValidBoundaryAndMalformedPrefixOrTailRetainsItsAuthority()
+    [Theory]
+    [InlineData("ab", "c", "+")]
+    [InlineData("ab", "ab", "{1,3}")]
+    [InlineData("é😀", "中Ω", "{2,4}")]
+    [InlineData("\0é", "\0", "{1,1000000}")]
+    [InlineData("😀", "é😀", "+")]
+    public void FixedLiteralTailsPreserveFullSuffixAndScalarCoordinates(string period, string tail, string quantifier)
     {
-        var regex = new Utf8PythonRegex("(?:é😀)+");
-        var bytes = Encoding.UTF8.GetBytes("πé😀é😀");
+        var pattern = "(?:" + Regex.Escape(period) + ")" + quantifier + Regex.Escape(tail);
+        var oracle = new Regex(@"\G(?:" + pattern + @")\z");
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, Small);
+        using var live = new CancellationTokenSource();
+        foreach (var count in new[] { 0, 1, 2, 3, 4, 15, 16, 31, 32, 63, 64, 65 })
+        foreach (var prefix in new[] { "", "π😀" })
+        foreach (var candidate in new[] {
+            string.Concat(Enumerable.Repeat(period, count)) + tail,
+            string.Concat(Enumerable.Repeat(period, count)) + tail + "!",
+            string.Concat(Enumerable.Repeat(period, count)),
+            string.Concat(Enumerable.Repeat(period, count)) + "x" + tail })
+        {
+            var text = prefix + candidate;
+            var bytes = Encoding.UTF8.GetBytes(text);
+            byte[] storage = [0xff, .. bytes, 0xff];
+            var start = Encoding.UTF8.GetByteCount(prefix);
+            var expected = oracle.Match(text, prefix.Length).Success;
+            var match = regex.FullMatch(storage.AsSpan(1, bytes.Length), start, live.Token);
+            Assert.Equal(expected, match.Success);
+            if (!expected) continue;
+            Assert.Equal((start, bytes.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+            Assert.Equal((prefix.Length, text.Length), (match.StartOffsetInUtf16, match.EndOffsetInUtf16));
+            Assert.Equal(candidate, match.GetValueString());
+        }
+        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
+    }
+
+    [Theory]
+    [InlineData(59)] [InlineData(60)]
+    public void FixedStackProofBoundaryRetainsUnicodeAndFallbackCorrectness(int periodScalars)
+    {
+        var period = string.Concat(Enumerable.Range(0, periodScalars).Select(i => new Rune(0x1f600 + i).ToString()));
+        var regex = new Utf8PythonRegex("(?:" + period + ")+🚀", PythonReCompileOptions.None,
+            Timeout.InfiniteTimeSpan, periodScalars == 59 ? Small : default);
+        var text = period + period + "🚀";
+        var input = Encoding.UTF8.GetBytes(text);
+        var match = regex.FullMatch(input);
+        Assert.True(match.Success);
+        Assert.Equal((0, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.Equal(text.Length, match.EndOffsetInUtf16);
+        Assert.Equal(text, match.GetValueString());
+        Assert.Equal(periodScalars == 60, regex.DebugIsScalarFullProgramValueCreated);
+        Assert.Throws<ArgumentException>(() => regex.FullMatch(input.AsSpan(0, input.Length - 1)));
+    }
+
+    [Fact]
+    public void FixedTailWorkDenialIsCumulativeAndNeverBecomesAMiss()
+    {
+        const string pattern = "(?:é😀){1,1000000}Ω";
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é😀", 129)) + "Ω");
+        ulong low = 1, high = 10000;
+        while (low < high)
+        {
+            var cap = low + (high - low) / 2;
+            try
+            {
+                Assert.True(new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan,
+                    Small with { MaxWorkSteps = cap }).FullMatch(input).Success);
+                high = cap;
+            }
+            catch (Utf8ResourceLimitExceededException error)
+            {
+                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
+                low = cap + 1;
+            }
+        }
+        for (ulong cap = 1; cap < low; cap++)
+        {
+            var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8PythonRegex(
+                pattern, default, Timeout.InfiniteTimeSpan, Small with { MaxWorkSteps = cap }).FullMatch(input));
+            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
+            Assert.Equal(cap + 1, error.Requested);
+        }
+        Assert.True(new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan,
+            Small with { MaxWorkSteps = low }).FullMatch(input).Success);
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void EveryValidBoundaryAndMalformedPrefixOrTailRetainsItsAuthority(bool hasTail)
+    {
+        var regex = new Utf8PythonRegex("(?:é😀)+" + (hasTail ? "Ω" : ""));
+        var bytes = Encoding.UTF8.GetBytes("πé😀é😀" + (hasTail ? "Ω" : ""));
         for (var start = 0; start <= bytes.Length; start++)
         {
             if (start < bytes.Length && (bytes[start] & 0xc0) == 0x80)
@@ -106,6 +192,16 @@ public sealed class PythonReLiteralRepeatFullMatchTests
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() =>
             regex.FullMatch([0xff], 0, canceled.Token)).CancellationToken);
+    }
+
+    [Theory]
+    [InlineData("(?:ab)+c", "axabc")]
+    [InlineData("(?:é😀)+Ω", "é😁é😀Ω")]
+    public void LiteralTailCannotHideAWrongPeriodOfTheSameByteLength(string pattern, string text)
+    {
+        var regex = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan, Small);
+        Assert.False(regex.FullMatch(Encoding.UTF8.GetBytes(text)).Success);
+        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
     }
 
     [Theory]
@@ -123,11 +219,12 @@ public sealed class PythonReLiteralRepeatFullMatchTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void ComparisonBlocksObserveOriginalCancellationAndDeadline(bool expire)
+    [InlineData(false, false)] [InlineData(true, false)]
+    [InlineData(false, true)] [InlineData(true, true)]
+    public void ComparisonBlocksObserveOriginalCancellationAndDeadline(bool expire, bool hasTail)
     {
-        const string pattern = "(?:Шерлок )+";
-        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("Шерлок ", 4096)));
+        var pattern = "(?:Шерлок )+" + (hasTail ? "Ω" : "");
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("Шерлок ", 4096)) + (hasTail ? "Ω" : ""));
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20), Small);
         using var token = new CancellationTokenSource();
         long ticks = 0;
@@ -156,11 +253,12 @@ public sealed class PythonReLiteralRepeatFullMatchTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void FinalPublicationPollsTokenAfterItsLastDeadlineRead(bool success)
+    [InlineData(false, false)] [InlineData(true, false)]
+    [InlineData(false, true)] [InlineData(true, true)]
+    public void FinalPublicationPollsTokenAfterItsLastDeadlineRead(bool success, bool hasTail)
     {
-        var regex = new Utf8PythonRegex("(?:ab)+", PythonReCompileOptions.None, TimeSpan.FromSeconds(30), Small);
-        var input = Encoding.UTF8.GetBytes(success ? "abab" : "abax");
+        var regex = new Utf8PythonRegex("(?:ab)+" + (hasTail ? "c" : ""), PythonReCompileOptions.None, TimeSpan.FromSeconds(30), Small);
+        var input = Encoding.UTF8.GetBytes((success ? "abab" : "abax") + (hasTail ? "c" : ""));
         var totalReads = 0;
         using (Utf8ExecutionDeadline.UseClockForDiagnostics(() => { totalReads++; return 0; }))
             Assert.Equal(success, regex.FullMatch(input).Success);
@@ -176,7 +274,7 @@ public sealed class PythonReLiteralRepeatFullMatchTests
     [InlineData(false)] [InlineData(true)]
     public void DeclinedRepeatProofKeepsColdPreparationAuthority(bool expire)
     {
-        const string pattern = "(?:ab)+c";
+        const string pattern = "(?:ab[cd])+";
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20));
         using var token = new CancellationTokenSource();
         long ticks = 0;
@@ -191,31 +289,34 @@ public sealed class PythonReLiteralRepeatFullMatchTests
         construction.Budget.CheckpointHook = hook;
         if (expire)
         {
-            var error = Assert.Throws<RegexMatchTimeoutException>(() => regex.FullMatch("ababc"u8, 0, token.Token));
-            Assert.Equal(pattern, error.Pattern); Assert.Equal("ababc", error.Input);
+            var error = Assert.Throws<RegexMatchTimeoutException>(() => regex.FullMatch("abcabd"u8, 0, token.Token));
+            Assert.Equal(pattern, error.Pattern); Assert.Equal("abcabd", error.Input);
         }
         else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
-            regex.FullMatch("ababc"u8, 0, token.Token)).CancellationToken);
+            regex.FullMatch("abcabd"u8, 0, token.Token)).CancellationToken);
         Assert.Equal(3, checkpoints);
         Assert.Same(hook, construction.Budget.CheckpointHook);
         Assert.Equal(0UL, construction.Budget.ReservedBytes);
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         ticks = 0;
-        Assert.True(regex.FullMatch("ababc"u8).Success);
+        Assert.True(regex.FullMatch("abcabd"u8).Success);
     }
 
-    [Fact]
-    public void FundedClosureKeepsParentLoanAndBorrowedValueValid()
+    [Theory]
+    [InlineData("(?:Шерлок )+", "Шерлок Шерлок ")]
+    [InlineData("(?:ab)+c", "ababc")]
+    [InlineData("(?:é😀){1,4}Ω", "é😀é😀Ω")]
+    public void FundedClosureKeepsParentLoanAndBorrowedValueValid(string pattern, string text)
     {
         var account = new Allowance(16 << 20); Assert.True(account.TryReserve(13));
-        using var regex = Utf8PythonRegex.Compile("(?:Шерлок )+", PythonReCompileOptions.None,
+        using var regex = Utf8PythonRegex.Compile(pattern, PythonReCompileOptions.None,
             Timeout.InfiniteTimeSpan, Small, default, Timeout.InfiniteTimeSpan, default, account);
         var held = account.Used; account.Maximum = held;
-        var input = "Шерлок Шерлок "u8.ToArray();
+        var input = Encoding.UTF8.GetBytes(text);
         var match = regex.FullMatch(input);
         Assert.True(match.Success); Assert.Equal(held, account.Used);
         regex.Dispose(); Assert.Equal(13UL, account.Used);
-        Assert.Equal("Шерлок Шерлок ", match.GetValueString());
+        Assert.Equal(text, match.GetValueString());
         Assert.Throws<ObjectDisposedException>(() => regex.FullMatch(input));
         account.Release(13);
     }

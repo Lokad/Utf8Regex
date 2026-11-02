@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -29,7 +28,10 @@ public sealed partial class Utf8PythonRegex
         // Capture the original deadline before the bounded proof or cold fallback
         // preparation. A declined proof must not create a second invocation.
         var invocation = CreateInvocation(cancellationToken);
-        if (!TryGetFullMatchLiteralRepeat(out var literal, out var minimum, out var maximum))
+        // At most 60 scalar instructions survive the structural proof. This
+        // fixed stack scratch, like scalar locals, needs no heap/program loan.
+        Span<byte> encoded = stackalloc byte[240];
+        if (!TryGetFullMatchLiteralRepeat(encoded, out var literal, out var suffix, out var minimum, out var maximum))
         {
             var program = GetScalarFullProgram(input, invocation.Budget.Deadline, cancellationToken);
             var cursor = new PythonReScalarMatchCursor(input, program, startOffsetInBytes,
@@ -50,15 +52,20 @@ public sealed partial class Utf8PythonRegex
                 throw new InvalidOperationException("Literal repeat exceeded the working budget.");
             var control = new Utf8InvocationBufferControl(ref invocation);
             Utf8InvocationOutput.Checkpoint(control);
-            var length = input.Length - startOffsetInBytes;
-            var repetitions = length / literal.Length;
-            var matched = length % literal.Length == 0 && repetitions >= minimum && repetitions <= maximum;
+            // FullMatch fixes both endpoints. Removing a fixed tail leaves
+            // exactly one possible repetition count, even when tail and period overlap.
+            var length = input.Length - startOffsetInBytes - suffix.Length;
+            var repetitions = length < 0 ? 0 : length / literal.Length;
+            var matched = length >= 0 && length % literal.Length == 0 &&
+                repetitions >= minimum && repetitions <= maximum &&
+                input[^suffix.Length..].SequenceEqual(suffix);
             var position = startOffsetInBytes;
+            var periodEnd = input.Length - suffix.Length;
             var perBlock = Math.Min(64, 2048 / literal.Length);
-            while (matched && position < input.Length)
+            while (matched && position < periodEnd)
             {
                 Utf8InvocationOutput.Checkpoint(control);
-                var end = position + Math.Min(perBlock, (input.Length - position) / literal.Length) * literal.Length;
+                var end = position + Math.Min(perBlock, (periodEnd - position) / literal.Length) * literal.Length;
                 for (; position < end; position += literal.Length)
                     if (!input.Slice(position, literal.Length).SequenceEqual(literal))
                     { matched = false; break; }
@@ -83,38 +90,39 @@ public sealed partial class Utf8PythonRegex
         { throw CreateMatchTimeoutException(input, Pattern); }
     }
 
-    private bool TryGetFullMatchLiteralRepeat(out ReadOnlySpan<byte> literal, out long minimum, out long maximum)
+    private bool TryGetFullMatchLiteralRepeat(Span<byte> encoded,
+        out ReadOnlySpan<byte> literal, out ReadOnlySpan<byte> suffix, out long minimum, out long maximum)
     {
-        literal = default; minimum = maximum = 0;
+        literal = suffix = default; minimum = maximum = 0;
         var program = _scalarProgram;
         var code = program.Instructions;
         var repeat = code[0];
         if (program.IgnoreCase || program.RightToLeft || program.IsNonBacktracking || program.RepeatCount != 1 ||
-            repeat.B != 0 || repeat.A != code.Length - 2 || repeat.RepeatMinimum < 1 ||
+            repeat.B != 0 || repeat.A < 3 || repeat.A > code.Length - 2 || repeat.RepeatMinimum < 1 ||
             repeat.RepeatMaximum < repeat.RepeatMinimum ||
-            code[^3] is not { Kind: Utf8SliceInstructionKind.RepeatEnd, A: 0 } ||
-            code[^2] is not { Kind: Utf8SliceInstructionKind.RepeatExit, A: 0 } ||
+            code[repeat.A - 1] is not { Kind: Utf8SliceInstructionKind.RepeatEnd, A: 0 } ||
+            code[repeat.A] is not { Kind: Utf8SliceInstructionKind.RepeatExit, A: 0 } ||
             code[^1].Kind != Utf8SliceInstructionKind.Accept)
             return false;
-        ref readonly var search = ref _utf8Regex!.Inspection.PreparedRegex.SearchPlan;
-        var required = search.RequiredPrefilterSearcher;
-        if (required.Kind != Internal.Search.PreparedSearcherKind.ExactLiteral ||
-            required.LiteralSearch.Needle is not { Length: > 0 } needle)
-            return false;
         var offset = 0;
-        for (var index = 1; index < code.Length - 3; index++)
+        var literalLength = 0;
+        for (var index = 1; index < code.Length - 1; index++)
         {
+            if (index == repeat.A - 1)
+            {
+                literalLength = offset;
+                index++; // Skip the proved RepeatEnd and RepeatExit.
+                continue;
+            }
             if (code[index] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0 } atom ||
-                offset >= needle.Length ||
-                Rune.DecodeFromUtf8(needle.AsSpan(offset), out var scalar, out var width) != OperationStatus.Done ||
-                scalar.Value != atom.A)
+                !Rune.TryCreate(atom.A, out var scalar) ||
+                !scalar.TryEncodeToUtf8(encoded[offset..], out var width))
                 return false;
             offset += width;
         }
-        if (offset != needle.Length) return false;
-        // At most 60 literal scalars, hence at most 240 bytes. The existing
-        // immutable required needle is already admitted; no new buffer/plan.
-        literal = needle; minimum = repeat.RepeatMinimum; maximum = repeat.RepeatMaximum;
+        if (literalLength == 0) return false;
+        literal = encoded[..literalLength]; suffix = encoded[literalLength..offset];
+        minimum = repeat.RepeatMinimum; maximum = repeat.RepeatMaximum;
         return true;
     }
 

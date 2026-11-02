@@ -263,12 +263,17 @@ requirements, Match/FullMatch can compare directly at the required start after
 full-subject validation. The comparison and final publication remain charged;
 avoiding candidate discovery lowers work requirements. Other eligible literals
 retain the complete finder.
-Value FullMatch also reuses the existing admitted literal for eligible capture-free
-positive greedy literal repeats. It validates the whole subject and compares
-bounded blocks under the original invocation, avoiding cold FullMatch preparation,
-VM scratch and coordinate maps. These calls need no major temporary/result buffer;
-finite work is charged at validation, comparison and publication checkpoints.
-Work/depth/byte requirements can therefore be lower than general matching.
+Value FullMatch can verify capture-free positive greedy literal repeats with an
+optional fixed literal tail directly from owned scalar instructions. FullMatch's
+endpoints determine one possible repetition count, including overlapping tails.
+It validates the whole subject and compares bounded blocks under the original
+invocation, avoiding cold FullMatch preparation, VM arrays and coordinate maps.
+Proof scratch is fixed at at most 240 stack bytes, independently of subject size;
+like fixed scalar helpers, it adds no modeled major-storage reservation. These
+calls need no major temporary/result buffer; finite work is charged at validation,
+comparison and publication checkpoints. Work/depth/byte requirements can therefore
+be lower than general matching. Captures, folding, lazy or nonliteral bodies and
+unsupported tails retain their existing verification.
 The previously rejected program-sharing prototype is not delivered.
 
 Scalar value results reuse the original validation's UTF-16 coordinates at byte

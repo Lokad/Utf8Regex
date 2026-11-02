@@ -30,6 +30,8 @@
 - Reuse admitted literals for capture-free repeated-literal PythonRe value
   FullMatch, reducing execution work and temporary storage while preserving
   strict validation, cancellation and finite resource limits.
+- Extend that bounded FullMatch verification to fixed literal tails using owned
+  scalar instructions, avoiding VM arrays and cold preparation for those calls.
 - Reuse validated subject-end coordinates for PythonRe scalar value results,
   avoiding redundant Unicode scans without changing strict input validation.
 - Use the runtime's checked ASCII predicate for boolean input checks, reducing
