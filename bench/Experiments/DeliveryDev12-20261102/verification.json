@@ -1,0 +1,88 @@
+{
+  "Source": "ea01c3cd01aeb969951f1bc68c4c00a24592fc99",
+  "PackageVersion": "0.5.0-dev.12",
+  "Published": false,
+  "WindowsQualificationSeconds": 374.1591862,
+  "WindowsPackagePassed": 107630.0,
+  "LinuxPackagePassed": 107630.0,
+  "OriginalWindowsCompilationDocuments": 464,
+  "LinuxPackageAssets": 6,
+  "LinuxRestoreChecks": 24,
+  "WindowsOriginalRestoreChecks": 12,
+  "SourceCi": "41460278114",
+  "SourceCiConclusion": "success",
+  "Archives": [
+    {
+      "File": "cumulative.tar.gz",
+      "Sha256": "CBD4869F58D7FB82643B5EA8DC12AE84C4D5259B87ECAEE3DABB6B21B4152A69",
+      "Length": 30663872
+    },
+    {
+      "File": "full-refresh-ea01c3cd.tar.gz",
+      "Sha256": "A6EE04CCE9334C5870864ECDDD249F0DE34A718A629FB1260E97ABBB5B8ED9DC",
+      "Length": 34327905
+    },
+    {
+      "File": "linux-consumers.tar.gz",
+      "Sha256": "DE2BDC1663217FE08B517A97F97D8E452A4D23B349E6ADB1487142D115F0D937",
+      "Length": 37826998
+    },
+    {
+      "File": "post-import-guards.zip",
+      "Sha256": "8E809BAFC035E071EFB31FCDEEB52B87C5ECB54531BE9628C27607E6A949A869",
+      "Length": 6911
+    },
+    {
+      "File": "windows-evidence.tar.gz",
+      "Sha256": "994000E3492FB427BACEB118D1E17E5E9BBCC101055A53AADAE0BC69F046E70C",
+      "Length": 6622544
+    },
+    {
+      "File": "windows-restore-inputs.tar.gz",
+      "Sha256": "F0B8A0101F8A1307DC09B06BBFCDCF7C62F74216E07BCE158541EDDFF6EF437D",
+      "Length": 24117
+    }
+  ],
+  "Windows": true,
+  "Linux": true,
+  "OriginalConsumers": true,
+  "FixedOriginalPerformance": true,
+  "FullRefreshComplete": true,
+  "FullRefreshSeconds": 2524.3002721,
+  "RequiredSteps": 83,
+  "RequiredStepInventoryMatches": true,
+  "AllStepsPassed": true,
+  "Within3600Seconds": true,
+  "ImportedSnapshots": [
+    {
+      "Path": "README.md",
+      "Sha256": "C50AC0165A333126851A9FA65B918F1B85816A7D527D194121296CD9EEE967F2"
+    },
+    {
+      "Path": "README.Benchmarks.json",
+      "Sha256": "3AC9BFEA665CCA6CFD4DCCE331B8CEA06527FAB2AF207C3C3FFEBB96622D53B7"
+    },
+    {
+      "Path": "README.Parity.json",
+      "Sha256": "E30B4D2FA32ABEFA6E6826F1CDEF88802063315D6E26DF1B6C08C0920E58F91B"
+    },
+    {
+      "Path": "PythonRe.Benchmarks.json",
+      "Sha256": "91103D73166E07D6204F14B73BD100111AAA7202F3BE644BE64B150D431A96DE"
+    },
+    {
+      "Path": "PCRE2.Benchmarks.json",
+      "Sha256": "8FBD5C595CFFAB981C0FC4194D46DE3D49B3C40AFD9EB8D71439D6F2CB04F095"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md",
+      "Sha256": "7E37F2375AD65FFBF774A508B3202CAB37EC9DECDA7E564FCFACFA8359DE8B35"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md",
+      "Sha256": "B8B7E6B63B92A758C43FAD15B8C1AA5DCB3BD4D9256AA8BEAE618D919354A85C"
+    }
+  ],
+  "SnapshotGuards": "Core3/PythonRe1/Pcre2 1 per runtime, net10.0/net11.0; affected graphs built once before data import, matching binaries reused.",
+  "Scope": "Immutable common dev.12 Core/PythonRe/Pcre2 candidate qualified on Windows/Linux with copied original consumers and representative fixed-a40 public operating costs. Same-source full quiet-VM refresh and byte-identical data import passed. No publication, universal equivalence, POSIX completion or complete N4 parity claim. Source CI is separate from receipt publication CI."
+}

@@ -1,0 +1,92 @@
+{
+  "Source": "ea01c3cd01aeb969951f1bc68c4c00a24592fc99",
+  "Baseline": "a40bda03",
+  "Accepted": true,
+  "Cases": 166,
+  "TimedSeconds": 763.9592054,
+  "ConfirmationRuns": 1,
+  "ConfirmationSeconds": 7.7477434,
+  "Scope": "One166named-public-entry fixed-original gate, frozen original113 plus17atomic/17profileFullMatch, plus19 current anchor/tail/resource controls. Exact existing protocols, dev9 effective100ms decoded-BCL union correction carried forward. Sole selected noise confirmation pools both selected rows into true10sample medians; other164 retain initial5. Initial adverse result and differing selected context preserved. No stablefailure/successful-section replay. All samples>=20ms and complete outputs/allocations; platform/package/original consumer acceptance separate.",
+  "Parts": [
+    {
+      "Part": "cost",
+      "Cases": 26,
+      "Seconds": 109.4615154,
+      "MinimumSampleMilliseconds": 60.7128,
+      "Failures": [],
+      "MaximumChangePercent": 2.8555069656842402
+    },
+    {
+      "Part": "pcre2-cost",
+      "Cases": 17,
+      "Seconds": 63.7313987,
+      "MinimumSampleMilliseconds": 36.1469,
+      "Failures": [],
+      "MaximumChangePercent": 2.560938853249639
+    },
+    {
+      "Part": "union",
+      "Cases": 14,
+      "Seconds": 86.2673832,
+      "MinimumSampleMilliseconds": 25.6363,
+      "Failures": [],
+      "MaximumChangePercent": 4.5092901537472585
+    },
+    {
+      "Part": "repeat",
+      "Cases": 16,
+      "Seconds": 91.6139369,
+      "MinimumSampleMilliseconds": 41.5888,
+      "Failures": [],
+      "MaximumChangePercent": 3.5835755575669426
+    },
+    {
+      "Part": "findall",
+      "Cases": 6,
+      "Seconds": 36.2105399,
+      "MinimumSampleMilliseconds": 53.365,
+      "Failures": [],
+      "MaximumChangePercent": 1.1532779490042389
+    },
+    {
+      "Part": "capital",
+      "Cases": 16,
+      "Seconds": 77.3496765,
+      "MinimumSampleMilliseconds": 48.2777,
+      "Failures": [],
+      "MaximumChangePercent": -0.6762121555267897
+    },
+    {
+      "Part": "word",
+      "Cases": 18,
+      "Seconds": 67.28887,
+      "MinimumSampleMilliseconds": 29.4536,
+      "Failures": [],
+      "MaximumChangePercent": 0.2647192002693588
+    },
+    {
+      "Part": "atomic",
+      "Cases": 17,
+      "Seconds": 97.4174905,
+      "MinimumSampleMilliseconds": 40.7591,
+      "Failures": [],
+      "MaximumChangePercent": 8.184600159238009
+    },
+    {
+      "Part": "fullmatch",
+      "Cases": 17,
+      "Seconds": 63.7393304,
+      "MinimumSampleMilliseconds": 54.762,
+      "Failures": [],
+      "MaximumChangePercent": 6.374762554879099
+    },
+    {
+      "Part": "supplement",
+      "Cases": 19,
+      "Seconds": 70.8790639,
+      "MinimumSampleMilliseconds": 36.6688,
+      "Failures": [],
+      "MaximumChangePercent": 4.971385933115635
+    }
+  ]
+}
