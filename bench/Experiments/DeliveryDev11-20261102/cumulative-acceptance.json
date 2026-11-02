@@ -1,0 +1,194 @@
+{
+  "Source": "69d664a7f13ea9200282eda329f0a94afeadc986",
+  "Baseline": "a40bda03",
+  "Accepted": false,
+  "Cases": 147,
+  "TimedSeconds": 692.4320058,
+  "ConfirmationRuns": 0,
+  "Scope": "One147named-public-entry fixed-original gate, frozen original113 plus17atomic/17profileFullMatch. Exact existing protocols, dev9 effective100ms decoded-BCL union correction carried forward; no new confirmation or successful-part replay. Five >=20ms producer/allocation samples, all original controls. Platform/package/original consumer acceptance separate.",
+  "Parts": [
+    {
+      "Part": "cost",
+      "Cases": 26,
+      "Seconds": 109.0937709,
+      "MinimumSampleMilliseconds": 59.7642,
+      "Failures": [],
+      "MaximumChangePercent": 4.16646128554814
+    },
+    {
+      "Part": "pcre2-cost",
+      "Cases": 17,
+      "Seconds": 63.6805895,
+      "MinimumSampleMilliseconds": 36.4049,
+      "Failures": [],
+      "MaximumChangePercent": 1.678026091697804
+    },
+    {
+      "Part": "union",
+      "Cases": 14,
+      "Seconds": 86.1542916,
+      "MinimumSampleMilliseconds": 30.4503,
+      "Failures": [],
+      "MaximumChangePercent": 6.5229092630510355
+    },
+    {
+      "Part": "repeat",
+      "Cases": 16,
+      "Seconds": 91.8768317,
+      "MinimumSampleMilliseconds": 54.9295,
+      "Failures": [
+        {
+          "Name": "lazy-control",
+          "BeforeUs": 0.570625811428679,
+          "AfterUs": 0.6290011270009739,
+          "ChangePercent": 10.230051708691601,
+          "BeforeBytes": 1680.0,
+          "AfterBytes": 1680.0,
+          "BeforeSpread": 1.0900655121900003,
+          "AfterSpread": 1.0308574592767241,
+          "PairChangesPercent": [
+            3.941542363655337,
+            9.086707728701171,
+            10.316261722617348,
+            11.074711006257786,
+            9.911500949852869
+          ],
+          "SamplesPerVersion": 5
+        }
+      ],
+      "MaximumChangePercent": 10.230051708691601
+    },
+    {
+      "Part": "findall",
+      "Cases": 6,
+      "Seconds": 36.2207342,
+      "MinimumSampleMilliseconds": 54.3945,
+      "Failures": [],
+      "MaximumChangePercent": -2.5189027742795744
+    },
+    {
+      "Part": "capital",
+      "Cases": 16,
+      "Seconds": 77.1366228,
+      "MinimumSampleMilliseconds": 48.3505,
+      "Failures": [],
+      "MaximumChangePercent": 0.3250242419600591
+    },
+    {
+      "Part": "word",
+      "Cases": 18,
+      "Seconds": 67.2040827,
+      "MinimumSampleMilliseconds": 29.52,
+      "Failures": [],
+      "MaximumChangePercent": 0.7394041925120165
+    },
+    {
+      "Part": "atomic",
+      "Cases": 17,
+      "Seconds": 97.3629164,
+      "MinimumSampleMilliseconds": 42.7061,
+      "Failures": [
+        {
+          "Name": "nullable-atomic-control",
+          "BeforeUs": 0.9493295141778147,
+          "AfterUs": 1.045610370132305,
+          "ChangePercent": 10.141984897401635,
+          "BeforeBytes": 3552.0,
+          "AfterBytes": 3552.0,
+          "BeforeSpread": 1.0528433517433409,
+          "AfterSpread": 1.0492557092357275,
+          "PairChangesPercent": [
+            5.782095070942139,
+            11.739059757577852,
+            9.597575977386818,
+            10.141984897401635,
+            8.46907976495499
+          ],
+          "SamplesPerVersion": 5
+        }
+      ],
+      "MaximumChangePercent": 10.141984897401635
+    },
+    {
+      "Part": "fullmatch",
+      "Cases": 17,
+      "Seconds": 63.702166,
+      "MinimumSampleMilliseconds": 53.351,
+      "Failures": [
+        {
+          "Name": "folded-control",
+          "BeforeUs": 77.73075916230366,
+          "AfterUs": 89.30809248554914,
+          "ChangePercent": 14.894146729059642,
+          "BeforeBytes": 85848.0,
+          "AfterBytes": 85848.0,
+          "BeforeSpread": 1.0133097441480674,
+          "AfterSpread": 1.0111049516281898,
+          "PairChangesPercent": [
+            15.530258125367746,
+            15.025212749531702,
+            14.840103499330626,
+            15.627709444800765,
+            14.546762367642717
+          ],
+          "SamplesPerVersion": 5
+        },
+        {
+          "Name": "literal-control",
+          "BeforeUs": 0.07681565693134881,
+          "AfterUs": 0.09981457792453305,
+          "ChangePercent": 29.94040786989387,
+          "BeforeBytes": 0.0,
+          "AfterBytes": 0.0,
+          "BeforeSpread": 1.0059080093098007,
+          "AfterSpread": 1.0057908013517158,
+          "PairChangesPercent": [
+            29.70471221831239,
+            29.267521925773575,
+            30.229163831296635,
+            29.82580343344956,
+            29.788565390643072
+          ],
+          "SamplesPerVersion": 5
+        },
+        {
+          "Name": "suffixed-control",
+          "BeforeUs": 33.094774874930515,
+          "AfterUs": 38.87241610738255,
+          "ChangePercent": 17.45786534063609,
+          "BeforeBytes": 43752.0,
+          "AfterBytes": 43752.0,
+          "BeforeSpread": 1.024301829440488,
+          "AfterSpread": 1.0249440519434452,
+          "PairChangesPercent": [
+            19.289462926319768,
+            16.623977950843116,
+            17.780915914961714,
+            19.053937278555843,
+            18.50899652006477
+          ],
+          "SamplesPerVersion": 5
+        },
+        {
+          "Name": "unchanged-search-control",
+          "BeforeUs": 0.07828833781713286,
+          "AfterUs": 0.08917114267598551,
+          "ChangePercent": 13.900927216353587,
+          "BeforeBytes": 0.0,
+          "AfterBytes": 0.0,
+          "BeforeSpread": 1.0041078384159465,
+          "AfterSpread": 1.008259370861689,
+          "PairChangesPercent": [
+            13.876346726095967,
+            13.990666859208446,
+            13.621086284532446,
+            14.294704845050155,
+            13.318177593639247
+          ],
+          "SamplesPerVersion": 5
+        }
+      ],
+      "MaximumChangePercent": 29.94040786989387
+    }
+  ]
+}
