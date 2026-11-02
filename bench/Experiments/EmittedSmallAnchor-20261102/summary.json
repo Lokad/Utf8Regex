@@ -1,0 +1,183 @@
+{
+  "Accepted": false,
+  "Reason": "No useful primary-workload improvement: ordinary +7.08%, compiled +5.84%; restore source without a confirmation or another variant.",
+  "Parent": "9f3e9880f859da61c44e9688fe4471b330e4b31a",
+  "Baseline": {
+    "Version": "0.5.0-dev.8+f48327e6d027a2be107383c27126cfc1eece5743",
+    "Sha256": "95BE7091C4BCE7423C96712A50892C0DB5E4A7E660427025E4ADD69138C09640"
+  },
+  "Candidate": {
+    "Version": "0.5.0-dev.8+9f3e9880f859da61c44e9688fe4471b330e4b31a",
+    "Sha256": "E1A021A87889BA7390A0ECAC97AA927826FE972B8955DBA39121EE608056066F"
+  },
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "ElapsedSeconds": 59.4089499,
+  "MinimumSampleMilliseconds": 28.0134,
+  "Protocol": "One 120-second capped batch, 16 equal-result public Count/IsMatch workloads; isolated producer assemblies, warmed 500ms, independently calibrated four lanes, five alternating samples >=20ms; complete result batches consumed after timing; one implementation, no confirmation.",
+  "CandidatePatchSha256": "5AA6A74774BA75F865715C11EE3BD4CC3C5C44CCF5A14E98356022694DA8FB05",
+  "Scope": "Parent pilot, not fixed-original cumulative acceptance or catalog/package qualification. Diagnostic helper phase timings are not public costs. All per-operation allocation medians are unchanged.",
+  "EvidenceSha256": "84F9793FAAEE98BCB36211E41AB30B651AC05B647BFBC3FB1E319D1C1A35D9BE",
+  "CorrectnessSourceSha256": "38734358EFED8280E471B84F5FEE582357E84A47F8C7299EEB99341CCC94BFD3",
+  "Rows": [
+    {
+      "Name": "corpus-ordinary",
+      "Before": 73.45684848484849,
+      "After": 78.65798969072166,
+      "ChangePct": 7.080539545534648,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.0287872276742642,
+      "Predecoded": 216.4200743494424
+    },
+    {
+      "Name": "corpus-compiled",
+      "Before": 74.24932349323493,
+      "After": 78.58398533007335,
+      "ChangePct": 5.837981590813235,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.0365478319570776,
+      "Predecoded": 7.58744251405212
+    },
+    {
+      "Name": "corpus-finite-live",
+      "Before": 48.57257281553398,
+      "After": 46.62598714416896,
+      "ChangePct": -4.007581971738761,
+      "BeforeBytes": 3672,
+      "AfterBytes": 3672,
+      "CandidateSpread": 1.0674261925830586,
+      "Predecoded": 7.520554044026713
+    },
+    {
+      "Name": "corpus-live",
+      "Before": 45.75432,
+      "After": 46.760372771474884,
+      "ChangePct": 2.1988148255178697,
+      "BeforeBytes": 3672,
+      "AfterBytes": 3672,
+      "CandidateSpread": 1.05558858081044,
+      "Predecoded": 7.521538847746957
+    },
+    {
+      "Name": "corpus-deadline-live",
+      "Before": 56.34741873804971,
+      "After": 56.70098522167488,
+      "ChangePct": 0.6274759191167822,
+      "BeforeBytes": 3720,
+      "AfterBytes": 3720,
+      "CandidateSpread": 1.0606679364811367,
+      "Predecoded": 7.608911513323278
+    },
+    {
+      "Name": "dense-hits",
+      "Before": 37.490379901960786,
+      "After": 33.62722127900396,
+      "ChangePct": -10.304399776847228,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.01738424073044,
+      "Predecoded": 62.18536335721596
+    },
+    {
+      "Name": "dense-anchor-miss",
+      "Before": 396.31103896103895,
+      "After": 395.6792207792208,
+      "ChangePct": -0.15942482537818492,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.024816820326221,
+      "Predecoded": 2.2216754627220694
+    },
+    {
+      "Name": "boundary-false",
+      "Before": 32.70995623632385,
+      "After": 32.120285087719296,
+      "ChangePct": -1.802726803864485,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.0242967526455597,
+      "Predecoded": 31.728479657387577
+    },
+    {
+      "Name": "sparse-anchor-miss",
+      "Before": 3.5097030968566614,
+      "After": 1.8247613786330297,
+      "ChangePct": -48.00809845518524,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.0144953919285167,
+      "Predecoded": 2.2626651371054285
+    },
+    {
+      "Name": "short-tail",
+      "Before": 0.12006350799719091,
+      "After": 0.11434783590855697,
+      "ChangePct": -4.760540637183174,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.0165424040849067,
+      "Predecoded": 0.0282486
+    },
+    {
+      "Name": "two-anchors",
+      "Before": 50.74915824915825,
+      "After": 49.05965770171149,
+      "ChangePct": -3.3291203356555887,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.0182836638083526,
+      "Predecoded": 6.925418410041841
+    },
+    {
+      "Name": "large-anchor-control",
+      "Before": 14.058659479728147,
+      "After": 14.22029808374734,
+      "ChangePct": 1.1497440723439167,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.020483363305542,
+      "Predecoded": 20.335185794146664
+    },
+    {
+      "Name": "unicode-control",
+      "Before": 46.83258513931888,
+      "After": 47.00474209650582,
+      "ChangePct": 0.3676007990479402,
+      "BeforeBytes": 3552,
+      "AfterBytes": 3552,
+      "CandidateSpread": 1.0407208021405596,
+      "Predecoded": 7.559314964610718
+    },
+    {
+      "Name": "literal-control",
+      "Before": 6.136433536970719,
+      "After": 6.113151490569864,
+      "ChangePct": -0.3794068046298449,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.0177609755442447,
+      "Predecoded": 11.467318007662836
+    },
+    {
+      "Name": "is-match-late",
+      "Before": 393.8522580645161,
+      "After": 408.5780821917808,
+      "ChangePct": 3.738920832809467,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.0166843175535532,
+      "Predecoded": 2.2368835316932203
+    },
+    {
+      "Name": "is-match-miss",
+      "Before": 390.0335443037975,
+      "After": 409.2774834437086,
+      "ChangePct": 4.933918997726505,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "CandidateSpread": 1.0162254162831836,
+      "Predecoded": 2.2106997859304647
+    }
+  ]
+}
