@@ -35,6 +35,11 @@ alone does not prove a match; tight working/depth/result limits may admit a
 scratch-free miss that formerly required VM capacity. Charges remain dependent
 on the selected route and version.
 
+Necessary ASCII start hints can enter a mandatory atomic body and skip impossible
+starts. The profile VM still verifies the complete body, atomic commit and
+captures. Full-subject validation and the original interruption authority remain;
+skipping failed attempts can reduce work charges.
+
 Capture-free exact literals, including two or three alternatives, followed by
 an exact positive literal lookahead can borrow complete native discovery. The
 same invocation confirms the suffix before publishing, excluding it from the

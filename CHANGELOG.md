@@ -25,6 +25,8 @@
 - Speed up repeated-segment Count with Unicode separators and declaration searches
   by skipping impossible word-interior starts, preserving strict validation and
   existing cancellation and resource authority.
+- Skip impossible ASCII starts in PythonRe atomic and possessive searches while
+  retaining complete atomic verification, captures and resource controls.
 - Reduce shared PCRE2 VM overhead for controlled matching and capture operations.
 - Speed up NonBacktracking batches and scan proved complete anchored-line Count
   roots without a viability table. Captures, cursors and bounded interruption

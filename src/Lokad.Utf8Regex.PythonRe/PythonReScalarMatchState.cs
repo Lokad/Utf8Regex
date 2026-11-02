@@ -245,6 +245,12 @@ internal struct PythonReScalarMatchState
                     pending[count++] = instruction.A;
                     index++;
                     continue;
+                case Utf8SliceInstructionKind.Fork when instruction.B == 2:
+                    // An atomic fork's alternate is Fail, not an empty success.
+                    // Its body must supply the first consumer. The VM still
+                    // executes every atomic commit and verifies the whole match.
+                    index++;
+                    continue;
                 case Utf8SliceInstructionKind.Fork when instruction.B == 1:
                     // Lookahead restores its input position. Skip only the
                     // lowerer's known negative/positive assertion trailers.
