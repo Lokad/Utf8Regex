@@ -79,3 +79,4 @@ run. Raw `selective.tar.gz` has SHA256
 `1B5278AF91AFF0C545CBED151CE4B9675BCB7CEA119A0B18A728692744B6C955`.
 Immutable dev.18 bytes and their complete 44m12s Full receipt remain unchanged;
 package/platform qualification stays at the next coherent delivery boundary.
+Accepted-source/data CI `41699921084` / `41700955599` pass on Windows and Linux.

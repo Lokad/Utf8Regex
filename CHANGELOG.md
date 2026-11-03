@@ -28,6 +28,9 @@
 - Speed up mixed-text keyword-family Count with the existing checked SIMD prefix
   filter. Miss scans and dense matches can cost more; the additional compiled
   search storage is admitted through the existing resource controls.
+- Speed up multiline searches beginning with a mandatory ASCII literal using
+  bounded checked line-start discovery. Finite/live-token and deadline operations
+  benefit too; sparse and false-prefix misses can cost more.
 - Skip impossible ASCII starts in PythonRe atomic and possessive searches while
   retaining complete atomic verification, captures and resource controls.
 - Reuse admitted literals for capture-free repeated-literal PythonRe value
