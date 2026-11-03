@@ -268,6 +268,10 @@ with its bounded checkpoints, without scalar capture/backtracking workspace.
 Full strict subject validation still precedes the decision. Unsupported shapes,
 mixed Unicode input, RTL and NonBacktracking keep their existing paths. The
 controlled invocation owner remains; this is not a general zero-allocation claim.
+For example, the fixed predicate `^[A-Z]{3}[0-9]{4}$` keeps this Boolean path
+with a live caller token and finite numeric limits. Its fixed invocation metadata
+still allocates. The separate caller-funded entry point can use scalar scratch;
+that storage remains admitted and refunded independently of program ownership.
 Native counters admit their fixed scratch capacity against working bytes before
 use and record active nesting against depth. A Count or value-Match shortcut can
 avoid capture workspace; a declined shortcut retains its spent work when scalar
