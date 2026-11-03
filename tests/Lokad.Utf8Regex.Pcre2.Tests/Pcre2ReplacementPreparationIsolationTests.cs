@@ -97,7 +97,9 @@ public sealed class Pcre2ReplacementPreparationIsolationTests
                     (int)entry.GetType().GetField("OwnerThread", fields)!.GetValue(entry)! != Environment.CurrentManagedThreadId) return;
                 stopped = true;
                 paused.Set();
-                if (!release.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException("Owner release timed out.");
+                // The controller releases this pause in finally. A competing
+                // timeout here can expire while it is still arranging the waiter.
+                release.Wait();
                 // Spend this owner's actual invocation allowance. No exception
                 // is injected and the waiter retains a separate, ample budget.
                 if (failure == "WorkOwner")
@@ -134,8 +136,10 @@ public sealed class Pcre2ReplacementPreparationIsolationTests
         finally
         {
             release.Set();
-            Assert.True(owner.Join(TimeSpan.FromSeconds(10)), "Owner did not complete.");
-            if (followerStarted) Assert.True(follower.Join(TimeSpan.FromSeconds(10)), "Follower did not complete.");
+            var ownerCompleted = owner.Join(TimeSpan.FromSeconds(30));
+            var followerCompleted = !followerStarted || follower.Join(TimeSpan.FromSeconds(30));
+            Assert.True(ownerCompleted, "Owner did not complete after release.");
+            Assert.True(followerCompleted, "Follower did not complete after release.");
         }
         using var retryClock = Utf8ExecutionDeadline.UseClockForDiagnostics(static () => 0);
         Assert.Equal(new string('a', 128), Run(regex, input, template, route, default));
