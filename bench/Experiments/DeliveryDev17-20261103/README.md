@@ -6,9 +6,18 @@ Frozen common `0.5.0-dev.17` source
 [empty literal confirmation](../EmptyLiteralConfirmation-20261103/README.md)
 changes. CI `41658342576` is green on Windows/Linux.
 
-The [complete assessment](cumulative-acceptance.json) is **false**. No dev.17
-package qualification, consumer run or Full refresh was launched. Immutable
-dev.14 remains the canonical staged candidate; nothing was published.
+The [complete assessment](cumulative-acceptance.json) is **false** under its
+uniform 10% threshold. No dev.17 package qualification, consumer run or Full
+refresh was launched. Immutable dev.14 remains the last qualified staged
+candidate; nothing was published.
+
+The user clarified on 2026-11-03 that local regressions are acceptable for
+relatively major gains. The 10% instruction concerned checked-access conversions;
+it is not a universal 0.5.0 release ceiling. The recorded flag and measurements
+remain unchanged. These three regressions are documented trade-offs alongside
+the gains below; delivery proceeds with a fresh common dev.18 candidate, exact
+production-source equivalence, final package/consumer checks and a fresh Full
+refresh. This policy change is not a performance rerun or package qualification.
 
 All **217** named outputs and loaded identities preflighted: existing 172 cases,
 mail 17, retained entry 26 and two explicit Python Match calls. The original
@@ -25,8 +34,20 @@ producer, unchanged allocations. Diagnostic .NET comparators are separate lanes.
 Every pair exceeds 10%: respectively 22.19–23.55%, 11.16–11.58%, and
 10.94–11.68%. No further confirmation or unchanged-gate replay is justified.
 The earlier Python Search failure passes on this source; that does not override
-these failures or relabel earlier evidence. Next work traces the actual largest
-live route before a bounded correction.
+these measured regressions or relabel earlier evidence.
+
+Representative larger gains from the **same** recorded 217-case batch:
+
+| Public operation | Original us | Dev.17 us | B/op before -> after |
+| --- | ---: | ---: | ---: |
+| PythonRe mail corpus Count | 2,547,579 | 3,883 | 7,200 -> 3,568 |
+| PythonRe finite/live mail corpus Count | 2,823,854 | 5,794 | 7,312 -> 3,680 |
+| Core compiled capitalized-word corpus Count | 769,453 | 9,614 | 11,880 -> 0 |
+| Core live-token Boolean predicate pair | 1.2354 | 0.4765 | 3,584 -> 224 |
+
+Each Boolean iteration makes two public calls. Workloads/protocols differ across
+rows; compare each row to its own original, without aggregating ratios or
+claiming these numbers replace final catalog qualification.
 
 The first attempt stopped on an invalid **19.5016ms** union/miss candidate
 sample, below the unchanged 20ms minimum. One permitted correction raised only
@@ -92,3 +113,21 @@ Immutable instruction-borrow raw under
 Read-only driver inspection is sealed at
 `artifacts/experiments/capital-driver-codegen-20261103/evidence.tar.gz`, SHA256
 `A881C54ABA9E95E56B49656A24A7D81BB83F41997459162D55C9F467F54A56DA`.
+
+A final ASCII cursor-advance prototype is also rejected and reverted. All 4,647
+PythonRe checks passed per runtime, but the twelve-case initial comparison
+(69.474s, minimum 38.641ms) did not establish a useful gain. One two-case
+confirmation (13.071s, minimum 55.452ms) changed nullable Count by +1.75% while
+the unchanged native control moved -4.90%. Pooling the actual ten selected
+samples gives nullable -0.53% versus control -3.79%; allocations are unchanged.
+[Pooled results](cursor-advance-summary.json). No further confirmation or variant.
+The frozen dev.17 Core/Python DLL/PDB bytes are restored on the VM. This outcome
+does not change the approved larger delivery trade-offs above.
+
+Cursor raw under `artifacts/experiments/python-ascii-cursor-advance-20261103/`:
+initial `F6F7A70CBA2DA55A54911F4A5738519E1D53C6E036AEA6333B125CB0DCF3A467`,
+confirmation `508D25AB39EA92E875E0F3D9D330258166AA9C84C031970BBE2EBB9667A1EDB3`,
+correctness/source `A1A4573695D32D49A6DE6B2821A32E8A4F6D381F779396D80CA3404548F0D123`.
+Read-only nullable codegen is separately sealed as
+`artifacts/experiments/python-nullable-advance-codegen-20261103/evidence.tar.gz`,
+`1135C9161FC48AC9BA159D465657A4430246150649534A474F41338EF8B65672`.
