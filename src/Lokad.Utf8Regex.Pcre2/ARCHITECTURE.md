@@ -53,6 +53,10 @@ specializations retain the owned general route for option combinations they
 cannot execute. Literal, character, and backtracking programs cover the admitted
 syntax; no complete-pattern classifier or legacy match/replacement router remains.
 
+Bounded literal windows can cross zero-width word boundaries within an ASCII
+consuming prefix. The original scalar VM still verifies boundaries and captures;
+the window only excludes starts that cannot reach the required literal.
+
 The anchored ASCII boolean optimizer emits flat class and repeated-class steps,
 start/end anchors and acceptance. Its DFA partitions overlapping input classes
 and unions their NFA targets before closure. Nested programs and text alternatives

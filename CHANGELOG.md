@@ -65,6 +65,9 @@
 - Speed up scalar Count with class-delimiter candidate windows and shared
   capture-free PythonRe counting, preserving pinned Unicode and resource controls.
 - Reduce shared PCRE2 VM overhead for controlled matching and capture operations.
+- Skip impossible PCRE2 date-like candidates using existing bounded literal
+  windows across word boundaries. Some controlled, capture and UCP workloads
+  cost more; captures, scalar semantics and interruption remain.
 - Speed up NonBacktracking batches and scan proved complete anchored-line Count
   roots without a viability table. Captures, cursors and bounded interruption
   checks remain. Work and working requirements change; recheck finite policies

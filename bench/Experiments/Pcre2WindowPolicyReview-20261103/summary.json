@@ -1,0 +1,167 @@
+[
+  {
+    "Name": "date-hit",
+    "BeforeUs": 1.5201290585864768,
+    "AfterUs": 0.6536663160394964,
+    "ChangePercent": -56.999288162590524,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.018548376261303,
+    "AfterSpread": 1.0148503261830468,
+    "MinimumSampleMs": 24.9625
+  },
+  {
+    "Name": "date-miss",
+    "BeforeUs": 5.466216832315127,
+    "AfterUs": 2.504332039564292,
+    "ChangePercent": -54.18527811119371,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0137964322345796,
+    "AfterSpread": 1.0024759826347525,
+    "MinimumSampleMs": 59.5925
+  },
+  {
+    "Name": "finite-hit",
+    "BeforeUs": 2.5406577489988926,
+    "AfterUs": 2.7083844580777097,
+    "ChangePercent": 6.601704190377755,
+    "BeforeBytes": 1592,
+    "AfterBytes": 1592,
+    "BeforeSpread": 1.0179790997410751,
+    "AfterSpread": 1.0145683645294645,
+    "MinimumSampleMs": 41.0721
+  },
+  {
+    "Name": "finite-miss",
+    "BeforeUs": 8.240697674418605,
+    "AfterUs": 8.682880789894003,
+    "ChangePercent": 5.36584562309641,
+    "BeforeBytes": 1592,
+    "AfterBytes": 1592,
+    "BeforeSpread": 1.0054094645470075,
+    "AfterSpread": 1.0064693443961692,
+    "MinimumSampleMs": 59.5253
+  },
+  {
+    "Name": "deadline-hit",
+    "BeforeUs": 2.808263013179103,
+    "AfterUs": 2.909789075175771,
+    "ChangePercent": 3.6152618725599828,
+    "BeforeBytes": 1640,
+    "AfterBytes": 1640,
+    "BeforeSpread": 1.0117389038921942,
+    "AfterSpread": 1.0112166055304261,
+    "MinimumSampleMs": 57.4079
+  },
+  {
+    "Name": "deadline-miss",
+    "BeforeUs": 8.96817496229261,
+    "AfterUs": 9.728303412582889,
+    "ChangePercent": 8.4758432288208,
+    "BeforeBytes": 1640,
+    "AfterBytes": 1640,
+    "BeforeSpread": 1.0050313998494966,
+    "AfterSpread": 1.0097503997914568,
+    "MinimumSampleMs": 59.2678
+  },
+  {
+    "Name": "no-digit-miss",
+    "BeforeUs": 351.07953216374267,
+    "AfterUs": 0.26546763869923184,
+    "ChangePercent": -99.92438532743189,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.011706735558707,
+    "AfterSpread": 1.0228892801586351,
+    "MinimumSampleMs": 58.499
+  },
+  {
+    "Name": "dense-candidates",
+    "BeforeUs": 455.91127819548876,
+    "AfterUs": 248.4299180327869,
+    "ChangePercent": -45.50915278602443,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0118379336456609,
+    "AfterSpread": 1.010360798802855,
+    "MinimumSampleMs": 59.3163
+  },
+  {
+    "Name": "dense-count",
+    "BeforeUs": 61.48414006179197,
+    "AfterUs": 63.59701810436635,
+    "ChangePercent": 3.436460265120278,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0220299189659507,
+    "AfterSpread": 1.004639826350389,
+    "MinimumSampleMs": 55.1743
+  },
+  {
+    "Name": "unicode",
+    "BeforeUs": 0.7922638804067869,
+    "AfterUs": 0.7484152457372117,
+    "ChangePercent": -5.53459974056385,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0034153108587092,
+    "AfterSpread": 1.0014805822393849,
+    "MinimumSampleMs": 59.6139
+  },
+  {
+    "Name": "captured-count",
+    "BeforeUs": 64.42910848549947,
+    "AfterUs": 71.58760429082241,
+    "ChangePercent": 11.110654754650295,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.037563290344718,
+    "AfterSpread": 1.0060328576175472,
+    "MinimumSampleMs": 59.7445
+  },
+  {
+    "Name": "nonword-count",
+    "BeforeUs": 113.71323251417769,
+    "AfterUs": 94.70301109350237,
+    "ChangePercent": -16.71768623612484,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0037943831126612,
+    "AfterSpread": 1.0076552258342029,
+    "MinimumSampleMs": 57.0431
+  },
+  {
+    "Name": "ucp-control",
+    "BeforeUs": 2.4255234015035163,
+    "AfterUs": 2.8211633256654616,
+    "ChangePercent": 16.311527809490478,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.004740562259718,
+    "AfterSpread": 1.0048060372919083,
+    "MinimumSampleMs": 59.2749
+  },
+  {
+    "Name": "candidate-control",
+    "BeforeUs": 0.783561357429404,
+    "AfterUs": 0.7873506343106806,
+    "ChangePercent": 0.48359670182152037,
+    "BeforeBytes": 64,
+    "AfterBytes": 64,
+    "BeforeSpread": 1.0041019395549429,
+    "AfterSpread": 1.0072308111215322,
+    "MinimumSampleMs": 59.4954
+  },
+  {
+    "Name": "literal-control",
+    "BeforeUs": 0.15860145106834708,
+    "AfterUs": 0.15991506035044953,
+    "ChangePercent": 0.8282454373865544,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0030281971483916,
+    "AfterSpread": 1.0105965013870557,
+    "MinimumSampleMs": 59.4064
+  }
+]
