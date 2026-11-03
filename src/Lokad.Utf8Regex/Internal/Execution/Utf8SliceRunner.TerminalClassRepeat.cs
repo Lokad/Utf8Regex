@@ -176,8 +176,24 @@ internal static partial class Utf8SliceRunner
                 outcome = new(false, -1, breach, null, null);
                 return true;
             }
-            var length = Math.Min(input.Length - start, (int)repeat.RepeatMaximum * 4 + 1);
-            var possible = input.Slice(start, length).IndexOf((byte)suffix.A) >= 0;
+            // Bound instruction inspection and the search even for enormous tails.
+            // Stop at captures, folds or other instructions; this prefix is only
+            // a necessary condition, never a substitute for executing the tail.
+            Span<byte> prefix = stackalloc byte[8];
+            prefix[0] = (byte)suffix.A;
+            var prefixLength = 1;
+            while (prefixLength < prefix.Length && prefixLength < instructions.Length - tail)
+            {
+                var next = instructions[tail + prefixLength];
+                if (next.Kind != Utf8SliceInstructionKind.Literal || next.B != 0 || (uint)next.A >= 128)
+                    break;
+                prefix[prefixLength++] = (byte)next.A;
+            }
+            // Include the whole prefix at the final possible scalar endpoint.
+            var length = Math.Min(input.Length - start, (int)repeat.RepeatMaximum * 4 + prefixLength);
+            var window = input.Slice(start, length);
+            var possible = prefixLength == 1 ? window.IndexOf(prefix[0]) >= 0
+                : window.IndexOf(prefix[..prefixLength]) >= 0;
             breach = invocation.TryChargeInputStep();
             invocation.Budget.ThrowIfCancellationRequested();
             if (breach != Utf8ExecutionLimitKind.None || !possible)

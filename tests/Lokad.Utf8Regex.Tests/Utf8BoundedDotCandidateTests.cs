@@ -79,6 +79,36 @@ public sealed class Utf8BoundedDotCandidateTests
     }
 
     [Fact]
+    public void LiteralPrefixProofKeepsFinalEndpointsAndTailInstructionBoundaries()
+    {
+        foreach (var tail in new[] { "Watson", "Watson123456789", "W(?<tail>at)son", "W(?i:AT)son" })
+        foreach (var maximum in new[] { 8, 25, 511 })
+        {
+            var pattern = @"\AA(?<gap>.{0," + maximum + "})" + tail;
+            var referencePattern = pattern.Replace(".", @"(?:(?=[\s\S]).)");
+            var regex = new Utf8Regex(pattern, RegexOptions.Compiled, Timeout.InfiniteTimeSpan, Funded);
+            var reference = new Utf8Regex(referencePattern, RegexOptions.Compiled, Timeout.InfiniteTimeSpan, Funded);
+            foreach (var scalar in new[] { "x", "é", "中", "😀" })
+            foreach (var length in new[] { maximum - 1, maximum, maximum + 1 })
+            foreach (var suffix in new[] { tail == "Watson123456789" ? tail : "Watson", "Wats", "Wxxxxx" })
+            {
+                var gap = string.Concat(Enumerable.Repeat(scalar, length));
+                var input = Encoding.UTF8.GetBytes("A" + gap + suffix);
+                var actual = regex.MatchDetailed(input); var expected = reference.MatchDetailed(input);
+                Assert.Equal((expected.Success, expected.IndexInBytes, expected.LengthInBytes, expected.GetValueString()),
+                    (actual.Success, actual.IndexInBytes, actual.LengthInBytes, actual.GetValueString()));
+                Assert.Equal(reference.Count(input), regex.Count(input));
+                Assert.Equal(reference.IsMatch(input), regex.IsMatch(input));
+                if (actual.Success)
+                {
+                    Assert.Equal(gap, actual.GetGroup("gap").GetValueString());
+                    if (tail.Contains("?<tail>")) Assert.Equal("at", actual.GetGroup("tail").GetValueString());
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void NonBacktrackingAndNonzeroOriginsKeepTheirRanges()
     {
         var input = "😀xA😀😀Z xx AxxxxZ"u8.ToArray();
