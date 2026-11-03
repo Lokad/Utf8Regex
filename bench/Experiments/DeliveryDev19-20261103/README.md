@@ -22,9 +22,43 @@ belongs to the completed checked-access campaign. The
 cumulative claim or a universal release ceiling. Focused public comparisons above
 and the new boundary's catalog/resource checks serve different purposes.
 
-Qualification is pending: one clean-source Windows package qualification, exact
-same-byte Linux detached fixtures, original copied Awk/Lython and native/funded
-producer probes on both targets/platforms, followed by one current-source Full
-refresh with the existing83-step inventory and3600s cap. Preserve source/PDB/feed/
-cache/lock identities and final snapshot guards. No additional qualification
-framework, per-pilot matrix or unchanged217-case rerun.
+Clean package source is `87db1ced59fcfcfa7b3bb2eaadf782b23b4c6042`.
+Source CI `41713070105` is green on Windows and Linux. Windows qualification
+completed in **272.817s**: eight detached fixtures, **107,858** runtime checks,
+six target assets and **464** original compiler documents, including generated
+inputs. Core is packed once, each adapter once; exact pins and DLL/PDB/source/
+feed/cache/lock identities pass. Packages/symbols are staged in `artifacts/nuget/`.
+
+Original copied Windows consumers pass: Awk19 and Lython118 checks per target,
+plus native/funded public API probes with final root loans zero. The first five
+consumer entries passed; the last direct .NET11 probe selected the system dotnet
+host, which lacked that runtime. Only this unfinished probe resumed through the
+pinned local SDK; no package, completed test or consumer build was repeated.
+The original1565-file prehosting audit changes only three exact version pins.
+
+Linux qualification also passes: the exact Windows-produced packages, all eight
+detached fixtures (**107,858** checks), all six original consumer entries and
+six assets/24 restore records. No repacking or consumer-source edit. This is
+compatibility qualification, not downstream adoption or POSIX acceptance.
+
+The current-source Full refresh started at **2026-11-03 20:48:12 UTC**, with
+the existing83-step inventory/3600s cap after actual-RAM admission. Its build
+passed in25.886s; runtime tests are active. It is not yet a completed refresh
+or current-source catalog qualification; final snapshot guards and data import
+remain. The prior frozen44m12s Full evidence stays unchanged.
+
+Completed Linux scratch was compared against its hash-verified off-VM archive
+before retirement:2,171,654,319 logical fixture bytes and807,290,433 bytes of the
+verified VM archive duplicate. Canonical off-VM evidence and staged packages
+remain. No additional qualification framework, per-pilot matrix, unchanged217-
+case rerun or automatic publication.
+
+Immutable Windows evidence under `artifacts/experiments/delivery-dev19-20261103/`:
+
+- `windows-evidence.zip`: `8923C4704D1E76C341EDB03422EDF88CFA2F6B523E3FC012CF7B37AB89FAD3CD`.
+- `windows-restore-inputs.zip`: `9C9D7E7394FB6DEFFA8EF0C82F659152DFEDA0E8246CA2790931016E9EED6120`.
+- `linux-evidence.tar.gz`: `7BAFC5893A7A72DF170B60D51904AB91B61BEFAF203564E386F5AF4D1BB2C453`.
+
+Transfer input hash `8233DD60F9B146D5966D3453C1E7A8D9CE90CE75E2C05600E484BA1FAF25DC38`;
+repinned original input `85605696C3466782DBE459D4CEADA2B029550D39A9A14FA8FA2E9215B11A3B00`;
+compiler-input archive `A186E80C430BD2E13DD74E58C4D2954B65D3ACCCE8FE39CE303508B5760ECD6D`.
