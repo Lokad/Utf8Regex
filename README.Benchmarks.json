@@ -3244,13 +3244,13 @@
           "DecodeThenCompiledRegexAllocatedBytes": 16440
         },
         "common/backtracking": {
-          "MeasuredAtUtc": "2026-11-03T20:56:49.1373408+00:00",
+          "MeasuredAtUtc": "2026-11-03T22:19:49.6125219+00:00",
           "Environment": {
-            "BenchmarkAssembly": "1.0.0\u002B87db1ced59fcfcfa7b3bb2eaadf782b23b4c6042 sha256=DB928A00C49265170A449FE77C863C86A812F9DAE3E89A49BDE6B0ED35EB85BF",
-            "CoreAssembly": "0.5.0-dev.19\u002B87db1ced59fcfcfa7b3bb2eaadf782b23b4c6042 sha256=6DAE976789A8E64548CBA6D830A110B58422381CD277AF5FE85A30BE9CD79FB1",
-            "Pcre2Assembly": "0.5.0-dev.19\u002B87db1ced59fcfcfa7b3bb2eaadf782b23b4c6042 sha256=F7BD5B42E955C1B5093B58F4D96BE989FEFC8E7300209281CAA1349C7AFC3BE1",
-            "PythonReAssembly": "0.5.0-dev.19\u002B87db1ced59fcfcfa7b3bb2eaadf782b23b4c6042 sha256=940788EF4AE981DF853A0432297C176BA6C586E43916CE94A1B3EF5F79C35998",
-            "SourceCommit": "87db1ced59fc",
+            "BenchmarkAssembly": "1.0.0\u002Bdd492ee022576f65a1d80ce074e6c18ae849ad3f sha256=C0CAA40E41DC7F4BF5506A9579148E8D74C00ECF66447D417D11089B06242FF4",
+            "CoreAssembly": "0.5.0-dev.19\u002Bdd492ee022576f65a1d80ce074e6c18ae849ad3f sha256=D127E11346E46A1AD9CFD176ADADBEBB22F15583C4A9ADBC9543DCD3EA667D32",
+            "Pcre2Assembly": "0.5.0-dev.19\u002Bdd492ee022576f65a1d80ce074e6c18ae849ad3f sha256=1921279D0D7DEA62EA3A4F9BCD4BC1206734632E8E0356C065B138424136BEA9",
+            "PythonReAssembly": "0.5.0-dev.19\u002Bdd492ee022576f65a1d80ce074e6c18ae849ad3f sha256=CA3E71145F01CB3C2F7970E3B1E5094D1352193DA8C19572DC4DD1CF05B0EDF1",
+            "SourceCommit": "dd492ee02257",
             "TrackedDirty": false,
             "HasUntrackedFiles": false,
             "Runtime": ".NET 11.0.0-rc.3.26522.148",
@@ -3260,72 +3260,72 @@
           },
           "MeasurementProtocol": "IndependentSixLaneV3",
           "RequestedIterations": 1,
-          "EffectiveIterations": 56330,
+          "EffectiveIterations": 56722,
           "Samples": 5,
           "LaneIterations": [
-            265471,
-            265233,
-            59319,
-            1164226,
-            56330,
-            645866
+            526927,
+            527360,
+            59887,
+            1097342,
+            56722,
+            626522
           ],
           "SampleMicroseconds": [
             [
-              51967,
-              51943.2,
-              51913.7,
-              51857,
-              52011.8
+              48992.5,
+              48933.1,
+              49017.7,
+              48817.1,
+              48937.6
             ],
             [
-              51694.6,
-              51905.4,
-              51951.7,
-              52084.7,
-              51839.5
+              48954.3,
+              49187,
+              49033,
+              48961,
+              49040.1
             ],
             [
-              50135.5,
-              49996.6,
-              50135.8,
-              49938.6,
-              50007.1
+              50135.4,
+              50003.5,
+              50081.3,
+              50343.2,
+              49994.7
             ],
             [
-              51106.2,
-              52416.4,
-              51851.7,
-              51586.7,
-              51843.5
+              50314,
+              49964.1,
+              49915.1,
+              50043.7,
+              49831.7
             ],
             [
-              49752,
-              49743.4,
-              49809,
-              49516.4,
-              49921
+              50263.8,
+              49859.3,
+              50451.1,
+              50151.3,
+              50189.9
             ],
             [
-              47693.8,
-              47486.9,
-              47796.3,
-              47788.9,
-              53654.8
+              47395.1,
+              47302,
+              47547.3,
+              47412.6,
+              47260.8
             ]
           ],
           "PhaseMilliseconds": {
-            "Warmup": 1502.4587,
-            "Calibration": 627.9412,
-            "Sampling": 1541.2902,
-            "Allocation": 299.6106
+            "Warmup": 1502.2265,
+            "Calibration": 639.3899,
+            "Sampling": 1502.4404,
+            "Allocation": 307.422
           },
-          "Utf8Regex": 0.19566430984928673,
-          "Utf8Compiled": 0.1956973679745733,
-          "PredecodedRegex": 0.843019943019943,
-          "CompiledRegex": 0.044530443401882454,
-          "DecodeThenRegex": 0.8832238593999645,
-          "DecodeThenCompiledRegex": 0.07399197356727247,
+          "Utf8Regex": 0.09287358590468889,
+          "Utf8Compiled": 0.09297823118932039,
+          "PredecodedRegex": 0.8362632958738959,
+          "CompiledRegex": 0.04553193079277017,
+          "DecodeThenRegex": 0.8848400973167379,
+          "DecodeThenCompiledRegex": 0.0756479421313218,
           "Utf8RegexAllocatedBytes": 0,
           "Utf8CompiledAllocatedBytes": 0,
           "PredecodedRegexAllocatedBytes": 0,
@@ -8198,13 +8198,13 @@
           "DecodeThenCompiledRegexAllocatedBytes": 16440
         },
         "common/backtracking": {
-          "MeasuredAtUtc": "2026-11-03T20:56:49.1373435+00:00",
+          "MeasuredAtUtc": "2026-11-03T22:19:49.6362567+00:00",
           "Environment": {
-            "BenchmarkAssembly": "1.0.0\u002B87db1ced59fcfcfa7b3bb2eaadf782b23b4c6042 sha256=DB928A00C49265170A449FE77C863C86A812F9DAE3E89A49BDE6B0ED35EB85BF",
-            "CoreAssembly": "0.5.0-dev.19\u002B87db1ced59fcfcfa7b3bb2eaadf782b23b4c6042 sha256=6DAE976789A8E64548CBA6D830A110B58422381CD277AF5FE85A30BE9CD79FB1",
-            "Pcre2Assembly": "0.5.0-dev.19\u002B87db1ced59fcfcfa7b3bb2eaadf782b23b4c6042 sha256=F7BD5B42E955C1B5093B58F4D96BE989FEFC8E7300209281CAA1349C7AFC3BE1",
-            "PythonReAssembly": "0.5.0-dev.19\u002B87db1ced59fcfcfa7b3bb2eaadf782b23b4c6042 sha256=940788EF4AE981DF853A0432297C176BA6C586E43916CE94A1B3EF5F79C35998",
-            "SourceCommit": "87db1ced59fc",
+            "BenchmarkAssembly": "1.0.0\u002Bdd492ee022576f65a1d80ce074e6c18ae849ad3f sha256=C0CAA40E41DC7F4BF5506A9579148E8D74C00ECF66447D417D11089B06242FF4",
+            "CoreAssembly": "0.5.0-dev.19\u002Bdd492ee022576f65a1d80ce074e6c18ae849ad3f sha256=D127E11346E46A1AD9CFD176ADADBEBB22F15583C4A9ADBC9543DCD3EA667D32",
+            "Pcre2Assembly": "0.5.0-dev.19\u002Bdd492ee022576f65a1d80ce074e6c18ae849ad3f sha256=1921279D0D7DEA62EA3A4F9BCD4BC1206734632E8E0356C065B138424136BEA9",
+            "PythonReAssembly": "0.5.0-dev.19\u002Bdd492ee022576f65a1d80ce074e6c18ae849ad3f sha256=CA3E71145F01CB3C2F7970E3B1E5094D1352193DA8C19572DC4DD1CF05B0EDF1",
+            "SourceCommit": "dd492ee02257",
             "TrackedDirty": false,
             "HasUntrackedFiles": false,
             "Runtime": ".NET 11.0.0-rc.3.26522.148",
@@ -8214,72 +8214,72 @@
           },
           "MeasurementProtocol": "IndependentSixLaneV3",
           "RequestedIterations": 1,
-          "EffectiveIterations": 56330,
+          "EffectiveIterations": 56722,
           "Samples": 5,
           "LaneIterations": [
-            265471,
-            265233,
-            59319,
-            1164226,
-            56330,
-            645866
+            526927,
+            527360,
+            59887,
+            1097342,
+            56722,
+            626522
           ],
           "SampleMicroseconds": [
             [
-              51967,
-              51943.2,
-              51913.7,
-              51857,
-              52011.8
+              48992.5,
+              48933.1,
+              49017.7,
+              48817.1,
+              48937.6
             ],
             [
-              51694.6,
-              51905.4,
-              51951.7,
-              52084.7,
-              51839.5
+              48954.3,
+              49187,
+              49033,
+              48961,
+              49040.1
             ],
             [
-              50135.5,
-              49996.6,
-              50135.8,
-              49938.6,
-              50007.1
+              50135.4,
+              50003.5,
+              50081.3,
+              50343.2,
+              49994.7
             ],
             [
-              51106.2,
-              52416.4,
-              51851.7,
-              51586.7,
-              51843.5
+              50314,
+              49964.1,
+              49915.1,
+              50043.7,
+              49831.7
             ],
             [
-              49752,
-              49743.4,
-              49809,
-              49516.4,
-              49921
+              50263.8,
+              49859.3,
+              50451.1,
+              50151.3,
+              50189.9
             ],
             [
-              47693.8,
-              47486.9,
-              47796.3,
-              47788.9,
-              53654.8
+              47395.1,
+              47302,
+              47547.3,
+              47412.6,
+              47260.8
             ]
           ],
           "PhaseMilliseconds": {
-            "Warmup": 1502.4587,
-            "Calibration": 627.9412,
-            "Sampling": 1541.2902,
-            "Allocation": 299.6106
+            "Warmup": 1502.2265,
+            "Calibration": 639.3899,
+            "Sampling": 1502.4404,
+            "Allocation": 307.422
           },
-          "Utf8Regex": 0.19566430984928673,
-          "Utf8Compiled": 0.1956973679745733,
-          "PredecodedRegex": 0.843019943019943,
-          "CompiledRegex": 0.044530443401882454,
-          "DecodeThenRegex": 0.8832238593999645,
-          "DecodeThenCompiledRegex": 0.07399197356727247,
+          "Utf8Regex": 0.09287358590468889,
+          "Utf8Compiled": 0.09297823118932039,
+          "PredecodedRegex": 0.8362632958738959,
+          "CompiledRegex": 0.04553193079277017,
+          "DecodeThenRegex": 0.8848400973167379,
+          "DecodeThenCompiledRegex": 0.0756479421313218,
           "Utf8RegexAllocatedBytes": 0,
           "Utf8CompiledAllocatedBytes": 0,
           "PredecodedRegexAllocatedBytes": 0,

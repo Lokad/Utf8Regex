@@ -1,0 +1,145 @@
+[
+  {
+    "Name": "actual-ordinary",
+    "BeforeUs": 0.17185048427376298,
+    "AfterUs": 0.0997399115338664,
+    "ChangePercent": -41.96122754302064,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0109269602905717,
+    "AfterSpread": 1.017189353733471,
+    "MinimumSampleMs": 46.5667
+  },
+  {
+    "Name": "actual-compiled",
+    "BeforeUs": 0.17206581026072718,
+    "AfterUs": 0.09981641025298667,
+    "ChangePercent": -41.98939922943595,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.00819011588896,
+    "AfterSpread": 1.0204980947011637,
+    "MinimumSampleMs": 57.9462
+  },
+  {
+    "Name": "actual-finite-live",
+    "BeforeUs": 0.18169169376108052,
+    "AfterUs": 0.15142814881707706,
+    "ChangePercent": -16.656537411005246,
+    "BeforeBytes": 112,
+    "AfterBytes": 112,
+    "BeforeSpread": 1.0159357722254343,
+    "AfterSpread": 1.0135509425582567,
+    "MinimumSampleMs": 57.7694
+  },
+  {
+    "Name": "actual-deadline-live",
+    "BeforeUs": 0.28640723459521866,
+    "AfterUs": 0.24554364113716143,
+    "ChangePercent": -14.267654068099933,
+    "BeforeBytes": 160,
+    "AfterBytes": 160,
+    "BeforeSpread": 1.0107940895221812,
+    "AfterSpread": 1.0177712653395756,
+    "MinimumSampleMs": 58.0769
+  },
+  {
+    "Name": "large-ascii",
+    "BeforeUs": 1.939435342873794,
+    "AfterUs": 0.6324535617578574,
+    "ChangePercent": -67.38980940603527,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.009330694349073,
+    "AfterSpread": 1.0103483258924821,
+    "MinimumSampleMs": 59.4168
+  },
+  {
+    "Name": "two-byte",
+    "BeforeUs": 0.6286863383830398,
+    "AfterUs": 0.6229908746026864,
+    "ChangePercent": -0.9059308963197621,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0037181347777613,
+    "AfterSpread": 1.0125613294294953,
+    "MinimumSampleMs": 59.4653
+  },
+  {
+    "Name": "common-three-byte",
+    "BeforeUs": 0.6212520387704007,
+    "AfterUs": 0.6682119871279164,
+    "ChangePercent": 7.5589206033770395,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0091617425802493,
+    "AfterSpread": 1.0185175737539878,
+    "MinimumSampleMs": 58.8036
+  },
+  {
+    "Name": "constrained-three-byte",
+    "BeforeUs": 1.6166693474880705,
+    "AfterUs": 1.6241255144032922,
+    "ChangePercent": 0.4612054361522233,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0108461206630923,
+    "AfterSpread": 1.0036319208454898,
+    "MinimumSampleMs": 59.6989
+  },
+  {
+    "Name": "four-byte",
+    "BeforeUs": 0.6870277164920022,
+    "AfterUs": 0.6929656302656788,
+    "ChangePercent": 0.8642902798734031,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.001993078611974,
+    "AfterSpread": 1.0087119126592987,
+    "MinimumSampleMs": 59.4581
+  },
+  {
+    "Name": "late-unicode",
+    "BeforeUs": 4.040363043034876,
+    "AfterUs": 4.856378299120235,
+    "ChangePercent": 20.196582519783092,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0550934848023803,
+    "AfterSpread": 1.0145433959975334,
+    "MinimumSampleMs": 59.0197
+  },
+  {
+    "Name": "metadata-count-control",
+    "BeforeUs": 4.259850213980029,
+    "AfterUs": 4.27056304859773,
+    "ChangePercent": 0.2514838334583658,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0621452287953472,
+    "AfterSpread": 1.009201153537442,
+    "MinimumSampleMs": 58.2667
+  },
+  {
+    "Name": "python-control",
+    "BeforeUs": 4.470399129172714,
+    "AfterUs": 4.3843738851230825,
+    "ChangePercent": -1.9243302793312544,
+    "BeforeBytes": 5744,
+    "AfterBytes": 5744,
+    "BeforeSpread": 1.0117010408540943,
+    "AfterSpread": 1.0139657029840432,
+    "MinimumSampleMs": 60.5248
+  },
+  {
+    "Name": "pcre2-control",
+    "BeforeUs": 0.01384525,
+    "AfterUs": 0.0139923,
+    "ChangePercent": 1.062097109116844,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "BeforeSpread": 1.0434819320897688,
+    "AfterSpread": 1.0439309209920813,
+    "MinimumSampleMs": 27.1631
+  }
+]

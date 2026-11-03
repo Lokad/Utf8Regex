@@ -175,13 +175,13 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/boostdocs-postcode-match` | `IsMatch` | 0.023 us | 0.084 us | 0.099 us | 0.28x |
 | `common/date-match` | `IsMatch` | 0.029 us | 0.109 us | 0.137 us | 0.27x |
 | `common/one-node-backtracking` | `IsMatch` | 0.161 us | 0.621 us | 0.660 us | 0.26x |
-| `common/backtracking` | `IsMatch` | 0.196 us | 0.843 us | 0.883 us | 0.23x |
 | `common/split-words` | `Split` | 14.662 us | 79.243 us | 80.417 us | 0.19x |
 | `industry/rust-sherlock-nonnewline-count` | `Count` | 176.132 us | 976.150 us | 1,270.881 us | 0.18x |
 | `industry/leipzig-river-window-count` | `Count` | 5,786.033 us | 32,520.000 us | 46,890.900 us | 0.18x |
 | `common/date-miss` | `IsMatch` | 0.087 us | 0.564 us | 0.595 us | 0.15x |
 | `common/matches-words` | `Count` | 9.442 us | 70.537 us | 72.191 us | 0.13x |
 | `industry/boostdocs-float-match` | `IsMatch` | 0.010 us | 0.077 us | 0.091 us | 0.13x |
+| `common/backtracking` | `IsMatch` | 0.093 us | 0.836 us | 0.885 us | 0.11x |
 | `industry/rust-sherlock-letter-count` | `Count` | 1,929.748 us | 19,738.250 us | 20,564.133 us | 0.10x |
 | `industry/leipzig-symbol-count` | `Count` | 1,875.119 us | 23,892.100 us | 31,394.700 us | 0.08x |
 | `industry/rust-sherlock-word-holmes-count` | `Count` | 536.584 us | 8,544.400 us | 9,161.900 us | 0.06x |
@@ -236,7 +236,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 
 | Case | Operation | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
-| `common/backtracking` | `IsMatch` | 0.196 us | 0.045 us | 0.074 us | 4.39x |
 | `industry/rust-sherlock-holmes-window-count` | `Count` | 241.744 us | 58.763 us | 274.453 us | 4.11x |
 | `industry/leipzig-river-window-count` | `Count` | 5,768.333 us | 1,582.685 us | 14,377.033 us | 3.64x |
 | `industry/boostdocs-ftp-line-match` | `IsMatch` | 0.176 us | 0.049 us | 0.088 us | 3.57x |
@@ -246,6 +245,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/ip-miss` | `IsMatch` | 0.121 us | 0.051 us | 0.073 us | 2.40x |
 | `common/uri-miss` | `IsMatch` | 0.159 us | 0.067 us | 0.087 us | 2.38x |
 | `common/ip-match` | `IsMatch` | 0.103 us | 0.049 us | 0.069 us | 2.13x |
+| `common/backtracking` | `IsMatch` | 0.093 us | 0.046 us | 0.076 us | 2.04x |
 | `common/uri-match` | `IsMatch` | 0.165 us | 0.090 us | 0.121 us | 1.83x |
 | `common/one-node-backtracking` | `IsMatch` | 0.160 us | 0.089 us | 0.128 us | 1.81x |
 | `common/email-match` | `IsMatch` | 0.147 us | 0.082 us | 0.107 us | 1.80x |

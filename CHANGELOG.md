@@ -49,7 +49,9 @@
 - Reuse validated subject-end coordinates for PythonRe scalar value results,
   avoiding redundant Unicode scans without changing strict input validation.
 - Use the runtime's checked ASCII predicate for boolean input checks, reducing
-  literal Count validation cost without changing resource controls.
+  literal Count validation cost. Accept a complete ASCII validity proof before
+  Unicode selection for faster matching; late Unicode after a long ASCII prefix
+  can cost more. Resource controls remain enforced.
 - Reduce shared invocation metadata and finite-limit Core Match overhead while
   preserving numeric working limits, caller-funded admission and deterministic refunds.
 - Reduce required-literal screening and empty confirmation overhead while
