@@ -1,0 +1,173 @@
+{
+  "Source": "347b7845c5062deddb61d029290213248fdd85b0",
+  "Baseline": "a40bda03",
+  "Accepted": false,
+  "Cases": 217,
+  "TimedSeconds": 995.4178046,
+  "ConfirmationRuns": 1,
+  "ConfirmationSeconds": 91.5023014,
+  "Scope": "One217entry fixed-original gate: all existing172 and mail17 definitions/settings retained, plus prior26 entry controls and two explicit Python Match calls. Entry has only original/candidate producer timing; H5 records two public calls per iteration. Existing source/shape/output/allocations and >=20ms requirements. Initial results preserved; any sole selected same-binary noise confirmation must pool actual samples. One bounded union recalibration follows an invalid19.5016ms sample; initial failed part retained, first two completed parts reused byte-identically, all other parts executed only once. Invalid union samples are not pooled into valid confirmation. Package/platform/consumer/Full acceptance separate.",
+  "Parts": [
+    {
+      "Part": "cost",
+      "Cases": 26,
+      "Seconds": 108.7837461,
+      "MinimumSampleMilliseconds": 57.4602,
+      "Failures": [],
+      "MaximumChangePercent": 2.4937583537185004
+    },
+    {
+      "Part": "pcre2-cost",
+      "Cases": 17,
+      "Seconds": 63.6773627,
+      "MinimumSampleMilliseconds": 35.8166,
+      "Failures": [],
+      "MaximumChangePercent": -10.085750699735229
+    },
+    {
+      "Part": "union",
+      "Cases": 14,
+      "Seconds": 91.5023014,
+      "MinimumSampleMilliseconds": 26.4407,
+      "Failures": [],
+      "MaximumChangePercent": 5.516630602136829
+    },
+    {
+      "Part": "repeat",
+      "Cases": 16,
+      "Seconds": 91.7779182,
+      "MinimumSampleMilliseconds": 46.6176,
+      "Failures": [],
+      "MaximumChangePercent": 6.2379641649905615
+    },
+    {
+      "Part": "findall",
+      "Cases": 6,
+      "Seconds": 36.5721706,
+      "MinimumSampleMilliseconds": 54.8924,
+      "Failures": [],
+      "MaximumChangePercent": -1.9202279202279238
+    },
+    {
+      "Part": "capital",
+      "Cases": 16,
+      "Seconds": 76.9754136,
+      "MinimumSampleMilliseconds": 48.112,
+      "Failures": [
+        {
+          "Name": "ascii-native-control",
+          "BeforeUs": 13.989679382167097,
+          "AfterUs": 17.145110750945435,
+          "ChangePercent": 22.55542305566076,
+          "BeforeBytes": 0.0,
+          "AfterBytes": 0.0,
+          "BeforeSpread": 1.0022347397407032,
+          "AfterSpread": 1.0104640230075772,
+          "PairChangesPercent": [
+            22.79405051487362,
+            22.192996428977363,
+            22.362804380661828,
+            23.55306137576636,
+            22.304115581847483
+          ],
+          "SamplesPerVersion": 5
+        }
+      ],
+      "MaximumChangePercent": 22.55542305566076
+    },
+    {
+      "Part": "word",
+      "Cases": 18,
+      "Seconds": 67.2613327,
+      "MinimumSampleMilliseconds": 29.5768,
+      "Failures": [],
+      "MaximumChangePercent": -0.0864373463818624
+    },
+    {
+      "Part": "atomic",
+      "Cases": 17,
+      "Seconds": 97.2417048,
+      "MinimumSampleMilliseconds": 39.7793,
+      "Failures": [],
+      "MaximumChangePercent": 5.250155798361411
+    },
+    {
+      "Part": "fullmatch",
+      "Cases": 17,
+      "Seconds": 63.6270005,
+      "MinimumSampleMilliseconds": 43.2399,
+      "Failures": [],
+      "MaximumChangePercent": 8.157238047133841
+    },
+    {
+      "Part": "supplement",
+      "Cases": 19,
+      "Seconds": 71.0075108,
+      "MinimumSampleMilliseconds": 33.3301,
+      "Failures": [],
+      "MaximumChangePercent": 3.1662317410592333
+    },
+    {
+      "Part": "boundary",
+      "Cases": 6,
+      "Seconds": 25.4933917,
+      "MinimumSampleMilliseconds": 33.9518,
+      "Failures": [],
+      "MaximumChangePercent": -75.09500107463536
+    },
+    {
+      "Part": "mail",
+      "Cases": 17,
+      "Seconds": 102.6312903,
+      "MinimumSampleMilliseconds": 55.3617,
+      "Failures": [
+        {
+          "Name": "core-gap-control",
+          "BeforeUs": 68.28878504672898,
+          "AfterUs": 76.14010349288486,
+          "ChangePercent": 11.497229656060437,
+          "BeforeBytes": 3568.0,
+          "AfterBytes": 3568.0,
+          "BeforeSpread": 1.0049502575367626,
+          "AfterSpread": 1.0040965231548171,
+          "PairChangesPercent": [
+            11.204130460069628,
+            11.160070933201638,
+            11.304540071003188,
+            11.579635948845368,
+            11.422785384060251
+          ],
+          "SamplesPerVersion": 5
+        }
+      ],
+      "MaximumChangePercent": 11.497229656060437
+    },
+    {
+      "Part": "entry",
+      "Cases": 28,
+      "Seconds": 98.8666612,
+      "MinimumSampleMilliseconds": 42.6909,
+      "Failures": [
+        {
+          "Name": "nullable-control",
+          "BeforeUs": 21.510100647016536,
+          "AfterUs": 23.94679588607595,
+          "ChangePercent": 11.328144293910514,
+          "BeforeBytes": 3552.0,
+          "AfterBytes": 3552.0,
+          "BeforeSpread": 1.0047533797349752,
+          "AfterSpread": 1.005290585140702,
+          "PairChangesPercent": [
+            11.544777874712885,
+            11.29767299592177,
+            11.684690026053858,
+            11.440122411402731,
+            10.936979980822127
+          ],
+          "SamplesPerVersion": 5
+        }
+      ],
+      "MaximumChangePercent": 11.328144293910514
+    }
+  ]
+}
