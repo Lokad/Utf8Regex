@@ -190,7 +190,9 @@ internal static partial class Utf8SliceRunner
         {
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
-            if (!TryReadScalar(input, position, true, out _, out var width)) break;
+            // Count's caller validated the subject and scalar endpoints. This
+            // gap needs only width; membership reads below still decode values.
+            if (!TryGetScalarWidthEndingAt(input, position, out var width)) break;
             position -= width;
         }
         // The classes can overlap. Cover the complete whitespace/class window,
