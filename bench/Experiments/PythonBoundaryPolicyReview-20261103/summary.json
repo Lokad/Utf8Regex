@@ -1,0 +1,137 @@
+[
+  {
+    "Name": "date-miss",
+    "BeforeUs": 3.083060552318216,
+    "AfterUs": 2.4747806837746986,
+    "Change": -19.729741217250485,
+    "BeforeBytes": 3568,
+    "AfterBytes": 3568,
+    "MinimumMs": 44.9261
+  },
+  {
+    "Name": "finite-token",
+    "BeforeUs": 3.453393795852348,
+    "AfterUs": 2.9226861858911377,
+    "Change": -15.367711918594672,
+    "BeforeBytes": 3680,
+    "AfterBytes": 3680,
+    "MinimumMs": 59.42
+  },
+  {
+    "Name": "deadline-token",
+    "BeforeUs": 4.0225636581789095,
+    "AfterUs": 3.4067652432062117,
+    "Change": -15.308605836992061,
+    "BeforeBytes": 3728,
+    "AfterBytes": 3728,
+    "MinimumMs": 59.2694
+  },
+  {
+    "Name": "date-hit",
+    "BeforeUs": 0.9600861187033333,
+    "AfterUs": 0.9419333818269989,
+    "Change": -1.8907404786615345,
+    "BeforeBytes": 3568,
+    "AfterBytes": 3568,
+    "MinimumMs": 58.496
+  },
+  {
+    "Name": "dense-almost-dates",
+    "BeforeUs": 72.92705018359854,
+    "AfterUs": 53.94837837837838,
+    "Change": -26.02418685171021,
+    "BeforeBytes": 3568,
+    "AfterBytes": 3568,
+    "MinimumMs": 59.4651
+  },
+  {
+    "Name": "dense-word-interiors",
+    "BeforeUs": 103.57396551724138,
+    "AfterUs": 55.83271375464684,
+    "Change": -46.093872648573374,
+    "BeforeBytes": 80,
+    "AfterBytes": 80,
+    "MinimumMs": 57.2162
+  },
+  {
+    "Name": "unicode-prefix",
+    "BeforeUs": 587.1303921568627,
+    "AfterUs": 643.4021276595744,
+    "Change": 9.584197352822033,
+    "BeforeBytes": 3568,
+    "AfterBytes": 3568,
+    "MinimumMs": 59.3942
+  },
+  {
+    "Name": "offset",
+    "BeforeUs": 1.9174029409955085,
+    "AfterUs": 1.5623382161131736,
+    "Change": -18.51800251740443,
+    "BeforeBytes": 3568,
+    "AfterBytes": 3568,
+    "MinimumMs": 58.8226
+  },
+  {
+    "Name": "scoped-ascii",
+    "BeforeUs": 2.7911786474234432,
+    "AfterUs": 2.2780375538832467,
+    "Change": -18.384387327335016,
+    "BeforeBytes": 3568,
+    "AfterBytes": 3568,
+    "MinimumMs": 59.6362
+  },
+  {
+    "Name": "nonboundary-control",
+    "BeforeUs": 1.2009512756606608,
+    "AfterUs": 1.2100504227167608,
+    "Change": 0.7576616337823028,
+    "BeforeBytes": 3568,
+    "AfterBytes": 3568,
+    "MinimumMs": 58.3242
+  },
+  {
+    "Name": "captured-control",
+    "BeforeUs": 3.4649920706841866,
+    "AfterUs": 2.8850528338136407,
+    "Change": -16.737101414377342,
+    "BeforeBytes": 5760,
+    "AfterBytes": 5760,
+    "MinimumMs": 59.1009
+  },
+  {
+    "Name": "anchored-control",
+    "BeforeUs": 0.9499397724030811,
+    "AfterUs": 0.9298299914771454,
+    "Change": -2.1169532543167113,
+    "BeforeBytes": 3616,
+    "AfterBytes": 3616,
+    "MinimumMs": 58.8994
+  },
+  {
+    "Name": "literal-control",
+    "BeforeUs": 0.31262845931862066,
+    "AfterUs": 0.3095923655958208,
+    "Change": -0.9711507805198138,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumMs": 59.6937
+  },
+  {
+    "Name": "boundary-count-control",
+    "BeforeUs": 177.34470588235294,
+    "AfterUs": 189.68495297805643,
+    "Change": 6.95833971152755,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumMs": 59.0441
+  },
+  {
+    "Name": "core-count-control",
+    "BeforeUs": 1.8372203493717438,
+    "AfterUs": 2.2926432291666665,
+    "Change": 24.788691239494455,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumMs": 54.8886
+  }
+]

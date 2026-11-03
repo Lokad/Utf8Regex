@@ -36,6 +36,9 @@
   admitted Core root increases resident preparation and construction costs.
 - Skip impossible ASCII starts in PythonRe atomic and possessive searches while
   retaining complete atomic verification, captures and resource controls.
+- Skip proved ASCII word-interior candidates after PythonRe VM admission.
+  Date-like misses improve; Unicode-prefix and boundary-only operations can cost
+  more. Strict validation, captures and interruption authority remain.
 - Reuse admitted literals for capture-free repeated-literal PythonRe value
   FullMatch, reducing execution work and temporary storage while preserving
   strict validation, cancellation and finite resource limits.
