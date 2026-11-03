@@ -1,0 +1,30 @@
+{
+  "ParentSource": "a80260ecafeb649b13cea125484a83840eacdbec",
+  "Decision": "Rejected; fully restored",
+  "PublicCases": 17,
+  "TimedSeconds": 66.4541361,
+  "MinimumSampleMilliseconds": 22.7372,
+  "CoreBytesChanged": true,
+  "PythonDllAndPdbBytesIdentical": true,
+  "CandidateFullPythonPerRuntime": 4641,
+  "CandidateInitialCorePassedPerRuntime": 817,
+  "CandidateInitialCoreTotalPerRuntime": 818,
+  "CandidateCorrectedCorePerRuntime": 107,
+  "CandidatePcrePassedPerRuntime": 720,
+  "CandidatePcreTotalPerRuntime": 724,
+  "CandidatePcreQualificationComplete": false,
+  "RestoredCorePerRuntime": 806,
+  "RestoredPythonPerRuntime": 119,
+  "RestoredPcrePerRuntime": 724,
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "SourceAndTestsDiffAfterRestoration": "Empty",
+  "VmRestoredCoreDllAndPdb": "Exact parent bytes",
+  "ConfirmationRuns": 0,
+  "VariantRuns": 0,
+  "PackageAndSnapshotChanges": false,
+  "RawEvidenceSha256": "CCE37796AF0F00840AA3AD68ECEC9115B794D822E47F3F894F63E32214CC358C",
+  "CorrectnessArchiveSha256": "0C20AE3710196F57AF72D2C99E7B84B4AC5F856149A2FDE3DC08DFBD5030F353"
+}

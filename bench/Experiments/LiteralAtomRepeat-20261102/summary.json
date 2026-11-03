@@ -1,0 +1,296 @@
+{
+  "ElapsedSeconds": 66.4541361,
+  "MinimumSampleMilliseconds": 22.7372,
+  "Rows": [
+    {
+      "Name": "empty-findall",
+      "BeforeMicroseconds": 139.20923076923077,
+      "AfterMicroseconds": 105.55510563380282,
+      "ChangePercent": -24.175210903375287,
+      "BeforeBytes": 20016.0,
+      "AfterBytes": 16528.0,
+      "PairedPercent": [
+        -24.297151283700614,
+        -23.922020230037923,
+        -23.583376033052406,
+        -24.3784793516029,
+        -24.05558517394626
+      ],
+      "BeforeSpread": 1.0087074484436187,
+      "AfterSpread": 1.0057177727436113
+    },
+    {
+      "Name": "finite-findall",
+      "BeforeMicroseconds": 167.82793296089386,
+      "AfterMicroseconds": 138.02033096926715,
+      "ChangePercent": -17.760811007886435,
+      "BeforeBytes": 24216.0,
+      "AfterBytes": 20728.0,
+      "PairedPercent": [
+        -17.96534335556631,
+        -17.867926210253472,
+        -17.44913302910249,
+        -18.099821672408357,
+        -18.314842587704703
+      ],
+      "BeforeSpread": 1.0099729527248338,
+      "AfterSpread": 1.0054143089749608
+    },
+    {
+      "Name": "deadline-findall",
+      "BeforeMicroseconds": 217.4503597122302,
+      "AfterMicroseconds": 200.17606557377047,
+      "ChangePercent": -7.944017274250648,
+      "BeforeBytes": 24264.0,
+      "AfterBytes": 20776.0,
+      "PairedPercent": [
+        -8.158262575126574,
+        -7.748433631843876,
+        -7.584861039467983,
+        -8.067352092175263,
+        -7.9085842768392585
+      ],
+      "BeforeSpread": 1.0072784878583707,
+      "AfterSpread": 1.0043552746667368
+    },
+    {
+      "Name": "mixed-findall",
+      "BeforeMicroseconds": 117.1611328125,
+      "AfterMicroseconds": 87.10773722627737,
+      "ChangePercent": -25.651335784128083,
+      "BeforeBytes": 14872.0,
+      "AfterBytes": 11384.0,
+      "PairedPercent": [
+        -25.631047613614488,
+        -25.52050342713972,
+        -26.031325588943975,
+        -25.72015812798889,
+        -25.66905531283914
+      ],
+      "BeforeSpread": 1.0067976551269415,
+      "AfterSpread": 1.009428219228441
+    },
+    {
+      "Name": "offset-findall",
+      "BeforeMicroseconds": 145.06219512195122,
+      "AfterMicroseconds": 111.98803738317758,
+      "ChangePercent": -22.79998431773955,
+      "BeforeBytes": 20016.0,
+      "AfterBytes": 16528.0,
+      "PairedPercent": [
+        -23.014533901957044,
+        -22.59317647249237,
+        -22.572462308440056,
+        -22.76794007271289,
+        -22.80868003015555
+      ],
+      "BeforeSpread": 1.0048231294124796,
+      "AfterSpread": 1.0063253289556338
+    },
+    {
+      "Name": "captured-findall",
+      "BeforeMicroseconds": 76.21404853128992,
+      "AfterMicroseconds": 55.370790697674416,
+      "ChangePercent": -27.34831469431549,
+      "BeforeBytes": 16040.0,
+      "AfterBytes": 12552.0,
+      "PairedPercent": [
+        -27.486034373543898,
+        -27.204371706920583,
+        -27.62447739787487,
+        -27.765011355192193,
+        -27.30036795607522
+      ],
+      "BeforeSpread": 1.0071191585960482,
+      "AfterSpread": 1.0070832108302834
+    },
+    {
+      "Name": "bodycapture-control",
+      "BeforeMicroseconds": 77.53177083333334,
+      "AfterMicroseconds": 87.64441176470588,
+      "ChangePercent": 13.043221923966165,
+      "BeforeBytes": 15016.0,
+      "AfterBytes": 15016.0,
+      "PairedPercent": [
+        13.479465609617725,
+        13.024164351534262,
+        13.029364796125243,
+        13.730577936786204,
+        12.945918359685727
+      ],
+      "BeforeSpread": 1.0046804634923847,
+      "AfterSpread": 1.0079150696189314
+    },
+    {
+      "Name": "overlap-control",
+      "BeforeMicroseconds": 39.961850865512645,
+      "AfterMicroseconds": 48.74955609362389,
+      "ChangePercent": 21.990235781834343,
+      "BeforeBytes": 8696.0,
+      "AfterBytes": 8696.0,
+      "PairedPercent": [
+        20.73279891535349,
+        22.003767654473894,
+        21.485512323174238,
+        22.656355644270153,
+        21.543529741270962
+      ],
+      "BeforeSpread": 1.0051191635863836,
+      "AfterSpread": 1.0164051391045257
+    },
+    {
+      "Name": "lazy-control",
+      "BeforeMicroseconds": 125.60125260960334,
+      "AfterMicroseconds": 134.02857142857144,
+      "ChangePercent": 6.709581826514177,
+      "BeforeBytes": 20016.0,
+      "AfterBytes": 20016.0,
+      "PairedPercent": [
+        6.643110463012314,
+        6.8981792881275705,
+        6.456788550857717,
+        7.122022484952972,
+        7.364085088737227
+      ],
+      "BeforeSpread": 1.006599694344027,
+      "AfterSpread": 1.0044149121325647
+    },
+    {
+      "Name": "fold-control",
+      "BeforeMicroseconds": 47.09542947202522,
+      "AfterMicroseconds": 47.91437699680511,
+      "ChangePercent": 1.7389108326665736,
+      "BeforeBytes": 10360.0,
+      "AfterBytes": 10360.0,
+      "PairedPercent": [
+        1.614038851822297,
+        1.624800971415996,
+        1.3540984992170824,
+        1.7389108326665736,
+        1.7667958278637874
+      ],
+      "BeforeSpread": 1.0056615740949932,
+      "AfterSpread": 1.007485412977057
+    },
+    {
+      "Name": "alternative-control",
+      "BeforeMicroseconds": 193.69129032258064,
+      "AfterMicroseconds": 209.393031358885,
+      "ChangePercent": 8.106580843234656,
+      "BeforeBytes": 52808.0,
+      "AfterBytes": 52808.0,
+      "PairedPercent": [
+        8.106580843234656,
+        7.862344055100445,
+        7.834992448819844,
+        8.945678802369361,
+        8.543562733052346
+      ],
+      "BeforeSpread": 1.0104532653882257,
+      "AfterSpread": 1.0027803645292788
+    },
+    {
+      "Name": "assertion-control",
+      "BeforeMicroseconds": 141.54105011933174,
+      "AfterMicroseconds": 125.07383966244726,
+      "ChangePercent": -11.634229393523054,
+      "BeforeBytes": 28088.0,
+      "AfterBytes": 26472.0,
+      "PairedPercent": [
+        -11.841703283782746,
+        -11.616641199322897,
+        -11.374505438578165,
+        -11.87607152928769,
+        -11.83020408380595
+      ],
+      "BeforeSpread": 1.0086146394754778,
+      "AfterSpread": 1.0060586276244328
+    },
+    {
+      "Name": "count-finite",
+      "BeforeMicroseconds": 129.9880341880342,
+      "AfterMicroseconds": 94.00858034321372,
+      "ChangePercent": -27.679050667674833,
+      "BeforeBytes": 3664.0,
+      "AfterBytes": 176.0,
+      "PairedPercent": [
+        -27.55692372461812,
+        -27.943764159650808,
+        -27.51174857693518,
+        -27.425907889298394,
+        -27.750665327813383
+      ],
+      "BeforeSpread": 1.010008199368897,
+      "AfterSpread": 1.0064923270226447
+    },
+    {
+      "Name": "core-class-control",
+      "BeforeMicroseconds": 5.578988434000367,
+      "AfterMicroseconds": 6.1550508683588525,
+      "ChangePercent": 10.325571403728917,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "PairedPercent": [
+        11.362416730595726,
+        10.845086838482064,
+        10.699126802205505,
+        9.205990381638829,
+        9.139319347280184
+      ],
+      "BeforeSpread": 1.0227189117295037,
+      "AfterSpread": 1.0103901169476592
+    },
+    {
+      "Name": "core-nb-control",
+      "BeforeMicroseconds": 21.15228712174525,
+      "AfterMicroseconds": 20.477773995915587,
+      "ChangePercent": -3.188842520656976,
+      "BeforeBytes": 6256.0,
+      "AfterBytes": 6256.0,
+      "PairedPercent": [
+        -3.3951820348319894,
+        -3.17724270433859,
+        -3.013339629959899,
+        -3.518392150280303,
+        -3.601365855161609
+      ],
+      "BeforeSpread": 1.0046886815394198,
+      "AfterSpread": 1.0091089903227424
+    },
+    {
+      "Name": "core-rtl-control",
+      "BeforeMicroseconds": 27.836044880785416,
+      "AfterMicroseconds": 35.06996487119438,
+      "ChangePercent": 25.987599967559948,
+      "BeforeBytes": 3552.0,
+      "AfterBytes": 3552.0,
+      "PairedPercent": [
+        26.21080634545523,
+        24.973984702277964,
+        26.356052503157535,
+        26.228729879557577,
+        25.859718331185235
+      ],
+      "BeforeSpread": 1.0162474281094347,
+      "AfterSpread": 1.0064136055515367
+    },
+    {
+      "Name": "literal-control",
+      "BeforeMicroseconds": 10.352204738025245,
+      "AfterMicroseconds": 10.369965277777778,
+      "ChangePercent": 0.1715628718904405,
+      "BeforeBytes": 2112.0,
+      "AfterBytes": 2112.0,
+      "PairedPercent": [
+        -0.06099024517690621,
+        0.20879326642182505,
+        0.03441187119916922,
+        -0.1393610975120474,
+        -0.1188352459483788
+      ],
+      "BeforeSpread": 1.0042413188378418,
+      "AfterSpread": 1.0048229133757707
+    }
+  ],
+  "Decision": "Rejected: stable body-capture +13.04%, overlapping tail +21.99%, RTL +25.99% exceed 10%. No confirmation or variants. Core/Python/PCRE source and experimental fixtures must be fully restored."
+}
