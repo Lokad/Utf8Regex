@@ -1,4 +1,4 @@
-# Dev.18 packages qualified; final refresh pending VM recovery
+# Dev.18 packages qualified; final refresh retry pending
 
 Common **0.5.0-dev.18** Core/PythonRe/PCRE2 packages and symbols are staged in
 `artifacts/nuget/`. Both adapters pin Core exactly. All three target .NET 10/11.
@@ -36,28 +36,40 @@ removes a competing owner-pause timeout and attempts both bounded worker joins
 before asserting. Its complete `src/` and `bench/` trees equal package source;
 focused checks and CI `41677011460` pass both platforms. Packages were not rebuilt.
 
-The fresh Full refresh uses that test-corrected source, existing 83-step inventory
-and 3,600s hard cap. It started at **2026-11-03 16:50:19 UTC** and passed its
-build in 25.18s. The last guest observation was the tests phase. **No completed
-Full refresh, new benchmark-table import or current 60-minute acceptance is claimed.**
-The original run remains open; new SSH logins time out. Azure reports the VM
-running with an unresponsive guest agent and approximately 146–158MB available
-memory. A single guarded recovery command, limited to the completed, archived
-Linux fixture's RAM copy, returned `VMAgentStatusCommunicationError`; cleanup is
-unconfirmed. No reboot, resize or benchmark restart occurred.
+The first Full refresh used that test-corrected source, the existing 83-step
+inventory and 3,600s hard cap. It started at **2026-11-03 16:50:19 UTC**, passed
+its build in 25.18s, then exhausted the cap during tests (terminal exit **137**).
+Its incomplete manifest retains the interrupted test step as Running; that is
+not evidence of a live process after termination. No benchmark phase ran.
+**No completed current Full refresh or new benchmark-table import is claimed.**
+SSH and the guest agent became unavailable while available memory fell to about
+146–158MB. One Azure recovery request returned `VMAgentStatusCommunicationError`.
+SSH subsequently recovered and the original connection exported the failed run;
+7.4GB RAM was available and the completed Linux scratch was absent. No reboot,
+resize or process kill was performed. The failed run is preserved separately;
+its clock will not be combined with a retry.
 
 Subsequent workflow fix `f164532535de41a21708da8bdb7e259eabff810e` serializes
 project/target test hosts through existing MSBuild settings, preserving suite
 parallelism, coverage and build reuse. Focused both-target checks pass. It does
-not modify the live frozen run or package bytes. Future preparation must consider
-actual available RAM and release completed fixture scratch.
+not modify the failed run or package bytes. A new full invocation will use this
+fix after actual-RAM and disk admission, preserving all catalogs and both targets.
+The package/consumer and 217-case qualifications will not be repeated.
 CI `41684015379` passes on Ubuntu and Windows for this scheduling change.
+
+Preparation compared two completed dev.14 consumer scratch trees byte-for-byte
+against their sealed, locally hash-verified `linux-consumers.tar.gz` archive
+(`8DAA2A5823FA83FA7C6A4C49765C308A8FCBF59C76F5FD722EDBE3D3C7629BD0`).
+Only those duplicate scratch trees were retired: 2,188,871,264 logical bytes.
+Canonical packages, qualification records, sources and archives were retained.
+Available RAM rose from 7.4GB to 9.6GB; repository headroom rose to 2.2GB.
 
 Immutable evidence under `artifacts/experiments/delivery-dev18-20261103/`:
 
 - `windows-evidence.zip`: `48182CF7E341BA4BEB18505994F16F8BAC8C7E3CB2EA049FA2F65807A77FF32F`.
 - `windows-restore-inputs.zip`: `E20547B8294947A9440E1B81AF98545B0AEB51DEBA08F26E917581F4A7D7C773`.
 - `linux-evidence.tar.gz`: `74BC491F2039324DB62F0C3693C80B7AC953EE6795AB3EADF8363229D4B22132`.
+- `failed-full-evidence.tar.gz`: `16361DC04F7DA62F0F2B6C1EC24E5D584C5F4EC82E99FE7259259E023AD87B5D`.
 
 The Windows transfer hash is `9D1B06D1D10713348246717527C711B958C757590B7E8D313A43BE6BD43D1D9B`;
 original repinned consumer input `40F8DFCD550EBF260C93E99950F7929E0AD81C044321D304B504623FD2E47544`;

@@ -63,7 +63,9 @@ Only a completed full run counts toward the 60-minute VM target. Benchmark child
 share the remaining budget; on Linux wrap the runner in
 `timeout --kill-after=5s 3600s pwsh -NoProfile -File ./refresh-benchmarks.ps1`
 to hard-cap builds/tests too. Set PATH and UTF8REGEX_CPYTHON before starting.
-Check VM disk capacity first. Keep an SSH session open until `/dev/shm` evidence
+Check disk capacity and actual available RAM first; free tmpfs capacity does not
+reserve physical memory. Retire archived fixture scratch before a full run.
+Keep an SSH session open until `/dev/shm` evidence
 is archived and copied off the VM; logout cleanup can clear this filesystem.
 The Verify phase requires matching frozen paired evidence; it deliberately rejects
 old comparisons after source or binaries change.
