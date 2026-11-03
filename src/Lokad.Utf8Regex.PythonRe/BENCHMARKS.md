@@ -24,16 +24,17 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-11-03T21:17:13.1375154+00:00`
-- Snapshot SHA-256: `1A94F914B171B1B5226A5C20083930E701B065AB7DA1703F9DEC9E6D74451514`
+- Generated: `2026-11-03T23:22:03.4360091+00:00`
+- Snapshot SHA-256: `E5E96D2A7686C8C67A31F215BAC8362E75857325E8371049E7167B72261312E1`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `4`
 - Scaling families: `7`
 - Public Status: `34` managed faster, `1` equivalent, `40` CPython faster, `12` inconclusive, `3` unqualified
-- Historical point measurement environments represented: `1`
-- Paired evidence from source `87db1ced59fc`: `90` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
+- Historical point measurement environments represented: `2`
+- Paired evidence from source `87db1ced59fc`: `89` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
+- Paired evidence from source `9f2d0c4699e4`: `1` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
 - Historical CPython point environments represented: `1`
@@ -79,7 +80,7 @@ Input hashes cover the exact decoded subject re-encoded as strict UTF-8 and time
 | `corpus/code-declarations` | `LokadReplica/Code/Data` | 53,352 | `E25F45289E44A6DE119149C10B258E8416A8E24E4FF01D94ED4753FA5A9A351B` |
 | `corpus/sherlock-ru` | `DotNetPerformanceReplica/Stress/Data/opensubtitles/ru-sampled.txt` | 1,570,556 | `7FFDDB21336A1BFB4A9E2DF4BB77EEA0305C0010A57C5D3C56E0DFEAD9E80A90` |
 
-Historical independent point columns were measured from source `87db1ced59fc` on .NET 11.0.0-rc.3.26522.148, Ubuntu 24.04.4 LTS, X64. Qualified paired rows record their own exact source, runtime, and interpreter provenance in the JSON evidence.
+Historical point rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins; qualified paired rows carry separate exact provenance.
 
 ## Results
 
@@ -158,7 +159,7 @@ Historical independent point columns were measured from source `87db1ced59fc` on
 | `findall/zero-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 0.538 us | 90.838 us | 0.01x | 91.609 us | 1.196 us | 0 B |
 | `findall/one-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 0.736 us | 38.915 us | 0.02x | 39.382 us | 0.768 us | 64 B |
 | `findall/from-offset-strings` | `FindAllStringsFromOffset` | EagerMaterializedResult | CPython faster | 17.542 us | 16.466 us | 1.06x | 17.167 us | 53.699 us | 4,152 B |
-| `findall/empty-progression-strings` | `FindAllStrings` | EagerMaterializedResult | CPython faster | 164.357 us | 43.608 us | 3.77x | 46.238 us | 47.009 us | 20,016 B |
+| `findall/empty-progression-strings` | `FindAllStrings` | EagerMaterializedResult | CPython faster | 112.352 us | 43.776 us | 2.57x | 46.256 us | 46.357 us | 16,528 B |
 | `findall/optional-capture-strings` | `FindAllStrings` | EagerMaterializedResult | CPython faster | 103.178 us | 55.471 us | 1.86x | 49.389 us | 103.165 us | 14,008 B |
 | `findall/named-capture-strings` | `FindAllStrings` | EagerMaterializedResult | CPython faster | 167.029 us | 94.286 us | 1.77x | 101.535 us | 143.337 us | 45,336 B |
 | `findall/structural-many` | `FindAllStructural` | EagerMaterializedResult | Managed faster | 160.388 us | 203.905 us | 0.79x | 192.922 us | 109.566 us | 55,552 B |

@@ -256,9 +256,11 @@ class run, with or without intervening whitespace. The actual scalar predicate
 rewinds a conservative candidate window; the VM verifies every retained start.
 Skipped starts need no VM work or scratch. Whole-subject strict validation,
 bounded search/rewind checkpoints and admission before live VM storage remain.
-Scalar-class repetitions with a proved endpoint can omit unused repeat-journal
-storage. Live counter vectors and captures still require admission; examined
-scalars/classifications and terminal interruption remain metered.
+Scalar-class and unfolded literal repetitions with a proved endpoint can omit
+unused repeat-journal storage. Live counter vectors and captures still require
+admission; examined scalars/classifications and terminal interruption remain metered.
+Pure literal runs can lower working and depth requirements; repeats requiring
+rewinding or captures inside the body retain their continuation frames.
 Template replacement reads final completed captures without materializing capture
 histories. Evaluator callbacks retain their profile's histories. Avoiding those
 temporary snapshots can lower work and covered working/result charges; execution,

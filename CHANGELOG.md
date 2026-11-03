@@ -25,6 +25,9 @@
 - Reject impossible bounded scalar-gap candidates using short ASCII tail prefixes.
   Corpus Count and finite/deadline operations improve; single-byte tails can cost
   more. Strict validation, captures and bounded interruption remain.
+- Reuse scalar repeat execution for unfolded literal runs, reducing nullable
+  FindAll and Count scratch. Capture-inside, overlapping-tail and RTL operations
+  can cost more; numeric work/depth requirements can decrease.
 - Speed up repeated-segment Count with Unicode separators and declaration searches
   by skipping impossible word-interior starts, preserving strict validation and
   existing cancellation and resource authority.
