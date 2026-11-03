@@ -29,7 +29,7 @@ Compatible predecoded/decode-then .NET diagnostics remain separate.
 | Dense Core gap | 69.550 | 68.103 | -2.08% |
 | Finite/live gap | 79.628 | 77.575 | -2.58% |
 | Deadline/live gap | 90.474 | 88.179 | -2.54% |
-| Class/whitespace | 44.829 | 43.349 | -3.30% |
+| Class/whitespace | 44.832 | 43.352 | -3.30% |
 | ASCII-range control | 22.089 | 23.498 | **+6.38%** |
 
 **Accept:** actual gap work improves, all public controls remain within 10%,
