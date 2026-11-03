@@ -403,23 +403,24 @@ public sealed partial class Utf8PythonRegex
         try
         {
             var control = new Utf8InvocationBufferControl(ref invocation);
-            Utf8PythonValueMatch result = default;
-            if (TryDiscoverNativeMatch(input, startOffsetInBytes, kind, ref invocation,
+            if (!TryDiscoverNativeMatch(input, startOffsetInBytes, kind, ref invocation,
                 out var start, out var end, out var validation))
             {
-                var startUtf16 = validation.IsAscii || start == 0 ? start
-                    : Utf8Validation.Validate(input[..start], ref invocation).Utf16Length;
-                var endUtf16 = validation.IsAscii ? end : end == input.Length ? validation.Utf16Length
-                    : startUtf16 + Utf8Validation.Validate(input[start..end], ref invocation).Utf16Length;
-                result = Utf8PythonValueMatch.Create(input, new PythonReGroupData
-                {
-                    Number = 0, Success = true,
-                    StartOffsetInBytes = start, EndOffsetInBytes = end,
-                    StartOffsetInUtf16 = startUtf16, EndOffsetInUtf16 = endUtf16,
-                });
+                Utf8InvocationOutput.Checkpoint(control);
+                return default;
             }
+
+            var startUtf16 = validation.IsAscii || start == 0 ? start
+                : Utf8Validation.Validate(input[..start], ref invocation).Utf16Length;
+            var endUtf16 = validation.IsAscii ? end : end == input.Length ? validation.Utf16Length
+                : startUtf16 + Utf8Validation.Validate(input[start..end], ref invocation).Utf16Length;
             Utf8InvocationOutput.Checkpoint(control);
-            return result;
+            return Utf8PythonValueMatch.Create(input, new PythonReGroupData
+            {
+                Number = 0, Success = true,
+                StartOffsetInBytes = start, EndOffsetInBytes = end,
+                StartOffsetInUtf16 = startUtf16, EndOffsetInUtf16 = endUtf16,
+            });
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
             invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
