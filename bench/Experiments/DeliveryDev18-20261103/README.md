@@ -42,8 +42,9 @@ build in 25.18s. The last guest observation was the tests phase. **No completed
 Full refresh, new benchmark-table import or current 60-minute acceptance is claimed.**
 The original run remains open; new SSH logins time out. Azure reports the VM
 running with an unresponsive guest agent and approximately 146–158MB available
-memory. A single guarded recovery command is pending, limited to the completed,
-archived Linux fixture's RAM copy. No reboot, resize or benchmark restart occurred.
+memory. A single guarded recovery command, limited to the completed, archived
+Linux fixture's RAM copy, returned `VMAgentStatusCommunicationError`; cleanup is
+unconfirmed. No reboot, resize or benchmark restart occurred.
 
 Subsequent workflow fix `f164532535de41a21708da8bdb7e259eabff810e` serializes
 project/target test hosts through existing MSBuild settings, preserving suite
