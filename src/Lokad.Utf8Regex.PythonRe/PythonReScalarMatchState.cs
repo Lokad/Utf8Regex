@@ -355,10 +355,20 @@ internal struct PythonReScalarMatchState
                                 (uint)(input[_position] - _leadingAsciiLow) > (uint)(_leadingAsciiHigh - _leadingAsciiLow))) &&
                             !SeekCandidate(input)) { _finished = true; return false; }
                         _invocation.AnchorOriginByte = _position;
+                        // Once scratch is admitted, a positive leading boundary
+                        // cannot match between two ASCII word scalars. Borrow the
+                        // exact profile predicate and keep failure's advancement.
+                        if (search && _workspace.Initialized && _leadingAsciiLow >= 0 &&
+                            _program.Instructions[0] is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 } boundary &&
+                            _position > 0 && _position < input.Length &&
+                            input[_position - 1] < 128 && input[_position] < 128 &&
+                            Utf8SliceScalarClasses.IsBoundaryWord(new Rune(input[_position - 1]), _program, boundary) &&
+                            Utf8SliceScalarClasses.IsBoundaryWord(new Rune(input[_position]), _program, boundary))
+                            outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
                         // A complete boundary-only root cannot satisfy a nonempty
                         // retry. Reuse failure's scalar advance/EOF checks; actual
                         // candidates still run the VM with its admitted workspace.
-                        if (_retryNonEmpty && _program.GroupCount == 0 && !_program.IsNonBacktracking &&
+                        else if (_retryNonEmpty && _program.GroupCount == 0 && !_program.IsNonBacktracking &&
                             _program.Instructions is { Length: 2 } code &&
                             code[0].Kind == Utf8SliceInstructionKind.Boundary && code[1].Kind == Utf8SliceInstructionKind.Accept)
                             outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
