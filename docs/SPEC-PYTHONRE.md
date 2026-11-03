@@ -271,7 +271,7 @@ Cold FullMatch copies the existing instruction program with an end constraint,
 sharing immutable tables/names. Its token/deadline is the current invocation's;
 failure is retryable and leaves no failed publication. Exact capture-free literal
 value/string paths can use prepared literal operations without this preparation.
-For an unfolded literal of 1-16 UTF-8 bytes without boundary or trailing-literal
+For an unfolded literal of 1-256 UTF-8 bytes without boundary or trailing-literal
 requirements, Match/FullMatch can compare directly at the required start after
 full-subject validation. The comparison and final publication remain charged;
 avoiding candidate discovery lowers work requirements. Other eligible literals

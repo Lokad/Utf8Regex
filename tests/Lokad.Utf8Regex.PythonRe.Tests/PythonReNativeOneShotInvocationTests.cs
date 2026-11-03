@@ -33,7 +33,9 @@ public sealed class PythonReNativeOneShotInvocationTests
             if (expire) ticks = 50; else token.Cancel();
         };
         Exception? failure = null;
-        try { _ = regex.MaterializeNativeMatchValue(input, 0, 2, ref invocation); }
+        // Exercise discovery itself. FullMatch can reject this unequal-length
+        // subject immediately after validation and need not search its tail.
+        try { _ = regex.MaterializeNativeMatchValue(input, 0, 0, ref invocation); }
         catch (Exception error) { failure = error; }
         Assert.True(enteredSearch);
         if (expire)

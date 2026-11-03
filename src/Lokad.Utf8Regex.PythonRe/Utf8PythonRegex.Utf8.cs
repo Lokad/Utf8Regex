@@ -465,10 +465,11 @@ public sealed partial class Utf8PythonRegex
         {
             ref readonly var search = ref _utf8Regex.Inspection.PreparedRegex.SearchPlan;
             if (!search.HasBoundaryRequirements && !search.HasTrailingLiteralRequirement &&
-                search.LiteralSearch is { IgnoreCase: false, Needle: { Length: >= 1 and <= 16 } literal })
+                search.LiteralSearch is { IgnoreCase: false, Needle: { Length: >= 1 and <= 256 } literal })
             {
                 // A required start permits one bounded comparison of the complete
-                // short literal. Validate the whole subject before any rejection.
+                // literal, within the profile's existing 256-byte comparison
+                // block. Validate the whole subject before any rejection.
                 validation = Utf8Validation.Validate(input, ref invocation);
                 var remaining = input.Length - startOffsetInBytes;
                 if (remaining < literal.Length || kind == 2 && remaining != literal.Length) return false;

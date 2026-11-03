@@ -57,7 +57,8 @@ public sealed class PythonReLiteralFullMatchTests
     }
 
     [Theory]
-    [InlineData(1)] [InlineData(16)] [InlineData(17)] [InlineData(4096)]
+    [InlineData(1)] [InlineData(16)] [InlineData(17)]
+    [InlineData(255)] [InlineData(256)] [InlineData(257)] [InlineData(4096)]
     public void LiteralLengthBoundariesKeepAnchoredValuesAndText(int length)
     {
         var pattern = new string('x', length);
@@ -111,6 +112,30 @@ public sealed class PythonReLiteralFullMatchTests
         var canceled = Assert.Throws<OperationCanceledException>(() => Run(regex, [0xff], 0, text, cancellation.Token));
         Assert.Equal(cancellation.Token, canceled.CancellationToken);
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
+    }
+
+    [Theory]
+    [InlineData(3)] [InlineData(17)] [InlineData(256)]
+    public void BoundedFixedStartComparisonChargesEveryWorkCutoff(int length)
+    {
+        var pattern = new string('x', length);
+        var input = Encoding.UTF8.GetBytes(pattern);
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
+            new() { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        ulong steps = 0;
+        for (ulong limit = 1; limit <= 64; limit++)
+        {
+            var limited = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
+                new() { MaxWorkSteps = limit, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            try { Assert.True(limited.FullMatch(input).Success); steps = limit; break; }
+            catch (Utf8ResourceLimitExceededException failure)
+            { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind); Assert.Equal(limit, failure.Limit); }
+        }
+        Assert.InRange(steps, 2UL, 64UL);
+        using var token = new CancellationTokenSource();
+        Assert.True(regex.FullMatch(input, 0, token.Token).Success);
+        Assert.Throws<ArgumentException>(() => regex.FullMatch([.. input, 0xff]));
+        Assert.False(regex.FullMatch([.. input, (byte)'!']).Success);
     }
 
     [Fact]
