@@ -37,16 +37,19 @@ internal sealed class Utf8EmittedKernelMatcher
 
     private readonly Utf8EmittedKernelPlan _plan;
     private readonly PreparedByteSet? _anchorSearch;
+    private readonly PreparedMultiLiteralPackedNibbleSimdPrefilter _prefixFilter;
     private readonly Utf8EmittedDelegate<FindNextDelegate> _findNext;
     private readonly Utf8EmittedDelegate<CountDelegate> _count;
 
     private readonly record struct ConstructionState(Utf8EmittedKernelPlan Plan,
-        PreparedByteSet? AnchorSearch, Utf8EmittedDelegate<FindNextDelegate> FindNext, Utf8EmittedDelegate<CountDelegate> Count);
+        PreparedByteSet? AnchorSearch, PreparedMultiLiteralPackedNibbleSimdPrefilter PrefixFilter,
+        Utf8EmittedDelegate<FindNextDelegate> FindNext, Utf8EmittedDelegate<CountDelegate> Count);
 
     private Utf8EmittedKernelMatcher(ConstructionState state)
     {
         _plan = state.Plan;
         _anchorSearch = state.AnchorSearch;
+        _prefixFilter = state.PrefixFilter;
         _findNext = state.FindNext;
         _count = state.Count;
     }
@@ -106,11 +109,22 @@ internal sealed class Utf8EmittedKernelMatcher
         var budget = scope.Budget; budget.EnterDepth();
         try
         {
-            var search = plan.FindOptimization.Kind == Utf8CompiledFindOptimizationKind.AnchorByteSetAtOffset
+            var filter = default(PreparedMultiLiteralPackedNibbleSimdPrefilter);
+            if (plan.Kind == Utf8EmittedKernelKind.UpperWordIdentifierFamily && plan.Prefixes.Length is >= 2 and <= 8)
+            {
+                var eligible = true;
+                foreach (var prefix in plan.Prefixes)
+                {
+                    budget.ChargeWork(1);
+                    if (prefix.Length < 4) { eligible = false; break; }
+                }
+                if (eligible) filter = new(plan.Prefixes);
+            }
+            var search = !filter.HasValue && plan.FindOptimization.Kind == Utf8CompiledFindOptimizationKind.AnchorByteSetAtOffset
                 ? PreparedByteSet.CreateOwned(plan.FindOptimization.AnchorBytes) : null;
             // The wrapper and byte set have explicit field-state admission.
             // CLR/JIT resolution metadata remains excluded; lowered managed payloads are admitted.
-            var state = new ConstructionState(plan, search, CompileFindNext(plan), CompileCount(plan));
+            var state = new ConstructionState(plan, search, filter, CompileFindNext(plan), CompileCount(plan));
             var result = budget.AllocateObject(state, static value => new Utf8EmittedKernelMatcher(value));
             scope.Complete();
             return result;
@@ -124,6 +138,7 @@ internal sealed class Utf8EmittedKernelMatcher
 
     private int FindNextAnchorRelative(ReadOnlySpan<byte> input, int startIndex)
     {
+        if (_prefixFilter.HasValue) return FindNextPrefixAnchorRelative(input, startIndex);
         var search = _anchorSearch ?? throw new InvalidOperationException("The emitted plan does not define an anchor byte set.");
         var anchorOffset = _plan.FindOptimization.AnchorOffset;
         var scanFrom = startIndex;
@@ -146,6 +161,23 @@ internal sealed class Utf8EmittedKernelMatcher
             var wordEnd = start + stop;
             if (input.Length - wordEnd <= anchorOffset + 1) return -1;
             scanFrom = wordEnd + anchorOffset + 1;
+        }
+        return -1;
+    }
+
+    private int FindNextPrefixAnchorRelative(ReadOnlySpan<byte> input, int startIndex)
+    {
+        var anchorOffset = _plan.FindOptimization.AnchorOffset;
+        var state = new PreparedMultiLiteralScanState(Math.Max(0, startIndex - anchorOffset), 0, 0);
+        while (_prefixFilter.TryFindNextCandidate(input, ref state, out var start))
+        {
+            // The filter admits complete prefix windows but remains approximate.
+            // Emitted dispatch still verifies the complete winning alternative.
+            if (start == 0 || !Utf8AsciiBytePredicates.IsWord(input[start - 1]))
+                return start + anchorOffset - startIndex;
+            var stop = Utf8AsciiBytePredicates.WordSearch.IndexOfAnyExcept(input[start..]);
+            if (stop < 0) return -1;
+            state = new PreparedMultiLiteralScanState(start + stop + 1, 0, 0);
         }
         return -1;
     }

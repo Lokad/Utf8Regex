@@ -11,6 +11,8 @@ public sealed class Utf8EmittedWordBoundaryTests
     [InlineData("class|struct", "class", "struct")]
     [InlineData("record|struct|class", "record", "class")]
     [InlineData("class|struct|union|enum", "class", "enum")]
+    [InlineData("record|struct|class|union|enum|module|trait|interface", "record", "interface")]
+    [InlineData("record|struct|class|union|enum|module|trait|interface|namespace", "record", "namespace")]
     [InlineData("a|bbbb", "a", "bbbb")]
     public void SkippingWordInteriorsPreservesEveryCandidateOriginAndPublicResult(
         string alternatives, string first, string last)
@@ -33,6 +35,7 @@ public sealed class Utf8EmittedWordBoundaryTests
                 "x" + first + " Ab " + last + " Cd_1",
                 first + "! Ab " + last + "\tCd " + first + "\r\nEf",
                 first + "x Ab " + last + "\vGh_ " + first + " Ij",
+                first[..^1] + last[^1] + " Ab " + last[..^1] + first[^1] + " Cd " + last + " Ef",
                 first + " Ab" + last + " Cd " + last + " Ef",
                 "o.s" + first + " Ab !" + last + " Cd",
                 "x." + first + " Ab x.." + last + " Cd",
