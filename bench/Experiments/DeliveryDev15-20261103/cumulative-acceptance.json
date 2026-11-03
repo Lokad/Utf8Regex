@@ -1,0 +1,164 @@
+{
+  "Source": "58b8291cd953210aa0a86139dfe517bfafd6bc5c",
+  "Baseline": "a40bda03",
+  "Accepted": false,
+  "Cases": 189,
+  "TimedSeconds": 891.2503367999999,
+  "ConfirmationRuns": 0,
+  "ConfirmationSeconds": 0,
+  "Scope": "One189entry fixed-original gate: every existing172 entry unchanged, plus the17 mail/control public operations. Existing source/shape/output/allocations and >=20ms requirements. Initial results preserved; any sole selected same-binary noise confirmation must pool actual samples. Package/platform/consumer/Full acceptance separate.",
+  "Parts": [
+    {
+      "Part": "cost",
+      "Cases": 26,
+      "Seconds": 109.2005444,
+      "MinimumSampleMilliseconds": 60.0281,
+      "Failures": [],
+      "MaximumChangePercent": 5.631292933094945
+    },
+    {
+      "Part": "pcre2-cost",
+      "Cases": 17,
+      "Seconds": 63.6947685,
+      "MinimumSampleMilliseconds": 35.5179,
+      "Failures": [],
+      "MaximumChangePercent": 3.8681569683192807
+    },
+    {
+      "Part": "union",
+      "Cases": 14,
+      "Seconds": 85.9610997,
+      "MinimumSampleMilliseconds": 28.476,
+      "Failures": [],
+      "MaximumChangePercent": 7.397019176305042
+    },
+    {
+      "Part": "repeat",
+      "Cases": 16,
+      "Seconds": 91.9014506,
+      "MinimumSampleMilliseconds": 52.1584,
+      "Failures": [],
+      "MaximumChangePercent": 5.3927084995393
+    },
+    {
+      "Part": "findall",
+      "Cases": 6,
+      "Seconds": 35.9863614,
+      "MinimumSampleMilliseconds": 52.3909,
+      "Failures": [],
+      "MaximumChangePercent": -3.1361513493103343
+    },
+    {
+      "Part": "capital",
+      "Cases": 16,
+      "Seconds": 77.148765,
+      "MinimumSampleMilliseconds": 48.5761,
+      "Failures": [],
+      "MaximumChangePercent": 1.5247670321869577
+    },
+    {
+      "Part": "word",
+      "Cases": 18,
+      "Seconds": 67.2097496,
+      "MinimumSampleMilliseconds": 29.1728,
+      "Failures": [],
+      "MaximumChangePercent": 0.043723594013189704
+    },
+    {
+      "Part": "atomic",
+      "Cases": 17,
+      "Seconds": 97.2051965,
+      "MinimumSampleMilliseconds": 39.6704,
+      "Failures": [],
+      "MaximumChangePercent": 4.209638033207552
+    },
+    {
+      "Part": "fullmatch",
+      "Cases": 17,
+      "Seconds": 63.6138955,
+      "MinimumSampleMilliseconds": 53.9917,
+      "Failures": [],
+      "MaximumChangePercent": 7.645033906915666
+    },
+    {
+      "Part": "supplement",
+      "Cases": 19,
+      "Seconds": 71.1992784,
+      "MinimumSampleMilliseconds": 40.9015,
+      "Failures": [
+        {
+          "Name": "native-search-miss",
+          "BeforeUs": 0.07355071850605797,
+          "AfterUs": 0.08534060661825113,
+          "ChangePercent": 16.029602907580156,
+          "BeforeBytes": 0.0,
+          "AfterBytes": 0.0,
+          "BeforeSpread": 1.0015336834655415,
+          "AfterSpread": 1.0023130546678507,
+          "PairChangesPercent": [
+            15.920218049634794,
+            16.192548260721384,
+            16.081743461857243,
+            15.988503715259883,
+            15.96068314851864
+          ],
+          "SamplesPerVersion": 5
+        },
+        {
+          "Name": "unchanged-17byte-full",
+          "BeforeUs": 0.09043072609494343,
+          "AfterUs": 0.10981914015551919,
+          "ChangePercent": 21.440073410689877,
+          "BeforeBytes": 0.0,
+          "AfterBytes": 0.0,
+          "BeforeSpread": 1.0040733299681421,
+          "AfterSpread": 1.0151622689594384,
+          "PairChangesPercent": [
+            21.133589493130422,
+            21.227432076660758,
+            21.27263088312139,
+            23.10378960628199,
+            21.346632193990445
+          ],
+          "SamplesPerVersion": 5
+        }
+      ],
+      "MaximumChangePercent": 21.440073410689877
+    },
+    {
+      "Part": "boundary",
+      "Cases": 6,
+      "Seconds": 25.5059253,
+      "MinimumSampleMilliseconds": 33.2889,
+      "Failures": [],
+      "MaximumChangePercent": -75.4071989870869
+    },
+    {
+      "Part": "mail",
+      "Cases": 17,
+      "Seconds": 102.6233019,
+      "MinimumSampleMilliseconds": 55.2996,
+      "Failures": [
+        {
+          "Name": "core-gap-control",
+          "BeforeUs": 67.80231749710312,
+          "AfterUs": 76.63341968911917,
+          "ChangePercent": 13.024779267159058,
+          "BeforeBytes": 3568.0,
+          "AfterBytes": 3568.0,
+          "BeforeSpread": 1.0089642819730351,
+          "AfterSpread": 1.0043179823892725,
+          "PairChangesPercent": [
+            12.58742437817364,
+            13.290664713773115,
+            13.700568441682481,
+            12.849207907400917,
+            12.318599032715127
+          ],
+          "SamplesPerVersion": 5
+        }
+      ],
+      "MaximumChangePercent": 13.024779267159058
+    }
+  ]
+}
