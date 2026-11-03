@@ -61,7 +61,12 @@ Immutable raw evidence under `artifacts/experiments/anchored-line-policy-review-
 - `evidence.tar.gz`: `D01B68B20092370FBF8C5FF132D0A02B34010E061EC70B4B9420256C816F1391`.
 - `correctness.zip`: `C536C1BE78067714D3F0B1AB390E770726C13ABB666C682E018E7DF49BABBBE1`.
 
-This comparison is not a catalog verdict or package qualification. Update only
-the affected row through the existing runner. Dev.18 packages and their frozen
-44m12s Full receipt stay immutable; package/platform matrices remain batched at
-the next coherent delivery boundary.
+The comparison is separate from the catalog verdict and package qualification.
+One selective six-lane refresh on documentation-equivalent source `3bd89b41`
+updated only the ordinary/compiled import records. The compiled ratio fell
+**7.131 -> 3.442x** predecoded .NET; ordinary is **2.408x**. Matching allocation
+remains 3,584 B. The existing parity verifier passes; all three files were
+hash-verified and imported with other rows unchanged. Raw `selective.tar.gz`:
+`D53FCC60D707BC90A8E2DB08949EF53AE61DF583842822866F392DD58A827497`.
+Dev.18 packages and their frozen 44m12s Full receipt stay immutable;
+package/platform matrices remain batched at the next coherent delivery boundary.

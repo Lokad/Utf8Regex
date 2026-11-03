@@ -287,7 +287,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 
 | Case | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `lokad/imports/module-imports` | 31.909 us | 6.486 us | 28.955 us | 4.92x |
+| `lokad/imports/module-imports` | 15.601 us | 6.479 us | 29.366 us | 2.41x |
 | `structural/keyword-to-generic-type` | 5.289 us | 4.115 us | 16.063 us | 1.29x |
 | `lokad/langserv/color-short-hex` | 1.695 us | 1.364 us | 1.494 us | 1.24x |
 | `lokad/lexer/doc-line` | 3.385 us | 3.053 us | 3.782 us | 1.11x |
@@ -338,7 +338,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 
 | Case | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `lokad/imports/module-imports` | 31.731 us | 4.450 us | 26.080 us | 7.13x |
+| `lokad/imports/module-imports` | 15.553 us | 4.519 us | 26.398 us | 3.44x |
 | `structural/keyword-family-to-capitalized-identifier` | 18.036 us | 7.737 us | 18.746 us | 2.33x |
 | `structural/modifier-family-to-type-pair` | 23.770 us | 10.747 us | 22.459 us | 2.21x |
 | `lokad/langserv/color-short-hex` | 1.688 us | 1.031 us | 1.200 us | 1.64x |
