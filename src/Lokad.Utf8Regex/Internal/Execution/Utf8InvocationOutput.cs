@@ -48,6 +48,18 @@ internal static class Utf8InvocationOutput
     {
         if (source.Length > destination.Length) throw new ArgumentException("The output destination is too small.", nameof(destination));
         destination = destination[..source.Length];
+        // One bounded CopyTo already handles overlap. Preserve the same work
+        // charges and terminal interruption check without inspecting direction.
+        if (source.Length <= 4096)
+        {
+            if (!source.IsEmpty)
+            {
+                Checkpoint(control);
+                source.CopyTo(destination);
+            }
+            Checkpoint(control);
+            return;
+        }
         // Preserve Span.CopyTo's memmove semantics across bounded blocks.
         // The loop admits its first block too; the terminal checkpoint also
         // observes the original authority when there are no bytes to copy.

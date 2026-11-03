@@ -128,16 +128,19 @@ public sealed class Utf8OutputExtentAdmissionTests
     [InlineData(-37)] [InlineData(0)] [InlineData(37)]
     public void BoundedUnchangedCopiesPreserveOverlappingSpanSemantics(int displacement)
     {
-        var actual = Enumerable.Range(0, 20074).Select(i => (byte)(i % 251)).ToArray();
-        var expected = actual.ToArray();
-        var start = displacement < 0 ? 37 : 0;
-        expected.AsSpan(start, 20000).CopyTo(expected.AsSpan(start + displacement, 20000));
-        var invocation = new Utf8SliceInvocation(new(32, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
-        Assert.True(Utf8ReplacementOutput.TryCopyUnchanged(actual.AsSpan(start, 20000),
-            actual.AsSpan(start + displacement, 20000), out var written, new Utf8InvocationBufferControl(ref invocation)));
-        Assert.Equal(20000, written);
-        Assert.Equal(expected, actual);
-        Assert.Equal(6UL, invocation.Budget.Steps);
+        foreach (var length in new[] { 0, 1, 7, 31, 32, 33, 4095, 4096, 4097, 8192, 20000 })
+        {
+            var actual = Enumerable.Range(0, length + 74).Select(i => (byte)(i % 251)).ToArray();
+            var expected = actual.ToArray();
+            var start = displacement < 0 ? 37 : 0;
+            expected.AsSpan(start, length).CopyTo(expected.AsSpan(start + displacement, length));
+            var invocation = new Utf8SliceInvocation(new(32, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
+            Assert.True(Utf8ReplacementOutput.TryCopyUnchanged(actual.AsSpan(start, length),
+                actual.AsSpan(start + displacement, length), out var written, new Utf8InvocationBufferControl(ref invocation)));
+            Assert.Equal(length, written);
+            Assert.Equal(expected, actual);
+            Assert.Equal((ulong)((length + 4095) / 4096 + 1), invocation.Budget.Steps);
+        }
     }
 
     [Theory]
