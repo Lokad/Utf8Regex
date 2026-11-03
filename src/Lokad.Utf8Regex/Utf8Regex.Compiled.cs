@@ -29,21 +29,10 @@ public sealed partial class Utf8Regex
             return false;
         }
 
-        if (literal.Length % 3 != 0)
-        {
-            return false;
-        }
-
-        for (var i = 0; i < literal.Length; i += 3)
-        {
-            var b0 = literal[i];
-            if (b0 < 0xE0 || b0 >= 0xF0)
-            {
-                return false;
-            }
-        }
-
-        return true;
+        // The validated counter admits a three-byte first scalar; subsequent
+        // scalars can have any width. Two-byte and family routes retain their
+        // separately measured kernels.
+        return literal.Length >= 3 && literal[0] is >= 0xE0 and < 0xF0;
     }
 
     private bool CanUseFusedCompiledUtf8LiteralFamilyCount()

@@ -461,7 +461,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         var literal = _regexPlan.LiteralUtf8 ?? throw UnexpectedExecutionKind();
         if (budget.IsInfinite &&
             _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
-            CanUseFusedValidatedBmpThreeByteLiteralCount(literal))
+            literal.Length >= 3 && literal[0] is >= 0xE0 and < 0xF0)
         {
             return CountExactUtf8LiteralValidatedThreeByte(input, literal);
         }
@@ -552,9 +552,75 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         var index = 0;
         var maxStart = input.Length - literal.Length;
         var literalFirst = literal[0];
+        var nextMatchStart = 0;
+        var lastVectorStart = input.Length - Vector256<byte>.Count;
+        var first = Vector256.Create(literalFirst);
+        var second = Vector256.Create(literal[1]);
+        var third = Vector256.Create(literal[2]);
+        var continuationMask = Vector256.Create((byte)0xC0);
+        var continuationTag = Vector256.Create((byte)0x80);
+        var twoByteLeadMask = Vector256.Create((byte)0xE0);
+        var twoByteLeadTag = Vector256.Create((byte)0xC0);
+        var threeByteLeadMask = Vector256.Create((byte)0xF0);
+        var threeByteLeadTag = Vector256.Create((byte)0xE0);
+        var e0 = Vector256.Create((byte)0xE0);
+        var ed = Vector256.Create((byte)0xED);
+        var overlongLeadMask = Vector256.Create((byte)0xFE);
 
         while (index < input.Length)
         {
+            if (Vector256.IsHardwareAccelerated && index <= lastVectorStart)
+            {
+                var block = MemoryMarshal.Read<Vector256<byte>>(input[index..]);
+                var nonAscii = block.ExtractMostSignificantBits();
+                if (nonAscii == 0)
+                {
+                    index += Vector256<byte>.Count;
+                    continue;
+                }
+
+                // Same common-UTF8 proof as the validity-only validator. E0/ED,
+                // four-byte and malformed blocks retain the scalar checks below.
+                var continuations = Vector256.Equals(Vector256.BitwiseAnd(block, continuationMask), continuationTag)
+                    .ExtractMostSignificantBits();
+                var twoByteLeads = Vector256.Equals(Vector256.BitwiseAnd(block, twoByteLeadMask), twoByteLeadTag)
+                    .ExtractMostSignificantBits();
+                var threeByteLeads = Vector256.Equals(Vector256.BitwiseAnd(block, threeByteLeadMask), threeByteLeadTag)
+                    .ExtractMostSignificantBits() &
+                    ~(Vector256.Equals(block, e0).ExtractMostSignificantBits() | Vector256.Equals(block, ed).ExtractMostSignificantBits());
+                var leads = twoByteLeads | threeByteLeads;
+                var expected = ((ulong)leads << 1) | ((ulong)threeByteLeads << 2);
+                var overlong = Vector256.Equals(Vector256.BitwiseAnd(block, overlongLeadMask), twoByteLeadTag)
+                    .ExtractMostSignificantBits();
+                if (overlong == 0 && (nonAscii & ~(continuations | leads)) == 0 && continuations == (uint)expected)
+                {
+                    // Correlate the complete first scalar in this same checked
+                    // load. Starts in the last two lanes are revisited because
+                    // an incomplete three-byte scalar also shortens advancement.
+                    var candidates = Vector256.Equals(block, first).ExtractMostSignificantBits() &
+                        (Vector256.Equals(block, second).ExtractMostSignificantBits() >> 1) &
+                        (Vector256.Equals(block, third).ExtractMostSignificantBits() >> 2);
+                    while (candidates != 0)
+                    {
+                        var start = index + BitOperations.TrailingZeroCount(candidates);
+                        candidates &= candidates - 1;
+                        if (start >= nextMatchStart && start <= maxStart && input.Slice(start, literal.Length).SequenceEqual(literal))
+                        {
+                            count++;
+                            nextMatchStart = start + literal.Length;
+                        }
+                    }
+
+                    // Revisit an unfinished last scalar instead of carrying
+                    // validation state. nextMatchStart prevents a second count
+                    // when a verified literal crosses this overlapping tail.
+                    index += (expected >> 32) == 0
+                        ? Vector256<byte>.Count
+                        : (leads & 0x80000000u) != 0 ? 31 : 30;
+                    continue;
+                }
+            }
+
             var scalarStart = index;
             var b0 = input[index];
             if (b0 < 0x80)
@@ -598,12 +664,13 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
                     break;
                 }
 
-                if (scalarStart <= maxStart &&
+                if (scalarStart >= nextMatchStart && scalarStart <= maxStart &&
                     b0 == literalFirst &&
                     input.Slice(scalarStart, literal.Length).SequenceEqual(literal))
                 {
                     count++;
                     index = scalarStart + literal.Length;
+                    nextMatchStart = index;
                     continue;
                 }
 
