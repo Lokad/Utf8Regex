@@ -1,4 +1,4 @@
-# Dev.18 packages qualified; final refresh retry pending
+# Qualified 0.5.0-dev.18 delivery candidate
 
 Common **0.5.0-dev.18** Core/PythonRe/PCRE2 packages and symbols are staged in
 `artifacts/nuget/`. Both adapters pin Core exactly. All three target .NET 10/11.
@@ -41,7 +41,6 @@ inventory and 3,600s hard cap. It started at **2026-11-03 16:50:19 UTC**, passed
 its build in 25.18s, then exhausted the cap during tests (terminal exit **137**).
 Its incomplete manifest retains the interrupted test step as Running; that is
 not evidence of a live process after termination. No benchmark phase ran.
-**No completed current Full refresh or new benchmark-table import is claimed.**
 SSH and the guest agent became unavailable while available memory fell to about
 146–158MB. One Azure recovery request returned `VMAgentStatusCommunicationError`.
 SSH subsequently recovered and the original connection exported the failed run;
@@ -52,7 +51,7 @@ its clock will not be combined with a retry.
 Subsequent workflow fix `f164532535de41a21708da8bdb7e259eabff810e` serializes
 project/target test hosts through existing MSBuild settings, preserving suite
 parallelism, coverage and build reuse. Focused both-target checks pass. It does
-not modify the failed run or package bytes. A new full invocation will use this
+not modify the failed run or package bytes. The new full invocation used this
 fix after actual-RAM and disk admission, preserving all catalogs and both targets.
 The package/consumer and 217-case qualifications will not be repeated.
 CI `41684015379` passes on Ubuntu and Windows for this scheduling change.
@@ -64,12 +63,47 @@ Only those duplicate scratch trees were retired: 2,188,871,264 logical bytes.
 Canonical packages, qualification records, sources and archives were retained.
 Available RAM rose from 7.4GB to 9.6GB; repository headroom rose to 2.2GB.
 
+The fresh [Full refresh](full-refresh.json) completed in **2652.0147515s
+(44m12.015s)** from `60022add0dce365779ef2cbe03b079364a953de2`: Full/Complete,
+all **83 exact expected steps passed**, terminal exit zero, below 3,600s.
+It includes one Release build, both-runtime source correctness and disabled
+dynamic code, complete .NET 11 catalogs, paired comparators, lifecycle/scaling,
+resource costs and final verifiers. Its complete `src/` and benchmark-project
+trees equal package source; test, orchestration and receipt changes differ.
+The failed and completed clocks remain separate. Package/cumulative/consumer
+qualification was not replayed.
+
+All seven snapshot/Markdown files were imported byte-identically. Existing
+Core/PythonRe/PCRE2 snapshot guards then passed on both targets using matching
+VM binaries (3/1/1 checks per target, no build). The root README's introductory
+date/time and receipt link were subsequently corrected; generated tables were
+not edited by hand. Source CI `41689413903` is green on Windows and Linux.
+
+[Current rankings](ratio-summary.json) retain uncertainty and exclusions:
+Core has 114 wins, two tie candidates, 58 gaps and four unqualified rows;
+PythonRe has 34 ManagedFaster, 40 CpythonFaster, 12 inconclusive and four
+unqualified rows. Native PCRE2 has 77 ManagedFaster, one equivalent, 11
+NativeFaster, 12 inconclusive and 25 excluded rows. No verdict was resampled.
+The mail Count row is now 0.0131x CPython versus 3.5717x in the prior snapshot;
+catalog movement includes comparator variation and is separate from the causal
+fixed-original operating-cost evidence linked above.
+
+The largest current Core gaps are keyword-family discovery **8.60x**, imports
+**7.13x** and Chinese literal search **7.11x** against matching predecoded .NET.
+PythonRe's largest are early literal search **5.39x**, IP hit **4.03x** and date
+miss **3.96x** against CPython. Native PCRE2 date hit/miss remain **9.39x/9.07x**
+on its separately scoped queue. These are distinct comparators, not one ranking.
+Next Core work reassesses the archived keyword-filter trade-off on current
+source; optional PCRE2 scalar projection and later POSIX remain unfinished.
+
 Immutable evidence under `artifacts/experiments/delivery-dev18-20261103/`:
 
 - `windows-evidence.zip`: `48182CF7E341BA4BEB18505994F16F8BAC8C7E3CB2EA049FA2F65807A77FF32F`.
 - `windows-restore-inputs.zip`: `E20547B8294947A9440E1B81AF98545B0AEB51DEBA08F26E917581F4A7D7C773`.
 - `linux-evidence.tar.gz`: `74BC491F2039324DB62F0C3693C80B7AC953EE6795AB3EADF8363229D4B22132`.
 - `failed-full-evidence.tar.gz`: `16361DC04F7DA62F0F2B6C1EC24E5D584C5F4EC82E99FE7259259E023AD87B5D`.
+- `full-serial-evidence.tar.gz`: `C81F83A2004F2E9B7D23842C6AC9F72A966CF75C0FCC6E2F96B689C0A5AB01CA`.
+- `post-refresh-guards.zip`: `B413C02F6354DA2660C4F74941E78553E0E3D59D368A10E7C8C26B4AA17838B5`.
 
 The Windows transfer hash is `9D1B06D1D10713348246717527C711B958C757590B7E8D313A43BE6BD43D1D9B`;
 original repinned consumer input `40F8DFCD550EBF260C93E99950F7929E0AD81C044321D304B504623FD2E47544`;

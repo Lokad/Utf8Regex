@@ -1,0 +1,444 @@
+{
+  "Source": "60022add0dce365779ef2cbe03b079364a953de2",
+  "PackageSource": "3e7bd2db3bb42c35f5cb8eb41af71c46e7900a27",
+  "Scope": "Completed .NET11 Full rankings. Core uses predecoded .NET; PythonRe uses official CPython; PCRE2 uses native PCRE2. Preserve qualification, uncertainty and exclusions. Previous committed observations retain their own source identity; catalog movement is not a causal parent A/B claim. The 217-case fixed-original evidence separately documents approved major gains and local costs.",
+  "Core": {
+    "Summary": {
+      "Rows": 178,
+      "Wins": 114,
+      "TieCandidates": 2,
+      "Gaps": 58,
+      "Unqualified": 4
+    },
+    "LargestGaps": [
+      {
+        "CaseId": "structural/keyword-family-to-capitalized-identifier",
+        "Section": "lokad-compiled",
+        "Mode": "Compiled",
+        "RatioToPredecoded": 8.595259775969271,
+        "Utf8Microseconds": 66.36140583554376,
+        "Utf8AllocatedBytes": 0
+      },
+      {
+        "CaseId": "lokad/imports/module-imports",
+        "Section": "lokad-compiled",
+        "Mode": "Compiled",
+        "RatioToPredecoded": 7.13143588461759,
+        "Utf8Microseconds": 31.7314913448735,
+        "Utf8AllocatedBytes": 3584
+      },
+      {
+        "CaseId": "literal/sherlock-zh",
+        "Section": "dotnet-performance",
+        "Mode": "Ordinary",
+        "RatioToPredecoded": 7.10887879001066,
+        "Utf8Microseconds": 134.7002688172043,
+        "Utf8AllocatedBytes": 0
+      },
+      {
+        "CaseId": "literal-alternate/sherlock-zh",
+        "Section": "dotnet-performance-compiled",
+        "Mode": "Compiled",
+        "RatioToPredecoded": 6.5558794680178325,
+        "Utf8Microseconds": 238.5,
+        "Utf8AllocatedBytes": 0
+      },
+      {
+        "CaseId": "literal/sherlock-zh",
+        "Section": "dotnet-performance-compiled",
+        "Mode": "Compiled",
+        "RatioToPredecoded": 5.568981240835173,
+        "Utf8Microseconds": 134.4366047745358,
+        "Utf8AllocatedBytes": 0
+      },
+      {
+        "CaseId": "lokad/imports/module-imports",
+        "Section": "lokad",
+        "Mode": "Ordinary",
+        "RatioToPredecoded": 4.919583614799524,
+        "Utf8Microseconds": 31.90851485148515,
+        "Utf8AllocatedBytes": 3584
+      },
+      {
+        "CaseId": "industry/rust-sherlock-holmes-window-count",
+        "Section": "dotnet-performance-compiled",
+        "Mode": "Compiled",
+        "RatioToPredecoded": 4.089850775914916,
+        "Utf8Microseconds": 242.7409756097561,
+        "Utf8AllocatedBytes": 3552
+      },
+      {
+        "CaseId": "common/backtracking",
+        "Section": "dotnet-performance-compiled",
+        "Mode": "Compiled",
+        "RatioToPredecoded": 3.845488574816368,
+        "Utf8Microseconds": 0.165948046417545,
+        "Utf8AllocatedBytes": 0
+      },
+      {
+        "CaseId": "industry/boostdocs-ftp-line-match",
+        "Section": "dotnet-performance-compiled",
+        "Mode": "Compiled",
+        "RatioToPredecoded": 3.635691142080047,
+        "Utf8Microseconds": 0.17793415895017894,
+        "Utf8AllocatedBytes": 0
+      },
+      {
+        "CaseId": "literal-alternate/sherlock-zh",
+        "Section": "dotnet-performance",
+        "Mode": "Ordinary",
+        "RatioToPredecoded": 3.5824335119465536,
+        "Utf8Microseconds": 248.72288557213932,
+        "Utf8AllocatedBytes": 0
+      }
+    ]
+  },
+  "PythonRe": {
+    "StatusCounts": [
+      {
+        "Status": "CpythonFaster",
+        "Count": 40
+      },
+      {
+        "Status": "Inconclusive",
+        "Count": 12
+      },
+      {
+        "Status": "ManagedFaster",
+        "Count": 34
+      },
+      {
+        "Status": "Unqualified",
+        "Count": 4
+      }
+    ],
+    "LargestQualifiedGaps": [
+      {
+        "Case": "literal/search-early",
+        "Status": "CpythonFaster",
+        "Ratio": 5.38857681319003,
+        "Lower95": 5.380433124784546,
+        "Upper95": 5.416788732916732,
+        "Microseconds": 1.28008535214147,
+        "Bytes": 0,
+        "PreviousRatio": 5.560402354792749,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      },
+      {
+        "Case": "common/ip-match",
+        "Status": "CpythonFaster",
+        "Ratio": 4.031915492885014,
+        "Lower95": 3.964761778112397,
+        "Upper95": 4.135197299765384,
+        "Microseconds": 1.3515199960032973,
+        "Bytes": 3568,
+        "PreviousRatio": 4.1529315034156955,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      },
+      {
+        "Case": "common/date-miss",
+        "Status": "CpythonFaster",
+        "Ratio": 3.964401607379746,
+        "Lower95": 3.9582954249842155,
+        "Upper95": 3.9952536051264302,
+        "Microseconds": 3.4507814661134164,
+        "Bytes": 3568,
+        "PreviousRatio": 4.018486539702405,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      },
+      {
+        "Case": "split/unicode",
+        "Status": "CpythonFaster",
+        "Ratio": 3.675771525380521,
+        "Lower95": 3.6629959993600454,
+        "Upper95": 3.6868606639816277,
+        "Microseconds": 163.7315960912052,
+        "Bytes": 19512,
+        "PreviousRatio": 3.5486015852589694,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      },
+      {
+        "Case": "findall/empty-progression-strings",
+        "Status": "CpythonFaster",
+        "Ratio": 3.604402525954016,
+        "Lower95": 3.59246533606104,
+        "Upper95": 3.62966697402115,
+        "Microseconds": 157.76426332288403,
+        "Bytes": 20016,
+        "PreviousRatio": 3.5755909662769016,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      },
+      {
+        "Case": "replacement/empty-progression-string",
+        "Status": "CpythonFaster",
+        "Ratio": 3.3654335092045127,
+        "Lower95": 3.348643828696618,
+        "Upper95": 3.396206022247864,
+        "Microseconds": 79.89663461538461,
+        "Bytes": 6464,
+        "PreviousRatio": 3.5108335993319186,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      },
+      {
+        "Case": "split/zero-width",
+        "Status": "CpythonFaster",
+        "Ratio": 3.355255200410264,
+        "Lower95": 3.3477372852962586,
+        "Upper95": 3.3699550008444703,
+        "Microseconds": 223.76026785714288,
+        "Bytes": 40016,
+        "PreviousRatio": 3.3500313727546756,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      },
+      {
+        "Case": "unicode-literal/search-miss",
+        "Status": "CpythonFaster",
+        "Ratio": 3.0476026936249,
+        "Lower95": 3.030767764025994,
+        "Upper95": 3.0951600645433652,
+        "Microseconds": 0.8936151608701084,
+        "Bytes": 0,
+        "PreviousRatio": 2.9187891373741826,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      },
+      {
+        "Case": "findall/one-capture-strings",
+        "Status": "CpythonFaster",
+        "Ratio": 2.5014774471780328,
+        "Lower95": 2.496718759700598,
+        "Upper95": 2.5096522504943675,
+        "Microseconds": 535.12,
+        "Bytes": 112944,
+        "PreviousRatio": 2.5136426983743383,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      },
+      {
+        "Case": "leading-inline/search-hit",
+        "Status": "CpythonFaster",
+        "Ratio": 2.3985150734818745,
+        "Lower95": 2.37355766559423,
+        "Upper95": 2.4125229692265977,
+        "Microseconds": 0.801945262344934,
+        "Bytes": 0,
+        "PreviousRatio": 2.3974854893472752,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      }
+    ],
+    "SelectedChanges": [
+      {
+        "Case": "common/date-miss",
+        "Status": "CpythonFaster",
+        "Ratio": 3.964401607379746,
+        "Lower95": 3.9582954249842155,
+        "Upper95": 3.9952536051264302,
+        "Microseconds": 3.4507814661134164,
+        "Bytes": 3568,
+        "PreviousRatio": 4.018486539702405,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      },
+      {
+        "Case": "corpus/mail-email-count",
+        "Status": "ManagedFaster",
+        "Ratio": 0.013122191595918216,
+        "Lower95": 0.013004635766218967,
+        "Upper95": 0.013160039102496041,
+        "Microseconds": 4713.5,
+        "Bytes": 3568,
+        "PreviousRatio": 3.5716980819630195,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      },
+      {
+        "Case": "findall/empty-progression-strings",
+        "Status": "CpythonFaster",
+        "Ratio": 3.604402525954016,
+        "Lower95": 3.59246533606104,
+        "Upper95": 3.62966697402115,
+        "Microseconds": 157.76426332288403,
+        "Bytes": 20016,
+        "PreviousRatio": 3.5755909662769016,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      },
+      {
+        "Case": "literal/search-early",
+        "Status": "CpythonFaster",
+        "Ratio": 5.38857681319003,
+        "Lower95": 5.380433124784546,
+        "Upper95": 5.416788732916732,
+        "Microseconds": 1.28008535214147,
+        "Bytes": 0,
+        "PreviousRatio": 5.560402354792749,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      }
+    ]
+  },
+  "Pcre2": {
+    "StatusCounts": [
+      {
+        "Status": "Equivalent",
+        "Count": 1
+      },
+      {
+        "Status": "Excluded",
+        "Count": 25
+      },
+      {
+        "Status": "Inconclusive",
+        "Count": 12
+      },
+      {
+        "Status": "ManagedFaster",
+        "Count": 77
+      },
+      {
+        "Status": "NativeFaster",
+        "Count": 11
+      }
+    ],
+    "LargestQualifiedGaps": [
+      {
+        "Section": "pcre2-managed-compatible-ismatch",
+        "Case": "common/date-match",
+        "Status": "NativeFaster",
+        "Ratio": 9.385860885332834,
+        "Lower95": 9.381637692455136,
+        "Upper95": 9.401428338833174,
+        "Microseconds": 1.5018776050796618,
+        "Bytes": 0,
+        "PreviousRatio": 9.612350763177993,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      },
+      {
+        "Section": "pcre2-managed-compatible-ismatch",
+        "Case": "common/date-miss",
+        "Status": "NativeFaster",
+        "Ratio": 9.070992240006246,
+        "Lower95": 8.953195270349093,
+        "Upper95": 9.11870240970547,
+        "Microseconds": 5.240782861676806,
+        "Bytes": 0,
+        "PreviousRatio": 9.140289103684989,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      },
+      {
+        "Section": "pcre2-special-ismatch",
+        "Case": "pcre2/subroutine-prefix-digits",
+        "Status": "NativeFaster",
+        "Ratio": 4.319067895900823,
+        "Lower95": 4.253763050763169,
+        "Upper95": 4.352912249103677,
+        "Microseconds": 0.47096086962101674,
+        "Bytes": 0,
+        "PreviousRatio": 4.133732151261651,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      },
+      {
+        "Section": "pcre2-special-ismatch",
+        "Case": "pcre2/conditional-negative-lookahead",
+        "Status": "NativeFaster",
+        "Ratio": 3.758468822268653,
+        "Lower95": 3.5872736058079036,
+        "Upper95": 3.7736979691361183,
+        "Microseconds": 0.39256078898146574,
+        "Bytes": 0,
+        "PreviousRatio": 3.8528631769745236,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      },
+      {
+        "Section": "pcre2-special-ismatch",
+        "Case": "pcre2/conditional-accept-negative-lookahead",
+        "Status": "NativeFaster",
+        "Ratio": 3.7474744519873635,
+        "Lower95": 3.632973998249773,
+        "Upper95": 3.764464718956454,
+        "Microseconds": 0.3901066376978673,
+        "Bytes": 0,
+        "PreviousRatio": 3.6725836745286813,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      },
+      {
+        "Section": "pcre2-special-ismatch",
+        "Case": "pcre2/conditional-lookahead",
+        "Status": "NativeFaster",
+        "Ratio": 3.270926402977356,
+        "Lower95": 3.2547791506850197,
+        "Upper95": 3.302272965913332,
+        "Microseconds": 0.3934929018404243,
+        "Bytes": 0,
+        "PreviousRatio": 3.286768268187953,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      },
+      {
+        "Section": "pcre2-special-ismatch",
+        "Case": "pcre2/grapheme-cluster",
+        "Status": "NativeFaster",
+        "Ratio": 1.6409631689475421,
+        "Lower95": 1.6334054390371646,
+        "Upper95": 1.6472714623610647,
+        "Microseconds": 0.5688873626373626,
+        "Bytes": 0,
+        "PreviousRatio": 1.6762035937927184,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      },
+      {
+        "Section": "pcre2-managed-compatible-count",
+        "Case": "common/matches-set",
+        "Status": "NativeFaster",
+        "Ratio": 1.0993031184242203,
+        "Lower95": 1.0957125486479131,
+        "Upper95": 1.1040785765785437,
+        "Microseconds": 238.06807228915665,
+        "Bytes": 0,
+        "PreviousRatio": 1.1211577172298477,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      },
+      {
+        "Section": "pcre2-special-enumerate",
+        "Case": "pcre2/kreset-atomic-alt",
+        "Status": "NativeFaster",
+        "Ratio": 1.067971826040849,
+        "Lower95": 1.0674828110172196,
+        "Upper95": 1.0731338175305467,
+        "Microseconds": 0.9564631172058351,
+        "Bytes": 0,
+        "PreviousRatio": 1.068313584552202,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      },
+      {
+        "Section": "pcre2-special-ismatch",
+        "Case": "pcre2/backslash-c-literal",
+        "Status": "NativeFaster",
+        "Ratio": 1.0438878055264835,
+        "Lower95": 1.0373029695352793,
+        "Upper95": 1.047181683569634,
+        "Microseconds": 0.08915931042508271,
+        "Bytes": 0,
+        "PreviousRatio": 1.022338588980198,
+        "PreviousSource": "16839b38bce3",
+        "Source": "60022add0dce"
+      }
+    ]
+  }
+}
