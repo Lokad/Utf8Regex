@@ -136,6 +136,10 @@ internal static class Utf8FallbackProfileClassifier
     {
         if (!TryLiteral(node, out var literal) || LiteralLength(literal) != value.Length) return false;
         Utf8ConstructionScope.ChargeWork((ulong)value.Length);
-        return literal.Kind == Utf8TreeNodeKind.One ? literal.Ch == value[0] : literal.Str == value;
+        // Native pattern nodes retain UTF-8 bytes rather than decoded text.
+        // TryLiteral already proved ASCII, so compare either representation.
+        for (var index = 0; index < value.Length; index++)
+            if (LiteralByte(literal, index) != value[index]) return false;
+        return true;
     }
 }

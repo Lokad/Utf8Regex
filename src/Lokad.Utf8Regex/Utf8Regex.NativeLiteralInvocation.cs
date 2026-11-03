@@ -56,6 +56,12 @@ public sealed partial class Utf8Regex
 
     internal bool CanFindNativeLiteralForResult => CanUseNativeLiteralSearch(_ownedSliceProgram);
 
+    // A profile can borrow the complete ASCII language proof and bounded
+    // boolean executor, under its own validated subject and invocation.
+    internal bool CanUseAsciiIpv4Boolean =>
+        _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount &&
+        CanUseNativeScalarTokenSearch(_ownedSliceProgram, 0);
+
     // Borrow the adapter's already validated subject and invocation. Returning
     // false declines the route without searching; found describes an accepted
     // complete match, not a necessary start hint. The caller owns projection.
