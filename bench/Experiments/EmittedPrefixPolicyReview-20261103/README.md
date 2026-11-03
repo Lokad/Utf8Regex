@@ -68,7 +68,14 @@ Immutable evidence under `artifacts/experiments/emitted-prefix-policy-review-202
 - `evidence.tar.gz`: `35262529C4048AD655083CF2A0805241D3CC6171B6F46FC23F2F21A4E87126F5`.
 - `correctness.zip`: `588BF4FEAF63DF1507F6C065DB0EF30DE8B2189E1526C62E3B974C3D59A86D66`.
 
-The raw comparison is not a catalog Status or a package qualification. Refresh
-only the affected public row through the existing runner. Immutable dev.18 bytes
-and their complete 44m12s Full receipt remain unchanged; package/platform
-qualification stays at the next coherent delivery boundary.
+The raw comparison is not a catalog Status or a package qualification. One
+selective catalog refresh on documentation-equivalent source `6f108ad7` used
+the existing six-lane runner and parity verifier. Only this case's ordinary and
+compiled records changed: compiled ratio **8.595 -> 2.331x** predecoded .NET,
+ordinary **0.0817x**, with zero matching allocation. All three generated files
+were hash-verified and imported; other rows retain their previous evidence.
+The root README clarifies the distinction between selective rows and a complete
+run. Raw `selective.tar.gz` has SHA256
+`1B5278AF91AFF0C545CBED151CE4B9675BCB7CEA119A0B18A728692744B6C955`.
+Immutable dev.18 bytes and their complete 44m12s Full receipt remain unchanged;
+package/platform qualification stays at the next coherent delivery boundary.

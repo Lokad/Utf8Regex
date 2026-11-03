@@ -92,8 +92,8 @@ retain their observations without establishing parity. The complete Release
 build, .NET 10/11 tests, all-profile catalogs, paired comparators, lifecycle/scaling
 and resource checks passed in **44m12s**. The [run receipt](bench/Experiments/DeliveryDev18-20261103/full-refresh.json)
 records the scope and timings; package and consumer qualification are separate.
-Measurements describe each row's recorded implementation; later source changes
-need their own evidence.
+Each row retains its recorded implementation. Selective updates do not imply a
+new complete run; the full-run receipt applies to its recorded revision.
 
 Ordinary and compiled rows use matching .NET compilation flags. All tables rank
 `Utf8Regex / .NET predecoded` ratios from highest to lowest; lower is better.
@@ -312,13 +312,13 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `lokad/style/range-ref` | 0.913 us | 2.811 us | 2.853 us | 0.32x |
 | `structural/ordered-modifier-pair` | 5.685 us | 17.750 us | 28.687 us | 0.32x |
 | `structural/ordered-keyword-window` | 5.512 us | 17.859 us | 29.260 us | 0.31x |
-| `structural/keyword-family-to-capitalized-identifier` | 66.116 us | 225.304 us | 237.588 us | 0.29x |
 | `structural/modifier-family-to-type-window` | 75.117 us | 257.615 us | 268.826 us | 0.29x |
 | `lokad/lexer/string` | 25.217 us | 95.684 us | 101.488 us | 0.26x |
 | `lokad/folding/region-marker` | 6.865 us | 37.200 us | 61.912 us | 0.18x |
 | `structural/modifier-family-to-type-pair` | 23.795 us | 135.901 us | 148.160 us | 0.18x |
 | `structural/ordered-identifier-window` | 5.018 us | 29.172 us | 40.913 us | 0.17x |
 | `lokad/langserv/url-dashboard` | 2.533 us | 24.735 us | 24.970 us | 0.10x |
+| `structural/keyword-family-to-capitalized-identifier` | 18.343 us | 224.628 us | 237.403 us | 0.08x |
 | `lokad/langserv/url-download` | 2.689 us | 53.907 us | 54.039 us | 0.05x |
 | `balancing/begin-end-blocks` | 7.458 us | 4,441.242 us | 4,486.783 us | 0.0017x |
 <!-- END GENERATED LOKAD BENCHMARKS -->
@@ -338,8 +338,8 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 
 | Case | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `structural/keyword-family-to-capitalized-identifier` | 66.361 us | 7.721 us | 19.280 us | 8.60x |
 | `lokad/imports/module-imports` | 31.731 us | 4.450 us | 26.080 us | 7.13x |
+| `structural/keyword-family-to-capitalized-identifier` | 18.036 us | 7.737 us | 18.746 us | 2.33x |
 | `structural/modifier-family-to-type-pair` | 23.770 us | 10.747 us | 22.459 us | 2.21x |
 | `lokad/langserv/color-short-hex` | 1.688 us | 1.031 us | 1.200 us | 1.64x |
 | `lokad/lexer/operator-run` | 3.208 us | 2.091 us | 2.687 us | 1.53x |
