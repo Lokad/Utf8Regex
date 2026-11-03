@@ -471,6 +471,34 @@ internal static partial class Utf8SliceRunner
             program.Instructions.Length > 1 &&
             program.Instructions[1] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } leading &&
             (uint)leading.A < 0x80 ? leading.A : -1;
+        if (multiline && leadingLiteral >= 0)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (position < input.Length && (position == 0 || input[position - 1] == (byte)'\n') &&
+                input[position] == leadingLiteral) return Utf8ExecutionLimitKind.None;
+
+            // The same required first scalar admits a checked byte-pair search.
+            // Only candidate discovery changes; the original VM verifies each
+            // survivor. One-byte overlap preserves pairs crossing block edges.
+            Span<byte> pair = stackalloc byte[2];
+            pair[0] = (byte)'\n';
+            pair[1] = (byte)leadingLiteral;
+            while (input.Length - position >= 2)
+            {
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                var length = Math.Min(2048, input.Length - position);
+                var relative = input.Slice(position, length).IndexOf(pair);
+                invocation.Budget.ThrowIfCancellationRequested();
+                if (relative >= 0)
+                { position += relative + 1; return Utf8ExecutionLimitKind.None; }
+                position += length - 1;
+            }
+            position = -1;
+            return Utf8ExecutionLimitKind.None;
+        }
         while (true)
         {
             if (position != 0 && !multiline) { position = -1; return Utf8ExecutionLimitKind.None; }
