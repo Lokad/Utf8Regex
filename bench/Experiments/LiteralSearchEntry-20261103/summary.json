@@ -1,0 +1,402 @@
+[
+  {
+    "Name": "search-hit",
+    "OriginalUs": 0.0780237931959808,
+    "BeforeUs": 0.07665083107802029,
+    "AfterUs": 0.07391672128435746,
+    "ParentChange": -3.566966926790227,
+    "OriginalChange": -5.263871113401475,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumMilliseconds": 47.8714,
+    "BeforeSpread": 1.0057807760923978,
+    "AfterSpread": 1.007536177570332,
+    "PairPercent": [
+      -3.888515017791927,
+      -3.1158499462104583,
+      -4.112408747586116,
+      -3.0665970255973396,
+      -3.7312762040421
+    ]
+  },
+  {
+    "Name": "search-miss",
+    "OriginalUs": 0.07026643429901082,
+    "BeforeUs": 0.07006676601803961,
+    "AfterUs": 0.06828732422015438,
+    "ParentChange": -2.539637404453765,
+    "OriginalChange": -2.8165796352132566,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumMilliseconds": 55.8397,
+    "BeforeSpread": 1.0048322120340734,
+    "AfterSpread": 1.007075199309051,
+    "PairPercent": [
+      -2.6375769021038997,
+      -1.9931331340859115,
+      -2.7335247217552094,
+      -2.2341919592376747,
+      -2.40595716635148
+    ]
+  },
+  {
+    "Name": "finite-live-hit",
+    "OriginalUs": 0.2946374860494563,
+    "BeforeUs": 0.3200252398595628,
+    "AfterUs": 0.3127883486519932,
+    "ParentChange": -2.261350139365703,
+    "OriginalChange": 6.160405061116414,
+    "BeforeBytes": 112,
+    "AfterBytes": 112,
+    "MinimumMilliseconds": 57.2711,
+    "BeforeSpread": 1.0103835183544205,
+    "AfterSpread": 1.0057911194920774,
+    "PairPercent": [
+      -2.094448964722373,
+      -2.360424855250809,
+      -2.340183178219557,
+      -2.098406161409039,
+      -1.6513917073611828
+    ]
+  },
+  {
+    "Name": "finite-live-miss",
+    "OriginalUs": 0.29091305168682924,
+    "BeforeUs": 0.31143959407891975,
+    "AfterUs": 0.30582559686808025,
+    "ParentChange": -1.802595854082989,
+    "OriginalChange": 5.126117613074488,
+    "BeforeBytes": 112,
+    "AfterBytes": 112,
+    "MinimumMilliseconds": 57.1775,
+    "BeforeSpread": 1.0090610530303286,
+    "AfterSpread": 1.0079045058883769,
+    "PairPercent": [
+      -2.1277971909180016,
+      -2.0582916257367745,
+      -1.3326342194187268,
+      -0.9326283334645802,
+      -2.211559679792363
+    ]
+  },
+  {
+    "Name": "deadline-live-miss",
+    "OriginalUs": 0.40590391159977407,
+    "BeforeUs": 0.42597268285724477,
+    "AfterUs": 0.41331518531121314,
+    "ParentChange": -2.9714340978699627,
+    "OriginalChange": 1.825869004866032,
+    "BeforeBytes": 160,
+    "AfterBytes": 160,
+    "MinimumMilliseconds": 45.8039,
+    "BeforeSpread": 1.006186625679782,
+    "AfterSpread": 1.0078659647701966,
+    "PairPercent": [
+      -2.888738239612787,
+      -3.0108379025618026,
+      -2.9714340978699627,
+      -3.260937304954359,
+      -3.172444402781216
+    ]
+  },
+  {
+    "Name": "long-miss",
+    "OriginalUs": 4.524119731584106,
+    "BeforeUs": 4.5142459571267395,
+    "AfterUs": 4.511064309890937,
+    "ParentChange": -0.07048014809161174,
+    "OriginalChange": -0.2885737440153413,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumMilliseconds": 59.3341,
+    "BeforeSpread": 1.007462462161458,
+    "AfterSpread": 1.0074748863170044,
+    "PairPercent": [
+      -0.07064676782706503,
+      0.2297041744348638,
+      -0.04751908683320316,
+      0.14791157806066657,
+      -0.20333861370321893
+    ]
+  },
+  {
+    "Name": "unicode-search",
+    "OriginalUs": 0.2943164889446448,
+    "BeforeUs": 0.3230662849116741,
+    "AfterUs": 0.32917616729041305,
+    "ParentChange": 1.891216342927704,
+    "OriginalChange": 11.84428316292012,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumMilliseconds": 58.8612,
+    "BeforeSpread": 1.0056439646423199,
+    "AfterSpread": 1.0020069378474892,
+    "PairPercent": [
+      1.8651700013397443,
+      1.9629962954389235,
+      2.1894449677074324,
+      1.4123998779831615,
+      1.8320377911647423
+    ]
+  },
+  {
+    "Name": "unicode-offset",
+    "OriginalUs": 0.2672552510743116,
+    "BeforeUs": 0.2881872296195064,
+    "AfterUs": 0.2786714102959166,
+    "ParentChange": -3.3019573199525643,
+    "OriginalChange": 4.2716313994633826,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumMilliseconds": 48.3365,
+    "BeforeSpread": 1.0019423577749471,
+    "AfterSpread": 1.0039607480145953,
+    "PairPercent": [
+      -3.2565290049662687,
+      -3.087195923647501,
+      -3.3849065309155213,
+      -3.2768985452133026,
+      -3.198994550392431
+    ]
+  },
+  {
+    "Name": "trailing-assertion",
+    "OriginalUs": 0.7827486380503724,
+    "BeforeUs": 0.2747571840654325,
+    "AfterUs": 0.26264241428647134,
+    "ParentChange": -4.409264063528928,
+    "OriginalChange": -66.44613589611006,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumMilliseconds": 55.8711,
+    "BeforeSpread": 1.0085048463463313,
+    "AfterSpread": 1.0064814408897311,
+    "PairPercent": [
+      -4.516531081948482,
+      -4.403756274351755,
+      -4.659507903223825,
+      -4.148131564160562,
+      -4.741157707473542
+    ]
+  },
+  {
+    "Name": "boundary-search",
+    "OriginalUs": 5.420685600578871,
+    "BeforeUs": 0.554461179779439,
+    "AfterUs": 0.5533335179135057,
+    "ParentChange": -0.2033797688743233,
+    "OriginalChange": -89.79218573653459,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumMilliseconds": 55.5743,
+    "BeforeSpread": 1.0026869989048015,
+    "AfterSpread": 1.0022520189650737,
+    "PairPercent": [
+      -0.16059275582108734,
+      -0.23434293662798478,
+      -0.21969187290853398,
+      -0.11843300528853185,
+      -0.20390451651306485
+    ]
+  },
+  {
+    "Name": "folded-control",
+    "OriginalUs": 0.35182963104311415,
+    "BeforeUs": 0.3433277065821506,
+    "AfterUs": 0.33540426807603485,
+    "ParentChange": -2.3078354453225147,
+    "OriginalChange": -4.6685558912081815,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumMilliseconds": 58.166,
+    "BeforeSpread": 1.0086545512994383,
+    "AfterSpread": 1.0069384258373604,
+    "PairPercent": [
+      -2.579584977083005,
+      -3.5145228517072247,
+      -2.0042331597164953,
+      -2.1291569861920046,
+      -2.7027149545006623
+    ]
+  },
+  {
+    "Name": "captured-control",
+    "OriginalUs": 0.5572939033742331,
+    "BeforeUs": 0.5397266677665952,
+    "AfterUs": 0.5361485093805092,
+    "ParentChange": -0.6629574930756221,
+    "OriginalChange": -3.794298460057699,
+    "BeforeBytes": 2192,
+    "AfterBytes": 2192,
+    "MinimumMilliseconds": 53.7844,
+    "BeforeSpread": 1.026705669645903,
+    "AfterSpread": 1.0337355563336657,
+    "PairPercent": [
+      -3.357259223271203,
+      -0.23072580269701826,
+      -3.388763424273067,
+      -0.20907577994323523,
+      -1.002169331906777
+    ]
+  },
+  {
+    "Name": "fullmatch-17-control",
+    "OriginalUs": 0.07627428287464773,
+    "BeforeUs": 0.06148819676964221,
+    "AfterUs": 0.06140679411103523,
+    "ParentChange": -0.13238745463938217,
+    "OriginalChange": -19.492138376504087,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumMilliseconds": 43.583,
+    "BeforeSpread": 1.0068686396311048,
+    "AfterSpread": 1.0188795566715731,
+    "PairPercent": [
+      -0.4130830720486145,
+      1.8732756677646734,
+      -0.2684534508926695,
+      1.4190852332063741,
+      -0.6679923013500177
+    ]
+  },
+  {
+    "Name": "fullmatch-256-control",
+    "OriginalUs": 0.07593570120873497,
+    "BeforeUs": 0.061992620718454745,
+    "AfterUs": 0.06206002179418837,
+    "ParentChange": 0.1087243529189319,
+    "OriginalChange": -18.272932485873284,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumMilliseconds": 47.2912,
+    "BeforeSpread": 1.0087165322636613,
+    "AfterSpread": 1.01153765760848,
+    "PairPercent": [
+      -0.5665876816737025,
+      1.3044066223205864,
+      0.031367116902503156,
+      1.2427706458569387,
+      -0.13229185987165826
+    ]
+  },
+  {
+    "Name": "unchanged-native-count",
+    "OriginalUs": 0.10613550445482765,
+    "BeforeUs": 0.10636779411292539,
+    "AfterUs": 0.10682553302650938,
+    "ParentChange": 0.4303360029239922,
+    "OriginalChange": 0.6501392490911639,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumMilliseconds": 51.8469,
+    "BeforeSpread": 1.0047533155427526,
+    "AfterSpread": 1.0083374437414556,
+    "PairPercent": [
+      0.8052750738856806,
+      0.2907436096231564,
+      0.32647148645537083,
+      0.64624843974046,
+      0.022983605995330336
+    ]
+  },
+  {
+    "Name": "core-finite-match",
+    "OriginalUs": 0.28786910230086993,
+    "BeforeUs": 0.3138851760902676,
+    "AfterUs": 0.3258322816484616,
+    "ParentChange": 3.8062025441935043,
+    "OriginalChange": 13.187653361948515,
+    "BeforeBytes": 112,
+    "AfterBytes": 112,
+    "MinimumMilliseconds": 53.8803,
+    "BeforeSpread": 1.015122989162382,
+    "AfterSpread": 1.0091604564958023,
+    "PairPercent": [
+      3.734130516321188,
+      3.8062025441935043,
+      4.28255202193899,
+      2.2281521521849923,
+      3.6131459090481544
+    ]
+  },
+  {
+    "Name": "core-finite-miss",
+    "OriginalUs": 0.21717174281186655,
+    "BeforeUs": 0.2362934545054323,
+    "AfterUs": 0.2321392229508068,
+    "ParentChange": -1.758081519151855,
+    "OriginalChange": 6.892001668884884,
+    "BeforeBytes": 112,
+    "AfterBytes": 112,
+    "MinimumMilliseconds": 52.7617,
+    "BeforeSpread": 1.0047147673903853,
+    "AfterSpread": 1.0105240374127402,
+    "PairPercent": [
+      -1.8046608171131795,
+      -1.4722630252208768,
+      -1.8337468706590587,
+      -1.868433415567139,
+      -2.398082057550066
+    ]
+  },
+  {
+    "Name": "core-literal-count",
+    "OriginalUs": 0.1003728058475164,
+    "BeforeUs": 0.10403103975190399,
+    "AfterUs": 0.10401547312860876,
+    "ParentChange": -0.014963441038706726,
+    "OriginalChange": 3.629137643742064,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "MinimumMilliseconds": 51.6582,
+    "BeforeSpread": 1.0088642584984067,
+    "AfterSpread": 1.0138418460686658,
+    "PairPercent": [
+      0.35287508364976183,
+      0.16071257603049727,
+      0.5766365769987569,
+      0.3960720822923314,
+      -1.1093781216614529
+    ]
+  },
+  {
+    "Name": "core-gap-control",
+    "OriginalUs": 74.68862199747156,
+    "BeforeUs": 77.84309895833333,
+    "AfterUs": 80.43653585926928,
+    "ParentChange": 3.331620831699067,
+    "OriginalChange": 7.695836002962153,
+    "BeforeBytes": 3568,
+    "AfterBytes": 3568,
+    "MinimumMilliseconds": 58.8769,
+    "BeforeSpread": 1.0071461738717913,
+    "AfterSpread": 1.0192497448400037,
+    "PairPercent": [
+      3.555417698168961,
+      4.712202231732743,
+      2.024960002196785,
+      2.8105157428865324,
+      4.475624284935331
+    ]
+  },
+  {
+    "Name": "nullable-control",
+    "OriginalUs": 20.624824684431978,
+    "BeforeUs": 22.355169839492348,
+    "AfterUs": 22.505488721804515,
+    "ParentChange": 0.6724121686009887,
+    "OriginalChange": 9.11844859846056,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "MinimumMilliseconds": 58.5914,
+    "BeforeSpread": 1.0018913233243143,
+    "AfterSpread": 1.0033523877176287,
+    "PairPercent": [
+      0.6430037987452231,
+      0.37677484605578293,
+      0.6937519412305804,
+      0.6589800602068596,
+      0.8650218181835312
+    ]
+  }
+]

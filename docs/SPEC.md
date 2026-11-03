@@ -245,6 +245,10 @@ not byte counts, CPU instructions, elapsed time or portable per-pattern minima.
 The invocation checks its numeric working ceiling before caller-funded admission;
 live reservations, overlap and the first denial remain shared across aliases.
 Native shortcuts still meter bounded search, comparison and publication.
+Literal-search blocks own their work charges; entering the search helper adds
+no separate work unit for a nonempty admitted plan. Empty plans and prior resource
+failures retain their checkpoint, and terminal success/miss checks still observe
+the original token and deadline. This can lower finite work requirements.
 Scalar Count can search an exact ASCII delimiter after a proved leading
 class run, with or without intervening whitespace. The actual scalar predicate
 rewinds a conservative candidate window; the VM verifies every retained start.

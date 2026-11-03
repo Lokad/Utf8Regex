@@ -11,6 +11,43 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8NativeLiteralInvocationTests
 {
     [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void PriorWorkingOverflowStopsUnmeteredDiscoveryBeforePublishing(bool reverse)
+    {
+        var plan = Plan("target"u8.ToArray(), false, []);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited,
+            Regex.InfiniteMatchTimeout, default);
+        Assert.True(invocation.IsUnmetered);
+        // Exercise the ledger's real overflow denial without allocating payload.
+        Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(ulong.MaxValue));
+        Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, invocation.TryReserveWorking(1));
+        Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes,
+            Utf8SearchExecutor.TryFindLiteral(plan, "target"u8, 0, 6, reverse, ref invocation, out var index));
+        Assert.Equal(-1, index);
+        Assert.Equal(ulong.MaxValue, invocation.Ledger.ReservedBytes);
+        invocation.Ledger.Release(ulong.MaxValue);
+    }
+
+    [Fact]
+    public void PriorDenialRetainsOriginalCancellationPrecedence()
+    {
+        var plan = Plan("target"u8.ToArray(), false, []);
+        using var source = new CancellationTokenSource();
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited,
+            Regex.InfiniteMatchTimeout, source.Token);
+        Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(ulong.MaxValue));
+        Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, invocation.TryReserveWorking(1));
+        source.Cancel();
+        var index = -1;
+        var error = Assert.Throws<OperationCanceledException>(() =>
+            Utf8SearchExecutor.TryFindLiteral(plan, "target"u8, 0, 6, false, ref invocation, out index));
+        Assert.Equal(source.Token, error.CancellationToken);
+        Assert.Equal(-1, index);
+        Assert.Equal(ulong.MaxValue, invocation.Ledger.ReservedBytes);
+        invocation.Ledger.Release(ulong.MaxValue);
+    }
+
+    [Theory]
     [InlineData("foo(?=bar)", "xxfoobazfoobar", 8, 11)]
     [InlineData("(?:a|ab)(?=c)", "xabc", 1, 3)]
     public void CompleteLookaheadDiscoveryKeepsEveryWorkCutoffAndCallerReservation(

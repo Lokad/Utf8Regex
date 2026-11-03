@@ -35,10 +35,13 @@ internal static partial class Utf8SearchExecutor
         ArgumentOutOfRangeException.ThrowIfNegative(start);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(end, input.Length);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(start, end);
-        var breach = invocation.TryChargeInputStep();
-        if (breach != Utf8ExecutionLimitKind.None) return breach;
-        if (plan.LiteralSearch is not { Length: > 0 } search) return Utf8ExecutionLimitKind.None;
+        // Candidate blocks own search work. A prior denial must still stop
+        // before even the unmetered finder; empty plans retain their checkpoint.
+        if (invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None ||
+            plan.LiteralSearch is not { Length: > 0 } search)
+            return invocation.TryChargeInputStep();
 
+        var breach = Utf8ExecutionLimitKind.None;
         var low = start;
         var high = end - search.Length;
         while (low <= high)
