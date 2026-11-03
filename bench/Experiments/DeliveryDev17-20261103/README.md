@@ -20,7 +20,7 @@ producer, unchanged allocations. Diagnostic .NET comparators are separate lanes.
 | --- | ---: | ---: | ---: | ---: |
 | Core compiled Count, ASCII repeated capitalized words | 13.989679 | 17.145111 | **+22.56%** | 0 |
 | Core Count, bounded gap before `Result` | 68.288785 | 76.140103 | **+11.50%** | 3,568 |
-| Core Count, nullable `x*\|y` | 21.510101 | 23.946796 | **+11.33%** | 3,552 |
+| PythonRe Count, nullable `x*\|y` | 21.510101 | 23.946796 | **+11.33%** | 3,552 |
 
 Every pair exceeds 10%: respectively 22.19–23.55%, 11.16–11.58%, and
 10.94–11.68%. No further confirmation or unchanged-gate replay is justified.
