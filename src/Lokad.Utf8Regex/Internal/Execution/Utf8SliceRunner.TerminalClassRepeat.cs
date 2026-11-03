@@ -115,9 +115,10 @@ internal static partial class Utf8SliceRunner
             instructions[repeatIndex + 2].A != repeatIndex ||
             instructions[repeatIndex + 3].Kind != Utf8SliceInstructionKind.RepeatExit ||
             instructions[repeatIndex + 3].A != repeat.B ||
-            atom.Kind is not (Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Shorthand or
+            atom.Kind is not (Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Shorthand or
                 Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid))
             return false;
+        if (atom.Kind == Utf8SliceInstructionKind.Literal && atom.B != 0) return false;
         // A pure atom repeated an exact number of times has one endpoint,
         // independently of its tail or an enclosing assertion's required end.
         if (repeat.RepeatMinimum == repeat.RepeatMaximum)
@@ -248,6 +249,11 @@ internal static partial class Utf8SliceRunner
     private static Utf8ExecutionLimitKind TryMatchScalarClass(Utf8SliceProgram program,
         Utf8SliceInstruction instruction, Rune scalar, ref Utf8SliceInvocation invocation, out bool hit)
     {
+        if (instruction.Kind == Utf8SliceInstructionKind.Literal)
+        {
+            hit = scalar.Value == instruction.A;
+            return Utf8ExecutionLimitKind.None;
+        }
         if (instruction.Kind == Utf8SliceInstructionKind.Dot)
         {
             hit = instruction.A != 0 || scalar.Value != '\n';

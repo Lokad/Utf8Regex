@@ -10,7 +10,7 @@ public sealed class PythonReStringFindAllInterruptionTests
     public static IEnumerable<object[]> Cases()
     {
         foreach (var (pattern, unit) in new[] { ("(?P<word>[a-z]+)", "alpha beta "),
-            ("([a-z]+)([0-9]+)", "alpha12 beta34 "), ("(😀)?", "😀é") })
+            ("([a-z]+)([0-9]+)", "alpha12 beta34 "), ("(😀)?", "😀é"), ("x*", "xé😀y") })
         foreach (var finite in new[] { false, true })
         foreach (var expire in new[] { false, true })
             yield return [pattern, unit, finite, expire];

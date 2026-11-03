@@ -54,7 +54,8 @@ public sealed class PythonReFiniteDepthPolicyTests
     [Fact]
     public void ExplicitCursorOwnerPreservesSnapshotsOnDepthFailureAndDisposal()
     {
-        var regex = Create("(?P<x>ab)|😀+ab", 1, false); using var cursor = regex.CreateMatchCursor("ab 😀😀ab"u8.ToArray());
+        // The overlapping emoji tail requires rewinding the greedy run.
+        var regex = Create("(?P<x>ab)|😀+😀ab", 1, false); using var cursor = regex.CreateMatchCursor("ab 😀😀ab"u8.ToArray());
         Assert.True(cursor.MoveNext()); var retained = cursor.Current;
         Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext()), 1);
         cursor.Dispose(); cursor.Dispose(); Assert.Equal("ab", retained.Value.ValueText);

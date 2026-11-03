@@ -62,7 +62,7 @@ public sealed class Utf8CoreDepthPolicyTests
     [Fact]
     public void CopiedCursorDenialIsStickyAndRetainedRangesStayValid()
     {
-        var input = "ab 😀😀ab"u8.ToArray(); var regex = Create("(?<x>ab)|😀+ab", 1, RegexOptions.CultureInvariant);
+        var input = "ab 😀😀ab"u8.ToArray(); var regex = Create("(?<x>ab)|😀+😀ab", 1, RegexOptions.CultureInvariant);
         var cursor = regex.EnumerateMatches(input); Assert.True(cursor.MoveNext()); var retained = cursor.Current; var alias = cursor;
         try { alias.MoveNext(); Assert.Fail("Depth denial must remain an exception."); } catch (Utf8ResourceLimitExceededException error) { Denied(error, 1); }
         try { cursor.MoveNext(); Assert.Fail("Aliases must share the first denial."); } catch (Utf8ResourceLimitExceededException error) { Denied(error, 1); }

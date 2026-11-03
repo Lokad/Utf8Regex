@@ -40,6 +40,16 @@ public sealed class Utf8DisjointClassRepeatTests
     [InlineData("(?<=([a-z]{3}))a", "abca")]
     [InlineData("(?i:([a-z]{3}))a", "AbCa")]
     [InlineData(@"(\w{2})[a-z]", "ééa ABc")]
+    [InlineData("(x*)-", "- xx- xxx-")]
+    [InlineData("((x{1,2}))-", "x- xxx-")]
+    [InlineData("(x*)x", "xxx")]
+    [InlineData("(x{2})x", "xxxx")]
+    [InlineData("(x)*-", "xxx-")]
+    [InlineData("(?i:(x*))-", "XXX-")]
+    [InlineData("(x*?)-", "xxx-")]
+    [InlineData(@"(?=(x*))\1y", "xxxy")]
+    [InlineData("(?<=(x{2}))y", "xxy")]
+    [InlineData("(é*)-", "éé- é-")]
     public void CapturesAndFallbackKeepOverlappingBclSemantics(string pattern, string text)
     {
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);

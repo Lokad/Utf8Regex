@@ -3,7 +3,8 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2SliceDepthAdmissionTests
 {
     private static Utf8Pcre2Regex Create(uint depth)
-        => new("(😀+)(é+)", Pcre2CompileOptions.None, default,
+        // Captures inside the repeats keep actual continuation frames live.
+        => new("(😀)+(é)+", Pcre2CompileOptions.None, default,
             new Utf8Pcre2ExecutionLimits { DepthLimit = depth }, Utf8Pcre2Regex.DefaultMatchTimeout);
 
     [Theory]
@@ -13,7 +14,7 @@ public sealed class Pcre2SliceDepthAdmissionTests
         var exact = Create(4); var denied = Create(3);
         Assert.IsType<Pcre2SliceDirectProgram>(exact.DebugCompiledProgram.Operations.Count);
         var input = "😀😀😀éé"u8.ToArray();
-        Assert.Equal(operation == 3 ? "éé😀😀😀" : "1", Run(exact, input, operation));
+        Assert.Equal(operation == 3 ? "é😀" : "1", Run(exact, input, operation));
         var failure = Assert.Throws<Pcre2MatchException>(() => Run(denied, input, operation));
         Assert.Equal(Pcre2ErrorKind.DepthLimit, failure.ErrorKind);
         Assert.Equal("1", Run(Create(4), input, 0));

@@ -105,8 +105,8 @@ public sealed class Pcre2LimitEnforcementTests
 
     public static IEnumerable<object?[]> DepthRows()
     {
-        yield return new object?[] { "(a+)(b+)", Pcre2CompileOptions.None, "aaabbb aaabbb", 2 };
-        yield return new object?[] { "((a+))b", Pcre2CompileOptions.None, "aaab aaab", 2 };
+        yield return new object?[] { "(a)+(b)+", Pcre2CompileOptions.None, "aaabbb aaabbb", 2 };
+        yield return new object?[] { "((a)+)b", Pcre2CompileOptions.None, "aaab aaab", 2 };
     }
 
     [Theory]

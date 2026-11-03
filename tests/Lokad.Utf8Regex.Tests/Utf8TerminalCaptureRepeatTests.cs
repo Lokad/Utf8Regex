@@ -122,6 +122,8 @@ public sealed class Utf8TerminalCaptureRepeatTests
     [InlineData(@"(\p{L}{1,3})", "éé A𐐀!")]
     [InlineData("([a-z]{1,3})", "abc de!")]
     [InlineData("([ace]+)", "ace b aaa")]
+    [InlineData("(x{1,3})", "xx x!")]
+    [InlineData("(é{1,3})", "éé é!")]
     public void EveryWorkCutoffPreservesTheParentLoan(string pattern, string text)
     {
         var regex = new Utf8Regex(pattern);

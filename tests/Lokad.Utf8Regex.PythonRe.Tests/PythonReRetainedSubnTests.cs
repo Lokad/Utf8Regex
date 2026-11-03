@@ -139,7 +139,9 @@ public sealed class PythonReRetainedSubnTests
             1 => new Utf8ResourcePolicy { MaxDepth = 1 },
             _ => new Utf8ResourcePolicy { MaxWorkingBytes = 4096 },
         };
-        var account = new Allowance(16 << 20); using var regex = Compile("(a+)", account, policy);
+        // A capture inside the repeat still needs real continuation frames;
+        // a completed capture around a pure literal run can discard them.
+        var account = new Allowance(16 << 20); using var regex = Compile(kind == 1 ? "(a)+" : "(a+)", account, policy);
         var held = account.Used;
         var input = Encoding.UTF8.GetBytes(new string('a', kind == 2 ? 32768 : 4));
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.SubnRetained(input, @"\g<1>"));
