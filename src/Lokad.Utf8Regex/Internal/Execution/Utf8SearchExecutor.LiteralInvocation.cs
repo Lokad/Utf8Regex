@@ -50,9 +50,13 @@ internal static partial class Utf8SearchExecutor
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             if (candidate < 0) break;
 
-            breach = TryConfirmLiteral(plan.LeadingBoundary, plan.TrailingBoundary, plan.TrailingLiteralUtf8,
-                input, candidate, search.Length, ref invocation, out var accepted);
-            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            var accepted = true;
+            if (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement)
+            {
+                breach = TryConfirmLiteral(plan.LeadingBoundary, plan.TrailingBoundary, plan.TrailingLiteralUtf8,
+                    input, candidate, search.Length, ref invocation, out accepted);
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+            }
             if (accepted)
             {
                 breach = invocation.TryChargeInputStep();

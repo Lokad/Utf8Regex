@@ -40,8 +40,8 @@
   literal Count validation cost without changing resource controls.
 - Reduce shared invocation metadata and finite-limit Core Match overhead while
   preserving numeric working limits, caller-funded admission and deterministic refunds.
-- Reduce required-literal screening overhead while retaining strict validation,
-  matching and resource controls.
+- Reduce required-literal screening and empty confirmation overhead while
+  retaining strict validation, matching and resource controls.
 - Speed up capture-free PythonRe word-boundary Split and Count by avoiding
   impossible nonempty retries, preserving scalar progression and resource controls.
 - Speed up scalar Count with class-delimiter candidate windows and shared

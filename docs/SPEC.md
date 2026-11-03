@@ -248,7 +248,9 @@ Native shortcuts still meter bounded search, comparison and publication.
 Literal-search blocks own their work charges; entering the search helper adds
 no separate work unit for a nonempty admitted plan. Empty plans and prior resource
 failures retain their checkpoint, and terminal success/miss checks still observe
-the original token and deadline. This can lower finite work requirements.
+the original token and deadline. Candidates without boundary or trailing-literal
+requirements omit an empty confirmation step; their terminal publication remains
+charged. These shortcuts can lower finite work requirements.
 Scalar Count can search an exact ASCII delimiter after a proved leading
 class run, with or without intervening whitespace. The actual scalar predicate
 rewinds a conservative candidate window; the VM verifies every retained start.

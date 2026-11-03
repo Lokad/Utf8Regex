@@ -12,6 +12,37 @@ public sealed class Utf8NativeLiteralInvocationTests
 {
     [Theory]
     [InlineData(false)] [InlineData(true)]
+    public void UnconstrainedCandidateRetainsOriginalTerminalAuthority(bool expire)
+    {
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var source = new CancellationTokenSource();
+        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 1024),
+            expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout, source.Token);
+        Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(13));
+        while (invocation.Budget.Steps < 62)
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
+        var entered = false;
+        invocation.CheckpointHook = step =>
+        {
+            Assert.Equal(64UL, step);
+            entered = true;
+            if (expire) ticks = 50; else source.Cancel();
+        };
+        var plan = Plan("target"u8.ToArray(), false, []);
+        var index = -1;
+        var failure = Record.Exception(() => Utf8SearchExecutor.TryFindLiteral(plan,
+            "target"u8, 0, 6, false, ref invocation, out index));
+        Assert.True(entered);
+        Assert.Equal(-1, index);
+        if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
+        else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        invocation.Ledger.Release(13);
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
     public void PriorWorkingOverflowStopsUnmeteredDiscoveryBeforePublishing(bool reverse)
     {
         var plan = Plan("target"u8.ToArray(), false, []);
