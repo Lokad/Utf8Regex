@@ -41,11 +41,40 @@ detached fixtures (**107,858** checks), all six original consumer entries and
 six assets/24 restore records. No repacking or consumer-source edit. This is
 compatibility qualification, not downstream adoption or POSIX acceptance.
 
-The current-source Full refresh started at **2026-11-03 20:48:12 UTC**, with
-the existing83-step inventory/3600s cap after actual-RAM admission. Its build
-passed in25.886s; runtime tests are active. It is not yet a completed refresh
-or current-source catalog qualification; final snapshot guards and data import
-remain. The prior frozen44m12s Full evidence stays unchanged.
+The [current-source Full refresh](full-refresh.json) completed in
+**2587.6726373s (43m08s)** on the package's frozen source. All **83 exact expected
+steps passed**, Full/Complete/terminal0, below3600s. One Release build, both-runtime
+source correctness (107,898 checks), disabled dynamic code, complete .NET11
+catalogs, paired comparators, lifecycle/scaling, resources and verifiers are
+included. No benchmark retry. The prior frozen44m12s Full evidence stays unchanged.
+
+All seven generated files were imported byte-identically, then only the root
+README introductory duration/receipt link was updated. Existing matching-binary
+snapshot guards passed3/1/1 checks per runtime, without another build. All six
+root benchmark tables retain descending ratios; generated tables are not edited
+by hand. Publication and downstream adoption remain separate actions.
+
+[Fresh rankings](ratio-summary.json) preserve uncertainty: Core113 wins/2 tie
+candidates/57 gaps/6 unqualified; PythonRe34 ManagedFaster/1 equivalent/40
+CpythonFaster/12 inconclusive/3 unqualified; native PCRE2 75 ManagedFaster/2
+equivalent/12 NativeFaster/12 inconclusive/25 excluded. Python IP now qualifies
+at **0.298x [0.297,0.301],0.096us/0B**, with all nine paired samples>=49.737ms.
+Its older selective Unqualified result remains unchanged. Python date miss is
+**3.416x [3.380,3.447]**. Catalog movement is separate from the causal A/Bs.
+
+Finite controls remain measured, including their cost. On the captured9B
+`(a+)(b+)` IsMatch case, unlimited -> finite/live-token costs are Core
+**1.101 ->1.227us**, PythonRe **0.949 ->1.107us**, PCRE2 **1.076 ->1.163us**;
+each lane returns the same Boolean result and adds112B. These are current
+operating-cost examples, not total-heap bounds or universal overhead estimates.
+The full raw policy-lane samples retain other sizes, operations and profile-
+specific nullable-result differences; compare controls within each profile.
+
+Chinese literal/alternation **7.05x/6.53x/5.58x** remain the leading Core gaps.
+Python early literal remains **5.44x**; native PCRE2 date hit/miss **9.40x/8.96x**
+remain on its separate queue. Core's next bounded investigation is combined
+checked validity/search in the existing exact-literal counter, preserving the
+measured two-byte and family routes. No measured gain is claimed for that idea.
 
 Completed Linux scratch was compared against its hash-verified off-VM archive
 before retirement:2,171,654,319 logical fixture bytes and807,290,433 bytes of the
@@ -58,6 +87,8 @@ Immutable Windows evidence under `artifacts/experiments/delivery-dev19-20261103/
 - `windows-evidence.zip`: `8923C4704D1E76C341EDB03422EDF88CFA2F6B523E3FC012CF7B37AB89FAD3CD`.
 - `windows-restore-inputs.zip`: `9C9D7E7394FB6DEFFA8EF0C82F659152DFEDA0E8246CA2790931016E9EED6120`.
 - `linux-evidence.tar.gz`: `7BAFC5893A7A72DF170B60D51904AB91B61BEFAF203564E386F5AF4D1BB2C453`.
+- `full-evidence.tar.gz`: `87758EB7B54CD0045F06D4569EC62C920F0D15BB32E5BA7EB79A03D69B934894`.
+- `post-refresh-guards.zip`: `517EE591942966D830C66BCE5E422FD7641BFB9B5A051CA19A341CEE74565A4A`.
 
 Transfer input hash `8233DD60F9B146D5966D3453C1E7A8D9CE90CE75E2C05600E484BA1FAF25DC38`;
 repinned original input `85605696C3466782DBE459D4CEADA2B029550D39A9A14FA8FA2E9215B11A3B00`;
