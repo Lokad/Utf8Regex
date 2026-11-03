@@ -53,7 +53,7 @@ the full trial. This is instrument evidence, not a new producer speedup or
 qualification framework. All old failed/partial evidence remains unchanged.
 
 Release checks pass on .NET 10/11: focused PythonRe 298 and full 4,673 per target,
-Core 2,184 and PCRE2 6,486 per target. They include funding/refunds, program close,
+focused Core 2,184, full Core 41,270 and PCRE2 6,486 per target. They include funding/refunds, program close,
 cursor aliases and retained snapshots, tiny numeric budgets, invalid tails,
 Unicode/partial matches, offsets and original cancellation/deadlines.
 
@@ -62,12 +62,24 @@ step per rejected line. Test-only `3012cc48` places its invocation before the
 actual checkpoint while retaining original-token/deadline/64-step/loan assertions;
 both-target checks pass. Production code and measured binaries are unchanged.
 
+The existing selective Python commands refreshed only `common/ip-match` on clean
+`837249b9`. The raw catalog result is **0.073us, 0 B**, with an observed paired
+ratio **0.226x** against official CPython 3.13.2. Its public Status remains
+**Unqualified**: the nine paired managed batches were about 2.4–2.6ms, below
+the required 20ms, although the independent raw batches passed that duration.
+This is not a qualified CPython win. The calibrator already warms and rechecks
+its batches; the cause of the later short batches is not established. Preserve
+the verdict and samples, without another timing campaign. All other rows,
+lifecycle/scaling evidence and catalog identities remain unchanged. This does
+not invalidate the separate, duration-qualified public before/after comparison.
+
 Immutable evidence under `artifacts/experiments/python-ip-policy-review-20261103/`:
 
 - `evidence.tar.gz`: `466B2A643FAA06F317D9B85420471CBE5814E6CE129188BDDE45F105A43A0C9D`.
 - `confirmation.tar.gz`: `7B37F5B34101DD5E5D76D791E92D99CF6C872521656577C79A23D47C6A729A7D`.
 - `correctness.zip`: `FCC9D9089ACDE531B35BD1569D96C1C0D19315712044B832CDFCD6641370004C`.
+- `selective.tar.gz`: `C55018EC730354E553D89B9559B7F1BAC8344DCEAB70BF70D3AF5D15D19520D9`.
+- `core-and-checkpoint-validation.zip`: `A296E766C9FDC86AFE7BAB34EBDD308E574E2F5CA1B13536EF877441C3108F2A`.
 
-Official Python catalog/CPython qualification is separate and follows through
-existing commands. Dev.18 packages and frozen Full evidence remain immutable;
+Dev.18 packages and frozen Full evidence remain immutable;
 combined package/platform/cumulative checks stay at the coherent next boundary.
