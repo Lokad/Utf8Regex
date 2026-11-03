@@ -124,7 +124,10 @@ public sealed class Utf8AnchoredCountPrefixTests
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0),
             expire ? TimeSpan.FromMilliseconds(200) : Timeout.InfiniteTimeSpan, token.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
-        Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
+        // Reach the next checkpoint inside discovery even when bounded search
+        // rejects all these lines in one block rather than visiting each line.
+        for (var step = 0; step < 62; step++)
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
         var triggered = false;
         invocation.CheckpointHook = _ => { triggered = true; if (expire) clock.Advance(250); else token.Cancel(); };
         void Run()
