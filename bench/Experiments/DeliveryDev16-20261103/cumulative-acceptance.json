@@ -1,0 +1,135 @@
+{
+  "Source": "aeeeed9512cb3ef81f36ad3a0ca0bf8ab8550ec3",
+  "Baseline": "a40bda03",
+  "Accepted": false,
+  "Cases": 215,
+  "TimedSeconds": 982.3201434999999,
+  "ConfirmationRuns": 0,
+  "ConfirmationSeconds": 0,
+  "Scope": "One215entry fixed-original gate: all existing172 and mail17 definitions/settings retained, plus prior24 entry controls and two H5 positive-negative pairs. Entry has only original/candidate producer timing; H5 records two public calls per iteration. Existing source/shape/output/allocations and >=20ms requirements. Initial results preserved; any sole selected same-binary noise confirmation must pool actual samples. Package/platform/consumer/Full acceptance separate.",
+  "Parts": [
+    {
+      "Part": "cost",
+      "Cases": 26,
+      "Seconds": 109.0902634,
+      "MinimumSampleMilliseconds": 60.0615,
+      "Failures": [],
+      "MaximumChangePercent": 3.7977469990766455
+    },
+    {
+      "Part": "pcre2-cost",
+      "Cases": 17,
+      "Seconds": 63.7160447,
+      "MinimumSampleMilliseconds": 36.9391,
+      "Failures": [],
+      "MaximumChangePercent": -0.3015100953272398
+    },
+    {
+      "Part": "union",
+      "Cases": 14,
+      "Seconds": 85.8711611,
+      "MinimumSampleMilliseconds": 26.1846,
+      "Failures": [],
+      "MaximumChangePercent": 5.826761540065362
+    },
+    {
+      "Part": "repeat",
+      "Cases": 16,
+      "Seconds": 91.6125633,
+      "MinimumSampleMilliseconds": 43.6505,
+      "Failures": [],
+      "MaximumChangePercent": 5.166763167702326
+    },
+    {
+      "Part": "findall",
+      "Cases": 6,
+      "Seconds": 35.8826487,
+      "MinimumSampleMilliseconds": 54.3974,
+      "Failures": [],
+      "MaximumChangePercent": 0.912725302654005
+    },
+    {
+      "Part": "capital",
+      "Cases": 16,
+      "Seconds": 77.0310138,
+      "MinimumSampleMilliseconds": 48.4313,
+      "Failures": [],
+      "MaximumChangePercent": 1.1595345636030263
+    },
+    {
+      "Part": "word",
+      "Cases": 18,
+      "Seconds": 67.1726828,
+      "MinimumSampleMilliseconds": 29.4097,
+      "Failures": [],
+      "MaximumChangePercent": 0.7674762491067355
+    },
+    {
+      "Part": "atomic",
+      "Cases": 17,
+      "Seconds": 97.0653069,
+      "MinimumSampleMilliseconds": 40.1542,
+      "Failures": [],
+      "MaximumChangePercent": 6.022252265889216
+    },
+    {
+      "Part": "fullmatch",
+      "Cases": 17,
+      "Seconds": 63.6457854,
+      "MinimumSampleMilliseconds": 46.6149,
+      "Failures": [],
+      "MaximumChangePercent": 4.75949536719924
+    },
+    {
+      "Part": "supplement",
+      "Cases": 19,
+      "Seconds": 70.935358,
+      "MinimumSampleMilliseconds": 38.6061,
+      "Failures": [],
+      "MaximumChangePercent": 2.591671804933915
+    },
+    {
+      "Part": "boundary",
+      "Cases": 6,
+      "Seconds": 25.486919,
+      "MinimumSampleMilliseconds": 33.001,
+      "Failures": [],
+      "MaximumChangePercent": -74.72487326336055
+    },
+    {
+      "Part": "mail",
+      "Cases": 17,
+      "Seconds": 103.1230485,
+      "MinimumSampleMilliseconds": 55.6807,
+      "Failures": [],
+      "MaximumChangePercent": 8.373427198321481
+    },
+    {
+      "Part": "entry",
+      "Cases": 26,
+      "Seconds": 91.6873479,
+      "MinimumSampleMilliseconds": 41.6205,
+      "Failures": [
+        {
+          "Name": "search-hit",
+          "BeforeUs": 0.07584437136165854,
+          "AfterUs": 0.08694758280991575,
+          "ChangePercent": 14.639466645866616,
+          "BeforeBytes": 0.0,
+          "AfterBytes": 0.0,
+          "BeforeSpread": 1.0193377658464662,
+          "AfterSpread": 1.0043026362997882,
+          "PairChangesPercent": [
+            13.200477929820309,
+            14.895170136037583,
+            14.638208480131398,
+            14.771196785486973,
+            14.639466645866616
+          ],
+          "SamplesPerVersion": 5
+        }
+      ],
+      "MaximumChangePercent": 14.639466645866616
+    }
+  ]
+}
