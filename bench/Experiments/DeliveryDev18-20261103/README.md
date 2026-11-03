@@ -50,6 +50,7 @@ project/target test hosts through existing MSBuild settings, preserving suite
 parallelism, coverage and build reuse. Focused both-target checks pass. It does
 not modify the live frozen run or package bytes. Future preparation must consider
 actual available RAM and release completed fixture scratch.
+CI `41684015379` passes on Ubuntu and Windows for this scheduling change.
 
 Immutable evidence under `artifacts/experiments/delivery-dev18-20261103/`:
 
