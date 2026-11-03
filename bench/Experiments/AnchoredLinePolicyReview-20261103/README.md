@@ -70,3 +70,9 @@ hash-verified and imported with other rows unchanged. Raw `selective.tar.gz`:
 `D53FCC60D707BC90A8E2DB08949EF53AE61DF583842822866F392DD58A827497`.
 Dev.18 packages and their frozen 44m12s Full receipt stay immutable;
 package/platform matrices remain batched at the next coherent delivery boundary.
+
+Source CI `41706173935` later failed on an older test whose 64-step interruption
+hook was never reached after skipping the whole input in one block. Test-only
+`3012cc48` precharges the invocation to reach that actual checkpoint, retaining
+original cancellation/deadline, exact step and borrowed-loan assertions. Both-
+runtime focused checks pass; production code and measured evidence are unchanged.

@@ -1,0 +1,172 @@
+{
+  "Seconds": 86.5805461,
+  "Cases": 15,
+  "MinimumMilliseconds": 22.0107,
+  "Rows": [
+    {
+      "Case": "catalog-hit",
+      "BeforeUs": 1.1744112868747327,
+      "AfterUs": 0.07708884269882592,
+      "ChangePercent": -93.4359586321782,
+      "BeforeBytes": 3568,
+      "AfterBytes": 0,
+      "MinimumMilliseconds": 59.5391,
+      "BeforeSpread": 1.103203128961915,
+      "AfterSpread": 1.013900109339913
+    },
+    {
+      "Case": "finite-token",
+      "BeforeUs": 1.3473241713823765,
+      "AfterUs": 0.1204764635138408,
+      "ChangePercent": -91.05809380750365,
+      "BeforeBytes": 3680,
+      "AfterBytes": 112,
+      "MinimumMilliseconds": 56.9528,
+      "BeforeSpread": 1.0682894839715413,
+      "AfterSpread": 1.0406037982329226
+    },
+    {
+      "Case": "deadline-token",
+      "BeforeUs": 1.5195743301141758,
+      "AfterUs": 0.20274900492717454,
+      "ChangePercent": -86.65751316607589,
+      "BeforeBytes": 3728,
+      "AfterBytes": 160,
+      "MinimumMilliseconds": 58.9425,
+      "BeforeSpread": 1.0456621797929573,
+      "AfterSpread": 1.0200347796581415
+    },
+    {
+      "Case": "partial-positive",
+      "BeforeUs": 1.2260803763538892,
+      "AfterUs": 0.07703772759855712,
+      "ChangePercent": -93.71674736140452,
+      "BeforeBytes": 3568,
+      "AfterBytes": 0,
+      "MinimumMilliseconds": 59.5932,
+      "BeforeSpread": 1.0654920636418985,
+      "AfterSpread": 1.0083145419881856
+    },
+    {
+      "Case": "dense-genuine-miss",
+      "BeforeUs": 377.66037735849056,
+      "AfterUs": 6.764598581240851,
+      "ChangePercent": -98.20881432451156,
+      "BeforeBytes": 3568,
+      "AfterBytes": 0,
+      "MinimumMilliseconds": 59.2593,
+      "BeforeSpread": 1.009878456411521,
+      "AfterSpread": 1.0116289991982312
+    },
+    {
+      "Case": "unicode-prefix",
+      "BeforeUs": 1.5327481631244144,
+      "AfterUs": 0.97022420072845,
+      "ChangePercent": -36.700351429506426,
+      "BeforeBytes": 3568,
+      "AfterBytes": 0,
+      "MinimumMilliseconds": 58.3478,
+      "BeforeSpread": 1.0877273864652994,
+      "AfterSpread": 1.0111314896768724
+    },
+    {
+      "Case": "offset",
+      "BeforeUs": 1.183712653854834,
+      "AfterUs": 0.09878189479730433,
+      "ChangePercent": -91.65490928261897,
+      "BeforeBytes": 3568,
+      "AfterBytes": 0,
+      "MinimumMilliseconds": 58.4831,
+      "BeforeSpread": 1.0992291119692341,
+      "AfterSpread": 1.006061154484869
+    },
+    {
+      "Case": "eof-miss",
+      "BeforeUs": 0.22181117376161996,
+      "AfterUs": 0.07157681699322993,
+      "ChangePercent": -67.73074332578331,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "MinimumMilliseconds": 44.8744,
+      "BeforeSpread": 1.005836078800511,
+      "AfterSpread": 1.0116349793321617
+    },
+    {
+      "Case": "ascii-option",
+      "BeforeUs": 1.1526140611398432,
+      "AfterUs": 0.07725841415303691,
+      "ChangePercent": -93.29711333933976,
+      "BeforeBytes": 3568,
+      "AfterBytes": 0,
+      "MinimumMilliseconds": 59.3403,
+      "BeforeSpread": 1.111716956113968,
+      "AfterSpread": 1.0055207900849212
+    },
+    {
+      "Case": "unicode-digit-miss",
+      "BeforeUs": 0.2728913603318216,
+      "AfterUs": 0.17788419403442005,
+      "ChangePercent": -34.8150143639131,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "MinimumMilliseconds": 58.72,
+      "BeforeSpread": 1.0027793144134944,
+      "AfterSpread": 1.0104175870482768
+    },
+    {
+      "Case": "literal-control",
+      "BeforeUs": 0.3008351065161339,
+      "AfterUs": 0.24437472627774573,
+      "ChangePercent": -18.767882808704094,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "MinimumMilliseconds": 59.3788,
+      "BeforeSpread": 1.0302341642711776,
+      "AfterSpread": 1.0147123215693146
+    },
+    {
+      "Case": "captured-control",
+      "BeforeUs": 1.227281636898214,
+      "AfterUs": 1.3015321966970363,
+      "ChangePercent": 6.050001692071305,
+      "BeforeBytes": 5760,
+      "AfterBytes": 5760,
+      "MinimumMilliseconds": 59.1441,
+      "BeforeSpread": 1.157482297041171,
+      "AfterSpread": 1.1512892050757106
+    },
+    {
+      "Case": "count-control",
+      "BeforeUs": 1.5601503759398496,
+      "AfterUs": 1.411886727293657,
+      "ChangePercent": -9.503163985514995,
+      "BeforeBytes": 3568,
+      "AfterBytes": 3568,
+      "MinimumMilliseconds": 59.0581,
+      "BeforeSpread": 1.0859061412898046,
+      "AfterSpread": 1.0929847048923007
+    },
+    {
+      "Case": "core-control",
+      "BeforeUs": 0.1420665730956818,
+      "AfterUs": 0.10612187742064709,
+      "ChangePercent": -25.30130409412069,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "MinimumMilliseconds": 59.5733,
+      "BeforeSpread": 1.0167693851225454,
+      "AfterSpread": 1.0095445442841005
+    },
+    {
+      "Case": "construction",
+      "BeforeUs": 666.6750000000001,
+      "AfterUs": 830.5777777777777,
+      "ChangePercent": 24.585109352799716,
+      "BeforeBytes": 380588.25,
+      "AfterBytes": 390590.51851851854,
+      "MinimumMilliseconds": 22.0107,
+      "BeforeSpread": 2.0007723516289806,
+      "AfterSpread": 1.8893159460077786
+    }
+  ]
+}

@@ -31,6 +31,9 @@
 - Speed up multiline searches beginning with a mandatory ASCII literal using
   bounded checked line-start discovery. Finite/live-token and deadline operations
   benefit too; sparse and false-prefix misses can cost more.
+- Reuse the existing bounded ASCII dotted-decimal boolean executor in PythonRe.
+  Eligible repeated IsMatch calls use less time and scratch; retaining the
+  admitted Core root increases resident preparation and construction costs.
 - Skip impossible ASCII starts in PythonRe atomic and possessive searches while
   retaining complete atomic verification, captures and resource controls.
 - Reuse admitted literals for capture-free repeated-literal PythonRe value
