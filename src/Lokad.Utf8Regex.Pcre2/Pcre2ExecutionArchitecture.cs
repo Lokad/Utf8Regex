@@ -1453,7 +1453,9 @@ internal static class Pcre2CandidateSearchAnalyzer
         Pcre2TokenBacktrackingNode { Token: var token } =>
             token.Options == Pcre2CharacterOptions.None &&
             (token.Kind == Pcre2CharacterTokenKind.Literal && token.Literal.IsAscii ||
-             token.Kind == Pcre2CharacterTokenKind.CharacterClass && IsAsciiOnlyClass(token.CharacterClass)),
+             token.Kind == Pcre2CharacterTokenKind.CharacterClass && IsAsciiOnlyClass(token.CharacterClass) ||
+             // Boundaries consume no bytes; the original VM still verifies them.
+             token.Kind is Pcre2CharacterTokenKind.WordBoundary or Pcre2CharacterTokenKind.NonWordBoundary),
         Pcre2SequenceBacktrackingNode sequence => sequence.Children.All(IsAsciiOnlyRegularNode),
         Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.All(IsAsciiOnlyRegularNode),
         Pcre2RepeatBacktrackingNode repeat => IsAsciiOnlyRegularNode(repeat.Body),
