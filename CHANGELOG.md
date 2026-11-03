@@ -38,8 +38,8 @@
   avoiding redundant Unicode scans without changing strict input validation.
 - Use the runtime's checked ASCII predicate for boolean input checks, reducing
   literal Count validation cost without changing resource controls.
-- Reduce shared invocation metadata while preserving numeric working limits,
-  caller-funded admission and deterministic refunds.
+- Reduce shared invocation metadata and finite-limit Core Match overhead while
+  preserving numeric working limits, caller-funded admission and deterministic refunds.
 - Reduce required-literal screening overhead while retaining strict validation,
   matching and resource controls.
 - Speed up capture-free PythonRe word-boundary Split and Count by avoiding

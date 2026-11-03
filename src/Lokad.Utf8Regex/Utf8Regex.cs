@@ -1952,7 +1952,7 @@ public sealed partial class Utf8Regex
             // Value Match needs only the selected range. Borrow Count's proven
             // literal discovery and the existing metered coordinate projection;
             // detailed captures still use their own scalar VM path.
-            var plan = _preparedRegex.SearchPlan;
+            ref readonly var plan = ref _preparedRegex.SearchPlan;
             var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(plan, input, startByte,
                 input.Length, false, ref invocation, out var selected, out var found);
             if (breach != Utf8ExecutionLimitKind.None)
