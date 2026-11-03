@@ -25,6 +25,9 @@
 - Speed up repeated-segment Count with Unicode separators and declaration searches
   by skipping impossible word-interior starts, preserving strict validation and
   existing cancellation and resource authority.
+- Speed up mixed-text keyword-family Count with the existing checked SIMD prefix
+  filter. Miss scans and dense matches can cost more; the additional compiled
+  search storage is admitted through the existing resource controls.
 - Skip impossible ASCII starts in PythonRe atomic and possessive searches while
   retaining complete atomic verification, captures and resource controls.
 - Reuse admitted literals for capture-free repeated-literal PythonRe value

@@ -95,6 +95,7 @@ miss **3.96x** against CPython. Native PCRE2 date hit/miss remain **9.39x/9.07x*
 on its separately scoped queue. These are distinct comparators, not one ranking.
 Next Core work reassesses the archived keyword-filter trade-off on current
 source; optional PCRE2 scalar projection and later POSIX remain unfinished.
+Data commit `3fd96731` passes CI `41697657701` on Windows and Linux.
 
 Immutable evidence under `artifacts/experiments/delivery-dev18-20261103/`:
 
