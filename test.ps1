@@ -105,7 +105,9 @@ $testArguments = @(
     "--nologo",
     "-v", "minimal",
     "--no-build",
-    "--no-restore"
+    "--no-restore",
+    "-maxcpucount:1",
+    "-p:TestTfmsInParallel=false"
 )
 
 if ($Framework) { $testArguments += @("--framework", $Framework) }

@@ -30,6 +30,8 @@ Use -Framework net10.0 or net11.0 for focused runs; the test default covers both
 Build affected projects during experiments; reuse matching binaries with
 -SkipBuild. Zero discovered tests is failure. Reserve solution/platform/package
 matrices for coherent delivery boundaries; do not repeat unchanged qualification.
+The test script serializes project/target hosts to bound peak memory; each suite
+retains its normal internal parallelism.
 
 Reuse build/compiler servers. Recover test hosts only after an observed file-lock
 failure and only when their executable path is inside this checkout; command-line
