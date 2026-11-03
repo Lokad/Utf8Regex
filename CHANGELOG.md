@@ -22,6 +22,9 @@
 - Reduce live-token ASCII Boolean matching scratch through existing metered
   native plans. Reuse proved literal/category/count and bounded candidate ranges
   for matching, preserving strict full-subject validation and resource controls.
+- Reject impossible bounded scalar-gap candidates using short ASCII tail prefixes.
+  Corpus Count and finite/deadline operations improve; single-byte tails can cost
+  more. Strict validation, captures and bounded interruption remain.
 - Speed up repeated-segment Count with Unicode separators and declaration searches
   by skipping impossible word-interior starts, preserving strict validation and
   existing cancellation and resource authority.
