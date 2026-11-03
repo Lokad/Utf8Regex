@@ -55,7 +55,8 @@
   literal Count validation cost. Accept a complete ASCII validity proof before
   Unicode selection for faster matching; late Unicode after a long ASCII prefix
   can cost more. Resource controls remain enforced.
-- Reduce shared invocation metadata and finite-limit Core Match overhead while
+- Reduce shared invocation metadata, bounded output-copy overhead and finite-limit
+  Core Match overhead while
   preserving numeric working limits, caller-funded admission and deterministic refunds.
 - Reduce required-literal screening and empty confirmation overhead while
   retaining strict validation, matching and resource controls.

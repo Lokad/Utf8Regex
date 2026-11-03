@@ -159,8 +159,8 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/match-word` | `Match` | 0.201 us | 0.164 us | 1.169 us | 1.22x |
 | `industry/leipzig-twain-count` | `Count` | 1,262.915 us | 1,350.145 us | 8,669.850 us | 0.94x |
 | `industry/mariomka-uri-count` | `Count` | 1,749.897 us | 1,904.770 us | 10,476.300 us | 0.92x |
-| `common/replace-words` | `Replace` | 65.801 us | 77.550 us | 79.502 us | 0.85x |
 | `common/uri-miss` | `IsMatch` | 0.159 us | 0.206 us | 0.226 us | 0.77x |
+| `common/replace-words` | `Replace` | 101.078 us | 136.556 us | 82.151 us | 0.74x |
 | `industry/rust-sherlock-holmes-window-count` | `Count` | 194.463 us | 264.208 us | 501.566 us | 0.74x |
 | `common/uri-match` | `IsMatch` | 0.167 us | 0.235 us | 0.274 us | 0.71x |
 | `common/ip-miss` | `IsMatch` | 0.121 us | 0.193 us | 0.216 us | 0.63x |
@@ -237,7 +237,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | Case | Operation | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
 | `industry/boostdocs-ftp-line-match` | `IsMatch` | 0.176 us | 0.049 us | 0.088 us | 3.57x |
-| `common/replace-words` | `Replace` | 65.830 us | 19.270 us | 21.011 us | 3.42x |
+| `common/replace-words` | `Replace` | 101.258 us | 29.792 us | 25.232 us | 3.40x |
 | `industry/mariomka-email-count` | `Count` | 1,536.855 us | 457.439 us | 7,957.700 us | 3.36x |
 | `industry/rust-sherlock-holmes-window-count` | `Count` | 194.835 us | 58.733 us | 260.282 us | 3.32x |
 | `common/match-word` | `Match` | 0.200 us | 0.081 us | 1.022 us | 2.48x |
