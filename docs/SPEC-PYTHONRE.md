@@ -35,6 +35,15 @@ alone does not prove a match; tight working/depth/result limits may admit a
 scratch-free miss that formerly required VM capacity. Charges remain dependent
 on the selected route and version.
 
+Capture-free programs proved unable to match empty can Count through the shared
+scalar counter, using Python's compiled predicates and instructions. The whole
+subject is validated without deriving unused UTF-16 coordinates. A leading class
+run followed by an exact ASCII delimiter can bound candidate windows; scalar
+membership and complete VM verification remain authoritative. This can reduce
+work and scratch on misses. Captured and empty-capable programs retain their
+profile cursor, including empty-then-nonempty retries. Original cancellation,
+deadlines, major-buffer admission and caller-funded refunds still apply.
+
 Necessary ASCII start hints can enter a mandatory atomic body and skip impossible
 starts. The profile VM still verifies the complete body, atomic commit and
 captures. Full-subject validation and the original interruption authority remain;

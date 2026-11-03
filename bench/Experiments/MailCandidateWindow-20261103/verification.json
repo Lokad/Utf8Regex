@@ -1,0 +1,29 @@
+{
+  "ParentSource": "6f72dbf6e564accecdb9fdfb0d5737e6c0713352",
+  "Decision": "Promote corrected capture-free nonempty shared Count and direct class-delimiter windows",
+  "InitialComparisonSeconds": 57.500262,
+  "InitialCapturedControlPercent": 27.571112530717134,
+  "InitialCandidateRejected": true,
+  "Correction": "One explicitly replanned dispatch scope correction before timing; captured Count remains on its existing cursor. Not a noise confirmation.",
+  "CorrectedComparisonSeconds": 57.4811341,
+  "CorrectedMinimumSampleMilliseconds": 56.1663,
+  "CorrectedMaximumAdversePercent": 7.468931153345282,
+  "AllocationIncreases": 0,
+  "PublicCases": 17,
+  "CorrectedCoreDllAndPdbMatchInitialCandidate": true,
+  "PrototypePythonFullPerRuntime": 4639,
+  "FinalAdditionalOwnershipCasesPerRuntime": 18,
+  "CoreFocusedPerRuntime": 361,
+  "PcreFocusedPerRuntime": 724,
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "ThirdRun": false,
+  "NoiseConfirmation": false,
+  "ApiChanges": false,
+  "PackageChanges": false,
+  "FixedOriginalCumulativeAcceptance": "Pending next coherent delivery; retain all172 and these17 public cases",
+  "RawArchiveSha256": "3E9A8162FD0580531458158C58C6993DE2DE8547FD93932A96683D810ACC7B60",
+  "CorrectnessArchiveSha256": "16A85ECFAD581CBE97E5F848199CC17610F9C111F2FEAC6D879F5B468AA336A7"
+}

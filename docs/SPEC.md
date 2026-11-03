@@ -245,6 +245,11 @@ not byte counts, CPU instructions, elapsed time or portable per-pattern minima.
 The invocation checks its numeric working ceiling before caller-funded admission;
 live reservations, overlap and the first denial remain shared across aliases.
 Native shortcuts still meter bounded search, comparison and publication.
+Scalar Count can search an exact ASCII delimiter after a proved leading
+class run, with or without intervening whitespace. The actual scalar predicate
+rewinds a conservative candidate window; the VM verifies every retained start.
+Skipped starts need no VM work or scratch. Whole-subject strict validation,
+bounded search/rewind checkpoints and admission before live VM storage remain.
 Scalar-class repetitions with a proved endpoint can omit unused repeat-journal
 storage. Live counter vectors and captures still require admission; examined
 scalars/classifications and terminal interruption remain metered.

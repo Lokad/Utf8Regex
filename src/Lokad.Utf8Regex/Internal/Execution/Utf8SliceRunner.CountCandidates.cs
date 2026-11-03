@@ -120,6 +120,15 @@ internal static partial class Utf8SliceRunner
             while (index < code.Length && index < 64 && code[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
                 index++;
         }
+        // The scalar-class run may meet its delimiter directly. Its actual
+        // instruction supplies the necessary byte; no prepared hint is borrowed.
+        if (leadingClass >= 0 && index < 64 && index < code.Length &&
+            code[index] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } direct &&
+            (uint)direct.A < 128)
+        {
+            literalIndex = index;
+            return direct.A;
+        }
         if (index >= 64 || !IsSingleClassRepeat(code, index)) return -1;
         var repeat = code[index];
         if (repeat.RepeatMaximum != long.MaxValue ||

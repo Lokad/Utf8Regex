@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
@@ -175,6 +176,10 @@ public sealed partial class Utf8PythonRegex
     private int CountOwnedSlicePythonStyle(ReadOnlySpan<byte> input, int startOffsetInBytes,
         Utf8SliceProgram program, CancellationToken cancellationToken)
     {
+        // Captured roots retain their existing profile candidate hints. A
+        // capture-free nonempty root shares Core's byte-only progression.
+        if (program.GroupCount == 0 && !program.CanMatchEmpty)
+            return CountNonEmptyScalar(input, startOffsetInBytes, program, cancellationToken);
         var cursor = new PythonReScalarMatchCursor(input, program,
             startOffsetInBytes, MatchTimeout, _utf8Regex, this,
             CreateInvocation(cancellationToken));
@@ -185,6 +190,37 @@ public sealed partial class Utf8PythonRegex
             return count;
         }
         finally { cursor.Dispose(); }
+    }
+
+    private int CountNonEmptyScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
+        Utf8SliceProgram program, CancellationToken cancellationToken)
+    {
+        var invocation = CreateInvocation(cancellationToken);
+        try
+        {
+            Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
+            var impossible = program.Instructions[0].Kind == Utf8SliceInstructionKind.Fail ||
+                !program.IgnoreCase && _utf8Regex is { } required &&
+                required.RejectMissingExactRequiredLiteral(input, ref invocation);
+            var count = 0;
+            if (!impossible)
+            {
+                var result = Utf8SliceRunner.CountFromBytes(program, input, startOffsetInBytes,
+                    [], [], ref invocation, _utf8Regex?.Inspection.SearchPlan ?? default);
+                if (result.Breach != Utf8ExecutionLimitKind.None)
+                    throw invocation.Budget.CreateResourceFailure();
+                count = result.Count;
+            }
+            if (invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None)
+                throw invocation.Budget.CreateResourceFailure();
+            invocation.Budget.ThrowIfCancellationRequested();
+            return count;
+        }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+            invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { throw invocation.Budget.CreateResourceFailure(); }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        { throw CreateMatchTimeoutException(input, Pattern); }
     }
 
     /// <summary>Counts non-overlapping matches at or after a zero-based UTF-8 byte offset, observing cancellation during validation, matching and required result processing.</summary>

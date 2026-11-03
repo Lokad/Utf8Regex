@@ -589,7 +589,7 @@ internal static partial class Utf8SliceRunner
         var whitespaceLiteral = !seekLiteral && !program.RightToLeft && !program.IgnoreCase &&
             !program.HasContiguousAnchor && input.Length - fromByte >= 256
             ? GetLeadingWhitespaceLiteral(program, out leadingClass, out whitespaceLiteralIndex, out whitespaceGapMaximum) : -1;
-        if (whitespaceLiteral >= 0 && leadingClass >= 0 &&
+        if (whitespaceLiteral >= 0 && leadingClass >= 0 && whitespaceLiteralIndex != leadingClass + 3 &&
             (candidatePlan.LiteralSearch is not { IgnoreCase: false } classSearch ||
                 !LiteralStartsAtInstruction(program, whitespaceLiteralIndex, classSearch.Needle)))
             whitespaceLiteral = -1;
@@ -620,8 +620,16 @@ internal static partial class Utf8SliceRunner
                     if (leadingClass >= 0)
                     {
                         var search = candidatePlan.LiteralSearch.GetValueOrDefault();
-                        var seekBreach = Utf8SearchExecutor.TryFindLiteralCandidate(search, input, position,
-                            input.Length - search.Length, false, ref invocation, out whitespaceWindowEnd);
+                        Utf8ExecutionLimitKind seekBreach;
+                        if (whitespaceLiteralIndex == leadingClass + 3)
+                        {
+                            whitespaceWindowEnd = position;
+                            seekBreach = TrySeekAsciiCandidate(input, ref whitespaceWindowEnd,
+                                (byte)whitespaceLiteral, (byte)whitespaceLiteral, ref invocation);
+                        }
+                        else
+                            seekBreach = Utf8SearchExecutor.TryFindLiteralCandidate(search, input, position,
+                                input.Length - search.Length, false, ref invocation, out whitespaceWindowEnd);
                         if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                         var floor = position;
                         position = whitespaceWindowEnd;

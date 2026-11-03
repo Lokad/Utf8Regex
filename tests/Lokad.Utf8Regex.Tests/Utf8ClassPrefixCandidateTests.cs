@@ -21,6 +21,12 @@ public sealed class Utf8ClassPrefixCandidateTests
     [InlineData(@"[a ]+\s+Holmes")]
     [InlineData(@"[^x]+\s+Holmes")]
     [InlineData(@"\w+\s+Holmes|x")]
+    [InlineData(@"\w+@")]
+    [InlineData(@"[aé😀]+@")]
+    [InlineData(@"[^!]{1,4}@")]
+    [InlineData(@"[\w@]+@")]
+    [InlineData(@"[a ]+@")]
+    [InlineData(@"(?<w>\w+)@\k<w>")]
     public void CountsAgreeWithIndependentScalarEnumerationAtFloorsAndTails(string pattern)
     {
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
@@ -28,7 +34,8 @@ public sealed class Utf8ClassPrefixCandidateTests
             var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, Funded);
             foreach (var tail in new[] { "", "Holmes", "ab Holmes", "ab Holmesb", "é\u0301\u2003Holmes",
                 "𐐀\u00a0Holmes", "😀 Holmes", "aé😀\tHolmes", "aHolmes Holmes",
-                "ab\nHolmes Holmes", "ab Holmesx cd Holmes", "ab H\né Holmes" })
+                "ab\nHolmes Holmes", "ab Holmesx cd Holmes", "ab H\né Holmes",
+                "é@ word@", "ab@b", "😀é@ a@@a", "aa @ aaa@", "abcde@" })
             {
                 var text = new string('!', 260) + tail + new string('!', 260);
                 var input = Encoding.UTF8.GetBytes(text);
@@ -71,12 +78,15 @@ public sealed class Utf8ClassPrefixCandidateTests
                     Funded with { MaxWorkSteps = 1 }).Count(invalid)).ResourceKind);
     }
 
-    [Fact]
-    public void EveryWorkCutoffRetainsTheOriginalScratchLoan()
+    [Theory]
+    [InlineData(@"(?<w>\w+)\s+Holmes\k<w>", "ab Holmesb")]
+    [InlineData(@"\w+@", "é@")]
+    [InlineData(@"(?<w>\w+)@\k<w>", "ab@b")]
+    public void EveryWorkCutoffRetainsTheOriginalScratchLoan(string pattern, string tail)
     {
-        var regex = new Utf8Regex(@"(?<w>\w+)\s+Holmes\k<w>");
+        var regex = new Utf8Regex(pattern);
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
-        var input = Encoding.UTF8.GetBytes(new string('!', 260) + "ab Holmesb");
+        var input = Encoding.UTF8.GetBytes(new string('!', 260) + tail);
         var plan = regex.Inspection.PreparedRegex.SearchPlan;
         var complete = new Utf8SliceInvocation(new(100000, 0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(complete.Ledger.TryReserve(13));
