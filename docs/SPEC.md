@@ -101,6 +101,14 @@ roots retain their existing discovery, as do initial beginning anchors. Skipping
 impossible starts can reduce work and avoid local scratch; enclosing storage loans,
 strict whole-subject validation and final interruption/admission still apply.
 
+Boolean/count/value matching share the same conservative unobserved-capture proof.
+Eligible owned backtracking programs omit capture slots and their trails when
+captures cannot affect matching. Backreferences, conditions, lookarounds, balancing,
+shared/explicit declarations, NonBacktracking and alternate/unknown programs retain
+their storage. Detailed and cursor results retain all captures. Eliminated
+bookkeeping can reduce work and working-byte requirements; other VM buffers,
+original interruption and result admission remain in force.
+
 Scalar sizing admits one work quantum before at most 64 bytes, and exact offset
 preparation one before at most 64 scalars. Viability preparation admits one before
 at most 64 instruction cells per row. Scanning prepared candidate starts admits

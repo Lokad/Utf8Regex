@@ -967,7 +967,7 @@ public sealed partial class Utf8Regex
         var slots = new Utf8SliceSlots([], []);
         try
         {
-            slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
+            slots = Utf8SliceRunner.RentSlots(GetValueOperationCaptureSlotCount(program), ref invocation);
             var outcome = Utf8SliceRunner.TryFindFirst(program, input, startByte, slots.Starts, slots.Ends, false, ref invocation);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException("Owned slice execution breached the invocation budget.");
@@ -1625,17 +1625,7 @@ public sealed partial class Utf8Regex
         var slots = new Utf8SliceSlots([], []);
         try
         {
-            // Count publishes no captures. Reuse the existing whole-tree facts;
-            // unknown/alternate programs and any capture-sensitive shape retain
-            // their slots. Other operations continue to request all values.
-            var captureCount = program.GroupCount;
-            if (ReferenceEquals(program, _ownedSliceProgram) &&
-                _preparedRegex.Features is { CaptureCount: > 0, HasBackreferences: false, HasConditionals: false, HasLookarounds: false } &&
-                !program.IsNonBacktracking && !program.HasBalancing &&
-                !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
-                !program.HasConditionalTest && !program.SawLookaround && !program.SawCapturingLookbehind)
-                captureCount = 0;
-            slots = Utf8SliceRunner.RentSlots(captureCount, ref invocation);
+            slots = Utf8SliceRunner.RentSlots(GetValueOperationCaptureSlotCount(program), ref invocation);
             var outcome = Utf8SliceRunner.CountFromBytes(program, input, startByte, slots.Starts, slots.Ends,
                 ref invocation, _preparedRegex.SearchPlan);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
@@ -1650,6 +1640,17 @@ public sealed partial class Utf8Regex
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
         }
     }
+
+    // Boolean/count/value results do not expose captures. Keep Count's original
+    // proof unchanged: dependent, alternate and unknown programs retain storage.
+    // Detailed results and cursors continue to request every capture slot.
+    private int GetValueOperationCaptureSlotCount(Utf8SliceProgram program)
+        => ReferenceEquals(program, _ownedSliceProgram) &&
+            _preparedRegex.Features is { CaptureCount: > 0, HasBackreferences: false, HasConditionals: false, HasLookarounds: false } &&
+            !program.IsNonBacktracking && !program.HasBalancing &&
+            !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
+            !program.HasConditionalTest && !program.SawLookaround && !program.SawCapturingLookbehind
+                ? 0 : program.GroupCount;
 
     /// <summary>Finds the first match and returns its UTF-16 and, when scalar-aligned, UTF-8 byte coordinates.</summary>
     public Utf8ValueMatch Match(ReadOnlySpan<byte> input)
@@ -2005,7 +2006,7 @@ public sealed partial class Utf8Regex
         var slots = new Utf8SliceSlots([], []);
         try
         {
-            slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
+            slots = Utf8SliceRunner.RentSlots(GetValueOperationCaptureSlotCount(program), ref invocation);
             var outcome = Utf8SliceRunner.TryFindFirst(program, input, startByte, slots.Starts, slots.Ends, false, ref invocation);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException("Owned slice execution breached the invocation budget.");
