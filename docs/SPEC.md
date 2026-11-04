@@ -148,6 +148,13 @@ repeated tail scans. Working admission observes enclosing loans with a zero-byte
 local request. Work/working/depth thresholds can consequently be lower than table
 execution; budget costs remain route/version dependent.
 
+`Count` can reuse the prepared literal-window counter on validated mixed UTF-8
+subjects for capture-free windows without separator classes and with dot gaps up
+to 2048 scalars. Gap endpoints count scalars while literal searches use byte
+coordinates. The original invocation observes cancellation/deadlines throughout;
+finite public numeric policies retain their owned counter. Working capacities
+and work charges can differ from general VM execution.
+
 ### Native pattern metadata
 
 `CaptureGroupCount` counts defined capture slots excluding group zero. Sparse

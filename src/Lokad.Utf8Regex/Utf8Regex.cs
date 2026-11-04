@@ -1115,9 +1115,11 @@ public sealed partial class Utf8Regex
         {
             return invariantCyrillicLiteralCountStrategy.Count(input);
         }
-        if (TryStartNativeStructuralInvocation(input, cancellationToken, false, out var structuralInvocation, out var structuralValidation))
+        var scalarWindowCount = !_hasCaptures &&
+            _preparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan.SupportsValidatedUtf8Input;
+        if (TryStartNativeStructuralInvocation(input, cancellationToken, scalarWindowCount, out var structuralInvocation, out var structuralValidation))
         {
-            if (!structuralValidation.IsAscii || _preparedRegex.StructuralIdentifierFamilyPlan.HasUnresolvedPrefixOverlap ||
+            if (!structuralValidation.IsAscii && !scalarWindowCount || _preparedRegex.StructuralIdentifierFamilyPlan.HasUnresolvedPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap ||
                 _preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
                 return OwnedSliceCountFromByte(input, _ownedSliceProgram,

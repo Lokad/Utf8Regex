@@ -79,7 +79,8 @@ internal static partial class AsciiOrderedLiteralWindowExecutor
     }
 
     // Every scan borrows prepared literals and the same deadline, token, work
-    // budget and ledger. Gap lengths are byte counts on admitted ASCII subjects.
+    // budget and ledger. Dot gaps count scalars; literal offsets stay in bytes.
+    // Separator classes retain their separate ASCII-input admission.
     internal static Utf8ExecutionLimitKind TryMatchAt(ReadOnlySpan<byte> input, in AsciiOrderedLiteralWindowPlan plan,
         int start, int leadingLength, int branch, ref Utf8SliceInvocation invocation, out int length, out bool accepted)
     {
@@ -123,6 +124,29 @@ internal static partial class AsciiOrderedLiteralWindowExecutor
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var lower = (long)current + plan.MinGap;
             var upper = (int)Math.Min((long)input.Length - trailingLength, (long)current + plan.MaxGap);
+            var gapBytes = Math.Min(plan.MaxGap, input.Length - current);
+            if (plan.MaxGap <= 2048 && !System.Text.Ascii.IsValid(input.Slice(current, gapBytes)))
+            {
+                var position = current;
+                var minimum = plan.MinGap == 0 ? current : -1;
+                var checkpoint = current;
+                for (var scalars = 0; scalars < plan.MaxGap && position < input.Length; scalars++)
+                {
+                    if (position - checkpoint >= 2048)
+                    {
+                        breach = invocation.TryChargeInputStep();
+                        if (breach != Utf8ExecutionLimitKind.None) return breach;
+                        checkpoint = position;
+                    }
+                    if (System.Text.Rune.DecodeFromUtf8(input[position..], out _, out var width) !=
+                        System.Buffers.OperationStatus.Done)
+                        throw new InvalidOperationException("Literal windows require validated UTF-8 input.");
+                    position += width;
+                    if (scalars + 1 == plan.MinGap) minimum = position;
+                }
+                lower = minimum < 0 ? (long)input.Length + 1 : minimum;
+                upper = Math.Min(position, input.Length - trailingLength);
+            }
             if (plan.GapSameLine)
             {
                 if (lazy && current > lineEnd) { lineEnd = input.Length; lineScan = current; }

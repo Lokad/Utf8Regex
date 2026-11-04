@@ -129,6 +129,20 @@ internal readonly struct AsciiOrderedLiteralWindowPlan
     // Old specialized kernels remain only where their semantic envelope holds.
     internal bool RequiresSemanticExecutor { get; }
 
+    // Literal endpoints are ASCII; only dot contributes scalar-width gaps.
+    // Separator classes and larger gaps keep their existing input admission.
+    // The 2048-byte bound keeps the ASCII probe within one interruption block.
+    internal bool SupportsValidatedUtf8Input
+    {
+        get
+        {
+            if (!HasValue || MaxGap > 2048 || YieldLeadingLiteralOnly || Separator.HasValue) return false;
+            foreach (var separator in BranchSeparators)
+                if (separator.HasValue) return false;
+            return true;
+        }
+    }
+
     /// <summary>
     /// When true, the match length stays on the leading literal and the trailing literal only acts as a lookahead guard.
     /// </summary>

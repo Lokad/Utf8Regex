@@ -1,0 +1,187 @@
+{
+  "ElapsedSeconds": 74.1955111,
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "OwnedSamples": 140,
+  "MinimumOwnedDurationMs": 51.4952,
+  "Baseline": {
+    "Core": {
+      "Version": "0.5.0-dev.26+e731a4526f4b2c3071f37876fb8c0285c3be17b4",
+      "Sha256": "CA26EF5D3E865EF7D0E186CCF313EE84EAF94BD364E7B7AD29F699E5C8FEB698"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.26+e731a4526f4b2c3071f37876fb8c0285c3be17b4",
+      "Sha256": "356924C842FF67D237C44E58FCB7157513FD88AD493BB17F5FD6AA4D2BFB9820"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.26+e731a4526f4b2c3071f37876fb8c0285c3be17b4",
+      "Sha256": "14C9CF5429F4A858951E4FDFC74D51E0BE9A53DC86BDE1263EBFB62157EC3C39"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+e731a4526f4b2c3071f37876fb8c0285c3be17b4",
+      "Sha256": "8E347AB88C0345350231711DB492D541D246F94D322EBC3A04E1B9C3F300EB4E"
+    }
+  },
+  "Candidate": {
+    "Core": {
+      "Version": "0.5.0-dev.26+8ae2e88c695ac64d9c436d34bcddfa50976ec375",
+      "Sha256": "27FE9D4B677B09A2F19A0C3B8463F77AD1D9EB49C7064BA4407A291E4A55CB1D"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.26+e731a4526f4b2c3071f37876fb8c0285c3be17b4",
+      "Sha256": "356924C842FF67D237C44E58FCB7157513FD88AD493BB17F5FD6AA4D2BFB9820"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.26+e731a4526f4b2c3071f37876fb8c0285c3be17b4",
+      "Sha256": "14C9CF5429F4A858951E4FDFC74D51E0BE9A53DC86BDE1263EBFB62157EC3C39"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+e731a4526f4b2c3071f37876fb8c0285c3be17b4",
+      "Sha256": "8E347AB88C0345350231711DB492D541D246F94D322EBC3A04E1B9C3F300EB4E"
+    }
+  },
+  "Rows": [
+    {
+      "Name": "native-control-first",
+      "BeforeUs": 2.493377451453966,
+      "AfterUs": 2.4966295440218533,
+      "ChangePercent": 0.130429212231431,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0631359816060526,
+      "AfterSpread": 1.0098490077580344
+    },
+    {
+      "Name": "actual-window",
+      "BeforeUs": 181.65135951661634,
+      "AfterUs": 149.0483950617284,
+      "ChangePercent": -17.948098236999776,
+      "BeforeBytes": 3552,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0106251937757145,
+      "AfterSpread": 1.0098678117088686
+    },
+    {
+      "Name": "actual-window-compiled",
+      "BeforeUs": 181.00634441087612,
+      "AfterUs": 149.2759900990099,
+      "ChangePercent": -17.529968032413144,
+      "BeforeBytes": 3552,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0089674145379743,
+      "AfterSpread": 1.007754491017964
+    },
+    {
+      "Name": "actual-window-live",
+      "BeforeUs": 199.33087248322147,
+      "AfterUs": 186.16604938271604,
+      "ChangePercent": -6.6045078399050166,
+      "BeforeBytes": 3664,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.0128580362302753,
+      "AfterSpread": 1.1143974598692303
+    },
+    {
+      "Name": "actual-window-finite-live-control",
+      "BeforeUs": 203.9836177474403,
+      "AfterUs": 210.66350877192983,
+      "ChangePercent": 3.2747193614146797,
+      "BeforeBytes": 3664,
+      "AfterBytes": 3664,
+      "BeforeSpread": 1.0097723039750324,
+      "AfterSpread": 1.0173613447640069
+    },
+    {
+      "Name": "actual-window-deadline-live",
+      "BeforeUs": 258.7264069264069,
+      "AfterUs": 308.92704081632655,
+      "ChangePercent": 19.40298034757577,
+      "BeforeBytes": 3712,
+      "AfterBytes": 160,
+      "BeforeSpread": 1.0023022633896554,
+      "AfterSpread": 1.0020880588822685
+    },
+    {
+      "Name": "corpus-ascii-window-control",
+      "BeforeUs": 135.31820175438597,
+      "AfterUs": 151.46750629722922,
+      "ChangePercent": 11.934318024825386,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0280717682023246,
+      "AfterSpread": 1.0056378353245463
+    },
+    {
+      "Name": "dense-mixed-window",
+      "BeforeUs": 654.9934065934066,
+      "AfterUs": 285.2985645933014,
+      "ChangePercent": -56.44252877641512,
+      "BeforeBytes": 3552,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.021126724608873,
+      "AfterSpread": 1.0168269962813454
+    },
+    {
+      "Name": "unicode-gap-window",
+      "BeforeUs": 656.3365591397849,
+      "AfterUs": 297.97860696517415,
+      "ChangePercent": -54.59972436158147,
+      "BeforeBytes": 3552,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0218669691848217,
+      "AfterSpread": 1.0029751551964037
+    },
+    {
+      "Name": "dense-misses-window",
+      "BeforeUs": 956.395238095238,
+      "AfterUs": 168.85786516853932,
+      "ChangePercent": -82.34434275260116,
+      "BeforeBytes": 3552,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0112673933792133,
+      "AfterSpread": 1.010235112487871
+    },
+    {
+      "Name": "large-gap-fallback-control",
+      "BeforeUs": 596.2701923076922,
+      "AfterUs": 590.3543689320388,
+      "ChangePercent": -0.992138036073531,
+      "BeforeBytes": 124544,
+      "AfterBytes": 124544,
+      "BeforeSpread": 1.050656870559245,
+      "AfterSpread": 1.0119140644318934
+    },
+    {
+      "Name": "captured-window-control",
+      "BeforeUs": 265.73982683982683,
+      "AfterUs": 278.5408256880734,
+      "ChangePercent": 4.817117178285191,
+      "BeforeBytes": 3552,
+      "AfterBytes": 3552,
+      "BeforeSpread": 1.0120388802003417,
+      "AfterSpread": 1.014094125486283
+    },
+    {
+      "Name": "python-findall-control",
+      "BeforeUs": 436.2647058823529,
+      "AfterUs": 444.24436090225566,
+      "ChangePercent": 1.8290856244636444,
+      "BeforeBytes": 112944,
+      "AfterBytes": 112944,
+      "BeforeSpread": 1.0033367673317157,
+      "AfterSpread": 1.0063367387915954
+    },
+    {
+      "Name": "pcre-count-control",
+      "BeforeUs": 149.1482843137255,
+      "AfterUs": 146.47951219512197,
+      "ChangePercent": -1.7893414804490138,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0012420970546672,
+      "AfterSpread": 1.0031480728058533
+    }
+  ],
+  "CanonicalEvidenceSha256": "B2533E553663BEAEAA1FC24A657F566B5E8B57F3AEA83585A84DD9A8927B467C",
+  "WindowsEvidenceSha256": "F6EAC3F1539C04300E7E99FD7EF9599E46447F97D4863EA571D617E235A0A6AB",
+  "ExportCorrection": "Timed command exited0; first tar exited1 because archive creation changed its containing directory metadata. First archive preserved inside corrected separate-directory export. No timing rerun."
+}
