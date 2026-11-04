@@ -91,6 +91,26 @@ public sealed class PackedNibbleLiteralFamilyCountTests
         Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
     }
 
+    [Theory]
+    [InlineData(0)] [InlineData(1)] [InlineData(17)] [InlineData(31)]
+    public void LongScansKeepBorrowedOffsetsDenseFalsePrefixesAndChunkCrossings(int borrowedOffset)
+    {
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
+        {
+            var regex = new Utf8Regex(Pattern, options);
+            var oracle = new Regex(Pattern, options);
+            foreach (var prefix in new[] { 31, 32, 33, 2047, 2048, 2049, 4096 })
+            {
+                var text = "é😀" + new string('x', prefix) + "约翰华生" +
+                    string.Concat(Enumerable.Repeat("夏洛克x", 512)) + "阿德勒";
+                var length = Encoding.UTF8.GetByteCount(text);
+                var storage = Enumerable.Repeat((byte)0xff, borrowedOffset + length + 1).ToArray();
+                Encoding.UTF8.GetBytes(text, storage.AsSpan(borrowedOffset, length));
+                Assert.Equal(oracle.Count(text), regex.Count(storage.AsSpan(borrowedOffset, length)));
+            }
+        }
+    }
+
     [Fact]
     public void CountMatchesDotNetOnDeterministicValidSubjects()
     {

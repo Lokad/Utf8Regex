@@ -1085,44 +1085,49 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
             var vectorLimit = maxStart - (AvxLaneCount - 1);
             var lowNibbleMask = Vector256.Create((byte)0x0F);
             var zero = Vector256<byte>.Zero;
-            while (baseIndex <= vectorLimit)
+            if (MaskLength == 3 && baseIndex <= vectorLimit)
             {
-                Vector256<byte> candidates;
-                // Long folded families select exactly three rare offsets. Keep that
-                // dominant AVX2 path free of the per-block mask loop and repeated array indexing.
-                if (MaskLength == 3)
+                // Exact and folded families reuse these immutable masks for the
+                // complete scan. Admit their array entries once, before the loop;
+                // input loads remain checked independently at each block.
+                var offset0 = MaskOffsets[0];
+                var offset1 = MaskOffsets[1];
+                var offset2 = MaskOffsets[2];
+                var low0 = LowMaskVectors[0];
+                var low1 = LowMaskVectors[1];
+                var low2 = LowMaskVectors[2];
+                var high0 = HighMaskVectors[0];
+                var high1 = HighMaskVectors[1];
+                var high2 = HighMaskVectors[2];
+                while (baseIndex <= vectorLimit)
                 {
-                    candidates = CreateAvxMask(
-                        input,
-                        baseIndex + MaskOffsets[0],
-                        LowMaskVectors[0],
-                        HighMaskVectors[0],
-                        lowNibbleMask);
+                    var candidates = CreateAvxMask(input, baseIndex + offset0,
+                        low0, high0, lowNibbleMask);
                     candidates = Avx2.And(candidates, CreateAvxMask(
-                        input,
-                        baseIndex + MaskOffsets[1],
-                        LowMaskVectors[1],
-                        HighMaskVectors[1],
-                        lowNibbleMask));
+                        input, baseIndex + offset1, low1, high1, lowNibbleMask));
                     candidates = Avx2.And(candidates, CreateAvxMask(
-                        input,
-                        baseIndex + MaskOffsets[2],
-                        LowMaskVectors[2],
-                        HighMaskVectors[2],
-                        lowNibbleMask));
-                }
-                else
-                {
-                    candidates = Vector256.Create((byte)0xFF);
-                    for (var offset = 0; offset < MaskLength; offset++)
+                        input, baseIndex + offset2, low2, high2, lowNibbleMask));
+                    var matchMask = ~(uint)Avx2.MoveMask(Avx2.CompareEqual(candidates, zero));
+                    if (matchMask != 0)
                     {
-                        candidates = Avx2.And(candidates, CreateAvxMask(
-                            input,
-                            baseIndex + MaskOffsets[offset],
-                            LowMaskVectors[offset],
-                            HighMaskVectors[offset],
-                            lowNibbleMask));
+                        var lane = BitOperations.TrailingZeroCount(matchMask);
+                        candidateIndex = baseIndex + lane;
+                        state = new PreparedMultiLiteralScanState(
+                            baseIndex + AvxLaneCount,
+                            (int)(matchMask & ~(1U << lane)), baseIndex);
+                        return true;
                     }
+                    baseIndex += AvxLaneCount;
+                }
+            }
+            else while (baseIndex <= vectorLimit)
+            {
+                var candidates = Vector256.Create((byte)0xFF);
+                for (var offset = 0; offset < MaskLength; offset++)
+                {
+                    candidates = Avx2.And(candidates, CreateAvxMask(
+                        input, baseIndex + MaskOffsets[offset], LowMaskVectors[offset],
+                        HighMaskVectors[offset], lowNibbleMask));
                 }
 
                 var zeroMask = Avx2.MoveMask(Avx2.CompareEqual(candidates, zero));
