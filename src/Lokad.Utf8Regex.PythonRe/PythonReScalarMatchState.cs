@@ -358,8 +358,13 @@ internal struct PythonReScalarMatchState
                         // Once scratch is admitted, a positive leading boundary
                         // cannot match between two ASCII word scalars. Borrow the
                         // exact profile predicate and keep failure's advancement.
-                        if (search && _workspace.Initialized && _leadingAsciiLow >= 0 &&
+                        // A complete boundary-only root has no consuming hint,
+                        // but admits the same proof without changing its retries.
+                        if (search && _workspace.Initialized &&
                             _program.Instructions[0] is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 } boundary &&
+                            (_leadingAsciiLow >= 0 || _program.GroupCount == 0 && !_program.IsNonBacktracking &&
+                                _program.Instructions is { Length: 2 } boundaryCode &&
+                                boundaryCode[1].Kind == Utf8SliceInstructionKind.Accept) &&
                             _position > 0 && _position < input.Length &&
                             input[_position - 1] < 128 && input[_position] < 128 &&
                             Utf8SliceScalarClasses.IsBoundaryWord(new Rune(input[_position - 1]), _program, boundary) &&

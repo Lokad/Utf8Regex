@@ -52,8 +52,10 @@ skipping failed attempts can reduce work charges.
 After VM scratch has been admitted, a positive leading word boundary can reject
 an ASCII word-interior start using the profile's exact word predicate. Scalar
 advancement and interruption checks remain in the cursor; the first attempt still
-admits VM storage. Non-ASCII neighbors and possible boundaries retain complete VM
-verification. Eliminated failed attempts can lower version-dependent work charges.
+admits required VM storage. Complete capture-free boundary-only programs reuse
+this proof without a consuming start hint. Non-ASCII neighbors and possible
+boundaries retain complete VM verification. Eliminated failed attempts can lower
+version-dependent work charges.
 
 Capture-free exact literals, including two or three alternatives, followed by
 an exact positive literal lookahead can borrow complete native discovery. The

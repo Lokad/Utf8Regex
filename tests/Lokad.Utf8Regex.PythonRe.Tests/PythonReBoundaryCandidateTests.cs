@@ -102,25 +102,38 @@ public sealed class PythonReBoundaryCandidateTests
         Assert.Throws<ArgumentException>(() => regex.IsMatch(invalid));
     }
 
-    [Fact]
-    public void FirstImpossibleCandidateStillAdmitsVmStorage()
+    [Theory]
+    [InlineData(@"\b[0-9]+X\b", "a111X", 0, true)]
+    [InlineData(@"\b", "alpha beta", 1, false)]
+    public void InteriorStartsKeepActualWorkingAdmission(string pattern, string text, int offset, bool requiresStorage)
     {
-        using var regex = new Utf8PythonRegex(@"\b[0-9]+X\b", default, Timeout.InfiniteTimeSpan,
+        using var regex = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan,
             new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, Assert.Throws<Utf8ResourceLimitExceededException>(
-            () => regex.IsMatch("a111X"u8)).ResourceKind);
+        var input = Encoding.UTF8.GetBytes(text);
+        if (requiresStorage)
+            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, Assert.Throws<Utf8ResourceLimitExceededException>(
+                () => regex.IsMatch(input, offset)).ResourceKind);
+        else
+            Assert.True(regex.IsMatch(input, offset)); // A pure boundary needs no major scratch buffer.
     }
 
-    [Fact]
-    public void EveryWorkCutoffRefundsOnlyOwnedScratch()
+    [Theory]
+    [InlineData(@"\b[0-9]+X\b", 1)]
+    [InlineData(@"\b", 4)]
+    public void EveryWorkCutoffRefundsOnlyOwnedScratch(string pattern, int expectedCount)
     {
-        const string pattern = @"\b[0-9]+X\b";
         var program = PythonReScalarCompiler.Compile(new PythonReParser(pattern).Parse(default));
         var input = "a111A 22X"u8.ToArray();
         ulong required;
         var probe = new PythonReScalarMatchCursor(input, program, 0, Timeout.InfiniteTimeSpan,
             null, pattern, new(new(1_000_000, 1024, 1 << 20), Timeout.InfiniteTimeSpan, default));
-        try { Assert.True(probe.MoveNext()); Assert.False(probe.MoveNext()); required = probe.WorkingInvocation.Budget.Steps; }
+        try
+        {
+            var count = 0;
+            while (probe.MoveNext()) count++;
+            Assert.Equal(expectedCount, count);
+            required = probe.WorkingInvocation.Budget.Steps;
+        }
         finally { probe.Dispose(); }
         for (ulong cap = 1; cap <= required; cap++)
         {
@@ -132,7 +145,10 @@ public sealed class PythonReBoundaryCandidateTests
             {
                 cursor = new(input, program, 0, Timeout.InfiniteTimeSpan, null, pattern, invocation);
                 constructed = true;
-                Assert.True(cursor.MoveNext()); Assert.False(cursor.MoveNext()); Assert.Equal(required, cap);
+                var count = 0;
+                while (cursor.MoveNext()) count++;
+                Assert.Equal(expectedCount, count);
+                Assert.Equal(required, cap);
             }
             catch (Utf8ResourceLimitExceededException error)
             { Assert.True(cap < required); Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); }
@@ -141,14 +157,16 @@ public sealed class PythonReBoundaryCandidateTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void WordInteriorScanObservesOriginalInterruption(bool expire)
+    [InlineData(false, @"\b[0-9]+X\b")] [InlineData(true, @"\b[0-9]+X\b")]
+    [InlineData(false, @"\b")] [InlineData(true, @"\b")]
+    public void WordInteriorScanObservesOriginalInterruption(bool expire, string pattern)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
-        using var regex = new Utf8PythonRegex(@"\b[0-9]+X\b", default, TimeSpan.FromMilliseconds(20));
+        using var regex = new Utf8PythonRegex(pattern, default, TimeSpan.FromMilliseconds(20));
         using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes("a" + new string('1', 4096)), 0, token.Token);
+        if (pattern == @"\b") Assert.True(cursor.MoveNext());
         var interrupted = false;
         cursor.WorkingInvocation.CheckpointHook = _ => { interrupted = true; if (expire) ticks = 30; else token.Cancel(); };
         if (expire) Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext());
