@@ -1,0 +1,322 @@
+{
+  "Source": "b58992530a35b74942f6a0382af36d91e3d1a1d6",
+  "ElapsedSeconds": 84.8261493,
+  "StartupProcessors": 8,
+  "CpuAffinityMask": "4",
+  "CoreIdentical": true,
+  "Scope": "One16case boundary-interior public comparison; frozen dev21 Full9d464227 before, PythonRe-only candidate after. Identical Core bytes and unchanged Core controls FIRST. Complete outputs consumed after timing, five alternating calibrated samples, allocations and raw durations. Short comparator lanes remain unqualified without discarding owned rows; promotion requires every owned lane >=20ms. No kernel/public Status or cumulative fixed-original acceptance claim.",
+  "Baseline": {
+    "Core": {
+      "Version": "0.5.0-dev.21+9d46422701ddb61807f5376ee40dc475cf4ab4a5",
+      "Sha256": "9F330A7D62370C84A7DA06958BE680CAE84AA71BDF6F4588934A1E66D9492E90"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.21+9d46422701ddb61807f5376ee40dc475cf4ab4a5",
+      "Sha256": "8050E23490F4512B5BD5C168248EEA96F09F0E33B943A4B94955088541F18BD1"
+    }
+  },
+  "Candidate": {
+    "Core": {
+      "Version": "0.5.0-dev.21+9d46422701ddb61807f5376ee40dc475cf4ab4a5",
+      "Sha256": "9F330A7D62370C84A7DA06958BE680CAE84AA71BDF6F4588934A1E66D9492E90"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.21+b58992530a35b74942f6a0382af36d91e3d1a1d6",
+      "Sha256": "247930BC074134725E8B00AD5ADAD79492A465CF82F11BDAE601747C8A82B86D"
+    }
+  },
+  "Rows": [
+    {
+      "Name": "core-word-control",
+      "InputBytes": 2176,
+      "BeforeUs": 144.11060240963855,
+      "AfterUs": 143.51690476190475,
+      "ChangePercent": -0.4119736076365732,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.023423426482598,
+      "AfterSpread": 1.0058609485381755,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 58.8983
+    },
+    {
+      "Name": "core-linear-control",
+      "InputBytes": 2176,
+      "BeforeUs": 53.394498669032835,
+      "AfterUs": 52.9930823117338,
+      "ChangePercent": -0.7517934755548961,
+      "BeforeBytes": 26224,
+      "AfterBytes": 26224,
+      "BeforeSpread": 1.0076519315320074,
+      "AfterSpread": 1.0070571899794214,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 59.8411
+    },
+    {
+      "Name": "split-ascii",
+      "InputBytes": 2176,
+      "BeforeUs": 195.50980392156862,
+      "AfterUs": 121.31370143149285,
+      "ChangePercent": -37.95006746558885,
+      "BeforeBytes": 40016,
+      "AfterBytes": 40016,
+      "BeforeSpread": 1.0201268438728577,
+      "AfterSpread": 1.0102274850919963,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 58.861
+    },
+    {
+      "Name": "split-finite-token",
+      "InputBytes": 2176,
+      "BeforeUs": 239.70159362549802,
+      "AfterUs": 169.05811965811964,
+      "ChangePercent": -29.471424406860415,
+      "BeforeBytes": 44216,
+      "AfterBytes": 44216,
+      "BeforeSpread": 1.013877153560559,
+      "AfterSpread": 1.0064690601343536,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 59.1276
+    },
+    {
+      "Name": "split-deadline-token",
+      "InputBytes": 2176,
+      "BeforeUs": 320.25,
+      "AfterUs": 233.2027237354086,
+      "ChangePercent": -27.18103864624244,
+      "BeforeBytes": 40176,
+      "AfterBytes": 40176,
+      "BeforeSpread": 1.0096315142487091,
+      "AfterSpread": 1.008593040441583,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 59.6762
+    },
+    {
+      "Name": "split-mixed",
+      "InputBytes": 2176,
+      "BeforeUs": 115.63919694072658,
+      "AfterUs": 105.67935943060499,
+      "ChangePercent": -8.612855998322722,
+      "BeforeBytes": 15448,
+      "AfterBytes": 15448,
+      "BeforeSpread": 1.0037770809578106,
+      "AfterSpread": 1.0103404266843607,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 59.0788
+    },
+    {
+      "Name": "split-no-boundary",
+      "InputBytes": 2176,
+      "BeforeUs": 139.33530805687204,
+      "AfterUs": 147.07364532019704,
+      "ChangePercent": 5.553751860344303,
+      "BeforeBytes": 4408,
+      "AfterBytes": 4408,
+      "BeforeSpread": 1.0142255449996123,
+      "AfterSpread": 1.0078171867201928,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 58.0505
+    },
+    {
+      "Name": "split-sparse",
+      "InputBytes": 65536,
+      "BeforeUs": 4204.2,
+      "AfterUs": 803.3706666666667,
+      "ChangePercent": -80.89123574837859,
+      "BeforeBytes": 131144,
+      "AfterBytes": 131144,
+      "BeforeSpread": 1.0034137333699584,
+      "AfterSpread": 1.0060274210141074,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 59.9759
+    },
+    {
+      "Name": "split-nonboundary",
+      "InputBytes": 2176,
+      "BeforeUs": 436.73576642335763,
+      "AfterUs": 439.3839416058394,
+      "ChangePercent": 0.6063563797783278,
+      "BeforeBytes": 78808,
+      "AfterBytes": 78808,
+      "BeforeSpread": 1.01407606410553,
+      "AfterSpread": 1.0113020912633413,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 59.2211
+    },
+    {
+      "Name": "split-scoped",
+      "InputBytes": 2176,
+      "BeforeUs": 195.75424836601306,
+      "AfterUs": 121.10648967551624,
+      "ChangePercent": -38.13340416036518,
+      "BeforeBytes": 40016,
+      "AfterBytes": 40016,
+      "BeforeSpread": 1.0056889514662375,
+      "AfterSpread": 1.0187904134780803,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 40.4568
+    },
+    {
+      "Name": "count-ascii",
+      "InputBytes": 17408,
+      "BeforeUs": 1238.0938775510206,
+      "AfterUs": 660.508695652174,
+      "ChangePercent": -46.65116211068937,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0301115067779283,
+      "AfterSpread": 1.0177579131445635,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 59.8708
+    },
+    {
+      "Name": "unicode-control",
+      "InputBytes": 2176,
+      "BeforeUs": 208.31284722222225,
+      "AfterUs": 138.79375000000002,
+      "ChangePercent": -33.37244829074859,
+      "BeforeBytes": 40016,
+      "AfterBytes": 40016,
+      "BeforeSpread": 1.0155940569092297,
+      "AfterSpread": 1.0203887794111186,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 59.1698
+    },
+    {
+      "Name": "literal-control",
+      "InputBytes": 2176,
+      "BeforeUs": 35.64854014598541,
+      "AfterUs": 36.762708018154306,
+      "ChangePercent": 3.1254235590187918,
+      "BeforeBytes": 19512,
+      "AfterBytes": 19512,
+      "BeforeSpread": 1.004404556555599,
+      "AfterSpread": 1.007456141256008,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 48.4567
+    },
+    {
+      "Name": "capture-control",
+      "InputBytes": 2176,
+      "BeforeUs": 330.1375690607735,
+      "AfterUs": 336.2290502793296,
+      "ChangePercent": 1.845134207502075,
+      "BeforeBytes": 64760,
+      "AfterBytes": 64760,
+      "BeforeSpread": 1.0123428974956072,
+      "AfterSpread": 1.0130917170867926,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 59.4755
+    },
+    {
+      "Name": "lookahead-control",
+      "InputBytes": 2176,
+      "BeforeUs": 199.1717607973422,
+      "AfterUs": 202.53691275167785,
+      "ChangePercent": 1.6895728294332502,
+      "BeforeBytes": 10096,
+      "AfterBytes": 10096,
+      "BeforeSpread": 1.0384773504373488,
+      "AfterSpread": 1.0059732777905839,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 59.8378
+    },
+    {
+      "Name": "empty-input-control",
+      "InputBytes": 0,
+      "BeforeUs": 0.4191166891953411,
+      "AfterUs": 0.4473138942267524,
+      "ChangePercent": 6.727769558770591,
+      "BeforeBytes": 32,
+      "AfterBytes": 32,
+      "BeforeSpread": 1.0111839723894103,
+      "AfterSpread": 1.0044403777899324,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 58.6887
+    }
+  ],
+  "RawArchiveSha256": "4AE142822205F0055B4E47F078B40A09925A1A0AB4BD95340FB8BD50B3C46807",
+  "CorrectnessArchiveSha256": "EE6201720BE73BECA58C5AA8DEC6D18A9ACB2FBD75AAB96EADE25EF44C6B84F6",
+  "NoiseConfirmations": 0,
+  "VariantsAfterTiming": 0
+}

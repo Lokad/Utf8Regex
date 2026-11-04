@@ -1,0 +1,42 @@
+{
+  "Source": "b58992530a35b74942f6a0382af36d91e3d1a1d6",
+  "UnchangedRows": 88,
+  "UnchangedLifecycleScaling": true,
+  "ArchiveSha256": "84DBC04DBA249B439F2D60464353FA1CCF4AE6B7F6CF0DB30C525734A2B27189",
+  "ImportedHashes": [
+    "7afa28bb87507560cce6d10d8a0e863a1f4229a4851f46e96af3336c52d6839c  PythonRe.Benchmarks.json",
+    "077d306b4283f08cf0591e2f878a039aac5f3054b61664ced19e51a5868fe1b3  src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md"
+  ],
+  "Rows": [
+    {
+      "CaseId": "split/zero-width",
+      "PreviousRatio": 3.539588515912768,
+      "Status": "CpythonFaster",
+      "Ratio": 1.8209557580939795,
+      "Lower95": 1.807604854161708,
+      "Upper95": 1.830452236806529,
+      "ManagedUs": 122.66723716381418,
+      "ManagedBytes": 40016,
+      "Source": "b58992530a35",
+      "MinimumManagedMs": 49.9888,
+      "MinimumCpythonMs": 49.754143,
+      "Samples": 9,
+      "CpuAffinityMask": "0x10"
+    },
+    {
+      "CaseId": "zero-width/count",
+      "PreviousRatio": 1.3641456892084005,
+      "Status": "ManagedFaster",
+      "Ratio": 0.5870134210040362,
+      "Lower95": 0.5836943286075489,
+      "Upper95": 0.5901319338010373,
+      "ManagedUs": 651.8701298701299,
+      "ManagedBytes": 0,
+      "Source": "b58992530a35",
+      "MinimumManagedMs": 49.3565,
+      "MinimumCpythonMs": 50.263961,
+      "Samples": 9,
+      "CpuAffinityMask": "0x20"
+    }
+  ]
+}

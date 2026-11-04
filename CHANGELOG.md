@@ -68,7 +68,9 @@
 - Reduce required-literal screening and empty confirmation overhead while
   retaining strict validation, matching and resource controls.
 - Speed up capture-free PythonRe word-boundary Split and Count by avoiding
-  impossible nonempty retries, preserving scalar progression and resource controls.
+  impossible word-interior attempts and nonempty retries, preserving scalar
+  progression and resource controls. No-boundary misses and empty input can cost
+  more; execution allocations remain unchanged.
 - Speed up scalar Count with class-delimiter candidate windows and shared
   capture-free PythonRe counting, preserving pinned Unicode and resource controls.
 - Reduce shared PCRE2 VM overhead for controlled matching and capture operations.

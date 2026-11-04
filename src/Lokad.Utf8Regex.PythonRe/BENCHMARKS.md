@@ -24,16 +24,17 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-11-04T02:44:44.0728985+00:00`
-- Snapshot SHA-256: `9DBA8529474CFD10642AD43EA6FFAC92BB124F394FDB426E92D507A542DAD5FA`
+- Generated: `2026-11-04T03:20:16.6437945+00:00`
+- Snapshot SHA-256: `7AFA28BB87507560CCE6D10D8A0E863A1F4229A4851F46E96AF3336C52D6839C`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `4`
 - Scaling families: `7`
-- Public Status: `36` managed faster, `0` equivalent, `39` CPython faster, `13` inconclusive, `2` unqualified
-- Historical point measurement environments represented: `1`
-- Paired evidence from source `9d46422701dd`: `90` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
+- Public Status: `37` managed faster, `0` equivalent, `38` CPython faster, `13` inconclusive, `2` unqualified
+- Historical point measurement environments represented: `2`
+- Paired evidence from source `9d46422701dd`: `88` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
+- Paired evidence from source `b58992530a35`: `2` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
 - Historical CPython point environments represented: `1`
@@ -79,7 +80,7 @@ Input hashes cover the exact decoded subject re-encoded as strict UTF-8 and time
 | `corpus/code-declarations` | `LokadReplica/Code/Data` | 53,352 | `E25F45289E44A6DE119149C10B258E8416A8E24E4FF01D94ED4753FA5A9A351B` |
 | `corpus/sherlock-ru` | `DotNetPerformanceReplica/Stress/Data/opensubtitles/ru-sampled.txt` | 1,570,556 | `7FFDDB21336A1BFB4A9E2DF4BB77EEA0305C0010A57C5D3C56E0DFEAD9E80A90` |
 
-Historical independent point columns were measured from source `9d46422701dd` on .NET 11.0.0-rc.3.26522.148, Ubuntu 24.04.4 LTS, X64. Qualified paired rows record their own exact source, runtime, and interpreter provenance in the JSON evidence.
+Historical point rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins; qualified paired rows carry separate exact provenance.
 
 ## Results
 
@@ -150,7 +151,7 @@ Historical independent point columns were measured from source `9d46422701dd` on
 | `findall/many-capture-utf8` | `FindAllUtf8` | EagerMaterializedResult | Managed faster | 796.372 us | 1,252.075 us | 0.64x | 1,220.817 us | 680.548 us | 260,400 B |
 | `findall/unicode-capture-utf8` | `FindAllUtf8` | EagerMaterializedResult | Managed faster | 562.724 us | 620.306 us | 0.91x | 628.955 us | 363.771 us | 131,176 B |
 | `iteration/finditer-detailed` | `FindIterDetailed` | EagerMaterializedResult | Managed faster | 257.146 us | 541.777 us | 0.48x | 530.671 us | 160.883 us | 141,568 B |
-| `zero-width/count` | `Count` | ScalarResult | CPython faster | 1,527.912 us | 1,119.190 us | 1.36x | 1,125.322 us | 1,765.945 us | 0 B |
+| `zero-width/count` | `Count` | ScalarResult | Managed faster | 651.870 us | 1,109.587 us | 0.59x | 1,127.668 us | 1,485.156 us | 0 B |
 | `count/zero` | `Count` | ScalarResult | Managed faster | 29.520 us | 91.302 us | 0.32x | 92.371 us | 1.130 us | 0 B |
 | `count/one` | `Count` | ScalarResult | Managed faster | 0.240 us | 2.018 us | 0.12x | 2.666 us | 0.715 us | 0 B |
 | `count/empty-progression` | `Count` | ScalarResult | CPython faster | 442.698 us | 381.528 us | 1.16x | 353.402 us | 70.940 us | 64 B |
@@ -192,7 +193,7 @@ Historical independent point columns were measured from source `9d46422701dd` on
 | `split/one-separator` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 1.190 us | 12.065 us | 0.10x | 12.676 us | 0.770 us | 4,192 B |
 | `split/limited` | `SplitStringsLimited` | EagerMaterializedResult | Inconclusive | 1.456 us | 0.540 us | 2.68x | 1.260 us | 1.228 us | 6,032 B |
 | `split/optional-capture` | `SplitStrings` | EagerMaterializedResult | CPython faster | 111.036 us | 83.004 us | 1.34x | 85.873 us | 87.521 us | 39,616 B |
-| `split/zero-width` | `SplitStrings` | EagerMaterializedResult | CPython faster | 237.544 us | 67.152 us | 3.54x | 79.625 us | 297.018 us | 40,016 B |
+| `split/zero-width` | `SplitStrings` | EagerMaterializedResult | CPython faster | 122.667 us | 67.756 us | 1.82x | 79.183 us | 254.367 us | 40,016 B |
 | `split/unicode` | `SplitStrings` | EagerMaterializedResult | CPython faster | 175.068 us | 44.875 us | 3.91x | 43.006 us | 53.510 us | 19,512 B |
 | `split/detailed` | `SplitDetailed` | EagerMaterializedResult | Managed faster | 125.394 us | 136.411 us | 0.92x | 136.674 us | 95.300 us | 104,704 B |
 
