@@ -106,7 +106,7 @@ public sealed class Utf8FiniteLiteralCountTests
 
     [Theory]
     [InlineData(1)] [InlineData(2)] [InlineData(15)] [InlineData(16)]
-    [InlineData(17)] [InlineData(31)] [InlineData(2047)]
+    [InlineData(17)] [InlineData(23)] [InlineData(31)] [InlineData(32)] [InlineData(33)] [InlineData(2047)]
     [InlineData(2048)] [InlineData(2049)] [InlineData(4097)]
     public void BoundedLiteralCountPreservesFalseCandidatesChunkEdgesAndBorrowedSlices(int length)
     {
@@ -194,6 +194,7 @@ public sealed class Utf8FiniteLiteralCountTests
     [Theory]
     [InlineData("(a)(b)", false, false)] [InlineData("(a)(b)", false, true)]
     [InlineData("(a)(b)", true, false)] [InlineData("(a)(b)", true, true)]
+    [InlineData("夏洛克·福尔摩斯", false, false)] [InlineData("夏洛克·福尔摩斯", false, true)]
     [InlineData("ab|cd|ef", false, false)] [InlineData("ab|cd|ef", false, true)]
     [InlineData("ab|cd|ef", true, false)] [InlineData("ab|cd|ef", true, true)]
     public void OriginalInterruptionCoversValidationAndNativeSearch(string pattern, bool validationPhase, bool expire)

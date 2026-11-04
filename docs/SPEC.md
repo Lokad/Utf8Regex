@@ -251,6 +251,11 @@ failures retain their checkpoint, and terminal success/miss checks still observe
 the original token and deadline. Candidates without boundary or trailing-literal
 requirements omit an empty confirmation step; their terminal publication remains
 charged. These shortcuts can lower finite work requirements.
+Exact literal needles up to32 bytes can use the existing prepared search inside
+one admitted block of at most2048 bytes, including lookahead. Verification within
+that block is bounded by the needle limit; longer or folded needles retain separate
+candidate comparisons. Fewer false-candidate charges can lower required work;
+complete-input validation and original-token/deadline publication checks remain.
 Scalar Count can search an exact ASCII delimiter after a proved leading
 class run, with or without intervening whitespace. The actual scalar predicate
 rewinds a conservative candidate window; the VM verifies every retained start.

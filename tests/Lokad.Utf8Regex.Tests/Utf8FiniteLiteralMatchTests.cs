@@ -50,7 +50,8 @@ public sealed class Utf8FiniteLiteralMatchTests
     }
 
     [Theory]
-    [InlineData(17)] [InlineData(2049)] [InlineData(8193)]
+    [InlineData(16)] [InlineData(17)] [InlineData(23)] [InlineData(32)] [InlineData(33)]
+    [InlineData(2049)] [InlineData(8193)]
     public void LongLiteralsKeepBoundedComparisonsAfterFalseStarts(int length)
     {
         var literal = new string('a', length - 1) + "b";
@@ -63,6 +64,32 @@ public sealed class Utf8FiniteLiteralMatchTests
             var input = storage.AsSpan(7, Encoding.UTF8.GetByteCount(text));
             AssertRange(regex.Match(input, source.Token), text, 2052, length);
             Assert.True(regex.IsMatch(input, source.Token));
+        }
+    }
+
+    [Theory]
+    [InlineData(16)] [InlineData(17)] [InlineData(23)] [InlineData(32)] [InlineData(33)]
+    public void PreparedWindowEdgesPreserveReverseRangesAndCaptures(int length)
+    {
+        var literal = new string('a', length - 1) + "b";
+        using var source = new CancellationTokenSource();
+        foreach (var reverse in new[] { RegexOptions.None, RegexOptions.RightToLeft })
+        foreach (var compiled in new[] { RegexOptions.None, RegexOptions.Compiled })
+        foreach (var prefix in new[] { 2016, 2017, 2031, 2032, 2047, 2048 })
+        {
+            var text = "é😀" + new string('a', prefix) + literal + " " + literal + "😀";
+            var storage = Encoding.UTF8.GetBytes("padding" + text + "padding");
+            var input = storage.AsSpan(7, Encoding.UTF8.GetByteCount(text));
+            var pattern = "(?<hit>" + literal + ")";
+            var options = reverse | compiled | RegexOptions.CultureInvariant;
+            var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
+                new() { MaxWorkSteps = 1_000_000, MaxDepth = 32,
+                    MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+            var expected = new Regex(pattern, options).Match(text);
+            AssertRange(regex.Match(input, source.Token), text, expected.Index, length);
+            var detailed = regex.MatchDetailed(input, source.Token);
+            Assert.Equal(literal, detailed.GetGroup("hit").GetValueString());
+            Assert.Equal(2, regex.Count(input, source.Token));
         }
     }
 
@@ -106,10 +133,11 @@ public sealed class Utf8FiniteLiteralMatchTests
     }
 
     [Theory]
-    [InlineData("needle")] [InlineData("needle|other|third")]
+    [InlineData("needle")] [InlineData("needle|other|third")] [InlineData("夏洛克·福尔摩斯")]
     public void WorkDenialIncludesValidationDiscoveryProjectionAndPublication(string pattern)
     {
-        var text = new string('é', 4097) + "😀needle";
+        var literal = pattern.Contains('夏') ? pattern : "needle";
+        var text = new string('é', 4097) + "😀" + literal;
         var input = Encoding.UTF8.GetBytes(text);
         ulong low = 1, high = 100000;
         while (low < high)
@@ -130,7 +158,7 @@ public sealed class Utf8FiniteLiteralMatchTests
             Assert.Equal(cap, failure.Limit);
             Assert.Equal(cap + 1, failure.Requested);
         }
-        AssertRange(Create(pattern, low).Match(input), text, 4099, 6);
+        AssertRange(Create(pattern, low).Match(input), text, 4099, literal.Length);
     }
 
     [Theory]
