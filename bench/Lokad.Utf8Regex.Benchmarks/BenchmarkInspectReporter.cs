@@ -2072,8 +2072,8 @@ internal static partial class BenchmarkInspectReporter
             var utf8Compiled = new Utf8Regex(control.Pattern, RegexOptions.Compiled);
             var regex = new Regex(control.Pattern);
             var compiledRegex = new Regex(control.Pattern, RegexOptions.Compiled);
-            var utf8Eligible = utf8Regex.TryGetSmallAsciiLiteralFamilySplitSearch(inputBytes, out _);
-            var compiledEligible = utf8Compiled.TryGetSmallAsciiLiteralFamilySplitSearch(inputBytes, out _);
+            var utf8Eligible = utf8Regex.TryGetSmallAsciiLiteralFamilySearch(inputBytes, out _);
+            var compiledEligible = utf8Compiled.TryGetSmallAsciiLiteralFamilySearch(inputBytes, out _);
             if (utf8Eligible != control.ExpectedEligible || compiledEligible != control.ExpectedEligible)
             {
                 throw new InvalidOperationException($"Control '{control.Name}' Split eligibility did not match its expectation.");
@@ -3088,8 +3088,8 @@ internal static partial class BenchmarkInspectReporter
         {
             Console.WriteLine($"BaselineCanUseNativeSplit : {context.Utf8Regex.CanUseNativeSplit(Utf8Validation.Validate(context.InputBytes))}");
             Console.WriteLine($"CompiledCanUseNativeSplit : {context.CompiledUtf8Regex.CanUseNativeSplit(Utf8Validation.Validate(context.InputBytes))}");
-            Console.WriteLine($"BaselineCanUseSmallAsciiLiteralFamilySplit : {context.Utf8Regex.TryGetSmallAsciiLiteralFamilySplitSearch(context.InputBytes, out _)}");
-            Console.WriteLine($"CompiledCanUseSmallAsciiLiteralFamilySplit : {context.CompiledUtf8Regex.TryGetSmallAsciiLiteralFamilySplitSearch(context.InputBytes, out _)}");
+            Console.WriteLine($"BaselineCanUseSmallAsciiLiteralFamilySplit : {context.Utf8Regex.TryGetSmallAsciiLiteralFamilySearch(context.InputBytes, out _)}");
+            Console.WriteLine($"CompiledCanUseSmallAsciiLiteralFamilySplit : {context.CompiledUtf8Regex.TryGetSmallAsciiLiteralFamilySearch(context.InputBytes, out _)}");
 
             Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).Utf16Length);
             Measure("WellFormedOnly", iterations, () =>

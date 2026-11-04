@@ -2881,7 +2881,7 @@ public sealed partial class Utf8Regex
         if (UsesRightToLeft() || ShouldUseKelvinSignFallback(input))
             return OwnedSliceEnumerateSplits(input, _ownedSliceProgram, count == 0 ? int.MaxValue : count, CancellationToken.None);
 
-        if (count > 0 && TryGetSmallAsciiLiteralFamilySplitSearch(input, out var smallAsciiLiteralFamilySearch))
+        if (count > 0 && TryGetSmallAsciiLiteralFamilySearch(input, out var smallAsciiLiteralFamilySearch))
         {
             return new Utf8ValueSplitEnumerator(
                 input,
@@ -3450,7 +3450,7 @@ public sealed partial class Utf8Regex
         };
     }
 
-    internal bool TryGetSmallAsciiLiteralFamilySplitSearch(
+    internal bool TryGetSmallAsciiLiteralFamilySearch(
         ReadOnlySpan<byte> input,
         out PreparedSmallAsciiLiteralFamilySearch search)
     {

@@ -268,11 +268,13 @@ public sealed partial class Utf8Regex
             return Utf8CursorReplaceEngine.Replace(input, replacementBytes, ref scalarCursor, out replacementCount);
         }
 
-        var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
-            _preparedRegex,
-            input,
-            validation,
-            budget);
+        // Reuse the prepared ASCII family search already used by Split. The
+        // original range ledger still owns output admission and publication.
+        var cursor = budget.IsInfinite && !_ownedSliceProgram.IsNonBacktracking &&
+            Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null &&
+            TryGetSmallAsciiLiteralFamilySearch(input, out var smallFamily)
+                ? new Utf8OperationMatchCursor(input, smallFamily, budget)
+                : Utf8CompiledOperationCursorFactory.CreateMatchCursor(_preparedRegex, input, validation, budget);
         return Utf8CursorReplaceEngine.Replace(input, replacementBytes, ref cursor, out replacementCount);
     }
 
