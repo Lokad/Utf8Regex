@@ -57,7 +57,7 @@ internal static partial class Utf8SliceRunner
             {
                 var suspended = false;
                 var outcome = terminalClassRepeat
-                    ? RunTerminalClassRepeat(program, input, start, ref invocation)
+                    ? RunTerminalClassRepeat(program, input, start, requireNonEmpty, ref invocation)
                     : RunSegment(input, captureStarts, captureEnds, balanceHeads,
                         ref current, resumeFailure, ref stacks, ref invocation, out suspended);
                 resumeFailure = false;

@@ -35,16 +35,18 @@ public sealed class Utf8WideRepeatStateTests
     }
 
     [Theory]
-    [InlineData("a{0,2147483647}", false)]
-    [InlineData("a{0,2147483647}?", false)]
-    [InlineData("a{0,}", true)]
-    [InlineData("a{0,}?", true)]
+    [InlineData(@"a{0,2147483647}\z", false)]
+    [InlineData(@"a{0,2147483647}?\z", false)]
+    [InlineData(@"a{0,}\z", true)]
+    [InlineData(@"a{0,}?\z", true)]
     public void CoreFiniteMaximumStopsAtItsBoundary(string pattern, bool expected)
     {
         var tree = Assert.IsType<Utf8OwnedRegexTree>(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.None));
         var program = Assert.IsType<Utf8SliceProgram>(Utf8OwnedTreeSliceLowerer.TryLower(tree, RegexOptions.None));
         // Seed a completed consuming iteration. Unbounded counts retain only
         // the optional phase (min+1); finite counts retain the exact maximum.
+        // The end anchor retains the VM counter path; complete atom roots can
+        // execute without counters and cannot represent this injected state.
         Assert.Equal(expected, RunAtCount(program, expected ? 1 : int.MaxValue, "aa"u8, true, 1).IsMatch);
     }
 

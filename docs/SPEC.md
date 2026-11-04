@@ -259,6 +259,9 @@ bounded search/rewind checkpoints and admission before live VM storage remain.
 Scalar-class and unfolded literal repetitions with a proved endpoint can omit
 unused repeat-journal storage. Live counter vectors and captures still require
 admission; examined scalars/classifications and terminal interruption remain metered.
+Complete capture-free greedy atom repeats, including nullable ones, can also omit
+unused counter vectors. Empty-match advancement and nonempty retries retain their
+profile rules; required work/working capacity can be lower than earlier builds.
 Pure literal runs can lower working and depth requirements; repeats requiring
 rewinding or captures inside the body retain their continuation frames.
 Nonempty bounded runs before a positive word boundary can also omit useless

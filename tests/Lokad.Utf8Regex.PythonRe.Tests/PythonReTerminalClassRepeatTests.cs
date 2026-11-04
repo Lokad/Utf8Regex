@@ -15,6 +15,9 @@ public sealed class PythonReTerminalClassRepeatTests
     [InlineData(@"(?i)[a-z]+", "KKſİıX", new[] { "KKſİıX" })]
     [InlineData(@"(?ai)[a-z]+", "KKſİıX", new[] { "K", "X" })]
     [InlineData(@"\w{2}", "😀é²abc", new[] { "é²", "ab" })]
+    [InlineData(@"\w*", "a😀", new[] { "a", "", "" })]
+    [InlineData(@"[a-z]{0,2}", "abc😀", new[] { "ab", "c", "", "" })]
+    [InlineData(@"\d*", "1a", new[] { "1", "", "" })]
     public void PublicCountsValuesAndByteRangesUseThePinnedProfile(string pattern, string text, string[] expected)
     {
         var regex = Create(pattern, 256, 1 << 20);
@@ -28,6 +31,10 @@ public sealed class PythonReTerminalClassRepeatTests
         var previous = 0;
         for (var i = 0; i < expected.Length; i++)
         {
+            // These greedy atom roots cannot consume after an empty match at
+            // the same start; the next empty result advances one scalar.
+            if (i > 0 && expected[i - 1].Length == 0 && previous < text.Length)
+                previous += char.IsSurrogatePair(text, previous) ? 2 : 1;
             var start = text.IndexOf(expected[i], previous, StringComparison.Ordinal);
             Assert.True(start >= 0);
             Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), matches[i].Value.StartOffsetInBytes);

@@ -16,6 +16,10 @@ public sealed class Utf8TerminalClassRepeatTests
     [InlineData(@"(?i)\p{Ll}+", "aÉ𐐀!11", 1)]
     [InlineData(@"[\uD800-\uDFFF]+", "😀", 0)]
     [InlineData(@"[^\uD800]+", "😀é", 1)]
+    [InlineData("x*", "xx😀x", 4)]
+    [InlineData("(?:😀)*", "😀😀é😀", 4)]
+    [InlineData("é{0,2}", "ééé😀", 4)]
+    [InlineData(@"\w*", "a😀", 3)]
     public void CompleteScalarsKeepCoreClassSemantics(string pattern, string text, int expected)
     {
         var regex = Create(pattern, 256);
@@ -47,17 +51,20 @@ public sealed class Utf8TerminalClassRepeatTests
         Assert.Equal(2, reverse.Count("abc ééé"u8));
     }
 
-    [Fact]
-    public void EveryWorkCutoffPreservesTheBorrowedLoanAndKeepsScalarWorkMetered()
+    [Theory]
+    [InlineData(@"\p{L}+", "éé A𐐀!", 2)]
+    [InlineData("x*", "xxé😀x", 5)]
+    [InlineData(@"\w*", "a😀", 3)]
+    public void EveryWorkCutoffPreservesTheBorrowedLoanAndKeepsScalarWorkMetered(string pattern, string text, int expected)
     {
-        var regex = new Utf8Regex(@"\p{L}+");
+        var regex = new Utf8Regex(pattern);
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Missing scalar program.");
-        var input = "éé A𐐀!"u8.ToArray();
+        var input = Encoding.UTF8.GetBytes(text);
         var baseline = new Utf8SliceInvocation(new(100000, 1, 1 << 20, 1), Timeout.InfiniteTimeSpan, default);
         Assert.True(baseline.Ledger.TryReserve(13));
         var result = Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref baseline);
         Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
-        Assert.Equal(2, result.Count);
+        Assert.Equal(expected, result.Count);
         Assert.Equal(0U, baseline.Budget.PeakDepth);
         Assert.InRange(baseline.Budget.Steps, 8UL, 100UL);
         Assert.Equal(13UL, baseline.Ledger.ReservedBytes);
@@ -92,10 +99,11 @@ public sealed class Utf8TerminalClassRepeatTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void OriginalInterruptionDuringTheRunReleasesScratch(bool timeout)
+    [InlineData(false, @"\p{L}+")] [InlineData(true, @"\p{L}+")]
+    [InlineData(false, "x*")] [InlineData(true, "x*")]
+    public void OriginalInterruptionDuringTheRunReleasesScratch(bool timeout, string pattern)
     {
-        var regex = new Utf8Regex(@"\p{L}+");
+        var regex = new Utf8Regex(pattern);
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Missing scalar program.");
         var input = Encoding.UTF8.GetBytes(new string('é', 2048));
         using var token = new CancellationTokenSource();

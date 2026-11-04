@@ -9,6 +9,9 @@ public sealed class PythonReLiteralAtomRepeatTests
     [InlineData("x*", "xxyx", new[] { "xx", "", "x", "" })]
     [InlineData("(?:😀)*", "😀😀é😀", new[] { "😀😀", "", "😀", "" })]
     [InlineData("é{0,2}", "éééx", new[] { "éé", "é", "", "" })]
+    [InlineData("x*", "yé😀x", new[] { "", "", "", "x", "" })]
+    [InlineData("x{0,2}", "xxx", new[] { "xx", "x", "" })]
+    [InlineData("x*", "", new[] { "" })]
     [InlineData("(x*)", "xxy", new[] { "xx", "", "" })]
     [InlineData("(x)*", "xxy", new[] { "x", "", "" })]
     [InlineData("x*?y", "xxy", new[] { "xxy" })]
@@ -44,7 +47,9 @@ public sealed class PythonReLiteralAtomRepeatTests
         var small = new Utf8PythonRegex("x*", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new() { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 256 });
         Assert.Equal(513, small.Count(input));
-        var denied = new Utf8PythonRegex("x*", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
+        Assert.Equal(513, new Utf8PythonRegex("x*", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
+            new() { MaxWorkingBytes = 1 }).Count(input));
+        var denied = new Utf8PythonRegex("(x*)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new() { MaxWorkingBytes = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input)).ResourceKind);

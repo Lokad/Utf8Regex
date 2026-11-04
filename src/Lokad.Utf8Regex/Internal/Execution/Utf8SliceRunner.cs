@@ -568,7 +568,8 @@ internal static partial class Utf8SliceRunner
         var count = 0;
         var position = fromByte;
         invocation.AnchorOriginByte = fromByte;
-        if (CanRunTerminalClassRepeat(program))
+        // Nullable roots retain the caller's empty-match progression below.
+        if (CanRunTerminalClassRepeat(program) && program.Instructions[0].RepeatMinimum > 0)
             return CountTerminalClassRepeat(program, input, fromByte, ref invocation);
         if (program.IsNonBacktracking)
         {

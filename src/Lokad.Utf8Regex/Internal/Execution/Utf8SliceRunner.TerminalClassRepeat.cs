@@ -13,13 +13,14 @@ internal static partial class Utf8SliceRunner
         var repeat = instructions[0];
         var atom = instructions[1];
         if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy ||
-            repeat.A != 3 || repeat.B != 0 || repeat.RepeatMinimum < 1 || repeat.RepeatMaximum < repeat.RepeatMinimum ||
+            repeat.A != 3 || repeat.B != 0 || repeat.RepeatMinimum < 0 || repeat.RepeatMaximum < repeat.RepeatMinimum ||
             instructions[2].Kind != Utf8SliceInstructionKind.RepeatEnd || instructions[2].A != 0 ||
             instructions[3].Kind != Utf8SliceInstructionKind.RepeatExit || instructions[3].A != 0 ||
             instructions[4].Kind != Utf8SliceInstructionKind.Accept ||
-            atom.Kind is not (Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Shorthand or
+            atom.Kind is not (Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Shorthand or
                 Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid))
             return false;
+        if (atom.Kind == Utf8SliceInstructionKind.Literal && atom.B != 0) return false;
         // Keep each fused base step bounded. A nested class program retains its
         // own metering; a long list of independent members stays on the VM path.
         return atom.Kind != Utf8SliceInstructionKind.CategorySet ||
@@ -98,8 +99,14 @@ internal static partial class Utf8SliceRunner
     }
 
     private static Utf8SliceMatchOutcome RunTerminalClassRepeat(Utf8SliceProgram program,
-        ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation)
-        => RunClassRepeat(program, 0, input, start, ref invocation);
+        ReadOnlySpan<byte> input, int start, bool requireNonEmpty, ref Utf8SliceInvocation invocation)
+    {
+        var outcome = RunClassRepeat(program, 0, input, start, ref invocation);
+        // A complete greedy atom has no other positive endpoint when its
+        // longest match is empty. The profile caller owns scalar advancement.
+        return requireNonEmpty && outcome.IsMatch && outcome.EndIndex == start
+            ? new(false, -1, outcome.Breach, null, null) : outcome;
+    }
 
     private static bool TryRunClassRepeatWithoutRewind(Utf8SliceProgram program, int repeatIndex,
         ReadOnlySpan<byte> input, int start, int? requiredEnd, ref Utf8SliceInvocation invocation,
