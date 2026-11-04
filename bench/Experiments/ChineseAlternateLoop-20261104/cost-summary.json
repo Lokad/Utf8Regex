@@ -1,0 +1,316 @@
+{
+  "Source": "5335681662d784489642516a6c887745a2354441",
+  "ElapsedSeconds": 112.3984674,
+  "Cases": 17,
+  "OwnedSamples": 170,
+  "MinimumOwnedMilliseconds": 56.1,
+  "Scope": "One17case <=120s public comparison for hoisting immutable three-mask metadata outside the existing AVX2 loop. Baseline accepted wide Core3a8cf7e2; six companion assets unchanged. Actual Chinese alternate ordinary/compiled/finite/live/deadline, dense matches, dense false prefixes, miss, short borrowed/tail, ordered overlap and shared folded family. Unchanged ASCII FIRST, single Chinese, reverse, generic ASCII family, Russian folded and Python controls. Same-options BCL diagnostics separate, all Count results consumed after timing, allocations preserved. Normal8CPUstartup thenCPU2; managed1.5s/min128,BCL250ms/min64 warmup, independent60ms calibration,5alternating samples,owned>=20ms. One comparison,at mostone noiseconfirmation,no tuning variant or universal10%gate.",
+  "Rows": [
+    {
+      "Name": "ascii-control-first",
+      "InputBytes": 65542,
+      "Expected": 1,
+      "BeforeUs": 2.5178270231473174,
+      "AfterUs": 2.5188614800759015,
+      "ChangePercent": 0.041085305665311544,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0293897510104284,
+      "AfterSpread": 1.0080022570899325,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "actual-chinese-alternate",
+      "InputBytes": 813478,
+      "Expected": 207,
+      "BeforeUs": 199.50671378091874,
+      "AfterUs": 154.2048843187661,
+      "ChangePercent": -22.706919784112756,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0076363636363637,
+      "AfterSpread": 1.0124879923150818,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "actual-chinese-alternate-compiled",
+      "InputBytes": 813478,
+      "Expected": 207,
+      "BeforeUs": 201.7526690391459,
+      "AfterUs": 154.45725190839696,
+      "ChangePercent": -23.442275810275525,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0039880253082138,
+      "AfterSpread": 1.0064571446542754,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "actual-chinese-alternate-finite-live",
+      "InputBytes": 813478,
+      "Expected": 207,
+      "BeforeUs": 48623.85,
+      "AfterUs": 48931.649999999994,
+      "ChangePercent": 0.6330226833128005,
+      "BeforeBytes": 1984,
+      "AfterBytes": 1984,
+      "BeforeSpread": 1.001889349563628,
+      "AfterSpread": 1.0038065229215987,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "actual-chinese-alternate-deadline-live",
+      "InputBytes": 813478,
+      "Expected": 207,
+      "BeforeUs": 15061.8,
+      "AfterUs": 15231.675,
+      "ChangePercent": 1.1278532446321154,
+      "BeforeBytes": 160,
+      "AfterBytes": 160,
+      "BeforeSpread": 1.0053036462152083,
+      "AfterSpread": 1.0452079655753734,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "actual-chinese-alternate-live-only",
+      "InputBytes": 813478,
+      "Expected": 207,
+      "BeforeUs": 7291.911111111111,
+      "AfterUs": 7445.366666666667,
+      "ChangePercent": 2.104462783723826,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.005061278548846,
+      "AfterSpread": 1.0107041170605127,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "actual-chinese-single-control",
+      "InputBytes": 813478,
+      "Expected": 30,
+      "BeforeUs": 95.81645569620254,
+      "AfterUs": 96.19904306220096,
+      "ChangePercent": 0.39929192038938854,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.02379160512287,
+      "AfterSpread": 1.0042859421098793,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "dense-chinese-matches",
+      "InputBytes": 18944,
+      "Expected": 1280,
+      "BeforeUs": 27.743905817174518,
+      "AfterUs": 28.153694355208813,
+      "ChangePercent": 1.477039825375348,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0140825502254747,
+      "AfterSpread": 1.0307323884126565,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "dense-false-prefixes",
+      "InputBytes": 81920,
+      "Expected": 0,
+      "BeforeUs": 239.9936,
+      "AfterUs": 252.22320675105482,
+      "ChangePercent": 5.095805367749318,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0991426000740963,
+      "AfterSpread": 1.0250160576045435,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "chinese-no-prefix-miss",
+      "InputBytes": 73728,
+      "Expected": 0,
+      "BeforeUs": 18.174190674190672,
+      "AfterUs": 13.366452755034299,
+      "ChangePercent": -26.453656205906782,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.019386749359014,
+      "AfterSpread": 1.005890389556858,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "short-offset-tail",
+      "InputBytes": 74,
+      "Expected": 2,
+      "BeforeUs": 0.25872749323630934,
+      "AfterUs": 0.24709462792565443,
+      "ChangePercent": -4.4961844468651035,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0045974746728403,
+      "AfterSpread": 1.0105158591959456,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "ordered-overlap-long-first",
+      "InputBytes": 24576,
+      "Expected": 2048,
+      "BeforeUs": 36.404815695600476,
+      "AfterUs": 35.68150563129816,
+      "ChangePercent": -1.98685270198945,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0115972518983598,
+      "AfterSpread": 1.0052593072945246,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "actual-chinese-reverse-control",
+      "InputBytes": 813478,
+      "Expected": 207,
+      "BeforeUs": 50903.55,
+      "AfterUs": 52409.75,
+      "ChangePercent": 2.9589291905967263,
+      "BeforeBytes": 1872,
+      "AfterBytes": 1872,
+      "BeforeSpread": 1.009077312539339,
+      "AfterSpread": 1.0084707573429725,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "ascii-family-control",
+      "InputBytes": 26624,
+      "Expected": 4096,
+      "BeforeUs": 53.720982142857146,
+      "AfterUs": 53.72768817204301,
+      "ChangePercent": 0.0124830725693581,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0042832014805305,
+      "AfterSpread": 1.0056846748406214,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "folded-family",
+      "InputBytes": 14592,
+      "Expected": 1024,
+      "BeforeUs": 23.75131101250504,
+      "AfterUs": 23.691998423334645,
+      "ChangePercent": -0.24972343269459296,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0107201970493838,
+      "AfterSpread": 1.005693153536661,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "actual-russian-folded-control",
+      "InputBytes": 1570556,
+      "Expected": 746,
+      "BeforeUs": 228.43284132841328,
+      "AfterUs": 259.1316455696203,
+      "ChangePercent": 13.438875103370961,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0144300426194173,
+      "AfterSpread": 1.01256907005601,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "python-count-control",
+      "InputBytes": 9216,
+      "Expected": 1024,
+      "BeforeUs": 9.655926463473632,
+      "AfterUs": 9.629673495518567,
+      "ChangePercent": -0.27188450589774593,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0190814642719852,
+      "AfterSpread": 1.0157679874695904,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    }
+  ]
+}
