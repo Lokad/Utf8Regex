@@ -1,0 +1,60 @@
+{
+  "Decision": "DEFERRED, not a demonstrated product regression. No promotion or catalog refresh. One initial run plus ONE allowed confirmation both ended134 at an unrelated .NET sparse-split sample below20ms. Stop timing; restore prototype.",
+  "BaselineSource": "428d7732813ab5f938e4fd5310818f1fed0a24e2",
+  "PreflightCases": 14,
+  "InitialSparseComparatorMs": 10.1557,
+  "ConfirmationSparseComparatorMs": 19.0171,
+  "FullPythonChecksPerTarget": 4732,
+  "Targets": [
+    "net10.0",
+    "net11.0"
+  ],
+  "PartialPublicObservations": [
+    {
+      "Name": "unicode-split",
+      "BaselineUs": 120.40464646464646,
+      "CandidateUs": 57.20729366602687,
+      "ChangePercent": -52.487470088769186,
+      "CompleteControlCoverage": false,
+      "AllocationDataAvailable": false
+    },
+    {
+      "Name": "finite-split",
+      "BaselineUs": 162.2051912568306,
+      "CandidateUs": 96.3736,
+      "ChangePercent": -40.585378770396396,
+      "CompleteControlCoverage": false,
+      "AllocationDataAvailable": false
+    },
+    {
+      "Name": "deadline-split",
+      "BaselineUs": 224.86367041198503,
+      "CandidateUs": 168.20305555555555,
+      "ChangePercent": -25.19776305021548,
+      "CompleteControlCoverage": false,
+      "AllocationDataAvailable": false
+    },
+    {
+      "Name": "dense-split",
+      "BaselineUs": 64.02433297758805,
+      "CandidateUs": 60.7658215010142,
+      "ChangePercent": -5.089489144251602,
+      "CompleteControlCoverage": false,
+      "AllocationDataAvailable": false
+    }
+  ],
+  "Unmeasured": [
+    "complete sparse-split",
+    "miss-split",
+    "supplementary-split",
+    "captured-split",
+    "offset-split",
+    "fold-closure-split",
+    "ascii-class-control",
+    "range-control",
+    "unchanged Core control",
+    "construction"
+  ],
+  "FailedArchive": "DDC3784862E9D74D0DAEF60DD13B6F0F9D1552483C0C6E75A8560BB8D1ED8CFD",
+  "ConfirmationArchive": "64531BF1AB5BB8E9586DAD9E420EEFB99B8A50C65A3E76B196AFDAEEFC5AF1C2"
+}
