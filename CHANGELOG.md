@@ -43,6 +43,9 @@
   positive boundaries. Date recognition and finite controls use less time and
   temporary storage. Excluded ASCII separators give bounded word Count the same
   frame savings; declined proofs can cost more.
+- Reuse greedy class runs before two disjoint literal alternatives, reducing
+  imports Count time and temporary storage. Overlapping, folded and RTL calls
+  can cost more; captures and resource controls retain their contracts.
 - Speed up repeated-segment Count with Unicode separators and declaration searches
   by skipping impossible word-interior starts, preserving strict validation and
   existing cancellation and resource authority.

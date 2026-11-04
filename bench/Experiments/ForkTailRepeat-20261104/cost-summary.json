@@ -1,0 +1,194 @@
+{
+  "ElapsedSeconds": 78.7152778,
+  "OwnedSamples": 150,
+  "MinimumOwnedDurationMs": 45.1111,
+  "Baseline": {
+    "Core": {
+      "Version": "0.5.0-dev.27+11a26e26db6782530ea048d043dd12dee21b855c",
+      "Sha256": "35C4A097542A7F81A9E3BE0026BD03E87F0EB742EC9B7F673B15572BCEBA8F34"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.27+11a26e26db6782530ea048d043dd12dee21b855c",
+      "Sha256": "CFC7A9954B6F4ABED1D46EE811EB2E9D49E01C39CEBFA41D2FE8C82079CB5926"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.27+11a26e26db6782530ea048d043dd12dee21b855c",
+      "Sha256": "2983554796BA42B7383DD9D883CA2A394C3FBE2AD12C9BFE4002CAB642E0CDF3"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+11a26e26db6782530ea048d043dd12dee21b855c",
+      "Sha256": "3FBD42AFAF643A1F7B599D561FFECC20B22B4A9216569BB933C846CD1A3CAB4D"
+    }
+  },
+  "Candidate": {
+    "Core": {
+      "Version": "0.5.0-dev.27+e3ac261f2e04943bec7df7831040e5cdf8ba8bcd",
+      "Sha256": "F39535858CC2EA82151AB269EF9652E4CC1972332668FA66925503912EF1A9BB"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.27+11a26e26db6782530ea048d043dd12dee21b855c",
+      "Sha256": "CFC7A9954B6F4ABED1D46EE811EB2E9D49E01C39CEBFA41D2FE8C82079CB5926"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.27+11a26e26db6782530ea048d043dd12dee21b855c",
+      "Sha256": "2983554796BA42B7383DD9D883CA2A394C3FBE2AD12C9BFE4002CAB642E0CDF3"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+11a26e26db6782530ea048d043dd12dee21b855c",
+      "Sha256": "3FBD42AFAF643A1F7B599D561FFECC20B22B4A9216569BB933C846CD1A3CAB4D"
+    }
+  },
+  "RawSha256": "E9FD70464CE9348E321857C09884B640BFDBBCDE2147DAA3D90A070C0ED12410",
+  "Rows": [
+    {
+      "Name": "native-count-control",
+      "BeforeUs": 2.1536337760910813,
+      "AfterUs": 2.158749731163524,
+      "DeltaPercent": 0.23754990886744043,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0138369492209236,
+      "AfterSpread": 1.015181574510759
+    },
+    {
+      "Name": "actual-imports",
+      "BeforeUs": 13.955748422001802,
+      "AfterUs": 12.334384599631374,
+      "DeltaPercent": -11.617892307475842,
+      "BeforeBytes": 3568.0,
+      "AfterBytes": 1952.0,
+      "BeforeSpread": 1.1122715669192431,
+      "AfterSpread": 1.0466454915835748
+    },
+    {
+      "Name": "actual-imports-compiled",
+      "BeforeUs": 14.10903803131991,
+      "AfterUs": 12.33892798013245,
+      "DeltaPercent": -12.545930114144465,
+      "BeforeBytes": 3568.0,
+      "AfterBytes": 1952.0,
+      "BeforeSpread": 1.113543345430092,
+      "AfterSpread": 1.0526265138353534
+    },
+    {
+      "Name": "actual-imports-finite-live",
+      "BeforeUs": 16.812351029252437,
+      "AfterUs": 14.808418177303203,
+      "DeltaPercent": -11.919408823087952,
+      "BeforeBytes": 3680.0,
+      "AfterBytes": 2064.0,
+      "BeforeSpread": 1.0936712168597804,
+      "AfterSpread": 1.0512033706571289
+    },
+    {
+      "Name": "actual-imports-deadline-live",
+      "BeforeUs": 18.356108995019046,
+      "AfterUs": 16.803372028745166,
+      "DeltaPercent": -8.45896571378617,
+      "BeforeBytes": 3728.0,
+      "AfterBytes": 2112.0,
+      "BeforeSpread": 1.0978367083089042,
+      "AfterSpread": 1.053881932624412
+    },
+    {
+      "Name": "actual-imports-detailed",
+      "BeforeUs": 160.32340425531913,
+      "AfterUs": 155.88151041666666,
+      "DeltaPercent": -2.7705835335049667,
+      "BeforeBytes": 197976.0,
+      "AfterBytes": 196360.0,
+      "BeforeSpread": 1.0239943767635522,
+      "AfterSpread": 1.028385682808664
+    },
+    {
+      "Name": "dense-fork-count",
+      "BeforeUs": 918.415625,
+      "AfterUs": 248.78403361344536,
+      "DeltaPercent": -72.91160702830537,
+      "BeforeBytes": 3552.0,
+      "AfterBytes": 1936.0,
+      "BeforeSpread": 1.0144285136626252,
+      "AfterSpread": 1.0113091629691138
+    },
+    {
+      "Name": "unicode-fork-count",
+      "BeforeUs": 432.51240875912407,
+      "AfterUs": 409.4020408163265,
+      "DeltaPercent": -5.343284371678736,
+      "BeforeBytes": 3552.0,
+      "AfterBytes": 1936.0,
+      "BeforeSpread": 1.0129555412152293,
+      "AfterSpread": 1.007676915348657
+    },
+    {
+      "Name": "overlapping-second-tail",
+      "BeforeUs": 303.465625,
+      "AfterUs": 324.6690217391304,
+      "DeltaPercent": 6.9870835417126465,
+      "BeforeBytes": 3552.0,
+      "AfterBytes": 3552.0,
+      "BeforeSpread": 1.0230219043361646,
+      "AfterSpread": 1.0100350756834378
+    },
+    {
+      "Name": "folded-tail-declined",
+      "BeforeUs": 408.4201388888889,
+      "AfterUs": 421.43333333333334,
+      "DeltaPercent": 3.186227417640808,
+      "BeforeBytes": 3552.0,
+      "AfterBytes": 3552.0,
+      "BeforeSpread": 1.0081052519980984,
+      "AfterSpread": 1.0115788509422807
+    },
+    {
+      "Name": "tiny-fork-count",
+      "BeforeUs": 0.7773872050721162,
+      "AfterUs": 0.6022427485215432,
+      "DeltaPercent": -22.52988670354116,
+      "BeforeBytes": 3552.0,
+      "AfterBytes": 1936.0,
+      "BeforeSpread": 1.1580150091486299,
+      "AfterSpread": 1.1299416688604347
+    },
+    {
+      "Name": "capture-dependent-detailed",
+      "BeforeUs": 1.3406738715829625,
+      "AfterUs": 1.117036316233981,
+      "DeltaPercent": -16.680981116229844,
+      "BeforeBytes": 6384.0,
+      "AfterBytes": 4768.0,
+      "BeforeSpread": 1.1622443569282483,
+      "AfterSpread": 1.1118252255403547
+    },
+    {
+      "Name": "rtl-count-control",
+      "BeforeUs": 1114.8574074074074,
+      "AfterUs": 1226.0739999999998,
+      "DeltaPercent": 9.97585806522341,
+      "BeforeBytes": 3552.0,
+      "AfterBytes": 3552.0,
+      "BeforeSpread": 1.013247718485565,
+      "AfterSpread": 1.0112433202940458
+    },
+    {
+      "Name": "python-fork-count",
+      "BeforeUs": 942.7354838709678,
+      "AfterUs": 273.31838565022423,
+      "DeltaPercent": -71.00794546016755,
+      "BeforeBytes": 5744.0,
+      "AfterBytes": 4128.0,
+      "BeforeSpread": 1.0123212048624017,
+      "AfterSpread": 1.011520055256796
+    },
+    {
+      "Name": "pcre-count-control",
+      "BeforeUs": 145.0102189781022,
+      "AfterUs": 143.9624703087886,
+      "DeltaPercent": -0.7225343680584362,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0101319049799344,
+      "AfterSpread": 1.0139494260660493
+    }
+  ]
+}

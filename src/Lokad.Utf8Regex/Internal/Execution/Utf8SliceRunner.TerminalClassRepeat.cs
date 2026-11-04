@@ -187,10 +187,24 @@ internal static partial class Utf8SliceRunner
         // End anchors can succeed only at the subject end or before LF. If the
         // atom excludes LF, no shorter endpoint can satisfy either kind of end.
         // Keep this conservative proof for absolute ends as well as multiline $.
-        var excludedScalar = suffix.Kind == Utf8SliceInstructionKind.Literal && suffix.B == 0 && Rune.IsValid(suffix.A)
-            ? suffix.A
-            : suffix.Kind == Utf8SliceInstructionKind.Anchor &&
-                suffix.A is (int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd ? '\n' : -1;
+        var alternateScalar = -1;
+        int excludedScalar;
+        if (suffix is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } && suffix.A > tail)
+        {
+            // Each alternative's first consuming atom must be an excluded literal.
+            // Only inspect through bounded capture markers;
+            // the VM still executes their effects and chooses the branch normally.
+            if (!TryGetLiteralAfterCaptureMarkers(instructions, tail + 1, out excludedScalar) ||
+                !TryGetLiteralAfterCaptureMarkers(instructions, suffix.A, out alternateScalar))
+                return false;
+        }
+        else
+        {
+            excludedScalar = suffix.Kind == Utf8SliceInstructionKind.Literal && suffix.B == 0 && Rune.IsValid(suffix.A)
+                ? suffix.A
+                : suffix.Kind == Utf8SliceInstructionKind.Anchor &&
+                    suffix.A is (int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd ? '\n' : -1;
+        }
         if (excludedScalar < 0) return false;
 
         // Every shorter greedy boundary points at a scalar accepted by this
@@ -247,8 +261,39 @@ internal static partial class Utf8SliceRunner
             }
             return false;
         }
+        if (alternateScalar >= 0)
+        {
+            breach = invocation.TryChargeStep();
+            if (breach == Utf8ExecutionLimitKind.None)
+                breach = TryMatchScalarClass(program, atom, new Rune(alternateScalar), ref invocation, out includesLiteral);
+            if (breach != Utf8ExecutionLimitKind.None)
+            {
+                outcome = new(false, -1, breach, null, null);
+                return true;
+            }
+            if (includesLiteral) return false;
+        }
         outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
         return true;
+    }
+
+    private static bool TryGetLiteralAfterCaptureMarkers(ReadOnlySpan<Utf8SliceInstruction> instructions,
+        int index, out int scalar)
+    {
+        for (var inspected = 0; inspected < 32 && (uint)index < (uint)instructions.Length; inspected++, index++)
+        {
+            var instruction = instructions[index];
+            if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
+                continue;
+            if (instruction is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } && Rune.IsValid(instruction.A))
+            {
+                scalar = instruction.A;
+                return true;
+            }
+            break;
+        }
+        scalar = -1;
+        return false;
     }
 
     private static Utf8SliceMatchOutcome RunClassRepeat(Utf8SliceProgram program, int repeatIndex,

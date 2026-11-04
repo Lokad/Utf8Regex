@@ -70,6 +70,18 @@ public sealed class Utf8DisjointClassRepeatTests
     [InlineData(@"(.{1,8})\b", "alpha beta gamma")]
     [InlineData(@"(.{1,8})\b", "abc\ndef")]
     [InlineData(@"(\d{1,4})\b", "12-345/6")]
+    [InlineData(@"(?<run>[a-z]+)(?:-|:)", "abc- def: abc? a:-")]
+    [InlineData(@"(?<run>a+)(?:b|a)c", "aaac aaabc")]
+    [InlineData(@"(?<run>a+)(?:a|b)c", "aaac aaabc")]
+    [InlineData(@"(?<run>a+)(?:b|(?i:a))c", "aaaAc aaabc")]
+    [InlineData(@"(?<run>a+)(?:b|(?=a)a)c", "aaac aaabc")]
+    [InlineData(@"(?<run>a+)(?:b|)", "aaa aaab")]
+    [InlineData(@"(?<run>a+)(?:(?<tail>b)|(?<tail>c))", "aaac aaab")]
+    [InlineData(@"(?=(?<run>a+)(?:b|c))\k<run>", "aaab aaac")]
+    [InlineData(@"(?<run>a+)(?:b|c)\k<run>", "aabaa aacaa")]
+    [InlineData(@"(?<pop>a+)(?<-pop>b|c)(?(pop)d|e)", "aaabe abe")]
+    [InlineData(@"(?<run>a+)(?<end>b)?c", "aaabc aaac")]
+    [InlineData("""^import\s+(?<shared>shared\s+)?"(?<path>(\.|[^\\"]*))".*$""", "import shared \"module.nvn\";")]
     public void CapturesAndFallbackKeepOverlappingBclSemantics(string pattern, string text)
     {
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
@@ -121,6 +133,137 @@ public sealed class Utf8DisjointClassRepeatTests
         var match = new Utf8Regex("([a-z]+)-", options).MatchDetailed("abc- def-"u8);
         Assert.Equal("def-", match.GetValueString());
         Assert.Equal("def", match.GetGroup(1).GetValueString());
+    }
+
+    [Theory]
+    [InlineData(RegexOptions.Compiled)]
+    [InlineData(RegexOptions.RightToLeft)]
+    [InlineData(RegexOptions.NonBacktracking)]
+    public void ForkTailsKeepOtherExecutionOptions(RegexOptions option)
+    {
+        const string pattern = @"(?<run>a+)(?:(?<tail>b)|c)";
+        const string text = "aaab aac";
+        var options = RegexOptions.CultureInvariant | option;
+        var oracle = new Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options);
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(oracle.Count(text), regex.Count(input));
+        var expected = oracle.Match(text);
+        var actual = regex.MatchDetailed(input);
+        Assert.Equal(expected.Value, actual.GetValueString());
+        Assert.Equal(expected.Groups["run"].Value, actual.GetGroup(regex.GroupNumberFromName("run")).GetValueString());
+        Assert.Equal(expected.Groups["tail"].Value, actual.GetGroup(regex.GroupNumberFromName("tail")).GetValueString());
+    }
+
+    [Theory]
+    [InlineData("[é😀]+(?:x|y)", "é😀y", "é😀")]
+    [InlineData("[é😀]{1,2}(?:x|y)", "é😀x", "é😀")]
+    [InlineData("[é😀]+(?:x|😀)z", "é😀😀z", "é😀")]
+    [InlineData("[é😀]{2,3}(?:x|y)", "éy", null)]
+    public void ForkTailBoundsAndOverlapUseScalars(string body, string text, string? expected)
+    {
+        var split = body.IndexOf("(?:", StringComparison.Ordinal);
+        var regex = new Utf8Regex("(?<run>" + body[..split] + ")" + body[split..]);
+        var input = Encoding.UTF8.GetBytes(text);
+        var actual = regex.MatchDetailed(input);
+        Assert.Equal(expected is not null, actual.Success);
+        Assert.Equal(expected is null ? 0 : 1, regex.Count(input));
+        if (expected is not null)
+        {
+            Assert.Equal(expected, actual.GetGroup(regex.GroupNumberFromName("run")).GetValueString());
+            Assert.Equal(input.Length, actual.LengthInBytes);
+        }
+    }
+
+    [Fact]
+    public void ForkTailCursorResultsSurviveLaterBranchesAndDisposal()
+    {
+        var regex = new Utf8Regex(@"(?<run>[a-z]+)(?:(?<tail>-)|:)");
+        var input = "abc- def:"u8.ToArray();
+        var cursor = regex.CreateMatchCursor(input);
+        Assert.True(cursor.MoveNext(out var first));
+        var alias = first;
+        Assert.True(cursor.MoveNext(out var second));
+        Assert.Equal("def:", Encoding.UTF8.GetString(second.GetValueMemory().Span));
+        Assert.False(cursor.MoveNext(out _));
+        cursor.Dispose();
+        Assert.Equal("abc-", Encoding.UTF8.GetString(alias.GetValueMemory().Span));
+        Assert.Equal("abc", Encoding.UTF8.GetString(alias.GetGroupMemory(regex.GroupNumberFromName("run")).Span));
+        Assert.Equal("-", Encoding.UTF8.GetString(alias.GetGroupMemory(regex.GroupNumberFromName("tail")).Span));
+    }
+
+    [Theory]
+    [InlineData(0)] [InlineData(1)] [InlineData(31)] [InlineData(32)] [InlineData(33)]
+    public void NestedCaptureTailsKeepResultsAcrossBoundedInspection(int nesting)
+    {
+        var pattern = "(?<run>a+)(?:" + new string('(', nesting) + "b" + new string(')', nesting) + "|c)";
+        const string text = "aaab aac";
+        var oracle = new Regex(pattern);
+        var regex = new Utf8Regex(pattern);
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(oracle.Count(text), regex.Count(input));
+        var actual = regex.MatchDetailed(input);
+        var expected = oracle.Match(text);
+        foreach (var number in oracle.GetGroupNumbers())
+            Assert.Equal(expected.Groups[number].Value, actual.GetGroup(number).GetValueString());
+    }
+
+    [Fact]
+    public void ForkTailProofKeepsEveryWorkCutoffAndParentLoan()
+    {
+        var regex = new Utf8Regex(@"(?<run>a+)(?:(?<tail>b)|c)");
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        var input = "aaab aac"u8.ToArray();
+        var starts = new int[program.GroupCount];
+        var ends = new int[program.GroupCount];
+        var baseline = new Utf8SliceInvocation(new(100000, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        Assert.True(baseline.Ledger.TryReserve(13));
+        var result = Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref baseline);
+        Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
+        Assert.Equal(2, result.Count);
+        Assert.Equal(13UL, baseline.Ledger.ReservedBytes);
+        for (ulong limit = 1; limit < baseline.Budget.Steps; limit++)
+        {
+            var invocation = new Utf8SliceInvocation(new(limit, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
+            Assert.True(invocation.Ledger.TryReserve(13));
+            var denied = Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref invocation);
+            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, denied.Breach);
+            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        }
+        byte[] malformed = [.. input, 0xff];
+        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
+        var limited = new Utf8Regex(regex.Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
+            new Utf8ResourcePolicy { MaxWorkingBytes = 1 });
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input)).ResourceKind);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ForkTailMatchingObservesOriginalInterruption(bool timeout)
+    {
+        var regex = new Utf8Regex(@"(?<run>a+)(?:b|c)", RegexOptions.None, TimeSpan.FromMilliseconds(20));
+        var input = Encoding.UTF8.GetBytes(new string('a', 200000) + "b");
+        using var token = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var entered = false;
+        var session = Utf8SearchDiagnosticsSession.Start(_ =>
+        {
+            if (entered || !new System.Diagnostics.StackTrace().GetFrames().Any(frame =>
+                frame.GetMethod()?.DeclaringType?.Name == nameof(Utf8SliceRunner))) return;
+            entered = true;
+            if (timeout) ticks = 25; else token.Cancel();
+        });
+        try
+        {
+            if (timeout) Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(input, token.Token));
+            else Assert.Equal(token.Token,
+                Assert.Throws<OperationCanceledException>(() => regex.Count(input, token.Token)).CancellationToken);
+            Assert.True(entered);
+        }
+        finally { session.Complete(); }
     }
 
     [Theory]

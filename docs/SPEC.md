@@ -303,6 +303,10 @@ unused counter vectors. Empty-match advancement and nonempty retries retain thei
 profile rules; required work/working capacity can be lower than earlier builds.
 Pure literal runs can lower working and depth requirements; repeats requiring
 rewinding or captures inside the body retain their continuation frames.
+Greedy class runs before two exact literal alternatives can omit rewinds when
+both first literals are excluded by the class. Capture-marker inspection is
+bounded; normal alternatives and capture effects still execute. Avoided journal
+storage can lower working requirements, while declined proofs can increase work.
 Nonempty bounded runs before a positive word boundary can also omit useless
 rewinds when a bounded ASCII input check proves every shorter endpoint lies
 between word scalars. This uses the profile's actual word predicate and can stop
