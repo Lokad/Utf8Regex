@@ -61,6 +61,9 @@
 - Speed up mixed-text keyword-family Count with the existing checked SIMD prefix
   filter. Miss scans and dense matches can cost more; the additional compiled
   search storage is admitted through the existing resource controls.
+- Widen large exact UTF-8 literal Count scans on 512-bit vector hardware while
+  retaining the 256-bit fallback. Dense false prefixes and some long or mixed
+  literals can cost more; validation and finite resource routes remain.
 - Speed up multiline searches beginning with a mandatory ASCII literal using
   bounded checked line-start discovery. Finite/live-token and deadline operations
   benefit too; sparse and false-prefix misses can cost more.

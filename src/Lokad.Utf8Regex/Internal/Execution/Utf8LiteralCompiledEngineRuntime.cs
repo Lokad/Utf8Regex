@@ -659,6 +659,35 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         var second = Vector256.Create(literal[1]);
         var fourth = Vector256.Create(literal[3]);
 
+        if (Vector512.IsHardwareAccelerated)
+        {
+            var wideFirst = Vector512.Create(literal[0]);
+            var wideSecond = Vector512.Create(literal[1]);
+            var wideFourth = Vector512.Create(literal[3]);
+            while (index <= maxStart - (Vector512<byte>.Count - 1))
+            {
+                var blockStart = index;
+                var block = input.Slice(blockStart, Vector512<byte>.Count + 3);
+                var matches = Vector512.BitwiseAnd(
+                    Vector512.Equals(MemoryMarshal.Read<Vector512<byte>>(block), wideFirst),
+                    Vector512.Equals(MemoryMarshal.Read<Vector512<byte>>(block[1..]), wideSecond));
+                matches = Vector512.BitwiseAnd(matches,
+                    Vector512.Equals(MemoryMarshal.Read<Vector512<byte>>(block[3..]), wideFourth));
+                var candidateBits = matches.ExtractMostSignificantBits();
+                while (candidateBits != 0)
+                {
+                    var candidate = blockStart + BitOperations.TrailingZeroCount(candidateBits);
+                    if (candidate >= index && input.Slice(candidate, literal.Length).SequenceEqual(literal))
+                    {
+                        count++;
+                        index = candidate + literal.Length;
+                    }
+                    candidateBits &= candidateBits - 1;
+                }
+                index = Math.Max(index, blockStart + Vector512<byte>.Count);
+            }
+        }
+
         while (index <= maxStart - (Vector256<byte>.Count - 1))
         {
             // Correlate the first scalar and the final byte of the next scalar.
