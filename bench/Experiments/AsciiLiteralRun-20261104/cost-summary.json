@@ -1,0 +1,236 @@
+{
+  "ElapsedSeconds": 86.9955535,
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "OwnedSamples": 160,
+  "MinimumOwnedDurationMs": 58.1586,
+  "Baseline": {
+    "Core": {
+      "Version": "0.5.0-dev.24+49b8f2b1119745a71bca42eda77aa989921664e4",
+      "Sha256": "75DE77C230A5D5310C474C94335CF7F7D262E87A4959EB107A038FF848EB2348"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.24+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "65C6801C223998510735305C3258BC22C22169D85A707E3EB44B803EF257C239"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.24+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "AF7B8BDE6ECE463347D499B73FA1FBB166B142FFC61CBE26ED6834E1E8A26AF2"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "91B3BEB5D079BEF7F4B3550D71491FCD2924D4A3857D841D424AB074A2E792FF"
+    }
+  },
+  "Candidate": {
+    "Core": {
+      "Version": "0.5.0-dev.24+bde712e78684a5588c58177ea92100fe2450c6b9",
+      "Sha256": "01A4B64ECDE23E807327E8E504EBFA4D4AAE728D64FC4EBABFB403610785B7BC"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.24+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "65C6801C223998510735305C3258BC22C22169D85A707E3EB44B803EF257C239"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.24+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "AF7B8BDE6ECE463347D499B73FA1FBB166B142FFC61CBE26ED6834E1E8A26AF2"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "91B3BEB5D079BEF7F4B3550D71491FCD2924D4A3857D841D424AB074A2E792FF"
+    }
+  },
+  "Rows": [
+    {
+      "Name": "ascii-control-first",
+      "Profile": "Core",
+      "Operation": "Count",
+      "BeforeUs": 2.5077289192148933,
+      "AfterUs": 2.5195501437510566,
+      "ChangePercent": 0.4713916422778297,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0486807978120385,
+      "AfterSpread": 1.00315024694305
+    },
+    {
+      "Name": "actual-one-capture-findall",
+      "Profile": "PythonRe",
+      "Operation": "FindAll",
+      "BeforeUs": 449.7136363636364,
+      "AfterUs": 431.6194244604316,
+      "ChangePercent": -4.023496385280589,
+      "BeforeBytes": 112944,
+      "AfterBytes": 112944,
+      "BeforeSpread": 1.0117740865137193,
+      "AfterSpread": 1.0050932257096161
+    },
+    {
+      "Name": "actual-one-capture-finite-live",
+      "Profile": "PythonRe",
+      "Operation": "FindAll",
+      "BeforeUs": 656.2215053763441,
+      "AfterUs": 647.3354838709677,
+      "ChangePercent": -1.354119216236338,
+      "BeforeBytes": 117144,
+      "AfterBytes": 117144,
+      "BeforeSpread": 1.0040371178717076,
+      "AfterSpread": 1.003875453023652
+    },
+    {
+      "Name": "actual-one-capture-deadline-live",
+      "Profile": "PythonRe",
+      "Operation": "FindAll",
+      "BeforeUs": 878.4927536231884,
+      "AfterUs": 860.3774647887324,
+      "ChangePercent": -2.062087451460781,
+      "BeforeBytes": 113104,
+      "AfterBytes": 113104,
+      "BeforeSpread": 1.0063846992113796,
+      "AfterSpread": 1.003534553248528
+    },
+    {
+      "Name": "actual-many-capture-findall",
+      "Profile": "PythonRe",
+      "Operation": "FindAll",
+      "BeforeUs": 724.2182926829269,
+      "AfterUs": 686.316091954023,
+      "ChangePercent": -5.233532639515637,
+      "BeforeBytes": 260400,
+      "AfterBytes": 260400,
+      "BeforeSpread": 1.0076679224401033,
+      "AfterSpread": 1.0077463401824982
+    },
+    {
+      "Name": "actual-imports-count",
+      "Profile": "Core",
+      "Operation": "Count",
+      "BeforeUs": 20.69188647746244,
+      "AfterUs": 20.451941586458677,
+      "ChangePercent": -1.159608580228344,
+      "BeforeBytes": 3568,
+      "AfterBytes": 3568,
+      "BeforeSpread": 1.074143327034084,
+      "AfterSpread": 1.043361583809002
+    },
+    {
+      "Name": "dense-prefix-findall",
+      "Profile": "PythonRe",
+      "Operation": "FindAll",
+      "BeforeUs": 213.2225,
+      "AfterUs": 197.80633333333333,
+      "ChangePercent": -7.230084379775437,
+      "BeforeBytes": 63704,
+      "AfterBytes": 63704,
+      "BeforeSpread": 1.0123920824731212,
+      "AfterSpread": 1.00909565208582
+    },
+    {
+      "Name": "long-prefix-findall",
+      "Profile": "PythonRe",
+      "Operation": "FindAll",
+      "BeforeUs": 59.10307539682539,
+      "AfterUs": 45.241892940263774,
+      "ChangePercent": -23.452557017542507,
+      "BeforeBytes": 4840,
+      "AfterBytes": 4840,
+      "BeforeSpread": 1.0060254249700749,
+      "AfterSpread": 1.0085748281423557
+    },
+    {
+      "Name": "failed-prefix-branch-findall",
+      "Profile": "PythonRe",
+      "Operation": "FindAll",
+      "BeforeUs": 252.12784810126584,
+      "AfterUs": 228.69731800766283,
+      "ChangePercent": -9.29311469163544,
+      "BeforeBytes": 53264,
+      "AfterBytes": 53264,
+      "BeforeSpread": 1.0061854321078785,
+      "AfterSpread": 1.0058898718423088
+    },
+    {
+      "Name": "single-literal-findall",
+      "Profile": "PythonRe",
+      "Operation": "FindAll",
+      "BeforeUs": 173.33052325581397,
+      "AfterUs": 171.19656160458453,
+      "ChangePercent": -1.2311516812765766,
+      "BeforeBytes": 47320,
+      "AfterBytes": 47320,
+      "BeforeSpread": 1.003511475239232,
+      "AfterSpread": 1.0063303686330907
+    },
+    {
+      "Name": "unicode-prefix-control",
+      "Profile": "PythonRe",
+      "Operation": "FindAll",
+      "BeforeUs": 208.41964912280702,
+      "AfterUs": 207.84720279720278,
+      "ChangePercent": -0.27466044013294555,
+      "BeforeBytes": 63744,
+      "AfterBytes": 63744,
+      "BeforeSpread": 1.0058565500488046,
+      "AfterSpread": 1.0067464911317103
+    },
+    {
+      "Name": "folded-prefix-control",
+      "Profile": "PythonRe",
+      "Operation": "FindAll",
+      "BeforeUs": 118.72286282306163,
+      "AfterUs": 118.69920159680639,
+      "ChangePercent": -0.019929797591311527,
+      "BeforeBytes": 26880,
+      "AfterBytes": 26880,
+      "BeforeSpread": 1.0068025952136241,
+      "AfterSpread": 1.0263541118886779
+    },
+    {
+      "Name": "reverse-count-control",
+      "Profile": "Core",
+      "Operation": "Count",
+      "BeforeUs": 353.9011834319527,
+      "AfterUs": 353.22261904761905,
+      "ChangePercent": -0.1917383767280123,
+      "BeforeBytes": 3552,
+      "AfterBytes": 3552,
+      "BeforeSpread": 1.0072317173984635,
+      "AfterSpread": 1.0071489051020872
+    },
+    {
+      "Name": "nonbacktracking-control",
+      "Profile": "Core",
+      "Operation": "Count",
+      "BeforeUs": 323.53279569892476,
+      "AfterUs": 313.26979166666666,
+      "ChangePercent": -3.1721680672548325,
+      "BeforeBytes": 143536,
+      "AfterBytes": 143536,
+      "BeforeSpread": 1.0099252509766246,
+      "AfterSpread": 1.0078801982187102
+    },
+    {
+      "Name": "pcre-prefix-count",
+      "Profile": "Pcre2",
+      "Operation": "Count",
+      "BeforeUs": 74.55475285171103,
+      "AfterUs": 69.80140845070422,
+      "ChangePercent": -6.375642355707612,
+      "BeforeBytes": 2256,
+      "AfterBytes": 2256,
+      "BeforeSpread": 1.0096393670523776,
+      "AfterSpread": 1.0589442296515301
+    },
+    {
+      "Name": "prefix-value-match",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 285.36555023923444,
+      "AfterUs": 281.60934579439254,
+      "ChangePercent": -1.3162781708208726,
+      "BeforeBytes": 2256,
+      "AfterBytes": 2256,
+      "BeforeSpread": 1.0028642121399565,
+      "AfterSpread": 1.0029830060058964
+    }
+  ]
+}
