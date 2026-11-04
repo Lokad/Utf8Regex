@@ -58,6 +58,10 @@
   scalar instructions, avoiding VM arrays and cold preparation for those calls.
 - Reuse validated subject-end coordinates for PythonRe scalar value results,
   avoiding redundant Unicode scans without changing strict input validation.
+- Defer exact PythonRe Search coordinate projection until a hit, widen checked
+  UTF-8 validation on supported hardware and reuse invariant SIMD mask metadata.
+  Larger Unicode searches and Chinese Count improve; tiny or late Search hits,
+  dense false prefixes and folded Russian Count can cost more.
 - Use the runtime's checked ASCII predicate for boolean input checks, reducing
   literal Count validation cost. Accept a complete ASCII validity proof before
   Unicode selection for faster matching; late Unicode after a long ASCII prefix
