@@ -27,6 +27,12 @@
 - Reduce temporary allocations for Boolean and coordinate-only matching when
   captures cannot affect the match. Capture-dependent expressions, detailed
   results and cursors retain their capture storage.
+- Reuse bounded ordered-window Count on eligible mixed Unicode input, deriving
+  gap limits in scalars. Unicode-constrained classes retain scalar execution;
+  ASCII and deadline calls can cost more while match scratch decreases.
+- Batch ASCII runs in the Unicode email-token counter using checked searches.
+  Dense and long tokens improve; the large document corpus remains validation
+  dominated. Work units charge bounded scans rather than helper characters.
 - Reject impossible bounded scalar-gap candidates using short ASCII tail prefixes.
   Corpus Count and finite/deadline operations improve; single-byte tails can cost
   more. Strict validation, captures and bounded interruption remain.
