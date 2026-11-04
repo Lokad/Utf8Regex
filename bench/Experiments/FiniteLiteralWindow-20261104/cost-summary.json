@@ -1,0 +1,316 @@
+{
+  "Source": "f3997fd10b0ce538a6a633351eefac1e25c960e4",
+  "ElapsedSeconds": 89.698204,
+  "Cases": 17,
+  "OwnedSamples": 170,
+  "MinimumOwnedMilliseconds": 56.1083,
+  "Scope": "One17case <=120s public Count comparison. Baseline accepted wide Core3a8cf7e2, six unchanged companions. Only exact17-32B bounded prepared search cutoff changes. Actual Chinese finite/live,deadline/live,live-only;16/33B unchanged,23B dense-first/miss/dense-last adverse/dense-match/reverse/captured/supplementary and folded controls. Count outputs consumed after timing. Same-options BCL diagnostics separate. Normal8CPUstartup thenCPU2, managed1.5s/min128 and BCL250ms/min64 warmup, independent60ms calibration,5alternating samples,owned>=20ms. One prebounded comparison,at most one noise confirmation. Preserve all local costs; no universal10%gate or package qualification.",
+  "Rows": [
+    {
+      "Name": "ascii-control-first",
+      "InputBytes": 65542,
+      "Expected": 1,
+      "BeforeUs": 2.5014212747057516,
+      "AfterUs": 2.5002609343936384,
+      "ChangePercent": -0.04638724087967505,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.032813327083515,
+      "AfterSpread": 1.0096740640888024,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "actual-chinese-finite-live",
+      "InputBytes": 813478,
+      "Expected": 30,
+      "BeforeUs": 1214.4920000000002,
+      "AfterUs": 605.08,
+      "ChangePercent": -50.17834617272078,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.008468412902332,
+      "AfterSpread": 1.0057453745427554,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "actual-chinese-deadline-live",
+      "InputBytes": 813478,
+      "Expected": 30,
+      "BeforeUs": 2142.4241379310342,
+      "AfterUs": 617.1204081632653,
+      "ChangePercent": -71.19522706837937,
+      "BeforeBytes": 160,
+      "AfterBytes": 160,
+      "BeforeSpread": 1.0086332535838887,
+      "AfterSpread": 1.0093814276996547,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "actual-chinese-live-only",
+      "InputBytes": 813478,
+      "Expected": 30,
+      "BeforeUs": 1189.9941176470588,
+      "AfterUs": 603.8764705882353,
+      "ChangePercent": -49.25382725569578,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.0190523940837302,
+      "AfterSpread": 1.0064312247047735,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "actual-chinese-unlimited-control",
+      "InputBytes": 813478,
+      "Expected": 30,
+      "BeforeUs": 110.8920517560074,
+      "AfterUs": 108.53667262969589,
+      "ChangePercent": -2.1240288091106785,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.009962431516658,
+      "AfterSpread": 1.020586963815081,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "length16-finite-control",
+      "InputBytes": 32784,
+      "Expected": 1,
+      "BeforeUs": 306.53826530612247,
+      "AfterUs": 301.51,
+      "ChangePercent": -1.640338540149644,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.006154148840032,
+      "AfterSpread": 1.012290905330507,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "length17-finite",
+      "InputBytes": 32785,
+      "Expected": 1,
+      "BeforeUs": 444.85661764705884,
+      "AfterUs": 0.9128415968698417,
+      "ChangePercent": -99.7948009402,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.0159052548853156,
+      "AfterSpread": 1.0410525817756615,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "length23-finite",
+      "InputBytes": 32791,
+      "Expected": 1,
+      "BeforeUs": 444.6955555555556,
+      "AfterUs": 0.9080248880795204,
+      "ChangePercent": -99.79580976766339,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.006420382420596,
+      "AfterSpread": 1.0243504996672237,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "length32-finite",
+      "InputBytes": 32800,
+      "Expected": 1,
+      "BeforeUs": 424.59507042253523,
+      "AfterUs": 0.9068410676372459,
+      "ChangePercent": -99.7864221393963,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.0070067615248715,
+      "AfterSpread": 1.0145268718419844,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "length33-finite-control",
+      "InputBytes": 32801,
+      "Expected": 1,
+      "BeforeUs": 438.47985611510796,
+      "AfterUs": 503.16470588235296,
+      "ChangePercent": 14.752068735915703,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.0039604611225688,
+      "AfterSpread": 1.0098059558631582,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "length23-first-dense-miss",
+      "InputBytes": 32768,
+      "Expected": 0,
+      "BeforeUs": 445.06058394160584,
+      "AfterUs": 0.8922812881080349,
+      "ChangePercent": -99.79951464580267,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.046639753105917,
+      "AfterSpread": 1.0298754215776542,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "length23-last-dense-adverse",
+      "InputBytes": 32791,
+      "Expected": 1,
+      "BeforeUs": 1.1810780315926996,
+      "AfterUs": 308.4720812182741,
+      "ChangePercent": 26017.840901866184,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.0052201127974196,
+      "AfterSpread": 1.0073993729848596,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "length23-dense-matches",
+      "InputBytes": 23552,
+      "Expected": 1024,
+      "BeforeUs": 18.105324909747292,
+      "AfterUs": 15.048619477911647,
+      "ChangePercent": -16.88290846517766,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.0027191242854598,
+      "AfterSpread": 1.0062048434573188,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "length23-reverse",
+      "InputBytes": 32791,
+      "Expected": 1,
+      "BeforeUs": 2004.3,
+      "AfterUs": 2049.2533333333336,
+      "ChangePercent": 2.2428445508822836,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.008314733313644,
+      "AfterSpread": 1.0047345376272439,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "length23-supplementary-prefix",
+      "InputBytes": 32797,
+      "Expected": 1,
+      "BeforeUs": 447.30882352941177,
+      "AfterUs": 1.4242892886929583,
+      "ChangePercent": -99.6815870347795,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.0093466299976324,
+      "AfterSpread": 1.002396654739259,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "length23-captured-count",
+      "InputBytes": 32791,
+      "Expected": 1,
+      "BeforeUs": 444.63529411764705,
+      "AfterUs": 0.9272222831794599,
+      "ChangePercent": -99.79146453386714,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.0083750008300298,
+      "AfterSpread": 1.011362360076373,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Name": "length23-folded-control",
+      "InputBytes": 32791,
+      "Expected": 1,
+      "BeforeUs": 1473.160975609756,
+      "AfterUs": 1162.822641509434,
+      "ChangePercent": -21.066152256162617,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.006888587972386,
+      "AfterSpread": 1.009836976052795,
+      "Qualified": [
+        true,
+        true,
+        true,
+        true
+      ]
+    }
+  ]
+}

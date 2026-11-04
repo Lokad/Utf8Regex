@@ -69,7 +69,7 @@ public sealed class Utf8FiniteLiteralMatchTests
 
     [Theory]
     [InlineData(16)] [InlineData(17)] [InlineData(23)] [InlineData(32)] [InlineData(33)]
-    public void PreparedWindowEdgesPreserveReverseRangesAndCaptures(int length)
+    public void FiniteLiteralWindowsPreserveReverseRangesAndCaptures(int length)
     {
         var literal = new string('a', length - 1) + "b";
         using var source = new CancellationTokenSource();
