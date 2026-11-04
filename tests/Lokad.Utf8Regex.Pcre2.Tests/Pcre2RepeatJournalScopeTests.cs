@@ -7,6 +7,23 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 [Collection(Pcre2AllocationTestCollection.Name)]
 public sealed class Pcre2RepeatJournalScopeTests
 {
+    [Theory]
+    [InlineData(@"\d{2,4}\b", "123A 1234 12 1", Pcre2CompileOptions.None, 2)]
+    [InlineData(@"\d{0,4}\b", "201A", Pcre2CompileOptions.None, 2)]
+    [InlineData(@"\d{2,4}\b", "١٢٣ 123A 12", Pcre2CompileOptions.None, 1)]
+    [InlineData(@"\d{2,4}\b", "١٢٣ 123A 12", Pcre2CompileOptions.Ucp, 2)]
+    [InlineData(@".{1,4}\b", "abc !", Pcre2CompileOptions.None, 1)]
+    [InlineData(@"[a-z]{1,4}\B", "abcd!", Pcre2CompileOptions.None, 1)]
+    [InlineData(@"((\d{2,4}))\b", "123A 1234 12", Pcre2CompileOptions.None, 2)]
+    public void BoundedWordRepeatsPreserveProfilePredicates(string pattern, string text, Pcre2CompileOptions options, int expected)
+    {
+        var regex = new Utf8Pcre2Regex(pattern, options, default,
+            new() { MatchLimit = 1000000 }, Timeout.InfiniteTimeSpan);
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(expected, regex.Count(input));
+        Assert.Equal(expected != 0, regex.IsMatch(input));
+    }
+
     [Fact]
     public void ControlledDenseCountDoesNotRerentRepeatStorageForEveryMatch()
     {

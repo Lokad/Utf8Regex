@@ -28,6 +28,9 @@
 - Reuse scalar repeat execution for unfolded literal runs, reducing nullable
   FindAll and Count scratch. Capture-inside, overlapping-tail and RTL operations
   can cost more; numeric work/depth requirements can decrease.
+- Avoid unnecessary repeat frames for proved nonempty bounded word runs before
+  positive boundaries. Date recognition and finite controls use less time and
+  temporary storage; dense bounded word Count can cost more.
 - Speed up repeated-segment Count with Unicode separators and declaration searches
   by skipping impossible word-interior starts, preserving strict validation and
   existing cancellation and resource authority.

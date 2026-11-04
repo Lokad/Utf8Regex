@@ -141,6 +141,32 @@ internal static partial class Utf8SliceRunner
             outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
             return true;
         }
+        if (suffix.Kind == Utf8SliceInstructionKind.Boundary && suffix.A == 1 &&
+            repeat.RepeatMinimum >= 1 && repeat.RepeatMaximum <= 8)
+        {
+            // Every shorter nonempty endpoint lies between consumed word scalars,
+            // where a positive boundary cannot succeed. Prove only this bounded
+            // ASCII input window using the actual profile predicate. Zero minima
+            // can rewind to a boundary before the first scalar and stay on the VM.
+            var proofBreach = invocation.TryChargeStep();
+            if (proofBreach != Utf8ExecutionLimitKind.None)
+            {
+                outcome = new(false, -1, proofBreach, null, null);
+                return true;
+            }
+            var window = input.Slice(start, Math.Min(input.Length - start, (int)repeat.RepeatMaximum));
+            var allWord = true;
+            foreach (var value in window)
+            {
+                if (value >= 128 || !Utf8SliceScalarClasses.IsBoundaryWord(new Rune(value), program, suffix))
+                { allWord = false; break; }
+            }
+            if (allWord)
+            {
+                outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
+                return true;
+            }
+        }
         // End anchors can succeed only at the subject end or before LF. If the
         // atom excludes LF, no shorter endpoint can satisfy either kind of end.
         // Keep this conservative proof for absolute ends as well as multiline $.

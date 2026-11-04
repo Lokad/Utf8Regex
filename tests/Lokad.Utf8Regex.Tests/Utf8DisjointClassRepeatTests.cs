@@ -50,6 +50,20 @@ public sealed class Utf8DisjointClassRepeatTests
     [InlineData(@"(?=(x*))\1y", "xxxy")]
     [InlineData("(?<=(x{2}))y", "xxy")]
     [InlineData("(é*)-", "éé- é-")]
+    [InlineData(@"(\d{2,4})\b", "123A 1234 12 1")]
+    [InlineData(@"\b\d{1,2}/\d{1,2}/(\d{2,4})\b", "11/18/201A 11/19/2018")]
+    [InlineData(@"(([a-z]{1,4}))\b", "abcd abcdef abc-")]
+    [InlineData(@"(?=(([a-z]{1,4}))\b)\1", "abcd abcdef abc-")]
+    [InlineData(@"(?<=(([a-z]{1,4}))\b)!", "abcd! abcdx!")]
+    [InlineData(@"(a{1,4})\b", "aaaab aaaa a-")]
+    [InlineData(@"(a{0,4})\b", "aaaab")]
+    [InlineData(@"([a-z]{1,4})\B", "abcd!")]
+    [InlineData(@"(.{1,4})\b", "abc !")]
+    [InlineData(@"([^a]{1,4})\b", "x !a")]
+    [InlineData(@"([a-z]{1,9})\b", "abcdefghi abcdefghix")]
+    [InlineData(@"([a-z]{1,4}?)\b", "abcd abcdef")]
+    [InlineData(@"((?i:[a-z]){1,4})\b", "AbCd AbCdX")]
+    [InlineData(@"([a-z]{1,4})\bX|([a-z]{1,4})\b!", "abcd! abcdX")]
     public void CapturesAndFallbackKeepOverlappingBclSemantics(string pattern, string text)
     {
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
@@ -122,14 +136,15 @@ public sealed class Utf8DisjointClassRepeatTests
     }
 
     [Theory]
-    [InlineData(1, false)] [InlineData(2, false)]
-    [InlineData(1, true)] [InlineData(2, true)]
-    public void EveryWorkCutoffDeniesWithoutLeakingTheParentLoan(int nesting, bool exact)
+    [InlineData(1, false, false)] [InlineData(2, false, false)]
+    [InlineData(1, true, false)] [InlineData(2, true, false)]
+    [InlineData(1, false, true)] [InlineData(2, false, true)]
+    public void EveryWorkCutoffDeniesWithoutLeakingTheParentLoan(int nesting, bool exact, bool boundary)
     {
-        var regex = new Utf8Regex(new string('(', nesting) + (exact ? @"\p{L}{2}" : @"\p{L}{2,3}") +
-            new string(')', nesting) + (exact ? "[A-Z]" : "-"));
+        var regex = new Utf8Regex(new string('(', nesting) + (boundary ? @"\d{2,4}" : exact ? @"\p{L}{2}" : @"\p{L}{2,3}") +
+            new string(')', nesting) + (boundary ? @"\b" : exact ? "[A-Z]" : "-"));
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException();
-        var input = Encoding.UTF8.GetBytes(exact ? "ééA ABB" : "éé- AB-");
+        var input = Encoding.UTF8.GetBytes(boundary ? "1234 5678" : exact ? "ééA ABB" : "éé- AB-");
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
         var baseline = new Utf8SliceInvocation(new(100000, 1, 1 << 20), Timeout.InfiniteTimeSpan, default);

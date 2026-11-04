@@ -18,6 +18,13 @@ public sealed class PythonReBoundaryCandidateTests
     [InlineData(@"\B[0-9]+X", "a22X", 0, "22X", 1)]
     [InlineData(@"\b[0-9]+X\b", "a11X 22X", 2, "22X", 1)]
     [InlineData(@"\b[0-9]+X\b", "a11X 22X", 8, null, 0)]
+    [InlineData(@"(\d{2,4})\b", "123A 1234 12 1", 0, "1234", 2)]
+    [InlineData(@"\d{0,4}\b", "201A", 0, "", 2)]
+    [InlineData(@"(?a:\d{2,4}\b)", "١٢٣ 123A 12", 0, "12", 1)]
+    [InlineData(@"\d{2,4}\b", "١٢٣ 123A 12", 0, "١٢٣", 2)]
+    [InlineData(@".{1,4}\b", "abc !", 0, "abc", 1)]
+    [InlineData(@"[a-z]{1,4}\B", "abcd!", 0, "abc", 1)]
+    [InlineData(@"\d{2,4}\b", "😀12 34", 4, "12", 2)]
     public void SearchKeepsBoundaryPredicatesCapturesAndOffsets(string pattern, string text, int offset, string? expected, int expectedCount)
     {
         using var token = new CancellationTokenSource();
@@ -32,6 +39,49 @@ public sealed class PythonReBoundaryCandidateTests
         if (pattern.Contains("?P<")) Assert.Equal("22", held.Groups[1].ValueText);
         Assert.Equal(expectedCount, regex.Count(input, offset));
         if (expected is not null) Assert.Equal(expected, held.Groups[0].ValueText);
+    }
+
+    [Fact]
+    public void BoundedWordRunsNeedNoUselessRewindDepth()
+    {
+        using var regex = new Utf8PythonRegex(@"(\d{2,4})\b", default, Timeout.InfiniteTimeSpan,
+            new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+        Assert.Equal(1, regex.Count("1234"u8));
+        Assert.Equal(0, regex.Count("123A"u8));
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void BoundedWordRunsPreserveOriginalInterruptionAndRetainedResult(bool timeout)
+    {
+        using var cancellation = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var armed = false;
+        var interrupted = false;
+        var session = Utf8SearchDiagnosticsSession.Start(_ =>
+        {
+            if (!armed) return;
+            interrupted = true;
+            if (timeout) ticks = 25; else cancellation.Cancel();
+        });
+        try
+        {
+            using var regex = new Utf8PythonRegex(@"\d{2,4}\b", default, TimeSpan.FromMilliseconds(20),
+                new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+            var input = Encoding.UTF8.GetBytes("1234 " + string.Concat(Enumerable.Repeat("123A ", 4096)) + "5678");
+            using var cursor = regex.CreateMatchCursor(input, 0, cancellation.Token);
+            Assert.True(cursor.MoveNext());
+            var retained = cursor.Current;
+            armed = true;
+            var failure = Record.Exception(() => cursor.MoveNext());
+            Assert.True(interrupted);
+            if (timeout) Assert.IsType<RegexMatchTimeoutException>(failure);
+            else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+            cursor.Dispose();
+            Assert.Equal("1234", retained.Value.ValueText);
+        }
+        finally { session.Complete(); }
     }
 
     [Theory]
