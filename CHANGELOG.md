@@ -65,6 +65,10 @@
 - Reduce shared invocation metadata, bounded output-copy overhead and finite-limit
   Core Match overhead while
   preserving numeric working limits, caller-funded admission and deterministic refunds.
+- Reuse the prepared small ASCII literal-family search for literal replacement,
+  reducing eligible ordinary and compiled execution time without changing output
+  allocations. Miss scans can cost more; controlled and declined shapes retain
+  their existing execution and admission.
 - Reduce required-literal screening and empty confirmation overhead while
   retaining strict validation, matching and resource controls.
 - Speed up capture-free PythonRe word-boundary Split and Count by avoiding

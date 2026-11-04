@@ -1,0 +1,78 @@
+{
+  "Source": "78aa44c70458e6ffa7ed00ec1a1583a827587021",
+  "UnchangedRows": 176,
+  "ArchiveSha256": "8052332BA81086451A2503B245938A5B0D138D4968BAC4A36091FBD330177A81",
+  "ImportedHashes": [
+    "d6f974325435e47bc6ffea25ab03acf061663f399c720f84a963f2b7ec53e53c  README.md",
+    "c456f10a381f7edeaf2aef9d8046e777e38fff766a2c544cc23b57f2ddb37bfd  README.Benchmarks.json",
+    "d43d566cd0cf7c6e4ca19e16a5a636084aa54ffca1146ffcd05a39ae55147144  README.Parity.json"
+  ],
+  "Rows": [
+    {
+      "Section": "dotnet-performance",
+      "CaseId": "common/replace-words",
+      "Operation": "Replace",
+      "Mode": "Ordinary",
+      "Status": "Win",
+      "MeasurementProtocol": "IndependentSixLaneV3",
+      "Utf8Microseconds": 27.914214601769913,
+      "PredecodedRegexMicroseconds": 75.46172465960665,
+      "DecodeThenRegexMicroseconds": 78.2806800618238,
+      "RatioToDecode": 0.35659136557991167,
+      "RatioToPredecoded": 0.36991222673064494,
+      "Utf8AllocatedBytes": 13648,
+      "PredecodedRegexAllocatedBytes": 28560.39939485628,
+      "DecodeThenRegexAllocatedBytes": 45000.40803709428,
+      "RequestedIterations": 1,
+      "EffectiveIterations": 647,
+      "Samples": 5,
+      "MeasuredAtUtc": "2026-11-04T04:57:44.5163285+01:00",
+      "Environment": {
+        "BenchmarkAssembly": "1.0.0+78aa44c70458e6ffa7ed00ec1a1583a827587021 sha256=4BF0F599CE901E2B213B45A5A62C6EE0579BB95D0B2DC0E180B6C12F9771CB19",
+        "CoreAssembly": "0.5.0-dev.21+78aa44c70458e6ffa7ed00ec1a1583a827587021 sha256=F8BD3265654E3AFD757EF8B5C15888E54CCA415D64F7151C5F8A0104C4132FC6",
+        "Pcre2Assembly": "0.5.0-dev.21+78aa44c70458e6ffa7ed00ec1a1583a827587021 sha256=9F22E2BA63F1544D9AA6FAFDD6411BAE061BE721A23612BD9549E6DEE6DC1F89",
+        "PythonReAssembly": "0.5.0-dev.21+78aa44c70458e6ffa7ed00ec1a1583a827587021 sha256=317F8715024C7E94FCDF7B4FE441B6840C562F291271342523BAF74FA0D67CD0",
+        "SourceCommit": "78aa44c70458",
+        "TrackedDirty": false,
+        "HasUntrackedFiles": false,
+        "Runtime": ".NET 11.0.0-rc.3.26522.148",
+        "OperatingSystem": "Ubuntu 24.04.4 LTS",
+        "Processor": "X64",
+        "TieredPgo": "runtime-default"
+      }
+    },
+    {
+      "Section": "dotnet-performance-compiled",
+      "CaseId": "common/replace-words",
+      "Operation": "Replace",
+      "Mode": "Compiled",
+      "Status": "Gap",
+      "MeasurementProtocol": "IndependentSixLaneV3",
+      "Utf8Microseconds": 27.79186460807601,
+      "PredecodedRegexMicroseconds": 17.356471465870943,
+      "DecodeThenRegexMicroseconds": 19.71972119721197,
+      "RatioToDecode": 1.4093436884901447,
+      "RatioToPredecoded": 1.6012393223314312,
+      "Utf8AllocatedBytes": 13648,
+      "PredecodedRegexAllocatedBytes": 28560.09847071988,
+      "DecodeThenRegexAllocatedBytes": 45000.21648216482,
+      "RequestedIterations": 1,
+      "EffectiveIterations": 647,
+      "Samples": 5,
+      "MeasuredAtUtc": "2026-11-04T04:57:44.5401933+01:00",
+      "Environment": {
+        "BenchmarkAssembly": "1.0.0+78aa44c70458e6ffa7ed00ec1a1583a827587021 sha256=4BF0F599CE901E2B213B45A5A62C6EE0579BB95D0B2DC0E180B6C12F9771CB19",
+        "CoreAssembly": "0.5.0-dev.21+78aa44c70458e6ffa7ed00ec1a1583a827587021 sha256=F8BD3265654E3AFD757EF8B5C15888E54CCA415D64F7151C5F8A0104C4132FC6",
+        "Pcre2Assembly": "0.5.0-dev.21+78aa44c70458e6ffa7ed00ec1a1583a827587021 sha256=9F22E2BA63F1544D9AA6FAFDD6411BAE061BE721A23612BD9549E6DEE6DC1F89",
+        "PythonReAssembly": "0.5.0-dev.21+78aa44c70458e6ffa7ed00ec1a1583a827587021 sha256=317F8715024C7E94FCDF7B4FE441B6840C562F291271342523BAF74FA0D67CD0",
+        "SourceCommit": "78aa44c70458",
+        "TrackedDirty": false,
+        "HasUntrackedFiles": false,
+        "Runtime": ".NET 11.0.0-rc.3.26522.148",
+        "OperatingSystem": "Ubuntu 24.04.4 LTS",
+        "Processor": "X64",
+        "TieredPgo": "runtime-default"
+      }
+    }
+  ]
+}

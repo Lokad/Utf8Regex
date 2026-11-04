@@ -1,0 +1,217 @@
+{
+  "Source": "78aa44c70458e6ffa7ed00ec1a1583a827587021",
+  "ElapsedSeconds": 62.7807219,
+  "Before": "0.5.0-dev.21+b58992530a35b74942f6a0382af36d91e3d1a1d6 sha256=A0B77997C51D4EC1B7E08377F91B49359AAA2DEC280AD57CB820A2D2F7187807",
+  "After": "0.5.0-dev.21+78aa44c70458e6ffa7ed00ec1a1583a827587021 sha256=F8BD3265654E3AFD757EF8B5C15888E54CCA415D64F7151C5F8A0104C4132FC6",
+  "Scope": "One12case public literal-family replacement A/B, frozenb5899253 graph; only Core rebuilt. Managed1.5s/min64 and BCL250ms/min64 warmup, independent60ms calibration,5alternating samples with raw qualification flags. Complete UTF8 outputs checked after timing; BCL lanes include UTF8 materialization. UnchangedCountFIRST, actualordinary/compiled, native/destination, finite/live/deadline, Unicode/overlap/dense/large-copy/miss. At mostONE noise confirmation; no variants or package/Full replay. Existing search/output metering and admission preserved.",
+  "Rows": [
+    {
+      "Name": "Count-unchanged-control",
+      "BeforeUs": 0.3285472174692414,
+      "AfterUs": 0.329103041605804,
+      "ChangePercent": 0.16917633357056427,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0274653257115518,
+      "AfterSpread": 1.0073780420658518,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 60.1959
+    },
+    {
+      "Name": "actual-words",
+      "BeforeUs": 62.90364203954214,
+      "AfterUs": 27.43235975892443,
+      "ChangePercent": -56.38987049163218,
+      "BeforeBytes": 13648,
+      "AfterBytes": 13648,
+      "BeforeSpread": 1.016440149065344,
+      "AfterSpread": 1.0183450183654337,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 58.7789
+    },
+    {
+      "Name": "actual-words-compiled",
+      "BeforeUs": 62.70696202531645,
+      "AfterUs": 27.077165725047077,
+      "ChangePercent": -56.8195223456762,
+      "BeforeBytes": 13648,
+      "AfterBytes": 13648,
+      "BeforeSpread": 1.0139345646081641,
+      "AfterSpread": 1.015600044831741,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 57.1024
+    },
+    {
+      "Name": "native-words",
+      "BeforeUs": 62.26425576519916,
+      "AfterUs": 27.185656108597286,
+      "ChangePercent": -56.338262178680154,
+      "BeforeBytes": 13648,
+      "AfterBytes": 13648,
+      "BeforeSpread": 1.0228388342336052,
+      "AfterSpread": 1.030901234610205,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 58.3666
+    },
+    {
+      "Name": "destination-words",
+      "BeforeUs": 65.22965440356745,
+      "AfterUs": 63.45987193169691,
+      "ChangePercent": -2.713156290728025,
+      "BeforeBytes": 4120,
+      "AfterBytes": 4120,
+      "BeforeSpread": 1.024198025724368,
+      "AfterSpread": 1.0139024950511106,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 58.1783
+    },
+    {
+      "Name": "finite-live-words",
+      "BeforeUs": 158.14945945945948,
+      "AfterUs": 160.92918918918917,
+      "ChangePercent": 1.7576599624371525,
+      "BeforeBytes": 57056,
+      "AfterBytes": 57056,
+      "BeforeSpread": 1.012893596946434,
+      "AfterSpread": 1.0181444855592305,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 58.2925
+    },
+    {
+      "Name": "deadline-live-words",
+      "BeforeUs": 261.0685840707965,
+      "AfterUs": 266.02567567567564,
+      "ChangePercent": 1.898769866363903,
+      "BeforeBytes": 57104,
+      "AfterBytes": 57104,
+      "BeforeSpread": 1.044264058478045,
+      "AfterSpread": 1.0219284162487872,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 58.1962
+    },
+    {
+      "Name": "mixed-Unicode-control",
+      "BeforeUs": 66.65450236966825,
+      "AfterUs": 67.99299883313886,
+      "ChangePercent": 2.00811110410406,
+      "BeforeBytes": 13664,
+      "AfterBytes": 13664,
+      "BeforeSpread": 1.0353918427817101,
+      "AfterSpread": 1.0141097825161693,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 55.2811
+    },
+    {
+      "Name": "overlapping-alternatives",
+      "BeforeUs": 128.54175588865095,
+      "AfterUs": 130.2046255506608,
+      "ChangePercent": 1.2936416268113815,
+      "BeforeBytes": 22920,
+      "AfterBytes": 22920,
+      "BeforeSpread": 1.0139996969033627,
+      "AfterSpread": 1.0262878915912552,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 58.5783
+    },
+    {
+      "Name": "dense-adjacent-control",
+      "BeforeUs": 120.4796,
+      "AfterUs": 123.89463917525774,
+      "ChangePercent": 2.8345372787241363,
+      "BeforeBytes": 21576,
+      "AfterBytes": 21576,
+      "BeforeSpread": 1.0131742385286793,
+      "AfterSpread": 1.0115769136920778,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 59.8346
+    },
+    {
+      "Name": "large-copy-control",
+      "BeforeUs": 20.240688849970812,
+      "AfterUs": 20.430613242120693,
+      "ChangePercent": 0.9383296860973944,
+      "BeforeBytes": 65576,
+      "AfterBytes": 65576,
+      "BeforeSpread": 1.9365436402496676,
+      "AfterSpread": 1.5682642404049463,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 22.3177
+    },
+    {
+      "Name": "no-hit-control",
+      "BeforeUs": 13.770582662245381,
+      "AfterUs": 20.616682950659506,
+      "ChangePercent": 49.71540025814583,
+      "BeforeBytes": 65560,
+      "AfterBytes": 65560,
+      "BeforeSpread": 1.6703094738614856,
+      "AfterSpread": 1.23002388196052,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "MinimumOwnedMs": 27.3141
+    }
+  ],
+  "RawArchiveSha256": "D6E4F150248170B0C423CC67915C3683F9A6FAF64AFE7368FE61DA417A812952",
+  "CorrectnessArchiveSha256": "2B274576E28D9BCD54561FEE6BD679C679B730384D7435440DF918DABD6FD03C",
+  "NoiseConfirmations": 0,
+  "VariantsAfterTiming": 0
+}
