@@ -183,8 +183,10 @@ public sealed class Pcre2AssertionCompilerTests
     [Fact]
     public void AssertionsShareTheInvocationLimitsAndRemainConcurrent()
     {
+        // Both repeat branches remain viable; the assertion still needs a
+        // pending alternative in addition to its own logical depth.
         var limited = new Utf8Pcre2Regex(
-            "(?=(a|b))a",
+            "(?=(a+|a+b))a",
             Pcre2CompileOptions.None,
             default,
             new Utf8Pcre2ExecutionLimits { DepthLimit = 1 },

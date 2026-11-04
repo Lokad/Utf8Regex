@@ -95,7 +95,9 @@ public sealed class Utf8SliceFiniteLazyTests
     [InlineData(true)]
     public void AbandonedCapturedRangesRespectWorkStorageAndCancellationWithRecovery(bool compiled)
     {
-        const string pattern = @"\A(?<x>(?<x>a){0,24}?b)?c";
+        // The empty optional branch also starts with 'a', so its pending
+        // continuation cannot be discarded by the required-literal proof.
+        const string pattern = @"\A(?<x>(?<x>a){0,24}?b)?ac";
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var program = Utf8SliceParser.TryParse(pattern, options);
         Assert.NotNull(program);
@@ -148,7 +150,7 @@ public sealed class Utf8SliceFiniteLazyTests
         Assert.Equal(0UL, canceled.Ledger.ReservedBytes);
         var regex = new Utf8Regex(pattern, options);
         Assert.False(regex.IsMatch(input));
-        var recovered = regex.MatchDetailed("aaabc"u8);
+        var recovered = regex.MatchDetailed("aaabac"u8);
         Assert.Equal("aaab", recovered.GetGroup("x").GetValueString());
         Assert.Equal(4, recovered.GetGroup("x").CaptureCount);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);

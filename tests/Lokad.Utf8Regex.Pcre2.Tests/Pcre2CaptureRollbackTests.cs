@@ -61,9 +61,15 @@ public sealed class Pcre2CaptureRollbackTests
             Assert.Throws<Pcre2MatchException>(() => result.MatchDetailed("aba"u8)).ErrorKind);
         var depth = new Utf8Pcre2Regex(@"(?:(?<x>a|ab)c|d)\k<x>",
             Pcre2CompileOptions.None, default, new() { DepthLimit = 1 }, Timeout.InfiniteTimeSpan);
-        Assert.Equal(1, depth.Count("abcab"u8)); // The flattened count uses less depth.
+        Assert.Equal(1, depth.Count("abcab"u8));
+        // Disproved alternatives no longer require pending frames here.
+        Assert.Equal("ab", depth.MatchDetailed("abcab"u8).GetGroup(1).GetValueString());
+        const string ambiguous = @"(?:(?<x>a+|a+b)c|a)\k<x>";
+        Assert.True(new Utf8Pcre2Regex(ambiguous).MatchDetailed("aabcaab"u8).Success);
+        var pending = new Utf8Pcre2Regex(ambiguous, Pcre2CompileOptions.None, default,
+            new() { DepthLimit = 1 }, Timeout.InfiniteTimeSpan);
         Assert.Equal(Pcre2ErrorKind.DepthLimit,
-            Assert.Throws<Pcre2MatchException>(() => depth.MatchDetailed("abcab"u8)).ErrorKind);
+            Assert.Throws<Pcre2MatchException>(() => pending.MatchDetailed("aabcaab"u8)).ErrorKind);
     }
 
     [Theory]

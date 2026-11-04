@@ -94,3 +94,23 @@ Raw evidence includes declaration, probe, source overlays, driver, frozen graphs
 failures and passing checks, all samples and terminal status. Published/staged
 packages and dev.28 Full tables remain immutable. No package/platform/Full matrix
 or completed checked-access campaign was repeated for this small change.
+
+## Full source CI follow-up
+
+CI run `41921036908` for accepted source `69548b89` found three more obsolete
+budget witnesses on both platforms. The finite-lazy fixture's optional fallback
+could now be pruned before reaching its historical work/depth thresholds; two
+PCRE2 subjects no longer needed their formerly expected continuation depth.
+The test-only repair keeps the Core optional alternative genuinely viable and
+retains exhaustive work/depth cutoffs, storage cleanup, original cancellation and
+capture recovery. PCRE2 now verifies the newly shallow success and uses ambiguous
+repeat alternatives to prove real depth denial, including inside an assertion.
+
+Windows/Linux .NET 10/11 each pass Core 288 and PCRE2 116 affected checks. An
+initial test compile used a nonexistent PCRE2 string-group overload; it was fixed
+to slot 1, and the failed build logs are retained. Core's passing checks were
+reused. All runtime source remains identical to `69548b89`; no timing, package or
+Full refresh was repeated. The complete source CI is rerun after this test repair.
+Failure logs, corrected source overlays and focused checks are sealed in
+`artifacts/experiments/plain-fork-ci-20261104/correctness.zip`, SHA256
+`EAAB9618918195555314FC82EF46934B9F38AE0E58238782069B2EE3B1914E41`.
