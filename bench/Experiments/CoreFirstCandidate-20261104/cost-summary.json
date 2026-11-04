@@ -1,0 +1,272 @@
+{
+  "ElapsedSeconds": 100.1055239,
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "OwnedSamples": 190,
+  "MinimumOwnedDurationMs": 42.1063,
+  "Baseline": {
+    "Core": {
+      "Version": "0.5.0-dev.24+bde712e78684a5588c58177ea92100fe2450c6b9",
+      "Sha256": "01A4B64ECDE23E807327E8E504EBFA4D4AAE728D64FC4EBABFB403610785B7BC"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.24+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "65C6801C223998510735305C3258BC22C22169D85A707E3EB44B803EF257C239"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.24+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "AF7B8BDE6ECE463347D499B73FA1FBB166B142FFC61CBE26ED6834E1E8A26AF2"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "91B3BEB5D079BEF7F4B3550D71491FCD2924D4A3857D841D424AB074A2E792FF"
+    }
+  },
+  "Candidate": {
+    "Core": {
+      "Version": "0.5.0-dev.24+078cbba94baba9e9835335624075bc4d963b96f0",
+      "Sha256": "54104EF1277B77BC185CA8E9F35884C21EE03ED76573A802A81E89EFAFE35410"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.24+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "65C6801C223998510735305C3258BC22C22169D85A707E3EB44B803EF257C239"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.24+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "AF7B8BDE6ECE463347D499B73FA1FBB166B142FFC61CBE26ED6834E1E8A26AF2"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "91B3BEB5D079BEF7F4B3550D71491FCD2924D4A3857D841D424AB074A2E792FF"
+    }
+  },
+  "Rows": [
+    {
+      "Name": "ascii-control-first",
+      "Profile": "Core",
+      "Operation": "Count",
+      "BeforeUs": 2.5165014436958613,
+      "AfterUs": 2.5212445186886616,
+      "ChangePercent": 0.1884789299319678,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.060072739835136,
+      "AfterSpread": 1.006307976500414
+    },
+    {
+      "Name": "actual-prefix-match",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 259.2336206896552,
+      "AfterUs": 0.6002757465390516,
+      "ChangePercent": -99.76844217006186,
+      "BeforeBytes": 2256,
+      "AfterBytes": 2256,
+      "BeforeSpread": 1.0091601366654894,
+      "AfterSpread": 1.1097995116098893
+    },
+    {
+      "Name": "actual-finite-live-match",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 262.29782608695655,
+      "AfterUs": 0.8867318000056721,
+      "ChangePercent": -99.66193703804784,
+      "BeforeBytes": 2368,
+      "AfterBytes": 2368,
+      "BeforeSpread": 1.0043781514139751,
+      "AfterSpread": 1.048977678832972
+    },
+    {
+      "Name": "actual-deadline-live-match",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 302.6445,
+      "AfterUs": 1.1337692062027607,
+      "ChangePercent": -99.62537921349876,
+      "BeforeBytes": 2416,
+      "AfterBytes": 2416,
+      "BeforeSpread": 1.0044863093070227,
+      "AfterSpread": 1.0565487607115516
+    },
+    {
+      "Name": "early-prefix-match",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 0.5208775837395225,
+      "AfterUs": 0.5031929060708277,
+      "ChangePercent": -3.3951696561275946,
+      "BeforeBytes": 2256,
+      "AfterBytes": 2256,
+      "BeforeSpread": 1.10703367156129,
+      "AfterSpread": 1.1511980342304862
+    },
+    {
+      "Name": "dense-rejected-neighbour-match",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 280.4919047619048,
+      "AfterUs": 32.93867768595042,
+      "ChangePercent": -88.25681699658662,
+      "BeforeBytes": 2256,
+      "AfterBytes": 2256,
+      "BeforeSpread": 1.0149828561219791,
+      "AfterSpread": 1.0078412819841764
+    },
+    {
+      "Name": "dense-false-prefix-miss",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 151.57562814070351,
+      "AfterUs": 35.10172711571675,
+      "ChangePercent": -76.84210347910762,
+      "BeforeBytes": 2256,
+      "AfterBytes": 2256,
+      "BeforeSpread": 1.0014329736525238,
+      "AfterSpread": 1.0057897373034388
+    },
+    {
+      "Name": "missing-head-match",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 257.58969957081547,
+      "AfterUs": 0.22378255255449708,
+      "ChangePercent": -99.91312441727004,
+      "BeforeBytes": 128,
+      "AfterBytes": 64,
+      "BeforeSpread": 1.0033660766858323,
+      "AfterSpread": 1.0094838557785155
+    },
+    {
+      "Name": "positive-range-match",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 479.4976,
+      "AfterUs": 0.957534868729489,
+      "ChangePercent": -99.80030455444835,
+      "BeforeBytes": 2256,
+      "AfterBytes": 2256,
+      "BeforeSpread": 1.0055007580904822,
+      "AfterSpread": 1.0080540479924789
+    },
+    {
+      "Name": "unicode-offset-match",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 129.98444924406047,
+      "AfterUs": 0.748207342436025,
+      "ChangePercent": -99.42438703492049,
+      "BeforeBytes": 2256,
+      "AfterBytes": 2256,
+      "BeforeSpread": 1.004410935527491,
+      "AfterSpread": 1.0775255437976736
+    },
+    {
+      "Name": "branch-root-control",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 380.9012738853503,
+      "AfterUs": 430.48857142857145,
+      "ChangePercent": 13.018412103853127,
+      "BeforeBytes": 4128,
+      "AfterBytes": 4128,
+      "BeforeSpread": 1.0045726386726093,
+      "AfterSpread": 1.0073229050019052
+    },
+    {
+      "Name": "folded-root-control",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 295.7258536585366,
+      "AfterUs": 322.1508021390374,
+      "ChangePercent": 8.935623366570011,
+      "BeforeBytes": 2256,
+      "AfterBytes": 2256,
+      "BeforeSpread": 1.0025918461741774,
+      "AfterSpread": 1.0062788399254752
+    },
+    {
+      "Name": "reverse-root-control",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 433.2992857142857,
+      "AfterUs": 445.6051851851852,
+      "ChangePercent": 2.8400461013023515,
+      "BeforeBytes": 5744,
+      "AfterBytes": 5744,
+      "BeforeSpread": 1.0082602971849994,
+      "AfterSpread": 1.009475652744019
+    },
+    {
+      "Name": "nullable-root-control",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 0.5921007135812496,
+      "AfterUs": 0.584030707776807,
+      "ChangePercent": -1.3629447861381871,
+      "BeforeBytes": 4064,
+      "AfterBytes": 4064,
+      "BeforeSpread": 1.0282637900586402,
+      "AfterSpread": 1.058854777138556
+    },
+    {
+      "Name": "contiguous-root-control",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 264.8301310043668,
+      "AfterUs": 298.8915422885572,
+      "ChangePercent": 12.86160723291292,
+      "BeforeBytes": 128,
+      "AfterBytes": 128,
+      "BeforeSpread": 1.0058013603645246,
+      "AfterSpread": 1.00674660789978
+    },
+    {
+      "Name": "nonbacktracking-control",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 171.7,
+      "AfterUs": 176.80206489675516,
+      "ChangePercent": 2.971499648663456,
+      "BeforeBytes": 1416,
+      "AfterBytes": 1416,
+      "BeforeSpread": 1.009180699428055,
+      "AfterSpread": 1.004105588515051
+    },
+    {
+      "Name": "python-findall-control",
+      "Profile": "PythonRe",
+      "Operation": "FindAll",
+      "BeforeUs": 474.1213483146068,
+      "AfterUs": 439.3474452554745,
+      "ChangePercent": -7.3343887978775,
+      "BeforeBytes": 112944,
+      "AfterBytes": 112944,
+      "BeforeSpread": 1.0051868722732702,
+      "AfterSpread": 1.011206129940292
+    },
+    {
+      "Name": "pcre-count-control",
+      "Profile": "Pcre2",
+      "Operation": "Count",
+      "BeforeUs": 75.4705735660848,
+      "AfterUs": 67.8965909090909,
+      "ChangePercent": -10.035676554600226,
+      "BeforeBytes": 2256,
+      "AfterBytes": 2256,
+      "BeforeSpread": 1.0052230364269057,
+      "AfterSpread": 1.0042521248028857
+    },
+    {
+      "Name": "nonascii-root-control",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 277.31290322580645,
+      "AfterUs": 305.86345177664975,
+      "ChangePercent": 10.295427374180122,
+      "BeforeBytes": 2256,
+      "AfterBytes": 2256,
+      "BeforeSpread": 1.0034657167172119,
+      "AfterSpread": 1.0068074108858627
+    }
+  ]
+}
