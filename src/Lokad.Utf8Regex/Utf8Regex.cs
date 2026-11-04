@@ -1115,7 +1115,10 @@ public sealed partial class Utf8Regex
         {
             return invariantCyrillicLiteralCountStrategy.Count(input);
         }
-        var scalarWindowCount = !_hasCaptures &&
+        // A byte window proves its ASCII intersection only. Explicit Unicode
+        // class constraints (for example [^α-ω]) still require the scalar VM.
+        var scalarWindowCount = !_hasCaptures && !_ownedSliceProgram.HasUnicodePatternAtoms &&
+            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow &&
             _preparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan.SupportsValidatedUtf8Input;
         if (TryStartNativeStructuralInvocation(input, cancellationToken, scalarWindowCount, out var structuralInvocation, out var structuralValidation))
         {

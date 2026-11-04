@@ -58,6 +58,15 @@ Immutable artifacts/experiments/scalar-window-count-20261104/:
 - evidence.tar.gz: `B2533E553663BEAEAA1FC24A657F566B5E8B57F3AEA83585A84DD9A8927B467C`.
 - windows-correctness.zip: `F6EAC3F1539C04300E7E99FD7EF9599E46447F97D4863EA571D617E235A0A6AB`.
 
+Full source CI41866587253 subsequently caught a broader admission bug in66ff9299:
+Unicode-constrained negated classes can have the same ASCII window intersection
+as dot. The original class constraints must still run on the scalar VM. The follow-up
+uses the existing HasUnicodePatternAtoms flag and requires the actual ordered-window
+execution kind. Focused tests now include the failing public route guardrails and
+explicit Greek/supplementary exclusions. This narrows admission; all timed window
+patterns retain the same intended route. The original measurements and failed CI
+logs remain preserved; no performance rerun is used to conceal the defect.
+
 The dev.26 Full remains authoritative for published tables. A later coherent
 boundary will refresh final operating costs and exact packages/consumers; no
 qualification of unchanged dev.26 packages is repeated for this improvement.

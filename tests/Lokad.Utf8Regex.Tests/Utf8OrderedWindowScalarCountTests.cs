@@ -18,12 +18,13 @@ public sealed class Utf8OrderedWindowScalarCountTests
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         string[] patterns = [Window, "a.{1,1}b", "a.{1,2}b", "a.{0,3}b", "a.{2,4}b",
             "(?:a|ab).{0,3}z", "foo.{0,3}bar|bar.{0,3}foo", @"a.{0,2}\nb",
-            "(a).{0,3}b", @"a\s+.{0,3}b", "a.{0,4096}b"];
+            "(a).{0,3}b", @"a\s+.{0,3}b", "a.{0,4096}b",
+            "a[^α-ω]{2,5}b", "a[^😀]{2,5}b"];
         string[] texts = ["", "é😀 a😀b a😀😀b a\rb a\nb a😀x😀b a😀😀😀b",
             "é a😀bz ab😀z a\u2003b a \u2003b a😀\nb a\r\nb",
             "é Holmes😀Watson WatsonéHolmes Holmes\rWatson Holmes\nWatson",
             "é Holmes" + new string('x', 24) + "😀Watson Watson" + new string('x', 25) + "😀Holmes",
-            "é fooxbar bar😀foo foo😀😀😀bar foo😀😀😀😀bar"];
+            "é fooxbar bar😀foo foo😀😀😀bar foo😀😀😀😀bar", "xaαβb xa😀😀b xayzb"];
         using var cancellation = new CancellationTokenSource();
         foreach (var pattern in patterns)
         {
