@@ -106,14 +106,18 @@ public sealed class Utf8NativeProjectionInvocationTests
         Assert.Equal(24003, recovered.Utf16Length);
     }
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public void LongValidationAndProjectionPollOriginalTokenAndDeadline(bool project, bool expire)
+    [InlineData(false, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, false)]
+    [InlineData(false, false, true)]
+    [InlineData(false, true, true)]
+    public void LongValidationAndProjectionPollOriginalTokenAndDeadline(bool project, bool expire, bool validityOnly)
     {
         using var clock = Utf8DeadlineTestClock.Start();
-        var gap = Encoding.UTF8.GetBytes(new string('中', 160000));
+        var gap = Encoding.UTF8.GetBytes(validityOnly
+            ? new string('x', 320000) + "😀"
+            : new string('中', 160000));
         byte[] input = [.. gap, .. "abc"u8.ToArray()];
         using var source = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0),
@@ -127,6 +131,7 @@ public sealed class Utf8NativeProjectionInvocationTests
         {
             if (project) Utf8ProjectionExecutor.TryProjectMatch(new(Utf8ProjectionKind.Utf16Incremental), input,
                 0, 0, gap.Length, 3, 3, ref invocation, out match, out nextBytes, out nextUnits);
+            else if (validityOnly) Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
             else Utf8Validation.TryValidate(input, ref invocation, out _);
         }
         if (expire) Assert.Throws<Utf8ExecutionDeadlineExpiredException>(Run);
