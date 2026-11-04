@@ -452,6 +452,13 @@ invocation metadata, borrowed input and the compiled expression are separate.
 Funded timeout diagnostics omit subject text rather than decoding it without
 admission. Native literal, word and category counters keep bounded metering.
 
+The proved Unicode word-delimited token counter charges ASCII head/body and
+interior-dot searches in blocks of at most 2048 bytes, with scalar word checks
+at Unicode fall-throughs. These are bounded native work units rather than one
+unit per ASCII character. The same invocation retains finite work admission,
+original cancellation/deadlines and terminal checks; no working/result payload
+is acquired by this counter.
+
 Core's `Compile(..., token, programMemoryAllowance)` returns a disposable
 `Utf8RegexProgramOwner`. It admits conservative compilation capacities before
 acquisition and transfers their charge to explicit ownership. The owner offers

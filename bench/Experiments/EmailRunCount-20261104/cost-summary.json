@@ -1,0 +1,185 @@
+{
+  "ElapsedSeconds": 75.5878344,
+  "OwnedSamples": 140,
+  "MinimumOwnedDurationMs": 47.6327,
+  "Baseline": {
+    "Core": {
+      "Version": "0.5.0-dev.26+045b1810fda056d2e8f47ed1ab22539a9de8b713",
+      "Sha256": "D781AF70BE2AABE6B446E9610557AB5CA11FD7A1020FFDA99BBF4B8C061305BF"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.26+e731a4526f4b2c3071f37876fb8c0285c3be17b4",
+      "Sha256": "356924C842FF67D237C44E58FCB7157513FD88AD493BB17F5FD6AA4D2BFB9820"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.26+e731a4526f4b2c3071f37876fb8c0285c3be17b4",
+      "Sha256": "14C9CF5429F4A858951E4FDFC74D51E0BE9A53DC86BDE1263EBFB62157EC3C39"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+e731a4526f4b2c3071f37876fb8c0285c3be17b4",
+      "Sha256": "8E347AB88C0345350231711DB492D541D246F94D322EBC3A04E1B9C3F300EB4E"
+    }
+  },
+  "Candidate": {
+    "Core": {
+      "Version": "0.5.0-dev.26+045b1810fda056d2e8f47ed1ab22539a9de8b713",
+      "Sha256": "86CE4C0F961114E00E0B82A208DA64EE1502A7A29C0B8A54DA89C6BE6F5C7885"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.26+e731a4526f4b2c3071f37876fb8c0285c3be17b4",
+      "Sha256": "356924C842FF67D237C44E58FCB7157513FD88AD493BB17F5FD6AA4D2BFB9820"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.26+e731a4526f4b2c3071f37876fb8c0285c3be17b4",
+      "Sha256": "14C9CF5429F4A858951E4FDFC74D51E0BE9A53DC86BDE1263EBFB62157EC3C39"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+e731a4526f4b2c3071f37876fb8c0285c3be17b4",
+      "Sha256": "8E347AB88C0345350231711DB492D541D246F94D322EBC3A04E1B9C3F300EB4E"
+    }
+  },
+  "Rows": [
+    {
+      "Name": "native-control-first",
+      "BeforeUs": 2.489157142857143,
+      "AfterUs": 2.4888594384163008,
+      "ChangePercent": -0.011960050079462548,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.062754503416385,
+      "AfterSpread": 1.0063104128493234
+    },
+    {
+      "Name": "actual-email",
+      "BeforeUs": 1235.134693877551,
+      "AfterUs": 1233.7102040816326,
+      "ChangePercent": -0.1153307248982216,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0123344721813512,
+      "AfterSpread": 1.0068831724153997
+    },
+    {
+      "Name": "actual-email-compiled",
+      "BeforeUs": 1241.7,
+      "AfterUs": 1232.8448979591838,
+      "ChangePercent": -0.7131434356782096,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0058528152239183,
+      "AfterSpread": 1.0067374391090242
+    },
+    {
+      "Name": "actual-email-live",
+      "BeforeUs": 2847.0545454545454,
+      "AfterUs": 2791.059090909091,
+      "ChangePercent": -1.9667854497151693,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.0080417729438376,
+      "AfterSpread": 1.0180594732147112
+    },
+    {
+      "Name": "actual-email-finite-live",
+      "BeforeUs": 2851.7190476190476,
+      "AfterUs": 2815.495454545455,
+      "ChangePercent": -1.2702370909868033,
+      "BeforeBytes": 112,
+      "AfterBytes": 112,
+      "BeforeSpread": 1.0132480160872381,
+      "AfterSpread": 1.010990066138944
+    },
+    {
+      "Name": "actual-email-deadline-live",
+      "BeforeUs": 2956.3285714285716,
+      "AfterUs": 2902.485714285714,
+      "ChangePercent": -1.821274457217703,
+      "BeforeBytes": 160,
+      "AfterBytes": 160,
+      "BeforeSpread": 1.0103786884448982,
+      "AfterSpread": 1.0134089711418852
+    },
+    {
+      "Name": "tiny-ascii-email",
+      "BeforeUs": 0.09979892772863629,
+      "AfterUs": 0.10199388911424871,
+      "ChangePercent": 2.1993837364473023,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0134955893771518,
+      "AfterSpread": 1.0509398992153263
+    },
+    {
+      "Name": "tiny-unicode-email",
+      "BeforeUs": 0.12309528006982935,
+      "AfterUs": 0.12421332225502502,
+      "ChangePercent": 0.9082738059180029,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0090369620678725,
+      "AfterSpread": 1.0149580091414045
+    },
+    {
+      "Name": "dense-ascii-email",
+      "BeforeUs": 121.82103092783504,
+      "AfterUs": 43.69148014440434,
+      "ChangePercent": -64.13469840828509,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0195003429751224,
+      "AfterSpread": 1.0156359720986845
+    },
+    {
+      "Name": "dense-unicode-email",
+      "BeforeUs": 86.73106382978723,
+      "AfterUs": 53.79936014625228,
+      "ChangePercent": -37.96990631657023,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0285336564944365,
+      "AfterSpread": 1.0137353325418712
+    },
+    {
+      "Name": "long-ascii-head",
+      "BeforeUs": 104.46998254799303,
+      "AfterUs": 4.909812703583062,
+      "ChangePercent": -95.30026464651938,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0664614721472014,
+      "AfterSpread": 1.021275702472677
+    },
+    {
+      "Name": "long-body-without-dot",
+      "BeforeUs": 27.742956441149214,
+      "AfterUs": 1.092193504117109,
+      "ChangePercent": -96.06316829846897,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.017085163044302,
+      "AfterSpread": 1.0101107012619484
+    },
+    {
+      "Name": "python-email",
+      "BeforeUs": 3510.7166666666667,
+      "AfterUs": 3540.1823529411768,
+      "ChangePercent": 0.8393068729891873,
+      "BeforeBytes": 3568,
+      "AfterBytes": 3568,
+      "BeforeSpread": 1.0113242992400944,
+      "AfterSpread": 1.0164583389365534
+    },
+    {
+      "Name": "pcre-count-control",
+      "BeforeUs": 147.81703703703704,
+      "AfterUs": 145.53710843373494,
+      "ChangePercent": -1.542399069148459,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0143410238871047,
+      "AfterSpread": 1.0109290616024307
+    }
+  ],
+  "CanonicalEvidenceSha256": "FD8CE8C30822249EC0DF74D1144A52FF6A7F9B7160C354BD236474696D40B575",
+  "WindowsEvidenceSha256": "71F14755437CA79AFF4C6CE13BE1B641C6DBB3ABE2F8487BC7DE835E932A93B9"
+}

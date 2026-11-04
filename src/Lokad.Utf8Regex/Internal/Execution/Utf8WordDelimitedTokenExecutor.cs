@@ -1,10 +1,16 @@
 using System.Buffers;
 using System.Text;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8WordDelimitedTokenExecutor
 {
+    private static readonly PreparedByteSetState s_head = PreparedByteSetState.FromValues(
+        "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz.+-"u8);
+    private static readonly PreparedByteSetState s_body = PreparedByteSetState.FromValues(
+        "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz.-"u8);
+
     public static int CountWellFormed(ReadOnlySpan<byte> input)
     {
         var invocation = new Utf8SliceInvocation(default, Timeout.InfiniteTimeSpan, default);
@@ -50,6 +56,13 @@ internal static class Utf8WordDelimitedTokenExecutor
             {
                 breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
+                var length = Math.Min(2048, tokenStart - searchFrom);
+                var blockStart = tokenStart - length;
+                var relative = s_head.LastIndexOfAnyExcept(input.Slice(blockStart, length));
+                tokenStart = relative < 0 ? blockStart : blockStart + relative + 1;
+                if (relative < 0) continue;
+                // The closest non-ASCII byte is a scalar's final byte. Keep
+                // the established Unicode word predicate at that boundary.
                 if (!TryConsumePreviousHead(input, ref tokenStart)) break;
             }
             if (tokenStart == delimiterIndex)
@@ -59,20 +72,35 @@ internal static class Utf8WordDelimitedTokenExecutor
             }
 
             var tokenEnd = delimiterIndex + 1;
-            var lastSecondaryIndex = -1;
-            var hasSecondaryWithTail = false;
-            while (true)
+            while (tokenEnd < input.Length)
             {
                 breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
-                if (!TryConsumeNextBody(input, ref tokenEnd, out var scalarStart, out var isSecondary)) break;
-                if (lastSecondaryIndex > delimiterIndex + 1) hasSecondaryWithTail = true;
-                if (isSecondary) lastSecondaryIndex = scalarStart;
+                var length = Math.Min(2048, input.Length - tokenEnd);
+                var relative = s_body.IndexOfAnyExcept(input.Slice(tokenEnd, length));
+                tokenEnd += relative < 0 ? length : relative;
+                if (relative < 0) continue;
+                if (!TryConsumeNextBody(input, ref tokenEnd, out _, out _)) break;
             }
-            // A secondary with both neighbours already proves a nonempty body.
+            // Dot is ASCII, so it cannot occur inside a validated UTF-8 scalar.
+            // Excluding the first/last byte therefore proves nonempty scalar
+            // neighbours without maintaining per-character secondary state.
+            var hasSecondaryWithTail = false;
+            var bodyStart = delimiterIndex + 1;
+            var interiorLength = tokenEnd - bodyStart - 2;
+            for (var scanned = 0; scanned < interiorLength;)
+            {
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                var length = Math.Min(2048, interiorLength - scanned);
+                if (input.Slice(bodyStart + 1 + scanned, length).Contains((byte)'.')) { hasSecondaryWithTail = true; break; }
+                scanned += length;
+            }
             if (hasSecondaryWithTail) { count++; searchFrom = tokenEnd; }
             else searchFrom = delimiterIndex + 1;
         }
+        invocation.Budget.ThrowIfCancellationRequested();
+        invocation.Budget.CheckDeadline();
         return Utf8ExecutionLimitKind.None;
     }
 

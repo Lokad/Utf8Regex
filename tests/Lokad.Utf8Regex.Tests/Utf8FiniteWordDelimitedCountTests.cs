@@ -94,8 +94,8 @@ public sealed class Utf8FiniteWordDelimitedCountTests
         var input = Encoding.UTF8.GetBytes(phase switch
         {
             0 => new string('x', 200000),
-            1 => new string('x', 512) + "@b.c",
-            _ => "a@" + new string('b', 512) + ".c",
+            1 => new string('x', 200000) + "@b.c",
+            _ => "a@" + new string('b', 200000) + ".c",
         });
         using var cancellation = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(new(100000, 1, 1, 1), Regex.InfiniteMatchTimeout, cancellation.Token);
@@ -113,8 +113,8 @@ public sealed class Utf8FiniteWordDelimitedCountTests
         var input = Encoding.UTF8.GetBytes(phase switch
         {
             0 => new string('x', 200000),
-            1 => new string('x', 512) + "@b.c",
-            _ => "a@" + new string('b', 512) + ".c",
+            1 => new string('x', 200000) + "@b.c",
+            _ => "a@" + new string('b', 200000) + ".c",
         });
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -135,5 +135,24 @@ public sealed class Utf8FiniteWordDelimitedCountTests
         var regex = new Utf8Regex(Pattern, options, Regex.InfiniteMatchTimeout,
             new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
         Assert.Equal(expected, regex.Count("équipe@exemple.fr 𐐀@b.c a@b.c"u8));
+    }
+
+    [Fact]
+    public void AsciiRunBlocksKeepUnicodeScalarBoundariesAndDotNeighbours()
+    {
+        foreach (var word in new[] { "é", "中", "\u0301", "𐐀" })
+        foreach (var length in new[] { 0, 15, 31, 2047, 2048, 4095 })
+        {
+            var run = new string('a', length);
+            var texts = new[] { $"{word}{run}@b.c", $"a@{word}{run}.c", $"a@b.{run}{word}",
+                $"a@{word}{run}.", $"a@.{run}{word}", $"{word}@{word}.{word}" };
+            var expected = new[] { 1, 1, 1, 0, 0, 1 };
+            foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
+            {
+                var regex = Create(options, 100000);
+                for (var index = 0; index < texts.Length; index++)
+                    Assert.Equal(expected[index], regex.Count(Encoding.UTF8.GetBytes(texts[index])));
+            }
+        }
     }
 }
