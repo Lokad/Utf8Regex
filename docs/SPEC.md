@@ -93,6 +93,14 @@ and each group's last completed capture. Unsupported grammar fails before planni
 Nullable cycles and zero-width repeats must terminate without bound-sized
 expansion. This mode does not expose ordinary backtracking capture history.
 
+Backtracking first-match search can reuse Count's mandatory exact ASCII head or
+range proof. Controlled gap searches cover at most 2048 bytes per checkpoint;
+rejected neighbouring bytes still consume work. Every surviving start runs the
+normal VM with captures and rollback. Nullable, contiguous-anchor, folded and RTL
+roots retain their existing discovery, as do initial beginning anchors. Skipping
+impossible starts can reduce work and avoid local scratch; enclosing storage loans,
+strict whole-subject validation and final interruption/admission still apply.
+
 Scalar sizing admits one work quantum before at most 64 bytes, and exact offset
 preparation one before at most 64 scalars. Viability preparation admits one before
 at most 64 instruction cells per row. Scanning prepared candidate starts admits

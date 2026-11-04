@@ -430,8 +430,32 @@ internal static partial class Utf8SliceRunner
         var first = program.Instructions[0];
         var seekBeginning = !program.RightToLeft && first.Kind == Utf8SliceInstructionKind.Anchor &&
             first.A == (int)Utf8SliceAnchorKind.Beginning;
+        byte leadingLast = 0, secondLast = 0;
+        var second = -1;
+        // Borrow Count's bounded necessary-start proof. Every survivor still
+        // executes the VM; empty/contiguous/mirrored/folded roots stay unchanged.
+        var leading = !seekBeginning && !program.RightToLeft && !program.IgnoreCase &&
+            !program.CanMatchEmpty && !program.HasContiguousAnchor
+            ? GetLeadingAsciiCandidate(program, out leadingLast, out second, out secondLast) : -1;
+        if (leading >= 0)
+        {
+            // A miss can avoid local scratch, but not an enclosing storage loan.
+            var admission = invocation.TryReserveWorking(0);
+            if (admission != Utf8ExecutionLimitKind.None)
+                return new(false, -1, -1, null, null, admission);
+        }
         for (var position = fromByte; position >= 0; position = AdvancePastScalar(input, position, program.RightToLeft))
         {
+            if (leading >= 0 && ((uint)position >= (uint)input.Length ||
+                (uint)(input[position] - leading) > (uint)(leadingLast - leading)))
+            {
+                var seekBreach = TrySeekAsciiCandidate(input, ref position, (byte)leading, leadingLast, ref invocation);
+                if (seekBreach != Utf8ExecutionLimitKind.None)
+                    return new(false, -1, -1, null, null, seekBreach);
+                if (position < 0)
+                    return new(false, -1, -1, null, null,
+                        new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+            }
             if (seekBeginning)
             {
                 var seekBreach = TrySeekBeginning(program, input, ref position, ref invocation);
@@ -443,6 +467,11 @@ internal static partial class Utf8SliceRunner
             if (breach != Utf8ExecutionLimitKind.None)
                 return new(false, -1, -1, null, null, breach);
             invocation.Budget.ThrowIfCancellationRequested();
+            // Charge even rejected neighbours: dense false heads must retain
+            // bounded work and the original interruption authority.
+            if (leading >= 0 && second >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
+                (uint)(input[position + 1] - second) > (uint)(secondLast - second)))
+                continue;
             var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds, collectHistory, false, true, ref workspace, ref invocation);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
                 return new(false, -1, -1, null, null, outcome.Breach);

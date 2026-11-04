@@ -5,6 +5,23 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 public sealed class Pcre2MemoryCursorTests
 {
+    [Fact]
+    public void SharedSliceCandidateGapsKeepByteRangesBackreferencesAndRetainedAliases()
+    {
+        var regex = new Utf8Pcre2Regex(@"([0-9]+)-\1");
+        Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+        var input = Encoding.UTF8.GetBytes("é" + new string('x', 2047) + "12-12 😀7-7");
+        using var cursor = regex.CreateMatchCursor(input);
+        var alias = cursor;
+        Assert.True(alias.MoveNext(out var first));
+        Assert.Equal(2049, first.Value.StartOffsetInBytes);
+        Assert.Equal("12", Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
+        Assert.True(cursor.MoveNext(out var second));
+        Assert.Equal("7", Encoding.UTF8.GetString(second.GetGroupMemory(1).Span));
+        Assert.False(alias.MoveNext(out _));
+        Assert.Equal("12-12", Encoding.UTF8.GetString(first.GetValueMemory().Span));
+    }
+
     [Theory]
     [InlineData("needle", "😀needle needle", Pcre2CompileOptions.None, 0, Pcre2MatchOptions.None)]
     [InlineData("a|ab", "ababa", Pcre2CompileOptions.None, 0, Pcre2MatchOptions.None)]
