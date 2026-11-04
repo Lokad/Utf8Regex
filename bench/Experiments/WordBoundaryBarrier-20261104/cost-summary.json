@@ -1,0 +1,178 @@
+[
+  {
+    "Name": "literal-control",
+    "Before": 3.195636673229394,
+    "After": 3.193420842004162,
+    "Percent": -0.06933927263366169,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "Qualified": true,
+    "SpreadBefore": 1.0047428773455895,
+    "SpreadAfter": 1.004305335534843
+  },
+  {
+    "Name": "python-date-miss",
+    "Before": 1.73081480209496,
+    "After": 1.730953814397523,
+    "Percent": 0.008031610452752247,
+    "BeforeBytes": 80,
+    "AfterBytes": 80,
+    "Qualified": true,
+    "SpreadBefore": 1.0060191682241126,
+    "SpreadAfter": 1.004670731687061
+  },
+  {
+    "Name": "python-date-hit",
+    "Before": 0.5380423423423424,
+    "After": 0.5204633439230596,
+    "Percent": -3.26721468476876,
+    "BeforeBytes": 80,
+    "AfterBytes": 80,
+    "Qualified": true,
+    "SpreadBefore": 1.012267210228852,
+    "SpreadAfter": 1.016881782107935
+  },
+  {
+    "Name": "python-finite-miss",
+    "Before": 2.1837490441685175,
+    "After": 2.1696496930299745,
+    "Percent": -0.645648875093674,
+    "BeforeBytes": 192,
+    "AfterBytes": 192,
+    "Qualified": true,
+    "SpreadBefore": 1.003328506748034,
+    "SpreadAfter": 1.0027026981964784
+  },
+  {
+    "Name": "python-deadline-miss",
+    "Before": 2.739896068685043,
+    "After": 2.709742481541509,
+    "Percent": -1.1005376257941513,
+    "BeforeBytes": 240,
+    "AfterBytes": 240,
+    "Qualified": true,
+    "SpreadBefore": 1.0041982806410776,
+    "SpreadAfter": 1.0019753604159074
+  },
+  {
+    "Name": "python-dense-miss",
+    "Before": 180.26137724550898,
+    "After": 179.6814371257485,
+    "Percent": -0.3217217845676634,
+    "BeforeBytes": 80,
+    "AfterBytes": 80,
+    "Qualified": true,
+    "SpreadBefore": 1.006984510575233,
+    "SpreadAfter": 1.0099844261097028
+  },
+  {
+    "Name": "core-date-miss",
+    "Before": 0.0990159344957924,
+    "After": 0.09919883080665394,
+    "Percent": 0.18471401779207586,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "Qualified": true,
+    "SpreadBefore": 1.0067840233275187,
+    "SpreadAfter": 1.014531936465022
+  },
+  {
+    "Name": "core-finite-miss",
+    "Before": 6.286395138074422,
+    "After": 6.115461295900722,
+    "Percent": -2.7191075078691007,
+    "BeforeBytes": 192,
+    "AfterBytes": 192,
+    "Qualified": true,
+    "SpreadBefore": 1.0103817822201937,
+    "SpreadAfter": 1.0079157170644562
+  },
+  {
+    "Name": "pcre-date-miss",
+    "Before": 2.3669264723426253,
+    "After": 2.333108810284439,
+    "Percent": -1.4287584533505204,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "Qualified": true,
+    "SpreadBefore": 1.0106338436703912,
+    "SpreadAfter": 1.08649913686235
+  },
+  {
+    "Name": "pcre-ucp-miss",
+    "Before": 5.92566275746526,
+    "After": 5.677562430115543,
+    "Percent": -4.186878961971907,
+    "BeforeBytes": 0,
+    "AfterBytes": 0,
+    "Qualified": true,
+    "SpreadBefore": 1.004350862921146,
+    "SpreadAfter": 1.0032470891988705
+  },
+  {
+    "Name": "dense-word-count",
+    "Before": 208.1027972027972,
+    "After": 128.90757894736842,
+    "Percent": -38.05581631766951,
+    "BeforeBytes": 3664,
+    "AfterBytes": 176,
+    "Qualified": true,
+    "SpreadBefore": 1.0154784731874429,
+    "SpreadAfter": 1.0132874023871108
+  },
+  {
+    "Name": "unicode-digits",
+    "Before": 1.9886666666666668,
+    "After": 2.0000349472614056,
+    "Percent": 0.57165339899794,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "Qualified": true,
+    "SpreadBefore": 1.043747429344878,
+    "SpreadAfter": 1.0510070336949677
+  },
+  {
+    "Name": "zero-minimum",
+    "Before": 0.9192983514577457,
+    "After": 0.9078375604750036,
+    "Percent": -1.2466889519130109,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "Qualified": true,
+    "SpreadBefore": 1.154933448506027,
+    "SpreadAfter": 1.1760488366592603
+  },
+  {
+    "Name": "negative-boundary",
+    "Before": 0.8780684754521964,
+    "After": 0.8995263187398397,
+    "Percent": 2.4437551156352377,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "Qualified": true,
+    "SpreadBefore": 1.1335383907003043,
+    "SpreadAfter": 1.1451921682856427
+  },
+  {
+    "Name": "capture-count",
+    "Before": 109.13134057971014,
+    "After": 86.79361393323659,
+    "Percent": -20.468663289403978,
+    "BeforeBytes": 5744,
+    "AfterBytes": 2256,
+    "Qualified": true,
+    "SpreadBefore": 1.0032499771304066,
+    "SpreadAfter": 1.006823070717935
+  },
+  {
+    "Name": "core-rtl-count",
+    "Before": 110.4535447761194,
+    "After": 111.40964749536177,
+    "Percent": 0.8656152422996666,
+    "BeforeBytes": 3552,
+    "AfterBytes": 3552,
+    "Qualified": true,
+    "SpreadBefore": 1.0255187995233181,
+    "SpreadAfter": 1.0120710986195813
+  }
+]
