@@ -35,7 +35,7 @@ public sealed class Utf8CountCaptureElisionTests
     [InlineData("(?>(?:(ab)|c){1,8})X", "ababcX cabX ")]
     [InlineData("((?:ab|c){1,8})cX", "ababcX cabcX ")]
     [InlineData("(?:(😀)|é){1,8}X", "😀éX é😀X ")]
-    public void CountFitsWithoutUnobservedCaptureScratch(string pattern, string text)
+    public void CountAndValuesFitWithoutUnobservedCaptureScratch(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(text, 16)));
         var expected = new Regex(pattern).Count(Encoding.UTF8.GetString(input));
@@ -46,8 +46,10 @@ public sealed class Utf8CountCaptureElisionTests
                 new() { MaxWorkSteps = 1000000, MaxDepth = 128, MaxWorkingBytes = 4096, MaxResultBytes = 1 });
             Assert.Equal(expected, regex.Count(input));
             Assert.Equal(expected, regex.Count(input, cancellation.Token));
+            Assert.True(regex.IsMatch(input, cancellation.Token));
+            Assert.True(regex.Match(input, cancellation.Token).Success);
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-                Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match(input)).ResourceKind);
+                Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.MatchDetailed(input)).ResourceKind);
             Assert.Equal(expected, regex.Count(input));
         }
     }
