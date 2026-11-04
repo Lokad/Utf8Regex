@@ -788,6 +788,25 @@ internal static partial class Utf8SliceRunner
             switch (instruction.Kind)
             {
                 case Utf8SliceInstructionKind.Literal:
+                    // Adjacent exact ASCII literals share this checked byte loop.
+                    // Each keeps its original instruction charge; effects and
+                    // wider/folded/mirrored atoms return to normal dispatch.
+                    if (!program.RightToLeft && instruction.B == 0 && (uint)instruction.A < 128)
+                    {
+                        while (true)
+                        {
+                            if ((uint)inputIndex >= (uint)input.Length || input[inputIndex] != instruction.A)
+                            { failed = true; break; }
+                            inputIndex++;
+                            instruction = instructions[++programIndex];
+                            if (instruction.Kind != Utf8SliceInstructionKind.Literal || instruction.B != 0 ||
+                                (uint)instruction.A >= 128) break;
+                            var literalBreach = invocation.TryChargeStep();
+                            if (literalBreach != Utf8ExecutionLimitKind.None)
+                                return new(false, -1, literalBreach, null, null);
+                        }
+                        break;
+                    }
                     // Literal atoms consume one complete scalar in either direction.
                     var literalIndex = inputIndex;
                     var literalWidth = 0;
