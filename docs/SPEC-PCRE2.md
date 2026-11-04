@@ -205,6 +205,9 @@ Create maps positive nullable common policies to these limits; null becomes zero
 common zero rejects, and work values above uint.MaxValue reject. Units depend on
 the managed route, not native PCRE2. Proved search/count shortcuts can change work
 counts or avoid VM workspace; exact denial thresholds are not version-stable.
+Disproved plain-alternative branches need no frame storage. For example, Count
+of `cat|horse` can succeed with a one-byte heap limit; nonlinear paths that need
+workspace still require admission. This limit does not cover total managed memory.
 Boolean slice searches can reuse a compiler-proved first ASCII byte to skip
 impossible starts. Each scan admits at most 2048 bytes, with original-token and
 deadline checks even on unlimited calls. Actual candidates retain normal VM and

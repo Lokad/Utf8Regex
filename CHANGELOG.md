@@ -49,6 +49,9 @@
 - Reuse greedy class runs before two disjoint literal alternatives, reducing
   imports Count time and temporary storage. Overlapping, folded and RTL calls
   can cost more; captures and resource controls retain their contracts.
+- Avoid plain-alternative frames when a required ASCII literal disproves a
+  branch, reducing imports Count allocations and working requirements. Viable
+  alternatives retain ordering and captures; some matching workloads cost more.
 - Avoid full coordinate-map arrays for detailed matches whose complete capture
   histories lie in an ASCII prefix, retaining strict full-subject validation.
   Result/working requirements can fall; Unicode full-map calls can cost more.

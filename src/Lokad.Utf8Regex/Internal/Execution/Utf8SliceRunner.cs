@@ -906,6 +906,26 @@ internal static partial class Utf8SliceRunner
                     break;
 
                 case Utf8SliceInstructionKind.Fork:
+                    // A required exact ASCII literal can disprove a branch
+                    // before its frame/rollback storage is needed. Reuse the
+                    // bounded capture-marker proof; opaque branches keep frames.
+                    if (instruction.B == 0 && !program.RightToLeft && !program.HasBalancing)
+                    {
+                        if (TryGetLiteralAfterCaptureMarkers(instructions, programIndex + 1, out var forkFirstScalar) &&
+                            (uint)forkFirstScalar < 0x80 &&
+                            (inputIndex >= input.Length || input[inputIndex] != forkFirstScalar))
+                        {
+                            programIndex = instruction.A;
+                            break;
+                        }
+                        if (TryGetLiteralAfterCaptureMarkers(instructions, instruction.A, out var forkOtherScalar) &&
+                            (uint)forkOtherScalar < 0x80 &&
+                            (inputIndex >= input.Length || input[inputIndex] != forkOtherScalar))
+                        {
+                            programIndex++;
+                            break;
+                        }
+                    }
                     if (!stacks.PushFrame(
                         new Utf8SliceFrame
                         {

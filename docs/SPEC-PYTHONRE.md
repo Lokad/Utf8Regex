@@ -35,6 +35,10 @@ alone does not prove a match; tight working/depth/result limits may admit a
 scratch-free miss that formerly required VM capacity. Charges remain dependent
 on the selected route and version.
 
+The shared scalar runner can also omit impossible plain-alternative frames using
+a bounded required-ASCII-literal check, as described in [Core](SPEC.md). Captures,
+ordered choice and original invocation controls remain; required capacity can fall.
+
 Capture-free programs proved unable to match empty can Count through the shared
 scalar counter, using Python's compiled predicates and instructions. The whole
 subject is validated without deriving unused UTF-16 coordinates. A leading class

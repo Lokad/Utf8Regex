@@ -1,0 +1,223 @@
+{
+  "ElapsedSeconds": 78.6667817,
+  "OwnedSamples": 150,
+  "MinimumOwnedDurationMs": 54.3294,
+  "Baseline": {
+    "Core": {
+      "Version": "0.5.0-dev.28+e53ec8247a16db40e1188f10ab49383c3d56fc95",
+      "Sha256": "49512C142999639D782C7CEEF581292B746D81AA993E383CFA3AA4BD1C988EBC"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.28+ba457088fc45ec34ef5170aedbedc6e8fd271824",
+      "Sha256": "8111EA2BA7704C21B4CBCEBF41FA604FCF1084E1177745CE06D326122CD536F5"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.28+ba457088fc45ec34ef5170aedbedc6e8fd271824",
+      "Sha256": "A1B88DFCC12D34395960E47A7986A16D96AF399CBF4D3206EED364E932D5061B"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+ba457088fc45ec34ef5170aedbedc6e8fd271824",
+      "Sha256": "9DC7D55A0899522ED83186C1A93EEE9A336136FBF19352FAF5CD885C88916EB7"
+    }
+  },
+  "Candidate": {
+    "Core": {
+      "Version": "0.5.0-dev.28+99cff1d947654bdf2b9aa116f0ae1cc34eec224c",
+      "Sha256": "378EBFBABD6801D46F9040A218BD6D5D6AB7754379A978E6F7EC8801D1B843F3"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.28+ba457088fc45ec34ef5170aedbedc6e8fd271824",
+      "Sha256": "8111EA2BA7704C21B4CBCEBF41FA604FCF1084E1177745CE06D326122CD536F5"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.28+ba457088fc45ec34ef5170aedbedc6e8fd271824",
+      "Sha256": "A1B88DFCC12D34395960E47A7986A16D96AF399CBF4D3206EED364E932D5061B"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+ba457088fc45ec34ef5170aedbedc6e8fd271824",
+      "Sha256": "9DC7D55A0899522ED83186C1A93EEE9A336136FBF19352FAF5CD885C88916EB7"
+    }
+  },
+  "Rows": [
+    {
+      "Name": "native-count-control",
+      "BeforeUs": 2.46206743566992,
+      "AfterUs": 2.447854989883975,
+      "DeltaPercent": -0.5772565600778323,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0451633921964902,
+      "AfterSpread": 1.024455356595953,
+      "PredecodedUs": 3.4736808199121523,
+      "DecodeThenUs": 46.912903225806446
+    },
+    {
+      "Name": "actual-imports",
+      "BeforeUs": 12.816382252559727,
+      "AfterUs": 11.465850286391467,
+      "DeltaPercent": -10.537544367471774,
+      "BeforeBytes": 1952,
+      "AfterBytes": 80,
+      "BeforeSpread": 1.0834111281757863,
+      "AfterSpread": 1.0213209830183168,
+      "PredecodedUs": 7.100184864240323,
+      "DecodeThenUs": 43.995830230826506
+    },
+    {
+      "Name": "actual-imports-compiled",
+      "BeforeUs": 12.876620703848529,
+      "AfterUs": 11.505694889685083,
+      "DeltaPercent": -10.646627292156763,
+      "BeforeBytes": 1952,
+      "AfterBytes": 80,
+      "BeforeSpread": 1.0947152327858973,
+      "AfterSpread": 1.0137664423307755,
+      "PredecodedUs": 4.35410299123633,
+      "DecodeThenUs": 32.83027116768124
+    },
+    {
+      "Name": "actual-imports-finite-live",
+      "BeforeUs": 15.27453430794624,
+      "AfterUs": 13.945189042336429,
+      "DeltaPercent": -8.703016660339358,
+      "BeforeBytes": 2064,
+      "AfterBytes": 192,
+      "BeforeSpread": 1.0905438143822261,
+      "AfterSpread": 1.0149248099949308,
+      "PredecodedUs": 6.909071901498432,
+      "DecodeThenUs": 45.184190330007674
+    },
+    {
+      "Name": "actual-imports-deadline-live",
+      "BeforeUs": 16.949666399786494,
+      "AfterUs": 15.497424242424241,
+      "DeltaPercent": -8.56796896828923,
+      "BeforeBytes": 2112,
+      "AfterBytes": 240,
+      "BeforeSpread": 1.0593943926711662,
+      "AfterSpread": 1.0405151297309532,
+      "PredecodedUs": 7.08231173380035,
+      "DecodeThenUs": 40.81049250535332
+    },
+    {
+      "Name": "actual-imports-detailed",
+      "BeforeUs": 2.8591224985347066,
+      "AfterUs": 2.3780658724597057,
+      "DeltaPercent": -16.825324074835592,
+      "BeforeBytes": 4848,
+      "AfterBytes": 2976,
+      "BeforeSpread": 1.5510037884920507,
+      "AfterSpread": 1.1061239549648152,
+      "PredecodedUs": 0.31544747638059417,
+      "DecodeThenUs": 36.833631713554986
+    },
+    {
+      "Name": "dense-disjoint-count",
+      "BeforeUs": 537.5884955752213,
+      "AfterUs": 567.3123809523809,
+      "DeltaPercent": 5.529114856774409,
+      "BeforeBytes": 3552,
+      "AfterBytes": 3552,
+      "BeforeSpread": 1.011521879181327,
+      "AfterSpread": 1.022817245852024,
+      "PredecodedUs": 189.03364485981308,
+      "DecodeThenUs": 191.19128919860626
+    },
+    {
+      "Name": "dense-disjoint-finite-live",
+      "BeforeUs": 664.39,
+      "AfterUs": 657.7739130434783,
+      "DeltaPercent": -0.9958137474257112,
+      "BeforeBytes": 3664,
+      "AfterBytes": 3664,
+      "BeforeSpread": 1.0170909860972919,
+      "AfterSpread": 1.0125081470052273,
+      "PredecodedUs": 186.67784615384613,
+      "DecodeThenUs": 190.6237113402062
+    },
+    {
+      "Name": "dense-overlapping-head",
+      "BeforeUs": 593.3979999999999,
+      "AfterUs": 656.6978494623655,
+      "DeltaPercent": 10.66735133289387,
+      "BeforeBytes": 3552,
+      "AfterBytes": 3552,
+      "BeforeSpread": 1.0217977680770471,
+      "AfterSpread": 1.0178379963906394,
+      "PredecodedUs": 190.74568690095848,
+      "DecodeThenUs": 191.72517730496455
+    },
+    {
+      "Name": "folded-first-branch",
+      "BeforeUs": 449.9179104477612,
+      "AfterUs": 447.92348484848486,
+      "DeltaPercent": -0.4432865536051822,
+      "BeforeBytes": 3552,
+      "AfterBytes": 3552,
+      "BeforeSpread": 1.0237622259696457,
+      "AfterSpread": 1.0313173080048517,
+      "PredecodedUs": 246.90775510204082,
+      "DecodeThenUs": 246.10580357142857
+    },
+    {
+      "Name": "nullable-branch",
+      "BeforeUs": 350.3532544378698,
+      "AfterUs": 344.75762711864405,
+      "DeltaPercent": -1.5971386731382653,
+      "BeforeBytes": 3552,
+      "AfterBytes": 3552,
+      "BeforeSpread": 1.0248498252465166,
+      "AfterSpread": 1.0178077472067726,
+      "PredecodedUs": 170.74752747252748,
+      "DecodeThenUs": 170.8460606060606
+    },
+    {
+      "Name": "reverse-control",
+      "BeforeUs": 9506.885714285714,
+      "AfterUs": 10114.933333333332,
+      "DeltaPercent": 6.395865452909821,
+      "BeforeBytes": 56248,
+      "AfterBytes": 56248,
+      "BeforeSpread": 1.021719114148745,
+      "AfterSpread": 1.033085381575793,
+      "PredecodedUs": 3800.1749999999997,
+      "DecodeThenUs": 3880.4375
+    },
+    {
+      "Name": "supplementary-first-branch",
+      "BeforeUs": 403.31301369863013,
+      "AfterUs": 433.44718309859155,
+      "DeltaPercent": 7.471658086014243,
+      "BeforeBytes": 3552,
+      "AfterBytes": 3552,
+      "BeforeSpread": 1.014642755752267,
+      "AfterSpread": 1.019106636104762,
+      "PredecodedUs": 151.97731958762887,
+      "DecodeThenUs": 168.45075528700906
+    },
+    {
+      "Name": "python-disjoint-count",
+      "BeforeUs": 602.928125,
+      "AfterUs": 613.5397959183674,
+      "DeltaPercent": 1.76002254304648,
+      "BeforeBytes": 5744,
+      "AfterBytes": 5744,
+      "BeforeSpread": 1.035498571313657,
+      "AfterSpread": 1.015509836775673,
+      "PredecodedUs": 186.40698412698413,
+      "DecodeThenUs": 189.32789115646258
+    },
+    {
+      "Name": "pcre-count-control",
+      "BeforeUs": 143.1754761904762,
+      "AfterUs": 141.03891509433961,
+      "DeltaPercent": -1.4922674978878114,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0186734026885018,
+      "AfterSpread": 1.016413376927424,
+      "PredecodedUs": 24.304060913705584,
+      "DecodeThenUs": 24.821021159153634
+    }
+  ]
+}

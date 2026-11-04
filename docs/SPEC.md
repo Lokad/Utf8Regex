@@ -87,6 +87,13 @@ major working-buffer requirements can decrease; numeric costs depend on the
 program version. Frames still require depth and working admission before growth,
 and the original token/deadline governs execution and publication.
 
+Forward plain alternatives can omit a frame when a required exact ASCII literal
+disproves one branch at the current position. Inspection skips at most 32 capture
+markers per branch; viable alternatives retain their original order and capture
+effects. Opaque branches keep normal verification. Balancing, assertion/atomic
+frames and RTL retain their existing behavior. Avoided frames can lower work,
+depth and working requirements; needed state remains admitted before acquisition.
+
 `NonBacktracking` is a separate owned linear mode for its admitted regular
 subset. It preserves ordered choice, greedy/lazy behavior, scalar empty progress
 and each group's last completed capture. Unsupported grammar fails before planning.
