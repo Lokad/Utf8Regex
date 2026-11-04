@@ -5,6 +5,7 @@ combines accepted Python Search projection, wide UTF-8 validity and SIMD mask
 metadata hoisting. All three packages target .NET10/11 with exact Core pins.
 Staged in artifacts/nuget, **not published**; older bytes remain immutable.
 Freeze CI41815048304 is green on Windows/Linux.
+Data/receipt commit `fa77dc05` also passes CI41824913779 on both platforms.
 
 [Python Search](../PythonSearchMetadata-20261104/README.md) improves larger Unicode
 hits24–52%, actual Unicode miss39% and ASCII early42%; tiny/late hits, supplementary
