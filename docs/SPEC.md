@@ -256,6 +256,8 @@ class run, with or without intervening whitespace. The actual scalar predicate
 rewinds a conservative candidate window; the VM verifies every retained start.
 Skipped starts need no VM work or scratch. Whole-subject strict validation,
 bounded search/rewind checkpoints and admission before live VM storage remain.
+Mandatory anchors can precede Count's ASCII start filter; the VM still checks
+their full original-subject context. Skipped starts can lower required work/storage.
 Scalar-class and unfolded literal repetitions with a proved endpoint can omit
 unused repeat-journal storage. Live counter vectors and captures still require
 admission; examined scalars/classifications and terminal interruption remain metered.

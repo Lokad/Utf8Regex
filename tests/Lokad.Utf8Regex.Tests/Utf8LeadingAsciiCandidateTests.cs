@@ -10,6 +10,44 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8LeadingAsciiCandidateTests
 {
     [Theory]
+    [InlineData("^import\\s+\"[^\"]*\"", "é😀 import \"hidden\"\nimport \"α😀\"\nx import \"skip\"\nimport\u2003\"a\nb\"")]
+    [InlineData(@"\A[A-Z][a-z]+", "é😀Ab\nCd")]
+    [InlineData(@"^([A-Z][a-z]+)", "Aa\nxx Bb\nCc\n😀Dd")]
+    [InlineData(@"(?:^)(?<w>[A-Z])[a-z]", "Aa\nBb\nx Cc")]
+    [InlineData(@"\G[A-Z][a-z]", "AaBb!Cc")]
+    [InlineData(@"^a^b", "ab\na\nb\na^b")]
+    [InlineData(@"\zX", "X\nX")]
+    [InlineData(@"\n^b", "a\nb\nb")]
+    [InlineData(@"\n\Ab", "\nb")]
+    [InlineData(@"^(?:[A-Z][a-z]){1,2}$", "Aa\nAaBb\nAaBbCc\néAa\n")]
+    public void AnchoredPrefixesKeepFullContextAndZeroWidthChecks(string pattern, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        foreach (var options in new[] { RegexOptions.Multiline, RegexOptions.Multiline | RegexOptions.Compiled })
+        {
+            var oracle = new Regex(pattern, options | RegexOptions.CultureInvariant);
+            var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, Funded);
+            var retained = regex.MatchDetailed(input);
+            using var live = new CancellationTokenSource();
+            foreach (var start in new[] { 0, 1, Math.Min(2, text.Length), text.Length })
+            {
+                if (start > 0 && start < text.Length && char.IsSurrogatePair(text, start - 1))
+                {
+                    Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(input, start));
+                    Assert.Throws<ArgumentOutOfRangeException>(() => regex.CountFromUtf16Offset(input, start, live.Token));
+                    continue;
+                }
+                var expected = oracle.Matches(text, start).Count;
+                Assert.Equal(expected, regex.CountFromUtf16Offset(input, start));
+                Assert.Equal(expected, regex.CountFromUtf16Offset(input, start, live.Token));
+            }
+            Assert.Equal(oracle.Count(text), regex.Count(input, live.Token));
+            Assert.Equal(oracle.Match(text).Value, retained.GetValueString());
+            Assert.Throws<ArgumentException>(() => regex.Count(input.Append((byte)255).ToArray()));
+        }
+    }
+
+    [Theory]
     [InlineData(@"(?:[A-Z][a-z]+\s*){2,4}")]
     [InlineData(@"(?:(?<w>[A-Z][a-z]+)\s*){2,4}")]
     [InlineData(@"(?:(?:[A-Z][a-z]+){1,2}\s*){2,4}")]
@@ -109,6 +147,11 @@ public sealed class Utf8LeadingAsciiCandidateTests
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex("(?<x>" + pattern + ")",
                 RegexOptions.None, Regex.InfiniteMatchTimeout, Funded with { MaxWorkingBytes = 1 }).Count(input)).ResourceKind);
+        var anchored = new Utf8Regex("(?<x>^" + pattern + ")", RegexOptions.Multiline,
+            Regex.InfiniteMatchTimeout, Funded with { MaxWorkingBytes = 1 });
+        Assert.Equal(0, anchored.Count(Encoding.UTF8.GetBytes(new string('x', 8192) + "😀")));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => anchored.Count("xx\nAb Cd"u8)).ResourceKind);
         var invalid = input.Append((byte)255).ToArray();
         Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern).Count(invalid));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
@@ -119,11 +162,12 @@ public sealed class Utf8LeadingAsciiCandidateTests
     [Theory]
     [InlineData(@"(?<w>[A-Z]+)[a-z]\k<w>")]
     [InlineData(@"(?:[A-Z][a-z]+\s*){2,4}")]
+    [InlineData(@"(?m)^(?<w>[A-Z])[a-z]+")]
     public void EveryWorkCutoffPreservesTheOriginalScratchLoan(string pattern)
     {
         var regex = new Utf8Regex(pattern);
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
-        var input = "éABaB😀Ab CdA"u8.ToArray();
+        var input = "éABaB😀\nAb CdA"u8.ToArray();
         var complete = new Utf8SliceInvocation(new(100000, 0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(complete.Ledger.TryReserve(13));
         var outcome = Utf8SliceRunner.CountFromBytes(program, input, 0, new int[program.GroupCount],
@@ -143,18 +187,21 @@ public sealed class Utf8LeadingAsciiCandidateTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(true, false)]
-    [InlineData(false, true)] [InlineData(true, true)]
-    public void BoundedRangeSearchKeepsOriginalCancellationAndDeadline(bool expire, bool firstOnly)
+    [InlineData(false, false, false)] [InlineData(true, false, false)]
+    [InlineData(false, true, false)] [InlineData(true, true, false)]
+    [InlineData(false, false, true)] [InlineData(true, false, true)]
+    [InlineData(false, true, true)] [InlineData(true, true, true)]
+    public void BoundedRangeSearchKeepsOriginalCancellationAndDeadline(bool expire, bool firstOnly, bool anchored)
     {
-        var input = Encoding.UTF8.GetBytes(new string(firstOnly ? 'A' : 'x', 200000) + "😀Ab Cd");
+        var input = Encoding.UTF8.GetBytes(new string(firstOnly ? 'A' : 'x', 200000) + (anchored ? "\nAb Cd😀" : "😀Ab Cd"));
         var calibration = new Utf8SliceInvocation(new(4000000, 0, 0), Regex.InfiniteMatchTimeout, default);
         Utf8Validation.ThrowIfInvalidOnly(input, ref calibration);
         var threshold = ((calibration.Budget.Steps / 64) + 1) * 64;
         using var cancellation = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8Regex(@"(?:[A-Z][a-z]+\s*){2,4}", RegexOptions.Compiled,
+        var regex = new Utf8Regex(anchored ? @"^(?:[A-Z][a-z]+\s*){2,4}" : @"(?:[A-Z][a-z]+\s*){2,4}",
+            RegexOptions.Compiled | (anchored ? RegexOptions.Multiline : RegexOptions.None),
             expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout, Funded);
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>

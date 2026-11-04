@@ -609,7 +609,9 @@ internal static partial class Utf8SliceRunner
         byte leadingAsciiLast = 0;
         var leadingAsciiSecond = -1;
         byte leadingAsciiSecondLast = 0;
-        var leadingAsciiFirst = !seekLiteral && !program.RightToLeft && !program.IgnoreCase &&
+        // A direct beginning anchor already owns bounded line/prefix discovery.
+        // Keep one candidate search rather than scanning its prefix twice.
+        var leadingAsciiFirst = !seekLiteral && !seekBeginning && !program.RightToLeft && !program.IgnoreCase &&
             !program.CanMatchEmpty && !program.HasContiguousAnchor
             ? GetLeadingAsciiCandidate(program, out leadingAsciiLast, out leadingAsciiSecond, out leadingAsciiSecondLast) : -1;
         var leadingClass = -1;

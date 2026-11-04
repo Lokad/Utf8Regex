@@ -4,7 +4,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8SliceRunner
 {
-    // Capture markers and mandatory repeat entries precede the first scalar.
+    // Capture markers, anchors and mandatory repeat entries consume no scalar.
     // An unfolded ASCII literal/positive range proves possible starts. Other
     // instructions (including optional repeats/forks/assertions) decline.
     private static int GetLeadingAsciiCandidate(Utf8SliceProgram program, out byte last,
@@ -20,7 +20,7 @@ internal static partial class Utf8SliceRunner
         while (index < code.Length && index < 64)
         {
             var entry = code[index];
-            if (entry.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd ||
+            if (entry.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or Utf8SliceInstructionKind.Anchor ||
                 entry.Kind == Utf8SliceInstructionKind.RepeatGreedy && entry.RepeatMinimum > 0)
                 index++;
             else break;
@@ -35,7 +35,7 @@ internal static partial class Utf8SliceRunner
         while (index < code.Length && index < 64)
         {
             var entry = code[index];
-            if (entry.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd ||
+            if (entry.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or Utf8SliceInstructionKind.Anchor ||
                 entry.Kind == Utf8SliceInstructionKind.RepeatGreedy && entry.RepeatMinimum > 0)
                 index++;
             else break;
