@@ -1,0 +1,54 @@
+{
+  "Source": "290393009b569f036d1bda19cbf04af6a8b123c7",
+  "UnchangedRows": 87,
+  "UnchangedLifecycleScaling": true,
+  "ArchiveSha256": "5BFEB64ADB6536B3896A99D4B88C4DAD1DEE4F7724E923C1CF0EAB6F725EE70E",
+  "ImportedHashes": [
+    {
+      "Path": "PythonRe.Benchmarks.json",
+      "Sha256": "36DEC827E26E14B43412B21D2EB8F1185354A88701858F0F1B0698234700DF35"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md",
+      "Sha256": "1D6C1875FB45949BAC4B1AF9D19C14B178A822978EBA3AF5D4315F27DCCD0187"
+    }
+  ],
+  "Rows": [
+    {
+      "CaseId": "findall/empty-progression-strings",
+      "PreviousRatio": 3.122227497976635,
+      "Status": "CpythonFaster",
+      "Reason": "Qualified paired evidence.",
+      "Ratio": 1.8843109065475263,
+      "Lower95": 1.8810921284739492,
+      "Upper95": 1.8914296011184588,
+      "ManagedUs": 83.08462837837837,
+      "ManagedBytes": 16464,
+      "Source": "290393009b56"
+    },
+    {
+      "CaseId": "replacement/empty-progression-string",
+      "PreviousRatio": 2.926195970095433,
+      "Status": "CpythonFaster",
+      "Reason": "Qualified paired evidence.",
+      "Ratio": 1.644131961634402,
+      "Lower95": 1.6335275115378307,
+      "Upper95": 1.6514764625842262,
+      "ManagedUs": 38.98532258064516,
+      "ManagedBytes": 2912,
+      "Source": "290393009b56"
+    },
+    {
+      "CaseId": "count/empty-progression",
+      "PreviousRatio": 1.1760247575673415,
+      "Status": "Inconclusive",
+      "Reason": "Lane interquartile spreads are 1.010/1.140; the maximum is 1.10.",
+      "Ratio": 0.5180423999414384,
+      "Lower95": 0.4193396575598573,
+      "Upper95": 0.5591863343171843,
+      "ManagedUs": 211.22008368200835,
+      "ManagedBytes": 0,
+      "Source": "290393009b56"
+    }
+  ]
+}

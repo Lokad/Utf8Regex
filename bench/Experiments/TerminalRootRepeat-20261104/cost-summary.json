@@ -1,0 +1,365 @@
+{
+  "Source": "290393009b569f036d1bda19cbf04af6a8b123c7",
+  "RawSha256": "5E5E1A2B76C8D27CD8C4EBBDAB7CC7CBCA8DD46F7B59FB09334924F8BAA4F419",
+  "ElapsedSeconds": 94.9303522,
+  "Cases": 19,
+  "Samples": 370,
+  "MinimumSampleMilliseconds": 23.5906,
+  "StartupProcessors": 8,
+  "Identity": {
+    "Baseline": {
+      "Core": {
+        "Version": "0.5.0-dev.22+60491532fe8af8094887a3243f1b076d89bd8d0c",
+        "Sha256": "9E3ADF0E45AB63E41EE72A8747D2F201BFDBC1D83F5933EF0B426C195DF83B81"
+      },
+      "Python": {
+        "Version": "0.5.0-dev.22+60491532fe8af8094887a3243f1b076d89bd8d0c",
+        "Sha256": "3652280090B5EDBCE899B35EC455D8B4D2303E12071664C2CC70F00E8AAF1D8D"
+      },
+      "Benchmark": {
+        "Version": "1.0.0+60491532fe8af8094887a3243f1b076d89bd8d0c",
+        "Sha256": "BC7B4C230FB5893C780BAD33C55523A17F59219B00DCEDE8C4A0D7595F71C5BC"
+      }
+    },
+    "Candidate": {
+      "Core": {
+        "Version": "0.5.0-dev.22+290393009b569f036d1bda19cbf04af6a8b123c7",
+        "Sha256": "CE2417C9C2F2FDAAEAF751B52CF7E09C0D331118BF031C5106D35B5D2AD09A78"
+      },
+      "Python": {
+        "Version": "0.5.0-dev.22+60491532fe8af8094887a3243f1b076d89bd8d0c",
+        "Sha256": "3652280090B5EDBCE899B35EC455D8B4D2303E12071664C2CC70F00E8AAF1D8D"
+      },
+      "Benchmark": {
+        "Version": "1.0.0+60491532fe8af8094887a3243f1b076d89bd8d0c",
+        "Sha256": "BC7B4C230FB5893C780BAD33C55523A17F59219B00DCEDE8C4A0D7595F71C5BC"
+      }
+    }
+  },
+  "Observations": [
+    {
+      "Case": "literal-control",
+      "BeforeUs": 8.546284074605452,
+      "AfterUs": 8.532460881934565,
+      "ChangePercent": -0.1617450642901308,
+      "PairedChangePercent": -0.026808545226675307,
+      "BeforeBytes": 2112.0,
+      "AfterBytes": 2112.0,
+      "BeforeSpread": 1.005167071448648,
+      "AfterSpread": 1.1298691536329786,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Case": "core-class-control",
+      "BeforeUs": 5.007793388429752,
+      "AfterUs": 5.004414332030925,
+      "ChangePercent": -0.06747595471158219,
+      "PairedChangePercent": -0.3801735350719371,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.009372285997532,
+      "AfterSpread": 1.0127699121712703,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Case": "empty-findall",
+      "BeforeUs": 112.48662900188324,
+      "AfterUs": 71.72481927710844,
+      "ChangePercent": -36.23702664615577,
+      "PairedChangePercent": -36.20937875611248,
+      "BeforeBytes": 16528.0,
+      "AfterBytes": 16464.0,
+      "BeforeSpread": 1.008734027934106,
+      "AfterSpread": 1.008525124777439,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Case": "finite-findall",
+      "BeforeUs": 147.62800982800982,
+      "AfterUs": 100.97858347386172,
+      "ChangePercent": -31.59930585564068,
+      "PairedChangePercent": -31.79160972904418,
+      "BeforeBytes": 20728.0,
+      "AfterBytes": 20664.0,
+      "BeforeSpread": 1.0051128070394928,
+      "AfterSpread": 1.0104987584106309,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Case": "deadline-findall",
+      "BeforeUs": 212.11666666666665,
+      "AfterUs": 165.07582417582418,
+      "ChangePercent": -22.176872392948443,
+      "PairedChangePercent": -21.957848365417163,
+      "BeforeBytes": 20776.0,
+      "AfterBytes": 20712.0,
+      "BeforeSpread": 1.0151024194795328,
+      "AfterSpread": 1.0122054724577512,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Case": "mixed-findall",
+      "BeforeUs": 92.82930232558138,
+      "AfterUs": 62.93688092729189,
+      "ChangePercent": -32.20149311630871,
+      "PairedChangePercent": -32.13899698111165,
+      "BeforeBytes": 11384.0,
+      "AfterBytes": 11320.0,
+      "BeforeSpread": 1.0135485250322804,
+      "AfterSpread": 1.0107319628477982,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Case": "dense-findall",
+      "BeforeUs": 3.087232030264817,
+      "AfterUs": 2.9404535079884884,
+      "ChangePercent": -4.754372876331503,
+      "PairedChangePercent": -4.754372876331503,
+      "BeforeBytes": 1152.0,
+      "AfterBytes": 1088.0,
+      "BeforeSpread": 1.0111165341806976,
+      "AfterSpread": 1.0409943077084383,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Case": "bounded-findall",
+      "BeforeUs": 68.0,
+      "AfterUs": 45.65337423312884,
+      "ChangePercent": -32.86268495128112,
+      "PairedChangePercent": -32.667882044936846,
+      "BeforeBytes": 14456.0,
+      "AfterBytes": 14392.0,
+      "BeforeSpread": 1.005495005459619,
+      "AfterSpread": 1.0093480909966135,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Case": "replace-empty",
+      "BeforeUs": 58.44110787172012,
+      "AfterUs": 38.624043367346935,
+      "ChangePercent": -33.90946069652239,
+      "PairedChangePercent": -33.96521138658892,
+      "BeforeBytes": 2976.0,
+      "AfterBytes": 2912.0,
+      "BeforeSpread": 1.0067332993166653,
+      "AfterSpread": 1.0029153892201705,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Case": "empty-input-control",
+      "BeforeUs": 0.680461754851399,
+      "AfterUs": 0.545819879968624,
+      "ChangePercent": -19.78683943995918,
+      "PairedChangePercent": -19.905825101182494,
+      "BeforeBytes": 96.0,
+      "AfterBytes": 32.0,
+      "BeforeSpread": 1.0034856745840153,
+      "AfterSpread": 1.055132202115032,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Case": "captured-findall",
+      "BeforeUs": 58.77770204479065,
+      "AfterUs": 55.77067039106145,
+      "ChangePercent": -5.115939461937002,
+      "PairedChangePercent": -5.1786147220242995,
+      "BeforeBytes": 12552.0,
+      "AfterBytes": 12552.0,
+      "BeforeSpread": 1.0065933591420995,
+      "AfterSpread": 1.005375740463004,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Case": "bodycapture-control",
+      "BeforeUs": 87.94067547723935,
+      "AfterUs": 86.42274052478135,
+      "ChangePercent": -1.7260897124344643,
+      "PairedChangePercent": -1.5333080141170963,
+      "BeforeBytes": 15016.0,
+      "AfterBytes": 15016.0,
+      "BeforeSpread": 1.0167305259869077,
+      "AfterSpread": 1.0077484132148984,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Case": "overlap-control",
+      "BeforeUs": 47.57307380373074,
+      "AfterUs": 48.53661513425549,
+      "ChangePercent": 2.0253922092567933,
+      "PairedChangePercent": 1.7856205011261173,
+      "BeforeBytes": 8696.0,
+      "AfterBytes": 8696.0,
+      "BeforeSpread": 1.056153419040704,
+      "AfterSpread": 1.0444982484714085,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Case": "lazy-control",
+      "BeforeUs": 134.94272727272727,
+      "AfterUs": 136.49045454545453,
+      "ChangePercent": 1.1469512318357244,
+      "PairedChangePercent": 1.0288640439268804,
+      "BeforeBytes": 20016.0,
+      "AfterBytes": 20016.0,
+      "BeforeSpread": 1.0087067779152266,
+      "AfterSpread": 1.0057245534581112,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Case": "fold-control",
+      "BeforeUs": 50.14099746407439,
+      "AfterUs": 33.92573233773693,
+      "ChangePercent": -32.33933496826735,
+      "PairedChangePercent": -32.34128981048083,
+      "BeforeBytes": 10360.0,
+      "AfterBytes": 10296.0,
+      "BeforeSpread": 1.0073942365817994,
+      "AfterSpread": 1.0057878456936256,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Case": "alternative-control",
+      "BeforeUs": 210.46170212765958,
+      "AfterUs": 212.95232974910394,
+      "ChangePercent": 1.18341132674753,
+      "PairedChangePercent": 1.537140910372381,
+      "BeforeBytes": 52808.0,
+      "AfterBytes": 52808.0,
+      "BeforeSpread": 1.0146166654477609,
+      "AfterSpread": 1.0153017296062925,
+      "QualifiedLanes": [
+        true,
+        true
+      ]
+    },
+    {
+      "Case": "count-finite",
+      "BeforeUs": 100.81689189189188,
+      "AfterUs": 57.2125,
+      "ChangePercent": -43.251077347881164,
+      "PairedChangePercent": -43.49106764418508,
+      "BeforeBytes": 176.0,
+      "AfterBytes": 112.0,
+      "BeforeSpread": 1.0370464605684186,
+      "AfterSpread": 1.009117052968829,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Case": "core-nb-control",
+      "BeforeUs": 19.474220032840723,
+      "AfterUs": 19.38384991843393,
+      "ChangePercent": -0.46404998122848706,
+      "PairedChangePercent": -0.0877197939288421,
+      "BeforeBytes": 6256.0,
+      "AfterBytes": 6256.0,
+      "BeforeSpread": 1.0106335640867123,
+      "AfterSpread": 1.013574591695783,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "Case": "core-rtl-control",
+      "BeforeUs": 33.298170731707316,
+      "AfterUs": 34.47157034442498,
+      "ChangePercent": 3.5239161399347685,
+      "PairedChangePercent": 3.5239161399347685,
+      "BeforeBytes": 3552.0,
+      "AfterBytes": 3552.0,
+      "BeforeSpread": 1.0088899905539663,
+      "AfterSpread": 1.0072695575784711,
+      "QualifiedLanes": [
+        true,
+        true,
+        true,
+        true
+      ]
+    }
+  ],
+  "Scope": "One unchanged19-case public comparison. No universal10% ceiling; controls, local costs, allocations and spreads retained. No confirmation/variant. Promotion decision follows inspection.",
+  "Accepted": true,
+  "Acceptance": "Representative public FindAll/replacement/finite Count gains36/34/43%,64 fewer allocated bytes; unchanged first control-0.16%, Core class control-0.07%. RTL+3.52%(~1.17us), overlap+2.03%, lazy+1.15%, alternative+1.18% explicit. All370 samples >=23.5906ms. No confirmation/variant. Separate selective catalog qualification follows."
+}
