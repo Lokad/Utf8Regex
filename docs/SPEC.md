@@ -211,6 +211,15 @@ Default borrowed match/capture views expose empty values and zero coordinates.
 An unsuccessful operation retains unsuccessful group zero; a default view has no
 groups. Detailed results expose the owned capture history.
 
+After scalar matching, `MatchDetailed` can reuse the identity coordinate map
+when every returned capture history endpoint lies in a proved ASCII prefix.
+The subject is still validated completely and borrowed unchanged. Lookaround
+captures beyond the whole match are included in the proof; Unicode in the
+required prefix retains full mapping, as do already admitted UTF-16 offset maps.
+History and prefix scans have bounded interruption/work checkpoints. Avoiding
+map arrays can lower working/result charges and admit formerly denied calls;
+failed proofs can add time and work. Capture arrays remain admitted before allocation.
+
 Borrowed views require unchanged subject bytes and a live owner. Returned
 histories and owned snapshots remain valid after later discovery, denial or cursor
 closure. Split preserves count/empty/RTL ordering and does not insert delimiter

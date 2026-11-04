@@ -581,15 +581,16 @@ public sealed partial class Utf8Regex
                 return Utf8MatchContext.Unsuccessful(input, _program.CaptureCatalog);
             // The current context stores derived UTF-16 capture coordinates.
             // Its admitted map is result interoperability, never discovery state.
-            var map = admittedMap ?? Utf8BoundaryMap.Create(input, validation, ref invocation, out mapReservation);
+            var map = admittedMap ?? Utf8SliceCaptureProjection.CreateBoundaryMap(
+                outcome, input, validation, ref invocation, out mapReservation);
             projection = Utf8SliceCaptureProjection.Create(outcome, map, ref invocation);
             invocation.Budget.ThrowIfCancellationRequested();
             return projection.CreateContext(input, map, _program.CaptureCatalog);
         }
         finally
         {
-            // Result arrays/maps transfer to the caller. Common retained-result
-            // policy is still open; release this invocation's working reservation.
+            // Result arrays/maps transfer to the borrowed context; release this
+            // invocation's working reservation after result admission.
             projection.Release(ref invocation);
             invocation.Ledger.Release(mapReservation);
             Utf8SliceRunner.ReleaseHistory(outcome.CaptureStarts, outcome.CaptureLengths, ref invocation);

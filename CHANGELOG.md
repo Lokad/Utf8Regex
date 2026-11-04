@@ -46,6 +46,9 @@
 - Reuse greedy class runs before two disjoint literal alternatives, reducing
   imports Count time and temporary storage. Overlapping, folded and RTL calls
   can cost more; captures and resource controls retain their contracts.
+- Avoid full coordinate-map arrays for detailed matches whose complete capture
+  histories lie in an ASCII prefix, retaining strict full-subject validation.
+  Result/working requirements can fall; Unicode full-map calls can cost more.
 - Speed up repeated-segment Count with Unicode separators and declaration searches
   by skipping impossible word-interior starts, preserving strict validation and
   existing cancellation and resource authority.

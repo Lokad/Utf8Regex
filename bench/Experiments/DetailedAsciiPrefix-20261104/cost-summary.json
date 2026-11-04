@@ -1,0 +1,194 @@
+{
+  "ElapsedSeconds": 79.2063704,
+  "MinimumOwnedDurationMs": 47.1334,
+  "OwnedSamples": 150,
+  "Baseline": {
+    "Core": {
+      "Version": "0.5.0-dev.27+835ba6a24d97507d2d4d4e8249b1afa8637288d8",
+      "Sha256": "BB6048BDD577F96A918D1F92571B614AB39DE6E6B351683F3C2FCB1B0A1D2ACD"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.27+11a26e26db6782530ea048d043dd12dee21b855c",
+      "Sha256": "CFC7A9954B6F4ABED1D46EE811EB2E9D49E01C39CEBFA41D2FE8C82079CB5926"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.27+11a26e26db6782530ea048d043dd12dee21b855c",
+      "Sha256": "2983554796BA42B7383DD9D883CA2A394C3FBE2AD12C9BFE4002CAB642E0CDF3"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+11a26e26db6782530ea048d043dd12dee21b855c",
+      "Sha256": "3FBD42AFAF643A1F7B599D561FFECC20B22B4A9216569BB933C846CD1A3CAB4D"
+    }
+  },
+  "Candidate": {
+    "Core": {
+      "Version": "0.5.0-dev.27+835ba6a24d97507d2d4d4e8249b1afa8637288d8",
+      "Sha256": "371E686DD6B387E9C0E03151EE9B3DD904F7E3007DA09927A1D54E18F817E910"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.27+11a26e26db6782530ea048d043dd12dee21b855c",
+      "Sha256": "CFC7A9954B6F4ABED1D46EE811EB2E9D49E01C39CEBFA41D2FE8C82079CB5926"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.27+11a26e26db6782530ea048d043dd12dee21b855c",
+      "Sha256": "2983554796BA42B7383DD9D883CA2A394C3FBE2AD12C9BFE4002CAB642E0CDF3"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+11a26e26db6782530ea048d043dd12dee21b855c",
+      "Sha256": "3FBD42AFAF643A1F7B599D561FFECC20B22B4A9216569BB933C846CD1A3CAB4D"
+    }
+  },
+  "Rows": [
+    {
+      "Name": "native-count-control",
+      "BeforeUs": 2.4867581442210813,
+      "AfterUs": 2.4770884342449264,
+      "DeltaPercent": -0.38884802684274744,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.047887466596028,
+      "AfterSpread": 1.0180791151550002
+    },
+    {
+      "Name": "actual-imports-detailed",
+      "BeforeUs": 158.72670157068063,
+      "AfterUs": 3.093849771067937,
+      "DeltaPercent": -98.05083219114822,
+      "BeforeBytes": 196360,
+      "AfterBytes": 4848,
+      "BeforeSpread": 1.0148636734150682,
+      "AfterSpread": 1.4099457999853315
+    },
+    {
+      "Name": "actual-imports-compiled-detailed",
+      "BeforeUs": 172.91014492753624,
+      "AfterUs": 2.649459729033331,
+      "DeltaPercent": -98.46772453395161,
+      "BeforeBytes": 196360,
+      "AfterBytes": 4848,
+      "BeforeSpread": 1.0129200139185162,
+      "AfterSpread": 1.549056288835769
+    },
+    {
+      "Name": "actual-imports-live-detailed",
+      "BeforeUs": 179.12284866468843,
+      "AfterUs": 3.782593951523238,
+      "DeltaPercent": -97.88826831433207,
+      "BeforeBytes": 196472,
+      "AfterBytes": 4960,
+      "BeforeSpread": 1.020283847233006,
+      "AfterSpread": 1.5472457891194336
+    },
+    {
+      "Name": "actual-imports-finite-live-detailed",
+      "BeforeUs": 184.42926829268293,
+      "AfterUs": 3.9071714476317543,
+      "DeltaPercent": -97.88147972184588,
+      "BeforeBytes": 196472,
+      "AfterBytes": 4960,
+      "BeforeSpread": 1.0226964539688164,
+      "AfterSpread": 1.5079047685496452
+    },
+    {
+      "Name": "actual-imports-deadline-live-detailed",
+      "BeforeUs": 171.23861111111108,
+      "AfterUs": 4.322416683430564,
+      "DeltaPercent": -97.47579318975795,
+      "BeforeBytes": 196520,
+      "AfterBytes": 5008,
+      "BeforeSpread": 1.0199535433391744,
+      "AfterSpread": 1.3793486816214087
+    },
+    {
+      "Name": "tiny-ascii-detailed",
+      "BeforeUs": 0.8629954640614097,
+      "AfterUs": 0.8649888445196038,
+      "DeltaPercent": 0.23098388591904495,
+      "BeforeBytes": 4592,
+      "AfterBytes": 4592,
+      "BeforeSpread": 1.090918465628435,
+      "AfterSpread": 1.1189295770888663
+    },
+    {
+      "Name": "early-ascii-before-unicode",
+      "BeforeUs": 207.7127147766323,
+      "AfterUs": 2.77261220657277,
+      "DeltaPercent": -98.6651697227325,
+      "BeforeBytes": 275016,
+      "AfterBytes": 4592,
+      "BeforeSpread": 1.0359793358326377,
+      "AfterSpread": 1.6191925342985254
+    },
+    {
+      "Name": "unicode-before-capture",
+      "BeforeUs": 281.19775784753364,
+      "AfterUs": 397.0847133757962,
+      "DeltaPercent": 41.21190596089206,
+      "BeforeBytes": 275016,
+      "AfterBytes": 275016,
+      "BeforeSpread": 1.041742376119638,
+      "AfterSpread": 1.0349004304517209
+    },
+    {
+      "Name": "late-capture-nonascii-prefix",
+      "BeforeUs": 233.95040650406506,
+      "AfterUs": 378.124358974359,
+      "DeltaPercent": 61.625861063758734,
+      "BeforeBytes": 275008,
+      "AfterBytes": 275008,
+      "BeforeSpread": 1.0268420932586853,
+      "AfterSpread": 1.0170287082817233
+    },
+    {
+      "Name": "far-unicode-earlier-history",
+      "BeforeUs": 1379.0069767441862,
+      "AfterUs": 1427.6613636363638,
+      "DeltaPercent": 3.5282190527454738,
+      "BeforeBytes": 1495408,
+      "AfterBytes": 1495408,
+      "BeforeSpread": 1.0598217182670469,
+      "AfterSpread": 1.0390573730378652
+    },
+    {
+      "Name": "empty-capture-before-unicode",
+      "BeforeUs": 139.49976580796255,
+      "AfterUs": 1.5033553437509337,
+      "DeltaPercent": -98.92232410926017,
+      "BeforeBytes": 139768,
+      "AfterBytes": 4528,
+      "BeforeSpread": 1.0280516309205399,
+      "AfterSpread": 1.2195895055311097
+    },
+    {
+      "Name": "rtl-full-map-detailed",
+      "BeforeUs": 142.12558139534883,
+      "AfterUs": 200.4300653594771,
+      "DeltaPercent": 41.0232158009215,
+      "BeforeBytes": 141456,
+      "AfterBytes": 141456,
+      "BeforeSpread": 1.0341901168098346,
+      "AfterSpread": 1.0195554233740172
+    },
+    {
+      "Name": "python-count-control",
+      "BeforeUs": 81.97670850767085,
+      "AfterUs": 83.10644718792867,
+      "DeltaPercent": 1.378121543086963,
+      "BeforeBytes": 4128,
+      "AfterBytes": 4128,
+      "BeforeSpread": 1.0132290328831062,
+      "AfterSpread": 1.0074863173383308
+    },
+    {
+      "Name": "pcre-count-control",
+      "BeforeUs": 150.29375,
+      "AfterUs": 148.5152709359606,
+      "DeltaPercent": -1.1833353443103323,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0170701865838452,
+      "AfterSpread": 1.0142956489681694
+    }
+  ],
+  "RawSha256": "8A63FD702173C46965ED9522B2FC7AABCA14CC661AB3B4C9FE6B8D325D14A683"
+}
