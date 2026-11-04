@@ -414,12 +414,12 @@ function Invoke-IsolatedConsumerTests {
     )
 
     $sourceTests = Join-Path (Join-Path $RepositoryRoot "tests") $SourceTestProjectName
-    # Avoid copying root build outputs only to discard them. The cleanup below
-    # still removes nested/stale outputs; ordinary fixtures remain recursive.
-    Copy-Item -Path (Join-Path $sourceTests "*") -Destination $TestDirectory -Recurse -Force -Exclude @("bin", "obj")
+    # Keep local build and test outputs out of detached source fixtures.
+    # Cleanup also handles nested outputs; ordinary fixtures remain recursive.
+    Copy-Item -Path (Join-Path $sourceTests "*") -Destination $TestDirectory -Recurse -Force -Exclude @("bin", "obj", "TestResults")
     $testPrefix = $TestDirectory.TrimEnd([System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar
     Get-ChildItem -LiteralPath $TestDirectory -Directory -Recurse |
-        Where-Object Name -In @("bin", "obj") |
+        Where-Object Name -In @("bin", "obj", "TestResults") |
         Sort-Object { $_.FullName.Length } -Descending |
         ForEach-Object {
             $resolved = [System.IO.Path]::GetFullPath($_.FullName)
