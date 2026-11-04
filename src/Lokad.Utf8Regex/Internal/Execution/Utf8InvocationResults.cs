@@ -52,6 +52,29 @@ internal struct Utf8InvocationResultLedger
         catch { control.ReleaseWorking(bytes); throw; }
     }
 
+    internal T[] CompleteArray<T>(ref Utf8InvocationStateBuffer<T> staging, ref Utf8SliceInvocation invocation)
+    {
+        var control = new Utf8InvocationBufferControl(ref invocation);
+        if (staging.TakeFullArray(out var reservation) is { } full)
+        {
+            // Acquisition was already admitted and charged during staging.
+            // Adopt its live loan before any interruption can leave this method.
+            _reservedBytes += reservation;
+            Utf8InvocationOutput.Checkpoint(control);
+            return full;
+        }
+        var result = AllocateArray<T>(staging.Count, ref invocation);
+        for (var offset = 0; offset < result.Length;)
+        {
+            Utf8InvocationOutput.Checkpoint(control);
+            var count = Math.Min(256, result.Length - offset);
+            staging.WrittenItems.Slice(offset, count).CopyTo(result.AsSpan(offset, count));
+            offset += count;
+        }
+        Utf8InvocationOutput.Checkpoint(control);
+        return result;
+    }
+
     internal string DecodeUtf8(ReadOnlySpan<byte> bytes, int charCount, ref Utf8SliceInvocation invocation)
     {
         var control = new Utf8InvocationBufferControl(ref invocation);
@@ -115,7 +138,8 @@ internal struct Utf8InvocationResultLedger
 }
 
 // Exact staging extents reuse the invocation buffer's preallocation admission,
-// overlap accounting and reference clearing. Final roots overlap staging.
+// overlap accounting and reference clearing. Completion can transfer full arrays;
+// partial arrays require a separate exact root overlapping staging.
 internal struct Utf8InvocationResultBuffer<T>
 {
     private Utf8InvocationStateBuffer<T> _items;
@@ -134,19 +158,7 @@ internal struct Utf8InvocationResultBuffer<T>
     }
 
     internal T[] ToArray(ref Utf8InvocationResultLedger ledger, ref Utf8SliceInvocation invocation)
-    {
-        var result = ledger.AllocateArray<T>(Count, ref invocation);
-        var control = new Utf8InvocationBufferControl(ref invocation);
-        for (var offset = 0; offset < result.Length;)
-        {
-            Utf8InvocationOutput.Checkpoint(control);
-            var count = Math.Min(256, result.Length - offset);
-            _items.WrittenItems.Slice(offset, count).CopyTo(result.AsSpan(offset, count));
-            offset += count;
-        }
-        Utf8InvocationOutput.Checkpoint(control);
-        return result;
-    }
+        => ledger.CompleteArray(ref _items, ref invocation);
 
     internal void Release(ref Utf8SliceInvocation invocation) => _items.Release(ref invocation);
 }

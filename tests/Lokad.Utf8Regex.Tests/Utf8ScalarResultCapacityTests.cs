@@ -82,7 +82,7 @@ public sealed class Utf8ScalarResultCapacityTests
             stagingBytes = ArrayBytes<byte[]>(capacity);
             while (capacity < count) { capacity *= 2; stagingBytes += ArrayBytes<byte[]>(capacity); }
         }
-        var finalBytes = ArrayBytes<byte[]>(count);
+        var finalBytes = count > 0 && count == capacity ? 0UL : ArrayBytes<byte[]>(count);
         var invocation = Create(Math.Max(1UL, stagingBytes + finalBytes));
         Assert.True(invocation.Ledger.TryReserve(7));
         Utf8InvocationResultBuffer<byte[]> staging = default;
@@ -104,6 +104,74 @@ public sealed class Utf8ScalarResultCapacityTests
             Assert.All(retained, value => Assert.Equal(new byte[] { 0x7f }, value));
         }
         finally { staging.Release(ref invocation); results.Release(ref invocation); }
+    }
+
+    [Theory]
+    [InlineData(16)] [InlineData(512)]
+    public void FullResultTransfersItsExistingWorkingLoanAndNeverClearsReturnedChildren(int count)
+    {
+        var invocation = Create(1UL << 20);
+        Assert.True(invocation.Ledger.TryReserve(7));
+        Utf8InvocationResultBuffer<byte[]> staging = default;
+        Utf8InvocationResultLedger results = default;
+        var child = new byte[] { 42 };
+        try
+        {
+            for (var index = 0; index < count; index++) staging.Add(child, ref invocation);
+            var held = invocation.Ledger.ReservedBytes;
+            var traffic = invocation.Budget.ResultBytes;
+            var retained = staging.ToArray(ref results, ref invocation);
+            Assert.Equal(held, invocation.Ledger.ReservedBytes);
+            Assert.Equal(traffic, invocation.Budget.ResultBytes);
+            Assert.Equal(ArrayBytes<byte[]>(count), results.ReservedBytes);
+            staging.Release(ref invocation);
+            Assert.Equal(held, invocation.Ledger.ReservedBytes);
+            results.Release(ref invocation);
+            results.Release(ref invocation);
+            Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+            // A later staging lifetime must never borrow or clear the published leaf.
+            for (var index = 0; index < count; index++) staging.Add(new byte[] { 1 }, ref invocation);
+            staging.Release(ref invocation);
+            Assert.All(retained, value => Assert.Same(child, value));
+        }
+        finally { staging.Release(ref invocation); results.Release(ref invocation); }
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void FullResultInterruptionAfterTransferKeepsItsLoanFundedUntilCleanup(bool cancel)
+    {
+        var seed = new Utf8SliceInvocation(new(0, 0, 1UL << 20), Regex.InfiniteMatchTimeout, default);
+        Utf8InvocationResultBuffer<byte[]> preparation = default;
+        ulong steps;
+        try
+        {
+            for (var index = 0; index < 16; index++) preparation.Add([], ref seed);
+            steps = seed.Budget.Steps;
+        }
+        finally { preparation.Release(ref seed); }
+        using var token = new CancellationTokenSource();
+        var invocation = new Utf8SliceInvocation(new(cancel ? 0UL : steps, 0, 1UL << 20),
+            Regex.InfiniteMatchTimeout, token.Token);
+        Assert.True(invocation.Ledger.TryReserve(7));
+        Utf8InvocationResultBuffer<byte[]> staging = default;
+        Utf8InvocationResultLedger results = default;
+        var child = new byte[] { 42 };
+        try
+        {
+            for (var index = 0; index < 16; index++) staging.Add(child, ref invocation);
+            if (cancel) token.Cancel();
+            if (cancel)
+                Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(
+                    () => staging.ToArray(ref results, ref invocation)).CancellationToken);
+            else
+                Assert.Throws<InvalidOperationException>(() => staging.ToArray(ref results, ref invocation));
+            Assert.Equal(7 + ArrayBytes<byte[]>(16), invocation.Ledger.ReservedBytes);
+            Assert.Equal(ArrayBytes<byte[]>(16), results.ReservedBytes);
+        }
+        finally { staging.Release(ref invocation); results.Release(ref invocation); }
+        Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+        Assert.Equal(new byte[] { 42 }, child);
     }
 
     [Fact]

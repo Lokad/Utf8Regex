@@ -87,6 +87,17 @@ internal struct Utf8InvocationStateBuffer<T>
         if (RuntimeHelpers.IsReferenceOrContainsReferences<T>()) GetItems()[_count] = default;
     }
 
+    // A completed result can own an exactly filled array. Relinquish both the
+    // leaf and its existing working reservation without returning it to the pool.
+    internal T[]? TakeFullArray(out ulong reservedBytes)
+    {
+        reservedBytes = 0;
+        if (_items is not { } items || _count != items.Length) return null;
+        reservedBytes = _reservedBytes;
+        this = default;
+        return items;
+    }
+
     internal void Release(ref Utf8SliceInvocation invocation)
         => Release(new Utf8InvocationBufferControl(ref invocation));
 

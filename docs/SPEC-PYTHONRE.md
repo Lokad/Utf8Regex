@@ -269,6 +269,13 @@ discovery checks interruption before reporting EOF. Timeout uses
 pattern, while nested Core exceptions propagate. Finite working/result byte caps
 omit diagnostic subject text.
 
+Materialized result vectors can take over an exactly filled staging array and
+its already admitted working reservation. That array is never returned to the
+scratch pool. Partial vectors keep an exact final copy. Removing the duplicate
+acquisition/copy can lower cumulative result traffic, work and peak working
+requirements. Returned arrays and children remain valid across later calls;
+execution time and allocations still depend on capacity and pooling.
+
 Native literal value/text operations use validation and discovery's own bounded
 checkpoints, followed by final publication checks. Adjacent helper boundaries
 add no separate work charges. This can reduce required work units without

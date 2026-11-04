@@ -27,6 +27,9 @@
 - Reduce temporary allocations for Boolean and coordinate-only matching when
   captures cannot affect the match. Capture-dependent expressions, detailed
   results and cursors retain their capture storage.
+- Reuse exactly filled Python result arrays during materialization, reducing
+  allocation and working/result requirements for those calls. Partial buffers
+  keep their final copy; execution time can increase slightly.
 - Reuse bounded ordered-window Count on eligible mixed Unicode input, deriving
   gap limits in scalars. Unicode-constrained classes retain scalar execution;
   ASCII and deadline calls can cost more while match scratch decreases.
