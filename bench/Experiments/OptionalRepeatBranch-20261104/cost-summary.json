@@ -1,0 +1,204 @@
+{
+  "ElapsedSeconds": 84.2631404,
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "OwnedSamples": 160,
+  "MinimumOwnedDurationMs": 56.0014,
+  "Baseline": {
+    "Core": {
+      "Version": "0.5.0-dev.24+cc0bcb405b5bdd2eb283a685f7b24a9087f133b5",
+      "Sha256": "4DB4DAFD3F9FA87A19DB2ED0F38502656DC9F2C24A0B99AC3939C13D5C252DFF"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.24+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "65C6801C223998510735305C3258BC22C22169D85A707E3EB44B803EF257C239"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.24+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "AF7B8BDE6ECE463347D499B73FA1FBB166B142FFC61CBE26ED6834E1E8A26AF2"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "91B3BEB5D079BEF7F4B3550D71491FCD2924D4A3857D841D424AB074A2E792FF"
+    }
+  },
+  "Candidate": {
+    "Core": {
+      "Version": "0.5.0-dev.24+49b8f2b1119745a71bca42eda77aa989921664e4",
+      "Sha256": "75DE77C230A5D5310C474C94335CF7F7D262E87A4959EB107A038FF848EB2348"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.24+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "65C6801C223998510735305C3258BC22C22169D85A707E3EB44B803EF257C239"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.24+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "AF7B8BDE6ECE463347D499B73FA1FBB166B142FFC61CBE26ED6834E1E8A26AF2"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "91B3BEB5D079BEF7F4B3550D71491FCD2924D4A3857D841D424AB074A2E792FF"
+    }
+  },
+  "Rows": [
+    {
+      "Name": "ascii-control-first",
+      "BeforeUs": 2.501028870459887,
+      "AfterUs": 2.515670490093848,
+      "ChangePercent": 0.5854238552339686,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0338759388158156,
+      "AfterSpread": 1.0259545116455926
+    },
+    {
+      "Name": "actual-imports-ordinary",
+      "BeforeUs": 14.494684706450833,
+      "AfterUs": 14.35046857142857,
+      "ChangePercent": -0.9949587586274289,
+      "BeforeBytes": 3584,
+      "AfterBytes": 3568,
+      "BeforeSpread": 1.099642093543809,
+      "AfterSpread": 1.1298486663001392
+    },
+    {
+      "Name": "actual-imports-compiled",
+      "BeforeUs": 14.45219700627716,
+      "AfterUs": 14.194590877836351,
+      "ChangePercent": -1.7824703630106908,
+      "BeforeBytes": 3584,
+      "AfterBytes": 3568,
+      "BeforeSpread": 1.1017300771767335,
+      "AfterSpread": 1.1039031369507661
+    },
+    {
+      "Name": "actual-imports-finite-live",
+      "BeforeUs": 17.446271186440676,
+      "AfterUs": 17.391310269681284,
+      "ChangePercent": -0.3150295909770562,
+      "BeforeBytes": 3696,
+      "AfterBytes": 3680,
+      "BeforeSpread": 1.0934575850069796,
+      "AfterSpread": 1.1948919169105534
+    },
+    {
+      "Name": "actual-imports-deadline-live",
+      "BeforeUs": 19.086898478733314,
+      "AfterUs": 18.371768202080236,
+      "ChangePercent": -3.7467076039089275,
+      "BeforeBytes": 3744,
+      "AfterBytes": 3728,
+      "BeforeSpread": 1.0824726473380073,
+      "AfterSpread": 1.058843830025608
+    },
+    {
+      "Name": "optional-greedy-count",
+      "BeforeUs": 63.1604407135362,
+      "AfterUs": 63.1105152471083,
+      "ChangePercent": -0.0790454687520814,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0016972622710734,
+      "AfterSpread": 1.0027979471710202
+    },
+    {
+      "Name": "optional-lazy-count",
+      "BeforeUs": 1348.6200000000001,
+      "AfterUs": 1052.605172413793,
+      "ChangePercent": -21.949461492948863,
+      "BeforeBytes": 3552,
+      "AfterBytes": 1872,
+      "BeforeSpread": 1.0023101847653124,
+      "AfterSpread": 1.004010449183452
+    },
+    {
+      "Name": "optional-nullable-count",
+      "BeforeUs": 130.98602620087337,
+      "AfterUs": 131.69671052631577,
+      "ChangePercent": 0.5425649941868782,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0074636990534702,
+      "AfterSpread": 1.0065024413377597
+    },
+    {
+      "Name": "optional-nested-count",
+      "BeforeUs": 148.16558603491274,
+      "AfterUs": 102.96187175043327,
+      "ChangePercent": -30.50891606761368,
+      "BeforeBytes": 3552,
+      "AfterBytes": 3552,
+      "BeforeSpread": 1.0128067798213811,
+      "AfterSpread": 1.0103719036916403
+    },
+    {
+      "Name": "optional-value-match",
+      "BeforeUs": 0.30093142000170536,
+      "AfterUs": 0.30105286378950746,
+      "ChangePercent": 0.04035596808116271,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0083685922223873,
+      "AfterSpread": 1.0025307887624977
+    },
+    {
+      "Name": "optional-unicode-count",
+      "BeforeUs": 702.9413793103448,
+      "AfterUs": 516.7470085470086,
+      "ChangePercent": -26.48789447364891,
+      "BeforeBytes": 3552,
+      "AfterBytes": 1872,
+      "BeforeSpread": 1.0133763294567053,
+      "AfterSpread": 1.014541747869871
+    },
+    {
+      "Name": "scalar-optional-root-control",
+      "BeforeUs": 45.15971492873218,
+      "AfterUs": 45.18889722430608,
+      "ChangePercent": 0.06462019439219535,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.001489926368371,
+      "AfterSpread": 1.0033527037719165
+    },
+    {
+      "Name": "literal-optional-root-control",
+      "BeforeUs": 38.1959898154042,
+      "AfterUs": 38.306050955414015,
+      "ChangePercent": 0.2881484169980464,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0053530145836191,
+      "AfterSpread": 1.0076803555317941
+    },
+    {
+      "Name": "nonbacktracking-control",
+      "BeforeUs": 160.90534759358292,
+      "AfterUs": 163.8717808219178,
+      "ChangePercent": 1.8435889625169954,
+      "BeforeBytes": 133296,
+      "AfterBytes": 133296,
+      "BeforeSpread": 1.0042290836985321,
+      "AfterSpread": 1.0052606689115766
+    },
+    {
+      "Name": "python-optional-count",
+      "BeforeUs": 141.09714964370545,
+      "AfterUs": 141.00607476635514,
+      "ChangePercent": -0.06454763797871799,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0042931471396992,
+      "AfterSpread": 1.0295259132938082
+    },
+    {
+      "Name": "pcre-optional-count",
+      "BeforeUs": 101.66972789115646,
+      "AfterUs": 100.60823529411765,
+      "ChangePercent": -1.0440596419960868,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.0015523529786086,
+      "AfterSpread": 1.0054601294873815
+    }
+  ]
+}
