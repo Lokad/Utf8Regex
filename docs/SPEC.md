@@ -263,7 +263,8 @@ Pure literal runs can lower working and depth requirements; repeats requiring
 rewinding or captures inside the body retain their continuation frames.
 Nonempty bounded runs before a positive word boundary can also omit useless
 rewinds when a bounded ASCII input check proves every shorter endpoint lies
-between word scalars. This uses the profile's actual word predicate. The proof
+between word scalars. This uses the profile's actual word predicate and can stop
+at an ASCII nonword scalar excluded by the repeated class. The proof
 is charged; successful admission can require less working capacity and depth,
 while declined proofs can increase work. Zero-minimum and uncertain runs keep
 their existing continuations.

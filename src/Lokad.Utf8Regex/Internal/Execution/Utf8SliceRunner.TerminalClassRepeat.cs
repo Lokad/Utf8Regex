@@ -155,13 +155,23 @@ internal static partial class Utf8SliceRunner
                 return true;
             }
             var window = input.Slice(start, Math.Min(input.Length - start, (int)repeat.RepeatMaximum));
-            var allWord = true;
+            var onlyWordCanBeConsumed = true;
             foreach (var value in window)
             {
-                if (value >= 128 || !Utf8SliceScalarClasses.IsBoundaryWord(new Rune(value), program, suffix))
-                { allWord = false; break; }
+                if (value >= 128) { onlyWordCanBeConsumed = false; break; }
+                if (Utf8SliceScalarClasses.IsBoundaryWord(new Rune(value), program, suffix)) continue;
+                // An excluded nonword stops the run before this scalar. Later
+                // bytes cannot introduce a consumed nonword or useful rewind.
+                proofBreach = TryMatchScalarClass(program, atom, new Rune(value), ref invocation, out var consumesNonword);
+                if (proofBreach != Utf8ExecutionLimitKind.None)
+                {
+                    outcome = new(false, -1, proofBreach, null, null);
+                    return true;
+                }
+                onlyWordCanBeConsumed = !consumesNonword;
+                break;
             }
-            if (allWord)
+            if (onlyWordCanBeConsumed)
             {
                 outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
                 return true;

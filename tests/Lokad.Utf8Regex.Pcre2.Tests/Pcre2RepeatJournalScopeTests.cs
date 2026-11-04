@@ -15,6 +15,8 @@ public sealed class Pcre2RepeatJournalScopeTests
     [InlineData(@".{1,4}\b", "abc !", Pcre2CompileOptions.None, 1)]
     [InlineData(@"[a-z]{1,4}\B", "abcd!", Pcre2CompileOptions.None, 1)]
     [InlineData(@"((\d{2,4}))\b", "123A 1234 12", Pcre2CompileOptions.None, 2)]
+    [InlineData(@"[a-z]{1,8}\b", "alpha beta gamma", Pcre2CompileOptions.None, 3)]
+    [InlineData(@"[a-z ]{1,8}\b", "alpha beta gamma", Pcre2CompileOptions.None, 3)]
     public void BoundedWordRepeatsPreserveProfilePredicates(string pattern, string text, Pcre2CompileOptions options, int expected)
     {
         var regex = new Utf8Pcre2Regex(pattern, options, default,

@@ -64,6 +64,12 @@ public sealed class Utf8DisjointClassRepeatTests
     [InlineData(@"([a-z]{1,4}?)\b", "abcd abcdef")]
     [InlineData(@"((?i:[a-z]){1,4})\b", "AbCd AbCdX")]
     [InlineData(@"([a-z]{1,4})\bX|([a-z]{1,4})\b!", "abcd! abcdX")]
+    [InlineData(@"([a-z]{1,8})\b", "alpha beta gamma")]
+    [InlineData(@"([a-z ]{1,8})\b", "alpha beta gamma")]
+    [InlineData(@"([^x]{1,8})\b", "alpha beta gamma")]
+    [InlineData(@"(.{1,8})\b", "alpha beta gamma")]
+    [InlineData(@"(.{1,8})\b", "abc\ndef")]
+    [InlineData(@"(\d{1,4})\b", "12-345/6")]
     public void CapturesAndFallbackKeepOverlappingBclSemantics(string pattern, string text)
     {
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
@@ -144,7 +150,7 @@ public sealed class Utf8DisjointClassRepeatTests
         var regex = new Utf8Regex(new string('(', nesting) + (boundary ? @"\d{2,4}" : exact ? @"\p{L}{2}" : @"\p{L}{2,3}") +
             new string(')', nesting) + (boundary ? @"\b" : exact ? "[A-Z]" : "-"));
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException();
-        var input = Encoding.UTF8.GetBytes(boundary ? "1234 5678" : exact ? "ééA ABB" : "éé- AB-");
+        var input = Encoding.UTF8.GetBytes(boundary ? "12 567" : exact ? "ééA ABB" : "éé- AB-");
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
         var baseline = new Utf8SliceInvocation(new(100000, 1, 1 << 20), Timeout.InfiniteTimeSpan, default);

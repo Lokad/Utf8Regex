@@ -25,6 +25,8 @@ public sealed class PythonReBoundaryCandidateTests
     [InlineData(@".{1,4}\b", "abc !", 0, "abc", 1)]
     [InlineData(@"[a-z]{1,4}\B", "abcd!", 0, "abc", 1)]
     [InlineData(@"\d{2,4}\b", "😀12 34", 4, "12", 2)]
+    [InlineData(@"[a-z]{1,8}\b", "alpha beta gamma", 0, "alpha", 3)]
+    [InlineData(@"[a-z ]{1,8}\b", "alpha beta gamma", 0, "alpha ", 3)]
     public void SearchKeepsBoundaryPredicatesCapturesAndOffsets(string pattern, string text, int offset, string? expected, int expectedCount)
     {
         using var token = new CancellationTokenSource();
@@ -48,6 +50,10 @@ public sealed class PythonReBoundaryCandidateTests
             new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
         Assert.Equal(1, regex.Count("1234"u8));
         Assert.Equal(0, regex.Count("123A"u8));
+        Assert.Equal(2, regex.Count("12 567"u8));
+        using var words = new Utf8PythonRegex(@"[a-z]{1,8}\b", default, Timeout.InfiniteTimeSpan,
+            new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+        Assert.Equal(3, words.Count("alpha beta gamma"u8));
     }
 
     [Theory]
