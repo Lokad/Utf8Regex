@@ -15,6 +15,13 @@ internal static partial class Utf8SearchExecutor
         out bool found)
     {
         var folded = plan.Kind == Utf8SearchKind.AsciiFoldedByteLiterals;
+        // With no confirmation predicates, complete-needle discovery already
+        // proves this search language. Borrow its existing bounded windows and
+        // original invocation; callers retain any enclosing regex verification.
+        if (!folded && !reverse && !plan.HasBoundaryRequirements && !plan.HasTrailingLiteralRequirement &&
+            plan.AlternateLiteralsUtf8 is { Length: >= 3 and <= 8 } literals)
+            return TryFindSmallExactFamilyCandidate(literals, input, start, end,
+                ref invocation, out match, out found);
         PreparedByteSearch? firstByteSearch = null;
         if (folded && plan.AlternateIgnoreCaseLiteralSearch is
             { ShortestLength: > 0 and < int.MaxValue } foldedSearch)

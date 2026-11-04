@@ -251,6 +251,12 @@ failures retain their checkpoint, and terminal success/miss checks still observe
 the original token and deadline. Candidates without boundary or trailing-literal
 requirements omit an empty confirmation step; their terminal publication remains
 charged. These shortcuts can lower finite work requirements.
+Pure LTR exact families of three to eight needles can reuse complete-needle search
+in admitted spans of at most2048 bytes when no boundary or trailing-literal
+confirmation is required. Needles above1024 bytes keep the existing generic path.
+The same invocation charges eligibility, each branch/window and publication;
+avoiding false-candidate replay can reduce work, while dense hits can cost more.
+Caller validation, enclosing regex verification and original interruption remain.
 Scalar Count can search an exact ASCII delimiter after a proved leading
 class run, with or without intervening whitespace. The actual scalar predicate
 rewinds a conservative candidate window; the VM verifies every retained start.

@@ -32,6 +32,7 @@ public sealed class Utf8FiniteLiteralCountTests
     [Theory]
     [InlineData("aa|a", "aaa")]
     [InlineData("😀😀|😀|中", "😀😀😀中")]
+    [InlineData("中文語|夏洛克|约翰华", "中文語 夏洛克 约翰华")]
     public void SmallFamilyWorkDenialIsCumulativeAndNeverPublishesPartialCount(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
@@ -101,6 +102,28 @@ public sealed class Utf8FiniteLiteralCountTests
             Assert.Equal(expected, limited.Count(input));
             using var source = new CancellationTokenSource();
             Assert.Equal(expected, limited.Count(input, source.Token));
+        }
+    }
+
+    [Theory]
+    [InlineData("夏洛克·福尔摩斯|约翰华生|阿德勒|雷斯垂德|莫里亚蒂教授")]
+    [InlineData("猫猫猫猫|猫猫猫|犬犬犬")]
+    [InlineData("猫猫猫|猫猫猫猫|犬犬犬")]
+    public void LivePureFamiliesKeepOrderedMatchesAcrossWindowEdgesAndFalsePrefixes(string pattern)
+    {
+        using var source = new CancellationTokenSource();
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
+        foreach (var timeout in new[] { Regex.InfiniteMatchTimeout, TimeSpan.FromSeconds(10) })
+        foreach (var prefix in new[] { 2016, 2031, 2047, 2048, 2049 })
+        {
+            var text = "é😀" + new string('x', prefix) + "夏洛克·福尔摩斯" +
+                string.Concat(Enumerable.Repeat("夏洛克x", 256)) + "猫猫猫猫猫猫犬犬犬约翰华生";
+            var storage = Encoding.UTF8.GetBytes("padding" + text + "padding");
+            var input = storage.AsSpan(7, Encoding.UTF8.GetByteCount(text));
+            var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant, timeout);
+            Assert.Equal(new Regex(pattern, options).Count(text), regex.Count(input, source.Token));
+            byte[] malformed = [.. input, 0x80];
+            Assert.Throws<ArgumentException>(() => regex.Count(malformed, source.Token));
         }
     }
 
