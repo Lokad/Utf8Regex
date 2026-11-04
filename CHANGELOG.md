@@ -22,6 +22,11 @@
 - Reduce live-token ASCII Boolean matching scratch through existing metered
   native plans. Reuse proved literal/category/count and bounded candidate ranges
   for matching, preserving strict full-subject validation and resource controls.
+- Skip impossible ASCII starts in scalar first-match searches, including captured
+  and range-prefixed patterns. Some excluded pattern families can cost more.
+- Reduce temporary allocations for Boolean and coordinate-only matching when
+  captures cannot affect the match. Capture-dependent expressions, detailed
+  results and cursors retain their capture storage.
 - Reject impossible bounded scalar-gap candidates using short ASCII tail prefixes.
   Corpus Count and finite/deadline operations improve; single-byte tails can cost
   more. Strict validation, captures and bounded interruption remain.
