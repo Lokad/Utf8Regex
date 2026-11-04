@@ -130,6 +130,39 @@ public sealed class Utf8ValidationTests
         Assert.Equal(-1, errorOffset);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(3)]
+    public void CommonDrainMatchesScalarValidationAtEveryWideLaneAndSliceOffset(int sliceOffset)
+    {
+        var scalars = new[] { "é", "中", "ࠀ", "\uD7FF", "😀", "\U0010FFFF" };
+        foreach (var scalar in scalars)
+        for (var prefix = 0; prefix < 128; prefix++)
+        {
+            var bytes = Encoding.UTF8.GetBytes(new string('a', prefix) + scalar + new string('b', 128));
+            var storage = new byte[sliceOffset + bytes.Length + 3];
+            bytes.CopyTo(storage, sliceOffset);
+            var input = storage.AsSpan(sliceOffset, bytes.Length);
+            Assert.True(Utf8ValidationCore.TryValidate(input, false, out _, out var validOffset));
+            Assert.Equal(-1, validOffset);
+            for (var index = prefix; index < prefix + Encoding.UTF8.GetByteCount(scalar); index++)
+            {
+                var original = input[index];
+                foreach (var replacement in new byte[] { 0, 0x80, 0xC0, 0xE0, 0xFF })
+                {
+                    input[index] = replacement;
+                    var expected = Utf8ValidationCore.TryValidate(input, true, out _, out var expectedOffset);
+                    var actual = Utf8ValidationCore.TryValidate(input, false, out _, out var actualOffset);
+                    Assert.True(expected == actual && expectedOffset == actualOffset,
+                        $"slice={sliceOffset}, prefix={prefix}, scalar={scalar}, index={index}, byte={replacement:X2}: " +
+                        $"expected={expected}/{expectedOffset}, actual={actual}/{actualOffset}");
+                }
+                input[index] = original;
+            }
+        }
+    }
+
     [Fact]
     public void CommonUtf8DrainStopsBeforeAConstrainedThreeByteScalar()
     {
