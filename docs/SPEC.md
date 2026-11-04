@@ -79,8 +79,9 @@ requires instruction/state admission. Impossible classes and compact zero-width
 repeats preserve syntax checks, predicates and capture declarations without
 expansion proportional to the bound.
 
-Backtracking zero-or-one repeats use ordinary ordered branches rather than
-repeat counters and rollback mutations. Greedy/lazy preference, nullable captures,
+Backtracking zero-or-one repeats of compound bodies use ordinary ordered branches
+rather than repeat counters and rollback mutations. Single-atom repeats retain
+their existing fused kernels. Greedy/lazy preference, nullable captures,
 assertions and RTL are preserved. Instructions, construction/work charges and
 major working-buffer requirements can decrease; numeric costs depend on the
 program version. Frames still require depth and working admission before growth,

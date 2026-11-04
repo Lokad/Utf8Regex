@@ -1194,9 +1194,12 @@ internal static class Utf8SliceLowerer
                         break;
                     }
                     // Zero or one iteration needs a branch, not a counter or
-                    // rollback journal. Both paths retain the body's ordinary
-                    // capture/assertion behavior, including nullable completions.
-                    if (repeat.Minimum == 0 && repeat.Maximum == 1)
+                    // rollback journal. Preserve single-atom repeats for the
+                    // existing no-rewind/terminal kernels; compound bodies keep
+                    // ordinary captures/assertions, including nullable completions.
+                    if (repeat.Minimum == 0 && repeat.Maximum == 1 && repeat.Body is not
+                        (Utf8SliceNode.LiteralNode or Utf8SliceNode.DotNode or Utf8SliceNode.SetNode or
+                         Utf8SliceNode.ShorthandNode or Utf8SliceNode.CategorySetNode))
                     {
                         if (frame.Stage == 0)
                         {

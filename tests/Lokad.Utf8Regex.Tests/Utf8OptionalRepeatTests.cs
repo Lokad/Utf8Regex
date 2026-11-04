@@ -110,6 +110,19 @@ public sealed class Utf8OptionalRepeatTests
     }
 
     [Fact]
+    public void SingleAtomOptionalKeepsItsConstantSpaceTerminalPath()
+    {
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1 };
+        foreach (var pattern in new[] { "a?", @"\w?", "[é😀]?" })
+        {
+            var regex = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, policy);
+            Assert.Equal(3, regex.Count("a😀"u8));
+            using var source = new CancellationTokenSource();
+            Assert.Equal(3, regex.Count("a😀"u8, source.Token));
+        }
+    }
+
+    [Fact]
     public void OptionalMatchDoesNotHideMalformedSuffix()
     {
         var input = new byte[] { (byte)'a', (byte)'b', 0xFF };
