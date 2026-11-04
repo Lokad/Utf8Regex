@@ -1,0 +1,98 @@
+{
+  "Source": "3a8cf7e2d6c1a0c5cb374a68654e59569fa13cbc",
+  "SelectedRows": 8,
+  "UnchangedRows": 170,
+  "NoBuild": true,
+  "ArchiveSha256": "3A455EF61CD44075A579EB73E6156B824A8C26DDEDD6E7AD2187B1D933B4F7EA",
+  "GeneratedBlocks": 4,
+  "DescendingTables": 6,
+  "RatioRows": 178,
+  "ImportedHashes": [
+    {
+      "Path": "README.md",
+      "Sha256": "81320fd5897eb9b123ee084134cf7181a104d85e0bafa60b551b25cc8e6b5e22"
+    },
+    {
+      "Path": "README.Benchmarks.json",
+      "Sha256": "f674f8888e8aca176c41f62115eb7196f624cc953693f0afcd1594d3d98057ac"
+    },
+    {
+      "Path": "README.Parity.json",
+      "Sha256": "90bbfaeb0eab378a41a1777d9dd4ceb0b8e217bc2f51003eda6101eedd8d36b4"
+    }
+  ],
+  "Rows": [
+    {
+      "Section": "dotnet-performance",
+      "CaseId": "literal/sherlock-ru",
+      "Mode": "Ordinary",
+      "Status": "Gap",
+      "RatioToPredecoded": 1.9797885387727796,
+      "Utf8Microseconds": 204.68237704918033,
+      "StatusReason": null
+    },
+    {
+      "Section": "dotnet-performance",
+      "CaseId": "literal/sherlock-casei-ru",
+      "Mode": "Ordinary",
+      "Status": "Win",
+      "RatioToPredecoded": 0.6280245544485291,
+      "Utf8Microseconds": 248.00689655172414,
+      "StatusReason": null
+    },
+    {
+      "Section": "dotnet-performance",
+      "CaseId": "literal/sherlock-zh",
+      "Mode": "Ordinary",
+      "Status": "Gap",
+      "RatioToPredecoded": 4.9746040511645875,
+      "Utf8Microseconds": 94.67045454545455,
+      "StatusReason": null
+    },
+    {
+      "Section": "dotnet-performance",
+      "CaseId": "literal-alternate/sherlock-zh",
+      "Mode": "Ordinary",
+      "Status": "Gap",
+      "RatioToPredecoded": 2.9571800091758855,
+      "Utf8Microseconds": 206.02163265306123,
+      "StatusReason": null
+    },
+    {
+      "Section": "dotnet-performance-compiled",
+      "CaseId": "literal/sherlock-ru",
+      "Mode": "Compiled",
+      "Status": "Gap",
+      "RatioToPredecoded": 2.2271990435000135,
+      "Utf8Microseconds": 204.58577235772358,
+      "StatusReason": null
+    },
+    {
+      "Section": "dotnet-performance-compiled",
+      "CaseId": "literal/sherlock-casei-ru",
+      "Mode": "Compiled",
+      "Status": "Gap",
+      "RatioToPredecoded": 1.1126832442442407,
+      "Utf8Microseconds": 248.17365853658535,
+      "StatusReason": null
+    },
+    {
+      "Section": "dotnet-performance-compiled",
+      "CaseId": "literal/sherlock-zh",
+      "Mode": "Compiled",
+      "Status": "Gap",
+      "RatioToPredecoded": 3.9271173089026017,
+      "Utf8Microseconds": 94.82396226415094,
+      "StatusReason": null
+    },
+    {
+      "Section": "dotnet-performance-compiled",
+      "CaseId": "literal-alternate/sherlock-zh",
+      "Mode": "Compiled",
+      "Status": "Gap",
+      "RatioToPredecoded": 5.878910775895414,
+      "Utf8Microseconds": 214.21702127659574,
+      "StatusReason": null
+    }
+  ]
+}

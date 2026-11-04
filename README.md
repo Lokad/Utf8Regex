@@ -126,13 +126,13 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 
 | Case | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `literal/sherlock-zh` | 137.112 us | 18.950 us | 2,174.452 us | 7.24x |
-| `literal-alternate/sherlock-zh` | 238.556 us | 69.102 us | 2,180.013 us | 3.45x |
-| `literal/sherlock-ru` | 253.864 us | 97.931 us | 5,350.860 us | 2.59x |
+| `literal/sherlock-zh` | 94.670 us | 19.031 us | 2,172.261 us | 4.97x |
+| `literal-alternate/sherlock-zh` | 206.022 us | 69.668 us | 2,195.246 us | 2.96x |
+| `literal/sherlock-ru` | 204.682 us | 103.386 us | 5,284.590 us | 1.98x |
 | `ruff-noqa/tweaked` | 10,855.660 us | 8,347.743 us | 43,657.050 us | 1.30x |
 | `literal/sherlock-casei-en` | 170.179 us | 203.993 us | 635.114 us | 0.83x |
 | `literal/sherlock-en` | 69.963 us | 87.288 us | 467.238 us | 0.80x |
-| `literal/sherlock-casei-ru` | 258.148 us | 371.808 us | 5,695.478 us | 0.69x |
+| `literal/sherlock-casei-ru` | 248.007 us | 394.900 us | 5,795.667 us | 0.63x |
 | `aws-keys/quick` | 4,992.300 us | 10,013.733 us | 45,406.550 us | 0.50x |
 | `bounded-repeat/letters-en` | 1,050.852 us | 2,871.733 us | 2,964.494 us | 0.37x |
 | `literal-alternate/sherlock-ru` | 1,729.747 us | 4,828.245 us | 10,098.633 us | 0.36x |
@@ -208,14 +208,14 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 
 | Case | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `literal-alternate/sherlock-zh` | 241.709 us | 36.609 us | 2,174.900 us | 6.60x |
-| `literal/sherlock-zh` | 137.471 us | 24.130 us | 2,184.392 us | 5.70x |
-| `literal/sherlock-ru` | 255.331 us | 88.271 us | 5,338.210 us | 2.89x |
+| `literal-alternate/sherlock-zh` | 214.217 us | 36.438 us | 2,176.278 us | 5.88x |
+| `literal/sherlock-zh` | 94.824 us | 24.146 us | 2,154.626 us | 3.93x |
 | `ruff-noqa/tweaked` | 10,879.620 us | 4,616.064 us | 38,832.500 us | 2.36x |
+| `literal/sherlock-ru` | 204.586 us | 91.858 us | 5,285.910 us | 2.23x |
 | `literal/sherlock-casei-en` | 169.560 us | 79.050 us | 457.432 us | 2.14x |
 | `literal-alternate/sherlock-casei-en` | 218.187 us | 154.661 us | 622.831 us | 1.41x |
 | `aws-keys/quick` | 4,997.840 us | 3,591.407 us | 36,256.300 us | 1.39x |
-| `literal/sherlock-casei-ru` | 256.642 us | 227.902 us | 5,464.640 us | 1.13x |
+| `literal/sherlock-casei-ru` | 248.174 us | 223.041 us | 5,632.233 us | 1.11x |
 | `literal-alternate/sherlock-en` | 402.520 us | 377.613 us | 763.296 us | 1.07x |
 | `literal-alternate/sherlock-en-mixed` | 193.257 us | 188.072 us | 545.343 us | 1.03x |
 | `bounded-repeat/letters-ru` | 1,965.431 us | 2,083.476 us | 2,873.811 us | 0.94x |
