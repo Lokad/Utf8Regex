@@ -24,16 +24,17 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-11-04T07:28:34.1579759+00:00`
-- Snapshot SHA-256: `F9748A92D649D36706074C81169D57DCABED72FAE2835E6AF95C56606FCFBCF7`
+- Generated: `2026-11-04T08:17:34.8404224+00:00`
+- Snapshot SHA-256: `60577D1F95D64C872C629186708ACED04E74EBB9D5A00F89FE824D1BF1CC11C8`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `4`
 - Scaling families: `7`
 - Public Status: `39` managed faster, `0` equivalent, `33` CPython faster, `14` inconclusive, `4` unqualified
-- Historical point measurement environments represented: `1`
-- Paired evidence from source `baae83e6ef23`: `90` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
+- Historical point measurement environments represented: `2`
+- Paired evidence from source `8af18a5ee2c8`: `5` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
+- Paired evidence from source `baae83e6ef23`: `85` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
 - Historical CPython point environments represented: `1`
@@ -79,7 +80,7 @@ Input hashes cover the exact decoded subject re-encoded as strict UTF-8 and time
 | `corpus/code-declarations` | `LokadReplica/Code/Data` | 53,352 | `E25F45289E44A6DE119149C10B258E8416A8E24E4FF01D94ED4753FA5A9A351B` |
 | `corpus/sherlock-ru` | `DotNetPerformanceReplica/Stress/Data/opensubtitles/ru-sampled.txt` | 1,570,556 | `7FFDDB21336A1BFB4A9E2DF4BB77EEA0305C0010A57C5D3C56E0DFEAD9E80A90` |
 
-Historical independent point columns were measured from source `baae83e6ef23` on .NET 11.0.0-rc.3.26522.148, Ubuntu 24.04.4 LTS, X64. Qualified paired rows record their own exact source, runtime, and interpreter provenance in the JSON evidence.
+Historical point rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins; qualified paired rows carry separate exact provenance.
 
 ## Results
 
@@ -90,12 +91,12 @@ Historical independent point columns were measured from source `baae83e6ef23` on
 | Case | Operation | Contract | Status | PythonRe elapsed | CPython predecoded elapsed | Rstrong | CPython + decode elapsed | .NET + decode elapsed | PythonRe alloc |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|
 | `literal/ismatch` | `IsMatch` | ScalarResult | Managed faster | 2.470 us | 22.361 us | 0.11x | 28.035 us | 37.466 us | 0 B |
-| `literal/search` | `Search` | ConsumedGroupZeroRanges | Managed faster | 2.290 us | 22.711 us | 0.10x | 28.151 us | 29.078 us | 0 B |
-| `literal/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 2.269 us | 22.211 us | 0.10x | 28.033 us | 37.508 us | 0 B |
+| `literal/search` | `Search` | ConsumedGroupZeroRanges | Managed faster | 2.662 us | 22.788 us | 0.12x | 28.148 us | 32.938 us | 0 B |
+| `literal/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 1.665 us | 22.321 us | 0.07x | 27.998 us | 31.037 us | 0 B |
 | `prefix/match` | `Match` | ConsumedGroupZeroRanges | CPython faster | 0.317 us | 0.275 us | 1.16x | 1.786 us | 2.551 us | 0 B |
 | `literal/fullmatch` | `FullMatch` | ConsumedGroupZeroRanges | Managed faster | 0.068 us | 0.347 us | 0.20x | 0.434 us | 0.148 us | 0 B |
 | `unicode/fullmatch` | `FullMatch` | ConsumedGroupZeroRanges | Managed faster | 15.920 us | 19.747 us | 0.81x | 29.342 us | 28.076 us | 0 B |
-| `literal/search-early` | `Search` | ConsumedGroupZeroRanges | CPython faster | 1.280 us | 0.235 us | 5.44x | 5.945 us | 30.635 us | 0 B |
+| `literal/search-early` | `Search` | ConsumedGroupZeroRanges | CPython faster | 0.685 us | 0.236 us | 2.91x | 5.919 us | 22.320 us | 0 B |
 | `anchor/fullmatch-miss` | `FullMatch` | ConsumedGroupZeroRanges | CPython faster | 0.340 us | 0.184 us | 1.84x | 0.333 us | 0.084 us | 64 B |
 | `ignorecase/search-hit` | `Search` | ConsumedGroupZeroRanges | CPython faster | 0.420 us | 0.358 us | 1.17x | 0.400 us | 0.174 us | 0 B |
 | `ignorecase/search-miss` | `Search` | ConsumedGroupZeroRanges | CPython faster | 0.414 us | 0.288 us | 1.44x | 0.388 us | 0.052 us | 0 B |
@@ -120,8 +121,8 @@ Historical independent point columns were measured from source `baae83e6ef23` on
 | `atomic/search-miss` | `Search` | ConsumedGroupZeroRanges | Inconclusive | 0.968 us | 0.262 us | 3.70x | 0.368 us | 0.113 us | 3,552 B |
 | `possessive/search-hit` | `Search` | ConsumedGroupZeroRanges | Inconclusive | 0.970 us | 0.311 us | 3.10x | 0.348 us | 0.129 us | 3,552 B |
 | `leading-inline/search-hit` | `Search` | ConsumedGroupZeroRanges | CPython faster | 0.777 us | 0.335 us | 2.32x | 0.372 us | 0.158 us | 0 B |
-| `unicode-literal/search-hit` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.118 us | 0.237 us | 0.50x | 0.342 us | 0.133 us | 0 B |
-| `unicode-literal/search-miss` | `Search` | ConsumedGroupZeroRanges | CPython faster | 0.839 us | 0.293 us | 2.87x | 1.202 us | 0.882 us | 0 B |
+| `unicode-literal/search-hit` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.135 us | 0.238 us | 0.57x | 0.343 us | 0.118 us | 0 B |
+| `unicode-literal/search-miss` | `Search` | ConsumedGroupZeroRanges | CPython faster | 0.504 us | 0.293 us | 1.72x | 1.203 us | 0.788 us | 0 B |
 | `unicode-category/search-miss` | `Search` | ConsumedGroupZeroRanges | Unqualified | 0.213 us | 0.214 us | 1.00x | 0.325 us | 0.047 us | 0 B |
 | `greedy/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.177 us | 0.220 us | 0.80x | 0.327 us | 0.077 us | 0 B |
 | `alternation/search-miss` | `Search` | ConsumedGroupZeroRanges | CPython faster | 0.276 us | 0.238 us | 1.16x | 0.340 us | 0.111 us | 0 B |
@@ -320,12 +321,12 @@ These fields prevent a composed host-language operation or a managed decode fall
 | Case | CPython operation owner | Managed route | Byte control / engine evidence |
 |---|---|---|---|
 | `literal/ismatch` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; boolean result` | Rbyte 0.11x [0.11, 0.11]; ManagedFaster |
-| `literal/search` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Rbyte 0.10x [0.10, 0.10]; ManagedFaster |
-| `literal/search-miss` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Rbyte 0.10x [0.10, 0.10]; ManagedFaster |
+| `literal/search` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Rbyte 0.12x [0.12, 0.12]; ManagedFaster |
+| `literal/search-miss` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Rbyte 0.07x [0.07, 0.07]; ManagedFaster |
 | `prefix/match` | `_sre C Pattern.match` | `Utf8Regex/FallbackRegex; strict validation; direct anchored ASCII literal-prefix/digit-repeat value ranges` | Rbyte 0.98x [0.98, 0.99]; NotApplicable |
 | `literal/fullmatch` | `_sre C Pattern.fullmatch` | `Utf8Regex/OwnedScalar; full-match value ranges` | Rbyte 0.17x [0.17, 0.17]; ManagedFaster |
 | `unicode/fullmatch` | `_sre C Pattern.fullmatch` | `Utf8Regex/OwnedScalar; full-match value ranges` | Excluded: pattern or subject is not entirely ASCII. |
-| `literal/search-early` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Rbyte 5.21x [5.19, 5.22]; CpythonFaster |
+| `literal/search-early` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Rbyte 2.78x [2.77, 2.80]; CpythonFaster |
 | `anchor/fullmatch-miss` | `_sre C Pattern.fullmatch` | `Utf8Regex/OwnedScalar; full-match value ranges` | Rbyte 1.58x [1.58, 1.70]; CpythonFaster |
 | `ignorecase/search-hit` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Rbyte 1.13x [1.13, 1.14]; NotApplicable |
 | `ignorecase/search-miss` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Rbyte 1.56x [1.55, 1.56]; NotApplicable |

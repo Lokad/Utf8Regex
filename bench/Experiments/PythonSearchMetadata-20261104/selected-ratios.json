@@ -1,0 +1,79 @@
+{
+  "Source": "8af18a5ee2c8ce7c45461ea8f325fc9ce15a892f",
+  "UnchangedRows": 85,
+  "UnchangedLifecycleScaling": true,
+  "ArchiveSha256": "53AF9791D4B75AE9F037896562D70BC3880A88717B43738994BD4F466B05B07A",
+  "NoBuild": true,
+  "ImportedHashes": [
+    {
+      "Path": "PythonRe.Benchmarks.json",
+      "Sha256": "60577d1f95d64c872c629186708aced04e74ebb9d5a00f89fe824d1bf1cc11c8"
+    },
+    {
+      "Path": "src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md",
+      "Sha256": "ce6a768e5a5878e8e519e9579897be502fc025b0a49ce6dffee4ca812b95eb5e"
+    }
+  ],
+  "Rows": [
+    {
+      "CaseId": "literal/search",
+      "PreviousRatio": 0.1007088076003658,
+      "Status": "ManagedFaster",
+      "Ratio": 0.11739904539730717,
+      "Lower95": 0.1165770808326432,
+      "Upper95": 0.1176629066888774,
+      "ManagedUs": 2.6615928544845553,
+      "ManagedBytes": 0,
+      "Reason": "Qualified paired evidence.",
+      "Source": "8af18a5ee2c8"
+    },
+    {
+      "CaseId": "literal/search-miss",
+      "PreviousRatio": 0.10210897812906128,
+      "Status": "ManagedFaster",
+      "Ratio": 0.07470110090926439,
+      "Lower95": 0.07446070991416681,
+      "Upper95": 0.07493258774924984,
+      "ManagedUs": 1.6654492523488156,
+      "ManagedBytes": 0,
+      "Reason": "Qualified paired evidence.",
+      "Source": "8af18a5ee2c8"
+    },
+    {
+      "CaseId": "literal/search-early",
+      "PreviousRatio": 5.43692436283848,
+      "Status": "CpythonFaster",
+      "Ratio": 2.907147949727238,
+      "Lower95": 2.8950336958409837,
+      "Upper95": 2.9296305443696733,
+      "ManagedUs": 0.6847704228835215,
+      "ManagedBytes": 0,
+      "Reason": "The conclusion survives the conservative harness-floor bound.",
+      "Source": "8af18a5ee2c8"
+    },
+    {
+      "CaseId": "unicode-literal/search-hit",
+      "PreviousRatio": 0.4986447960450096,
+      "Status": "ManagedFaster",
+      "Ratio": 0.5663345445902952,
+      "Lower95": 0.5636006565117487,
+      "Upper95": 0.5683518570155855,
+      "ManagedUs": 0.13510559689309712,
+      "ManagedBytes": 0,
+      "Reason": "The conclusion survives the conservative harness-floor bound.",
+      "Source": "8af18a5ee2c8"
+    },
+    {
+      "CaseId": "unicode-literal/search-miss",
+      "PreviousRatio": 2.870337212716368,
+      "Status": "CpythonFaster",
+      "Ratio": 1.7206788829844784,
+      "Lower95": 1.7030704052701442,
+      "Upper95": 1.723253080185513,
+      "ManagedUs": 0.503553974667728,
+      "ManagedBytes": 0,
+      "Reason": "The conclusion survives the conservative harness-floor bound.",
+      "Source": "8af18a5ee2c8"
+    }
+  ]
+}
