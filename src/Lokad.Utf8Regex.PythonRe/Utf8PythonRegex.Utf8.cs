@@ -403,17 +403,39 @@ public sealed partial class Utf8PythonRegex
         try
         {
             var control = new Utf8InvocationBufferControl(ref invocation);
-            if (!TryDiscoverNativeMatch(input, startOffsetInBytes, kind, ref invocation,
-                out var start, out var end, out var validation))
+            int start, end, startUtf16, endUtf16;
+            if (kind == 0 && _canUseZeroOffsetUtf8SearchValueFastPath &&
+                _utf8Regex is { CanFindNativeLiteralForResult: true } literal)
             {
-                Utf8InvocationOutput.Checkpoint(control);
-                return default;
+                ValidateScalarStartOffset(input, startOffsetInBytes);
+                // A miss has no interoperability coordinates. Validate the whole
+                // subject before discovery, then project only an actual range.
+                Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
+                if (!literal.TryFindNativeLiteralForResult(input, startOffsetInBytes,
+                    ref invocation, out var found, out start, out end))
+                    throw new InvalidOperationException("Prepared literal discovery declined its eligible route.");
+                if (!found)
+                {
+                    Utf8InvocationOutput.Checkpoint(control);
+                    return default;
+                }
+                startUtf16 = start == 0 ? 0
+                    : Utf8Validation.Validate(input[..start], ref invocation).Utf16Length;
+                endUtf16 = startUtf16 + Utf8Validation.Validate(input[start..end], ref invocation).Utf16Length;
             }
-
-            var startUtf16 = validation.IsAscii || start == 0 ? start
-                : Utf8Validation.Validate(input[..start], ref invocation).Utf16Length;
-            var endUtf16 = validation.IsAscii ? end : end == input.Length ? validation.Utf16Length
-                : startUtf16 + Utf8Validation.Validate(input[start..end], ref invocation).Utf16Length;
+            else
+            {
+                if (!TryDiscoverNativeMatch(input, startOffsetInBytes, kind, ref invocation,
+                    out start, out end, out var validation))
+                {
+                    Utf8InvocationOutput.Checkpoint(control);
+                    return default;
+                }
+                startUtf16 = validation.IsAscii || start == 0 ? start
+                    : Utf8Validation.Validate(input[..start], ref invocation).Utf16Length;
+                endUtf16 = validation.IsAscii ? end : end == input.Length ? validation.Utf16Length
+                    : startUtf16 + Utf8Validation.Validate(input[start..end], ref invocation).Utf16Length;
+            }
             Utf8InvocationOutput.Checkpoint(control);
             return Utf8PythonValueMatch.Create(input, new PythonReGroupData
             {

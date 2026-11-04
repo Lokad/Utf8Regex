@@ -57,6 +57,10 @@ public sealed class PythonReNativeOneShotInvocationTests
     [InlineData(0, "", "😀", 0, 0, 0, 0, 0, "")]
     [InlineData(0, "abc", "abc😀", 0, 0, 3, 0, 3, "abc")]
     [InlineData(0, "abc", "😀abc", 0, 4, 7, 2, 5, "abc")]
+    [InlineData(0, "Шерлок", "😀 π Шерлок", 0, 8, 20, 5, 11, "Шерлок")]
+    [InlineData(0, "Шерлок", "😀 π Шерлок 𝒜", 0, 8, 20, 5, 11, "Шерлок")]
+    [InlineData(0, "needle", "😀éneedle", 0, 6, 12, 3, 9, "needle")]
+    [InlineData(0, "Шерлок", "😀 Ватсон", 0, 0, 0, 0, 0, null)]
     [InlineData(1, "ab[0-9]+", "ab123😀", 0, 0, 5, 0, 5, "ab123")]
     [InlineData(1, "ab[0-9]+", "ab😀", 0, 0, 0, 0, 0, null)]
     [InlineData(2, "ab.*xy", "éab😀xy", 2, 2, 10, 1, 7, "ab😀xy")]
@@ -93,9 +97,11 @@ public sealed class PythonReNativeOneShotInvocationTests
 
     [Theory]
     [InlineData(0, "abc", "abc")]
+    [InlineData(0, "Шерлок", "Шерлок")]
+    [InlineData(0, "Шерлок", "Ватсон")]
     [InlineData(1, "ab[0-9]+", "ab123")]
     [InlineData(2, "ab.*xy", "abxy")]
-    public void NativeHitsStillRejectMalformedWholeSubjectTails(int kind, string pattern, string prefix)
+    public void NativeDiscoveryStillRejectsMalformedWholeSubjectTails(int kind, string pattern, string prefix)
     {
         var regex = new Utf8PythonRegex(pattern, kind == 2 ? PythonReCompileOptions.DotAll : PythonReCompileOptions.None);
         var input = Encoding.UTF8.GetBytes(prefix).Concat(new byte[] { 0xff }).ToArray();
