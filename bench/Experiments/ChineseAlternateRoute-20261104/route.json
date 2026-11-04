@@ -8,7 +8,19 @@
     {
       "Mode": "None",
       "Count": 207,
-      "Census": {
+      "ActualPublicRoute": "literal_family_packed_nibble_simd_count",
+      "ActualPackedNibbleStrategy": true,
+      "ActualNibbleCensus": {
+        "MaskOffsets": [
+          2,
+          5,
+          8
+        ],
+        "PotentialAvx32Blocks": 25420,
+        "Candidates": 212,
+        "FullMatches": 207
+      },
+      "PreparedPackedCensus": {
         "DiscriminatorOffset": 1,
         "ShortestLength": 9,
         "HasSecondAnchor": true,
@@ -35,7 +47,19 @@
     {
       "Mode": "Compiled",
       "Count": 207,
-      "Census": {
+      "ActualPublicRoute": "literal_family_packed_nibble_simd_count",
+      "ActualPackedNibbleStrategy": true,
+      "ActualNibbleCensus": {
+        "MaskOffsets": [
+          2,
+          5,
+          8
+        ],
+        "PotentialAvx32Blocks": 25420,
+        "Candidates": 212,
+        "FullMatches": 207
+      },
+      "PreparedPackedCensus": {
         "DiscriminatorOffset": 1,
         "ShortestLength": 9,
         "HasSecondAnchor": true,

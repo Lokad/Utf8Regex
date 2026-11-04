@@ -1,26 +1,36 @@
 # Chinese alternation route census
 
-Read-only, untimed inspection of the accepted wide Core `3a8cf7e2`, using the
-actual813478-byte Chinese corpus and207 public Count matches. Both ordinary and
-compiled modes select the same **ExactPacked** search. Full strict validation
-precedes it; fused-family eligibility is false. The generic prepared-search branch
-precedes the existing leading-UTF8-segment hybrid branch.
+Read-only, untimed inspection of accepted wide Core `3a8cf7e2`, using the actual
+813478-byte Chinese corpus and207 public Count matches. Both ordinary and compiled
+modes execute **literal_family_packed_nibble_simd_count**, after strict validation.
+The existing public Count diagnostic confirms this earlier facade shortcut.
 
-The production packed predicate census consumes40,540 discriminator candidates
-at byte offset1;829 survive its second anchor,344 its third, and207 match fully.
-The five actual six-byte leading prefixes occur254 times. This demonstrates a
-specific source of candidate work; it is not a timing estimate or speedup claim.
+The live SIMD prefilter uses offsets2/5/8. A scalar census of its exact stored
+nibble tables produces **212 candidates for207 matches**. Its full scan covers
+approximately25420 32-byte blocks before match-induced realignment. Candidate
+selectivity is already good; a longer-prefix filter has no demonstrated benefit.
+These are work counts, not timings or a speedup estimate.
 
-The runtime already retains a LeadingUtf8Segment prefilter and its automaton.
-Investigate letting that existing Count path handle this qualified family before
-the generic packed branch. This needs a bounded public comparison and dense-prefix,
-cross-window, priority, malformed-input and controlled-route validation. Eligibility
-does not establish that the alternate path is faster or suitable for every family.
-No new engine, preparation, mode or permanent instrumentation has been added.
+**Correction to the initial inspection:** the prepared runtime also has an
+ExactPacked search and a leading-segment hybrid. Its packed predicate yields40540
+discriminator candidates,829 second-anchor and344 third-anchor survivors; six-byte
+prefixes occur254 times. Public Count bypasses that prepared route. Those counts
+do not diagnose its execution cost. The earlier suggestion to reorder generic
+packed/hybrid dispatch was withdrawn before any source change or timing experiment.
 
-[Frozen route and counts](route.json) identify the exact DLL and corpus. The initial
-restored Windows build gave identical route/census results; the authoritative
-frozen probe uses the measured accepted Linux DLL. Immutable inspection.zip under
-artifacts/experiments/chinese-alternate-route-20261104/ has SHA256
-`0829B7F806EA21F40F0AB6BD378922D5002281A7A7A07431CFBB4937F9B442C6`, retaining
-the probe, outputs and frozen DLL/PDB. No performance experiment or catalog refresh.
+Further investigation must target the actual SIMD scan or validation work, with a
+distinct demonstrated cause and one bounded public comparison. No new executor,
+preparation, mode or permanent instrumentation has been added. This also does not
+reopen the closed fused-validation or checked-access campaigns.
+
+[Frozen public route and counts](route.json) identify the exact DLL and corpus.
+Immutable evidence under artifacts/experiments/chinese-alternate-route-20261104/:
+
+- inspection.zip, superseded prepared-only inspection including frozen DLL/PDB:
+  `0829B7F806EA21F40F0AB6BD378922D5002281A7A7A07431CFBB4937F9B442C6`.
+- actual-public-route.zip, corrected facade diagnostic:
+  `DAE2F13CFC2B2015F2B252177E6D3880ACF41F114F8E407535D33A4CDF63819B`.
+- actual-mask-census.zip, current public diagnostic and live mask census:
+  `F1A2927DCACECA417F4CFC7260F6D05429DE96269C8EBAC38FBC7F03309AC685`.
+
+No performance experiment, dispatch change or catalog refresh.
