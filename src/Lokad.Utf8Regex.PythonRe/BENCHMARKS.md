@@ -24,16 +24,17 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-11-04T00:31:44.6749601+00:00`
-- Snapshot SHA-256: `460F34ED92F15F9C66BA0883CAA383CC4B0E14F8D31FBDB9994B12691AC4FD38`
+- Generated: `2026-11-04T01:33:26.4834891+00:00`
+- Snapshot SHA-256: `D12E4C84E641694286D8671489DE1BCC514B3C1E1C43091A6A167CAA49DCA305`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `4`
 - Scaling families: `7`
 - Public Status: `36` managed faster, `1` equivalent, `35` CPython faster, `15` inconclusive, `3` unqualified
-- Historical point measurement environments represented: `1`
-- Paired evidence from source `fe169a8fc3b0`: `90` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
+- Historical point measurement environments represented: `2`
+- Paired evidence from source `061ac4e50f8a`: `1` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
+- Paired evidence from source `fe169a8fc3b0`: `89` rows; .NET 11.0.0-rc.3.26522.148; CPython 3.13.2
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
 - Historical CPython point environments represented: `1`
@@ -79,7 +80,7 @@ Input hashes cover the exact decoded subject re-encoded as strict UTF-8 and time
 | `corpus/code-declarations` | `LokadReplica/Code/Data` | 53,352 | `E25F45289E44A6DE119149C10B258E8416A8E24E4FF01D94ED4753FA5A9A351B` |
 | `corpus/sherlock-ru` | `DotNetPerformanceReplica/Stress/Data/opensubtitles/ru-sampled.txt` | 1,570,556 | `7FFDDB21336A1BFB4A9E2DF4BB77EEA0305C0010A57C5D3C56E0DFEAD9E80A90` |
 
-Historical independent point columns were measured from source `fe169a8fc3b0` on .NET 11.0.0-rc.3.26522.148, Ubuntu 24.04.4 LTS, X64. Qualified paired rows record their own exact source, runtime, and interpreter provenance in the JSON evidence.
+Historical point rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins; qualified paired rows carry separate exact provenance.
 
 ## Results
 
@@ -125,7 +126,7 @@ Historical independent point columns were measured from source `fe169a8fc3b0` on
 | `unicode-category/search-miss` | `Search` | ConsumedGroupZeroRanges | CPython faster | 0.219 us | 0.213 us | 1.03x | 0.317 us | 0.045 us | 0 B |
 | `greedy/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.177 us | 0.220 us | 0.81x | 0.316 us | 0.077 us | 0 B |
 | `alternation/search-miss` | `Search` | ConsumedGroupZeroRanges | CPython faster | 0.275 us | 0.237 us | 1.16x | 0.324 us | 0.108 us | 0 B |
-| `common/date-miss` | `IsMatch` | ScalarResult | CPython faster | 3.133 us | 0.870 us | 3.60x | 1.028 us | 2.304 us | 3,568 B |
+| `common/date-miss` | `IsMatch` | ScalarResult | CPython faster | 1.775 us | 0.865 us | 2.05x | 1.027 us | 1.640 us | 80 B |
 | `common/ip-match` | `IsMatch` | ScalarResult | Managed faster | 0.065 us | 0.321 us | 0.20x | 0.490 us | 0.286 us | 0 B |
 
 ### Detailed and scalar projections
@@ -403,7 +404,7 @@ These fields prevent a composed host-language operation or a managed decode fall
 | `split/zero-width` | `_sre C Pattern.split` | `owned scalar VM; split; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `split/unicode` | `_sre C Pattern.split` | `owned scalar VM; split; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `split/detailed` | `_sre C Pattern.split + Python split-item metadata projection` | `owned scalar VM; split; item-metadata shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
-| `common/date-miss` | `_sre C Pattern.search` | `Utf8Regex/OwnedScalar; boolean result` | Rbyte 3.71x [3.68, 3.72]; CpythonFaster |
+| `common/date-miss` | `_sre C Pattern.search` | `Utf8Regex/OwnedScalar; boolean result` | Rbyte 2.11x [2.10, 2.12]; CpythonFaster |
 | `common/ip-match` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; boolean result` | Rbyte 0.20x [0.20, 0.20]; NotApplicable |
 | `corpus/mail-email-count` | `_sre scanner + Python finditer/sum` | `owned scalar VM; byte-driven Python count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `corpus/code-log-methods` | `_sre scanner + Python finditer/sum` | `owned scalar VM; byte-driven Python count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |

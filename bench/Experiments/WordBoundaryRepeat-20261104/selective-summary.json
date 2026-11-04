@@ -1,0 +1,13 @@
+{
+  "Cases": 90,
+  "Status": "CpythonFaster",
+  "Ratio": 2.050809521258957,
+  "Lower95": 2.04503046103964,
+  "Upper95": 2.0551530178389443,
+  "Us": 1.7748748535520291,
+  "Bytes": 80,
+  "Source": "061ac4e50f8a",
+  "CpuAffinityMask": "0x80",
+  "SampleCount": 9,
+  "MinimumPairedMilliseconds": 49.239717
+}
