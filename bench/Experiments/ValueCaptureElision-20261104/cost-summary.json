@@ -1,0 +1,260 @@
+{
+  "ElapsedSeconds": 94.8412476,
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "OwnedSamples": 180,
+  "MinimumOwnedDurationMs": 47.7188,
+  "Baseline": {
+    "Core": {
+      "Version": "0.5.0-dev.24+078cbba94baba9e9835335624075bc4d963b96f0",
+      "Sha256": "54104EF1277B77BC185CA8E9F35884C21EE03ED76573A802A81E89EFAFE35410"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.24+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "65C6801C223998510735305C3258BC22C22169D85A707E3EB44B803EF257C239"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.24+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "AF7B8BDE6ECE463347D499B73FA1FBB166B142FFC61CBE26ED6834E1E8A26AF2"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "91B3BEB5D079BEF7F4B3550D71491FCD2924D4A3857D841D424AB074A2E792FF"
+    }
+  },
+  "Candidate": {
+    "Core": {
+      "Version": "0.5.0-dev.24+2280e74c2e4d2a96197e5d0cdfbde9d802d7e05b",
+      "Sha256": "2DA7A14CEE98FC88B76A4D8CEA6E71D6ADC76F1097E4C4882EFCA0DD93C489B0"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.24+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "65C6801C223998510735305C3258BC22C22169D85A707E3EB44B803EF257C239"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.24+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "AF7B8BDE6ECE463347D499B73FA1FBB166B142FFC61CBE26ED6834E1E8A26AF2"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+00a9756189c2e97b1da890df7e6d8a794b56bd6d",
+      "Sha256": "91B3BEB5D079BEF7F4B3550D71491FCD2924D4A3857D841D424AB074A2E792FF"
+    }
+  },
+  "Rows": [
+    {
+      "Name": "native-control-first",
+      "Profile": "Core",
+      "Operation": "Count",
+      "BeforeUs": 2.498448424480414,
+      "AfterUs": 2.5087203474774475,
+      "ChangePercent": 0.41113208087013575,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeSpread": 1.057901507151771,
+      "AfterSpread": 1.0025000542039773
+    },
+    {
+      "Name": "early-value-match",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 0.5577952453168721,
+      "AfterUs": 0.28772434853222206,
+      "ChangePercent": -48.41756882155356,
+      "BeforeBytes": 2256,
+      "AfterBytes": 64,
+      "BeforeSpread": 1.1264512100052808,
+      "AfterSpread": 1.014630070659218
+    },
+    {
+      "Name": "late-value-match",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 0.608136171689709,
+      "AfterUs": 0.3807782081206556,
+      "ChangePercent": -37.38602868126366,
+      "BeforeBytes": 2256,
+      "AfterBytes": 64,
+      "BeforeSpread": 1.1234449067112597,
+      "AfterSpread": 1.008983962289708
+    },
+    {
+      "Name": "finite-live-value-match",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 0.885960813060277,
+      "AfterUs": 0.6227207084758001,
+      "ChangePercent": -29.712386902891964,
+      "BeforeBytes": 2368,
+      "AfterBytes": 176,
+      "BeforeSpread": 1.1007904769372658,
+      "AfterSpread": 1.0044913529923276
+    },
+    {
+      "Name": "deadline-live-value-match",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 1.104215396223418,
+      "AfterUs": 0.8220400195217179,
+      "ChangePercent": -25.554378037725446,
+      "BeforeBytes": 2416,
+      "AfterBytes": 224,
+      "BeforeSpread": 1.0994459721067595,
+      "AfterSpread": 1.0160784971715815
+    },
+    {
+      "Name": "late-boolean-match",
+      "Profile": "Core",
+      "Operation": "IsMatch",
+      "BeforeUs": 0.6207795762913593,
+      "AfterUs": 0.400487549359336,
+      "ChangePercent": -35.48635221668931,
+      "BeforeBytes": 2256,
+      "AfterBytes": 64,
+      "BeforeSpread": 1.1596422791303094,
+      "AfterSpread": 1.0106071461685646
+    },
+    {
+      "Name": "finite-live-boolean-match",
+      "Profile": "Core",
+      "Operation": "IsMatch",
+      "BeforeUs": 0.8830941174513945,
+      "AfterUs": 0.6227971778716623,
+      "ChangePercent": -29.47556035487451,
+      "BeforeBytes": 2368,
+      "AfterBytes": 176,
+      "BeforeSpread": 1.1302030050165779,
+      "AfterSpread": 1.0065163280466074
+    },
+    {
+      "Name": "reverse-value-match",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 441.6845588235294,
+      "AfterUs": 440.52919708029196,
+      "ChangePercent": -0.26158074131340525,
+      "BeforeBytes": 5744,
+      "AfterBytes": 3552,
+      "BeforeSpread": 1.005380267343514,
+      "AfterSpread": 1.0044084439039203
+    },
+    {
+      "Name": "unicode-value-match",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 1.0049550954734265,
+      "AfterUs": 0.7422375505545493,
+      "ChangePercent": -26.142217309233406,
+      "BeforeBytes": 2256,
+      "AfterBytes": 64,
+      "BeforeSpread": 1.049118571608198,
+      "AfterSpread": 1.002420894308807
+    },
+    {
+      "Name": "count-control",
+      "Profile": "Core",
+      "Operation": "Count",
+      "BeforeUs": 63.51019108280255,
+      "AfterUs": 65.75065502183406,
+      "ChangePercent": 3.5277235052095346,
+      "BeforeBytes": 64,
+      "AfterBytes": 64,
+      "BeforeSpread": 1.0054156893931006,
+      "AfterSpread": 1.0029563071766103
+    },
+    {
+      "Name": "backreference-control",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 1.3544228179171915,
+      "AfterUs": 1.4566911813717867,
+      "ChangePercent": 7.55069702767277,
+      "BeforeBytes": 5744,
+      "AfterBytes": 5744,
+      "BeforeSpread": 1.1586404774977417,
+      "AfterSpread": 1.0989295613733292
+    },
+    {
+      "Name": "lookaround-control",
+      "Profile": "Core",
+      "Operation": "IsMatch",
+      "BeforeUs": 1.096530381586265,
+      "AfterUs": 1.1778945195969905,
+      "ChangePercent": 7.4201444280114215,
+      "BeforeBytes": 5744,
+      "AfterBytes": 5744,
+      "BeforeSpread": 1.079178532347715,
+      "AfterSpread": 1.1578671148652913
+    },
+    {
+      "Name": "detailed-range-control",
+      "Profile": "Core",
+      "Operation": "MatchDetailed",
+      "BeforeUs": 0.8439784311535823,
+      "AfterUs": 0.8736768177013192,
+      "ChangePercent": 3.5188561047874156,
+      "BeforeBytes": 2720,
+      "AfterBytes": 2720,
+      "BeforeSpread": 1.067883061823676,
+      "AfterSpread": 1.0671799163759925
+    },
+    {
+      "Name": "cursor-first-range-control",
+      "Profile": "Core",
+      "Operation": "CursorFirst",
+      "BeforeUs": 1.1847009501337773,
+      "AfterUs": 1.199990202993965,
+      "ChangePercent": 1.290557997650077,
+      "BeforeBytes": 2992,
+      "AfterBytes": 2992,
+      "BeforeSpread": 1.1032240742207342,
+      "AfterSpread": 1.0654094831251255
+    },
+    {
+      "Name": "nonbacktracking-control",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 178.69525222551928,
+      "AfterUs": 177.49792899408286,
+      "ChangePercent": -0.6700363980154167,
+      "BeforeBytes": 1416,
+      "AfterBytes": 1416,
+      "BeforeSpread": 1.0047439135871745,
+      "AfterSpread": 1.006490044462924
+    },
+    {
+      "Name": "python-findall-control",
+      "Profile": "PythonRe",
+      "Operation": "FindAll",
+      "BeforeUs": 429.7159420289855,
+      "AfterUs": 450.0473684210526,
+      "ChangePercent": 4.731364234724089,
+      "BeforeBytes": 112944,
+      "AfterBytes": 112944,
+      "BeforeSpread": 1.0063297989278406,
+      "AfterSpread": 1.009221352801194
+    },
+    {
+      "Name": "pcre-count-control",
+      "Profile": "Pcre2",
+      "Operation": "Count",
+      "BeforeUs": 67.89298642533937,
+      "AfterUs": 71.46806220095694,
+      "ChangePercent": 5.265751241549821,
+      "BeforeBytes": 2256,
+      "AfterBytes": 2256,
+      "BeforeSpread": 1.005789041311335,
+      "AfterSpread": 1.0041489185152404
+    },
+    {
+      "Name": "contiguous-value-match",
+      "Profile": "Core",
+      "Operation": "Match",
+      "BeforeUs": 0.570423784681246,
+      "AfterUs": 0.2897205559619605,
+      "ChangePercent": -49.20959403474787,
+      "BeforeBytes": 2256,
+      "AfterBytes": 64,
+      "BeforeSpread": 1.0967897768133525,
+      "AfterSpread": 1.0221595929018075
+    }
+  ]
+}
