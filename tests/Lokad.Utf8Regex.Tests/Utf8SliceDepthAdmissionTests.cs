@@ -49,7 +49,8 @@ public sealed class Utf8SliceDepthAdmissionTests
     private static Utf8SliceProgram Assertions(int repeats, bool positive)
     {
         var body = new Utf8SliceNode.ConcatNode(Enumerable.Range(0, repeats).Select(_ => (Utf8SliceNode)
-            new Utf8SliceNode.RepeatNode(new Utf8SliceNode.LiteralNode('a', false), 0, 1, false)).ToArray());
+            // Keep actual counter vectors: zero-or-one repeats need only a fork.
+            new Utf8SliceNode.RepeatNode(new Utf8SliceNode.LiteralNode('a', false), 0, 2, false)).ToArray());
         var inner = new Utf8SliceNode.LookbehindNode(body, positive);
         return Utf8SliceLowerer.Lower(new Utf8SliceNode.LookbehindNode(inner, true), null, false, false, false)!;
     }

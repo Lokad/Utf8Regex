@@ -1193,6 +1193,28 @@ internal static class Utf8SliceLowerer
                             foreach (var exit in remainingExits) { Budget.ChargeWork(1); Patch(exit, Instructions.Count); }
                         break;
                     }
+                    // Zero or one iteration needs a branch, not a counter or
+                    // rollback journal. Both paths retain the body's ordinary
+                    // capture/assertion behavior, including nullable completions.
+                    if (repeat.Minimum == 0 && repeat.Maximum == 1)
+                    {
+                        if (frame.Stage == 0)
+                        {
+                            frame.Mark = Instructions.Count;
+                            Emit(new(Utf8SliceInstructionKind.Fork, 0, 0, 0, 0));
+                            if (repeat.Lazy)
+                            {
+                                frame.Jump = Instructions.Count;
+                                Emit(new(Utf8SliceInstructionKind.Jump, 0, 0, 0, 0));
+                                Patch(frame.Mark, Instructions.Count);
+                            }
+                            frame.Stage = 1;
+                            request = new(repeat.Body, false, MirrorExecute, 0);
+                            return true;
+                        }
+                        Patch(repeat.Lazy ? frame.Jump : frame.Mark, Instructions.Count);
+                        break;
+                    }
                     if (frame.Stage == 0)
                     {
                         frame.RepeatId = RepeatCount++;

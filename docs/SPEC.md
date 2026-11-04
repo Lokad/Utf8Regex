@@ -79,6 +79,13 @@ requires instruction/state admission. Impossible classes and compact zero-width
 repeats preserve syntax checks, predicates and capture declarations without
 expansion proportional to the bound.
 
+Backtracking zero-or-one repeats use ordinary ordered branches rather than
+repeat counters and rollback mutations. Greedy/lazy preference, nullable captures,
+assertions and RTL are preserved. Instructions, construction/work charges and
+major working-buffer requirements can decrease; numeric costs depend on the
+program version. Frames still require depth and working admission before growth,
+and the original token/deadline governs execution and publication.
+
 `NonBacktracking` is a separate owned linear mode for its admitted regular
 subset. It preserves ordered choice, greedy/lazy behavior, scalar empty progress
 and each group's last completed capture. Unsupported grammar fails before planning.
