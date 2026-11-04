@@ -62,6 +62,7 @@ Immutable evidence under artifacts/experiments/finite-literal-window-20261104/:
 
 - evidence.tar.gz: `794747E6F5528BFF568DF83C6755163A4B6959D088284D9CEC38DDCC223A9FB8`.
 - windows-correctness.zip: `66E9FC9347491F6D81B71741A2E58BE9DE40D2356657916D1EE28980145C928A`.
+- restored-checks.zip: `B87B6DDE26FA595F4BBCCE916EA75991AEADEAFE96C77B0F8D7F627EA49CED48`.
 
 The archive retains the predeclared driver,17 cases, frozen before/after assets,
 source patch, exact corpus, raw timings, result checks, source identities and Linux

@@ -1,0 +1,63 @@
+{
+  "Scope": "Read-only untimed current production route on actual Chinese corpus. No engine/prototype change, speedup claim or new comparison.",
+  "CoreSha256": "66EA074863F43F1C18F0B11D66A36820E2D4D164FEF96973C33A81135763653A",
+  "CoreVersion": "0.5.0-dev.23\u002B3a8cf7e2d6c1a0c5cb374a68654e59569fa13cbc",
+  "InputBytes": 813478,
+  "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+  "Rows": [
+    {
+      "Mode": "None",
+      "Count": 207,
+      "Census": {
+        "DiscriminatorOffset": 1,
+        "ShortestLength": 9,
+        "HasSecondAnchor": true,
+        "HasThirdAnchor": true,
+        "DiscriminatorCandidates": 40540,
+        "SecondAccepted": 829,
+        "ThirdAccepted": 344,
+        "FullMatches": 207,
+        "DistinctSixBytePrefixCandidates": 254
+      },
+      "FusedFamily": false,
+      "ExecutionKind": "ExactUtf8Literals",
+      "Runtime": "Utf8LiteralCompiledEngineRuntime",
+      "MultiKind": "ExactPacked",
+      "PreparedSearcher": true,
+      "LeadingPrefilter": true,
+      "LeadingPrefilterKind": "LeadingUtf8Segment",
+      "BmpFamily": false,
+      "EmittedCounter": true,
+      "ShortCounter": false,
+      "SmallAscii": false,
+      "SmallPrimitive": false
+    },
+    {
+      "Mode": "Compiled",
+      "Count": 207,
+      "Census": {
+        "DiscriminatorOffset": 1,
+        "ShortestLength": 9,
+        "HasSecondAnchor": true,
+        "HasThirdAnchor": true,
+        "DiscriminatorCandidates": 40540,
+        "SecondAccepted": 829,
+        "ThirdAccepted": 344,
+        "FullMatches": 207,
+        "DistinctSixBytePrefixCandidates": 254
+      },
+      "FusedFamily": false,
+      "ExecutionKind": "ExactUtf8Literals",
+      "Runtime": "Utf8LiteralCompiledEngineRuntime",
+      "MultiKind": "ExactPacked",
+      "PreparedSearcher": true,
+      "LeadingPrefilter": true,
+      "LeadingPrefilterKind": "LeadingUtf8Segment",
+      "BmpFamily": false,
+      "EmittedCounter": true,
+      "ShortCounter": false,
+      "SmallAscii": false,
+      "SmallPrimitive": false
+    }
+  ]
+}
