@@ -1,0 +1,947 @@
+{
+  "Scope": "One bounded public root segment dispatch ABBA; separate ordinary Default-context processes, identical caller/companions/inputs. Ten normalized observations per version/case; median averages middle values. Keep local costs and process spreads. BCL lanes are equal-result diagnostics, no new catalog Status.",
+  "ElapsedSeconds": 106.286,
+  "OwnedSamples": 180,
+  "MinimumOwnedDurationMs": 41.612,
+  "Parent": "6328eb748585c2e32dffa5878d94efc3a5d8a36d",
+  "FrozenBaseline": "0dc05633e21103df5753b8bad3a4ceaad4754276",
+  "Graphs": [
+    {
+      "Side": "before",
+      "File": "Lokad.Utf8Regex.dll",
+      "Sha256": "A23FAEB9CE45DB8FA5D74C36E9065DF27C7C7A2AD3445A748EEFFA5677C9FC98"
+    },
+    {
+      "Side": "before",
+      "File": "Lokad.Utf8Regex.pdb",
+      "Sha256": "B46A74113635997EF1040C9C9227F346B2C34E13EE84B150D9C758821304F4D2"
+    },
+    {
+      "Side": "before",
+      "File": "Lokad.Utf8Regex.PythonRe.dll",
+      "Sha256": "1C4C8B977225FE8862A947C732A1B1FC36D83838A4CDF3B4241CA9379AAB517D"
+    },
+    {
+      "Side": "before",
+      "File": "Lokad.Utf8Regex.PythonRe.pdb",
+      "Sha256": "A737730647CAC9DA8979DFF42FB7C1A44252B5B9414F53691CC472F07082F5DA"
+    },
+    {
+      "Side": "before",
+      "File": "Lokad.Utf8Regex.Pcre2.dll",
+      "Sha256": "2AC61B529971A01DD24346C45CA37F9048E5E24E545E201921755278AB49F6F3"
+    },
+    {
+      "Side": "before",
+      "File": "Lokad.Utf8Regex.Pcre2.pdb",
+      "Sha256": "B9F48D49020B65AF3C2A6F54C572D85CC087BEB0EEEF321D5D345571BF6DD3ED"
+    },
+    {
+      "Side": "before",
+      "File": "Lokad.Utf8Regex.Benchmarks.dll",
+      "Sha256": "66ADC43FC5E42424411FBC91711793F1368430FD0A2C97C3E01DCE0D54557213"
+    },
+    {
+      "Side": "before",
+      "File": "Lokad.Utf8Regex.Benchmarks.pdb",
+      "Sha256": "BF058174880B90363B3676258FC44E75A1E6BF6563FEDCFBEE721AC93AF2B978"
+    },
+    {
+      "Side": "after",
+      "File": "Lokad.Utf8Regex.dll",
+      "Sha256": "4EA06F703E4BAA5DBFE3FD71756226AF42342690227A1DAE294D1E47FBA72479"
+    },
+    {
+      "Side": "after",
+      "File": "Lokad.Utf8Regex.pdb",
+      "Sha256": "8CFA89B2B5DE4287581536A071EDD96C474FADC17BA49D306A4969F8D281CF7A"
+    },
+    {
+      "Side": "after",
+      "File": "Lokad.Utf8Regex.PythonRe.dll",
+      "Sha256": "1C4C8B977225FE8862A947C732A1B1FC36D83838A4CDF3B4241CA9379AAB517D"
+    },
+    {
+      "Side": "after",
+      "File": "Lokad.Utf8Regex.PythonRe.pdb",
+      "Sha256": "A737730647CAC9DA8979DFF42FB7C1A44252B5B9414F53691CC472F07082F5DA"
+    },
+    {
+      "Side": "after",
+      "File": "Lokad.Utf8Regex.Pcre2.dll",
+      "Sha256": "2AC61B529971A01DD24346C45CA37F9048E5E24E545E201921755278AB49F6F3"
+    },
+    {
+      "Side": "after",
+      "File": "Lokad.Utf8Regex.Pcre2.pdb",
+      "Sha256": "B9F48D49020B65AF3C2A6F54C572D85CC087BEB0EEEF321D5D345571BF6DD3ED"
+    },
+    {
+      "Side": "after",
+      "File": "Lokad.Utf8Regex.Benchmarks.dll",
+      "Sha256": "66ADC43FC5E42424411FBC91711793F1368430FD0A2C97C3E01DCE0D54557213"
+    },
+    {
+      "Side": "after",
+      "File": "Lokad.Utf8Regex.Benchmarks.pdb",
+      "Sha256": "BF058174880B90363B3676258FC44E75A1E6BF6563FEDCFBEE721AC93AF2B978"
+    }
+  ],
+  "Rows": [
+    {
+      "Name": "core-count-control",
+      "InputBytes": 65542,
+      "InputSha256": "4E381E20D292A1149943470F2827649D9D8D087F6BA87326BFA715A124316FA2",
+      "ExpectedDigest": 1,
+      "BeforeUs": 2.5007485087175976,
+      "AfterUs": 2.487660263059624,
+      "DeltaPercent": -0.5233731265798292,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0186717112628663,
+      "AfterSpread": 1.0063451760304511,
+      "Processes": [
+        {
+          "Worker": "A0",
+          "ManagedUs": 2.488531747681816,
+          "PredecodedUs": 3.553934649825061,
+          "DecodeThenUs": 29.385482062780266,
+          "ManagedSamples": [
+            2.494719115139923,
+            2.4899039461100254,
+            2.488531747681816,
+            2.4866273025905445,
+            2.486344546550792
+          ],
+          "ManagedDurationMs": [
+            59.9955,
+            59.8797,
+            59.8467,
+            59.8009,
+            59.7941
+          ]
+        },
+        {
+          "Worker": "B0",
+          "ManagedUs": 2.4885938342807354,
+          "PredecodedUs": 3.553540189125296,
+          "DecodeThenUs": 29.40663293985385,
+          "ManagedSamples": [
+            2.4940500394174516,
+            2.486863615617609,
+            2.490274262478735,
+            2.488456910501639,
+            2.4885938342807354
+          ],
+          "ManagedDurationMs": [
+            60.1091,
+            59.9359,
+            60.0181,
+            59.9743,
+            59.9776
+          ]
+        },
+        {
+          "Worker": "B1",
+          "ManagedUs": 2.4840334741900736,
+          "PredecodedUs": 3.5510541276797345,
+          "DecodeThenUs": 29.360444704505557,
+          "ManagedSamples": [
+            2.4920830226199353,
+            2.485292899163145,
+            2.48392990305742,
+            2.4840334741900736,
+            2.4783246333581905
+          ],
+          "ManagedDurationMs": [
+            60.1539,
+            59.99,
+            59.9571,
+            59.9596,
+            59.8218
+          ]
+        },
+        {
+          "Worker": "A1",
+          "ManagedUs": 2.51088282903748,
+          "PredecodedUs": 3.5488432637122065,
+          "DecodeThenUs": 29.517259475218662,
+          "ManagedSamples": [
+            2.5327688540239905,
+            2.51088282903748,
+            2.5087743327937577,
+            2.5067779022952728,
+            2.5119246254098697
+          ],
+          "ManagedDurationMs": [
+            61.022,
+            60.4947,
+            60.4439,
+            60.3958,
+            60.5198
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "actual-unicode-split",
+      "InputBytes": 3200,
+      "InputSha256": "CC5FBD5648F8BFE70C282D116BC3D52E3B72094F74A9A097D1B27AB5F5B220C8",
+      "ExpectedDigest": 7970282790603220403,
+      "BeforeUs": 129.01427858889727,
+      "AfterUs": 99.23857207796425,
+      "DeltaPercent": -23.07938844956302,
+      "BeforeBytes": 19512.0,
+      "AfterBytes": 19512.0,
+      "BeforeSpread": 1.057427624955073,
+      "AfterSpread": 1.0255263328831041,
+      "Processes": [
+        {
+          "Worker": "A0",
+          "ManagedUs": 125.77668067226891,
+          "PredecodedUs": 22.787176560121768,
+          "DecodeThenUs": 26.103600654664486,
+          "ManagedSamples": [
+            125.73088235294118,
+            125.65525210084034,
+            125.77668067226891,
+            125.93088235294117,
+            125.965756302521
+          ],
+          "ManagedDurationMs": [
+            59.8479,
+            59.8119,
+            59.8697,
+            59.9431,
+            59.9597
+          ]
+        },
+        {
+          "Worker": "B0",
+          "ManagedUs": 100.2839924670433,
+          "PredecodedUs": 22.672879421833397,
+          "DecodeThenUs": 26.859938704028025,
+          "ManagedSamples": [
+            100.6517890772128,
+            100.01770244821093,
+            100.13088512241055,
+            100.2839924670433,
+            100.41073446327684
+          ],
+          "ManagedDurationMs": [
+            53.4461,
+            53.1094,
+            53.1695,
+            53.2508,
+            53.3181
+          ]
+        },
+        {
+          "Worker": "B1",
+          "ManagedUs": 98.16420361247947,
+          "PredecodedUs": 22.631307339449542,
+          "DecodeThenUs": 25.9019864750634,
+          "ManagedSamples": [
+            98.1464696223317,
+            98.15369458128079,
+            98.16420361247947,
+            98.45944170771756,
+            98.40279146141215
+          ],
+          "ManagedDurationMs": [
+            59.7712,
+            59.7756,
+            59.782,
+            59.9618,
+            59.9273
+          ]
+        },
+        {
+          "Worker": "A1",
+          "ManagedUs": 132.38993435448577,
+          "PredecodedUs": 22.705707762557076,
+          "DecodeThenUs": 26.762877131613465,
+          "ManagedSamples": [
+            132.87133479212255,
+            132.06280087527352,
+            132.19387308533916,
+            132.38993435448577,
+            132.5929978118162
+          ],
+          "ManagedDurationMs": [
+            60.7222,
+            60.3527,
+            60.4126,
+            60.5022,
+            60.595
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "actual-unicode-finite-live",
+      "InputBytes": 3200,
+      "InputSha256": "CC5FBD5648F8BFE70C282D116BC3D52E3B72094F74A9A097D1B27AB5F5B220C8",
+      "ExpectedDigest": 7970282790603220403,
+      "BeforeUs": 160.65038251802005,
+      "AfterUs": 134.4319412816364,
+      "DeltaPercent": -16.320185999832738,
+      "BeforeBytes": 23712.0,
+      "AfterBytes": 23712.0,
+      "BeforeSpread": 1.0655723818853517,
+      "AfterSpread": 1.0189528041281506,
+      "Processes": [
+        {
+          "Worker": "A0",
+          "ManagedUs": 156.28481675392672,
+          "PredecodedUs": 24.124228743416104,
+          "DecodeThenUs": 26.16218818380744,
+          "ManagedSamples": [
+            156.70157068062827,
+            156.76780104712043,
+            155.5604712041885,
+            156.28481675392672,
+            155.8803664921466
+          ],
+          "ManagedDurationMs": [
+            59.86,
+            59.8853,
+            59.4241,
+            59.7008,
+            59.5463
+          ]
+        },
+        {
+          "Worker": "B0",
+          "ManagedUs": 134.7608108108108,
+          "PredecodedUs": 23.756445461479785,
+          "DecodeThenUs": 25.98969804618117,
+          "ManagedSamples": [
+            135.73603603603604,
+            134.73986486486487,
+            135.28423423423425,
+            134.7608108108108,
+            134.60157657657658
+          ],
+          "ManagedDurationMs": [
+            60.2668,
+            59.8245,
+            60.0662,
+            59.8338,
+            59.7631
+          ]
+        },
+        {
+          "Worker": "B1",
+          "ManagedUs": 133.5150776053215,
+          "PredecodedUs": 23.72314144109798,
+          "DecodeThenUs": 25.91652928416486,
+          "ManagedSamples": [
+            134.26230598669625,
+            133.2113082039911,
+            133.30620842572063,
+            133.5150776053215,
+            133.90731707317073
+          ],
+          "ManagedDurationMs": [
+            60.5523,
+            60.0783,
+            60.1211,
+            60.2153,
+            60.3922
+          ]
+        },
+        {
+          "Worker": "A1",
+          "ManagedUs": 165.30941828254848,
+          "PredecodedUs": 23.821292048929664,
+          "DecodeThenUs": 25.902156334231808,
+          "ManagedSamples": [
+            165.7421052631579,
+            165.2268698060942,
+            165.30941828254848,
+            165.76094182825483,
+            164.53296398891968
+          ],
+          "ManagedDurationMs": [
+            59.8329,
+            59.6469,
+            59.6767,
+            59.8397,
+            59.3964
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "actual-unicode-deadline-live",
+      "InputBytes": 3200,
+      "InputSha256": "CC5FBD5648F8BFE70C282D116BC3D52E3B72094F74A9A097D1B27AB5F5B220C8",
+      "ExpectedDigest": 7970282790603220403,
+      "BeforeUs": 216.8131805019305,
+      "AfterUs": 180.79620884754826,
+      "DeltaPercent": -16.61198436875545,
+      "BeforeBytes": 23760.0,
+      "AfterBytes": 23760.0,
+      "BeforeSpread": 1.0406448867366995,
+      "AfterSpread": 1.0335495682364912,
+      "Processes": [
+        {
+          "Worker": "A0",
+          "ManagedUs": 212.85250000000002,
+          "PredecodedUs": 26.098605056669573,
+          "DecodeThenUs": 28.518744053282585,
+          "ManagedSamples": [
+            213.86535714285716,
+            213.6960714285714,
+            212.77035714285714,
+            212.85250000000002,
+            212.57571428571427
+          ],
+          "ManagedDurationMs": [
+            59.8823,
+            59.8349,
+            59.5757,
+            59.5987,
+            59.5212
+          ]
+        },
+        {
+          "Worker": "B0",
+          "ManagedUs": 178.64216867469878,
+          "PredecodedUs": 26.175142982842058,
+          "DecodeThenUs": 28.529122974261202,
+          "ManagedSamples": [
+            178.72801204819277,
+            178.62078313253014,
+            178.79819277108433,
+            178.2948795180723,
+            178.64216867469878
+          ],
+          "ManagedDurationMs": [
+            59.3377,
+            59.3021,
+            59.361,
+            59.1939,
+            59.3092
+          ]
+        },
+        {
+          "Worker": "B1",
+          "ManagedUs": 183.58419452887537,
+          "PredecodedUs": 26.193070175438596,
+          "DecodeThenUs": 28.48365888518342,
+          "ManagedSamples": [
+            183.58419452887537,
+            183.52279635258358,
+            182.79422492401216,
+            184.27659574468086,
+            184.061094224924
+          ],
+          "ManagedDurationMs": [
+            60.3992,
+            60.379,
+            60.1393,
+            60.627,
+            60.5561
+          ]
+        },
+        {
+          "Worker": "A1",
+          "ManagedUs": 220.4223938223938,
+          "PredecodedUs": 26.05789243550503,
+          "DecodeThenUs": 28.233490566037737,
+          "ManagedSamples": [
+            221.21583011583013,
+            220.09652509652508,
+            219.76100386100387,
+            220.5181467181467,
+            220.4223938223938
+          ],
+          "ManagedDurationMs": [
+            57.2949,
+            57.005,
+            56.9181,
+            57.1142,
+            57.0894
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "captured-unicode-findall",
+      "InputBytes": 3200,
+      "InputSha256": "CC5FBD5648F8BFE70C282D116BC3D52E3B72094F74A9A097D1B27AB5F5B220C8",
+      "ExpectedDigest": 5047295215960784640,
+      "BeforeUs": 229.52586171310628,
+      "AfterUs": 205.57101692322175,
+      "DeltaPercent": -10.436664788487615,
+      "BeforeBytes": 25248.0,
+      "AfterBytes": 25248.0,
+      "BeforeSpread": 1.0600156259621516,
+      "AfterSpread": 1.021860441401716,
+      "Processes": [
+        {
+          "Worker": "A0",
+          "ManagedUs": 223.85902255639098,
+          "PredecodedUs": 105.94725130890053,
+          "DecodeThenUs": 109.0026845637584,
+          "ManagedSamples": [
+            223.85902255639098,
+            223.88458646616542,
+            222.98984962406016,
+            223.97368421052633,
+            222.53796992481202
+          ],
+          "ManagedDurationMs": [
+            59.5465,
+            59.5533,
+            59.3153,
+            59.577,
+            59.1951
+          ]
+        },
+        {
+          "Worker": "B0",
+          "ManagedUs": 204.0529209621993,
+          "PredecodedUs": 103.0736220472441,
+          "DecodeThenUs": 109.48672199170126,
+          "ManagedSamples": [
+            204.47388316151202,
+            203.8127147766323,
+            204.2103092783505,
+            204.0529209621993,
+            204.02886597938144
+          ],
+          "ManagedDurationMs": [
+            59.5019,
+            59.3095,
+            59.4252,
+            59.3794,
+            59.3724
+          ]
+        },
+        {
+          "Worker": "B1",
+          "ManagedUs": 207.70102739726028,
+          "PredecodedUs": 108.1098273572377,
+          "DecodeThenUs": 112.52916666666667,
+          "ManagedSamples": [
+            206.70513698630137,
+            207.70102739726028,
+            207.78253424657535,
+            206.6681506849315,
+            208.26815068493153
+          ],
+          "ManagedDurationMs": [
+            60.3579,
+            60.6487,
+            60.6725,
+            60.3471,
+            60.8143
+          ]
+        },
+        {
+          "Worker": "A1",
+          "ManagedUs": 235.5172549019608,
+          "PredecodedUs": 103.67901726427623,
+          "DecodeThenUs": 108.68844621513944,
+          "ManagedSamples": [
+            235.5172549019608,
+            235.07803921568626,
+            235.8937254901961,
+            235.88352941176473,
+            235.1321568627451
+          ],
+          "ManagedDurationMs": [
+            60.0569,
+            59.9449,
+            60.1529,
+            60.1503,
+            59.9587
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "long-astral-split",
+      "InputBytes": 55300,
+      "InputSha256": "346B27EC9A03402FAF1C53817AFE52EF6FAF95F46D07FBECE78C71B27CAAE8F1",
+      "ExpectedDigest": 18195444429159635969,
+      "BeforeUs": 1744.1271428571429,
+      "AfterUs": 1363.8954545454546,
+      "DeltaPercent": -21.80068637019268,
+      "BeforeBytes": 49272.0,
+      "AfterBytes": 49272.0,
+      "BeforeSpread": 1.0101350906962367,
+      "AfterSpread": 1.0105894586904114,
+      "Processes": [
+        {
+          "Worker": "A0",
+          "ManagedUs": 1749.1542857142858,
+          "PredecodedUs": 6.973426573426573,
+          "DecodeThenUs": 184.6019305019305,
+          "ManagedSamples": [
+            1750.0857142857142,
+            1755.28,
+            1745.4,
+            1749.1542857142858,
+            1742.9142857142858
+          ],
+          "ManagedDurationMs": [
+            61.253,
+            61.4348,
+            61.089,
+            61.2204,
+            61.002
+          ]
+        },
+        {
+          "Worker": "B0",
+          "ManagedUs": 1361.0068181818183,
+          "PredecodedUs": 9.754909819639279,
+          "DecodeThenUs": 187.34846153846152,
+          "ManagedSamples": [
+            1362.8954545454544,
+            1361.0068181818183,
+            1359.4136363636362,
+            1363.6227272727274,
+            1359.6545454545455
+          ],
+          "ManagedDurationMs": [
+            59.9674,
+            59.8843,
+            59.8142,
+            59.9994,
+            59.8248
+          ]
+        },
+        {
+          "Worker": "B1",
+          "ManagedUs": 1368.1931818181818,
+          "PredecodedUs": 10.16205613797768,
+          "DecodeThenUs": 188.65703125,
+          "ManagedSamples": [
+            1364.168181818182,
+            1372.6068181818182,
+            1373.8090909090909,
+            1368.1931818181818,
+            1365.384090909091
+          ],
+          "ManagedDurationMs": [
+            60.0234,
+            60.3947,
+            60.4476,
+            60.2005,
+            60.0769
+          ]
+        },
+        {
+          "Worker": "A1",
+          "ManagedUs": 1742.44,
+          "PredecodedUs": 10.041828653707704,
+          "DecodeThenUs": 187.9422712933754,
+          "ManagedSamples": [
+            1742.44,
+            1743.8428571428572,
+            1737.6685714285713,
+            1744.4114285714286,
+            1740.36
+          ],
+          "ManagedDurationMs": [
+            60.9854,
+            61.0345,
+            60.8184,
+            61.0544,
+            60.9126
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "assertion-driver-control",
+      "InputBytes": 3200,
+      "InputSha256": "CC5FBD5648F8BFE70C282D116BC3D52E3B72094F74A9A097D1B27AB5F5B220C8",
+      "ExpectedDigest": 3376153741097507531,
+      "BeforeUs": 420.1377622377622,
+      "AfterUs": 419.2820367132867,
+      "DeltaPercent": -0.20367736523317914,
+      "BeforeBytes": 8080.0,
+      "AfterBytes": 8080.0,
+      "BeforeSpread": 1.0088394629754451,
+      "AfterSpread": 1.0602148949277612,
+      "Processes": [
+        {
+          "Worker": "A0",
+          "ManagedUs": 419.1083916083916,
+          "PredecodedUs": 25.280666948079357,
+          "DecodeThenUs": 28.92534939759036,
+          "ManagedSamples": [
+            418.1027972027972,
+            419.25524475524475,
+            418.6916083916084,
+            419.8965034965035,
+            419.1083916083916
+          ],
+          "ManagedDurationMs": [
+            59.7887,
+            59.9535,
+            59.8729,
+            60.0452,
+            59.9325
+          ]
+        },
+        {
+          "Worker": "B0",
+          "ManagedUs": 419.47832167832166,
+          "PredecodedUs": 25.98617957746479,
+          "DecodeThenUs": 29.555301144848187,
+          "ManagedSamples": [
+            419.47832167832166,
+            416.59650349650354,
+            441.6818181818182,
+            419.2265734265734,
+            420.7048951048951
+          ],
+          "ManagedDurationMs": [
+            59.9854,
+            59.5733,
+            63.1605,
+            59.9494,
+            60.1608
+          ]
+        },
+        {
+          "Worker": "B1",
+          "ManagedUs": 419.19236111111115,
+          "PredecodedUs": 24.294241686942417,
+          "DecodeThenUs": 27.52454804947669,
+          "ManagedSamples": [
+            419.19236111111115,
+            419.6423611111111,
+            419.3375,
+            418.76666666666665,
+            418.6743055555555
+          ],
+          "ManagedDurationMs": [
+            60.3637,
+            60.4285,
+            60.3846,
+            60.3024,
+            60.2891
+          ]
+        },
+        {
+          "Worker": "A1",
+          "ManagedUs": 421.37412587412587,
+          "PredecodedUs": 23.873309608540925,
+          "DecodeThenUs": 27.10143112701252,
+          "ManagedSamples": [
+            421.37412587412587,
+            421.27412587412584,
+            420.37902097902094,
+            421.40139860139857,
+            421.79860139860136
+          ],
+          "ManagedDurationMs": [
+            60.2565,
+            60.2422,
+            60.1142,
+            60.2604,
+            60.3172
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "captured-ascii-neighbor",
+      "InputBytes": 4352,
+      "InputSha256": "8BC1D3F575618D7C8B72E3A97F88750889A03E446C9FCD1325170CAC5FA1BB48",
+      "ExpectedDigest": 4897063670823375795,
+      "BeforeUs": 178.44528768827476,
+      "AfterUs": 147.86161971830987,
+      "DeltaPercent": -17.13896083565477,
+      "BeforeBytes": 86264.0,
+      "AfterBytes": 86264.0,
+      "BeforeSpread": 1.1603350607411744,
+      "AfterSpread": 1.0117225800249927,
+      "Processes": [
+        {
+          "Worker": "A0",
+          "ManagedUs": 167.023661971831,
+          "PredecodedUs": 136.58492392807744,
+          "DecodeThenUs": 150.2250493096647,
+          "ManagedSamples": [
+            165.48140845070424,
+            166.6107042253521,
+            167.023661971831,
+            167.6470422535211,
+            167.61887323943662
+          ],
+          "ManagedDurationMs": [
+            58.7459,
+            59.1468,
+            59.2934,
+            59.5147,
+            59.5047
+          ]
+        },
+        {
+          "Worker": "B0",
+          "ManagedUs": 148.03916256157635,
+          "PredecodedUs": 86.83915094339623,
+          "DecodeThenUs": 85.251403887689,
+          "ManagedSamples": [
+            147.10221674876848,
+            147.58965517241379,
+            148.18201970443351,
+            148.17093596059112,
+            148.03916256157635
+          ],
+          "ManagedDurationMs": [
+            59.7235,
+            59.9214,
+            60.1619,
+            60.1574,
+            60.1039
+          ]
+        },
+        {
+          "Worker": "B1",
+          "ManagedUs": 147.73415492957747,
+          "PredecodedUs": 82.47311111111111,
+          "DecodeThenUs": 127.6868,
+          "ManagedSamples": [
+            146.5211267605634,
+            147.73415492957747,
+            148.2387323943662,
+            147.57288732394366,
+            147.98908450704226
+          ],
+          "ManagedDurationMs": [
+            41.612,
+            41.9565,
+            42.0998,
+            41.9107,
+            42.0289
+          ]
+        },
+        {
+          "Worker": "A1",
+          "ManagedUs": 190.65425867507884,
+          "PredecodedUs": 86.05848623853211,
+          "DecodeThenUs": 127.97288590604028,
+          "ManagedSamples": [
+            190.52397476340693,
+            189.2435331230284,
+            190.65425867507884,
+            190.7640378548896,
+            192.01388012618298
+          ],
+          "ManagedDurationMs": [
+            60.3961,
+            59.9902,
+            60.4374,
+            60.4722,
+            60.8684
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "core-category-mask-neighbor",
+      "InputBytes": 7424,
+      "InputSha256": "E3603E9073137E1E01DF4A5105E141F554520DF4C6551AA014AC3C0E88F9BEE1",
+      "ExpectedDigest": 768,
+      "BeforeUs": 279.41196920757966,
+      "AfterUs": 232.78153846153845,
+      "DeltaPercent": -16.688773526161548,
+      "BeforeBytes": 64.0,
+      "AfterBytes": 64.0,
+      "BeforeSpread": 1.0172974851751881,
+      "AfterSpread": 1.0106214884720426,
+      "Processes": [
+        {
+          "Worker": "A0",
+          "ManagedUs": 277.7148148148148,
+          "PredecodedUs": 69.52539863325741,
+          "DecodeThenUs": 85.90201149425286,
+          "ManagedSamples": [
+            279.25324074074075,
+            277.9675925925926,
+            277.7148148148148,
+            277.2384259259259,
+            277.337962962963
+          ],
+          "ManagedDurationMs": [
+            60.3187,
+            60.041,
+            59.9864,
+            59.8835,
+            59.905
+          ]
+        },
+        {
+          "Worker": "B0",
+          "ManagedUs": 231.745,
+          "PredecodedUs": 66.05022075055187,
+          "DecodeThenUs": 80.74832214765101,
+          "ManagedSamples": [
+            231.29653846153846,
+            232.65692307692308,
+            232.90615384615384,
+            231.24384615384614,
+            231.745
+          ],
+          "ManagedDurationMs": [
+            60.1371,
+            60.4908,
+            60.5556,
+            60.1234,
+            60.2537
+          ]
+        },
+        {
+          "Worker": "B1",
+          "ManagedUs": 233.318320610687,
+          "PredecodedUs": 69.27679180887372,
+          "DecodeThenUs": 84.56111111111112,
+          "ManagedSamples": [
+            233.0671755725191,
+            233.70000000000002,
+            231.63358778625954,
+            233.318320610687,
+            233.33931297709924
+          ],
+          "ManagedDurationMs": [
+            61.0636,
+            61.2294,
+            60.688,
+            61.1294,
+            61.1349
+          ]
+        },
+        {
+          "Worker": "A1",
+          "ManagedUs": 280.8539534883721,
+          "PredecodedUs": 66.21503841931943,
+          "DecodeThenUs": 80.38829787234043,
+          "ManagedSamples": [
+            281.7539534883721,
+            282.0339534883721,
+            280.8539534883721,
+            279.5706976744186,
+            280.58093023255816
+          ],
+          "ManagedDurationMs": [
+            60.5771,
+            60.6373,
+            60.3836,
+            60.1077,
+            60.3249
+          ]
+        }
+      ]
+    }
+  ]
+}

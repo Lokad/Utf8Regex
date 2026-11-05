@@ -365,7 +365,18 @@ internal static partial class Utf8SliceRunner
         var completed = false;
         try
         {
-            var attempt = RunFrom(program, input, start, captureStarts, captureEnds, counts, positions, heads, collectHistory, requireNonEmpty, startIsScalarBoundary, ref workspace.Stacks, ref invocation);
+            Utf8SliceMatchOutcome attempt;
+            if (!collectHistory && program.Assertions.Length == 0 && !CanRunTerminalClassRepeat(program))
+            {
+                // This root cannot suspend or publish capture history. Execute
+                // the same VM without the unused assertion-continuation driver.
+                var current = new AssertionCursor(program, start, counts, positions,
+                    requireNonEmpty, startIsScalarBoundary, workspace.Stacks.FrameCount);
+                attempt = RunSegment(input, captureStarts, captureEnds, heads, ref current,
+                    false, ref workspace.Stacks, ref invocation, out _);
+            }
+            else
+                attempt = RunFrom(program, input, start, captureStarts, captureEnds, counts, positions, heads, collectHistory, requireNonEmpty, startIsScalarBoundary, ref workspace.Stacks, ref invocation);
             if (attempt.IsMatch && program.RightToLeft)
             {
                 // Mirrored runs record right edges at capture starts and left
