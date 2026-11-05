@@ -168,7 +168,7 @@ public sealed partial class Utf8PythonRegex
             return _utf8Regex.Count(input, cancellationToken);
         // Count discards captures. Complete native eligibility proves the whole
         // match even when the returned-capture iteration classifier declines it.
-        if (_utf8Regex is { } prepared && prepared.CanFindNativeLiteralForResult)
+        if (_utf8Regex is { } prepared && prepared.CanCountNativeLiteralForResult)
             return CountPreparedLiteral(prepared, input, startOffsetInBytes, cancellationToken);
         return CountOwnedSlicePythonStyle(input, startOffsetInBytes, ScalarProgram, cancellationToken);
     }

@@ -48,6 +48,15 @@ work and scratch on misses. Captured and empty-capable programs retain their
 profile cursor, including empty-then-nonempty retries. Original cancellation,
 deadlines, major-buffer admission and caller-funded refunds still apply.
 
+Count can also borrow Core's complete, case-sensitive nonempty literal proof for
+up to eight alternatives, including captures whose values Count discards. The
+existing bounded search shares validation, work, token and deadline authority.
+These calls need no VM workspace or capture storage; numerical working/depth/work
+requirements can decrease. Discovery and result-producing operations retain their
+own eligibility, and patterns without a compatible native rendering retain Python
+scalar execution. This does not change matching order, captured results or limits
+on actual result payloads.
+
 Necessary ASCII start hints can enter a mandatory atomic body and skip impossible
 starts. The profile VM still verifies the complete body, atomic commit and
 captures. Full-subject validation and the original interruption authority remain;

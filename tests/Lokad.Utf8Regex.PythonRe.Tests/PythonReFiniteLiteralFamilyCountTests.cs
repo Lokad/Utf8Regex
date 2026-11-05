@@ -8,6 +8,8 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReFiniteLiteralFamilyCountTests
 {
+    private static readonly string[] Literals = ["cat", "horse", "dog", "pig", "cow", "duck", "eagle", "fox"];
+
     private static Utf8ResourcePolicy Generous => new()
     {
         MaxWorkSteps = 1_000_000, MaxDepth = 128,
@@ -63,11 +65,82 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
         Assert.Equal(0, regex.Count(input, input.Length));
     }
 
-    [Fact]
-    public void WorkDenialIsPublicCumulativeAndFreshOnReuse()
+    [Theory]
+    [InlineData(4, false)] [InlineData(5, false)] [InlineData(6, false)]
+    [InlineData(7, false)] [InlineData(8, false)]
+    [InlineData(4, true)] [InlineData(5, true)] [InlineData(6, true)]
+    [InlineData(7, true)] [InlineData(8, true)]
+    public void FourToEightLiteralCountsDiscardCaptureStorageAndKeepWholeSubjectValidation(int width, bool captured)
     {
-        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("cat horse ", 128)));
-        Utf8PythonRegex Create(ulong cap) => new("cat|horse", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
+        var pattern = string.Join('|', Literals.Take(width));
+        if (captured) pattern = "(" + pattern + ")";
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
+            new() { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var input = Encoding.UTF8.GetBytes("π😀" + string.Join(' ', Literals.Take(width)) + " cat");
+        using var token = new CancellationTokenSource();
+        Assert.Equal(width + 1, regex.Count(input, 6));
+        Assert.Equal(width + 1, regex.Count(input, 6, token.Token));
+        Assert.Equal(0, regex.Count(input, input.Length, token.Token));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count(input, 1));
+        Assert.Contains($"byte offset {input.Length}.", Assert.Throws<ArgumentException>(() =>
+            regex.Count([.. input, 0xFF], input.Length, token.Token)).Message);
+        input[0] = 0xFF;
+        Assert.Contains("byte offset 0.", Assert.Throws<ArgumentException>(() => regex.Count(input, 6)).Message);
+    }
+
+    [Fact]
+    public void BorrowedEightLiteralCountRetainsParentLoanAndDiscoveryEligibility()
+    {
+        var core = new global::Lokad.Utf8Regex.Utf8Regex(string.Join('|', Literals));
+        Assert.True(core.CanCountNativeLiteralForResult);
+        Assert.False(core.CanFindNativeLiteralForResult);
+        var invocation = new Utf8SliceInvocation(new(1_000_000, 1, 8, 1), Regex.InfiniteMatchTimeout, default);
+        Assert.True(invocation.Ledger.TryReserve(7));
+        try
+        {
+            Assert.Equal(8, core.CountForResult(Encoding.UTF8.GetBytes(string.Join(' ', Literals)), 0, ref invocation));
+            Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+        }
+        finally { invocation.Ledger.Release(7); }
+    }
+
+    [Fact]
+    public void LongLiteralWindowsAndLaterCapturedResultsKeepTheirSemantics()
+    {
+        var longLiterals = Enumerable.Range(0, 5).Select(i => (char)('a' + i) + new string('x', 1025) + "z").ToArray();
+        var longRegex = new Utf8PythonRegex(string.Join('|', longLiterals), PythonReCompileOptions.None,
+            Regex.InfiniteMatchTimeout, new() { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        Assert.Equal(2, longRegex.Count(Encoding.UTF8.GetBytes("😀" + longLiterals[4] + " " + longLiterals[0]), 4));
+        var captured = new Utf8PythonRegex("(cat|horse|dog|pig|cow)", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, Generous);
+        var input = "π😀cat cow"u8.ToArray();
+        var retained = captured.SearchDetailedData(input);
+        Assert.Equal(2, captured.Count(input));
+        var matches = captured.FindIterDetailed(input);
+        Assert.Equal(new[] { "cat", "cow" }, matches.Select(match => match.Groups[1].ValueText));
+        Assert.Equal("cat", retained.Groups[1].ValueText);
+        Assert.Equal((6, 3), (retained.Value.StartOffsetInBytes, retained.Value.StartOffsetInUtf16));
+    }
+
+    [Fact]
+    public void NinthAlternativeStillUsesAdmittedScalarExecution()
+    {
+        var pattern = string.Join('|', Literals) + "|wolf";
+        var input = Encoding.UTF8.GetBytes(string.Join(' ', Literals) + " wolf");
+        var bounded = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
+            new() { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => bounded.Count(input)).ResourceKind);
+        Assert.Equal(9, new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, Generous).Count(input));
+    }
+
+    [Theory]
+    [InlineData(2)] [InlineData(5)] [InlineData(8)]
+    public void WorkDenialIsPublicCumulativeAndFreshOnReuse(int width)
+    {
+        var pattern = string.Join('|', Literals.Take(width));
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(string.Join(' ', Literals.Take(width)) + " ", 128)));
+        var expected = width * 128;
+        Utf8PythonRegex Create(ulong cap) => new(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
             Generous with { MaxWorkSteps = cap });
         void Denied(ulong cap)
         {
@@ -80,13 +153,13 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
         while (high - low > 1)
         {
             var middle = low + (high - low) / 2;
-            try { Assert.Equal(256, Create(middle).Count(input)); high = middle; }
+            try { Assert.Equal(expected, Create(middle).Count(input)); high = middle; }
             catch (Utf8ResourceLimitExceededException error)
             { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); low = middle; }
         }
         Denied(high - 1);
         var admitted = Create(high);
-        Assert.Equal(256, admitted.Count(input)); Assert.Equal(256, admitted.Count(input));
+        Assert.Equal(expected, admitted.Count(input)); Assert.Equal(expected, admitted.Count(input));
     }
 
     [Fact]
@@ -105,11 +178,13 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void NativeSearchKeepsOriginalInterruptionAfterValidation(bool expire)
+    [InlineData(false, 2)] [InlineData(true, 2)]
+    [InlineData(false, 5)] [InlineData(true, 5)]
+    [InlineData(false, 8)] [InlineData(true, 8)]
+    public void NativeSearchKeepsOriginalInterruptionAfterValidation(bool expire, int width)
     {
-        var regex = new Utf8PythonRegex("cat|horse", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20), Generous);
-        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("cat horse ", 512)));
+        var regex = new Utf8PythonRegex(string.Join('|', Literals.Take(width)), PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20), Generous);
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(string.Join(' ', Literals.Take(width)) + " ", 512)));
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var validation = new Utf8SliceInvocation(new Utf8ExecutionLimits(1_000_000, 128, 1 << 20, 1 << 20),
@@ -132,6 +207,6 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
         }
         finally { session.Complete(); }
         Assert.True(entered); ticks = 0;
-        Assert.Equal(1024, regex.Count(input));
+        Assert.Equal(width * 512, regex.Count(input));
     }
 }

@@ -45,7 +45,7 @@ public sealed partial class Utf8Regex
         // established strategy; controlled calls only need strict validity.
         if (invocation.IsUnmetered) _ = Utf8Validation.Validate(input, ref invocation);
         else Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
-        if (!CanUseNativeLiteralSearch(_ownedSliceProgram))
+        if (!CanCountNativeLiteralForResult)
             return OwnedSliceCountFromByte(input, _ownedSliceProgram, startOffsetInBytes, ref invocation);
         var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(_preparedRegex.SearchPlan,
             input[startOffsetInBytes..], false, ref invocation, out var count);
@@ -55,6 +55,10 @@ public sealed partial class Utf8Regex
     }
 
     internal bool CanFindNativeLiteralForResult => CanUseNativeLiteralSearch(_ownedSliceProgram);
+
+    // Count discards captures and borrows the same bounded eight-needle search
+    // as Core Count. Result discovery retains its existing three-needle proof.
+    internal bool CanCountNativeLiteralForResult => CanUseNativeLiteralSearch(_ownedSliceProgram, maximumAlternatives: 8);
 
     // A profile can borrow the complete ASCII language proof and bounded
     // boolean executor, under its own validated subject and invocation.
