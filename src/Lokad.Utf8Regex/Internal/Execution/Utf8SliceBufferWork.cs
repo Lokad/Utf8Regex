@@ -51,9 +51,9 @@ internal static class Utf8SliceBufferWork
         return (remaining[cut] & 0xc0) == 0x80 ? count : cut;
     }
 
-    // The caller has validated these bytes. Count and admit the returned string
-    // while its existing staging/subject authority remains live.
-    internal static string DecodeUtf8(ReadOnlySpan<byte> bytes, ref Utf8SliceInvocation invocation)
+    // The caller has validated these complete scalar ranges. Sizing shares the
+    // decoder's bounded work and interruption authority without validating again.
+    internal static int CountUtf16(ReadOnlySpan<byte> bytes, ref Utf8SliceInvocation invocation)
     {
         var chars = 0;
         for (var offset = 0; offset < bytes.Length;)
@@ -63,6 +63,14 @@ internal static class Utf8SliceBufferWork
             chars += Encoding.UTF8.GetCharCount(bytes.Slice(offset, count));
             offset += count;
         }
+        return chars;
+    }
+
+    // The caller has validated these bytes. Count and admit the returned string
+    // while its existing staging/subject authority remains live.
+    internal static string DecodeUtf8(ReadOnlySpan<byte> bytes, ref Utf8SliceInvocation invocation)
+    {
+        var chars = CountUtf16(bytes, ref invocation);
         var reservation = Utf8ConstructionBudget.StringBytes(chars);
         ChargeResultBytes(reservation, ref invocation);
         if (new Utf8InvocationBufferControl(ref invocation).TryReserveWorking(reservation) != Utf8ExecutionLimitKind.None)

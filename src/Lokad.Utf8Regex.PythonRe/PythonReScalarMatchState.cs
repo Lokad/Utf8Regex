@@ -642,12 +642,12 @@ internal struct PythonReScalarMatchState
             // String-only results need the selected scalar range's char count,
             // not a coordinate map for the complete subject. Detailed results
             // already project coordinates and can supply their character count.
-            // Original whole-subject validation already proves the character
-            // count for ASCII captures; do not validate those bytes again.
+            // Original whole-subject validation proves these scalar ranges.
+            // Unknown lengths need bounded character counting, not validation.
             var count = characterCount ?? (_validation.IsAscii ? end - start
                 : start == 0 && end == input.Length ? _validation.Utf16Length : _hasMap
                 ? _map.GetUtf16OffsetForByteOffset(end) - _map.GetUtf16OffsetForByteOffset(start)
-                : Utf8Validation.Validate(input[start..end], ref _invocation).Utf16Length);
+                : Utf8SliceBufferWork.CountUtf16(input[start..end], ref _invocation));
             var text = _results.DecodeUtf8(input[start..end], count, ref _invocation);
             Checkpoint(input);
             return text;

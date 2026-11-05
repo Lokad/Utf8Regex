@@ -125,6 +125,13 @@ This can change covered capacity/work compared with earlier development builds.
 No-match operations acquire no canonical output string. Borrowed UTF-8/range
 results and retained-result lifetimes keep their existing contracts.
 
+String sizing reuses whole-subject validity. Unknown Unicode substring lengths
+use the existing checked character counter in scalar-aligned blocks of at most
+4096 bytes, sharing decoding's invocation and interruption checks. This removes
+redundant substring validation and can lower work charges; complete-subject
+validation, result/working admission before string allocation and output lifetimes
+retain their contracts.
+
 Supported families include literals/classes/standard escapes, ordered alternatives,
 greedy/lazy/possessive repetition, captures/named groups, references,
 participation conditionals, lookahead, fixed-width lookbehind, atomic groups and
