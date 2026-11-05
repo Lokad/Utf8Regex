@@ -149,7 +149,7 @@ public sealed class Utf8ValidationTests
             for (var index = prefix; index < prefix + Encoding.UTF8.GetByteCount(scalar); index++)
             {
                 var original = input[index];
-                foreach (var replacement in new byte[] { 0, 0x80, 0xC0, 0xE0, 0xFF })
+                foreach (var replacement in new byte[] { 0, 0x80, 0xC0, 0xC1, 0xC2, 0xDF, 0xE0, 0xFF })
                 {
                     input[index] = replacement;
                     var expected = Utf8ValidationCore.TryValidate(input, true, out _, out var expectedOffset);

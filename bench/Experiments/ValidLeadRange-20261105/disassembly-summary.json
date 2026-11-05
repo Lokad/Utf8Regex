@@ -1,0 +1,39 @@
+{
+  "Listings": 2,
+  "Parts": [
+    {
+      "ListingCharacters": 15178,
+      "Zmm": 43,
+      "RangeAdd": 0,
+      "CompareByte": 9,
+      "IntrinsicLines": [
+        "       vpcmpeqb k1, zmm8, zmmword ptr [reloc @RWD16]",
+        "       vpcmpeqb k1, zmm8, zmm1",
+        "       vpcmpeqb k1, zmm7, zmm3",
+        "       vpcmpeqb k1, zmm7, zmm5",
+        "       vpcmpeqb k1, zmm8, zmm3",
+        "       vpcmpeqb k1, zmm7, zmm1",
+        "       vpcmpeqb k1, zmm6, zmm3",
+        "       vpcmpeqb k1, zmm6, zmm5",
+        "       vpcmpeqb k1, zmm6, zmm3"
+      ]
+    },
+    {
+      "ListingCharacters": 15349,
+      "Zmm": 33,
+      "RangeAdd": 1,
+      "CompareByte": 8,
+      "IntrinsicLines": [
+        "       vpcmpeqb k1, zmm6, zmmword ptr [reloc @RWD16]",
+        "       vpsubb   zmm6, zmm5, zmmword ptr [reloc @RWD80]",
+        "       vpcmpleub k1, zmm6, zmmword ptr [reloc @RWD144]",
+        "       vpcmpeqb k1, zmm5, zmm1",
+        "       vpcmpeqb k1, zmm5, zmm3",
+        "       vpcmpeqb k1, zmm5, zmm0",
+        "       vpcmpeqb k1, zmm4, zmm1",
+        "       vpcmpeqb k1, zmm4, zmm3",
+        "       vpcmpeqb k1, zmm4, zmm0"
+      ]
+    }
+  ]
+}

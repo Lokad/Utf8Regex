@@ -1,0 +1,104 @@
+{
+  "Scope": "One15case <=120s public valid-two-byte-lead classification comparison. Exact accepted433F388D Core with six frozenfb309 companion DLL-PDBs versus parentf77e88d3 Core overlay. Replace C0-DF classification plus separate overlong mask with checked vector unsigned C2-DF range classification, preserving rare C0-C1 drain-level errors and missing-continuation precedence. Keep vector widths,SIMD,carry,mode selector,full validation,scalar fallback,interruption,resource admission and allocation behavior. No fused matching,selector tuning,framework,owner or unchecked access. Chinese actual813478B30matches ordinary-compiled-alternate;finite/deadline controls;Russian and mixed-width/constrained/supplementary/short/Python cases;ASCII-PCRE controls. Typed checksums after timing; BCL diagnostics are not new parity. Normal8CPU startup thenCPU2;producer1.5s-min128,BCL250ms-min64,independent60ms,fivealternatingsamples>=20ms. At most one selected confirmation for decision-blocking noise; no tuned variants,Full/package replay or completed checked campaign.",
+  "ElapsedSeconds": 26.3621951,
+  "OwnedSamples": 50,
+  "MinimumOwnedDurationMs": 54.6236,
+  "Baseline": {
+    "Core": {
+      "Version": "0.5.0-dev.30+39d377e98dc7b15ebc69ed180bb3c8c668d76867",
+      "Sha256": "433F388D90DDD36C9ACD20FAD2A68C975C1B77D8BEC95020065EC5766E6DC0AA"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.30+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "77E4AEC20BA4A85EEFC4BFB267CF9D7E397F51337AC48F59FCDFCCF1C4B13016"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.30+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "95DF5BA00911F5CAD190F6D067F83F59D20BC10B51ECA33EE181362E5896B075"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "CD6849BFB29CC09B8A26E4F8D6590CDED5B4DFB858EEC08E49AEE60D74A09486"
+    }
+  },
+  "Candidate": {
+    "Core": {
+      "Version": "0.5.0-dev.30+f77e88d3d8ca2a7e439ae3fd0980d208a7959981",
+      "Sha256": "B2C9D5A4CF8935E1AB68D26DCA4E8FDE07A8E49D7E2C4E28463279EE2F3D4B16"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.30+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "77E4AEC20BA4A85EEFC4BFB267CF9D7E397F51337AC48F59FCDFCCF1C4B13016"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.30+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "95DF5BA00911F5CAD190F6D067F83F59D20BC10B51ECA33EE181362E5896B075"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "CD6849BFB29CC09B8A26E4F8D6590CDED5B4DFB858EEC08E49AEE60D74A09486"
+    }
+  },
+  "Rows": [
+    {
+      "Name": "ascii-count-control",
+      "BeforeUs": 2.506048460557478,
+      "AfterUs": 2.4934410366443687,
+      "DeltaPercent": -0.5030798131615111,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.041877503496657,
+      "AfterSpread": 1.0092092115785503,
+      "PredecodedUs": 3.527232589627362,
+      "DecodeThenUs": 31.20847810979847
+    },
+    {
+      "Name": "actual-chinese",
+      "BeforeUs": 95.41974723538704,
+      "AfterUs": 90.84042553191489,
+      "DeltaPercent": -4.799134179401676,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0167159381092519,
+      "AfterSpread": 1.0152644507301494,
+      "PredecodedUs": 18.990189382179448,
+      "DecodeThenUs": 2272.5703703703703
+    },
+    {
+      "Name": "actual-chinese-compiled",
+      "BeforeUs": 94.88769470404985,
+      "AfterUs": 90.26338880484114,
+      "DeltaPercent": -4.873451624714553,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.024307242744019,
+      "AfterSpread": 1.0148865998770786,
+      "PredecodedUs": 25.092732558139534,
+      "DecodeThenUs": 2125.5214285714287
+    },
+    {
+      "Name": "actual-russian-compiled",
+      "BeforeUs": 188.99723076923078,
+      "AfterUs": 177.21899109792287,
+      "DeltaPercent": -6.231964152791935,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0180354526785171,
+      "AfterSpread": 1.0080367451686254,
+      "PredecodedUs": 86.91325648414985,
+      "DecodeThenUs": 5172.375
+    },
+    {
+      "Name": "actual-russian-folded",
+      "BeforeUs": 228.00922509225092,
+      "AfterUs": 261.5596566523605,
+      "DeltaPercent": 14.714506198832655,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0239154453102848,
+      "AfterSpread": 1.0052261167615848,
+      "PredecodedUs": 465.62932330827067,
+      "DecodeThenUs": 5861.854545454546
+    }
+  ]
+}

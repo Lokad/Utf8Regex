@@ -1,0 +1,20 @@
+{
+  "PublicRoute": "InvariantCyrillicFusedValidatedCount",
+  "PublicCount": 746,
+  "NewCommonValidatorReachedDuringCount": false,
+  "Reason": "Count returns after its fused counter succeeds, before canonical validator call",
+  "CounterSourceUnmodified": true,
+  "InputSha256": "7FFDDB21336A1BFB4A9E2DF4BB77EEA0305C0010A57C5D3C56E0DFEAD9E80A90",
+  "CountEntryIlEqual": true,
+  "FusedRawIlEqual": false,
+  "NoRawIlEquivalenceClaim": true,
+  "OneConfirmationCases": [
+    "ascii-count-control",
+    "actual-chinese",
+    "actual-chinese-compiled",
+    "actual-russian-compiled",
+    "actual-russian-folded"
+  ],
+  "Rationale": "An unchanged logical control moved11.42percent; compare process uncertainty against primary4-6percent gains",
+  "NoRetuning": true
+}

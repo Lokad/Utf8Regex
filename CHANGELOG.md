@@ -66,6 +66,8 @@
   eligible finite-policy declaration Count, reducing scalar VM scratch. Work,
   depth and working requirements can fall; strict validation and interruption
   retain their original scope.
+- Simplify common UTF-8 validation by classifying valid two-byte leads directly.
+  Chinese and case-sensitive Russian Count improve; folded Russian can cost more.
 - Widen large exact UTF-8 literal Count scans on 512-bit vector hardware while
   retaining the 256-bit fallback. Dense false prefixes and some long or mixed
   literals can cost more; validation and finite resource routes remain.
