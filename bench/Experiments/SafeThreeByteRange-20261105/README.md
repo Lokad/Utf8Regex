@@ -60,5 +60,14 @@ preflights, forced-width tests, codegen listings, caller and every sample/log.
 Windows correctness archive SHA256: `6F33AA11F923B3264D02E7428A9186F132A5BCC714CEA6301C85D535D17F42DB`.
 Selected-refresh evidence is recorded separately after clean-source qualification.
 
+A clean-source [selected refresh](selected-refresh.json) on01618cd3 changes only
+Chinese literal ordinary/compiled rows:88.834/88.601us, ratios4.637x/3.653x, both
+remain Gap. All30six-lane samples exceed49.6449ms. Every unselected measurement,
+lifecycle/scaling record is preserved; three generated files were hash-imported,
+six descending tables/178ratios and two snapshot hosts/sixchecks pass SkipBuild.
+No other case, full catalog or package qualification is repeated.
+
+Selected evidence archive SHA256:
+`DF585B59F839695B4210A8DF0B4FBF4D06EE28BB488280BD6E4B46C444BF6D00`.
 Existing staged/published packages, symbols and the dev32Full receipt remain
 immutable. This is a small source change; no new package/Full matrix follows.

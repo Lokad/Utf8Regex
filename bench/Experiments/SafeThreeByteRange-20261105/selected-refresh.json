@@ -1,0 +1,29 @@
+{
+  "Source": "01618cd307e81ed84954a4165b8828962c9c0ab8",
+  "ChangedMeasurements": [
+    "dotnet-performance/literal/sherlock-zh",
+    "dotnet-performance-compiled/literal/sherlock-zh"
+  ],
+  "UnselectedPreserved": true,
+  "LaneSamples": 30,
+  "MinimumLaneDurationMs": 49.6449,
+  "SnapshotHosts": 2,
+  "SnapshotChecks": 6.0,
+  "Tables": 6,
+  "RatioRows": 178,
+  "Rows": [
+    {
+      "Section": "dotnet-performance",
+      "Status": "Gap",
+      "Utf8Microseconds": 88.83351158645276,
+      "RatioToPredecoded": 4.637215024806748
+    },
+    {
+      "Section": "dotnet-performance-compiled",
+      "Status": "Gap",
+      "Utf8Microseconds": 88.60141592920354,
+      "RatioToPredecoded": 3.65296326974714
+    }
+  ],
+  "ArchiveSha256": "DF585B59F839695B4210A8DF0B4FBF4D06EE28BB488280BD6E4B46C444BF6D00"
+}
