@@ -129,9 +129,9 @@ internal readonly struct Utf8SliceCountOutcome
 /// start/end input indexes, -1 when unset; the trail journal restores them.</summary>
 internal static partial class Utf8SliceRunner
 {
-    internal const int FrameChunkCapacity = 64;
+    internal const int FrameChunkCapacity = 16;
     internal const int TrailChunkCapacity = 128;
-    internal const int JournalChunkCapacity = 128;
+    internal const int JournalChunkCapacity = 32;
     internal const int BalanceChunkCapacity = 128;
     internal const int ChunkTableCapacity = 4;
 
