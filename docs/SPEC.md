@@ -320,6 +320,10 @@ admission; examined scalars/classifications and terminal interruption remain met
 Lazy pure-atom repeats can also omit rollback when a following required literal
 excludes every consumed scalar: no shorter endpoint can match that literal.
 Unconstrained lazy roots and overlapping tails retain their normal choices.
+Greedy pure-atom repeats before an atomic commit can omit shorter choices that
+the commit would discard. Capture endings, the atomic marker and commit still
+execute; examined scalars remain metered. Working, depth and work requirements
+can decrease. Lazy atomic repeats retain their distinct endpoint order.
 Complete capture-free greedy atom repeats, including nullable ones, can also omit
 unused counter vectors. Empty-match advancement and nonempty retries retain their
 profile rules; required work/working capacity can be lower than earlier builds.

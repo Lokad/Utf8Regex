@@ -147,7 +147,10 @@ internal static partial class Utf8SliceRunner
             return false;
         // RunFrom can retry a child after Accept to satisfy its required end.
         // Without that constraint, no shorter successful endpoint is requested.
-        if (suffix.Kind == Utf8SliceInstructionKind.Accept && requiredEnd is null)
+        // An atomic commit discards shorter greedy endpoints even if its tail
+        // later fails. Capture endings and the commit still execute normally.
+        if (suffix.Kind == Utf8SliceInstructionKind.Accept && requiredEnd is null ||
+            suffix.Kind == Utf8SliceInstructionKind.AtomicCommit)
         {
             outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
             return true;

@@ -37,6 +37,13 @@ public sealed class Pcre2SliceAtomicTests
         yield return new object?[] { "(?>a+)b", "aaab", true };
         yield return new object?[] { "(?>(a+))b", "aaab", true };
         yield return new object?[] { "(?>a+)+b", "aaab", true };
+        yield return new object?[] { "(?>ab+)c", "xxabbbczz", true };
+        yield return new object?[] { "(?>ab+)c", "xxabbbdzz", false };
+        yield return new object?[] { "(?>a{2,3})a", "aaaa", true };
+        yield return new object?[] { "(?>a{2,3})b", "ab", false };
+        yield return new object?[] { "(?>a*)b", "b", true };
+        yield return new object?[] { "(?>a+?)b", "aaab", true };
+        yield return new object?[] { "(?>x(?>a+))b", "xxaaaabzz", true };
     }
 
     [Theory]
