@@ -1,0 +1,224 @@
+[
+  {
+    "Pattern": "[,\uFF0C]",
+    "InputBytes": 3200,
+    "Count": 384,
+    "Instructions": [
+      {
+        "Kind": "CategorySet",
+        "A": 0,
+        "B": 0,
+        "C": 0,
+        "D": 0
+      },
+      {
+        "Kind": "Accept",
+        "A": 0,
+        "B": 0,
+        "C": 0,
+        "D": 0
+      }
+    ],
+    "Tables": [
+      {
+        "Mask": 0,
+        "Ranges": [
+          65292,
+          65293
+        ],
+        "ClassProgram": false,
+        "ScalarPredicate": false
+      }
+    ]
+  },
+  {
+    "Pattern": "([^,\uFF0C]\u002B)",
+    "InputBytes": 3200,
+    "Count": 384,
+    "Instructions": [
+      {
+        "Kind": "CaptureStart",
+        "A": 0,
+        "B": 0,
+        "C": 0,
+        "D": 0
+      },
+      {
+        "Kind": "RepeatGreedy",
+        "A": 8,
+        "B": 0,
+        "C": 1,
+        "D": -1
+      },
+      {
+        "Kind": "Fork",
+        "A": 6,
+        "B": 1,
+        "C": 0,
+        "D": 0
+      },
+      {
+        "Kind": "CategorySet",
+        "A": 0,
+        "B": 0,
+        "C": 0,
+        "D": 0
+      },
+      {
+        "Kind": "Commit",
+        "A": 0,
+        "B": 0,
+        "C": 0,
+        "D": 0
+      },
+      {
+        "Kind": "Fail",
+        "A": 0,
+        "B": 0,
+        "C": 0,
+        "D": 0
+      },
+      {
+        "Kind": "Dot",
+        "A": 1,
+        "B": 0,
+        "C": 0,
+        "D": 0
+      },
+      {
+        "Kind": "RepeatEnd",
+        "A": 1,
+        "B": 0,
+        "C": 0,
+        "D": 0
+      },
+      {
+        "Kind": "RepeatExit",
+        "A": 0,
+        "B": 0,
+        "C": 0,
+        "D": 0
+      },
+      {
+        "Kind": "CaptureEnd",
+        "A": 0,
+        "B": 0,
+        "C": 0,
+        "D": 0
+      },
+      {
+        "Kind": "Accept",
+        "A": 0,
+        "B": 0,
+        "C": 0,
+        "D": 0
+      }
+    ],
+    "Tables": [
+      {
+        "Mask": 0,
+        "Ranges": [
+          65292,
+          65293
+        ],
+        "ClassProgram": false,
+        "ScalarPredicate": false
+      }
+    ]
+  },
+  {
+    "Pattern": "[\u00E9\u4E2D\uD83D\uDE00]",
+    "InputBytes": 3200,
+    "Count": 0,
+    "Instructions": [
+      {
+        "Kind": "CategorySet",
+        "A": 0,
+        "B": 0,
+        "C": 0,
+        "D": 0
+      },
+      {
+        "Kind": "Accept",
+        "A": 0,
+        "B": 0,
+        "C": 0,
+        "D": 0
+      }
+    ],
+    "Tables": [
+      {
+        "Mask": 0,
+        "Ranges": [
+          233,
+          234,
+          20013,
+          20014,
+          128512,
+          128513
+        ],
+        "ClassProgram": false,
+        "ScalarPredicate": false
+      }
+    ]
+  },
+  {
+    "Pattern": "[\\w\uFF0C]",
+    "InputBytes": 3200,
+    "Count": 1024,
+    "Instructions": [
+      {
+        "Kind": "Fork",
+        "A": 3,
+        "B": 0,
+        "C": 0,
+        "D": 0
+      },
+      {
+        "Kind": "CategorySet",
+        "A": 0,
+        "B": 0,
+        "C": 0,
+        "D": 0
+      },
+      {
+        "Kind": "Jump",
+        "A": 4,
+        "B": 0,
+        "C": 0,
+        "D": 0
+      },
+      {
+        "Kind": "CategorySet",
+        "A": 1,
+        "B": 0,
+        "C": 0,
+        "D": 1
+      },
+      {
+        "Kind": "Accept",
+        "A": 0,
+        "B": 0,
+        "C": 0,
+        "D": 0
+      }
+    ],
+    "Tables": [
+      {
+        "Mask": 0,
+        "Ranges": [],
+        "ClassProgram": false,
+        "ScalarPredicate": true
+      },
+      {
+        "Mask": 0,
+        "Ranges": [
+          65292,
+          65293
+        ],
+        "ClassProgram": false,
+        "ScalarPredicate": false
+      }
+    ]
+  }
+]

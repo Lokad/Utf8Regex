@@ -1,0 +1,16 @@
+[
+  {
+    "Side": "before",
+    "Listings": 1,
+    "CategoryCallsRetained": 1,
+    "CodeBytes": 298,
+    "ZeroMaskBypassesCategory": false
+  },
+  {
+    "Side": "after",
+    "Listings": 1,
+    "CategoryCallsRetained": 1,
+    "CodeBytes": 304,
+    "ZeroMaskBypassesCategory": true
+  }
+]

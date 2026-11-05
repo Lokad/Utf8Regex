@@ -1,0 +1,649 @@
+{
+  "Scope": "ONE managed sampled-thread-time trace; evented Speedscope weighted intervals whose stack includes ProfileSplitBatch. Warmup/checksum/outside stacks excluded. Inclusive observations overlap. CPU_TIME is a converter pseudo-frame; GC polling dominates. This is not reliable CPU attribution, exact CPU time, public throughput or causal optimization evidence.",
+  "Source": "79d9256c298e8c031a86a36242d2c7e30712a52c",
+  "LoadedSource": "0dc05633e21103df5753b8bad3a4ceaad4754276",
+  "ToolVersion": "10.0.750501+ad724c4b85e7ae775e42f393c6e95a7557a57954",
+  "ProfileCount": 1,
+  "BatchFrame": "Profile!Program.<<Main>$>g__ProfileSplitBatch|0_1(class Lokad.Utf8Regex.PythonRe.Utf8PythonRegex,unsigned int8[],class System.String[][])",
+  "ObservedBatchStackMs": 14867.090168587942,
+  "PositiveWeightedSegments": 6973,
+  "Inclusive": [
+    {
+      "FrameId": 0,
+      "Name": "Process64 dotnet (2805895) Args: /home/vermorel/tmp/utf8regex-net11-memory/pilot/tmp/python-split-profile-20261105/worker/bin/Release/net11.0/Profile.dll",
+      "InclusiveMs": 14867.090168587942,
+      "InclusivePercent": 100.0,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 1,
+      "Name": "(Non-Activities)",
+      "InclusiveMs": 14867.090168587942,
+      "InclusivePercent": 100.0,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 2,
+      "Name": "Threads",
+      "InclusiveMs": 14867.090168587942,
+      "InclusivePercent": 100.0,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 3,
+      "Name": "Thread (2805895)",
+      "InclusiveMs": 14867.090168587942,
+      "InclusivePercent": 100.0,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 90,
+      "Name": "System.Private.CoreLib!System.Environment.CallEntryPoint(int,class System.String[]*,int32*,bool,class System.Exception*)",
+      "InclusiveMs": 14867.090168587942,
+      "InclusivePercent": 100.0,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 91,
+      "Name": "Profile!Program.<Main>$(class System.String[])",
+      "InclusiveMs": 14867.090168587942,
+      "InclusivePercent": 100.0,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 417,
+      "Name": "Profile!Program.<<Main>$>g__ProfileSplitBatch|0_1(class Lokad.Utf8Regex.PythonRe.Utf8PythonRegex,unsigned int8[],class System.String[][])",
+      "InclusiveMs": 14867.090168587942,
+      "InclusivePercent": 100.0,
+      "ExclusiveMs": 0.0015478904688279727,
+      "ExclusivePercent": 1.041152270737179E-05
+    },
+    {
+      "FrameId": 11,
+      "Name": "CPU_TIME",
+      "InclusiveMs": 14862.765635261816,
+      "InclusivePercent": 99.97091203943012,
+      "ExclusiveMs": 14862.765635261816,
+      "ExclusivePercent": 99.97091203943012
+    },
+    {
+      "FrameId": 373,
+      "Name": "System.Private.CoreLib!System.Threading.Thread.<PollGC>g__PollGCWorker|71_0()",
+      "InclusiveMs": 13130.681159663063,
+      "InclusivePercent": 88.32045148556598,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 380,
+      "Name": "System.Private.CoreLib!System.Buffer.BulkMoveWithWriteBarrier(unsigned int8&,unsigned int8&,unsigned int)",
+      "InclusiveMs": 11915.030603533267,
+      "InclusivePercent": 80.14366273709727,
+      "ExclusiveMs": 1.1361230463080574E-06,
+      "ExclusivePercent": 7.641865579779186E-09
+    },
+    {
+      "FrameId": 353,
+      "Name": "Lokad.Utf8Regex.PythonRe!Lokad.Utf8Regex.PythonRe.PythonReScalarMatchState.AddResult(value class System.ReadOnlySpan`1<unsigned int8>,value class Lokad.Utf8Regex.Internal.Execution.Utf8InvocationResultBuffer`1<!!0>&,!!0)",
+      "InclusiveMs": 11768.19923204425,
+      "InclusivePercent": 79.15603590613037,
+      "ExclusiveMs": 1.2426366993167903E-05,
+      "ExclusivePercent": 8.358304720195387E-08
+    },
+    {
+      "FrameId": 355,
+      "Name": "Lokad.Utf8Regex!Lokad.Utf8Regex.Internal.Execution.Utf8InvocationStateBuffer`1[System.__Canon].TryPush(!0,!!0)",
+      "InclusiveMs": 11722.386404241846,
+      "InclusivePercent": 78.84788664973318,
+      "ExclusiveMs": 6.344251232803799E-06,
+      "ExclusivePercent": 4.267312003130448E-08
+    },
+    {
+      "FrameId": 344,
+      "Name": "Lokad.Utf8Regex.PythonRe!Lokad.Utf8Regex.PythonRe.PythonReScalarMatchState.MoveNextCore(value class System.ReadOnlySpan`1<unsigned int8>,bool)",
+      "InclusiveMs": 1293.7834024860524,
+      "InclusivePercent": 8.702331040001585,
+      "ExclusiveMs": 3.5242860576545354E-06,
+      "ExclusivePercent": 2.370528474429282E-08
+    },
+    {
+      "FrameId": 358,
+      "Name": "Lokad.Utf8Regex.PythonRe!Lokad.Utf8Regex.PythonRe.PythonReScalarMatchState.CompleteResults(value class System.ReadOnlySpan`1<unsigned int8>,value class Lokad.Utf8Regex.Internal.Execution.Utf8InvocationResultBuffer`1<!!0>&)",
+      "InclusiveMs": 1234.3051795936824,
+      "InclusivePercent": 8.302264704101914,
+      "ExclusiveMs": 2.9740476747974753E-09,
+      "ExclusivePercent": 2.0004235133255715E-11
+    },
+    {
+      "FrameId": 347,
+      "Name": "Lokad.Utf8Regex!Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner.RunFrom(class Lokad.Utf8Regex.Internal.Execution.Utf8SliceProgram,value class System.ReadOnlySpan`1<unsigned int8>,int32,int32[],int32[],int32[],int32[],int32[],bool,bool,bool,value class ChunkedStacks&,value class Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation&)",
+      "InclusiveMs": 885.3645497758644,
+      "InclusivePercent": 5.955197282966067,
+      "ExclusiveMs": 2.4311584638780914E-06,
+      "ExclusivePercent": 1.6352618006008906E-08
+    },
+    {
+      "FrameId": 327,
+      "Name": "Lokad.Utf8Regex.PythonRe!Lokad.Utf8Regex.PythonRe.Utf8PythonRegex.SplitToStrings(value class System.ReadOnlySpan`1<unsigned int8>)",
+      "InclusiveMs": 631.2358172273562,
+      "InclusivePercent": 4.245859882931686,
+      "ExclusiveMs": 2.5594895078029367E-05,
+      "ExclusivePercent": 1.721580671657441E-07
+    },
+    {
+      "FrameId": 348,
+      "Name": "Lokad.Utf8Regex!Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner.RunSegment(value class System.ReadOnlySpan`1<unsigned int8>,int32[],int32[],int32[],value class AssertionCursor&,bool,value class ChunkedStacks&,value class Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation&,bool&)",
+      "InclusiveMs": 460.85855157130914,
+      "InclusivePercent": 3.099857109530674,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 350,
+      "Name": "Lokad.Utf8Regex.PythonRe!Lokad.Utf8Regex.PythonRe.PythonReScalarMatchState.GetText(value class System.ReadOnlySpan`1<unsigned int8>,int32,int32,value class System.Nullable`1<int32>)",
+      "InclusiveMs": 258.44137899437965,
+      "InclusivePercent": 1.738345406288244,
+      "ExclusiveMs": 5.5862074077595025E-08,
+      "ExclusivePercent": 3.7574315783477043E-10
+    },
+    {
+      "FrameId": 351,
+      "Name": "Lokad.Utf8Regex!Lokad.Utf8Regex.Internal.Execution.Utf8InvocationResultLedger.DecodeUtf8(value class System.ReadOnlySpan`1<unsigned int8>,int32,value class Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation&)",
+      "InclusiveMs": 93.70217188927654,
+      "InclusivePercent": 0.6302657132412903,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 415,
+      "Name": "System.Private.CoreLib!System.Text.Unicode.Utf8Utility.GetPointerToFirstInvalidByte(unsigned int8*,int32,int32&,int32&)",
+      "InclusiveMs": 76.55129724331528,
+      "InclusivePercent": 0.514904371839066,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 389,
+      "Name": "Lokad.Utf8Regex.PythonRe!Lokad.Utf8Regex.PythonRe.PythonReScalarMatchState.Checkpoint(value class System.ReadOnlySpan`1<unsigned int8>)",
+      "InclusiveMs": 57.79320871739128,
+      "InclusivePercent": 0.38873248269859934,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 55,
+      "Name": "System.Private.CoreLib!System.Text.Unicode.Utf8Utility.TranscodeToUtf16(unsigned int8*,int32,wchar*,int32,unsigned int8*&,wchar*&)",
+      "InclusiveMs": 30.447948171522512,
+      "InclusivePercent": 0.20480099216627284,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 334,
+      "Name": "Lokad.Utf8Regex.PythonRe!Lokad.Utf8Regex.PythonRe.PythonReScalarMatchState..ctor(value class System.ReadOnlySpan`1<unsigned int8>,class Lokad.Utf8Regex.Internal.Execution.Utf8SliceProgram,int32,value class System.TimeSpan,class System.Object,value class Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation,class Lokad.Utf8Regex.Utf8Regex,bool)",
+      "InclusiveMs": 11.009155461950058,
+      "InclusivePercent": 0.07405050576212181,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 410,
+      "Name": "Lokad.Utf8Regex!Lokad.Utf8Regex.Internal.Execution.Utf8SliceBufferWork.ChargeResultBytes(unsigned int64,value class Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation&)",
+      "InclusiveMs": 7.624720802124102,
+      "InclusivePercent": 0.05128589869074756,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 416,
+      "Name": "Lokad.Utf8Regex!Lokad.Utf8Regex.Internal.Execution.Utf8StorageLedger.Release(unsigned int64)",
+      "InclusiveMs": 6.503102599566546,
+      "InclusivePercent": 0.04374159654527879,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    }
+  ],
+  "Exclusive": [
+    {
+      "FrameId": 11,
+      "Name": "CPU_TIME",
+      "InclusiveMs": 14862.765635261816,
+      "InclusivePercent": 99.97091203943012,
+      "ExclusiveMs": 14862.765635261816,
+      "ExclusivePercent": 99.97091203943012
+    },
+    {
+      "FrameId": 7,
+      "Name": "UNMANAGED_CODE_TIME",
+      "InclusiveMs": 4.322933919738716,
+      "InclusivePercent": 0.02907720253740348,
+      "ExclusiveMs": 4.322933919738716,
+      "ExclusivePercent": 0.02907720253740348
+    },
+    {
+      "FrameId": 417,
+      "Name": "Profile!Program.<<Main>$>g__ProfileSplitBatch|0_1(class Lokad.Utf8Regex.PythonRe.Utf8PythonRegex,unsigned int8[],class System.String[][])",
+      "InclusiveMs": 14867.090168587942,
+      "InclusivePercent": 100.0,
+      "ExclusiveMs": 0.0015478904688279727,
+      "ExclusivePercent": 1.041152270737179E-05
+    },
+    {
+      "FrameId": 327,
+      "Name": "Lokad.Utf8Regex.PythonRe!Lokad.Utf8Regex.PythonRe.Utf8PythonRegex.SplitToStrings(value class System.ReadOnlySpan`1<unsigned int8>)",
+      "InclusiveMs": 631.2358172273562,
+      "InclusivePercent": 4.245859882931686,
+      "ExclusiveMs": 2.5594895078029367E-05,
+      "ExclusivePercent": 1.721580671657441E-07
+    },
+    {
+      "FrameId": 353,
+      "Name": "Lokad.Utf8Regex.PythonRe!Lokad.Utf8Regex.PythonRe.PythonReScalarMatchState.AddResult(value class System.ReadOnlySpan`1<unsigned int8>,value class Lokad.Utf8Regex.Internal.Execution.Utf8InvocationResultBuffer`1<!!0>&,!!0)",
+      "InclusiveMs": 11768.19923204425,
+      "InclusivePercent": 79.15603590613037,
+      "ExclusiveMs": 1.2426366993167903E-05,
+      "ExclusivePercent": 8.358304720195387E-08
+    },
+    {
+      "FrameId": 355,
+      "Name": "Lokad.Utf8Regex!Lokad.Utf8Regex.Internal.Execution.Utf8InvocationStateBuffer`1[System.__Canon].TryPush(!0,!!0)",
+      "InclusiveMs": 11722.386404241846,
+      "InclusivePercent": 78.84788664973318,
+      "ExclusiveMs": 6.344251232803799E-06,
+      "ExclusivePercent": 4.267312003130448E-08
+    },
+    {
+      "FrameId": 344,
+      "Name": "Lokad.Utf8Regex.PythonRe!Lokad.Utf8Regex.PythonRe.PythonReScalarMatchState.MoveNextCore(value class System.ReadOnlySpan`1<unsigned int8>,bool)",
+      "InclusiveMs": 1293.7834024860524,
+      "InclusivePercent": 8.702331040001585,
+      "ExclusiveMs": 3.5242860576545354E-06,
+      "ExclusivePercent": 2.370528474429282E-08
+    },
+    {
+      "FrameId": 347,
+      "Name": "Lokad.Utf8Regex!Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner.RunFrom(class Lokad.Utf8Regex.Internal.Execution.Utf8SliceProgram,value class System.ReadOnlySpan`1<unsigned int8>,int32,int32[],int32[],int32[],int32[],int32[],bool,bool,bool,value class ChunkedStacks&,value class Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation&)",
+      "InclusiveMs": 885.3645497758644,
+      "InclusivePercent": 5.955197282966067,
+      "ExclusiveMs": 2.4311584638780914E-06,
+      "ExclusivePercent": 1.6352618006008906E-08
+    },
+    {
+      "FrameId": 380,
+      "Name": "System.Private.CoreLib!System.Buffer.BulkMoveWithWriteBarrier(unsigned int8&,unsigned int8&,unsigned int)",
+      "InclusiveMs": 11915.030603533267,
+      "InclusivePercent": 80.14366273709727,
+      "ExclusiveMs": 1.1361230463080574E-06,
+      "ExclusivePercent": 7.641865579779186E-09
+    },
+    {
+      "FrameId": 350,
+      "Name": "Lokad.Utf8Regex.PythonRe!Lokad.Utf8Regex.PythonRe.PythonReScalarMatchState.GetText(value class System.ReadOnlySpan`1<unsigned int8>,int32,int32,value class System.Nullable`1<int32>)",
+      "InclusiveMs": 258.44137899437965,
+      "InclusivePercent": 1.738345406288244,
+      "ExclusiveMs": 5.5862074077595025E-08,
+      "ExclusivePercent": 3.7574315783477043E-10
+    },
+    {
+      "FrameId": 358,
+      "Name": "Lokad.Utf8Regex.PythonRe!Lokad.Utf8Regex.PythonRe.PythonReScalarMatchState.CompleteResults(value class System.ReadOnlySpan`1<unsigned int8>,value class Lokad.Utf8Regex.Internal.Execution.Utf8InvocationResultBuffer`1<!!0>&)",
+      "InclusiveMs": 1234.3051795936824,
+      "InclusivePercent": 8.302264704101914,
+      "ExclusiveMs": 2.9740476747974753E-09,
+      "ExclusivePercent": 2.0004235133255715E-11
+    },
+    {
+      "FrameId": 415,
+      "Name": "System.Private.CoreLib!System.Text.Unicode.Utf8Utility.GetPointerToFirstInvalidByte(unsigned int8*,int32,int32&,int32&)",
+      "InclusiveMs": 76.55129724331528,
+      "InclusivePercent": 0.514904371839066,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 351,
+      "Name": "Lokad.Utf8Regex!Lokad.Utf8Regex.Internal.Execution.Utf8InvocationResultLedger.DecodeUtf8(value class System.ReadOnlySpan`1<unsigned int8>,int32,value class Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation&)",
+      "InclusiveMs": 93.70217188927654,
+      "InclusivePercent": 0.6302657132412903,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 55,
+      "Name": "System.Private.CoreLib!System.Text.Unicode.Utf8Utility.TranscodeToUtf16(unsigned int8*,int32,wchar*,int32,unsigned int8*&,wchar*&)",
+      "InclusiveMs": 30.447948171522512,
+      "InclusivePercent": 0.20480099216627284,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 410,
+      "Name": "Lokad.Utf8Regex!Lokad.Utf8Regex.Internal.Execution.Utf8SliceBufferWork.ChargeResultBytes(unsigned int64,value class Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation&)",
+      "InclusiveMs": 7.624720802124102,
+      "InclusivePercent": 0.05128589869074756,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 383,
+      "Name": "Lokad.Utf8Regex!Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation.TryReserveWorking(unsigned int64)",
+      "InclusiveMs": 1.072897984931842,
+      "InclusivePercent": 0.007216597012364422,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 413,
+      "Name": "Lokad.Utf8Regex!Lokad.Utf8Regex.Internal.Execution.Utf8ExactStatePool.Rent(int32,bool)",
+      "InclusiveMs": 1.0805230100177141,
+      "InclusivePercent": 0.007267884957748534,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 389,
+      "Name": "Lokad.Utf8Regex.PythonRe!Lokad.Utf8Regex.PythonRe.PythonReScalarMatchState.Checkpoint(value class System.ReadOnlySpan`1<unsigned int8>)",
+      "InclusiveMs": 57.79320871739128,
+      "InclusivePercent": 0.38873248269859934,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 0,
+      "Name": "Process64 dotnet (2805895) Args: /home/vermorel/tmp/utf8regex-net11-memory/pilot/tmp/python-split-profile-20261105/worker/bin/Release/net11.0/Profile.dll",
+      "InclusiveMs": 14867.090168587942,
+      "InclusivePercent": 100.0,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 416,
+      "Name": "Lokad.Utf8Regex!Lokad.Utf8Regex.Internal.Execution.Utf8StorageLedger.Release(unsigned int64)",
+      "InclusiveMs": 6.503102599566546,
+      "InclusivePercent": 0.04374159654527879,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 334,
+      "Name": "Lokad.Utf8Regex.PythonRe!Lokad.Utf8Regex.PythonRe.PythonReScalarMatchState..ctor(value class System.ReadOnlySpan`1<unsigned int8>,class Lokad.Utf8Regex.Internal.Execution.Utf8SliceProgram,int32,value class System.TimeSpan,class System.Object,value class Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation,class Lokad.Utf8Regex.Utf8Regex,bool)",
+      "InclusiveMs": 11.009155461950058,
+      "InclusivePercent": 0.07405050576212181,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 373,
+      "Name": "System.Private.CoreLib!System.Threading.Thread.<PollGC>g__PollGCWorker|71_0()",
+      "InclusiveMs": 13130.681159663063,
+      "InclusivePercent": 88.32045148556598,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 91,
+      "Name": "Profile!Program.<Main>$(class System.String[])",
+      "InclusiveMs": 14867.090168587942,
+      "InclusivePercent": 100.0,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 90,
+      "Name": "System.Private.CoreLib!System.Environment.CallEntryPoint(int,class System.String[]*,int32*,bool,class System.Exception*)",
+      "InclusiveMs": 14867.090168587942,
+      "InclusivePercent": 100.0,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 3,
+      "Name": "Thread (2805895)",
+      "InclusiveMs": 14867.090168587942,
+      "InclusivePercent": 100.0,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    }
+  ],
+  "Frames": [
+    {
+      "FrameId": 0,
+      "Name": "Process64 dotnet (2805895) Args: /home/vermorel/tmp/utf8regex-net11-memory/pilot/tmp/python-split-profile-20261105/worker/bin/Release/net11.0/Profile.dll",
+      "InclusiveMs": 14867.090168587942,
+      "InclusivePercent": 100.0,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 1,
+      "Name": "(Non-Activities)",
+      "InclusiveMs": 14867.090168587942,
+      "InclusivePercent": 100.0,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 2,
+      "Name": "Threads",
+      "InclusiveMs": 14867.090168587942,
+      "InclusivePercent": 100.0,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 3,
+      "Name": "Thread (2805895)",
+      "InclusiveMs": 14867.090168587942,
+      "InclusivePercent": 100.0,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 90,
+      "Name": "System.Private.CoreLib!System.Environment.CallEntryPoint(int,class System.String[]*,int32*,bool,class System.Exception*)",
+      "InclusiveMs": 14867.090168587942,
+      "InclusivePercent": 100.0,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 91,
+      "Name": "Profile!Program.<Main>$(class System.String[])",
+      "InclusiveMs": 14867.090168587942,
+      "InclusivePercent": 100.0,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 417,
+      "Name": "Profile!Program.<<Main>$>g__ProfileSplitBatch|0_1(class Lokad.Utf8Regex.PythonRe.Utf8PythonRegex,unsigned int8[],class System.String[][])",
+      "InclusiveMs": 14867.090168587942,
+      "InclusivePercent": 100.0,
+      "ExclusiveMs": 0.0015478904688279727,
+      "ExclusivePercent": 1.041152270737179E-05
+    },
+    {
+      "FrameId": 327,
+      "Name": "Lokad.Utf8Regex.PythonRe!Lokad.Utf8Regex.PythonRe.Utf8PythonRegex.SplitToStrings(value class System.ReadOnlySpan`1<unsigned int8>)",
+      "InclusiveMs": 631.2358172273562,
+      "InclusivePercent": 4.245859882931686,
+      "ExclusiveMs": 2.5594895078029367E-05,
+      "ExclusivePercent": 1.721580671657441E-07
+    },
+    {
+      "FrameId": 358,
+      "Name": "Lokad.Utf8Regex.PythonRe!Lokad.Utf8Regex.PythonRe.PythonReScalarMatchState.CompleteResults(value class System.ReadOnlySpan`1<unsigned int8>,value class Lokad.Utf8Regex.Internal.Execution.Utf8InvocationResultBuffer`1<!!0>&)",
+      "InclusiveMs": 1234.3051795936824,
+      "InclusivePercent": 8.302264704101914,
+      "ExclusiveMs": 2.9740476747974753E-09,
+      "ExclusivePercent": 2.0004235133255715E-11
+    },
+    {
+      "FrameId": 373,
+      "Name": "System.Private.CoreLib!System.Threading.Thread.<PollGC>g__PollGCWorker|71_0()",
+      "InclusiveMs": 13130.681159663063,
+      "InclusivePercent": 88.32045148556598,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 11,
+      "Name": "CPU_TIME",
+      "InclusiveMs": 14862.765635261816,
+      "InclusivePercent": 99.97091203943012,
+      "ExclusiveMs": 14862.765635261816,
+      "ExclusivePercent": 99.97091203943012
+    },
+    {
+      "FrameId": 353,
+      "Name": "Lokad.Utf8Regex.PythonRe!Lokad.Utf8Regex.PythonRe.PythonReScalarMatchState.AddResult(value class System.ReadOnlySpan`1<unsigned int8>,value class Lokad.Utf8Regex.Internal.Execution.Utf8InvocationResultBuffer`1<!!0>&,!!0)",
+      "InclusiveMs": 11768.19923204425,
+      "InclusivePercent": 79.15603590613037,
+      "ExclusiveMs": 1.2426366993167903E-05,
+      "ExclusivePercent": 8.358304720195387E-08
+    },
+    {
+      "FrameId": 355,
+      "Name": "Lokad.Utf8Regex!Lokad.Utf8Regex.Internal.Execution.Utf8InvocationStateBuffer`1[System.__Canon].TryPush(!0,!!0)",
+      "InclusiveMs": 11722.386404241846,
+      "InclusivePercent": 78.84788664973318,
+      "ExclusiveMs": 6.344251232803799E-06,
+      "ExclusivePercent": 4.267312003130448E-08
+    },
+    {
+      "FrameId": 380,
+      "Name": "System.Private.CoreLib!System.Buffer.BulkMoveWithWriteBarrier(unsigned int8&,unsigned int8&,unsigned int)",
+      "InclusiveMs": 11915.030603533267,
+      "InclusivePercent": 80.14366273709727,
+      "ExclusiveMs": 1.1361230463080574E-06,
+      "ExclusivePercent": 7.641865579779186E-09
+    },
+    {
+      "FrameId": 344,
+      "Name": "Lokad.Utf8Regex.PythonRe!Lokad.Utf8Regex.PythonRe.PythonReScalarMatchState.MoveNextCore(value class System.ReadOnlySpan`1<unsigned int8>,bool)",
+      "InclusiveMs": 1293.7834024860524,
+      "InclusivePercent": 8.702331040001585,
+      "ExclusiveMs": 3.5242860576545354E-06,
+      "ExclusivePercent": 2.370528474429282E-08
+    },
+    {
+      "FrameId": 347,
+      "Name": "Lokad.Utf8Regex!Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner.RunFrom(class Lokad.Utf8Regex.Internal.Execution.Utf8SliceProgram,value class System.ReadOnlySpan`1<unsigned int8>,int32,int32[],int32[],int32[],int32[],int32[],bool,bool,bool,value class ChunkedStacks&,value class Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation&)",
+      "InclusiveMs": 885.3645497758644,
+      "InclusivePercent": 5.955197282966067,
+      "ExclusiveMs": 2.4311584638780914E-06,
+      "ExclusivePercent": 1.6352618006008906E-08
+    },
+    {
+      "FrameId": 334,
+      "Name": "Lokad.Utf8Regex.PythonRe!Lokad.Utf8Regex.PythonRe.PythonReScalarMatchState..ctor(value class System.ReadOnlySpan`1<unsigned int8>,class Lokad.Utf8Regex.Internal.Execution.Utf8SliceProgram,int32,value class System.TimeSpan,class System.Object,value class Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation,class Lokad.Utf8Regex.Utf8Regex,bool)",
+      "InclusiveMs": 11.009155461950058,
+      "InclusivePercent": 0.07405050576212181,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 416,
+      "Name": "Lokad.Utf8Regex!Lokad.Utf8Regex.Internal.Execution.Utf8StorageLedger.Release(unsigned int64)",
+      "InclusiveMs": 6.503102599566546,
+      "InclusivePercent": 0.04374159654527879,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 348,
+      "Name": "Lokad.Utf8Regex!Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner.RunSegment(value class System.ReadOnlySpan`1<unsigned int8>,int32[],int32[],int32[],value class AssertionCursor&,bool,value class ChunkedStacks&,value class Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation&,bool&)",
+      "InclusiveMs": 460.85855157130914,
+      "InclusivePercent": 3.099857109530674,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 350,
+      "Name": "Lokad.Utf8Regex.PythonRe!Lokad.Utf8Regex.PythonRe.PythonReScalarMatchState.GetText(value class System.ReadOnlySpan`1<unsigned int8>,int32,int32,value class System.Nullable`1<int32>)",
+      "InclusiveMs": 258.44137899437965,
+      "InclusivePercent": 1.738345406288244,
+      "ExclusiveMs": 5.5862074077595025E-08,
+      "ExclusivePercent": 3.7574315783477043E-10
+    },
+    {
+      "FrameId": 415,
+      "Name": "System.Private.CoreLib!System.Text.Unicode.Utf8Utility.GetPointerToFirstInvalidByte(unsigned int8*,int32,int32&,int32&)",
+      "InclusiveMs": 76.55129724331528,
+      "InclusivePercent": 0.514904371839066,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 389,
+      "Name": "Lokad.Utf8Regex.PythonRe!Lokad.Utf8Regex.PythonRe.PythonReScalarMatchState.Checkpoint(value class System.ReadOnlySpan`1<unsigned int8>)",
+      "InclusiveMs": 57.79320871739128,
+      "InclusivePercent": 0.38873248269859934,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 351,
+      "Name": "Lokad.Utf8Regex!Lokad.Utf8Regex.Internal.Execution.Utf8InvocationResultLedger.DecodeUtf8(value class System.ReadOnlySpan`1<unsigned int8>,int32,value class Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation&)",
+      "InclusiveMs": 93.70217188927654,
+      "InclusivePercent": 0.6302657132412903,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 55,
+      "Name": "System.Private.CoreLib!System.Text.Unicode.Utf8Utility.TranscodeToUtf16(unsigned int8*,int32,wchar*,int32,unsigned int8*&,wchar*&)",
+      "InclusiveMs": 30.447948171522512,
+      "InclusivePercent": 0.20480099216627284,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 410,
+      "Name": "Lokad.Utf8Regex!Lokad.Utf8Regex.Internal.Execution.Utf8SliceBufferWork.ChargeResultBytes(unsigned int64,value class Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation&)",
+      "InclusiveMs": 7.624720802124102,
+      "InclusivePercent": 0.05128589869074756,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 383,
+      "Name": "Lokad.Utf8Regex!Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation.TryReserveWorking(unsigned int64)",
+      "InclusiveMs": 1.072897984931842,
+      "InclusivePercent": 0.007216597012364422,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 413,
+      "Name": "Lokad.Utf8Regex!Lokad.Utf8Regex.Internal.Execution.Utf8ExactStatePool.Rent(int32,bool)",
+      "InclusiveMs": 1.0805230100177141,
+      "InclusivePercent": 0.007267884957748534,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    },
+    {
+      "FrameId": 7,
+      "Name": "UNMANAGED_CODE_TIME",
+      "InclusiveMs": 4.322933919738716,
+      "InclusivePercent": 0.02907720253740348,
+      "ExclusiveMs": 4.322933919738716,
+      "ExclusivePercent": 0.02907720253740348
+    },
+    {
+      "FrameId": 363,
+      "Name": "System.Private.CoreLib!System.Threading.Thread.PollGC()",
+      "InclusiveMs": 1.0962510108947754,
+      "InclusivePercent": 0.007373675671995309,
+      "ExclusiveMs": 0,
+      "ExclusivePercent": 0
+    }
+  ],
+  "ArchiveSha256": "5500D42999F7C62667E3D927C3AF90738760DE5D3B591DC33C31DB70284D9070"
+}
