@@ -339,6 +339,12 @@ Greedy class runs before two exact literal alternatives can omit rewinds when
 both first literals are excluded by the class. Capture-marker inspection is
 bounded; normal alternatives and capture effects still execute. Avoided journal
 storage can lower working requirements, while declined proofs can increase work.
+The same greedy proof can use a required positive, unfolded ASCII set, directly
+or at the start of a nonempty simple repeat. It checks at most128 following
+scalars against the current profile's exact predicate under the original work,
+token and deadline authority. Capture effects still execute. Working/depth needs
+can decrease while proof work increases; nullable or uncertain followers retain
+normal backtracking.
 Nonempty bounded runs before a positive word boundary can also omit useless
 rewinds when a bounded ASCII input check proves every shorter endpoint lies
 between word scalars. This uses the profile's actual word predicate and can stop

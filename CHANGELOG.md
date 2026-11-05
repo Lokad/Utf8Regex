@@ -49,9 +49,10 @@
   positive boundaries. Date recognition and finite controls use less time and
   temporary storage. Excluded ASCII separators give bounded word Count the same
   frame savings; declined proofs can cost more.
-- Reuse greedy class runs before two disjoint literal alternatives, reducing
-  imports Count time and temporary storage. Overlapping, folded and RTL calls
-  can cost more; captures and resource controls retain their contracts.
+- Reuse greedy class runs before disjoint literal alternatives or required ASCII
+  classes, avoiding futile rewinds and temporary storage. Overlapping, folded and
+  RTL calls can cost more; captures and resource controls retain their contracts.
+  The bounded class proof can add work while working/depth requirements decrease.
 - Avoid plain-alternative frames when a required ASCII literal disproves a
   branch, reducing imports Count allocations and working requirements. Viable
   alternatives retain ordering and captures; some matching workloads cost more.

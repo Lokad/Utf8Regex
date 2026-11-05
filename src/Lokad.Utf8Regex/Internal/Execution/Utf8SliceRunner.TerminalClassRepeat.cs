@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -190,6 +191,46 @@ internal static partial class Utf8SliceRunner
                 outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
                 return true;
             }
+        }
+        // A mandatory positive ASCII set excludes every shorter endpoint when
+        // none of its members can be consumed by this repeat. A nonempty simple
+        // following repeat has the same required first atom. Nullable/folded or
+        // complemented followers keep their normal backtracking paths.
+        var following = suffix;
+        if (following.Kind is Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy)
+        {
+            if (following.RepeatMinimum < 1 || instructions.Length - tail < 5 || following.A != tail + 3 ||
+                instructions[tail + 2].Kind != Utf8SliceInstructionKind.RepeatEnd || instructions[tail + 2].A != tail ||
+                instructions[tail + 3].Kind != Utf8SliceInstructionKind.RepeatExit || instructions[tail + 3].A != following.B)
+                return false;
+            following = instructions[tail + 1];
+        }
+        if (following is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 })
+        {
+            ReadOnlySpan<byte> mask = program.SetMasks[following.A].AsSpan(0, 16);
+            for (var octet = 0; octet < mask.Length; octet++)
+            {
+                var bits = (uint)mask[octet];
+                while (bits != 0)
+                {
+                    var value = octet * 8 + BitOperations.TrailingZeroCount(bits);
+                    // At most128 members; retain each profile's actual predicate
+                    // and charge proof work before inspecting a member.
+                    var proofBreach = invocation.TryChargeStep();
+                    var overlaps = false;
+                    if (proofBreach == Utf8ExecutionLimitKind.None)
+                        proofBreach = TryMatchScalarClass(program, atom, new Rune(value), ref invocation, out overlaps);
+                    if (proofBreach != Utf8ExecutionLimitKind.None)
+                    {
+                        outcome = new(false, -1, proofBreach, null, null);
+                        return true;
+                    }
+                    if (overlaps) return false;
+                    bits &= bits - 1;
+                }
+            }
+            outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
+            return true;
         }
         // End anchors can succeed only at the subject end or before LF. If the
         // atom excludes LF, no shorter endpoint can satisfy either kind of end.
