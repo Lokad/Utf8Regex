@@ -60,10 +60,14 @@ internal static class Utf8InputAnalyzer
     }
 
     internal static bool TryValidateOnly(ReadOnlySpan<byte> input, out int errorOffset)
+        => TryValidateOnly(input, out errorOffset, out _);
+
+    internal static bool TryValidateOnly(ReadOnlySpan<byte> input, out int errorOffset, out bool isAscii)
     {
         // ASCII is a complete validity proof; avoid sampling and draining it again.
         // Other inputs retain the established UTF-8 selector and error offsets.
-        if (IsAscii(input) ||
+        isAscii = IsAscii(input);
+        if (isAscii ||
             SelectThrowIfInvalidOnlyMode(input) == ThrowIfInvalidOnlyMode.Utf8IsValid && Utf8.IsValid(input))
         {
             errorOffset = -1;

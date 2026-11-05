@@ -374,6 +374,12 @@ mixed Unicode, folding, RTL and NonBacktracking retain their existing routes.
 Avoiding scalar VM scratch can lower route-dependent work, depth and working
 requirements; invocation metadata still allocates.
 
+Finite structural/simple `Count` needs validity and ASCII eligibility, not UTF-16
+lengths or supplementary-scalar metadata. It carries the existing ASCII proof
+through the same bounded validation blocks; validation work charges, error offsets
+and interruption points stay unchanged. Coordinate-producing operations still
+derive their complete metadata. Unicode subjects retain scalar matching.
+
 On fully validated ASCII subjects of at most 2048 bytes, a proved zero-origin
 operator or quoted-string prefix can publish its value-Match range through the existing
 bounded prefix helper. The original invocation meters discovery and publication,

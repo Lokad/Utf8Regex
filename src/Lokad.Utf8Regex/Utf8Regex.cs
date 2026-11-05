@@ -1478,10 +1478,10 @@ public sealed partial class Utf8Regex
                 !_requiresKelvinSignFallback && (Options & RegexOptions.NonBacktracking) == 0 &&
                 _preparedRegex.ExecutionKind is NativeExecutionKind.AsciiSimplePattern or NativeExecutionKind.AsciiStructuralIdentifierFamily)
             {
-                var validation = Utf8Validation.Validate(input, ref invocation);
+                var isAscii = Utf8Validation.ValidateIsAscii(input, ref invocation);
                 // The family proof resolves proper-start overlap behind word boundaries
                 // and still rejects same-start alternatives requiring scalar retry.
-                if (validation.IsAscii && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
+                if (isAscii && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
                     _preparedRegex.StructuralSearchPlan.HasValue && _preparedRegex.StructuralVerifier.AsciiProgram.LinearProgram.HasValue &&
                     !_preparedRegex.StructuralIdentifierFamilyPlan.HasUnresolvedPrefixOverlap)
                 {
@@ -1492,9 +1492,8 @@ public sealed partial class Utf8Regex
                         throw new InvalidOperationException("Native structural count breached the invocation budget.");
                     return structuralCount;
                 }
-                if (validation.IsAscii && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+                if (isAscii && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
                     !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
-                    Utf8AsciiInstructionLinearExecutor.SupportsInput(_preparedRegex.StructuralLinearProgram, validation) &&
                     Utf8AsciiDeterministicFixedWidthCountExecutor.TryCountValidatedAscii(
                         _preparedRegex.StructuralLinearProgram, input, ref invocation, out var nativeCount, out var breach))
                 {
@@ -1502,7 +1501,7 @@ public sealed partial class Utf8Regex
                         throw new InvalidOperationException("Native fixed-width count breached the invocation budget.");
                     return nativeCount;
                 }
-                if (validation.IsAscii && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+                if (isAscii && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
                     _preparedRegex.SimplePatternPlan is { Branches.Length: > 0, MinLength: > 0 } simple)
                 {
                     var branchBreach = Utf8ExecutionInterpreter.TryCountSimplePattern(input,
@@ -1515,8 +1514,7 @@ public sealed partial class Utf8Regex
             }
             else
             {
-                // The generic scalar counter consumes bytes only. Derive
-                // coordinate metadata solely for the structural lanes above.
+                // Count consumes bytes only, without derived coordinate metadata.
                 Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
             }
             return OwnedSliceCountFromByte(input, program, startByte, ref invocation);

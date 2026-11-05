@@ -14,9 +14,18 @@ internal static partial class Utf8Validation
 
     internal static void ThrowIfInvalidOnly(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)
     {
-        var breach = TryValidate(input, ref invocation, computeUtf16Length: false, out _);
+        var breach = TryValidate(input, ref invocation, computeUtf16Length: false, out _, out _);
         if (breach != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException($"UTF-8 validation exceeded the invocation {breach} budget.");
+    }
+
+    // Byte-only counters need ASCII eligibility, not derived coordinates.
+    internal static bool ValidateIsAscii(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)
+    {
+        var breach = TryValidate(input, ref invocation, computeUtf16Length: false, out _, out var isAscii);
+        if (breach != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException($"UTF-8 validation exceeded the invocation {breach} budget.");
+        return isAscii;
     }
 
     // Work is charged per bounded block. Boundary adjustment examines at most
@@ -24,24 +33,29 @@ internal static partial class Utf8Validation
     // existing validator's first error offset over the original slice.
     internal static Utf8ExecutionLimitKind TryValidate(ReadOnlySpan<byte> input,
         ref Utf8SliceInvocation invocation, out Utf8ValidationResult validation)
-        => TryValidate(input, ref invocation, computeUtf16Length: true, out validation);
+        => TryValidate(input, ref invocation, computeUtf16Length: true, out validation, out _);
 
     private static Utf8ExecutionLimitKind TryValidate(ReadOnlySpan<byte> input,
-        ref Utf8SliceInvocation invocation, bool computeUtf16Length, out Utf8ValidationResult validation)
+        ref Utf8SliceInvocation invocation, bool computeUtf16Length, out Utf8ValidationResult validation, out bool isAscii)
     {
         validation = default;
+        isAscii = true;
         var breach = invocation.TryChargeInputStep();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         invocation.Budget.ThrowIfCancellationRequested();
         if (invocation.IsUnmetered && invocation.CheckpointHook is null)
         {
-            if (computeUtf16Length) validation = Validate(input);
-            else ThrowIfInvalidOnly(input);
+            if (computeUtf16Length)
+            {
+                validation = Validate(input);
+                isAscii = validation.IsAscii;
+            }
+            else if (!Utf8InputAnalyzer.TryValidateOnly(input, out var errorOffset, out isAscii))
+                throw CreateInvalidUtf8Exception(errorOffset);
             return Utf8ExecutionLimitKind.None;
         }
 
         var utf16Length = 0;
-        var ascii = true;
         var supplementary = false;
         for (var offset = 0; offset < input.Length;)
         {
@@ -63,19 +77,21 @@ internal static partial class Utf8Validation
                 if (!Utf8ValidationCore.TryValidate(span, true, out var block, out var errorOffset))
                     throw CreateInvalidUtf8Exception(offset + errorOffset);
                 utf16Length += block.Utf16Length;
-                ascii &= block.IsAscii;
+                isAscii &= block.IsAscii;
                 supplementary |= block.ContainsSupplementaryScalars;
             }
-            else if (!Utf8InputAnalyzer.IsAscii(span) && !Utf8InputAnalyzer.TryValidateOnly(span, out var errorOffset))
+            else
             {
-                throw CreateInvalidUtf8Exception(offset + errorOffset);
+                if (!Utf8InputAnalyzer.TryValidateOnly(span, out var errorOffset, out var blockIsAscii))
+                    throw CreateInvalidUtf8Exception(offset + errorOffset);
+                isAscii &= blockIsAscii;
             }
             offset += length;
         }
         breach = invocation.TryChargeInputStep();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         invocation.Budget.ThrowIfCancellationRequested();
-        if (computeUtf16Length) validation = new(input.Length, utf16Length, ascii, supplementary);
+        if (computeUtf16Length) validation = new(input.Length, utf16Length, isAscii, supplementary);
         return Utf8ExecutionLimitKind.None;
     }
 }
