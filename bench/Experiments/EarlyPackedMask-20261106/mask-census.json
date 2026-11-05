@@ -1,0 +1,15 @@
+{
+  "Scope": "Untimed scalar replay of immutable masks on aligned complete64-start windows; not live-state counts, timings or public performance",
+  "InputBytes": 813478,
+  "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+  "Offsets": [
+    2,
+    5,
+    8
+  ],
+  "Windows": 12710,
+  "FirstLive": 11377,
+  "PairLive": 508,
+  "AllLive": 155,
+  "PairRejectFraction": 0.9600314712824548
+}

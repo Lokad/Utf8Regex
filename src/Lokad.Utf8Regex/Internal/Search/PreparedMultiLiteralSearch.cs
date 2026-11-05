@@ -1101,6 +1101,11 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
                     low0, high0, lowNibbleMask);
                 candidates &= CreateAvx512Mask(input, baseIndex + offset1,
                     low1, high1, lowNibbleMask);
+                if (Vector512.EqualsAll(candidates, zero))
+                {
+                    baseIndex += Vector512<byte>.Count;
+                    continue;
+                }
                 candidates &= CreateAvx512Mask(input, baseIndex + offset2,
                     low2, high2, lowNibbleMask);
                 if (!Vector512.EqualsAll(candidates, zero))
