@@ -8,6 +8,30 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ValidationTests
 {
     [Fact]
+    public void EveryByteTagAtThreeByteBlockBoundariesAgreesWithScalarValidation()
+    {
+        var tail = Encoding.UTF8.GetBytes(new string('中', 80) + "é😀");
+        foreach (var prefix in new[] { 0, 1, 28, 29, 30, 31, 32, 60, 61, 62, 63, 64, 125, 126, 127, 128 })
+        {
+            var input = new byte[prefix + 3 + tail.Length];
+            input.AsSpan(0, prefix).Fill((byte)'x');
+            tail.CopyTo(input, prefix + 3);
+            foreach (var second in new byte[] { 0x80, 0x9f, 0xa0, 0xbf })
+            for (var tag = 0; tag < 256; tag++)
+            {
+                input[prefix] = (byte)tag;
+                input[prefix + 1] = second;
+                input[prefix + 2] = 0x80;
+                var expected = Utf8.IsValid(input);
+                Assert.Equal(expected, Utf8ValidationCore.TryValidate(input, true, out var scalar, out var scalarError));
+                Assert.Equal(expected, Utf8ValidationCore.TryValidate(input, false, out _, out var vectorError));
+                if (expected) Assert.Equal(Encoding.UTF8.GetString(input).Length, scalar.Utf16Length);
+                else Assert.Equal(scalarError, vectorError);
+            }
+        }
+    }
+
+    [Fact]
     public void ValidateAsciiInputReportsExpectedLengths()
     {
         ReadOnlySpan<byte> input = "hello"u8;

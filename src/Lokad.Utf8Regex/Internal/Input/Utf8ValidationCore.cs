@@ -243,17 +243,15 @@ internal static class Utf8ValidationCore
             var continuationMask = Vector256.Create((byte)0xC0);
             var twoByteLeadFirst = Vector256.Create((byte)0xC2);
             var twoByteLeadMaxDelta = Vector256.Create((byte)(0xDF - 0xC2));
-            var threeByteLeadTag = Vector256.Create((byte)0xE0);
-            var threeByteLeadMask = Vector256.Create((byte)0xF0);
-            var e0 = Vector256.Create((byte)0xE0);
+            var safeThreeByteLeadFirst = Vector256.Create((byte)0xE1);
+            var safeThreeByteLeadMaxDelta = Vector256.Create((byte)(0xEF - 0xE1));
             var ed = Vector256.Create((byte)0xED);
             var continuationTag512 = Vector512.Create((byte)0x80);
             var continuationMask512 = Vector512.Create((byte)0xC0);
             var twoByteLeadFirst512 = Vector512.Create((byte)0xC2);
             var twoByteLeadMaxDelta512 = Vector512.Create((byte)(0xDF - 0xC2));
-            var threeByteLeadTag512 = Vector512.Create((byte)0xE0);
-            var threeByteLeadMask512 = Vector512.Create((byte)0xF0);
-            var e0512 = Vector512.Create((byte)0xE0);
+            var safeThreeByteLeadFirst512 = Vector512.Create((byte)0xE1);
+            var safeThreeByteLeadMaxDelta512 = Vector512.Create((byte)(0xEF - 0xE1));
             var ed512 = Vector512.Create((byte)0xED);
 
             while (offset <= lastVectorStart)
@@ -270,9 +268,9 @@ internal static class Utf8ValidationCore
                         twoByteLeadBits = Vector512.LessThanOrEqual(Vector512.Subtract(current, twoByteLeadFirst512), twoByteLeadMaxDelta512).ExtractMostSignificantBits();
                         if (includeSafeThreeByte)
                         {
-                            var threeByteLeadBits = Vector512.Equals(Vector512.BitwiseAnd(current, threeByteLeadMask512), threeByteLeadTag512).ExtractMostSignificantBits();
-                            var constrained = Vector512.Equals(current, e0512).ExtractMostSignificantBits() | Vector512.Equals(current, ed512).ExtractMostSignificantBits();
-                            safeThreeByteLeadBits = threeByteLeadBits & ~constrained;
+                            var inRange = Vector512.LessThanOrEqual(Vector512.Subtract(current, safeThreeByteLeadFirst512), safeThreeByteLeadMaxDelta512).ExtractMostSignificantBits();
+                            var surrogateLead = Vector512.Equals(current, ed512).ExtractMostSignificantBits();
+                            safeThreeByteLeadBits = inRange & ~surrogateLead;
                         }
                     }
                 }
@@ -286,9 +284,9 @@ internal static class Utf8ValidationCore
                         twoByteLeadBits = Vector256.LessThanOrEqual(Vector256.Subtract(current, twoByteLeadFirst), twoByteLeadMaxDelta).ExtractMostSignificantBits();
                         if (includeSafeThreeByte)
                         {
-                            var threeByteLeadBits = Vector256.Equals(Vector256.BitwiseAnd(current, threeByteLeadMask), threeByteLeadTag).ExtractMostSignificantBits();
-                            var constrained = Vector256.Equals(current, e0).ExtractMostSignificantBits() | Vector256.Equals(current, ed).ExtractMostSignificantBits();
-                            safeThreeByteLeadBits = threeByteLeadBits & ~constrained;
+                            var inRange = Vector256.LessThanOrEqual(Vector256.Subtract(current, safeThreeByteLeadFirst), safeThreeByteLeadMaxDelta).ExtractMostSignificantBits();
+                            var surrogateLead = Vector256.Equals(current, ed).ExtractMostSignificantBits();
+                            safeThreeByteLeadBits = inRange & ~surrogateLead;
                         }
                     }
                 }
@@ -359,16 +357,16 @@ internal static class Utf8ValidationCore
                         if (use512)
                         {
                             var current = MemoryMarshal.Read<Vector512<byte>>(input[offset..]);
-                            var leads = Vector512.Equals(Vector512.BitwiseAnd(current, threeByteLeadMask512), threeByteLeadTag512).ExtractMostSignificantBits();
-                            var constrained = Vector512.Equals(current, e0512).ExtractMostSignificantBits() | Vector512.Equals(current, ed512).ExtractMostSignificantBits();
-                            safeThreeByteBits = leads & ~constrained;
+                            var inRange = Vector512.LessThanOrEqual(Vector512.Subtract(current, safeThreeByteLeadFirst512), safeThreeByteLeadMaxDelta512).ExtractMostSignificantBits();
+                            var surrogateLead = Vector512.Equals(current, ed512).ExtractMostSignificantBits();
+                            safeThreeByteBits = inRange & ~surrogateLead;
                         }
                         else
                         {
                             var current = MemoryMarshal.Read<Vector256<byte>>(input[offset..]);
-                            var leads = Vector256.Equals(Vector256.BitwiseAnd(current, threeByteLeadMask), threeByteLeadTag).ExtractMostSignificantBits();
-                            var constrained = Vector256.Equals(current, e0).ExtractMostSignificantBits() | Vector256.Equals(current, ed).ExtractMostSignificantBits();
-                            safeThreeByteBits = leads & ~constrained;
+                            var inRange = Vector256.LessThanOrEqual(Vector256.Subtract(current, safeThreeByteLeadFirst), safeThreeByteLeadMaxDelta).ExtractMostSignificantBits();
+                            var surrogateLead = Vector256.Equals(current, ed).ExtractMostSignificantBits();
+                            safeThreeByteBits = inRange & ~surrogateLead;
                         }
                         if (BitOperations.PopCount(safeThreeByteBits) >= DenseThreeByteLeadThreshold)
                         {
