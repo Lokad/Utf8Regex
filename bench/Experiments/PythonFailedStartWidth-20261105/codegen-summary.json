@@ -1,0 +1,14 @@
+[
+  {
+    "Side": "before",
+    "Listings": 1,
+    "DiscardedDecodeCalls": 1,
+    "CodeBytes": 1665
+  },
+  {
+    "Side": "after",
+    "Listings": 1,
+    "DiscardedDecodeCalls": 0,
+    "CodeBytes": 1570
+  }
+]
