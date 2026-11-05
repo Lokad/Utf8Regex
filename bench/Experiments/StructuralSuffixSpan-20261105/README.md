@@ -86,3 +86,11 @@ Raw evidence retains declarations, initial/final source and graphs, caller,
 preflights, every sample, focused logs and source/companion checks. Published/
 staged packages and previous refreshes remain immutable. Full/package matrices
 stay at the next coherent delivery boundary.
+
+Full source CI41984534078 found one stale structural test on both platforms:
+it required the deleted `LiteralSearch` descriptor. The corrected fixture checks
+borrowed literal bytes and zero preparation charges instead; all nine checks pass
+on Windows Release/.NET10+11. The existing runtime test still verifies suffix
+results without construction work during execution. No production change or
+repeat performance experiment follows this correction. Dev32 batches this change
+with the accepted Ruff improvement for package and full-refresh qualification.

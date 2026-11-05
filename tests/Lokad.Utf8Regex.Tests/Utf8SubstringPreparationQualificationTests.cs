@@ -185,24 +185,23 @@ public sealed class Utf8SubstringPreparationQualificationTests
     }
 
     [Fact]
-    public void SuffixPartsRetainOneCanonicalSearchAndDeadPreparationOverloadsAreAbsent()
+    public void SuffixPartsBorrowLiteralBytesWithoutPreparationAndDeadOverloadsAreAbsent()
     {
         Assert.Equal(7, typeof(PreparedSubstringSearch).GetFields(Fields).Length);
-        Assert.Equal(4, typeof(AsciiStructuralSuffixPart).GetFields(Fields).Length);
         var literal = "suffix"u8.ToArray();
+        using var zero = new Utf8ConstructionScope(0, 0, 0, 0);
         var part = AsciiStructuralSuffixPart.CreateLiteral(literal);
-        var property = typeof(AsciiStructuralSuffixPart).GetProperty("LiteralSearch", Fields);
-        Assert.NotNull(property);
-        var search = Assert.IsType<PreparedSubstringSearch>(property.GetValue(part));
-        Assert.Same(literal, search.Needle); Assert.Same(literal, part.LiteralUtf8);
-        Assert.Empty(typeof(AsciiStructuralSuffixPart).GetFields(Fields).Where(f => f.FieldType == typeof(byte[])));
+        Assert.Same(literal, part.LiteralUtf8);
+        Assert.Equal(0ul, zero.Budget.WorkSteps);
+        Assert.Equal(0ul, zero.Budget.PeakBytes);
+        Assert.Equal(0ul, zero.Budget.Depth);
         var methods = typeof(PreparedSubstringSearch).GetMethods(BindingFlags.NonPublic | BindingFlags.Static);
         Assert.DoesNotContain(methods, m => m.Name is "CreateFoldedNeedle" or "CreateIgnoreCaseShiftTable");
         Assert.DoesNotContain(methods, m => m.Name == "TryIndexOfIgnoreCaseFirstLastVector" && m.GetParameters().Length is 3 or 5);
     }
 
     [Fact]
-    public void RuntimeWindowAndReverseSuffixKernelsBorrowPreviouslyPreparedSearches()
+    public void RuntimeWindowAndReverseSuffixKernelsDoNotPrepareDuringExecution()
     {
         var literal = "tail"u8.ToArray();
         var family = new AsciiStructuralIdentifierFamilyPlan(["head"u8.ToArray()], AsciiCharClass.ForByte((byte)' '), 1,
