@@ -356,11 +356,11 @@ internal static partial class Utf8SliceRunner
         var counts = workspace.Counts;
         var positions = workspace.Positions;
         var heads = workspace.Heads;
-        Array.Fill(counts, -1);
-        Array.Fill(positions, -1);
-        Array.Fill(captureStarts, -1);
-        Array.Fill(captureEnds, -1);
-        Array.Fill(heads, -1);
+        if (counts.Length != 0) Array.Fill(counts, -1);
+        if (positions.Length != 0) Array.Fill(positions, -1);
+        if (captureStarts.Length != 0) Array.Fill(captureStarts, -1);
+        if (captureEnds.Length != 0) Array.Fill(captureEnds, -1);
+        if (heads.Length != 0) Array.Fill(heads, -1);
         workspace.Stacks.ResetAttempt();
         var completed = false;
         try
@@ -402,8 +402,8 @@ internal static partial class Utf8SliceRunner
             {
                 // A committed positive assertion still belongs to this attempt;
                 // failure or cancellation must not publish its capture slots.
-                Array.Fill(captureStarts, -1);
-                Array.Fill(captureEnds, -1);
+                if (captureStarts.Length != 0) Array.Fill(captureStarts, -1);
+                if (captureEnds.Length != 0) Array.Fill(captureEnds, -1);
             }
         }
     }
