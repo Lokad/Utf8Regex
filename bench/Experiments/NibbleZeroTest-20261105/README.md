@@ -54,3 +54,11 @@ Existing packages/symbols and previous Full/classifications remain immutable.
 No package, Full matrix or wider-filter/cursor design is introduced.
 
 Windows correctness archive SHA256: 91C9B82583BE6F432EFCED5F4B8419FEB5EA79876C3D50608BBFBA1ECD7902AC.
+
+One clean committed-source refresh changes ONLY Chinese alternation ordinary and
+compiled rows. [Selected evidence](selected-refresh.json) retains all unselected,
+lifecycle and scaling records; 30 six-lane samples exceed49.8804ms. Generated
+Markdown has six descending tables/178ratios; both matching runtime snapshot
+hosts pass six checks without rebuilding. No full or package qualification.
+Selected archive SHA256:
+`97BC4C9AC36651E2486E165F9C06C5B6A62326E0EA21458685C3EA09E753B093`.
