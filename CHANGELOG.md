@@ -62,6 +62,10 @@
   filter. Miss scans and dense matches can cost more; the additional compiled
   search storage is admitted through the existing resource controls. Reuse its
   immutable four-position masks within each scan to reduce candidate-scan costs.
+- Reuse the existing boundary-overlap proof and metered structural verifier for
+  eligible finite-policy declaration Count, reducing scalar VM scratch. Work,
+  depth and working requirements can fall; strict validation and interruption
+  retain their original scope.
 - Widen large exact UTF-8 literal Count scans on 512-bit vector hardware while
   retaining the 256-bit fallback. Dense false prefixes and some long or mixed
   literals can cost more; validation and finite resource routes remain.

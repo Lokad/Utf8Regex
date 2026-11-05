@@ -1,0 +1,224 @@
+{
+  "Scope": "One15case <=120s public finite boundary-family Count eligibility comparison. Frozen Fullfb309 Core and six identical companion DLL-PDBs versus parent39d377e9 Core overlay. Reuse existing family word-boundary overlap proof and controlled search-verifier executor. Keep algorithms,SIMD,checked access,strict full validation and original work/token/deadline/major-buffer/result admission. Same-start and other unresolved overlaps retain scalar retry. Actual keyword53352B73matches finite-none/live/compiled,dense-sparse-false-interior-long affected shapes,unlimited/deadline/same-start/Unicode/NonBacktracking/Python/Pcre controls. Typed public checksums after timing; overlapping-semantics projected BCL diagnostics are not a parity Status. Normal8CPU startup thenCPU2;producer1.5s-min128,BCL250ms-min64,independent60ms,fivealternatingsamples>=20ms. One selected noise confirmation only if needed; no retuning,Full/package replay,universal10percent gate or checked-access campaign.",
+  "ElapsedSeconds": 78.821417,
+  "OwnedSamples": 150,
+  "MinimumOwnedDurationMs": 58.4662,
+  "Baseline": {
+    "Core": {
+      "Version": "0.5.0-dev.30+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "1C5B679FB211E977B05603416804C1ABFE1111038AF965710E4607B06486E549"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.30+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "77E4AEC20BA4A85EEFC4BFB267CF9D7E397F51337AC48F59FCDFCCF1C4B13016"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.30+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "95DF5BA00911F5CAD190F6D067F83F59D20BC10B51ECA33EE181362E5896B075"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "CD6849BFB29CC09B8A26E4F8D6590CDED5B4DFB858EEC08E49AEE60D74A09486"
+    }
+  },
+  "Candidate": {
+    "Core": {
+      "Version": "0.5.0-dev.30+39d377e98dc7b15ebc69ed180bb3c8c668d76867",
+      "Sha256": "433F388D90DDD36C9ACD20FAD2A68C975C1B77D8BEC95020065EC5766E6DC0AA"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.30+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "77E4AEC20BA4A85EEFC4BFB267CF9D7E397F51337AC48F59FCDFCCF1C4B13016"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.30+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "95DF5BA00911F5CAD190F6D067F83F59D20BC10B51ECA33EE181362E5896B075"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "CD6849BFB29CC09B8A26E4F8D6590CDED5B4DFB858EEC08E49AEE60D74A09486"
+    }
+  },
+  "Rows": [
+    {
+      "Name": "actual-finite-none",
+      "BeforeUs": 45.30530582166544,
+      "AfterUs": 44.80652173913044,
+      "DeltaPercent": -1.1009396658712811,
+      "BeforeBytes": 3664.0,
+      "AfterBytes": 112.0,
+      "BeforeSpread": 1.0287662709375545,
+      "AfterSpread": 1.0114237982070167,
+      "PredecodedUs": 221.02772727272728,
+      "DecodeThenUs": 234.4296875
+    },
+    {
+      "Name": "actual-finite-live",
+      "BeforeUs": 47.971130030959756,
+      "AfterUs": 45.90291262135922,
+      "DeltaPercent": -4.311379382277936,
+      "BeforeBytes": 3664.0,
+      "AfterBytes": 112.0,
+      "BeforeSpread": 1.054399307153103,
+      "AfterSpread": 1.0133117443513855,
+      "PredecodedUs": 220.53956043956043,
+      "DecodeThenUs": 239.66733067729083
+    },
+    {
+      "Name": "actual-finite-compiled-live",
+      "BeforeUs": 47.802223926380364,
+      "AfterUs": 45.517903596021426,
+      "DeltaPercent": -4.778690493306326,
+      "BeforeBytes": 3664.0,
+      "AfterBytes": 112.0,
+      "BeforeSpread": 1.0544255463357837,
+      "AfterSpread": 1.0527187310722061,
+      "PredecodedUs": 7.701563485058631,
+      "DecodeThenUs": 24.16124497991968
+    },
+    {
+      "Name": "actual-unlimited-control",
+      "BeforeUs": 10.624300389656394,
+      "AfterUs": 10.582540244118167,
+      "DeltaPercent": -0.3930625453595349,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0104329830996106,
+      "AfterSpread": 1.007079515371943,
+      "PredecodedUs": 221.02304832713753,
+      "DecodeThenUs": 237.66784313725492
+    },
+    {
+      "Name": "actual-deadline-live-control",
+      "BeforeUs": 56.00917516218721,
+      "AfterUs": 56.500836431226766,
+      "DeltaPercent": 0.8778227274653494,
+      "BeforeBytes": 3712.0,
+      "AfterBytes": 3712.0,
+      "BeforeSpread": 1.0472982688455736,
+      "AfterSpread": 1.047324681295507,
+      "PredecodedUs": 221.7468634686347,
+      "DecodeThenUs": 240.89433198380567
+    },
+    {
+      "Name": "dense-finite-hits",
+      "BeforeUs": 2041.006666666667,
+      "AfterUs": 2235.2892857142856,
+      "DeltaPercent": 9.518960531614407,
+      "BeforeBytes": 3664.0,
+      "AfterBytes": 112.0,
+      "BeforeSpread": 1.006544318267426,
+      "AfterSpread": 1.0083475432283489,
+      "PredecodedUs": 658.6912087912089,
+      "DecodeThenUs": 685.891011235955
+    },
+    {
+      "Name": "sparse-finite-miss",
+      "BeforeUs": 6.980362608900401,
+      "AfterUs": 7.338051015354136,
+      "DeltaPercent": 5.1242095360155115,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeSpread": 1.013911107194664,
+      "AfterSpread": 1.0190032905392732,
+      "PredecodedUs": 2.1360278943997724,
+      "DecodeThenUs": 24.647901533494753
+    },
+    {
+      "Name": "dense-finite-false-prefix",
+      "BeforeUs": 7.5401325009555356,
+      "AfterUs": 7.917994139584444,
+      "DeltaPercent": 5.011339503397627,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeSpread": 1.0249682722667113,
+      "AfterSpread": 1.0153737251211736,
+      "PredecodedUs": 477.54031007751934,
+      "DecodeThenUs": 500.8016806722689
+    },
+    {
+      "Name": "finite-word-interior-prefixes",
+      "BeforeUs": 759.0550000000001,
+      "AfterUs": 547.7816513761468,
+      "DeltaPercent": -27.833733869594855,
+      "BeforeBytes": 176.0,
+      "AfterBytes": 112.0,
+      "BeforeSpread": 1.008622387099016,
+      "AfterSpread": 1.0067759742879425,
+      "PredecodedUs": 471.53076923076924,
+      "DecodeThenUs": 499.44736842105266
+    },
+    {
+      "Name": "finite-long-identifiers",
+      "BeforeUs": 283.3924528301887,
+      "AfterUs": 150.11703703703705,
+      "DeltaPercent": -47.02856920223329,
+      "BeforeBytes": 3664.0,
+      "AfterBytes": 112.0,
+      "BeforeSpread": 1.0298366871151197,
+      "AfterSpread": 1.0160220665371618,
+      "PredecodedUs": 132.94978165938863,
+      "DecodeThenUs": 158.18933333333334
+    },
+    {
+      "Name": "same-start-finite-control",
+      "BeforeUs": 269.4327272727273,
+      "AfterUs": 262.53127753303966,
+      "DeltaPercent": -2.5614741793048013,
+      "BeforeBytes": 2048.0,
+      "AfterBytes": 2048.0,
+      "BeforeSpread": 1.0545059164309438,
+      "AfterSpread": 1.009672475086941,
+      "PredecodedUs": 105.486690647482,
+      "DecodeThenUs": 106.51187739463603
+    },
+    {
+      "Name": "unicode-finite-control",
+      "BeforeUs": 491.9844262295082,
+      "AfterUs": 505.36499999999995,
+      "DeltaPercent": 2.7197149050099734,
+      "BeforeBytes": 3664.0,
+      "AfterBytes": 3664.0,
+      "BeforeSpread": 1.0048822367091421,
+      "AfterSpread": 1.054930656680079,
+      "PredecodedUs": 169.86412429378532,
+      "DecodeThenUs": 196.67347670250894
+    },
+    {
+      "Name": "nonbacktracking-finite-control",
+      "BeforeUs": 2375.232,
+      "AfterUs": 2398.1115384615387,
+      "DeltaPercent": 0.9632548930605056,
+      "BeforeBytes": 640448.0,
+      "AfterBytes": 640448.0,
+      "BeforeSpread": 1.0052750870186988,
+      "AfterSpread": 1.0035051662264467,
+      "PredecodedUs": 20.53698676620292,
+      "DecodeThenUs": 51.26213921901528
+    },
+    {
+      "Name": "python-keyword-count-control",
+      "BeforeUs": 58.47102713178295,
+      "AfterUs": 59.257786483839375,
+      "DeltaPercent": 1.3455541840973861,
+      "BeforeBytes": 3552.0,
+      "AfterBytes": 3552.0,
+      "BeforeSpread": 1.0436533779518882,
+      "AfterSpread": 1.0421299619150073,
+      "PredecodedUs": 222.0186813186813,
+      "DecodeThenUs": 245.5794979079498
+    },
+    {
+      "Name": "pcre-count-control",
+      "BeforeUs": 154.26301020408164,
+      "AfterUs": 156.6241645244216,
+      "DeltaPercent": 1.5306030377705282,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.008657165913761,
+      "AfterSpread": 1.0123765652714904,
+      "PredecodedUs": 26.365194578049845,
+      "DecodeThenUs": 26.387493893502686
+    }
+  ]
+}

@@ -1479,11 +1479,11 @@ public sealed partial class Utf8Regex
                 _preparedRegex.ExecutionKind is NativeExecutionKind.AsciiSimplePattern or NativeExecutionKind.AsciiStructuralIdentifierFamily)
             {
                 var validation = Utf8Validation.Validate(input, ref invocation);
+                // The family proof resolves proper-start overlap behind word boundaries
+                // and still rejects same-start alternatives requiring scalar retry.
                 if (validation.IsAscii && _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
                     _preparedRegex.StructuralSearchPlan.HasValue && _preparedRegex.StructuralVerifier.AsciiProgram.LinearProgram.HasValue &&
-                    !_preparedRegex.StructuralIdentifierFamilyPlan.HasUnresolvedPrefixOverlap &&
-                    !_preparedRegex.SearchPlan.HasAlternateLiteralPrefixOverlap &&
-                    !_preparedRegex.SearchPlan.HasAlternateLiteralProperStartOverlap)
+                    !_preparedRegex.StructuralIdentifierFamilyPlan.HasUnresolvedPrefixOverlap)
                 {
                     var structuralBreach = Utf8AsciiStructuralIdentifierFamilyExecutor.TryCount(
                         _preparedRegex.StructuralSearchPlan, _preparedRegex.StructuralVerifier.AsciiProgram,

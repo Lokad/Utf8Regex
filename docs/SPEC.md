@@ -354,6 +354,15 @@ use and record active nesting against depth. A Count or value-Match shortcut can
 avoid capture workspace; a declined shortcut retains its spent work when scalar
 execution resumes.
 
+Finite-policy zero-origin LTR ASCII `Count` can reuse the existing structural
+family search and linear verifier when the family's leading word-boundary proof
+resolves proper-start prefix overlap, for example declaration keywords followed
+by identifiers. Whole-subject validation, search, verification and publication
+share the original work/token/deadline scope. Same-start or unproved overlaps,
+mixed Unicode, folding, RTL and NonBacktracking retain their existing routes.
+Avoiding scalar VM scratch can lower route-dependent work, depth and working
+requirements; invocation metadata still allocates.
+
 On fully validated ASCII subjects of at most 2048 bytes, a proved zero-origin
 operator or quoted-string prefix can publish its value-Match range through the existing
 bounded prefix helper. The original invocation meters discovery and publication,
