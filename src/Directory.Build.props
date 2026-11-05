@@ -13,7 +13,7 @@
     <Authors>Lokad</Authors>
     <Company>Lokad</Company>
     <!-- Common release version; adapters pin this exact Core. -->
-    <Version>0.5.0-dev.29</Version>
+    <Version>0.5.0-dev.30</Version>
     <AssemblyVersion>0.5.0</AssemblyVersion>
     <FileVersion>0.5.0</FileVersion>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
