@@ -665,12 +665,13 @@ internal static partial class Utf8SliceRunner
                     if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     if (position < 0)
                         return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
-                    if (leadingAsciiSecond >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
-                        (uint)(input[position + 1] - leadingAsciiSecond) > (uint)(leadingAsciiSecondLast - leadingAsciiSecond)))
+                    if ((leadingAsciiSecond >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
+                        (uint)(input[position + 1] - leadingAsciiSecond) > (uint)(leadingAsciiSecondLast - leadingAsciiSecond))) ||
+                        !MatchesStraightAsciiPrefix(program, input, position, 0))
                     {
-                        // The first candidate is one ASCII scalar. Rejecting its
-                        // required neighbour advances exactly that scalar; the
-                        // next bounded search keeps the original work authority.
+                        // Rejecting a necessary prefix advances one admitted ASCII
+                        // scalar. Reuse the bounded filter, which stops at control
+                        // effects; the next search keeps the original work authority.
                         position++;
                         continue;
                     }

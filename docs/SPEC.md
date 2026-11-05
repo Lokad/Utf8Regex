@@ -443,6 +443,12 @@ admission still checks enclosing loans and the first denial. Work/depth/working
 costs can therefore fall; other grammars and capture/cursor operations retain
 their existing implementations and lifetimes.
 
+Count can reject impossible mandatory ASCII prefixes before acquiring local VM
+continuation storage. The bounded prefix filter accepts no match: surviving
+candidates still run the scalar verifier. Finite misses can require less working
+capacity; actual VM execution retains its admission, work and original
+cancellation/deadline scope. Captures and control-flow effects remain VM decisions.
+
 Bounded literal assertions can avoid child VM storage while still admitting
 their logical assertion depth under the original work, token and deadline scope.
 

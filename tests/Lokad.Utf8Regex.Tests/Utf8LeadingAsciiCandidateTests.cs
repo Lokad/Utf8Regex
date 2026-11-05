@@ -10,6 +10,90 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8LeadingAsciiCandidateTests
 {
     [Theory]
+    [InlineData(0)] [InlineData(2047)] [InlineData(2048)] [InlineData(4095)]
+    public void LongerStraightPrefixMissAvoidsUnneededVmStorage(int padding)
+    {
+        var input = Encoding.UTF8.GetBytes(new string('x', padding) + "é😀# noX # nOQ # n");
+        byte[] storage = [0xff, .. input, 0xff];
+        using var cancellation = new CancellationTokenSource();
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
+        {
+            var regex = new Utf8Regex(StraightPrefixPattern, options, Regex.InfiniteMatchTimeout,
+                Funded with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            Assert.Equal(0, regex.Count(storage.AsSpan(1, input.Length), cancellation.Token));
+            Assert.Throws<ArgumentException>(() => regex.Count([.. input, 0xff]));
+            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+                Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(StraightPrefixPattern,
+                    options, Regex.InfiniteMatchTimeout, Funded with { MaxWorkSteps = 1 }).Count(input)).ResourceKind);
+            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
+                Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count("# noqa: A123"u8)).ResourceKind);
+        }
+    }
+
+    [Theory]
+    [InlineData(@"(?<head># [Nn][Oo][Qq][Aa])(?::\s?([A-Z]+[0-9]+))?")]
+    [InlineData(@"# [Nn][Oo][Qq][Aa](?<n>[0-9]+)\k<n>")]
+    [InlineData(@"# (?:noqa|notes)")]
+    [InlineData(@"# n?oqa")]
+    [InlineData(@"# n{1,2}oqa")]
+    [InlineData(@"# (?=noqa)noqa")]
+    [InlineData(@"# (?i:noqa)")]
+    [InlineData(@"# (?i:k)elvin")]
+    [InlineData(@"# ^noqa")]
+    public void StraightPrefixFilterKeepsCaptureAndControlFlowSemantics(string pattern)
+    {
+        const string text = "é😀# noX # n # noqa: A123 # nOQa1212 # notes # oqa # nnoqa # Kelvin\n# noqa";
+        var input = Encoding.UTF8.GetBytes(text);
+        byte[] storage = [0xff, .. input, 0xff];
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft })
+        {
+            var oracle = new Regex(pattern, options | RegexOptions.CultureInvariant);
+            var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant,
+                Regex.InfiniteMatchTimeout, Funded);
+            var retained = regex.MatchDetailed(input);
+            using var cancellation = new CancellationTokenSource();
+            foreach (var start in new[] { 0, 3, 4, text.Length })
+                Assert.Equal(oracle.Matches(text, start).Count,
+                    regex.CountFromUtf16Offset(storage.AsSpan(1, input.Length), start, cancellation.Token));
+            Assert.Equal(oracle.Count(text), regex.Count(storage.AsSpan(1, input.Length), cancellation.Token));
+            Assert.Equal(oracle.Match(text).Value, retained.GetValueString());
+        }
+        var nonBacktracking = new Utf8Regex(StraightPrefixPattern, RegexOptions.NonBacktracking,
+            Regex.InfiniteMatchTimeout, Funded);
+        Assert.Equal(new Regex(StraightPrefixPattern, RegexOptions.NonBacktracking).Count(text),
+            nonBacktracking.Count(input));
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void LongerFalsePrefixesKeepOriginalCancellationAndDeadline(bool expire)
+    {
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("# noX ", 20000)) + "# noqa");
+        var calibration = new Utf8SliceInvocation(new(4000000, 0, 0), Regex.InfiniteMatchTimeout, default);
+        Utf8Validation.ThrowIfInvalidOnly(input, ref calibration);
+        var threshold = ((calibration.Budget.Steps / 64) + 1) * 64;
+        using var cancellation = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var regex = new Utf8Regex(StraightPrefixPattern, RegexOptions.Compiled,
+            expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout, Funded);
+        var entered = false;
+        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        {
+            if (steps < threshold) return;
+            entered = true;
+            if (expire) ticks = 50; else cancellation.Cancel();
+        });
+        Exception? failure = null;
+        try { regex.Count(input, cancellation.Token); }
+        catch (Exception error) { failure = error; }
+        finally { session.Complete(); }
+        Assert.True(entered);
+        if (expire) Assert.IsType<RegexMatchTimeoutException>(failure);
+        else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+    }
+
+    [Theory]
     [InlineData("^import\\s+\"[^\"]*\"", "é😀 import \"hidden\"\nimport \"α😀\"\nx import \"skip\"\nimport\u2003\"a\nb\"")]
     [InlineData(@"\A[A-Z][a-z]+", "é😀Ab\nCd")]
     [InlineData(@"^([A-Z][a-z]+)", "Aa\nxx Bb\nCc\n😀Dd")]
@@ -240,6 +324,8 @@ public sealed class Utf8LeadingAsciiCandidateTests
             Assert.Throws<OperationCanceledException>(() => regex.Count(input, cancellation.Token)).CancellationToken);
         Assert.Equal(cancelAt, reads);
     }
+
+    private const string StraightPrefixPattern = @"(?:# [Nn][Oo][Qq][Aa])(?::\s?(([A-Z]+[0-9]+(?:[,\s]+)?)+))?";
 
     private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 4000000, MaxDepth = 4096,
         MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 };
