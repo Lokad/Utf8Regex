@@ -52,6 +52,7 @@ Immutable artifacts/experiments/python-split-profile-20261105:
 
 - evidence.tar.gz (managed trace/worker/graphs): `5500D42999F7C62667E3D927C3AF90738760DE5D3B591DC33C31DB70284D9070`.
 - cpu-evidence-complete.tar.gz (kernel data/samples/JIT map/dump): `57FE1C8C92AF8D5249BFE0B69A8C39D6865D977D6EEBA1DEEE779625BFDA6C96`.
+- analysis-evidence.tar.gz (mapping algorithm, derived summary/static inspection): `BF6B91E9E683D881EB969F8C780CDF8D0D057C25EE57BB682E0C100F601D72E3`.
 
 The CPU workload completed before export encountered root-owned perf-data
 permissions. The initial partial export is preserved; sudo tar exported the same
