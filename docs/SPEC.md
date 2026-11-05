@@ -619,8 +619,10 @@ misses admit/copy immutable byte keys under the same construction owner as parse
 capacity. Text/native entries share one bounded cache with independent keys,
 allowing earlier eviction. Retained values contain only the lowered byte plan,
 literal payload and original flags. Shared payload slots still count again in
-conservative cache charges; no identity collector is needed. Construction remains
-a conservative capacity backstop, including discarded intermediate storage.
+conservative cache charges; no identity collector is needed. Eliminating unused
+preparation or compacting plan descriptors can lower charged work and capacities.
+Construction remains a conservative capacity backstop, including discarded
+intermediate storage.
 Native source extents use bytes, so admission/work requirements may differ from
 legacy decoded-key charges. PythonRe funded hits keep their existing active uses;
 Core program owners retain their existing conservative cache-capacity reservation.

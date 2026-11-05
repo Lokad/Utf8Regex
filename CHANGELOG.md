@@ -70,6 +70,8 @@
   Chinese and case-sensitive Russian Count improve; folded Russian can cost more.
 - Reject longer impossible ASCII prefixes before scalar Count enters the VM,
   improving Ruff-like searches and reducing working requirements for misses.
+- Speed up native literal-suffix Count with checked span search, and retain
+  suffix bytes directly without unused prepared search descriptors.
 - Widen large exact UTF-8 literal Count scans on 512-bit vector hardware while
   retaining the 256-bit fallback. Dense false prefixes and some long or mixed
   literals can cost more; validation and finite resource routes remain.
