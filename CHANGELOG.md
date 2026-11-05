@@ -60,7 +60,8 @@
   existing cancellation and resource authority.
 - Speed up mixed-text keyword-family Count with the existing checked SIMD prefix
   filter. Miss scans and dense matches can cost more; the additional compiled
-  search storage is admitted through the existing resource controls.
+  search storage is admitted through the existing resource controls. Reuse its
+  immutable four-position masks within each scan to reduce candidate-scan costs.
 - Widen large exact UTF-8 literal Count scans on 512-bit vector hardware while
   retaining the 256-bit fallback. Dense false prefixes and some long or mixed
   literals can cost more; validation and finite resource routes remain.

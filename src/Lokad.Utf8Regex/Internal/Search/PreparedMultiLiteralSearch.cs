@@ -1120,6 +1120,43 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
                     baseIndex += AvxLaneCount;
                 }
             }
+            else if (MaskLength == 4 && baseIndex <= vectorLimit)
+            {
+                var offset0 = MaskOffsets[0];
+                var offset1 = MaskOffsets[1];
+                var offset2 = MaskOffsets[2];
+                var offset3 = MaskOffsets[3];
+                var low0 = LowMaskVectors[0];
+                var low1 = LowMaskVectors[1];
+                var low2 = LowMaskVectors[2];
+                var low3 = LowMaskVectors[3];
+                var high0 = HighMaskVectors[0];
+                var high1 = HighMaskVectors[1];
+                var high2 = HighMaskVectors[2];
+                var high3 = HighMaskVectors[3];
+                while (baseIndex <= vectorLimit)
+                {
+                    var candidates = CreateAvxMask(input, baseIndex + offset0,
+                        low0, high0, lowNibbleMask);
+                    candidates = Avx2.And(candidates, CreateAvxMask(
+                        input, baseIndex + offset1, low1, high1, lowNibbleMask));
+                    candidates = Avx2.And(candidates, CreateAvxMask(
+                        input, baseIndex + offset2, low2, high2, lowNibbleMask));
+                    candidates = Avx2.And(candidates, CreateAvxMask(
+                        input, baseIndex + offset3, low3, high3, lowNibbleMask));
+                    var matchMask = ~(uint)Avx2.MoveMask(Avx2.CompareEqual(candidates, zero));
+                    if (matchMask != 0)
+                    {
+                        var lane = BitOperations.TrailingZeroCount(matchMask);
+                        candidateIndex = baseIndex + lane;
+                        state = new PreparedMultiLiteralScanState(
+                            baseIndex + AvxLaneCount,
+                            (int)(matchMask & ~(1U << lane)), baseIndex);
+                        return true;
+                    }
+                    baseIndex += AvxLaneCount;
+                }
+            }
             else while (baseIndex <= vectorLimit)
             {
                 var candidates = Vector256.Create((byte)0xFF);

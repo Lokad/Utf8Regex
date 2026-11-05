@@ -10,12 +10,15 @@ public sealed class PackedNibbleLiteralFamilyCountTests
     private const string Pattern = "夏洛克·福尔摩斯|约翰华生|阿德勒|雷斯垂德|莫里亚蒂教授";
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void CandidateBlocksRespectBorrowedOffsetsAndEveryTail(bool folded)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void CandidateBlocksRespectBorrowedOffsetsAndEveryTail(bool folded, bool fourOffsets)
     {
         if (!(Sse2.IsSupported && Ssse3.IsSupported)) return;
-        var literals = (folded ? "abcdefghjlmn|qrstuvwxyzab|cdefghjklmno|pqrstuvwxyza" : Pattern)
+        var literals = (fourOffsets ? "class|record|struct"
+            : folded ? "abcdefghjlmn|qrstuvwxyzab|cdefghjklmno|pqrstuvwxyza" : Pattern)
             .Split('|').Select(Encoding.UTF8.GetBytes).ToArray();
         var prefilter = folded
             ? PreparedMultiLiteralPackedNibbleSimdPrefilter.CreateAsciiIgnoreCase(literals)
@@ -24,7 +27,7 @@ public sealed class PackedNibbleLiteralFamilyCountTests
         for (var prefix = 0; prefix < 64; prefix++)
         for (var tail = 0; tail < 32; tail++)
         {
-            var literal = folded ? Encoding.UTF8.GetBytes("ABCDEFGHJLMN") : literals[1];
+            var literal = folded ? Encoding.UTF8.GetBytes(fourOffsets ? "RECORD" : "ABCDEFGHJLMN") : literals[1];
             var length = prefix + literal.Length + tail;
             var storage = Enumerable.Repeat((byte)'x', borrowedOffset + length + 32).ToArray();
             literal.CopyTo(storage.AsSpan(borrowedOffset + prefix));

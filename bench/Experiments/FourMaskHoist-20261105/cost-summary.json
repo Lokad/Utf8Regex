@@ -1,0 +1,224 @@
+{
+  "Scope": "One15case <=120s public four-offset packed-nibble metadata hoisting comparison. Frozen Full434 Core and six identical companion DLL-PDBs versus parentb604 Core overlay. Existing algorithms,256-bit SIMD,checked loads,tails,candidate verification,full strict validation,resource and interruption contracts remain. No new owner,metadata,state,plan,engine,selector,mode,framework or unchecked operations. Actual keyword53352B/public73 ordinary-compiled,finite-live/deadline controls,dense-hit-false-interior-sparse-long shapes,folded-exactfourliteral families,Chinesethreemask-ASCII-Python-Pcre controls. Typed public results consumed after timing; equal-result same-options BCL diagnostics only, no parity Status. Normal8CPU startup thenCPU2;managed1.5s-min128,BCL250ms-min64,independent60ms,fivealternatingsamples>=20ms. At most one selected noise confirmation; no tuned variant,repeated campaign,Full-package-catalog replay,universal10percent gate or reopened checked-access work",
+  "ElapsedSeconds": 79.1768564,
+  "OwnedSamples": 150,
+  "MinimumOwnedDurationMs": 54.7286,
+  "Baseline": {
+    "Core": {
+      "Version": "0.5.0-dev.29+434359064e2f36f50af008540f90e4c3527c6779",
+      "Sha256": "0813AEE73ECF2CC5DAB7B69486300B63171B1B0B70E3DE2F51B2BE8D750AF125"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.29+434359064e2f36f50af008540f90e4c3527c6779",
+      "Sha256": "E2B36E738B53C8A13480ED2E217EAAEA9CD8B901003D99B5789A165A8F8C1D36"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.29+434359064e2f36f50af008540f90e4c3527c6779",
+      "Sha256": "36D3BFD24949FE108E709E5EFCF275AC79B8C28A573413897773841D11849D42"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+434359064e2f36f50af008540f90e4c3527c6779",
+      "Sha256": "A2EB14B09AFD5D88C40BC52CCBDFA1CD09C1D2BD891E93890FF9ACE0AC537D46"
+    }
+  },
+  "Candidate": {
+    "Core": {
+      "Version": "0.5.0-dev.29+b604c54330f5efec04e5775a832f694993d67f9e",
+      "Sha256": "E3B3503FAD398D4D28BBDA149830FE26196157E6CF164383C75BDC208708BF24"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.29+434359064e2f36f50af008540f90e4c3527c6779",
+      "Sha256": "E2B36E738B53C8A13480ED2E217EAAEA9CD8B901003D99B5789A165A8F8C1D36"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.29+434359064e2f36f50af008540f90e4c3527c6779",
+      "Sha256": "36D3BFD24949FE108E709E5EFCF275AC79B8C28A573413897773841D11849D42"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+434359064e2f36f50af008540f90e4c3527c6779",
+      "Sha256": "A2EB14B09AFD5D88C40BC52CCBDFA1CD09C1D2BD891E93890FF9ACE0AC537D46"
+    }
+  },
+  "Rows": [
+    {
+      "Name": "ascii-count-control",
+      "BeforeUs": 2.500063359884142,
+      "AfterUs": 2.4907379363974953,
+      "DeltaPercent": -0.37300748598142475,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0342362128759004,
+      "AfterSpread": 1.0152803927960774,
+      "PredecodedUs": 3.5438449357808923,
+      "DecodeThenUs": 26.82383830751795
+    },
+    {
+      "Name": "actual-keyword",
+      "BeforeUs": 18.557626094835395,
+      "AfterUs": 10.655508474576271,
+      "DeltaPercent": -42.58151112581308,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.009703073814483,
+      "AfterSpread": 1.0057998511410307,
+      "PredecodedUs": 262.8396551724138,
+      "DecodeThenUs": 283.8300469483568
+    },
+    {
+      "Name": "actual-keyword-compiled",
+      "BeforeUs": 18.46887677868604,
+      "AfterUs": 10.655324033197951,
+      "DeltaPercent": -42.306594164433974,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.006015930893922,
+      "AfterSpread": 1.012407990531625,
+      "PredecodedUs": 7.752953182803928,
+      "DecodeThenUs": 28.013155339805824
+    },
+    {
+      "Name": "actual-finite-live-control",
+      "BeforeUs": 46.48284424379232,
+      "AfterUs": 46.42614329268292,
+      "DeltaPercent": -0.12198253362469824,
+      "BeforeBytes": 3664.0,
+      "AfterBytes": 3664.0,
+      "BeforeSpread": 1.0098098277377967,
+      "AfterSpread": 1.0226537754354612,
+      "PredecodedUs": 263.9755364806867,
+      "DecodeThenUs": 284.75607476635514
+    },
+    {
+      "Name": "actual-deadline-live-control",
+      "BeforeUs": 55.78984302862419,
+      "AfterUs": 56.582082551594745,
+      "DeltaPercent": 1.4200425739933964,
+      "BeforeBytes": 3712.0,
+      "AfterBytes": 3712.0,
+      "BeforeSpread": 1.0124467115807956,
+      "AfterSpread": 1.0239830687830689,
+      "PredecodedUs": 261.4543103448276,
+      "DecodeThenUs": 283.848275862069
+    },
+    {
+      "Name": "dense-keyword-hits",
+      "BeforeUs": 152.5845758354756,
+      "AfterUs": 141.28306636155605,
+      "DeltaPercent": -7.4067181509259505,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0067398652365471,
+      "AfterSpread": 1.0136211153431995,
+      "PredecodedUs": 691.314606741573,
+      "DecodeThenUs": 723.7358024691358
+    },
+    {
+      "Name": "sparse-keyword-miss",
+      "BeforeUs": 19.54914543695582,
+      "AfterUs": 9.913672070867458,
+      "DeltaPercent": -49.28846325872335,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0077233402744867,
+      "AfterSpread": 1.019887928902232,
+      "PredecodedUs": 2.133588598170602,
+      "DecodeThenUs": 22.980753138075315
+    },
+    {
+      "Name": "dense-false-prefix",
+      "BeforeUs": 102.73197278911564,
+      "AfterUs": 102.61593959731545,
+      "DeltaPercent": -0.112947496918403,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0089896091966264,
+      "AfterSpread": 1.0099437697652467,
+      "PredecodedUs": 561.7055045871559,
+      "DecodeThenUs": 588.6135922330097
+    },
+    {
+      "Name": "word-interior-prefixes",
+      "BeforeUs": 149.39414634146343,
+      "AfterUs": 146.45330073349635,
+      "DeltaPercent": -1.9685146171961265,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0226145100189497,
+      "AfterSpread": 1.0232140129932685,
+      "PredecodedUs": 585.4285714285714,
+      "DecodeThenUs": 624.4208333333333
+    },
+    {
+      "Name": "long-identifiers",
+      "BeforeUs": 47.7484076433121,
+      "AfterUs": 47.572539682539684,
+      "DeltaPercent": -0.36832214821942433,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0170243564199422,
+      "AfterSpread": 1.016609118122048,
+      "PredecodedUs": 161.17027027027027,
+      "DecodeThenUs": 188.57258566978192
+    },
+    {
+      "Name": "folded-four-literal-family",
+      "BeforeUs": 236.26536964980545,
+      "AfterUs": 237.08515625,
+      "DeltaPercent": 0.3469770459418875,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0585025608919498,
+      "AfterSpread": 1.0038968988142671,
+      "PredecodedUs": 647.1627659574468,
+      "DecodeThenUs": 671.6902173913044
+    },
+    {
+      "Name": "exact-four-literal-family",
+      "BeforeUs": 110.70386029411765,
+      "AfterUs": 108.87387387387388,
+      "DeltaPercent": -1.6530466194962568,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0124002859281085,
+      "AfterSpread": 1.0239389607378357,
+      "PredecodedUs": 450.5723880597015,
+      "DecodeThenUs": 476.84999999999997
+    },
+    {
+      "Name": "chinese-three-mask-control",
+      "BeforeUs": 155.87506493506493,
+      "AfterUs": 155.29693094629155,
+      "DeltaPercent": -0.37089574847279927,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0091804202465666,
+      "AfterSpread": 1.0090352811740397,
+      "PredecodedUs": 78.50509138381202,
+      "DecodeThenUs": 2269.885185185185
+    },
+    {
+      "Name": "python-keyword-count-control",
+      "BeforeUs": 58.74539411206078,
+      "AfterUs": 58.521209213051826,
+      "DeltaPercent": -0.38162123583902474,
+      "BeforeBytes": 3552.0,
+      "AfterBytes": 3552.0,
+      "BeforeSpread": 1.0217324034956858,
+      "AfterSpread": 1.0114663224238742,
+      "PredecodedUs": 264.30555555555554,
+      "DecodeThenUs": 290.321052631579
+    },
+    {
+      "Name": "pcre-count-control",
+      "BeforeUs": 152.31167512690357,
+      "AfterUs": 153.31384615384616,
+      "DeltaPercent": 0.6579738723952788,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0162832143810983,
+      "AfterSpread": 1.0175690502959782,
+      "PredecodedUs": 24.413888888888888,
+      "DecodeThenUs": 25.054549653579677
+    }
+  ]
+}
