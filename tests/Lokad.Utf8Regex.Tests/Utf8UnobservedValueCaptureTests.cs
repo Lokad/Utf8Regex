@@ -35,7 +35,11 @@ public sealed class Utf8UnobservedValueCaptureTests
     {
         var regex = new Utf8Regex("abcdef([0-9]+)", rtl ? RegexOptions.RightToLeft : RegexOptions.None,
             // Mirrored repeats retain their ordinary frames and repeat journal.
-            Timeout.InfiniteTimeSpan, new Utf8ResourcePolicy { MaxWorkingBytes = rtl ? 4096UL : 256UL, MaxWorkSteps = 100000 });
+            Timeout.InfiniteTimeSpan, new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = rtl ? (ulong)Utf8SliceRunner.TrailReserveBytes - 1 : 256UL,
+                MaxWorkSteps = 100000
+            });
         var input = "xxabcdef123"u8.ToArray();
         using var token = new CancellationTokenSource();
         Assert.True(regex.IsMatch(input, token.Token));

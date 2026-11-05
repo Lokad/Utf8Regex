@@ -42,8 +42,10 @@ public sealed class Utf8CountCaptureElisionTests
         using var cancellation = new CancellationTokenSource();
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
+            // Value-only scratch fits; even one observed capture trail cannot.
             var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = 1000000, MaxDepth = 128, MaxWorkingBytes = 4096, MaxResultBytes = 1 });
+                new() { MaxWorkSteps = 1000000, MaxDepth = 128,
+                    MaxWorkingBytes = (ulong)Utf8SliceRunner.TrailReserveBytes - 1, MaxResultBytes = 1 });
             Assert.Equal(expected, regex.Count(input));
             Assert.Equal(expected, regex.Count(input, cancellation.Token));
             Assert.True(regex.IsMatch(input, cancellation.Token));
@@ -81,7 +83,8 @@ public sealed class Utf8CountCaptureElisionTests
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var tiny = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = 1000000, MaxDepth = 128, MaxWorkingBytes = 4096, MaxResultBytes = 1000000 });
+                new() { MaxWorkSteps = 1000000, MaxDepth = 128,
+                    MaxWorkingBytes = (ulong)Utf8SliceRunner.TrailReserveBytes - 1, MaxResultBytes = 1000000 });
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
                 Assert.Throws<Utf8ResourceLimitExceededException>(() => tiny.Count(input)).ResourceKind);
             var funded = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,

@@ -53,10 +53,18 @@ All nine independent public preflights agree. Frozen Full DLL/PDBs and staged
 package/symbol bytes remain unchanged. This source is qualified in the next useful
 delivery batch, not by repeating the completed dev33 checkpoint.
 
+Source CI42035487720 found three admission fixtures relying on the old 4KiB
+scratch boundary. Smaller chunks correctly let detailed/read-dependent operations
+fit, sometimes reaching the result cap instead. The fixtures now derive their
+working limit from the unchanged capture-trail reservation: value-only operations
+fit while observed captures still fail working admission. All 84 checks pass per
+target on Windows/Linux. No producer or timing change follows this correction.
+
 Immutable artifacts/experiments/small-vm-chunks-20261105, verified off VM:
 
 - evidence.tar.gz: `E6E77C01B118C540B7D17C584359EEB9E9E0002815C1FF41AA4B87C3566D91A8`.
 - windows-correctness.zip: `5A13715DDD626EB24D9B0454F25B9686407E6556A06E67C7F3778898BD856BD6`.
+- admission-fix.zip: `3D18A71BE87E0D6B335A06B8DB38F3541C3D50895DC705C307AAFD9403C96646`.
 
 Declaration `2A7D539B51CD344F2527E568753108639C7547613D4072C5EBBED6B36D5BBC5B`
 and initial two-file patch `A1A689D52B69A87AE724F55926D866D8D60FC572430EAC8B1605BE87390B490A`
