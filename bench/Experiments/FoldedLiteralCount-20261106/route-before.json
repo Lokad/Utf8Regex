@@ -1,0 +1,29 @@
+{
+  "Scope": "Untimed actual input/dispatch proof; no speedup or performance verdict",
+  "Rows": [
+    {
+      "Id": "literal/sherlock-casei-en",
+      "Pattern": "Sherlock Holmes",
+      "Options": "IgnoreCase, CultureInvariant",
+      "InputBytes": 899232,
+      "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+      "IsAscii": false,
+      "ContainsKelvin": false,
+      "SelectorReturnsOwned": true,
+      "CanValidateKelvin": true,
+      "Count": 522
+    },
+    {
+      "Id": "literal-alternate/sherlock-casei-en",
+      "Pattern": "Sherlock Holmes|John Watson|Irene Adler|Inspector Lestrade|Professor Moriarty",
+      "Options": "IgnoreCase, CultureInvariant",
+      "InputBytes": 899232,
+      "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+      "IsAscii": false,
+      "ContainsKelvin": false,
+      "SelectorReturnsOwned": false,
+      "CanValidateKelvin": true,
+      "Count": 725
+    }
+  ]
+}
