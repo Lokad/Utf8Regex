@@ -317,6 +317,9 @@ their full original-subject context. Skipped starts can lower required work/stor
 Scalar-class and unfolded literal repetitions with a proved endpoint can omit
 unused repeat-journal storage. Live counter vectors and captures still require
 admission; examined scalars/classifications and terminal interruption remain metered.
+Lazy pure-atom repeats can also omit rollback when a following required literal
+excludes every consumed scalar: no shorter endpoint can match that literal.
+Unconstrained lazy roots and overlapping tails retain their normal choices.
 Complete capture-free greedy atom repeats, including nullable ones, can also omit
 unused counter vectors. Empty-match advancement and nonempty retries retain their
 profile rules; required work/working capacity can be lower than earlier builds.

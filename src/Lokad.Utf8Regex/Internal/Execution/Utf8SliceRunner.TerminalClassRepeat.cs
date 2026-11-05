@@ -117,7 +117,7 @@ internal static partial class Utf8SliceRunner
         if (program.RightToLeft || instructions.Length - repeatIndex < 5) return false;
         var repeat = instructions[repeatIndex];
         var atom = instructions[repeatIndex + 1];
-        if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy || repeat.A != repeatIndex + 3 ||
+        if (repeat.Kind is not (Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy) || repeat.A != repeatIndex + 3 ||
             instructions[repeatIndex + 2].Kind != Utf8SliceInstructionKind.RepeatEnd ||
             instructions[repeatIndex + 2].A != repeatIndex ||
             instructions[repeatIndex + 3].Kind != Utf8SliceInstructionKind.RepeatExit ||
@@ -141,6 +141,10 @@ internal static partial class Utf8SliceRunner
             instructions[tail].Kind == Utf8SliceInstructionKind.CaptureEnd; skipped++) tail++;
         if (tail == instructions.Length) return false;
         var suffix = instructions[tail];
+        // A lazy repeat can skip shorter endpoints only when the following
+        // required literal excludes every scalar consumed by its atom.
+        if (repeat.Kind == Utf8SliceInstructionKind.RepeatLazy && suffix.Kind != Utf8SliceInstructionKind.Literal)
+            return false;
         // RunFrom can retry a child after Accept to satisfy its required end.
         // Without that constraint, no shorter successful endpoint is requested.
         if (suffix.Kind == Utf8SliceInstructionKind.Accept && requiredEnd is null)
@@ -207,7 +211,7 @@ internal static partial class Utf8SliceRunner
         }
         if (excludedScalar < 0) return false;
 
-        // Every shorter greedy boundary points at a scalar accepted by this
+        // Every shorter boundary points at a scalar accepted by this
         // side-effect-free atom. If the following literal/end stop is excluded,
         // none of those alternatives can succeed. CaptureEnd still executes
         // normally, with its original trail and publication authority.
@@ -222,7 +226,8 @@ internal static partial class Utf8SliceRunner
         }
         if (includesLiteral)
         {
-            if (atom.Kind != Utf8SliceInstructionKind.Dot || suffix.Kind != Utf8SliceInstructionKind.Literal ||
+            if (repeat.Kind == Utf8SliceInstructionKind.RepeatLazy ||
+                atom.Kind != Utf8SliceInstructionKind.Dot || suffix.Kind != Utf8SliceInstructionKind.Literal ||
                 (uint)suffix.A >= 128 || repeat.RepeatMaximum is < 8 or > 511)
                 return false;
             // A scalar consumes at most four bytes. Absence in this conservative
