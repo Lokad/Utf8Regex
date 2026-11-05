@@ -24,8 +24,8 @@ public sealed class PackedNibbleLiteralFamilyCountTests
             ? PreparedMultiLiteralPackedNibbleSimdPrefilter.CreateAsciiIgnoreCase(literals)
             : new PreparedMultiLiteralPackedNibbleSimdPrefilter(literals);
         foreach (var borrowedOffset in new[] { 0, 1, 17, 31 })
-        for (var prefix = 0; prefix < 64; prefix++)
-        for (var tail = 0; tail < 32; tail++)
+        for (var prefix = 0; prefix < 96; prefix++)
+        for (var tail = 0; tail < 64; tail++)
         {
             var literal = folded ? Encoding.UTF8.GetBytes(fourOffsets ? "RECORD" : "ABCDEFGHJLMN") : literals[1];
             var length = prefix + literal.Length + tail;
@@ -43,6 +43,29 @@ public sealed class PackedNibbleLiteralFamilyCountTests
             }
             Assert.True(found);
         }
+    }
+
+    [Theory]
+    [InlineData(0)] [InlineData(1)] [InlineData(31)] [InlineData(32)]
+    [InlineData(63)] [InlineData(64)] [InlineData(65)]
+    public void FalsePrefixesKeepEveryPendingCandidateAcrossHalves(int prefix)
+    {
+        if (!(Sse2.IsSupported && Ssse3.IsSupported)) return;
+        const string pattern = "猫猫猫猫|狗狗狗狗";
+        var text = new string('.', prefix) + string.Concat(Enumerable.Repeat("猫猫猫狗", 24));
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var storage = new byte[bytes.Length + 17];
+        bytes.CopyTo(storage.AsSpan(5));
+        var input = storage.AsSpan(5, bytes.Length);
+        var literals = pattern.Split('|').Select(Encoding.UTF8.GetBytes).ToArray();
+        var prefilter = new PreparedMultiLiteralPackedNibbleSimdPrefilter(literals);
+        var state = new PreparedMultiLiteralScanState(0, 0, 0);
+        var actual = new List<int>();
+        while (prefilter.TryFindNextCandidate(input, ref state, out var candidate))
+            actual.Add(candidate);
+        Assert.Equal(Enumerable.Range(0, 24).Select(index => prefix + 12 * index), actual);
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
+            Assert.Equal(0, new Utf8Regex(pattern, options).Count(input));
     }
 
     [Theory]

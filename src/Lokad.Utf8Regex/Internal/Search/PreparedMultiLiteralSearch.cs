@@ -1080,6 +1080,52 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
 
         var maxStart = input.Length - ShortestLength;
         var baseIndex = state.NextStart;
+        if (Avx512BW.IsSupported && MaskLength == 3 &&
+            baseIndex <= maxStart - (Vector512<byte>.Count - 1))
+        {
+            var vectorLimit = maxStart - (Vector512<byte>.Count - 1);
+            var lowNibbleMask = Vector512.Create((byte)0x0F);
+            var zero = Vector512<byte>.Zero;
+            var offset0 = MaskOffsets[0];
+            var offset1 = MaskOffsets[1];
+            var offset2 = MaskOffsets[2];
+            var low0 = Vector512.Create(LowMaskVectors[0], LowMaskVectors[0]);
+            var low1 = Vector512.Create(LowMaskVectors[1], LowMaskVectors[1]);
+            var low2 = Vector512.Create(LowMaskVectors[2], LowMaskVectors[2]);
+            var high0 = Vector512.Create(HighMaskVectors[0], HighMaskVectors[0]);
+            var high1 = Vector512.Create(HighMaskVectors[1], HighMaskVectors[1]);
+            var high2 = Vector512.Create(HighMaskVectors[2], HighMaskVectors[2]);
+            while (baseIndex <= vectorLimit)
+            {
+                var candidates = CreateAvx512Mask(input, baseIndex + offset0,
+                    low0, high0, lowNibbleMask);
+                candidates &= CreateAvx512Mask(input, baseIndex + offset1,
+                    low1, high1, lowNibbleMask);
+                candidates &= CreateAvx512Mask(input, baseIndex + offset2,
+                    low2, high2, lowNibbleMask);
+                if (!Vector512.EqualsAll(candidates, zero))
+                {
+                    var wideMask = ~Vector512.ExtractMostSignificantBits(Vector512.Equals(candidates, zero));
+                    var matchMask = (uint)wideMask;
+                    var pendingBase = baseIndex;
+                    var nextStart = baseIndex + AvxLaneCount;
+                    if (matchMask == 0)
+                    {
+                        matchMask = (uint)(wideMask >> AvxLaneCount);
+                        pendingBase += AvxLaneCount;
+                        nextStart += AvxLaneCount;
+                    }
+                    // Preserve the compact pending mask. A lower-half false
+                    // candidate can require rescanning the upper half later.
+                    var lane = BitOperations.TrailingZeroCount(matchMask);
+                    candidateIndex = pendingBase + lane;
+                    state = new PreparedMultiLiteralScanState(nextStart,
+                        (int)(matchMask & (matchMask - 1)), pendingBase);
+                    return true;
+                }
+                baseIndex += Vector512<byte>.Count;
+            }
+        }
         if (Avx2.IsSupported)
         {
             var vectorLimit = maxStart - (AvxLaneCount - 1);
@@ -1259,6 +1305,20 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
 
         state = new PreparedMultiLiteralScanState(input.Length, 0, 0);
         return false;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector512<byte> CreateAvx512Mask(
+        ReadOnlySpan<byte> input,
+        int inputOffset,
+        Vector512<byte> lowMaskVector,
+        Vector512<byte> highMaskVector,
+        Vector512<byte> lowNibbleMask)
+    {
+        var window = MemoryMarshal.Read<Vector512<byte>>(input[inputOffset..]);
+        var low = window & lowNibbleMask;
+        var high = Avx512BW.ShiftRightLogical(window.AsUInt16(), 4).AsByte() & lowNibbleMask;
+        return Avx512BW.Shuffle(lowMaskVector, low) & Avx512BW.Shuffle(highMaskVector, high);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
