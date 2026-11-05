@@ -1107,9 +1107,9 @@ internal readonly partial struct PreparedMultiLiteralPackedNibbleSimdPrefilter
                         input, baseIndex + offset1, low1, high1, lowNibbleMask));
                     candidates = Avx2.And(candidates, CreateAvxMask(
                         input, baseIndex + offset2, low2, high2, lowNibbleMask));
-                    var matchMask = ~(uint)Avx2.MoveMask(Avx2.CompareEqual(candidates, zero));
-                    if (matchMask != 0)
+                    if (!Vector256.EqualsAll(candidates, zero))
                     {
+                        var matchMask = ~(uint)Avx2.MoveMask(Avx2.CompareEqual(candidates, zero));
                         var lane = BitOperations.TrailingZeroCount(matchMask);
                         candidateIndex = baseIndex + lane;
                         state = new PreparedMultiLiteralScanState(

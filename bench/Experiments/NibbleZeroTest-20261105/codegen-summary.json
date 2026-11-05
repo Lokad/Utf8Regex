@@ -1,0 +1,16 @@
+[
+  {
+    "Side": "before",
+    "Listings": 1,
+    "VectorZeroTests": 0,
+    "MaskExtractions": 4,
+    "CodeBytes": 2073
+  },
+  {
+    "Side": "after",
+    "Listings": 1,
+    "VectorZeroTests": 1,
+    "MaskExtractions": 4,
+    "CodeBytes": 2069
+  }
+]
