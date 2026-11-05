@@ -1,0 +1,211 @@
+{
+  "Scope": "Corrected frozen comparison; each process has exactly one Default-context producer. Sequential A0 B0 B1 A1, identical caller and six companions. Raw dual-ALC deltas are superseded for causal attribution; preserve all observations.",
+  "Source": "df8e62c8",
+  "OuterSeconds": 94.173,
+  "OwnedSamples": 140,
+  "MinimumOwnedDurationMs": 55.7039,
+  "BeforeCore": "433F388D90DDD36C9ACD20FAD2A68C975C1B77D8BEC95020065EC5766E6DC0AA",
+  "AfterCore": "B2C9D5A4CF8935E1AB68D26DCA4E8FDE07A8E49D7E2C4E28463279EE2F3D4B16",
+  "WorkerSha256": "B5354C4185B0B4DBC264B0417A9E0D57EB42460E22E9E299F2F78F4AC1D4383B",
+  "Processes": [
+    {
+      "Worker": "A0",
+      "ElapsedSeconds": 23.203588,
+      "CoreSha256": "433F388D90DDD36C9ACD20FAD2A68C975C1B77D8BEC95020065EC5766E6DC0AA",
+      "CoreVersion": "0.5.0-dev.30+39d377e98dc7b15ebc69ed180bb3c8c668d76867",
+      "LoadContext": "Default",
+      "LoadedCoreAssemblies": 1,
+      "StartupProcessors": 8
+    },
+    {
+      "Worker": "B0",
+      "ElapsedSeconds": 23.2333584,
+      "CoreSha256": "B2C9D5A4CF8935E1AB68D26DCA4E8FDE07A8E49D7E2C4E28463279EE2F3D4B16",
+      "CoreVersion": "0.5.0-dev.30+f77e88d3d8ca2a7e439ae3fd0980d208a7959981",
+      "LoadContext": "Default",
+      "LoadedCoreAssemblies": 1,
+      "StartupProcessors": 8
+    },
+    {
+      "Worker": "B1",
+      "ElapsedSeconds": 23.1897928,
+      "CoreSha256": "B2C9D5A4CF8935E1AB68D26DCA4E8FDE07A8E49D7E2C4E28463279EE2F3D4B16",
+      "CoreVersion": "0.5.0-dev.30+f77e88d3d8ca2a7e439ae3fd0980d208a7959981",
+      "LoadContext": "Default",
+      "LoadedCoreAssemblies": 1,
+      "StartupProcessors": 8
+    },
+    {
+      "Worker": "A1",
+      "ElapsedSeconds": 23.1909192,
+      "CoreSha256": "433F388D90DDD36C9ACD20FAD2A68C975C1B77D8BEC95020065EC5766E6DC0AA",
+      "CoreVersion": "0.5.0-dev.30+39d377e98dc7b15ebc69ed180bb3c8c668d76867",
+      "LoadContext": "Default",
+      "LoadedCoreAssemblies": 1,
+      "StartupProcessors": 8
+    }
+  ],
+  "Rows": [
+    {
+      "Name": "ascii-control",
+      "BeforeUs": 2.479860983982644,
+      "AfterUs": 2.458923814674557,
+      "DeltaPercent": -0.8442880243416773,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessUs": [
+        2.4875354861603975,
+        2.4636560819017874
+      ],
+      "AfterProcessUs": [
+        2.4553876964604466,
+        2.4642925555071833
+      ],
+      "BeforeSpread": 1.0259850219781388,
+      "AfterSpread": 1.0134462955941181,
+      "PredecodedBeforeUs": 3.531765953685699,
+      "PredecodedAfterUs": 3.529474108634295,
+      "InputBytes": 65542,
+      "InputSha256": "4E381E20D292A1149943470F2827649D9D8D087F6BA87326BFA715A124316FA2",
+      "ExpectedCount": 1
+    },
+    {
+      "Name": "actual-chinese",
+      "BeforeUs": 95.3940312152595,
+      "AfterUs": 91.16635745537823,
+      "DeltaPercent": -4.431801136846181,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessUs": [
+        95.43096366508689,
+        95.3570987654321
+      ],
+      "AfterProcessUs": [
+        90.87448071216618,
+        91.4481981981982
+      ],
+      "BeforeSpread": 1.020606229765953,
+      "AfterSpread": 1.0148474127019256,
+      "PredecodedBeforeUs": 19.72774984267876,
+      "PredecodedAfterUs": 19.760903671984387,
+      "InputBytes": 813478,
+      "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+      "ExpectedCount": 30
+    },
+    {
+      "Name": "actual-chinese-compiled",
+      "BeforeUs": 96.05286579402693,
+      "AfterUs": 91.46413533834587,
+      "DeltaPercent": -4.7772967706356635,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessUs": [
+        96.00936507936508,
+        96.09636650868879
+      ],
+      "AfterProcessUs": [
+        91.52751879699248,
+        91.34011887072809
+      ],
+      "BeforeSpread": 1.0346085960572535,
+      "AfterSpread": 1.0175506744627738,
+      "PredecodedBeforeUs": 25.077280163599184,
+      "PredecodedAfterUs": 25.433621500525614,
+      "InputBytes": 813478,
+      "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+      "ExpectedCount": 30
+    },
+    {
+      "Name": "actual-chinese-alternate-compiled",
+      "BeforeUs": 152.5248730964467,
+      "AfterUs": 149.8824476905819,
+      "DeltaPercent": -1.7324554036467932,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessUs": [
+        152.1578680203046,
+        153.10511508951407
+      ],
+      "AfterProcessUs": [
+        149.57648514851485,
+        150.31256157635465
+      ],
+      "BeforeSpread": 1.0211798683372266,
+      "AfterSpread": 1.015021356002488,
+      "PredecodedBeforeUs": 37.10170414814159,
+      "PredecodedAfterUs": 37.0248995398276,
+      "InputBytes": 813478,
+      "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+      "ExpectedCount": 207
+    },
+    {
+      "Name": "actual-russian-compiled",
+      "BeforeUs": 189.64203125,
+      "AfterUs": 178.6736613066555,
+      "DeltaPercent": -5.7837230866216505,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessUs": [
+        191.5231746031746,
+        189.065
+      ],
+      "AfterProcessUs": [
+        181.4288288288288,
+        176.28081395348838
+      ],
+      "BeforeSpread": 1.0285909365254673,
+      "AfterSpread": 1.0424047411089739,
+      "PredecodedBeforeUs": 91.54830096413636,
+      "PredecodedAfterUs": 91.45679243663162,
+      "InputBytes": 1570556,
+      "InputSha256": "7FFDDB21336A1BFB4A9E2DF4BB77EEA0305C0010A57C5D3C56E0DFEAD9E80A90",
+      "ExpectedCount": 724
+    },
+    {
+      "Name": "folded-russian-control",
+      "BeforeUs": 232.98691638237136,
+      "AfterUs": 240.69901488481253,
+      "DeltaPercent": 3.310099391926502,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessUs": [
+        234.26679245283017,
+        231.86937269372694
+      ],
+      "AfterProcessUs": [
+        241.3400793650794,
+        238.6252918287938
+      ],
+      "BeforeSpread": 1.029292280651041,
+      "AfterSpread": 1.0441313890909807,
+      "PredecodedBeforeUs": 451.17828211189914,
+      "PredecodedAfterUs": 451.9955223880597,
+      "InputBytes": 1570556,
+      "InputSha256": "7FFDDB21336A1BFB4A9E2DF4BB77EEA0305C0010A57C5D3C56E0DFEAD9E80A90",
+      "ExpectedCount": 746
+    },
+    {
+      "Name": "actual-chinese-finite-live",
+      "BeforeUs": 1171.9831277213352,
+      "AfterUs": 1208.536862745098,
+      "DeltaPercent": 3.1189642716814125,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessUs": [
+        1161.622641509434,
+        1175.4903846153845
+      ],
+      "AfterProcessUs": [
+        1205.592156862745,
+        1209.4620000000002
+      ],
+      "BeforeSpread": 1.0346352348318661,
+      "AfterSpread": 1.0146583250298111,
+      "PredecodedBeforeUs": 18.95334789902385,
+      "PredecodedAfterUs": 19.093401681870162,
+      "InputBytes": 813478,
+      "InputSha256": "F129E81928C58ECBBA0CCBB63B36679355345248DF057D1E9DED670D6E9C964B",
+      "ExpectedCount": 30
+    }
+  ]
+}

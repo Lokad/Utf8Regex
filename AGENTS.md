@@ -75,6 +75,9 @@ old comparisons after source or binaries change.
   Kernel/phase attribution is not a public speedup or benchmark Status.
 - Bound comparisons and any confirmation before running them; use public-operation
   costs and unchanged controls rather than isolated-kernel estimates.
+- Compare producer versions in separate ordinary processes. Identical Core DLLs
+  showed9.8% slot movement in a dual-AssemblyLoadContext driver; retain per-process
+  observations and uncertainty, with one producer loaded per process.
 - JSON snapshots are authoritative: README.Benchmarks.json/README.Parity.json,
   PythonRe.Benchmarks.json and PCRE2.Benchmarks.json. Regenerate their Markdown
   through the existing rewrite/verify commands; never hand-edit generated tables.

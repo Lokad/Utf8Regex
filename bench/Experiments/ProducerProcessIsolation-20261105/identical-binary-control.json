@@ -1,0 +1,92 @@
+{
+  "Scope": "One bounded4case unchanged-binary A-A fairness diagnostic of the disposable dual-AssemblyLoadContext comparison driver. Both producer graphs are byte-identical acceptedB2C9D5A4 Core and six frozenfb309 companions. No production change, source variant, optimization comparison, package qualification or parity Status. Same normal8CPU startup thenCPU2,1.5s-min128 producer warmup,independent60ms,fivealternatingsamples>=20ms,typed checksums after timing. Compare slot movement on identical code. Existing default-context benchmark CLI is run twice separately as diagnostic context, not additive or interchangeable public proof. Stop after this bounded control.",
+  "ElapsedSeconds": 21.5661867,
+  "OwnedSamples": 40,
+  "MinimumOwnedDurationMs": 55.122,
+  "Baseline": {
+    "Core": {
+      "Version": "0.5.0-dev.30+f77e88d3d8ca2a7e439ae3fd0980d208a7959981",
+      "Sha256": "B2C9D5A4CF8935E1AB68D26DCA4E8FDE07A8E49D7E2C4E28463279EE2F3D4B16"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.30+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "77E4AEC20BA4A85EEFC4BFB267CF9D7E397F51337AC48F59FCDFCCF1C4B13016"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.30+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "95DF5BA00911F5CAD190F6D067F83F59D20BC10B51ECA33EE181362E5896B075"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "CD6849BFB29CC09B8A26E4F8D6590CDED5B4DFB858EEC08E49AEE60D74A09486"
+    }
+  },
+  "Candidate": {
+    "Core": {
+      "Version": "0.5.0-dev.30+f77e88d3d8ca2a7e439ae3fd0980d208a7959981",
+      "Sha256": "B2C9D5A4CF8935E1AB68D26DCA4E8FDE07A8E49D7E2C4E28463279EE2F3D4B16"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.30+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "77E4AEC20BA4A85EEFC4BFB267CF9D7E397F51337AC48F59FCDFCCF1C4B13016"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.30+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "95DF5BA00911F5CAD190F6D067F83F59D20BC10B51ECA33EE181362E5896B075"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "CD6849BFB29CC09B8A26E4F8D6590CDED5B4DFB858EEC08E49AEE60D74A09486"
+    }
+  },
+  "Rows": [
+    {
+      "Name": "ascii-count-control",
+      "BeforeUs": 2.4893181818181818,
+      "AfterUs": 2.4666833291677084,
+      "DeltaPercent": -0.9092792080898637,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0455008889372663,
+      "AfterSpread": 1.0318768231950475,
+      "PredecodedUs": 3.5100809289232937,
+      "DecodeThenUs": 27.488790560471976
+    },
+    {
+      "Name": "actual-email",
+      "BeforeUs": 1202.873076923077,
+      "AfterUs": 1189.6058823529413,
+      "DeltaPercent": -1.1029588095921805,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0171690533670734,
+      "AfterSpread": 1.0080629415755251,
+      "PredecodedUs": 508.96050420168064,
+      "DecodeThenUs": 8546.0
+    },
+    {
+      "Name": "actual-chinese-control",
+      "BeforeUs": 92.41194486983154,
+      "AfterUs": 92.85052790346909,
+      "DeltaPercent": 0.47459561018363683,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.008934659777692,
+      "AfterSpread": 1.0168268640442428,
+      "PredecodedUs": 19.832320897986133,
+      "DecodeThenUs": 2202.276923076923
+    },
+    {
+      "Name": "folded-russian-control",
+      "BeforeUs": 232.23702290076335,
+      "AfterUs": 255.02563025210083,
+      "DeltaPercent": 9.812650483844344,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0059177951834897,
+      "AfterSpread": 1.0255201799108453,
+      "PredecodedUs": 448.33629629629627,
+      "DecodeThenUs": 5684.054545454545
+    }
+  ]
+}

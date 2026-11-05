@@ -1,0 +1,224 @@
+{
+  "Scope": "One15case <=120s public validation density-hint persistence comparison. Exact acceptedB2C9D5A4 Core with six frozenfb309 companion DLL-PDBs versus parentdf8e62c8 Core overlay. Reuse caller-local existing boolean byref and remove drain duplicate; preserve learned density hint across scalar resumes. No new state object,mode,selector,framework,owner,wrapper,unchecked access or allocation. Same64-32/scalar,carry,density/idle thresholds,strict full validation,error offsets,and bounded work/interruption/resource controls. Actual email6839410B92matches ordinary/compiled/finite/deadline;heterogeneous constrained/supplementary/two-byte and mode-switch shapes;Chinese/folded/ASCII/short/Python/Pcre controls. Typed results after timing; BCL diagnostics not new parity. Normal8CPU startup thenCPU2;producer1.5s-min128,BCL250ms-min64,independent60ms,fivealternatingsamples>=20ms. At most one selected noise confirmation,no source variants,tuning,Full/package replay or reopened selector/fusion/checked campaign.",
+  "ElapsedSeconds": 80.1967319,
+  "OwnedSamples": 150,
+  "MinimumOwnedDurationMs": 54.9942,
+  "Baseline": {
+    "Core": {
+      "Version": "0.5.0-dev.30+f77e88d3d8ca2a7e439ae3fd0980d208a7959981",
+      "Sha256": "B2C9D5A4CF8935E1AB68D26DCA4E8FDE07A8E49D7E2C4E28463279EE2F3D4B16"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.30+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "77E4AEC20BA4A85EEFC4BFB267CF9D7E397F51337AC48F59FCDFCCF1C4B13016"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.30+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "95DF5BA00911F5CAD190F6D067F83F59D20BC10B51ECA33EE181362E5896B075"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "CD6849BFB29CC09B8A26E4F8D6590CDED5B4DFB858EEC08E49AEE60D74A09486"
+    }
+  },
+  "Candidate": {
+    "Core": {
+      "Version": "0.5.0-dev.30+df8e62c86808c1c67be10e508380e1e44230614e",
+      "Sha256": "A317EF7D25CB988A93095563CA873DB817E65CCA2122F0056EF17FB2EE3E00EB"
+    },
+    "Python": {
+      "Version": "0.5.0-dev.30+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "77E4AEC20BA4A85EEFC4BFB267CF9D7E397F51337AC48F59FCDFCCF1C4B13016"
+    },
+    "Pcre": {
+      "Version": "0.5.0-dev.30+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "95DF5BA00911F5CAD190F6D067F83F59D20BC10B51ECA33EE181362E5896B075"
+    },
+    "Benchmark": {
+      "Version": "1.0.0+fb30938025f0287f08c270806553aedf77241da0",
+      "Sha256": "CD6849BFB29CC09B8A26E4F8D6590CDED5B4DFB858EEC08E49AEE60D74A09486"
+    }
+  },
+  "Rows": [
+    {
+      "Name": "ascii-count-control",
+      "BeforeUs": 2.5195992714025497,
+      "AfterUs": 2.5065704661704165,
+      "DeltaPercent": -0.5170983092434689,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0309087140098412,
+      "AfterSpread": 1.0087203646456064,
+      "PredecodedUs": 3.5493531157270035,
+      "DecodeThenUs": 27.134314115308154
+    },
+    {
+      "Name": "actual-email",
+      "BeforeUs": 1187.786274509804,
+      "AfterUs": 1168.196153846154,
+      "DeltaPercent": -1.6492967703078287,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0174438297391892,
+      "AfterSpread": 1.0194388091600504,
+      "PredecodedUs": 507.2733333333333,
+      "DecodeThenUs": 8398.35
+    },
+    {
+      "Name": "actual-email-compiled",
+      "BeforeUs": 1177.1333333333334,
+      "AfterUs": 1175.0153846153846,
+      "DeltaPercent": -0.17992428367917812,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0082539661318328,
+      "AfterSpread": 1.0299995306549374,
+      "PredecodedUs": 455.993984962406,
+      "DecodeThenUs": 8800.4875
+    },
+    {
+      "Name": "actual-email-finite-live",
+      "BeforeUs": 2787.168181818182,
+      "AfterUs": 2784.109090909091,
+      "DeltaPercent": -0.10975623677992319,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeSpread": 1.013962064042423,
+      "AfterSpread": 1.0127423840994052,
+      "PredecodedUs": 509.24666666666667,
+      "DecodeThenUs": 8516.65
+    },
+    {
+      "Name": "actual-email-deadline-live",
+      "BeforeUs": 2871.277272727273,
+      "AfterUs": 2859.3333333333335,
+      "DeltaPercent": -0.4159800067861319,
+      "BeforeBytes": 160.0,
+      "AfterBytes": 160.0,
+      "BeforeSpread": 1.0052615990382774,
+      "AfterSpread": 1.0203210578565978,
+      "PredecodedUs": 504.8479338842975,
+      "DecodeThenUs": 8836.675
+    },
+    {
+      "Name": "actual-chinese-control",
+      "BeforeUs": 93.54977238239756,
+      "AfterUs": 95.99229559748427,
+      "DeltaPercent": 2.6109344286831204,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.02092229843771,
+      "AfterSpread": 1.0172019352590116,
+      "PredecodedUs": 19.692425726412015,
+      "DecodeThenUs": 2177.989655172414
+    },
+    {
+      "Name": "folded-russian-control",
+      "BeforeUs": 230.39256505576208,
+      "AfterUs": 255.0045267489712,
+      "DeltaPercent": 10.682619765638822,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0111481978135441,
+      "AfterSpread": 1.0089698984818547,
+      "PredecodedUs": 446.1116788321168,
+      "DecodeThenUs": 5624.827272727272
+    },
+    {
+      "Name": "frequent-constrained-resumes",
+      "BeforeUs": 329.958064516129,
+      "AfterUs": 295.1048543689321,
+      "DeltaPercent": -10.56292113917805,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.013002061001706,
+      "AfterSpread": 1.014719351691456,
+      "PredecodedUs": 1322.182608695652,
+      "DecodeThenUs": 1502.3631578947368
+    },
+    {
+      "Name": "alternating-width-modes",
+      "BeforeUs": 10.14943686006826,
+      "AfterUs": 10.44558212058212,
+      "DeltaPercent": 2.9178491831306275,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0176024849769998,
+      "AfterSpread": 1.0278866202645123,
+      "PredecodedUs": 21.869216691068814,
+      "DecodeThenUs": 76.8185230024213
+    },
+    {
+      "Name": "mostly-two-byte",
+      "BeforeUs": 28.53489260143198,
+      "AfterUs": 28.6059849198869,
+      "DeltaPercent": 0.24914170677954317,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0122309528478592,
+      "AfterSpread": 1.0643383764047007,
+      "PredecodedUs": 85.32947067238912,
+      "DecodeThenUs": 131.77256637168142
+    },
+    {
+      "Name": "supplementary-resumes",
+      "BeforeUs": 167.6927777777778,
+      "AfterUs": 151.40712468193385,
+      "DeltaPercent": -9.711600768773287,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.017050027640973,
+      "AfterSpread": 1.0084390687713793,
+      "PredecodedUs": 663.4179775280899,
+      "DecodeThenUs": 859.5283582089553
+    },
+    {
+      "Name": "constrained-only-control",
+      "BeforeUs": 138.83566433566435,
+      "AfterUs": 140.61405152224825,
+      "DeltaPercent": 1.280929648079665,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0189880108025535,
+      "AfterSpread": 1.0305002199086064,
+      "PredecodedUs": 664.4288888888889,
+      "DecodeThenUs": 744.6986842105263
+    },
+    {
+      "Name": "short-mixed-control",
+      "BeforeUs": 0.21563467381334556,
+      "AfterUs": 0.22371973822708344,
+      "DeltaPercent": 3.749426875909734,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0279725083607556,
+      "AfterSpread": 1.024128732735207,
+      "PredecodedUs": 0.3516176244939391,
+      "DecodeThenUs": 0.4022840311321972
+    },
+    {
+      "Name": "python-mixed-control",
+      "BeforeUs": 518.0417391304348,
+      "AfterUs": 517.9230769230769,
+      "DeltaPercent": -0.02290591633737904,
+      "BeforeBytes": 3568.0,
+      "AfterBytes": 3568.0,
+      "BeforeSpread": 1.0143895385815687,
+      "AfterSpread": 1.015213043816279,
+      "PredecodedUs": 167.10495867768597,
+      "DecodeThenUs": 187.23006756756757
+    },
+    {
+      "Name": "pcre-ascii-control",
+      "BeforeUs": 142.77919621749407,
+      "AfterUs": 143.83939393939394,
+      "DeltaPercent": 0.7425435567552041,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeSpread": 1.0098936791214932,
+      "AfterSpread": 1.0076400996365182,
+      "PredecodedUs": 24.520379537953794,
+      "DecodeThenUs": 25.079399343031444
+    }
+  ]
+}

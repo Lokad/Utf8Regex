@@ -1,5 +1,10 @@
 # Classify valid two-byte UTF-8 leads directly
 
+**Measurement correction:** the dual-context figures below are historical.
+[Identical-binary control and separate-process comparison](../ProducerProcessIsolation-20261105/README.md)
+supersede their producer-effect attribution: Chinese−4.43/−4.78%, case-sensitive
+Russian−5.78%, folded+3.31% and finite Chinese+3.12%. The classifier remains accepted.
+
 **Accepted with a folded-Russian cost.** The existing common UTF-8 validator
 now classifies C2–DF directly using unsigned vector subtraction/range comparison.
 This removes the separate overlong-lead mask, its constants and its bitfield.
