@@ -68,10 +68,22 @@ succeeds with a one-byte working limit, while a true candidate still fails VM
 storage admission under that limit. Initial Windows leading-prefix66 and broader
 Core744 runs reuse matching binaries; no full/package matrix is repeated.
 
+A separate [selected refresh](selected-refresh.json) on committed206691c4 updates
+only Ruff's ordinary/compiled rows. Their public Count costs are4382.85/4466.00µs,
+ratios0.541/0.977 to predecoded .NET11, both Status=Win under the existing rules.
+All30 six-lane samples exceed49.7022ms. Every unselected measurement, including
+lifecycle/scaling evidence, is preserved. Three generated files were hash-imported;
+six descending tables/178 ratios and two snapshot hosts/six checks pass SkipBuild.
+The initial shell invocation passed comma-separated arguments as one flag and
+exited2 before measuring; the corrected invocation reuses its matching build.
+Both attempts remain archived. The previous43m24s Full remains its frozen source's
+receipt; this selected update does not claim a new complete Full/package boundary.
+
 Immutable artifacts/experiments/ruff-straight-prefix-20261105:
 
 - evidence.tar.gz: `3172A2698FFA9F4C3B80C766FFA3348368B435892F1B830012C072E95B492B60`.
 - windows-evidence.zip: `17D9D5C3DE4FA93E21B8CF0401B3B39822D116A1E78C25E7E92BF93085C55BAB`.
+- selected-evidence.tar.gz: `2FB51CB836DE95997A22479F858C93F0058E9865AE19ACF54AB530B3CF40AACE`.
 
 Raw evidence retains the declaration, exact source, both graphs, caller and
 preflights, every sample, focused logs, source/companion checks and terminal0.

@@ -1,0 +1,36 @@
+{
+  "Source": "206691c48f9749e011fae1eeedb319b108a7684f",
+  "ChangedMeasurements": [
+    "dotnet-performance/ruff-noqa/tweaked",
+    "dotnet-performance-compiled/ruff-noqa/tweaked"
+  ],
+  "UnselectedPreserved": true,
+  "LaneSamples": 30,
+  "MinimumLaneDurationMs": 49.7022,
+  "SnapshotHosts": 2,
+  "SnapshotChecks": 6.0,
+  "Tables": 6,
+  "RatioRows": 178,
+  "Rows": [
+    {
+      "Section": "dotnet-performance",
+      "Status": "Win",
+      "Utf8Microseconds": 4382.849999999999,
+      "RatioToPredecoded": 0.5409962246583941
+    },
+    {
+      "Section": "dotnet-performance-compiled",
+      "Status": "Win",
+      "Utf8Microseconds": 4466,
+      "RatioToPredecoded": 0.9771107150813098
+    }
+  ],
+  "Summary": {
+    "Rows": 178,
+    "Wins": 118,
+    "TieCandidates": 2,
+    "Gaps": 54,
+    "Unqualified": 4
+  },
+  "ArchiveSha256": "2FB51CB836DE95997A22479F858C93F0058E9865AE19ACF54AB530B3CF40AACE"
+}

@@ -129,11 +129,11 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 | `literal/sherlock-zh` | 89.494 us | 18.824 us | 2,153.979 us | 4.75x |
 | `literal-alternate/sherlock-zh` | 149.964 us | 68.562 us | 2,164.626 us | 2.19x |
 | `literal/sherlock-ru` | 172.651 us | 104.285 us | 5,395.580 us | 1.66x |
-| `ruff-noqa/tweaked` | 10,171.520 us | 7,841.486 us | 41,368.600 us | 1.30x |
 | `literal/sherlock-casei-en` | 158.871 us | 197.511 us | 591.001 us | 0.80x |
 | `aws-keys/quick` | 6,560.856 us | 9,941.260 us | 43,497.600 us | 0.66x |
 | `literal/sherlock-casei-ru` | 257.501 us | 392.104 us | 5,580.967 us | 0.66x |
 | `literal/sherlock-en` | 56.835 us | 86.626 us | 479.658 us | 0.66x |
+| `ruff-noqa/tweaked` | 4,382.850 us | 8,101.443 us | 41,642.150 us | 0.54x |
 | `bounded-repeat/letters-en` | 1,054.365 us | 2,849.700 us | 2,936.512 us | 0.37x |
 | `literal-alternate/sherlock-ru` | 1,689.465 us | 4,875.882 us | 10,116.433 us | 0.35x |
 | `bounded-repeat/letters-ru` | 1,968.492 us | 5,959.656 us | 6,767.387 us | 0.33x |
@@ -210,7 +210,6 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 |---|---:|---:|---:|---:|
 | `literal-alternate/sherlock-zh` | 149.269 us | 36.539 us | 2,159.571 us | 4.09x |
 | `literal/sherlock-zh` | 89.626 us | 23.842 us | 2,148.904 us | 3.76x |
-| `ruff-noqa/tweaked` | 10,345.240 us | 4,570.975 us | 36,194.900 us | 2.26x |
 | `literal/sherlock-casei-en` | 158.761 us | 80.644 us | 441.405 us | 1.97x |
 | `literal/sherlock-ru` | 172.693 us | 92.024 us | 5,263.540 us | 1.88x |
 | `aws-keys/quick` | 6,572.250 us | 3,696.321 us | 35,331.150 us | 1.78x |
@@ -218,6 +217,7 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 | `literal/sherlock-casei-ru` | 255.623 us | 222.687 us | 5,326.840 us | 1.15x |
 | `literal-alternate/sherlock-en-mixed` | 198.519 us | 177.680 us | 553.914 us | 1.12x |
 | `literal-alternate/sherlock-en` | 411.271 us | 375.214 us | 794.932 us | 1.10x |
+| `ruff-noqa/tweaked` | 4,466.000 us | 4,570.618 us | 35,725.900 us | 0.98x |
 | `bounded-repeat/letters-ru` | 1,966.865 us | 2,073.040 us | 2,891.200 us | 0.95x |
 | `literal/sherlock-en` | 56.983 us | 76.053 us | 438.261 us | 0.75x |
 | `literal-alternate/sherlock-en-nomatch` | 153.998 us | 208.870 us | 591.372 us | 0.74x |
