@@ -289,9 +289,10 @@ Denial throws `Utf8ResourceLimitExceededException` with kind, limit and requeste
 total. Totals saturate, and first denial stays sticky across copies. Denial is not
 no-match or partial success. Numerical charges depend on route/version; they are
 not byte counts, CPU instructions, elapsed time or portable per-pattern minima.
-The shared backtracking VM uses small fixed frame and repeat-journal chunks.
-Short searches need less initial capacity; deep runs acquire more chunks, headers
-and growth checkpoints. Every covered acquisition still requires admission first.
+The shared backtracking VM uses small fixed frame, capture-trail and repeat-journal
+chunks. Short searches and captures need less initial capacity; deep runs acquire
+more chunks, headers and growth checkpoints. Every covered acquisition still
+requires admission first.
 The invocation checks its numeric working ceiling before caller-funded admission;
 live reservations, overlap and the first denial remain shared across aliases.
 Native shortcuts still meter bounded search, comparison and publication.

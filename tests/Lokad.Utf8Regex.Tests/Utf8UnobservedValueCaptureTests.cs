@@ -37,7 +37,8 @@ public sealed class Utf8UnobservedValueCaptureTests
             // Mirrored repeats retain their ordinary frames and repeat journal.
             Timeout.InfiniteTimeSpan, new Utf8ResourcePolicy
             {
-                MaxWorkingBytes = rtl ? (ulong)Utf8SliceRunner.TrailReserveBytes - 1 : 256UL,
+                MaxWorkingBytes = rtl ? (ulong)(Utf8SliceRunner.FrameReserveBytes +
+                    Utf8SliceRunner.JournalReserveBytes + Utf8SliceRunner.TrailReserveBytes) - 1 : 256UL,
                 MaxWorkSteps = 100000
             });
         var input = "xxabcdef123"u8.ToArray();

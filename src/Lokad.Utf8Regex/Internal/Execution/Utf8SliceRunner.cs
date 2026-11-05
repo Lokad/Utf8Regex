@@ -130,7 +130,7 @@ internal readonly struct Utf8SliceCountOutcome
 internal static partial class Utf8SliceRunner
 {
     internal const int FrameChunkCapacity = 16;
-    internal const int TrailChunkCapacity = 128;
+    internal const int TrailChunkCapacity = 32;
     internal const int JournalChunkCapacity = 32;
     internal const int BalanceChunkCapacity = 128;
     internal const int ChunkTableCapacity = 4;
