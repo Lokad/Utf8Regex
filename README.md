@@ -315,11 +315,11 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `structural/ordered-keyword-window` | 5.419 us | 17.689 us | 29.315 us | 0.31x |
 | `structural/ordered-modifier-pair` | 5.377 us | 17.622 us | 28.499 us | 0.31x |
 | `lokad/lexer/string` | 22.215 us | 96.842 us | 103.230 us | 0.23x |
-| `structural/modifier-family-to-type-pair` | 23.544 us | 132.581 us | 144.301 us | 0.18x |
 | `lokad/folding/region-marker` | 6.418 us | 36.732 us | 60.366 us | 0.17x |
 | `lokad/langserv/url-dashboard` | 2.520 us | 24.617 us | 24.781 us | 0.10x |
 | `lokad/langserv/url-download` | 2.688 us | 50.857 us | 51.306 us | 0.05x |
 | `structural/keyword-family-to-capitalized-identifier` | 10.505 us | 220.835 us | 234.602 us | 0.05x |
+| `structural/modifier-family-to-type-pair` | 4.972 us | 131.783 us | 142.816 us | 0.04x |
 | `balancing/begin-end-blocks` | 5.716 us | 4,451.167 us | 4,508.133 us | 0.0013x |
 <!-- END GENERATED LOKAD BENCHMARKS -->
 
@@ -339,7 +339,6 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | Case | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
 | `lokad/imports/module-imports` | 12.330 us | 4.427 us | 26.111 us | 2.78x |
-| `structural/modifier-family-to-type-pair` | 23.617 us | 10.716 us | 21.634 us | 2.20x |
 | `lokad/langserv/color-short-hex` | 1.695 us | 1.020 us | 1.205 us | 1.66x |
 | `structural/keyword-to-generic-type` | 5.507 us | 3.510 us | 14.621 us | 1.57x |
 | `lokad/langserv/helper-identifier` | 7.205 us | 4.621 us | 5.588 us | 1.56x |
@@ -368,6 +367,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `lokad/style/range-ref` | 0.928 us | 1.539 us | 1.540 us | 0.60x |
 | `literal/identifier-token` | 2.773 us | 4.694 us | 15.652 us | 0.59x |
 | `lokad/lexer/string` | 22.121 us | 45.627 us | 48.148 us | 0.48x |
+| `structural/modifier-family-to-type-pair` | 5.000 us | 10.705 us | 21.928 us | 0.47x |
 | `lokad/langserv/url-dashboard` | 2.526 us | 7.471 us | 7.943 us | 0.34x |
 | `lokad/langserv/url-download` | 2.696 us | 13.210 us | 13.371 us | 0.20x |
 | `lokad/folding/region-marker` | 6.454 us | 36.920 us | 60.372 us | 0.17x |

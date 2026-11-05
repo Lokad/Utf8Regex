@@ -67,11 +67,20 @@ projects were rebuilt for the final candidate. The timed comparison measures the
 complete simplification once against the original frozen baseline. Its eight-case
 caller is unchanged; the final preflight reuses the original before graph.
 
+A [selected refresh](selected-refresh.json) on committed2ace2d51 updates only the
+modifier/type ordinary and compiled rows. Public costs4.972/5.000µs, ratios0.038/
+0.467 to predecoded .NET11, both StatusWin. All30 six-lane samples exceed48.2244ms.
+Every unselected observation and lifecycle/scaling record remains unchanged.
+Three generated files were hash-imported; six descending tables/178 ratios and
+two snapshot hosts/six checks pass SkipBuild. The previous full-run receipt keeps
+its frozen source; this selected update is not a new Full/package qualification.
+
 Immutable artifacts/experiments/structural-suffix-span-20261105:
 
 - evidence.tar.gz: `A4A01347AD4C112ACD5E288D171D6B0E0BCFD7C66E34385DB377FCE44CA0BFA6`.
 - windows-evidence.zip: `3820F9768F118DBB2A20464ED131B543D621FC74CCE69B0E14D3E121D67356BE`.
 - route-evidence.zip: `04581CC06052D60B4196DE6885CB7D4F93C8D7D89F6AB6612A69EC884B81E0EB`.
+- selected-evidence.tar.gz: `D55A366EEA8FEAD4E0C4741441AEEF3076DF315D02B6A6AC8D94B15FC95FD5DF`.
 
 Raw evidence retains declarations, initial/final source and graphs, caller,
 preflights, every sample, focused logs and source/companion checks. Published/

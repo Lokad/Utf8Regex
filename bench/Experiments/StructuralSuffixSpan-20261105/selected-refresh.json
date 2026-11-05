@@ -1,0 +1,36 @@
+{
+  "Source": "2ace2d5164ca77aa50785c910138dde9b5490002",
+  "ChangedMeasurements": [
+    "lokad/structural/modifier-family-to-type-pair",
+    "lokad-compiled/structural/modifier-family-to-type-pair"
+  ],
+  "UnselectedPreserved": true,
+  "LaneSamples": 30,
+  "MinimumLaneDurationMs": 48.2244,
+  "SnapshotHosts": 2,
+  "SnapshotChecks": 6.0,
+  "Tables": 6,
+  "RatioRows": 178,
+  "Rows": [
+    {
+      "Section": "lokad",
+      "Status": "Win",
+      "Utf8Microseconds": 4.971599718111346,
+      "RatioToPredecoded": 0.03772575838366831
+    },
+    {
+      "Section": "lokad-compiled",
+      "Status": "Win",
+      "Utf8Microseconds": 5,
+      "RatioToPredecoded": 0.46707215891794446
+    }
+  ],
+  "Summary": {
+    "Rows": 178,
+    "Wins": 119,
+    "TieCandidates": 2,
+    "Gaps": 53,
+    "Unqualified": 4
+  },
+  "ArchiveSha256": "D55A366EEA8FEAD4E0C4741441AEEF3076DF315D02B6A6AC8D94B15FC95FD5DF"
+}
