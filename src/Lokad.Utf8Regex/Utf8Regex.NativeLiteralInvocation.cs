@@ -86,7 +86,9 @@ public sealed partial class Utf8Regex
 
     // Shared semantic eligibility, independent of the optional Core owner's
     // policy. An adapter can supply finite limits through its borrowed invocation.
-    private bool CanUseNativeLiteralSearch(Utf8SliceProgram program) =>
+    // Count can borrow the existing eight-needle bounded search. Result paths
+    // retain their established three-alternative eligibility.
+    private bool CanUseNativeLiteralSearch(Utf8SliceProgram program, int maximumAlternatives = 3) =>
         !program.RightToLeft && !program.IgnoreCase &&
         !program.HasBalancing && !program.HasSharedCaptureDeclarations &&
         !program.HasExplicitCaptureNumbers && !program.HasContiguousAnchor &&
@@ -97,7 +99,8 @@ public sealed partial class Utf8Regex
         (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal &&
             _preparedRegex.LiteralUtf8 is { Length: > 0 } ||
          _preparedRegex.ExecutionKind == NativeExecutionKind.ExactUtf8Literals &&
-            _preparedRegex.SearchPlan.AlternateLiteralsUtf8 is { Length: 2 or 3 }) &&
+            _preparedRegex.SearchPlan.AlternateLiteralsUtf8 is { Length: >= 2 } literals &&
+            literals.Length <= maximumAlternatives) &&
         !_preparedRegex.SearchPlan.HasBoundaryRequirements;
 
     // Metered literal value operations start their one deadline before validation.

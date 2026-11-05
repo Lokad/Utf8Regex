@@ -1463,7 +1463,7 @@ public sealed partial class Utf8Regex
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
         try
         {
-            if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program) ||
+            if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program, maximumAlternatives: 8) ||
                 CanUseNativeScalarTokenSearch(program, startByte))
             {
                 // These complete counters consume validated bytes, not coordinate metadata.
@@ -1554,7 +1554,7 @@ public sealed partial class Utf8Regex
         // A pure literal/family Count needs no capture slots or continuation frames.
         // Borrow the validated invocation instead of dropping finite callers
         // into the VM solely because they selected an enforceable policy.
-        if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program))
+        if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program, maximumAlternatives: 8))
         {
             var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(
                 _preparedRegex.SearchPlan, input[startByte..], false, ref invocation, out var count);

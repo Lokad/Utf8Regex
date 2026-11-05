@@ -308,6 +308,11 @@ confirmation is required. Needles above1024 bytes keep the existing generic path
 The same invocation charges eligibility, each branch/window and publication;
 avoiding false-candidate replay can reduce work, while dense hits can cost more.
 Caller validation, enclosing regex verification and original interruption remain.
+Finite-policy and caller-funded `Count` also admit four-to-eight complete literal
+alternatives to this existing bounded search. Avoiding VM scratch can lower work,
+depth and working requirements. Explicit UTF-16 offsets still require admission
+for their coordinate map; result-producing operations retain their existing
+native eligibility.
 Scalar Count can search an exact ASCII delimiter after a proved leading
 class run, with or without intervening whitespace. The actual scalar predicate
 rewinds a conservative candidate window; the VM verifies every retained start.

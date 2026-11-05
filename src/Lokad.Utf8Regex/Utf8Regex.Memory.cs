@@ -104,7 +104,7 @@ public sealed partial class Utf8Regex
                     _fallbackDirectFamily.MinCount, ref invocation, out result);
                 if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
             }
-            else if (CanUseNativeLiteralSearch(_ownedSliceProgram))
+            else if (CanUseNativeLiteralSearch(_ownedSliceProgram, maximumAlternatives: 8))
             {
                 var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(_preparedRegex.SearchPlan,
                     input, false, ref invocation, out result);
