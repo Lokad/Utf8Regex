@@ -1,0 +1,240 @@
+{
+  "Scope": "Dev36-to-dev37 catalog movement; not isolated A/B or proven causality. Retain comparator/control drift and uncertainty.",
+  "PythonLargestAdverseAbsolute": [
+    {
+      "CaseId": "corpus/code-declarations",
+      "BeforeUs": 69.7154711673699,
+      "AfterUs": 117.24114942528736,
+      "DeltaUs": 47.52567825791746,
+      "Percent": 68.17092025932072,
+      "BeforeBytes": 1056,
+      "AfterBytes": 592,
+      "BeforeStatus": "ManagedFaster",
+      "AfterStatus": "ManagedFaster"
+    },
+    {
+      "CaseId": "findall/one-capture-strings",
+      "BeforeUs": 459.3216216216216,
+      "AfterUs": 472.6277777777778,
+      "DeltaUs": 13.306156156156192,
+      "Percent": 2.896914826081809,
+      "BeforeBytes": 95000,
+      "AfterBytes": 95000,
+      "BeforeStatus": "CpythonFaster",
+      "AfterStatus": "CpythonFaster"
+    },
+    {
+      "CaseId": "split/no-captures",
+      "BeforeUs": 274.0989417989418,
+      "AfterUs": 287.2427807486631,
+      "DeltaUs": 13.143838949721328,
+      "Percent": 4.795289928321811,
+      "BeforeBytes": 143488,
+      "AfterBytes": 143488,
+      "BeforeStatus": "CpythonFaster",
+      "AfterStatus": "CpythonFaster"
+    },
+    {
+      "CaseId": "corpus/mail-email-count",
+      "BeforeUs": 4063.3384615384616,
+      "AfterUs": 4074.1000000000004,
+      "DeltaUs": 10.761538461538748,
+      "Percent": 0.2648447468356796,
+      "BeforeBytes": 1544,
+      "AfterBytes": 1544,
+      "BeforeStatus": "ManagedFaster",
+      "AfterStatus": "ManagedFaster"
+    },
+    {
+      "CaseId": "findall/many-capture-utf8",
+      "BeforeUs": 736.0507246376811,
+      "AfterUs": 745.9970149253732,
+      "DeltaUs": 9.946290287692023,
+      "Percent": 1.3513050058592269,
+      "BeforeBytes": 242456,
+      "AfterBytes": 242456,
+      "BeforeStatus": "ManagedFaster",
+      "AfterStatus": "ManagedFaster"
+    },
+    {
+      "CaseId": "findall/full-strings",
+      "BeforeUs": 433.80689655172415,
+      "AfterUs": 441.76666666666665,
+      "DeltaUs": 7.959770114942501,
+      "Percent": 1.8348648161690573,
+      "BeforeBytes": 184440,
+      "AfterBytes": 184440,
+      "BeforeStatus": "CpythonFaster",
+      "AfterStatus": "CpythonFaster"
+    },
+    {
+      "CaseId": "findall/full-utf8",
+      "BeforeUs": 452.3848214285714,
+      "AfterUs": 459.35,
+      "DeltaUs": 6.965178571428623,
+      "Percent": 1.5396578845049413,
+      "BeforeBytes": 184440,
+      "AfterBytes": 184440,
+      "BeforeStatus": "ManagedFaster",
+      "AfterStatus": "ManagedFaster"
+    },
+    {
+      "CaseId": "findall/unicode-capture-utf8",
+      "BeforeUs": 521,
+      "AfterUs": 526.7421052631579,
+      "DeltaUs": 5.742105263157896,
+      "Percent": 1.1021315284372113,
+      "BeforeBytes": 120080,
+      "AfterBytes": 120080,
+      "BeforeStatus": "ManagedFaster",
+      "AfterStatus": "ManagedFaster"
+    },
+    {
+      "CaseId": "split/captures",
+      "BeforeUs": 421.83361344537815,
+      "AfterUs": 427.06,
+      "DeltaUs": 5.226386554621854,
+      "Percent": 1.238968727962364,
+      "BeforeBytes": 275240,
+      "AfterBytes": 275240,
+      "BeforeStatus": "CpythonFaster",
+      "AfterStatus": "CpythonFaster"
+    },
+    {
+      "CaseId": "family/count",
+      "BeforeUs": 635.9962962962962,
+      "AfterUs": 639.0253164556962,
+      "DeltaUs": 3.02902015939992,
+      "Percent": 0.4762638048427803,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeStatus": "ManagedFaster",
+      "AfterStatus": "ManagedFaster"
+    }
+  ],
+  "PythonLargestAdverseRelative": [
+    {
+      "CaseId": "corpus/code-declarations",
+      "BeforeUs": 69.7154711673699,
+      "AfterUs": 117.24114942528736,
+      "DeltaUs": 47.52567825791746,
+      "Percent": 68.17092025932072,
+      "BeforeBytes": 1056,
+      "AfterBytes": 592,
+      "BeforeStatus": "ManagedFaster",
+      "AfterStatus": "ManagedFaster"
+    },
+    {
+      "CaseId": "replacement/no-match-string",
+      "BeforeUs": 1.7364439883474576,
+      "AfterUs": 2.1742995601889556,
+      "DeltaUs": 0.43785557184149804,
+      "Percent": 25.215646158457282,
+      "BeforeBytes": 20016,
+      "AfterBytes": 20016,
+      "BeforeStatus": "Inconclusive",
+      "AfterStatus": "Inconclusive"
+    },
+    {
+      "CaseId": "unicode/fullmatch",
+      "BeforeUs": 15.543501080580427,
+      "AfterUs": 16.47123595505618,
+      "DeltaUs": 0.9277348744757532,
+      "Percent": 5.968635184995974,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeStatus": "ManagedFaster",
+      "AfterStatus": "ManagedFaster"
+    },
+    {
+      "CaseId": "capture/search-detailed",
+      "BeforeUs": 1.5859408365783192,
+      "AfterUs": 1.6744528647024237,
+      "DeltaUs": 0.08851202812410452,
+      "Percent": 5.5810422484025235,
+      "BeforeBytes": 944,
+      "AfterBytes": 944,
+      "BeforeStatus": "CpythonFaster",
+      "AfterStatus": "Inconclusive"
+    },
+    {
+      "CaseId": "findall/unicode-full-strings",
+      "BeforeUs": 34.49100418410042,
+      "AfterUs": 36.2852033660589,
+      "DeltaUs": 1.7941991819584828,
+      "Percent": 5.201933734320119,
+      "BeforeBytes": 4160,
+      "AfterBytes": 4160,
+      "BeforeStatus": "CpythonFaster",
+      "AfterStatus": "CpythonFaster"
+    },
+    {
+      "CaseId": "lookbehind/search-hit",
+      "BeforeUs": 0.40053855685825945,
+      "AfterUs": 0.420058260855049,
+      "DeltaUs": 0.01951970399678954,
+      "Percent": 4.873364539458569,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeStatus": "CpythonFaster",
+      "AfterStatus": "CpythonFaster"
+    },
+    {
+      "CaseId": "split/no-captures",
+      "BeforeUs": 274.0989417989418,
+      "AfterUs": 287.2427807486631,
+      "DeltaUs": 13.143838949721328,
+      "Percent": 4.795289928321811,
+      "BeforeBytes": 143488,
+      "AfterBytes": 143488,
+      "BeforeStatus": "CpythonFaster",
+      "AfterStatus": "CpythonFaster"
+    },
+    {
+      "CaseId": "common/date-miss",
+      "BeforeUs": 2.1429904174933516,
+      "AfterUs": 2.2257877280265337,
+      "DeltaUs": 0.08279731053318207,
+      "Percent": 3.863634193475751,
+      "BeforeBytes": 80,
+      "AfterBytes": 80,
+      "BeforeStatus": "CpythonFaster",
+      "AfterStatus": "CpythonFaster"
+    },
+    {
+      "CaseId": "ignorecase/search-miss",
+      "BeforeUs": 0.413697884897542,
+      "AfterUs": 0.4264048420320937,
+      "DeltaUs": 0.012706957134551722,
+      "Percent": 3.0715547742524274,
+      "BeforeBytes": 0,
+      "AfterBytes": 0,
+      "BeforeStatus": "CpythonFaster",
+      "AfterStatus": "CpythonFaster"
+    },
+    {
+      "CaseId": "anchor/fullmatch-miss",
+      "BeforeUs": 0.2982424437605859,
+      "AfterUs": 0.3072330205204452,
+      "DeltaUs": 0.008990576759859314,
+      "Percent": 3.0145195454059914,
+      "BeforeBytes": 64,
+      "AfterBytes": 64,
+      "BeforeStatus": "CpythonFaster",
+      "AfterStatus": "CpythonFaster"
+    }
+  ],
+  "ChangedRoute": [
+    {
+      "CaseId": "verbose/fullmatch-hit",
+      "BeforeUs": 0.7517408470926059,
+      "AfterUs": 0.6992308333101935,
+      "DeltaUs": -0.05251001378241238,
+      "Percent": -6.985121799021221,
+      "BeforeBytes": 1056,
+      "AfterBytes": 64,
+      "BeforeStatus": "CpythonFaster",
+      "AfterStatus": "CpythonFaster"
+    }
+  ]
+}
