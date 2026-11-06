@@ -85,7 +85,8 @@ old comparisons after source or binaries change.
   through the existing rewrite/verify commands; never hand-edit generated tables.
   Prefer selective refresh and preserve historical identities/uncertainty.
   New Core/PCRE2 refresh lanes calibrate independently and retain raw durations;
-  Core V3 samples below 20 ms remain unqualified. Python/.NET/CPython result
+  Core V3 targets 75 ms with one calibration confirmation; samples below 20 ms
+  remain unqualified. Python/.NET/CPython result
   batches consume checksums after timing. Keep lifecycle/scaling evidence when
   refreshing ordinary rows; package matrices stay at delivery boundaries.
 - Python comparisons use an official CPython in a long-lived worker, excluding

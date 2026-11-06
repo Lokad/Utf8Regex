@@ -5555,7 +5555,9 @@ internal static partial class BenchmarkInspectReporter
         // Independent counts prevent decode-heavy lanes from reducing matching
         // samples to microseconds. All lanes still perform the same public work
         // per operation; normalize by their actual counts and alternate order.
-        const double targetSampleMicroseconds = 50_000;
+        // Allocating decode lanes can accelerate after calibration. Leave
+        // headroom above the unchanged 20 ms qualification floor.
+        const double targetSampleMicroseconds = 75_000;
         var maximumIterations = Math.Max(requestedIterations, 10_000_000);
         var counts = new int[actions.Count];
         for (var lane = 0; lane < actions.Count; lane++)
@@ -5572,7 +5574,7 @@ internal static partial class BenchmarkInspectReporter
             GC.WaitForPendingFinalizers();
             GC.Collect();
             var elapsed = MeasureTimedCore(count, action).Elapsed.TotalMicroseconds;
-            if (elapsed > 0 && (elapsed < 40_000 || elapsed > 75_000))
+            if (elapsed > 0 && (elapsed < targetSampleMicroseconds * .8 || elapsed > targetSampleMicroseconds * 1.5))
                 count = (int)Math.Clamp(Math.Ceiling(count * targetSampleMicroseconds / elapsed), requestedIterations, maximumIterations);
             counts[lane] = count;
         }

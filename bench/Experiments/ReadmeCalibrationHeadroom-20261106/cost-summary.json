@@ -1,0 +1,547 @@
+{
+  "Scope": "ONE bounded four-workload old/new runner comparison. Only benchmark calibrator changes. Equal-result public lanes, same shipped graph and allocations. Duration reliability and runner wall time, not a production speedup or qualified catalog result.",
+  "Parent": "13d97dd7c7ca277274e643675dc3f01c15289c89",
+  "BenchmarkBefore": "B7F07B3FEEB743FDDD8E24B3EE0C8CC04884614B409718A41F41EF8C8A3C7DE6",
+  "BenchmarkAfter": "7CBDD84F85EB017DD4B1DF00F1A7B0D7E7E56BCCCDF4646B850A9E5C67E6C28A",
+  "Seconds": 47.457930294,
+  "Comparisons": 1,
+  "Confirmations": 0,
+  "SamplesPerSide": 120,
+  "Rows": [
+    {
+      "Case": "twain",
+      "Before": {
+        "Side": "before",
+        "WallSeconds": 4.958411125,
+        "LaneIterations": [
+          44,
+          44,
+          40,
+          39,
+          4,
+          4
+        ],
+        "MinimumMilliseconds": [
+          50.8819,
+          50.9452,
+          50.8099,
+          49.8505,
+          24.8885,
+          24.407799999999998
+        ],
+        "LanesBelow20ms": [],
+        "SamplesBelow20ms": 0,
+        "PublicMicroseconds": [
+          1158.9977272727274,
+          1158.7386363636363,
+          1361.09,
+          1307.6820512820511,
+          8881.875,
+          6518.175
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          32027968,
+          32027968
+        ],
+        "PhaseMilliseconds": {
+          "Warmup": 2072.7464,
+          "Calibration": 662.9403,
+          "Sampling": 1343.0635,
+          "Allocation": 271.2158
+        },
+        "PeakResidentKiB": 379616
+      },
+      "After": {
+        "Side": "after",
+        "WallSeconds": 5.878893803,
+        "LaneIterations": [
+          62,
+          62,
+          58,
+          57,
+          4,
+          9
+        ],
+        "MinimumMilliseconds": [
+          75.354,
+          75.3571,
+          75.8592,
+          75.9965,
+          25.7575,
+          68.7807
+        ],
+        "LanesBelow20ms": [],
+        "SamplesBelow20ms": 0,
+        "PublicMicroseconds": [
+          1216.7387096774194,
+          1217.4370967741936,
+          1363.2275862068966,
+          1335.1035087719297,
+          9074.1,
+          7876.911111111111
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          32027968,
+          32027968
+        ],
+        "PhaseMilliseconds": {
+          "Warmup": 1962.3852,
+          "Calibration": 806.8805,
+          "Sampling": 2079.1443,
+          "Allocation": 415.445
+        },
+        "PeakResidentKiB": 379484
+      },
+      "WallPercent": 18.56406527806831
+    },
+    {
+      "Case": "river",
+      "Before": {
+        "Side": "before",
+        "WallSeconds": 5.309461124,
+        "LaneIterations": [
+          16,
+          16,
+          2,
+          34,
+          1,
+          3
+        ],
+        "MinimumMilliseconds": [
+          53.212900000000005,
+          52.8215,
+          64.20830000000001,
+          51.4109,
+          35.9298,
+          18.410400000000003
+        ],
+        "LanesBelow20ms": [
+          "DecodeThenCompiledRegex"
+        ],
+        "SamplesBelow20ms": 1,
+        "PublicMicroseconds": [
+          3329.74375,
+          3337.83125,
+          32231.4,
+          1534.2911764705882,
+          45695,
+          11397.466666666667
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          32027968,
+          32027968
+        ],
+        "PhaseMilliseconds": {
+          "Warmup": 1918.1522,
+          "Calibration": 733.8596,
+          "Sampling": 1553.2194,
+          "Allocation": 296.6877
+        },
+        "PeakResidentKiB": 384472
+      },
+      "After": {
+        "Side": "after",
+        "WallSeconds": 6.706680114,
+        "LaneIterations": [
+          22,
+          23,
+          3,
+          49,
+          2,
+          4
+        ],
+        "MinimumMilliseconds": [
+          75.2698,
+          78.6647,
+          96.0805,
+          78.1017,
+          78.22510000000001,
+          29.530900000000003
+        ],
+        "LanesBelow20ms": [],
+        "SamplesBelow20ms": 0,
+        "PublicMicroseconds": [
+          3427.7681818181813,
+          3444.913043478261,
+          32778.76666666667,
+          1608.3632653061225,
+          44760.2,
+          16771.525
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          32027968,
+          32027968
+        ],
+        "PhaseMilliseconds": {
+          "Warmup": 2069.258,
+          "Calibration": 943.3183,
+          "Sampling": 2424.5631,
+          "Allocation": 462.6013
+        },
+        "PeakResidentKiB": 384684
+      },
+      "WallPercent": 26.315645926556375
+    },
+    {
+      "Case": "symbol",
+      "Before": {
+        "Side": "before",
+        "WallSeconds": 5.464645921,
+        "LaneIterations": [
+          28,
+          28,
+          2,
+          41,
+          2,
+          3
+        ],
+        "MinimumMilliseconds": [
+          50.4195,
+          50.825900000000004,
+          46.6028,
+          50.686,
+          55.0459,
+          16.2653
+        ],
+        "LanesBelow20ms": [
+          "DecodeThenCompiledRegex"
+        ],
+        "SamplesBelow20ms": 2,
+        "PublicMicroseconds": [
+          1819.3285714285714,
+          1824.4285714285713,
+          23524.45,
+          1264.2268292682927,
+          30839.15,
+          6694.533333333333
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          32027968,
+          32027968
+        ],
+        "PhaseMilliseconds": {
+          "Warmup": 2302.4404,
+          "Calibration": 728.3816,
+          "Sampling": 1429.8165,
+          "Allocation": 287.7135
+        },
+        "PeakResidentKiB": 382608
+      },
+      "After": {
+        "Side": "after",
+        "WallSeconds": 6.527571947,
+        "LaneIterations": [
+          40,
+          40,
+          4,
+          58,
+          2,
+          5
+        ],
+        "MinimumMilliseconds": [
+          75.1941,
+          75.2144,
+          92.9335,
+          73.96130000000001,
+          55.5815,
+          34.912699999999994
+        ],
+        "LanesBelow20ms": [],
+        "SamplesBelow20ms": 0,
+        "PublicMicroseconds": [
+          1885.44,
+          1891.235,
+          23512.2,
+          1296.0931034482758,
+          31407.45,
+          7906.539999999999
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          32027968,
+          32027968
+        ],
+        "PhaseMilliseconds": {
+          "Warmup": 2416.4463,
+          "Calibration": 843.2431,
+          "Sampling": 2121.6927,
+          "Allocation": 428.2637
+        },
+        "PeakResidentKiB": 382548
+      },
+      "WallPercent": 19.450958787929864
+    },
+    {
+      "Case": "control",
+      "Before": {
+        "Side": "before",
+        "WallSeconds": 4.98195916,
+        "LaneIterations": [
+          865,
+          865,
+          580,
+          654,
+          129,
+          92
+        ],
+        "MinimumMilliseconds": [
+          50.067800000000005,
+          49.887800000000006,
+          49.9613,
+          49.9972,
+          53.6619,
+          37.5231
+        ],
+        "LanesBelow20ms": [],
+        "SamplesBelow20ms": 0,
+        "PublicMicroseconds": [
+          57.980346820809245,
+          58.00531791907514,
+          87.18741379310345,
+          76.59694189602446,
+          450.70542635658916,
+          458.76630434782606
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          1797352,
+          1797352
+        ],
+        "PhaseMilliseconds": {
+          "Warmup": 1973.6723,
+          "Calibration": 670.8836,
+          "Sampling": 1540.2269,
+          "Allocation": 306.8126
+        },
+        "PeakResidentKiB": 101744
+      },
+      "After": {
+        "Side": "after",
+        "WallSeconds": 5.972690239,
+        "LaneIterations": [
+          1300,
+          1296,
+          858,
+          976,
+          190,
+          150
+        ],
+        "MinimumMilliseconds": [
+          74.74080000000001,
+          74.3645,
+          74.7643,
+          74.43589999999999,
+          83.6327,
+          60.7881
+        ],
+        "LanesBelow20ms": [],
+        "SamplesBelow20ms": 0,
+        "PublicMicroseconds": [
+          57.68292307692308,
+          58.023070987654314,
+          87.16048951048951,
+          76.66987704918033,
+          456.02210526315787,
+          420.008
+        ],
+        "AllocatedBytes": [
+          0,
+          0,
+          0,
+          0,
+          1797352,
+          1797352
+        ],
+        "PhaseMilliseconds": {
+          "Warmup": 1927.5744,
+          "Calibration": 812.336,
+          "Sampling": 2284.1148,
+          "Allocation": 466.0496
+        },
+        "PeakResidentKiB": 84112
+      },
+      "WallPercent": 19.88637496177308
+    }
+  ],
+  "Unchanged": [
+    {
+      "File": "Lokad.Utf8Regex.Pcre2.pdb",
+      "Sha256": "2AEE756D3587A554534E55509754A7CBC8138C0220EBBB45058AEEADE367A25A"
+    },
+    {
+      "File": "Lokad.Utf8Regex.PythonRe.pdb",
+      "Sha256": "4362AD0510F9164537E082309C29719FC465ABA3FA133C140614FBA76879CC5B"
+    },
+    {
+      "File": "Lokad.Utf8Regex.pdb",
+      "Sha256": "E8001487570802719386FE43B9D52006C7F0EA2DD3CF884E1B36EEB91158F394"
+    },
+    {
+      "File": "PythonPointWarmupProbe.runtimeconfig.json",
+      "Sha256": "C2ECF2430D6785354D9099B35EEF9D6AC3D72F2089DC3DC9FD723558265B83D0"
+    },
+    {
+      "File": "PythonPointPathProbe.runtimeconfig.json",
+      "Sha256": "C2ECF2430D6785354D9099B35EEF9D6AC3D72F2089DC3DC9FD723558265B83D0"
+    },
+    {
+      "File": "Lokad.Utf8Regex.Benchmarks.runtimeconfig.json",
+      "Sha256": "5176A0099F7D76CD7803F528AF7F33FD0E48FFB58D6D75B725E592DCEF1F4A35"
+    },
+    {
+      "File": "InputProbe.runtimeconfig.json",
+      "Sha256": "C2ECF2430D6785354D9099B35EEF9D6AC3D72F2089DC3DC9FD723558265B83D0"
+    },
+    {
+      "File": "PythonPointWarmupProbe.deps.json",
+      "Sha256": "DB6396CA13420E9B62C790874E37005A776562C567A34211FF22CCC11F9B642E"
+    },
+    {
+      "File": "PythonPointPathProbe.deps.json",
+      "Sha256": "CAD7E0479D3D5F79BA254E2E0EE815E1F0FF93F00E1E0AD90D83BA2A0F566A9F"
+    },
+    {
+      "File": "Lokad.Utf8Regex.Benchmarks.deps.json",
+      "Sha256": "87C071CEE1AA42B72682CD40F1C44C7862297187A22E92EF5F811ACB68AA53BE"
+    },
+    {
+      "File": "InputProbe.deps.json",
+      "Sha256": "F49F6B88B092C859802FAB1D7C85163C2401AB587CA1132A2B48A4D2095163DB"
+    },
+    {
+      "File": "TraceReloggerLib.dll",
+      "Sha256": "6830C0F1D3F3C17719181E73DD5CFA8CCBB3F3C575329D2120576545103467B5"
+    },
+    {
+      "File": "System.Management.dll",
+      "Sha256": "0BE24B09DA5ABAD0B20EFCB58FAB14B0DEDC79B09D4FBDCB894BE268105A2195"
+    },
+    {
+      "File": "System.CodeDom.dll",
+      "Sha256": "8D0CF191C86FEEA81C9875652C06E454ABE8DBFF66BEA9E4CB5F8AA2DC02F32A"
+    },
+    {
+      "File": "PythonPointWarmupProbe.dll",
+      "Sha256": "BC8EB911A7E9CDDBE59E2744549AA94DC5F2FE5BC0B7A24D1B43ECB8861CA890"
+    },
+    {
+      "File": "PythonPointPathProbe.dll",
+      "Sha256": "5F859FA37447135593111135F6F39E19C52AB4B04531085BC740B491D3904004"
+    },
+    {
+      "File": "Pragmastat.dll",
+      "Sha256": "E9B3FC36000E7FE3FB11D3EA6A65F3C9C7B17E03C9F5034306437D65972E8C51"
+    },
+    {
+      "File": "Perfolizer.dll",
+      "Sha256": "22A4A336DB943465CBDFC8D0A8E23E89DF3024D39F1C5954D97554B3DA39E300"
+    },
+    {
+      "File": "PCRE.NET.dll",
+      "Sha256": "43D101170346B3F0070D3DC0C3F5223F5117B2F39ACD52113C553955977716B3"
+    },
+    {
+      "File": "Microsoft.Extensions.Logging.dll",
+      "Sha256": "183650081B551DFAD967A7CBF79946A229CB79458B8D04A12DB7C44B03BB9AB7"
+    },
+    {
+      "File": "Microsoft.Extensions.DependencyInjection.dll",
+      "Sha256": "2AA8182B5356A8CC5C35FC3641A87E814857D8D9BE399AC78F260343754D09E0"
+    },
+    {
+      "File": "Microsoft.DotNet.PlatformAbstractions.dll",
+      "Sha256": "B1F4AD169FB192747F5D2D3111C01DB4257E3EC1F7F18F301F7FC4BE3B869FF3"
+    },
+    {
+      "File": "Microsoft.Diagnostics.Tracing.TraceEvent.dll",
+      "Sha256": "401E948DAC99D0F9756EF96D5A8B8E4736E19E9F82CE8CDD744495951E3A94BB"
+    },
+    {
+      "File": "Microsoft.Diagnostics.Runtime.dll",
+      "Sha256": "06F9910C8A37F8D4D758538E6DD307DE58BCFB3BB13E83658142C08087A25382"
+    },
+    {
+      "File": "Microsoft.Diagnostics.NETCore.Client.dll",
+      "Sha256": "BAED2D25CA5BC53A3447C237D5572C92EAC1FD842807B3E72602A711749B1B22"
+    },
+    {
+      "File": "Microsoft.Diagnostics.FastSerialization.dll",
+      "Sha256": "83E89BAF0BBECCA8CFA194CFF13365F716849E22EFC374B669206F26998A019F"
+    },
+    {
+      "File": "Microsoft.CodeAnalysis.dll",
+      "Sha256": "395736B2D0E02BE77BEDC3847B269DA7A93BF8E49CD3431A4A8E68D2C52D5846"
+    },
+    {
+      "File": "Microsoft.CodeAnalysis.CSharp.dll",
+      "Sha256": "53302ACCA07700E9BB10DCF21034435D6E0454C8EEBF2481164EC13E520004C9"
+    },
+    {
+      "File": "Lokad.Utf8Regex.dll",
+      "Sha256": "A13D50C19F4FF9654E23EB4991CAAD94365AECB51371D12621CFB8DE5902D3B5"
+    },
+    {
+      "File": "Lokad.Utf8Regex.PythonRe.dll",
+      "Sha256": "ABEB4035015CE18E198BC4D16C656F0711B3994D914948F7D3D251D4BE00C6FC"
+    },
+    {
+      "File": "Lokad.Utf8Regex.Pcre2.dll",
+      "Sha256": "45E1E0EE4A65418DC39BE1CF9880D8AB14BBF016DDBC7A49D7C64356275874B2"
+    },
+    {
+      "File": "InputProbe.dll",
+      "Sha256": "1C575B43C769464A7CA0E5AC505096C05477FBA3E74A0C1A19CA8EE872B07447"
+    },
+    {
+      "File": "Iced.dll",
+      "Sha256": "F058C01321B4CDFC9B9151879E88E59571C8D0BA176FBCF95BC936A8F3D073ED"
+    },
+    {
+      "File": "Gee.External.Capstone.dll",
+      "Sha256": "6DFDA67784598DE9677173B89D0692593935F1A4024D36040C95DEA48C1B5965"
+    },
+    {
+      "File": "Dia2Lib.dll",
+      "Sha256": "6C4CAC68010FE032218EFE5E9FCF46EEF9F77BFAA5F3BD33F03C5FF77D5A8FAC"
+    },
+    {
+      "File": "CommandLine.dll",
+      "Sha256": "8A55501CD1A1590A4BD93A17C6FDD2C01A0ED5BFF1AEA9036BDC78D98C9A3FAD"
+    },
+    {
+      "File": "BenchmarkDotNet.dll",
+      "Sha256": "D460626B2E1A9FA2F786E09E6C85CDF4D7B73DECA636450A0E23892C8CE6192B"
+    },
+    {
+      "File": "BenchmarkDotNet.Annotations.dll",
+      "Sha256": "4B5D273032CAE7C8FC97E16713B8D4F1EE3A2AA28A0E2BD0695232FB9DD7D558"
+    }
+  ],
+  "IndependentControlScope": "Existing --measure-case public command bypasses changed calibrator. Raw before/after output retained; short lanes are descriptive controls, not qualified throughput."
+}
