@@ -1,0 +1,410 @@
+{
+  "Scope": "ONE Default fresh-process ABBA, only Python implementation differs. Public costs; no normalization or catalog Status.",
+  "SourceParent": "7323558fbd8dec460e1fafecc880c399436ae925",
+  "CoreBoth": "B515BD2DF5E67A96D8FD78F110223F7507F93858CF22B8891142206DBA3B83F9",
+  "PythonBefore": "2E76F402929F563DB7984A8A6690D051EC50B447CD86880283173BB957A1A623",
+  "PythonAfter": "84FEA93CD687F0C67F067769BE70265825434CA29E6C3F8BE64ABBE95C35860E",
+  "PcreBoth": "68A0E317AB481FABE561BF093396AA4632FB4B6ED0FBBD86F72CFC7E6521A91A",
+  "Seconds": 88.868332475,
+  "Samples": 300,
+  "MinimumSampleMilliseconds": 55.1293,
+  "Rows": [
+    {
+      "Name": "unchanged-core-native-count",
+      "BeforeUs": 12.470609866562116,
+      "AfterUs": 12.471222999144349,
+      "DeltaUs": 0.0006131325822327227,
+      "Percent": 0.004916620668860006,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        12.472489082969433,
+        12.468730650154798
+      ],
+      "AfterProcessMedians": [
+        12.44993762993763,
+        12.482292967124428
+      ],
+      "BeforeMinimum": 12.386460268317855,
+      "BeforeMaximum": 12.503034055727554,
+      "AfterMinimum": 12.330893970893971,
+      "AfterMaximum": 12.485393258426967,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "actual-python-date-miss-control",
+      "BeforeUs": 1.5618340085681877,
+      "AfterUs": 1.5770697562153029,
+      "DeltaUs": 0.015235747647115216,
+      "Percent": 0.9755036427387509,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        1.5348278539994824,
+        1.5701601125833091
+      ],
+      "AfterProcessMedians": [
+        1.5802370799474348,
+        1.5729052116492594
+      ],
+      "BeforeMinimum": 1.5311571317628785,
+      "BeforeMaximum": 1.5943363160829507,
+      "AfterMinimum": 1.5677540711899187,
+      "AfterMaximum": 1.593501756644407,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "actual-python-named-reference-control",
+      "BeforeUs": 0.48752917639213067,
+      "AfterUs": 0.4982333416086715,
+      "DeltaUs": 0.010704165216540829,
+      "Percent": 2.1955947940911047,
+      "BeforeBytes": 400.0,
+      "AfterBytes": 400.0,
+      "BeforeProcessMedians": [
+        0.48677933294838116,
+        0.48986416739034255
+      ],
+      "AfterProcessMedians": [
+        0.4846205070733648,
+        0.5110174401009918
+      ],
+      "BeforeMinimum": 0.48402719605722233,
+      "BeforeMaximum": 0.49198603988137174,
+      "AfterMinimum": 0.481484188471471,
+      "AfterMaximum": 0.511340821249773,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "unicode-pair-ismatch",
+      "BeforeUs": 807.0168918918919,
+      "AfterUs": 10.907495929443058,
+      "DeltaUs": -796.1093959624488,
+      "Percent": -98.64841789074916,
+      "BeforeBytes": 448160.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        804.2933333333333,
+        808.131081081081
+      ],
+      "AfterProcessMedians": [
+        10.833857294242316,
+        10.9811345646438
+      ],
+      "BeforeMinimum": 800.6013333333333,
+      "BeforeMaximum": 813.2226666666667,
+      "AfterMinimum": 10.572077004592016,
+      "AfterMaximum": 11.247380324161329,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "ascii-pair-ismatch",
+      "BeforeUs": 1537.5034075573549,
+      "AfterUs": 1.3071060731701087,
+      "DeltaUs": -1536.1963014841847,
+      "Percent": -99.9149851592689,
+      "BeforeBytes": 895488.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        1550.65,
+        1517.0641025641025
+      ],
+      "AfterProcessMedians": [
+        1.2898370830100854,
+        1.322359615299384
+      ],
+      "BeforeMinimum": 1513.0717948717947,
+      "BeforeMaximum": 1552.8236842105264,
+      "AfterMinimum": 1.2864559089733643,
+      "AfterMaximum": 1.3248747950183928,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "unicode-pair-count",
+      "BeforeUs": 777.0493963963963,
+      "AfterUs": 119.92698283386676,
+      "DeltaUs": -657.1224135625296,
+      "Percent": -84.56636304074955,
+      "BeforeBytes": 448160.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        776.1706666666668,
+        779.2202702702704
+      ],
+      "AfterProcessMedians": [
+        119.67433808553972,
+        120.97755102040816
+      ],
+      "BeforeMinimum": 774.392,
+      "BeforeMaximum": 789.268918918919,
+      "AfterMinimum": 118.71934826883911,
+      "AfterMaximum": 121.12367346938775,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "unicode-pair-finite-live",
+      "BeforeUs": 814.6479729729729,
+      "AfterUs": 10.693290075217577,
+      "DeltaUs": -803.9546828977553,
+      "Percent": -98.6873728984811,
+      "BeforeBytes": 448272.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        812.9934210526316,
+        818.4067567567567
+      ],
+      "AfterProcessMedians": [
+        10.66500963391137,
+        10.74539510554829
+      ],
+      "BeforeMinimum": 811.4065789473684,
+      "BeforeMaximum": 819.3702702702703,
+      "AfterMinimum": 10.622215799614644,
+      "AfterMaximum": 10.925518400896692,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "unicode-pair-deadline-live",
+      "BeforeUs": 846.6898993963782,
+      "AfterUs": 10.77962355183909,
+      "DeltaUs": -835.9102758445391,
+      "Percent": -98.72685105142696,
+      "BeforeBytes": 448320.0,
+      "AfterBytes": 160.0,
+      "BeforeProcessMedians": [
+        841.7549295774647,
+        852.1128571428571
+      ],
+      "AfterProcessMedians": [
+        10.933288305673486,
+        10.621674333026679
+      ],
+      "BeforeMinimum": 834.1309859154929,
+      "BeforeMaximum": 856.7271428571429,
+      "AfterMinimum": 10.597092916283348,
+      "AfterMaximum": 11.044886144345812,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "unicode-captured-search",
+      "BeforeUs": 894.9262374245473,
+      "AfterUs": 66.85280792911661,
+      "DeltaUs": -828.0734294954307,
+      "Percent": -92.5297968554919,
+      "BeforeBytes": 530048.0,
+      "AfterBytes": 81888.0,
+      "BeforeProcessMedians": [
+        883.4228571428571,
+        903.487323943662
+      ],
+      "AfterProcessMedians": [
+        67.45497206703911,
+        66.43740288568259
+      ],
+      "BeforeMinimum": 882.1671428571428,
+      "BeforeMaximum": 906.8774647887325,
+      "AfterMinimum": 66.13662597114318,
+      "AfterMaximum": 67.79139664804468,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "unicode-single-exclusion",
+      "BeforeUs": 808.0855263157895,
+      "AfterUs": 78.54800813158818,
+      "DeltaUs": -729.5375181842013,
+      "Percent": -90.27974074851916,
+      "BeforeBytes": 448160.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        808.2565789473684,
+        807.9144736842105
+      ],
+      "AfterProcessMedians": [
+        80.18124174372524,
+        76.67334183673469
+      ],
+      "BeforeMinimum": 804.6868421052632,
+      "BeforeMaximum": 813.4328947368422,
+      "AfterMinimum": 76.25994897959183,
+      "AfterMaximum": 80.22919418758256,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "unicode-wide-exclusions",
+      "BeforeUs": 472.5252548387097,
+      "AfterUs": 340.9877840909091,
+      "DeltaUs": -131.53747074780063,
+      "Percent": -27.837130269936406,
+      "BeforeBytes": 224440.0,
+      "AfterBytes": 224440.0,
+      "BeforeProcessMedians": [
+        472.5137096774194,
+        472.5368
+      ],
+      "AfterProcessMedians": [
+        342.43693181818185,
+        339.02500000000003
+      ],
+      "BeforeMinimum": 471.584,
+      "BeforeMaximum": 475.2224,
+      "AfterMinimum": 337.74488636363634,
+      "AfterMaximum": 343.45454545454544,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "standalone-predicate-control",
+      "BeforeUs": 1176.7359351432883,
+      "AfterUs": 1179.1029411764705,
+      "DeltaUs": 2.3670060331821787,
+      "Percent": 0.20115014443695678,
+      "BeforeBytes": 448160.0,
+      "AfterBytes": 448160.0,
+      "BeforeProcessMedians": [
+        1190.4725490196079,
+        1172.9192307692306
+      ],
+      "AfterProcessMedians": [
+        1176.6549019607844,
+        1181.5980392156862
+      ],
+      "BeforeMinimum": 1166.1846153846154,
+      "BeforeMaximum": 1193.7254901960785,
+      "AfterMinimum": 1173.7019607843138,
+      "AfterMaximum": 1184.3039215686274,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "folded-complement",
+      "BeforeUs": 849.4267605633803,
+      "AfterUs": 170.2576045612248,
+      "DeltaUs": -679.1691560021554,
+      "Percent": -79.95617603943843,
+      "BeforeBytes": 448160.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        848.8521126760563,
+        852.1464788732394
+      ],
+      "AfterProcessMedians": [
+        170.40339943342778,
+        169.74129213483147
+      ],
+      "BeforeMinimum": 845.4014084507043,
+      "BeforeMaximum": 857.3352112676057,
+      "AfterMinimum": 168.84775280898876,
+      "AfterMaximum": 171.12078651685394,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "short-dense-pair-count",
+      "BeforeUs": 1121.8627272727272,
+      "AfterUs": 542.8779279279279,
+      "DeltaUs": -578.9847993447993,
+      "Percent": -51.60923750023534,
+      "BeforeBytes": 1056.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        1118.7818181818182,
+        1122.1909090909091
+      ],
+      "AfterProcessMedians": [
+        543.090990990991,
+        542.6648648648649
+      ],
+      "BeforeMinimum": 1111.7181818181818,
+      "BeforeMaximum": 1133.1636363636364,
+      "AfterMinimum": 538.3261261261262,
+      "AfterMaximum": 545.7027027027027,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    },
+    {
+      "Name": "overlapping-tail-rewind",
+      "BeforeUs": 795.0993243243244,
+      "AfterUs": 477.6048,
+      "DeltaUs": -317.49452432432435,
+      "Percent": -39.93142927069285,
+      "BeforeBytes": 448160.0,
+      "AfterBytes": 447688.0,
+      "BeforeProcessMedians": [
+        788.0293333333334,
+        798.8972972972973
+      ],
+      "AfterProcessMedians": [
+        478.952,
+        477.1648
+      ],
+      "BeforeMinimum": 783.1426666666667,
+      "BeforeMaximum": 799.7337837837838,
+      "AfterMinimum": 476.6296,
+      "AfterMaximum": 480.36,
+      "SamplesBefore": 10,
+      "SamplesAfter": 10
+    }
+  ],
+  "ReferenceRows": [
+    {
+      "Name": "unicode-predecoded-dotnet",
+      "Microseconds": 89.52339791356184,
+      "AllocatedBytes": 0.0,
+      "MinimumMilliseconds": 59.9464,
+      "Scope": "Separate equal-result public .NET IsMatch diagnostics; no catalog Status"
+    },
+    {
+      "Name": "unicode-decode-then-dotnet",
+      "Microseconds": 100.65434782608695,
+      "AllocatedBytes": 20024.0,
+      "MinimumMilliseconds": 60.0384,
+      "Scope": "Separate equal-result public .NET IsMatch diagnostics; no catalog Status"
+    },
+    {
+      "Name": "ascii-predecoded-dotnet",
+      "Microseconds": 95.08303425774878,
+      "AllocatedBytes": 0.0,
+      "MinimumMilliseconds": 54.946,
+      "Scope": "Separate equal-result public .NET IsMatch diagnostics; no catalog Status"
+    },
+    {
+      "Name": "ascii-decode-then-dotnet",
+      "Microseconds": 95.10805687203792,
+      "AllocatedBytes": 40024.0,
+      "MinimumMilliseconds": 59.7276,
+      "Scope": "Separate equal-result public .NET IsMatch diagnostics; no catalog Status"
+    }
+  ],
+  "ProcessLifetime": [
+    {
+      "Worker": "before-a",
+      "PeakResidentKiB": 151676
+    },
+    {
+      "Worker": "after-a",
+      "PeakResidentKiB": 152824
+    },
+    {
+      "Worker": "after-b",
+      "PeakResidentKiB": 152932
+    },
+    {
+      "Worker": "before-b",
+      "PeakResidentKiB": 151456
+    },
+    {
+      "Worker": "comparators",
+      "PeakResidentKiB": 142896
+    }
+  ]
+}

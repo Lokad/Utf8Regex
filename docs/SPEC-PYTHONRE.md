@@ -336,6 +336,10 @@ captures, retained results or synchronous interruption and release.
 Proved unbounded repeats excluding an ASCII pair can use checked 2048-byte search
 blocks after whole-subject validation. They retain scalar endpoints and bounded
 work/interruption checks; numeric work charges can fall.
+Ordinary class complements lower directly to scalar classes. A complement of a
+union containing standalone predicate branches retains its guard form. Removing
+unnecessary branch state can lower construction/execution work, depth and working
+requirements; captures, folding and retained-result/interruption contracts remain.
 
 Cold FullMatch/replacement preparation retains separate construction limits;
 finite working bytes cap additional covered construction capacity. A byte failure

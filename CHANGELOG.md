@@ -39,6 +39,9 @@
 - Search proved unbounded runs excluding two ASCII values in checked bounded
   spans, reducing imports Count work without additional allocation. Finite and
   scalar-counted repeats retain their existing behavior; some local costs rise.
+- Lower ordinary PythonRe class complements directly to scalar classes, avoiding
+  redundant guards and backtracking state. Compound predicate unions retain their
+  existing handling; numerical work and storage requirements can decrease.
 - Skip impossible ASCII starts in scalar first-match searches, including captured
   and range-prefixed patterns. Some excluded pattern families can cost more.
 - Reduce temporary allocations for Boolean and coordinate-only matching when

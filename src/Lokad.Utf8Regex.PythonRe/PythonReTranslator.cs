@@ -453,13 +453,11 @@ internal static partial class PythonReTranslator
             if (node.Items[index] is PythonReCharacterClassRangeItem { StartScalar: 0, EndScalar: 0x10ffff })
             { complete = true; break; }
         }
-        if (node.IsNegated) builder.Append("(?:(?!");
-        if (complete) builder.Append(NativeScalarPattern);
-        else AppendScalarCharacterClassAtom(node.Items, builder);
-        if (node.IsNegated) builder.Append(')').Append(NativeScalarPattern).Append(')');
+        if (complete) builder.Append(node.IsNegated ? "(?!)" : NativeScalarPattern);
+        else AppendScalarCharacterClassAtom(node.Items, node.IsNegated, builder);
     }
 
-    private static void AppendScalarCharacterClassAtom(IReadOnlyList<PythonReCharacterClassItem> items, ByteBuilder builder)
+    private static void AppendScalarCharacterClassAtom(IReadOnlyList<PythonReCharacterClassItem> items, bool negated, ByteBuilder builder)
     {
         using var ranges = Utf8ConstructionBuffer<(int Start, int End)>.Create(Utf8ConstructionScope.CurrentBudget);
         using var fragments = Utf8ConstructionBuffer<string>.Create(Utf8ConstructionScope.CurrentBudget);
@@ -484,9 +482,17 @@ internal static partial class PythonReTranslator
         }
         var hasRanges = ranges.Count != 0 || fragments.Count != 0;
         var count = (hasRanges ? 1 : 0) + branches.Count;
-        if (count == 0) { builder.Append("(?!)"); return; }
+        if (count == 0) { builder.Append(negated ? NativeScalarPattern : "(?!)"); return; }
+        // The owned parser matches scalar classes directly. Only unions with
+        // standalone predicate branches need the complement guard and scalar.
+        if (branches.Count == 0)
+        {
+            AppendRangeCharacterClass(ranges, fragments, negated, builder);
+            return;
+        }
+        if (negated) builder.Append("(?:(?!");
         if (count > 1) builder.Append("(?:");
-        if (hasRanges) AppendRangeCharacterClass(ranges, fragments, builder);
+        if (hasRanges) AppendRangeCharacterClass(ranges, fragments, false, builder);
         for (var index = 0; index < branches.Count; index++)
         {
             Utf8ConstructionScope.ChargeWork(1);
@@ -494,6 +500,7 @@ internal static partial class PythonReTranslator
             builder.Append(branches[index]);
         }
         if (count > 1) builder.Append(')');
+        if (negated) builder.Append(')').Append(NativeScalarPattern).Append(')');
     }
 
     private static void AddScalarRange(Utf8ConstructionBuffer<(int Start, int End)> ranges, int start, int end)
@@ -503,9 +510,10 @@ internal static partial class PythonReTranslator
     }
 
     private static void AppendRangeCharacterClass(Utf8ConstructionBuffer<(int Start, int End)> ranges,
-        Utf8ConstructionBuffer<string> fragments, ByteBuilder builder)
+        Utf8ConstructionBuffer<string> fragments, bool negated, ByteBuilder builder)
     {
         builder.Append('[');
+        if (negated) builder.Append('^');
         foreach (var fragment in fragments)
         {
             Utf8ConstructionScope.ChargeWork(1);
