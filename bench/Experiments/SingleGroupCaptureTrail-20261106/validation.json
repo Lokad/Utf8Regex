@@ -41,5 +41,22 @@
     "WindowsBytes": 9726
   },
   "Packages": "No repack, qualification or publication; staged dev.44 immutable",
-  "CI": "Pending source push"
+  "CI": "First source run 42263961611 failed/closed; corrected source follow-up pending push",
+  "SourceCommit": "90e121dc8820edd27378da16c9daade55864f5dc",
+  "AdmissionFollowup": {
+    "Scope": "Test-only corrections; production and measured graphs unchanged",
+    "WindowsPerTarget": 39,
+    "LinuxPerTarget": 39,
+    "Targets": [
+      "net10.0",
+      "net11.0"
+    ],
+    "InitialCI": "42263961611 terminal failure on both platforms; four stale assertions per runtime in three Python fixtures; closed",
+    "Raw": "artifacts/experiments/single-group-capture-trail-20261106/admission-followup.tar.gz",
+    "Sha256": "8A85E8CFE04FBC0A12CB4835C57185FDC9D8CD77F57A3001A01F144F50B36706",
+    "Bytes": 20695,
+    "InitialWindowsCI": "artifacts/experiments/single-group-capture-trail-20261106/first-ci-windows.txt",
+    "InitialWindowsCISha256": "07188F6560356CAAC751D7A8DF051B1AD712A34E8DF08AB841D0D974DA6AF34E",
+    "InitialWindowsCIBytes": 167696
+  }
 }

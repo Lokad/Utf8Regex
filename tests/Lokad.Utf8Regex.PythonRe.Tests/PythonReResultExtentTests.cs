@@ -61,7 +61,7 @@ public sealed class PythonReResultExtentTests
             var baseline = cursor.ReservedBytes;
             Assert.True(cursor.MoveNext());
             var positioned = cursor.ReservedBytes;
-            Assert.True(positioned > baseline);
+            Assert.Equal(baseline, positioned); // No rollback scratch for this linear slot.
             var count = 0;
             do
             {
@@ -77,7 +77,7 @@ public sealed class PythonReResultExtentTests
                 count++;
             } while (cursor.MoveNext());
             Assert.Equal(1025, count);
-            Assert.Equal(baseline, cursor.ReservedBytes); // EOF releases exclusive scratch.
+            Assert.Equal(baseline, cursor.ReservedBytes); // EOF retains the original slots and map.
         }
         finally { cursor.Dispose(); }
         Assert.Equal(0UL, cursor.ReservedBytes);

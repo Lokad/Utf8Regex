@@ -144,10 +144,9 @@ public sealed class PythonReOneShotProjectionTests
         var names = Enumerable.Repeat(new PythonReNameEntry { Name = "word", Number = 1 }, 5000).ToArray();
         var extent = ArrayBytes<PythonReNameEntry>(names.Length);
         var groupExtent = ArrayBytes<PythonReGroupData>(2);
-        // This shape needs a capture trail, but no balancing-head vector.
-        var scratch = (ulong)Utf8SliceRunner.TrailReserveBytes +
-            ArrayBytes<Utf8SliceTrailEntry[]>(Utf8SliceRunner.ChunkTableCapacity);
-        var total = 13 + 96 + 96 + scratch + groupExtent + extent;
+        // This linear single capture needs slots and a boundary map, with no
+        // rollback trail. The group/name roots still require prior admission.
+        var total = 13 + 96 + 96 + groupExtent + extent;
         var cursor = new PythonReScalarMatchCursor("😀é"u8, program, 0, Regex.InfiniteMatchTimeout,
             null, "(.)", new(new(0, 0, total - (allow ? 0UL : 1UL)), Regex.InfiniteMatchTimeout, CancellationToken.None));
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));

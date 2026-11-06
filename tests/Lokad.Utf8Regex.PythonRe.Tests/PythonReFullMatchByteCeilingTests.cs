@@ -20,15 +20,21 @@ public sealed class PythonReFullMatchByteCeilingTests
         }
     }
 
-    [Fact]
-    public void CapturesStillRequireTheirOwnAdmittedScratch()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SingleCaptureSlotsAreAdmittedWithoutUnneededTrail(bool allow)
     {
         using var regex = Utf8PythonRegex.Compile("([A-Z]{3})[0-9]{3}",
             PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 10000, MaxDepth = 1, MaxWorkingBytes = 256, MaxResultBytes = 4096 },
+            new() { MaxWorkSteps = 10000, MaxDepth = 1, MaxWorkingBytes = allow ? 256UL : 1UL, MaxResultBytes = 4096 },
             default, Timeout.InfiniteTimeSpan, default);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.FullMatch("ABC123"u8));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);
+        if (allow) Assert.True(regex.FullMatch("ABC123"u8).Success);
+        else
+        {
+            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.FullMatch("ABC123"u8));
+            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);
+        }
     }
 
     [Theory]

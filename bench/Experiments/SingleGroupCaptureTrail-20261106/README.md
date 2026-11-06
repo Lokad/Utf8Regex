@@ -67,6 +67,15 @@ NonBacktracking remain covered. No runtime changes were made to accommodate thos
 test corrections.
 
 Linux focused checks and raw archive identities are recorded in validation.json.
+Full source CI then found four stale Python assertions per runtime in three
+fixtures: mandatory trail storage in name-copy thresholds, a 256-byte FullMatch
+denial, and scratch growth on first advance. Their corrected 39 focused checks
+pass on Windows/Linux, both runtimes, preserving exact admission failures and
+result-root refunds. The initial failed CI record remains; no production code or
+measured graph changed for this correction. The two archived project files select
+their own source explicitly and both build independently with frozen CorePath and
+PythonPath references; they are outside the solution.
+
 No solution refresh, package rebuild, immutable artifact rewrite or checked-access
 campaign replay is part of this experiment. Resource costs are route/version
 dependent; this change lowers required scratch and some journal work, not public
