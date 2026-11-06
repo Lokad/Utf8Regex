@@ -313,6 +313,10 @@ UTF-8 validation precedes execution; ASCII stops and final endpoints stay on sca
 boundaries. Minimums above one, finite maxima and folding retain scalar-counted
 execution; paths requiring rewind retain their existing handling. Work charges
 can fall; no scratch storage is added.
+Direct candidate windows for unbounded minimum-one repeats excluding an ASCII
+pair can also rewind in checked blocks of at most 2048 bytes. Delimiter discovery
+and full VM verification remain; scalar floors and original interruption are
+preserved. Avoiding per-scalar rewind checks can lower required work steps.
 Literal-search blocks own their work charges; entering the search helper adds
 no separate work unit for a nonempty admitted plan. Empty plans and prior resource
 failures retain their checkpoint, and terminal success/miss checks still observe

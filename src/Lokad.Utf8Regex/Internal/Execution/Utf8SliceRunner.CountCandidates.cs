@@ -183,6 +183,28 @@ internal static partial class Utf8SliceRunner
     private static Utf8ExecutionLimitKind TryRewindClassWhitespace(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int floor, int leadingClass, long gapMaximum, ref int position, ref Utf8SliceInvocation invocation)
     {
+        var code = program.Instructions;
+        if (gapMaximum == 0 && leadingClass > 0 && code.Length - leadingClass > 3 &&
+            code[leadingClass + 3] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } &&
+            code[leadingClass - 1].RepeatMinimum == 1 && code[leadingClass - 1].RepeatMaximum == long.MaxValue &&
+            code[leadingClass] is { Kind: Utf8SliceInstructionKind.Set, B: 1, C: 0 } atom &&
+            TryGetAsciiMaskPair(program.SetMasks[atom.A], out var first, out var second))
+        {
+            // Direct unbounded class runs start after the last excluded byte.
+            // ASCII cannot occur inside a wider scalar in this validated span.
+            // Keep literal discovery and VM verification: this is only a window.
+            while (position > floor)
+            {
+                var breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                var length = Math.Min(2048, position - floor);
+                var start = position - length;
+                var stop = input.Slice(start, length).LastIndexOfAny(first, second);
+                if (stop >= 0) { position = start + stop + 1; break; }
+                position = start;
+            }
+            return invocation.TryChargeInputStep();
+        }
         // Move by scalar count, not bytes. If this lands inside a valid prefix,
         // it lies in its class/whitespace runs; their conservative rewind then
         // covers the earliest start. Landing before the prefix only adds starts.

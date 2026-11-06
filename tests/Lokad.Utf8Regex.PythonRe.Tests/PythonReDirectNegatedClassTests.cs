@@ -62,7 +62,7 @@ public sealed class PythonReDirectNegatedClassTests
     {
         using var token = new CancellationTokenSource();
         using var regex = new Utf8PythonRegex(@"[^ab]+a", default, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            new() { MaxWorkSteps = 10000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
         var input = Encoding.UTF8.GetBytes(new string('é', 10000) + "a");
         Assert.True(regex.IsMatch(input, 0, token.Token));
         Assert.Equal(1, regex.Count(input, 0, token.Token));

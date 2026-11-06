@@ -42,6 +42,9 @@
 - Lower ordinary PythonRe class complements directly to scalar classes, avoiding
   redundant guards and backtracking state. Compound predicate unions retain their
   existing handling; numerical work and storage requirements can decrease.
+- Reduce Count candidate-window rewind work for direct unbounded scalar runs
+  excluding an ASCII pair. Missing-delimiter rejection, scalar floors and original
+  interruption remain; some other class/repeat workloads can cost more time.
 - Skip impossible ASCII starts in scalar first-match searches, including captured
   and range-prefixed patterns. Some excluded pattern families can cost more.
 - Reduce temporary allocations for Boolean and coordinate-only matching when
