@@ -23,6 +23,8 @@
   FullMatch also reuse proved scalar/native work and materialized result buffers.
   Global PythonRe matching skips proved impossible empty retries and word-interior
   starts while retaining bounded interruption and resource controls.
+  Completed single-capture references avoid unnecessary opening journals, and
+  bounded repeat proofs reuse pure predicate dispatch with unchanged work charges.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
   complete scalars in PCRE2 classes, including escaped supplementary characters.
   Fix literal Count throwing on a trailing partial Unicode needle after a match.
