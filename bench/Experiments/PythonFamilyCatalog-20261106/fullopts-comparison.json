@@ -1,0 +1,14 @@
+{
+  "Scope": "Untimed FullOpts/no PGO; exact archived Linux graphs on pinned VM; not public execution evidence",
+  "Methods": 5,
+  "CodeBytes": [
+    345,
+    331,
+    526,
+    1062,
+    2264
+  ],
+  "Differences": "Only28 process address lines; all other instructions/labels/offsets equal",
+  "RawBeforeSha256": "CF2EC3F5B40C871AF1B5FF28538A4F8DD538ECEA68E88CACAFF7DA7CE8816B25",
+  "RawAfterSha256": "96F294EE8ED18DEFE5AB88A76BCCB90BC75BBB1D286C4C544B3CFD12A14D1AD3"
+}

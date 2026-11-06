@@ -1,0 +1,70 @@
+{
+  "Scope": "ONE public-operation frozen38/39 separate Default-process ABBA; no catalog refresh or normalization",
+  "ElapsedSeconds": 17.523990107,
+  "Samples": 60,
+  "Summary": [
+    {
+      "Name": "unchanged-exact-count-control",
+      "BeforeUs": 2.4731494747159295,
+      "AfterUs": 2.4682913649421945,
+      "Percent": -0.1964341348309695,
+      "BeforeProcessMedians": [
+        2.470929120764914,
+        2.475369828666945
+      ],
+      "AfterProcessMedians": [
+        2.46889654313815,
+        2.467686186746239
+      ],
+      "BeforeAllocatedBytes": [
+        0
+      ],
+      "AfterAllocatedBytes": [
+        0
+      ],
+      "MinimumBatchMs": 58.1005
+    },
+    {
+      "Name": "actual-family-count",
+      "BeforeUs": 513.0427350427351,
+      "AfterUs": 511.38756733462617,
+      "Percent": -0.3226179019903741,
+      "BeforeProcessMedians": [
+        513.0649572649572,
+        511.1457627118644
+      ],
+      "AfterProcessMedians": [
+        513.4495726495726,
+        506.3386554621849
+      ],
+      "BeforeAllocatedBytes": [
+        0
+      ],
+      "AfterAllocatedBytes": [
+        0
+      ],
+      "MinimumBatchMs": 59.3403
+    },
+    {
+      "Name": "actual-family-count-finite",
+      "BeforeUs": 609.2985,
+      "AfterUs": 594.0514851485148,
+      "Percent": -2.502388378025755,
+      "BeforeProcessMedians": [
+        609.318,
+        607.1252525252526
+      ],
+      "AfterProcessMedians": [
+        594.1326732673267,
+        590.7235294117646
+      ],
+      "BeforeAllocatedBytes": [
+        112
+      ],
+      "AfterAllocatedBytes": [
+        112
+      ],
+      "MinimumBatchMs": 59.512
+    }
+  ]
+}
