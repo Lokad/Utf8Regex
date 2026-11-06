@@ -130,6 +130,10 @@ counter's scalar-ended 4096-byte admission, including caller-funded Count. This
 reduces work units and can admit tighter storage policies while retaining strict
 validation, original-token cancellation and deadlines.
 
+Bounded greedy Dot repeats with a proved terminal ASCII literal can avoid rewind
+storage. Captures and strict validation are unchanged; finite work, depth and
+working requirements can be lower for these shapes.
+
 Count can reuse a prepared disjoint-class repeat such as
 `(?:[A-Z][a-z]+\s*){10,100}` without VM scratch, including on mixed UTF-8.
 Its original separator predicate preserves Unicode whitespace. Complete-input

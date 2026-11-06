@@ -12,6 +12,130 @@ public sealed class Utf8BoundedDotCandidateTests
         MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     [Theory]
+    [InlineData("Watson")]
+    [InlineData("W\nend")]
+    [InlineData("Wé")]
+    public void TerminalLiteralChoosesTheLastScalarEndpointAndKeepsCaptureEndings(string tail)
+    {
+        var literal = Regex.Escape(tail);
+        foreach (var pattern in new[] { @"\AA(?<gap>.{0,25})" + literal,
+            @"\A(?<outer>A(?<gap>.{0,25})" + literal + ")",
+            @"\A(?:A(?<gap>.{0,25})" + literal + "|A(?<other>.{0,25})Z)" })
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.Singleline })
+        {
+            var referencePattern = pattern.Replace(".", @"(?:(?=[\s\S]).)");
+            var regex = new Utf8Regex(pattern, options, Timeout.InfiniteTimeSpan, Funded);
+            var reference = new Utf8Regex(referencePattern, options, Timeout.InfiniteTimeSpan, Funded);
+            foreach (var text in new[] { "Aé😀" + tail + "中" + tail, "A\n" + tail,
+                "A" + new string('x', 25) + tail, "A" + new string('x', 26) + tail,
+                "AéW-not-a-tail Z", "Aé" + tail[..^1], "Aé" + tail + "\n" + tail })
+            {
+                var input = Encoding.UTF8.GetBytes(text);
+                var actual = regex.MatchDetailed(input); var expected = reference.MatchDetailed(input);
+                Assert.Equal((expected.Success, expected.IndexInBytes, expected.LengthInBytes, expected.GetValueString()),
+                    (actual.Success, actual.IndexInBytes, actual.LengthInBytes, actual.GetValueString()));
+                Assert.Equal(reference.Count(input), regex.Count(input));
+                Assert.Equal(reference.IsMatch(input), regex.IsMatch(input));
+                if (!actual.Success) continue;
+                foreach (var number in regex.GetGroupNumbers())
+                    Assert.Equal(expected.GetGroup(number).GetValueString(), actual.GetGroup(number).GetValueString());
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(1)] [InlineData(63)] [InlineData(64)] [InlineData(65)]
+    public void TerminalTailProofIsBoundedWithoutChangingLongTailSemantics(int length)
+    {
+        var tail = "W" + new string('z', length - 1);
+        var pattern = @"\AA(?<gap>.{0,25})" + tail;
+        var input = Encoding.UTF8.GetBytes("Aé😀" + tail);
+        var regex = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, Funded);
+        Assert.Equal("é😀", regex.MatchDetailed(input).GetGroup("gap").GetValueString());
+        Assert.Equal(1, regex.Count(input));
+    }
+
+    [Fact]
+    public void AChildRequiredEndCannotDiscardAnEarlierValidEndpoint()
+    {
+        foreach (var pattern in new[] { @"(?<=A(?<gap>.{0,25})Watson)X", @"(?=A(?<gap>.{0,25})Watson)A.*X" })
+        {
+            var referencePattern = pattern.Replace(".", @"(?:(?=[\s\S]).)");
+            var input = "AéWatsonX中Watson"u8.ToArray();
+            var regex = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, Funded);
+            var reference = new Utf8Regex(referencePattern, RegexOptions.None, Timeout.InfiniteTimeSpan, Funded);
+            Assert.Equal(reference.MatchDetailed(input).GetValueString(), regex.MatchDetailed(input).GetValueString());
+            Assert.Equal(reference.MatchDetailed(input).GetGroup("gap").GetValueString(), regex.MatchDetailed(input).GetGroup("gap").GetValueString());
+        }
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void CompleteTailWorkCutoffsPreserveTheCallerLoan(bool hit)
+    {
+        var program = new Utf8Regex(@"\AA.{0,25}Watson").Inspection.AvailableOwnedSliceProgram;
+        var input = Encoding.UTF8.GetBytes("AéW-not-a-tail " + (hit ? "Watson" : "Watsxx"));
+        var baseline = new Utf8SliceInvocation(new(100000, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        Assert.True(baseline.Ledger.TryReserve(13));
+        var expected = Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref baseline);
+        Assert.Equal(Utf8ExecutionLimitKind.None, expected.Breach);
+        Assert.Equal(hit ? 1 : 0, expected.Count);
+        Assert.Equal(13UL, baseline.Ledger.ReservedBytes);
+        for (ulong work = 1; work <= baseline.Budget.Steps; work++)
+        {
+            var invocation = new Utf8SliceInvocation(new(work, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
+            Assert.True(invocation.Ledger.TryReserve(13));
+            var outcome = Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation);
+            Assert.Equal(work == baseline.Budget.Steps ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, outcome.Breach);
+            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void CompleteTailScanObservesOriginalInterruption(bool expire)
+    {
+        using var clock = Utf8DeadlineTestClock.Start();
+        using var token = new CancellationTokenSource();
+        var program = new Utf8Regex(@"\AA.{0,511}Watson").Inspection.AvailableOwnedSliceProgram;
+        var input = Encoding.UTF8.GetBytes("A" + new string('x', 100) + "Watson");
+        var invocation = new Utf8SliceInvocation(new(100000, 1024, 1 << 20),
+            expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan, token.Token);
+        Assert.True(invocation.Ledger.TryReserve(13));
+        var entered = false;
+        invocation.CheckpointHook = _ => { entered = true; if (expire) clock.Advance(50); else token.Cancel(); };
+        Exception? error = null;
+        try { _ = Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation); }
+        catch (Exception observed) { error = observed; }
+        Assert.True(entered);
+        if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(error);
+        else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+    }
+
+    [Fact]
+    public void ACompleteTailDenialNeverPublishesSuccessOrPartialCaptureSlots()
+    {
+        var program = new Utf8Regex(@"\AA(?<gap>.{0,25})Watson").Inspection.AvailableOwnedSliceProgram;
+        var input = "AéWatson"u8.ToArray();
+        var starts = new int[program.GroupCount]; var ends = new int[program.GroupCount];
+        var baseline = new Utf8SliceInvocation(new(100000, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        Assert.True(Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, ref baseline).IsMatch);
+        for (ulong work = 1; work < baseline.Budget.Steps; work++)
+        {
+            Array.Fill(starts, -1); Array.Fill(ends, -1);
+            var invocation = new Utf8SliceInvocation(new(work, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
+            Assert.True(invocation.Ledger.TryReserve(13));
+            var result = Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, ref invocation);
+            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, result.Breach);
+            Assert.False(result.IsMatch);
+            Assert.All(starts, value => Assert.Equal(-1, value));
+            Assert.All(ends, value => Assert.Equal(-1, value));
+            Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        }
+    }
+
+    [Theory]
     [InlineData("Holmes.{0,25}Watson|Watson.{0,25}Holmes")]
     [InlineData("A(?<gap>.{8,25})Z")]
     [InlineData("(?:A(?<gap>.{0,25})Z|A(?<other>.{0,25})Y)")]

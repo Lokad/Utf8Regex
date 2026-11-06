@@ -309,7 +309,8 @@ internal static partial class Utf8SliceRunner
                 outcome = new(false, -1, breach, null, null);
                 return true;
             }
-            return false;
+            return TryRunBoundedDotTerminalTail(program, repeatIndex, tail, input, start,
+                requiredEnd, ref invocation, out outcome);
         }
         if (alternateScalar >= 0)
         {
@@ -324,6 +325,65 @@ internal static partial class Utf8SliceRunner
             if (includesLiteral) return false;
         }
         outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
+        return true;
+    }
+
+    private static bool TryRunBoundedDotTerminalTail(Utf8SliceProgram program, int repeatIndex, int tail,
+        ReadOnlySpan<byte> input, int start, int? requiredEnd, ref Utf8SliceInvocation invocation,
+        out Utf8SliceMatchOutcome outcome)
+    {
+        outcome = default;
+        // The caller proved a greedy Dot, maximum 8..511 and an ASCII tail head.
+        // Prove the complete terminal tail before discarding any rewind choice.
+        // Outer capture endings still execute in the VM at the selected boundary.
+        if (program.HasBalancing) return false;
+        Span<byte> literal = stackalloc byte[64];
+        var length = 0;
+        var cursor = tail;
+        var instructions = program.Instructions;
+        while (cursor < instructions.Length && instructions[cursor].Kind == Utf8SliceInstructionKind.Literal)
+        {
+            var item = instructions[cursor++];
+            if (item.B != 0 || (uint)item.A >= 128 || length == literal.Length) return false;
+            literal[length++] = (byte)item.A;
+        }
+        for (var skipped = 0; skipped < 32 && cursor < instructions.Length &&
+            instructions[cursor].Kind == Utf8SliceInstructionKind.CaptureEnd; skipped++) cursor++;
+        if (cursor < instructions.Length && instructions[cursor].Kind == Utf8SliceInstructionKind.Jump)
+            cursor = instructions[cursor].A;
+        if (length == 0 || (uint)cursor >= (uint)instructions.Length ||
+            instructions[cursor].Kind != Utf8SliceInstructionKind.Accept) return false;
+
+        var repeat = instructions[repeatIndex];
+        var singleline = instructions[repeatIndex + 1].A != 0;
+        var position = start;
+        var selected = -1;
+        for (var count = 0; ; count++)
+        {
+            var breach = invocation.TryChargeStep();
+            if (breach != Utf8ExecutionLimitKind.None)
+            {
+                outcome = new(false, -1, breach, null, null);
+                return true;
+            }
+            if (count >= repeat.RepeatMinimum && input[position..].StartsWith(literal[..length]) &&
+                (requiredEnd is null || position + length == requiredEnd))
+                selected = position;
+            if (count == repeat.RepeatMaximum ||
+                !TryReadScalar(input, position, false, out var scalar, out var width) ||
+                !singleline && scalar.Value == '\n') break;
+            position += width;
+        }
+        var terminal = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        if (terminal != Utf8ExecutionLimitKind.None)
+        {
+            outcome = new(false, -1, terminal, null, null);
+            return true;
+        }
+        // Report the repeat's endpoint. Original RepeatExit/CaptureEnd/literal
+        // instructions retain their journals, capture positions and publication.
+        outcome = new(selected >= 0, selected, Utf8ExecutionLimitKind.None, null, null);
         return true;
     }
 

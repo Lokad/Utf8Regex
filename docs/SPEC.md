@@ -300,6 +300,9 @@ more chunks, headers and growth checkpoints. Every covered acquisition still
 requires admission first.
 Root repeat state is acquired only when execution needs mutable counters. Fused
 runs can fit tighter working limits, including Count when captures are unused.
+Bounded greedy Dot repeats with a proved terminal ASCII literal can select their
+last scalar endpoint without repeat rewinds. Original captures and interruption
+checks still execute; work, depth and working requirements can be lower.
 Counter-dependent execution still admits the complete vectors before allocation;
 the invocation retains them across retries and releases them synchronously.
 Assertion children retain their separate storage lifetime. Numerical work and
