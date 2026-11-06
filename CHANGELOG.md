@@ -70,8 +70,9 @@
   eligible finite-policy declaration Count, reducing scalar VM scratch. Work,
   depth and working requirements can fall; strict validation and interruption
   retain their original scope.
-- Simplify common UTF-8 validation by classifying valid two-byte leads directly.
-  Chinese and case-sensitive Russian Count improve; folded Russian can cost more.
+- Simplify common UTF-8 validation with fewer vector comparisons for valid
+  two-byte leads and continuation bytes. Chinese and case-sensitive Russian Count
+  improve; folded Russian and some deadline calls can cost more.
 - Avoid unused coordinate computation during finite structural/simple Count,
   retaining whole-subject validation, block work charges and interruption points.
 - Reuse metered native Count for four-to-eight complete literal alternatives,

@@ -239,15 +239,14 @@ internal static class Utf8ValidationCore
             var expectedContinuationCarry = 0UL;
             var includeSafeThreeByte = drainSafeThreeByte;
             var safeThreeByteIdleBlocks = 0;
-            var continuationTag = Vector256.Create((byte)0x80);
-            var continuationMask = Vector256.Create((byte)0xC0);
+            // Signed -128..-65 is exactly the UTF-8 continuation range 80..BF.
+            var continuationLimit = Vector256.Create((sbyte)-64);
             var twoByteLeadFirst = Vector256.Create((byte)0xC2);
             var twoByteLeadMaxDelta = Vector256.Create((byte)(0xDF - 0xC2));
             var safeThreeByteLeadFirst = Vector256.Create((byte)0xE1);
             var safeThreeByteLeadMaxDelta = Vector256.Create((byte)(0xEF - 0xE1));
             var ed = Vector256.Create((byte)0xED);
-            var continuationTag512 = Vector512.Create((byte)0x80);
-            var continuationMask512 = Vector512.Create((byte)0xC0);
+            var continuationLimit512 = Vector512.Create((sbyte)-64);
             var twoByteLeadFirst512 = Vector512.Create((byte)0xC2);
             var twoByteLeadMaxDelta512 = Vector512.Create((byte)(0xDF - 0xC2));
             var safeThreeByteLeadFirst512 = Vector512.Create((byte)0xE1);
@@ -264,7 +263,7 @@ internal static class Utf8ValidationCore
                     nonAsciiBits = current.ExtractMostSignificantBits();
                     if (nonAsciiBits != 0 || expectedContinuationCarry != 0)
                     {
-                        continuationBits = Vector512.Equals(Vector512.BitwiseAnd(current, continuationMask512), continuationTag512).ExtractMostSignificantBits();
+                        continuationBits = Vector512.LessThan(current.AsSByte(), continuationLimit512).ExtractMostSignificantBits();
                         twoByteLeadBits = Vector512.LessThanOrEqual(Vector512.Subtract(current, twoByteLeadFirst512), twoByteLeadMaxDelta512).ExtractMostSignificantBits();
                         if (includeSafeThreeByte)
                         {
@@ -280,7 +279,7 @@ internal static class Utf8ValidationCore
                     nonAsciiBits = current.ExtractMostSignificantBits();
                     if (nonAsciiBits != 0 || expectedContinuationCarry != 0)
                     {
-                        continuationBits = Vector256.Equals(Vector256.BitwiseAnd(current, continuationMask), continuationTag).ExtractMostSignificantBits();
+                        continuationBits = Vector256.LessThan(current.AsSByte(), continuationLimit).ExtractMostSignificantBits();
                         twoByteLeadBits = Vector256.LessThanOrEqual(Vector256.Subtract(current, twoByteLeadFirst), twoByteLeadMaxDelta).ExtractMostSignificantBits();
                         if (includeSafeThreeByte)
                         {
