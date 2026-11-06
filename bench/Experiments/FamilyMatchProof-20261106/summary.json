@@ -1,0 +1,173 @@
+{
+  "Scope": "Completed four separate Default producer processes/8 public workloads/160samples; composite command134 because following separate BCL diagnostic had a short sample. Not a completed comparator/catalog qualification.",
+  "Source": "fd8c6b3f0ae7a5fa217e07273acfc91424125e3c",
+  "CoreBefore": "3432CF7E4150987A7D5DD8135D8142E8B8266AC34DD66B4E7897C2D449CCB6E0",
+  "CoreAfter": "79CCA5A478B69A573E9E79ECC234DD3C5BBB01268D9DF481ABD77FFAB0058CB5",
+  "CompositeSeconds": 47.209682685,
+  "CompletedProducerSeconds": 44.5997026,
+  "Samples": 160,
+  "MinimumSampleMilliseconds": 58.2767,
+  "Comparator": "Incomplete; retained failure, no new BCL results or Status; no rerun",
+  "Rows": [
+    {
+      "Name": "actual-common-match-ordinary",
+      "BeforeUs": 0.20965383297683482,
+      "AfterUs": 0.20792859563970045,
+      "Percent": -0.8228980661302732,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        0.20525315076581357,
+        0.21278974591177444
+      ],
+      "AfterProcessMedians": [
+        0.20875938680448541,
+        0.20674007317107623
+      ],
+      "BeforeMinimum": 0.2048145388600308,
+      "BeforeMaximum": 0.2142860625903415,
+      "AfterMinimum": 0.20654796378172982,
+      "AfterMaximum": 0.21551509052216666
+    },
+    {
+      "Name": "actual-common-match-compiled",
+      "BeforeUs": 0.20886619476117846,
+      "AfterUs": 0.20564194543210654,
+      "Percent": -1.543691324849672,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        0.20499788897708274,
+        0.21306121289791224
+      ],
+      "AfterProcessMedians": [
+        0.206791912929434,
+        0.20534213158179265
+      ],
+      "BeforeMinimum": 0.20350666238832688,
+      "BeforeMaximum": 0.2241035326193071,
+      "AfterMinimum": 0.2048816088225754,
+      "AfterMaximum": 0.20745413976937882
+    },
+    {
+      "Name": "family-ascii-miss",
+      "BeforeUs": 0.363698601267335,
+      "AfterUs": 0.3630840383119409,
+      "Percent": -0.16897589192056417,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        0.36159524384355385,
+        0.3664643668587596
+      ],
+      "AfterProcessMedians": [
+        0.36397559315441463,
+        0.36255683909342384
+      ],
+      "BeforeMinimum": 0.3613037180106229,
+      "BeforeMaximum": 0.36667932316322593,
+      "AfterMinimum": 0.3613773166011706,
+      "AfterMaximum": 0.36457360949047063
+    },
+    {
+      "Name": "family-mixed-unicode",
+      "BeforeUs": 3.785581766018489,
+      "AfterUs": 3.802667470185232,
+      "Percent": 0.45133628654157043,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        3.7638997601312965,
+        3.7936308575071727
+      ],
+      "AfterProcessMedians": [
+        3.82314767825425,
+        3.7851215024427387
+      ],
+      "BeforeMinimum": 3.7517232672642344,
+      "BeforeMaximum": 3.809467644246095,
+      "AfterMinimum": 3.772228919484804,
+      "AfterMaximum": 3.894384874056214
+    },
+    {
+      "Name": "family-finite-live-control",
+      "BeforeUs": 0.44566746555322373,
+      "AfterUs": 0.42301866995856585,
+      "Percent": -5.0819943893690045,
+      "BeforeBytes": 112.0,
+      "AfterBytes": 112.0,
+      "BeforeProcessMedians": [
+        0.46430826866470426,
+        0.42656255553265143
+      ],
+      "AfterProcessMedians": [
+        0.42444387533701833,
+        0.4216849733082733
+      ],
+      "BeforeMinimum": 0.4249390473617992,
+      "BeforeMaximum": 0.4668167743415268,
+      "AfterMinimum": 0.42107610179302657,
+      "AfterMaximum": 0.42667193091035843
+    },
+    {
+      "Name": "family-deadline-live-control",
+      "BeforeUs": 0.7199948836035808,
+      "AfterUs": 0.7228988644977126,
+      "Percent": 0.40333354587152037,
+      "BeforeBytes": 160.0,
+      "AfterBytes": 160.0,
+      "BeforeProcessMedians": [
+        0.7168321094553544,
+        0.7233846636576476
+      ],
+      "AfterProcessMedians": [
+        0.7336488654314789,
+        0.7123726899994057
+      ],
+      "BeforeMinimum": 0.7160140646303251,
+      "BeforeMaximum": 0.7257246988969612,
+      "AfterMinimum": 0.7084877295145284,
+      "AfterMaximum": 0.7349763044782699
+    },
+    {
+      "Name": "unchanged-single-literal-control",
+      "BeforeUs": 0.18701038133164335,
+      "AfterUs": 0.18275064356255416,
+      "Percent": -2.2778081830307606,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        0.1809954131372376,
+        0.19188721151060611
+      ],
+      "AfterProcessMedians": [
+        0.18413692855136826,
+        0.18168915945430542
+      ],
+      "BeforeMinimum": 0.1795173902059675,
+      "BeforeMaximum": 0.19293526893488266,
+      "AfterMinimum": 0.18127017016282823,
+      "AfterMaximum": 0.18481280649830412
+    },
+    {
+      "Name": "unchanged-family-count-control",
+      "BeforeUs": 9.383363664987407,
+      "AfterUs": 9.430844916445416,
+      "Percent": 0.5060152537322837,
+      "BeforeBytes": 0.0,
+      "AfterBytes": 0.0,
+      "BeforeProcessMedians": [
+        9.409083753148614,
+        9.378515625
+      ],
+      "AfterProcessMedians": [
+        9.42112366603892,
+        9.43582695611432
+      ],
+      "BeforeMinimum": 9.363078125,
+      "BeforeMaximum": 9.447402392947103,
+      "AfterMinimum": 9.381261770244821,
+      "AfterMaximum": 9.455335844318896
+    }
+  ]
+}
