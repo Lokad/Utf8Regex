@@ -1,0 +1,8 @@
+{
+  "InitialExportTarExit": 1,
+  "Reason": "Creating excluded archive inside captured directory produced directory-change warning",
+  "RetainedSameArchive": true,
+  "GnuTarFullContentComparisonExit": 0,
+  "OffVmSha256": "BE3BCEFA1F5837F007E5621E8227C938CB05BC07F9BBF249427C1389EC4AC082",
+  "TestsOrMeasurementsRepeated": false
+}

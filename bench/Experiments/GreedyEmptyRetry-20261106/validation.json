@@ -1,0 +1,20 @@
+{
+  "Platforms": [
+    "Windows",
+    "Linux"
+  ],
+  "Frameworks": [
+    "net10.0",
+    "net11.0"
+  ],
+  "PythonTestsPerHost": 4868,
+  "InitialFocusedPerWindowsHost": 41,
+  "ProducerBuild": "Affected PythonRe only, BuildProjectReferences=false; Core bytes preserved",
+  "TestBuild": "Affected PythonRe test project only; BuildProjectReferences=false",
+  "NoPackageMatrix": true,
+  "NoFullRefresh": true,
+  "AddedPublicCases": 14,
+  "Methods": "FindIterDetailed/Count/FindAllStrings/FindAllUtf8/Split/Replace/aliases/retained results; existing finite resource and every-observed-checkpoint interruption suites",
+  "CandidateRuntimeSha256": "74052BE52C37A767BCA9D2B1D43346B36628ED268B0D4CC87F7764C699B93B5C",
+  "CandidateTestsSha256": "EE5A8143F3BB8F35B0C86AFA16B2502D7B41C25CBF6729DEDDE920C7055D77A9"
+}

@@ -111,9 +111,11 @@ numeric work/working requirements may decrease, with admission before needed
 allocation and interruption/result contracts preserved.
 Global discovery retries a nonempty match at the same position after an empty
 result before advancing one complete scalar. A complete capture-free boundary-only
-program skips that impossible nonempty retry and uses the same scalar advancement,
-EOF checks and workspace cleanup. Actual candidates still execute the VM; other
-programs retain their retry. Eliminated instructions lower work requirements,
+program skips that impossible nonempty retry. A complete LTR greedy scalar repeat
+can also skip it after returning empty: it has already exhausted its consuming
+endpoints at that position. Both use the same scalar advancement, EOF checks and
+workspace cleanup. Lazy, captured, alternating and constrained-tail programs keep
+their retry. Eliminated instructions lower work requirements,
 with the original cancellation/deadline and byte/depth/result admission preserved.
 
 Default match/group data expose empty text. Default and unsuccessful detailed

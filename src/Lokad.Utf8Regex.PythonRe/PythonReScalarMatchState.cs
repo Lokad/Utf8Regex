@@ -377,6 +377,20 @@ internal struct PythonReScalarMatchState
                             _program.Instructions is { Length: 2 } code &&
                             code[0].Kind == Utf8SliceInstructionKind.Boundary && code[1].Kind == Utf8SliceInstructionKind.Accept)
                             outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+                        // A complete greedy scalar repeat returned empty only
+                        // because it could not consume here. Its nonempty retry
+                        // cannot succeed. Lazy repeats and tails can choose an
+                        // empty endpoint despite a consuming alternative.
+                        else if (_retryNonEmpty && _program.GroupCount == 0 && !_program.IsNonBacktracking &&
+                            !_program.RightToLeft && _program.Instructions is { Length: 5 } repeatCode &&
+                            repeatCode[0] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, A: 3, RepeatMinimum: 0 } repeat &&
+                            repeatCode[1].Kind is (Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Dot or
+                                Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Shorthand or
+                                Utf8SliceInstructionKind.Hybrid or Utf8SliceInstructionKind.CategorySet) &&
+                            repeatCode[2] is { Kind: Utf8SliceInstructionKind.RepeatEnd, A: 0 } &&
+                            repeatCode[3].Kind == Utf8SliceInstructionKind.RepeatExit && repeatCode[3].A == repeat.B &&
+                            repeatCode[4].Kind == Utf8SliceInstructionKind.Accept)
+                            outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
                         else
                             outcome = Utf8SliceRunner.TryMatchAt(_program, input, _position,
                                 _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref _workspace, ref _invocation);

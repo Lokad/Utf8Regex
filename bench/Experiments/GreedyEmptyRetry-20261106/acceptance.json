@@ -1,0 +1,10 @@
+{
+  "EvidenceSha256": "BE3BCEFA1F5837F007E5621E8227C938CB05BC07F9BBF249427C1389EC4AC082",
+  "EvidenceBytes": 9719579,
+  "WindowsSha256": "C32C88AAB75323C25BD0931BC37AB045AC0E5BD8F8A2B1C7918B6F45FDA347B0",
+  "OffVmVerified": true,
+  "Complete": true,
+  "Decision": "Promote; primary public gains 20-29% with unchanged allocation; retained neighbor observations +0.92/+1.99/+2.77%; no confirmation",
+  "PackageRegenerated": false,
+  "FullRefreshRepeated": false
+}
