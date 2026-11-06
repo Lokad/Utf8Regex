@@ -8,6 +8,27 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReCaptureCompletionTests
 {
     [Theory]
+    [InlineData("(?P<outer>a(?P<inner>b))", "ab", 1, "outer", "ab")]
+    [InlineData("(?P<one>a)(?P<two>b)?", "a", 1, "one", "a")]
+    [InlineData("(?P<one>a)(?P<two>)", "a", 2, "two", "")]
+    [InlineData("(?P<one>a)+(?P<two>b)", "aab", 2, "two", "b")]
+    [InlineData("(?P<one>a)(?P<two>b)|(?P<three>c)", "c", 3, "three", "c")]
+    public void MultipleCaptureCompletionSurvivesReducedRollbackStorage(
+        string pattern, string text, int last, string name, string capture)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
+            new Utf8ResourcePolicy { MaxWorkingBytes = 4096, MaxResultBytes = 4096, MaxWorkSteps = 10000 });
+        var input = Encoding.UTF8.GetBytes(text);
+        var result = regex.SearchDetailedData(input);
+        Assert.True(result.Success);
+        Assert.Equal(last, result.LastIndex);
+        Assert.Equal(name, result.LastGroup);
+        Assert.Equal(capture, result.Groups[last].ValueText);
+        Assert.True(regex.SearchDetailedData(input).Success);
+        Assert.Equal(capture, result.Groups[last].ValueText);
+    }
+
+    [Theory]
     [InlineData("(?P<v>a)", "a", "a")]
     [InlineData("(?P<v>)", "", "")]
     public void SingleCaptureCompletionRemainsValidWithFiniteLimits(string pattern, string text, string capture)

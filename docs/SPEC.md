@@ -117,10 +117,11 @@ Boolean/count/value matching share the same conservative unobserved-capture proo
 Eligible owned backtracking programs omit capture slots and their trails when
 captures cannot affect matching. Backreferences, conditions, lookarounds, balancing,
 shared/explicit declarations, NonBacktracking and alternate/unknown programs retain
-their capture slots. An assertion-free latest-value run with one plain slot needs
-rollback entries only while a frame can restore an earlier value. History,
-assertions, opening journals and balancing retain their required entries. Detailed
-and cursor results retain all captures. Eliminated bookkeeping can reduce work
+their capture slots. In an assertion-free latest-value run, plain capture starts
+need undo entries only while a frame can restore an earlier value. Closing entries
+retain multi-group completion order; a sole slot needs them only for rollback.
+History, assertions, opening journals and balancing retain their required entries.
+Detailed and cursor results retain all captures. Eliminated bookkeeping can reduce work
 and working-byte requirements; other VM buffers, original interruption and result
 admission remain in force.
 

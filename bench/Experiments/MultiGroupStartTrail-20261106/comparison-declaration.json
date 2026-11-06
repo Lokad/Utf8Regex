@@ -1,0 +1,29 @@
+{
+  "Scope": "Multi-group start rollback; ONE bounded Default-process ABBA, no catalog Status",
+  "SourceParent": "1be94e16b21a29ebce1e1da207282b4980e73b58",
+  "Order": [
+    "before-a",
+    "after-a",
+    "after-b",
+    "before-b"
+  ],
+  "CoreBefore": "78611BD06E5AB45BE8DBC46F6FCF4EB7490F01674E4CDDD7D603D364F49ED02C",
+  "CoreAfter": "05B6E228187D7A6C4929A3C459BCD91415AAF64812E9A14A0CDA89B1783354A2",
+  "PythonBefore": "3A89E99EBC0A7DB3993E254202D885B12025B7E47E2F59F3465D717E2CE5950A",
+  "PythonAfter": "3A89E99EBC0A7DB3993E254202D885B12025B7E47E2F59F3465D717E2CE5950A",
+  "Rows": 15,
+  "Samples": 300,
+  "TargetMs": 75,
+  "FloorMs": 20,
+  "OuterSeconds": 120,
+  "ProducerSeconds": 35,
+  "MemoryAdmissionKiB": 2097152,
+  "CatalogInputBytes": 18432,
+  "CatalogInputSha256": "DCDD3DF5C16D4EBC22138EE5589DF31722DCADD6C1EEF5BF2A5E1D4EC18E34AA",
+  "Confirmation": "At most one if noise prevents decision",
+  "Controls": [
+    "unchanged-core-literal-count",
+    "unchanged-python-literal-findall",
+    "unchanged-named-fullmatch-miss"
+  ]
+}

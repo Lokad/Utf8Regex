@@ -1,0 +1,47 @@
+{
+  "Decision": "Accepted public throughput and reduced necessary trail storage",
+  "SourceParent": "1be94e16b21a29ebce1e1da207282b4980e73b58",
+  "BeforeCore": "78611BD06E5AB45BE8DBC46F6FCF4EB7490F01674E4CDDD7D603D364F49ED02C",
+  "AfterCore": "05B6E228187D7A6C4929A3C459BCD91415AAF64812E9A14A0CDA89B1783354A2",
+  "Python": "3A89E99EBC0A7DB3993E254202D885B12025B7E47E2F59F3465D717E2CE5950A",
+  "Scope": "One-condition eligibility generalization; closing entries preserved for multi-group completion",
+  "Checks": {
+    "Platforms": [
+      "Windows",
+      "Linux"
+    ],
+    "Targets": [
+      "net10.0",
+      "net11.0"
+    ],
+    "Core": 7573,
+    "Python": 995,
+    "PythonFiniteAndInterruption": 878,
+    "Pcre2": 841,
+    "Pcre2PolicyAndInterruption": 67,
+    "ExitCodes": 0,
+    "NewPublicCompletionCases": 5,
+    "FrozenFullAssets": "All eight original DLL/PDB hashes unchanged"
+  },
+  "Measurement": {
+    "Seconds": 91.821036601,
+    "Rows": 15,
+    "Samples": 300,
+    "MinimumMilliseconds": 32.3722,
+    "Confirmation": "None",
+    "Model": "Separate Default graph per ordinary producer process; ABBA; unchanged Core/Python literal controls",
+    "InitialPreflight": "Baseline public values agreed; checker imposed name order/private backing-field equality. Corrected before any timed run. Original logs and fixture retained."
+  },
+  "Raw": {
+    "Linux": "artifacts/experiments/multi-group-start-trail-20261106/evidence.tar.gz",
+    "LinuxSha256": "7C381223FE0C544B0695AFA98C677A1A20D42C9B8D186D9477095729B336D5EC",
+    "LinuxBytes": 8548989,
+    "OffVmHashVerified": true,
+    "Windows": "artifacts/experiments/multi-group-start-trail-20261106/windows.tar.gz",
+    "WindowsSha256": "EDF0C00E22DFAC061F3A8E5BA466822D17E337DBF28F6FC9E44A4FE07E47BC9A",
+    "WindowsBytes": 8570441,
+    "WindowsIncludes": "Twelve-group probe and preceding untimed imports audit"
+  },
+  "Packages": "No pack/qualification/publication; staged dev.44 immutable",
+  "CI": "Pending source push"
+}

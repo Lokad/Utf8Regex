@@ -1103,9 +1103,10 @@ internal static partial class Utf8SliceRunner
                         break;
                     }
                     // The assertion/history driver retains every entry. In an
-                    // assertion-free latest-value root, one plain slot needs
+                    // assertion-free latest-value root, a plain start slot needs
                     // undo only while a frame can return to an earlier value.
-                    if ((preserveCaptureTrail || captureStarts.Length != 1 || balanceHeads.Length != 0 || stacks.FrameCount != 0) &&
+                    // Closing entries still preserve multi-group completion order.
+                    if ((preserveCaptureTrail || balanceHeads.Length != 0 || stacks.FrameCount != 0) &&
                         !stacks.PushTrail(instruction.A, captureStarts[instruction.A], inputIndex, true, ref invocation))
                     {
                         return new Utf8SliceMatchOutcome(false, -1, stacks.Breach, null, null);
