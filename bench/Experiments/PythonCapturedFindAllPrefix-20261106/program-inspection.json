@@ -1,0 +1,115 @@
+{
+  "Scope": "ONE untimed exact-dev44 production program/state inspection; no alternative executor or performance claim",
+  "Runtime": ".NET 11.0.0-rc.3.26522.148",
+  "CoreSha256": "B61AF63D12B2F3B6D3387FCB9B87303584BDF473748A1AAD5D809AFBC6145E1D",
+  "PythonSha256": "A1654B75B7DD150375E293CEFAB47F0E408B1951708791EE5CB993B1868FA8DC",
+  "Pattern": "item-([0-9]\u002B)",
+  "InputBytes": 17408,
+  "InputSha256": "332DF9A8E15D370BEA5C971A99487AB004C70A24DF73ECE9FF954619B5E8C3C1",
+  "PublicResults": 2048,
+  "DirectProductionResults": 2048,
+  "RetainedCandidate": true,
+  "GroupCount": 1,
+  "UsesCaptureOpeningJournal": false,
+  "CandidateKind": "ExactAsciiLiterals",
+  "CandidateDistance": 0,
+  "CandidateCanGuide": true,
+  "Instructions": [
+    {
+      "Index": 0,
+      "Kind": "Literal",
+      "A": 105,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Index": 1,
+      "Kind": "Literal",
+      "A": 116,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Index": 2,
+      "Kind": "Literal",
+      "A": 101,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Index": 3,
+      "Kind": "Literal",
+      "A": 109,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Index": 4,
+      "Kind": "Literal",
+      "A": 45,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Index": 5,
+      "Kind": "CaptureStart",
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Index": 6,
+      "Kind": "RepeatGreedy",
+      "A": 9,
+      "B": 0,
+      "C": 1,
+      "D": -1
+    },
+    {
+      "Index": 7,
+      "Kind": "Set",
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Index": 8,
+      "Kind": "RepeatEnd",
+      "A": 6,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Index": 9,
+      "Kind": "RepeatExit",
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Index": 10,
+      "Kind": "CaptureEnd",
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    {
+      "Index": 11,
+      "Kind": "Accept",
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    }
+  ]
+}

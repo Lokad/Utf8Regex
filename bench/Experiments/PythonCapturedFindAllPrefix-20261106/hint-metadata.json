@@ -1,0 +1,30 @@
+{
+  "Scope": "Prepared immutable hint metadata only; no public operation or timing",
+  "Kind": "ExactAsciiLiterals",
+  "Distance": 0,
+  "CanGuideFallbackStarts": true,
+  "Literal": null,
+  "Alternatives": [
+    "item-0",
+    "item-1",
+    "item-2",
+    "item-3",
+    "item-4",
+    "item-5",
+    "item-6",
+    "item-7",
+    "item-8",
+    "item-9"
+  ],
+  "Buckets": [
+    {
+      "FirstByte": 105,
+      "CommonPrefix": "item-",
+      "DiscriminatorOffset": 5,
+      "HasDiscriminator": true,
+      "Branches": 10
+    }
+  ],
+  "CoreSha256": "B61AF63D12B2F3B6D3387FCB9B87303584BDF473748A1AAD5D809AFBC6145E1D",
+  "PythonSha256": "A1654B75B7DD150375E293CEFAB47F0E408B1951708791EE5CB993B1868FA8DC"
+}
