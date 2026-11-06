@@ -21,6 +21,8 @@
   plans under finite limits, avoid unnecessary backtracking/capture/coordinate
   scratch and reduce small capture-trail allocations. PythonRe Count, Split and
   FullMatch also reuse proved scalar/native work and materialized result buffers.
+  Global PythonRe matching skips proved impossible empty retries and word-interior
+  starts while retaining bounded interruption and resource controls.
 - Preserve scoped Python verbose spaces and Unicode class/folding rules; quote
   complete scalars in PCRE2 classes, including escaped supplementary characters.
   Fix literal Count throwing on a trailing partial Unicode needle after a match.
