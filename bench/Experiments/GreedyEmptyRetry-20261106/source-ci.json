@@ -1,0 +1,22 @@
+{
+  "Id": 42285764158,
+  "HeadSha": "f7c709dd79c1a504a5c39f0cd126011a4c85e6e2",
+  "Status": "completed",
+  "Conclusion": "success",
+  "Jobs": [
+    {
+      "name": "tests (windows-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "completedAt": "2026-11-06T20:15:57Z"
+    },
+    {
+      "name": "tests (ubuntu-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "completedAt": "2026-11-06T20:16:04Z"
+    }
+  ],
+  "ObservedLocal": "2026-11-06T21:17:43.0173228+01:00",
+  "Closed": true
+}

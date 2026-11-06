@@ -1,5 +1,8 @@
 # Skip an impossible Python nonempty retry
 
+Accepted source `f7c709dd79c1a504a5c39f0cd126011a4c85e6e2`.
+[Source CI](source-ci.json)42285764158 is terminal GREEN on Windows/Linux, CLOSED.
+
 After a complete capture-free LTR greedy scalar repeat returns empty, it has no
 consuming endpoint at that position. The existing cursor now skips its impossible
 nonempty retry, reusing failure's scalar advance, EOF checks and workspace cleanup.
