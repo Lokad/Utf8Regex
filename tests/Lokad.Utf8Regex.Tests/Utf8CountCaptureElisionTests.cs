@@ -44,10 +44,10 @@ public sealed class Utf8CountCaptureElisionTests
         {
             // Allow the value-only frame/journal stacks, while the additional
             // observed capture trail still needs its own admitted capacity.
+            // This public allowance must not shrink with an elided trail.
             var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
                 new() { MaxWorkSteps = 1000000, MaxDepth = 128,
-                    MaxWorkingBytes = (ulong)(Utf8SliceRunner.FrameReserveBytes +
-                        Utf8SliceRunner.JournalReserveBytes + Utf8SliceRunner.TrailReserveBytes) - 1, MaxResultBytes = 1 });
+                    MaxWorkingBytes = 1280, MaxResultBytes = 1 });
             Assert.Equal(expected, regex.Count(input));
             Assert.Equal(expected, regex.Count(input, cancellation.Token));
             Assert.True(regex.IsMatch(input, cancellation.Token));

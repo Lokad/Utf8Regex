@@ -61,6 +61,15 @@ No mirrored test was added. [SPEC](../../../docs/SPEC.md) and
 [migration guidance](../../../docs/MIGRATION.md) explain that short captures reserve
 less while long histories can require more headers/growth and working capacity.
 
+Freeze CI81c66fc6 found nine outdated assumptions per runtime on both OS. Eight
+elision cases computed their value allowance from the trail they omit, reducing
+it to1055B below1120B needed by unchanged frame/journal storage. They now use a
+concrete1280B public allowance while retaining detailed/cursor working denials.
+The explicit modeled trail-charge pin changes288 ->160; size queries remain.
+The corrected four fixtures pass113 checks per runtime on Windows/Linux, with
+production unchanged. The first Full failed357.03s in tests before any catalogs;
+its immutable raw4AC78D1C is preserved under the delivery44 evidence directory.
+
 Immutable raw in `artifacts/experiments/capture-trail-quantum-20261106/`:
 
 - `evidence.tar.gz`: exact before/after assets, allocation probe/driver, public
@@ -69,6 +78,9 @@ Immutable raw in `artifacts/experiments/capture-trail-quantum-20261106/`:
 - `correctness-source.zip`: Windows checks, exact source/docs, patch, probes,
   analyzer and summary; SHA256
   `7F00752457B13F5C72A3ACAEA315BEF8E4D0FA21ADAF9F5F51472ADDBBD040E0`.
+- `working-witness.zip`: failed freeze CI, corrected tests/patch and focused
+  Windows/Linux results; SHA256
+  `29961A5AB81AFAEAAA9AAC5B103B6B5D7047AEF7E4F751651565AD7942AB797F`.
 
 An initial private-driver compile error selected FindAll rather than
 FindAllToStrings; the failed log remains. No production workaround was needed.
