@@ -36,6 +36,9 @@
   matching can allocate less and fit smaller working limits; unfused, assertion
   and reverse workloads can cost more time. State remains admitted before
   acquisition and released synchronously.
+- Search proved unbounded runs excluding two ASCII values in checked bounded
+  spans, reducing imports Count work without additional allocation. Finite and
+  scalar-counted repeats retain their existing behavior; some local costs rise.
 - Skip impossible ASCII starts in scalar first-match searches, including captured
   and range-prefixed patterns. Some excluded pattern families can cost more.
 - Reduce temporary allocations for Boolean and coordinate-only matching when

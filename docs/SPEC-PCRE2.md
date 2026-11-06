@@ -212,6 +212,9 @@ Fused scalar repeats can also execute without unused counter vectors. The first
 counter-dependent repeat admits its complete state before acquisition; retries
 reuse it under the same synchronous invocation lifetime. Required capture and
 assertion storage remains admitted. Work and heap requirements can therefore fall.
+Proved unbounded repeats excluding an ASCII pair can scan checked blocks of at
+most 2048 bytes after whole-subject validation, retaining scalar endpoints and
+bounded work/interruption checks. This can reduce route-dependent work charges.
 Boolean slice searches can reuse a compiler-proved first ASCII byte to skip
 impossible starts. Each scan admits at most 2048 bytes, with original-token and
 deadline checks even on unlimited calls. Actual candidates retain normal VM and

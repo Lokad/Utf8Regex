@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Numerics;
 using System.Text;
 
@@ -354,6 +355,39 @@ internal static partial class Utf8SliceRunner
         var maximum = repeat.RepeatMaximum;
         var position = start;
         var count = 0;
+        if (minimum <= 1 && maximum == long.MaxValue &&
+            atom is { Kind: Utf8SliceInstructionKind.Set, B: 1, C: 0 })
+        {
+            ReadOnlySpan<byte> mask = program.SetMasks[atom.A];
+            var low = BinaryPrimitives.ReadUInt64LittleEndian(mask);
+            var high = BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]);
+            if (BitOperations.PopCount(low) + BitOperations.PopCount(high) == 2)
+            {
+                var first = low != 0 ? BitOperations.TrailingZeroCount(low) : 64 + BitOperations.TrailingZeroCount(high);
+                if (low != 0) low &= low - 1;
+                else high &= high - 1;
+                var second = low != 0 ? BitOperations.TrailingZeroCount(low) : 64 + BitOperations.TrailingZeroCount(high);
+                // Whole-subject validity is established by the caller. ASCII
+                // stops cannot occur inside wider scalars; intermediate blocks
+                // may split a scalar, but the selected endpoint never does.
+                while (position < input.Length)
+                {
+                    var breach = invocation.TryChargeInputStep();
+                    if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, breach, null, null);
+                    var block = input.Slice(position, Math.Min(2048, input.Length - position));
+                    var stop = block.IndexOfAny((byte)first, (byte)second);
+                    if (stop >= 0) { position += stop; break; }
+                    position += block.Length;
+                }
+                var terminalBreach = invocation.TryChargeInputStep();
+                if (terminalBreach != Utf8ExecutionLimitKind.None) return new(false, -1, terminalBreach, null, null);
+                // With no maximum and minimum at most one, nonempty byte extent
+                // suffices; bounded/scalar-counted repeats keep the normal loop.
+                return position != start || minimum == 0
+                    ? new(true, position, Utf8ExecutionLimitKind.None, null, null)
+                    : new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+            }
+        }
         ReadOnlySpan<byte> asciiMask = atom.Kind == Utf8SliceInstructionKind.Set && atom.B == 0 && atom.C == 0
             ? program.SetMasks[atom.A] : [];
         while (count < maximum)

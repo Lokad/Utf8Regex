@@ -307,6 +307,12 @@ working requirements can change; counter-heavy paths can cost more time.
 The invocation checks its numeric working ceiling before caller-funded admission;
 live reservations, overlap and the first denial remain shared across aliases.
 Native shortcuts still meter bounded search, comparison and publication.
+Proved unbounded scalar repeats excluding exactly two ASCII values can scan in
+checked byte spans of at most 2048 bytes per work/deadline checkpoint. Whole-subject
+UTF-8 validation precedes execution; ASCII stops and final endpoints stay on scalar
+boundaries. Minimums above one, finite maxima and folding retain scalar-counted
+execution; paths requiring rewind retain their existing handling. Work charges
+can fall; no scratch storage is added.
 Literal-search blocks own their work charges; entering the search helper adds
 no separate work unit for a nonempty admitted plan. Empty plans and prior resource
 failures retain their checkpoint, and terminal success/miss checks still observe

@@ -333,6 +333,9 @@ Fused VM repeats need no unused counter vectors. Counter-dependent execution
 still admits its state before acquisition and retains it across candidate
 attempts. This can lower execution work/working requirements without changing
 captures, retained results or synchronous interruption and release.
+Proved unbounded repeats excluding an ASCII pair can use checked 2048-byte search
+blocks after whole-subject validation. They retain scalar endpoints and bounded
+work/interruption checks; numeric work charges can fall.
 
 Cold FullMatch/replacement preparation retains separate construction limits;
 finite working bytes cap additional covered construction capacity. A byte failure
