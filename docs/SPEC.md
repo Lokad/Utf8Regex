@@ -302,6 +302,11 @@ failures retain their checkpoint, and terminal success/miss checks still observe
 the original token and deadline. Candidates without boundary or trailing-literal
 requirements omit an empty confirmation step; their terminal publication remains
 charged. These shortcuts can lower finite work requirements.
+Controlled exact single-literal searches through32 bytes can search complete
+needles within admitted spans of at most2048 bytes, including lookahead. They
+retain pre-scan and terminal token/deadline checks, without separately charging
+every first-byte candidate. Numerical work requirements can therefore fall;
+larger and folded needles retain separately admitted comparisons.
 Pure LTR exact families of three to eight needles can reuse complete-needle search
 in admitted spans of at most2048 bytes when no boundary or trailing-literal
 confirmation is required. Needles above1024 bytes keep the existing generic path.

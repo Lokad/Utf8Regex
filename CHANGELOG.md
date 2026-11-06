@@ -77,6 +77,9 @@
   retaining whole-subject validation, block work charges and interruption points.
 - Reuse metered native Count for four-to-eight complete literal alternatives,
   reducing execution time, temporary storage and route-dependent resource needs.
+- Reuse checked span search for 17–32-byte exact literals in bounded native
+  windows. Count and value matching improve; reverse and dense-tail calls can
+  cost more. Modeled work requirements can decrease.
 - Reject longer impossible ASCII prefixes before scalar Count enters the VM,
   improving Ruff-like searches and reducing working requirements for misses.
 - Speed up native literal-suffix Count with checked span search, and retain

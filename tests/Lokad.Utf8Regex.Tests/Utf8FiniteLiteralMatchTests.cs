@@ -75,9 +75,10 @@ public sealed class Utf8FiniteLiteralMatchTests
         using var source = new CancellationTokenSource();
         foreach (var reverse in new[] { RegexOptions.None, RegexOptions.RightToLeft })
         foreach (var compiled in new[] { RegexOptions.None, RegexOptions.Compiled })
+        foreach (var fill in new[] { 'a', 'b' })
         foreach (var prefix in new[] { 2016, 2017, 2031, 2032, 2047, 2048 })
         {
-            var text = "é😀" + new string('a', prefix) + literal + " " + literal + "😀";
+            var text = "é😀" + new string(fill, prefix) + literal + " " + literal + "😀";
             var storage = Encoding.UTF8.GetBytes("padding" + text + "padding");
             var input = storage.AsSpan(7, Encoding.UTF8.GetByteCount(text));
             var pattern = "(?<hit>" + literal + ")";

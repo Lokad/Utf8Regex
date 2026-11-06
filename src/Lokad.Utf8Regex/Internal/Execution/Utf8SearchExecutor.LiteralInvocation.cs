@@ -95,7 +95,7 @@ internal static partial class Utf8SearchExecutor
         // A short exact needle has bounded verification cost inside the existing
         // prepared searcher. Include its lookahead in the 2,048-byte window;
         // longer/folded needles retain separately charged candidate comparisons.
-        var preparedWindow = !search.IgnoreCase && search.Length <= 16;
+        var preparedWindow = !search.IgnoreCase && search.Length <= 32;
         var lookahead = preparedWindow ? search.Length - 1 : 0;
         while (low <= high)
         {

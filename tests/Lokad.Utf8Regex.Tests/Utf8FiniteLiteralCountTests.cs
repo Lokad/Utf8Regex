@@ -135,9 +135,10 @@ public sealed class Utf8FiniteLiteralCountTests
     {
         var literal = new string('a', length - 1) + "b";
         var regex = Create(literal, 1000000, RegexOptions.Compiled);
+        foreach (var fill in length == 1 ? new[] { 'a' } : new[] { 'a', 'b' })
         foreach (var prefix in new[] { 0, 2032, 2033, 2034, 2047, 2048, 2049 })
         {
-            var subject = "😀é" + new string('a', prefix) + literal + " " + literal + "a";
+            var subject = "😀é" + new string(fill, prefix) + literal + " " + literal + "a";
             var storage = Encoding.UTF8.GetBytes("padding" + subject + "padding");
             var input = storage.AsSpan(7, Encoding.UTF8.GetByteCount(subject));
             Assert.Equal(2, regex.Count(input));

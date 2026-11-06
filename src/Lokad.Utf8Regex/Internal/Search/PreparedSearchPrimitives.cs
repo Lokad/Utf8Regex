@@ -250,7 +250,7 @@ internal readonly struct PreparedSubstringSearch
         {
             <= 2 => PreparedExactSearchTier.None,
             <= 8 => PreparedExactSearchTier.ShortFirstByte,
-            <= 32 => PreparedExactSearchTier.MediumLastByte,
+            <= 16 => PreparedExactSearchTier.MediumLastByte,
             _ => PreparedExactSearchTier.SpanIndexOf,
         };
     }
