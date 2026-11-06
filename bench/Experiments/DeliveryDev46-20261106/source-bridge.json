@@ -1,10 +1,10 @@
 {
   "FullSource": "41a751a3d8d9ba344b7ccdbfe9f0814d44571b00",
-  "PackageSource": "Unbound until final data/docs commit",
+  "PackageSource": "6957b35aa51ee5730252011085e21669767ee1f9",
   "PackageVersion": "0.5.0-dev.46",
   "ProducerAndBenchmarkCSharpChangedAfterFull": false,
   "BuildInputsChangedAfterFull": false,
   "ActualBinaries": "Final revision metadata and DLLs differ; no byte equality claim",
-  "QualificationComplete": false,
+  "QualificationComplete": true,
   "PublicationAuthorized": false
 }

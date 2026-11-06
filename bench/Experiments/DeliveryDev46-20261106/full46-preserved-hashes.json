@@ -1,0 +1,40 @@
+{
+  "FullSource": "41a751a3d8d9ba344b7ccdbfe9f0814d44571b00",
+  "PackageSource": "6957b35aa51ee5730252011085e21669767ee1f9",
+  "AfterLinuxAndCost": true,
+  "AllEightUnchanged": true,
+  "Assets": [
+    {
+      "File": "bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.dll",
+      "Sha256": "6A0A97A1DEB1D20B725F9E6734D3031A1D105AF22BC49E7EDE16857408052F9F"
+    },
+    {
+      "File": "bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.pdb",
+      "Sha256": "D946B4842389632D917BA76F69A7E7CD7EE053C7E1F2F31B1A8607FFC461CF99"
+    },
+    {
+      "File": "bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.PythonRe.dll",
+      "Sha256": "80F5DB150042541E6249F1738991DDCF6E694490B6CB38D56394F32F95A3876B"
+    },
+    {
+      "File": "bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.PythonRe.pdb",
+      "Sha256": "5F64DD6F6A721D3FC0E28F98A7CBE8DB99EA8580F000146F6EFFE042BB0AA86E"
+    },
+    {
+      "File": "bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.Pcre2.dll",
+      "Sha256": "C7AEC16B115CED1E9D897A4E452A5C26CFE5CF62F0A3B240CE4ECCBDAAC6500E"
+    },
+    {
+      "File": "bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.Pcre2.pdb",
+      "Sha256": "51CA233B6B8F1D4E10E7933846234E3FFD98F9C07339B31EDF60DB90730847FC"
+    },
+    {
+      "File": "bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.Benchmarks.dll",
+      "Sha256": "1B70CEEBD86AFCE2DAD705DDD5935A488A4596481C1E4476DD863D45D2662A02"
+    },
+    {
+      "File": "bench/Lokad.Utf8Regex.Benchmarks/bin/Release/net11.0/Lokad.Utf8Regex.Benchmarks.pdb",
+      "Sha256": "11C62B67D7E9B8E725A570AC7C7E698BE32504EDD695EFBB4CC622307790DC4A"
+    }
+  ]
+}

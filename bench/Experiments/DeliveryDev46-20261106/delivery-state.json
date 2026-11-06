@@ -1,0 +1,12 @@
+{
+  "Version": "0.5.0-dev.46",
+  "PackageSource": "6957b35aa51ee5730252011085e21669767ee1f9",
+  "FullSource": "41a751a3d8d9ba344b7ccdbfe9f0814d44571b00",
+  "FullAccepted": true,
+  "WindowsPackagesAccepted": true,
+  "OriginalWindowsConsumersAccepted": true,
+  "LinuxAcceptance": "Complete: exact Windows bytes,8fixtures/109832checks,24restore audits,12TRX,Awk19/Lython118 perTFM/public probes/root loans0",
+  "FinalPackageCosts": "Complete:112.658756760s,18rows/360samples,min51.3256ms,no confirmation; rawCE08E99B offVM",
+  "Published": false,
+  "Qualified": true
+}

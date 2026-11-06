@@ -1,0 +1,22 @@
+{
+  "Id": 42297916134,
+  "HeadSha": "6957b35aa51ee5730252011085e21669767ee1f9",
+  "Status": "completed",
+  "Conclusion": "success",
+  "Jobs": [
+    {
+      "name": "tests (windows-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "completedAt": "2026-11-06T21:42:39Z"
+    },
+    {
+      "name": "tests (ubuntu-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "completedAt": "2026-11-06T21:42:16Z"
+    }
+  ],
+  "Closed": true,
+  "Scope": "Final generated data/docs and package source; full Windows/Linux source/runtime and disabled dynamic code CI"
+}
