@@ -506,6 +506,17 @@ internal static class Utf8ValidationCore
     {
         // Match each checked Slice's end admission. Invocation callers retain
         // their original 2 KiB checkpoints; no validation block is widened.
+        if (Vector512.IsHardwareAccelerated)
+        {
+            while ((ulong)(uint)offset + (uint)Vector512<byte>.Count <= (uint)input.Length)
+            {
+                var mask = MemoryMarshal.Read<Vector512<byte>>(
+                    input.Slice(offset, Vector512<byte>.Count)).ExtractMostSignificantBits();
+                if (mask != 0) return offset + BitOperations.TrailingZeroCount(mask);
+                offset += Vector512<byte>.Count;
+            }
+        }
+
         if (Vector256.IsHardwareAccelerated)
         {
             while ((ulong)(uint)offset + (uint)Vector256<byte>.Count <= (uint)input.Length)

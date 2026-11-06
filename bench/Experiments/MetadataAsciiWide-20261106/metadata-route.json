@@ -1,0 +1,17 @@
+{
+  "Scope": "Untimed input/metadata-route feasibility only; not performance evidence",
+  "Rows": [
+    {
+      "Id": "literal-alternate/sherlock-casei-en",
+      "InputBytes": 899232,
+      "InputSha256": "0D40805F6D02C8FE02BD75945B98911891F707E8ECB939E018446858065D76EA",
+      "FirstNonAscii": 3976,
+      "MetadataSuffixBytes": 895256,
+      "SuffixAsciiBytes": 894266,
+      "Count": 725,
+      "Utf16Length": 898664,
+      "ContainsKelvin": false,
+      "Options": "IgnoreCase, CultureInvariant"
+    }
+  ]
+}
