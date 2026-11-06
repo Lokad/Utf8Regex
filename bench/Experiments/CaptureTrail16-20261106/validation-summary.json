@@ -1,0 +1,16 @@
+{
+  "SourceParent": "61347fc96ae903f2fd42f404179c13acd8fe5bc8",
+  "RawSha256": "ABECCA513E68A44BEF85F8453AA73E92B651468044FD8D888E89D18326AB24EF",
+  "RawBytes": 1651874,
+  "OffVmVerified": true,
+  "WindowsSha256": "27078568D82AF6AE4EE23B69FD53EEF9035D4D3C1F32272EE29DCD273D9047AB",
+  "WindowsCoreUnaffectedPerFramework": 11231,
+  "WindowsInitialOldAccountingPinFailuresPerFramework": 1,
+  "WindowsCorrectedPinAndBoundaryChecksPerFramework": 21,
+  "LinuxCorePerFramework": 11232,
+  "PythonPerOsPerFramework": 1350,
+  "Pcre2PerOsPerFramework": 766,
+  "BothFrameworks": true,
+  "Complete": true,
+  "FullPackageQualificationRepeated": false
+}

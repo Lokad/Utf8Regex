@@ -29,6 +29,9 @@
   PythonRe Unicode splits improve; dense wide-character splits can cost more.
   Construction and execution admission, whole-subject validation and original
   interruption controls remain enforced.
+- Reduce initial capture-trail allocation for small matches. Long capture
+  histories can use more buffers and bytes; working admission still covers
+  each table/chunk acquisition and growth overlap.
 - Skip impossible ASCII starts in scalar first-match searches, including captured
   and range-prefixed patterns. Some excluded pattern families can cost more.
 - Reduce temporary allocations for Boolean and coordinate-only matching when

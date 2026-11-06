@@ -1,0 +1,154 @@
+{
+  "Scope": "ONE public capture-trail32-to16 ABBA; no normalization/catalog Status",
+  "ElapsedSeconds": 40.040364712,
+  "Samples": 140,
+  "Summary": [
+    {
+      "Name": "unchanged-literal-fullmatch-control",
+      "BeforeUs": 0.02932025,
+      "AfterUs": 0.029313595212805684,
+      "Percent": -0.02269689785835416,
+      "BeforeProcessMedians": [
+        0.02942115,
+        0.029136649999999997
+      ],
+      "AfterProcessMedians": [
+        0.029194462057915763,
+        0.029355299703406886
+      ],
+      "BeforeAllocatedBytes": [
+        0
+      ],
+      "AfterAllocatedBytes": [
+        0
+      ],
+      "MinimumBatchMs": 57.8012
+    },
+    {
+      "Name": "actual-named-backreference-miss",
+      "BeforeUs": 0.470210399888663,
+      "AfterUs": 0.45163840226670243,
+      "Percent": -3.9497207263722856,
+      "BeforeProcessMedians": [
+        0.4705548990951211,
+        0.46986590068220485
+      ],
+      "AfterProcessMedians": [
+        0.44826296418205214,
+        0.45768103905691276
+      ],
+      "BeforeAllocatedBytes": [
+        720
+      ],
+      "AfterAllocatedBytes": [
+        464
+      ],
+      "MinimumBatchMs": 58.966
+    },
+    {
+      "Name": "named-backreference-hit",
+      "BeforeUs": 0.5102166785093614,
+      "AfterUs": 0.49390554879838944,
+      "Percent": -3.1969024922168687,
+      "BeforeProcessMedians": [
+        0.5057551915387593,
+        0.5121223535857682
+      ],
+      "AfterProcessMedians": [
+        0.4904641468397812,
+        0.49642914062827664
+      ],
+      "BeforeAllocatedBytes": [
+        720
+      ],
+      "AfterAllocatedBytes": [
+        464
+      ],
+      "MinimumBatchMs": 58.4768
+    },
+    {
+      "Name": "actual-named-backreference-miss-finite-live",
+      "BeforeUs": 0.6347683535999993,
+      "AfterUs": 0.6083802479169633,
+      "Percent": -4.157123702430898,
+      "BeforeProcessMedians": [
+        0.6284930481283423,
+        0.6389041479518747
+      ],
+      "AfterProcessMedians": [
+        0.6048356136410047,
+        0.6110114892604888
+      ],
+      "BeforeAllocatedBytes": [
+        832
+      ],
+      "AfterAllocatedBytes": [
+        576
+      ],
+      "MinimumBatchMs": 58.1501
+    },
+    {
+      "Name": "large-core-capture-history",
+      "BeforeUs": 317.57473684210527,
+      "AfterUs": 324.5533254994125,
+      "Percent": 2.197463414974643,
+      "BeforeProcessMedians": [
+        316.5878947368421,
+        321.02736842105264
+      ],
+      "AfterProcessMedians": [
+        325.90380434782605,
+        322.7918918918919
+      ],
+      "BeforeAllocatedBytes": [
+        394128
+      ],
+      "AfterAllocatedBytes": [
+        408232
+      ],
+      "MinimumBatchMs": 58.8571
+    },
+    {
+      "Name": "core-capture-rollback",
+      "BeforeUs": 102.50412880249294,
+      "AfterUs": 104.32858097419953,
+      "Percent": 1.7798816428379993,
+      "BeforeProcessMedians": [
+        101.33481228668941,
+        103.31965217391304
+      ],
+      "AfterProcessMedians": [
+        104.68112874779541,
+        103.36958762886597
+      ],
+      "BeforeAllocatedBytes": [
+        69952
+      ],
+      "AfterAllocatedBytes": [
+        73304
+      ],
+      "MinimumBatchMs": 58.5597
+    },
+    {
+      "Name": "actual-findall-many-capture-strings",
+      "BeforeUs": 658.646871945259,
+      "AfterUs": 670.1962142492339,
+      "Percent": 1.7534953547816645,
+      "BeforeProcessMedians": [
+        641.0322580645161,
+        677.6647727272727
+      ],
+      "AfterProcessMedians": [
+        670.0261363636363,
+        670.3662921348315
+      ],
+      "BeforeAllocatedBytes": [
+        242456
+      ],
+      "AfterAllocatedBytes": [
+        242200
+      ],
+      "MinimumBatchMs": 58.7974
+    }
+  ]
+}
