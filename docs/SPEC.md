@@ -121,6 +121,10 @@ their capture slots. In an assertion-free latest-value run, plain capture starts
 need undo entries only while a frame can restore an earlier value. Closing entries
 retain multi-group completion order; a sole slot needs them only for rollback.
 History, assertions, opening journals and balancing retain their required entries.
+For one unique capture, references after its local close can use the completed
+slot without an opening journal. References before closure or inside its body,
+external assertion slots, shared declarations and other excluded shapes retain
+the separate opening history. Capture values and required rollback remain intact.
 Detailed and cursor results retain all captures. Eliminated bookkeeping can reduce work
 and working-byte requirements; other VM buffers, original interruption and result
 admission remain in force.

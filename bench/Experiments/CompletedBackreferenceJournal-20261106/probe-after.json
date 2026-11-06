@@ -1,0 +1,13 @@
+{
+  "Scope": "Untimed actual named FullMatch state; no alternative executor",
+  "CoreSha256": "03C320737324B8FFF8707600F71D69E151C04C5B4F0163F2CEB120CBECEDDDBE",
+  "PythonSha256": "58D5DBD3BDC364316B8386B3F6C7ECA2EE153F516029078FAB4331C44304E4C1",
+  "GroupCount": 1,
+  "UsesCaptureOpeningJournal": false,
+  "Positioned": {
+    "ReservedBytes": 96,
+    "FrameCount": 0,
+    "TrailCount": 0
+  },
+  "DisposedReservedBytes": 0
+}

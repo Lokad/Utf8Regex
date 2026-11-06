@@ -109,8 +109,11 @@ capture to close on the successful path, not the largest participating number:
 `((a))` closes group 1 last. `LastGroup` is that slot's name, or null when
 unnamed. Misses/no participating captures have null completion metadata. With one
 group, participation in its completed slot establishes `LastIndex` without a
-completion-journal scan. Unneeded rollback storage can be omitted on linear paths;
-numeric work/working requirements may decrease, with admission before needed
+completion-journal scan. Unneeded rollback storage can be omitted on linear paths.
+References after the sole unique capture closes can also use its completed slot
+without a separate opening journal. References that can observe an open capture
+or an external assertion slot retain their opening history.
+Numeric work/working requirements may decrease, with admission before needed
 allocation and interruption/result contracts preserved.
 Global discovery retries a nonempty match at the same position after an empty
 result before advancing one complete scalar. A complete capture-free boundary-only

@@ -359,6 +359,10 @@ internal sealed class Utf8SliceProgram
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
         var usesCaptureOpeningJournal = captureCatalog is { HasSharedCaptureDeclarations: true };
+        var canUseCompletedCapture = groupCount == 1 && !rightToLeft && !hasBalancing &&
+            !hasConditionalTest && !sawLookaround && assertions.Length == 0;
+        var captureIsOpen = false;
+        var hasClosedCapture = false;
         var hasUnicodePatternAtoms = false;
         var hasOrderSensitiveLookbehind = false;
         ulong consumers = 0, accepts = 0;
@@ -366,7 +370,18 @@ internal sealed class Utf8SliceProgram
         for (var pc = 0; pc < instructions.Length; pc++)
         {
             var instruction = instructions[pc];
-            usesCaptureOpeningJournal |= instruction.Kind == Utf8SliceInstructionKind.Backref;
+            if (instruction.Kind == Utf8SliceInstructionKind.CaptureStart) captureIsOpen = true;
+            else if (instruction.Kind == Utf8SliceInstructionKind.CaptureEnd)
+            {
+                captureIsOpen = false;
+                hasClosedCapture = true;
+            }
+            // One unique, locally closed capture already occupies its final
+            // slot. Only references before closure or inside its body need the
+            // opening journal's separate last-completed value. An external
+            // assertion slot has no local close and retains the journal.
+            usesCaptureOpeningJournal |= instruction.Kind == Utf8SliceInstructionKind.Backref &&
+                (!canUseCompletedCapture || captureIsOpen || !hasClosedCapture);
             hasUnicodePatternAtoms |= instruction.Kind == Utf8SliceInstructionKind.CategorySet ||
                 instruction.Kind == Utf8SliceInstructionKind.Boundary && instruction.C != 0 ||
                 instruction.Kind == Utf8SliceInstructionKind.Literal && instruction.A >= 128;

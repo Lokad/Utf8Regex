@@ -1,0 +1,4 @@
+Initial Windows console output was emitted by test.ps1 Write-Host. The first > redirection did not capture that information stream; the zero-byte files are not raw logs. Tool output recorded:
+Core eachTFM:681passed/1failed of682; only the new conditional-classification expectation failed. No production fix. Corrected new class21passed eachTFM.
+Python eachTFM:1363passed/1failed of1364; only the new zero-budget fixture failed (zero is rejected at construction). Changed witness caps to1; corrected fact1passed eachTFM, retained in windows-python-corrected.txt. No production fix.
+Core authority329passed eachTFM and Pcre789passed eachTFM have captured logs. Corrected Linux Core1011/Python1364/Pcre789 eachTFM logs retain the complete current filters. Do not replay passed tests merely to replace Windows logging.

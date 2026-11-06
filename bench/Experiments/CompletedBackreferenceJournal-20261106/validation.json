@@ -1,0 +1,32 @@
+{
+  "Parent": "7359fbae54027fca9f23d279c5cf6954b4c1c4e0",
+  "Windows": {
+    "Frameworks": [
+      "net10.0",
+      "net11.0"
+    ],
+    "Core": 1011,
+    "PythonRe": 1364,
+    "Pcre2": 789,
+    "CountsArePerFramework": true,
+    "InitialFixtureCorrections": "Core classification expectation; Python unsupported0caps ->1; production unchanged",
+    "Logging": "Initial console information stream was not captured; notes retain actual observations. Corrected fact, authority and PCRE logs plus complete Linux filters retained. No replay solely for logs."
+  },
+  "Linux": {
+    "Frameworks": [
+      "net10.0",
+      "net11.0"
+    ],
+    "Core": 1011,
+    "PythonRe": 1364,
+    "Pcre2": 789,
+    "CountsArePerFramework": true,
+    "TerminalExit": 0
+  },
+  "RawSha256": "CFC6AC08E6FF4433D560E5439FA60AD4F012539CAEF66473E688B7D067BCA397",
+  "Bytes": 4823486,
+  "OffVmVerified": true,
+  "Full46GraphPreserved": true,
+  "PackagesRegenerated": false,
+  "Accepted": true
+}

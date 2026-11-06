@@ -1,0 +1,14 @@
+[
+  {
+    "File": "src/Lokad.Utf8Regex/Internal/Execution/Utf8SliceProgram.cs",
+    "Sha256": "186FC3AF39991D19981D4464CABA7BBAD8FF6E79D1D249F1188FFF2A2FAD61FF"
+  },
+  {
+    "File": "tests/Lokad.Utf8Regex.Tests/Utf8CompletedBackreferenceTests.cs",
+    "Sha256": "E184F5FF8315BD4A179DFEA389537281E668A3F54272286F4BED88863EE75585"
+  },
+  {
+    "File": "tests/Lokad.Utf8Regex.PythonRe.Tests/PythonReCompletedBackreferenceTests.cs",
+    "Sha256": "C5B10712D4CB43EE657797411CDEA851E0DDB1DA9A58DB47920828C54DD4BAFD"
+  }
+]
